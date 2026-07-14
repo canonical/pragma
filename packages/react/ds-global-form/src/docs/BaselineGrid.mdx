@@ -1,4 +1,5 @@
-import { Meta } from "@storybook/addon-docs/blocks";
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Examples from "./examples/DensityExamples.stories";
 
 <Meta title="Documentation/Guides/The Baseline Grid" />
 
@@ -34,25 +35,69 @@ baseline on a grid line, the system adds a calculated top padding.
 The distance from the top of a `line-height: 1` box to the text baseline is
 approximated, font-relatively, as:
 
-```
+```css
 --natural-baseline: calc((1em + 1cap) / 2);
 ```
 
 `1cap` is the cap height of the current font, `1em` its size. The average of the
 two is a close, size-independent stand-in for where the alphabetic baseline sits
 — no magic pixel constant, and correct at any font size because both terms scale
-with the font.
+with the font. That size-independence is the entire reason for the cap-unit form:
+a naive implementation would hard-code a pixel offset per font size and break the
+moment the size changed; this expression tracks the font automatically.
 
 The text is then seated on a chosen grid line — the **target baseline** — by
 padding the top with the remaining distance:
 
-```
+```css
 --space-before: max(0px, calc(target − --natural-baseline − border-top));
 padding-block-start: var(--space-before);
 ```
 
 The result: the first baseline lands exactly on `target`, which is always a whole
 baseline multiple, so the text is on the grid.
+
+## A worked example
+
+Take **apps-comfortable**, the default cell. Its control height is a whole
+baseline multiple:
+
+```
+control-height = --baseline-height × 8 = 32px   (8 bU)
+```
+
+The density model seats a control's single baseline on its **target line**, which
+is two-thirds of the box height, rounded _up_ to the next baseline:
+
+```
+target = round(up, control-height × 2/3, --baseline-height)
+       = round(up, 32 × 2/3, 4)
+       = round(up, 21.33px, 4)
+       = 24px                                    (6 bU)
+```
+
+Rounding up is deliberate — a fractional case such as this one (21.33) lifts to
+the next whole line (24), while an already-exact case stays put (apps-dense's
+`24 × 2/3 = 16` is exact, so it stays on the 4th baseline).
+
+Now seat a 14px label into that box. With a cap height of roughly 10px for the
+body face:
+
+```
+natural-baseline = (1em + 1cap) / 2 = (14 + 10) / 2 = 12px
+space-before     = max(0px, 24 − 12 − border-top)
+```
+
+For a borderless label (`border-top = 0`) that is `24 − 12 = 12px` of top
+padding, and the baseline lands exactly on the 6th grid line. Change the font
+size and both terms move together, so the arithmetic still lands on `24px` — the
+target never has to be re-tuned per size.
+
+The stories below force the baseline overlay on, so this seating can be read
+directly: the label's baseline and the input's baseline both rest on the same
+pink band boundary.
+
+<Canvas of={Examples.ButtonAndInput} />
 
 ## The whole-multiple invariant
 
@@ -69,9 +114,11 @@ paragraph or a textarea cannot — its line-height must be snapped to the grid.
 
 The typography engine already guarantees this for prose: it computes each tier's
 line-height as `round(up, font-size × ratio, --baseline-height)`, a snapped
-value. That is why running text stays on the grid line after line, and why the
-form system leaves prose to the engine (see the composition rule in the density
-guide).
+value. A `1rem × 1.5` body line snaps to `24px` — exactly 6 bU — so running text
+stays on the grid line after line. This is also why the textarea, alone among the
+form controls, takes the density line-height (a whole multiple) rather than the
+`line-height: 1` crush: it has many rows, and every row must land on a grid line,
+not just the first.
 
 ## Two ways text reaches the grid
 
@@ -81,19 +128,37 @@ model.
 
 - **Controls** — a button label, an input's text, a field label / description /
   error. These are seated by the **density model**: crushed to `line-height: 1`,
-  then padded so their single baseline lands on the density _target_ line (a
-  fraction of the control's height, `round(up, height × 2/3, baseline)`). This
-  is what makes a 32px button's label and a 32px input's value share one line.
+  then padded so their single baseline lands on the density _target_ line
+  (`round(up, height × 2/3, baseline)`, as worked above). This is what makes a
+  32px button's label and a 32px input's value share one line.
 
 - **Running prose** — bare `p`, `h1`–`h6`, and anything in an `.editorial`
   context. These are seated by the **typography engine**: each keeps its tier's
-  snapped natural line-height and is nudged onto the _nearest_ grid line, so
-  multi-line reading rhythm is preserved and every wrapped line stays on-grid.
+  snapped natural line-height and is nudged onto the _nearest_ grid line (via the
+  engine's `--start-nudge` / `--end-nudge`), so multi-line reading rhythm is
+  preserved and every wrapped line stays on-grid.
 
 The two never fight over the same element. Density seats controls; the engine
-seats prose. A paragraph placed next to a control will sit on _a_ grid line, but
-not necessarily the control's target line — controls and prose answer to
-different seating rules by design.
+seats prose. Because they write to **disjoint** element sets, there is no
+specificity war between them — a point returned to below. A paragraph placed next
+to a control will sit on _a_ grid line, but not necessarily the control's target
+line — controls and prose answer to different seating rules by design.
+
+## The seat is computed against the box, not the border
+
+The target baseline is measured from the top of the **control box**, and the box
+is `border-box` sized: a control's border is absorbed into its fixed height, not
+added past it. So a bordered and a borderless control of the same density are the
+same height, and their text seats on the same line.
+
+The border only enters the placement as the `border-top` term subtracted in
+`--space-before` — it accounts for the border occupying part of the space above
+the text, nothing more. A borderless primary button (`border-top = 0`) and a
+bordered secondary (a 1px top border) therefore share one baseline: the secondary
+simply contributes 1px of border where the primary contributes 1px more padding.
+The example below places the two side by side against the overlay.
+
+<Canvas of={Examples.BorderlessAndBordered} />
 
 ## Why not just set `line-height: 1` everywhere?
 
@@ -101,9 +166,31 @@ Crushing everything to `line-height: 1` seats the _first_ line of any element on
 the grid, which is why an earlier iteration did exactly that. But it breaks
 running prose two ways: it removes the leading that makes multi-line text
 readable, and — because a crushed line-height is not a whole baseline multiple —
-it lets every _wrapped_ line drift off the grid. The current model keeps
+it lets every _wrapped_ line drift off the grid.
+
+The fix (call it "Stage A") was to **partition** the two mechanisms: density
+seats controls only, and the typography engine owns prose. Because the two now
+write to disjoint element sets, `.editorial` composes with density without a
+specificity war, and — since the engine snaps prose line-height to a whole
+baseline multiple — wrapped-prose drift is gone as well. The current model keeps
 `line-height: 1` only where it is safe (single-line controls) and hands prose to
-the engine, which snaps the line-height and keeps every line on the grid.
+the engine.
+
+## An honest rough edge: control text drift
+
+The cap-unit maths is exact for a real text run such as a `<span>` or a button
+label, but native form controls are less obliging: an `<input>` or `<textarea>`
+renders its text roughly **2px lower** than a `<span>` at byte-identical CSS — a
+user-agent metrics quirk of editable controls, not a border and not something the
+cap approximation captures.
+
+To keep the input's value on the same grid line as the button's label, a small
+lift is applied through a knob deliberately named
+`--control-text-drift-AVOID-USAGE`. The name is a klaxon: the value is empirical
+(calibrated by eye, may vary by browser and font), it is set only on the input
+and textarea paths — never in app code, and never on the button — and it is
+tracked for a structural fix rather than treated as a permanent design lever. It
+is documented here honestly because the alignment depends on it.
 
 ## The debug overlay
 
@@ -111,3 +198,5 @@ The Storybook baseline overlay (the stepped pink bands) is driven by the same
 `--baseline-height`, so it always draws the real grid. Turn it on to read any
 element against the grid: a correctly-seated baseline sits on a band boundary.
 The overlay is a measuring tool only — it is never part of a shipped component.
+The example stories above enable it automatically, which is why their controls
+appear striped.

@@ -1,4 +1,5 @@
-import { Meta } from "@storybook/addon-docs/blocks";
+import { Meta, Canvas } from "@storybook/addon-docs/blocks";
+import * as Examples from "./examples/DensityExamples.stories";
 
 <Meta title="Documentation/Guides/Density & the Form Channel" />
 
@@ -26,7 +27,7 @@ Density is a matrix of two axes:
 Apply one class from each axis on an ancestor (the app root, or the Storybook
 toolbar in this workspace). With no class, a form keeps its plain defaults.
 
-The matrix, in baseline units (1 bU = 4px):
+The matrix, in baseline units (1 bU = `--baseline-height` = 4px):
 
 ```
                    app                 site / docs
@@ -42,6 +43,68 @@ Context sets the `*-comfy` / `*-dense` pair for every value; density picks withi
 it. Every cell is a whole baseline multiple, so vertical rhythm holds in all four
 combinations.
 
+### Reading one cell
+
+Take **site / dense**. The context is `.site`, so it runs one baseline looser
+than an app; the density is `.dense`, so it picks the `*-dense` half of each of
+the site's pairs. Read straight down that column:
+
+- **line-height** — 28px, so a control is a 7 bU box (`--baseline-height * 7`).
+- **padding-inline** — 12px = 3 bU of inline padding inside the control and on
+  the horizontal label↔input gap.
+- **space-lg** — 20px = 5 bU between one field and the next.
+- **space-md** — 12px = 3 bU from a field's label down to its control.
+- **space-sm** — 8px = 2 bU from a description or error across to the input.
+
+Compare that to **app / dense** one baseline tighter: the box is 24px (6 bU) and
+the inline padding drops to 8px (2 bU). The site column never goes below its 8px
+`space-sm` — a site stays a touch airier than an app even when dense.
+
+## How to apply density
+
+Density is two classes on an **ancestor**, not on each control. Put one context
+class and one density class on a wrapper and every control beneath it sizes and
+seats to that cell:
+
+```jsx
+// site / dense — a moderately loose surface, packed tight.
+<div className="site dense">
+  <Form>
+    <Field name="email" label="Email">
+      <TextInput name="email" />
+    </Field>
+    <Field name="role" label="Role">
+      <Select name="role" options={roles} />
+    </Field>
+    <Button importance="primary">Save</Button>
+  </Form>
+</div>
+```
+
+The wrapper carries `.site .dense`; the `Form`, `Field`s and `Button` inside it
+inherit the cell through the cascade. Swap the two classes on the wrapper and the
+whole form retunes — nothing on the controls changes. In this workspace the
+Storybook toolbar sets the two classes globally so an unwrapped story still has a
+cell; the examples below instead wrap each row in an explicit `.app .comfortable`
+(etc.) so they pin one named cell regardless of the toolbar.
+
+<Canvas of={Examples.AppsComfortableVsDense} />
+
+Comfortable is the 32px (8 bU) box; dense drops it to 24px (6 bU). The label text
+still lands on a grid line in both rows — the seat is computed against the box, so
+it holds as the height changes.
+
+## Context: one baseline looser
+
+The **context** axis is the surface, and its whole job is to run a site or docs
+surface one baseline looser than an app. At the same `.comfortable` density an app
+control is 32px (8 bU) and a site control is 36px (9 bU): the extra 4px is the one
+baseline of headroom that makes a marketing or docs surface breathe. Every rung
+below the height lifts to match, so the looser surface is looser everywhere, not
+just taller.
+
+<Canvas of={Examples.AppsVsSites} />
+
 ## How density flows to the form
 
 The model is layered so each layer knows only about the one below it:
@@ -56,7 +119,7 @@ The model is layered so each layer knows only about the one below it:
 3. **The form** maps its own tokens onto those primitives — this is the only
    place a field concept meets a density value:
 
-```
+```css
 --form-input-padding-inline: var(--density-padding-inline);   /* inline */
 --form-field-inline-gap:     var(--density-padding-inline);   /* inline */
 --form-field-block-gap:      var(--density-space-lg);         /* between fields   */
@@ -64,9 +127,22 @@ The model is layered so each layer knows only about the one below it:
 --form-group-gap:            var(--density-space-sm);         /* desc/error → input */
 ```
 
-The direction matters: density is the lower layer and never references a
-`--form-*` token. If you need a new density-driven spacing, add a primitive to
-the density layer and map it here — do not reach upward from density.
+### Why the layering direction matters
+
+Density is the lower layer and must **never** reference a `--form-*` token; the
+form reaches _down_ to density, never the reverse. This is not a style
+preference — it is what keeps density reusable and keeps the two layers from
+deadlocking.
+
+Concretely, imagine the arrow reversed: the density layer setting
+`--density-space-lg: var(--form-field-block-gap)`. Now density is defined in terms
+of a form concept, so density can no longer size anything that is not a form —
+and the form maps `--form-field-block-gap` back onto `--density-space-lg`, so the
+two tokens each resolve to the other and the value collapses to nothing. Keeping
+density domain-neutral (it only ever emits `--density-*` primitives) means the
+same layer can one day seat a toolbar, a list row or an Accordion header with no
+form in sight. If a new density-driven spacing is needed, add a primitive to the
+density layer and map it in the form — do not reach upward from density.
 
 ## Gaps are split by axis
 
@@ -78,9 +154,15 @@ axis independently, and so a token's name never lies about its axis:
 - **Inline (horizontal):** `--form-field-inline-gap`.
 
 `--form-field-inline-gap` is horizontal only. The vertical label-to-control gap
-is `--form-field-label-gap` — a dedicated block token, not the inline one. (An
-earlier version overloaded the inline token onto a vertical `row-gap`; retuning it
-then moved both axes at once. The split removes that trap.)
+is `--form-field-label-gap` — a dedicated block token, not the inline one.
+
+This split fixes a concrete trap. An earlier version had a single inline token
+doing double duty: it set the horizontal label↔input gap _and_ was borrowed as a
+vertical `row-gap` for the stacked label-over-control layout. So the moment that
+token was retuned to fix horizontal spacing, the vertical gap moved with it —
+one edit dragged both axes at once, and there was no way to nudge one without
+disturbing the other. Giving the vertical gap its own block token
+(`--form-field-label-gap`) means each axis is now tuned in isolation.
 
 ## Control height
 
@@ -89,8 +171,19 @@ line-height, with `box-sizing: border-box` so a bordered and a borderless contro
 of the same density are the same height. The control is top-referenced, and its
 label is seated to the density _target_ baseline —
 `round(up, height × 2/3, --baseline-height)` — so text at any font size lands on
-the grid. A borderless importance (e.g. a primary button) and a bordered one seat
-identically, because the seat is computed against the box, not the border.
+the grid.
+
+<Canvas of={Examples.ButtonAndInput} />
+
+A borderless importance (e.g. a primary button) and a bordered one (a secondary)
+seat **identically**, because the seat is computed against the box, not the
+border. This was a subtle earlier bug: the placement formula subtracted the
+border only for bordered controls, so the borderless primary — with nothing to
+subtract — sat a pixel high against its bordered neighbour. The fix was to
+subtract a _nominal_ border width (`--button-border-width`, 1px) for **both**
+importances and let the grid maths absorb it; switching the borderless case to
+its real 0-width outline lifted it a pixel again (regression found and reverted).
+The nominal term stays.
 
 ## Composition: density and running prose
 
@@ -100,8 +193,11 @@ snapped line-height and inter-block margins.
 
 This is the rule that lets a density scope and `.editorial` prose _nest_ without
 conflict — for example a density-sized header above an `.editorial` content
-panel. Because density and the typography engine write to disjoint element sets,
-there is no specificity war and no override: each system owns its own elements.
+panel (the future Accordion case). Because density and the typography engine
+write to disjoint element sets, there is no specificity war and no override: each
+system owns its own elements. An earlier attempt to have density crush prose to
+`line-height: 1` fought the engine and only ever landed the _first_ line on the
+grid — wrapped lines drifted. Partitioning prose out removed that fight entirely.
 
 Practically:
 
@@ -110,16 +206,15 @@ Practically:
 - Let running prose be plain `p` / `h*` or wrap it in `.editorial` — it keeps its
   reading rhythm and stays on the grid, whether or not it sits inside a density
   scope.
-- Do **not** try to make density seat a paragraph. If you need a text reference
-  to line up with controls (as the spike testbed does for its measuring lead),
-  seat that one element explicitly; do not change how prose ships.
+- Do **not** try to make density seat a paragraph. If a text reference must line
+  up with controls (as the spike testbed does for its measuring lead), seat that
+  one element explicitly; do not change how prose ships.
 
 ## Known rough edge
 
-Native form controls (`<input>`, `<textarea>`) render their text a couple of
-pixels lower than a `<span>` at identical CSS — a browser metrics quirk of
-editable controls, not captured by the cap approximation. The model lifts them
-with a single, deliberately-named knob, `--control-text-drift-AVOID-USAGE`
-(currently 2px). The name is a warning: it is an empirical constant, may vary by
-browser and font, and is tracked for a structural fix. Never reach for it in
-application code.
+Native form controls (`input`, `textarea`) render their text a couple of pixels
+lower than a `span` at identical CSS — a browser metrics quirk of editable
+controls, not captured by the cap approximation. The model lifts them with a
+single, deliberately-named knob, `--control-text-drift-AVOID-USAGE` (currently
+2px). The name is a warning: it is an empirical constant, may vary by browser and
+font, and is tracked for a structural fix. Never reach for it in application code.
