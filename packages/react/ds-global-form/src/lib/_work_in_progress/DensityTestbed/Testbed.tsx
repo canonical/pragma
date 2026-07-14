@@ -1,7 +1,7 @@
 import { Button } from "@canonical/react-ds-global";
 import type { ReactNode } from "react";
-import { FormProvider, useForm } from "react-hook-form";
-import Field from "../../pattern/Field/Field.js";
+import { Label } from "../../subcomponent/Field/Label/index.js";
+import { TextInput } from "../../subcomponent/TextInput/index.js";
 import { SpikeBox, SpikeRows } from "./mocks.js";
 import "./density.testbed.css";
 import "./baseline-system.css";
@@ -15,65 +15,32 @@ import "./baseline-system.css";
  * is supplied by the styles-debug plugin (story parameter).
  */
 
-/** react-hook-form context so real Field components render inline. */
-const FormShell = ({ children }: { children: ReactNode }) => {
-  const methods = useForm({ mode: "onChange" });
-  return (
-    <FormProvider {...methods}>
-      <form
-        className="ds form"
-        onSubmit={methods.handleSubmit(() => {})}
-        style={{ display: "contents" }}
-      >
-        {children}
-      </form>
-    </FormProvider>
-  );
-};
-
 /**
- * A bucket = one line: the short prose prefix `lead`, then the inline components.
- * `anchored` makes the `.p` lead the height/baseline anchor and shrinks the
- * controls so the paragraph — not a control — determines the line's alignment.
+ * A bucket = a short prose prefix + the components, laid out inline with the
+ * NORMAL component structure (no flattening, no overrides) so what we see is what
+ * ships. `align-items: baseline` lines them up; nothing else is customised.
  */
-const Line = ({
-  lead,
-  anchored,
-  children,
-}: {
-  lead: string;
-  anchored?: boolean;
-  children: ReactNode;
-}) => (
+const Line = ({ lead, children }: { lead: string; children: ReactNode }) => (
   <div className="density-testbed">
-    <div
-      className={[
-        "density-testbed__line",
-        anchored ? "density-testbed__line--anchored" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
-      <p className="p density-testbed__lead">{lead}</p>
+    <div className="density-testbed__row">
+      <p className="p">{lead}</p>
       {children}
     </div>
   </div>
 );
 
-/** Controls bucket — buttons + inputs on one line, anchored to the `.p` lead. */
+/** Controls bucket — real Button + a standalone Label and TextInput (used
+ *  separately, so there's no stacked Field grid to flatten). */
 export const ControlsLine = () => (
-  <Line lead="Sample" anchored>
-    <SpikeBox as="button">Sa</SpikeBox>
-    <SpikeBox>Va</SpikeBox>
+  <Line lead="Sample">
     <Button importance="primary">Re</Button>
     <Button importance="secondary">Se</Button>
-    <FormShell>
-      <Field inputType="text" name="n" placeholder="In" />
-    </FormShell>
+    <Label name="n">Label</Label>
+    <TextInput name="n" placeholder="In" />
   </Line>
 );
 
-/** Navigation bucket — tab / side-nav items on one line. */
+/** Navigation bucket — tab / side-nav item stand-ins on one line. */
 export const NavigationLine = () => (
   <Line lead="Ov">
     <SpikeBox>Ov</SpikeBox>
