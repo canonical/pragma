@@ -105,7 +105,9 @@ describe("collectPackStories", () => {
     );
     expect(entries).toHaveLength(1);
     expect(entries.at(0)?.source).toBe("config");
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("already taken"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("already provided"),
+    );
   });
 
   it("skips invalid package stories with a warning", () => {
@@ -180,7 +182,9 @@ describe("collectPackStories", () => {
     );
 
     expect(entries.map((entry) => entry.definition.noun)).toEqual(["standard"]);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining("already taken"));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("shadows built-in command"),
+    );
   });
 
   // Regression restoration (FIX 1): operational nouns own no list/lookup, so
@@ -226,7 +230,7 @@ describe("collectPackStories", () => {
       );
       expect(entries).toHaveLength(0);
       expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining("already taken"),
+        expect.stringContaining("shadows built-in command"),
       );
     });
   });
@@ -291,7 +295,7 @@ describe("collectPackStories", () => {
       );
       expect(entries).toHaveLength(0);
       expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining("already taken"),
+        expect.stringContaining("shadows built-in command"),
       );
     });
   });

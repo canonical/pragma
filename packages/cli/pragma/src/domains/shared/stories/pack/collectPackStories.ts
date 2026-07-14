@@ -20,6 +20,16 @@ function emittedVerbs(definition: StoryPackDefinition): string[] {
 }
 
 /**
+ * Name the built-in `(noun, verb)` command(s) a pack collides with, for
+ * actionable diagnostics — e.g. `built-in command "standard lookup"`.
+ * Since the guard is per-verb, reporting the noun alone is misleading.
+ */
+function describeShadow(noun: string, verbs: readonly string[]): string {
+  const pairs = verbs.map((verb) => `"${noun} ${verb}"`).join(", ");
+  return `built-in command${verbs.length > 1 ? "s" : ""} ${pairs}`;
+}
+
+/**
  * Gather the story-pack definitions active for a runtime.
  *
  * Config-declared stories come first (already validated by the config
@@ -47,13 +57,15 @@ export default function collectPackStories(
   const taken = new Set<string>();
 
   for (const definition of config.stories ?? []) {
-    if (
-      emittedVerbs(definition).some((verb) =>
-        isReserved(reserved, definition.noun, verb),
-      )
-    ) {
+    const shadowed = emittedVerbs(definition).filter((verb) =>
+      isReserved(reserved, definition.noun, verb),
+    );
+    if (shadowed.length > 0) {
       throw PragmaError.configError(
-        `Story noun "${definition.noun}" shadows a built-in command.`,
+        `Story noun "${definition.noun}" shadows ${describeShadow(
+          definition.noun,
+          shadowed,
+        )}.`,
       );
     }
     if (taken.has(definition.noun)) {
@@ -75,14 +87,21 @@ export default function collectPackStories(
         process.stderr.write(`Warning: skipping story — ${reason}\n`);
         continue;
       }
-      if (
-        emittedVerbs(definition).some((verb) =>
-          isReserved(reserved, definition.noun, verb),
-        ) ||
-        taken.has(definition.noun)
-      ) {
+      const shadowed = emittedVerbs(definition).filter((verb) =>
+        isReserved(reserved, definition.noun, verb),
+      );
+      if (shadowed.length > 0) {
         process.stderr.write(
-          `Warning: skipping story "${definition.noun}" from ${file.path} — the noun is already taken.\n`,
+          `Warning: skipping story "${definition.noun}" from ${file.path} — it shadows ${describeShadow(
+            definition.noun,
+            shadowed,
+          )}.\n`,
+        );
+        continue;
+      }
+      if (taken.has(definition.noun)) {
+        process.stderr.write(
+          `Warning: skipping story "${definition.noun}" from ${file.path} — the noun is already provided by a higher-precedence source.\n`,
         );
         continue;
       }
