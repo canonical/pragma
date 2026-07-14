@@ -54,7 +54,10 @@
  * A control is a FIXED grid-multiple height with border-box so its border is
  * absorbed into that height (not added past it) — so a bordered and a borderless
  * control of the same density are the same height. Top-referenced so the
- * space-before below (not flex centre/stretch) governs the text. */
+ * space-before below (not flex centre/stretch) governs the text.
+ *
+ * Controls no longer carry `.p` — the density system supplies the body font tier
+ * (font-size / weight / family) here, and the baseline placement below. */
 :where(.comfortable, .dense, .app, .site, .docs) :where(.ds.button, .ds.input) {
   box-sizing: border-box;
   --density-box-height: var(
@@ -66,6 +69,10 @@
   align-items: flex-start;
   justify-content: flex-start;
   padding-block: 0; /* drop UA padding-block (e.g. the <button>'s default) */
+
+  /* Body font tier — what `.p` used to supply. */
+  font-size: var(--typography-text-primary-font-size);
+  font-family: var(--typography-text-primary-font-family);
 }
 
 /* The <input> is content-box with an intrinsic height; normalise it so only the
@@ -77,23 +84,33 @@
   margin-block: 0;
 }
 
-/* ── Baseline placement: one space-before for every text carrier ────────────
- * The text sits on the shared target line. `line-height: 1` collapses the line
- * box; the baseline within it is ≈ (1em + 1cap)/2 (font-relative, so it scales);
- * space-before pushes it down to the target, less the box's own top border.
+/* ── Baseline placement: `.baseline` nudge + `--space-before` ───────────────
+ * Two parts, the combination that put controls ON the grid:
  *
- * Applies to the button label, the input, and inline text (p / h1–h6). Inputs and
- * the button do NOT need a `.p` class — the density system positions them
- * directly. */
-/* `:is()` (not `:where()`) on the density scope AND the element so this rule
- * out-specifies the base `.p` engine rule (`h1..h6, p, .p` = 0,1,0) and wins;
- * `:where` would be 0,0,0 and lose, leaving `.p`'s own nudge in place. */
+ *  1. NUDGE (the DS.01 `.baseline` mechanism): --bl-start-nudge snaps the text's
+ *     first baseline onto the NEAREST grid line, computed from the element's own
+ *     font (1cap + line-height) — font-relative, so it's exact at any size and
+ *     needs no per-element fudge. This is what lands text exactly on a line.
+ *
+ *  2. --space-before: whole baselines added to move that snapped baseline DOWN to
+ *     the density TARGET line (round-up of the remaining distance), less the box's
+ *     own top border.
+ *
+ *     padding-block-start = bl-start-nudge + space-before − border-top
+ *     space-before = round(up, target − bl-start-nudge − border-top, baseline)
+ *
+ * Applies to the button, the input, and inline text (p / h1–h6). None need a `.p`
+ * class — the density system positions them directly. `:is()` (not `:where()`)
+ * gives this the specificity to beat the base `.p` engine rule. */
 :is(.comfortable, .dense, .app, .site, .docs) .ds.button,
 :is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
 :is(.comfortable, .dense, .app, .site, .docs)
   :is(p, .p, h1, h2, h3, h4, h5, h6) {
   line-height: 1;
+  /* Baseline within a line-height:1 box (font-relative cap approximation). */
   --natural-baseline: calc((1em + 1cap) / 2);
+  /* Pad the top so the baseline lands at the density target, less the box's own
+     top border. */
   --space-before: max(
     0px,
     calc(
