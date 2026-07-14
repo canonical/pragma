@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   BaselineProofLine,
+  BoxedProofLine,
   ControlsLine,
   ListsLine,
   NavigationLine,
@@ -49,3 +50,10 @@ export const Typography: Story = { render: () => <TypographyLine /> };
  * machinery is decoupled from any particular font size.
  */
 export const BaselineClass: Story = { render: () => <BaselineProofLine /> };
+
+/**
+ * DS.02 — `.baseline-boxed` bottom-referenced fixed box. Dense (24px) and
+ * comfortable (32px) rows; within each, mixed sizes share a box height and a
+ * baseline a fixed distance up from the bottom.
+ */
+export const BoxedBaseline: Story = { render: () => <BoxedProofLine /> };

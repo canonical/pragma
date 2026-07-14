@@ -143,3 +143,30 @@ export const BaselineProofLine = () => (
     </div>
   </div>
 );
+
+/** Mixed sizes in the bottom-referenced fixed box, at both densities. */
+const BOXED_SIZES = [12, 14, 16, 20];
+
+/**
+ * DS.02 proof — `.baseline-boxed` bottom-referenced fixed box. Two rows: dense
+ * (24px boxes, baseline 8px from bottom) and comfortable (32px, 12px). Within a
+ * row every box is the same height and every text baseline sits the same
+ * distance up from the bottom, so mixed sizes share a baseline.
+ */
+export const BoxedProofLine = () => (
+  <div className="density-testbed">
+    {(["is-dense", "is-comfortable"] as const).map((density) => (
+      <div key={density} className={`boxed-proof ${density}`}>
+        {BOXED_SIZES.map((px) => (
+          <span
+            key={px}
+            className="baseline-boxed"
+            style={{ fontSize: `${px}px` }}
+          >
+            {px}
+          </span>
+        ))}
+      </div>
+    ))}
+  </div>
+);

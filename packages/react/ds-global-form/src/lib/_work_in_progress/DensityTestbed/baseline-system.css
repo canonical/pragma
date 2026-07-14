@@ -53,6 +53,47 @@
   margin-block: 0;
 }
 
+/* ── DS.02 — .baseline-boxed: bottom-referenced fixed box ────────────────────
+ *
+ * Instead of seating the FIRST baseline on the grid and letting the box grow
+ * (the .baseline / engine model), fix the box HEIGHT and place the text baseline
+ * a fixed number of grid units up from the BOX BOTTOM. This is what a control
+ * row wants: every control is the same height, and mixed sizes share a bottom
+ * baseline.
+ *
+ * Targets come from the density modifier (DS.03):
+ *   --density-box              box height (a whole grid multiple, e.g. 24/32px)
+ *   --density-baseline-offset  baseline distance up from the bottom (2/3 bU)
+ *
+ * Exact baseline via text-box-trim: `text-box: trim-both cap alphabetic` trims
+ * the line box to the cap-top and the ALPHABETIC BASELINE, so the element's
+ * content-box bottom edge IS the baseline. Then padding-block-end places that
+ * baseline exactly --density-baseline-offset up from the box bottom — for EVERY
+ * font size, no descender guessing. (This is why the offset holds constant where
+ * the cap-only approximation drifts.) Support: Chrome 133+, Safari 18.2+; where
+ * absent, the box height still holds and the baseline is approximate.
+ */
+.baseline-boxed {
+  display: inline-flex;
+  align-items: flex-end; /* trimmed text sits at the bottom; padding lifts it */
+  justify-content: flex-start;
+  box-sizing: border-box;
+  block-size: var(
+    --density-box,
+    calc(var(--baseline-height) * 6)
+  ); /* 24px default */
+
+  line-height: 1;
+  /* Trim to cap-top / alphabetic-baseline: the box bottom becomes the baseline. */
+  text-box: trim-both cap alphabetic;
+
+  /* Baseline sits --density-baseline-offset up from the box bottom. */
+  padding-block-end: var(
+    --density-baseline-offset,
+    calc(var(--baseline-height) * 2)
+  );
+}
+
 /* ── Testbed proof surface for DS.01 ────────────────────────────────────────
  * A row of DELIBERATELY off-scale sizes, each only a `.baseline` element with an
  * inline --font-size. If every one seats on the grid, the class is genuinely
@@ -67,4 +108,33 @@
 .baseline-proof > .baseline {
   /* each item carries its own --font-size inline in the story */
   font-family: inherit;
+}
+
+/* ── Testbed proof surface for DS.02 ────────────────────────────────────────
+ * Mixed sizes in fixed boxes at two densities. Each box should be exactly its
+ * --density-box tall, and every text baseline should land --density-baseline-
+ * offset up from the box bottom — so all the boxes on a row share a baseline. */
+.boxed-proof {
+  display: flex;
+  align-items: flex-start;
+  gap: calc(var(--baseline-height) * 3);
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-block: calc(var(--baseline-height) * 2);
+}
+.boxed-proof > .baseline-boxed {
+  border: 1px solid var(--color-border, #b3b3b3);
+  border-radius: var(--dimension-radius-100, 0.25rem);
+  padding-inline: calc(var(--baseline-height) * 2);
+  background: var(--color-background, #fff);
+}
+/* Provisional density targets on the row (DS.03 formalises these as .dense /
+   .comfortable scale-map classes). */
+.boxed-proof.is-dense {
+  --density-box: calc(var(--baseline-height) * 6); /* 24px */
+  --density-baseline-offset: calc(var(--baseline-height) * 2); /* 8px = 2bU */
+}
+.boxed-proof.is-comfortable {
+  --density-box: calc(var(--baseline-height) * 8); /* 32px */
+  --density-baseline-offset: calc(var(--baseline-height) * 3); /* 12px = 3bU */
 }
