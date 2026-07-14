@@ -7,6 +7,7 @@
  */
 
 import { createListView, createLookupView } from "#tui";
+import { PragmaError } from "../../error/index.js";
 import type { LookupStory, ReadStory } from "../shared/stories/index.js";
 import type { ModifierFamily } from "../shared/types/index.js";
 import {
@@ -67,6 +68,14 @@ export const modifierLookupStory: LookupStory<ModifierFamily, ModifierFamily> =
     },
     toFmtInput: (family) => family,
     formatters: lookupFormatters,
+    emptyNamesError: () =>
+      PragmaError.invalidInput("names", "(empty)", {
+        recovery: {
+          message: "List available modifier families.",
+          cli: "pragma modifier list",
+          mcp: { tool: "modifier_list" },
+        },
+      }),
     renderInk: (result) =>
       createLookupView({
         results: result.results,

@@ -51,10 +51,22 @@ export default function resolveCompletion(
   /* v8 ignore next — structurally guaranteed by words.length > 2 reaching here */
   if (verb === undefined) throw new Error("Expected words[1] to be defined");
   const argEntry = nounEntry.verbs.get(verb);
-  if (!argEntry || argEntry.completers.length === 0) {
+  if (!argEntry) {
     return { completer: undefined, partial, level: 3 };
   }
 
-  const completer = argEntry.completers[0];
+  // A word beginning with `-` completes the verb's flags rather than its
+  // positional arguments.
+  if (partial.startsWith("-")) {
+    const flags = argEntry.flags;
+    const completer: Completer = async (p: string) =>
+      flags.filter((flag) => flag.startsWith(p)).sort();
+    return { completer, partial, level: 3 };
+  }
+
+  const completer = argEntry.completers.at(0);
+  if (!completer) {
+    return { completer: undefined, partial, level: 3 };
+  }
   return { completer, partial, level: 3 };
 }

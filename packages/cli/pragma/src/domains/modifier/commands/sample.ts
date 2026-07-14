@@ -11,6 +11,7 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import parseSampleCount from "../../shared/parseSampleCount.js";
 import type { ModifierFamily, SampleOutput } from "../../shared/types/index.js";
 import { sampleFormatters } from "../formatters/index.js";
 import { sampleModifiers } from "../operations/index.js";
@@ -37,7 +38,7 @@ export default function sampleCommand(ctx: PragmaContext): CommandDefinition {
       examples: ["pragma modifier sample", "pragma modifier sample --count 3"],
     },
     async execute(params) {
-      const count = Number(params.count ?? 2);
+      const count = parseSampleCount(params.count);
       const result = await sampleModifiers(ctx.store, count);
 
       const output: SampleOutput<ModifierFamily> = {

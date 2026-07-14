@@ -155,6 +155,13 @@ export interface CommandOutputResult {
   readonly value: unknown;
   // biome-ignore lint/suspicious/noExplicitAny: RenderPair accepts any data shape from execute
   readonly render: RenderPair<any>;
+  /**
+   * Process exit code to set after rendering. Defaults to 0 (success). Set to
+   * a non-zero value for results that must still render human-readable output
+   * (e.g. an all-not-found lookup that prints its errors inline) yet signal
+   * failure to callers via the exit code.
+   */
+  readonly exitCode?: number;
 }
 
 /** Exit with code, no output */
@@ -288,6 +295,8 @@ export interface VerbCompletions {
 export interface ArgCompleters {
   /** Ordered list of completers for positional and flag arguments */
   readonly completers: readonly Completer[];
+  /** Long flag names in `--kebab-case` form, offered once the word starts with `-`. */
+  readonly flags: readonly string[];
 }
 
 /**

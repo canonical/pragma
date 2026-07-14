@@ -5,6 +5,7 @@
  * from each command's parameter definitions.
  */
 
+import { convertCamelToKebab } from "../convertCase.js";
 import type {
   ArgCompleters,
   CommandDefinition,
@@ -34,10 +35,27 @@ export default function buildCompleters(
     if (!verb) continue;
 
     const completers = extractCompleters(cmd.parameters);
-    (verbEntry.verbs as Map<string, ArgCompleters>).set(verb, { completers });
+    const flags = extractFlags(cmd.parameters);
+    (verbEntry.verbs as Map<string, ArgCompleters>).set(verb, {
+      completers,
+      flags,
+    });
   }
 
   return { nouns };
+}
+
+/**
+ * Collect the long flag names (`--kebab-case`) a verb accepts, from its
+ * non-positional parameters, for flag-level tab completion.
+ *
+ * @param parameters - The command's parameter definitions.
+ * @returns The `--flag` strings, in declaration order.
+ */
+function extractFlags(parameters: readonly ParameterDefinition[]): string[] {
+  return parameters
+    .filter((param) => !param.positional)
+    .map((param) => `--${convertCamelToKebab(param.name)}`);
 }
 
 function extractCompleters(

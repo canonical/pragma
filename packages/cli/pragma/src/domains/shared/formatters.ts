@@ -70,13 +70,34 @@ export function renderLookupResults<TResult, TInput>(
 
   const parts = result.results.map((item) => formatOne(mapResult(item)));
   if (result.errors.length > 0) {
+    const heading = ctx.globalFlags.llm ? "**Errors:**" : "Errors:";
     parts.push(
       [
-        "Errors:",
-        ...result.errors.map((error) => `- ${error.query}: ${error.message}`),
+        heading,
+        ...result.errors.flatMap((error) => formatErrorLines(error)),
       ].join("\n"),
     );
   }
 
   return parts.join("\n\n");
+}
+
+/**
+ * Render one lookup error as display lines: the query and message, plus any
+ * fuzzy-match suggestions carried on the error (which the JSON mode surfaces
+ * but the text modes previously dropped).
+ *
+ * @param error - A single lookup error entry.
+ * @returns One or more display lines for this error.
+ */
+function formatErrorLines(error: {
+  query: string;
+  message: string;
+  suggestions?: readonly string[];
+}): string[] {
+  const lines = [`- ${error.query}: ${error.message}`];
+  if (error.suggestions && error.suggestions.length > 0) {
+    lines.push(`  Did you mean: ${error.suggestions.join(", ")}?`);
+  }
+  return lines;
 }

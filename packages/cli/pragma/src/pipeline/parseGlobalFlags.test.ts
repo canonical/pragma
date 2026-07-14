@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import parseGlobalFlags, { stripGlobalFlags } from "./parseGlobalFlags.js";
+import parseGlobalFlags, {
+  readRawFormat,
+  stripGlobalFlags,
+} from "./parseGlobalFlags.js";
 
 describe("parseGlobalFlags", () => {
   it("extracts --llm", () => {
@@ -88,5 +91,29 @@ describe("stripGlobalFlags", () => {
       "block",
       "list",
     ]);
+  });
+});
+
+describe("readRawFormat", () => {
+  it("reads the space form", () => {
+    expect(readRawFormat(["node", "pragma", "--format", "json"])).toBe("json");
+  });
+
+  it("reads the equals form", () => {
+    expect(readRawFormat(["node", "pragma", "--format=text"])).toBe("text");
+  });
+
+  it("returns undefined when --format is absent", () => {
+    expect(readRawFormat(["node", "pragma", "info"])).toBeUndefined();
+  });
+
+  it("returns an empty string for a bare --format at end of argv", () => {
+    // Not undefined — the caller must reject it rather than fall through to
+    // root help with exit code 0.
+    expect(readRawFormat(["node", "pragma", "--format"])).toBe("");
+  });
+
+  it("returns an empty string when --format is followed by another flag", () => {
+    expect(readRawFormat(["node", "pragma", "--format", "--llm"])).toBe("");
   });
 });

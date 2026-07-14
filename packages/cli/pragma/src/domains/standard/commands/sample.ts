@@ -11,6 +11,7 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import parseSampleCount from "../../shared/parseSampleCount.js";
 import type {
   SampleOutput,
   StandardDetailed,
@@ -41,7 +42,7 @@ export default function sampleCommand(ctx: PragmaContext): CommandDefinition {
       examples: ["pragma standard sample", "pragma standard sample --count 3"],
     },
     async execute(params) {
-      const count = Number(params.count ?? 2);
+      const count = parseSampleCount(params.count);
       const result = await sampleStandards(ctx.store, count);
 
       const output: SampleOutput<StandardDetailed> = {

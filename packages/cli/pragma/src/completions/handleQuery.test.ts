@@ -37,6 +37,16 @@ function makeTree(): CompletionTree {
             );
           },
         },
+        {
+          name: "detailed",
+          description: "Show full detail",
+          type: "boolean",
+        },
+        {
+          name: "anatomyOnly",
+          description: "Show anatomy only",
+          type: "boolean",
+        },
       ],
       execute: async () => createExitResult(0),
     },
@@ -89,5 +99,27 @@ describe("handleQuery", () => {
   it("returns empty string for verb with no completers", async () => {
     const result = await handleQuery("block list something", makeTree(), ctx);
     expect(result).toBe("");
+  });
+
+  it("strips the leading program name shells forward", async () => {
+    // Every generated shell script forwards the full command line, so the
+    // program name arrives as the first word.
+    const result = await handleQuery("pragma blo", makeTree(), ctx);
+    expect(result).toBe("block");
+  });
+
+  it("lists nouns when only the program name is present", async () => {
+    const result = await handleQuery("pragma", makeTree(), ctx);
+    expect(result).toBe("block\nstandard");
+  });
+
+  it("completes verb flags when the word starts with a dash", async () => {
+    const result = await handleQuery("block get --", makeTree(), ctx);
+    expect(result).toBe("--anatomy-only\n--detailed");
+  });
+
+  it("filters verb flags by the dash-prefixed partial", async () => {
+    const result = await handleQuery("block get --d", makeTree(), ctx);
+    expect(result).toBe("--detailed");
   });
 });

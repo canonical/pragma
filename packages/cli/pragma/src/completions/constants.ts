@@ -16,3 +16,10 @@ export const POLL_INTERVAL_MS = 50;
 
 /** Maximum time to wait for a spawned server to become ready. */
 export const SPAWN_TIMEOUT_MS = 5_000;
+
+/**
+ * Maximum time to wait for a query response before giving up. Bounds the
+ * whole client call so a wedged or slow server can never hang the shell's
+ * tab-completion — the query resolves to no candidates instead.
+ */
+export const QUERY_TIMEOUT_MS = 3_000;
