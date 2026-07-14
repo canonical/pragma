@@ -3,6 +3,74 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+### Bug Fixes
+
+* **cli:** partial-failure-safe lookupMany, bundledLoader hardening, remove dead sem MCP server ([#763](https://github.com/canonical/pragma/issues/763)) ([e85cf27](https://github.com/canonical/pragma/commit/e85cf275e20ce5d12c9f6aa6787e22fb63d6deb1))
+* **harnesses:** stop setup mcp from destroying valid JSONC configs (SEC-1) ([#743](https://github.com/canonical/pragma/issues/743)) ([1cf47a2](https://github.com/canonical/pragma/commit/1cf47a20889f1f25208110550398990bc11067e5))
+
+
+* refactor(cli)!: collapse the executor mode ladder; retire the interactive handoff (#772) ([34eb691](https://github.com/canonical/pragma/commit/34eb6916852ffd98670e4375a3692a90bb8443f9)), closes [#772](https://github.com/canonical/pragma/issues/772)
+
+
+### Features
+
+* **cli:** bundled loader serves embedded story definitions ([#781](https://github.com/canonical/pragma/issues/781)) ([511328a](https://github.com/canonical/pragma/commit/511328a4ca5e987f2f73e108a305848a65d6f03a))
+* **cli:** byte-identical output for pragma create and summon; summon on the shared core ([#761](https://github.com/canonical/pragma/issues/761)) ([c10e133](https://github.com/canonical/pragma/commit/c10e1332e3a1f7e4f815da7cc40ecb4f95fbb045))
+* **cli:** declarative list filters for story packs ([#780](https://github.com/canonical/pragma/issues/780)) ([87e0b0d](https://github.com/canonical/pragma/commit/87e0b0d9f86548da34d8bb1d7f0423b9904a6d45))
+* **cli:** one prompting model — dialog-first prompts through the executor seam ([#758](https://github.com/canonical/pragma/issues/758)) ([ace9246](https://github.com/canonical/pragma/commit/ace9246de5e5e72231b2637b69443d55d9d0cfb8))
+* **cli:** redesign MCP resources — TBox/ABox grouping, autocomplete, correctness fixes ([#784](https://github.com/canonical/pragma/issues/784)) ([7d08aec](https://github.com/canonical/pragma/commit/7d08aec79f54ea8a768f8d76e0f2cbe71be33c99))
+* **cli:** story packs — declarative read stories for any ontology (experimental) ([#778](https://github.com/canonical/pragma/issues/778)) ([23f1227](https://github.com/canonical/pragma/commit/23f122701a88668dba8bee6d0652d40417d5dbf5))
+* **pragma-cli:** graphql serve + config-driven build/check over semantic packages ([#682](https://github.com/canonical/pragma/issues/682)) ([d3a09f5](https://github.com/canonical/pragma/commit/d3a09f56b113bad0adc63158c38715c7eb39ec1f))
+
+
+### BREAKING CHANGES
+
+* cli-core no longer exports InteractiveSpec, InteractiveHandler,
+createInteractiveResult, or the "interactive" CommandResult variant; consumers
+inject a PromptSession via CommandContext.promptSession instead.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* test(cli): assert exit-code propagation; fix stale CommandResult docs
+
+Adversarial review of the mode-ladder collapse surfaced two gaps:
+
+- registerAll.handleResult's exit branch is the sole path by which
+  executeGenerator's exit 3 (non-interactive, missing flags) and exit
+  130 (Ctrl-C) reach process.exitCode, yet every test drove it with
+  code 0 — a mutation to that assignment would have gone unnoticed. Add
+  a regression test that dispatches a non-zero exit result and asserts
+  process.exitCode.
+- cli-core's README still described CommandResult as a three-variant
+  union listing the retired "interactive" variant. Update it to the
+  two-variant (output | exit) union the type now defines.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* fix(cli): don't construct a prompt session off a TTY; distinct headers
+
+runInteractiveExecution called the injected promptSession factory before
+checking the terminal, so a non-interactive run with a no-default
+required prompt would open a readline handle and discard it undisposed.
+Construct the session only on an interactive terminal.
+
+Also give the two "interaction unavailable" failure modes accurate
+headers: a non-interactive stdin/stdout versus an interactive terminal
+with no injected session — the latter previously misreported itself as a
+non-interactive terminal.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/pragma-cli

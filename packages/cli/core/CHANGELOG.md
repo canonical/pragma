@@ -3,6 +3,63 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
+
+
+* refactor(cli)!: collapse the executor mode ladder; retire the interactive handoff (#772) ([34eb691](https://github.com/canonical/pragma/commit/34eb6916852ffd98670e4375a3692a90bb8443f9)), closes [#772](https://github.com/canonical/pragma/issues/772)
+
+
+### Features
+
+* **cli:** byte-identical output for pragma create and summon; summon on the shared core ([#761](https://github.com/canonical/pragma/issues/761)) ([c10e133](https://github.com/canonical/pragma/commit/c10e1332e3a1f7e4f815da7cc40ecb4f95fbb045))
+* **cli:** one prompting model — dialog-first prompts through the executor seam ([#758](https://github.com/canonical/pragma/issues/758)) ([ace9246](https://github.com/canonical/pragma/commit/ace9246de5e5e72231b2637b69443d55d9d0cfb8))
+
+
+### BREAKING CHANGES
+
+* cli-core no longer exports InteractiveSpec, InteractiveHandler,
+createInteractiveResult, or the "interactive" CommandResult variant; consumers
+inject a PromptSession via CommandContext.promptSession instead.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* test(cli): assert exit-code propagation; fix stale CommandResult docs
+
+Adversarial review of the mode-ladder collapse surfaced two gaps:
+
+- registerAll.handleResult's exit branch is the sole path by which
+  executeGenerator's exit 3 (non-interactive, missing flags) and exit
+  130 (Ctrl-C) reach process.exitCode, yet every test drove it with
+  code 0 — a mutation to that assignment would have gone unnoticed. Add
+  a regression test that dispatches a non-zero exit result and asserts
+  process.exitCode.
+- cli-core's README still described CommandResult as a three-variant
+  union listing the retired "interactive" variant. Update it to the
+  two-variant (output | exit) union the type now defines.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+* fix(cli): don't construct a prompt session off a TTY; distinct headers
+
+runInteractiveExecution called the injected promptSession factory before
+checking the terminal, so a non-interactive run with a no-default
+required prompt would open a readline handle and discard it undisposed.
+Construct the session only on an interactive terminal.
+
+Also give the two "interaction unavailable" failure modes accurate
+headers: a non-interactive stdin/stdout versus an interactive terminal
+with no injected session — the latter previously misreported itself as a
+non-interactive terminal.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
+
+
+
+
+
 # [0.29.0](https://github.com/canonical/pragma/compare/v0.29.0-experimental.0...v0.29.0) (2026-07-03)
 
 **Note:** Version bump only for package @canonical/cli-core
