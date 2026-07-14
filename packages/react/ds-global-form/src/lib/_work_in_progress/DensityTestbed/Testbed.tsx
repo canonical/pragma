@@ -94,6 +94,36 @@ export const TypographyLine = () => (
   </div>
 );
 
+const EDITORIAL_BODY =
+  "Running prose belongs to the typography engine, not the density system. Each " +
+  "line keeps its tier's snapped line-height, so every baseline lands on the 4px " +
+  "grid — and, unlike a line-height:1 crush, WRAPPED lines stay on the grid too.";
+
+/**
+ * Editorial bucket — a real `.editorial` prose document (mixed headings + body)
+ * rendered INSIDE the density scope the story toolbar applies. This witnesses the
+ * DS.04 composition: density seats controls, but leaves prose to the engine, so
+ * `.editorial` here keeps its natural multi-line leading, seats every line on the
+ * grid, AND gets its whole-baseline inter-block margins (--space-after) — with no
+ * density override fighting it. Flip context/density in the toolbar: the prose
+ * rhythm must NOT change (it is engine-owned), proving density and editorial
+ * compose rather than collide.
+ */
+export const EditorialLine = () => (
+  <div className="density-testbed">
+    <article className="editorial density-testbed__prose">
+      <h2>Editorial composes with density</h2>
+      <p>{EDITORIAL_BODY}</p>
+      <h3>Inter-block rhythm</h3>
+      <p>{PROSE}</p>
+      <p>
+        A second paragraph, so the `--space-after` margin between blocks is
+        visible: each block still opens and closes on a grid line.
+      </p>
+    </article>
+  </div>
+);
+
 /** Deliberately off-scale sizes — none is a tier. Each is only a `.baseline`
  *  element with an inline font-size; if they all seat on the grid, `.baseline`
  *  is genuinely size-agnostic (DS.01). */

@@ -3,6 +3,7 @@ import {
   BaselineProofLine,
   BoxedProofLine,
   ControlsLine,
+  EditorialLine,
   ListsLine,
   NavigationLine,
   TypographyLine,
@@ -43,6 +44,14 @@ export const Lists: Story = { render: () => <ListsLine /> };
 
 /** Typography — real paragraph text at several sizes; witness the 4px baseline. */
 export const Typography: Story = { render: () => <TypographyLine /> };
+
+/**
+ * Editorial — `.editorial` prose inside the density scope. Witnesses DS.04: prose
+ * keeps its engine-owned natural leading + inter-block margins and stays on-grid,
+ * while density seats controls. Toggle context/density — prose rhythm must not
+ * change, proving they compose instead of collide.
+ */
+export const Editorial: Story = { render: () => <EditorialLine /> };
 
 /**
  * DS.01 — the size-agnostic `.baseline` class. Arbitrary off-scale font sizes,
