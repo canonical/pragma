@@ -35,14 +35,22 @@ export default function bindField<P extends FieldBindingProps>(
     Presentational.name ||
     "Input";
 
-  // Merge the field's register defaults UNDER the consumer's registerProps. Cast
-  // once: RHF's RegisterOptions is a discriminated union (e.g. `valueAsNumber`
-  // excludes `pattern`), which an object spread cannot satisfy structurally even
-  // though the merged value is valid at runtime.
+  // Merge the field's `additionalRegisterProps` UNDER the consumer's
+  // registerProps (consumer always wins). `additionalRegisterProps` may be a
+  // static object or a function of the component's own props; resolve it per
+  // render against `props`. Cast once: RHF's RegisterOptions is a discriminated
+  // union (e.g. `valueAsNumber` excludes `pattern`), which an object spread
+  // cannot satisfy structurally even though the merged value is valid at runtime.
   const mergeRegister = (
     registerProps: RegisterOptions | undefined,
-  ): RegisterOptions =>
-    ({ ...options.registerDefaults, ...registerProps }) as RegisterOptions;
+    props: Record<string, unknown>,
+  ): RegisterOptions => {
+    const extra =
+      typeof options.additionalRegisterProps === "function"
+        ? options.additionalRegisterProps(props)
+        : options.additionalRegisterProps;
+    return { ...extra, ...registerProps } as RegisterOptions;
+  };
 
   let Bound: FC<P>;
 
@@ -50,7 +58,7 @@ export default function bindField<P extends FieldBindingProps>(
     Bound = ({ name, registerProps, ...rest }: P) => {
       const { field } = useController({
         name,
-        rules: registerProps,
+        rules: mergeRegister(registerProps, rest),
         ...(options.defaultValue !== undefined
           ? { defaultValue: options.defaultValue }
           : {}),
@@ -71,7 +79,7 @@ export default function bindField<P extends FieldBindingProps>(
       return createElement(Presentational, {
         ...rest,
         value,
-        ...register(name, mergeRegister(registerProps)),
+        ...register(name, mergeRegister(registerProps, rest)),
       });
     };
   } else {
@@ -79,7 +87,7 @@ export default function bindField<P extends FieldBindingProps>(
       const { register } = useFormContext();
       return createElement(Presentational, {
         ...rest,
-        ...register(name, mergeRegister(registerProps)),
+        ...register(name, mergeRegister(registerProps, rest)),
       });
     };
   }

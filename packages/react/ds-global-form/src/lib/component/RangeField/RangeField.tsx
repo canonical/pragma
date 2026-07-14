@@ -17,6 +17,6 @@ import type { RangeFieldProps } from "./types.js";
  */
 export default withWrapper<RangeFieldProps>(
   bindField<RangeFieldProps>(RangeControl, "native", {
-    registerDefaults: { valueAsNumber: true },
+    additionalRegisterProps: { valueAsNumber: true },
   }),
 );

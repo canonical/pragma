@@ -16,6 +16,6 @@ export default withWrapper<NumberFieldProps>(
   // `valueAsNumber` so RHF stores a number, not the string the native
   // `<input type="number">` reports (the consumer's registerProps still win).
   bindField<NumberFieldProps>(NumberInput, "native", {
-    registerDefaults: { valueAsNumber: true },
+    additionalRegisterProps: { valueAsNumber: true },
   }),
 );

@@ -237,7 +237,25 @@
   }
 }
 
-/* ── Danger — bottom border only (matches normal theme); focus shows all four */
+/* ── Danger ──────────────────────────────────────────────────────────
+ * The field label recolours to the error token on any invalid field. This is
+ * the group-level affordance for controls whose payload has no single border to
+ * paint — notably the borderless `.ds.form-choices` fieldset, where the
+ * `<legend>` (a `.ds.field-label`) carries the error alongside the FieldError
+ * message, rather than lighting up every option box. */
+.danger > .ds.field-label {
+  color: var(--form-error-color);
+
+  /* The required "*" marker recolours WITH the label (it pins its own colour to
+   * `--form-label-color` by default, so it must be overridden here). The
+   * "(optional)" hint keeps its muted colour — it is subordinate, not an error
+   * signal — via its own explicit `color` in the Label styles. */
+  &[data-required]::before {
+    color: var(--form-error-color);
+  }
+}
+
+/* Input chrome: bottom border only (matches normal theme); focus shows all four */
 .danger > .payload .ds.input.chrome {
   border-color: var(--form-input-border-color-error);
 }

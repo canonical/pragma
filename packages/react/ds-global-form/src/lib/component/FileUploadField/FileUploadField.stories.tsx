@@ -40,6 +40,33 @@ export const ImagesOnly: Story = {
   },
 };
 
+/**
+ * Caps the number of files: `maxFiles` is enforced as a react-hook-form
+ * `validate` rule, so exceeding it shows a standard field error (rather than the
+ * input silently dropping the extra files). Seeded over the limit + touched so
+ * the error renders.
+ */
+export const MaxFiles: Story = {
+  args: {
+    name: "attachments",
+    label: "Attachments (max 2)",
+    multiple: true,
+    maxFiles: 2,
+  },
+  decorators: [
+    decorators.form({
+      defaultValues: {
+        attachments: [
+          new File(["a"], "one.txt"),
+          new File(["b"], "two.txt"),
+          new File(["c"], "three.txt"),
+        ],
+      },
+      touchedFields: ["attachments"],
+    }),
+  ],
+};
+
 export const SingleFile: Story = {
   args: {
     name: "resume",
