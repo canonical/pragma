@@ -36,7 +36,7 @@ Import the main styles package in your application entry point:
 import "@canonical/styles";
 ```
 
-`@canonical/svelte-ds-app/styles.css` imports `@canonical/styles`, which provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
+`@canonical/styles` provides the global design tokens (colour, spacing, typography). Each component in this package co-locates its own component-level tokens in a `styles.css` file next to the component source. These component tokens reference the global tokens from `@canonical/design-tokens` and are included automatically when the component is imported.
 
 ## Development
 
@@ -64,7 +64,7 @@ bunx playwright install chromium firefox webkit
 Use watch mode during development:
 
 ```bash
-bun run test:vitest:watch
+bun run test:watch
 ```
 
 ## Storybook

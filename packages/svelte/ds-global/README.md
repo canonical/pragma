@@ -64,7 +64,7 @@ bunx playwright install chromium firefox webkit
 Use watch mode during development:
 
 ```bash
-bun run test:vitest:watch
+bun run test:watch
 ```
 
 ## Storybook
