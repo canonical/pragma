@@ -8,6 +8,11 @@
  * auto-steps on nested .surface contexts to layer2/layer3), text uses
  * color-text, the chevron uses color-icon, and dividers use color-border-muted.
  * Vertical padding is expressed in baseline multiples.
+ *
+ * NOTE: the apps/sites element-size sizing (collapsed item at 36px sites / 32px
+ * apps, and the matching h6 line box) is intentionally NOT set here — control
+ * heights across apps vs sites are owned by the density/height bucket, not this
+ * design-review geometry pass.
  */
 :root {
   --accordion-item-color-text: var(--color-text);
@@ -25,16 +30,20 @@
   /* Default header background (surface 1). The surface channel is applied on
      the element below — NOT here — because a var() referencing
      --surface-color-foreground-ghost resolved in :root would capture the :root
-     value (where no .surface is active) and never step. The surface layer only
-     re-channels the base ghost (no hover/active channel), so hover/active pair
-     to the non-layered ghost vars directly. */
+     value (where no .surface is active) and never step. The built surface
+     layer re-channels only the base ghost (no hover/active channel), so
+     hover/active default to the non-layered ghost state vars here and are
+     re-pointed per surface nesting depth by the stopgap rules below the
+     header. */
   --accordion-item-header-background: var(--color-foreground-ghost);
   --accordion-item-header-background-hover: var(--color-foreground-ghost-hover);
   --accordion-item-header-background-active: var(
     --color-foreground-ghost-active
   );
 
-  --accordion-item-header-gap: var(--dimension-100);
+  --accordion-item-header-gap: var(--dimension-200);
+  /* Header block padding in baseline multiples (dimension-100 = 1 bU). The
+     apps/sites element-size sizing (6px → 36/32) is owned by the height bucket. */
   --accordion-item-header-padding-block: var(--dimension-100);
   --accordion-item-header-padding-inline: var(--dimension-200);
 
@@ -95,13 +104,49 @@
     display: none;
   }
 
+  /* Prefer the surface hover/active channels so a future token build that
+     ships them steps automatically; today they are unset everywhere, so these
+     resolve to the fallback tokens, re-pointed per nesting depth below. */
   &:hover {
-    background-color: var(--accordion-item-header-background-hover);
+    background-color: var(
+      --surface-color-foreground-ghost-hover,
+      var(--accordion-item-header-background-hover)
+    );
   }
 
   &:active {
-    background-color: var(--accordion-item-header-background-active);
+    background-color: var(
+      --surface-color-foreground-ghost-active,
+      var(--accordion-item-header-background-active)
+    );
   }
+}
+
+/* STOPGAP — step the header hover/active backgrounds with surface nesting.
+   The built surfaces modifier re-channels only the base ghost (it exposes no
+   --surface-color-foreground-ghost-hover/-active), so without this, hovering
+   a header on a layer-2/3 surface painted the base-layer colour. These rules
+   mirror the modifier's own nesting selectors to re-point the hover/active
+   tokens at the layered state tokens. Hard-coding surface depth in component
+   CSS is exactly what the token block above avoids — delete both rules once
+   the surfaces modifier ships the hover/active channels (the :hover/:active
+   rules above already prefer them). */
+.surface .surface .ds.accordion-item {
+  --accordion-item-header-background-hover: var(
+    --color-foreground-ghost-layer2-hover
+  );
+  --accordion-item-header-background-active: var(
+    --color-foreground-ghost-layer2-active
+  );
+}
+
+.surface .surface .surface .ds.accordion-item {
+  --accordion-item-header-background-hover: var(
+    --color-foreground-ghost-layer3-hover
+  );
+  --accordion-item-header-background-active: var(
+    --color-foreground-ghost-layer3-active
+  );
 }
 
 /* The consumer supplies the heading content — plain text by default (rendered
@@ -116,13 +161,26 @@
   font-family: var(--typography-text-primary-font-family);
   font-size: var(--typography-text-primary-font-size);
   font-weight: var(--typography-text-primary-font-weight);
-  line-height: var(--typography-text-primary-line-height);
+  /* HEIGHT MODEL (step 1 — height first, seating comes later): under a density
+     scope the heading line-height is SNAPPED UP to a whole baseline multiple, so
+     every line of the heading is a whole number of 4px rows. This makes the header
+     height grid-aligned by construction: a 1-line header fills one density cell
+     (via the item min-block), and each wrapped line adds exactly one snapped
+     line-height — never the off-grid natural ~23.5px that made a 2-line header
+     63px. Outside a density scope the natural tier line-height is unchanged. */
+  line-height: var(
+    --accordion-item-heading-line-height,
+    var(--typography-text-primary-line-height)
+  );
   letter-spacing: var(--typography-text-primary-letter-spacing);
 
   /* Normalise every heading element except <h6> down to the inherited body
-     tier. <h6> is left untouched so the base h6 tier from
-     @canonical/styles-typography applies (correct heading-6 tokens, including
-     the baseline-snapped line-height) — no heading-6 tokens are restated here. */
+     tier. <h6> keeps the base h6 tier from @canonical/styles-typography
+     (correct heading-6 tokens, including the baseline-snapped line-height) — no
+     heading-6 tokens are restated here.
+     NOTE: the per-context h6 line box (24px sites / 20px apps) and zeroing the
+     heading padding-block nudges to make the header height padding-driven are
+     part of the apps/sites height bucket, not this pass. */
   & :is(h1, h2, h3, h4, h5) {
     margin: 0;
     font: inherit;
@@ -204,5 +262,41 @@
   padding-block-end: calc(
     var(--accordion-item-content-padding-block) -
     var(--dimension-stroke-thickness-medium)
+  );
+}
+
+/* ── Density height model (STEP 1: get the height right; seating is layered on
+   after this). The #766 geometry pass deferred the collapsed-item element size
+   (32px apps / 36px sites, dense 24 / 28) to this density work. Here we only make
+   the HEIGHT a whole baseline multiple in every case:
+
+     · The ITEM is pinned to the density cell height (min-block-size + border-box),
+       so the whole item — INCLUDING its 1px block-end divider — is exactly the
+       cell height. This is what keeps every item a whole baseline multiple and
+       stops the 1px/item drift (the divider is inside the item's own box, not
+       added past a sized header).
+     · The HEADING line-height is snapped UP to a whole baseline multiple, so each
+       line is a whole number of 4px rows: a 1-line header fills the cell, a 2-line
+       header is cell-plus-one-snapped-line (grid-aligned), never the off-grid
+       natural line-height that made a two-line header 63px.
+     · The header's own block padding is a whole baseline multiple (1 bU) so it
+       does not knock the header off the grid.
+
+   Fire only under a density scope; the plain accordion is unchanged. */
+.app .ds.accordion-item,
+.site .ds.accordion-item,
+.docs .ds.accordion-item {
+  box-sizing: border-box;
+  min-block-size: var(--density-line-height-effective);
+}
+.app .ds.accordion-item > .header > .heading,
+.site .ds.accordion-item > .header > .heading,
+.docs .ds.accordion-item > .header > .heading {
+  /* Snap the tier's natural line-height up to the grid: round(up, font-size ×
+     ratio, baseline). --typography-text-primary-line-height is a unitless ratio. */
+  --accordion-item-heading-line-height: round(
+    up,
+    calc(1em * var(--typography-text-primary-line-height)),
+    var(--baseline-height)
   );
 }
