@@ -268,8 +268,9 @@ describe("checkMcpCommands", () => {
 
     const result = await checkMcpCommands(ctx);
     expect(result.status).toBe("fail");
-    expect(result.detail).toContain('"sem"');
-    expect(result.detail).toContain("/test/.mcp.json");
+    const semItem = result.items?.find((i) => i.label === '"sem"');
+    expect(semItem).toBeDefined();
+    expect(semItem?.detail).toContain("/test/.mcp.json");
     expect(result.remedy).toBeDefined();
   });
 
@@ -291,8 +292,9 @@ describe("checkMcpCommands", () => {
 
     const result = await checkMcpCommands(ctx);
     expect(result.status).toBe("fail");
-    expect(result.detail).toContain('"sem"');
-    expect(result.detail).not.toContain('"pragma"');
+    const labels = (result.items ?? []).map((i) => i.label);
+    expect(labels).toContain('"sem"');
+    expect(labels).not.toContain('"pragma"');
   });
 });
 
