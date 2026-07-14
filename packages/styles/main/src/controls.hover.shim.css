@@ -1,0 +1,115 @@
+/* @canonical/styles — Control selected-state SURFACE + HOVER SHIM (temporary)
+ *
+ * The generated design-tokens surface the control colours per nesting level
+ * (`.surface` → `.surface .surface` → `.contrasted` → `.modal`, in
+ * `@canonical/design-tokens/dist/modifiers.surfaces.css`) for the checkbox/radio
+ * UNSELECTED + checkmark and the switch knob — but NOT for any SELECTED state,
+ * nor the switch's unselected track. They also expose `--hover--color-foreground-*`
+ * (an OKLCH lightness-delta hover shade) only for those same unselected states.
+ *
+ * Consequences this shim fixes:
+ *   1. Selected controls were not surface-provided: a :checked box/dot/track kept
+ *      the flat `--color-foreground-*-selected` on every surface, ignoring
+ *      OnSurface stepping. (Ideal: selected states come through the surface layer
+ *      like the unselected ones do.)
+ *   2. Hovered selected controls had no hover token, so components faked it with
+ *      `filter: brightness()` on the whole <input> — which also dimmed the masked
+ *      checkmark glyph / switch knob (Diana's review: "hover should not affect the
+ *      checkmark/knob colour, just the fill/background").
+ *
+ * ── Part 1: surface-provided selected tokens ────────────────────────────────
+ * Mirror the surfaces.css selector structure so a control's SELECTED fill reads
+ * `--surface-color-foreground-*-selected`, resolved per surface. The design build
+ * has no `-selected-layer2/-layer3/-contrasted` PRIMITIVES yet, so every level
+ * currently aliases the flat base — but establishing the surface token means (a)
+ * components stop hard-coding the flat token, and (b) upstream can drop in real
+ * per-layer values later with zero component change. `switch-unselected` gets the
+ * same treatment (its surface token is also absent).
+ *
+ * ── Part 2: hover channels ──────────────────────────────────────────────────
+ * Same idiom as the generated `--hover--` tokens: shift the (now surface-aware)
+ * base lightness by the per-family `--delta-hover-*` step. Because Part 1 defines
+ * the surface tokens, these hovers are surface-correct too.
+ *
+ * Components read the CHANNELS, never re-derive the maths. Remove each block once
+ * generated upstream. Imported into `ds.modifiers` after the generated tokens.
+ */
+
+@layer ds.modifiers {
+  /* Part 1 — surface-provided selected tokens, per surface level (mirrors
+   * modifiers.surfaces.css). No -selected-layerN primitives exist yet, so each
+   * level aliases the flat base; swap in real per-layer tokens upstream.
+   *
+   * UPGRADE / REMOVAL (important): the component seam auto-upgrades for free —
+   * controls read `var(--surface-color-foreground-*-selected, <flat>)`, so
+   * whatever defines the surface token wins. But THIS block also defines those
+   * same tokens, in the same `ds.modifiers` layer, imported AFTER the generated
+   * modifiers.surfaces.css. So once upstream generates the real per-level
+   * `-selected` values, this Part 1 block will SHADOW them (later source order
+   * wins at equal specificity) and pin them flat. When upstream lands, DELETE
+   * this block — do not leave it, or surface stepping silently stays flat. */
+  .surface,
+  .surface .surface,
+  .surface .surface .surface,
+  .contrasted,
+  .modal {
+    --surface-color-foreground-checkbox-selected: var(
+      --color-foreground-checkbox-selected
+    );
+    --surface-color-foreground-radio-selected: var(
+      --color-foreground-radio-selected
+    );
+    --surface-color-foreground-switch-selected: var(
+      --color-foreground-switch-selected
+    );
+    --surface-color-foreground-switch-unselected: var(
+      --color-foreground-switch-unselected
+    );
+  }
+
+  /* Part 2 — hover channels, derived from the surface-aware base above. */
+  :root {
+    /* Checkbox — selected fill on :checked / :indeterminate hover. */
+    --hover--color-foreground-checkbox-selected: oklch(
+      from
+        var(
+          --surface-color-foreground-checkbox-selected,
+          var(--color-foreground-checkbox-selected)
+        )
+        calc(l + var(--delta-hover-color-foreground-checkbox-selected, -0.0391))
+        c h
+    );
+
+    /* Switch — selected track on :checked hover, and unselected track hover. */
+    --hover--color-foreground-switch-selected: oklch(
+      from
+        var(
+          --surface-color-foreground-switch-selected,
+          var(--color-foreground-switch-selected)
+        )
+        calc(l + var(--delta-hover-color-foreground-switch-selected, -0.0391)) c
+        h
+    );
+
+    --hover--color-foreground-switch-unselected: oklch(
+      from
+        var(
+          --surface-color-foreground-switch-unselected,
+          var(--color-foreground-switch-unselected)
+        )
+        calc(l + var(--delta-hover-color-foreground-switch-unselected, -0.0391))
+        c h
+    );
+
+    /* Radio — selected dot on :checked hover (parity with checkbox). */
+    --hover--color-foreground-radio-selected: oklch(
+      from
+        var(
+          --surface-color-foreground-radio-selected,
+          var(--color-foreground-radio-selected)
+        )
+        calc(l + var(--delta-hover-color-foreground-radio-selected, -0.0391)) c
+        h
+    );
+  }
+}
