@@ -21,28 +21,22 @@ import {
 } from "../domains/shared/stories/pack/index.js";
 import { commands as skillCommands } from "../domains/skill/index.js";
 import { commands as standardCommands } from "../domains/standard/index.js";
-import { commands as tierCommands } from "../domains/tier/index.js";
 import { commands as tokenCommands } from "../domains/token/index.js";
 
 /**
- * Collect all CLI command definitions from domain modules.
+ * The built-in (hand-written domain) command surface, in emission order.
  *
- * Extracted from runCli so the completions server can import
- * the command list independently without running the full CLI pipeline.
- *
- * @param ctx - The pragma context providing store, config, and global flags.
- * @returns The full array of command definitions for all domains.
+ * Excludes story-pack commands (bundled, config, or package). Exported so the
+ * reserved-verb derivation and its tests share the exact input production uses
+ * — the reserved map is built from built-ins only, never from packs.
  */
-export default function collectCommands(
-  ctx: PragmaContext,
-): CommandDefinition[] {
-  const builtIn: CommandDefinition[] = [
+export function builtInCommands(ctx: PragmaContext): CommandDefinition[] {
+  return [
     ...configCommands(ctx),
     ...createCommands(),
     ...setupCommands(),
     ...standardCommands(ctx),
     ...modifierCommands(ctx),
-    ...tierCommands(ctx),
     ...tokenCommands(ctx),
     ...blockCommands(ctx),
     ...ontologyCommands(ctx),
@@ -55,10 +49,27 @@ export default function collectCommands(
     buildLlmCommand(ctx),
     buildCapabilitiesCommand(),
   ];
+}
 
-  // Story packs project onto the same surface. Leaf read nouns reserve only
-  // the (noun, verb) pairs they own, so a pack can add a verb no built-in
-  // owns; operational nouns (config, graph, setup, …) stay reserved wholesale.
+/**
+ * Collect all CLI command definitions: built-in domains plus story packs.
+ *
+ * Extracted from runCli so the completions server can import the command list
+ * independently without running the full CLI pipeline.
+ *
+ * Story packs (bundled transitional packs, plus config- and package-declared
+ * stories) project onto the same surface. Leaf read nouns reserve only the
+ * (noun, verb) pairs they own, so a pack can add a verb no built-in owns and,
+ * once a built-in leaf is deleted, its bundled pack takes over the freed noun;
+ * operational nouns (config, graph, setup, …) stay reserved wholesale.
+ *
+ * @param ctx - The pragma context providing store, config, and global flags.
+ * @returns The full array of command definitions for all domains.
+ */
+export default function collectCommands(
+  ctx: PragmaContext,
+): CommandDefinition[] {
+  const builtIn = builtInCommands(ctx);
   const reserved = deriveReservedVerbs(
     builtIn.map((command) => nounVerbFromPath(command.path)),
   );

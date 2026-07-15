@@ -1,13 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { PragmaConfig } from "#config";
 import { PragmaError } from "#error";
 import { RECIPE_STORY } from "#testing";
 import type { SemanticPackage } from "../../semanticPackage.js";
-import collectPackStories from "./collectPackStories.js";
+import { BUNDLED_PACKS } from "./bundled/index.js";
+import realCollectPackStories from "./collectPackStories.js";
 import {
   buildReservedVerbs,
   deriveReservedVerbs,
   isReserved,
+  type ReservedVerbs,
 } from "./reservedVerbs.js";
+
+/**
+ * Test wrapper that isolates the always-present bundled packs: unit tests
+ * asserting exact entries pass `[]` so the default bundled `tier` pack does not
+ * pollute their expectations. Bundled behavior is covered separately below.
+ */
+function collectPackStories(
+  config: PragmaConfig,
+  packages: readonly SemanticPackage[],
+  reserved: ReservedVerbs,
+): ReturnType<typeof realCollectPackStories> {
+  return realCollectPackStories(config, packages, reserved, []);
+}
 
 function makePackage(stories: SemanticPackage["stories"]): SemanticPackage {
   return {
@@ -297,6 +313,51 @@ describe("collectPackStories", () => {
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining("shadows built-in command"),
       );
+    });
+  });
+
+  // Bundled transitional packs use the REAL collect (not the isolating wrapper).
+  describe("bundled packs", () => {
+    it("includes bundled packs by default, lowest precedence", () => {
+      const entries = realCollectPackStories(
+        CONFIG,
+        [],
+        buildReservedVerbs([]),
+      );
+      const nouns = entries.map((entry) => entry.definition.noun);
+      // Every bundled pack is present, tagged with a `bundled:` source.
+      for (const pack of BUNDLED_PACKS) {
+        expect(nouns).toContain(pack.noun);
+        const entry = entries.find((e) => e.definition.noun === pack.noun);
+        expect(entry?.source).toBe(`bundled:${pack.noun}`);
+      }
+    });
+
+    it("lets a config story override a bundled noun (config wins)", () => {
+      const bundledNoun = BUNDLED_PACKS[0]?.noun ?? "tier";
+      const entries = realCollectPackStories(
+        { ...CONFIG, stories: [{ ...RECIPE_STORY, noun: bundledNoun }] },
+        [],
+        buildReservedVerbs([]),
+      );
+      const entry = entries.find((e) => e.definition.noun === bundledNoun);
+      // The config-declared story wins; the bundled one yields silently.
+      expect(entry?.source).toBe("config");
+      expect(
+        entries.filter((e) => e.definition.noun === bundledNoun),
+      ).toHaveLength(1);
+    });
+
+    it("yields a bundled noun to a still-reserved built-in", () => {
+      // If a bundled noun is still a built-in (not yet cut over), the bundled
+      // pack must not shadow it.
+      const bundledNoun = BUNDLED_PACKS[0]?.noun ?? "tier";
+      const entries = realCollectPackStories(
+        CONFIG,
+        [],
+        buildReservedVerbs([[bundledNoun, undefined]]),
+      );
+      expect(entries.map((e) => e.definition.noun)).not.toContain(bundledNoun);
     });
   });
 });
