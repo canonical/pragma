@@ -63,6 +63,78 @@ export const DEFAULT_PREFIX_MAP = {
 } as const satisfies PrefixMap;
 
 /**
+ * Core prefixes reserved for pragma's own vocabularies. Packages and config
+ * may not redefine these — every query and the RDF/OWL/SKOS toolchain depend
+ * on them resolving to the canonical W3C namespaces, so a package that shadows
+ * `rdf:` (accidentally or maliciously) would silently corrupt every query.
+ */
+const RESERVED_PREFIXES: ReadonlySet<string> = new Set(Object.keys(PREFIX_MAP));
+
+/** A syntactically safe SPARQL prefix name (PN_PREFIX subset we accept). */
+const SAFE_PREFIX_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+/**
+ * Reject a namespace that cannot appear inside a SPARQL `<IRIREF>` unescaped.
+ * ke injects prefixes verbatim as `PREFIX name: <iri>`; a namespace containing
+ * `>` (or whitespace/control/`<"{}|^`\``) would break out of the IRI and inject
+ * arbitrary SPARQL into every query. SPARQL's IRIREF grammar forbids exactly
+ * these, so anything matching is both unsafe and invalid Turtle/SPARQL.
+ */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: IRIREF forbids U+0000–U+0020 by grammar
+const UNSAFE_NAMESPACE = /[\x00-\x20<>"{}|^`\\]/;
+
+/**
+ * Validate and merge one source of declared prefixes onto an accumulator.
+ *
+ * Skips (with a stderr warning) any entry that is unsafe to inject: a
+ * malformed prefix name, a namespace that could break out of the SPARQL
+ * IRIREF, or an attempt to redefine a reserved core prefix. Also warns when a
+ * later source silently overrides an already-declared prefix (last-wins
+ * collision), so a name clash between two packages is visible rather than
+ * mysterious.
+ *
+ * @note Impure — writes warnings to stderr.
+ */
+function mergePrefixSource(
+  acc: Record<string, string>,
+  claimed: Set<string>,
+  source: Readonly<Record<string, string>> | undefined,
+  origin: string,
+): void {
+  if (!source) return;
+  for (const [name, namespace] of Object.entries(source)) {
+    if (!SAFE_PREFIX_NAME.test(name)) {
+      process.stderr.write(
+        `Warning: ignoring prefix "${name}" from ${origin} — not a valid prefix name.\n`,
+      );
+      continue;
+    }
+    if (RESERVED_PREFIXES.has(name)) {
+      process.stderr.write(
+        `Warning: ignoring prefix "${name}" from ${origin} — "${name}:" is reserved for a core RDF vocabulary and cannot be redefined.\n`,
+      );
+      continue;
+    }
+    if (UNSAFE_NAMESPACE.test(namespace)) {
+      process.stderr.write(
+        `Warning: ignoring prefix "${name}" from ${origin} — namespace contains characters that are not valid in an IRI.\n`,
+      );
+      continue;
+    }
+    // Warn only on a collision between two *validated* sources (package vs.
+    // package/config). Silently overriding the trusted DS fallback is the
+    // expected transitional handoff, not a clash.
+    if (claimed.has(name) && acc[name] !== namespace) {
+      process.stderr.write(
+        `Warning: prefix "${name}" from ${origin} overrides an earlier declaration (was <${acc[name]}>, now <${namespace}>).\n`,
+      );
+    }
+    acc[name] = namespace;
+    claimed.add(name);
+  }
+}
+
+/**
  * Resolve the effective prefix map for a boot.
  *
  * Precedence (lowest → highest): the generic {@link PREFIX_MAP}, the
@@ -70,6 +142,12 @@ export const DEFAULT_PREFIX_MAP = {
  * array order), then config-level overrides. A package that declares its
  * own `ds:`/`cs:` therefore overrides the bundled fallback, and a user's
  * `pragma.config.json` `prefixes` wins over everything.
+ *
+ * Package- and config-declared prefixes are validated before they reach the
+ * store: unsafe names/namespaces are skipped (they would otherwise be injected
+ * verbatim into every SPARQL query), reserved core prefixes cannot be
+ * redefined, and last-wins collisions are surfaced as warnings. The bundled
+ * core and DS fallback are trusted and merged as-is.
  *
  * @param packages - Resolved packages, each optionally declaring prefixes.
  * @param configPrefixes - Config-level prefix overrides.
@@ -81,16 +159,18 @@ export function resolvePrefixes(
   }[] = [],
   configPrefixes?: Readonly<Record<string, string>>,
 ): Record<string, string> {
-  const packagePrefixes = Object.assign(
-    {},
-    ...packages.map((pkg) => pkg.prefixes ?? {}),
-  );
-  return {
+  const merged: Record<string, string> = {
     ...PREFIX_MAP,
     ...TRANSITIONAL_DS_PREFIX_MAP,
-    ...packagePrefixes,
-    ...configPrefixes,
   };
+  // Keys claimed by a validated source, so collisions between two such
+  // sources warn while overriding the trusted seed stays silent.
+  const claimed = new Set<string>();
+  for (const pkg of packages) {
+    mergePrefixSource(merged, claimed, pkg.prefixes, "a semantic package");
+  }
+  mergePrefixSource(merged, claimed, configPrefixes, "pragma.config.json");
+  return merged;
 }
 
 /**

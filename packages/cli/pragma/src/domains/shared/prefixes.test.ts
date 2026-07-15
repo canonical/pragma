@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   DEFAULT_PREFIX_MAP,
   P,
@@ -113,5 +113,91 @@ describe("resolvePrefixes", () => {
   it("tolerates packages that declare no prefixes", () => {
     const resolved = resolvePrefixes([{}, { prefixes: undefined }]);
     expect(resolved).toEqual({ ...PREFIX_MAP, ...TRANSITIONAL_DS_PREFIX_MAP });
+  });
+});
+
+describe("resolvePrefixes — injection & shadowing hardening", () => {
+  let warnings: string[];
+  let write: typeof process.stderr.write;
+
+  beforeEach(() => {
+    warnings = [];
+    write = process.stderr.write;
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      warnings.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+  });
+
+  afterEach(() => {
+    process.stderr.write = write;
+  });
+
+  it("drops a namespace that could break out of the SPARQL IRIREF", () => {
+    // A `>` would close `<...>` early and inject arbitrary SPARQL into every
+    // query the store runs.
+    const resolved = resolvePrefixes([
+      { prefixes: { evil: "http://e> SELECT * WHERE {?s ?p ?o} #" } },
+    ]);
+    expect(resolved).not.toHaveProperty("evil");
+    expect(warnings.join("")).toContain("not valid in an IRI");
+  });
+
+  it("rejects namespaces containing whitespace or angle/quote/brace chars", () => {
+    const resolved = resolvePrefixes([
+      {
+        prefixes: {
+          space: "http://e /x",
+          quote: 'http://e"x',
+          brace: "http://e{x}",
+        },
+      },
+    ]);
+    expect(resolved).not.toHaveProperty("space");
+    expect(resolved).not.toHaveProperty("quote");
+    expect(resolved).not.toHaveProperty("brace");
+  });
+
+  it("keeps a clean namespace untouched", () => {
+    const resolved = resolvePrefixes([
+      { prefixes: { ex: "https://example.org/ns#" } },
+    ]);
+    expect(resolved.ex).toBe("https://example.org/ns#");
+    expect(warnings).toHaveLength(0);
+  });
+
+  it("refuses to let a package redefine a reserved core prefix", () => {
+    const resolved = resolvePrefixes([
+      { prefixes: { rdf: "https://evil.example/rdf#" } },
+    ]);
+    expect(resolved.rdf).toBe(PREFIX_MAP.rdf);
+    expect(warnings.join("")).toContain("reserved");
+  });
+
+  it("refuses reserved prefixes from config too", () => {
+    const resolved = resolvePrefixes([], { owl: "https://evil.example/owl#" });
+    expect(resolved.owl).toBe(PREFIX_MAP.owl);
+  });
+
+  it("skips a malformed prefix name", () => {
+    const resolved = resolvePrefixes([
+      { prefixes: { "bad name!": "https://example.org/" } },
+    ]);
+    expect(resolved).not.toHaveProperty("bad name!");
+    expect(warnings.join("")).toContain("not a valid prefix name");
+  });
+
+  it("warns on a last-wins collision between two packages", () => {
+    const resolved = resolvePrefixes([
+      { prefixes: { a: "https://one.example/" } },
+      { prefixes: { a: "https://two.example/" } },
+    ]);
+    expect(resolved.a).toBe("https://two.example/");
+    expect(warnings.join("")).toContain("overrides an earlier declaration");
+  });
+
+  it("does not warn when a package overrides the trusted DS fallback", () => {
+    resolvePrefixes([{ prefixes: { ds: "https://packaged-ds.example/" } }]);
+    expect(warnings).toHaveLength(0);
   });
 });
