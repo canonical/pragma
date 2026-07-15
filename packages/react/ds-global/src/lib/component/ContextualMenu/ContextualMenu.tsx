@@ -3,7 +3,11 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
-import { MENU_PLACEMENT, useContextualMenu } from "../../hooks/index.js";
+import {
+  MENU_PLACEMENT,
+  useContextualMenu,
+  useIsMounted,
+} from "../../hooks/index.js";
 import MenuContext from "./common/MenuContext.js";
 import SubMenu from "./common/SubMenu/index.js";
 import type { ContextualMenuProps, MenuItem } from "./types.js";
@@ -44,6 +48,10 @@ const ContextualMenu = ({
     () => ({ key: "contextual-menu-root", items: groups }),
     [groups],
   );
+  // Portal only after mount so the server and first client render agree —
+  // `typeof window` is already truthy on the first client render, which would
+  // portal the menu on render 0 and mismatch the inline server output.
+  const mounted = useIsMounted();
   const menu = useContextualMenu({
     root,
     isOpen: open,
@@ -176,9 +184,7 @@ const ContextualMenu = ({
         >
           {trigger}
         </button>
-        {typeof window !== "undefined"
-          ? createPortal(menuElement, document.body)
-          : menuElement}
+        {mounted ? createPortal(menuElement, document.body) : menuElement}
       </div>
     </MenuContext.Provider>
   );

@@ -1,11 +1,6 @@
-import {
-  type CSSProperties,
-  type ReactElement,
-  useEffect,
-  useState,
-} from "react";
+import type { CSSProperties, ReactElement } from "react";
 import { createPortal } from "react-dom";
-import { useDisclosure } from "../../../../hooks/index.js";
+import { useDisclosure, useIsMounted } from "../../../../hooks/index.js";
 import { Tooltip } from "../../index.js";
 import type { TooltipAreaProps } from "./types.js";
 
@@ -61,10 +56,9 @@ const TooltipArea = ({
   // on the first client render) would differ from the post-mount portal output
   // and force a hydration mismatch + full re-mount — which resets the fitment
   // refs to null and re-triggers the unpositioned first frame. Deferring to a
-  // `mounted` gate makes the server and first client render identical (nothing
+  // mounted gate makes the server and first client render identical (nothing
   // at the call site); the tooltip mounts once, cleanly, after hydration.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useIsMounted();
 
   // The always-on arrow offset keeps the arrow pointing at the target centre
   // for every placement, not only when auto-fit clamps.

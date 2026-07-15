@@ -3,7 +3,11 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MENU_PLACEMENT, useWindowFitment } from "../../../../hooks/index.js";
+import {
+  MENU_PLACEMENT,
+  useIsMounted,
+  useWindowFitment,
+} from "../../../../hooks/index.js";
 import type { MenuItem } from "../../types.js";
 import Item from "../Item/index.js";
 import { useMenuContext } from "../MenuContext.js";
@@ -54,6 +58,9 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   const keyboardOpen = status.inHighlightedBranch && !status.highlighted;
   const [hovered, setHovered] = useState(false);
   const open = keyboardOpen || hovered;
+  // Portal only after mount so the server and first client render agree —
+  // `typeof window` is already truthy on the first client render.
+  const mounted = useIsMounted();
 
   // MENU_PLACEMENT is a stable module constant and logical, so the hook mirrors
   // it in RTL from this item's own writing direction — no per-submenu dir read.
@@ -165,7 +172,7 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
         itemProps={itemProps}
         onSelect={() => onSelectItem(item)}
       />
-      {submenuSurface && typeof window !== "undefined"
+      {submenuSurface && mounted
         ? createPortal(submenuSurface, document.body)
         : null}
     </div>

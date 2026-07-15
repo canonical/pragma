@@ -278,7 +278,7 @@ The gap only bites if _your_ component needs a ref for its own reasons — imper
 
 ### SSR renders nothing but the trigger
 
-`TooltipArea` renders the tooltip message through `createPortal` into `document.body` (or a `parentElement` you supply). Because `document` does not exist on the server, the portal is guarded behind `typeof window !== "undefined"`: on the server the message element is rendered inline instead of portalled, and because the disclosure is closed by default it produces no visible overlay. In effect the tooltip is dormant until hydration — the trigger renders on the server, the floating bubble is a client-only concern. This is intentional and keeps the component build-safe in server environments.
+`TooltipArea` renders the tooltip message through `createPortal` into `document.body` (or a `parentElement` you supply). The portal is gated on a `useIsMounted` flag, which is `false` during server rendering **and** the first client render, then `true` after mount — so the server HTML and the first client render agree (neither emits the message) and hydration never mismatches. The server therefore renders only the trigger and its `aria-describedby` target wrapper; the message portals in after hydration. In effect the tooltip is dormant until hydration — the trigger renders on the server, the floating bubble is a client-only concern. This keeps the component build-safe in server environments and hydration-clean on the client.
 
 ### How positioning actually anchors
 
