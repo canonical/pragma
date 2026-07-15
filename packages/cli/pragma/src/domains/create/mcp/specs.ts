@@ -81,8 +81,9 @@ const specs: readonly ToolSpec[] = [
 
       const result = await executeGenerator(gen, genParams, batchCtx);
       if (result.tag === "output") {
-        const text = result.render.plain(result.value);
-        return { data: JSON.parse(text) };
+        // In json mode result.value is already the structured plan; return it
+        // directly instead of a stringify/parse round-trip.
+        return { data: result.value };
       }
 
       throw PragmaError.invalidInput(
@@ -159,8 +160,9 @@ const specs: readonly ToolSpec[] = [
 
       const result = await executeGenerator(gen, genParams, batchCtx);
       if (result.tag === "output") {
-        const text = result.render.plain(result.value);
-        return { data: JSON.parse(text) };
+        // In json mode result.value is already the structured plan; return it
+        // directly instead of a stringify/parse round-trip.
+        return { data: result.value };
       }
 
       throw PragmaError.invalidInput("name", String(params.name));
@@ -233,8 +235,9 @@ const specs: readonly ToolSpec[] = [
 
       const result = await executeGenerator(gen, genParams, batchCtx);
       if (result.tag === "output") {
-        const text = result.render.plain(result.value);
-        return { data: JSON.parse(text) };
+        // In json mode result.value is already the structured plan; return it
+        // directly instead of a stringify/parse round-trip.
+        return { data: result.value };
       }
 
       throw PragmaError.invalidInput("appPath", String(params.appPath));
