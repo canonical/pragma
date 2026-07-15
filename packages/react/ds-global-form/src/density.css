@@ -9,9 +9,13 @@
  * 2×3 matrix and the value table.
  *
  * THIS file is the FORM APPLICATION layer: it applies those primitives to the
- * form's own controls (`.ds.button`, `.ds.input`, `.ds.field-label/description/
- * error`, the textarea) — sizing their boxes to the density cell and seating
- * their text on the 4px grid. The --form-* token mapping lives in index.css.
+ * form's own controls (`.ds.input`, `.ds.field-label/description/error`, the
+ * textarea) — sizing their boxes to the density cell and seating their text on the
+ * 4px grid. The --form-* token mapping lives in index.css.
+ *
+ * NB the BUTTON is a ds-global component, so its density seat lives in ds-global
+ * (Button/styles.css), reading the same shared --density-* primitives — an app
+ * that ships ds-global without the form package still gets a seated button.
  *
  * Text baseline sits round(up, height × 2/3) down the box, so every control shares
  * one baseline. Zero-JS (cap-unit approximation); holds to the cap tolerance.
@@ -25,15 +29,11 @@
  *
  * Controls no longer carry `.p` — the density system supplies the body font tier
  * (font-size / weight / family) here, and the baseline placement below. */
-/* `:is()` on the density scope (0,1,0) so `:is(...) .ds.button` (0,2,0) beats the
- * Button's own `.ds.button { align-items: center }` (0,1,0) — otherwise the label
- * stays flex-CENTRED and the padding-based baseline placement can't govern. */
 /* NB `.ds.input.textarea` is EXCLUDED: a textarea is a multi-line control whose
  * height is intrinsic (its `min-height: 5lh`), not a single density line — the
  * single-line crush below would flatten it. It gets its own placement further
  * down (grid-multiple line-height so every row sits on the grid). */
-:is(.comfortable, .dense, .app, .site, .docs)
-  :is(.ds.button, .ds.input:not(.textarea)) {
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input:not(.textarea) {
   box-sizing: border-box;
   /* Same effective line-height the target-baseline uses (single source of the
      fallback chain), so a bare context class keeps a valid box height too. */
@@ -107,7 +107,6 @@
   font-family: var(--typography-text-primary-font-family);
 }
 
-:is(.comfortable, .dense, .app, .site, .docs) .ds.button,
 :is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
 :is(.comfortable, .dense, .app, .site, .docs)
   :is(.ds.field-label, .ds.field-description, .ds.field-error) {
@@ -210,16 +209,6 @@
       1em
     )
   );
-}
-
-/* The box's top border sits above the content and counts toward the target, so
- * subtract it once. The NOMINAL --button-border-width (1px) is what put the button
- * ON the baseline — subtract it for BOTH importances. The primary's 0-outline
- * (borderless) is handled by the grid maths, NOT by zeroing this term: switching
- * to `calc(--modifier-outline × width)` lifts the primary a pixel and breaks the
- * alignment (regression found & reverted). Leave the nominal term alone. */
-:where(.comfortable, .dense, .app, .site, .docs) .ds.button {
-  --border-top-width: var(--button-border-width, 0px);
 }
 
 /* ── --control-text-drift-AVOID-USAGE — the one honest patch ──────────────────
