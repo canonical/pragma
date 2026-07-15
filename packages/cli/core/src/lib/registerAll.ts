@@ -234,6 +234,12 @@ async function handleResult(
           writeChunked(process.stdout, `${text}\n`);
         }
       }
+      // Output results normally succeed; an explicit non-zero exitCode lets a
+      // result render its content (e.g. inline not-found errors) yet still
+      // signal failure to callers.
+      if (result.exitCode !== undefined && result.exitCode !== 0) {
+        process.exitCode = result.exitCode;
+      }
       break;
     }
     case "exit": {

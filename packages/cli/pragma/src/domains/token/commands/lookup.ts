@@ -10,9 +10,11 @@ import {
   createOutputResult,
 } from "@canonical/cli-core";
 import { createLookupView } from "#tui";
+import { PragmaError } from "../../../error/index.js";
 import type { PragmaContext } from "../../shared/context.js";
 import type { LookupResult } from "../../shared/contracts.js";
 import { renderLookupResults } from "../../shared/formatters.js";
+import resolveLookupExitCode from "../../shared/resolveLookupExitCode.js";
 import {
   createLookupFormatters,
   createTokenInkLookupOptions,
@@ -56,6 +58,15 @@ export default function buildLookupCommand(
     },
     async execute(params: Record<string, unknown>) {
       const names = normalizeNames(params.names, params.name);
+      if (names.length === 0) {
+        throw PragmaError.invalidInput("names", "(empty)", {
+          recovery: {
+            message: "List available tokens.",
+            cli: "pragma token list",
+            mcp: { tool: "token_list" },
+          },
+        });
+      }
       const detailed = (params.detailed as boolean) ?? false;
       const contract = await resolveTokenLookup(ctx.store, names);
 
@@ -77,6 +88,7 @@ export default function buildLookupCommand(
               options: createTokenInkLookupOptions({ detailed: isDetailed }),
             }),
         },
+        resolveLookupExitCode(contract.result),
       );
     },
   };

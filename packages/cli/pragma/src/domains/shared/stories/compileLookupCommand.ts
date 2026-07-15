@@ -7,6 +7,7 @@ import {
 import type { PragmaContext } from "../context.js";
 import type { LookupResult } from "../contracts.js";
 import { renderLookupResults } from "../formatters.js";
+import resolveLookupExitCode from "../resolveLookupExitCode.js";
 import normalizeNames from "./normalizeNames.js";
 import projectCliParameters from "./projectCliParameters.js";
 import resolveLookupDetailed from "./resolveLookupDetailed.js";
@@ -68,6 +69,7 @@ export default function compileLookupCommand<TDetailed, TFmtInput>(
               renderInk(output.result, output.view),
           }),
         },
+        resolveLookupExitCode(result),
       );
     },
   };

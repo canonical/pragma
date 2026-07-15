@@ -2,6 +2,13 @@ import { PragmaError } from "#error";
 import type { LookupResult } from "./contracts.js";
 
 /**
+ * Marker in the ke SPARQL guard's rejection message. A rejected value is user
+ * input, not an internal fault, so it is reclassified as INVALID_INPUT rather
+ * than mislabelled as an internal error.
+ */
+const SPARQL_REJECTION_MARKER = "Potentially dangerous SPARQL value rejected";
+
+/**
  * Resolve multiple lookup queries and collect structured per-query failures.
  *
  * Used by MCP lookup tools so a single call can return multiple results
@@ -51,13 +58,22 @@ export default async function lookupMany<TResult>(
         }),
       });
     } else {
-      internalErrorCount += 1;
       const reason = error instanceof Error ? error.message : String(error);
-      errors.push({
-        query,
-        code: "INTERNAL_ERROR",
-        message: `Internal error: ${reason}`,
-      });
+      if (reason.includes(SPARQL_REJECTION_MARKER)) {
+        // A rejected value is invalid user input, not an internal fault.
+        errors.push({
+          query,
+          code: "INVALID_INPUT",
+          message: `Invalid lookup value "${query}": rejected as unsafe.`,
+        });
+      } else {
+        internalErrorCount += 1;
+        errors.push({
+          query,
+          code: "INTERNAL_ERROR",
+          message: `Internal error: ${reason}`,
+        });
+      }
     }
   }
 

@@ -82,6 +82,21 @@ describe("buildCapabilitiesCommand", () => {
     expect(text).toContain("30 tools");
   });
 
+  it("emits valid JSON when --format json is requested", async () => {
+    const cmd = buildCapabilitiesCommand();
+    const ctx = {
+      cwd: "/test",
+      globalFlags: { llm: false, format: "json" as const, verbose: false },
+    };
+
+    const result = await cmd.execute({}, ctx);
+    if (result.tag !== "output") throw new Error("Expected output result");
+
+    const text = result.render.plain(result.value) as string;
+    expect(() => JSON.parse(text)).not.toThrow();
+    expect(JSON.parse(text)).toMatchObject({ version: expect.any(String) });
+  });
+
   it("does not require a store or runtime", async () => {
     const cmd = buildCapabilitiesCommand();
     // Execute with no context — should succeed because it's static

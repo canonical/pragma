@@ -283,4 +283,46 @@ describe("completions", () => {
       expect(result.completer).toBeUndefined();
     });
   });
+
+  describe("flag completion", () => {
+    it("indexes each verb's flags in kebab-case", () => {
+      const tree = buildCompleters(makeCommands());
+      expect(tree.nouns.get("component")?.verbs.get("list")?.flags).toEqual([
+        "--all-tiers",
+      ]);
+    });
+
+    it("offers a verb's flags once the word starts with a dash", async () => {
+      const tree = buildCompleters(makeCommands());
+      const result = resolveCompletion(tree, ["component", "list", "--"]);
+
+      expect(result.level).toBe(3);
+      const candidates = await result.completer?.("--", testCtx);
+      expect(candidates).toEqual(["--all-tiers"]);
+    });
+
+    it("filters flags by the dash-prefixed partial", async () => {
+      const tree = buildCompleters(makeCommands());
+      const result = resolveCompletion(tree, ["component", "list", "--a"]);
+
+      const candidates = await result.completer?.("--a", testCtx);
+      expect(candidates).toEqual(["--all-tiers"]);
+    });
+
+    it("returns no flag candidates for a non-matching dash partial", async () => {
+      const tree = buildCompleters(makeCommands());
+      const result = resolveCompletion(tree, ["component", "list", "--zzz"]);
+
+      const candidates = await result.completer?.("--zzz", testCtx);
+      expect(candidates).toEqual([]);
+    });
+
+    it("still completes positional arguments when the word has no dash", async () => {
+      const tree = buildCompleters(makeCommands());
+      const result = resolveCompletion(tree, ["component", "get", "Bu"]);
+
+      const candidates = await result.completer?.("Bu", testCtx);
+      expect(candidates).toEqual(["Button"]);
+    });
+  });
 });

@@ -113,9 +113,15 @@ export const blockLookupStory: LookupStory<BlockDetailed, BlockLookupInput> = {
   complete: async (partial, cmdCtx) => {
     const ctx = requirePragmaContext(cmdCtx);
     const all = await listBlocks(ctx.store, ctx.config);
-    return all
-      .map((block) => block.name)
-      .filter((name) => name.toLowerCase().startsWith(partial.toLowerCase()));
+    const lower = partial.toLowerCase();
+    // Block names recur across tiers/packages; dedupe so completion offers each
+    // name once.
+    const unique = new Set(
+      all
+        .map((block) => block.name)
+        .filter((name) => name.toLowerCase().startsWith(lower)),
+    );
+    return [...unique];
   },
   detailedParam: {
     description:

@@ -1,5 +1,6 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { PROGRAM_NAME } from "../constants.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { buildCapabilitiesCommand } from "../domains/llm/index.js";
@@ -14,7 +15,10 @@ import { PragmaError } from "../error/index.js";
 import collectCommands from "./collectCommands.js";
 import createProgram from "./createProgram.js";
 import mapExitCode from "./mapExitCode.js";
-import parseGlobalFlags, { stripGlobalFlags } from "./parseGlobalFlags.js";
+import parseGlobalFlags, {
+  readRawFormat,
+  stripGlobalFlags,
+} from "./parseGlobalFlags.js";
 import {
   renderErrorJson,
   renderErrorLlm,
@@ -68,8 +72,23 @@ async function handleCompletionsServer(): Promise<void> {
   await startCompletionsServer();
 }
 
-async function handleDoctor(globalFlags: GlobalFlags): Promise<void> {
+async function handleDoctor(
+  argv: readonly string[],
+  globalFlags: GlobalFlags,
+): Promise<void> {
   const { doctorCommand } = await import("../domains/doctor/commands/index.js");
+
+  // `doctor` runs before Commander, so honour --help/-h here rather than
+  // executing the health check when the user only asked for usage.
+  const wantsHelp = argv
+    .slice(2)
+    .some((arg) => arg === "--help" || arg === "-h");
+  if (wantsHelp) {
+    const { formatVerbHelp } = await import("@canonical/cli-core");
+    process.stdout.write(`${formatVerbHelp(PROGRAM_NAME, doctorCommand)}\n`);
+    return;
+  }
+
   const ctx = { cwd: process.cwd(), globalFlags };
   const result = await doctorCommand.execute({}, ctx);
   if (result.tag === "output") {
@@ -242,6 +261,32 @@ function handleProgramError(err: unknown, globalFlags: GlobalFlags): void {
  */
 export default async function runCli(argv: readonly string[]): Promise<void> {
   const globalFlags = parseGlobalFlags(argv);
+
+  const commandKind = resolveCommandKind(argv);
+
+  // Completion queries must be handled before the root-help shortcut:
+  // `pragma --completions` (empty first-Tab partial) has no non-flag command
+  // arg, so it would otherwise fall through to root help and dump the help
+  // banner into the shell's completion buffer.
+  if (commandKind.kind === "completions-client") {
+    return handleCompletionsClient(commandKind.partial);
+  }
+  if (commandKind.kind === "completions-server") {
+    return handleCompletionsServer();
+  }
+
+  // Reject an unknown --format value early (completion queries are exempt above,
+  // so tab-completion never errors). Only text/json are supported.
+  const rawFormat = readRawFormat(argv);
+  if (rawFormat !== undefined && rawFormat !== "text" && rawFormat !== "json") {
+    const error = PragmaError.invalidInput("format", rawFormat, {
+      validOptions: ["text", "json"],
+    });
+    process.stderr.write(`${renderError(error, globalFlags)}\n`);
+    process.exitCode = mapExitCode(error.code);
+    return;
+  }
+
   const explicitHelpOrVersion = argv
     .slice(2)
     .some(
@@ -253,15 +298,9 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
     return handleRootHelp(globalFlags);
   }
 
-  const commandKind = resolveCommandKind(argv);
-
   switch (commandKind.kind) {
-    case "completions-client":
-      return handleCompletionsClient(commandKind.partial);
-    case "completions-server":
-      return handleCompletionsServer();
     case "doctor":
-      return handleDoctor(globalFlags);
+      return handleDoctor(argv, globalFlags);
     case "store-skip":
       return runStoreSkip(argv, globalFlags);
     case "store-required":

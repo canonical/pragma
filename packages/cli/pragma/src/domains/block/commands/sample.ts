@@ -11,6 +11,7 @@ import {
 } from "@canonical/cli-core";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
+import parseSampleCount from "../../shared/parseSampleCount.js";
 import type { BlockDetailed, SampleOutput } from "../../shared/types/index.js";
 import { sampleFormatters } from "../formatters/index.js";
 import { sampleBlocks } from "../operations/index.js";
@@ -38,7 +39,7 @@ export default function sampleCommand(ctx: PragmaContext): CommandDefinition {
       examples: ["pragma block sample", "pragma block sample --count 3"],
     },
     async execute(params) {
-      const count = Number(params.count ?? 2);
+      const count = parseSampleCount(params.count);
       const filters = buildBlockFilters(ctx);
       const result = await sampleBlocks(ctx.store, filters, count);
 

@@ -7,6 +7,7 @@
  */
 
 import { createListView, createLookupView } from "#tui";
+import { PragmaError } from "../../error/index.js";
 import type { LookupStory, ReadStory } from "../shared/stories/index.js";
 import type { StandardDetailed } from "../shared/types/index.js";
 import {
@@ -125,11 +126,10 @@ export const standardLookupStory: LookupStory<
       "Return full details with dos/donts (default: true for MCP)",
   },
   examples: [
-    "pragma standard lookup react/component/folder-structure",
-    "pragma standard lookup react/component/folder-structure react/component/props",
-    "pragma standard lookup react/component/folder-structure --detailed",
-    "pragma standard lookup react/component/folder-structure --llm",
-    "pragma standard lookup cs:react_props",
+    "pragma standard lookup react/component/naming",
+    "pragma standard lookup react/component/naming react/component/props",
+    "pragma standard lookup react/component/naming --detailed",
+    "pragma standard lookup react/component/naming --llm",
   ],
   resolve: async (rt, names) => {
     const contract = await resolveStandardLookup(rt.store, names);
@@ -141,6 +141,14 @@ export const standardLookupStory: LookupStory<
     const { uri, name, category, description } = standard;
     return { uri, name, category, description };
   },
+  emptyNamesError: () =>
+    PragmaError.invalidInput("names", "(empty)", {
+      recovery: {
+        message: "List available standards.",
+        cli: "pragma standard list",
+        mcp: { tool: "standard_list" },
+      },
+    }),
   renderInk: (result, view) =>
     createLookupView({
       results: result.results,
