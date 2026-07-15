@@ -5,7 +5,7 @@ import { ComboboxField } from "./index.js";
 
 // Field-tier stories: the combobox bound to react-hook-form, inside a form.
 const meta = {
-  title: "components/ComboboxField",
+  title: "_work_in_progress/component/ComboboxField",
   component: ComboboxField,
   tags: ["autodocs"],
   decorators: [

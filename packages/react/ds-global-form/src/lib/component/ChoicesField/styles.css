@@ -41,8 +41,8 @@
     & > input[type="radio"] {
       appearance: none;
       box-sizing: border-box;
-      width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-      height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+      width: var(--dimension-200); /* 16px */
+      height: var(--dimension-200); /* 16px */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: 50%;
       background-color: var(
@@ -107,8 +107,8 @@
       appearance: none;
       box-sizing: border-box;
       position: relative;
-      width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-      height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+      width: var(--dimension-200); /* 16px */
+      height: var(--dimension-200); /* 16px */
       border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
       border-radius: var(--dimension-radius-small);
       background-color: var(
