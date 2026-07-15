@@ -10,6 +10,54 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./BasicSection": {
+      "types": "./dist/types/lib/BasicSection/index.d.ts",
+      "import": "./dist/esm/lib/BasicSection/index.js"
+    },
+    "./Button": {
+      "types": "./dist/types/lib/Button/index.d.ts",
+      "import": "./dist/esm/lib/Button/index.js"
+    },
+    "./CTABlock": {
+      "types": "./dist/types/lib/CTABlock/index.d.ts",
+      "import": "./dist/esm/lib/CTABlock/index.js"
+    },
+    "./CTASection": {
+      "types": "./dist/types/lib/CTASection/index.d.ts",
+      "import": "./dist/esm/lib/CTASection/index.js"
+    },
+    "./Example": {
+      "types": "./dist/types/lib/Example/index.d.ts",
+      "import": "./dist/esm/lib/Example/index.js"
+    },
+    "./Hero": {
+      "types": "./dist/types/lib/Hero/index.d.ts",
+      "import": "./dist/esm/lib/Hero/index.js"
+    },
+    "./Link": {
+      "types": "./dist/types/lib/Link/index.d.ts",
+      "import": "./dist/esm/lib/Link/index.js"
+    },
+    "./List": {
+      "types": "./dist/types/lib/List/index.d.ts",
+      "import": "./dist/esm/lib/List/index.js"
+    },
+    "./LogoSection": {
+      "types": "./dist/types/lib/LogoSection/index.d.ts",
+      "import": "./dist/esm/lib/LogoSection/index.js"
+    },
+    "./Navigation": {
+      "types": "./dist/types/lib/Navigation/index.d.ts",
+      "import": "./dist/esm/lib/Navigation/index.js"
+    },
+    "./SiteLayout": {
+      "types": "./dist/types/lib/SiteLayout/index.d.ts",
+      "import": "./dist/esm/lib/SiteLayout/index.js"
+    },
+    "./TieredList": {
+      "types": "./dist/types/lib/TieredList/index.d.ts",
+      "import": "./dist/esm/lib/TieredList/index.js"
     }
   },
   "files": [
