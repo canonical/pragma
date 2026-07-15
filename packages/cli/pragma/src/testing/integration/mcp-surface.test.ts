@@ -55,7 +55,7 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(30);
+    expect(data.counts.total).toBe(31);
     expect(data.conventions).toBeDefined();
     expect(data.version).toBeDefined();
   });

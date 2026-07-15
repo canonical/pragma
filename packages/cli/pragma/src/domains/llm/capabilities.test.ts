@@ -29,7 +29,7 @@ describe("buildCapabilitiesData", () => {
   it("includes every tool from TOOL_CATALOG", () => {
     const data = buildCapabilitiesData();
     expect(data.tools).toHaveLength(TOOL_CATALOG.length);
-    expect(data.tools).toHaveLength(30);
+    expect(data.tools).toHaveLength(31);
   });
 
   it("every tool has a non-empty use_when", () => {
@@ -41,7 +41,7 @@ describe("buildCapabilitiesData", () => {
 
   it("counts match tool catalog category lengths", () => {
     const data = buildCapabilitiesData();
-    expect(data.counts.total).toBe(30);
+    expect(data.counts.total).toBe(31);
     expect(data.counts.read).toBe(
       TOOL_CATALOG.filter((t) => t.category === "read").length,
     );
@@ -79,7 +79,7 @@ describe("buildCapabilitiesCommand", () => {
     expect(text).toContain("Discovery Sequence");
     expect(text).toContain("block_list");
     expect(text).toContain("read");
-    expect(text).toContain("30 tools");
+    expect(text).toContain("31 tools");
   });
 
   it("emits valid JSON when --format json is requested", async () => {
