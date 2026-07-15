@@ -42,6 +42,7 @@ import {
 } from "../../domains/ontology/operations/index.js";
 import { CHANNEL_RELEASES } from "../../domains/shared/filters/buildChannelFilter.js";
 import { resolveTierChain } from "../../domains/shared/filters/buildTierFilter.js";
+import { listTiers } from "../../domains/shared/listTiers.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import {
   type StandardListOutput,
@@ -54,8 +55,6 @@ import {
   listStandards,
   lookupStandard,
 } from "../../domains/standard/operations/index.js";
-import { listFormatters as tierListFmt } from "../../domains/tier/formatters/index.js";
-import { listTiers } from "../../domains/tier/operations/index.js";
 import {
   createLookupFormatters as createTokenLookupFmt,
   listFormatters as tokenListFmt,
@@ -265,26 +264,51 @@ describe("standard parity", () => {
 // Tier parity
 // ---------------------------------------------------------------------------
 
-describe("tier parity", () => {
-  it("tier_list: paths and depths match", async () => {
+// `tier list` / `tier_list` is now served by the bundled `tier` story pack
+// (the hand-written domain was deleted). Pack rows are `Record<string,string>`
+// projected from the SELECT, so the shape is intentionally uniform: `{uri,
+// name}` with no always-zero `depth` field, and the llm renderer is the
+// generic pack renderer. These tests assert *semantic* parity — every tier the
+// shared operation sees is present, by the same names — rather than byte
+// equality with the removed bespoke formatter.
+describe("tier parity (bundled pack)", () => {
+  it("tier_list returns one {uri, name} row per ontology tier", async () => {
     const opResult = await listTiers(rt.store);
-    const mcpRes = await client.callTool({
-      name: "tier_list",
-      arguments: {},
-    });
-    assertParity(opResult, mcpRes);
+    const mcpRes = await client.callTool({ name: "tier_list", arguments: {} });
+
+    const content = mcpRes.content as { type: string; text: string }[];
+    const envelope = JSON.parse(content[0].text) as {
+      ok: boolean;
+      data: Array<{ uri?: string; name?: string }>;
+    };
+    expect(envelope.ok).toBe(true);
+
+    // Same tiers, same names — no tier dropped or invented by the cutover.
+    // The shared op names the field `path`; the pack names it `name` (the
+    // honest `ds:name` mapping) — the values are identical.
+    expect(new Set(envelope.data.map((r) => r.name))).toEqual(
+      new Set(opResult.map((t) => t.path)),
+    );
+    // Uniform pack shape: uri + name, no bespoke `depth` field.
+    for (const row of envelope.data) {
+      expect(row.uri).toBeTruthy();
+      expect(row).not.toHaveProperty("depth");
+    }
   });
 
-  it("tier_list condensed: matches llm formatter", async () => {
+  it("tier_list condensed lists every tier under a markdown heading", async () => {
     const opResult = await listTiers(rt.store);
-    const expectedText = tierListFmt.llm(opResult);
-
     const mcpRes = await client.callTool({
       name: "tier_list",
       arguments: { condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+
+    // The generic pack llm renderer headings by the capitalized noun: `## Tier`.
+    expect(body.text).toContain("## Tier");
+    for (const tier of opResult) {
+      expect(body.text).toContain(tier.path);
+    }
   });
 });
 
