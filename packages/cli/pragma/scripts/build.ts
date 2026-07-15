@@ -61,10 +61,31 @@ function discoverAssets(): string[] {
 const assets = discoverAssets();
 console.log(`Embedding ${assets.length} assets`);
 
+/**
+ * Stub out `react-devtools-core`. Ink imports it only in development
+ * (`NODE_ENV !== "production"`), but the import statement is still bundled, and
+ * the package is not installed / not resolvable inside the standalone binary.
+ * Resolve it to an empty module so the compile succeeds and the dev-only code
+ * path is inert at runtime.
+ */
+const stubDevtoolsPlugin: import("bun").BunPlugin = {
+  name: "stub-react-devtools",
+  setup(build) {
+    build.onResolve({ filter: /^react-devtools-core$/ }, () => ({
+      path: "react-devtools-core",
+      namespace: "stub-devtools",
+    }));
+    build.onLoad({ filter: /.*/, namespace: "stub-devtools" }, () => ({
+      contents: "export default {}; export const connectToDevTools = () => {};",
+      loader: "js",
+    }));
+  },
+};
+
 const result = await Bun.build({
   entrypoints: ["src/bin.ts", ...assets],
   minify: true,
-  plugins: [createStoryAssetsPlugin()],
+  plugins: [createStoryAssetsPlugin(), stubDevtoolsPlugin],
   compile: {
     target: "bun-linux-x64",
     outfile: "dist/pragma",
