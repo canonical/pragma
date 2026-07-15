@@ -26,12 +26,15 @@ vi.mock("./waitForSocket.js", () => ({
 
 describe("queryCompletions", () => {
   let stdoutSpy: ReturnType<typeof vi.spyOn>;
+  const unrefMock = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     stdoutSpy = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
+    // The spawned server handle is unref'd so the client can exit immediately.
+    spawnMock.mockReturnValue({ unref: unrefMock });
     vi.stubGlobal("Bun", { spawn: spawnMock });
   });
 
@@ -67,6 +70,8 @@ describe("queryCompletions", () => {
 
     expect(unlinkSyncMock).toHaveBeenCalledWith("/tmp/pragma-completions.sock");
     expect(spawnMock).toHaveBeenCalledTimes(1);
+    // The server handle is detached so the client is not held alive by it.
+    expect(unrefMock).toHaveBeenCalledTimes(1);
     expect(waitForSocketMock).toHaveBeenCalled();
     expect(querySocketMock).toHaveBeenCalledTimes(2);
     expect(stdoutSpy).toHaveBeenCalledWith("block\n");
