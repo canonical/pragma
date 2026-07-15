@@ -1,20 +1,30 @@
 /**
- * Standard-noun parity pilot — the built-in `standard` read stories vs
- * the declarative pack definition in `standardParityFixtures.ts`.
+ * Standard-noun parity pilot — the built-in `standard` read stories vs the
+ * declarative pack definition in `standardParityFixtures.ts`.
  *
- * Both paths run against the real @canonical/code-standards graphs,
- * resolved from node_modules through the production loader chain — no
- * fixture TTL. Assertions demand byte parity wherever the v0 pack
- * format reaches; every remaining divergence is pinned exactly and
- * must be named in PARITY_GAPS. Nothing is cut over: the built-in
- * stories stay untouched and the pack is compiled directly.
+ * This file wires the built-in `standard` noun into the reusable
+ * {@link packParity} harness: both paths run against the real
+ * @canonical/code-standards graphs, resolved from node_modules through the
+ * production loader chain, and every consumer-facing surface is asserted
+ * byte-identical unless the v0 pack format cannot reach it — in which case
+ * the divergence is pinned in an allowlist drawn from {@link PARITY_GAPS}.
+ * Where a surface diverges for a single known reason, a `normalize` confines
+ * the divergence: the raw forms must differ AND the normalized forms must be
+ * byte-equal, so the delta is exactly the gap and nothing more. Nothing is
+ * cut over: the built-in stories stay untouched and the pack is compiled
+ * directly.
  */
 
-import type { Store } from "@canonical/ke";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
+import { PragmaError } from "#error";
 import { PARITY_GAPS, STANDARD_PACK_STORY } from "#testing";
+import {
+  type PackParityNotFoundContract,
+  packParity,
+  type SurfaceNormalize,
+} from "../../../../testing/packParity.js";
 import { parsePackageEntry } from "../../../refs/operations/parseRef.js";
-import type { StandardListOutput } from "../../../standard/formatters/index.js";
+import { lookupStandard } from "../../../standard/operations/index.js";
 import {
   standardListStory,
   standardLookupStory,
@@ -22,287 +32,187 @@ import {
 import { bootStore } from "../../bootStore.js";
 import compactUri from "../../compactUri.js";
 import { PREFIX_MAP } from "../../prefixes.js";
-import type { PragmaRuntime, StandardDetailed } from "../../types/index.js";
-import type { LookupStoryView } from "../types.js";
-import compilePackStories, {
-  type CompiledPackStories,
-} from "./compilePackStories.js";
-import validateStoryPackDefinition from "./validateStoryPackDefinition.js";
+import type { PragmaRuntime } from "../../types/index.js";
 
 const PACK_SOURCE = "standardParityFixtures";
 
-/** The built-in CLI default view: summary lookup, no extra params. */
-const SUMMARY_VIEW: LookupStoryView = {
-  surface: "cli",
-  detailed: false,
-  params: {},
-};
-
-/** Real standard names without cs:extends — full byte parity expected. */
-const PARITY_LOOKUP_NAMES = [
-  "code/function/purity",
-  "react/component/props",
-] as const;
-
-/** A real standard with cs:extends — pins the JSON compaction gap. */
-const EXTENDS_LOOKUP_NAME = "react/component/structure/context";
-
-/** A near-miss query — both paths must produce identical suggestions. */
-const NEAR_MISS_NAME = "code/function/puriti";
-
-let store: Store;
-let rt: PragmaRuntime;
-let packList: CompiledPackStories["list"];
-let packLookup: NonNullable<CompiledPackStories["lookup"]>;
-
-beforeAll(async () => {
-  const boot = await bootStore({
-    refs: [parsePackageEntry("@canonical/code-standards")],
-  });
-  store = boot.store;
-  rt = { store } as PragmaRuntime;
-
-  const compiled = compilePackStories(STANDARD_PACK_STORY, PACK_SOURCE, {
-    ...PREFIX_MAP,
-  });
-  packList = compiled.list;
-  const lookup = compiled.lookup;
-  if (!lookup) {
-    throw new Error("STANDARD_PACK_STORY must declare a lookup story");
+/**
+ * Fetch the full gap-ledger entry beginning with `prefix`, so every
+ * allowlist reason is a verbatim member of {@link PARITY_GAPS} (the
+ * harness's `knownDivergences` check then enforces the linkage).
+ */
+function gap(prefix: string): string {
+  const entry = PARITY_GAPS.find((candidate) => candidate.startsWith(prefix));
+  if (entry === undefined) {
+    throw new Error(`no PARITY_GAP begins with "${prefix}"`);
   }
-  packLookup = lookup;
-});
-
-afterAll(() => store?.dispose());
-
-/** Resolve one name through the built-in lookup story. */
-async function lookupBuiltin(name: string): Promise<StandardDetailed> {
-  const result = await standardLookupStory.resolve(rt, [name], {});
-  expect(result.errors).toEqual([]);
-  const entity = result.results.at(0);
-  if (entity === undefined) {
-    throw new Error(`built-in lookup found no result for "${name}"`);
-  }
-  return entity;
+  return entry;
 }
 
-/** Resolve one name through the compiled pack lookup story. */
-async function lookupPack(name: string): Promise<Record<string, string>> {
-  const result = await packLookup.resolve(rt, [name], {});
-  expect(result.errors).toEqual([]);
-  const entity = result.results.at(0);
-  if (entity === undefined) {
-    throw new Error(`pack lookup found no result for "${name}"`);
-  }
-  return entity;
+/** A real standard with cs:extends — pins the JSON data-compaction gap. */
+const EXTENDS_LOOKUP_NAME = "react/component/structure/context";
+
+/** True for a non-null object, so JSON-parsed surfaces can be indexed. */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 /**
- * Remove the built-in's URI field line — the one v0 lookup rendering
- * gap (see PARITY_GAPS: "lookup uri field"). Asserts the line occurs
- * exactly once so the transformation cannot mask other divergence.
+ * Strip the built-in's single leading URI field line — the one v0 lookup
+ * rendering gap. Confines the plain/llm divergence to exactly that line: the
+ * built-in carries one such line, the pack none, so at most one line is ever
+ * removed and the normalizer cannot mask an unrelated divergence.
  */
-function dropUriField(text: string, marker: "  URI: " | "- URI: "): string {
-  const lines = text.split("\n");
-  const remaining = lines.filter((line) => !line.startsWith(marker));
-  expect(lines.length - remaining.length).toBe(1);
-  return remaining.join("\n");
+function stripUriLine(marker: "  URI: " | "- URI: "): SurfaceNormalize {
+  return (rendered) => {
+    if (typeof rendered !== "string") {
+      throw new Error("uri-field normalizer expects a rendered string surface");
+    }
+    const lines = rendered.split("\n");
+    const kept = lines.filter((line) => !line.startsWith(marker));
+    expect(lines.length - kept.length).toBeLessThanOrEqual(1);
+    return kept.join("\n");
+  };
 }
 
-/** Assert every name appears in the text, in order. */
-function expectNamesInOrder(text: string, names: readonly string[]): void {
-  let cursor = 0;
-  for (const name of names) {
-    const index = text.indexOf(name, cursor);
-    expect(
-      index,
-      `expected "${name}" after position ${cursor}`,
-    ).toBeGreaterThanOrEqual(0);
-    cursor = index + name.length;
-  }
-}
-
-describe("standard pack definition", () => {
-  it("round-trips as declarative JSON and validates as a v0 pack", () => {
-    const raw: unknown = JSON.parse(JSON.stringify(STANDARD_PACK_STORY));
-    expect(validateStoryPackDefinition(raw, PACK_SOURCE)).toEqual(
-      STANDARD_PACK_STORY,
+/**
+ * Compact the `extends` IRI in a rendered lookup JSON surface. The built-in
+ * compacts `extends` in resolved data (`cs:…`) while the pack keeps the raw
+ * IRI; compacting both confines the JSON divergence to exactly that field.
+ */
+function compactExtendsJson(
+  prefixes: Readonly<Record<string, string>>,
+): SurfaceNormalize {
+  return (rendered) => {
+    if (typeof rendered !== "string") {
+      throw new Error("extends normalizer expects a rendered JSON string");
+    }
+    const parsed: unknown = JSON.parse(rendered);
+    if (!isRecord(parsed)) {
+      throw new Error("extends normalizer expects a JSON object surface");
+    }
+    const extendsValue = parsed.extends;
+    if (typeof extendsValue !== "string") {
+      throw new Error("extends normalizer expects a string `extends` field");
+    }
+    return JSON.stringify(
+      { ...parsed, extends: compactUri(extendsValue, prefixes) },
+      null,
+      2,
     );
-  });
+  };
+}
 
-  it("records every known gap as a distinct capability entry", () => {
+/**
+ * Drop the authored recovery guidance from a not-found contract, keeping the
+ * code, message, and ranked suggestions. Confines the not-found divergence to
+ * exactly `recovery`/`crossDomain` — the authored copy the pack cannot
+ * express (see {@link PARITY_GAPS} "lookup recovery copy").
+ */
+function stripRecovery(contract: PackParityNotFoundContract): unknown {
+  const { code, message, suggestions } = contract;
+  return { code, message, suggestions };
+}
+
+packParity({
+  noun: "standard",
+  definition: STANDARD_PACK_STORY,
+  source: PACK_SOURCE,
+  prefixes: { ...PREFIX_MAP },
+  knownDivergences: PARITY_GAPS,
+  bootRuntime: async () => {
+    const boot = await bootStore({
+      refs: [parsePackageEntry("@canonical/code-standards")],
+    });
+    return {
+      rt: { store: boot.store } as PragmaRuntime,
+      dispose: () => boot.store.dispose(),
+    };
+  },
+  list: {
+    story: standardListStory,
+    expectedDivergences: {
+      plain: gap("list plain template"),
+      llm: gap("list llm template"),
+      // Condensed MCP text is the llm formatter wrapped — same gap.
+      condensed: gap("list llm template"),
+      // json + envelope are byte-identical (summary rows match exactly).
+    },
+    // Wave 3 supplies real `paramVariations` here once packs gain authorable
+    // filters; standard's pack declares none, so the default view suffices.
+  },
+  lookup: {
+    story: standardLookupStory,
+    names: [
+      // Standards without cs:extends — lookup json is byte-identical.
+      { name: "code/function/purity" },
+      { name: "react/component/props" },
+      // With cs:extends — the built-in compacts extends in resolved data
+      // while the pack keeps the raw IRI, so lookup json diverges. The
+      // normalizer compacts both, confirming the delta is only that field.
+      {
+        name: EXTENDS_LOOKUP_NAME,
+        expectedDivergences: {
+          json: {
+            reason: gap("lookup data compaction"),
+            normalize: compactExtendsJson(PREFIX_MAP),
+          },
+        },
+      },
+    ],
+    nearMiss: "code/function/puriti",
+    expectedDivergences: {
+      // The built-in renders a leading `URI:` field the pack cannot declare;
+      // stripping that single line confirms the rest is byte-identical.
+      plain: {
+        reason: gap("lookup uri field"),
+        normalize: stripUriLine("  URI: "),
+      },
+      llm: {
+        reason: gap("lookup uri field"),
+        normalize: stripUriLine("- URI: "),
+      },
+      // MCP defaults lookup to detailed (full dos/donts entity); the pack
+      // has one fixed summary shape, so envelope + condensed diverge. The
+      // shape gap is broad, so these stay unconfined (reason-only).
+      envelope: gap("lookup detailed toggle"),
+      condensed: gap("lookup detailed toggle"),
+      // json is byte-identical except for the cs:extends case above.
+    },
+    // The reduced LookupResult errors are identical, but the built-in's
+    // thrown error carries recovery copy (`List available standards.`) the
+    // pack cannot author. Reaching past lookupMany surfaces that divergence,
+    // confined by stripRecovery to leave code/message/suggestions identical.
+    nearMissExpectedDivergence: gap("lookup recovery copy"),
+    nearMissNormalize: stripRecovery,
+    resolveBuiltinNotFound: async (rt, nearMiss) => {
+      try {
+        await lookupStandard(rt.store, nearMiss);
+      } catch (error) {
+        if (error instanceof PragmaError) {
+          return {
+            code: error.code,
+            message: error.message,
+            suggestions: error.suggestions,
+            recovery: error.recovery,
+            crossDomain: error.crossDomain,
+          };
+        }
+        throw error;
+      }
+      throw new Error(
+        `near-miss "${nearMiss}" unexpectedly resolved to a standard`,
+      );
+    },
+  },
+});
+
+describe("standard parity-gap ledger", () => {
+  it("records every known gap as a distinct, non-empty capability entry", () => {
     expect(PARITY_GAPS.length).toBeGreaterThan(0);
     expect(new Set(PARITY_GAPS).size).toBe(PARITY_GAPS.length);
-    for (const gap of PARITY_GAPS) {
-      expect(gap.trim().length).toBeGreaterThan(0);
+    for (const entry of PARITY_GAPS) {
+      expect(entry.trim().length).toBeGreaterThan(0);
     }
-  });
-});
-
-describe("standard list parity", () => {
-  let builtinResolution: Awaited<ReturnType<typeof standardListStory.resolve>>;
-  let builtinOutput: StandardListOutput;
-  let packRows: Record<string, string>[];
-
-  beforeAll(async () => {
-    builtinResolution = await standardListStory.resolve(rt, {});
-    builtinOutput = standardListStory.toOutput(builtinResolution, {});
-    packRows = await packList.resolve(rt, {});
-  });
-
-  it("resolves the same rows as the built-in resolver", () => {
-    expect(packRows.length).toBeGreaterThan(0);
-    expect(packRows).toEqual(builtinOutput.items);
-  });
-
-  it("json output is byte-identical", () => {
-    const builtinJson = standardListStory.formatters.json(builtinOutput);
-    const packJson = packList.formatters.json(packList.toOutput(packRows, {}));
-    expect(packJson).toBe(builtinJson);
-  });
-
-  it("MCP envelope matches the built-in summary envelope", () => {
-    expect(packList.toEnvelope(packRows)).toEqual(
-      standardListStory.toEnvelope(builtinResolution),
-    );
-  });
-
-  it("plain output carries every standard in order — layout is a recorded gap", () => {
-    const names = builtinOutput.items.map((item) => item.name);
-    const builtinPlain = standardListStory.formatters.plain(builtinOutput);
-    const packPlain = packList.formatters.plain(
-      packList.toOutput(packRows, {}),
-    );
-    expectNamesInOrder(builtinPlain, names);
-    expectNamesInOrder(packPlain, names);
-    // Layout divergence pinned — see PARITY_GAPS "list plain template".
-    expect(packPlain).not.toBe(builtinPlain);
-  });
-
-  it("llm output carries every standard in order — templates are a recorded gap", () => {
-    const names = builtinOutput.items.map((item) => item.name);
-    const builtinLlm = standardListStory.formatters.llm(builtinOutput);
-    const packLlm = packList.formatters.llm(packList.toOutput(packRows, {}));
-    expectNamesInOrder(builtinLlm, names);
-    expectNamesInOrder(packLlm, names);
-    // Heading divergence pinned — see PARITY_GAPS "list llm template".
-    expect(builtinLlm.startsWith("## Standards\n")).toBe(true);
-    expect(packLlm.startsWith(`## Standard (${packRows.length})\n`)).toBe(true);
-    expect(packLlm).not.toBe(builtinLlm);
-  });
-});
-
-describe("standard lookup parity (summary view)", () => {
-  for (const name of PARITY_LOOKUP_NAMES) {
-    it(`plain output for "${name}" matches modulo the URI field gap`, async () => {
-      const builtinPlain = standardLookupStory.formatters.plain(
-        standardLookupStory.toFmtInput(await lookupBuiltin(name), SUMMARY_VIEW),
-      );
-      const packPlain = packLookup.formatters.plain(
-        packLookup.toFmtInput(await lookupPack(name), SUMMARY_VIEW),
-      );
-      expect(packPlain).toBe(dropUriField(builtinPlain, "  URI: "));
-    });
-
-    it(`llm output for "${name}" matches modulo the URI field gap`, async () => {
-      const builtinLlm = standardLookupStory.formatters.llm(
-        standardLookupStory.toFmtInput(await lookupBuiltin(name), SUMMARY_VIEW),
-      );
-      const packLlm = packLookup.formatters.llm(
-        packLookup.toFmtInput(await lookupPack(name), SUMMARY_VIEW),
-      );
-      expect(packLlm).toBe(dropUriField(builtinLlm, "- URI: "));
-    });
-
-    it(`json output for "${name}" is byte-identical`, async () => {
-      const builtinJson = standardLookupStory.formatters.json(
-        standardLookupStory.toFmtInput(await lookupBuiltin(name), SUMMARY_VIEW),
-      );
-      const packJson = packLookup.formatters.json(
-        packLookup.toFmtInput(await lookupPack(name), SUMMARY_VIEW),
-      );
-      expect(packJson).toBe(builtinJson);
-    });
-  }
-});
-
-describe("standard lookup parity — cs:extends divergence", () => {
-  it("plain and llm stay byte-identical modulo the URI field", async () => {
-    const builtinInput = standardLookupStory.toFmtInput(
-      await lookupBuiltin(EXTENDS_LOOKUP_NAME),
-      SUMMARY_VIEW,
-    );
-    const packInput = packLookup.toFmtInput(
-      await lookupPack(EXTENDS_LOOKUP_NAME),
-      SUMMARY_VIEW,
-    );
-    expect(packLookup.formatters.plain(packInput)).toBe(
-      dropUriField(
-        standardLookupStory.formatters.plain(builtinInput),
-        "  URI: ",
-      ),
-    );
-    expect(packLookup.formatters.llm(packInput)).toBe(
-      dropUriField(standardLookupStory.formatters.llm(builtinInput), "- URI: "),
-    );
-  });
-
-  it("json diverges only on extends compaction — a recorded gap", async () => {
-    const builtinJson = standardLookupStory.formatters.json(
-      standardLookupStory.toFmtInput(
-        await lookupBuiltin(EXTENDS_LOOKUP_NAME),
-        SUMMARY_VIEW,
-      ),
-    );
-    const packJson = packLookup.formatters.json(
-      packLookup.toFmtInput(
-        await lookupPack(EXTENDS_LOOKUP_NAME),
-        SUMMARY_VIEW,
-      ),
-    );
-    // Divergence pinned — see PARITY_GAPS "lookup data compaction".
-    expect(packJson).not.toBe(builtinJson);
-
-    const builtinParsed = JSON.parse(builtinJson) as Record<string, string>;
-    const packParsed = JSON.parse(packJson) as Record<string, string>;
-    const packExtends = packParsed.extends;
-    if (packExtends === undefined) {
-      throw new Error(`expected cs:extends on "${EXTENDS_LOOKUP_NAME}"`);
-    }
-    // The built-in compacts extends in resolved data; the pack keeps the
-    // raw IRI. Compacting the pack value restores byte-level agreement.
-    expect({
-      ...packParsed,
-      extends: compactUri(packExtends, PREFIX_MAP),
-    }).toEqual(builtinParsed);
-    expect(
-      JSON.stringify(
-        { ...packParsed, extends: compactUri(packExtends, PREFIX_MAP) },
-        null,
-        2,
-      ),
-    ).toBe(builtinJson);
-  });
-});
-
-describe("standard lookup miss parity", () => {
-  it("collects identical not-found entries with ranked suggestions", async () => {
-    const builtinResult = await standardLookupStory.resolve(
-      rt,
-      [NEAR_MISS_NAME],
-      {},
-    );
-    const packResult = await packLookup.resolve(rt, [NEAR_MISS_NAME], {});
-    expect(builtinResult.results).toEqual([]);
-    expect(packResult.results).toEqual([]);
-
-    const builtinError = builtinResult.errors.at(0);
-    const packError = packResult.errors.at(0);
-    if (builtinError === undefined || packError === undefined) {
-      throw new Error("both paths must report a not-found error");
-    }
-    expect(packError).toEqual(builtinError);
-    expect(builtinError.code).toBe("ENTITY_NOT_FOUND");
-    expect(builtinError.suggestions).toContain("code/function/purity");
   });
 });
