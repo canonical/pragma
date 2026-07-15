@@ -53,7 +53,7 @@ export default async function renderGeneratorUi(
     return executeGenerator(gen, params, ctx);
   }
 
-  const { renderApp } = await import("@canonical/summon/ui");
+  const { renderApp } = await import("@canonical/cli-ui");
   const stampEnabled = params.generatedStamp !== false;
   await renderApp({
     generator: gen,

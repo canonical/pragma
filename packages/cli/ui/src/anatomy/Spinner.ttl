@@ -1,0 +1,13 @@
+# Spinner — CLI loading indicator (React Ink).
+# Renders a horizontal Box containing an animated braille spinner glyph
+# (cycled through 10 frames on an 80ms interval, coloured via the `color`
+# prop, default cyan) and an optional trailing text label.
+# Structure: root Box (flow/row) → spinner-frame Text (always) + label Text (conditional).
+
+@prefix ds: <https://ds.canonical.com/>.
+
+ds:cli.component.spinner a ds:Component;
+    ds:name "Spinner";
+    ds:summary "A CLI loading spinner rendering an animated braille glyph with an optional trailing label, used to signal in-progress work in the terminal flow.";
+    ds:tier ds:cli;
+    ds:anatomyDsl "node:\n  uri: cli.component.spinner\n  styles:\n    layout.type: flow\n    layout.direction: row\n  edges:\n    - node:\n        role: spinner-frame\n        styles:\n          appearance.color: cyan\n      relation:\n        cardinality: \"1\"\n        slotName: frame\n    - node:\n        role: label\n      relation:\n        cardinality: \"0..1\"\n        slotName: label\n".

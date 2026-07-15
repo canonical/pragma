@@ -14,36 +14,22 @@ look and behave identically. This is deliberate: **we do not duplicate the TUI.*
 
 How it is wired, and the caveats that come with it:
 
-### 1. The UI lives in `@canonical/summon`, reached via its `./ui` subpath
+### 1. The UI is the shared `@canonical/cli-ui` package
 
 The Ink components (`App`, `PromptSequence`, `FileTreePreview`,
-`ExecutionProgress`, `Spinner`) live in `packages/cli/summon/src/components`.
-`@canonical/summon` exposes them through a dedicated entry point:
+`ExecutionProgress`, `Spinner`) live in **`packages/cli/ui`
+(`@canonical/cli-ui`)**, a neutral shared library. Both `@canonical/summon` and
+`@canonical/pragma-cli` depend on it; pragma imports `renderApp`/`App` from
+`@canonical/cli-ui`. Do **not** reintroduce a dependency on the `@canonical/summon`
+*binary* package for the UI, and do not duplicate these components into pragma —
+change them once, in `cli-ui`, and both CLIs update.
 
-```jsonc
-// packages/cli/summon/package.json
-"exports": { "./ui": { "types": "./dist/src/ui/index.d.ts",
-                       "import": "./dist/src/ui/index.js" } }
-```
+Each component is documented by an anatomy-DSL Turtle sidecar under
+`packages/cli/ui/src/anatomy/<Name>.ttl` (a `ds:Component` with a `ds:anatomyDsl`
+node tree), mirroring how design-system components are described. Update the
+sidecar when you change a component's rendered structure.
 
-`packages/cli/pragma` therefore **depends on the `@canonical/summon` binary
-package** and imports `renderApp`/`App` from `@canonical/summon/ui`.
-
-> **Known shortcut / tech debt.** This makes the *binary* package double as a
-> library, which is a backwards dependency (an app importing a CLI). The intended
-> end-state is a neutral `@canonical/summon-ui` package that both `@canonical/summon`
-> and pragma depend on. Until then, keep the coupling to the single `./ui` entry —
-> do not reach into `@canonical/summon`'s other internals.
-
-### 2. Summon must emit declarations
-
-`@canonical/summon` builds with `declaration: true` **specifically so pragma can
-type-check against the emitted `.d.ts`**, not against summon's `.tsx` source.
-Summon's source uses looser compiler settings than pragma; if pragma resolves
-summon's types from source it fails on summon-internal type errors that summon's
-own `tsc` tolerates. If you touch summon's build config, keep `declaration: true`.
-
-### 3. Ink breaks the standalone binary without a stub
+### 2. Ink breaks the standalone binary without a stub
 
 `bun build --compile` (the `pragma` binary in `scripts/build.ts`) cannot bundle
 Ink as-is: Ink statically imports `react-devtools-core` (only used when
@@ -54,7 +40,7 @@ module**. If you add TUI code and the binary build starts failing with
 `Cannot find package 'react-devtools-core'`), that stub is what handles it — do
 not mark it `external` (a compiled binary can't resolve externals at runtime).
 
-### 4. Interactive vs. non-interactive routing
+### 3. Interactive vs. non-interactive routing
 
 `src/domains/create/renderGeneratorUi.ts` decides which front-end runs:
 
@@ -67,7 +53,7 @@ Keep every non-interactive path on `executeGenerator`: it owns the batch,
 dry-run, and machine-readable (`--llm` / `--format json`) contracts, and it is
 what tests and agents drive.
 
-### 5. You cannot verify the Ink render in a non-interactive sandbox
+### 4. You cannot verify the Ink render in a non-interactive sandbox
 
 Because the Ink path only runs on a real TTY, an automated/headless run (tests,
 CI, an agent shell) **always takes the `executeGenerator` fallback** — you will
