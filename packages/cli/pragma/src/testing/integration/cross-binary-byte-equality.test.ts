@@ -27,10 +27,10 @@ import {
   executeGenerator,
   runGeneratorTask,
 } from "@canonical/cli-core";
+import { generators as componentGenerators } from "@canonical/summon-component";
 import type { GeneratorDefinition } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { COMPONENT_GENERATORS } from "../../domains/create/generators.js";
 
 interface Case {
   readonly name: string;
@@ -41,7 +41,7 @@ interface Case {
 const cases: Case[] = [
   {
     name: "component/react",
-    gen: COMPONENT_GENERATORS.react as GeneratorDefinition,
+    gen: componentGenerators["component/react"] as GeneratorDefinition,
     answers: { componentPath: "src/components/Button" },
   },
   {

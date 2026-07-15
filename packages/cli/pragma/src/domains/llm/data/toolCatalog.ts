@@ -166,6 +166,21 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when:
       "Scaffolding a new React application with SSR, routing, and optional Relay",
   },
+  {
+    name: "create_domain",
+    category: "write",
+    use_when: "Scaffolding a new domain module inside an existing application",
+  },
+  {
+    name: "create_route",
+    category: "write",
+    use_when: "Scaffolding a new route inside an existing application",
+  },
+  {
+    name: "create_wrapper",
+    category: "write",
+    use_when: "Scaffolding a new wrapper component inside an application",
+  },
 
   // — Orientation —————————————————————————————————————————————————————————————
   {
