@@ -307,12 +307,12 @@
       "dependencies": {
         "@canonical/anatomy-dsl": "^0.2.2",
         "@canonical/cli-core": "^0.30.0",
+        "@canonical/cli-ui": "^0.30.0",
         "@canonical/code-standards": "^0.1.2",
         "@canonical/design-system": "^0.1.2",
         "@canonical/harnesses": "^0.30.0",
         "@canonical/ke": "^0.30.0",
         "@canonical/ke-graphql": "^0.30.0",
-        "@canonical/summon": "^0.30.0",
         "@canonical/summon-component": "^0.30.0",
         "@canonical/summon-core": "^0.30.0",
         "@canonical/summon-package": "^0.30.0",
@@ -346,6 +346,7 @@
       },
       "dependencies": {
         "@canonical/cli-core": "^0.30.0",
+        "@canonical/cli-ui": "^0.30.0",
         "@canonical/summon-core": "^0.30.0",
         "@canonical/task": "^0.30.0",
         "@canonical/utils": "^0.30.0",
@@ -365,6 +366,30 @@
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "@types/omelette": "^0.4.5",
+        "@types/react": "^19.2.14",
+        "ink-testing-library": "^4.0.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
+    "packages/cli/ui": {
+      "name": "@canonical/cli-ui",
+      "version": "0.30.0",
+      "dependencies": {
+        "@canonical/cli-core": "^0.30.0",
+        "@canonical/summon-core": "^0.30.0",
+        "@canonical/task": "^0.30.0",
+        "ink": "^6.8.0",
+        "ink-select-input": "^6.2.0",
+        "ink-text-input": "^6.0.0",
+        "react": "^19.2.4",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.30.0",
+        "@canonical/typescript-config": "^0.30.0",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
         "ink-testing-library": "^4.0.0",
         "typescript": "^5.9.3",
@@ -1734,6 +1759,8 @@
     "@canonical/biome-config": ["@canonical/biome-config@workspace:configs/biome"],
 
     "@canonical/cli-core": ["@canonical/cli-core@workspace:packages/cli/core"],
+
+    "@canonical/cli-ui": ["@canonical/cli-ui@workspace:packages/cli/ui"],
 
     "@canonical/code-standards": ["@canonical/code-standards@0.1.2", "", {}, "sha512-Z9LJfXkXl/cX//S079XYKXdYHeQVpm4EKX14adhF8r/Dpp1esPZ4Rb4mMj3SYTCXsZlqWmTdN3ouxaF25h1JrA=="],
 

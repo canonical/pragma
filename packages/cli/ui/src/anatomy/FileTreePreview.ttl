@@ -1,0 +1,14 @@
+# FileTreePreview — CLI (React Ink) component.
+# Renders a preview list of filesystem effects (create / mkdir / copy / delete / rmdir)
+# that a task will apply. Effects are deduplicated by path and sorted. When there are
+# no effects it renders a single dimmed empty-state line; otherwise it renders a bold
+# cyan title followed by an indented column of file rows, each with a coloured +/-
+# action icon, the path, and an optional dimmed byte-size suffix.
+
+@prefix ds: <https://ds.canonical.com/>.
+
+ds:cli.component.file-tree-preview a ds:Component;
+    ds:name "FileTreePreview";
+    ds:summary "React Ink component that previews the list of files a task will create, modify or delete. Shows a bold cyan title and an indented column of colour-coded file rows, or a dimmed empty-state line when there is nothing to do.";
+    ds:tier ds:cli;
+    ds:anatomyDsl "node:\n  uri: cli.component.file-tree-preview\n  styles:\n    layout.type: stack\n    layout.direction: column\n  edges:\n    - node:\n        role: empty-state\n        styles:\n          appearance.dim: true\n        edges: []\n      relation:\n        cardinality: \"0..1\"\n    - node:\n        role: title\n        styles:\n          appearance.bold: true\n          appearance.color: cyan\n        edges: []\n      relation:\n        cardinality: \"0..1\"\n    - node:\n        role: file-list\n        styles:\n          layout.type: stack\n          layout.direction: column\n          spacing.indent: 1\n        edges:\n          - node:\n              role: file-row\n              styles:\n                layout.type: flow\n                layout.direction: row\n              edges:\n                - node:\n                    role: action-icon\n                    styles:\n                      appearance.color: green|red\n                    edges: []\n                  relation:\n                    cardinality: \"1\"\n                - node:\n                    role: path-label\n                    styles: {}\n                    edges: []\n                  relation:\n                    cardinality: \"1\"\n                - node:\n                    role: size-label\n                    styles:\n                      appearance.dim: true\n                    edges: []\n                  relation:\n                    cardinality: \"0..1\"\n            relation:\n              cardinality: \"0..n\"\n      relation:\n        cardinality: \"0..1\"\n".

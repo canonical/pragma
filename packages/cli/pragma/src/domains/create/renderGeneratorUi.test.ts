@@ -18,7 +18,7 @@ vi.mock("@canonical/cli-core", async (importOriginal) => {
   };
 });
 
-vi.mock("@canonical/summon/ui", () => ({ renderApp: renderAppMock }));
+vi.mock("@canonical/cli-ui", () => ({ renderApp: renderAppMock }));
 
 const gen = {
   meta: {},

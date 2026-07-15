@@ -15,6 +15,7 @@ import {
   formatLlmMarkdown,
   isVisibleEffect,
 } from "@canonical/cli-core";
+import { App } from "@canonical/cli-ui";
 import type {
   GeneratorDefinition,
   PromptDefinition,
@@ -25,7 +26,6 @@ import { runUndo } from "@canonical/task/node";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
-import { App } from "../components/App.js";
 import type { CommandEntry, OptionInfo } from "./types.js";
 
 // =============================================================================

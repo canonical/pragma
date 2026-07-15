@@ -8,9 +8,7 @@
     // `__dirname/../generators` → dist/generators.
     "rootDir": ".",
     "outDir": "dist",
-    // Emit declarations so the ./ui subpath ships real types for consumers
-    // (e.g. pragma), decoupling them from summon's source under their own tsc.
-    "declaration": true,
+    "declaration": false,
     "sourceMap": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "generators/**/*.ts"],
