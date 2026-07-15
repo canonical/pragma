@@ -62,6 +62,20 @@ describe("config framework command", () => {
     expect(readConfig(dir).framework).toBe("lit");
   });
 
+  it("rejects a value combined with --reset", async () => {
+    const ctx = makeCtx(dir);
+    await expect(
+      buildFrameworkCommand(ctx).execute({ value: "react", reset: true }, ctx),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("rejects an explicit empty-string value", async () => {
+    const ctx = makeCtx(dir);
+    await expect(
+      buildFrameworkCommand(ctx).execute({ value: "" }, ctx),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
   it("rejects an invalid framework", async () => {
     const ctx = makeCtx(dir);
     await expect(
