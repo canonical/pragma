@@ -195,4 +195,43 @@ describe("CLI user stories", () => {
     expect(existsSync(indexFile)).toBe(true);
     expect(readFileSync(indexFile, "utf-8")).toContain("./MySth");
   }, 20_000);
+
+  it("story: --version works at the root, noun, and verb levels", () => {
+    const workspace = createWorkspace();
+    const root = runCommand(["--version"], workspace);
+    const verb = runCommand(["block", "list", "--version"], workspace);
+
+    expectSuccess(root);
+    expectSuccess(verb);
+    expect(root.stdout.trim()).toBe(verb.stdout.trim());
+    expect(root.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
+  }, 20_000);
+
+  it("story: an unknown verb under a known noun lists that noun's verbs", () => {
+    const workspace = createWorkspace();
+
+    const result = runCommand(["standard", "frobnicate"], workspace);
+
+    expect(result.exitCode).not.toBe(0);
+    // Errors, then defers to the category that exists.
+    expect(result.stderr).toContain("unknown command 'frobnicate'");
+    expect(result.stderr).toContain("pragma standard <verb>");
+    expect(result.stderr).toContain("list");
+    expect(result.stderr).toContain("lookup");
+  }, 20_000);
+
+  it("story: a global flag before the noun still lists that noun's verbs", () => {
+    const workspace = createWorkspace();
+
+    // `--format json` sits before the noun; the flag *value* (`json`) must not
+    // be mistaken for the noun, or no verbs would be suggested.
+    const result = runCommand(
+      ["--format", "json", "standard", "frobnicate"],
+      workspace,
+    );
+
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain("pragma standard <verb>");
+    expect(result.stderr).toContain("lookup");
+  }, 20_000);
 });

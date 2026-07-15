@@ -262,19 +262,30 @@ describe("runCli orchestration", () => {
     expect(dispose).toHaveBeenCalledTimes(1);
   });
 
-  it("treats version commander errors as success", async () => {
-    const parseAsync = vi.fn(async () => {
-      throw new CommanderError(0, "commander.version", "version");
-    });
+  it("prints the version directly and never reaches the program", async () => {
+    // --version is a global flag handled before command dispatch, so it neither
+    // boots the store nor builds a Commander program.
+    const stdout: string[] = [];
+    const stdoutSpy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk) => {
+        stdout.push(String(chunk));
+        return true;
+      });
 
     resolveCommandKindMock.mockReturnValue({ kind: "store-skip" });
-    setupCommandsMock.mockReturnValue([{ path: ["setup", "skills"] }]);
-    createProgramMock.mockReturnValue({ parseAsync });
+    createProgramMock.mockClear();
 
-    const { default: runCli } = await import("./runCli.js");
-    await runCli(["node", "pragma", "--version"]);
+    try {
+      const { default: runCli } = await import("./runCli.js");
+      await runCli(["node", "pragma", "--version"]);
+    } finally {
+      stdoutSpy.mockRestore();
+    }
 
-    expect(process.exitCode).toBe(0);
+    expect(stdout.join("")).toContain(".");
+    expect(createProgramMock).not.toHaveBeenCalled();
+    expect(process.exitCode).toBeUndefined();
   });
 
   it("renders pragma errors from the program using mapped exit codes", async () => {

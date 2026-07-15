@@ -5,6 +5,7 @@ import {
 } from "@canonical/cli-core";
 import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
+import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { tierFormatters } from "../formatters/index.js";
@@ -53,6 +54,16 @@ export default function buildTierCommand(
       const reset = params.reset === true;
       const tierPath = params.path as string | undefined;
 
+      // Contradictory input: a tier path AND --reset. Reject rather than
+      // silently letting one win.
+      if (reset && tierPath !== undefined) {
+        throw PragmaError.invalidInput("tier", tierPath, {
+          recovery: {
+            message: "Pass either a tier path or --reset, not both.",
+          },
+        });
+      }
+
       if (reset) {
         const result = await runTask(setTierTask(ctx.cwd, undefined, scope));
         const format = selectFormatter(ctx, tierFormatters.reset);
@@ -62,7 +73,9 @@ export default function buildTierCommand(
         );
       }
 
-      if (!tierPath) {
+      // No path at all → query. An explicit empty string is invalid input and
+      // is rejected by validateTier below.
+      if (tierPath === undefined) {
         const config = readConfig(ctx.cwd);
         const format = selectFormatter(ctx, tierFormatters.query);
         return createOutputResult(config.tier, {

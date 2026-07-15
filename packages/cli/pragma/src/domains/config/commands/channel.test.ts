@@ -60,6 +60,22 @@ describe("config channel command", () => {
     }
   });
 
+  it("rejects a value combined with --reset", async () => {
+    const ctx = makeCtx(dir);
+    const cmd = buildChannelCommand(ctx);
+    await expect(
+      cmd.execute({ value: "experimental", reset: true }, ctx),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("rejects an explicit empty-string value", async () => {
+    const ctx = makeCtx(dir);
+    const cmd = buildChannelCommand(ctx);
+    await expect(cmd.execute({ value: "" }, ctx)).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
+  });
+
   it("resets channel via --reset flag", async () => {
     writeFileSync(
       join(dir, "pragma.config.json"),

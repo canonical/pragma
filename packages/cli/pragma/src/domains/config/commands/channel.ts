@@ -5,6 +5,7 @@ import {
 } from "@canonical/cli-core";
 import { runTask } from "@canonical/task/node";
 import { readConfig } from "#config";
+import { PragmaError } from "#error";
 import type { PragmaContext } from "../../shared/context.js";
 import { selectFormatter } from "../../shared/formatters.js";
 import { channelFormatters } from "../formatters/index.js";
@@ -56,6 +57,16 @@ export default function buildChannelCommand(
       const reset = params.reset === true;
       const value = params.value as string | undefined;
 
+      // Contradictory input: a value AND --reset. Reject rather than silently
+      // letting one win.
+      if (reset && value !== undefined) {
+        throw PragmaError.invalidInput("channel", value, {
+          recovery: {
+            message: "Pass either a channel value or --reset, not both.",
+          },
+        });
+      }
+
       if (reset) {
         const result = await runTask(setChannelTask(ctx.cwd, undefined, scope));
         const format = selectFormatter(ctx, channelFormatters.reset);
@@ -65,7 +76,9 @@ export default function buildChannelCommand(
         );
       }
 
-      if (!value) {
+      // No value at all → query the current channel. An explicit empty string
+      // is invalid input, not a query.
+      if (value === undefined) {
         const config = readConfig(ctx.cwd);
         const format = selectFormatter(ctx, channelFormatters.query);
         return createOutputResult(config.channel, {

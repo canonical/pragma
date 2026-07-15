@@ -8,7 +8,9 @@ import {
 
 function createUpgradeData(overrides: Partial<UpgradeData> = {}): UpgradeData {
   return {
-    pm: "bun",
+    // `pm` is the install label, which already carries the scope (as the
+    // command populates it from source.label).
+    pm: "bun (global)",
     current: "0.18.0",
     latest: "0.19.0",
     command: "bun update -g @canonical/pragma-cli",
@@ -21,9 +23,10 @@ function createUpgradeData(overrides: Partial<UpgradeData> = {}): UpgradeData {
 }
 
 describe("renderUpgradePlain", () => {
-  it("shows PM info", () => {
+  it("shows PM info without doubling the scope suffix", () => {
     const output = renderUpgradePlain(createUpgradeData());
-    expect(output).toContain("bun (global)");
+    expect(output).toContain("Installed via: bun (global)");
+    expect(output).not.toContain("(global) (global)");
   });
 
   it("shows version transition", () => {
@@ -107,7 +110,7 @@ describe("renderUpgradeJson", () => {
   it("produces valid JSON", () => {
     const data = createUpgradeData();
     const parsed = JSON.parse(renderUpgradeJson(data));
-    expect(parsed.pm).toBe("bun");
+    expect(parsed.pm).toBe("bun (global)");
     expect(parsed.current).toBe("0.18.0");
     expect(parsed.latest).toBe("0.19.0");
   });

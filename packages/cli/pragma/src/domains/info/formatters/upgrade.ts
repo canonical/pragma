@@ -12,7 +12,9 @@ import type { UpgradeData } from "../types.js";
 function renderUpgradePlain(data: UpgradeData): string {
   const lines: string[] = [];
 
-  lines.push(`Installed via: ${data.pm} (global)`);
+  // `data.pm` is the install label (e.g. "bun (global)"), which already carries
+  // the scope — do not append another "(global)".
+  lines.push(`Installed via: ${data.pm}`);
 
   if (data.offline) {
     lines.push("Could not reach registry");
