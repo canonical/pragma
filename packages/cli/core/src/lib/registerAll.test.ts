@@ -660,6 +660,53 @@ describe("registerAll", () => {
       expect(output).toContain("list");
     });
 
+    it("shows one help screen for a noun that is also a direct command", async () => {
+      // A noun with both a leaf command and verbs (e.g. `pragma setup`) must
+      // not stack two "Usage:" blocks; the verbs appear as a Subcommands list.
+      const commands: CommandDefinition[] = [
+        {
+          path: ["setup"],
+          description: "Configure the environment",
+          parameters: [
+            { name: "yes", description: "Skip prompts", type: "boolean" },
+          ],
+          execute: async () => createExitResult(0),
+        },
+        {
+          path: ["setup", "mcp"],
+          description: "Configure MCP",
+          parameters: [],
+          execute: async () => createExitResult(0),
+        },
+      ];
+
+      const program = new Command();
+      program.name("pragma");
+      program.exitOverride();
+      registerAll(program, commands, testCtx);
+
+      const stdoutChunks: string[] = [];
+      const originalWrite = process.stdout.write;
+      process.stdout.write = ((chunk: string) => {
+        stdoutChunks.push(chunk);
+        return true;
+      }) as typeof process.stdout.write;
+
+      try {
+        await program.parseAsync(["setup", "--help"], { from: "user" });
+      } catch {
+        // Commander throws on --help with exitOverride
+      } finally {
+        process.stdout.write = originalWrite;
+      }
+
+      const output = stdoutChunks.join("");
+      // Exactly one Usage line (the leaf), plus a Subcommands section.
+      expect(output.match(/Usage:/g)?.length).toBe(1);
+      expect(output).toContain("Subcommands:");
+      expect(output).toContain("mcp");
+    });
+
     it("renders verb-level help when --help is passed for a verb", async () => {
       const commands: CommandDefinition[] = [
         {

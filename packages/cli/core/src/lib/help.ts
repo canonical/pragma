@@ -66,6 +66,45 @@ export function formatNounHelp(
 }
 
 /**
+ * Format a compact verbs section for a noun that is ALSO a direct command.
+ *
+ * Unlike {@link formatNounHelp}, this omits the `Usage:` line so it can be
+ * appended below the direct command's own help without stacking two usage
+ * screens (e.g. `pragma setup --help`).
+ */
+export function formatVerbList(
+  programName: string,
+  noun: string,
+  commands: readonly CommandDefinition[],
+): string {
+  const verbCommands = commands.filter(
+    (c) => c.path.length > 1 && c.path[0] === noun,
+  );
+
+  if (verbCommands.length === 0) return "";
+
+  const lines: string[] = ["", "Subcommands:"];
+  const maxVerbLen = Math.max(
+    ...verbCommands.map((c) => (c.path[1] as string).length),
+  );
+
+  for (const cmd of verbCommands) {
+    const verb = cmd.path[1];
+    /* v8 ignore next — structurally guaranteed: verbCommands filtered to path.length > 1 */
+    if (!verb) throw new Error("Expected verb in command path");
+    const padding = " ".repeat(maxVerbLen - verb.length + 4);
+    lines.push(`  ${verb}${padding}${cmd.description}`);
+  }
+
+  lines.push("");
+  lines.push(
+    `Run \`${programName} ${noun} <verb> --help\` for verb-specific help.`,
+  );
+
+  return lines.join("\n");
+}
+
+/**
  * Format help text for a verb-level command (shows full interface).
  *
  * @example

@@ -74,6 +74,7 @@ export {
   formatLlmHelp,
   formatNounHelp,
   formatVerbHelp,
+  formatVerbList,
 } from "./lib/help.js";
 
 // =============================================================================
