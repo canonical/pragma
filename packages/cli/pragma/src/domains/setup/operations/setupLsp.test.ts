@@ -18,8 +18,9 @@ describe("setupLsp", () => {
   it("logs info messages before and after exec", () => {
     const result = dryRun(setupLsp("/project"));
     const logs = result.effects.filter((e) => e._tag === "Log");
-    expect(logs.some((l) => l.message.includes("Installing"))).toBe(true);
-    expect(logs.some((l) => l.message.includes("✓"))).toBe(true);
+    expect(logs.some((l) => l.message.includes("Ensuring"))).toBe(true);
+    // Reports an idempotent "up to date" outcome, not a fresh install claim.
+    expect(logs.some((l) => l.message.includes("up to date"))).toBe(true);
   });
 
   it("collects effects without execution", () => {
