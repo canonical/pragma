@@ -71,6 +71,7 @@ export const ICON_NAMES = [
   "highlight-on",
   "home",
   "image",
+  "image-registries",
   "import",
   "in-progress",
   "information",
