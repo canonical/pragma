@@ -33,4 +33,18 @@ describe("buildApplicationCommand", () => {
     const result = await cmd.execute({}, ctx);
     expect(result.tag).toBe("output");
   });
+
+  it("rejects an explicit --no-ssr with INVALID_INPUT (not INTERNAL_ERROR)", async () => {
+    const cmd = buildApplicationCommand();
+    await expect(
+      cmd.execute({ appPath: "my-app", ssr: false }, ctx),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
+
+  it("rejects an explicit --no-router with INVALID_INPUT", async () => {
+    const cmd = buildApplicationCommand();
+    await expect(
+      cmd.execute({ appPath: "my-app", router: false }, ctx),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
 });

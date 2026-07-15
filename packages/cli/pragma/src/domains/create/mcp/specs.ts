@@ -9,6 +9,7 @@ import type { AnyGenerator } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { PragmaError } from "#error";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
+import { assertApplicationFlags } from "../applicationFlags.js";
 import { COMPONENT_GENERATORS } from "../generators.js";
 
 const specs: readonly ToolSpec[] = [
@@ -215,6 +216,10 @@ const specs: readonly ToolSpec[] = [
       if (!gen) {
         throw PragmaError.internalError("Application generator not found");
       }
+
+      // Map the generator's hard ssr/router requirement to typed INVALID_INPUT
+      // so it serializes consistently instead of bubbling an untyped Error.
+      assertApplicationFlags(params);
 
       const genParams: Record<string, unknown> = {
         appPath: params.appPath,

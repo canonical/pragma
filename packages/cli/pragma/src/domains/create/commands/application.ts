@@ -4,6 +4,7 @@ import {
 } from "@canonical/cli-core";
 import { generators as applicationGenerators } from "@canonical/summon-application";
 import type { AnyGenerator } from "@canonical/summon-core";
+import { assertApplicationFlags } from "../applicationFlags.js";
 import renderGeneratorUi from "../renderGeneratorUi.js";
 
 /**
@@ -34,6 +35,11 @@ export default function buildApplicationCommand(): CommandDefinition {
   const command = generatorToCommand(["create", "application"], gen);
   return {
     ...command,
-    execute: (params, ctx) => renderGeneratorUi(gen, params, ctx),
+    execute: async (params, ctx) => {
+      // Map the generator's hard ssr/router requirement to typed INVALID_INPUT
+      // before it throws a plain Error (which would surface as INTERNAL_ERROR).
+      assertApplicationFlags(params);
+      return renderGeneratorUi(gen, params, ctx);
+    },
   };
 }
