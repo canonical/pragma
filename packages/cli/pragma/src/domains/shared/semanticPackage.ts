@@ -53,6 +53,13 @@ export interface SemanticPackage {
   readonly source: "local" | "git" | "bundled";
   /** TTL graph content to load into the ke store. */
   readonly graphs: GraphContent[];
+  /**
+   * Namespace prefixes this package declares, merged over the core prefix
+   * map at boot (see {@link resolvePrefixes}). Read from the package's
+   * `package.json` `pragma.prefixes` field. Absent when the package
+   * declares none.
+   */
+  readonly prefixes?: Readonly<Record<string, string>>;
   /** Skills available in this package. */
   readonly skills: SkillEntry[];
   /**

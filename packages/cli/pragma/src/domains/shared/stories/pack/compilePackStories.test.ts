@@ -7,11 +7,11 @@ import {
   RECIPE_STORY,
   RECIPE_TTL,
 } from "#testing";
-import { PREFIX_MAP } from "../../prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../prefixes.js";
 import type { PragmaRuntime } from "../../types/index.js";
 import compilePackStories from "./compilePackStories.js";
 
-const PREFIXES = { ...PREFIX_MAP, ...RECIPE_PREFIXES };
+const PREFIXES = { ...DEFAULT_PREFIX_MAP, ...RECIPE_PREFIXES };
 
 let store: Store;
 let cleanup: () => void;

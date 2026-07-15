@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import showOntology from "./showOntology.js";
 
 let store: Store;
@@ -20,7 +20,7 @@ describe("showOntology", () => {
   it("returns classes and properties for a prefix", async () => {
     const result = await showOntology(store, "ds");
     expect(result.prefix).toBe("ds");
-    expect(result.namespace).toBe(PREFIX_MAP.ds);
+    expect(result.namespace).toBe(DEFAULT_PREFIX_MAP.ds);
     expect(result.classes.length).toBeGreaterThan(0);
     expect(result.properties.length).toBeGreaterThan(0);
   });
@@ -41,7 +41,7 @@ describe("showOntology", () => {
   });
 
   it("resolves full namespace URI", async () => {
-    const result = await showOntology(store, PREFIX_MAP.ds);
+    const result = await showOntology(store, DEFAULT_PREFIX_MAP.ds);
     expect(result.prefix).toBe("ds");
     expect(result.classes.length).toBeGreaterThan(0);
   });

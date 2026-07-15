@@ -1,11 +1,11 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import type { BlockSummary } from "../../shared/types/index.js";
 import formatters from "./list.js";
 
 const BUTTON: BlockSummary = {
-  uri: `${PREFIX_MAP.ds}button` as URI,
+  uri: `${DEFAULT_PREFIX_MAP.ds}button` as URI,
   name: "Button",
   tier: "global",
   modifiers: ["importance", "density"],
@@ -18,7 +18,7 @@ const BUTTON: BlockSummary = {
 };
 
 const CARD: BlockSummary = {
-  uri: `${PREFIX_MAP.ds}card` as URI,
+  uri: `${DEFAULT_PREFIX_MAP.ds}card` as URI,
   name: "Card",
   tier: "global",
   modifiers: [],

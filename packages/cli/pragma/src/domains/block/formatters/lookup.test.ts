@@ -1,12 +1,12 @@
 import type { URI } from "@canonical/ke";
 import { describe, expect, it } from "vitest";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import type { BlockDetailed } from "../../shared/types/index.js";
 import type { AspectFlags } from "../types.js";
 import formatters from "./lookup.js";
 
 const BUTTON_DETAILED: BlockDetailed = {
-  uri: `${PREFIX_MAP.ds}global.component.button` as URI,
+  uri: `${DEFAULT_PREFIX_MAP.ds}global.component.button` as URI,
   name: "Button",
   type: "component",
   tier: "global",
@@ -40,7 +40,7 @@ const BUTTON_DETAILED: BlockDetailed = {
   ],
   modifierFamilies: [
     {
-      uri: `${PREFIX_MAP.ds}modifier_family.importance` as URI,
+      uri: `${DEFAULT_PREFIX_MAP.ds}modifier_family.importance` as URI,
       name: "importance",
       values: ["default", "primary", "secondary"],
     },
@@ -56,7 +56,7 @@ const BUTTON_DETAILED: BlockDetailed = {
   ],
   subcomponents: [
     {
-      uri: `${PREFIX_MAP.ds}global.subcomponent.button.icon` as URI,
+      uri: `${DEFAULT_PREFIX_MAP.ds}global.subcomponent.button.icon` as URI,
       name: "Button Icon",
     },
   ],
@@ -65,7 +65,7 @@ const BUTTON_DETAILED: BlockDetailed = {
   ],
   tokens: [
     {
-      uri: `${PREFIX_MAP.ds}token.color.primary` as URI,
+      uri: `${DEFAULT_PREFIX_MAP.ds}token.color.primary` as URI,
       name: "color.primary",
     },
   ],

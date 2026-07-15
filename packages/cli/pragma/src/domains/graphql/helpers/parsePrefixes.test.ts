@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import parsePrefixes from "./parsePrefixes.js";
 
 describe("parsePrefixes", () => {
   it("returns the default prefix map for no entries", () => {
     const prefixes = parsePrefixes([]);
-    expect(prefixes).toEqual(PREFIX_MAP);
+    expect(prefixes).toEqual(DEFAULT_PREFIX_MAP);
   });
 
   it("merges entries on top of the defaults", () => {
     const prefixes = parsePrefixes(["ex=http://example.org/"]);
     expect(prefixes.ex).toBe("http://example.org/");
-    expect(prefixes.ds).toBe(PREFIX_MAP.ds);
+    expect(prefixes.ds).toBe(DEFAULT_PREFIX_MAP.ds);
   });
 
   it("lets entries override default prefixes", () => {

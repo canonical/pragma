@@ -28,30 +28,14 @@ export default function createLocalLoader(): PackageLoader {
       // file:// refs → direct path check first
       if (ref.kind === "file") {
         if (!existsSync(ref.path)) return undefined;
-        const { version, graphs, skills, stories } = readPackageDir(ref.path);
-        return {
-          name: ref.pkg,
-          version,
-          source: "local",
-          graphs,
-          skills,
-          stories,
-        };
+        return { name: ref.pkg, source: "local", ...readPackageDir(ref.path) };
       }
 
       // All ref kinds → try node_modules walk
       const dir = findPackageDir(ref.pkg);
       if (!dir) return undefined;
 
-      const { version, graphs, skills, stories } = readPackageDir(dir);
-      return {
-        name: ref.pkg,
-        version,
-        source: "local",
-        graphs,
-        skills,
-        stories,
-      };
+      return { name: ref.pkg, source: "local", ...readPackageDir(dir) };
     },
   };
 }

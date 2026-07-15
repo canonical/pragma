@@ -1,6 +1,6 @@
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../../context.js";
-import { PREFIX_MAP } from "../../prefixes.js";
+import { resolvePrefixes } from "../../prefixes.js";
 import compileLookupCommand from "../compileLookupCommand.js";
 import compileReadCommand from "../compileReadCommand.js";
 import collectPackStories from "./collectPackStories.js";
@@ -23,8 +23,8 @@ export default function compilePackCommands(
   ctx: PragmaContext,
   reserved: ReservedVerbs,
 ): CommandDefinition[] {
-  const prefixes = { ...PREFIX_MAP, ...ctx.config.prefixes };
-  const entries = collectPackStories(ctx.config, ctx.packages, reserved);
+  const prefixes = resolvePrefixes(ctx.packages ?? [], ctx.config.prefixes);
+  const entries = collectPackStories(ctx.config, ctx.packages ?? [], reserved);
 
   return entries.flatMap((entry) => {
     const compiled = compilePackStories(

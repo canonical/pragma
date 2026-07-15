@@ -21,7 +21,7 @@ import {
 } from "../../../standard/stories.js";
 import { bootStore } from "../../bootStore.js";
 import compactUri from "../../compactUri.js";
-import { PREFIX_MAP } from "../../prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../prefixes.js";
 import type { PragmaRuntime, StandardDetailed } from "../../types/index.js";
 import type { LookupStoryView } from "../types.js";
 import compilePackStories, {
@@ -63,7 +63,7 @@ beforeAll(async () => {
   rt = { store } as PragmaRuntime;
 
   const compiled = compilePackStories(STANDARD_PACK_STORY, PACK_SOURCE, {
-    ...PREFIX_MAP,
+    ...DEFAULT_PREFIX_MAP,
   });
   packList = compiled.list;
   const lookup = compiled.lookup;
@@ -273,11 +273,11 @@ describe("standard lookup parity — cs:extends divergence", () => {
     // raw IRI. Compacting the pack value restores byte-level agreement.
     expect({
       ...packParsed,
-      extends: compactUri(packExtends, PREFIX_MAP),
+      extends: compactUri(packExtends, DEFAULT_PREFIX_MAP),
     }).toEqual(builtinParsed);
     expect(
       JSON.stringify(
-        { ...packParsed, extends: compactUri(packExtends, PREFIX_MAP) },
+        { ...packParsed, extends: compactUri(packExtends, DEFAULT_PREFIX_MAP) },
         null,
         2,
       ),

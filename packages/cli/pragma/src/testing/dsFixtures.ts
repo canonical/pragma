@@ -5,16 +5,19 @@
  * that D3 operations query against.
  *
  * All @prefix declarations derived from {@link TTL_PREFIXES} so that
- * a namespace rename in PREFIX_MAP propagates here automatically.
+ * a namespace rename in DEFAULT_PREFIX_MAP propagates here automatically.
  */
 
-import { PREFIX_MAP, TTL_PREFIXES } from "../domains/shared/prefixes.js";
+import {
+  DEFAULT_PREFIX_MAP,
+  TTL_PREFIXES,
+} from "../domains/shared/prefixes.js";
 
 /** Turtle @prefix block for ds: only (most data fixtures). */
-const dsPrefix = `@prefix ds: <${PREFIX_MAP.ds}> .`;
+const dsPrefix = `@prefix ds: <${DEFAULT_PREFIX_MAP.ds}> .`;
 
 /** Turtle @prefix block for cs: only (standards fixtures). */
-const csPrefix = `@prefix cs: <${PREFIX_MAP.cs}> .`;
+const csPrefix = `@prefix cs: <${DEFAULT_PREFIX_MAP.cs}> .`;
 
 // =============================================================================
 // Ontology (TBox) — class and property definitions

@@ -7,7 +7,9 @@
  */
 
 import pkg from "../package.json" with { type: "json" };
-import { PREFIX_MAP } from "./domains/shared/prefixes.js";
+// DEFAULT_PREFIX_MAP carries the transitional DS prefixes (ds/cs) this map
+// still keys on; remove in P4 when DS prefixes ship from their packages.
+import { DEFAULT_PREFIX_MAP as PREFIX_MAP } from "./domains/shared/prefixes.js";
 
 /** CLI program name used in help text and error messages. */
 const PROGRAM_NAME = "pragma";

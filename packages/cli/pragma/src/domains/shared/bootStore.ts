@@ -23,7 +23,7 @@ import {
   createLocalLoader,
 } from "./loaders/index.js";
 import { DEFAULT_PACKAGES } from "./packages.js";
-import { PREFIX_MAP } from "./prefixes.js";
+import { resolvePrefixes } from "./prefixes.js";
 import type { GraphContent, SemanticPackage } from "./semanticPackage.js";
 import { resolveSemanticPackages } from "./semanticPackage.js";
 
@@ -61,13 +61,14 @@ export interface BootResult {
 export async function bootStore(
   options: BootStoreOptions = {},
 ): Promise<BootResult> {
-  const prefixes = { ...PREFIX_MAP, ...options.prefixes };
   try {
-    // Testing/programmatic override — use explicit sources
+    // Testing/programmatic override — use explicit sources. No packages are
+    // resolved, so the prefix map is the core base plus the transitional DS
+    // fallback and any caller override.
     if (options.sources) {
       const store = await createStore({
         sources: options.sources,
-        prefixes,
+        prefixes: resolvePrefixes([], options.prefixes),
         cache: options.cache,
         cwd: options.cwd,
       });
@@ -103,9 +104,12 @@ export async function bootStore(
       plugins.push(createTracePlugin({ traceDir: traceDir() }));
     }
 
+    // Merge every resolved package's declared prefixes (and the transitional
+    // DS fallback) over the generic core, then config overrides — so the
+    // store and every query see the packages' own namespaces.
     const store = await createStore({
       sources: [],
-      prefixes,
+      prefixes: resolvePrefixes(packages, options.prefixes),
       cache: options.cache,
       cwd: options.cwd,
       plugins,
