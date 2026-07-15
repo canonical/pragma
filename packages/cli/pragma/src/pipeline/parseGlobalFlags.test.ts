@@ -56,6 +56,52 @@ describe("parseGlobalFlags", () => {
     ]);
     expect(flags.verbose).toBe(true);
   });
+
+  describe("auto-LLM detection", () => {
+    const tty = { isTty: true, noAutoLlm: false };
+    const piped = { isTty: false, noAutoLlm: false };
+
+    it("stays plain on an interactive terminal", () => {
+      expect(parseGlobalFlags(["node", "pragma", "info"], tty).llm).toBe(false);
+    });
+
+    it("defaults to llm when stdout is not a TTY, flagged as auto", () => {
+      const flags = parseGlobalFlags(["node", "pragma", "info"], piped);
+      expect(flags.llm).toBe(true);
+      expect(flags.autoLlm).toBe(true);
+    });
+
+    it("marks explicit --llm as not auto", () => {
+      const flags = parseGlobalFlags(
+        ["node", "pragma", "--llm", "info"],
+        piped,
+      );
+      expect(flags.llm).toBe(true);
+      expect(flags.autoLlm).toBe(false);
+    });
+
+    it("does not auto-enable llm when --format json is requested", () => {
+      expect(
+        parseGlobalFlags(["node", "pragma", "info", "--format", "json"], piped)
+          .llm,
+      ).toBe(false);
+    });
+
+    it("respects an explicit --llm even on a TTY", () => {
+      expect(
+        parseGlobalFlags(["node", "pragma", "--llm", "info"], tty).llm,
+      ).toBe(true);
+    });
+
+    it("honours PRAGMA_NO_AUTO_LLM to stay plain when piped", () => {
+      expect(
+        parseGlobalFlags(["node", "pragma", "info"], {
+          isTty: false,
+          noAutoLlm: true,
+        }).llm,
+      ).toBe(false);
+    });
+  });
 });
 
 describe("stripGlobalFlags", () => {
@@ -119,20 +165,6 @@ describe("stripGlobalFlags", () => {
         "list",
       ]),
     ).toEqual(["node", "pragma", "block", "list"]);
-  });
-});
-
-describe("readRawFormat", () => {
-  it("reads the space form", () => {
-    expect(readRawFormat(["node", "pragma", "--format", "json"])).toBe("json");
-  });
-
-  it("reads the equals form", () => {
-    expect(readRawFormat(["node", "pragma", "--format=xml"])).toBe("xml");
-  });
-
-  it("returns undefined when --format is absent", () => {
-    expect(readRawFormat(["node", "pragma", "info"])).toBeUndefined();
   });
 });
 

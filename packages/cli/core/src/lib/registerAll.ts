@@ -19,6 +19,8 @@ import type {
 /**
  * Convert a ParameterDefinition to Commander flag syntax.
  *
+ * - boolean defaulting to true → `--no-flag-name` (so the flag can turn it off;
+ *   the positive `--flag-name` would be a no-op since it is already the default)
  * - boolean → `--flag-name`
  * - string/select → `--flag-name <value>`
  * - multiselect → `--flag-name <values...>`
@@ -28,7 +30,9 @@ export function convertParameterToFlag(param: ParameterDefinition): string {
   const prefix = param.short ? `-${param.short}, ` : "";
   switch (param.type) {
     case "boolean":
-      return `${prefix}--${kebab}`;
+      return param.default === true
+        ? `${prefix}--no-${kebab}`
+        : `${prefix}--${kebab}`;
     case "multiselect":
       return `${prefix}--${kebab} <values...>`;
     default:

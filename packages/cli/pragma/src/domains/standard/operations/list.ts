@@ -41,24 +41,45 @@ export default async function listStandards(
       SELECT ?standard ?name ?categoryName ?description
       WHERE {
         ?standard a ${P.cs}CodeStandard ;
-                  ${P.cs}name ?name ;
                   ${P.cs}description ?description .
+        OPTIONAL { ?standard ${P.cs}name ?name . }
         OPTIONAL {
           ?standard ${P.cs}hasCategory ?cat .
           ?cat ${P.cs}slug ?categoryName .
         }
         ${filterClauses.join("\n        ")}
       }
-      ORDER BY ?name
+      ORDER BY ?standard
     `),
   );
 
   if (result.type !== "select") return [];
 
-  return result.bindings.map((b) => ({
-    uri: (b.standard ?? "") as URI,
-    name: b.name ?? "",
-    category: b.categoryName ?? "",
-    description: b.description ?? "",
-  }));
+  return result.bindings.map((b) => {
+    const uri = (b.standard ?? "") as URI;
+    return {
+      uri,
+      // `cs:name` is an optional display title; the IRI is the canonical
+      // identifier. Fall back to the IRI's local name when no title is set,
+      // otherwise standards without a title would be dropped entirely.
+      name: b.name ?? deriveStandardName(uri),
+      category: b.categoryName ?? "",
+      description: b.description ?? "",
+    };
+  });
+}
+
+/**
+ * Derive a display name from a standard's IRI local name.
+ *
+ * Takes the segment after the last `#`, `/`, or `:` and renders the
+ * dot-separated hierarchy as slashes (e.g.
+ * `…#react.component.props` → `react/component/props`).
+ *
+ * @param uri - The standard's IRI.
+ * @returns A human-readable slash-separated name.
+ */
+function deriveStandardName(uri: string): string {
+  const local = uri.split(/[#/:]/).at(-1) ?? uri;
+  return local.replace(/\./g, "/");
 }

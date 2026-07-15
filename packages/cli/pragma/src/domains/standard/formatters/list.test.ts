@@ -65,6 +65,20 @@ describe("formatters.plain — summary", () => {
     );
     expect(text).not.toContain("[");
   });
+
+  it("collapses a multi-line description to a single line", () => {
+    const multiline = {
+      ...SUMMARY,
+      description: "First paragraph.\n\n- point one\n- point two",
+    };
+    const text = formatters.plain(summaryOutput([multiline]));
+    // The heading is one line; the description must be exactly one more.
+    const descLines = text.split("\n").filter((line) => line.startsWith("  "));
+    expect(descLines).toHaveLength(1);
+    expect(descLines.at(0)).toContain(
+      "First paragraph. - point one - point two",
+    );
+  });
 });
 
 describe("formatters.llm — summary", () => {

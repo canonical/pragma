@@ -48,19 +48,55 @@ export function readRawFormat(argv: readonly string[]): string | undefined {
 }
 
 /**
+ * Environment probe used to decide the auto-LLM default. Injectable so the
+ * detection can be unit-tested without touching the real process.
+ */
+export interface OutputEnvironment {
+  /** Whether stdout is attached to an interactive terminal. */
+  readonly isTty: boolean;
+  /** Whether the auto-LLM default is explicitly disabled. */
+  readonly noAutoLlm: boolean;
+}
+
+/** Read the real stdout/env output environment. @note Impure — reads process. */
+function readOutputEnvironment(): OutputEnvironment {
+  return {
+    isTty: process.stdout.isTTY === true,
+    noAutoLlm: Boolean(process.env.PRAGMA_NO_AUTO_LLM),
+  };
+}
+
+/**
  * Extract global flags (--llm, --format, --verbose) from raw argv.
  *
  * Performs simple scanning rather than full argument parsing so it can run
  * before Commander processes the command tree. Recognises both the space form
  * (`--format json`) and the equals form (`--format=json`).
  *
+ * Auto-LLM: when no `--llm`/`--format` is given and stdout is not an
+ * interactive terminal (piped or redirected — the shape an agent captures),
+ * `llm` defaults to true so agents get condensed Markdown without passing a
+ * flag. Interactive terminals stay in rich mode. `--llm`, `--format json`, and
+ * `PRAGMA_NO_AUTO_LLM` all override this.
+ *
  * @param argv - Raw process.argv array.
+ * @param env - Output environment probe (defaults to the real process).
  * @returns Parsed global flags.
+ * @note Impure by default — reads process.stdout/env unless `env` is injected.
  */
-export default function parseGlobalFlags(argv: readonly string[]): GlobalFlags {
+export default function parseGlobalFlags(
+  argv: readonly string[],
+  env: OutputEnvironment = readOutputEnvironment(),
+): GlobalFlags {
+  const explicitLlm = argv.includes("--llm");
+  const format = readFlagValue(argv, "--format") === "json" ? "json" : "text";
+  const formatRequested = readFlagValue(argv, "--format") !== undefined;
+  const autoLlm =
+    !explicitLlm && !formatRequested && !env.isTty && !env.noAutoLlm;
   return {
-    llm: argv.includes("--llm"),
-    format: readFlagValue(argv, "--format") === "json" ? "json" : "text",
+    llm: explicitLlm || autoLlm,
+    autoLlm,
+    format,
     verbose: argv.includes("--verbose"),
   };
 }

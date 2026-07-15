@@ -118,6 +118,46 @@ const hasAllRequiredAnswers = (
 };
 
 /**
+ * Validate the resolved answers against each prompt's own constraints:
+ * `select` answers must be one of the declared choices, and any `validate`
+ * function must accept the value. Returns the first failure message, or null
+ * when every applicable answer is valid.
+ *
+ * Reuses the exact `validate` the interactive prompt already runs, so a
+ * flag-driven (non-interactive) run rejects the same bad input a wizard would —
+ * e.g. an empty component path or an unknown package type.
+ */
+const findInvalidAnswer = (
+  prompts: readonly PromptDefinition[],
+  answers: Record<string, unknown>,
+): string | null => {
+  for (const prompt of prompts) {
+    if (prompt.when && prompt.when(answers) !== true) continue;
+    if (!(prompt.name in answers)) continue;
+    const value = answers[prompt.name];
+
+    if (
+      prompt.type === "select" &&
+      prompt.choices &&
+      prompt.choices.length > 0 &&
+      !prompt.choices.some((choice) => choice.value === value)
+    ) {
+      const valid = prompt.choices.map((choice) => choice.value).join(", ");
+      return `Invalid --${convertCamelToKebab(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
+    }
+
+    if (prompt.validate) {
+      const verdict = prompt.validate(value);
+      if (verdict !== true) {
+        const detail = typeof verdict === "string" ? verdict : "invalid value";
+        return `Invalid --${convertCamelToKebab(prompt.name)}: ${detail}`;
+      }
+    }
+  }
+  return null;
+};
+
+/**
  * Render visible task effects into line-based CLI output.
  */
 const renderEffectsOutput = (
@@ -297,8 +337,11 @@ export default async function executeGenerator(
   params: Record<string, unknown>,
   ctx: CommandContext,
 ): Promise<CommandResult> {
-  // Expand --llm: set dryRun, showFiles, yes, no stamp
-  const isLlm = params.llm === true || ctx.globalFlags.llm;
+  // Expand --llm: set dryRun, showFiles, yes, no stamp. Auto-inferred LLM mode
+  // (non-interactive stdout, no explicit --llm) must NOT flip a generator into
+  // preview — a script running `create` off-TTY still expects files written.
+  const isLlm =
+    params.llm === true || (ctx.globalFlags.llm && !ctx.globalFlags.autoLlm);
   if (isLlm) {
     params.dryRun = true;
     params.showFiles = true;
@@ -330,6 +373,16 @@ export default async function executeGenerator(
     params.yes !== true &&
     process.stdin.isTTY === true &&
     process.stdout.isTTY === true;
+
+  // Reject invalid flag-supplied answers before any dispatch (an unknown select
+  // value, or a value the prompt's own validator rejects such as an empty path).
+  // Only the answers the user actually provided are checked; missing ones are
+  // still collected interactively where possible.
+  const invalidAnswer = findInvalidAnswer(gen.prompts, cliAnswers);
+  if (invalidAnswer !== null) {
+    process.stderr.write(`${invalidAnswer}\n`);
+    return createExitResult(3);
+  }
 
   // LLM mode: dry-run + markdown
   if (isLlm && hasAllAnswers) {

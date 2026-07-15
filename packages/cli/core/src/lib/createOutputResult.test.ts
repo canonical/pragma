@@ -29,4 +29,15 @@ describe("createOutputResult", () => {
         break;
     }
   });
+
+  it("omits exitCode when no third argument is given", () => {
+    const result = createOutputResult("x", { plain: (s) => s });
+    expect(result.tag).toBe("output");
+    expect(result.exitCode).toBeUndefined();
+  });
+
+  it("carries a non-zero exitCode when provided", () => {
+    const result = createOutputResult("x", { plain: (s) => s }, 3);
+    expect(result).toMatchObject({ tag: "output", exitCode: 3 });
+  });
 });

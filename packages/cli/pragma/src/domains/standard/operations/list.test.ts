@@ -73,3 +73,31 @@ describe("listStandards", () => {
     expect(result[0]?.name).toBe("react/component/props");
   });
 });
+
+describe("listStandards — name derivation", () => {
+  const NAMELESS_TTL = `
+@prefix cs: <http://pragma.canonical.com/codestandards#> .
+cs:react.component.aria a cs:CodeStandard ;
+  cs:description "Use aria attributes." .
+cs:code.function.purity a cs:CodeStandard ;
+  cs:name "code/function/purity" ;
+  cs:description "Keep functions pure." .
+`;
+
+  it("derives the name from the IRI when cs:name is absent", async () => {
+    const { store: local, cleanup: dispose } = await createTestStore({
+      ttl: NAMELESS_TTL,
+    });
+    try {
+      const result = await listStandards(local);
+      const names = result.map((s) => s.name);
+      // The nameless standard is kept and named from its IRI local part.
+      expect(names).toContain("react/component/aria");
+      // The titled standard keeps its explicit cs:name.
+      expect(names).toContain("code/function/purity");
+      expect(result).toHaveLength(2);
+    } finally {
+      dispose();
+    }
+  });
+});

@@ -146,6 +146,34 @@ describe("help", () => {
       expect(output).toContain("pragma component get Button --detailed --llm");
     });
 
+    it("shows a default-true boolean flag in its --no- form", () => {
+      const cmd: CommandDefinition = {
+        path: ["create", "component"],
+        description: "Scaffold a component",
+        parameters: [
+          {
+            name: "withStyles",
+            description: "Include styles",
+            type: "boolean",
+            default: true,
+          },
+          {
+            name: "dryRun",
+            description: "Preview only",
+            type: "boolean",
+            default: false,
+          },
+        ],
+        execute: async () => ({ tag: "exit", code: 0 }),
+      };
+      const output = formatVerbHelp("pragma", cmd);
+
+      expect(output).toContain("--no-with-styles");
+      expect(output).not.toContain("  --with-styles");
+      // A default-false boolean keeps its positive form.
+      expect(output).toContain("--dry-run");
+    });
+
     it("groups parameters when parameterGroups defined", () => {
       const cmd = findCommand("component", "get");
       const output = formatVerbHelp("pragma", cmd);

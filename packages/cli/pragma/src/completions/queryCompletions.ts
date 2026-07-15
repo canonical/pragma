@@ -38,9 +38,18 @@ export default async function queryCompletions(partial: string): Promise<void> {
     }
   }
 
-  // No running server — spawn one.
-  const binPath = resolve(import.meta.dirname, "../bin.ts");
-  Bun.spawn(["bun", "run", binPath, "_completions-server"], {
+  // No running server — spawn one. Re-invoke THIS executable so completion
+  // works from the shipped binary as well as from source: when the entry file
+  // exists on disk (source run) spawn `bun run bin.ts`; otherwise (a compiled
+  // standalone binary, where bin.ts is embedded, not a file) spawn the binary
+  // itself. The old code always spawned `bun run <dir>/../bin.ts`, which does
+  // not exist inside a compiled binary, so its server never started and every
+  // completion silently returned nothing.
+  const entryPath = resolve(import.meta.dirname, "../bin.ts");
+  const spawnArgs = existsSync(entryPath)
+    ? [process.execPath, "run", entryPath, "_completions-server"]
+    : [process.execPath, "_completions-server"];
+  Bun.spawn(spawnArgs, {
     stdio: ["ignore", "ignore", "ignore"],
     cwd: process.cwd(),
   });

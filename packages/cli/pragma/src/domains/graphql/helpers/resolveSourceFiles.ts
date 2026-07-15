@@ -8,8 +8,26 @@
  * @note Impure — reads filesystem to expand globs and check existence.
  */
 
-import { existsSync, globSync } from "node:fs";
+import { globSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+
+/**
+ * Whether a path points at an existing regular file.
+ *
+ * Guards against a directory (or the empty-string path, which resolves to the
+ * cwd directory) slipping through as a "source" and later crashing readFileSync
+ * with EISDIR.
+ *
+ * @param absPath - Absolute path to check.
+ * @returns True when the path exists and is a regular file.
+ */
+function isRegularFile(absPath: string): boolean {
+  try {
+    return statSync(absPath).isFile();
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Expand file paths and glob patterns into absolute file paths.
@@ -31,11 +49,14 @@ export default function resolveSourceFiles(
       pattern.includes("[")
     ) {
       for (const file of globSync(pattern, { cwd })) {
-        files.push(resolve(cwd, file));
+        const absPath = resolve(cwd, file);
+        if (isRegularFile(absPath)) {
+          files.push(absPath);
+        }
       }
     } else {
       const absPath = resolve(cwd, pattern);
-      if (existsSync(absPath)) {
+      if (isRegularFile(absPath)) {
         files.push(absPath);
       }
     }

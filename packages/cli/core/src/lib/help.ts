@@ -300,12 +300,15 @@ function appendFlags(
 
 /**
  * Format a flag for display in help text.
+ *
+ * A boolean that defaults to true is shown in its negated `--no-` form,
+ * matching how it is actually registered (the positive flag would be a no-op).
  */
 function formatFlagDisplay(param: ParameterDefinition): string {
   const kebab = convertCamelToKebab(param.name);
   switch (param.type) {
     case "boolean":
-      return `--${kebab}`;
+      return param.default === true ? `--no-${kebab}` : `--${kebab}`;
     case "multiselect":
       return `--${kebab} <values...>`;
     default:

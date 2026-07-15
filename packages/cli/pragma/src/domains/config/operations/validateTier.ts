@@ -12,12 +12,20 @@ import { listTiers } from "../../tier/operations/index.js";
  * @throws PragmaError.invalidInput if the tier path does not exist in the ontology.
  * @note Queries ke store
  */
+/** Normalise a tier path for comparison: trim and lowercase. */
+function normalizeTierPath(path: string): string {
+  return path.trim().toLowerCase();
+}
+
 export default async function validateTier(
   store: Store,
   tierPath: string,
 ): Promise<TierEntry> {
   const tiers = await listTiers(store);
-  const match = tiers.find((t) => t.path === tierPath);
+  // Compare case/format-insensitively so the documented lowercase slash-path
+  // (`apps/lxd`) matches the ontology's title-case label (`Apps/LXD`).
+  const target = normalizeTierPath(tierPath);
+  const match = tiers.find((t) => normalizeTierPath(t.path) === target);
 
   if (!match) {
     const validPaths = tiers.map((t) => t.path);

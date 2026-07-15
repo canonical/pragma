@@ -53,4 +53,13 @@ describe("resolveSourceFiles", () => {
     const files = resolveSourceFiles(["b.ttl", "nested/*.ttl"], dir);
     expect(files).toEqual([join(dir, "b.ttl"), join(dir, "nested", "c.ttl")]);
   });
+
+  it("skips a directory path instead of treating it as a file", () => {
+    // A directory would later crash readFileSync with EISDIR.
+    expect(resolveSourceFiles(["nested"], dir)).toEqual([]);
+  });
+
+  it("resolves the empty string (the cwd directory) to no files", () => {
+    expect(resolveSourceFiles([""], dir)).toEqual([]);
+  });
 });

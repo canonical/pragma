@@ -275,10 +275,24 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
     return handleCompletionsServer();
   }
 
-  // Reject an unknown --format value early (completion queries are exempt above,
-  // so tab-completion never errors). Only text/json are supported.
+  const explicitHelpOrVersion = argv
+    .slice(2)
+    .some(
+      (arg) =>
+        arg === "--help" || arg === "-h" || arg === "--version" || arg === "-V",
+    );
+
+  // Reject an unknown --format value early (completion queries are exempt
+  // above, so tab-completion never errors). Skip when the user asked for help
+  // or version — those should print regardless of a bad --format. Only
+  // text/json are supported.
   const rawFormat = readRawFormat(argv);
-  if (rawFormat !== undefined && rawFormat !== "text" && rawFormat !== "json") {
+  if (
+    !explicitHelpOrVersion &&
+    rawFormat !== undefined &&
+    rawFormat !== "text" &&
+    rawFormat !== "json"
+  ) {
     const error = PragmaError.invalidInput("format", rawFormat, {
       validOptions: ["text", "json"],
     });
@@ -286,13 +300,6 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
     process.exitCode = mapExitCode(error.code);
     return;
   }
-
-  const explicitHelpOrVersion = argv
-    .slice(2)
-    .some(
-      (arg) =>
-        arg === "--help" || arg === "-h" || arg === "--version" || arg === "-V",
-    );
 
   if (!hasCommandArg(argv) && !explicitHelpOrVersion) {
     return handleRootHelp(globalFlags);

@@ -30,6 +30,15 @@ describe("validateTier", () => {
     expect(entry.path).toBe("global");
   });
 
+  it("matches case- and whitespace-insensitively", async () => {
+    // The documented lowercase slash-path must match regardless of the label's
+    // casing in the ontology (e.g. real graph uses `Apps/LXD`).
+    const upper = await validateTier(store, "APPS/LXD");
+    expect(upper.path).toBe("apps/lxd");
+    const padded = await validateTier(store, "  Apps/Lxd  ");
+    expect(padded.path).toBe("apps/lxd");
+  });
+
   it("throws INVALID_INPUT for a nonexistent tier", async () => {
     await expect(validateTier(store, "apps/nonexistent")).rejects.toThrow(
       'Invalid tier "apps/nonexistent"',
