@@ -81,3 +81,95 @@ never see the Ink UI there, and that is correct. To validate TUI changes:
 - Ask a human to run `pragma create component react Foo` in a real terminal for
   the visual confirmation. State plainly that this step is unverified by the
   automated run rather than claiming the UI works.
+
+## Other gotchas in this package
+
+Things that are not obvious from the code and have each cost real debugging time.
+
+### Source vs. compiled binary — always know which you are testing
+
+The globally-installed `pragma` on `PATH` is the **compiled binary**
+(`dist/pragma`), not the source. Editing `src/**` does **not** change it — you
+must `bun run build` to refresh the binary. When iterating, run from source:
+`bun src/bin.ts <args>`. Several bugs reproduce **only** in the compiled binary
+(see completions below), so validate both when a change touches process spawning,
+asset embedding, or module resolution.
+
+### `@canonical/cli-core` resolves to its built `dist`, not source
+
+pragma depends on `cli-core` via a workspace symlink whose `exports` point at
+`dist/esm`. So **editing `packages/cli/core/src` has no effect on pragma until you
+`bun run build` in `core`.** If a cli-core change "isn't taking", that is why.
+Same pattern for the other `@canonical/*` workspace packages.
+
+### `--dry-run` stubs read effects — it cannot preview read-driven logic
+
+`dryRun` (in `@canonical/task`) walks the task tree and its combinators, but
+resolves read effects against a mocked filesystem rather than the real one, so a
+task whose control flow depends on reads produces a **misleading** preview. The
+plain `dryRun` interpreter stubs `Exists → true` unconditionally; the virtual-fs
+variant (`dryRunWithVirtualFs`, also used by undo) returns `true` only for paths
+a *preceding* write created in the same walk. Either way the answer reflects the
+mock, not the disk. This is why `pragma setup` must **execute for real** (via
+`runSetupTask`) rather than render `executeGenerator`'s dry-run preview: under
+dry-run, harness detection reads nothing real, so it reports "No AI harnesses
+detected" even inside Claude Code. Rule: if a step branches on what it reads
+(detection, "is it already installed?"), do not surface a dry-run preview as its
+result.
+
+### Completions run out-of-process and have two binary-only traps
+
+Tab completion is served by a background socket server the client spawns. Two
+failure modes reproduce **only in the compiled binary**, never from source:
+
+- The client spawns the completions server as a subprocess. From source it runs
+  `bun run <entryPath> _completions-server` (the entry file is on disk); inside a
+  **compiled binary** that entry file does not exist, so it must spawn **the
+  running executable itself** (`process.execPath`). `queryCompletions.ts` picks
+  the right one — the trap is hard-coding `bun run bin.ts`, which starts nothing
+  in the binary and every completion returns empty.
+- The spawned server must be **`unref()`d**, or it keeps the client's event loop
+  alive until its ~10 s idle timeout — every cold `Tab` appears to hang ~10 s and
+  the persistent-server fast path never engages.
+
+Also: shells forward the program name as the first completion word, so the
+resolver strips a leading `pragma` (see `handleQuery`). Test completion logic by
+driving `resolveCompletion`/`handleQuery` directly, not the socket.
+
+### Output mode is auto-detected — tests and agents get condensed output
+
+When `stdout` is not a TTY and no `--llm`/`--format` is given, output defaults to
+condensed Markdown (`--llm` mode) — the shape an agent captures. So piped
+commands (including in tests and CI) look different from an interactive terminal.
+Override with `--format json`, explicit `--llm`, or `PRAGMA_NO_AUTO_LLM=1`.
+Generators are exempt: auto-LLM shapes **formatting only** and never flips
+`create` into dry-run (`GlobalFlags.autoLlm`).
+
+### Coverage gates differ by package
+
+`@canonical/cli-core` enforces **100%** coverage (all four metrics); adding an
+untested branch there **fails the suite**. `@canonical/pragma-cli` enforces
+**80%**. When you add a branch to cli-core, add the test in the same change.
+
+### `bun build --compile` cannot bundle everything
+
+The standalone binary embeds assets via glob in `scripts/build.ts` and needs
+plugins/stubs for things a bundler can't resolve (the `react-devtools-core` stub
+for Ink; the story-assets plugin for `stories/*.json`). Large single-`write`s to
+`stdout` can also segfault the Bun runtime, which is why cli-core chunks stdout
+output (`writeChunked`, 4 KiB). If a big-output command crashes only as the
+binary, that guard is the relevant machinery.
+
+### Some commands intentionally skip booting the ke store
+
+`resolveCommandKind` lists `STORE_SKIP_COMMANDS` (`setup`, `mcp`, `create`,
+`graphql`, `trace`, `capabilities`, `update-refs`). These must never require the
+store — they run before it boots. If you make one of them depend on the graph,
+you will either couple it to installed packages or break it when they are absent;
+move it out of the skip set instead.
+
+### Format the way CI does
+
+Run `bunx biome check` (and `--write` to fix). Do **not** rely on `bunx --bun
+biome` — it can resolve a different biome and silently skip formatting that CI
+then rejects.
