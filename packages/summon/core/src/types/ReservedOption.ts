@@ -20,4 +20,4 @@ type ReservedOption =
   | "verbose"
   | "generatedStamp";
 
-export default ReservedOption;
+export type { ReservedOption as default };

@@ -31,4 +31,4 @@ export interface EditableBlockProps<T extends EditElementProps> {
   isReadOnly?: boolean;
 }
 
-export default EditableBlockProps;
+export type { EditableBlockProps as default };

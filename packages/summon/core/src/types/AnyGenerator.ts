@@ -6,4 +6,4 @@ import type GeneratorDefinition from "./GeneratorDefinition.js";
 // biome-ignore lint/suspicious/noExplicitAny: Required for contravariant generator collections
 type AnyGenerator = GeneratorDefinition<any>;
 
-export default AnyGenerator;
+export type { AnyGenerator as default };

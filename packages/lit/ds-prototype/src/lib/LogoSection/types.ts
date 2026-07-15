@@ -18,4 +18,4 @@ export interface Props {
   mode?: "default" | "minimal";
 }
 
-export default Props;
+export type { Props as default };
