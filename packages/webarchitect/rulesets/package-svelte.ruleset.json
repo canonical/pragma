@@ -24,6 +24,32 @@
           "types": {
             "const": "dist/index.d.ts"
           },
+          "exports": {
+            "type": "object",
+            "description": "Svelte packages must declare an exports map. svelte-package relies on the 'svelte' export condition for consumers to resolve components; dropping exports while keeping 'module'/'types' breaks resolution.",
+            "properties": {
+              ".": {
+                "type": "object",
+                "description": "Root entry point exposing the 'types', 'import' and 'svelte' conditions",
+                "properties": {
+                  "types": {
+                    "type": "string",
+                    "pattern": "^\\./dist/"
+                  },
+                  "import": {
+                    "type": "string",
+                    "pattern": "^\\./dist/"
+                  },
+                  "svelte": {
+                    "type": "string",
+                    "pattern": "^\\./dist/"
+                  }
+                },
+                "required": ["types", "import", "svelte"]
+              }
+            },
+            "required": ["."]
+          },
           "files": {
             "type": "array",
             "contains": { "const": "dist" }
@@ -54,6 +80,7 @@
           "type",
           "module",
           "types",
+          "exports",
           "files",
           "scripts"
         ]
