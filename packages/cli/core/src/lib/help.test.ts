@@ -5,6 +5,7 @@ import {
   formatLlmHelp,
   formatNounHelp,
   formatVerbHelp,
+  formatVerbList,
 } from "./help.js";
 import type { CommandDefinition } from "./types.js";
 
@@ -109,6 +110,24 @@ describe("help", () => {
     it("returns message for unknown noun", () => {
       const output = formatNounHelp("pragma", "unknown", makeCommands());
       expect(output).toContain('No commands found for "unknown"');
+    });
+  });
+
+  describe("formatVerbList", () => {
+    it("lists verbs under a compact Subcommands heading, without a Usage line", () => {
+      const output = formatVerbList("pragma", "component", makeCommands());
+
+      expect(output).toContain("Subcommands:");
+      expect(output).not.toContain("Usage:");
+      expect(output).toContain("list");
+      expect(output).toContain("get");
+      expect(output).toContain(
+        "Run `pragma component <verb> --help` for verb-specific help.",
+      );
+    });
+
+    it("returns an empty string for a noun with no verbs", () => {
+      expect(formatVerbList("pragma", "unknown", makeCommands())).toBe("");
     });
   });
 

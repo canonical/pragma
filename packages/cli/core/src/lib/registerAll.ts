@@ -7,7 +7,7 @@
 
 import { Command, type OptionValues } from "commander";
 import { convertCamelToKebab } from "./convertCase.js";
-import { formatNounHelp, formatVerbHelp } from "./help.js";
+import { formatNounHelp, formatVerbHelp, formatVerbList } from "./help.js";
 import type {
   CommandContext,
   CommandDefinition,
@@ -112,7 +112,14 @@ export default function registerAll(
     }
 
     if (multiSegment.length > 0) {
-      let parent = findSubcommand(program, noun);
+      const existingParent = findSubcommand(program, noun);
+      // A noun that is ALSO a direct command (e.g. `pragma setup`) already has
+      // its own leaf help; adding the full noun help on the same Commander
+      // command would stack two "Usage:" blocks. In that case list the verbs as
+      // a compact appended section instead of a second usage screen.
+      const isDualCommand =
+        singleSegment.length > 0 && existingParent !== undefined;
+      let parent = existingParent;
       if (!parent) {
         parent = program.command(noun);
         parent.description(`${noun} commands`);
@@ -124,11 +131,16 @@ export default function registerAll(
       const programName = program.name();
       const allCommands = commands;
       const nounParent = parent;
-      parent.addHelpText("beforeAll", (_ctx) => {
+      parent.addHelpText(isDualCommand ? "afterAll" : "beforeAll", (_ctx) => {
         if (_ctx.command !== nounParent) return "";
+        if (isDualCommand) {
+          return formatVerbList(programName, noun, allCommands);
+        }
         return formatNounHelp(programName, noun, allCommands);
       });
-      parent.configureHelp({ formatHelp: () => "" });
+      if (!isDualCommand) {
+        parent.configureHelp({ formatHelp: () => "" });
+      }
 
       for (const cmd of multiSegment) {
         const verb = cmd.path.slice(1).join(" ");

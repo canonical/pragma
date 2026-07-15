@@ -7,7 +7,7 @@
  * is clamped to the supported 1–5 range.
  */
 
-import { PragmaError } from "../../error/index.js";
+import { PragmaError } from "#error";
 
 /** Smallest number of samples a `sample` command will return. */
 export const MIN_SAMPLE_COUNT = 1;

@@ -10,8 +10,13 @@ import { $, exec, gen, info, type Task } from "@canonical/task";
  */
 export default function setupLsp(root: string): Task<void> {
   return gen(function* () {
-    yield* $(info("Installing Terrazzo LSP extension for VS Code..."));
+    yield* $(
+      info("Ensuring the Terrazzo LSP VS Code extension is installed..."),
+    );
+    // The extension installer is idempotent — it installs if missing and is a
+    // no-op if already present — so this reports "ensured", not a fresh install
+    // (pragma does not inspect VS Code's extension state to tell them apart).
     yield* $(exec("bunx", ["@canonical/terrazzo-lsp-extension"], root));
-    yield* $(info("✓ Terrazzo LSP extension installed."));
+    yield* $(info("✓ Terrazzo LSP extension is installed (up to date)."));
   });
 }

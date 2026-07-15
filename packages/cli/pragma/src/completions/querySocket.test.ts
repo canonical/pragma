@@ -67,4 +67,35 @@ describe("querySocket", () => {
       "connect failed",
     );
   });
+
+  it("times out and closes the socket when the server never replies", async () => {
+    vi.useFakeTimers();
+    const end = vi.fn();
+
+    connectMock.mockImplementation(
+      (options: {
+        socket: {
+          open: (socket: {
+            write: () => void;
+            flush: () => void;
+            end: () => void;
+          }) => void;
+        };
+      }) => {
+        // Open but never send data or close — simulate a wedged server.
+        options.socket.open({ write: () => {}, flush: () => {}, end });
+        return Promise.resolve({});
+      },
+    );
+
+    try {
+      const promise = querySocket("/tmp/pragma.sock", "blo");
+      const assertion = expect(promise).rejects.toThrow(/timed out/);
+      await vi.advanceTimersByTimeAsync(5000);
+      await assertion;
+      expect(end).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

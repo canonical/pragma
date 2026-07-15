@@ -2,21 +2,25 @@
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import {
-  allCommand,
   completionsCommand,
   lspCommand,
   mcpCommand,
+  setupCommand,
   skillsCommand,
 } from "./commands/index.js";
 
 /**
  * Return all setup command definitions.
  *
- * @returns An array of CommandDefinitions for the setup subcommands.
+ * The top-level `pragma setup` is a summon-generator-backed command (replacing
+ * the former `setup all`); the granular `setup <step>` verbs remain for
+ * targeted, scriptable configuration of a single concern.
+ *
+ * @returns An array of CommandDefinitions for the setup command and its verbs.
  */
 export function commands(): CommandDefinition[] {
   return [
-    allCommand,
+    setupCommand(),
     lspCommand,
     mcpCommand,
     completionsCommand,

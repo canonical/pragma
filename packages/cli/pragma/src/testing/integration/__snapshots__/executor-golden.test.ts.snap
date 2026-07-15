@@ -1182,9 +1182,9 @@ No changes were made."
 exports[`golden: runSetupTask — setups > lsp — dry-run 1`] = `
 "Dry run — the following operations would be performed:
 
-├─ Info          Installing Terrazzo LSP extension for VS Code...
+├─ Info          Ensuring the Terrazzo LSP VS Code extension is installed...
 ├─ Execute       bunx @canonical/terrazzo-lsp-extension
-└─ Info          ✓ Terrazzo LSP extension installed.
+└─ Info          ✓ Terrazzo LSP extension is installed (up to date).
 
 No changes were made."
 `;
@@ -1193,14 +1193,14 @@ exports[`golden: runSetupTask — setups > lsp — dry-run json 1`] = `
 "[
   {
     "action": "Log",
-    "message": "Installing Terrazzo LSP extension for VS Code..."
+    "message": "Ensuring the Terrazzo LSP VS Code extension is installed..."
   },
   {
     "action": "Exec"
   },
   {
     "action": "Log",
-    "message": "✓ Terrazzo LSP extension installed."
+    "message": "✓ Terrazzo LSP extension is installed (up to date)."
   }
 ]
 "

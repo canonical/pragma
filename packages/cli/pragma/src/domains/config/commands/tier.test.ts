@@ -92,4 +92,11 @@ describe("config tier command", () => {
       expect(text).toBe("No tier set (all tiers visible).");
     }
   });
+
+  it("rejects a tier path combined with --reset", async () => {
+    const ctx = makeCtx(dir);
+    await expect(
+      buildTierCommand(ctx).execute({ path: "apps/lxd", reset: true }, ctx),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
 });

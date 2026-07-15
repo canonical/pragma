@@ -49,10 +49,15 @@ export default async function queryCompletions(partial: string): Promise<void> {
   const spawnArgs = existsSync(entryPath)
     ? [process.execPath, "run", entryPath, "_completions-server"]
     : [process.execPath, "_completions-server"];
-  Bun.spawn(spawnArgs, {
+  const server = Bun.spawn(spawnArgs, {
     stdio: ["ignore", "ignore", "ignore"],
     cwd: process.cwd(),
   });
+  // Detach the server from the client's lifecycle. Without this the child keeps
+  // the client's event loop alive until the server's idle timeout (~10s) fires,
+  // so every tab-completion appears to hang for ~10s and the client tears the
+  // server down on exit — defeating the persistent-server fast path entirely.
+  server.unref();
 
   const ready = await waitForSocket(socketPath, SPAWN_TIMEOUT_MS);
   if (!ready) {

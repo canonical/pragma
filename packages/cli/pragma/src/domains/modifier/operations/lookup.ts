@@ -28,7 +28,7 @@ export default async function lookupModifier(
 
   const result = await store.query(
     buildQuery(`
-      SELECT ?family (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
+      SELECT ?family ?familyName (GROUP_CONCAT(DISTINCT ?valueName; separator="|") AS ?values)
       WHERE {
         ?family a ${P.ds}ModifierFamily ;
                 ${P.ds}name ?familyName .
@@ -39,7 +39,7 @@ export default async function lookupModifier(
                ${P.ds}name ?valueName .
         }
       }
-      GROUP BY ?family
+      GROUP BY ?family ?familyName
     `),
   );
 
@@ -61,7 +61,9 @@ export default async function lookupModifier(
   const b = result.bindings[0] as (typeof result.bindings)[number];
   return {
     uri: (b.family ?? "") as URI,
-    name,
+    // Return the canonical stored name, not the raw user query (which may
+    // differ in casing).
+    name: b.familyName ?? name,
     values: b.values ? b.values.split("|").filter(Boolean) : [],
   };
 }
