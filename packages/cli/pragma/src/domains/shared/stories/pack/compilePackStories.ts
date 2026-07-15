@@ -19,7 +19,10 @@ import { suggestNames } from "../../suggestions/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
 import type { LookupStory, ReadStory, StoryParam } from "../types.js";
 import applyPackFilters from "./applyPackFilters.js";
-import buildLookupQuery, { buildLookupNamesQuery } from "./buildLookupQuery.js";
+import buildLookupQuery, {
+  buildExpandQuery,
+  buildLookupNamesQuery,
+} from "./buildLookupQuery.js";
 import runSelectQuery from "./runSelectQuery.js";
 import type {
   StoryPackDefinition,
@@ -30,10 +33,17 @@ import type {
 /** A pack entity/row: SELECT variable name → string value. */
 type PackRow = Record<string, string>;
 
+/**
+ * A looked-up pack entity: flat SELECT fields plus any expanded child arrays
+ * (pack v1 nested projections). Scalar fields are strings; an expand's value
+ * is the array of its child rows.
+ */
+type PackEntity = Record<string, string | readonly PackRow[]>;
+
 /** The read stories a pack definition compiles to. */
 export interface CompiledPackStories {
   readonly list: ReadStory<PackRow[], PackRow[]>;
-  readonly lookup?: LookupStory<PackRow, PackRow>;
+  readonly lookup?: LookupStory<PackEntity, PackEntity>;
 }
 
 /**
@@ -116,25 +126,37 @@ function compileLookup(
   noun: string,
   source: string,
   prefixes: Readonly<Record<string, string>>,
-): LookupStory<PackRow, PackRow> {
-  const fields: LookupField<PackRow>[] = (lookup.fields ?? []).map((field) => ({
-    label: field.label ?? field.name,
-    value: (entity) => entity[field.name],
-  }));
-  const sections: SectionDef<PackRow>[] = (lookup.sections ?? []).map(
+): LookupStory<PackEntity, PackEntity> {
+  const fields: LookupField<PackEntity>[] = (lookup.fields ?? []).map(
+    (field) => ({
+      label: field.label ?? field.name,
+      value: (entity) => entity[field.name],
+    }),
+  );
+  const flatSections: SectionDef<PackEntity>[] = (lookup.sections ?? []).map(
     (section) => ({
       key: section.name,
       heading: section.label ?? section.name,
       kind: section.kind ?? "field",
     }),
   );
-  const lookupOptions: RenderLookupOptions<PackRow> = {
-    title: (entity) => entity.name ?? entity.uri ?? "(unnamed)",
+  // Expands render after the flat sections, as list/table collections.
+  const expandSections: SectionDef<PackEntity>[] = (lookup.expand ?? []).map(
+    (expand) => ({
+      key: expand.name,
+      heading: expand.heading ?? expand.name,
+      kind: expand.kind ?? "list",
+      ...(expand.showWhenEmpty ? { showWhenEmpty: true } : {}),
+    }),
+  );
+  const sections = [...flatSections, ...expandSections];
+  const lookupOptions: RenderLookupOptions<PackEntity> = {
+    title: (entity) => scalar(entity.name) ?? scalar(entity.uri) ?? "(unnamed)",
     fields,
     sections,
     prefixes,
   };
-  const lookupFormatters: Formatters<PackRow> = {
+  const lookupFormatters: Formatters<PackEntity> = {
     plain: (entity) => renderLookupPlain(entity, lookupOptions),
     llm: (entity) => renderLookupLlm(entity, lookupOptions),
     json: (entity) => JSON.stringify(entity, null, 2),
@@ -183,26 +205,40 @@ async function lookupPackEntity(
   noun: string,
   query: string,
   source: string,
-): Promise<PackRow> {
+): Promise<PackEntity> {
   const rows = await runSelectQuery(
     store,
     buildLookupQuery(lookup, query),
     source,
   );
-  const entity = rows.at(0);
-  if (entity) {
-    return entity;
+  const base = rows.at(0);
+  if (!base) {
+    const candidates = await listEntityNames(store, lookup, source);
+    throw PragmaError.notFound(noun, query, {
+      suggestions: suggestNames(query, candidates),
+      recovery: {
+        message: `List available ${noun} entries.`,
+        cli: `pragma ${noun} list`,
+        mcp: { tool: `${noun}_list` },
+      },
+    });
   }
 
-  const candidates = await listEntityNames(store, lookup, source);
-  throw PragmaError.notFound(noun, query, {
-    suggestions: suggestNames(query, candidates),
-    recovery: {
-      message: `List available ${noun} entries.`,
-      cli: `pragma ${noun} list`,
-      mcp: { tool: `${noun}_list` },
-    },
-  });
+  // Enrich with any declared multi-valued expands (pack v1 nested projections).
+  // Each expand runs a sub-SELECT bound to the resolved entity IRI (`base.uri`),
+  // which is store-derived, never user input.
+  const entity: PackEntity = { ...base };
+  const entityUri = base.uri;
+  if (entityUri) {
+    for (const expand of lookup.expand ?? []) {
+      entity[expand.name] = await runSelectQuery(
+        store,
+        buildExpandQuery(expand, entityUri),
+        source,
+      );
+    }
+  }
+  return entity;
 }
 
 async function listEntityNames(
@@ -216,6 +252,13 @@ async function listEntityNames(
     source,
   );
   return rows.map((row) => row.name ?? "").filter((name) => name !== "");
+}
+
+/** Return a value only when it is a scalar string (expands hold arrays). */
+function scalar(
+  value: string | readonly PackRow[] | undefined,
+): string | undefined {
+  return typeof value === "string" ? value : undefined;
 }
 
 /**

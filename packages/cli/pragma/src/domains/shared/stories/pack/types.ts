@@ -36,6 +36,39 @@ export interface StoryPackSection extends StoryPackField {
   readonly kind?: "field" | "code";
 }
 
+/** A field read from each child node of an {@link StoryPackExpand}. */
+export interface StoryPackExpandField {
+  /** Output field name on the child record. */
+  readonly name: string;
+  /** Property to read on the child node — prefixed name, IRI, or path. */
+  readonly property: string;
+  /** Display label (defaults to the field name). */
+  readonly label?: string;
+}
+
+/**
+ * A multi-valued nested projection: `entity → relation → child nodes`, each
+ * child projected to a small record. This is pack v1's structured-section
+ * primitive — the one thing v0 could not express (dos/donts, token scales,
+ * modifier values). Resolved with a generated, injection-safe sub-SELECT bound
+ * to the already-resolved entity IRI (never user input), so it needs no
+ * GraphQL. Rendered through the shared `list`/`table` render-kinds.
+ */
+export interface StoryPackExpand {
+  /** Output field holding the child array on the looked-up entity. */
+  readonly name: string;
+  /** Section heading (defaults to the field name). */
+  readonly heading?: string;
+  /** Render kind for the array (v1: `list` or `table`; defaults to `list`). */
+  readonly kind?: "list" | "table";
+  /** Relation from the entity to each child node — prefixed name, IRI, or path. */
+  readonly relation: string;
+  /** Fields to read from each child node. */
+  readonly select: readonly StoryPackExpandField[];
+  /** Render the section even when the array is empty (default: false). */
+  readonly showWhenEmpty?: boolean;
+}
+
 /**
  * A declarative list filter: a CLI/MCP parameter constraining one SELECT
  * variable to a declared value set.
@@ -82,6 +115,8 @@ export interface StoryPackLookup {
   readonly fields?: readonly StoryPackField[];
   /** Long-form sections shown after the fields. */
   readonly sections?: readonly StoryPackSection[];
+  /** Multi-valued nested projections (pack v1 structured sections). */
+  readonly expand?: readonly StoryPackExpand[];
 }
 
 /** One declarative read story: a noun with its preferred queries. */

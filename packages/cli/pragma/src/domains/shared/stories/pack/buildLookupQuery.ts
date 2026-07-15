@@ -1,4 +1,4 @@
-import type { StoryPackLookup } from "./types.js";
+import type { StoryPackExpand, StoryPackLookup } from "./types.js";
 
 /**
  * Build the generated, injection-safe lookup queries for a pack story.
@@ -57,6 +57,38 @@ export default function buildLookupQuery(
   ]
     .filter((line) => line !== "")
     .join("\n");
+}
+
+/**
+ * Build the sub-SELECT retrieving one expand's child rows for a resolved
+ * entity.
+ *
+ * Injection-safe by construction: the only interpolated value is
+ * `entityUri`, which is the IRI the base lookup already resolved from the
+ * store (never user input), and the relation/properties are validated pack
+ * terms. Returns one row per child node, each carrying the declared fields.
+ *
+ * @param expand - The expand declaration.
+ * @param entityUri - The resolved entity IRI (from the base lookup's `?uri`).
+ * @returns SPARQL SELECT text yielding one row per child node.
+ */
+export function buildExpandQuery(
+  expand: StoryPackExpand,
+  entityUri: string,
+): string {
+  const vars = expand.select.map((field) => `?${field.name}`).join(" ");
+  const optionals = expand.select
+    .map(
+      (field) =>
+        `  OPTIONAL { ?child ${formatTerm(field.property)} ?${field.name} . }`,
+    )
+    .join("\n");
+  return [
+    `SELECT ${vars} WHERE {`,
+    `  <${entityUri}> ${formatTerm(expand.relation)} ?child .`,
+    optionals,
+    "}",
+  ].join("\n");
 }
 
 /**

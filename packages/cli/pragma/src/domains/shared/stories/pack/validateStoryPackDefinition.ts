@@ -2,6 +2,8 @@ import { PragmaError } from "#error";
 import type {
   StoryPackColumn,
   StoryPackDefinition,
+  StoryPackExpand,
+  StoryPackExpandField,
   StoryPackField,
   StoryPackFilter,
   StoryPackLookup,
@@ -263,12 +265,84 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     "lookup.sections",
     source,
   );
+  const expand = validateExpandArray(obj.expand, "lookup.expand", source);
 
   return {
     by,
     ...(type !== undefined ? { type } : {}),
     ...(fields ? { fields } : {}),
     ...(sections ? { sections } : {}),
+    ...(expand ? { expand } : {}),
+  };
+}
+
+function validateExpandArray(
+  raw: unknown,
+  where: string,
+  source: string,
+): readonly StoryPackExpand[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) {
+    throw buildStoryConfigError(source, `"${where}" must be an array.`);
+  }
+  const names = new Set<string>();
+  return raw.map((entry, index) => {
+    const expand = validateExpand(entry, `${where}[${index}]`, source);
+    if (names.has(expand.name)) {
+      throw buildStoryConfigError(
+        source,
+        `duplicate expand name "${expand.name}" in "${where}".`,
+      );
+    }
+    names.add(expand.name);
+    return expand;
+  });
+}
+
+function validateExpand(
+  raw: unknown,
+  where: string,
+  source: string,
+): StoryPackExpand {
+  const obj = requireObject(raw, where, source);
+  const name = requireString(obj.name, `${where}.name`, source);
+  if (!FIELD_PATTERN.test(name)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.name" must be a simple identifier.`,
+    );
+  }
+  const relation = requirePredicateTerm(
+    obj.relation,
+    `${where}.relation`,
+    source,
+  );
+  if (obj.kind !== undefined && obj.kind !== "list" && obj.kind !== "table") {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.kind" must be "list" or "table".`,
+    );
+  }
+  if (!Array.isArray(obj.select) || obj.select.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.select" must be a non-empty array.`,
+    );
+  }
+  const select: StoryPackExpandField[] = obj.select.map((entry, index) =>
+    validateField(entry, `${where}.select[${index}]`, source),
+  );
+  const heading =
+    obj.heading === undefined
+      ? undefined
+      : requireString(obj.heading, `${where}.heading`, source);
+  return {
+    name,
+    relation,
+    select,
+    ...(heading !== undefined ? { heading } : {}),
+    ...(obj.kind !== undefined ? { kind: obj.kind as "list" | "table" } : {}),
+    ...(obj.showWhenEmpty === true ? { showWhenEmpty: true } : {}),
   };
 }
 

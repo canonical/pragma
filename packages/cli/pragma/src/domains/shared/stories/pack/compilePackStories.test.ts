@@ -10,6 +10,7 @@ import {
 import { DEFAULT_PREFIX_MAP } from "../../prefixes.js";
 import type { PragmaRuntime } from "../../types/index.js";
 import compilePackStories from "./compilePackStories.js";
+import type { StoryPackDefinition } from "./types.js";
 
 const PREFIXES = { ...DEFAULT_PREFIX_MAP, ...RECIPE_PREFIXES };
 
@@ -142,5 +143,109 @@ describe("compilePackStories — lookup", () => {
       store,
     };
     await expect(lookup?.complete?.("pan", ctx)).resolves.toEqual(["Pancakes"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pack v1: multi-valued expand projections (nested SPARQL)
+// ---------------------------------------------------------------------------
+
+const RECIPE_TTL_WITH_INGREDIENTS = `${RECIPE_TTL}
+ex:pancakes ex:ingredient [ ex:label "Flour" ; ex:amount "200g" ] .
+ex:pancakes ex:ingredient [ ex:label "Milk" ; ex:amount "300ml" ] .
+ex:gazpacho ex:ingredient [ ex:label "Tomato" ; ex:amount "1kg" ] .
+`;
+
+/** RECIPE_STORY with a multi-valued `ingredients` expand. */
+const RECIPE_STORY_WITH_EXPAND: StoryPackDefinition = {
+  ...RECIPE_STORY,
+  lookup: {
+    // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+    ...RECIPE_STORY.lookup!,
+    expand: [
+      {
+        name: "ingredients",
+        heading: "Ingredients",
+        kind: "table",
+        relation: "ex:ingredient",
+        select: [
+          { name: "label", property: "ex:label" },
+          { name: "amount", property: "ex:amount" },
+        ],
+      },
+    ],
+  },
+};
+
+describe("compilePackStories — expand", () => {
+  let expandStore: Store;
+  let expandCleanup: () => void;
+  let expandRt: PragmaRuntime;
+
+  beforeAll(async () => {
+    const result = await createTestStore({
+      ttl: RECIPE_TTL_WITH_INGREDIENTS,
+      prefixes: RECIPE_PREFIXES,
+    });
+    expandStore = result.store;
+    expandCleanup = result.cleanup;
+    expandRt = { store: expandStore } as PragmaRuntime;
+  });
+
+  afterAll(() => expandCleanup());
+
+  it("attaches expanded child rows as an array on the entity", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_WITH_EXPAND,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {});
+    const entity = result?.results.at(0) as
+      | { ingredients?: Array<Record<string, string>> }
+      | undefined;
+    expect(entity?.ingredients).toHaveLength(2);
+    const labels = entity?.ingredients?.map((i) => i.label).sort();
+    expect(labels).toEqual(["Flour", "Milk"]);
+    const flour = entity?.ingredients?.find((i) => i.label === "Flour");
+    expect(flour?.amount).toBe("200g");
+  });
+
+  it("renders the expand as a section through the generic renderer", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_WITH_EXPAND,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {});
+    const entity = result?.results.at(0);
+    if (!entity || !lookup) throw new Error("expected entity");
+    const llm = lookup.formatters.llm(
+      lookup.toFmtInput(entity, { surface: "cli", detailed: true, params: {} }),
+    );
+    expect(llm).toContain("Ingredients");
+    expect(llm).toContain("Flour");
+    expect(llm).toContain("200g");
+  });
+
+  it("returns an empty array when the entity has no children", async () => {
+    const noExpand: StoryPackDefinition = {
+      ...RECIPE_STORY_WITH_EXPAND,
+      lookup: {
+        // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+        ...RECIPE_STORY_WITH_EXPAND.lookup!,
+        expand: [
+          {
+            name: "steps",
+            relation: "ex:step",
+            select: [{ name: "text", property: "ex:text" }],
+          },
+        ],
+      },
+    };
+    const { lookup } = compilePackStories(noExpand, "test", PREFIXES);
+    const result = await lookup?.resolve(expandRt, ["Gazpacho"], {});
+    const entity = result?.results.at(0) as { steps?: unknown[] } | undefined;
+    expect(entity?.steps).toEqual([]);
   });
 });

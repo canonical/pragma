@@ -237,4 +237,75 @@ describe("validateStoryPackDefinition — list filters", () => {
       ),
     ).toThrow(/values/);
   });
+
+  /** RECIPE_STORY with the given `lookup.expand`, for expand validation. */
+  function withExpand(expand: unknown): unknown {
+    return {
+      ...RECIPE_STORY,
+      lookup: { ...RECIPE_STORY.lookup, expand },
+    };
+  }
+
+  it("accepts a valid expand", () => {
+    const validated = validateStoryPackDefinition(
+      withExpand([
+        {
+          name: "ingredients",
+          heading: "Ingredients",
+          kind: "table",
+          relation: "ex:ingredient",
+          select: [{ name: "label", property: "ex:label" }],
+        },
+      ]),
+      "test",
+    );
+    expect(validated.lookup?.expand?.[0]?.name).toBe("ingredients");
+  });
+
+  it("rejects an expand with an empty select", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withExpand([
+          { name: "ingredients", relation: "ex:ingredient", select: [] },
+        ]),
+        "test",
+      ),
+    ).toThrow(/select/);
+  });
+
+  it("rejects an expand kind other than list or table", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withExpand([
+          {
+            name: "ingredients",
+            relation: "ex:ingredient",
+            kind: "tree",
+            select: [{ name: "label", property: "ex:label" }],
+          },
+        ]),
+        "test",
+      ),
+    ).toThrow(/must be "list" or "table"/);
+  });
+
+  it("rejects duplicate expand names", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withExpand([
+          {
+            name: "dup",
+            relation: "ex:a",
+            select: [{ name: "x", property: "ex:x" }],
+          },
+          {
+            name: "dup",
+            relation: "ex:b",
+            select: [{ name: "y", property: "ex:y" }],
+          },
+        ]),
+        "test",
+      ),
+    ).toThrow(/duplicate expand name/);
+  });
 });
