@@ -168,8 +168,10 @@ store — they run before it boots. If you make one of them depend on the graph,
 you will either couple it to installed packages or break it when they are absent;
 move it out of the skip set instead.
 
-### Format the way CI does
+### Check the way CI does — use the package script
 
-Run `bunx biome check` (and `--write` to fix). Do **not** rely on `bunx --bun
-biome` — it can resolve a different biome and silently skip formatting that CI
-then rejects.
+Run **`bun run check`** (biome + `tsc` + webarchitect, the full gate) and
+**`bun run check:fix`** to apply fixes. Use the package scripts — not an ad-hoc
+`bunx biome` / `bunx --bun biome`, which can resolve a different biome and
+silently skip formatting that CI then rejects, and skips the type-check and
+architecture rules entirely.
