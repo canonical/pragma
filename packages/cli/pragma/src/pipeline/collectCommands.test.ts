@@ -60,6 +60,7 @@ describe("collectCommands", () => {
       "config show",
       "create component",
       "create package",
+      "create application",
       "setup",
       "setup lsp",
       "setup mcp",

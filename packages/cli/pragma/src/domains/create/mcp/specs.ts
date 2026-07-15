@@ -1,8 +1,10 @@
 /**
- * MCP tool specs for create domain — create_component, create_package.
+ * MCP tool specs for create domain — create_component, create_package,
+ * create_application.
  */
 
 import { executeGenerator } from "@canonical/cli-core";
+import { generators as applicationGenerators } from "@canonical/summon-application";
 import type { AnyGenerator } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { PragmaError } from "#error";
@@ -161,6 +163,76 @@ const specs: readonly ToolSpec[] = [
       }
 
       throw PragmaError.invalidInput("name", String(params.name));
+    },
+  },
+  {
+    name: "create_application",
+    description:
+      "Scaffold a complete React application with SSR and routing. Returns a JSON generation plan (dry-run).",
+    params: {
+      appPath: {
+        type: "string",
+        description: "Application directory name (e.g. 'my-app')",
+        optional: false,
+      },
+      ssr: {
+        type: "boolean",
+        description: "Include SSR (default: true)",
+        optional: true,
+      },
+      router: {
+        type: "boolean",
+        description: "Include router (default: true)",
+        optional: true,
+      },
+      forms: {
+        type: "boolean",
+        description: "Include form components (default: true)",
+        optional: true,
+      },
+      relay: {
+        type: "boolean",
+        description:
+          "Include a Relay (GraphQL) data layer with a local mock schema (default: false)",
+        optional: true,
+      },
+    },
+    readOnly: false,
+    destructive: false,
+    async execute(rt, params) {
+      const batchCtx = {
+        cwd: rt.cwd,
+        globalFlags: {
+          llm: false,
+          format: "json" as const,
+          verbose: false,
+        },
+      };
+
+      const gen = applicationGenerators["application/react"] as
+        | AnyGenerator
+        | undefined;
+      if (!gen) {
+        throw PragmaError.internalError("Application generator not found");
+      }
+
+      const genParams: Record<string, unknown> = {
+        appPath: params.appPath,
+        ...(params.ssr !== undefined && { ssr: params.ssr }),
+        ...(params.router !== undefined && { router: params.router }),
+        ...(params.forms !== undefined && { forms: params.forms }),
+        ...(params.relay !== undefined && { relay: params.relay }),
+        // Never install during a dry-run plan (mirrors create_package).
+        runInstall: false,
+      };
+
+      const result = await executeGenerator(gen, genParams, batchCtx);
+      if (result.tag === "output") {
+        const text = result.render.plain(result.value);
+        return { data: JSON.parse(text) };
+      }
+
+      throw PragmaError.invalidInput("appPath", String(params.appPath));
     },
   },
 ];

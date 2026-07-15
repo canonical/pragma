@@ -160,6 +160,12 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when:
       "Scaffolding a new npm package with proper monorepo configuration",
   },
+  {
+    name: "create_application",
+    category: "write",
+    use_when:
+      "Scaffolding a new React application with SSR, routing, and optional Relay",
+  },
 
   // — Orientation —————————————————————————————————————————————————————————————
   {

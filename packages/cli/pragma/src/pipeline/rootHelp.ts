@@ -54,7 +54,9 @@ const HELP_GROUPS: readonly HelpGroup[] = [
   },
   {
     title: "Generate code",
-    nouns: [{ noun: "create", summary: "Scaffold components and packages" }],
+    nouns: [
+      { noun: "create", summary: "Scaffold components, packages, and apps" },
+    ],
   },
   {
     title: "Query & serve the graph",

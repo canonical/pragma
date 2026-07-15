@@ -57,9 +57,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 30 tools", async () => {
+  it("registers 31 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(30);
+    expect(tools).toHaveLength(31);
   });
 
   it("all tools have descriptions", async () => {
@@ -151,6 +151,7 @@ describe("tool listing", () => {
       "llm",
       "create_component",
       "create_package",
+      "create_application",
     ]);
   });
 });
@@ -1036,7 +1037,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(32);
+      expect(tools).toHaveLength(33);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 
@@ -1146,9 +1147,9 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(30);
+    expect(data.counts.total).toBe(31);
     expect(data.counts.read).toBeGreaterThan(0);
-    expect(data.counts.write).toBe(5);
+    expect(data.counts.write).toBe(6);
     expect(data.counts.orientation).toBe(2);
     expect(data.counts.diagnostic).toBe(2);
     expect(data.version).toBeDefined();
