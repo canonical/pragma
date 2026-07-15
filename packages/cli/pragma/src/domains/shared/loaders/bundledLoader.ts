@@ -206,7 +206,17 @@ async function readEmbeddedPrefixes(
       const raw = (pragma as { prefixes?: unknown }).prefixes;
       if (typeof raw !== "object" || raw === null) continue;
       for (const [name, namespace] of Object.entries(raw)) {
-        if (typeof namespace === "string") prefixes[name] = namespace;
+        if (typeof namespace !== "string") continue;
+        // These collapse into one aggregate package, so a cross-manifest
+        // collision would never reach resolvePrefixes' warning — surface it
+        // here, naming the manifest, instead of silently last-winning.
+        if (name in prefixes && prefixes[name] !== namespace) {
+          warn(
+            `embedded manifest "${blob.name}" overrides prefix "${name}" ` +
+              `(was <${prefixes[name]}>, now <${namespace}>)`,
+          );
+        }
+        prefixes[name] = namespace;
       }
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);

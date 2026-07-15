@@ -155,6 +155,7 @@ function mergePrefixSource(
  */
 export function resolvePrefixes(
   packages: readonly {
+    readonly name?: string;
     readonly prefixes?: Readonly<Record<string, string>>;
   }[] = [],
   configPrefixes?: Readonly<Record<string, string>>,
@@ -167,7 +168,10 @@ export function resolvePrefixes(
   // sources warn while overriding the trusted seed stays silent.
   const claimed = new Set<string>();
   for (const pkg of packages) {
-    mergePrefixSource(merged, claimed, pkg.prefixes, "a semantic package");
+    // Name the declaring package in the origin so collision/injection
+    // warnings point at the actual source, not a generic placeholder.
+    const origin = pkg.name ? `package "${pkg.name}"` : "a semantic package";
+    mergePrefixSource(merged, claimed, pkg.prefixes, origin);
   }
   mergePrefixSource(merged, claimed, configPrefixes, "pragma.config.json");
   return merged;

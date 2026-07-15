@@ -196,6 +196,14 @@ describe("resolvePrefixes — injection & shadowing hardening", () => {
     expect(warnings.join("")).toContain("overrides an earlier declaration");
   });
 
+  it("names the declaring package in collision warnings when available", () => {
+    resolvePrefixes([
+      { name: "@canonical/one", prefixes: { a: "https://one.example/" } },
+      { name: "@canonical/two", prefixes: { a: "https://two.example/" } },
+    ]);
+    expect(warnings.join("")).toContain('package "@canonical/two"');
+  });
+
   it("does not warn when a package overrides the trusted DS fallback", () => {
     resolvePrefixes([{ prefixes: { ds: "https://packaged-ds.example/" } }]);
     expect(warnings).toHaveLength(0);
