@@ -1,12 +1,12 @@
 import {
   type CommandDefinition,
-  executeGenerator,
   type ParameterDefinition,
   promptToParameter,
 } from "@canonical/cli-core";
 import { generators } from "@canonical/summon-component";
 import { PragmaError } from "#error";
 import { COMPONENT_GENERATORS } from "../generators.js";
+import renderGeneratorUi from "../renderGeneratorUi.js";
 
 const FRAMEWORK_CHOICES = [
   { label: "react", value: "react" },
@@ -104,7 +104,7 @@ export default function buildComponentCommand(): CommandDefinition {
         });
       }
 
-      return executeGenerator(gen, params, ctx);
+      return renderGeneratorUi(gen, params, ctx);
     },
     meta: {
       examples: [

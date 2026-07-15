@@ -7,6 +7,16 @@
   "bin": {
     "summon": "dist/src/bin.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/src/bin.d.ts",
+      "import": "./dist/src/bin.js"
+    },
+    "./ui": {
+      "types": "./dist/src/ui/index.d.ts",
+      "import": "./dist/src/ui/index.js"
+    }
+  },
   "files": [
     "dist"
   ],
