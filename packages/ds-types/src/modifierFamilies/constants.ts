@@ -1,4 +1,6 @@
 export const MODIFIER_FAMILIES = {
+  /** @implements ds:global.modifier_family.animate */
+  animate: ["spin"],
   /** @implements ds:global.modifier_family.anticipation */
   anticipation: ["constructive", "caution", "destructive"],
   /** @implements ds:global.modifier_family.criticality */

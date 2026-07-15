@@ -98,6 +98,21 @@ export const Size: Story = {
   ),
 };
 
+export const Animate: Story = {
+  args: {
+    icon: "spinner",
+    animate: "spin",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Set `animate="spin"` to rotate the icon continuously, e.g. as a loading spinner. The animation is disabled for users who prefer reduced motion.',
+      },
+    },
+  },
+};
+
 export const Color: Story = {
   args: {
     icon: "user",

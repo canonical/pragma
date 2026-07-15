@@ -21,3 +21,37 @@
   width: var(--icon-size, var(--size-icon-default, 1rem));
   height: var(--icon-size, var(--size-icon-default, 1rem));
 }
+
+/**
+ * animate modifier family
+ * @implements ds:global.modifier_family.animate
+ */
+
+/* A full 0→360deg turn. Keep it a full turn: Chromatic freezes infinite
+   animations at the last frame of the cycle, so a complete rotation lands on
+   360deg (visually identical to 0deg) and the snapshot stays deterministic. A
+   partial arc here would make visual tests flaky. */
+@keyframes ds-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* animate: spin — rotate the icon continuously, e.g. as a loading spinner.
+   The linear, infinite cycle reads as steady rather than eased. Default to
+   ~1s/turn via a var() fallback (not a hard declaration) so a consumer can
+   retune the cycle from :root or an ancestor with --icon-spin-duration. */
+.ds.icon.spin {
+  animation: ds-icon-spin var(--icon-spin-duration, 1s) linear infinite;
+}
+
+/* Honour users who have asked for reduced motion: hold the icon still rather
+   than spinning it. The icon remains visible as a static glyph. */
+@media (prefers-reduced-motion: reduce) {
+  .ds.icon.spin {
+    animation: none;
+  }
+}

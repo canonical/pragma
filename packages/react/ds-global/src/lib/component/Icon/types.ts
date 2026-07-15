@@ -1,4 +1,5 @@
 import type { IconName } from "@canonical/ds-assets";
+import type { ModifierFamily } from "@canonical/ds-types";
 import type { SVGAttributes } from "react";
 
 /**
@@ -16,4 +17,12 @@ export interface IconProps extends SVGAttributes<HTMLOrSVGElement> {
   icon: IconName;
   /** Root path to the icons (default: /icons). Must be exposed to the user. */
   rootPath?: string;
+  /**
+   * Animation modifier for the icon.
+   * - "spin": Rotates the icon continuously, e.g. as a loading spinner.
+   *
+   * When omitted, the icon is rendered static. The animation honours the
+   * user's `prefers-reduced-motion` setting.
+   */
+  animate?: ModifierFamily<"animate">;
 }

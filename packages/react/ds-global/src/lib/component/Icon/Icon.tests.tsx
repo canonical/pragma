@@ -39,4 +39,11 @@ describe("Icon component", () => {
     );
     expect(container.querySelector("svg")).toHaveClass("test-class");
   });
+
+  it("applies the animate modifier class", () => {
+    const { container } = render(
+      <Component icon={"spinner"} animate={"spin"} />,
+    );
+    expect(container.querySelector("svg")).toHaveClass("spin");
+  });
 });

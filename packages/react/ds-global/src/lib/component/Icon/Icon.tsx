@@ -22,6 +22,7 @@ const Icon = ({
   className,
   rootPath = "/icons",
   role,
+  animate,
   ...props
 }: IconProps): ReactElement => {
   // Icons are decorative by default and hidden from assistive technology.
@@ -37,7 +38,9 @@ const Icon = ({
     <svg
       xmlns={xmlns}
       viewBox={viewBox}
-      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      className={[componentCssClassName, animate, className]
+        .filter(Boolean)
+        .join(" ")}
       role={role ?? (isLabelled ? "img" : undefined)}
       aria-hidden={isLabelled || role ? undefined : true}
       {...props}
