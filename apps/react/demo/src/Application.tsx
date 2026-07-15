@@ -1,9 +1,12 @@
-import { useExampleRHFInterface } from "hooks/index.js";
-import { FormProvider } from "react-hook-form";
+import { FORM_DEFAULT_VALUES } from "data/index.js";
+import { FormProvider, useForm } from "react-hook-form";
 import { Showcase } from "ui/index.js";
 
 function App() {
-  const { methods } = useExampleRHFInterface();
+  const methods = useForm({
+    mode: "onChange",
+    defaultValues: FORM_DEFAULT_VALUES,
+  });
 
   return (
     <FormProvider {...methods}>

@@ -8,9 +8,9 @@
  * @example
  * ```ts
  * convertToFormKey("Typographic Specimen", "--font-size");
- * // Returns "TypographicSpecimen.FontSize"
+ * // Returns "Typographic Specimen.--font-size"
  * // Causes a form structure like this to be created:
- * // { TypographicSpecimen: { FontSize: "value" } }
+ * // { "Typographic Specimen": { "--font-size": "value" } }
  * ```
  * @returns The form key.
  */

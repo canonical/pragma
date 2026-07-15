@@ -5,6 +5,7 @@ import "./styles.css";
 import { Button } from "@canonical/react-ds-global";
 import { Field } from "@canonical/react-ds-global-form";
 import { Drawer } from "ui/Drawer/index.js";
+import { toGlobalFormStateKey } from "utils/index.js";
 import { useShowcaseContext } from "../../hooks/index.js";
 
 const componentCssClassname = "ds example-controls";
@@ -84,7 +85,7 @@ const Controls = ({ id, className, style }: ControlsProps): ReactElement => {
                   ...fieldProps
                 }) => (
                   <Field
-                    name={name}
+                    name={toGlobalFormStateKey(activeExample.name, name)}
                     key={name}
                     unregisterOnUnmount={false}
                     {...fieldProps}
