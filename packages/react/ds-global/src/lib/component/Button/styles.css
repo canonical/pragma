@@ -82,13 +82,11 @@
      a borderless importance simply resolves to 0 with no separate rule. */
   border-width: calc(var(--modifier-outline, 0) * var(--button-border-width));
 
-  /* Typography and block padding come from the `.p` baseline utility on the
-     element (font-family and the padding-block nudges that align the box to
-     the baseline grid). The button re-points the engine's --font-size/
-     --line-height variables at its text-secondary component tokens —
-     `.ds.button` (0,2,0) outranks `.p` (0,1,0) on the same element — so the
-     label is 14px while the baseline-grid maths stay intact. Declaring
-     font-size/line-height/padding-block directly would bypass the engine. */
+  /* Label typography tokens (text-secondary tier, 14px). The block placement that
+     lands the label on the baseline grid comes from the density seat at the end of
+     this file (the button no longer carries `.p`, so the engine's on-element nudges
+     don't apply — without the seat the label is flat/unaligned). --font-size /
+     --line-height are still exposed for any consumer that reads them. */
   --font-size: var(--button-font-size);
   --line-height: var(--button-line-height);
   font-weight: var(--button-font-weight);
@@ -231,4 +229,50 @@
     background-color: transparent;
     border-color: transparent;
   }
+}
+
+/* ── Density seat (apps 32 / sites 36, dense 24 / 28) ────────────────────────
+ * The button consumes the density primitives from @canonical/styles (context ×
+ * density on an ancestor) to size its box to the cell and seat its label on the
+ * 4px baseline grid. This lives HERE (ds-global) and not in
+ * @canonical/react-ds-global-form's density.css, because the Button is a ds-global
+ * component: an app that ships ds-global without the form package must still get a
+ * seated button, not a flat one. The primitives are read from the shared styles
+ * layer, so there is no form dependency.
+ *
+ * `:is()` on the density scope (0,1,0) so `:is(...) .ds.button` (0,2,0) beats the
+ * button's own `.ds.button { align-items: center }` (0,1,0) — otherwise the label
+ * stays flex-CENTRED and the padding-based baseline placement can't govern. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.button {
+  box-sizing: border-box;
+  /* Fixed grid-multiple height (the density cell), border-box so the border is
+     absorbed into the height — a bordered and a borderless button of one density
+     are the same height. Top-referenced so the space-before below governs. */
+  block-size: var(--density-line-height-effective);
+  min-block-size: var(--density-line-height-effective);
+  align-items: flex-start;
+  justify-content: flex-start;
+  /* Kill only the UA bottom padding; the placement below owns padding-block-start
+     (a `padding-block: 0` shorthand would out-specify and wipe the start). */
+  padding-block-end: 0;
+
+  /* Crush to line-height:1 for the seat; the baseline within that box is the cap
+     approximation (1em + 1cap)/2. The label font tier (--font-size/--font-family)
+     is the button's own (text-secondary, 14px), set on the base rule. */
+  line-height: 1;
+  --natural-baseline: calc((1em + 1cap) / 2);
+  /* The box's top border sits above the label and counts toward the target, so
+     subtract the NOMINAL --button-border-width for BOTH importances — the primary's
+     0-outline (borderless) is handled by the grid maths, not by zeroing this term
+     (a per-importance term lifts the primary a pixel; regression, reverted). */
+  --border-top-width: var(--button-border-width, 0px);
+  --space-before: max(
+    0px,
+    calc(
+      var(--density-target-baseline-px, 0px) -
+      var(--natural-baseline) -
+      var(--border-top-width, 0px)
+    )
+  );
+  padding-block-start: var(--space-before);
 }

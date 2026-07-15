@@ -6,8 +6,10 @@
   appearance: none;
   box-sizing: border-box;
   margin-inline: var(--form-input-padding-inline);
-  width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-  height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+  /* 16px control — a fixed element size, not a baseline multiple (the 4px-baseline
+     spike halved the old `--space-baseline × 2`). Stable --dimension-200 (16px). */
+  width: var(--dimension-200);
+  height: var(--dimension-200);
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: 50%;
   background-color: var(

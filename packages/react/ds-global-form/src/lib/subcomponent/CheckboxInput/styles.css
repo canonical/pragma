@@ -6,8 +6,12 @@
   /* Align to the field edge like the label (no side margin by default), not to
    * the input's inner padding. Overridable via the shared variable. */
   margin-inline: var(--form-label-padding-inline, 0);
-  width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-  height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+  /* A 16px control — a fixed element size, NOT a baseline multiple. It was
+     `--space-baseline × 2` (16px when the baseline was 8px), but the 4px-baseline
+     spike halved it to 8px. Size to the stable --dimension-200 (16px) so the
+     control size is decoupled from the baseline grid unit. */
+  width: var(--dimension-200);
+  height: var(--dimension-200);
   border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
   border-radius: var(--dimension-radius-small);
   background: var(

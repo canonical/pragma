@@ -28,7 +28,7 @@ const stage: Decorator = (Story) => (
 );
 
 const meta = {
-  title: "components/Popover",
+  title: "_work_in_progress/component/Popover",
   component: Component,
   decorators: [stage],
   tags: ["autodocs"],

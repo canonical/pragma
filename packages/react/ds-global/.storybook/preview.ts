@@ -20,6 +20,11 @@ const preview = {
     ...previewConfig.parameters,
     options: {
       storySort: {
+        // Alphabetical WITHIN each group, while the `order` array below still
+        // pins the top-level tier order. Without a method, items in a group that
+        // aren't listed (every component under `components`) keep their file-
+        // discovery order — which floated Tooltip to the top of the sidebar.
+        method: "alphabetical",
         order: [
           // Keep Introduction first inside the Documentation folder.
           "Documentation",
