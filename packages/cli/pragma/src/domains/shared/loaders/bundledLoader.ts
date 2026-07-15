@@ -96,12 +96,14 @@ export default function createBundledLoader(): PackageLoader {
       if (graphs.length === 0 && stories.length === 0) return undefined;
 
       const version = await readEmbeddedVersion(blobs);
+      const prefixes = await readEmbeddedPrefixes(blobs);
 
       cached = {
         name: "(bundled)",
         version,
         source: "bundled",
         graphs,
+        ...(prefixes ? { prefixes } : {}),
         skills: [],
         stories,
       };
@@ -178,6 +180,42 @@ async function readEmbeddedStories(
 // ---------------------------------------------------------------------------
 // Version reading
 // ---------------------------------------------------------------------------
+
+/**
+ * Aggregate `pragma.prefixes` declared across embedded package manifests.
+ *
+ * The bundled loader collapses every embedded package into one aggregate
+ * SemanticPackage, so their prefix declarations are merged here (later
+ * manifests win on key collisions). Only string→string entries are kept;
+ * malformed shapes are ignored so one bad manifest cannot break boot.
+ *
+ * @returns The merged prefix map, or `undefined` when none is declared.
+ */
+async function readEmbeddedPrefixes(
+  blobs: ReadonlyArray<Blob & { name: string }>,
+): Promise<Readonly<Record<string, string>> | undefined> {
+  const prefixes: Record<string, string> = {};
+
+  for (const blob of blobs) {
+    if (!isPackageManifest(blob.name)) continue;
+
+    try {
+      const parsed = JSON.parse(await blob.text()) as { pragma?: unknown };
+      const pragma = parsed.pragma;
+      if (typeof pragma !== "object" || pragma === null) continue;
+      const raw = (pragma as { prefixes?: unknown }).prefixes;
+      if (typeof raw !== "object" || raw === null) continue;
+      for (const [name, namespace] of Object.entries(raw)) {
+        if (typeof namespace === "string") prefixes[name] = namespace;
+      }
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      warn(`skipping prefixes in embedded manifest "${blob.name}": ${reason}`);
+    }
+  }
+
+  return Object.keys(prefixes).length > 0 ? prefixes : undefined;
+}
 
 async function readEmbeddedVersion(
   blobs: ReadonlyArray<Blob & { name: string }>,

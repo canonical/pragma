@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import { P, PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP, P } from "../../shared/prefixes.js";
 import inspectUri from "./inspectUri.js";
 
 let store: Store;
@@ -19,7 +19,7 @@ afterAll(() => cleanup());
 describe("inspectUri", () => {
   it("returns grouped triples for a known URI", async () => {
     const result = await inspectUri(store, `${P.ds}global.component.button`);
-    expect(result.uri).toBe(`${PREFIX_MAP.ds}global.component.button`);
+    expect(result.uri).toBe(`${DEFAULT_PREFIX_MAP.ds}global.component.button`);
     expect(result.groups.length).toBeGreaterThan(0);
 
     const predicates = result.groups.map((g) => g.predicate);
@@ -30,15 +30,15 @@ describe("inspectUri", () => {
 
   it("resolves prefixed URIs", async () => {
     const result = await inspectUri(store, `${P.ds}global.component.button`);
-    expect(result.uri).toBe(`${PREFIX_MAP.ds}global.component.button`);
+    expect(result.uri).toBe(`${DEFAULT_PREFIX_MAP.ds}global.component.button`);
   });
 
   it("accepts full URIs", async () => {
     const result = await inspectUri(
       store,
-      `${PREFIX_MAP.ds}global.component.button`,
+      `${DEFAULT_PREFIX_MAP.ds}global.component.button`,
     );
-    expect(result.uri).toBe(`${PREFIX_MAP.ds}global.component.button`);
+    expect(result.uri).toBe(`${DEFAULT_PREFIX_MAP.ds}global.component.button`);
     expect(result.groups.length).toBeGreaterThan(0);
   });
 

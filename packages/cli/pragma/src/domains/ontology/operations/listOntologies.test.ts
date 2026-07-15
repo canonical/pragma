@@ -1,7 +1,7 @@
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import listOntologies from "./listOntologies.js";
 
 let store: Store;
@@ -22,7 +22,7 @@ describe("listOntologies", () => {
 
     const ds = result.find((o) => o.prefix === "ds");
     expect(ds).toBeDefined();
-    expect(ds?.namespace).toBe(PREFIX_MAP.ds);
+    expect(ds?.namespace).toBe(DEFAULT_PREFIX_MAP.ds);
     expect(ds?.classCount).toBeGreaterThan(0);
     expect(ds?.propertyCount).toBeGreaterThan(0);
     expect(ds?.anatomyCount).toBeGreaterThan(0);

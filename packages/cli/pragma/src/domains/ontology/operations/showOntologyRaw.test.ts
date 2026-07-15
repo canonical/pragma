@@ -2,7 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PragmaError } from "#error";
 import { createTestStore, DS_ALL_TTL } from "#testing";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import showOntologyRaw from "./showOntologyRaw.js";
 
 let store: Store;
@@ -21,7 +21,9 @@ describe("showOntologyRaw", () => {
     const triples = await showOntologyRaw(store, "ds");
     expect(triples.length).toBeGreaterThan(0);
 
-    const hasDs = triples.some((t) => t.subject.startsWith(PREFIX_MAP.ds));
+    const hasDs = triples.some((t) =>
+      t.subject.startsWith(DEFAULT_PREFIX_MAP.ds),
+    );
     expect(hasDs).toBe(true);
   });
 

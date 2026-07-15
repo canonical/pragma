@@ -1,7 +1,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestMcpClient, createTestStore } from "#testing";
-import { P, PREFIX_MAP } from "../domains/shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP, P } from "../domains/shared/prefixes.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import createClientFromRuntime from "../testing/helpers/createTestMcpClient.js";
 import {
@@ -227,7 +227,7 @@ describe("resource listing — capping", () => {
       { length: overflow },
       (_, i) => `ds:widget_${i} a ds:Gadget ; ds:name "Widget ${i}" .`,
     ).join("\n");
-    const ttl = `@prefix ds: <${PREFIX_MAP.ds}> .
+    const ttl = `@prefix ds: <${DEFAULT_PREFIX_MAP.ds}> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 

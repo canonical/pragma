@@ -2,7 +2,7 @@ import chalk from "chalk";
 import { formatHeading } from "#pipeline";
 import compactUri from "../../shared/compactUri.js";
 import type { Formatters } from "../../shared/formatters.js";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import type { InspectResult } from "../../shared/types/index.js";
 
 /**
@@ -15,13 +15,13 @@ import type { InspectResult } from "../../shared/types/index.js";
 const formatters: Formatters<InspectResult> = {
   plain(result) {
     const lines: string[] = [];
-    lines.push(formatHeading(compactUri(result.uri, PREFIX_MAP)));
+    lines.push(formatHeading(compactUri(result.uri, DEFAULT_PREFIX_MAP)));
 
     for (const g of result.groups) {
       lines.push("");
-      lines.push(chalk.bold(compactUri(g.predicate, PREFIX_MAP)));
+      lines.push(chalk.bold(compactUri(g.predicate, DEFAULT_PREFIX_MAP)));
       for (const o of g.objects) {
-        lines.push(`  ${compactUri(o, PREFIX_MAP)}`);
+        lines.push(`  ${compactUri(o, DEFAULT_PREFIX_MAP)}`);
       }
     }
 
@@ -30,13 +30,13 @@ const formatters: Formatters<InspectResult> = {
 
   llm(result) {
     const lines = [
-      `## ${compactUri(result.uri, PREFIX_MAP)} (${result.uri})`,
+      `## ${compactUri(result.uri, DEFAULT_PREFIX_MAP)} (${result.uri})`,
       "",
     ];
     for (const g of result.groups) {
-      lines.push(`**${compactUri(g.predicate, PREFIX_MAP)}:**`);
+      lines.push(`**${compactUri(g.predicate, DEFAULT_PREFIX_MAP)}:**`);
       for (const o of g.objects) {
-        lines.push(`  - ${compactUri(o, PREFIX_MAP)}`);
+        lines.push(`  - ${compactUri(o, DEFAULT_PREFIX_MAP)}`);
       }
     }
     return lines.join("\n");

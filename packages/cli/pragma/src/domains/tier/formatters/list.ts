@@ -1,6 +1,6 @@
 import compactUri from "../../shared/compactUri.js";
 import type { Formatters } from "../../shared/formatters.js";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import type { TierEntry } from "../../shared/types/index.js";
 
 /**
@@ -19,7 +19,7 @@ const formatters: Formatters<TierEntry[]> = {
       const indent = "  ".repeat(t.depth);
       const parent = t.parent ? ` (parent: ${t.parent})` : "";
       lines.push(
-        `${compactUri(t.uri, PREFIX_MAP)}  ${indent}${t.path}${parent}`,
+        `${compactUri(t.uri, DEFAULT_PREFIX_MAP)}  ${indent}${t.path}${parent}`,
       );
     }
     return lines.join("\n");
@@ -33,7 +33,7 @@ const formatters: Formatters<TierEntry[]> = {
       const indent = "  ".repeat(t.depth);
       const parent = t.parent ? ` (parent: ${t.parent})` : "";
       lines.push(
-        `${indent}- **${t.path}** \`${compactUri(t.uri, PREFIX_MAP)}\`${parent}`,
+        `${indent}- **${t.path}** \`${compactUri(t.uri, DEFAULT_PREFIX_MAP)}\`${parent}`,
       );
     }
     return lines.join("\n");

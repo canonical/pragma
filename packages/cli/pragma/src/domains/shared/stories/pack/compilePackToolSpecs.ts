@@ -1,4 +1,4 @@
-import { PREFIX_MAP } from "../../prefixes.js";
+import { resolvePrefixes } from "../../prefixes.js";
 import type { ToolSpec } from "../../ToolSpec.js";
 import type { PragmaRuntime } from "../../types/index.js";
 import compileLookupTool from "../compileLookupTool.js";
@@ -22,10 +22,13 @@ export default function compilePackToolSpecs(
   runtime: PragmaRuntime,
   reserved: ReservedVerbs,
 ): ToolSpec[] {
-  const prefixes = { ...PREFIX_MAP, ...runtime.config.prefixes };
+  const prefixes = resolvePrefixes(
+    runtime.packages ?? [],
+    runtime.config.prefixes,
+  );
   const entries = collectPackStories(
     runtime.config,
-    runtime.packages,
+    runtime.packages ?? [],
     reserved,
   );
 

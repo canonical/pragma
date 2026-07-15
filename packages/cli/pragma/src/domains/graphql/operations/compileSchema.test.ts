@@ -6,10 +6,10 @@ import {
   GRAPHQL_ERROR_TTL,
   GRAPHQL_FATAL_TTL,
 } from "#testing";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import compileSchema from "./compileSchema.js";
 
-const PREFIXES = { ...PREFIX_MAP, ex: EX_NAMESPACE };
+const PREFIXES = { ...DEFAULT_PREFIX_MAP, ex: EX_NAMESPACE };
 
 const inline = (content: string, path: string) => ({
   content,

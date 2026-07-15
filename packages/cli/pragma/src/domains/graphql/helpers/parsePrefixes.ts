@@ -1,11 +1,11 @@
 import { PragmaError } from "#error";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 
 /**
  * Parse repeated `--prefix name=namespace` entries into a prefix map.
  *
  * User-supplied prefixes are merged on top of pragma's default
- * {@link PREFIX_MAP}, so `ds:` and the W3C vocabularies stay available
+ * {@link DEFAULT_PREFIX_MAP}, so `ds:` and the W3C vocabularies stay available
  * unless explicitly overridden.
  *
  * @param entries - Raw `name=namespace` strings from the CLI.
@@ -15,7 +15,7 @@ import { PREFIX_MAP } from "../../shared/prefixes.js";
 export default function parsePrefixes(
   entries: readonly string[],
 ): Record<string, string> {
-  const prefixes: Record<string, string> = { ...PREFIX_MAP };
+  const prefixes: Record<string, string> = { ...DEFAULT_PREFIX_MAP };
 
   for (const entry of entries) {
     const separator = entry.indexOf("=");

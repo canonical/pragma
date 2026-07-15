@@ -13,7 +13,7 @@ import type {
   RenderLookupOptions,
   SectionDef,
 } from "./contracts.js";
-import { PREFIX_MAP } from "./prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "./prefixes.js";
 
 type RenderMode = "plain" | "llm";
 
@@ -21,7 +21,7 @@ export function renderListPlain<T>(
   items: readonly T[],
   options: RenderListOptions<T>,
 ): string {
-  const prefixes = options.prefixes ?? PREFIX_MAP;
+  const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
   const rows = items.map((item) =>
     options.columns
       .map((column) => ({
@@ -52,7 +52,7 @@ export function renderListLlm<T>(
   items: readonly T[],
   options: RenderListOptions<T>,
 ): string {
-  const prefixes = options.prefixes ?? PREFIX_MAP;
+  const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
   const lines = [`## ${options.heading} (${items.length})`, ""];
 
   for (const item of items) {
@@ -121,7 +121,7 @@ function renderLookupFields<T>(
   options: RenderLookupOptions<T>,
   mode: RenderMode,
 ): string[] {
-  const prefixes = options.prefixes ?? PREFIX_MAP;
+  const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
   return options.fields.flatMap((field) => {
     const value = field.value(entity);
     if (isEmptyValue(value)) {
@@ -173,7 +173,7 @@ function renderSectionValue<T>(
   options: RenderLookupOptions<T>,
   mode: RenderMode,
 ): string | null {
-  const prefixes = options.prefixes ?? PREFIX_MAP;
+  const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
 
   switch (section.kind) {
     case "field":

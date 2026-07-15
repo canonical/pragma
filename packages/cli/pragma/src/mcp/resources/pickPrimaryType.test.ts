@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PREFIX_MAP } from "../../domains/shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../domains/shared/prefixes.js";
 import pickPrimaryType from "./pickPrimaryType.js";
 
-const COMPONENT = `${PREFIX_MAP.ds}Component`;
-const BLOCK = `${PREFIX_MAP.ds}Block`;
-const NAMED_INDIVIDUAL = `${PREFIX_MAP.owl}NamedIndividual`;
-const OWL_THING = `${PREFIX_MAP.owl}Thing`;
+const COMPONENT = `${DEFAULT_PREFIX_MAP.ds}Component`;
+const BLOCK = `${DEFAULT_PREFIX_MAP.ds}Block`;
+const NAMED_INDIVIDUAL = `${DEFAULT_PREFIX_MAP.owl}NamedIndividual`;
+const OWL_THING = `${DEFAULT_PREFIX_MAP.owl}Thing`;
 
 describe("pickPrimaryType", () => {
   it("returns null for no types", () => {

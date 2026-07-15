@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { EX_NAMESPACE, GRAPHQL_CLEAN_TTL } from "#testing";
-import { PREFIX_MAP } from "../../shared/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../../shared/prefixes.js";
 import createSchemaServer, { type SchemaServer } from "./createSchemaServer.js";
 
-const PREFIXES = { ...PREFIX_MAP, ex: EX_NAMESPACE };
+const PREFIXES = { ...DEFAULT_PREFIX_MAP, ex: EX_NAMESPACE };
 
 describe("createSchemaServer", () => {
   let server: SchemaServer | undefined;
