@@ -109,9 +109,10 @@ just taller.
 
 The model is layered so each layer knows only about the one below it:
 
-1. **Context classes** set raw pairs — `--lh-comfy` / `--lh-dense`,
-   `--pad-inline-comfy` / `--pad-inline-dense`, and the three vertical rungs
-   `--space-{sm,md,lg}-comfy` / `-dense`.
+1. **Context classes** set raw pairs — `--density-lh-comfy` / `--density-lh-dense`,
+   `--density-pad-inline-comfy` / `--density-pad-inline-dense`, and the three
+   vertical rungs `--density-space-{sm,md,lg}-comfy` / `-dense`. (The pre-namespace
+   bare names — `--lh-comfy` etc. — remain as back-compat aliases.)
 2. **Density classes** pick within each pair and expose _generic, domain-neutral_
    primitives: `--density-line-height`, `--density-padding-inline`, and
    `--density-space-{sm,md,lg}`. This layer knows nothing about "form" or

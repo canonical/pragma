@@ -142,7 +142,7 @@
 :is(.comfortable, .dense, .app, .site, .docs) .ds.input.textarea {
   --td-line-height: var(
     --density-line-height,
-    var(--lh-comfy, calc(var(--baseline-height) * 8))
+    var(--density-lh-comfy, calc(var(--baseline-height) * 8))
   );
   line-height: var(--td-line-height);
   font-size: var(--typography-text-primary-font-size);
@@ -203,7 +203,7 @@
     calc(
       var(
         --density-line-height,
-        var(--lh-comfy, calc(var(--baseline-height) * 8))
+        var(--density-lh-comfy, calc(var(--baseline-height) * 8))
       ) -
       var(--space-before) -
       1em

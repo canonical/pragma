@@ -37,31 +37,61 @@
  *   (parenthesised = baseline units; 1 bU = --baseline-height = 4px)
  */
 
-/* ── Context family: the comfortable/dense PAIR per surface ────────────────── */
+/* ── Context family: the comfortable/dense PAIR per surface ──────────────────
+ * The internal pair-vars are namespaced `--density-*-comfy/-dense` — they ship on
+ * the global @canonical/styles surface, so a bare name like `--lh-comfy` would be
+ * an easy collision with an app-level variable. The pre-namespace names are kept
+ * as back-compat ALIASES (an app or an older ds-global-form that read `--lh-comfy`
+ * directly still resolves) — same computed values, no output change. Read the
+ * namespaced name in new code; the aliases exist only for the transition. */
 .app {
-  --lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
-  --lh-dense: calc(var(--baseline-height) * 6); /* 24px */
-  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
-  --space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
-  --space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
-  --space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
-  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
-  --space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
+  --density-lh-comfy: calc(var(--baseline-height) * 8); /* 32px */
+  --density-lh-dense: calc(var(--baseline-height) * 6); /* 24px */
+  --density-pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --density-pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
+  --density-space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
+  --density-space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --density-space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
+
+  /* Back-compat aliases (pre-namespace names). Remove once no consumer reads them. */
+  --lh-comfy: var(--density-lh-comfy);
+  --lh-dense: var(--density-lh-dense);
+  --pad-inline-comfy: var(--density-pad-inline-comfy);
+  --pad-inline-dense: var(--density-pad-inline-dense);
+  --space-lg-comfy: var(--density-space-lg-comfy);
+  --space-lg-dense: var(--density-space-lg-dense);
+  --space-md-comfy: var(--density-space-md-comfy);
+  --space-md-dense: var(--density-space-md-dense);
+  --space-sm-comfy: var(--density-space-sm-comfy);
+  --space-sm-dense: var(--density-space-sm-dense);
 }
 .site,
 .docs {
-  --lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
-  --lh-dense: calc(var(--baseline-height) * 7); /* 28px */
-  --pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
-  --space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
-  --space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
-  --space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
-  --space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
-  --space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
-  --space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-lh-comfy: calc(var(--baseline-height) * 9); /* 36px */
+  --density-lh-dense: calc(var(--baseline-height) * 7); /* 28px */
+  --density-pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
+  --density-pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --density-space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
+  --density-space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
+  --density-space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
+  --density-space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --density-space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
+
+  /* Back-compat aliases (pre-namespace names). Remove once no consumer reads them. */
+  --lh-comfy: var(--density-lh-comfy);
+  --lh-dense: var(--density-lh-dense);
+  --pad-inline-comfy: var(--density-pad-inline-comfy);
+  --pad-inline-dense: var(--density-pad-inline-dense);
+  --space-lg-comfy: var(--density-space-lg-comfy);
+  --space-lg-dense: var(--density-space-lg-dense);
+  --space-md-comfy: var(--density-space-md-comfy);
+  --space-md-dense: var(--density-space-md-dense);
+  --space-sm-comfy: var(--density-space-sm-comfy);
+  --space-sm-dense: var(--density-space-sm-dense);
 }
 
 /* ── Density family: pick within the context pair ────────────────────────────
@@ -69,24 +99,48 @@
  * *-comfy / *-dense pair. Fallbacks cover the app-comfortable defaults when no
  * context class is present (a plain `.comfortable` still works). */
 .comfortable {
-  --density-line-height: var(--lh-comfy, calc(var(--baseline-height) * 8));
+  --density-line-height: var(
+    --density-lh-comfy,
+    calc(var(--baseline-height) * 8)
+  );
   --density-padding-inline: var(
-    --pad-inline-comfy,
+    --density-pad-inline-comfy,
     calc(var(--baseline-height) * 4)
   );
-  --density-space-lg: var(--space-lg-comfy, calc(var(--baseline-height) * 6));
-  --density-space-md: var(--space-md-comfy, calc(var(--baseline-height) * 4));
-  --density-space-sm: var(--space-sm-comfy, calc(var(--baseline-height) * 2));
-}
-.dense {
-  --density-line-height: var(--lh-dense, calc(var(--baseline-height) * 6));
-  --density-padding-inline: var(
-    --pad-inline-dense,
+  --density-space-lg: var(
+    --density-space-lg-comfy,
+    calc(var(--baseline-height) * 6)
+  );
+  --density-space-md: var(
+    --density-space-md-comfy,
+    calc(var(--baseline-height) * 4)
+  );
+  --density-space-sm: var(
+    --density-space-sm-comfy,
     calc(var(--baseline-height) * 2)
   );
-  --density-space-lg: var(--space-lg-dense, calc(var(--baseline-height) * 4));
-  --density-space-md: var(--space-md-dense, calc(var(--baseline-height) * 2));
-  --density-space-sm: var(--space-sm-dense, calc(var(--baseline-height) * 1));
+}
+.dense {
+  --density-line-height: var(
+    --density-lh-dense,
+    calc(var(--baseline-height) * 6)
+  );
+  --density-padding-inline: var(
+    --density-pad-inline-dense,
+    calc(var(--baseline-height) * 2)
+  );
+  --density-space-lg: var(
+    --density-space-lg-dense,
+    calc(var(--baseline-height) * 4)
+  );
+  --density-space-md: var(
+    --density-space-md-dense,
+    calc(var(--baseline-height) * 2)
+  );
+  --density-space-sm: var(
+    --density-space-sm-dense,
+    calc(var(--baseline-height) * 1)
+  );
 }
 
 /* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
@@ -95,14 +149,14 @@
  * sites 36→6th/28→5th. */
 :where(.comfortable, .dense, .app, .site, .docs) {
   /* Effective line-height with the SAME fallback chain a control box uses
-     (--density-line-height → context --lh-comfy → apps-comfy literal). Without
-     this fallback, a bare context class (.app/.site/.docs applied with no density
-     class — the documented "no class = comfortable" case) leaves
+     (--density-line-height → context --density-lh-comfy → apps-comfy literal).
+     Without this fallback, a bare context class (.app/.site/.docs applied with no
+     density class — the documented "no class = comfortable" case) leaves
      --density-line-height unset, the round(calc(var(--density-line-height)…))
      becomes invalid, the target resolves to 0, and controls lose their seating. */
   --density-line-height-effective: var(
     --density-line-height,
-    var(--lh-comfy, calc(var(--baseline-height) * 8))
+    var(--density-lh-comfy, calc(var(--baseline-height) * 8))
   );
   --density-target-baseline-px: round(
     up,
