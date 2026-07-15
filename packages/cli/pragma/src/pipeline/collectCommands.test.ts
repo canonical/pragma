@@ -9,7 +9,7 @@ import {
 } from "../domains/shared/stories/pack/index.js";
 import { allSpecs } from "../mcp/tools/index.js";
 import createTestRuntime from "../testing/helpers/createTestRuntime.js";
-import collectCommands from "./collectCommands.js";
+import collectCommands, { builtInCommands } from "./collectCommands.js";
 
 let runtime: PragmaRuntime;
 
@@ -42,13 +42,13 @@ describe("collectCommands", () => {
     expect(paths).toContain("graph inspect");
   });
 
-  // Golden surface: the full built-in command set under default config (no
-  // packs), in emission order. The per-(noun, verb) reserved-guard flip must
-  // not add, drop, rename, or REORDER a single built-in command — order drives
-  // help output and registration — so this list is byte-identical (and
-  // order-identical) to the pre-flip surface.
+  // Golden surface: the full built-in command set, in emission order. The
+  // per-(noun, verb) reserved-guard flip must not add, drop, rename, or REORDER
+  // a single built-in command — order drives help output and registration.
+  // `tier list` is no longer here: the hand-written tier domain was deleted and
+  // is now served by the bundled `tier` story pack (asserted below).
   it("has a stable built-in command surface", () => {
-    const paths = collectCommands(makeCtx()).map((command) =>
+    const paths = builtInCommands(makeCtx()).map((command) =>
       command.path.join(" "),
     );
 
@@ -72,7 +72,6 @@ describe("collectCommands", () => {
       "modifier list",
       "modifier lookup",
       "modifier sample",
-      "tier list",
       "token list",
       "token lookup",
       "tokens add-config",
@@ -96,6 +95,16 @@ describe("collectCommands", () => {
       "capabilities",
     ]);
   });
+
+  it("serves `tier list` from the bundled pack, not a built-in", () => {
+    const builtInPaths = builtInCommands(makeCtx()).map((c) =>
+      c.path.join(" "),
+    );
+    const allPaths = collectCommands(makeCtx()).map((c) => c.path.join(" "));
+
+    expect(builtInPaths).not.toContain("tier list");
+    expect(allPaths).toContain("tier list");
+  });
 });
 
 // Cross-surface skew invariant (FIX 2 / R4-F1): the CLI and MCP surfaces both
@@ -109,7 +118,11 @@ describe("cross-surface reserved-verb parity", () => {
   const READ_VERBS = ["list", "lookup"] as const;
 
   it("CLI and MCP reserve the same list/lookup verbs for every leaf read noun", () => {
-    const cliPairs = collectCommands(makeCtx()).map((command) =>
+    // Both surfaces derive reservations from BUILT-INS only (production reserves
+    // from built-ins, before appending packs), so a bundled/config/package pack
+    // never inflates the reserved map. Using collectCommands here would fold the
+    // bundled tier pack into the CLI side and break the symmetry.
+    const cliPairs = builtInCommands(makeCtx()).map((command) =>
       nounVerbFromPath(command.path),
     );
     const mcpPairs = allSpecs.map((spec) => nounVerbFromToolName(spec.name));
@@ -131,8 +144,10 @@ describe("cross-surface reserved-verb parity", () => {
     );
 
     // Sanity: the real leaf-migration targets are present, so this asserts
-    // something (a silently empty set would make the test vacuous).
-    for (const noun of ["standard", "block", "modifier", "token", "tier"]) {
+    // something (a silently empty set would make the test vacuous). `tier` is
+    // no longer here — it was cut over to the bundled pack, so it is correctly
+    // absent from the built-in reserved surface on both sides.
+    for (const noun of ["standard", "block", "modifier", "token"]) {
       expect(readNouns.has(noun)).toBe(true);
     }
 

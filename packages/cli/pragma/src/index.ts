@@ -90,6 +90,7 @@ export {
   showOntology,
   showOntologyRaw,
 } from "./domains/ontology/operations/index.js";
+export { listTiers } from "./domains/shared/listTiers.js";
 export {
   discoverSkills,
   listSkills,
@@ -101,7 +102,6 @@ export {
   resolveStandardList,
   resolveStandardLookup,
 } from "./domains/standard/index.js";
-export { listTiers } from "./domains/tier/operations/index.js";
 export {
   listTokens,
   lookupToken,

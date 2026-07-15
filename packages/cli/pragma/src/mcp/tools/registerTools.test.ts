@@ -135,7 +135,6 @@ describe("tool listing", () => {
       "token_lookup",
       "tokens_add_config",
       "token_sample",
-      "tier_list",
       "config_show",
       "config_tier",
       "config_channel",
@@ -151,6 +150,9 @@ describe("tool listing", () => {
       "llm",
       "create_component",
       "create_package",
+      // `tier_list` is served by the bundled `tier` pack, registered after the
+      // built-in tools — the hand-written tier domain was deleted.
+      "tier_list",
     ]);
   });
 });
@@ -509,10 +511,11 @@ describe("tier_list", () => {
       name: "tier_list",
       arguments: {},
     });
-    const data = parseData(result) as { path: string }[];
+    // The bundled tier pack names the field `name` (its `ds:name` value).
+    const data = parseData(result) as { name: string }[];
     expect(data.length).toBeGreaterThan(0);
-    const paths = data.map((t) => t.path);
-    expect(paths).toContain("global");
+    const names = data.map((t) => t.name);
+    expect(names).toContain("global");
   });
 });
 
