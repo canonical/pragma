@@ -20,4 +20,4 @@ type ForbidReserved<T> = {
     : T[K];
 };
 
-export default ForbidReserved;
+export type { ForbidReserved as default };
