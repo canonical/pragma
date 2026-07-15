@@ -8,7 +8,7 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    min-height: calc(var(--space-baseline) * 16); /* 128px — 16bU */
+    min-height: calc(var(--dimension-400) * 4); /* 128px — 16bU */
     /* Compensate padding for border so total stays on baseline grid */
     padding: calc(
         var(--form-input-padding-block) -
@@ -85,8 +85,8 @@
   }
 
   & > .file-list > .file-item > .file-preview {
-    width: calc(var(--space-baseline) * 4); /* 32px — 4bU */
-    height: calc(var(--space-baseline) * 4); /* 32px — 4bU */
+    width: var(--dimension-400); /* 32px — 4bU */
+    height: var(--dimension-400); /* 32px — 4bU */
     object-fit: cover;
     border-radius: var(--form-input-border-radius);
     flex-shrink: 0;

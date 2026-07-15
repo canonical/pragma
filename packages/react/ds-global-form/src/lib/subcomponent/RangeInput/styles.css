@@ -4,7 +4,7 @@
   /* Element box is as tall as the THUMB (16px), so the thumb and its focus
    * ring are never clipped in a flex row; the visible 8px track is painted by
    * the track pseudo-elements below, vertically centred within this box. */
-  height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+  height: var(--dimension-200); /* 16px — 2bU */
   background: transparent;
   border: none;
   outline: none;
@@ -14,7 +14,7 @@
    * border even after `appearance: none` on the element — THIS is the visible
    * border. Style the track here: flat, no border, 8px tall. */
   &::-webkit-slider-runnable-track {
-    height: var(--space-baseline); /* 8px — 1bU */
+    height: var(--dimension-100); /* 8px — 1bU */
     background: var(--color-foreground-slider-track);
     border: none;
     border-radius: var(--dimension-radius-small);
@@ -23,7 +23,7 @@
   /* Firefox draws the track via its own pseudo-element with its own UA border —
    * zero it and paint the flat track here to match WebKit. */
   &::-moz-range-track {
-    height: var(--space-baseline); /* 8px — 1bU */
+    height: var(--dimension-100); /* 8px — 1bU */
     background: var(--color-foreground-slider-track);
     border: none;
     border-radius: var(--dimension-radius-small);
@@ -31,10 +31,11 @@
 
   &::-webkit-slider-thumb {
     appearance: none;
-    width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-    height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-    /* Re-centre the 16px thumb on the 8px runnable-track: (8 − 16) / 2 = −4px. */
-    margin-top: calc((var(--space-baseline) - var(--space-baseline) * 2) / 2);
+    width: var(--dimension-200); /* 16px — 2bU */
+    height: var(--dimension-200); /* 16px — 2bU */
+    /* Re-centre the 16px thumb on the 8px runnable-track: (8 − 16) / 2 = −4px.
+       Derived from the actual track/thumb dimension tokens, not the baseline unit. */
+    margin-top: calc((var(--dimension-100) - var(--dimension-200)) / 2);
     border-radius: 50%;
     background: var(--color-foreground-slider-progress);
     border: none;
@@ -42,8 +43,8 @@
   }
 
   &::-moz-range-thumb {
-    width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-    height: calc(var(--space-baseline) * 2); /* 16px — 2bU */
+    width: var(--dimension-200); /* 16px — 2bU */
+    height: var(--dimension-200); /* 16px — 2bU */
     border-radius: 50%;
     background: var(--color-foreground-slider-progress);
     border: none;

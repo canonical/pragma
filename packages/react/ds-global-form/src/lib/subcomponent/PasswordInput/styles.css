@@ -33,8 +33,8 @@
     cursor: pointer;
 
     & > .reveal-icon {
-      width: calc(var(--space-baseline) * 2); /* 16px — 2bU */
-      height: calc(var(--space-baseline) * 2);
+      width: var(--dimension-200); /* 16px — 2bU */
+      height: var(--dimension-200);
       background-color: currentColor;
       mask-repeat: no-repeat;
       mask-position: center;
