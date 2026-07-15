@@ -308,4 +308,72 @@ describe("validateStoryPackDefinition — list filters", () => {
       ),
     ).toThrow(/duplicate expand name/);
   });
+
+  /** RECIPE_STORY with the given `lookup` extras merged in. */
+  function withLookupExtras(extras: Record<string, unknown>): unknown {
+    return {
+      ...RECIPE_STORY,
+      lookup: { ...RECIPE_STORY.lookup, ...extras },
+    };
+  }
+
+  it("accepts a valid disclosure with a level-gated expand", () => {
+    const validated = validateStoryPackDefinition(
+      withLookupExtras({
+        disclosure: { levels: ["summary", "detailed"], default: "summary" },
+        expand: [
+          {
+            name: "ingredients",
+            relation: "ex:ingredient",
+            select: [{ name: "label", property: "ex:label" }],
+            level: "detailed",
+          },
+        ],
+      }),
+      "test",
+    );
+    expect(validated.lookup?.disclosure?.levels).toEqual([
+      "summary",
+      "detailed",
+    ]);
+  });
+
+  it("rejects empty disclosure levels", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookupExtras({ disclosure: { levels: [] } }),
+        "test",
+      ),
+    ).toThrow(/non-empty array/);
+  });
+
+  it("rejects a disclosure default not among the levels", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookupExtras({
+          disclosure: { levels: ["summary"], default: "detailed" },
+        }),
+        "test",
+      ),
+    ).toThrow(/default "detailed" is not one of/);
+  });
+
+  it("rejects an expand level that is not a declared disclosure level", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookupExtras({
+          disclosure: { levels: ["summary"] },
+          expand: [
+            {
+              name: "ingredients",
+              relation: "ex:ingredient",
+              select: [{ name: "label", property: "ex:label" }],
+              level: "detailed",
+            },
+          ],
+        }),
+        "test",
+      ),
+    ).toThrow(/is not a declared disclosure level/);
+  });
 });

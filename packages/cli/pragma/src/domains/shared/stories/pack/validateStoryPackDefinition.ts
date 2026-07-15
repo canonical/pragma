@@ -2,6 +2,7 @@ import { PragmaError } from "#error";
 import type {
   StoryPackColumn,
   StoryPackDefinition,
+  StoryPackDisclosure,
   StoryPackExpand,
   StoryPackExpandField,
   StoryPackField,
@@ -266,6 +267,18 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     source,
   );
   const expand = validateExpandArray(obj.expand, "lookup.expand", source);
+  const disclosure = validateDisclosure(obj.disclosure, source);
+
+  // Cross-check: every expand `level` must name a declared disclosure level.
+  const levels = new Set(disclosure?.levels ?? []);
+  for (const entry of expand ?? []) {
+    if (entry.level !== undefined && !levels.has(entry.level)) {
+      throw buildStoryConfigError(
+        source,
+        `expand "${entry.name}" level "${entry.level}" is not a declared disclosure level.`,
+      );
+    }
+  }
 
   return {
     by,
@@ -273,6 +286,51 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     ...(fields ? { fields } : {}),
     ...(sections ? { sections } : {}),
     ...(expand ? { expand } : {}),
+    ...(disclosure ? { disclosure } : {}),
+  };
+}
+
+function validateDisclosure(
+  raw: unknown,
+  source: string,
+): StoryPackDisclosure | undefined {
+  if (raw === undefined) return undefined;
+  const obj = requireObject(raw, "lookup.disclosure", source);
+  if (!Array.isArray(obj.levels) || obj.levels.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      '"lookup.disclosure.levels" must be a non-empty array.',
+    );
+  }
+  const seen = new Set<string>();
+  const levels = obj.levels.map((value, index) => {
+    const level = requireString(
+      value,
+      `lookup.disclosure.levels[${index}]`,
+      source,
+    );
+    if (seen.has(level)) {
+      throw buildStoryConfigError(
+        source,
+        `duplicate disclosure level "${level}".`,
+      );
+    }
+    seen.add(level);
+    return level;
+  });
+  const defaultLevel =
+    obj.default === undefined
+      ? undefined
+      : requireString(obj.default, "lookup.disclosure.default", source);
+  if (defaultLevel !== undefined && !seen.has(defaultLevel)) {
+    throw buildStoryConfigError(
+      source,
+      `disclosure default "${defaultLevel}" is not one of the declared levels.`,
+    );
+  }
+  return {
+    levels,
+    ...(defaultLevel !== undefined ? { default: defaultLevel } : {}),
   };
 }
 
@@ -336,6 +394,11 @@ function validateExpand(
     obj.heading === undefined
       ? undefined
       : requireString(obj.heading, `${where}.heading`, source);
+  // Membership in the declared levels is cross-checked in validateLookup.
+  const level =
+    obj.level === undefined
+      ? undefined
+      : requireString(obj.level, `${where}.level`, source);
   return {
     name,
     relation,
@@ -343,6 +406,7 @@ function validateExpand(
     ...(heading !== undefined ? { heading } : {}),
     ...(obj.kind !== undefined ? { kind: obj.kind as "list" | "table" } : {}),
     ...(obj.showWhenEmpty === true ? { showWhenEmpty: true } : {}),
+    ...(level !== undefined ? { level } : {}),
   };
 }
 

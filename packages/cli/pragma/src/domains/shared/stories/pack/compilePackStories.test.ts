@@ -248,4 +248,105 @@ describe("compilePackStories — expand", () => {
     const entity = result?.results.at(0) as { steps?: unknown[] } | undefined;
     expect(entity?.steps).toEqual([]);
   });
+
+  // -------------------------------------------------------------------------
+  // Disclosure capability: level-gated expands + derived --detail
+  // -------------------------------------------------------------------------
+
+  /** RECIPE_STORY_WITH_EXPAND with `ingredients` gated to a "detailed" level. */
+  const RECIPE_STORY_DISCLOSURE: StoryPackDefinition = {
+    ...RECIPE_STORY_WITH_EXPAND,
+    lookup: {
+      // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+      ...RECIPE_STORY_WITH_EXPAND.lookup!,
+      expand: [
+        {
+          name: "ingredients",
+          heading: "Ingredients",
+          kind: "table",
+          relation: "ex:ingredient",
+          select: [
+            { name: "label", property: "ex:label" },
+            { name: "amount", property: "ex:amount" },
+          ],
+          level: "detailed",
+        },
+      ],
+      disclosure: { levels: ["summary", "detailed"] },
+    },
+  };
+
+  it("derives a `detail` param enumerated from the declared levels", () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const param = lookup?.params?.find((p) => p.name === "detail");
+    expect(param?.enum).toEqual(["summary", "detailed"]);
+  });
+
+  it("omits a level-gated expand at the base level (no fetch)", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {});
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown }
+      | undefined;
+    expect(entity?.ingredients).toBeUndefined();
+  });
+
+  it("includes a level-gated expand when --detail selects its level", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {
+      detail: "detailed",
+    });
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown[] }
+      | undefined;
+    expect(entity?.ingredients).toHaveLength(2);
+  });
+
+  it("honors the global config.detail default when no flag is passed", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const configuredRt = {
+      store: expandStore,
+      config: { detail: "detailed" },
+    } as PragmaRuntime;
+    const result = await lookup?.resolve(configuredRt, ["Pancakes"], {});
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown[] }
+      | undefined;
+    expect(entity?.ingredients).toHaveLength(2);
+  });
+
+  it("lets an explicit --detail override the config default", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const configuredRt = {
+      store: expandStore,
+      config: { detail: "detailed" },
+    } as PragmaRuntime;
+    const result = await lookup?.resolve(configuredRt, ["Pancakes"], {
+      detail: "summary",
+    });
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown }
+      | undefined;
+    expect(entity?.ingredients).toBeUndefined();
+  });
 });

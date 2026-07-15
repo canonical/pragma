@@ -26,6 +26,7 @@ import buildLookupQuery, {
 import runSelectQuery from "./runSelectQuery.js";
 import type {
   StoryPackDefinition,
+  StoryPackDisclosure,
   StoryPackFilter,
   StoryPackLookup,
 } from "./types.js";
@@ -162,11 +163,26 @@ function compileLookup(
     json: (entity) => JSON.stringify(entity, null, 2),
   };
 
+  // Disclosure capability: a declared level set derives a `--detail <level>`
+  // parameter (enum of the levels) on both surfaces.
+  const disclosure = lookup.disclosure;
+  const detailParams: StoryParam[] = disclosure
+    ? [
+        {
+          name: "detail",
+          type: "string",
+          description: `Disclosure level (${disclosure.levels.join(", ")})`,
+          enum: [...disclosure.levels],
+        },
+      ]
+    : [];
+
   return {
     noun,
     description: `Look up ${noun} details by name`,
     toolDescription: `Get details for one or more ${noun} entries by name (story pack: ${source}).`,
     namesDescription: `${capitalize(noun)} names`,
+    params: detailParams,
     complete: async (partial, cmdCtx) => {
       const ctx = requirePragmaContext(cmdCtx);
       const names = await listEntityNames(ctx.store, lookup, source);
@@ -175,10 +191,14 @@ function compileLookup(
       );
     },
     examples: [`pragma ${noun} lookup <name>`],
-    resolve: (rt, names) =>
-      lookupMany(names, (query) =>
-        lookupPackEntity(rt.store, lookup, noun, query, source),
-      ),
+    resolve: (rt, names, params) => {
+      const level = disclosure
+        ? resolveDetailLevel(params, rt.config ?? {}, disclosure)
+        : undefined;
+      return lookupMany(names, (query) =>
+        lookupPackEntity(rt.store, lookup, noun, query, source, level),
+      );
+    },
     toFmtInput: (entity) => entity,
     formatters: lookupFormatters,
     emptyNamesError: () =>
@@ -205,6 +225,7 @@ async function lookupPackEntity(
   noun: string,
   query: string,
   source: string,
+  level?: string,
 ): Promise<PackEntity> {
   const rows = await runSelectQuery(
     store,
@@ -226,11 +247,17 @@ async function lookupPackEntity(
 
   // Enrich with any declared multi-valued expands (pack v1 nested projections).
   // Each expand runs a sub-SELECT bound to the resolved entity IRI (`base.uri`),
-  // which is store-derived, never user input.
+  // which is store-derived, never user input. An expand tagged with a
+  // disclosure level is fetched only at/above that level — so a lower level
+  // never runs the sub-SELECT and the renderer omits the (absent) section.
   const entity: PackEntity = { ...base };
   const entityUri = base.uri;
   if (entityUri) {
+    const levels = lookup.disclosure?.levels ?? [];
+    const activeIdx = level ? levels.indexOf(level) : Number.POSITIVE_INFINITY;
     for (const expand of lookup.expand ?? []) {
+      const requiredIdx = expand.level ? levels.indexOf(expand.level) : 0;
+      if (activeIdx < requiredIdx) continue;
       entity[expand.name] = await runSelectQuery(
         store,
         buildExpandQuery(expand, entityUri),
@@ -239,6 +266,30 @@ async function lookupPackEntity(
     }
   }
   return entity;
+}
+
+/**
+ * Resolve the effective disclosure level for a lookup call.
+ *
+ * Precedence (highest → lowest): an explicit `--detail`/`detail` value,
+ * the global `config.detail` default, the pack's declared `disclosure.default`,
+ * then the base level (the first declared). A config/pack value that is not one
+ * of the pack's levels is ignored (a global default may target another pack).
+ */
+function resolveDetailLevel(
+  params: Record<string, unknown>,
+  config: { readonly detail?: string },
+  disclosure: StoryPackDisclosure,
+): string {
+  const { levels } = disclosure;
+  const explicit =
+    typeof params.detail === "string" ? params.detail : undefined;
+  for (const candidate of [explicit, config.detail, disclosure.default]) {
+    if (candidate !== undefined && levels.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return levels[0] ?? "";
 }
 
 async function listEntityNames(

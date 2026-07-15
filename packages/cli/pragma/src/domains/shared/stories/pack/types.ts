@@ -67,6 +67,30 @@ export interface StoryPackExpand {
   readonly select: readonly StoryPackExpandField[];
   /** Render the section even when the array is empty (default: false). */
   readonly showWhenEmpty?: boolean;
+  /**
+   * Minimum disclosure level at which this expand is fetched and rendered — a
+   * name from {@link StoryPackDisclosure.levels}. Omitted means the base level
+   * (always included). Below its level the sub-SELECT never runs, so gating is
+   * both a cost and a rendering control.
+   */
+  readonly level?: string;
+}
+
+/**
+ * Progressive-disclosure capability for a lookup.
+ *
+ * Declares an **ordered** list of named levels (the first is the base/default,
+ * always shown). Fields/expands tag themselves with the minimum level at which
+ * they appear. The compiler derives from this one declaration: a `--detail
+ * <level>` CLI flag, a `detail` MCP parameter (enumerated from the levels), and
+ * the JSON/plain/llm projection for the selected level. Levels are additive and
+ * optional — a lookup with no disclosure exposes no detail flag.
+ */
+export interface StoryPackDisclosure {
+  /** Ordered level names, lowest → highest. The first is the base/default. */
+  readonly levels: readonly string[];
+  /** Default level when none is requested (must be one of `levels`). */
+  readonly default?: string;
 }
 
 /**
@@ -117,6 +141,8 @@ export interface StoryPackLookup {
   readonly sections?: readonly StoryPackSection[];
   /** Multi-valued nested projections (pack v1 structured sections). */
   readonly expand?: readonly StoryPackExpand[];
+  /** Progressive-disclosure levels; enables the derived `--detail` flag. */
+  readonly disclosure?: StoryPackDisclosure;
 }
 
 /** One declarative read story: a noun with its preferred queries. */
