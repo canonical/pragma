@@ -3,6 +3,11 @@ import { PragmaError } from "#error";
 import type { TierEntry } from "../../shared/types/index.js";
 import { listTiers } from "../../tier/operations/index.js";
 
+/** Normalise a tier path for comparison: trim and lowercase. */
+function normalizeTierPath(path: string): string {
+  return path.trim().toLowerCase();
+}
+
 /**
  * Validate a tier path against the ke store ontology.
  *
@@ -12,11 +17,6 @@ import { listTiers } from "../../tier/operations/index.js";
  * @throws PragmaError.invalidInput if the tier path does not exist in the ontology.
  * @note Queries ke store
  */
-/** Normalise a tier path for comparison: trim and lowercase. */
-function normalizeTierPath(path: string): string {
-  return path.trim().toLowerCase();
-}
-
 export default async function validateTier(
   store: Store,
   tierPath: string,

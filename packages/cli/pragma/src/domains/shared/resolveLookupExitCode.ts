@@ -8,8 +8,10 @@
  * human reader.
  */
 
-import { ERROR_CODES } from "../../error/constants.js";
-import type { ErrorCode } from "../../error/types.js";
+import { ERROR_CODES, type ErrorCode } from "#error";
+// mapExitCode is imported by its direct path, not the #pipeline barrel: the
+// barrel re-exports runCli/createProgram, which would form an import cycle
+// through this shared utility and break module initialization.
 import mapExitCode from "../../pipeline/mapExitCode.js";
 import type { LookupResult } from "./contracts.js";
 
