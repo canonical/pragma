@@ -1041,8 +1041,10 @@ exports[`golden: executeGenerator — package > library — dry-run plan 1`] = `
 ├─ Create dir    example/src
 ├─ Create file   example/package.json
 ├─ Create file   example/tsconfig.json
+├─ Create file   example/tsconfig.build.json
 ├─ Create file   example/biome.json
 ├─ Create file   example/src/index.ts
+├─ Create file   example/src/index.test.ts
 ├─ Create file   example/README.md
 ├─ Info          Package created at ./example
 ├─ Info          Running bun install...
@@ -1070,7 +1072,7 @@ exports[`golden: executeGenerator — package > library — json plan 1`] = `
     "name": "@canonical/example",
     "type": "library",
     "description": "",
-    "withReact": false,
+    "framework": "none",
     "withStorybook": false,
     "withCli": false,
     "withPrTemplate": false,
@@ -1105,12 +1107,22 @@ exports[`golden: executeGenerator — package > library — json plan 1`] = `
     },
     {
       "action": "create",
+      "path": "example/tsconfig.build.json",
+      "lines": 1
+    },
+    {
+      "action": "create",
       "path": "example/biome.json",
       "lines": 1
     },
     {
       "action": "create",
       "path": "example/src/index.ts",
+      "lines": 1
+    },
+    {
+      "action": "create",
+      "path": "example/src/index.test.ts",
       "lines": 1
     },
     {
@@ -1158,11 +1170,13 @@ exports[`golden: executeGenerator — package > library — json plan 1`] = `
   "files": {
     "example/package.json": "[mock content of <repo>/packages/summon/package/src/templates/package.json.ejs]",
     "example/tsconfig.json": "[mock content of <repo>/packages/summon/package/src/templates/tsconfig.json.ejs]",
+    "example/tsconfig.build.json": "[mock content of <repo>/packages/summon/package/src/templates/tsconfig.build.json.ejs]",
     "example/biome.json": "[mock content of <repo>/packages/summon/package/src/templates/biome.json.ejs]",
     "example/src/index.ts": "[mock content of <repo>/packages/summon/package/src/templates/index.ts.ejs]",
+    "example/src/index.test.ts": "[mock content of <repo>/packages/summon/package/src/templates/index.test.ts.ejs]",
     "example/README.md": "[mock content of <repo>/packages/summon/package/src/templates/README.md.ejs]"
   },
-  "executeCommand": "summon package --name @canonical/example --type library --description  --yes"
+  "executeCommand": "summon package --name @canonical/example --type library --description  --framework none --yes"
 }
 "
 `;
