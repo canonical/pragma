@@ -180,7 +180,9 @@ function compileLookup(
   };
 
   // Disclosure capability: a declared level set derives a `--detail <level>`
-  // parameter (enum of the levels) on both surfaces.
+  // parameter (enum of the levels) on both surfaces, plus one legacy alias
+  // boolean per non-base level (`--digest`, `--detailed`) that implies its
+  // level — preserving the pre-pack flag ergonomics on both surfaces.
   const disclosure = lookup.disclosure;
   const detailParams: StoryParam[] = disclosure
     ? [
@@ -190,6 +192,15 @@ function compileLookup(
           description: `Disclosure level (${disclosure.levels.join(", ")})`,
           enum: [...disclosure.levels],
         },
+        ...disclosure.levels.slice(1).map(
+          (level): StoryParam => ({
+            name: level,
+            type: "boolean",
+            description: `Shorthand for --detail ${level}`,
+            toolDescription: `Shorthand for detail="${level}"`,
+            default: false,
+          }),
+        ),
       ]
     : [];
 
@@ -207,9 +218,14 @@ function compileLookup(
       );
     },
     examples: [`pragma ${noun} lookup <name>`],
-    resolve: async (rt, names, params) => {
+    resolve: async (rt, names, params, view) => {
       const level = disclosure
-        ? resolveDetailLevel(params, rt.config ?? {}, disclosure)
+        ? resolveDetailLevel(
+            params,
+            rt.config ?? {},
+            disclosure,
+            view?.surface ?? "cli",
+          )
         : undefined;
       // Glob queries (`react/*`) expand against the entity name list before
       // resolution; a glob matching nothing becomes its own error entry.
@@ -408,20 +424,50 @@ function looksLikeIri(query: string): boolean {
 /**
  * Resolve the effective disclosure level for a lookup call.
  *
- * Precedence (highest → lowest): an explicit `--detail`/`detail` value,
- * the global `config.detail` default, the pack's declared `disclosure.default`,
- * then the base level (the first declared). A config/pack value that is not one
- * of the pack's levels is ignored (a global default may target another pack).
+ * Precedence (highest → lowest): an explicit `--detail`/`detail` value, a
+ * legacy alias flag set to true (the HIGHEST requested level wins when
+ * several are set), the MCP full-data default, the global `config.detail`
+ * default, the pack's declared `disclosure.default`, then the base level
+ * (the first declared). A config/pack value that is not one of the pack's
+ * levels is ignored (a global default may target another pack).
+ *
+ * The MCP default follows the ratified surface contract (see
+ * `resolveLookupDetailed`): the CLI opts in while MCP opts out, so an MCP
+ * call with no explicit choice resolves to the highest level — agents want
+ * full data by default — and an alias explicitly set to false (e.g.
+ * `detailed: false`) opts down to the config/pack defaults.
  */
 function resolveDetailLevel(
   params: Record<string, unknown>,
   config: { readonly detail?: string },
   disclosure: StoryPackDisclosure,
+  surface: "cli" | "mcp",
 ): string {
   const { levels } = disclosure;
   const explicit =
     typeof params.detail === "string" ? params.detail : undefined;
-  for (const candidate of [explicit, config.detail, disclosure.default]) {
+  if (explicit !== undefined && levels.includes(explicit)) {
+    return explicit;
+  }
+
+  const aliased = levels
+    .filter((level, index) => index > 0 && params[level] === true)
+    .at(-1);
+  if (aliased !== undefined) {
+    return aliased;
+  }
+
+  if (surface === "mcp") {
+    const optedDown = levels.some(
+      (level, index) => index > 0 && params[level] === false,
+    );
+    const highest = levels.at(-1);
+    if (!optedDown && highest !== undefined) {
+      return highest;
+    }
+  }
+
+  for (const candidate of [config.detail, disclosure.default]) {
     if (candidate !== undefined && levels.includes(candidate)) {
       return candidate;
     }

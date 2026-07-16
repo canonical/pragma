@@ -65,6 +65,26 @@ const RESERVED_FILTER_PARAMS = new Set([
 ]);
 
 /**
+ * Names a disclosure level may not take. Levels derive parameters — the
+ * `--detail <level>` selector plus one boolean alias flag per non-base
+ * level — so a level must not collide with `detail` itself, the lookup's
+ * `names` positional, or kernel/global parameter names. `detailed` is
+ * deliberately absent: it is the expected name for a pack's legacy
+ * detailed level and derives the compatible `--detailed`/`detailed`
+ * alias.
+ */
+const RESERVED_LEVEL_NAMES = new Set([
+  "detail",
+  "names",
+  "condensed",
+  "search",
+  "llm",
+  "format",
+  "verbose",
+  "help",
+]);
+
+/**
  * Validate one raw story-pack definition.
  *
  * Fails fast with `CONFIG_ERROR` naming the source and the offending
@@ -414,6 +434,21 @@ function validateDisclosure(
       `lookup.disclosure.levels[${index}]`,
       source,
     );
+    // Levels derive parameter names (`--detail` enum values and the alias
+    // flags), so they are held to the same single-word rule as filter
+    // params and may not shadow reserved parameter names.
+    if (!FILTER_PARAM_PATTERN.test(level)) {
+      throw buildStoryConfigError(
+        source,
+        `disclosure level "${level}" must be a single lowercase word (letters and digits, no hyphens).`,
+      );
+    }
+    if (RESERVED_LEVEL_NAMES.has(level)) {
+      throw buildStoryConfigError(
+        source,
+        `disclosure level "${level}" is a reserved name.`,
+      );
+    }
     if (seen.has(level)) {
       throw buildStoryConfigError(
         source,

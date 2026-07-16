@@ -416,6 +416,44 @@ describe("validateStoryPackDefinition — list filters", () => {
     ).toThrow(/default "detailed" is not one of/);
   });
 
+  it("rejects a disclosure level named detail (derived param collision)", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookupExtras({ disclosure: { levels: ["summary", "detail"] } }),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects a disclosure level colliding with a kernel param name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookupExtras({ disclosure: { levels: ["summary", "names"] } }),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects a disclosure level that is not a single lowercase word", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookupExtras({ disclosure: { levels: ["summary", "Fully-Deep"] } }),
+        "test",
+      ),
+    ).toThrow(/single lowercase word/);
+  });
+
+  it("accepts a disclosure level named detailed (the legacy alias)", () => {
+    const validated = validateStoryPackDefinition(
+      withLookupExtras({ disclosure: { levels: ["summary", "detailed"] } }),
+      "test",
+    );
+    expect(validated.lookup?.disclosure?.levels).toEqual([
+      "summary",
+      "detailed",
+    ]);
+  });
+
   it("rejects an expand level that is not a declared disclosure level", () => {
     expect(() =>
       validateStoryPackDefinition(

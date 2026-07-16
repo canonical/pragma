@@ -463,4 +463,138 @@ describe("compilePackStories — expand", () => {
       | undefined;
     expect(entity?.ingredients).toBeUndefined();
   });
+
+  // ---------------------------------------------------------------------
+  // Legacy disclosure alias flags + the MCP full-data default
+  // ---------------------------------------------------------------------
+
+  /** Three levels so alias precedence (highest wins) is observable. */
+  const RECIPE_STORY_THREE_LEVELS: StoryPackDefinition = {
+    ...RECIPE_STORY_WITH_EXPAND,
+    lookup: {
+      // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+      ...RECIPE_STORY_WITH_EXPAND.lookup!,
+      expand: [
+        {
+          name: "ingredients",
+          relation: "ex:ingredient",
+          select: [{ name: "label", property: "ex:label" }],
+          level: "digest",
+        },
+      ],
+      disclosure: { levels: ["summary", "digest", "detailed"] },
+    },
+  };
+
+  it("derives a boolean alias flag per non-base level", () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_THREE_LEVELS,
+      "test",
+      PREFIXES,
+    );
+    const names = (lookup?.params ?? []).map((param) => param.name);
+    expect(names).toEqual(["detail", "digest", "detailed"]);
+    const digest = lookup?.params?.find((param) => param.name === "digest");
+    expect(digest?.type).toBe("boolean");
+    expect(digest?.default).toBe(false);
+  });
+
+  it("an alias flag implies its level", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_THREE_LEVELS,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {
+      digest: true,
+    });
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown[] }
+      | undefined;
+    expect(entity?.ingredients).toHaveLength(2);
+  });
+
+  it("an explicit --detail beats an alias flag", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_THREE_LEVELS,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {
+      detail: "summary",
+      detailed: true,
+    });
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown }
+      | undefined;
+    expect(entity?.ingredients).toBeUndefined();
+  });
+
+  it("the highest requested alias level wins when several are set", async () => {
+    /** Gate the expand at `detailed` so digest-vs-detailed is observable. */
+    const gatedAtDetailed: StoryPackDefinition = {
+      ...RECIPE_STORY_THREE_LEVELS,
+      lookup: {
+        // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+        ...RECIPE_STORY_THREE_LEVELS.lookup!,
+        expand: [
+          {
+            name: "ingredients",
+            relation: "ex:ingredient",
+            select: [{ name: "label", property: "ex:label" }],
+            level: "detailed",
+          },
+        ],
+      },
+    };
+    const { lookup } = compilePackStories(gatedAtDetailed, "test", PREFIXES);
+    const result = await lookup?.resolve(expandRt, ["Pancakes"], {
+      digest: true,
+      detailed: true,
+    });
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown[] }
+      | undefined;
+    expect(entity?.ingredients).toHaveLength(2);
+  });
+
+  it("an MCP call with no explicit choice gets the highest level", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(
+      expandRt,
+      ["Pancakes"],
+      {},
+      {
+        surface: "mcp",
+        detailed: false,
+        params: {},
+      },
+    );
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown[] }
+      | undefined;
+    expect(entity?.ingredients).toHaveLength(2);
+  });
+
+  it("an MCP alias explicitly false opts down to the base level", async () => {
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const result = await lookup?.resolve(
+      expandRt,
+      ["Pancakes"],
+      { detailed: false },
+      { surface: "mcp", detailed: false, params: {} },
+    );
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown }
+      | undefined;
+    expect(entity?.ingredients).toBeUndefined();
+  });
 });
