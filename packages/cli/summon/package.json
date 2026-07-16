@@ -3,8 +3,6 @@
   "description": "Summon CLI binary: interactive code generator with Ink UI, shell completion, and Commander registration.",
   "version": "0.30.0",
   "type": "module",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
   "bin": {
     "summon": "dist/src/bin.js"
   },
@@ -19,7 +17,6 @@
     }
   },
   "files": [
-    "src",
     "dist"
   ],
   "author": {

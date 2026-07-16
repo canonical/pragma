@@ -3,13 +3,10 @@
   "description": "CLI and MCP server for Canonical's design system.",
   "version": "0.30.0",
   "type": "module",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
   "bin": {
     "pragma": "dist/pragma"
   },
   "files": [
-    "src",
     "dist"
   ],
   "author": {

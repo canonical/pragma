@@ -57,21 +57,25 @@
             "const": "module"
           },
           "module": {
-            "const": "src/index.ts"
+            "type": "string",
+            "pattern": "^dist/",
+            "description": "Module entry point must be a compiled dist artifact, never source"
           },
           "types": {
-            "const": "src/index.ts"
+            "type": "string",
+            "pattern": "^dist/",
+            "description": "Type declarations must be a compiled dist artifact, never source"
           },
           "files": {
             "type": "array",
-            "contains": { "const": "src" }
+            "contains": { "const": "dist" }
           },
           "scripts": {
             "type": "object",
             "properties": {
               "build": {
                 "type": "string",
-                "description": "Build command (can be no-op for TS-only packages)"
+                "description": "Build command producing the compiled dist output (implementation flexible)"
               },
               "test": {
                 "type": "string",
@@ -84,15 +88,7 @@
             "required": ["build", "test", "check:ts"]
           }
         },
-        "required": [
-          "name",
-          "version",
-          "type",
-          "module",
-          "types",
-          "files",
-          "scripts"
-        ]
+        "required": ["name", "version", "type", "files", "scripts"]
       }
     }
   },
