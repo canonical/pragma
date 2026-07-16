@@ -4,8 +4,6 @@ import blockSpecs from "../block/mcp/specs.js";
 import blockEmptyError from "../block/orchestration/blockEmptyError.js";
 import modifierSpecs from "../modifier/mcp/specs.js";
 import modifierEmptyError from "../modifier/orchestration/modifierEmptyError.js";
-import standardSpecs from "../standard/mcp/specs.js";
-import standardEmptyError from "../standard/orchestration/standardEmptyError.js";
 import tokenSpecs from "../token/mcp/specs.js";
 import tokenEmptyError from "../token/orchestration/tokenEmptyError.js";
 import type { FilterConfig } from "./types/index.js";
@@ -58,18 +56,9 @@ const cases: ReadonlyArray<{
     toolNames: new Set(modifierSpecs.map((s) => s.name)),
     storeEmpty: true,
   },
-  {
-    domain: "standard (filter active)",
-    error: standardEmptyError({ category: "react" }),
-    toolNames: new Set(standardSpecs.map((s) => s.name)),
-    storeEmpty: false,
-  },
-  {
-    domain: "standard (store-empty)",
-    error: standardEmptyError({}),
-    toolNames: new Set(standardSpecs.map((s) => s.name)),
-    storeEmpty: true,
-  },
+  // `standard` left this contract with its domain: the bundled pack has no
+  // emptyError hook (a pinned PARITY_GAP), so an empty standard list renders
+  // zero rows instead of an EMPTY_RESULTS recovery.
 ];
 
 describe("empty-error recovery contract (cross-domain)", () => {

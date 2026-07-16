@@ -4,10 +4,22 @@ import { createTestStore, DS_ALL_TTL } from "#testing";
 import listBlocks from "../../block/operations/list.js";
 import listModifiers from "../../modifier/operations/list.js";
 import { TTL_PREFIXES } from "../../shared/prefixes.js";
+import { standardPack } from "../../shared/stories/pack/bundled/standardPack.js";
+import runSelectQuery from "../../shared/stories/pack/runSelectQuery.js";
 import type { FilterConfig } from "../../shared/types/index.js";
-import listStandards from "../../standard/operations/list.js";
 import listTokens from "../../token/operations/list.js";
 import { collectEntityCounts } from "./collectEntityCounts.js";
+
+/**
+ * The user-facing standard row count: the bundled pack's list query is
+ * what `standard list` serves since the standard cutover, so the info
+ * count must stay in lockstep with it (same WHERE grain the retired
+ * listStandards op used, including the OPTIONAL fan-out).
+ */
+async function countStandardRows(store: Store): Promise<number> {
+  const rows = await runSelectQuery(store, standardPack.list.query, "test");
+  return rows.length;
+}
 
 let store: Store;
 let cleanup: () => void;
@@ -36,7 +48,7 @@ describe("collectEntityCounts", () => {
     const counts = await collectEntityCounts(store, config);
 
     expect(counts.blocks).toBe((await listBlocks(store, config)).length);
-    expect(counts.standards).toBe((await listStandards(store)).length);
+    expect(counts.standards).toBe(await countStandardRows(store));
     expect(counts.modifierFamilies).toBe((await listModifiers(store)).length);
     expect(counts.tokens).toBe((await listTokens(store)).length);
   });
@@ -119,7 +131,7 @@ describe("collectEntityCounts fan-out parity", () => {
     const counts = await collectEntityCounts(fanStore, config);
 
     expect(counts.blocks).toBe((await listBlocks(fanStore, config)).length);
-    expect(counts.standards).toBe((await listStandards(fanStore)).length);
+    expect(counts.standards).toBe(await countStandardRows(fanStore));
     expect(counts.modifierFamilies).toBe(
       (await listModifiers(fanStore)).length,
     );
@@ -132,7 +144,7 @@ describe("collectEntityCounts fan-out parity", () => {
     const config: FilterConfig = { tier: undefined, channel: "prerelease" };
     expect((await listBlocks(fanStore, config)).length).toBe(3);
     expect((await listModifiers(fanStore)).length).toBe(2);
-    expect((await listStandards(fanStore)).length).toBe(2);
+    expect(await countStandardRows(fanStore)).toBe(2);
     expect((await listTokens(fanStore)).length).toBe(2);
 
     // And under normal channel the beta block drops out (2 block rows).

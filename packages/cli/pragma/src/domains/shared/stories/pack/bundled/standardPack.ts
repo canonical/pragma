@@ -36,10 +36,13 @@ import type { StoryPackDefinition } from "../types.js";
  * The list SELECT mirrors the query the old `listStandards` operation sent
  * the store — `cs:name` and the category path stay OPTIONAL so a standard
  * without a display name or category still appears — while `ORDER BY ?name`
- * sorts by the human-facing name. Category filtering is value-free (the
- * category set lives in the graph) and search covers name + description;
- * both are post-query row predicates, so user input never touches this
- * query text.
+ * sorts by the human-facing name. The BIND reproduces the old
+ * `deriveStandardName` fallback declaratively: a standard without `cs:name`
+ * displays its IRI fragment with dots rendered as slashes
+ * (`…#react.component.props` → `react/component/props`). Category filtering
+ * is value-free (the category set lives in the graph) and search covers
+ * name + description; both are post-query row predicates, so user input
+ * never touches this query text.
  */
 export const standardPack: StoryPackDefinition = {
   noun: "standard",
@@ -52,7 +55,8 @@ export const standardPack: StoryPackDefinition = {
       "WHERE {",
       "  ?uri a cs:CodeStandard ;",
       "       cs:description ?description .",
-      "  OPTIONAL { ?uri cs:name ?name . }",
+      "  OPTIONAL { ?uri cs:name ?n . }",
+      '  BIND(COALESCE(?n, REPLACE(STRAFTER(STR(?uri), "#"), "\\\\.", "/")) AS ?name)',
       "  OPTIONAL {",
       "    ?uri cs:hasCategory ?cat .",
       "    ?cat cs:slug ?category .",

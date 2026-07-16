@@ -20,7 +20,6 @@ import {
   nounVerbFromPath,
 } from "../domains/shared/stories/pack/index.js";
 import { commands as skillCommands } from "../domains/skill/index.js";
-import { commands as standardCommands } from "../domains/standard/index.js";
 import { commands as tokenCommands } from "../domains/token/index.js";
 
 /**
@@ -35,7 +34,6 @@ export function builtInCommands(ctx: PragmaContext): CommandDefinition[] {
     ...configCommands(ctx),
     ...createCommands(),
     ...setupCommands(),
-    ...standardCommands(ctx),
     ...modifierCommands(ctx),
     ...tokenCommands(ctx),
     ...blockCommands(ctx),

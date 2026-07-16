@@ -144,16 +144,18 @@ describe("all-fail batch lookups", () => {
 // ---------------------------------------------------------------------------
 
 describe("empty result sets", () => {
-  it("standard_list with nonexistent category → error envelope", async () => {
+  it("standard_list with nonexistent category → empty rows", async () => {
     const res = await client.callTool({
       name: "standard_list",
       arguments: { category: "nonexistent_category" },
     });
     const body = parseEnvelope(res);
-    // resolveStandardList throws when no results found
-    expect(body.ok).toBe(false);
-    const error = body.error as { code: string };
-    expect(error.code).toBeDefined();
+    // The bundled pack's value-free category filter returns zero rows for
+    // an unmatched value; the old EMPTY_RESULTS error is a pinned
+    // PARITY_GAP of the standard cutover (packs have no emptyError hook).
+    expect(body.ok).toBe(true);
+    expect(body.data).toEqual([]);
+    expect((body.meta as { count: number }).count).toBe(0);
   });
 
   it("token_list with nonexistent category → empty or error", async () => {

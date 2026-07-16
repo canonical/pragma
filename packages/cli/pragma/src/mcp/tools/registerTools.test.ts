@@ -113,7 +113,7 @@ describe("tool listing", () => {
     }
   });
 
-  // Golden surface: the full built-in tool set with no story packs, in
+  // Golden surface: the full built-in tool set plus bundled packs, in
   // registration order. The per-(noun, verb) reserved-guard flip must leave
   // this byte-identical AND order-identical — registration order is the tool
   // surface a client sees.
@@ -124,10 +124,6 @@ describe("tool listing", () => {
       "block_list",
       "block_lookup",
       "block_sample",
-      "standard_list",
-      "standard_lookup",
-      "standard_categories",
-      "standard_sample",
       "modifier_list",
       "modifier_lookup",
       "modifier_sample",
@@ -154,10 +150,29 @@ describe("tool listing", () => {
       "create_domain",
       "create_route",
       "create_wrapper",
-      // `tier_list` is served by the bundled `tier` pack, registered after the
-      // built-in tools — the hand-written tier domain was deleted.
+      // Bundled packs register after the built-in tools: `tier_list` and the
+      // whole `standard` noun are served by bundled story packs — the
+      // hand-written tier and standard domains were deleted.
       "tier_list",
+      "standard_list",
+      "standard_lookup",
+      "standard_categories",
+      "standard_sample",
     ]);
+  });
+
+  it("serves the standard tools from the bundled pack, not built-ins", async () => {
+    const { tools } = await client.listTools();
+    const standardList = tools.find((tool) => tool.name === "standard_list");
+    // Pack-compiled tool descriptions carry no story-pack suffix here only
+    // because the bundled pack curates them; the giveaway is the derived
+    // `search`/`category` params on the pack projection.
+    const params = Object.keys(
+      (standardList?.inputSchema as { properties?: object })?.properties ?? {},
+    );
+    expect(params).toContain("category");
+    expect(params).toContain("search");
+    expect(params).toContain("condensed");
   });
 });
 

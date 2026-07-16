@@ -96,13 +96,6 @@ export {
   listSkills,
 } from "./domains/skill/operations/index.js";
 export {
-  listCategories,
-  listStandards,
-  lookupStandard,
-  resolveStandardList,
-  resolveStandardLookup,
-} from "./domains/standard/index.js";
-export {
   listTokens,
   lookupToken,
   resolveTokenList,

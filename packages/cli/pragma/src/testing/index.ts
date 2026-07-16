@@ -10,10 +10,7 @@ export {
   GRAPHQL_ERROR_TTL,
   GRAPHQL_FATAL_TTL,
 } from "./graphqlFixtures.js";
-export {
-  PARITY_GAPS,
-  STANDARD_PACK_STORY,
-} from "./standardParityFixtures.js";
+export { PARITY_GAPS } from "./standardParityFixtures.js";
 export type { PragmaTestStoreOptions } from "./store.js";
 export { createTestStore } from "./store.js";
 export {
