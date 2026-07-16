@@ -17,7 +17,9 @@ const allSpecs: readonly ToolSpec[] = [
   {
     name: "tokens_add_config",
     description:
-      "Generate a tokens.config.mjs file for terrazzo token pipeline.",
+      "Generate a tokens.config.mjs file for the terrazzo token pipeline. " +
+      "Use when wiring design-token sources into a project. Example: " +
+      "tokens_add_config {}.",
     params: {
       force: {
         type: "boolean",
@@ -53,7 +55,10 @@ const allSpecs: readonly ToolSpec[] = [
   {
     name: "token_sample",
     description:
-      "Return 1–5 randomly selected complete token instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.",
+      "Return 1–5 randomly selected complete token instances as exemplars " +
+      "(different each call). Use when new to token data — see actual " +
+      "shapes with theme values BEFORE writing queries. Example: " +
+      'token_sample { count: "2" }.',
     params: {
       count: {
         type: "string",

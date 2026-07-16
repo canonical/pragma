@@ -20,7 +20,7 @@ import type { TestMcpClientResult } from "../types.js";
 export default async function createTestMcpClient(
   runtime: PragmaRuntime,
 ): Promise<TestMcpClientResult> {
-  const { server } = createMcpServerFromRuntime(runtime);
+  const { server } = await createMcpServerFromRuntime(runtime);
 
   const [serverTransport, clientTransport] =
     InMemoryTransport.createLinkedPair();

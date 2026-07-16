@@ -27,7 +27,10 @@ import type { StoryPackDefinition } from "../types.js";
 export const modifierPack: StoryPackDefinition = {
   noun: "modifier",
   description: "List all modifier families",
-  toolDescription: "List all modifier families with their values.",
+  toolDescription:
+    "List all modifier families with their values. Use when browsing which " +
+    "modifier families exist and the values each allows. Example: " +
+    "modifier_list {}.",
   list: {
     // The alternation path (forward ds:hasModifier | reverse
     // ds:modifierFamily) collects values regardless of which direction the
@@ -63,6 +66,10 @@ export const modifierPack: StoryPackDefinition = {
   },
   lookup: {
     source: "graphql",
+    toolDescription:
+      "Get values and usage details for one or more modifier families by " +
+      "name. Use when you need the allowed values of specific families. " +
+      'Example: modifier_lookup { names: ["importance"] }.',
     by: "ds:name",
     type: "ds:ModifierFamily",
     // No flat fields: the old ModifierFamily shape was {uri, name, values},

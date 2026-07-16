@@ -9,7 +9,6 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
 
@@ -42,37 +41,41 @@ function parseEnvelope(
 // ---------------------------------------------------------------------------
 
 describe("capabilities", () => {
-  it("returns enriched tool catalog with conventions", async () => {
+  it("returns the aggregate of every orientation surface", async () => {
     const res = await client.callTool({ name: "capabilities", arguments: {} });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
-      version: string;
-      conventions: Record<string, string>;
-      tools: { name: string; category: string; use_when: string }[];
-      counts: Record<string, number>;
+      instructions: string;
+      state: { version: string; state: Record<string, unknown> };
+      prompts: { name: string }[];
+      tools: { name: string }[];
     };
+    expect(data.instructions).toContain("pragma://state");
+    expect(Object.keys(data.state.state)).toEqual([
+      "tier",
+      "channel",
+      "detail",
+      "packages",
+    ]);
+    expect(data.prompts.map((p) => p.name)).toContain("implement-component");
     const toolNames = data.tools.map((t) => t.name);
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
-    expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(TOKEN_READ_SURFACE_ENABLED ? 34 : 31);
-    expect(data.conventions).toBeDefined();
-    expect(data.version).toBeDefined();
   });
-});
 
-describe("llm", () => {
-  it("returns orientation with decision trees", async () => {
-    const res = await client.callTool({ name: "llm", arguments: {} });
+  it("returns one hydrated prompt when prompt is passed", async () => {
+    const res = await client.callTool({
+      name: "capabilities",
+      arguments: { prompt: "fix-empty-results" },
+    });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
-      decisionTrees: unknown[];
-      commandReference: unknown[];
+      messages: { content: { text: string } }[];
     };
-    expect(data.decisionTrees.length).toBeGreaterThan(0);
-    expect(data.commandReference.length).toBeGreaterThan(0);
+    expect(data.messages).toHaveLength(1);
+    expect(data.messages[0]?.content.text.length).toBeGreaterThan(0);
   });
 });
 
@@ -249,7 +252,7 @@ describe("modifier_lookup", () => {
 // Token
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
+describe("token_list", () => {
   it("returns tokens", async () => {
     const res = await client.callTool({
       name: "token_list",
@@ -261,7 +264,7 @@ describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
   });
 });
 
-describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
+describe("token_lookup", () => {
   it("returns token with values", async () => {
     const res = await client.callTool({
       name: "token_lookup",
@@ -339,6 +342,20 @@ describe("config_channel", () => {
     const data = body.data as { channel: string; action: string };
     expect(data.action).toBe("query");
     expect(data.channel).toBe("normal");
+  });
+});
+
+describe("config_detail", () => {
+  it("queries current detail", async () => {
+    const res = await client.callTool({
+      name: "config_detail",
+      arguments: {},
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as { detail: string | null; action: string };
+    expect(data.action).toBe("query");
+    expect(data.detail).toBeNull();
   });
 });
 

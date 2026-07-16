@@ -30,7 +30,9 @@ import type { StoryPackDefinition } from "../types.js";
 export const tokenPack: StoryPackDefinition = {
   noun: "token",
   description: "List all design tokens",
-  toolDescription: "List all design tokens with their type.",
+  toolDescription:
+    "List all design tokens with their type. Use when browsing which tokens " +
+    "exist under the active scope. Example: token_list {}.",
   list: {
     query: [
       "SELECT ?uri ?name ?category WHERE {",
@@ -59,6 +61,10 @@ export const tokenPack: StoryPackDefinition = {
     },
   },
   lookup: {
+    toolDescription:
+      "Get type and theme values for one or more design tokens by name. Use " +
+      "when resolving specific tokens' light/dark values. Example: " +
+      'token_lookup { names: ["color.primary"] }.',
     by: "ds:tokenId",
     type: "ds:Token",
     fields: [

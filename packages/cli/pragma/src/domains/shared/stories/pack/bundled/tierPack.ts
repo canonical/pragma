@@ -34,7 +34,9 @@ import type { StoryPackDefinition } from "../types.js";
 export const tierPack: StoryPackDefinition = {
   noun: "tier",
   description: "List all tiers in the design system ontology",
-  toolDescription: "List all tiers in the design-system ontology.",
+  toolDescription:
+    "List all tiers in the design-system ontology. Use when understanding " +
+    "the tier hierarchy before setting a tier filter. Example: tier_list {}.",
   list: {
     query: [
       "SELECT ?uri ?name WHERE {",

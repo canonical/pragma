@@ -96,11 +96,22 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | `pragma skill list` | List discovered agent skills from installed packages |
 | `pragma skill lookup <name...>` | Show full SKILL.md instructions for skills by name |
 
-### LLM
+### Prompt
 
 | Command | Description |
 |---------|-------------|
-| `pragma llm` | Print LLM orientation context (decision trees, command reference) |
+| `pragma prompt list` | List available prompts (mirrors MCP `prompts/list`) |
+| `pragma prompt lookup <name> [key=value ...]` | Hydrate one prompt (mirrors MCP `prompts/get`) |
+
+### Capabilities
+
+| Command | Description |
+|---------|-------------|
+| `pragma capabilities` | Live state: tier, channel, detail, packages (mirrors `pragma://state`) |
+| `pragma capabilities --detail prompts` | The prompt catalog (mirrors MCP `prompts/list`) |
+| `pragma capabilities --detail reference` | The full tool reference (mirrors MCP `tools/list`) |
+
+`--format json` on any level emits the exact MCP protocol payload.
 
 ### Setup
 
@@ -233,17 +244,22 @@ until token data ships (see the Tokens note above).
 |------|-------------|
 | `config_tier` | Set the project's tier |
 | `config_channel` | Set the release channel |
+| `config_detail` | Set the default disclosure level for lookups |
 | `tokens_add_config` | Add Terrazzo token build configuration |
 | `create_component` | Scaffold a new design system component |
 | `create_package` | Scaffold a new monorepo package |
 | `create_application` | Scaffold a complete React application |
 
-#### Orientation Tools (2)
+#### Orientation Tools (1)
 
 | Tool | Description |
 |------|-------------|
-| `capabilities` | List all available tools with category counts (~100 tokens) |
-| `llm` | Get full LLM orientation: context, decision trees, command reference |
+| `capabilities` | Aggregate orientation for tools-only harnesses: instructions, live state, prompt catalog, and tool reference in one call; pass `prompt` (+ `args`) for one hydrated prompt |
+
+Protocol-complete clients don't need the aggregator: the server sends
+orientation `instructions` in the `initialize` result, serves live state at
+the `pragma://state` resource, and exposes multi-step workflows via the
+standard `prompts/list` / `prompts/get` surface.
 
 #### Diagnostic Tools (2)
 
@@ -319,6 +335,11 @@ Lookup tools accept a `names` array and return partial results — valid items i
 
 Every subject URI in the ke graph is exposed as a discoverable MCP resource via the `pragma:{uri}` template. Reading a resource returns all properties with level-1 object relations resolved to summaries.
 
+`pragma://state` serves the live configuration state — tier, channel, detail,
+and loaded packages, each with its origin, effect, and how to change it
+(durable vs per-call). It re-reads the config layers on every read, so a
+`config_*` write during the session is reflected immediately.
+
 ## Configuration
 
 Configuration is layered: built-in defaults, then the global file at
@@ -334,7 +355,7 @@ globally, configure once, and override per project:
 }
 ```
 
-`pragma config tier|channel|framework|trace` writes to the nearest existing
+`pragma config tier|channel|detail|framework|trace` writes to the nearest existing
 project file, or to the global file when no project is configured; pass
 `--local` or `--global` to pick the layer explicitly. Every write echoes the
 file it wrote, and `pragma config show` reports which layer supplied each
@@ -417,7 +438,7 @@ With `--format json`, errors are returned as structured JSON with error code, su
 
 pragma is structured as a domain-driven application using the federation pattern from `@canonical/cli-core`:
 
-1. **Domains** — 17 domain modules (block, config, create, doctor, graph, graphql, info, llm, modifier, ontology, refs, setup, skill, standard, tier, token, trace — every directory under `src/domains/` except the `shared/` infrastructure folder), each contributing `CommandDefinition`s
+1. **Domains** — 17 domain modules (block, capabilities, config, create, doctor, graph, graphql, info, modifier, ontology, prompt, refs, setup, skill, standard, token, trace — every directory under `src/domains/` except the `shared/` infrastructure folder), each contributing `CommandDefinition`s
 2. **Operations** — data retrieval functions that query the ke triple store via SPARQL
 3. **Formatters** — three-mode output adapters (plain/llm/json) for each operation
 4. **Commands** — thin wiring layer connecting Commander.js parameters to operations + formatters

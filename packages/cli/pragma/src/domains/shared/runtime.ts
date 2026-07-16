@@ -14,7 +14,7 @@ import {
   compile,
   createStoreQueryFn,
 } from "@canonical/ke-graphql";
-import { readConfig } from "#config";
+import { readConfigLayers } from "#config";
 import { PragmaError } from "#error";
 import { bootStore } from "./bootStore.js";
 import { mergeAndParseRefs } from "./mergeAndParseRefs.js";
@@ -41,7 +41,7 @@ export async function bootPragma(options?: {
   sources?: SourceSpec[];
 }): Promise<PragmaRuntime> {
   const cwd = options?.cwd ?? process.cwd();
-  const config = readConfig(cwd);
+  const { config, origins } = readConfigLayers(cwd);
 
   // Merge package refs: a non-empty config list replaces global refs and
   // defaults; otherwise global refs merge over the defaults.
@@ -60,6 +60,7 @@ export async function bootPragma(options?: {
   return {
     store,
     config,
+    origins,
     cwd,
     packages,
     graphql: createLazyGraphql(store),

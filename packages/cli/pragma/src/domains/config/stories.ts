@@ -20,7 +20,8 @@ export const configShowStory: ReadStory<ConfigShowData, ConfigShowData> = {
   verb: "show",
   description: "Display resolved configuration",
   toolDescription:
-    "Show current pragma configuration (tier and channel settings).",
+    "Show current pragma configuration (tier and channel settings). Use " +
+    "when checking the active scope before querying. Example: config_show {}.",
   params: [],
   examples: ["pragma config show"],
   resolve: async (rt) => {

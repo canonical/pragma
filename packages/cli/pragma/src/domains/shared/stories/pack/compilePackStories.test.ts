@@ -803,4 +803,24 @@ describe("compilePackStories — list emptyRecovery", () => {
     const { list } = compilePackStories(noRecovery, "test", PREFIXES);
     await expect(list.resolve(rt, {})).resolves.toEqual([]);
   });
+
+  it("throws for filtered-to-empty even without a declared recovery (P3 generalization)", async () => {
+    const noRecovery: StoryPackDefinition = {
+      ...emptyDefinition,
+      list: {
+        query: emptyDefinition.list.query,
+        columns: emptyDefinition.list.columns,
+        filters: emptyDefinition.list.filters,
+      },
+    };
+    const { list } = compilePackStories(noRecovery, "test", PREFIXES);
+    const error = await list.resolve(rt, { category: "soup" }).then(
+      () => undefined,
+      (thrown) => thrown as PragmaError,
+    );
+    expect(error?.code).toBe("EMPTY_RESULTS");
+    expect(error?.filters).toEqual({ category: "soup" });
+    expect(error?.recovery?.cli).toBe("pragma recipe list");
+    expect(error?.recovery?.mcp?.tool).toBe("recipe_list");
+  });
 });

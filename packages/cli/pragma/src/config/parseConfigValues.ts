@@ -11,7 +11,7 @@ import {
 import type { StoryPackDefinition } from "../domains/shared/stories/pack/types.js";
 import validateStoryPackDefinition from "../domains/shared/stories/pack/validateStoryPackDefinition.js";
 import { PragmaError } from "../error/PragmaError.js";
-import type { ConfigFileValues } from "./types.js";
+import type { ConfigFileValues, PromptsConfig } from "./types.js";
 
 /**
  * Type guard: check whether a value is a recognized channel string.
@@ -93,6 +93,7 @@ export default function parseConfigValues(
   const stories = parseStoriesField(parsed.stories, sourcePath);
   const prefixes = parsePrefixesField(parsed.prefixes);
   const detail = typeof parsed.detail === "string" ? parsed.detail : undefined;
+  const prompts = parsePromptsField(parsed.prompts);
 
   return {
     ...(tier !== undefined ? { tier } : {}),
@@ -103,7 +104,35 @@ export default function parseConfigValues(
     ...(stories ? { stories } : {}),
     ...(prefixes ? { prefixes } : {}),
     ...(detail !== undefined ? { detail } : {}),
+    ...(prompts !== undefined ? { prompts } : {}),
   };
+}
+
+/**
+ * Validate and parse the `prompts` config field.
+ *
+ * @returns The prompts options, or `undefined` when absent.
+ * @throws PragmaError if the field is present but malformed.
+ */
+function parsePromptsField(raw: unknown): PromptsConfig | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw PragmaError.configError(
+      '"prompts" must be an object (e.g. { "skillStubs": false }).',
+    );
+  }
+  const { skillStubs } = raw as Record<string, unknown>;
+  if (skillStubs === undefined) return {};
+  if (typeof skillStubs === "boolean") return { skillStubs };
+  if (
+    Array.isArray(skillStubs) &&
+    skillStubs.every((name) => typeof name === "string")
+  ) {
+    return { skillStubs: skillStubs as string[] };
+  }
+  throw PragmaError.configError(
+    '"prompts.skillStubs" must be a boolean or an array of skill names.',
+  );
 }
 
 /**

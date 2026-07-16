@@ -47,10 +47,13 @@ import type { StoryPackDefinition } from "../types.js";
 export const blockPack: StoryPackDefinition = {
   noun: "block",
   description: "Look up design system blocks",
-  toolDescription:
-    "Get detailed information about one or more design system blocks including anatomy, modifiers, and properties.",
   lookup: {
     source: "graphql",
+    toolDescription:
+      "Get detailed information about one or more design system blocks " +
+      "including anatomy, modifiers, and properties. Use when you need the " +
+      'full spec of specific blocks by name — detail: "summary" trims to ' +
+      'the base view. Example: block_lookup { names: ["Button"] }.',
     by: "ds:name",
     // Blocks span four concrete classes; the VALUES-constrained resolve
     // keeps suggestions and completions scoped to blocks, and the UIBlock

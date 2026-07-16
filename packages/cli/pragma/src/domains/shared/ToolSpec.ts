@@ -15,7 +15,8 @@ import type { PragmaRuntime } from "./types/index.js";
  * could generate `ParameterDefinition[]`.
  */
 export interface ToolParamDef {
-  readonly type: "string" | "boolean" | "string[]";
+  /** `"record"` maps to `z.record(z.string())` — a string→string map. */
+  readonly type: "string" | "boolean" | "string[]" | "record";
   readonly description: string;
   readonly optional?: boolean;
   readonly enum?: readonly string[];

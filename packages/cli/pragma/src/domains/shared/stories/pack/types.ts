@@ -278,7 +278,11 @@ export interface StoryPackLookup {
   readonly type?: string;
   /** CLI description for the lookup command (defaults to a generated one). */
   readonly description?: string;
-  /** MCP tool description (defaults to a generated one). */
+  /**
+   * MCP tool description for the lookup verb. The pack owns the authored
+   * one-liner (what it does · use when · example) per the description-fold
+   * rule; defaults to a generic per-noun sentence.
+   */
   readonly toolDescription?: string;
   /**
    * Class constraints when entities span several classes (e.g. blocks are

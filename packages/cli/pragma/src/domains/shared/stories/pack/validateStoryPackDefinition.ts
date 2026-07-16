@@ -605,6 +605,7 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
 
   return {
     ...(fetchSource !== undefined ? { source: fetchSource } : {}),
+    ...(toolDescription !== undefined ? { toolDescription } : {}),
     by,
     ...(type !== undefined ? { type } : {}),
     ...(description !== undefined ? { description } : {}),

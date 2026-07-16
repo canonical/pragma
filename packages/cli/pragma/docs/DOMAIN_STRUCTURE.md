@@ -6,7 +6,7 @@ Canonical structure for all command and operation domains in `@canonical/pragma-
 
 ## Two domain tiers
 
-**CLI domains** have commands, operations, formatters, and optionally helpers. Seventeen exist today — every directory under `src/domains/` except `shared/`, which holds cross-domain infrastructure: `block`, `config`, `create`, `doctor`, `graph`, `graphql`, `info`, `llm`, `modifier`, `ontology`, `refs`, `setup`, `skill`, `standard`, `tier`, `token`, `trace`.
+**CLI domains** have commands, operations, formatters, and optionally helpers. Seventeen exist today — every directory under `src/domains/` except `shared/`, which holds cross-domain infrastructure: `block`, `capabilities`, `config`, `create`, `doctor`, `graph`, `graphql`, `info`, `modifier`, `ontology`, `prompt`, `refs`, `setup`, `skill`, `standard`, `token`, `trace`.
 
 **Operations-only domains** expose operations consumed by the MCP adapter but have no CLI commands. None exist today (`graph` and `ontology` have since gained CLI commands), but the tier remains available for future domains.
 

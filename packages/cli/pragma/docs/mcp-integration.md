@@ -42,10 +42,14 @@ Add to your `.mcp.json` (Claude Code) or equivalent config:
 
 A typical agent session:
 
-1. Call `capabilities` to discover available tools (~100 tokens)
-2. Call `llm` for full orientation: design system context, decision trees, command reference
-3. Use read tools (`block_lookup`, `standard_lookup`, etc.) to gather specific data
-4. Use write tools (`create_component`, `config_tier`, etc.) to make changes
+1. Read the `instructions` from the `initialize` result — conventions plus a
+   connect-time state snapshot (tools-only harnesses: call the `capabilities`
+   tool instead, which aggregates everything below in one call)
+2. Read `pragma://state` for the live tier/channel/detail/packages scope
+3. New to a data family? Call its `*_sample` tool to see real shapes; for
+   multi-step workflows use `prompts/list` / `prompts/get`
+4. Use read tools (`block_lookup`, `standard_lookup`, etc.) to gather specific data
+5. Use write tools (`create_component`, `config_tier`, etc.) to make changes
 
 ## Tool Reference
 
@@ -235,18 +239,22 @@ Parameters:
 
 #### `capabilities`
 
-List all available pragma MCP tools organized by category with counts. Costs ~100 tokens. Call this first to discover what pragma can do.
+Aggregate orientation for tools-only harnesses. Returns every protocol
+orientation payload in one call:
 
-No parameters.
+- **instructions** — the same text served in the `initialize` result
+- **state** — the live `pragma://state` payload (tier, channel, detail, packages)
+- **prompts** — the `prompts/list` result's prompts array
+- **tools** — the `tools/list` result's tools array (including this tool)
 
-#### `llm`
+Parameters:
+- `prompt` (string, optional) — a prompt name; when passed, the tool instead
+  returns that prompt hydrated (the tools-only fallback for `prompts/get`)
+- `args` (object, optional) — string arguments for the hydrated prompt
 
-Get full LLM orientation for the design system. Returns:
-- **context** — current design system summary (block count, standard count, token count)
-- **decisionTrees** — step-by-step guides for common intents (implement component, check standards, etc.)
-- **commandReference** — all tools with token cost estimates
-
-No parameters.
+Protocol-complete clients should use the native surfaces directly:
+initialize `instructions`, the `pragma://state` resource, and
+`prompts/list` / `prompts/get` (prompt arguments support `completion/complete`).
 
 ### Diagnostic Tools
 

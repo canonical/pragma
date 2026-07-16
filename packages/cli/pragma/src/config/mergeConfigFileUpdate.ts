@@ -41,6 +41,7 @@ export default function mergeConfigFileUpdate(
   applyField(existing, update, "packages");
   applyField(existing, update, "trace");
   applyField(existing, update, "framework");
+  applyField(existing, update, "detail");
 
   return `${JSON.stringify(existing, null, 2)}\n`;
 }

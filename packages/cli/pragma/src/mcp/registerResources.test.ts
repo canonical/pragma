@@ -1,5 +1,6 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DEFAULT_ORIGINS } from "#config";
 import { createTestMcpClient, createTestStore } from "#testing";
 import { DEFAULT_PREFIX_MAP, P } from "../domains/shared/prefixes.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
@@ -62,6 +63,7 @@ async function createClientForTtl(
   const runtime: PragmaRuntime = {
     store,
     config: { tier: undefined, channel: "normal" },
+    origins: DEFAULT_ORIGINS,
     cwd: process.cwd(),
     packages: [],
     dispose: () => closeStore(),

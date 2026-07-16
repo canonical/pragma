@@ -19,7 +19,10 @@ const specs: readonly ToolSpec[] = [
   {
     name: "block_sample",
     description:
-      "Return 1–5 randomly selected complete block instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.",
+      "Return 1–5 randomly selected complete block instances as exemplars " +
+      "(different each call). Use when new to block data — see actual " +
+      "shapes, property names, and value formats BEFORE writing queries. " +
+      'Example: block_sample { count: "2" }.',
     params: {
       count: {
         type: "string",
