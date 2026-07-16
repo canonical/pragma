@@ -15,12 +15,7 @@ import {
   RECIPE_STORY,
   RECIPE_TTL,
 } from "#testing";
-import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import type { McpErrorPayload } from "../types.js";
-
-// token_list, token_lookup, and token_sample are gated behind the token
-// read-surface feature flag.
-const EXPECTED_TOOL_COUNT = TOKEN_READ_SURFACE_ENABLED ? 34 : 31;
 
 let client: Client;
 let cleanup: () => Promise<void>;
@@ -62,9 +57,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers the expected number of tools", async () => {
+  it("registers 34 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(EXPECTED_TOOL_COUNT);
+    expect(tools).toHaveLength(34);
   });
 
   it("all tools have descriptions", async () => {
@@ -85,10 +80,8 @@ describe("tool listing", () => {
     expect(names).toContain("standard_categories");
     expect(names).toContain("modifier_list");
     expect(names).toContain("modifier_lookup");
-    if (TOKEN_READ_SURFACE_ENABLED) {
-      expect(names).toContain("token_list");
-      expect(names).toContain("token_lookup");
-    }
+    expect(names).toContain("token_list");
+    expect(names).toContain("token_lookup");
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
@@ -109,9 +102,7 @@ describe("tool listing", () => {
     // Sample tools
     expect(names).toContain("block_sample");
     expect(names).toContain("standard_sample");
-    if (TOKEN_READ_SURFACE_ENABLED) {
-      expect(names).toContain("token_sample");
-    }
+    expect(names).toContain("token_sample");
     expect(names).toContain("modifier_sample");
   });
 
@@ -134,9 +125,8 @@ describe("tool listing", () => {
       "block_lookup",
       "block_sample",
       "modifier_sample",
-      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_list", "token_lookup"] : []),
       "tokens_add_config",
-      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_sample"] : []),
+      "token_sample",
       "config_show",
       "config_tier",
       "config_channel",
@@ -150,15 +140,18 @@ describe("tool listing", () => {
       "info",
       "capabilities",
       "llm",
+      "create_component",
+      "create_package",
       "create_application",
       "create_domain",
       "create_route",
       "create_wrapper",
       // Bundled packs register after the built-in tools, in BUNDLED_PACKS
-      // order: `tier`, then `standard`, then `modifier`. The hand-written tier,
-      // standard, and modifier list/lookup domains were deleted and are now
-      // served by bundled story packs (only the `modifier sample` built-in
-      // remnant remains above).
+      // order: `tier`, `standard`, `modifier`, then `token`. The hand-written
+      // tier, standard, modifier list/lookup, and token list/lookup domains
+      // were deleted and are now served by bundled story packs (only the
+      // `modifier sample`, `token sample`, and `tokens_add_config` built-in
+      // remnants remain above).
       "tier_list",
       "standard_list",
       "standard_lookup",
@@ -166,6 +159,8 @@ describe("tool listing", () => {
       "standard_sample",
       "modifier_list",
       "modifier_lookup",
+      "token_list",
+      "token_lookup",
     ]);
   });
 
@@ -495,7 +490,7 @@ describe("modifier_lookup", () => {
 // Token tools
 // =============================================================================
 
-describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
+describe("token_list", () => {
   it("returns tokens", async () => {
     const result = await client.callTool({
       name: "token_list",
@@ -506,20 +501,24 @@ describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
   });
 });
 
-describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
+describe("token_lookup", () => {
   it("returns token with theme values", async () => {
     const result = await client.callTool({
       name: "token_lookup",
       arguments: { names: ["color.primary"] },
     });
+    // Served by the bundled token pack: theme values are the flat
+    // valueLight/valueDark fields (the old nested {theme, value} shape).
     const data = parseData(result) as {
       results: {
         name: string;
-        values: { theme: string; value: string }[];
+        valueLight?: string;
+        valueDark?: string;
       }[];
     };
     expect(data.results[0]?.name).toBe("color.primary");
-    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
+    expect(data.results[0]?.valueLight).toBeTruthy();
+    expect(data.results[0]?.valueDark).toBeTruthy();
   });
 
   it("returns per-query errors for unknown token", async () => {
@@ -861,7 +860,7 @@ describe("llm", () => {
     expect(data.context.counts.blocks).toBeGreaterThan(0);
     expect(data.context.counts.standards).toBeGreaterThan(0);
     expect(data.context.namespaces.length).toBeGreaterThan(0);
-    expect(data.decisionTrees).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 5 : 4);
+    expect(data.decisionTrees).toHaveLength(5);
     expect(data.commandReference.length).toBeGreaterThan(0);
   });
 });
@@ -875,9 +874,7 @@ describe("error handling", () => {
     const notFoundCalls = [
       { name: "block_lookup", arguments: { names: ["X"] } },
       { name: "modifier_lookup", arguments: { names: ["X"] } },
-      ...(TOKEN_READ_SURFACE_ENABLED
-        ? [{ name: "token_lookup", arguments: { names: ["X"] } }]
-        : []),
+      { name: "token_lookup", arguments: { names: ["X"] } },
       { name: "standard_lookup", arguments: { names: ["X"] } },
     ] as const;
 
@@ -951,7 +948,7 @@ describe("ontology_show", () => {
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);
     expect(envelope.condensed).toBe(true);
-    expect(envelope.text).toEqual(expect.stringContaining("## Ontology ds:"));
+    expect(envelope.text).toEqual(expect.stringContaining("## ds:"));
   });
 });
 
@@ -1074,7 +1071,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(EXPECTED_TOOL_COUNT + 2);
+      expect(tools).toHaveLength(36);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 
@@ -1184,7 +1181,7 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(EXPECTED_TOOL_COUNT);
+    expect(data.counts.total).toBe(34);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(9);
     expect(data.counts.orientation).toBe(2);
@@ -1267,17 +1264,14 @@ describe("condensed parameter", () => {
     expect((envelope.text as string).length).toBeGreaterThan(0);
   });
 
-  it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
-    "token_lookup returns condensed text",
-    async () => {
-      const result = await client.callTool({
-        name: "token_lookup",
-        arguments: { names: ["color.primary"], condensed: true },
-      });
-      const envelope = parseEnvelope(result);
-      expect(envelope.ok).toBe(true);
-      expect(envelope.condensed).toBe(true);
-      expect(typeof envelope.text).toBe("string");
-    },
-  );
+  it("token_lookup returns condensed text", async () => {
+    const result = await client.callTool({
+      name: "token_lookup",
+      arguments: { names: ["color.primary"], condensed: true },
+    });
+    const envelope = parseEnvelope(result);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.condensed).toBe(true);
+    expect(typeof envelope.text).toBe("string");
+  });
 });

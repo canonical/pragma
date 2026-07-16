@@ -71,8 +71,6 @@ describe("collectCommands", () => {
       "setup completions",
       "setup skills",
       "modifier sample",
-      "token list",
-      "token lookup",
       "tokens add-config",
       "token sample",
       "block list",
@@ -101,7 +99,13 @@ describe("collectCommands", () => {
     );
     const allPaths = collectCommands(makeCtx()).map((c) => c.path.join(" "));
 
-    for (const path of ["tier list", "modifier list", "modifier lookup"]) {
+    for (const path of [
+      "tier list",
+      "modifier list",
+      "modifier lookup",
+      "token list",
+      "token lookup",
+    ]) {
       expect(builtInPaths).not.toContain(path);
       expect(allPaths).toContain(path);
     }
@@ -164,15 +168,17 @@ describe("cross-surface reserved-verb parity", () => {
 
     // Sanity: the real leaf-migration targets are present, so this asserts
     // something (a silently empty set would make the test vacuous). `tier`,
-    // `standard`, and `modifier`'s read verbs are no longer here — all were cut
-    // over to bundled packs (only the `modifier sample` built-in remnant
-    // remains), so they are correctly absent from the built-in reserved surface
-    // on both sides.
-    for (const noun of ["block", "token"]) {
+    // `standard`, `modifier`, and `token` read verbs are no longer here — all
+    // were cut over to bundled packs (only the `modifier sample`/`token sample`/
+    // `tokens add-config` built-in remnants remain), so they are correctly
+    // absent from the built-in reserved surface on both sides. `block` is the
+    // last hand-written read domain.
+    for (const noun of ["block"]) {
       expect(readNouns.has(noun)).toBe(true);
     }
     expect(readNouns.has("standard")).toBe(false);
     expect(readNouns.has("modifier")).toBe(false);
+    expect(readNouns.has("token")).toBe(false);
 
     for (const noun of readNouns) {
       for (const verb of READ_VERBS) {

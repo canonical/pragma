@@ -90,9 +90,6 @@ export {
 export {
   listTokens,
   lookupToken,
-  resolveTokenList,
-  resolveTokenLookup,
-  tokenEmptyError,
 } from "./domains/token/index.js";
 
 // — Domain Types ——————————————————————————————————————————————————————————————

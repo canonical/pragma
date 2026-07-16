@@ -269,11 +269,14 @@ describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
+    // Served by the bundled token pack: theme values are the flat
+    // valueLight/valueDark fields (the old nested {theme, value} shape).
     const data = body.data as {
-      results: { name: string; values: unknown[] }[];
+      results: { name: string; valueLight?: string; valueDark?: string }[];
     };
     expect(data.results[0]?.name).toBe("color.primary");
-    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
+    expect(data.results[0]?.valueLight).toBeTruthy();
+    expect(data.results[0]?.valueDark).toBeTruthy();
   });
 });
 
