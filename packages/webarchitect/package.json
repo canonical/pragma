@@ -3,13 +3,13 @@
   "description": "A tool to test the compliance with architecture specifications for packages and applications.",
   "version": "0.30.0",
   "type": "module",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
   "bin": {
-    "webarchitect": "src/cli.ts"
+    "webarchitect": "dist/esm/cli.js"
   },
   "files": [
-    "src",
+    "dist",
     "rulesets"
   ],
   "author": {
@@ -29,7 +29,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",

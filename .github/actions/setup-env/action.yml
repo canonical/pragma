@@ -100,3 +100,10 @@ runs:
     - name: Build packages
       shell: bash
       run: ${{ inputs.build-command }}
+
+      # Bun only links a workspace bin once its target file exists. Compiled CLI
+      # bins (e.g. @canonical/webarchitect's dist/esm/cli.js) don't exist until
+      # the build above has run, so re-link once more after building.
+    - name: Re-link compiled workspace binaries
+      shell: bash
+      run: bun install --ignore-scripts

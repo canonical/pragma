@@ -1561,7 +1561,7 @@
       "name": "@canonical/webarchitect",
       "version": "0.30.0",
       "bin": {
-        "webarchitect": "src/cli.ts",
+        "webarchitect": "dist/esm/cli.js",
       },
       "dependencies": {
         "ajv": "^8.18.0",
