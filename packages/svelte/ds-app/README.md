@@ -1,6 +1,6 @@
-# @canonical/svelte-ds-global
+# @canonical/svelte-ds-app
 
-Global Svelte components for the Pragma design system. This package provides foundational UI elements for Canonical web applications.
+App-level Svelte components for the Pragma design system. This package provides UI elements for use across Canonical applications.
 
 ## Prerequisites
 
@@ -9,10 +9,10 @@ Global Svelte components for the Pragma design system. This package provides fou
 ## Installation
 
 ```bash
-bun add @canonical/svelte-ds-global
+bun add @canonical/svelte-ds-app
 ```
 
-The package depends on `@canonical/styles` for CSS.
+The package builds on top of `@canonical/svelte-ds-global` and depends on `@canonical/styles` for CSS.
 
 ## Usage
 
@@ -20,7 +20,7 @@ Import components by name:
 
 ```svelte
 <script lang="ts">
-	import { Example } from "@canonical/svelte-ds-global";
+	import { Example } from "@canonical/svelte-ds-app";
 </script>
 
 <Example class="my-example">Hello</Example>
@@ -72,7 +72,7 @@ bun run test:watch
 Each component includes Storybook stories demonstrating usage patterns and variants:
 
 ```bash
-cd packages/svelte/ds-global
+cd packages/svelte/ds-app
 bun run storybook
 ```
 
