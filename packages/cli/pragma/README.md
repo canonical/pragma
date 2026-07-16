@@ -409,7 +409,7 @@ With `--format json`, errors are returned as structured JSON with error code, su
 
 pragma is structured as a domain-driven application using the federation pattern from `@canonical/cli-core`:
 
-1. **Domains** — 17 domain modules (block, config, create, doctor, graph, graphql, info, llm, modifier, ontology, refs, setup, skill, standard, tier, token, trace — every directory under `src/domains/` except the `shared/` infrastructure folder), each contributing `CommandDefinition`s
+1. **Domains** — 17 domain modules (block, capabilities, config, create, doctor, graph, graphql, info, modifier, ontology, prompt, refs, setup, skill, standard, token, trace — every directory under `src/domains/` except the `shared/` infrastructure folder), each contributing `CommandDefinition`s
 2. **Operations** — data retrieval functions that query the ke triple store via SPARQL
 3. **Formatters** — three-mode output adapters (plain/llm/json) for each operation
 4. **Commands** — thin wiring layer connecting Commander.js parameters to operations + formatters
