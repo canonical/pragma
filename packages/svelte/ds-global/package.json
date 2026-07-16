@@ -15,6 +15,7 @@
   "files": [
     "dist",
     "!dist/**/*.test.*",
+    "!dist/**/*.fixtures.*",
     "!dist/**/*.stories.*",
     "!dist/**/*.mdx"
   ],
@@ -57,7 +58,8 @@
   },
   "dependencies": {
     "@canonical/ds-assets": "^0.30.0",
-    "@canonical/styles": "^0.30.0"
+    "@canonical/styles": "^0.30.0",
+    "@canonical/utils": "^0.30.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",

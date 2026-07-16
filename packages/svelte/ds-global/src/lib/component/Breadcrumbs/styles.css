@@ -1,0 +1,28 @@
+/**
+ * Breadcrumbs styles
+ * @implements dso:global.pattern.breadcrumbs
+ *
+ * DSL anatomy mapping:
+ * - layout.type: flow -> display: flex
+ * - layout.direction: horizontal -> flex-direction: row
+ * - layout.align: center -> align-items: center
+ *
+ * Typography and baseline alignment come from the `.p` class on the list
+ * (the typography-text-primary tier, per the Figma spec).
+ */
+.ds.breadcrumbs {
+  & > .list {
+    /* layout.type: flow, layout.direction: horizontal */
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+
+    /* layout.align: center */
+    align-items: center;
+
+    /* Reset list styles */
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}

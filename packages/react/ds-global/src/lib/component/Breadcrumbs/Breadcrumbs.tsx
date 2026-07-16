@@ -8,8 +8,8 @@ const componentCssClassName = "ds breadcrumbs";
 
 /**
  * Breadcrumbs are a navigational aid that shows users their current location
- * within a site's information hierarchy. They provide a clear path from the
- * root of the information hierarchy (IA) to the current page, allowing users
+ * within a site's information architecture. They provide a clear path from the
+ * root of the information architecture (IA) to the current page, allowing users
  * to quickly understand where they are and easily navigate back to previous
  * levels in the IA. Breadcrumbs should reflect the IA, not the user's path
  * they took to arrive at the current page. They work best in websites or
