@@ -44,5 +44,16 @@ when users might arrive at deep pages through search or external links.
 
 `import { Breadcrumbs } from "@canonical/svelte-ds-global";`
 
+## Example Usage
+```svelte
+<Breadcrumbs
+  items={[
+    { url: "/", label: "Home" },
+    { url: "/products", label: "Products" },
+    { key: "details", label: "Product Details", current: true },
+  ]}
+/>
+```
+
 @implements ds:global.pattern.breadcrumbs
 -->

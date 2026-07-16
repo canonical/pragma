@@ -15,7 +15,7 @@
   "files": [
     "dist",
     "!dist/**/*.test.*",
-    "!dist/**/*.fixture.*",
+    "!dist/**/*.fixtures.*",
     "!dist/**/*.stories.*",
     "!dist/**/*.mdx"
   ],
