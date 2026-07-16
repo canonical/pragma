@@ -56,6 +56,7 @@ describe("collectCommands", () => {
     expect(paths).toEqual([
       "config tier",
       "config channel",
+      "config detail",
       "config trace",
       "config framework",
       "config show",

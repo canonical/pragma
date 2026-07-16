@@ -57,9 +57,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 34 tools", async () => {
+  it("registers 35 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(34);
+    expect(tools).toHaveLength(35);
   });
 
   it("all tools have descriptions", async () => {
@@ -86,6 +86,7 @@ describe("tool listing", () => {
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
     expect(names).toContain("config_channel");
+    expect(names).toContain("config_detail");
     expect(names).toContain("tokens_add_config");
     expect(names).toContain("create_component");
     expect(names).toContain("create_package");
@@ -129,6 +130,7 @@ describe("tool listing", () => {
       "config_show",
       "config_tier",
       "config_channel",
+      "config_detail",
       "ontology_list",
       "ontology_show",
       "graph_query",
@@ -704,6 +706,71 @@ describe("config_channel", () => {
   });
 });
 
+describe("config_detail", () => {
+  it("sets, queries, and resets detail in workspace config", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-detail-"));
+    // Seed a project file so global-first writes stay in this workspace.
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
+
+    try {
+      const scoped = await createTestMcpClient({ cwd: dir });
+
+      try {
+        const setResult = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: { value: "digest" },
+        });
+        expect(parseData(setResult)).toMatchObject({
+          detail: "digest",
+          action: "set",
+        });
+
+        const queryResult = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: {},
+        });
+        expect(parseData(queryResult)).toEqual({
+          detail: "digest",
+          action: "query",
+        });
+
+        const resetResult = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: { reset: true },
+        });
+        expect(parseData(resetResult)).toMatchObject({
+          detail: null,
+          action: "reset",
+        });
+
+        const queriedAfterReset = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: {},
+        });
+        expect(parseData(queriedAfterReset)).toEqual({
+          detail: null,
+          action: "query",
+        });
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns an error for a non-token detail value", async () => {
+    const result = await client.callTool({
+      name: "config_detail",
+      arguments: { value: "Very Detailed" },
+    });
+    expect(result.isError).toBe(true);
+    const envelope = parseEnvelope(result);
+    const error = envelope.error as McpErrorPayload;
+    expect(error.code).toBe("INVALID_INPUT");
+  });
+});
+
 describe("tokens_add_config", () => {
   it("writes a token config file and reports its path", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-config-"));
@@ -1079,7 +1146,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(36);
+      expect(tools).toHaveLength(37);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 

@@ -341,6 +341,20 @@ describe("config_channel", () => {
   });
 });
 
+describe("config_detail", () => {
+  it("queries current detail", async () => {
+    const res = await client.callTool({
+      name: "config_detail",
+      arguments: {},
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as { detail: string | null; action: string };
+    expect(data.action).toBe("query");
+    expect(data.detail).toBeNull();
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Ontology
 // ---------------------------------------------------------------------------

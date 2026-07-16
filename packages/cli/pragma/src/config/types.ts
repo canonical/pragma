@@ -58,6 +58,8 @@ interface ConfigUpdate {
   trace?: boolean | undefined;
   /** New preferred framework, `undefined` to remove the field. */
   framework?: Framework | undefined;
+  /** New default disclosure level, `undefined` to remove the field. */
+  detail?: string | undefined;
 }
 
 /**
