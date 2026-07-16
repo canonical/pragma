@@ -3,10 +3,10 @@
 .ds.link {
   outline-offset: 0px;
   text-decoration: none;
-  color: var(--lp-color-text-link-default);
+  color: var(--color-text-link);
 
   &:not(.soft):visited {
-    color: var(--lp-color-text-link-visited);
+    color: var(--color-text-link-visited);
   }
 
   &:hover {

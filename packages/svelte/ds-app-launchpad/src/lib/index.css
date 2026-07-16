@@ -1,3 +1,4 @@
-/* TODO: remove this file once pragma tokens are ready and used in the project */
+/* TODO: when the only import here is @canonical/styles delete this file. The consumer should import @canonical/styles directly. */
+@import "./styles/ds-tokens.css";
 @import "./styles/index.css";
 @import "./modifier-families/styles/index.css";
