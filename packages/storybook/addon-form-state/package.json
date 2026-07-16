@@ -5,6 +5,7 @@
   "files": [
     "dist"
   ],
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "description": "Storybook panel displaying live react-hook-form state",
   "keywords": [
@@ -41,16 +42,19 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
-    "check:ts": "tsc --noEmit"
+    "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect library",
+    "test": "echo 'No unit tests yet'"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.30.0",
     "@canonical/typescript-config-react": "^0.30.0",
+    "@canonical/webarchitect": "^0.30.0",
     "@storybook/react-vite": "^10.3.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
