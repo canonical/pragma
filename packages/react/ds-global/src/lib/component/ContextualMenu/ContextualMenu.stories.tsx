@@ -1,7 +1,7 @@
 import type { Decorator, Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect } from "react";
 import Component from "./ContextualMenu.js";
-import type { MenuItem } from "./types.js";
+import type { MenuEntry } from "./types.js";
 
 /**
  * The menu is `position: fixed`, so it does not contribute to the story's flow
@@ -45,30 +45,18 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * A row-actions menu — the kind attached to an entry in a Landscape instances
- * table or a MAAS machine list. Grouped, with a destructive action set apart.
+ * table or a MAAS machine list. Separators partition the sections, with a
+ * destructive action set apart.
  */
-const rowActions: MenuItem[] = [
-  {
-    key: "manage",
-    label: "Manage",
-    items: [
-      { key: "view", label: "View details", url: "#view" },
-      { key: "edit", label: "Edit configuration", url: "#edit" },
-      { key: "tags", label: "Edit tags", url: "#tags" },
-    ],
-  },
-  {
-    key: "power",
-    label: "Power",
-    items: [
-      { key: "restart", label: "Restart", url: "#restart" },
-      { key: "shutdown", label: "Shut down", url: "#shutdown" },
-    ],
-  },
-  {
-    key: "danger",
-    items: [{ key: "delete", label: "Delete", url: "#delete" }],
-  },
+const rowActions: MenuEntry[] = [
+  { key: "view", label: "View details", url: "#view" },
+  { key: "edit", label: "Edit configuration", url: "#edit" },
+  { key: "tags", label: "Edit tags", url: "#tags" },
+  { type: "separator" },
+  { key: "restart", label: "Restart", url: "#restart" },
+  { key: "shutdown", label: "Shut down", url: "#shutdown" },
+  { type: "separator" },
+  { key: "delete", label: "Delete", url: "#delete" },
 ];
 
 /**
@@ -76,22 +64,17 @@ const rowActions: MenuItem[] = [
  * overflowing off-screen. Open it and arrow down past the fold: the highlighted
  * item stays focused and is scrolled into view, so no item ever "disappears".
  */
-const longList: MenuItem[] = [
-  {
-    key: "timezones",
-    items: Array.from({ length: 40 }, (_, i) => ({
-      key: `tz-${i}`,
-      label: `UTC${i - 12 >= 0 ? "+" : ""}${i - 12}:00`,
-      url: `#tz-${i}`,
-    })),
-  },
-];
+const longList: MenuEntry[] = Array.from({ length: 40 }, (_, i) => ({
+  key: `tz-${i}`,
+  label: `UTC${i - 12 >= 0 ? "+" : ""}${i - 12}:00`,
+  url: `#tz-${i}`,
+}));
 
 export const LongScrollable: Story = {
   args: {
     trigger: "Timezone",
     label: "Select a timezone",
-    groups: longList,
+    items: longList,
   },
 };
 
@@ -103,7 +86,7 @@ export const Default: Story = {
   args: {
     trigger: "Actions",
     label: "Instance actions",
-    groups: rowActions,
+    items: rowActions,
   },
 };
 
@@ -115,19 +98,12 @@ export const AccountMenu: Story = {
   args: {
     trigger: "abisola@canonical.com",
     label: "Account",
-    groups: [
-      {
-        key: "account",
-        items: [
-          { key: "profile", label: "Your profile", url: "#profile" },
-          { key: "subs", label: "Subscriptions", url: "#subscriptions" },
-          { key: "billing", label: "Billing", url: "#billing", disabled: true },
-        ],
-      },
-      {
-        key: "session",
-        items: [{ key: "signout", label: "Sign out", url: "#signout" }],
-      },
+    items: [
+      { key: "profile", label: "Your profile", url: "#profile" },
+      { key: "subs", label: "Subscriptions", url: "#subscriptions" },
+      { key: "billing", label: "Billing", url: "#billing", disabled: true },
+      { type: "separator" },
+      { key: "signout", label: "Sign out", url: "#signout" },
     ],
   },
 };
@@ -143,22 +119,13 @@ export const WithShortcuts_NotCoreApi: Story = {
   args: {
     trigger: "Edit",
     label: "Edit",
-    groups: [
-      {
-        key: "edit",
-        items: [
-          { key: "undo", label: "Undo", url: "#undo", slot: "⌘Z" },
-          { key: "redo", label: "Redo", url: "#redo", slot: "⇧⌘Z" },
-        ],
-      },
-      {
-        key: "clipboard",
-        items: [
-          { key: "cut", label: "Cut", url: "#cut", slot: "⌘X" },
-          { key: "copy", label: "Copy", url: "#copy", slot: "⌘C" },
-          { key: "paste", label: "Paste", url: "#paste", slot: "⌘V" },
-        ],
-      },
+    items: [
+      { key: "undo", label: "Undo", url: "#undo", slot: "⌘Z" },
+      { key: "redo", label: "Redo", url: "#redo", slot: "⇧⌘Z" },
+      { type: "separator" },
+      { key: "cut", label: "Cut", url: "#cut", slot: "⌘X" },
+      { key: "copy", label: "Copy", url: "#copy", slot: "⌘C" },
+      { key: "paste", label: "Paste", url: "#paste", slot: "⌘V" },
     ],
   },
 };
@@ -174,33 +141,28 @@ export const CustomItems_NotCoreApi: Story = {
   args: {
     trigger: "Switch organisation",
     label: "Organisations",
-    groups: [
+    items: [
       {
-        key: "orgs",
-        items: [
-          {
-            key: "canonical",
-            label: "Canonical",
-            displayItemsType: "custom",
-            Component: ({ item }) => (
-              <span style={{ display: "flex", flexDirection: "column" }}>
-                <strong>{item.label}</strong>
-                <small>Owner · 42 members</small>
-              </span>
-            ),
-          },
-          {
-            key: "community",
-            label: "Ubuntu Community",
-            displayItemsType: "custom",
-            Component: ({ item }) => (
-              <span style={{ display: "flex", flexDirection: "column" }}>
-                <strong>{item.label}</strong>
-                <small>Member · 1,208 members</small>
-              </span>
-            ),
-          },
-        ],
+        key: "canonical",
+        label: "Canonical",
+        displayItemsType: "custom",
+        Component: ({ item }) => (
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <strong>{item.label}</strong>
+            <small>Owner · 42 members</small>
+          </span>
+        ),
+      },
+      {
+        key: "community",
+        label: "Ubuntu Community",
+        displayItemsType: "custom",
+        Component: ({ item }) => (
+          <span style={{ display: "flex", flexDirection: "column" }}>
+            <strong>{item.label}</strong>
+            <small>Member · 1,208 members</small>
+          </span>
+        ),
       },
     ],
   },
@@ -212,52 +174,47 @@ export const CustomItems_NotCoreApi: Story = {
  * opens the submenu to the leading edge, top-aligned to the parent. ArrowLeft
  * closes the submenu and returns to the parent. Submenus can nest arbitrarily.
  */
-const nestedActions: MenuItem[] = [
+const nestedActions: MenuEntry[] = [
+  { key: "open", label: "Open", url: "#open" },
   {
-    key: "primary",
+    key: "share",
+    label: "Share",
+    // A submenu parent — its items open in a nested menu. Separators work
+    // inside submenus too.
     items: [
-      { key: "open", label: "Open", url: "#open" },
+      { key: "share-link", label: "Copy link", url: "#link" },
+      { key: "share-email", label: "Email", url: "#email" },
+      { type: "separator" },
       {
-        key: "share",
-        label: "Share",
-        // A submenu parent — its items open in a nested menu.
+        key: "share-teams",
+        label: "Send to team",
+        // A deeper submenu, to show arbitrary nesting.
         items: [
-          { key: "share-link", label: "Copy link", url: "#link" },
-          { key: "share-email", label: "Email", url: "#email" },
-          {
-            key: "share-teams",
-            label: "Send to team",
-            // A deeper submenu, to show arbitrary nesting.
-            items: [
-              { key: "team-eng", label: "Engineering", url: "#eng" },
-              { key: "team-design", label: "Design", url: "#design" },
-              { key: "team-ops", label: "Operations", url: "#ops" },
-            ],
-          },
-        ],
-      },
-      {
-        key: "export",
-        label: "Export as",
-        items: [
-          { key: "export-pdf", label: "PDF", url: "#pdf" },
-          { key: "export-csv", label: "CSV", url: "#csv" },
-          { key: "export-json", label: "JSON", url: "#json" },
+          { key: "team-eng", label: "Engineering", url: "#eng" },
+          { key: "team-design", label: "Design", url: "#design" },
+          { key: "team-ops", label: "Operations", url: "#ops" },
         ],
       },
     ],
   },
   {
-    key: "danger",
-    items: [{ key: "delete", label: "Delete", url: "#delete" }],
+    key: "export",
+    label: "Export as",
+    items: [
+      { key: "export-pdf", label: "PDF", url: "#pdf" },
+      { key: "export-csv", label: "CSV", url: "#csv" },
+      { key: "export-json", label: "JSON", url: "#json" },
+    ],
   },
+  { type: "separator" },
+  { key: "delete", label: "Delete", url: "#delete" },
 ];
 
 export const NestedSubmenus: Story = {
   args: {
     trigger: "Actions",
     label: "Item actions",
-    groups: nestedActions,
+    items: nestedActions,
   },
 };
 
@@ -286,34 +243,27 @@ const rtl: Decorator = (Story, context) => {
  * the menu opens to the left of the trigger, submenus cascade leftward, and the
  * submenu caret points `‹`.
  */
-const rtlActions: MenuItem[] = [
+const rtlActions: MenuEntry[] = [
+  { key: "open", label: "فتح", url: "#open" },
   {
-    key: "primary",
+    key: "share",
+    label: "مشاركة",
     items: [
-      { key: "open", label: "فتح", url: "#open" },
+      { key: "share-link", label: "نسخ الرابط", url: "#link" },
+      { key: "share-email", label: "بريد إلكتروني", url: "#email" },
       {
-        key: "share",
-        label: "مشاركة",
+        key: "share-team",
+        label: "إرسال إلى الفريق",
         items: [
-          { key: "share-link", label: "نسخ الرابط", url: "#link" },
-          { key: "share-email", label: "بريد إلكتروني", url: "#email" },
-          {
-            key: "share-team",
-            label: "إرسال إلى الفريق",
-            items: [
-              { key: "team-eng", label: "الهندسة", url: "#eng" },
-              { key: "team-design", label: "التصميم", url: "#design" },
-            ],
-          },
+          { key: "team-eng", label: "الهندسة", url: "#eng" },
+          { key: "team-design", label: "التصميم", url: "#design" },
         ],
       },
-      { key: "rename", label: "إعادة تسمية", url: "#rename" },
     ],
   },
-  {
-    key: "danger",
-    items: [{ key: "delete", label: "حذف", url: "#delete" }],
-  },
+  { key: "rename", label: "إعادة تسمية", url: "#rename" },
+  { type: "separator" },
+  { key: "delete", label: "حذف", url: "#delete" },
 ];
 
 export const RightToLeft: Story = {
@@ -321,6 +271,6 @@ export const RightToLeft: Story = {
   args: {
     trigger: "الإجراءات",
     label: "إجراءات العنصر",
-    groups: rtlActions,
+    items: rtlActions,
   },
 };

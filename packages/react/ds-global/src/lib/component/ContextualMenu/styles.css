@@ -1,7 +1,7 @@
 /* Component tokens — sourced from @canonical/design-tokens.
    Mapped strictly to the Figma "Contextual Menu" frame: white background
    (color-background) on the modal surface, a drop shadow (no border), and a
-   muted 1px divider between groups. */
+   muted 1px divider between sections. */
 :root {
   --contextual-menu-color-divider: var(--color-border-muted);
   --contextual-menu-divider-width: var(--dimension-stroke-thickness-medium);
@@ -66,16 +66,14 @@
     transition: none;
   }
 
-  /* Every group reserves a 1px top border so group heights never shift when a
-     divider is / isn't drawn (no layout drift). It is transparent by default and
-     only coloured between groups, where the muted divider is wanted (Figma:
-     group border-top, color-border-muted, stroke-thickness-medium). */
-  .group {
+  /* A separator entry draws the muted divider between sections (Figma:
+     color-border-muted, stroke-thickness-medium). Reset the UA's <hr> box —
+     the divider is a coloured border, not a margin-bearing rule. */
+  .separator {
+    margin: 0;
+    border: none;
     border-block-start: var(--contextual-menu-divider-width, 1px) solid
-      transparent;
-  }
-  .group + .group {
-    border-block-start-color: var(--contextual-menu-color-divider);
+      var(--contextual-menu-color-divider);
   }
 
   /* The submenu-anchor wraps a submenu-parent item for hover detection; it must

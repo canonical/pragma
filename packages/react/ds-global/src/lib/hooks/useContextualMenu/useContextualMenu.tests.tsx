@@ -8,24 +8,17 @@ import {
 import { useContextualMenu } from "./index.js";
 import type { MenuItem } from "./types.js";
 
-// Mock only the leaf positioning hook; the navigation tree and cross-group
-// reducer run for real so composition is genuinely exercised.
+// Mock only the leaf positioning hook; the navigation tree runs for real so
+// composition is genuinely exercised.
 vi.mock("../useWindowFitment/index.js");
 
 const menu: MenuItem = {
   key: "menu",
   items: [
-    {
-      key: "group-a",
-      items: [
-        { key: "a1", label: "A one", url: "/a1" },
-        { key: "a2", label: "A two", url: "/a2" },
-      ],
-    },
-    {
-      key: "group-b",
-      items: [{ key: "b1", label: "B one", url: "/b1" }],
-    },
+    { key: "a1", label: "A one", url: "/a1" },
+    { key: "a2", label: "A two", url: "/a2" },
+    { type: "separator" },
+    { key: "b1", label: "B one", url: "/b1" },
   ],
 };
 
@@ -76,19 +69,32 @@ describe("useContextualMenu", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
-  it("highlights the first enabled LEAF item on open, not a group", () => {
-    // Regression: the tree is root -> group -> item, so the shared reducer's
-    // OPEN highlights the first child — a structural GROUP — which leaves no
-    // menuitem as the roving tab stop and kills keyboard navigation. The hook
-    // must descend to the first real item ("a1") on open.
+  it("highlights the first enabled item on open", () => {
+    // The root's children are the items themselves, so the shared reducer's
+    // OPEN lands directly on the first real menuitem — the roving tab stop
+    // keyboard navigation moves from.
     const { result } = renderHook(() => useContextualMenu({ root: menu }));
 
     act(() => result.current.open());
 
     const highlighted = result.current.highlightedItems.at(-1);
     expect(highlighted?.key).toBe("a1");
-    // The full path is [root, group, item] — a leaf, not the group itself.
-    expect(result.current.highlightedItems.at(-2)?.key).toBe("group-a");
+    // The full path is [root, item].
+    expect(result.current.highlightedItems.at(-2)?.key).toBe("menu");
+  });
+
+  it("feeds separators to the tree as disabled nodes with generated keys", () => {
+    // The tree machinery skips DISABLED nodes — that, plus a guaranteed key
+    // (the index throws on identity-less nodes), is the entire separator
+    // contract. The discriminant survives annotation for the render layer.
+    const { result } = renderHook(() => useContextualMenu({ root: menu }));
+
+    const separator = result.current.index["separator-0"];
+    expect(separator).toBeDefined();
+    expect(separator?.disabled).toBe(true);
+    expect(separator && "type" in separator ? separator.type : undefined).toBe(
+      "separator",
+    );
   });
 
   it("passes positioning props through to useWindowFitment", () => {
@@ -100,19 +106,16 @@ describe("useContextualMenu", () => {
     );
   });
 
-  it("crosses group boundaries on ArrowDown through the composed hook", () => {
-    // Regression: the cross-group reducer must operate on the tree's own item
-    // instances (via the highlighted path), not a separately-annotated index —
-    // otherwise reference checks never match and the behaviour silently no-ops.
+  it("skips a separator on ArrowDown through the composed hook", () => {
+    // The separator sits between "a2" and "b1"; the tree's disabled-skipping
+    // sibling walk must step straight over it, with no separator logic here.
     const { result } = renderHook(() => useContextualMenu({ root: menu }));
 
-    // Highlight the last item of group A.
     const a2 = result.current.index["/a2"];
     expect(a2).toBeDefined();
     act(() => result.current.highlightItem(a2));
     expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
 
-    // ArrowDown at the group edge should move into group B's first item.
     const arrowDownEvent = {
       key: "ArrowDown",
       preventDefault: () => {},
@@ -134,9 +137,9 @@ describe("useContextualMenu", () => {
     const key = (k: string) =>
       ({ key: k, preventDefault: () => {} }) as unknown as React.KeyboardEvent;
 
-    // Open highlights "a1"; ArrowDown crosses into group B ("b1").
+    // Open highlights "a1"; ArrowDown moves to "a2".
     act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowDown")));
-    expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
 
     // The surface carries no tree mouse-leave handler; simulate the leave
     // anyway (optional call) — the highlight must survive it.
@@ -146,12 +149,11 @@ describe("useContextualMenu", () => {
       menuProps.onMouseLeave?.({} as React.SyntheticEvent);
     });
     expect(result.current.isOpen).toBe(true);
-    expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
-
-    // Arrow keys continue from where they were (back up into group A's last
-    // item), not from a reset state.
-    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowUp")));
     expect(result.current.highlightedItems.at(-1)?.key).toBe("a2");
+
+    // Arrow keys continue from where they were, not from a reset state.
+    act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowUp")));
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("a1");
   });
 
   it("opens a submenu on ArrowRight and closes it on ArrowLeft", () => {
@@ -159,18 +161,13 @@ describe("useContextualMenu", () => {
     const withSubmenu: MenuItem = {
       key: "menu",
       items: [
+        { key: "first", label: "First", url: "/first" },
         {
-          key: "group",
+          key: "parent",
+          label: "Parent",
           items: [
-            { key: "first", label: "First", url: "/first" },
-            {
-              key: "parent",
-              label: "Parent",
-              items: [
-                { key: "sub1", label: "Sub one", url: "/sub1" },
-                { key: "sub2", label: "Sub two", url: "/sub2" },
-              ],
-            },
+            { key: "sub1", label: "Sub one", url: "/sub1" },
+            { key: "sub2", label: "Sub two", url: "/sub2" },
           ],
         },
       ],

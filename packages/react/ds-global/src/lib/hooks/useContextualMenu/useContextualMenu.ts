@@ -1,33 +1,55 @@
 import type { _Item } from "@canonical/ds-types";
 import {
   getMenuProps as getMenuAriaProps,
-  getMenuGroupProps,
   getMenuItemProps,
   useNavigationTree,
 } from "@canonical/react-hooks";
-import {
-  createCrossGroupStateReducer,
-  getFirstEnabledLeaf,
-} from "@canonical/utils";
 import { useCallback, useEffect, useMemo } from "react";
 import { useDisclosure } from "../useDisclosure/index.js";
+import isMenuSeparator from "./isMenuSeparator.js";
 import type {
+  MenuEntry,
   MenuItem,
   UseContextualMenuProps,
   UseContextualMenuResult,
 } from "./types.js";
 
 /**
- * Drives a contextual menu: a click-triggered, positioned popup listing grouped
- * menu items with full keyboard support.
+ * Prepare a menu entry for the navigation tree. A separator becomes a
+ * disabled, label-less node with a guaranteed-unique key: `disabled` is what
+ * makes the shared navigation machinery (arrow keys, Home/End, type-ahead,
+ * roving focus) skip it with no separator awareness of its own, and the key
+ * gives it the identity the tree's index requires. Items recurse into their
+ * submenu entries; `counter` numbers auto-keyed separators tree-wide.
+ */
+const prepareEntry = (
+  entry: MenuEntry,
+  counter: { next: number },
+): MenuEntry => {
+  if (isMenuSeparator(entry)) {
+    return {
+      ...entry,
+      key: entry.key ?? `separator-${counter.next++}`,
+      disabled: true,
+    };
+  }
+  if (!entry.items?.length) return entry;
+  return {
+    ...entry,
+    items: entry.items.map((child) => prepareEntry(child, counter)),
+  };
+};
+
+/**
+ * Drives a contextual menu: a click-triggered, positioned popup listing menu
+ * items and separators with full keyboard support.
  *
  * Positioning, open state, outside-click and Escape dismissal come from
  * {@link useDisclosure} in `click` mode. Roving focus, type-ahead, and ARIA
- * wiring come from `useNavigationTree`. Vertical arrow keys cross group
- * boundaries through a `stateReducer`, so the shared navigation machinery stays
- * menu-agnostic.
+ * wiring come from `useNavigationTree`, unmodified: separators enter the tree
+ * as disabled, label-less nodes, which the tree already skips.
  *
- * @param root The menu tree (menu -> group -> item).
+ * @param root The menu tree (menu -> entries; an item's `items` is its submenu).
  * @param wrap Whether arrow keys wrap at the first/last item.
  * @param typeAheadTimeout Type-ahead reset timeout in milliseconds.
  * @param props Forwarded to the underlying disclosure (positioning, callbacks).
@@ -53,45 +75,31 @@ const useContextualMenu = ({
     getToggleProps: getDisclosureToggleProps,
   } = useDisclosure({ ...props, mode: "click" });
 
-  // The cross-group reducer operates on state.highlightedItems (the tree's own
-  // instances), so it needs no external index — avoiding the instance mismatch
-  // that a separately-annotated tree would introduce.
-  const stateReducer = useMemo(
-    () => createCrossGroupStateReducer<MenuItem>(),
-    [],
+  // Separators become disabled nodes with guaranteed keys BEFORE the tree
+  // annotates the root, so useNavigationTree runs unmodified.
+  const preparedRoot = useMemo(
+    () => prepareEntry(root, { next: 0 }) as MenuItem,
+    [root],
   );
 
-  const nav = useNavigationTree<MenuItem>({
-    root,
+  const nav = useNavigationTree<MenuEntry>({
+    root: preparedRoot,
     focus: "roving",
     wrap,
     typeAheadTimeout,
-    // The cross-group boundary rule lives here, not in the shared reducer.
-    stateReducer,
   });
 
   // The disclosure owns the open state (it drives positioning and dismissal);
-  // mirror it into the navigation tree so roving focus follows open/close. On
-  // open, highlight the first enabled LEAF (a real menuitem) rather than letting
-  // the shared reducer's OPEN land on the first child — which, for the menu's
-  // root -> group -> item tree, is a structural GROUP. Without a highlighted
-  // menuitem no item gets the roving `tabindex="0"` and arrow keys have no
-  // current item to move from, so keyboard navigation is dead.
+  // mirror it into the navigation tree so roving focus follows open/close. The
+  // reducer's OPEN highlights the first enabled child — a real menuitem, since
+  // the root's children are the items themselves (separators are disabled).
   useEffect(() => {
     if (isOpen) {
       nav.openMenu();
-      const firstLeaf = getFirstEnabledLeaf(nav.annotatedRoot);
-      if (firstLeaf) nav.highlightItem(firstLeaf);
     } else {
       nav.closeMenu();
     }
-  }, [
-    isOpen,
-    nav.openMenu,
-    nav.closeMenu,
-    nav.highlightItem,
-    nav.annotatedRoot,
-  ]);
+  }, [isOpen, nav.openMenu, nav.closeMenu]);
 
   // Move DOM focus into the menu when it opens so arrow keys reach the roving
   // keyboard handler (WAI-ARIA menu button: opening focuses the first item).
@@ -207,12 +215,6 @@ const useContextualMenu = ({
     [nav, handleMenuKeyDown],
   );
 
-  const getGroupProps = useCallback(
-    (opts?: { label?: string; labelledBy?: string }) =>
-      getMenuGroupProps(nav, opts),
-    [nav],
-  );
-
   const getItemProps = useCallback(
     (item: _Item<MenuItem>) => ({
       ...nav.getItemProps(item),
@@ -243,7 +245,6 @@ const useContextualMenu = ({
     getNodeStatus: nav.getNodeStatus,
     getTriggerProps,
     getMenuProps,
-    getGroupProps,
     getItemProps,
   };
 };

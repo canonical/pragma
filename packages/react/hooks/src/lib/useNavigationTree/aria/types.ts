@@ -25,13 +25,6 @@ export interface MenuPropsResult {
   "aria-labelledby"?: string;
 }
 
-/** Props returned by the contextual-menu group helper */
-export interface MenuGroupPropsResult {
-  role: "group";
-  "aria-label"?: string;
-  "aria-labelledby"?: string;
-}
-
 /** Props returned by the contextual-menu item helper */
 export interface MenuItemPropsResult {
   role: "menuitem";

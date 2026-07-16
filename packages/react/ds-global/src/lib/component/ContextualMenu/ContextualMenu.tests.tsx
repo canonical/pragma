@@ -1,26 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import ContextualMenu from "./ContextualMenu.js";
-import type { MenuItem } from "./types.js";
+import type { MenuEntry, MenuItem } from "./types.js";
 
-const groups: MenuItem[] = [
-  {
-    key: "group-a",
-    label: "Edit",
-    items: [
-      { key: "cut", label: "Cut", url: "#cut" },
-      { key: "copy", label: "Copy", url: "#copy" },
-    ],
-  },
-  {
-    key: "group-b",
-    label: "View",
-    items: [{ key: "zoom", label: "Zoom", url: "#zoom" }],
-  },
+const items: MenuEntry[] = [
+  { key: "cut", label: "Cut", url: "#cut" },
+  { key: "copy", label: "Copy", url: "#copy" },
+  { type: "separator" },
+  { key: "zoom", label: "Zoom", url: "#zoom" },
 ];
 
 const renderMenu = (props = {}) =>
-  render(<ContextualMenu trigger="Actions" groups={groups} {...props} />);
+  render(<ContextualMenu trigger="Actions" items={items} {...props} />);
 
 describe("ContextualMenu", () => {
   it("renders a trigger with menu semantics", () => {
@@ -48,12 +39,15 @@ describe("ContextualMenu", () => {
     );
   });
 
-  it("renders groups and their items", () => {
+  it("renders items and separators", () => {
     renderMenu();
-    expect(screen.getAllByRole("group", { hidden: true })).toHaveLength(2);
     expect(screen.getByText("Cut")).toBeInTheDocument();
     expect(screen.getByText("Copy")).toBeInTheDocument();
     expect(screen.getByText("Zoom")).toBeInTheDocument();
+    // The separator is a divider with the implicit `role="separator"`, not a
+    // menuitem — it must never enter the menu's interactive item list.
+    expect(screen.getAllByRole("separator", { hidden: true })).toHaveLength(1);
+    expect(screen.getAllByRole("menuitem", { hidden: true })).toHaveLength(3);
   });
 
   it("calls onSelect and closes when an item is activated", () => {
@@ -71,31 +65,23 @@ describe("ContextualMenu", () => {
   });
 
   it("renders a right-aligned slot on an item", () => {
-    const withSlot: MenuItem[] = [
-      {
-        key: "g",
-        items: [{ key: "save", label: "Save", url: "#save", slot: "⌘S" }],
-      },
+    const withSlot: MenuEntry[] = [
+      { key: "save", label: "Save", url: "#save", slot: "⌘S" },
     ];
-    render(<ContextualMenu trigger="File" groups={withSlot} />);
+    render(<ContextualMenu trigger="File" items={withSlot} />);
     expect(screen.getByText("⌘S")).toHaveClass("slot");
   });
 
   it("renders a custom item component", () => {
-    const custom: MenuItem[] = [
+    const custom: MenuEntry[] = [
       {
-        key: "g",
-        items: [
-          {
-            key: "custom",
-            label: "Custom",
-            displayItemsType: "custom",
-            Component: () => <span data-testid="custom-render">Custom!</span>,
-          },
-        ],
+        key: "custom",
+        label: "Custom",
+        displayItemsType: "custom",
+        Component: () => <span data-testid="custom-render">Custom!</span>,
       },
     ];
-    render(<ContextualMenu trigger="More" groups={custom} />);
+    render(<ContextualMenu trigger="More" items={custom} />);
     expect(screen.getByTestId("custom-render")).toBeInTheDocument();
   });
 
@@ -129,25 +115,20 @@ describe("ContextualMenu", () => {
   });
 
   describe("submenu ARIA state", () => {
-    const submenuGroups: MenuItem[] = [
+    const submenuItems: MenuEntry[] = [
+      { key: "first", label: "First", url: "#first" },
       {
-        key: "group",
+        key: "parent",
+        label: "Parent",
         items: [
-          { key: "first", label: "First", url: "#first" },
-          {
-            key: "parent",
-            label: "Parent",
-            items: [
-              { key: "sub1", label: "Sub one", url: "#sub1" },
-              { key: "sub2", label: "Sub two", url: "#sub2" },
-            ],
-          },
+          { key: "sub1", label: "Sub one", url: "#sub1" },
+          { key: "sub2", label: "Sub two", url: "#sub2" },
         ],
       },
     ];
 
     const openSubmenuMenu = () => {
-      render(<ContextualMenu trigger="Actions" groups={submenuGroups} />);
+      render(<ContextualMenu trigger="Actions" items={submenuItems} />);
       fireEvent.click(screen.getByRole("button", { name: "Actions" }));
       return {
         menu: screen.getByRole("menu"),
@@ -199,18 +180,13 @@ describe("ContextualMenu", () => {
   });
 
   describe("selection semantics", () => {
-    const parentGroups: MenuItem[] = [
+    const parentItems: MenuEntry[] = [
+      { key: "leaf", label: "Leaf", url: "#leaf" },
+      { key: "off", label: "Disabled", url: "#off", disabled: true },
       {
-        key: "group",
-        items: [
-          { key: "leaf", label: "Leaf", url: "#leaf" },
-          { key: "off", label: "Disabled", url: "#off", disabled: true },
-          {
-            key: "parent",
-            label: "Parent",
-            items: [{ key: "sub", label: "Sub", url: "#sub" }],
-          },
-        ],
+        key: "parent",
+        label: "Parent",
+        items: [{ key: "sub", label: "Sub", url: "#sub" }],
       },
     ];
 
@@ -218,7 +194,7 @@ describe("ContextualMenu", () => {
       render(
         <ContextualMenu
           trigger="Actions"
-          groups={parentGroups}
+          items={parentItems}
           onSelect={onSelect}
         />,
       );
@@ -279,6 +255,62 @@ describe("ContextualMenu", () => {
       fireEvent.keyDown(parent, { key: " " });
       fireEvent.keyDown(parent, { key: "Enter" });
       expect(onSelect).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("separator keyboard behaviour", () => {
+    // The separator enters the navigation tree as a disabled, label-less node,
+    // so every keyboard path must skip it with no separator-specific logic.
+    const rovingTarget = () =>
+      screen
+        .getAllByRole("menuitem")
+        .find((el) => el.getAttribute("tabindex") === "0");
+
+    const openMenu = () => {
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      return screen.getByRole("menu");
+    };
+
+    it("arrow keys skip the separator in both directions", () => {
+      renderMenu();
+      const menu = openMenu();
+      // Open highlights the first item (Cut); ArrowDown moves to Copy.
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(rovingTarget()).toHaveTextContent("Copy");
+      // The next entry is the separator — ArrowDown lands on Zoom beyond it.
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(rovingTarget()).toHaveTextContent("Zoom");
+      // And back up over it.
+      fireEvent.keyDown(menu, { key: "ArrowUp" });
+      expect(rovingTarget()).toHaveTextContent("Copy");
+    });
+
+    it("type-ahead matches an item beyond the separator", () => {
+      renderMenu();
+      const menu = openMenu();
+      fireEvent.keyDown(menu, { key: "z" });
+      expect(rovingTarget()).toHaveTextContent("Zoom");
+    });
+
+    it("skips leading and trailing separators on open, Home and End", () => {
+      const edged: MenuEntry[] = [
+        { type: "separator" },
+        { key: "alpha", label: "Alpha", url: "#alpha" },
+        { key: "beta", label: "Beta", url: "#beta" },
+        { type: "separator" },
+      ];
+      render(<ContextualMenu trigger="Actions" items={edged} />);
+      const menu = openMenu();
+      // Open lands past the leading separator, on the first real item.
+      expect(rovingTarget()).toHaveTextContent("Alpha");
+      // End lands before the trailing separator, on the last real item...
+      fireEvent.keyDown(menu, { key: "End" });
+      expect(rovingTarget()).toHaveTextContent("Beta");
+      // ...and ArrowDown from there has nowhere enabled to go.
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(rovingTarget()).toHaveTextContent("Beta");
+      fireEvent.keyDown(menu, { key: "Home" });
+      expect(rovingTarget()).toHaveTextContent("Alpha");
     });
   });
 

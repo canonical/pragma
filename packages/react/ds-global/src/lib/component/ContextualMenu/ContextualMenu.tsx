@@ -12,9 +12,9 @@ import "./styles.css";
 const componentCssClassName = "ds contextual-menu";
 
 /**
- * A contextual menu presents a list of grouped actions anchored to a trigger.
- * It opens on click, positions itself with viewport-fitment, and supports full
- * keyboard navigation including arrow traversal across groups.
+ * A contextual menu presents a flat list of actions — optionally partitioned
+ * by separators — anchored to a trigger. It opens on click, positions itself
+ * with viewport-fitment, and supports full keyboard navigation.
  *
  * `import { ContextualMenu } from "@canonical/react-ds-global";`
  *
@@ -22,7 +22,7 @@ const componentCssClassName = "ds contextual-menu";
  */
 const ContextualMenu = ({
   trigger,
-  groups,
+  items,
   label,
   className,
   preferredDirections,
@@ -36,14 +36,10 @@ const ContextualMenu = ({
   onOpenChange,
   ...props
 }: ContextualMenuProps): React.ReactElement => {
-  // A synthetic root holds the groups so the tree is menu -> group -> item.
-  // MUST be stable across renders: the hook annotates it (memoised on `root`)
-  // and the open effect keys on the annotated root, so a fresh object each
-  // render re-fires that effect every render → dispatch → re-render → freeze.
-  const root = useMemo(
-    () => ({ key: "contextual-menu-root", items: groups }),
-    [groups],
-  );
+  // A synthetic root holds the entries so the tree is menu -> item.
+  // MUST be stable across renders: the hook annotates it (memoised on `root`),
+  // so a fresh object each render would re-annotate the tree every render.
+  const root = useMemo(() => ({ key: "contextual-menu-root", items }), [items]);
   const menu = useContextualMenu({
     root,
     isOpen: open,
@@ -73,12 +69,11 @@ const ContextualMenu = ({
     highlightItem,
     getTriggerProps,
     getMenuProps,
-    getGroupProps,
     getItemProps,
   } = menu;
 
   const triggerProps = getTriggerProps();
-  const annotatedGroups = annotatedRoot.items ?? [];
+  const annotatedEntries = annotatedRoot.items ?? [];
 
   // The shared menu API threaded to every (nested) level. One state, one
   // highlight path, one keyboard handler — submenus are render-only. Memoised so
@@ -88,7 +83,6 @@ const ContextualMenu = ({
     () => ({
       getItemProps,
       getMenuProps,
-      getGroupProps,
       getNodeStatus,
       highlightItem,
       close,
@@ -97,15 +91,7 @@ const ContextualMenu = ({
         close();
       },
     }),
-    [
-      getItemProps,
-      getMenuProps,
-      getGroupProps,
-      getNodeStatus,
-      highlightItem,
-      close,
-      onSelect,
-    ],
+    [getItemProps, getMenuProps, getNodeStatus, highlightItem, close, onSelect],
   );
 
   // With no explicit `label`, the menu is named by its trigger — so the trigger
@@ -138,18 +124,10 @@ const ContextualMenu = ({
       style={popupPositionStyle}
       {...menuProps}
     >
-      {annotatedGroups.map((group) => (
-        <div
-          key={getItemId(group)}
-          className="group"
-          {...getGroupProps({ label: group.label })}
-        >
-          {(group.items ?? []).map((item) => (
-            // SubMenu renders the item and, if it is a submenu parent, its
-            // nested popup (recursively). Leaves render as a plain item.
-            <SubMenu key={getItemId(item)} item={item} />
-          ))}
-        </div>
+      {annotatedEntries.map((entry) => (
+        // SubMenu renders a separator as a divider, a submenu parent as the
+        // item plus its nested popup (recursively), and a leaf as a plain item.
+        <SubMenu key={getItemId(entry)} item={entry} />
       ))}
     </div>
   );

@@ -1,7 +1,6 @@
 import type { _Item, Item } from "@canonical/ds-types";
 import type {
   ItemProps,
-  MenuGroupPropsResult,
   MenuItemPropsResult,
   MenuProps,
   MenuPropsResult,
@@ -22,8 +21,8 @@ export interface MenuItem extends Item {
   slot?: React.ReactNode;
   /** Icon rendered left of the label. */
   icon?: React.ReactNode;
-  /** Child items — a group's items, or a future submenu's entries. */
-  items?: MenuItem[];
+  /** Child entries — this item's submenu, which may itself contain separators. */
+  items?: MenuEntry[];
   /** CSS class name applied to this item, in addition to the base classes. */
   className?: string;
   /**
@@ -35,12 +34,38 @@ export interface MenuItem extends Item {
   Component?: React.ComponentType<{ item: MenuItem }>;
 }
 
+/**
+ * A non-interactive divider between menu entries, rendered as a horizontal
+ * rule. It is fed to the navigation tree as a disabled, label-less node, so
+ * the shared navigation machinery (arrow keys, Home/End, type-ahead, roving
+ * focus) skips it without any separator awareness of its own.
+ */
+export interface MenuSeparator {
+  /** Discriminant distinguishing a separator from a menu item. */
+  type: "separator";
+  /**
+   * Unique identity within the menu, used as the React key and the navigation
+   * index id. Auto-generated when omitted.
+   */
+  key?: string;
+  /**
+   * Set by {@link useContextualMenu} before the tree is annotated — disabled
+   * is what makes the navigation machinery skip the separator. Consumers
+   * never set it.
+   */
+  disabled?: true;
+}
+
+/**
+ * One entry in a contextual menu's list: an actionable item or a separator.
+ */
+export type MenuEntry = MenuItem | MenuSeparator;
+
 export interface UseContextualMenuProps
   extends Omit<UseDisclosureProps, "mode"> {
   /**
-   * The menu tree. The root's children are groups; each group's children are
-   * the menu items (menu -> group -> item). One level of items is supported now;
-   * deeper nesting is reserved for submenus.
+   * The menu tree. The root's children are the menu entries — items and
+   * separators in one flat list; an item's own `items` form its submenu.
    */
   root: MenuItem;
   /** Whether arrow keys wrap at the first/last item. Defaults to false. */
@@ -49,7 +74,7 @@ export interface UseContextualMenuProps
   typeAheadTimeout?: number;
 }
 
-/** Options for the menu/group ARIA prop-getters. */
+/** Options for the menu ARIA prop-getter. */
 export interface MenuAriaOptions {
   /** Accessible name for the element. */
   label?: string;
@@ -61,8 +86,8 @@ export interface MenuAriaOptions {
 
 /**
  * The contextual menu combines a click disclosure (open state, positioning,
- * dismissal) with a navigation tree (roving keyboard focus, type-ahead, and
- * cross-group arrow traversal via a `stateReducer`) and menu ARIA wiring.
+ * dismissal) with a navigation tree (roving keyboard focus, arrow traversal,
+ * type-ahead) and menu ARIA wiring.
  */
 export interface UseContextualMenuResult
   extends Pick<
@@ -79,7 +104,7 @@ export interface UseContextualMenuResult
       | "arrowOffset"
     >,
     Pick<
-      UseNavigationTreeResult<MenuItem>,
+      UseNavigationTreeResult<MenuEntry>,
       | "annotatedRoot"
       | "index"
       | "highlightedItems"
@@ -98,8 +123,9 @@ export interface UseContextualMenuResult
    * container props (keyboard handler, ref) with the menu ARIA preset.
    */
   getMenuProps: (opts?: MenuAriaOptions) => MenuProps & MenuPropsResult;
-  /** Prop-getter for a `role="group"` element. */
-  getGroupProps: (opts?: MenuAriaOptions) => MenuGroupPropsResult;
-  /** Prop-getter for a `role="menuitem"` element. */
+  /**
+   * Prop-getter for a `role="menuitem"` element. Items only — a separator is
+   * not interactive and receives no item props.
+   */
   getItemProps: (item: _Item<MenuItem>) => ItemProps & MenuItemPropsResult;
 }

@@ -51,9 +51,17 @@ export interface Item {
  * (extra fields beyond the base WD405 `Item`, e.g. `icon`/`slot`) survives
  * annotation with its fields intact and fully typed.
  *
+ * Distributes over union item types: `_Item<A | B>` annotates each member
+ * separately (`_Item<A> | _Item<B>`-shaped), so a discriminated union of entry
+ * kinds (e.g. a menu item vs a separator) keeps its discriminant and
+ * member-specific fields after annotation. A plain `Omit<A | B, "items">`
+ * would collapse the union to its common keys. Children remain the **whole**
+ * union: a tree of `A | B` entries has `_Item<A | B>[]` children on every
+ * member, whichever member the parent is.
+ *
  * @template T - The item type being annotated (defaults to the base `Item`)
  */
-export type _Item<T extends Item = Item> = Omit<T, "items"> & {
+export type _Item<T extends Item = Item> = _DistributiveOmit<T, "items"> & {
   /**
    * URL (or key) of the parent item in the navigation hierarchy.
    * e.g. '/parent' for a child item under '/parent', or null for the root.
@@ -72,10 +80,25 @@ export type _Item<T extends Item = Item> = Omit<T, "items"> & {
    *
    * `T`'s own `items` is omitted before intersecting so this annotated form
    * (`_Item<T>[]`) is the one surfaced when iterating children — otherwise the
-   * intersection would expose `T`'s base element type.
+   * intersection would expose `T`'s base element type. `T` here is the whole
+   * (possibly union) entry type, so children stay heterogeneous regardless of
+   * which member the parent is.
    */
   items?: _Item<T>[];
 };
+
+/**
+ * An `Omit` that distributes over union types: `_DistributiveOmit<A | B, K>`
+ * is `Omit<A, K> | Omit<B, K>`, where the plain `Omit<A | B, K>` would first
+ * collapse the union to its common keys. Intersecting the annotation fields
+ * with the distributed union then distributes too, keeping `_Item<A | B>`
+ * member-shaped. The conditional is only on the `Omit` half — the annotation
+ * fields above stay a concrete object type, so generic code can access
+ * `parentUrl`/`depth`/`items` without resolving the conditional.
+ */
+type _DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
 
 /**
  * Index for quick lookup of items by URL or key - Private API (WD405)

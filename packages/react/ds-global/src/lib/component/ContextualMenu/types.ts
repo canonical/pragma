@@ -1,12 +1,13 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import type {
+  MenuEntry,
   MenuItem,
   UseContextualMenuProps,
   WindowFitmentPlacement,
   WindowFitmentSide,
 } from "../../hooks/index.js";
 
-export type { MenuItem } from "../../hooks/index.js";
+export type { MenuEntry, MenuItem, MenuSeparator } from "../../hooks/index.js";
 
 export interface ContextualMenuProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect">,
@@ -20,10 +21,11 @@ export interface ContextualMenuProps
    */
   trigger: ReactNode;
   /**
-   * The menu groups. Each top-level item is a group; its `items` are the menu
-   * entries. One level is supported now; deeper nesting is reserved for submenus.
+   * The menu entries: one flat list of items and separators
+   * (`{ type: "separator" }`). An item's own `items` form its submenu, which
+   * may itself contain separators.
    */
-  groups: MenuItem[];
+  items: MenuEntry[];
   /** Accessible name for the menu. Falls back to labelling by the trigger. */
   label?: string;
   /**

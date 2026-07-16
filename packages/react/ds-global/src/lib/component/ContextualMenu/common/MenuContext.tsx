@@ -15,7 +15,6 @@ export interface MenuContextValue
     UseContextualMenuResult,
     | "getItemProps"
     | "getMenuProps"
-    | "getGroupProps"
     | "getNodeStatus"
     | "highlightItem"
     | "close"

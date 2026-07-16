@@ -3,20 +3,31 @@ import { getItemId } from "@canonical/utils";
 import type React from "react";
 import { type ReactElement, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MENU_PLACEMENT, useWindowFitment } from "../../../../hooks/index.js";
-import type { MenuItem } from "../../types.js";
+import {
+  isMenuSeparator,
+  MENU_PLACEMENT,
+  useWindowFitment,
+} from "../../../../hooks/index.js";
+import type { MenuEntry, MenuItem } from "../../types.js";
 import Item from "../Item/index.js";
 import { useMenuContext } from "../MenuContext.js";
 
 /**
- * One node in a (possibly nested) contextual menu. A leaf renders a plain item;
- * a submenu parent renders the item plus a positioned nested popup for its
- * children (see {@link SubMenuParent}). The hook that positions the popup runs
- * ONLY for submenu parents — leaves render a bare item — so a menu of leaves
- * spins up no positioning machinery.
+ * One node in a (possibly nested) contextual menu. A separator renders as a
+ * plain divider (no item props — it is not interactive, and the navigation
+ * tree never highlights it); a leaf renders a plain item; a submenu parent
+ * renders the item plus a positioned nested popup for its children (see
+ * {@link SubMenuParent}). The hook that positions the popup runs ONLY for
+ * submenu parents — leaves render a bare item — so a menu of leaves spins up
+ * no positioning machinery.
  */
-const SubMenu = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
+const SubMenu = ({ item }: { item: _Item<MenuEntry> }): ReactElement => {
   const { getItemProps, onSelectItem } = useMenuContext();
+
+  if (isMenuSeparator(item)) {
+    // <hr> carries the implicit `role="separator"` WAI-ARIA menus expect.
+    return <hr className="separator" />;
+  }
 
   if (item.items?.length) {
     return <SubMenuParent item={item} />;

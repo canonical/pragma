@@ -2,7 +2,6 @@ import type { _Index, _Item } from "@canonical/ds-types";
 import type { NodeStatus } from "@canonical/utils";
 import { describe, expect, it } from "vitest";
 import type { UseNavigationTreeResult } from "../types.js";
-import getMenuGroupProps from "./getMenuGroupProps.js";
 import getMenuItemProps from "./getMenuItemProps.js";
 import getMenuProps from "./getMenuProps.js";
 
@@ -62,19 +61,6 @@ describe("contextual-menu ARIA helpers", () => {
       role: "menu",
       "aria-orientation": "vertical",
     });
-  });
-
-  it("getMenuGroupProps returns role=group with an accessible name", () => {
-    const nav = createMockNav();
-    expect(getMenuGroupProps(nav, { label: "Edit" })).toEqual({
-      role: "group",
-      "aria-label": "Edit",
-    });
-    expect(getMenuGroupProps(nav, { labelledBy: "heading-id" })).toEqual({
-      role: "group",
-      "aria-labelledby": "heading-id",
-    });
-    expect(getMenuGroupProps(nav)).toEqual({ role: "group" });
   });
 
   it("getMenuItemProps makes the highlighted item the roving tab stop", () => {
