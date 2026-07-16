@@ -30,7 +30,6 @@ const meta = {
   title: "components/Button",
   component: Component,
   decorators: [surface],
-  tags: ["autodocs"],
   argTypes: {
     // Importance is never blank — primary is the default hierarchy.
     importance: {

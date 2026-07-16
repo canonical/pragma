@@ -15,7 +15,6 @@ import Component from "./Tabs.js";
 const meta = {
   title: "components/Tabs",
   component: Component,
-  tags: ["autodocs"],
   args: {
     "aria-label": "Sections",
   },

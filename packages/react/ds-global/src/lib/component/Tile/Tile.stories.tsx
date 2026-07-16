@@ -5,7 +5,6 @@ import Component from "./Tile.js";
 const meta = {
   title: "components/Tile",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

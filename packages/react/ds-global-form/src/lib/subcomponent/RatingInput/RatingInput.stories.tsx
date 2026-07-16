@@ -5,7 +5,6 @@ import { RatingInput } from "./RatingInput.js";
 const meta = {
   title: "_work_in_progress/subcomponent/RatingInput",
   component: RatingInput,
-  tags: ["autodocs"],
   args: { name: "rating", "aria-label": "Rate this article" },
 } satisfies Meta<typeof RatingInput>;
 

@@ -5,7 +5,6 @@ import { DateTimeInput } from "./DateTimeInput.js";
 const meta = {
   title: "subcomponents/DateTimeInput",
   component: DateTimeInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof DateTimeInput>;
 
 export default meta;

@@ -7,7 +7,6 @@ import { SettingsView } from "./SettingsView.js";
 const meta: Meta<typeof SettingsView> = {
   title: "_work_in_progress/other/grid/SettingsView",
   component: SettingsView,
-  tags: ["autodocs"],
   parameters: {
     grid: "responsive",
   },

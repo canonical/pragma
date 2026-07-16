@@ -4,7 +4,6 @@ import Component from "./Item.js";
 const meta = {
   title: "components/Breadcrumbs/Item",
   component: Component,
-  tags: ["autodocs"],
   parameters: {
     docs: {
       description: {

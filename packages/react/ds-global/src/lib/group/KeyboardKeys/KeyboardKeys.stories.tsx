@@ -5,7 +5,6 @@ import Component from "./KeyboardKeys.js";
 const meta = {
   title: "groups/KeyboardKeys",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

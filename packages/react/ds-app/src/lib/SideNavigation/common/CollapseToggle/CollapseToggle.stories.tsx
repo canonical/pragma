@@ -6,7 +6,6 @@ import CollapseToggle from "./CollapseToggle.js";
 const meta: Meta<typeof CollapseToggle> = {
   title: "Components/SideNavigation/CollapseToggle",
   component: CollapseToggle,
-  tags: ["autodocs"],
   decorators: [withBaseLayer],
   args: { onClick: fn() },
 };

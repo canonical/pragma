@@ -11,7 +11,6 @@ import Component from "./Label.js";
 const meta = {
   title: "subcomponents/Field.Label",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

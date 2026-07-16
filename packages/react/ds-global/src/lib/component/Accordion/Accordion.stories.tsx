@@ -5,7 +5,6 @@ import Component from "./Accordion.js";
 const meta: Meta<typeof Component> = {
   title: "components/Accordion",
   component: Component,
-  tags: ["autodocs"],
 };
 
 export default meta;

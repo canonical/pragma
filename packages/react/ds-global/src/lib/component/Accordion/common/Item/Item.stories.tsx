@@ -4,7 +4,6 @@ import Component from "./Item.js";
 const meta = {
   title: "components/Accordion/Item",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     heading: {
       control: { type: "text" },

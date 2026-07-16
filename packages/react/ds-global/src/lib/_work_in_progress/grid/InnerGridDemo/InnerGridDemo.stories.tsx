@@ -7,7 +7,6 @@ import { InnerGridDemo } from "./InnerGridDemo.js";
 const meta: Meta<typeof InnerGridDemo> = {
   title: "_work_in_progress/other/grid/InnerGridDemo",
   component: InnerGridDemo,
-  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
   },

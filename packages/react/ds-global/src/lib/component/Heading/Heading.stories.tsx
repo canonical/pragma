@@ -17,7 +17,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
  */
 const meta = {
   title: "components/Heading",
-  tags: ["autodocs"],
   parameters: { layout: "padded" },
 } satisfies Meta;
 

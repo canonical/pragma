@@ -5,7 +5,6 @@ import { SwitchInput } from "./SwitchInput.js";
 const meta = {
   title: "subcomponents/SwitchInput",
   component: SwitchInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof SwitchInput>;
 
 export default meta;

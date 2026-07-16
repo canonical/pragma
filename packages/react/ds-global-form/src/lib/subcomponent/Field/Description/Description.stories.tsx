@@ -11,7 +11,6 @@ import Component from "./Description.js";
 const meta = {
   title: "subcomponents/Field.Description",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

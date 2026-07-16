@@ -4,7 +4,6 @@ import Component from "./Header.js";
 const meta = {
   title: "components/Card/Header",
   component: Component,
-  tags: ["autodocs"],
   parameters: {
     docs: {
       description: {

@@ -7,7 +7,6 @@ import CategoriesSection from "./CategoriesSection.js";
 const meta: Meta<typeof CategoriesSection> = {
   title: "_work_in_progress/other/CategoriesSection",
   component: CategoriesSection,
-  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
     grid: "responsive",

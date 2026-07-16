@@ -7,7 +7,6 @@ import { SwitchField } from "./index.js";
 const meta = {
   title: "components/SwitchField",
   component: SwitchField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof SwitchField>;
 

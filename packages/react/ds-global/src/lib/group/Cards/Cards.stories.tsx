@@ -18,7 +18,6 @@ import Cards from "./Cards.js";
 const meta = {
   title: "groups/Cards",
   component: Cards,
-  tags: ["autodocs"],
   parameters: { grid: "responsive" },
   argTypes: {
     cardSpan: { control: { type: "number", min: 1, step: 1 } },

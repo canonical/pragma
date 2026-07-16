@@ -7,7 +7,6 @@ import ChatSection from "./ChatSection.js";
 const meta: Meta<typeof ChatSection> = {
   title: "_work_in_progress/other/ChatSection",
   component: ChatSection,
-  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
     grid: "responsive",

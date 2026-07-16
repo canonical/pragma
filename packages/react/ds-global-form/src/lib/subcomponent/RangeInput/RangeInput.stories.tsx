@@ -4,7 +4,6 @@ import { RangeInput } from "./RangeInput.js";
 const meta = {
   title: "subcomponents/RangeInput",
   component: RangeInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof RangeInput>;
 
 export default meta;

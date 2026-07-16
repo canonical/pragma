@@ -6,7 +6,6 @@ import Component from "./RelativeTime.js";
 
 const meta = {
   title: "RelativeTime",
-  tags: ["autodocs"],
   component: Component,
   parameters: {
     // this component has no visual representation, so we disable snapshot testing

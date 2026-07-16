@@ -33,7 +33,6 @@ const meta = {
   title: "components/ContextualMenu",
   component: Component,
   decorators: [stage],
-  tags: ["autodocs"],
   parameters: {
     // Centre the trigger in the story canvas so the (portalled) menu is framed.
     layout: "centered",

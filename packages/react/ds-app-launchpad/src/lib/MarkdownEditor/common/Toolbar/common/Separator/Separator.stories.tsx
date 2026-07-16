@@ -5,7 +5,6 @@ import Component from "./Separator.js";
 
 const meta = {
   title: "MarkdownEditor/Toolbar/Separator",
-  tags: ["autodocs"],
   component: Component,
   decorators: [
     (Story) => (

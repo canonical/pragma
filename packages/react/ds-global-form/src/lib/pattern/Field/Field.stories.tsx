@@ -13,7 +13,6 @@ import type { FieldProps } from "./types.js";
 const meta = {
   title: "patterns/Field",
   component: Component,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

@@ -5,7 +5,6 @@ import CanonicalLogo from "./CanonicalLogo.js";
 const meta: Meta<typeof CanonicalLogo> = {
   title: "Components/SideNavigation/CanonicalLogo",
   component: CanonicalLogo,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },

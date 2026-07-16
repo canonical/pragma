@@ -10,7 +10,6 @@ import ApplicationLayout from "./ApplicationLayout.js";
 const meta: Meta<typeof ApplicationLayout> = {
   title: "Layouts/ApplicationLayout",
   component: ApplicationLayout,
-  tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
   decorators: layoutDecorators,
 };

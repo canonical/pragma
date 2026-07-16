@@ -9,7 +9,6 @@ import Component from "./Footer.js";
 const meta = {
   title: "components/Card/Footer",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     children: {
       control: { type: "text" },

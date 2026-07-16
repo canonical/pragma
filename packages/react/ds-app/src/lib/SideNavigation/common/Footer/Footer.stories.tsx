@@ -10,7 +10,6 @@ import Footer from "./Footer.js";
 const meta: Meta<typeof Footer> = {
   title: "Components/SideNavigation/Footer",
   component: Footer,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },

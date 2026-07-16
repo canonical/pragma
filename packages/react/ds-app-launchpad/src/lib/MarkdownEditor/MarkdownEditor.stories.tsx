@@ -7,7 +7,6 @@ import type { EditMode, MarkdownEditorProps } from "./types.js";
 
 const meta = {
   title: "MarkdownEditor",
-  tags: ["autodocs"],
   component: MarkdownEditor,
 } satisfies Meta<MarkdownEditorProps>;
 

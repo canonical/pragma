@@ -10,7 +10,6 @@ import Content from "./Content.js";
 const meta: Meta<typeof Content> = {
   title: "Components/SideNavigation/Content",
   component: Content,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },

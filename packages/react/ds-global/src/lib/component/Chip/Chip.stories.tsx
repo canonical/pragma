@@ -6,7 +6,6 @@ import Component from "./Chip.js";
 const meta = {
   title: "_work_in_progress/component/Chip",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     criticality: {
       options: [undefined, ...MODIFIER_FAMILIES.criticality],

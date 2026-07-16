@@ -7,7 +7,6 @@ import { ApplicationLayout } from "./ApplicationLayout.js";
 const meta: Meta<typeof ApplicationLayout> = {
   title: "_work_in_progress/other/grid/ApplicationLayout",
   component: ApplicationLayout,
-  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
   },

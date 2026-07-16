@@ -7,7 +7,6 @@ import { ColorInput } from "./ColorInput.js";
 const meta = {
   title: "_work_in_progress/subcomponent/ColorInput",
   component: ColorInput,
-  tags: ["autodocs"],
   render: (args) => {
     const [value, setValue] = useState(args.value ?? "#000000");
     return <ColorInput {...args} value={value} onChange={setValue} />;

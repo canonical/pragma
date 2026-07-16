@@ -5,7 +5,6 @@ import { HiddenField } from "./index.js";
 const meta = {
   title: "components/HiddenField",
   component: HiddenField,
-  tags: ["autodocs"],
   decorators: [
     decorators.form({ defaultValues: { hidden_field: "hidden_value" } }),
   ],

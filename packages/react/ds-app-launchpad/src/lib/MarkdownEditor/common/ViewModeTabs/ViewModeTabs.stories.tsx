@@ -7,7 +7,6 @@ import "../../styles.css";
 
 const meta = {
   title: "MarkdownEditor/ViewModeTabs",
-  tags: ["autodocs"],
   component: Component,
   decorators: [
     (Story, { args }) => (

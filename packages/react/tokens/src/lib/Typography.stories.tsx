@@ -2,7 +2,6 @@ import "./Typography.css";
 
 const meta = {
   title: "Foundation/Typography",
-  tags: ["autodocs"],
   parameters: {
     layout: "padded",
     docs: {

@@ -8,7 +8,6 @@ import type { ProviderOptions } from "./types.js";
 
 const meta = {
   title: "GitDiffViewer",
-  tags: ["autodocs"],
   component: GitDiffViewer,
   argTypes: {
     isCollapsed: {

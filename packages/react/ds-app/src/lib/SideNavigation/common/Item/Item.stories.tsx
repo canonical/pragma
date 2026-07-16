@@ -9,7 +9,6 @@ import Item from "./Item.js";
 const meta: Meta<typeof Item> = {
   title: "Components/SideNavigation/Item",
   component: Item,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },

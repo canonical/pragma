@@ -7,7 +7,6 @@ import { PasswordField } from "./index.js";
 const meta = {
   title: "components/PasswordField",
   component: PasswordField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof PasswordField>;
 

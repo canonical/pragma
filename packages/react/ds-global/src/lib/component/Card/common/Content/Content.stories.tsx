@@ -4,7 +4,6 @@ import Component from "./Content.js";
 const meta = {
   title: "components/Card/Content",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     children: {
       control: { type: "text" },

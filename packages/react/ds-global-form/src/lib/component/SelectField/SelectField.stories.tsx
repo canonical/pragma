@@ -8,7 +8,6 @@ import { SelectField } from "./index.js";
 const meta = {
   title: "components/SelectField",
   component: SelectField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof SelectField>;
 

@@ -7,7 +7,6 @@
   const { Story } = defineMeta({
     title: "Components/Example",
     component: Example,
-    tags: ["autodocs"],
     parameters: {
       // This is an example component, no need for it to be snapshotted.
       chromatic: { disableSnapshot: true },
