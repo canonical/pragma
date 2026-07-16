@@ -93,7 +93,13 @@ export type DisableableElement = HTMLElement & {
   disabled: boolean;
 };
 
-export interface UseDisclosureResult extends UseWindowFitmentResult {
+/**
+ * @typeParam TTarget - element type of the trigger element, forwarded to
+ *   `useWindowFitment` so a non-`div` trigger (Popover's `<details>`) gets a
+ *   correctly typed `targetRef` with no cast. Defaults to `HTMLElement`.
+ */
+export interface UseDisclosureResult<TTarget extends HTMLElement = HTMLElement>
+  extends UseWindowFitmentResult<TTarget> {
   /** Whether the disclosure is currently open. */
   isOpen: boolean;
   /** Whether the trigger is currently focused. */
@@ -105,7 +111,7 @@ export interface UseDisclosureResult extends UseWindowFitmentResult {
   /** Imperatively toggle the disclosure. */
   toggle: () => void;
   /** A ref to attach to the trigger element. */
-  targetRef: RefObject<HTMLDivElement | null>;
+  targetRef: RefObject<TTarget | null>;
   /** A ref to attach to the content (popup) element. */
   popupRef: RefObject<HTMLDivElement | null>;
   /** The style object to apply to the content element. */
