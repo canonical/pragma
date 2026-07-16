@@ -13,8 +13,13 @@ export interface ContextualMenuProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "onSelect">,
     Pick<
       UseContextualMenuProps,
-      "distance" | "gutter" | "maxWidth" | "autoFit" | "wrap"
+      "distance" | "gutter" | "maxWidth" | "autoFit"
     > {
+  /**
+   * Whether arrow keys wrap at the first/last item. Defaults to true (the
+   * APG menu convention), unlike the underlying hook.
+   */
+  wrap?: boolean;
   /**
    * The trigger content, rendered inside the trigger button. Clicking it opens
    * the menu.

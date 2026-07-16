@@ -208,8 +208,17 @@ const useContextualMenu = ({
         // surface would destroy a keyboard user's position. The DISCLOSURE
         // owns open/close for a contextual menu, so neutralise it.
         onMouseLeave: undefined,
-        onKeyDown: (event: React.KeyboardEvent) =>
-          handleMenuKeyDown(event, treeKeyDown),
+        onKeyDown: (event: React.KeyboardEvent) => {
+          // ONE keyboard handler serves every surface (root + each open
+          // submenu), and a keydown inside a portalled submenu bubbles
+          // through ALL of them in the React tree — so without stopping here
+          // each key would dispatch twice per extra surface. Doubled
+          // type-ahead ("c" accumulating as "cc") locks the search into the
+          // repeated-character cycle and never matches a two-letter prefix.
+          // Handle at the nearest menu surface only.
+          event.stopPropagation();
+          handleMenuKeyDown(event, treeKeyDown);
+        },
       };
     },
     [nav, handleMenuKeyDown],

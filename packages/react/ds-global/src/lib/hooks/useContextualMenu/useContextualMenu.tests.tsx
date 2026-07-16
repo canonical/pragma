@@ -119,11 +119,54 @@ describe("useContextualMenu", () => {
     const arrowDownEvent = {
       key: "ArrowDown",
       preventDefault: () => {},
+      stopPropagation: () => {},
     } as unknown as React.KeyboardEvent;
     act(() => {
       result.current.getMenuProps().onKeyDown?.(arrowDownEvent);
     });
     expect(result.current.highlightedItems.at(-1)?.key).toBe("b1");
+  });
+
+  it("handles a keydown once when it bubbles through nested menu surfaces", () => {
+    // Regression: one keyboard handler serves every surface (root + each open
+    // submenu), and a keydown inside a portalled submenu bubbles through ALL
+    // of them in the React tree. Without stopPropagation each key dispatched
+    // twice: type-ahead "c" accumulated as "cc", locking the search into the
+    // repeated-character cycle so a two-letter prefix never matched.
+    const typeAheadMenu: MenuItem = {
+      key: "menu",
+      items: [
+        { key: "cut", label: "Cut", url: "/cut" },
+        { key: "copy", label: "Copy", url: "/copy" },
+        { key: "cat", label: "Cat", url: "/cat" },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useContextualMenu({ root: typeAheadMenu }),
+    );
+    act(() => result.current.open());
+
+    // Mimic React's bubbling contract: the second (ancestor) surface handler
+    // only runs if the first did not stop propagation.
+    const bubble = (k: string) => {
+      let stopped = false;
+      const event = {
+        key: k,
+        preventDefault: () => {},
+        stopPropagation: () => {
+          stopped = true;
+        },
+      } as unknown as React.KeyboardEvent;
+      act(() => {
+        const handler = result.current.getMenuProps().onKeyDown;
+        handler?.(event); // nearest (submenu) surface
+        if (!stopped) handler?.(event); // root surface, per React semantics
+      });
+    };
+
+    bubble("c"); // matches Cut (already current) — must NOT become "cc"
+    bubble("a"); // accumulated "ca" must match Cat
+    expect(result.current.highlightedItems.at(-1)?.key).toBe("cat");
   });
 
   it("keeps the keyboard highlight when the pointer leaves the menu", () => {
@@ -135,7 +178,11 @@ describe("useContextualMenu", () => {
 
     act(() => result.current.open());
     const key = (k: string) =>
-      ({ key: k, preventDefault: () => {} }) as unknown as React.KeyboardEvent;
+      ({
+        key: k,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      }) as unknown as React.KeyboardEvent;
 
     // Open highlights "a1"; ArrowDown moves to "a2".
     act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowDown")));
@@ -186,7 +233,11 @@ describe("useContextualMenu", () => {
     expect(result.current.getNodeStatus(parent).highlighted).toBe(true);
 
     const key = (k: string) =>
-      ({ key: k, preventDefault: () => {} }) as unknown as React.KeyboardEvent;
+      ({
+        key: k,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      }) as unknown as React.KeyboardEvent;
 
     // ArrowRight descends into the submenu → highlight moves to the first child.
     act(() => result.current.getMenuProps().onKeyDown?.(key("ArrowRight")));

@@ -18,6 +18,7 @@ export interface MenuContextValue
     | "getNodeStatus"
     | "highlightItem"
     | "close"
+    | "isOpen"
   > {
   /** Activate an item (run the consumer's onSelect and close the menu). */
   onSelectItem: (item: _Item<MenuItem>) => void;

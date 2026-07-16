@@ -53,7 +53,7 @@ const SubMenu = ({ item }: { item: _Item<MenuEntry> }): ReactElement => {
  * alignment as space runs out.
  */
 const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
-  const { getItemProps, getMenuProps, getNodeStatus, onSelectItem } =
+  const { getItemProps, getMenuProps, getNodeStatus, onSelectItem, isOpen } =
     useMenuContext();
 
   // `_Item<MenuItem>` re-types annotated children with the single member, but
@@ -68,7 +68,17 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   // (which moves the highlight back onto the parent) would leave the submenu open.
   const keyboardOpen = status.inHighlightedBranch && !status.highlighted;
   const [hovered, setHovered] = useState(false);
-  const open = keyboardOpen || hovered;
+  // Gate on the ROOT open state: `hovered` is local, so a mouse-selected
+  // nested leaf (which closes the root disclosure) would otherwise leave the
+  // still-hovered submenu surface mounted and visible on its own.
+  const open = isOpen && (keyboardOpen || hovered);
+
+  // The pointer never "leaves" a surface that is hidden under it, so clear
+  // the hover state when the menu closes — otherwise the submenu would pop
+  // straight open the next time the menu opens.
+  useEffect(() => {
+    if (!isOpen) setHovered(false);
+  }, [isOpen]);
 
   // MENU_PLACEMENT is a stable module constant and logical, so the hook mirrors
   // it in RTL from this item's own writing direction — no per-submenu dir read.

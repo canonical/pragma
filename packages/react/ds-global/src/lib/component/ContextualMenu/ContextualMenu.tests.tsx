@@ -201,6 +201,30 @@ describe("ContextualMenu", () => {
       fireEvent.click(screen.getByRole("button", { name: "Actions" }));
     };
 
+    it("closes the whole menu when a nested submenu leaf is selected", () => {
+      // Regression: the submenu gated its visibility on hover/keyboard state
+      // alone, so a mouse-selected nested leaf closed the root surface while
+      // the still-hovered, portalled submenu stayed mounted and visible.
+      const onSelect = vi.fn();
+      openMenu(onSelect);
+      const anchor = screen
+        .getByRole("menuitem", { name: "Parent" })
+        .closest(".submenu-anchor") as HTMLElement;
+      fireEvent.pointerEnter(anchor);
+      fireEvent.click(screen.getByRole("menuitem", { name: "Sub" }));
+      expect(onSelect).toHaveBeenCalledWith(
+        expect.objectContaining({ key: "sub" }),
+      );
+      expect(screen.getByRole("button", { name: "Actions" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      expect(screen.queryByText("Sub")).not.toBeInTheDocument();
+      // Reopening must not resurrect the submenu from stale hover state.
+      fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+      expect(screen.queryByText("Sub")).not.toBeInTheDocument();
+    });
+
     it("does not fire onSelect for a submenu parent (opens its submenu instead)", () => {
       // A parent is a submenu trigger, not a choosable leaf: activating it must
       // open the submenu and never call onSelect (WAI-ARIA menu pattern).
@@ -299,14 +323,14 @@ describe("ContextualMenu", () => {
         { key: "beta", label: "Beta", url: "#beta" },
         { type: "separator" },
       ];
-      render(<ContextualMenu trigger="Actions" items={edged} />);
+      render(<ContextualMenu trigger="Actions" items={edged} wrap={false} />);
       const menu = openMenu();
       // Open lands past the leading separator, on the first real item.
       expect(rovingTarget()).toHaveTextContent("Alpha");
       // End lands before the trailing separator, on the last real item...
       fireEvent.keyDown(menu, { key: "End" });
       expect(rovingTarget()).toHaveTextContent("Beta");
-      // ...and ArrowDown from there has nowhere enabled to go.
+      // ...and with wrapping off, ArrowDown from there has nowhere to go.
       fireEvent.keyDown(menu, { key: "ArrowDown" });
       expect(rovingTarget()).toHaveTextContent("Beta");
       fireEvent.keyDown(menu, { key: "Home" });
@@ -314,6 +338,25 @@ describe("ContextualMenu", () => {
       // PageDown's raw landing clamps onto the trailing separator; the jump
       // must fall back to the nearest enabled item, not silently no-op.
       fireEvent.keyDown(menu, { key: "PageDown" });
+      expect(rovingTarget()).toHaveTextContent("Beta");
+    });
+
+    it("wraps by default, looping past leading and trailing separators", () => {
+      const edged: MenuEntry[] = [
+        { type: "separator" },
+        { key: "alpha", label: "Alpha", url: "#alpha" },
+        { key: "beta", label: "Beta", url: "#beta" },
+        { type: "separator" },
+      ];
+      render(<ContextualMenu trigger="Actions" items={edged} />);
+      const menu = openMenu();
+      fireEvent.keyDown(menu, { key: "End" });
+      expect(rovingTarget()).toHaveTextContent("Beta");
+      // ArrowDown from the last item loops to the first, stepping over BOTH
+      // the trailing and the leading separator.
+      fireEvent.keyDown(menu, { key: "ArrowDown" });
+      expect(rovingTarget()).toHaveTextContent("Alpha");
+      fireEvent.keyDown(menu, { key: "ArrowUp" });
       expect(rovingTarget()).toHaveTextContent("Beta");
     });
   });

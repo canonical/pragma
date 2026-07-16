@@ -51,7 +51,9 @@ const ContextualMenu = ({
     gutter,
     maxWidth,
     autoFit: autoFit ?? true,
-    wrap,
+    // Menus conventionally wrap: ArrowDown on the last item loops to the
+    // first (APG menu pattern). Opt out with `wrap={false}`.
+    wrap: wrap ?? true,
     onShow: () => onOpenChange?.(true),
     onHide: () => onOpenChange?.(false),
   });
@@ -86,12 +88,24 @@ const ContextualMenu = ({
       getNodeStatus,
       highlightItem,
       close,
+      // Submenus gate their own visibility on the ROOT open state: their
+      // hover state is local, so without this a mouse-selected nested leaf
+      // would close the root surface while the hovered submenu stayed up.
+      isOpen,
       onSelectItem: (item: _Item<MenuItem>) => {
         onSelect?.(item);
         close();
       },
     }),
-    [getItemProps, getMenuProps, getNodeStatus, highlightItem, close, onSelect],
+    [
+      getItemProps,
+      getMenuProps,
+      getNodeStatus,
+      highlightItem,
+      close,
+      isOpen,
+      onSelect,
+    ],
   );
 
   // With no explicit `label`, the menu is named by its trigger — so the trigger
