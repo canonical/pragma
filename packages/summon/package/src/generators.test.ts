@@ -7,6 +7,24 @@ import { describe, expect, it } from "vitest";
 import { generator } from "./package/index.js";
 import type { PackageAnswers } from "./shared/index.js";
 
+const baseAnswers: PackageAnswers = {
+  name: "@canonical/my-tool",
+  type: "tool-ts",
+  description: "My tool",
+  framework: "none",
+  withStorybook: false,
+  withCli: false,
+  withPrTemplate: false,
+  runInstall: false,
+};
+
+function writePaths(answers: PackageAnswers): string[] {
+  const result = dryRun(generator.generate(answers));
+  return result.effects
+    .filter((e) => e._tag === "WriteFile")
+    .map((e) => (e as { path: string }).path);
+}
+
 describe("package generator", () => {
   it("has correct meta information", () => {
     expect(generator.meta.name).toBe("package");
@@ -20,104 +38,114 @@ describe("package generator", () => {
     expect(promptNames).toContain("name");
     expect(promptNames).toContain("type");
     expect(promptNames).toContain("description");
-    expect(promptNames).toContain("withReact");
+    expect(promptNames).toContain("framework");
     expect(promptNames).toContain("withCli");
     expect(promptNames).toContain("runInstall");
+    expect(promptNames).not.toContain("withReact");
   });
 
   it("generates expected files for tool-ts package", () => {
-    const answers: PackageAnswers = {
-      name: "@canonical/my-tool",
-      type: "tool-ts",
-      description: "My tool",
-      withReact: false,
-      withStorybook: false,
-      withCli: false,
-      withPrTemplate: false,
-      runInstall: false,
-    };
+    const paths = writePaths(baseAnswers);
 
-    const task = generator.generate(answers);
-    const result = dryRun(task);
+    expect(paths.some((p) => p.endsWith("package.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("biome.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("index.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("index.test.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("README.md"))).toBe(true);
 
-    const writePaths = result.effects
-      .filter((e) => e._tag === "WriteFile")
-      .map((e) => (e as { path: string }).path);
-
-    expect(writePaths.some((p) => p.endsWith("package.json"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("tsconfig.json"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("biome.json"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("index.ts"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("README.md"))).toBe(true);
-
-    expect(writePaths.some((p) => p.endsWith("cli.ts"))).toBe(false);
+    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(false);
   });
 
   it("generates CLI file when withCli is true", () => {
-    const answers: PackageAnswers = {
-      name: "@canonical/my-cli",
-      type: "tool-ts",
-      description: "My CLI",
-      withReact: false,
-      withStorybook: false,
-      withCli: true,
-      withPrTemplate: false,
-      runInstall: false,
-    };
-
-    const task = generator.generate(answers);
-    const result = dryRun(task);
-
-    const writePaths = result.effects
-      .filter((e) => e._tag === "WriteFile")
-      .map((e) => (e as { path: string }).path);
-
-    expect(writePaths.some((p) => p.endsWith("cli.ts"))).toBe(true);
+    const paths = writePaths({ ...baseAnswers, withCli: true });
+    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(true);
   });
 
   it("generates CSS package with index.css", () => {
-    const answers: PackageAnswers = {
+    const paths = writePaths({
+      ...baseAnswers,
       name: "@canonical/my-styles",
       type: "css",
-      description: "My styles",
-      withReact: false,
-      withStorybook: false,
-      withCli: false,
-      withPrTemplate: false,
-      runInstall: false,
-    };
+    });
 
-    const task = generator.generate(answers);
-    const result = dryRun(task);
+    expect(paths.some((p) => p.endsWith("index.css"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("package.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("biome.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("README.md"))).toBe(true);
 
-    const writePaths = result.effects
-      .filter((e) => e._tag === "WriteFile")
-      .map((e) => (e as { path: string }).path);
+    expect(paths.some((p) => p.endsWith("index.ts"))).toBe(false);
+    expect(paths.some((p) => p.endsWith("tsconfig.json"))).toBe(false);
+  });
 
-    expect(writePaths.some((p) => p.endsWith("index.css"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("package.json"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("biome.json"))).toBe(true);
-    expect(writePaths.some((p) => p.endsWith("README.md"))).toBe(true);
+  it("generates a plain library with a build config and barrel test", () => {
+    const paths = writePaths({
+      ...baseAnswers,
+      name: "@canonical/my-lib",
+      type: "library",
+      framework: "none",
+    });
 
-    expect(writePaths.some((p) => p.endsWith("index.ts"))).toBe(false);
-    expect(writePaths.some((p) => p.endsWith("tsconfig.json"))).toBe(false);
+    expect(paths.some((p) => p.endsWith("tsconfig.build.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("index.test.ts"))).toBe(true);
+  });
+
+  it("generates a react component library", () => {
+    const paths = writePaths({
+      ...baseAnswers,
+      name: "@canonical/my-react-lib",
+      type: "library",
+      framework: "react",
+    });
+
+    expect(paths.some((p) => p.endsWith("vitest.config.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("vitest.setup.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("tsconfig.build.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith(`${"Example"}/Example.tsx`))).toBe(
+      true,
+    );
+    expect(paths.some((p) => p.endsWith("Example.test.tsx"))).toBe(true);
+  });
+
+  it("generates a svelte component library and omits the CLI even if requested", () => {
+    const paths = writePaths({
+      ...baseAnswers,
+      name: "@canonical/my-svelte-lib",
+      type: "library",
+      framework: "svelte",
+      withCli: true,
+    });
+
+    expect(paths.some((p) => p.endsWith("package.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("svelte.config.js"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("vite.config.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("tsconfig.build.json"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("Example.svelte"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("Example.ssr.test.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("Example.svelte.test.ts"))).toBe(true);
+
+    // svelte-package publishes dist/ only; a src/cli.ts bin can never ship.
+    expect(paths.some((p) => p.endsWith("cli.ts"))).toBe(false);
+  });
+
+  it("wires svelte-CSF storybook files for a svelte library", () => {
+    const paths = writePaths({
+      ...baseAnswers,
+      name: "@canonical/my-svelte-lib",
+      type: "library",
+      framework: "svelte",
+      withStorybook: true,
+    });
+
+    expect(paths.some((p) => p.endsWith("main.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("preview.ts"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("Example.stories.svelte"))).toBe(true);
   });
 
   it("creates directory structure using short name", () => {
-    const answers: PackageAnswers = {
-      name: "@canonical/my-pkg",
-      type: "tool-ts",
-      description: "",
-      withReact: false,
-      withStorybook: false,
-      withCli: false,
-      withPrTemplate: false,
-      runInstall: false,
-    };
-
-    const task = generator.generate(answers);
-    const result = dryRun(task);
-
+    const result = dryRun(
+      generator.generate({ ...baseAnswers, name: "@canonical/my-pkg" }),
+    );
     const mkdirPaths = result.effects
       .filter((e) => e._tag === "MakeDir")
       .map((e) => (e as { path: string }).path);

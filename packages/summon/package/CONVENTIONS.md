@@ -23,18 +23,29 @@
 |----|------|------|
 | P1.1 | Every package has exactly one of three types: `tool-ts`, `library`, or `css` | `type ∈ {tool-ts, library, css}` |
 | P1.2 | `tool-ts` packages use `src/index.ts` as entry point, no build step | entry = `src/index.ts` |
-| P1.3 | `library` packages build to `dist/esm/index.js` via `tsc` | entry = `dist/esm/index.js` |
+| P1.3 | `library` packages build to `dist/` — `tsc` (`none`/`react`) emits `dist/esm/index.js`, `svelte-package` (`svelte`) emits `dist/index.js` | entry per framework |
 | P1.4 | `css` packages use `src/index.css` as entry point, no build step | entry = `src/index.css` |
-| P1.5 | Source lives in `src/` directory | `src/` exists |
+| P1.5 | Source lives in `src/` directory (`src/lib/` for `svelte` libraries — the svelte-package build input) | `src/` exists |
 | P1.6 | Tests live in `src/__tests__/` or alongside source in `src/` | test files under `src/` |
+| P1.7 | A library's `--framework` (`none`/`react`/`svelte`) selects its build + ruleset; the flag applies only to `library` and coerces to `none` (with a warning) for other types | framework ∈ {none, react, svelte} |
 
 ### Package Type Matrix
 
 | Type | License | Entry Point | Build | Use Case |
 |------|---------|-------------|-------|----------|
 | `tool-ts` | GPL-3.0 | `src/index.ts` | None | CLI tools, generators |
-| `library` | LGPL-3.0 | `dist/esm/index.js` | `tsc` | Publishable npm packages |
+| `library` | LGPL-3.0 | `dist/esm/index.js` (`none`/`react`) or `dist/index.js` (`svelte`) | `tsc` or `svelte-package` | Publishable npm packages |
 | `css` | LGPL-3.0 | `src/index.css` | None | CSS-only packages |
+
+### Library Framework Matrix (`--framework`)
+
+| Framework | Build | Module / Types | Ruleset | Sample component |
+|-----------|-------|----------------|---------|------------------|
+| `none` (default) | `tsc -p tsconfig.build.json` | `dist/esm/index.js` / `dist/types/index.d.ts` | `library` | none |
+| `react` | `tsc -p tsconfig.build.json` | `dist/esm/index.js` / `dist/types/index.d.ts` | `package-react` | `Example.tsx` + test |
+| `svelte` | `svelte-package -i src/lib` | `dist/index.js` / `dist/index.d.ts` (+ `exports.svelte`) | `package-svelte` | `Example.svelte` + browser/SSR tests |
+
+`--framework=svelte` is incompatible with `--with-cli` (svelte-package publishes `dist/` only) and coerces the CLI flag off with a warning.
 
 ---
 
@@ -112,9 +123,10 @@
 | P7.1 | `@canonical/webarchitect` enforces package structure | webarchitect in devDeps |
 | P7.2 | Library packages use `library` ruleset | ruleset = library |
 | P7.3 | Tool packages use `tool-ts` ruleset | ruleset = tool-ts |
-| P7.4 | React packages use `package-react` ruleset | ruleset = package-react |
-| P7.5 | Asset packages use `assets` ruleset | ruleset = assets |
-| P7.6 | Minimal validation uses `base` ruleset | ruleset = base |
+| P7.4 | React libraries (`--framework=react`) use `package-react` ruleset | ruleset = package-react |
+| P7.5 | Svelte libraries (`--framework=svelte`) use `package-svelte` ruleset | ruleset = package-svelte |
+| P7.6 | Asset packages use `assets` ruleset | ruleset = assets |
+| P7.7 | Minimal validation (e.g. `css`) uses `base` ruleset | ruleset = base |
 
 ---
 

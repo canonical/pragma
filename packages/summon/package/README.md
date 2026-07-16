@@ -44,8 +44,11 @@ summon package
 # Direct — specify options
 summon package --name=@canonical/my-tool --type=tool-ts
 
-# With React support
-summon package --name=@canonical/my-lib --type=library --with-react
+# React component library
+summon package --name=@canonical/my-lib --type=library --framework=react
+
+# Svelte component library (built with svelte-package)
+summon package --name=@canonical/my-lib --type=library --framework=svelte
 
 # Preview first
 summon package --name=@canonical/my-tool --type=tool-ts --dry-run
@@ -142,6 +145,40 @@ Example package.json:
 }
 ```
 
+#### Component frameworks (`--framework`)
+
+Libraries accept a `--framework` flag to scaffold a component library. It only
+applies to `--type=library`; other types coerce it back to `none` with a
+warning.
+
+| Value | Build | Ruleset | Notes |
+|-------|-------|---------|-------|
+| `none` (default) | `tsc` → `dist/esm` + `dist/types` | `library` | Plain TypeScript library |
+| `react` | `tsc` → `dist/esm` + `dist/types` | `package-react` | React + Testing Library + Vitest (jsdom) |
+| `svelte` | `svelte-package` → `dist/` | `package-svelte` | Svelte 5 runes, Vitest browser/SSR/server projects |
+
+The Svelte variant generates:
+
+```
+my-lib/
+├── package.json            # svelte-package build, exports.svelte condition
+├── svelte.config.js        ├── tsconfig.json / tsconfig.build.json
+├── vite.config.ts          # client (browser) / ssr / server test projects
+├── vitest-setup-client.ts  ├── biome.json / README.md
+└── src/lib/
+    ├── index.ts            ├── index.test.ts
+    └── Example/
+        ├── Example.svelte           ├── types.ts / index.ts / styles.css
+        ├── Example.svelte.test.ts   └── Example.ssr.test.ts
+```
+
+`--framework=svelte` is incompatible with `--with-cli` (svelte-package
+publishes `dist/` only, so a `src/cli.ts` bin can never ship); the CLI flag is
+coerced off with a warning.
+
+Client tests run in real browsers via Vitest browser mode and Playwright — run
+`bunx playwright install chromium firefox webkit` once before `bun run test`.
+
 ### `css` — CSS-Only Package
 
 For pure CSS packages with no TypeScript.
@@ -183,7 +220,7 @@ packages/my-styles/
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--with-react` | Add React dependencies and JSX config | `false` |
+| `--framework` | Component framework for a library: `none`, `react`, or `svelte` | `none` |
 | `--with-storybook` | Add Storybook configuration | `false` |
 | `--with-cli` | Add CLI binary entry point | `false` |
 | `--run-install` | Run package manager install after creation | `true` |
@@ -202,32 +239,21 @@ packages/my-styles/
 
 ## Feature Details
 
-### `--with-react`
+### `--framework react`
 
-Adds React as a peer dependency and configures JSX:
+Scaffolds a functional React component library: `react`/`react-dom`
+dependencies, `@canonical/typescript-config-react`, a `@canonical/vitest-config-react`
+test setup with `@testing-library/react` + jsdom, a sample `Example` component
+with a passing test, and the `package-react` webarchitect ruleset.
 
-```json
-{
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0"
-  }
-}
-```
+### `--framework svelte`
 
-tsconfig.json:
-
-```json
-{
-  "compilerOptions": {
-    "jsx": "react-jsx"
-  }
-}
-```
+Scaffolds a Svelte 5 component library built with `@sveltejs/package`. Output
+publishes `dist/` with an `exports.svelte` condition, Vitest is wired with
+separate `client` (browser), `ssr`, and `server` projects, and a sample
+`Example` component ships with SSR and browser tests. Uses the `package-svelte`
+webarchitect ruleset. See the [library section](#component-frameworks---framework)
+for the full generated tree.
 
 ### `--with-storybook`
 
@@ -321,9 +347,20 @@ summon package \
 summon package \
   --name=@canonical/ui-components \
   --type=library \
-  --with-react \
+  --framework=react \
   --with-storybook \
   --description="Shared UI components"
+```
+
+### Svelte Component Library
+
+```bash
+summon package \
+  --name=@canonical/ui-svelte \
+  --type=library \
+  --framework=svelte \
+  --with-storybook \
+  --description="Shared Svelte components"
 ```
 
 ### CSS Design Tokens

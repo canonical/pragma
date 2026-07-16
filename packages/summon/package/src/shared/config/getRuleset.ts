@@ -1,13 +1,14 @@
-import type { PackageType } from "../types.js";
+import type { PackageFramework, PackageType } from "../types.js";
 
 /**
- * Get the webarchitect ruleset based on package type and options.
+ * Get the webarchitect ruleset based on package type and framework.
  */
 export default function getRuleset(
   type: PackageType,
-  withReact: boolean,
+  framework: PackageFramework,
 ): string {
-  if (withReact) return "package-react";
+  if (framework === "react") return "package-react";
+  if (framework === "svelte") return "package-svelte";
   if (type === "css") return "base";
   return type;
 }

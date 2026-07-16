@@ -11,7 +11,7 @@ const baseAnswers: PackageAnswers = {
   name: "@canonical/test-pkg",
   type: "tool-ts",
   description: "Test",
-  withReact: false,
+  framework: "none",
   withStorybook: false,
   withCli: false,
   withPrTemplate: false,
@@ -23,8 +23,9 @@ describe("package generator undo plan", () => {
     const task = generator.generate(baseAnswers);
     const undos = collectUndos(task);
 
-    // 2 mkdirs + 5 templates × 2 = 12
-    expect(undos.length).toBe(12);
+    // 2 mkdirs + 6 templates (package.json, tsconfig, biome, index.ts,
+    // index.test.ts, README) × 2 = 14
+    expect(undos.length).toBe(14);
   });
 
   it("produces more undos with CLI enabled", () => {
@@ -53,9 +54,53 @@ describe("package generator undo plan", () => {
     };
     const undos = collectUndos(generator.generate(cssAnswers));
 
-    // CSS: 2 mkdirs + no tsconfig + packageJson + biome + indexCss + readme
-    // = 2 + 4 templates × 2 = 10
+    // CSS: 2 mkdirs + no tsconfig/build/test + packageJson + biome + indexCss
+    // + readme = 2 + 4 templates × 2 = 10
     expect(undos.length).toBe(10);
+  });
+
+  it("plain library adds a build config and barrel test", () => {
+    const libAnswers: PackageAnswers = {
+      ...baseAnswers,
+      name: "@canonical/my-lib",
+      type: "library",
+      framework: "none",
+    };
+    const undos = collectUndos(generator.generate(libAnswers));
+
+    // 2 mkdirs + 7 templates (package.json, tsconfig, tsconfig.build, biome,
+    // index.ts, index.test.ts, README) × 2 = 16
+    expect(undos.length).toBe(16);
+  });
+
+  it("svelte library produces its full file set", () => {
+    const svelteAnswers: PackageAnswers = {
+      ...baseAnswers,
+      name: "@canonical/my-svelte-lib",
+      type: "library",
+      framework: "svelte",
+    };
+    const undos = collectUndos(generator.generate(svelteAnswers));
+
+    // 3 explicit mkdirs (pkg, src/lib, Example) + 16 templates × 2 = 35
+    expect(undos.length).toBe(35);
+  });
+
+  it("svelte storybook adds three files and a directory", () => {
+    const svelteAnswers: PackageAnswers = {
+      ...baseAnswers,
+      name: "@canonical/my-svelte-lib",
+      type: "library",
+      framework: "svelte",
+    };
+    const without = collectUndos(generator.generate(svelteAnswers));
+    const with_ = collectUndos(
+      generator.generate({ ...svelteAnswers, withStorybook: true }),
+    );
+
+    // storybook adds mkdir(.storybook) + 3 templates (main, preview, stories)
+    // = 1 + 6 = 7 more undos
+    expect(with_.length).toBe(without.length + 7);
   });
 
   it("exec effects (runInstall) produce no undos", () => {

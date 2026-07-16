@@ -1,0 +1,24 @@
+import type React from "react";
+import type { ExampleProps } from "./types.js";
+
+const componentCssClassName = "ds example";
+
+/**
+ * Example component
+ */
+const Example = ({
+  className,
+  children,
+  ...props
+}: ExampleProps): React.ReactElement => {
+  return (
+    <div
+      className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+};
+
+export default Example;

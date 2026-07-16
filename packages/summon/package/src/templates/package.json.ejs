@@ -3,14 +3,17 @@
   "description": "<%= description %>",
   "version": "<%= version %>",
   "type": "module",
-<% if (type === 'tool-ts') { -%>
-  "module": "src/index.ts",
-  "types": "src/index.ts",
-<% } else if (type === 'css') { -%>
-  "module": "src/index.css",
-<% } else { -%>
-  "module": "dist/esm/index.js",
-  "types": "dist/types/index.d.ts",
+  "module": "<%= module %>",
+<% if (types) { -%>
+  "types": "<%= types %>",
+<% } -%>
+<% if (type === 'library') { -%>
+  "exports": {
+    ".": {
+      "types": "./<%= types %>",
+      "import": "./<%= module %>"
+    }
+  },
 <% } -%>
 <% if (withCli && type !== 'css') { -%>
   "bin": {
@@ -18,11 +21,9 @@
   },
 <% } -%>
   "files": [
-<% if (type === 'tool-ts' || type === 'css') { -%>
-    "src"
-<% } else { -%>
-    "dist"
-<% } -%>
+<% files.forEach((file, index) => { -%>
+    "<%= file %>"<%= index < files.length - 1 ? "," : "" %>
+<% }) -%>
   ],
   "author": {
     "email": "webteam@canonical.com",
@@ -37,6 +38,9 @@
     "url": "https://github.com/canonical/pragma/issues"
   },
   "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
 <% if (type === 'tool-ts' || type === 'css') { -%>
     "build": "echo 'No build needed'",
@@ -68,45 +72,64 @@
 <% if (type === 'css') { -%>
     "test": "echo 'No tests for CSS package'"
 <% } else { -%>
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
 <% } -%>
   },
-<% if (type !== 'css') { -%>
-  "devDependencies": {
-    "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^<%= monorepoVersion || '0.1.0' %>",
-<% if (withReact) { -%>
-    "@canonical/typescript-config-react": "^<%= monorepoVersion || '0.1.0' %>",
-<% } else { -%>
-    "@canonical/typescript-config": "^<%= monorepoVersion || '0.1.0' %>",
-<% } -%>
-<% if (withStorybook) { -%>
-    "@chromatic-com/storybook": "^5.0.0",
-<% } -%>
-<% if (withReact) { -%>
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-<% } -%>
-    "bun-types": "^1.0.0",
-<% if (withStorybook) { -%>
-    "storybook": "^10.1.11",
-<% } -%>
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
-  },
+<% if (framework === 'react') { -%>
   "dependencies": {
-<% if (withStorybook) { -%>
-    "@canonical/storybook-config": "^<%= monorepoVersion || '0.1.0' %>",
-<% } -%>
-<% if (withReact) { -%>
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
 <% } -%>
+<% if (type === 'css') { -%>
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^<%= configsVersion %>",
+    "@canonical/webarchitect": "^<%= configsVersion %>"
+  }
+<% } else if (framework === 'react') { -%>
+  "devDependencies": {
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^<%= configsVersion %>",
+    "@canonical/typescript-config-react": "^<%= configsVersion %>",
+    "@canonical/vitest-config-react": "^<%= configsVersion %>",
+    "@canonical/webarchitect": "^<%= configsVersion %>",
+<% if (withStorybook) { -%>
+    "@canonical/storybook-config": "^<%= configsVersion %>",
+<% } -%>
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^28.1.0",
+<% if (withStorybook) { -%>
+    "storybook": "^10.3.1",
+<% } -%>
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vitest": "^4.0.18"
   }
 <% } else { -%>
   "devDependencies": {
-    "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^<%= monorepoVersion || '0.1.0' %>"
+    "@biomejs/biome": "2.4.9",
+    "@canonical/biome-config": "^<%= configsVersion %>",
+    "@canonical/typescript-config": "^<%= configsVersion %>",
+    "@canonical/webarchitect": "^<%= configsVersion %>",
+<% if (withStorybook) { -%>
+    "@canonical/storybook-config": "^<%= configsVersion %>",
+<% } -%>
+<% if (type === 'tool-ts') { -%>
+    "@types/bun": "^1.3.10",
+<% } -%>
+    "@types/node": "^24.12.0",
+<% if (withStorybook) { -%>
+    "storybook": "^10.3.1",
+<% } -%>
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 <% } -%>
 }
