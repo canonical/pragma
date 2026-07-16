@@ -34,8 +34,12 @@ export default function compilePackCommands(
       prefixes,
     );
     // Surface order mirrors the built-in leaf domains: list, lookup,
-    // extra verbs, sample.
-    const commands = [compileReadCommand(ctx, compiled.list)];
+    // extra verbs, sample. `list` is optional — a pack may serve only the
+    // lookup verb of a noun whose list stays built-in.
+    const commands: CommandDefinition[] = [];
+    if (compiled.list) {
+      commands.push(compileReadCommand(ctx, compiled.list));
+    }
     if (compiled.lookup) {
       commands.push(compileLookupCommand(ctx, compiled.lookup));
     }

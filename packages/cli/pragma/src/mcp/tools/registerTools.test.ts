@@ -122,7 +122,6 @@ describe("tool listing", () => {
 
     expect(names).toEqual([
       "block_list",
-      "block_lookup",
       "block_sample",
       "modifier_sample",
       "tokens_add_config",
@@ -161,6 +160,8 @@ describe("tool listing", () => {
       "modifier_lookup",
       "token_list",
       "token_lookup",
+      // block is a partial migration: only the lookup verb is pack-served.
+      "block_lookup",
     ]);
   });
 
@@ -280,6 +281,9 @@ describe("block_list", () => {
 
 describe("block_lookup", () => {
   it("returns detailed block data by default", async () => {
+    // Served by the bundled block pack (GraphQL fetch path): the default
+    // disclosure level is `detailed`, so anatomy, modifier families with
+    // values, and properties arrive without any parameter.
     const result = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"] },
@@ -288,22 +292,26 @@ describe("block_lookup", () => {
       results: Record<string, unknown>[];
     };
     expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]).toHaveProperty("modifierValues");
-    expect(data.results[0]).toHaveProperty("implementationPaths");
-    expect(data.results[0]).toHaveProperty("tokens");
+    expect(data.results[0]).toHaveProperty("anatomyDsl");
+    expect(data.results[0]).toHaveProperty("modifierFamilies");
+    expect(data.results[0]).toHaveProperty("properties");
   });
 
-  it("returns summary when detailed=false", async () => {
+  it("returns the base view when detail=summary", async () => {
+    // The pack's `--detail` disclosure parameter replaces the old boolean
+    // `detailed` flag; the base level fetch-gates the detailed sections
+    // (they are never queried, not just hidden).
     const result = await client.callTool({
       name: "block_lookup",
-      arguments: { names: ["Button"], detailed: false },
+      arguments: { names: ["Button"], detail: "summary" },
     });
     const data = parseData(result) as {
       results: Record<string, unknown>[];
     };
     expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]).not.toHaveProperty("modifierValues");
-    expect(data.results[0]).not.toHaveProperty("implementationPaths");
+    expect(data.results[0]).toHaveProperty("summary");
+    expect(data.results[0]).not.toHaveProperty("anatomyDsl");
+    expect(data.results[0]).not.toHaveProperty("modifierFamilies");
   });
 
   it("returns structured per-query errors for unknown blocks", async () => {

@@ -335,7 +335,13 @@ export interface StoryPackDefinition {
   readonly description?: string;
   /** MCP tool description (defaults to the CLI description). */
   readonly toolDescription?: string;
-  readonly list: StoryPackList;
+  /**
+   * The list story. Optional so a pack can serve only the lookup verb of a
+   * noun whose list stays built-in (per-verb reservation) — e.g. `block
+   * lookup` from the bundled pack while the config-filtered `block list`
+   * remains hand-written. At least one of `list`/`lookup` must be declared.
+   */
+  readonly list?: StoryPackList;
   /** Additional list-shaped verbs beyond `list` (e.g. `categories`). */
   readonly verbs?: readonly StoryPackVerb[];
   readonly lookup?: StoryPackLookup;

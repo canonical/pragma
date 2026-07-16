@@ -13,6 +13,7 @@
  */
 
 import type { StoryPackDefinition } from "../types.js";
+import { blockPack } from "./blockPack.js";
 import { modifierPack } from "./modifierPack.js";
 import { standardPack } from "./standardPack.js";
 import { tierPack } from "./tierPack.js";
@@ -24,4 +25,5 @@ export const BUNDLED_PACKS: readonly StoryPackDefinition[] = [
   standardPack,
   modifierPack,
   tokenPack,
+  blockPack,
 ];

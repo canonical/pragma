@@ -74,7 +74,6 @@ describe("collectCommands", () => {
       "tokens add-config",
       "token sample",
       "block list",
-      "block lookup",
       "block sample",
       "ontology list",
       "ontology show",
@@ -105,6 +104,9 @@ describe("collectCommands", () => {
       "modifier lookup",
       "token list",
       "token lookup",
+      // block is a PARTIAL migration: only the lookup verb is pack-served,
+      // while the config-filtered `block list` stays built-in.
+      "block lookup",
     ]) {
       expect(builtInPaths).not.toContain(path);
       expect(allPaths).toContain(path);

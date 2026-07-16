@@ -95,22 +95,30 @@ describe("CLI user stories", () => {
     expect(data.store.tripleCount).toBeGreaterThan(0);
   }, 20_000);
 
-  it("story: an explorer sees duplicate Button matches before scoping the workspace", () => {
+  it("story: an explorer resolves Button to one deterministic block", () => {
+    // Served by the bundled block pack: a name resolves to ONE entity (the
+    // old lookup flattened every same-name match across tiers; the pack's
+    // generated resolve is LIMIT 1). Cross-tier disambiguation returns with
+    // the IRI-lookup pack primitive.
     const workspace = createWorkspace();
 
     const result = runCommand(
       ["block", "lookup", "button", "--format", "json"],
       workspace,
     );
-    const data = parseJson<{
-      results: { name: string; tier: string }[];
-      errors: unknown[];
+    const block = parseJson<{
+      name: string;
+      tier: string;
+      uri: string;
+      modifierFamilies?: { name: string; values: string[] }[];
     }>(result);
 
-    expect(data.errors).toEqual([]);
-    expect(data.results.length).toBeGreaterThan(1);
-    expect(data.results.every((item) => item.name === "Button")).toBe(true);
-    expect(data.results.some((item) => item.tier === "global")).toBe(true);
+    expect(block.name).toBe("Button");
+    expect(block.uri).toContain("component.button");
+    // The default disclosure level is detailed: modifier families arrive
+    // with their values through the one generated GraphQL document.
+    expect(block.modifierFamilies?.length).toBeGreaterThan(0);
+    expect(block.modifierFamilies?.[0]?.values.length).toBeGreaterThan(0);
   }, 20_000);
 
   it("story: an app engineer scopes to global and resolves Button case-insensitively", () => {
@@ -143,7 +151,9 @@ describe("CLI user stories", () => {
     }>(lookupResult);
 
     expect(block.name).toBe("Button");
-    expect(block.tier).toBe("global");
+    // The pack binds the tier's IRI (what the graph asserts), not the old
+    // extracted local name — same entity, uniform pack shape.
+    expect(block.tier).toBe("https://ds.canonical.com/global");
     expect(block.uri).toContain("global.component.button");
   }, 20_000);
 

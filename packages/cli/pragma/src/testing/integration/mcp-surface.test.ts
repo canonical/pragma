@@ -117,21 +117,21 @@ describe("block_lookup", () => {
     expect(body.ok).toBe(true);
     const data = body.data as { results: Record<string, unknown>[] };
     expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]).toHaveProperty("modifierValues");
+    expect(data.results[0]).toHaveProperty("modifierFamilies");
   });
 
-  it("resolves block lookup by prefixed IRI", async () => {
+  it("reports IRI queries as not found (name-based lookup only)", async () => {
+    // The bundled block pack looks up by ds:name; IRI-based lookup is a
+    // flat-compiler primitive that arrives with the P1.5 slice. Until then
+    // an IRI query fails typed, with name suggestions.
     const res = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["ds:global.component.button"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { results: { name: string; uri: string }[] };
-    expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]?.uri).toBe(
-      "https://ds.canonical.com/global.component.button",
-    );
+    const data = body.data as { errors: { code: string }[] };
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 
   it("returns structured per-query errors for unknown blocks", async () => {

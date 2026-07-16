@@ -63,7 +63,8 @@ interface PackSampleData {
 
 /** The read stories a pack definition compiles to. */
 export interface CompiledPackStories {
-  readonly list: ReadStory<PackRow[], PackRow[]>;
+  /** The list story, when the pack declares one. */
+  readonly list?: ReadStory<PackRow[], PackRow[]>;
   /** Extra list-shaped verbs (e.g. `categories`), in declaration order. */
   readonly verbs: readonly ReadStory<PackRow[], PackRow[]>[];
   readonly lookup?: LookupStory<PackEntity, PackEntity>;
@@ -94,16 +95,19 @@ export default function compilePackStories(
   const { noun } = definition;
   const description = definition.description ?? `List ${noun} entries`;
 
-  const list = compileListVerb(definition.list, {
-    noun,
-    verb: "list",
-    heading: capitalize(noun),
-    description,
-    toolDescription:
-      definition.toolDescription ?? `${description} (story pack: ${source}).`,
-    source,
-    prefixes,
-  });
+  const list = definition.list
+    ? compileListVerb(definition.list, {
+        noun,
+        verb: "list",
+        heading: capitalize(noun),
+        description,
+        toolDescription:
+          definition.toolDescription ??
+          `${description} (story pack: ${source}).`,
+        source,
+        prefixes,
+      })
+    : undefined;
 
   const verbs = (definition.verbs ?? []).map((verb) => {
     const verbDescription = verb.description ?? `List ${noun} ${verb.verb}`;
@@ -124,7 +128,7 @@ export default function compilePackStories(
     : undefined;
 
   return {
-    list,
+    ...(list ? { list } : {}),
     verbs,
     ...(compiled ? { lookup: compiled.lookup } : {}),
     ...(compiled?.sample ? { sample: compiled.sample } : {}),
@@ -353,7 +357,7 @@ function buildListEmptyError(
   noun: string,
   filters: readonly StoryPackFilter[] | undefined,
   params: Record<string, unknown>,
-  emptyRecovery: NonNullable<StoryPackDefinition["list"]["emptyRecovery"]>,
+  emptyRecovery: NonNullable<StoryPackList["emptyRecovery"]>,
 ): PragmaError {
   const applied = (filters ?? []).filter(
     (filter) => typeof params[filter.param] === "string",
