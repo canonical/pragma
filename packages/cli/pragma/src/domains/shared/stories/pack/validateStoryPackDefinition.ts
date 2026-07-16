@@ -1,4 +1,5 @@
 import { PragmaError } from "#error";
+import { MAX_SAMPLE_COUNT, MIN_SAMPLE_COUNT } from "../../parseSampleCount.js";
 import type {
   StoryPackColumn,
   StoryPackDefinition,
@@ -9,8 +10,10 @@ import type {
   StoryPackFilter,
   StoryPackList,
   StoryPackLookup,
+  StoryPackSample,
   StoryPackSearch,
   StoryPackSection,
+  StoryPackVerb,
 } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
@@ -119,6 +122,7 @@ export default function validateStoryPackDefinition(
       : requireString(obj.toolDescription, "toolDescription", source);
 
   const list = validateList(obj.list, source);
+  const verbs = validateVerbs(obj.verbs, source);
   const lookup =
     obj.lookup === undefined ? undefined : validateLookup(obj.lookup, source);
 
@@ -127,8 +131,65 @@ export default function validateStoryPackDefinition(
     ...(description !== undefined ? { description } : {}),
     ...(toolDescription !== undefined ? { toolDescription } : {}),
     list,
+    ...(verbs ? { verbs } : {}),
     ...(lookup ? { lookup } : {}),
   };
+}
+
+/**
+ * Verbs the compiler itself emits for a pack noun — an extra verb may not
+ * collide with them.
+ */
+const COMPILED_VERBS = new Set(["list", "lookup", "sample"]);
+
+function validateVerbs(
+  raw: unknown,
+  source: string,
+): readonly StoryPackVerb[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw buildStoryConfigError(source, '"verbs" must be a non-empty array.');
+  }
+  const seen = new Set<string>();
+  return raw.map((entry, index) => {
+    const where = `verbs[${index}]`;
+    const obj = requireObject(entry, where, source);
+    const verb = requireString(obj.verb, `${where}.verb`, source);
+    if (!NOUN_PATTERN.test(verb)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.verb" must be kebab-case, got "${verb}".`,
+      );
+    }
+    if (COMPILED_VERBS.has(verb)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.verb" "${verb}" collides with a compiled verb.`,
+      );
+    }
+    if (seen.has(verb)) {
+      throw buildStoryConfigError(source, `duplicate verb "${verb}".`);
+    }
+    seen.add(verb);
+    const description =
+      obj.description === undefined
+        ? undefined
+        : requireString(obj.description, `${where}.description`, source);
+    const toolDescription =
+      obj.toolDescription === undefined
+        ? undefined
+        : requireString(
+            obj.toolDescription,
+            `${where}.toolDescription`,
+            source,
+          );
+    return {
+      verb,
+      ...(description !== undefined ? { description } : {}),
+      ...(toolDescription !== undefined ? { toolDescription } : {}),
+      ...validateListShape(entry, where, source),
+    };
+  });
 }
 
 function validateList(
@@ -384,6 +445,14 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     obj.type === undefined
       ? undefined
       : requireTerm(obj.type, "lookup.type", source);
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, "lookup.description", source);
+  const toolDescription =
+    obj.toolDescription === undefined
+      ? undefined
+      : requireString(obj.toolDescription, "lookup.toolDescription", source);
 
   const fields = validateFieldArray(obj.fields, "lookup.fields", source);
   const sections = validateSectionArray(
@@ -393,6 +462,7 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
   );
   const expand = validateExpandArray(obj.expand, "lookup.expand", source);
   const disclosure = validateDisclosure(obj.disclosure, source);
+  const sample = validateSample(obj.sample, source);
 
   // Cross-check: every expand `level` must name a declared disclosure level.
   const levels = new Set(disclosure?.levels ?? []);
@@ -408,10 +478,54 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
   return {
     by,
     ...(type !== undefined ? { type } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(toolDescription !== undefined ? { toolDescription } : {}),
     ...(fields ? { fields } : {}),
     ...(sections ? { sections } : {}),
     ...(expand ? { expand } : {}),
     ...(disclosure ? { disclosure } : {}),
+    ...(sample !== undefined ? { sample } : {}),
+  };
+}
+
+function validateSample(
+  raw: unknown,
+  source: string,
+): true | StoryPackSample | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === true) return true;
+  const obj = requireObject(raw, "lookup.sample", source);
+  if (obj.count !== undefined) {
+    // Authors fail fast on an out-of-range default; user-provided counts
+    // are clamped at run time by parseSampleCount instead.
+    if (
+      typeof obj.count !== "number" ||
+      !Number.isInteger(obj.count) ||
+      obj.count < MIN_SAMPLE_COUNT ||
+      obj.count > MAX_SAMPLE_COUNT
+    ) {
+      throw buildStoryConfigError(
+        source,
+        `"lookup.sample.count" must be an integer between ${MIN_SAMPLE_COUNT} and ${MAX_SAMPLE_COUNT}.`,
+      );
+    }
+  }
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, "lookup.sample.description", source);
+  const toolDescription =
+    obj.toolDescription === undefined
+      ? undefined
+      : requireString(
+          obj.toolDescription,
+          "lookup.sample.toolDescription",
+          source,
+        );
+  return {
+    ...(obj.count !== undefined ? { count: obj.count as number } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(toolDescription !== undefined ? { toolDescription } : {}),
   };
 }
 

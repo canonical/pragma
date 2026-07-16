@@ -12,8 +12,9 @@ import type { ReservedVerbs } from "./reservedVerbs.js";
  *
  * Story packs come from the merged config (`stories`) and from resolved
  * semantic packages (`stories/*.json`); each yields `<noun> list` and,
- * when declared, `<noun> lookup` — projected through the same kernel as
- * the built-in read stories, so completions and help come for free.
+ * when declared, `<noun> lookup`, extra list verbs, and `<noun> sample` —
+ * projected through the same kernel as the built-in read stories, so
+ * completions and help come for free.
  *
  * @param ctx - Pragma context carrying config, packages, and the store.
  * @param reserved - Built-in `(noun, verb)` reservations packs must not shadow.
@@ -32,9 +33,17 @@ export default function compilePackCommands(
       entry.source,
       prefixes,
     );
+    // Surface order mirrors the built-in leaf domains: list, lookup,
+    // extra verbs, sample.
     const commands = [compileReadCommand(ctx, compiled.list)];
     if (compiled.lookup) {
       commands.push(compileLookupCommand(ctx, compiled.lookup));
+    }
+    for (const verb of compiled.verbs) {
+      commands.push(compileReadCommand(ctx, verb));
+    }
+    if (compiled.sample) {
+      commands.push(compileReadCommand(ctx, compiled.sample));
     }
     return commands;
   });

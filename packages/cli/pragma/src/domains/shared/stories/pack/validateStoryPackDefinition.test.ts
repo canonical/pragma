@@ -473,3 +473,93 @@ describe("validateStoryPackDefinition — list filters", () => {
     ).toThrow(/is not a declared disclosure level/);
   });
 });
+
+// Pack v1: extra list verbs and the sample capability.
+describe("validateStoryPackDefinition — verbs and sample", () => {
+  const VERB = {
+    verb: "categories",
+    query: "SELECT ?name WHERE { ?uri ex:category ?name }",
+    columns: [{ field: "name" }],
+  };
+
+  function withVerbs(verbs: unknown): unknown {
+    return { ...RECIPE_STORY, verbs };
+  }
+
+  it("accepts a valid extra verb and validates its list shape", () => {
+    const validated = validateStoryPackDefinition(withVerbs([VERB]), "test");
+    expect(validated.verbs?.at(0)?.verb).toBe("categories");
+    expect(validated.verbs?.at(0)?.columns).toEqual([{ field: "name" }]);
+  });
+
+  it("rejects a verb colliding with a compiled verb", () => {
+    for (const verb of ["list", "lookup", "sample"]) {
+      expect(() =>
+        validateStoryPackDefinition(withVerbs([{ ...VERB, verb }]), "test"),
+      ).toThrow(/collides with a compiled verb/);
+    }
+  });
+
+  it("rejects duplicate verbs", () => {
+    expect(() =>
+      validateStoryPackDefinition(withVerbs([VERB, VERB]), "test"),
+    ).toThrow(/duplicate verb/);
+  });
+
+  it("rejects a non-kebab verb", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withVerbs([{ ...VERB, verb: "Cats" }]),
+        "test",
+      ),
+    ).toThrow(/kebab-case/);
+  });
+
+  it("rejects a verb whose query is not a SELECT", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withVerbs([{ ...VERB, query: "ASK { ?s ?p ?o }" }]),
+        "test",
+      ),
+    ).toThrow(/verbs\[0\].query/);
+  });
+
+  it("validates verb filters against the verb query", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withVerbs([
+          {
+            ...VERB,
+            filters: [{ param: "season", variable: "season", values: ["x"] }],
+          },
+        ]),
+        "test",
+      ),
+    ).toThrow(/does not appear in "verbs\[0\].query"/);
+  });
+
+  function withSample(sample: unknown): unknown {
+    return { ...RECIPE_STORY, lookup: { ...RECIPE_STORY.lookup, sample } };
+  }
+
+  it("accepts sample: true", () => {
+    const validated = validateStoryPackDefinition(withSample(true), "test");
+    expect(validated.lookup?.sample).toBe(true);
+  });
+
+  it("accepts a configured sample with a valid default count", () => {
+    const validated = validateStoryPackDefinition(
+      withSample({ count: 3 }),
+      "test",
+    );
+    expect(validated.lookup?.sample).toEqual({ count: 3 });
+  });
+
+  it("rejects an out-of-range or non-integer sample count", () => {
+    for (const count of [0, 6, 2.5, "2"]) {
+      expect(() =>
+        validateStoryPackDefinition(withSample({ count }), "test"),
+      ).toThrow(/sample.count/);
+    }
+  });
+});

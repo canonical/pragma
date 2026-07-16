@@ -149,6 +149,133 @@ describe("compilePackStories — value-free filters and search", () => {
   });
 });
 
+// Pack v1: extra list-shaped verbs compiled through the list machinery.
+describe("compilePackStories — extra verbs", () => {
+  const STORY_WITH_VERB: StoryPackDefinition = {
+    ...RECIPE_STORY,
+    verbs: [
+      {
+        verb: "categories",
+        description: "List recipe categories",
+        query:
+          "SELECT ?name (COUNT(?uri) AS ?count) WHERE { ?uri a ex:Recipe ; ex:category ?name } GROUP BY ?name ORDER BY ?name",
+        columns: [{ field: "name" }, { field: "count" }],
+      },
+    ],
+  };
+
+  it("compiles each declared verb into a read story on the noun", async () => {
+    const { verbs } = compilePackStories(STORY_WITH_VERB, "test", PREFIXES);
+    expect(verbs).toHaveLength(1);
+    const categories = verbs.at(0);
+    expect(categories?.noun).toBe("recipe");
+    expect(categories?.verb).toBe("categories");
+    expect(categories?.description).toBe("List recipe categories");
+    const rows = await categories?.resolve(rt, {});
+    expect(rows).toEqual([
+      { name: "breakfast", count: "1" },
+      { name: "soup", count: "1" },
+    ]);
+    expect(categories?.toEnvelope(rows ?? [])).toEqual({
+      data: rows,
+      meta: { count: 2 },
+    });
+  });
+
+  it("renders extra verbs through the generic list renderer", async () => {
+    const { verbs } = compilePackStories(STORY_WITH_VERB, "test", PREFIXES);
+    const categories = verbs.at(0);
+    const rows = (await categories?.resolve(rt, {})) ?? [];
+    const llm = categories?.formatters.llm(rows) ?? "";
+    expect(llm).toContain("## Recipe categories (2)");
+    expect(llm).toContain("breakfast");
+  });
+
+  it("compiles no extra verbs when none are declared", () => {
+    const { verbs } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    expect(verbs).toEqual([]);
+  });
+});
+
+// Pack v1: the generic sample verb.
+describe("compilePackStories — sample", () => {
+  const STORY_WITH_SAMPLE: StoryPackDefinition = {
+    ...RECIPE_STORY,
+    lookup: {
+      // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+      ...RECIPE_STORY.lookup!,
+      sample: true,
+    },
+  };
+
+  it("draws N entities resolved through the lookup path", async () => {
+    const { sample } = compilePackStories(STORY_WITH_SAMPLE, "test", PREFIXES);
+    expect(sample?.noun).toBe("recipe");
+    expect(sample?.verb).toBe("sample");
+    const data = await sample?.resolve(rt, { count: "2" });
+    expect(data?.totalCount).toBe(2);
+    expect(data?.samples.map((entity) => entity.name).sort()).toEqual([
+      "Gazpacho",
+      "Pancakes",
+    ]);
+    // Full lookup shape, not just names.
+    expect(
+      data?.samples.every((entity) => typeof entity.instructions === "string"),
+    ).toBe(true);
+  });
+
+  it("clamps the requested count and rejects non-integers", async () => {
+    const { sample } = compilePackStories(STORY_WITH_SAMPLE, "test", PREFIXES);
+    const data = await sample?.resolve(rt, { count: "99" });
+    expect(data?.samples.length).toBeLessThanOrEqual(5);
+    await expect(sample?.resolve(rt, { count: "abc" })).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+    });
+  });
+
+  it("envelopes samples with totalCount and nextSteps", async () => {
+    const { sample } = compilePackStories(STORY_WITH_SAMPLE, "test", PREFIXES);
+    const data = await sample?.resolve(rt, {});
+    if (!data || !sample) throw new Error("expected sample data");
+    const envelope = sample.toEnvelope(data);
+    expect(envelope.meta).toEqual({ count: data.samples.length });
+    const payload = envelope.data as {
+      totalCount: number;
+      nextSteps: string[];
+    };
+    expect(payload.totalCount).toBe(2);
+    expect(payload.nextSteps.join(" ")).toContain("recipe_lookup");
+  });
+
+  it("renders samples via the lookup formatters under a count header", async () => {
+    const { sample } = compilePackStories(STORY_WITH_SAMPLE, "test", PREFIXES);
+    const data = await sample?.resolve(rt, { count: "2" });
+    if (!data || !sample) throw new Error("expected sample data");
+    const llm = sample.formatters.llm(sample.toOutput(data, {}));
+    expect(llm).toContain("Showing 2 of 2 recipe entries");
+    expect(llm).toContain("## ");
+  });
+
+  it("honors a declared default count", async () => {
+    const configured: StoryPackDefinition = {
+      ...RECIPE_STORY,
+      lookup: {
+        // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+        ...RECIPE_STORY.lookup!,
+        sample: { count: 1 },
+      },
+    };
+    const { sample } = compilePackStories(configured, "test", PREFIXES);
+    const data = await sample?.resolve(rt, {});
+    expect(data?.samples).toHaveLength(1);
+  });
+
+  it("compiles no sample story when the capability is not declared", () => {
+    const { sample } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    expect(sample).toBeUndefined();
+  });
+});
+
 describe("compilePackStories — lookup", () => {
   it("looks an entity up by name, case-insensitively", async () => {
     const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);

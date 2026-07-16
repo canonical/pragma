@@ -10,17 +10,25 @@ import type {
 } from "../../contracts.js";
 import type { Formatters } from "../../formatters.js";
 import lookupMany from "../../lookupMany.js";
+import parseSampleCount, {
+  DEFAULT_SAMPLE_COUNT,
+  MAX_SAMPLE_COUNT,
+  MIN_SAMPLE_COUNT,
+} from "../../parseSampleCount.js";
+import pickRandom from "../../pickRandom.js";
 import {
   renderListLlm,
   renderListPlain,
   renderLookupLlm,
   renderLookupPlain,
 } from "../../renderers.js";
+import createSampleFormatters from "../../sampleFormatters.js";
 import {
   expandGlob,
   isGlobPattern,
   suggestNames,
 } from "../../suggestions/index.js";
+import type { SampleOutput } from "../../types/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
 import type { LookupStory, ReadStory, StoryParam } from "../types.js";
 import applyPackFilters from "./applyPackFilters.js";
@@ -35,6 +43,7 @@ import type {
   StoryPackDefinition,
   StoryPackDisclosure,
   StoryPackFilter,
+  StoryPackList,
   StoryPackLookup,
   StoryPackSearch,
 } from "./types.js";
@@ -50,24 +59,36 @@ type PackRow = Record<string, string>;
  */
 type PackEntity = Record<string, string | readonly PackRow[]>;
 
+/** Resolved sample data: the drawn entities plus the population size. */
+interface PackSampleData {
+  readonly samples: PackEntity[];
+  readonly totalCount: number;
+}
+
 /** The read stories a pack definition compiles to. */
 export interface CompiledPackStories {
   readonly list: ReadStory<PackRow[], PackRow[]>;
+  /** Extra list-shaped verbs (e.g. `categories`), in declaration order. */
+  readonly verbs: readonly ReadStory<PackRow[], PackRow[]>[];
   readonly lookup?: LookupStory<PackEntity, PackEntity>;
+  /** The `sample` story, when the lookup declares the capability. */
+  readonly sample?: ReadStory<PackSampleData, SampleOutput<PackEntity>>;
 }
 
 /**
  * Compile one validated story-pack definition into kernel read stories.
  *
- * The list story runs the pack's preferred SELECT verbatim; the lookup
- * story runs the generated, injection-safe per-name query. Both render
- * through the shared generic renderers with the runtime's merged prefix
- * map, so foreign namespaces display compacted.
+ * The list story (and any extra list-shaped verbs) run the pack's
+ * preferred SELECT verbatim; the lookup and sample stories run generated,
+ * injection-safe queries. All render through the shared generic renderers
+ * with the runtime's merged prefix map, so foreign namespaces display
+ * compacted.
  *
  * @param definition - A validated pack definition.
  * @param source - Where the definition came from, for diagnostics.
  * @param prefixes - The merged prefix map used for display.
- * @returns The compiled list story and, when declared, the lookup story.
+ * @returns The compiled list story, extra verbs, and — when declared —
+ *   the lookup and sample stories.
  */
 export default function compilePackStories(
   definition: StoryPackDefinition,
@@ -75,17 +96,71 @@ export default function compilePackStories(
   prefixes: Readonly<Record<string, string>>,
 ): CompiledPackStories {
   const { noun } = definition;
-  const heading = capitalize(noun);
   const description = definition.description ?? `List ${noun} entries`;
 
-  const listColumns: ColumnDef<PackRow>[] = definition.list.columns.map(
-    (column) => ({
-      key: column.field,
-      label: column.label ?? column.field,
-    }),
-  );
+  const list = compileListVerb(definition.list, {
+    noun,
+    verb: "list",
+    heading: capitalize(noun),
+    description,
+    toolDescription:
+      definition.toolDescription ?? `${description} (story pack: ${source}).`,
+    source,
+    prefixes,
+  });
+
+  const verbs = (definition.verbs ?? []).map((verb) => {
+    const verbDescription = verb.description ?? `List ${noun} ${verb.verb}`;
+    return compileListVerb(verb, {
+      noun,
+      verb: verb.verb,
+      heading: `${capitalize(noun)} ${verb.verb}`,
+      description: verbDescription,
+      toolDescription:
+        verb.toolDescription ?? `${verbDescription} (story pack: ${source}).`,
+      source,
+      prefixes,
+    });
+  });
+
+  const compiled = definition.lookup
+    ? compileLookup(definition.lookup, noun, source, prefixes)
+    : undefined;
+
+  return {
+    list,
+    verbs,
+    ...(compiled ? { lookup: compiled.lookup } : {}),
+    ...(compiled?.sample ? { sample: compiled.sample } : {}),
+  };
+}
+
+/** Presentation facts for one compiled list-shaped verb. */
+interface ListVerbMeta {
+  readonly noun: string;
+  readonly verb: string;
+  readonly heading: string;
+  readonly description: string;
+  readonly toolDescription: string;
+  readonly source: string;
+  readonly prefixes: Readonly<Record<string, string>>;
+}
+
+/**
+ * Compile one list-shaped story half (the `list` verb or an extra verb)
+ * into a kernel read story.
+ */
+function compileListVerb(
+  shape: StoryPackList,
+  meta: ListVerbMeta,
+): ReadStory<PackRow[], PackRow[]> {
+  const { noun, verb, source, prefixes } = meta;
+  const listColumns: ColumnDef<PackRow>[] = shape.columns.map((column) => ({
+    key: column.field,
+    label: column.label ?? column.field,
+  }));
   const listOptions: RenderListOptions<PackRow> = {
-    heading,
+    heading: meta.heading,
     columns: listColumns,
     prefixes,
   };
@@ -95,31 +170,30 @@ export default function compilePackStories(
     json: (rows) => JSON.stringify(rows, null, 2),
   };
 
-  const filters = definition.list.filters;
-  const search = definition.list.search;
+  const filters = shape.filters;
+  const search = shape.search;
   // The generated example uses the first filter with a declared value set —
   // a value-free filter has no representative value to show.
   const filterExample = filters?.find((filter) => filter.values !== undefined);
-  const list: ReadStory<PackRow[], PackRow[]> = {
+  return {
     noun,
-    verb: "list",
-    description,
-    toolDescription:
-      definition.toolDescription ?? `${description} (story pack: ${source}).`,
+    verb,
+    description: meta.description,
+    toolDescription: meta.toolDescription,
     params: [...projectFilterParams(filters), ...projectSearchParam(search)],
     examples: [
-      `pragma ${noun} list`,
+      `pragma ${noun} ${verb}`,
       ...(filterExample
         ? [
-            `pragma ${noun} list --${filterExample.param} ${quoteExampleValue(filterExample.values?.at(0) ?? "")}`,
+            `pragma ${noun} ${verb} --${filterExample.param} ${quoteExampleValue(filterExample.values?.at(0) ?? "")}`,
           ]
         : []),
-      `pragma ${noun} list --llm`,
+      `pragma ${noun} ${verb} --llm`,
     ],
     resolve: async (rt, params) =>
       applyPackSearch(
         applyPackFilters(
-          await runSelectQuery(rt.store, definition.list.query, source),
+          await runSelectQuery(rt.store, shape.query, source),
           filters,
           params,
         ),
@@ -130,12 +204,6 @@ export default function compilePackStories(
     formatters: listFormatters,
     toEnvelope: (rows) => ({ data: rows, meta: { count: rows.length } }),
   };
-
-  const lookup = definition.lookup
-    ? compileLookup(definition.lookup, noun, source, prefixes)
-    : undefined;
-
-  return { list, ...(lookup ? { lookup } : {}) };
 }
 
 function compileLookup(
@@ -143,7 +211,10 @@ function compileLookup(
   noun: string,
   source: string,
   prefixes: Readonly<Record<string, string>>,
-): LookupStory<PackEntity, PackEntity> {
+): {
+  lookup: LookupStory<PackEntity, PackEntity>;
+  sample?: ReadStory<PackSampleData, SampleOutput<PackEntity>>;
+} {
   const fields: LookupField<PackEntity>[] = (lookup.fields ?? []).map(
     (field) => ({
       label: field.label ?? field.name,
@@ -204,10 +275,12 @@ function compileLookup(
       ]
     : [];
 
-  return {
+  const lookupStory: LookupStory<PackEntity, PackEntity> = {
     noun,
-    description: `Look up ${noun} details by name`,
-    toolDescription: `Get details for one or more ${noun} entries by name (story pack: ${source}).`,
+    description: lookup.description ?? `Look up ${noun} details by name`,
+    toolDescription:
+      lookup.toolDescription ??
+      `Get details for one or more ${noun} entries by name (story pack: ${source}).`,
     namesDescription: `${capitalize(noun)} names`,
     params: detailParams,
     complete: async (partial, cmdCtx) => {
@@ -263,6 +336,98 @@ function compileLookup(
         },
       }),
   };
+
+  const sample = lookup.sample
+    ? compileSample(lookup, noun, source, prefixes, lookupFormatters)
+    : undefined;
+
+  return { lookup: lookupStory, ...(sample ? { sample } : {}) };
+}
+
+/**
+ * Compile the `sample` story for a lookup that declares the capability.
+ *
+ * Draws N random entity names (clamped 1–5) and resolves each through the
+ * SAME lookup path at the HIGHEST disclosure level, so exemplars carry the
+ * full shape — fields, expands, and all. Rendering reuses the lookup
+ * formatters per entity under the shared sample header.
+ */
+function compileSample(
+  lookup: StoryPackLookup,
+  noun: string,
+  source: string,
+  prefixes: Readonly<Record<string, string>>,
+  lookupFormatters: Formatters<PackEntity>,
+): ReadStory<PackSampleData, SampleOutput<PackEntity>> {
+  const config =
+    lookup.sample === true || lookup.sample === undefined ? {} : lookup.sample;
+  const description =
+    config.description ??
+    `Return randomly selected complete ${noun} entries as exemplars for shape discovery`;
+  const toolDescription =
+    config.toolDescription ??
+    `Return ${MIN_SAMPLE_COUNT}–${MAX_SAMPLE_COUNT} randomly selected complete ${noun} entries as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.`;
+  const sampleFormatters = createSampleFormatters<PackEntity>(
+    `${noun} entries`,
+    (entity, mode) => lookupFormatters[mode](entity),
+  );
+  const toOutput = (data: PackSampleData): SampleOutput<PackEntity> => ({
+    ...data,
+    nextSteps: sampleNextSteps(noun, data),
+  });
+
+  return {
+    noun,
+    verb: "sample",
+    description,
+    toolDescription,
+    params: [
+      {
+        name: "count",
+        type: "string",
+        description: `Number of samples to return (${MIN_SAMPLE_COUNT}–${MAX_SAMPLE_COUNT}, default ${config.count ?? DEFAULT_SAMPLE_COUNT})`,
+        positional: true,
+      },
+    ],
+    examples: [`pragma ${noun} sample`, `pragma ${noun} sample 3`],
+    resolve: async (rt, params) => {
+      const count = parseSampleCount(params.count ?? config.count);
+      const names = await listEntityNames(rt.store, lookup, source);
+      // Exemplars resolve at the HIGHEST disclosure level so every expand
+      // is fetched — samples exist to show the full data shape.
+      const level = lookup.disclosure?.levels.at(-1);
+      const selected = pickRandom(names, count);
+      const samples = await Promise.all(
+        selected.map((name) =>
+          lookupPackEntity(
+            rt.store,
+            lookup,
+            noun,
+            name,
+            source,
+            level,
+            prefixes,
+          ),
+        ),
+      );
+      return { samples, totalCount: names.length };
+    },
+    toOutput,
+    formatters: sampleFormatters,
+    toEnvelope: (data) => ({
+      data: toOutput(data),
+      meta: { count: data.samples.length },
+    }),
+  };
+}
+
+/** Agent-facing follow-ups appended to sample output. */
+function sampleNextSteps(noun: string, data: PackSampleData): string[] {
+  return [
+    `These are ${data.samples.length} of ${data.totalCount} total ${noun} entries.`,
+    `Use ${noun}_lookup to inspect specific entries by name.`,
+    `Use ${noun}_list to browse all entries.`,
+  ];
 }
 
 /**

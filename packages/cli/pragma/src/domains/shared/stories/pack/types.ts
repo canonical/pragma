@@ -147,6 +147,36 @@ export interface StoryPackList {
 }
 
 /**
+ * An additional list-shaped verb: `<noun> <verb>` and `<noun>_<verb>`
+ * compiled through the SAME machinery as `list` (query, columns, filters,
+ * search) — e.g. standard's `categories`. The verb may not collide with
+ * the compiled `list`/`lookup`/`sample` verbs.
+ */
+export interface StoryPackVerb extends StoryPackList {
+  /** Verb name (kebab-case), e.g. `"categories"`. */
+  readonly verb: string;
+  /** CLI description for the command. */
+  readonly description?: string;
+  /** MCP tool description (defaults to the CLI description). */
+  readonly toolDescription?: string;
+}
+
+/**
+ * The sample capability: `<noun> sample [count]` and `<noun>_sample`
+ * return 1–5 randomly selected complete entities (resolved through the
+ * lookup path at the HIGHEST disclosure level) so agents can learn the
+ * data shape before querying.
+ */
+export interface StoryPackSample {
+  /** Default sample count when none is requested (1–5; default 2). */
+  readonly count?: number;
+  /** CLI description for the command. */
+  readonly description?: string;
+  /** MCP tool description (defaults to the CLI description). */
+  readonly toolDescription?: string;
+}
+
+/**
  * The lookup half of a story pack. The query is generated from `type` and
  * `by` — user-supplied names are escaped by the generator, never
  * interpolated by the author.
@@ -156,6 +186,10 @@ export interface StoryPackLookup {
   readonly by: string;
   /** Optional class constraint — prefixed name or IRI. */
   readonly type?: string;
+  /** CLI description for the lookup command (defaults to a generated one). */
+  readonly description?: string;
+  /** MCP tool description (defaults to a generated one). */
+  readonly toolDescription?: string;
   /** Inline fields shown under the entity title. */
   readonly fields?: readonly StoryPackField[];
   /** Long-form sections shown after the fields. */
@@ -164,6 +198,8 @@ export interface StoryPackLookup {
   readonly expand?: readonly StoryPackExpand[];
   /** Progressive-disclosure levels; enables the derived `--detail` flag. */
   readonly disclosure?: StoryPackDisclosure;
+  /** Sample capability: `true` for defaults, or a configured sample. */
+  readonly sample?: true | StoryPackSample;
 }
 
 /** One declarative read story: a noun with its preferred queries. */
@@ -175,6 +211,8 @@ export interface StoryPackDefinition {
   /** MCP tool description (defaults to the CLI description). */
   readonly toolDescription?: string;
   readonly list: StoryPackList;
+  /** Additional list-shaped verbs beyond `list` (e.g. `categories`). */
+  readonly verbs?: readonly StoryPackVerb[];
   readonly lookup?: StoryPackLookup;
 }
 
