@@ -1,59 +1,50 @@
 /**
- * Standard-noun parity pilot — the built-in `standard` read stories vs
- * the declarative pack definition in `standardParityFixtures.ts`.
+ * Standard-noun cutover parity — the bundled `standard` pack against the
+ * real @canonical/code-standards graphs, resolved from node_modules
+ * through the production loader chain (no fixture TTL).
  *
- * Both paths run against the real @canonical/code-standards graphs,
- * resolved from node_modules through the production loader chain — no
- * fixture TTL. Assertions demand byte parity wherever the v0 pack
- * format reaches; every remaining divergence is pinned exactly and
- * must be named in PARITY_GAPS. Nothing is cut over: the built-in
- * stories stay untouched and the pack is compiled directly.
+ * The hand-written standard domain is gone, so parity is SEMANTIC and
+ * asserted directly against the graph: every standard the store carries
+ * is reachable through the pack's list/lookup/categories/sample stories
+ * with the same names and values (category, description, extends,
+ * dos/donts code examples), by name, prefixed name, absolute IRI, and
+ * glob. The accepted divergences from the deleted built-in are pinned in
+ * PARITY_GAPS (`#testing`), not silently absorbed here.
  */
 
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PARITY_GAPS, STANDARD_PACK_STORY } from "#testing";
+import { createTestStore, PARITY_GAPS } from "#testing";
 import { parsePackageEntry } from "../../../refs/operations/parseRef.js";
-import type { StandardListOutput } from "../../../standard/formatters/index.js";
-import {
-  standardListStory,
-  standardLookupStory,
-} from "../../../standard/stories.js";
 import { bootStore } from "../../bootStore.js";
 import compactUri from "../../compactUri.js";
-import { DEFAULT_PREFIX_MAP } from "../../prefixes.js";
-import type { PragmaRuntime, StandardDetailed } from "../../types/index.js";
-import type { LookupStoryView } from "../types.js";
+import {
+  DEFAULT_PREFIX_MAP,
+  TRANSITIONAL_DS_PREFIX_MAP,
+} from "../../prefixes.js";
+import { listDomainNames } from "../../suggestions/index.js";
+import type { PragmaRuntime } from "../../types/index.js";
+import { standardPack } from "./bundled/standardPack.js";
 import compilePackStories, {
   type CompiledPackStories,
 } from "./compilePackStories.js";
+import runSelectQuery from "./runSelectQuery.js";
 import validateStoryPackDefinition from "./validateStoryPackDefinition.js";
 
-const PACK_SOURCE = "standardParityFixtures";
+const PACK_SOURCE = "bundled:standard";
 
-/** The built-in CLI default view: summary lookup, no extra params. */
-const SUMMARY_VIEW: LookupStoryView = {
-  surface: "cli",
-  detailed: false,
-  params: {},
-};
+/** A real standard whose dos AND donts are non-empty on the live package. */
+const LOOKUP_NAME = "react/component/props";
 
-/** Real standard names without cs:extends — full byte parity expected. */
-const PARITY_LOOKUP_NAMES = [
-  "code/function/purity",
-  "react/component/props",
-] as const;
-
-/** A real standard with cs:extends — pins the JSON compaction gap. */
+/** A real standard with cs:extends — pins the raw-IRI JSON contract. */
 const EXTENDS_LOOKUP_NAME = "react/component/structure/context";
 
-/** A near-miss query — both paths must produce identical suggestions. */
+/** A near-miss query — must produce ranked suggestions. */
 const NEAR_MISS_NAME = "code/function/puriti";
 
 let store: Store;
 let rt: PragmaRuntime;
-let packList: CompiledPackStories["list"];
-let packLookup: NonNullable<CompiledPackStories["lookup"]>;
+let compiled: CompiledPackStories;
 
 beforeAll(async () => {
   const boot = await bootStore({
@@ -61,76 +52,39 @@ beforeAll(async () => {
   });
   store = boot.store;
   rt = { store } as PragmaRuntime;
-
-  const compiled = compilePackStories(STANDARD_PACK_STORY, PACK_SOURCE, {
+  compiled = compilePackStories(standardPack, PACK_SOURCE, {
     ...DEFAULT_PREFIX_MAP,
   });
-  packList = compiled.list;
-  const lookup = compiled.lookup;
-  if (!lookup) {
-    throw new Error("STANDARD_PACK_STORY must declare a lookup story");
-  }
-  packLookup = lookup;
 });
 
 afterAll(() => store?.dispose());
 
-/** Resolve one name through the built-in lookup story. */
-async function lookupBuiltin(name: string): Promise<StandardDetailed> {
-  const result = await standardLookupStory.resolve(rt, [name], {});
-  expect(result.errors).toEqual([]);
-  const entity = result.results.at(0);
-  if (entity === undefined) {
-    throw new Error(`built-in lookup found no result for "${name}"`);
-  }
-  return entity;
-}
+/** The dos/donts row shape the pack projects for each code example. */
+type ExampleRow = { caption?: string; language?: string; code?: string };
 
-/** Resolve one name through the compiled pack lookup story. */
-async function lookupPack(name: string): Promise<Record<string, string>> {
-  const result = await packLookup.resolve(rt, [name], {});
+/** Resolve one lookup query at an optional detail level. */
+async function lookupPack(
+  name: string,
+  params: Record<string, unknown> = {},
+): Promise<Record<string, string | readonly ExampleRow[]>> {
+  const lookup = compiled.lookup;
+  if (!lookup) throw new Error("standard pack must declare a lookup story");
+  const result = await lookup.resolve(rt, [name], params);
   expect(result.errors).toEqual([]);
   const entity = result.results.at(0);
   if (entity === undefined) {
     throw new Error(`pack lookup found no result for "${name}"`);
   }
-  return entity;
-}
-
-/**
- * Remove the built-in's URI field line — the one v0 lookup rendering
- * gap (see PARITY_GAPS: "lookup uri field"). Asserts the line occurs
- * exactly once so the transformation cannot mask other divergence.
- */
-function dropUriField(text: string, marker: "  URI: " | "- URI: "): string {
-  const lines = text.split("\n");
-  const remaining = lines.filter((line) => !line.startsWith(marker));
-  expect(lines.length - remaining.length).toBe(1);
-  return remaining.join("\n");
-}
-
-/** Assert every name appears in the text, in order. */
-function expectNamesInOrder(text: string, names: readonly string[]): void {
-  let cursor = 0;
-  for (const name of names) {
-    const index = text.indexOf(name, cursor);
-    expect(
-      index,
-      `expected "${name}" after position ${cursor}`,
-    ).toBeGreaterThanOrEqual(0);
-    cursor = index + name.length;
-  }
+  return entity as Record<string, string | readonly ExampleRow[]>;
 }
 
 describe("standard pack definition", () => {
-  it("round-trips as declarative JSON and validates as a v0 pack", () => {
-    const raw: unknown = JSON.parse(JSON.stringify(STANDARD_PACK_STORY));
-    expect(validateStoryPackDefinition(raw, PACK_SOURCE)).toEqual(
-      STANDARD_PACK_STORY,
-    );
+  it("round-trips as declarative JSON and validates as a v1 pack", () => {
+    const raw: unknown = JSON.parse(JSON.stringify(standardPack));
+    expect(validateStoryPackDefinition(raw, PACK_SOURCE)).toEqual(standardPack);
   });
 
-  it("records every known gap as a distinct capability entry", () => {
+  it("records every accepted divergence as a distinct entry", () => {
     expect(PARITY_GAPS.length).toBeGreaterThan(0);
     expect(new Set(PARITY_GAPS).size).toBe(PARITY_GAPS.length);
     for (const gap of PARITY_GAPS) {
@@ -140,169 +94,288 @@ describe("standard pack definition", () => {
 });
 
 describe("standard list parity", () => {
-  let builtinResolution: Awaited<ReturnType<typeof standardListStory.resolve>>;
-  let builtinOutput: StandardListOutput;
-  let packRows: Record<string, string>[];
+  let rows: Record<string, string>[];
 
   beforeAll(async () => {
-    builtinResolution = await standardListStory.resolve(rt, {});
-    builtinOutput = standardListStory.toOutput(builtinResolution, {});
-    packRows = await packList.resolve(rt, {});
+    rows = await compiled.list.resolve(rt, {});
   });
 
-  it("resolves the same rows as the built-in resolver", () => {
-    expect(packRows.length).toBeGreaterThan(0);
-    expect(packRows).toEqual(builtinOutput.items);
-  });
-
-  it("json output is byte-identical", () => {
-    const builtinJson = standardListStory.formatters.json(builtinOutput);
-    const packJson = packList.formatters.json(packList.toOutput(packRows, {}));
-    expect(packJson).toBe(builtinJson);
-  });
-
-  it("MCP envelope matches the built-in summary envelope", () => {
-    expect(packList.toEnvelope(packRows)).toEqual(
-      standardListStory.toEnvelope(builtinResolution),
-    );
-  });
-
-  it("plain output carries every standard in order — layout is a recorded gap", () => {
-    const names = builtinOutput.items.map((item) => item.name);
-    const builtinPlain = standardListStory.formatters.plain(builtinOutput);
-    const packPlain = packList.formatters.plain(
-      packList.toOutput(packRows, {}),
-    );
-    expectNamesInOrder(builtinPlain, names);
-    expectNamesInOrder(packPlain, names);
-    // Layout divergence pinned — see PARITY_GAPS "list plain template".
-    expect(packPlain).not.toBe(builtinPlain);
-  });
-
-  it("llm output carries every standard in order — templates are a recorded gap", () => {
-    const names = builtinOutput.items.map((item) => item.name);
-    const builtinLlm = standardListStory.formatters.llm(builtinOutput);
-    const packLlm = packList.formatters.llm(packList.toOutput(packRows, {}));
-    expectNamesInOrder(builtinLlm, names);
-    expectNamesInOrder(packLlm, names);
-    // Heading divergence pinned — see PARITY_GAPS "list llm template".
-    expect(builtinLlm.startsWith("## Standards\n")).toBe(true);
-    expect(packLlm.startsWith(`## Standard (${packRows.length})\n`)).toBe(true);
-    expect(packLlm).not.toBe(builtinLlm);
-  });
-});
-
-describe("standard lookup parity (summary view)", () => {
-  for (const name of PARITY_LOOKUP_NAMES) {
-    it(`plain output for "${name}" matches modulo the URI field gap`, async () => {
-      const builtinPlain = standardLookupStory.formatters.plain(
-        standardLookupStory.toFmtInput(await lookupBuiltin(name), SUMMARY_VIEW),
+  it("lists every named standard in the graph, with the uniform row shape", async () => {
+    // The shared suggestions name query is the independent oracle for
+    // which standards exist (same store, different query path).
+    const allNames = await listDomainNames(store, "standard");
+    expect(allNames.length).toBeGreaterThan(0);
+    const listed = new Set(rows.map((row) => row.name));
+    for (const name of allNames) {
+      expect(listed.has(name), `"${name}" missing from standard list`).toBe(
+        true,
       );
-      const packPlain = packLookup.formatters.plain(
-        packLookup.toFmtInput(await lookupPack(name), SUMMARY_VIEW),
-      );
-      expect(packPlain).toBe(dropUriField(builtinPlain, "  URI: "));
-    });
-
-    it(`llm output for "${name}" matches modulo the URI field gap`, async () => {
-      const builtinLlm = standardLookupStory.formatters.llm(
-        standardLookupStory.toFmtInput(await lookupBuiltin(name), SUMMARY_VIEW),
-      );
-      const packLlm = packLookup.formatters.llm(
-        packLookup.toFmtInput(await lookupPack(name), SUMMARY_VIEW),
-      );
-      expect(packLlm).toBe(dropUriField(builtinLlm, "- URI: "));
-    });
-
-    it(`json output for "${name}" is byte-identical`, async () => {
-      const builtinJson = standardLookupStory.formatters.json(
-        standardLookupStory.toFmtInput(await lookupBuiltin(name), SUMMARY_VIEW),
-      );
-      const packJson = packLookup.formatters.json(
-        packLookup.toFmtInput(await lookupPack(name), SUMMARY_VIEW),
-      );
-      expect(packJson).toBe(builtinJson);
-    });
-  }
-});
-
-describe("standard lookup parity — cs:extends divergence", () => {
-  it("plain and llm stay byte-identical modulo the URI field", async () => {
-    const builtinInput = standardLookupStory.toFmtInput(
-      await lookupBuiltin(EXTENDS_LOOKUP_NAME),
-      SUMMARY_VIEW,
-    );
-    const packInput = packLookup.toFmtInput(
-      await lookupPack(EXTENDS_LOOKUP_NAME),
-      SUMMARY_VIEW,
-    );
-    expect(packLookup.formatters.plain(packInput)).toBe(
-      dropUriField(
-        standardLookupStory.formatters.plain(builtinInput),
-        "  URI: ",
-      ),
-    );
-    expect(packLookup.formatters.llm(packInput)).toBe(
-      dropUriField(standardLookupStory.formatters.llm(builtinInput), "- URI: "),
-    );
-  });
-
-  it("json diverges only on extends compaction — a recorded gap", async () => {
-    const builtinJson = standardLookupStory.formatters.json(
-      standardLookupStory.toFmtInput(
-        await lookupBuiltin(EXTENDS_LOOKUP_NAME),
-        SUMMARY_VIEW,
-      ),
-    );
-    const packJson = packLookup.formatters.json(
-      packLookup.toFmtInput(
-        await lookupPack(EXTENDS_LOOKUP_NAME),
-        SUMMARY_VIEW,
-      ),
-    );
-    // Divergence pinned — see PARITY_GAPS "lookup data compaction".
-    expect(packJson).not.toBe(builtinJson);
-
-    const builtinParsed = JSON.parse(builtinJson) as Record<string, string>;
-    const packParsed = JSON.parse(packJson) as Record<string, string>;
-    const packExtends = packParsed.extends;
-    if (packExtends === undefined) {
-      throw new Error(`expected cs:extends on "${EXTENDS_LOOKUP_NAME}"`);
     }
-    // The built-in compacts extends in resolved data; the pack keeps the
-    // raw IRI. Compacting the pack value restores byte-level agreement.
-    expect({
-      ...packParsed,
-      extends: compactUri(packExtends, DEFAULT_PREFIX_MAP),
-    }).toEqual(builtinParsed);
-    expect(
-      JSON.stringify(
-        { ...packParsed, extends: compactUri(packExtends, DEFAULT_PREFIX_MAP) },
-        null,
-        2,
+    for (const row of rows) {
+      expect(row.uri).toBeTruthy();
+      expect(row.description).toBeTruthy();
+    }
+  });
+
+  it("filters by category (value-free, case-insensitive)", async () => {
+    const filtered = await compiled.list.resolve(rt, { category: "REACT" });
+    expect(filtered.length).toBeGreaterThan(0);
+    expect(filtered).toEqual(rows.filter((row) => row.category === "react"));
+  });
+
+  it("returns zero rows (not an error) for an unknown category", async () => {
+    // Pinned gap: the old list raised EMPTY_RESULTS here.
+    await expect(
+      compiled.list.resolve(rt, { category: "nonexistent" }),
+    ).resolves.toEqual([]);
+  });
+
+  it("searches name and description case-insensitively", async () => {
+    const found = await compiled.list.resolve(rt, { search: "folder" });
+    expect(found.length).toBeGreaterThan(0);
+    expect(found).toEqual(
+      rows.filter(
+        (row) =>
+          row.name?.toLowerCase().includes("folder") ||
+          row.description?.toLowerCase().includes("folder"),
       ),
-    ).toBe(builtinJson);
+    );
+  });
+
+  it("combines category and search conjunctively", async () => {
+    const found = await compiled.list.resolve(rt, {
+      category: "react",
+      search: "folder",
+    });
+    expect(found.length).toBeGreaterThan(0);
+    for (const row of found) {
+      expect(row.category).toBe("react");
+    }
   });
 });
 
-describe("standard lookup miss parity", () => {
-  it("collects identical not-found entries with ranked suggestions", async () => {
-    const builtinResult = await standardLookupStory.resolve(
-      rt,
-      [NEAR_MISS_NAME],
+describe("standard lookup parity", () => {
+  it("resolves base fields by name at the default (summary) level", async () => {
+    const entity = await lookupPack(LOOKUP_NAME);
+    expect(entity.name).toBe(LOOKUP_NAME);
+    expect(entity.uri).toBeTruthy();
+    expect(entity.category).toBe("react");
+    expect(typeof entity.description).toBe("string");
+    // Summary fetches no expands.
+    expect(entity.dos).toBeUndefined();
+    expect(entity.donts).toBeUndefined();
+  });
+
+  it("fetches full dos (code examples) at --detail digest", async () => {
+    const entity = await lookupPack(LOOKUP_NAME, { detail: "digest" });
+    const dos = entity.dos as readonly ExampleRow[];
+    expect(Array.isArray(dos)).toBe(true);
+    expect(dos.length).toBeGreaterThan(0);
+    for (const example of dos) {
+      expect(example.code).toBeTruthy();
+      expect(example.language).toBeTruthy();
+    }
+    expect(entity.donts).toBeUndefined();
+  });
+
+  it("fetches dos AND donts at --detail detailed", async () => {
+    const entity = await lookupPack(LOOKUP_NAME, { detail: "detailed" });
+    expect((entity.dos as readonly ExampleRow[]).length).toBeGreaterThan(0);
+    expect((entity.donts as readonly ExampleRow[]).length).toBeGreaterThan(0);
+  });
+
+  it("carries each example's cs:description as its caption", async () => {
+    const entity = await lookupPack(LOOKUP_NAME, { detail: "detailed" });
+    const uri = entity.uri as string;
+    const dos = entity.dos as readonly ExampleRow[];
+    const donts = entity.donts as readonly ExampleRow[];
+    expect(dos.at(0)?.caption).toBeTruthy();
+    expect(donts.at(0)?.caption).toBeTruthy();
+    // Oracle: the same store queried directly for the examples' captions.
+    const doCaptions = await runSelectQuery(
+      store,
+      `SELECT ?caption WHERE { <${uri}> cs:do ?ex . ?ex cs:description ?caption }`,
+      "test:oracle",
+    );
+    expect(doCaptions.map((row) => row.caption)).toContain(dos.at(0)?.caption);
+    const dontCaptions = await runSelectQuery(
+      store,
+      `SELECT ?caption WHERE { <${uri}> cs:dont ?ex . ?ex cs:description ?caption }`,
+      "test:oracle",
+    );
+    expect(dontCaptions.map((row) => row.caption)).toContain(
+      donts.at(0)?.caption,
+    );
+  });
+
+  it("honors the legacy --detailed alias flag", async () => {
+    const aliased = await lookupPack(LOOKUP_NAME, { detailed: true });
+    const explicit = await lookupPack(LOOKUP_NAME, { detail: "detailed" });
+    expect(aliased).toEqual(explicit);
+  });
+
+  it("keeps cs:extends as the raw IRI in data — a pinned gap", async () => {
+    const entity = await lookupPack(EXTENDS_LOOKUP_NAME);
+    const extendsIri = entity.extends as string;
+    expect(extendsIri).toMatch(/^https?:\/\//);
+    // Display-time compaction still yields the prefixed form.
+    expect(compactUri(extendsIri, DEFAULT_PREFIX_MAP)).toMatch(/^cs:/);
+  });
+
+  it("resolves the same entity by absolute IRI and prefixed name", async () => {
+    const byName = await lookupPack(LOOKUP_NAME);
+    const uri = byName.uri as string;
+
+    const byIri = await lookupPack(uri);
+    expect(byIri.name).toBe(LOOKUP_NAME);
+
+    const prefixed = compactUri(uri, DEFAULT_PREFIX_MAP);
+    expect(prefixed).toMatch(/^cs:/);
+    const byPrefixed = await lookupPack(prefixed);
+    expect(byPrefixed.name).toBe(LOOKUP_NAME);
+  });
+
+  it("expands glob queries against the standard names", async () => {
+    const lookup = compiled.lookup;
+    if (!lookup) throw new Error("expected lookup story");
+    const result = await lookup.resolve(rt, ["react/component/*"], {});
+    expect(result.errors).toEqual([]);
+    expect(result.results.length).toBeGreaterThan(1);
+    for (const entity of result.results) {
+      expect(String(entity.name)).toMatch(/^react\/component\//);
+    }
+  });
+
+  it("reports misses with ranked suggestions", async () => {
+    const lookup = compiled.lookup;
+    if (!lookup) throw new Error("expected lookup story");
+    const result = await lookup.resolve(rt, [NEAR_MISS_NAME], {});
+    expect(result.results).toEqual([]);
+    const error = result.errors.at(0);
+    expect(error?.code).toBe("ENTITY_NOT_FOUND");
+    expect(error?.suggestions).toContain("code/function/purity");
+  });
+});
+
+describe("standard categories parity", () => {
+  it("lists every category with its standard count (zero-counts kept)", async () => {
+    const categories = compiled.verbs.find(
+      (story) => story.verb === "categories",
+    );
+    if (!categories) throw new Error("expected a categories verb");
+    const rows = await categories.resolve(rt, {});
+    expect(rows.length).toBeGreaterThan(0);
+
+    // Independent oracle: recount per category from the list story.
+    const listRows = await compiled.list.resolve(rt, {});
+    const expected = new Map<string, number>();
+    for (const row of listRows) {
+      if (row.category) {
+        expected.set(row.category, (expected.get(row.category) ?? 0) + 1);
+      }
+    }
+    for (const [category, count] of expected) {
+      const row = rows.find((entry) => entry.name === category);
+      expect(row, `category "${category}" missing`).toBeDefined();
+      expect(Number(row?.count)).toBe(count);
+    }
+    // Categories beyond the expected map are zero-count declarations.
+    for (const row of rows) {
+      if (!expected.has(row.name ?? "")) {
+        expect(Number(row.count)).toBe(0);
+      }
+    }
+  });
+});
+
+// Synthetic fixture: the pinned @canonical/code-standards release names every
+// standard, so the real-graph suites above cannot observe the list query's
+// COALESCE/STRAFTER derived-name fallback or the name-addressable/list-row
+// population split. This tiny store has one NAMED and one UNNAMED standard.
+describe("standard pack on a synthetic graph (derived-name fallback)", () => {
+  const CS = TRANSITIONAL_DS_PREFIX_MAP.cs;
+  const SYNTHETIC_TTL = `
+@prefix cs: <${CS}> .
+
+cs:code.named a cs:CodeStandard ;
+  cs:name "code/named" ;
+  cs:description "A standard with an explicit cs:name." .
+
+<${CS}react.component.unnamed> a cs:CodeStandard ;
+  cs:description "A standard without cs:name." .
+`;
+
+  let syntheticStore: Store;
+  let syntheticCleanup: () => void;
+  let syntheticRt: PragmaRuntime;
+  let synthetic: CompiledPackStories;
+
+  beforeAll(async () => {
+    const result = await createTestStore({ ttl: SYNTHETIC_TTL });
+    syntheticStore = result.store;
+    syntheticCleanup = result.cleanup;
+    syntheticRt = { store: syntheticStore } as PragmaRuntime;
+    synthetic = compilePackStories(standardPack, "test:synthetic", {
+      ...DEFAULT_PREFIX_MAP,
+    });
+  });
+
+  afterAll(() => syntheticCleanup());
+
+  it("lists the unnamed standard under its IRI-derived slash-name", async () => {
+    const rows = await synthetic.list.resolve(syntheticRt, {});
+    expect(rows.map((row) => row.name).sort()).toEqual([
+      "code/named",
+      "react/component/unnamed",
+    ]);
+    const derived = rows.find((row) => row.name === "react/component/unnamed");
+    expect(derived?.uri).toBe(`${CS}react.component.unnamed`);
+    expect(derived?.description).toBe("A standard without cs:name.");
+  });
+
+  it("counts only the NAMED standard in the sample population", async () => {
+    const sample = synthetic.sample;
+    if (!sample) throw new Error("expected a sample story");
+    const data = await sample.resolve(syntheticRt, { count: "1" });
+    // 2 list rows, but only 1 name-addressable standard (PARITY_GAPS).
+    expect(data.totalCount).toBe(1);
+    expect(data.samples.map((entity) => entity.name)).toEqual(["code/named"]);
+  });
+
+  it("cannot address the unnamed standard's derived name via lookup", async () => {
+    const lookup = synthetic.lookup;
+    if (!lookup) throw new Error("expected a lookup story");
+    const result = await lookup.resolve(
+      syntheticRt,
+      ["react/component/unnamed"],
       {},
     );
-    const packResult = await packLookup.resolve(rt, [NEAR_MISS_NAME], {});
-    expect(builtinResult.results).toEqual([]);
-    expect(packResult.results).toEqual([]);
+    expect(result.results).toEqual([]);
+    expect(result.errors.at(0)?.code).toBe("ENTITY_NOT_FOUND");
+  });
+});
 
-    const builtinError = builtinResult.errors.at(0);
-    const packError = packResult.errors.at(0);
-    if (builtinError === undefined || packError === undefined) {
-      throw new Error("both paths must report a not-found error");
+describe("standard sample parity", () => {
+  it("returns N full exemplars (highest disclosure) with the population size", async () => {
+    const sample = compiled.sample;
+    if (!sample) throw new Error("expected a sample story");
+    const data = await sample.resolve(rt, { count: "2" });
+    expect(data.samples).toHaveLength(2);
+    // PARITY_GAPS: totalCount counts NAME-ADDRESSABLE standards (the set
+    // the sampler can resolve), while the list also carries rows whose
+    // name is COALESCE-derived from the IRI — so the list length is only
+    // an upper bound. The independent oracle is the shared suggestions
+    // name query (cs:name only, different query path, same store).
+    const nameAddressable = await listDomainNames(store, "standard");
+    expect(nameAddressable.length).toBeGreaterThan(0);
+    expect(data.totalCount).toBe(nameAddressable.length);
+    const listRows = await compiled.list.resolve(rt, {});
+    expect(data.totalCount).toBeLessThanOrEqual(listRows.length);
+    for (const entity of data.samples) {
+      expect(entity.name).toBeTruthy();
+      // Highest level: expands are fetched (arrays, possibly empty).
+      expect(Array.isArray(entity.dos)).toBe(true);
+      expect(Array.isArray(entity.donts)).toBe(true);
     }
-    expect(packError).toEqual(builtinError);
-    expect(builtinError.code).toBe("ENTITY_NOT_FOUND");
-    expect(builtinError.suggestions).toContain("code/function/purity");
   });
 });

@@ -314,6 +314,49 @@ describe("collectPackStories", () => {
         expect.stringContaining("shadows built-in command"),
       );
     });
+
+    it("rejects a list-only standard pack whose extra verb is still built-in", () => {
+      // Pack v1 emissions beyond list/lookup are guarded too: `categories`
+      // here collides with the still-registered built-in wrapper.
+      const withCategories = {
+        ...RECIPE_STORY,
+        noun: "standard",
+        lookup: undefined,
+        verbs: [
+          {
+            verb: "categories",
+            query: RECIPE_STORY.list.query,
+            columns: RECIPE_STORY.list.columns,
+          },
+        ],
+      };
+      const error = caught(() =>
+        collectPackStories(
+          { ...CONFIG, stories: [withCategories] },
+          [],
+          reserved,
+        ),
+      );
+      expect(error).toBeInstanceOf(PragmaError);
+      expect((error as PragmaError).message).toContain("standard categories");
+    });
+
+    it("rejects a pack whose sample capability is still built-in", () => {
+      const withSample = {
+        ...RECIPE_STORY,
+        noun: "standard",
+        lookup: {
+          // biome-ignore lint/style/noNonNullAssertion: fixture always declares lookup
+          ...RECIPE_STORY.lookup!,
+          sample: true as const,
+        },
+      };
+      const error = caught(() =>
+        collectPackStories({ ...CONFIG, stories: [withSample] }, [], reserved),
+      );
+      expect(error).toBeInstanceOf(PragmaError);
+      expect((error as PragmaError).message).toContain("standard sample");
+    });
   });
 
   // Bundled transitional packs use the REAL collect (not the isolating wrapper).

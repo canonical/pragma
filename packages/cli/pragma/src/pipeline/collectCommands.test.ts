@@ -45,8 +45,9 @@ describe("collectCommands", () => {
   // Golden surface: the full built-in command set, in emission order. The
   // per-(noun, verb) reserved-guard flip must not add, drop, rename, or REORDER
   // a single built-in command — order drives help output and registration.
-  // `tier list` is no longer here: the hand-written tier domain was deleted and
-  // is now served by the bundled `tier` story pack (asserted below).
+  // `tier list` and the whole `standard` noun are no longer here: the
+  // hand-written domains were deleted and are served by bundled story packs
+  // (asserted below).
   it("has a stable built-in command surface", () => {
     const paths = builtInCommands(makeCtx()).map((command) =>
       command.path.join(" "),
@@ -69,10 +70,6 @@ describe("collectCommands", () => {
       "setup mcp",
       "setup completions",
       "setup skills",
-      "standard list",
-      "standard lookup",
-      "standard categories",
-      "standard sample",
       "modifier list",
       "modifier lookup",
       "modifier sample",
@@ -108,6 +105,24 @@ describe("collectCommands", () => {
 
     expect(builtInPaths).not.toContain("tier list");
     expect(allPaths).toContain("tier list");
+  });
+
+  it("serves the whole `standard` noun from the bundled pack", () => {
+    const builtInPaths = builtInCommands(makeCtx()).map((c) =>
+      c.path.join(" "),
+    );
+    const allPaths = collectCommands(makeCtx()).map((c) => c.path.join(" "));
+
+    const standardVerbs = [
+      "standard list",
+      "standard lookup",
+      "standard categories",
+      "standard sample",
+    ];
+    for (const path of standardVerbs) {
+      expect(builtInPaths).not.toContain(path);
+      expect(allPaths).toContain(path);
+    }
   });
 });
 
@@ -148,12 +163,14 @@ describe("cross-surface reserved-verb parity", () => {
     );
 
     // Sanity: the real leaf-migration targets are present, so this asserts
-    // something (a silently empty set would make the test vacuous). `tier` is
-    // no longer here — it was cut over to the bundled pack, so it is correctly
-    // absent from the built-in reserved surface on both sides.
-    for (const noun of ["standard", "block", "modifier", "token"]) {
+    // something (a silently empty set would make the test vacuous). `tier`
+    // and `standard` are no longer here — both were cut over to bundled
+    // packs, so they are correctly absent from the built-in reserved
+    // surface on both sides.
+    for (const noun of ["block", "modifier", "token"]) {
       expect(readNouns.has(noun)).toBe(true);
     }
+    expect(readNouns.has("standard")).toBe(false);
 
     for (const noun of readNouns) {
       for (const verb of READ_VERBS) {

@@ -32,15 +32,7 @@ export type {
 } from "./ontology.js";
 export type { PragmaRuntime } from "./runtime.js";
 export type { SampleOutput, SampleResult } from "./sample.js";
-export type {
-  CategorySummary,
-  CodeBlock,
-  StandardDetailed,
-  StandardDigest,
-  StandardListFilters,
-  StandardRef,
-  StandardSummary,
-} from "./standard.js";
+export type { StandardRef } from "./standard.js";
 export type { TierEntry } from "./tier.js";
 export type {
   TokenDetailed,

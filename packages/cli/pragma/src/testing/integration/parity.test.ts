@@ -44,17 +44,7 @@ import { CHANNEL_RELEASES } from "../../domains/shared/filters/buildChannelFilte
 import { resolveTierChain } from "../../domains/shared/filters/buildTierFilter.js";
 import { listTiers } from "../../domains/shared/listTiers.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
-import {
-  type StandardListOutput,
-  categoriesFormatters as standardCatFmt,
-  listFormatters as standardListFmt,
-  lookupFormatters as standardLookupFmt,
-} from "../../domains/standard/formatters/index.js";
-import {
-  listCategories,
-  listStandards,
-  lookupStandard,
-} from "../../domains/standard/operations/index.js";
+import { listDomainNames } from "../../domains/shared/suggestions/index.js";
 import {
   createLookupFormatters as createTokenLookupFmt,
   listFormatters as tokenListFmt,
@@ -175,58 +165,83 @@ describe("block parity", () => {
 // Standard parity
 // ---------------------------------------------------------------------------
 
-describe("standard parity", () => {
-  it("standard_list: count and names match", async () => {
-    const opResult = await listStandards(rt.store);
+// `standard *` is now served by the bundled `standard` story pack (the
+// hand-written domain was deleted). Pack rows/entities are uniform
+// `Record<string,string>` projections with expand arrays, and rendering is
+// the generic pack renderer — so these tests assert *semantic* parity
+// against the store (every standard reachable, by the same names, with the
+// same category/description/dos/donts values) rather than byte equality
+// with the removed bespoke formatters. See PARITY_GAPS in #testing for the
+// pinned, accepted divergences.
+describe("standard parity (bundled pack)", () => {
+  it("standard_list returns one {uri, name, category, description} row per standard", async () => {
+    const allNames = await listDomainNames(rt.store, "standard");
+    expect(allNames.length).toBeGreaterThan(0);
+
     const mcpRes = await client.callTool({
       name: "standard_list",
       arguments: {},
     });
-    assertParity(opResult, mcpRes);
+    const body = parseEnvelope(mcpRes);
+    expect(body.ok).toBe(true);
+    const rows = body.data as {
+      uri?: string;
+      name?: string;
+      category?: string;
+      description?: string;
+    }[];
+
+    // Same standards, same names — nothing dropped or invented.
+    const listed = new Set(rows.map((row) => row.name));
+    for (const name of allNames) {
+      expect(listed.has(name), `"${name}" missing from standard_list`).toBe(
+        true,
+      );
+    }
+    for (const row of rows) {
+      expect(row.uri).toBeTruthy();
+      expect(row.description).toBeTruthy();
+    }
   });
 
-  it("standard_list condensed: matches llm formatter", async () => {
-    const opResult = await listStandards(rt.store);
-    const output: StandardListOutput = {
-      items: opResult,
-      details: undefined,
-      disclosure: { level: "summary" },
-    };
-    const expectedText = standardListFmt.llm(output);
-
+  it("standard_list condensed lists every standard under the pack heading", async () => {
+    const allNames = await listDomainNames(rt.store, "standard");
     const mcpRes = await client.callTool({
       name: "standard_list",
       arguments: { condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain("## Standard");
+    for (const name of allNames) {
+      expect(body.text).toContain(name);
+    }
   });
 
-  it("standard_lookup: detailed fields match", async () => {
-    const opResult = await lookupStandard(
-      rt.store,
-      "react/component/folder-structure",
-    );
+  it("standard_lookup returns full detail by default (MCP full-data contract)", async () => {
     const mcpRes = await client.callTool({
       name: "standard_lookup",
       arguments: { names: ["react/component/folder-structure"] },
     });
     const body = parseEnvelope(mcpRes);
-    const data = body.data as { results: unknown[]; errors: unknown[] };
-    expect(data.results[0]).toEqual(opResult);
+    const data = body.data as {
+      results: {
+        name: string;
+        category: string;
+        dos: { code?: string; language?: string }[];
+        donts: { code?: string }[];
+      }[];
+      errors: unknown[];
+    };
     expect(data.errors).toEqual([]);
+    const entity = data.results[0];
+    expect(entity?.name).toBe("react/component/folder-structure");
+    expect(entity?.category).toBe("react");
+    expect(entity?.dos.length).toBeGreaterThan(0);
+    expect(entity?.dos.every((example) => example.code)).toBe(true);
+    expect(entity?.donts.length).toBeGreaterThan(0);
   });
 
-  it("standard_lookup condensed: matches llm formatter", async () => {
-    const opResult = await lookupStandard(
-      rt.store,
-      "react/component/folder-structure",
-    );
-    const expectedText = standardLookupFmt.llm({
-      standard: opResult,
-      detailed: true,
-    });
-
+  it("standard_lookup condensed renders the entity with its code examples", async () => {
     const mcpRes = await client.callTool({
       name: "standard_lookup",
       arguments: {
@@ -235,28 +250,37 @@ describe("standard parity", () => {
       },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain("## react/component/folder-structure");
+    expect(body.text).toContain("Do");
+    expect(body.text).toContain("src/lib/Button/Button.tsx");
   });
 
-  it("standard_categories: data matches", async () => {
-    const opResult = await listCategories(rt.store);
+  it("standard_categories counts agree with the standard list", async () => {
+    const listRes = await client.callTool({
+      name: "standard_list",
+      arguments: {},
+    });
+    const rows = parseEnvelope(listRes).data as { category?: string }[];
+    const expected = new Map<string, number>();
+    for (const row of rows) {
+      if (row.category) {
+        expected.set(row.category, (expected.get(row.category) ?? 0) + 1);
+      }
+    }
+
     const mcpRes = await client.callTool({
       name: "standard_categories",
       arguments: {},
     });
-    assertParity(opResult, mcpRes);
-  });
-
-  it("standard_categories condensed: matches llm formatter", async () => {
-    const opResult = await listCategories(rt.store);
-    const expectedText = standardCatFmt.llm(opResult);
-
-    const mcpRes = await client.callTool({
-      name: "standard_categories",
-      arguments: { condensed: true },
-    });
-    const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    const body = parseEnvelope(mcpRes);
+    expect(body.ok).toBe(true);
+    const categories = body.data as { name: string; count: string }[];
+    expect(categories.length).toBeGreaterThan(0);
+    for (const [category, count] of expected) {
+      const row = categories.find((entry) => entry.name === category);
+      expect(row, `category "${category}" missing`).toBeDefined();
+      expect(Number(row?.count)).toBe(count);
+    }
   });
 });
 

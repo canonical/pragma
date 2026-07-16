@@ -39,6 +39,11 @@ interface PragmaConfig {
    * registered on the store (usable in queries) and used for display.
    */
   prefixes?: Readonly<Record<string, string>> | undefined;
+  /**
+   * Default progressive-disclosure level for disclosure-capable commands
+   * (e.g. `"digest"`, `"detailed"`). An explicit `--detail` flag overrides it.
+   */
+  detail?: string | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -67,6 +72,7 @@ interface ConfigFileValues {
   readonly framework?: Framework;
   readonly stories?: ReadonlyArray<StoryPackDefinition>;
   readonly prefixes?: Readonly<Record<string, string>>;
+  readonly detail?: string;
 }
 
 /** Which config layer supplied an effective field value. */
@@ -81,6 +87,7 @@ interface ConfigOrigins {
   readonly framework: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
+  readonly detail: ConfigOrigin;
 }
 
 /** A resolved config file layer. */

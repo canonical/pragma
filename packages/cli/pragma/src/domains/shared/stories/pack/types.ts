@@ -36,9 +36,66 @@ export interface StoryPackSection extends StoryPackField {
   readonly kind?: "field" | "code";
 }
 
+/** A field read from each child node of an {@link StoryPackExpand}. */
+export interface StoryPackExpandField {
+  /** Output field name on the child record. */
+  readonly name: string;
+  /** Property to read on the child node — prefixed name, IRI, or path. */
+  readonly property: string;
+  /** Display label (defaults to the field name). */
+  readonly label?: string;
+}
+
+/**
+ * A multi-valued nested projection: `entity → relation → child nodes`, each
+ * child projected to a small record. This is pack v1's structured-section
+ * primitive — the one thing v0 could not express (dos/donts, token scales,
+ * modifier values). Resolved with a generated, injection-safe sub-SELECT bound
+ * to the already-resolved entity IRI (never user input), so it needs no
+ * GraphQL. Rendered through the shared `list`/`table` render-kinds.
+ */
+export interface StoryPackExpand {
+  /** Output field holding the child array on the looked-up entity. */
+  readonly name: string;
+  /** Section heading (defaults to the field name). */
+  readonly heading?: string;
+  /** Render kind for the array (v1: `list` or `table`; defaults to `list`). */
+  readonly kind?: "list" | "table";
+  /** Relation from the entity to each child node — prefixed name, IRI, or path. */
+  readonly relation: string;
+  /** Fields to read from each child node. */
+  readonly select: readonly StoryPackExpandField[];
+  /** Render the section even when the array is empty (default: false). */
+  readonly showWhenEmpty?: boolean;
+  /**
+   * Minimum disclosure level at which this expand is fetched and rendered — a
+   * name from {@link StoryPackDisclosure.levels}. Omitted means the base level
+   * (always included). Below its level the sub-SELECT never runs, so gating is
+   * both a cost and a rendering control.
+   */
+  readonly level?: string;
+}
+
+/**
+ * Progressive-disclosure capability for a lookup.
+ *
+ * Declares an **ordered** list of named levels (the first is the base/default,
+ * always shown). Fields/expands tag themselves with the minimum level at which
+ * they appear. The compiler derives from this one declaration: a `--detail
+ * <level>` CLI flag, a `detail` MCP parameter (enumerated from the levels), and
+ * the JSON/plain/llm projection for the selected level. Levels are additive and
+ * optional — a lookup with no disclosure exposes no detail flag.
+ */
+export interface StoryPackDisclosure {
+  /** Ordered level names, lowest → highest. The first is the base/default. */
+  readonly levels: readonly string[];
+  /** Default level when none is requested (must be one of `levels`). */
+  readonly default?: string;
+}
+
 /**
  * A declarative list filter: a CLI/MCP parameter constraining one SELECT
- * variable to a declared value set.
+ * variable.
  *
  * Filters are row predicates applied AFTER the author query runs — the
  * query text is never modified, so filter input cannot inject SPARQL,
@@ -52,8 +109,27 @@ export interface StoryPackFilter {
   readonly param: string;
   /** SELECT variable the filter constrains (without `?`). */
   readonly variable: string;
-  /** Allowed values; anything else is rejected with INVALID_INPUT. */
-  readonly values: readonly string[];
+  /**
+   * Allowed values; anything else is rejected with INVALID_INPUT and the
+   * set projects to CLI select choices and an MCP enum. Omitted when the
+   * value set is data-driven (e.g. categories that live in the graph): the
+   * parameter is then a free string matched case-insensitively against the
+   * variable — still a post-query row predicate, never query text.
+   */
+  readonly values?: readonly string[];
+  /** Help text (defaults to a generated description). */
+  readonly description?: string;
+}
+
+/**
+ * Free-text search over list rows: a `--search` string parameter that
+ * keeps a row when ANY named SELECT variable's value contains the term
+ * (case-insensitive substring). Like filters, search is applied after the
+ * author query runs — user input never touches the query text.
+ */
+export interface StoryPackSearch {
+  /** SELECT variables searched (without `?`). */
+  readonly variables: readonly string[];
   /** Help text (defaults to a generated description). */
   readonly description?: string;
 }
@@ -66,6 +142,38 @@ export interface StoryPackList {
   readonly columns: readonly StoryPackColumn[];
   /** Declarative filters projected to CLI flags and MCP parameters. */
   readonly filters?: readonly StoryPackFilter[];
+  /** Free-text search projected to a `--search` flag / `search` parameter. */
+  readonly search?: StoryPackSearch;
+}
+
+/**
+ * An additional list-shaped verb: `<noun> <verb>` and `<noun>_<verb>`
+ * compiled through the SAME machinery as `list` (query, columns, filters,
+ * search) — e.g. standard's `categories`. The verb may not collide with
+ * the compiled `list`/`lookup`/`sample` verbs.
+ */
+export interface StoryPackVerb extends StoryPackList {
+  /** Verb name (kebab-case), e.g. `"categories"`. */
+  readonly verb: string;
+  /** CLI description for the command. */
+  readonly description?: string;
+  /** MCP tool description (defaults to the CLI description). */
+  readonly toolDescription?: string;
+}
+
+/**
+ * The sample capability: `<noun> sample [count]` and `<noun>_sample`
+ * return 1–5 randomly selected complete entities (resolved through the
+ * lookup path at the HIGHEST disclosure level) so agents can learn the
+ * data shape before querying.
+ */
+export interface StoryPackSample {
+  /** Default sample count when none is requested (1–5; default 2). */
+  readonly count?: number;
+  /** CLI description for the command. */
+  readonly description?: string;
+  /** MCP tool description (defaults to the CLI description). */
+  readonly toolDescription?: string;
 }
 
 /**
@@ -78,10 +186,20 @@ export interface StoryPackLookup {
   readonly by: string;
   /** Optional class constraint — prefixed name or IRI. */
   readonly type?: string;
+  /** CLI description for the lookup command (defaults to a generated one). */
+  readonly description?: string;
+  /** MCP tool description (defaults to a generated one). */
+  readonly toolDescription?: string;
   /** Inline fields shown under the entity title. */
   readonly fields?: readonly StoryPackField[];
   /** Long-form sections shown after the fields. */
   readonly sections?: readonly StoryPackSection[];
+  /** Multi-valued nested projections (pack v1 structured sections). */
+  readonly expand?: readonly StoryPackExpand[];
+  /** Progressive-disclosure levels; enables the derived `--detail` flag. */
+  readonly disclosure?: StoryPackDisclosure;
+  /** Sample capability: `true` for defaults, or a configured sample. */
+  readonly sample?: true | StoryPackSample;
 }
 
 /** One declarative read story: a noun with its preferred queries. */
@@ -93,6 +211,8 @@ export interface StoryPackDefinition {
   /** MCP tool description (defaults to the CLI description). */
   readonly toolDescription?: string;
   readonly list: StoryPackList;
+  /** Additional list-shaped verbs beyond `list` (e.g. `categories`). */
+  readonly verbs?: readonly StoryPackVerb[];
   readonly lookup?: StoryPackLookup;
 }
 

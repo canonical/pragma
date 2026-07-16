@@ -25,7 +25,6 @@ import {
 } from "../../domains/shared/stories/pack/index.js";
 import type { ToolSpec } from "../../domains/shared/ToolSpec.js";
 import { specs as skillSpecs } from "../../domains/skill/mcp/index.js";
-import { specs as standardSpecs } from "../../domains/standard/mcp/index.js";
 import { specs as tokenSpecs } from "../../domains/token/mcp/index.js";
 import registerFromSpec from "./registerFromSpec.js";
 
@@ -37,7 +36,6 @@ import registerFromSpec from "./registerFromSpec.js";
  */
 export const allSpecs: readonly ToolSpec[] = [
   ...blockSpecs,
-  ...standardSpecs,
   ...modifierSpecs,
   ...tokenSpecs,
   ...configSpecs,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import buildLookupQuery, {
+  buildLookupByIriQuery,
   buildLookupNamesQuery,
   escapeSparqlString,
   formatTerm,
@@ -37,6 +38,35 @@ describe("buildLookupQuery", () => {
 
   it("omits the type constraint when absent", () => {
     const query = buildLookupQuery({ by: "ex:name" }, "x");
+    expect(query).not.toContain("?uri a ");
+  });
+});
+
+describe("buildLookupByIriQuery", () => {
+  it("binds the resolved IRI instead of filtering on the name", () => {
+    const query = buildLookupByIriQuery(
+      {
+        by: "ex:name",
+        type: "ex:Recipe",
+        fields: [{ name: "category", property: "ex:category" }],
+      },
+      "http://example.org/recipes/pancakes",
+    );
+    expect(query).toContain(
+      "BIND(<http://example.org/recipes/pancakes> AS ?uri)",
+    );
+    expect(query).toContain("?uri ex:name ?name .");
+    expect(query).toContain("?uri a ex:Recipe .");
+    expect(query).toContain("OPTIONAL { ?uri ex:category ?category . }");
+    expect(query).not.toContain("FILTER");
+    expect(query).toContain("LIMIT 1");
+  });
+
+  it("omits the type constraint when absent", () => {
+    const query = buildLookupByIriQuery(
+      { by: "ex:name" },
+      "http://example.org/x",
+    );
     expect(query).not.toContain("?uri a ");
   });
 });

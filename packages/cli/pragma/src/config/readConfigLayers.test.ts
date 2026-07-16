@@ -44,6 +44,7 @@ describe("readConfigLayers", () => {
       framework: "default",
       stories: "default",
       prefixes: "default",
+      detail: "default",
     });
     expect(layers.global.exists).toBe(false);
     expect(layers.project.exists).toBe(false);
@@ -77,6 +78,7 @@ describe("readConfigLayers", () => {
       framework: "default",
       stories: "default",
       prefixes: "default",
+      detail: "default",
     });
   });
 

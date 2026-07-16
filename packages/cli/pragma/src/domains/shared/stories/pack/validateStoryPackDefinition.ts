@@ -1,20 +1,73 @@
 import { PragmaError } from "#error";
+import { MAX_SAMPLE_COUNT, MIN_SAMPLE_COUNT } from "../../parseSampleCount.js";
 import type {
   StoryPackColumn,
   StoryPackDefinition,
+  StoryPackDisclosure,
+  StoryPackExpand,
+  StoryPackExpandField,
   StoryPackField,
   StoryPackFilter,
+  StoryPackList,
   StoryPackLookup,
+  StoryPackSample,
+  StoryPackSearch,
   StoryPackSection,
+  StoryPackVerb,
 } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/**
+ * Object-prototype key names no pack identifier may take.
+ *
+ * Pack identifiers become plain-object keys at run time — SELECT
+ * variables become row keys, expand names become entity keys, and filter
+ * params become parameter keys — so `__proto__`/`constructor`/`prototype`
+ * are rejected at boot, before any row or params object could be built
+ * with a prototype-polluting key.
+ */
+const RESERVED_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Reject an identifier that names a reserved object-prototype key.
+ *
+ * Shared guard for every FIELD_PATTERN/FILTER_PARAM_PATTERN-shaped
+ * identifier (column fields, field/section/expand/select names, filter
+ * params and variables, search variables, disclosure levels).
+ *
+ * @throws PragmaError with code `CONFIG_ERROR` when the value is reserved.
+ */
+function rejectReservedObjectKey(
+  value: string,
+  where: string,
+  source: string,
+): void {
+  if (RESERVED_OBJECT_KEYS.has(value)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}" must not be the reserved object key "${value}".`,
+    );
+  }
+}
 /** A prefixed name (`ex:Recipe`) — prefix + local part, no path slashes. */
 const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s]+$/;
 
 /** An absolute IRI that can be safely embedded as `<iri>` in SPARQL. */
 const EMBEDDABLE_IRI_PATTERN = /^[A-Za-z][\w+.-]*:\/\/[^<>"\s]+$/;
+
+/**
+ * Whether a resolved IRI matches the embeddable shape pack terms are held
+ * to (no whitespace or `<>"` characters, `scheme://` form).
+ *
+ * Shared with the lookup path so an IRI-addressed lookup applies the same
+ * strictness to resolved user queries as this validator applies to
+ * authored pack terms before either is embedded as `<iri>` in SPARQL.
+ */
+export function isEmbeddableIri(value: string): boolean {
+  return EMBEDDABLE_IRI_PATTERN.test(value);
+}
 
 /**
  * A filter parameter name: a single lowercase word.
@@ -30,16 +83,40 @@ const FILTER_PARAM_PATTERN = /^[a-z][a-z0-9]*$/;
 
 /**
  * Parameter names taken by global flags or parameters the kernel appends
- * to every read story — `condensed` is added to every MCP list tool, and
- * `detailed` to every lookup — so a filter may not reuse them.
+ * to every read story — `condensed` is added to every MCP list tool,
+ * `detailed` to every lookup, `search` is the compiled free-text search
+ * parameter, and `detail` the disclosure level selector — so a filter may
+ * not reuse them.
  */
 const RESERVED_FILTER_PARAMS = new Set([
   "llm",
   "format",
   "verbose",
+  "detail",
   "detailed",
   "condensed",
   "names",
+  "search",
+  "help",
+]);
+
+/**
+ * Names a disclosure level may not take. Levels derive parameters — the
+ * `--detail <level>` selector plus one boolean alias flag per non-base
+ * level — so a level must not collide with `detail` itself, the lookup's
+ * `names` positional, or kernel/global parameter names. `detailed` is
+ * deliberately absent: it is the expected name for a pack's legacy
+ * detailed level and derives the compatible `--detailed`/`detailed`
+ * alias.
+ */
+const RESERVED_LEVEL_NAMES = new Set([
+  "detail",
+  "names",
+  "condensed",
+  "search",
+  "llm",
+  "format",
+  "verbose",
   "help",
 ]);
 
@@ -78,6 +155,7 @@ export default function validateStoryPackDefinition(
       : requireString(obj.toolDescription, "toolDescription", source);
 
   const list = validateList(obj.list, source);
+  const verbs = validateVerbs(obj.verbs, source);
   const lookup =
     obj.lookup === undefined ? undefined : validateLookup(obj.lookup, source);
 
@@ -86,16 +164,87 @@ export default function validateStoryPackDefinition(
     ...(description !== undefined ? { description } : {}),
     ...(toolDescription !== undefined ? { toolDescription } : {}),
     list,
+    ...(verbs ? { verbs } : {}),
     ...(lookup ? { lookup } : {}),
   };
+}
+
+/**
+ * Verbs the compiler itself emits for a pack noun — an extra verb may not
+ * collide with them.
+ */
+const COMPILED_VERBS = new Set(["list", "lookup", "sample"]);
+
+function validateVerbs(
+  raw: unknown,
+  source: string,
+): readonly StoryPackVerb[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw buildStoryConfigError(source, '"verbs" must be a non-empty array.');
+  }
+  const seen = new Set<string>();
+  return raw.map((entry, index) => {
+    const where = `verbs[${index}]`;
+    const obj = requireObject(entry, where, source);
+    const verb = requireString(obj.verb, `${where}.verb`, source);
+    if (!NOUN_PATTERN.test(verb)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.verb" must be kebab-case, got "${verb}".`,
+      );
+    }
+    if (COMPILED_VERBS.has(verb)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.verb" "${verb}" collides with a compiled verb.`,
+      );
+    }
+    if (seen.has(verb)) {
+      throw buildStoryConfigError(source, `duplicate verb "${verb}".`);
+    }
+    seen.add(verb);
+    const description =
+      obj.description === undefined
+        ? undefined
+        : requireString(obj.description, `${where}.description`, source);
+    const toolDescription =
+      obj.toolDescription === undefined
+        ? undefined
+        : requireString(
+            obj.toolDescription,
+            `${where}.toolDescription`,
+            source,
+          );
+    return {
+      verb,
+      ...(description !== undefined ? { description } : {}),
+      ...(toolDescription !== undefined ? { toolDescription } : {}),
+      ...validateListShape(entry, where, source),
+    };
+  });
 }
 
 function validateList(
   raw: unknown,
   source: string,
 ): StoryPackDefinition["list"] {
-  const obj = requireObject(raw, "list", source);
-  const query = requireString(obj.query, "list.query", source);
+  return validateListShape(raw, "list", source);
+}
+
+/**
+ * Validate a list-shaped story half: query, columns, filters, and search.
+ *
+ * Shared by `list` and (pack v1) extra list verbs, which compile through
+ * the same machinery. `where` names the field path for error messages.
+ */
+function validateListShape(
+  raw: unknown,
+  where: string,
+  source: string,
+): StoryPackList {
+  const obj = requireObject(raw, where, source);
+  const query = requireString(obj.query, `${where}.query`, source);
   // Strip leading PREFIX declarations so the real query verb is checked —
   // "PREFIX ex: <…> CONSTRUCT {…}" must fail here, not at first use.
   const afterPrefixes = query.replace(
@@ -105,31 +254,104 @@ function validateList(
   if (!/^\s*SELECT\s/i.test(afterPrefixes)) {
     throw buildStoryConfigError(
       source,
-      '"list.query" must be a SPARQL SELECT query.',
+      `"${where}.query" must be a SPARQL SELECT query.`,
     );
   }
 
   if (!Array.isArray(obj.columns) || obj.columns.length === 0) {
     throw buildStoryConfigError(
       source,
-      '"list.columns" must be a non-empty array.',
+      `"${where}.columns" must be a non-empty array.`,
     );
   }
   const columns = obj.columns.map((column, index) =>
-    validateColumn(column, `list.columns[${index}]`, source),
+    validateColumn(column, `${where}.columns[${index}]`, source),
   );
-
-  const filters = validateFilterArray(obj.filters, source);
-  for (const filter of filters ?? []) {
-    if (!referencesVariable(query, filter.variable)) {
+  // Like filters and search below: a column naming a variable the query
+  // never binds is a typo that should fail at boot, not render an
+  // always-empty column at first use.
+  for (const column of columns) {
+    if (!referencesVariable(query, column.field)) {
       throw buildStoryConfigError(
         source,
-        `filter variable "?${filter.variable}" does not appear in "list.query".`,
+        `column field "?${column.field}" does not appear in "${where}.query".`,
       );
     }
   }
 
-  return { query, columns, ...(filters ? { filters } : {}) };
+  const filters = validateFilterArray(obj.filters, where, source);
+  for (const filter of filters ?? []) {
+    if (!referencesVariable(query, filter.variable)) {
+      throw buildStoryConfigError(
+        source,
+        `filter variable "?${filter.variable}" does not appear in "${where}.query".`,
+      );
+    }
+  }
+
+  const search = validateSearch(obj.search, query, where, source);
+
+  return {
+    query,
+    columns,
+    ...(filters ? { filters } : {}),
+    ...(search ? { search } : {}),
+  };
+}
+
+/**
+ * Validate a list's free-text `search` declaration.
+ *
+ * Every searched variable must appear in the query — like filters, this
+ * fails a typo at boot instead of a search that silently never matches.
+ */
+function validateSearch(
+  raw: unknown,
+  query: string,
+  where: string,
+  source: string,
+): StoryPackSearch | undefined {
+  if (raw === undefined) return undefined;
+  const obj = requireObject(raw, `${where}.search`, source);
+  if (!Array.isArray(obj.variables) || obj.variables.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.search.variables" must be a non-empty array.`,
+    );
+  }
+  const variables = obj.variables.map((value, index) => {
+    const variable = requireString(
+      value,
+      `${where}.search.variables[${index}]`,
+      source,
+    );
+    if (!FIELD_PATTERN.test(variable)) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.search.variables[${index}]" must name a SELECT variable.`,
+      );
+    }
+    rejectReservedObjectKey(
+      variable,
+      `${where}.search.variables[${index}]`,
+      source,
+    );
+    if (!referencesVariable(query, variable)) {
+      throw buildStoryConfigError(
+        source,
+        `search variable "?${variable}" does not appear in "${where}.query".`,
+      );
+    }
+    return variable;
+  });
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, `${where}.search.description`, source);
+  return {
+    variables,
+    ...(description !== undefined ? { description } : {}),
+  };
 }
 
 /**
@@ -145,17 +367,18 @@ function referencesVariable(query: string, variable: string): boolean {
 
 function validateFilterArray(
   raw: unknown,
+  where: string,
   source: string,
 ): readonly StoryPackFilter[] | undefined {
   if (raw === undefined) return undefined;
   if (!Array.isArray(raw) || raw.length === 0) {
     throw buildStoryConfigError(
       source,
-      '"list.filters" must be a non-empty array.',
+      `"${where}.filters" must be a non-empty array.`,
     );
   }
   const filters = raw.map((entry, index) =>
-    validateFilter(entry, `list.filters[${index}]`, source),
+    validateFilter(entry, `${where}.filters[${index}]`, source),
   );
   const seen = new Set<string>();
   for (const filter of filters) {
@@ -189,6 +412,7 @@ function validateFilter(
       `"${where}.param" "${param}" is a reserved name.`,
     );
   }
+  rejectReservedObjectKey(param, `${where}.param`, source);
   const variable = requireString(obj.variable, `${where}.variable`, source);
   if (!FIELD_PATTERN.test(variable)) {
     throw buildStoryConfigError(
@@ -196,13 +420,38 @@ function validateFilter(
       `"${where}.variable" must name a SELECT variable.`,
     );
   }
-  if (!Array.isArray(obj.values) || obj.values.length === 0) {
+  rejectReservedObjectKey(variable, `${where}.variable`, source);
+  // `values` is optional (pack v1): without it the filter is a free-string
+  // parameter matched case-insensitively against the variable — used when
+  // the value set is data-driven and cannot be declared.
+  const values =
+    obj.values === undefined
+      ? undefined
+      : validateFilterValues(obj.values, where, source);
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, `${where}.description`, source);
+  return {
+    param,
+    variable,
+    ...(values ? { values } : {}),
+    ...(description !== undefined ? { description } : {}),
+  };
+}
+
+function validateFilterValues(
+  raw: unknown,
+  where: string,
+  source: string,
+): readonly string[] {
+  if (!Array.isArray(raw) || raw.length === 0) {
     throw buildStoryConfigError(
       source,
       `"${where}.values" must be a non-empty array.`,
     );
   }
-  const values = obj.values.map((value, index) =>
+  const values = raw.map((value, index) =>
     requireString(value, `${where}.values[${index}]`, source),
   );
   const lowered = new Set<string>();
@@ -217,16 +466,7 @@ function validateFilter(
     }
     lowered.add(key);
   }
-  const description =
-    obj.description === undefined
-      ? undefined
-      : requireString(obj.description, `${where}.description`, source);
-  return {
-    param,
-    variable,
-    values,
-    ...(description !== undefined ? { description } : {}),
-  };
+  return values;
 }
 
 function validateColumn(
@@ -242,6 +482,7 @@ function validateColumn(
       `"${where}.field" must name a SELECT variable.`,
     );
   }
+  rejectReservedObjectKey(field, `${where}.field`, source);
   const label =
     obj.label === undefined
       ? undefined
@@ -256,6 +497,14 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     obj.type === undefined
       ? undefined
       : requireTerm(obj.type, "lookup.type", source);
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, "lookup.description", source);
+  const toolDescription =
+    obj.toolDescription === undefined
+      ? undefined
+      : requireString(obj.toolDescription, "lookup.toolDescription", source);
 
   const fields = validateFieldArray(obj.fields, "lookup.fields", source);
   const sections = validateSectionArray(
@@ -263,12 +512,213 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     "lookup.sections",
     source,
   );
+  const expand = validateExpandArray(obj.expand, "lookup.expand", source);
+  const disclosure = validateDisclosure(obj.disclosure, source);
+  const sample = validateSample(obj.sample, source);
+
+  // Cross-check: every expand `level` must name a declared disclosure level.
+  const levels = new Set(disclosure?.levels ?? []);
+  for (const entry of expand ?? []) {
+    if (entry.level !== undefined && !levels.has(entry.level)) {
+      throw buildStoryConfigError(
+        source,
+        `expand "${entry.name}" level "${entry.level}" is not a declared disclosure level.`,
+      );
+    }
+  }
 
   return {
     by,
     ...(type !== undefined ? { type } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(toolDescription !== undefined ? { toolDescription } : {}),
     ...(fields ? { fields } : {}),
     ...(sections ? { sections } : {}),
+    ...(expand ? { expand } : {}),
+    ...(disclosure ? { disclosure } : {}),
+    ...(sample !== undefined ? { sample } : {}),
+  };
+}
+
+function validateSample(
+  raw: unknown,
+  source: string,
+): true | StoryPackSample | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === true) return true;
+  const obj = requireObject(raw, "lookup.sample", source);
+  if (obj.count !== undefined) {
+    // Authors fail fast on an out-of-range default; user-provided counts
+    // are clamped at run time by parseSampleCount instead.
+    if (
+      typeof obj.count !== "number" ||
+      !Number.isInteger(obj.count) ||
+      obj.count < MIN_SAMPLE_COUNT ||
+      obj.count > MAX_SAMPLE_COUNT
+    ) {
+      throw buildStoryConfigError(
+        source,
+        `"lookup.sample.count" must be an integer between ${MIN_SAMPLE_COUNT} and ${MAX_SAMPLE_COUNT}.`,
+      );
+    }
+  }
+  const description =
+    obj.description === undefined
+      ? undefined
+      : requireString(obj.description, "lookup.sample.description", source);
+  const toolDescription =
+    obj.toolDescription === undefined
+      ? undefined
+      : requireString(
+          obj.toolDescription,
+          "lookup.sample.toolDescription",
+          source,
+        );
+  return {
+    ...(obj.count !== undefined ? { count: obj.count as number } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(toolDescription !== undefined ? { toolDescription } : {}),
+  };
+}
+
+function validateDisclosure(
+  raw: unknown,
+  source: string,
+): StoryPackDisclosure | undefined {
+  if (raw === undefined) return undefined;
+  const obj = requireObject(raw, "lookup.disclosure", source);
+  if (!Array.isArray(obj.levels) || obj.levels.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      '"lookup.disclosure.levels" must be a non-empty array.',
+    );
+  }
+  const seen = new Set<string>();
+  const levels = obj.levels.map((value, index) => {
+    const level = requireString(
+      value,
+      `lookup.disclosure.levels[${index}]`,
+      source,
+    );
+    // Levels derive parameter names (`--detail` enum values and the alias
+    // flags), so they are held to the same single-word rule as filter
+    // params and may not shadow reserved parameter names.
+    if (!FILTER_PARAM_PATTERN.test(level)) {
+      throw buildStoryConfigError(
+        source,
+        `disclosure level "${level}" must be a single lowercase word (letters and digits, no hyphens).`,
+      );
+    }
+    if (RESERVED_LEVEL_NAMES.has(level)) {
+      throw buildStoryConfigError(
+        source,
+        `disclosure level "${level}" is a reserved name.`,
+      );
+    }
+    rejectReservedObjectKey(
+      level,
+      `lookup.disclosure.levels[${index}]`,
+      source,
+    );
+    if (seen.has(level)) {
+      throw buildStoryConfigError(
+        source,
+        `duplicate disclosure level "${level}".`,
+      );
+    }
+    seen.add(level);
+    return level;
+  });
+  const defaultLevel =
+    obj.default === undefined
+      ? undefined
+      : requireString(obj.default, "lookup.disclosure.default", source);
+  if (defaultLevel !== undefined && !seen.has(defaultLevel)) {
+    throw buildStoryConfigError(
+      source,
+      `disclosure default "${defaultLevel}" is not one of the declared levels.`,
+    );
+  }
+  return {
+    levels,
+    ...(defaultLevel !== undefined ? { default: defaultLevel } : {}),
+  };
+}
+
+function validateExpandArray(
+  raw: unknown,
+  where: string,
+  source: string,
+): readonly StoryPackExpand[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw)) {
+    throw buildStoryConfigError(source, `"${where}" must be an array.`);
+  }
+  const names = new Set<string>();
+  return raw.map((entry, index) => {
+    const expand = validateExpand(entry, `${where}[${index}]`, source);
+    if (names.has(expand.name)) {
+      throw buildStoryConfigError(
+        source,
+        `duplicate expand name "${expand.name}" in "${where}".`,
+      );
+    }
+    names.add(expand.name);
+    return expand;
+  });
+}
+
+function validateExpand(
+  raw: unknown,
+  where: string,
+  source: string,
+): StoryPackExpand {
+  const obj = requireObject(raw, where, source);
+  const name = requireString(obj.name, `${where}.name`, source);
+  if (!FIELD_PATTERN.test(name)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.name" must be a simple identifier.`,
+    );
+  }
+  rejectReservedObjectKey(name, `${where}.name`, source);
+  const relation = requirePredicateTerm(
+    obj.relation,
+    `${where}.relation`,
+    source,
+  );
+  if (obj.kind !== undefined && obj.kind !== "list" && obj.kind !== "table") {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.kind" must be "list" or "table".`,
+    );
+  }
+  if (!Array.isArray(obj.select) || obj.select.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.select" must be a non-empty array.`,
+    );
+  }
+  const select: StoryPackExpandField[] = obj.select.map((entry, index) =>
+    validateField(entry, `${where}.select[${index}]`, source),
+  );
+  const heading =
+    obj.heading === undefined
+      ? undefined
+      : requireString(obj.heading, `${where}.heading`, source);
+  // Membership in the declared levels is cross-checked in validateLookup.
+  const level =
+    obj.level === undefined
+      ? undefined
+      : requireString(obj.level, `${where}.level`, source);
+  return {
+    name,
+    relation,
+    select,
+    ...(heading !== undefined ? { heading } : {}),
+    ...(obj.kind !== undefined ? { kind: obj.kind as "list" | "table" } : {}),
+    ...(obj.showWhenEmpty === true ? { showWhenEmpty: true } : {}),
+    ...(level !== undefined ? { level } : {}),
   };
 }
 
@@ -324,6 +774,7 @@ function validateField(
       `"${where}.name" must be a simple identifier.`,
     );
   }
+  rejectReservedObjectKey(name, `${where}.name`, source);
   const property = requirePredicateTerm(
     obj.property,
     `${where}.property`,

@@ -29,7 +29,7 @@ export default function compileLookupTool<TDetailed, TFmtInput>(
         detailed: resolveLookupDetailed(story, "mcp", params),
         params,
       };
-      const result = await story.resolve(rt, names, params);
+      const result = await story.resolve(rt, names, params, view);
 
       if (params.condensed) {
         const textParts = result.results.map((entity) =>

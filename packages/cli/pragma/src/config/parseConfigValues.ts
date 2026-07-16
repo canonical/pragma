@@ -92,6 +92,7 @@ export default function parseConfigValues(
   const packages = parsePackagesField(parsed.packages);
   const stories = parseStoriesField(parsed.stories, sourcePath);
   const prefixes = parsePrefixesField(parsed.prefixes);
+  const detail = typeof parsed.detail === "string" ? parsed.detail : undefined;
 
   return {
     ...(tier !== undefined ? { tier } : {}),
@@ -101,6 +102,7 @@ export default function parseConfigValues(
     ...(framework !== undefined ? { framework } : {}),
     ...(stories ? { stories } : {}),
     ...(prefixes ? { prefixes } : {}),
+    ...(detail !== undefined ? { detail } : {}),
   };
 }
 

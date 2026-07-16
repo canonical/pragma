@@ -51,7 +51,7 @@ export default function compileLookupCommand<TDetailed, TFmtInput>(
         detailed: resolveLookupDetailed(story, "cli", params),
         params,
       };
-      const result = await story.resolve(ctx, names, params);
+      const result = await story.resolve(ctx, names, params, view);
       const renderInk = story.renderInk;
 
       return createOutputResult<LookupOutput>(

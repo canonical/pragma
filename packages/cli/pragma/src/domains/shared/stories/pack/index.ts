@@ -27,10 +27,16 @@ export { default as runSelectQuery } from "./runSelectQuery.js";
 export type {
   StoryPackColumn,
   StoryPackDefinition,
+  StoryPackDisclosure,
+  StoryPackExpand,
   StoryPackField,
+  StoryPackFilter,
   StoryPackList,
   StoryPackLookup,
+  StoryPackSample,
+  StoryPackSearch,
   StoryPackSection,
   StoryPackSource,
+  StoryPackVerb,
 } from "./types.js";
 export { default as validateStoryPackDefinition } from "./validateStoryPackDefinition.js";

@@ -1,92 +1,35 @@
 /**
- * Standard-noun parity pilot fixtures.
+ * Standard-noun cutover parity contract.
  *
- * The built-in `standard` list/lookup read stories re-expressed as a v0
- * story-pack definition, plus the honest record of what v0 cannot yet
- * reproduce. Together they form the pilot's contract: the definition is
- * asserted byte-compatible with the built-in output where the format
- * reaches (`standardParity.test.ts`), and every remaining divergence
- * must appear in {@link PARITY_GAPS} rather than being papered over.
+ * The hand-written `standard` domain was deleted; the noun is served by
+ * the bundled pack-v1 definition (`pack/bundled/standardPack.ts`), and
+ * `standardParity.test.ts` asserts SEMANTIC parity against the real
+ * @canonical/code-standards graphs: same entities and values reachable,
+ * uniform pack row/entity shapes, generic renderers.
+ *
+ * {@link PARITY_GAPS} is the honest record of the differences that
+ * remain BY DESIGN after the cutover. Each entry names a concrete,
+ * accepted divergence from the deleted built-in — remove an entry only
+ * when the pack format gains the capability and the parity test asserts
+ * it.
  */
 
-import type { StoryPackDefinition } from "../domains/shared/stories/pack/types.js";
-
 /**
- * The built-in `standard` stories as a declarative pack definition.
- *
- * The list SELECT mirrors the query `listStandards` sends the store,
- * with variables renamed to the built-in's output fields (`?standard` →
- * `?uri`, `?categoryName` → `?category`) so pack rows carry the same
- * keys as the built-in summary items. The lookup mirrors the built-in
- * title and inline fields as far as v0 reaches — {@link PARITY_GAPS}
- * lists what it cannot express.
- */
-export const STANDARD_PACK_STORY: StoryPackDefinition = {
-  noun: "standard",
-  description: "List all code standards",
-  list: {
-    query: [
-      "SELECT ?uri ?name ?category ?description",
-      "WHERE {",
-      "  ?uri a cs:CodeStandard ;",
-      "       cs:description ?description .",
-      "  OPTIONAL { ?uri cs:name ?name . }",
-      "  OPTIONAL {",
-      "    ?uri cs:hasCategory ?cat .",
-      "    ?cat cs:slug ?category .",
-      "  }",
-      "}",
-      "ORDER BY ?uri",
-    ].join("\n"),
-    columns: [
-      { field: "uri", label: "IRI" },
-      { field: "name", label: "Name" },
-      { field: "category", label: "Category" },
-      { field: "description", label: "Description" },
-    ],
-  },
-  lookup: {
-    type: "cs:CodeStandard",
-    by: "cs:name",
-    fields: [
-      {
-        name: "category",
-        property: "cs:hasCategory/cs:slug",
-        label: "Category",
-      },
-      {
-        name: "description",
-        property: "cs:description",
-        label: "Description",
-      },
-      { name: "extends", property: "cs:extends", label: "Extends" },
-    ],
-  },
-};
-
-/**
- * Every place the v0 pack format cannot reproduce the built-in standard
- * stories — the pilot's primary output. Each entry names the concrete
- * missing pack-format capability; remove an entry only when the format
- * gains the capability and the parity test asserts it.
+ * Accepted post-cutover divergences from the deleted built-in standard
+ * domain. These are doctrine (semantic parity, not byte parity) plus the
+ * capabilities pack v1 deliberately does not carry.
  */
 export const PARITY_GAPS: readonly string[] = [
-  "list params: packs declare no story parameters, so the built-in --category and --search filters (and their MCP tool arguments) cannot be expressed",
-  "list disclosure: no digest/detailed progressive-disclosure levels — the built-in --digest/--detailed flags enrich rows with extends/example/dos/donts and add disclosure meta to the MCP envelope; pack lists always render summary rows",
-  "list empty guard: the built-in raises EMPTY_RESULTS with an install-hint recovery when no standards load; the pack format has no emptyError hook, so a pack list renders nothing",
-  "list plain template: packs render the shared aligned-column table; the built-in renders stacked `name [category]` blocks with an indented description — v0 columns carry no layout or template control",
-  "list llm template: pack headings are `## <Noun> (<count>)` with `` `iri` — **name** value | value `` items; the built-in emits `## Standards` with `- **name** [category]` plus an indented description line — heading text and item template are not authorable",
-  "lookup uri field: the entity IRI cannot be declared as an inline field — v0 fields are property-derived, and a field named `uri` generates a duplicate ?uri SELECT variable the store rejects; the built-in renders `URI: cs:...` as its first lookup field",
-  "lookup property paths: `category` needs the two-hop path cs:hasCategory/cs:slug; the documented v0 `property` contract is a single predicate, and the path only passes validation because the prefixed-name pattern rejects `/` in the first character alone — multi-hop fields need first-class support",
-  "lookup data compaction: the built-in compacts `extends` in resolved data (JSON shows `cs:ComponentFolderStructure`); pack rows keep the raw IRI, so lookup JSON diverges for standards with cs:extends (plain/llm still match because renderers compact at display time)",
-  "lookup sections: dos/donts (cs:do/cs:dont → Example nodes with description/language/code) cannot be declared — v0 sections are single-valued field/code kinds, and the generated single-row lookup query cannot collect arrays of structured code blocks",
-  "lookup detailed toggle: no detailedParam — the built-in CLI adds Do/Don't sections under --detailed and MCP defaults to detailed with a summary projection (project); a pack lookup has one fixed output shape",
-  "lookup empty placeholders: the built-in renders `Category: —` for a standard without a category; pack renderers skip empty fields — no fallback/placeholder declaration (every current standard has a category, so outputs match today)",
-  "lookup glob expansion: the built-in expands glob queries (e.g. `react/*`) via expandLookupQueries before resolving; pack lookups pass names through verbatim",
-  "lookup by IRI: the built-in resolves an IRI or prefixed name (e.g. `cs:ComponentProps`) as the query; a pack lookup only matches the `by` property's string value, and only case-insensitively — exact-match semantics are not selectable",
-  "lookup recovery copy: built-in not-found errors carry cross-domain hints and the recovery message `List available standards.`; pack errors generate `List available standard entries.` — recovery copy is not authorable",
-  "lookup descriptions and examples: the pack lookup CLI description, tool description, names description, and examples are generated from the noun; the built-in curates all of them (e.g. `Look up detailed information for a standard by name or IRI`)",
-  "ink renderers: the built-in stories declare renderInk TUI views; the pack format has none",
-  "extra verbs: the standard noun also ships `categories` and `sample` commands; v0 packs compile only list and lookup",
-  "noun cutover: cutover is per-verb, not same-release-atomic — the reserved guard in collectPackStories reserves `standard` per (noun, verb), so a pack may claim a built-in read verb (`list`/`lookup`) as soon as that specific built-in wrapper is deleted, independently of the noun's other verbs (`categories`/`sample` may stay); a pack is blocked only while it would emit a verb the built-in still owns",
+  "list disclosure: pack lists are single-level — the old `standard list --digest/--detailed` row enrichment (extends/example/dos/donts merged into every row, disclosure meta on the MCP envelope) is gone; the same data is reachable per-entity via `standard lookup --detail digest|detailed` and `standard sample`",
+  "list empty guard: the old list raised EMPTY_RESULTS with an install-hint recovery when no standards load or a --category matched nothing; the pack format has no emptyError hook, so an empty or fully-filtered list renders zero rows successfully",
+  "lookup digest rendering: the old list digest truncated the first do-example to 120 chars; the pack `digest` level fetches the full `dos` expand instead (richer, not byte-equal)",
+  "lookup data compaction: the old domain compacted cs:extends in resolved data (JSON showed `cs:ComponentFolderStructure`); pack entities keep the raw IRI in JSON — plain/llm output still compacts at display time",
+  "lookup recovery copy: cross-domain hints (detectCrossDomain) and the curated `List available standards.` message are not authorable; pack misses carry ranked suggestions with the generic `List available standard entries.` copy",
+  'typed shapes: pack rows/entities are all-string records — category counts are strings, and dos/donts entries are `{caption?, language?, code?}` string records rather than typed CodeBlock objects (no `language: "typescript"` default, absent captions are omitted)',
+  "render templates: plain/llm output uses the generic pack renderers (aligned columns, `## Standard (n)` headings, `- key: value` collection entries), not the old bespoke standard templates",
+  "sample count flag: the pack sample takes a positional count (`standard sample 3`) instead of the old `--count 3` flag",
+  "lookup IRI display: plain/llm lookup output does not print the entity IRI (the pack renderer titles by name and projects no uri field); the IRI stays reachable via the list's IRI column, `--format json`, and the non-condensed MCP envelope",
+  "categories JSON shape: the old CategorySummary carried a numeric `standardCount`; pack category rows carry the key `count` with a string value (all-string pack rows, until pack v2 typed columns)",
+  "sample population: totalCount counts name-addressable standards (the set the sampler can actually resolve) rather than all list rows; the old op counted every list row but failed outright when it drew a standard without cs:name",
+  "ink renderers: the pack format declares no renderInk TUI views",
 ];

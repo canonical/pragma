@@ -68,6 +68,7 @@ export default function readConfigLayers(
   const framework = pick("framework");
   const stories = pick("stories");
   const prefixes = pick("prefixes");
+  const detail = pick("detail");
 
   const config: PragmaConfig = {
     tier: tier.value,
@@ -77,6 +78,7 @@ export default function readConfigLayers(
     ...(framework.value !== undefined ? { framework: framework.value } : {}),
     ...(stories.value ? { stories: stories.value } : {}),
     ...(prefixes.value ? { prefixes: prefixes.value } : {}),
+    ...(detail.value !== undefined ? { detail: detail.value } : {}),
   };
 
   return {
@@ -89,6 +91,7 @@ export default function readConfigLayers(
       framework: framework.origin,
       stories: stories.origin,
       prefixes: prefixes.origin,
+      detail: detail.origin,
     },
     global: { path: globalPath, exists: globalFile.exists },
     project: { path: projectPath, exists: projectFile.exists },

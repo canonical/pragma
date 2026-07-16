@@ -9,12 +9,16 @@ import type { StoryPackFilter } from "./types.js";
  * query's ordering is preserved.
  *
  * Matching semantics:
- * - Input is trimmed, unicode-normalized (NFC), and matched against the
- *   declared values case-insensitively; the DECLARED value is canonical
- *   and is what rows are compared against.
- * - Row comparison is exact on the canonical value (NFC on both sides).
- *   ke bindings carry lexical forms — language tags and datatypes are
- *   already stripped — so plain equality is sound.
+ * - With declared `values`: input is trimmed, unicode-normalized (NFC),
+ *   and matched against the declared values case-insensitively; the
+ *   DECLARED value is canonical and rows are compared against it exactly
+ *   (NFC on both sides).
+ * - Without `values` (value-free filter): the input itself is the term —
+ *   trimmed, NFC-normalized — and rows match on case-insensitive equality
+ *   with the variable's value. Nothing is rejected up front because the
+ *   valid set lives in the data.
+ * - ke bindings carry lexical forms — language tags and datatypes are
+ *   already stripped — so plain string comparison is sound.
  * - A row without a binding for the variable (e.g. from OPTIONAL) never
  *   matches an active filter.
  * - Several provided filters combine conjunctively.
@@ -25,7 +29,8 @@ import type { StoryPackFilter } from "./types.js";
  * @returns Rows matching every provided filter.
  * @throws PragmaError with code `INVALID_INPUT` (carrying the declared
  *         values as valid options) when a provided value is not in the
- *         filter's declared set.
+ *         filter's declared set, or when a value-free filter receives a
+ *         non-string value.
  */
 export default function applyPackFilters(
   rows: Record<string, string>[],
@@ -39,12 +44,41 @@ export default function applyPackFilters(
   for (const filter of filters ?? []) {
     const provided = params[filter.param];
     if (provided === undefined) continue;
-    const canonical = canonicalizeFilterValue(provided, filter);
+    const values = filter.values;
+    if (values === undefined) {
+      // Value-free filter: case-insensitive equality against the variable.
+      const term = requireStringValue(provided, filter).toLowerCase();
+      result = result.filter(
+        (row) => row[filter.variable]?.normalize("NFC").toLowerCase() === term,
+      );
+      continue;
+    }
+    const canonical = canonicalizeFilterValue(provided, filter, values);
     result = result.filter(
       (row) => row[filter.variable]?.normalize("NFC") === canonical,
     );
   }
   return result;
+}
+
+/**
+ * Require a value-free filter's input to be a trimmed, NFC-normalized
+ * string.
+ *
+ * @throws PragmaError with code `INVALID_INPUT` when it is not a string.
+ */
+function requireStringValue(
+  provided: unknown,
+  filter: StoryPackFilter,
+): string {
+  if (typeof provided !== "string") {
+    throw PragmaError.invalidInput(filter.param, String(provided), {
+      recovery: {
+        message: `Provide a string value for --${filter.param}.`,
+      },
+    });
+  }
+  return provided.trim().normalize("NFC");
 }
 
 /**
@@ -56,10 +90,11 @@ export default function applyPackFilters(
 function canonicalizeFilterValue(
   provided: unknown,
   filter: StoryPackFilter,
+  values: readonly string[],
 ): string {
   if (typeof provided === "string") {
     const normalized = provided.trim().normalize("NFC");
-    const match = filter.values.find(
+    const match = values.find(
       (value) =>
         value.normalize("NFC").toLowerCase() === normalized.toLowerCase(),
     );
@@ -68,9 +103,9 @@ function canonicalizeFilterValue(
     }
   }
   throw PragmaError.invalidInput(filter.param, String(provided), {
-    validOptions: [...filter.values],
+    validOptions: [...values],
     recovery: {
-      message: `Allowed values for --${filter.param}: ${filter.values.join(", ")}.`,
+      message: `Allowed values for --${filter.param}: ${values.join(", ")}.`,
     },
   });
 }

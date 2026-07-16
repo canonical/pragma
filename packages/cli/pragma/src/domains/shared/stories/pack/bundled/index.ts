@@ -13,7 +13,11 @@
  */
 
 import type { StoryPackDefinition } from "../types.js";
+import { standardPack } from "./standardPack.js";
 import { tierPack } from "./tierPack.js";
 
 /** Every pack pragma ships by default, lowest precedence. */
-export const BUNDLED_PACKS: readonly StoryPackDefinition[] = [tierPack];
+export const BUNDLED_PACKS: readonly StoryPackDefinition[] = [
+  tierPack,
+  standardPack,
+];

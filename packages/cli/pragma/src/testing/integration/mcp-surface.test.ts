@@ -190,7 +190,11 @@ describe("standard_lookup", () => {
       results: { name: string; extends?: string }[];
     };
     expect(data.results[0]?.name).toBe("react/component/props");
-    expect(data.results[0]?.extends).toBe("cs:react_folder");
+    // Pack entities keep cs:extends as the raw IRI in data (compaction is
+    // display-time only) — a pinned PARITY_GAP of the standard cutover.
+    expect(data.results[0]?.extends).toBe(
+      "http://pragma.canonical.com/codestandards#react_folder",
+    );
   });
 });
 
@@ -481,15 +485,34 @@ describe("disclosure", () => {
     expect(meta.disclosure).toBe("digest");
   });
 
-  it("standard_list with detailed returns enriched data", async () => {
-    const res = await client.callTool({
-      name: "standard_list",
-      arguments: { detailed: true },
+  // `standard list --detailed` was retired with the standard cutover (a
+  // pinned PARITY_GAP: pack lists are single-level); per-entity disclosure
+  // now lives on the lookup's `detail` parameter and its legacy aliases.
+  it("standard_lookup honors the detail parameter", async () => {
+    const summary = await client.callTool({
+      name: "standard_lookup",
+      arguments: {
+        names: ["react/component/folder-structure"],
+        detail: "summary",
+      },
     });
-    const body = parseEnvelope(res);
-    expect(body.ok).toBe(true);
-    const meta = body.meta as { disclosure?: string };
-    expect(meta.disclosure).toBe("detailed");
+    const summaryData = parseEnvelope(summary).data as {
+      results: Record<string, unknown>[];
+    };
+    expect(summaryData.results[0]).not.toHaveProperty("dos");
+
+    const detailed = await client.callTool({
+      name: "standard_lookup",
+      arguments: {
+        names: ["react/component/folder-structure"],
+        detail: "detailed",
+      },
+    });
+    const detailedData = parseEnvelope(detailed).data as {
+      results: Record<string, unknown>[];
+    };
+    expect(detailedData.results[0]).toHaveProperty("dos");
+    expect(detailedData.results[0]).toHaveProperty("donts");
   });
 });
 

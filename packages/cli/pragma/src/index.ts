@@ -43,8 +43,6 @@ export type {
   BlockDetailed,
   BlockDigest,
   BlockSummary,
-  CategorySummary,
-  CodeBlock,
   Disclosure,
   FilterConfig,
   InspectResult,
@@ -54,10 +52,7 @@ export type {
   OntologyProperty,
   OntologySummary,
   PredicateGroup,
-  StandardDetailed,
-  StandardListFilters,
   StandardRef,
-  StandardSummary,
   TierEntry,
   TokenDetailed,
   TokenRef,
@@ -95,13 +90,6 @@ export {
   discoverSkills,
   listSkills,
 } from "./domains/skill/operations/index.js";
-export {
-  listCategories,
-  listStandards,
-  lookupStandard,
-  resolveStandardList,
-  resolveStandardLookup,
-} from "./domains/standard/index.js";
 export {
   listTokens,
   lookupToken,

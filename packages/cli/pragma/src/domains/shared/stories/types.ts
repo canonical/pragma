@@ -141,11 +141,19 @@ export interface LookupStory<TDetailed, TFmtInput> {
   /** Named groups for organizing CLI parameters in help output. */
   readonly parameterGroups?: Readonly<Record<string, readonly string[]>>;
   readonly examples: readonly string[];
-  /** Resolve all queries, collecting per-query failures. */
+  /**
+   * Resolve all queries, collecting per-query failures.
+   *
+   * The compilers pass the per-invocation `view` so surface-sensitive
+   * resolution (e.g. pack disclosure defaults, which differ between the
+   * CLI and MCP per the ratified surface contract) can see which surface
+   * is calling; most stories ignore it.
+   */
   readonly resolve: (
     rt: PragmaRuntime,
     names: readonly string[],
     params: Record<string, unknown>,
+    view?: LookupStoryView,
   ) => Promise<LookupResult<TDetailed>>;
   /**
    * Effective `detailed` for a surface. Defaults to the plain flag value
