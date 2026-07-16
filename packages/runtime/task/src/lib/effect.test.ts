@@ -157,6 +157,14 @@ describe("Effect Constructors - File System", () => {
       expect(effect._tag).toBe("DeleteDirectory");
       expect((effect as { path: string }).path).toBe("/path/to/delete/dir");
     });
+
+    it("passes onlyIfEmpty through", () => {
+      const effect = deleteDirectoryEffect("/path/to/delete/dir", {
+        onlyIfEmpty: true,
+      });
+
+      expect((effect as { onlyIfEmpty?: boolean }).onlyIfEmpty).toBe(true);
+    });
   });
 
   describe("makeDirEffect", () => {
@@ -559,6 +567,15 @@ describe("Effect Utilities - describeEffect", () => {
     const effect = deleteDirectoryEffect("/path/to/delete/dir");
     expect(describeEffect(effect)).toBe(
       "Delete directory: /path/to/delete/dir",
+    );
+  });
+
+  it("describes DeleteDirectory effect with onlyIfEmpty", () => {
+    const effect = deleteDirectoryEffect("/path/to/delete/dir", {
+      onlyIfEmpty: true,
+    });
+    expect(describeEffect(effect)).toBe(
+      "Delete directory (only if empty): /path/to/delete/dir",
     );
   });
 

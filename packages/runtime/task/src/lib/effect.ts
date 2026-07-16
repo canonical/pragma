@@ -127,10 +127,11 @@ export const deleteFileEffect = (path: string, opts?: UndoOptions): Effect => ({
 
 export const deleteDirectoryEffect = (
   path: string,
-  opts?: UndoOptions,
+  opts?: UndoOptions & { onlyIfEmpty?: boolean },
 ): Effect => ({
   _tag: "DeleteDirectory",
   path,
+  onlyIfEmpty: opts?.onlyIfEmpty,
   undo: resolveUndo(opts?.undo, undefined),
 });
 
@@ -142,7 +143,16 @@ export const makeDirEffect = (
   _tag: "MakeDir",
   path,
   recursive,
-  undo: resolveUndo(opts?.undo, bareTask({ _tag: "DeleteDirectory", path })),
+  // The default undo must never destroy contents the task did not create:
+  // the directory may have existed before the forward run (mkdir is then a
+  // no-op), and undo collection cannot know that. Removing only when empty
+  // is evaluated against the real filesystem at undo time, after this
+  // task's file undos have run, so a directory this task populated is
+  // cleaned up while a pre-existing one is left untouched.
+  undo: resolveUndo(
+    opts?.undo,
+    bareTask({ _tag: "DeleteDirectory", path, onlyIfEmpty: true }),
+  ),
 });
 
 export const existsEffect = (path: string): Effect => ({
@@ -256,7 +266,9 @@ export const describeEffect = (effect: Effect): string => {
     case "DeleteFile":
       return `Delete file: ${effect.path}`;
     case "DeleteDirectory":
-      return `Delete directory: ${effect.path}`;
+      return effect.onlyIfEmpty
+        ? `Delete directory (only if empty): ${effect.path}`
+        : `Delete directory: ${effect.path}`;
     case "MakeDir":
       return `Created ${effect.path}/`;
     case "Exists":

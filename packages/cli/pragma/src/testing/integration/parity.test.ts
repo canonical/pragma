@@ -45,6 +45,7 @@ import { resolveTierChain } from "../../domains/shared/filters/buildTierFilter.j
 import { listTiers } from "../../domains/shared/listTiers.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import { listDomainNames } from "../../domains/shared/suggestions/index.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import {
   createLookupFormatters as createTokenLookupFmt,
   listFormatters as tokenListFmt,
@@ -390,7 +391,7 @@ describe("modifier parity", () => {
 // Token parity
 // ---------------------------------------------------------------------------
 
-describe("token parity", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token parity", () => {
   it("token_list: count matches", async () => {
     const opResult = await listTokens(rt.store);
     const mcpRes = await client.callTool({

@@ -75,19 +75,11 @@ Parameters:
 
 #### `block_lookup`
 
-Look up detailed information about a single block including anatomy tree, modifiers, tokens, and applicable standards.
+Look up detailed information about one or more blocks including anatomy tree, modifiers, tokens, and applicable standards. Returns partial results — successful lookups in `results`, failures in `errors`.
 
 Parameters:
-- `name` (string, required) — block name (e.g., "Button")
-- `detailed` (boolean, optional) — return full details (default: true)
-- `condensed` (boolean, optional) — return token-optimized Markdown
-
-#### `block_batch_lookup`
-
-Look up multiple blocks by name in a single call. Returns partial results — successful lookups in `results`, failures in `errors`.
-
-Parameters:
-- `names` (string[], required) — block names to look up
+- `names` (string[], required) — block names or IRIs (e.g., `["Button"]`)
+- `detailed` (boolean, optional) — return full details
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
 #### `standard_list`
@@ -101,18 +93,10 @@ Parameters:
 
 #### `standard_lookup`
 
-Look up a standard with full do/don't code examples.
+Look up one or more standards with full do/don't code examples. Returns partial results — successful lookups in `results`, failures in `errors`.
 
 Parameters:
-- `name` (string, required) — standard name (e.g., "react/component/props")
-- `condensed` (boolean, optional) — return token-optimized Markdown
-
-#### `standard_batch_lookup`
-
-Look up multiple standards by name in a single call.
-
-Parameters:
-- `names` (string[], required) — standard names to look up
+- `names` (string[], required) — standard names or IRIs (e.g., `["react/component/props"]`)
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
 #### `standard_categories`
@@ -130,43 +114,15 @@ Parameters:
 
 #### `modifier_lookup`
 
-Look up a modifier family with its values.
+Look up one or more modifier families with their values. Returns partial results — successful lookups in `results`, failures in `errors`.
 
 Parameters:
-- `name` (string, required) — modifier family name
+- `names` (string[], required) — modifier family names
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
-#### `modifier_batch_lookup`
-
-Look up multiple modifier families by name in a single call.
-
-Parameters:
-- `names` (string[], required) — modifier family names to look up
-- `condensed` (boolean, optional) — return token-optimized Markdown
-
-#### `token_list`
-
-List design tokens with optional category filtering.
-
-Parameters:
-- `category` (string, optional) — filter by token category
-- `condensed` (boolean, optional) — return token-optimized Markdown
-
-#### `token_lookup`
-
-Look up a design token with theme-resolved values.
-
-Parameters:
-- `name` (string, required) — token name
-- `condensed` (boolean, optional) — return token-optimized Markdown
-
-#### `token_batch_lookup`
-
-Look up multiple tokens by name in a single call.
-
-Parameters:
-- `names` (string[], required) — token names to look up
-- `condensed` (boolean, optional) — return token-optimized Markdown
+> **Note:** `token_list`, `token_lookup`, and `token_sample` are currently
+> feature-flagged off (`src/domains/token/featureFlag.ts`) because the
+> published design-system data does not yet contain token instances.
 
 #### `tier_list`
 
@@ -237,14 +193,14 @@ batch-error semantics as the built-in read tools. See the README's
 
 #### `config_tier`
 
-Set the project tier in `pragma.config.toml`.
+Set the project tier (written to the nearest `pragma.config.json`, or the global config).
 
 Parameters:
 - `tier` (string, required) — tier path (e.g., "apps/lxd")
 
 #### `config_channel`
 
-Set the release channel in `pragma.config.toml`.
+Set the release channel (written to the nearest `pragma.config.json`, or the global config).
 
 Parameters:
 - `channel` (string, required) — one of "normal", "experimental", "prerelease"

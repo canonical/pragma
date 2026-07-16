@@ -135,8 +135,18 @@ export type Effect =
     }
   /** Delete a file */
   | { _tag: "DeleteFile"; path: string; undo?: Task<void> }
-  /** Recursively delete a directory */
-  | { _tag: "DeleteDirectory"; path: string; undo?: Task<void> }
+  /**
+   * Delete a directory — recursively by default, or non-recursively
+   * (skipped when missing or non-empty) when `onlyIfEmpty` is set.
+   * `onlyIfEmpty` exists so cleanup steps (e.g. MakeDir's default undo)
+   * can never destroy contents they did not create.
+   */
+  | {
+      _tag: "DeleteDirectory";
+      path: string;
+      onlyIfEmpty?: boolean;
+      undo?: Task<void>;
+    }
   /** Create directory and parents */
   | { _tag: "MakeDir"; path: string; recursive: boolean; undo?: Task<void> }
   /** Check if path exists */

@@ -1,3 +1,4 @@
+import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
 import type { CommandRefEntry } from "../types.js";
 import { TOOL_CATALOG } from "./toolCatalog.js";
 
@@ -60,17 +61,25 @@ export const COMMAND_REFERENCE: readonly CommandRefEntry[] = [
     tokens: "~80",
     use_when: hintFor("modifier_lookup"),
   },
-  {
-    command: "token sample",
-    tokens: "~300",
-    use_when: hintFor("token_sample"),
-  },
-  { command: "token list", tokens: "~400", use_when: hintFor("token_list") },
-  {
-    command: "token lookup <name-or-iri...> --detailed",
-    tokens: "~150",
-    use_when: hintFor("token_lookup"),
-  },
+  ...(TOKEN_READ_SURFACE_ENABLED
+    ? ([
+        {
+          command: "token sample",
+          tokens: "~300",
+          use_when: hintFor("token_sample"),
+        },
+        {
+          command: "token list",
+          tokens: "~400",
+          use_when: hintFor("token_list"),
+        },
+        {
+          command: "token lookup <name-or-iri...> --detailed",
+          tokens: "~150",
+          use_when: hintFor("token_lookup"),
+        },
+      ] as const)
+    : []),
   { command: "tier list", tokens: "~50", use_when: hintFor("tier_list") },
   {
     command: "ontology list",

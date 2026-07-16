@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { VERSION } from "#constants";
+import { TOKEN_READ_SURFACE_ENABLED } from "../token/featureFlag.js";
 import { buildCapabilitiesCommand } from "./commands/index.js";
 import { TOOL_CATALOG } from "./data/index.js";
 import { buildCapabilitiesData } from "./mcp/index.js";
+
+// token_list, token_lookup, and token_sample are gated behind the token
+// read-surface feature flag.
+const EXPECTED_TOOL_COUNT = TOKEN_READ_SURFACE_ENABLED ? 34 : 31;
 
 describe("buildCapabilitiesData", () => {
   it("returns correct version", () => {
@@ -29,7 +34,7 @@ describe("buildCapabilitiesData", () => {
   it("includes every tool from TOOL_CATALOG", () => {
     const data = buildCapabilitiesData();
     expect(data.tools).toHaveLength(TOOL_CATALOG.length);
-    expect(data.tools).toHaveLength(34);
+    expect(data.tools).toHaveLength(EXPECTED_TOOL_COUNT);
   });
 
   it("every tool has a non-empty use_when", () => {
@@ -41,7 +46,7 @@ describe("buildCapabilitiesData", () => {
 
   it("counts match tool catalog category lengths", () => {
     const data = buildCapabilitiesData();
-    expect(data.counts.total).toBe(34);
+    expect(data.counts.total).toBe(EXPECTED_TOOL_COUNT);
     expect(data.counts.read).toBe(
       TOOL_CATALOG.filter((t) => t.category === "read").length,
     );
@@ -79,7 +84,7 @@ describe("buildCapabilitiesCommand", () => {
     expect(text).toContain("Discovery Sequence");
     expect(text).toContain("block_list");
     expect(text).toContain("read");
-    expect(text).toContain("34 tools");
+    expect(text).toContain(`${EXPECTED_TOOL_COUNT} tools`);
   });
 
   it("emits valid JSON when --format json is requested", async () => {

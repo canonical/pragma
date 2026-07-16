@@ -1,3 +1,4 @@
+import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
 import type { DecisionTree } from "../types.js";
 
 /**
@@ -26,16 +27,20 @@ export const DECISION_TREES: readonly DecisionTree[] = [
     no  → standard list --category <cat> [~100]
           → standard lookup <std-iri...> --detailed [~400] Σ500`,
   },
-  {
-    intent: "Find a token",
-    tree: `? Know token IRI or name?
+  ...(TOKEN_READ_SURFACE_ENABLED
+    ? ([
+        {
+          intent: "Find a token",
+          tree: `? Know token IRI or name?
   yes → token lookup <name-or-iri...> --detailed [~150]
   no  → token list --category <cat> [~100]
         → token lookup <name-or-iri...> --detailed [~150] Σ250`,
-  },
+        },
+      ] as const)
+    : []),
   {
     intent: "Explore the design system",
-    tree: `first time → block sample / token sample / modifier sample [~300] → see real shapes
+    tree: `first time → block sample / ${TOKEN_READ_SURFACE_ENABLED ? "token sample / " : ""}modifier sample [~300] → see real shapes
 high-level → ontology list [~80] → ontology show <ns> [~300]
 modifiers  → modifier list [~100] → modifier lookup <name-or-iri...> [~80]
 tiers      → tier list [~50]

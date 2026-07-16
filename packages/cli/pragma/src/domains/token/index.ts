@@ -14,8 +14,12 @@ import {
   lookupCommand,
   sampleCommand,
 } from "./commands/index.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "./featureFlag.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
+  if (!TOKEN_READ_SURFACE_ENABLED) {
+    return [addConfigCommand()];
+  }
   return [
     listCommand(ctx),
     lookupCommand(ctx),
@@ -24,6 +28,7 @@ export function commands(ctx: PragmaContext): CommandDefinition[] {
   ];
 }
 
+export { TOKEN_READ_SURFACE_ENABLED } from "./featureFlag.js";
 export { specs as mcpSpecs } from "./mcp/index.js";
 export type { AddConfigResult, TokenListFilters } from "./operations/index.js";
 export {

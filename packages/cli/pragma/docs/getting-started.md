@@ -66,21 +66,23 @@ pragma standard list
 pragma standard list --category react
 
 # Get a specific standard with code examples
-pragma standard lookup react/component/props
+pragma standard lookup react/component/props --detailed
 ```
 
-### Check modifiers and tokens
+### Check modifiers
 
 ```bash
 # List modifier families
 pragma modifier list
 
-# List design tokens
-pragma token list
-
-# Get token values across themes
-pragma token lookup spacing-vertical-medium
+# Show a modifier family and its values
+pragma modifier lookup Importance
 ```
+
+> Token read commands (`token list`, `token lookup`) are currently disabled
+> behind a feature flag while the design-system data does not yet ship token
+> instances. `pragma tokens add-config` (Terrazzo config scaffolding) works
+> today.
 
 ### Explore the knowledge graph
 
@@ -100,7 +102,11 @@ pragma graph inspect ds:global.component.button
 
 ### Discover agent skills
 
+Skills are discovered from the git-referenced semantic packages, so fetch
+them into the local cache first:
+
 ```bash
+pragma update-refs
 pragma skill list
 ```
 
@@ -175,20 +181,20 @@ This makes design system and code standards skills available to your AI editor.
 Run all setup steps at once:
 
 ```bash
-pragma setup all
+pragma setup
 ```
 
-This configures MCP, installs shell completions, and symlinks skills.
+This installs shell completions, sets up the LSP, and configures MCP.
 
 ## Undoing Changes
 
 All setup and create commands support `--undo`:
 
 ```bash
-pragma setup all --undo
+pragma setup --undo
 pragma setup mcp --undo
 pragma setup completions --undo
-pragma create component Foo --undo
+pragma create component react src/lib/Foo --undo
 ```
 
 The undo interpreter walks the task tree from the original command and reverses each step.
@@ -204,8 +210,8 @@ pragma doctor
 # Show version and store info
 pragma info
 
-# Check for updates
-pragma info upgrade
+# Check for updates (and upgrade)
+pragma upgrade --dry-run
 ```
 
 ## LLM Orientation

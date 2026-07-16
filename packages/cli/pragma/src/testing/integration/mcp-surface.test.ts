@@ -9,6 +9,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
 
@@ -55,7 +56,7 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(34);
+    expect(data.counts.total).toBe(TOKEN_READ_SURFACE_ENABLED ? 34 : 31);
     expect(data.conventions).toBeDefined();
     expect(data.version).toBeDefined();
   });
@@ -244,7 +245,7 @@ describe("modifier_lookup", () => {
 // Token
 // ---------------------------------------------------------------------------
 
-describe("token_list", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
   it("returns tokens", async () => {
     const res = await client.callTool({
       name: "token_list",
@@ -256,7 +257,7 @@ describe("token_list", () => {
   });
 });
 
-describe("token_lookup", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
   it("returns token with values", async () => {
     const res = await client.callTool({
       name: "token_lookup",

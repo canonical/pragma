@@ -5,6 +5,7 @@
 import { VERSION } from "#constants";
 import { buildFilterConfig } from "../../shared/filters/index.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
 import {
   COMMAND_REFERENCE,
   DECISION_TREES,
@@ -43,14 +44,12 @@ function buildCapabilitiesData(): CapabilitiesData {
       {
         stage: 2,
         tool: "*_sample",
-        purpose:
-          "Call block_sample, standard_sample, token_sample, or modifier_sample to see real data shapes before querying. Prevents guessing at property names.",
+        purpose: `Call block_sample, standard_sample,${TOKEN_READ_SURFACE_ENABLED ? " token_sample," : ""} or modifier_sample to see real data shapes before querying. Prevents guessing at property names.`,
       },
       {
         stage: 3,
         tool: "domain tools",
-        purpose:
-          "Query specific entities — block_list, standard_lookup, token_list, etc. Use the use_when hints above to pick the right tool.",
+        purpose: `Query specific entities — block_list, standard_lookup, ${TOKEN_READ_SURFACE_ENABLED ? "token_list, " : ""}etc. Use the use_when hints above to pick the right tool.`,
       },
     ],
     tools: TOOL_CATALOG,
