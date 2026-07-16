@@ -1,0 +1,9 @@
+import type { Snippet } from "svelte";
+import type { SvelteHTMLElements } from "svelte/elements";
+
+type BaseProps = SvelteHTMLElements["div"];
+
+export interface ExampleProps extends BaseProps {
+  /** Content to render inside the component */
+  children?: Snippet;
+}
