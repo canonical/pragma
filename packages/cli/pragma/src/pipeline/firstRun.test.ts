@@ -71,10 +71,10 @@ describe("ensureFirstRun", () => {
     process.env.XDG_CONFIG_HOME = join(blocker, "nested");
 
     await expect(ensureFirstRun(write)).resolves.toBeUndefined();
-    expect(
-      lines.some((l) =>
-        l.includes("could not create the global pragma config"),
-      ),
-    ).toBe(true);
+    // Exactly one warning line and no welcome banner: creation is attempted
+    // before the greeting, so a failure degrades to a single stderr warning.
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("could not create the global pragma config");
+    expect(lines.join("\n")).not.toContain("pre-release pragma CLI");
   });
 });

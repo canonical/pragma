@@ -56,11 +56,17 @@ export function firstRunTask(): Task<{ created: boolean; path: string }> {
       return { created: false, path };
     }
 
+    // Create the config first, then greet: if creation fails the effects throw
+    // before any line is emitted, so onboarding degrades to the single stderr
+    // warning ensureFirstRun writes — never a "just created" banner alongside a
+    // failure. `mkdir` is recursive (its default), so a missing XDG parent is
+    // created rather than being treated as an error.
+    yield* $(mkdir(dirname(path), true));
+    yield* $(writeFile(path, SEED_CONFIG));
+
     for (const line of welcomeLines(path)) {
       yield* $(info(line));
     }
-    yield* $(mkdir(dirname(path)));
-    yield* $(writeFile(path, SEED_CONFIG));
 
     return { created: true, path };
   });
