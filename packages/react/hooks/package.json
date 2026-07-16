@@ -52,7 +52,7 @@
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.22.0",
     "@canonical/typescript-config": "^0.22.0",
-    "@canonical/typescript-config-react": "^0.22.0",
+    "@canonical/typescript-config-react": "^0.30.0",
     "@canonical/vitest-config-react": "^0.30.0",
     "@canonical/webarchitect": "^0.22.0",
     "@testing-library/jest-dom": "^6.9.1",
