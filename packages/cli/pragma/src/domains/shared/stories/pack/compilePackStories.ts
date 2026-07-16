@@ -277,11 +277,12 @@ function compileLookup(
 
   const lookupStory: LookupStory<PackEntity, PackEntity> = {
     noun,
-    description: lookup.description ?? `Look up ${noun} details by name`,
+    description:
+      lookup.description ?? `Look up ${noun} details by name, IRI, or glob`,
     toolDescription:
       lookup.toolDescription ??
-      `Get details for one or more ${noun} entries by name (story pack: ${source}).`,
-    namesDescription: `${capitalize(noun)} names`,
+      `Get details for one or more ${noun} entries by name, prefixed name (ex:thing), absolute IRI, or glob pattern (story pack: ${source}).`,
+    namesDescription: `${capitalize(noun)} names, IRIs/prefixed names, or glob patterns`,
     params: detailParams,
     complete: async (partial, cmdCtx) => {
       const ctx = requirePragmaContext(cmdCtx);
@@ -591,16 +592,22 @@ function looksLikeIri(query: string): boolean {
  *
  * Precedence (highest → lowest): an explicit `--detail`/`detail` value, a
  * legacy alias flag set to true (the HIGHEST requested level wins when
- * several are set), the MCP full-data default, the global `config.detail`
+ * several are set), the global `config.detail` default, the MCP full-data
  * default, the pack's declared `disclosure.default`, then the base level
  * (the first declared). A config/pack value that is not one of the pack's
  * levels is ignored (a global default may target another pack).
  *
+ * `config.detail` deliberately outranks the MCP default: the config value
+ * is something the user explicitly chose, while the MCP default is only a
+ * surface fallback — a user who configured `detail: summary` gets summary
+ * on both surfaces.
+ *
  * The MCP default follows the ratified surface contract (see
  * `resolveLookupDetailed`): the CLI opts in while MCP opts out, so an MCP
- * call with no explicit choice resolves to the highest level — agents want
- * full data by default — and an alias explicitly set to false (e.g.
- * `detailed: false`) opts down to the config/pack defaults.
+ * call with no explicit or configured choice resolves to the highest
+ * level — agents want full data by default — and an alias explicitly set
+ * to false (e.g. `detailed: false`) opts down to the pack default or base
+ * level.
  */
 function resolveDetailLevel(
   params: Record<string, unknown>,
@@ -622,6 +629,10 @@ function resolveDetailLevel(
     return aliased;
   }
 
+  if (config.detail !== undefined && levels.includes(config.detail)) {
+    return config.detail;
+  }
+
   if (surface === "mcp") {
     const optedDown = levels.some(
       (level, index) => index > 0 && params[level] === false,
@@ -632,10 +643,9 @@ function resolveDetailLevel(
     }
   }
 
-  for (const candidate of [config.detail, disclosure.default]) {
-    if (candidate !== undefined && levels.includes(candidate)) {
-      return candidate;
-    }
+  const packDefault = disclosure.default;
+  if (packDefault !== undefined && levels.includes(packDefault)) {
+    return packDefault;
   }
   return levels[0] ?? "";
 }

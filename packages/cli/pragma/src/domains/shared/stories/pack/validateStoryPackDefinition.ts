@@ -18,6 +18,39 @@ import type {
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/**
+ * Object-prototype key names no pack identifier may take.
+ *
+ * Pack identifiers become plain-object keys at run time — SELECT
+ * variables become row keys, expand names become entity keys, and filter
+ * params become parameter keys — so `__proto__`/`constructor`/`prototype`
+ * are rejected at boot, before any row or params object could be built
+ * with a prototype-polluting key.
+ */
+const RESERVED_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Reject an identifier that names a reserved object-prototype key.
+ *
+ * Shared guard for every FIELD_PATTERN/FILTER_PARAM_PATTERN-shaped
+ * identifier (column fields, field/section/expand/select names, filter
+ * params and variables, search variables, disclosure levels).
+ *
+ * @throws PragmaError with code `CONFIG_ERROR` when the value is reserved.
+ */
+function rejectReservedObjectKey(
+  value: string,
+  where: string,
+  source: string,
+): void {
+  if (RESERVED_OBJECT_KEYS.has(value)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}" must not be the reserved object key "${value}".`,
+    );
+  }
+}
 /** A prefixed name (`ex:Recipe`) — prefix + local part, no path slashes. */
 const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s]+$/;
 
@@ -234,6 +267,17 @@ function validateListShape(
   const columns = obj.columns.map((column, index) =>
     validateColumn(column, `${where}.columns[${index}]`, source),
   );
+  // Like filters and search below: a column naming a variable the query
+  // never binds is a typo that should fail at boot, not render an
+  // always-empty column at first use.
+  for (const column of columns) {
+    if (!referencesVariable(query, column.field)) {
+      throw buildStoryConfigError(
+        source,
+        `column field "?${column.field}" does not appear in "${where}.query".`,
+      );
+    }
+  }
 
   const filters = validateFilterArray(obj.filters, where, source);
   for (const filter of filters ?? []) {
@@ -287,6 +331,11 @@ function validateSearch(
         `"${where}.search.variables[${index}]" must name a SELECT variable.`,
       );
     }
+    rejectReservedObjectKey(
+      variable,
+      `${where}.search.variables[${index}]`,
+      source,
+    );
     if (!referencesVariable(query, variable)) {
       throw buildStoryConfigError(
         source,
@@ -363,6 +412,7 @@ function validateFilter(
       `"${where}.param" "${param}" is a reserved name.`,
     );
   }
+  rejectReservedObjectKey(param, `${where}.param`, source);
   const variable = requireString(obj.variable, `${where}.variable`, source);
   if (!FIELD_PATTERN.test(variable)) {
     throw buildStoryConfigError(
@@ -370,6 +420,7 @@ function validateFilter(
       `"${where}.variable" must name a SELECT variable.`,
     );
   }
+  rejectReservedObjectKey(variable, `${where}.variable`, source);
   // `values` is optional (pack v1): without it the filter is a free-string
   // parameter matched case-insensitively against the variable — used when
   // the value set is data-driven and cannot be declared.
@@ -431,6 +482,7 @@ function validateColumn(
       `"${where}.field" must name a SELECT variable.`,
     );
   }
+  rejectReservedObjectKey(field, `${where}.field`, source);
   const label =
     obj.label === undefined
       ? undefined
@@ -563,6 +615,11 @@ function validateDisclosure(
         `disclosure level "${level}" is a reserved name.`,
       );
     }
+    rejectReservedObjectKey(
+      level,
+      `lookup.disclosure.levels[${index}]`,
+      source,
+    );
     if (seen.has(level)) {
       throw buildStoryConfigError(
         source,
@@ -624,6 +681,7 @@ function validateExpand(
       `"${where}.name" must be a simple identifier.`,
     );
   }
+  rejectReservedObjectKey(name, `${where}.name`, source);
   const relation = requirePredicateTerm(
     obj.relation,
     `${where}.relation`,
@@ -716,6 +774,7 @@ function validateField(
       `"${where}.name" must be a simple identifier.`,
     );
   }
+  rejectReservedObjectKey(name, `${where}.name`, source);
   const property = requirePredicateTerm(
     obj.property,
     `${where}.property`,

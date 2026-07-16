@@ -14,17 +14,21 @@
 
 import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PARITY_GAPS } from "#testing";
+import { createTestStore, PARITY_GAPS } from "#testing";
 import { parsePackageEntry } from "../../../refs/operations/parseRef.js";
 import { bootStore } from "../../bootStore.js";
 import compactUri from "../../compactUri.js";
-import { DEFAULT_PREFIX_MAP } from "../../prefixes.js";
+import {
+  DEFAULT_PREFIX_MAP,
+  TRANSITIONAL_DS_PREFIX_MAP,
+} from "../../prefixes.js";
 import { listDomainNames } from "../../suggestions/index.js";
 import type { PragmaRuntime } from "../../types/index.js";
 import { standardPack } from "./bundled/standardPack.js";
 import compilePackStories, {
   type CompiledPackStories,
 } from "./compilePackStories.js";
+import runSelectQuery from "./runSelectQuery.js";
 import validateStoryPackDefinition from "./validateStoryPackDefinition.js";
 
 const PACK_SOURCE = "bundled:standard";
@@ -180,6 +184,30 @@ describe("standard lookup parity", () => {
     expect((entity.donts as readonly ExampleRow[]).length).toBeGreaterThan(0);
   });
 
+  it("carries each example's cs:description as its caption", async () => {
+    const entity = await lookupPack(LOOKUP_NAME, { detail: "detailed" });
+    const uri = entity.uri as string;
+    const dos = entity.dos as readonly ExampleRow[];
+    const donts = entity.donts as readonly ExampleRow[];
+    expect(dos.at(0)?.caption).toBeTruthy();
+    expect(donts.at(0)?.caption).toBeTruthy();
+    // Oracle: the same store queried directly for the examples' captions.
+    const doCaptions = await runSelectQuery(
+      store,
+      `SELECT ?caption WHERE { <${uri}> cs:do ?ex . ?ex cs:description ?caption }`,
+      "test:oracle",
+    );
+    expect(doCaptions.map((row) => row.caption)).toContain(dos.at(0)?.caption);
+    const dontCaptions = await runSelectQuery(
+      store,
+      `SELECT ?caption WHERE { <${uri}> cs:dont ?ex . ?ex cs:description ?caption }`,
+      "test:oracle",
+    );
+    expect(dontCaptions.map((row) => row.caption)).toContain(
+      donts.at(0)?.caption,
+    );
+  });
+
   it("honors the legacy --detailed alias flag", async () => {
     const aliased = await lookupPack(LOOKUP_NAME, { detailed: true });
     const explicit = await lookupPack(LOOKUP_NAME, { detail: "detailed" });
@@ -260,14 +288,89 @@ describe("standard categories parity", () => {
   });
 });
 
+// Synthetic fixture: the pinned @canonical/code-standards release names every
+// standard, so the real-graph suites above cannot observe the list query's
+// COALESCE/STRAFTER derived-name fallback or the name-addressable/list-row
+// population split. This tiny store has one NAMED and one UNNAMED standard.
+describe("standard pack on a synthetic graph (derived-name fallback)", () => {
+  const CS = TRANSITIONAL_DS_PREFIX_MAP.cs;
+  const SYNTHETIC_TTL = `
+@prefix cs: <${CS}> .
+
+cs:code.named a cs:CodeStandard ;
+  cs:name "code/named" ;
+  cs:description "A standard with an explicit cs:name." .
+
+<${CS}react.component.unnamed> a cs:CodeStandard ;
+  cs:description "A standard without cs:name." .
+`;
+
+  let syntheticStore: Store;
+  let syntheticCleanup: () => void;
+  let syntheticRt: PragmaRuntime;
+  let synthetic: CompiledPackStories;
+
+  beforeAll(async () => {
+    const result = await createTestStore({ ttl: SYNTHETIC_TTL });
+    syntheticStore = result.store;
+    syntheticCleanup = result.cleanup;
+    syntheticRt = { store: syntheticStore } as PragmaRuntime;
+    synthetic = compilePackStories(standardPack, "test:synthetic", {
+      ...DEFAULT_PREFIX_MAP,
+    });
+  });
+
+  afterAll(() => syntheticCleanup());
+
+  it("lists the unnamed standard under its IRI-derived slash-name", async () => {
+    const rows = await synthetic.list.resolve(syntheticRt, {});
+    expect(rows.map((row) => row.name).sort()).toEqual([
+      "code/named",
+      "react/component/unnamed",
+    ]);
+    const derived = rows.find((row) => row.name === "react/component/unnamed");
+    expect(derived?.uri).toBe(`${CS}react.component.unnamed`);
+    expect(derived?.description).toBe("A standard without cs:name.");
+  });
+
+  it("counts only the NAMED standard in the sample population", async () => {
+    const sample = synthetic.sample;
+    if (!sample) throw new Error("expected a sample story");
+    const data = await sample.resolve(syntheticRt, { count: "1" });
+    // 2 list rows, but only 1 name-addressable standard (PARITY_GAPS).
+    expect(data.totalCount).toBe(1);
+    expect(data.samples.map((entity) => entity.name)).toEqual(["code/named"]);
+  });
+
+  it("cannot address the unnamed standard's derived name via lookup", async () => {
+    const lookup = synthetic.lookup;
+    if (!lookup) throw new Error("expected a lookup story");
+    const result = await lookup.resolve(
+      syntheticRt,
+      ["react/component/unnamed"],
+      {},
+    );
+    expect(result.results).toEqual([]);
+    expect(result.errors.at(0)?.code).toBe("ENTITY_NOT_FOUND");
+  });
+});
+
 describe("standard sample parity", () => {
   it("returns N full exemplars (highest disclosure) with the population size", async () => {
     const sample = compiled.sample;
     if (!sample) throw new Error("expected a sample story");
     const data = await sample.resolve(rt, { count: "2" });
     expect(data.samples).toHaveLength(2);
+    // PARITY_GAPS: totalCount counts NAME-ADDRESSABLE standards (the set
+    // the sampler can resolve), while the list also carries rows whose
+    // name is COALESCE-derived from the IRI — so the list length is only
+    // an upper bound. The independent oracle is the shared suggestions
+    // name query (cs:name only, different query path, same store).
+    const nameAddressable = await listDomainNames(store, "standard");
+    expect(nameAddressable.length).toBeGreaterThan(0);
+    expect(data.totalCount).toBe(nameAddressable.length);
     const listRows = await compiled.list.resolve(rt, {});
-    expect(data.totalCount).toBe(listRows.length);
+    expect(data.totalCount).toBeLessThanOrEqual(listRows.length);
     for (const entity of data.samples) {
       expect(entity.name).toBeTruthy();
       // Highest level: expands are fetched (arrays, possibly empty).

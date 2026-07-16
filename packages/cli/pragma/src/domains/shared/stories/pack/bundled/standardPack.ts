@@ -112,9 +112,10 @@ export const standardPack: StoryPackDefinition = {
   lookup: {
     by: "cs:name",
     type: "cs:CodeStandard",
-    description: "Look up detailed information for a standard by name or IRI",
+    description:
+      "Look up detailed information for a standard by name, IRI, or glob",
     toolDescription:
-      "Get detailed information about one or more code standards including dos and donts with code examples.",
+      "Get detailed information about one or more code standards including dos and donts with code examples. Address standards by name, prefixed name (cs:…), absolute IRI, or glob pattern (react/component/*).",
     fields: [
       {
         name: "category",

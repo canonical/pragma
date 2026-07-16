@@ -28,6 +28,8 @@ export const PARITY_GAPS: readonly string[] = [
   'typed shapes: pack rows/entities are all-string records — category counts are strings, and dos/donts entries are `{caption?, language?, code?}` string records rather than typed CodeBlock objects (no `language: "typescript"` default, absent captions are omitted)',
   "render templates: plain/llm output uses the generic pack renderers (aligned columns, `## Standard (n)` headings, `- key: value` collection entries), not the old bespoke standard templates",
   "sample count flag: the pack sample takes a positional count (`standard sample 3`) instead of the old `--count 3` flag",
+  "lookup IRI display: plain/llm lookup output does not print the entity IRI (the pack renderer titles by name and projects no uri field); the IRI stays reachable via the list's IRI column, `--format json`, and the non-condensed MCP envelope",
+  "categories JSON shape: the old CategorySummary carried a numeric `standardCount`; pack category rows carry the key `count` with a string value (all-string pack rows, until pack v2 typed columns)",
   "sample population: totalCount counts name-addressable standards (the set the sampler can actually resolve) rather than all list rows; the old op counted every list row but failed outright when it drew a standard without cs:name",
   "ink renderers: the pack format declares no renderInk TUI views",
 ];

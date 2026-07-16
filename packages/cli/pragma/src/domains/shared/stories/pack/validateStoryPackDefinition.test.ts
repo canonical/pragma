@@ -474,6 +474,183 @@ describe("validateStoryPackDefinition — list filters", () => {
   });
 });
 
+describe("validateStoryPackDefinition — identifier hardening", () => {
+  const base = JSON.parse(JSON.stringify(RECIPE_STORY)) as Record<
+    string,
+    unknown
+  >;
+
+  it("rejects a column field the query never mentions", () => {
+    const list = {
+      ...(base.list as Record<string, unknown>),
+      columns: [{ field: "name" }, { field: "season" }],
+    };
+    expect(() =>
+      validateStoryPackDefinition({ ...base, list }, "test"),
+    ).toThrow(/column field "\?season" does not appear in "list.query"/);
+  });
+
+  it("validates verb columns against the verb query", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          verbs: [
+            {
+              verb: "categories",
+              query: "SELECT ?name WHERE { ?uri ex:category ?name }",
+              columns: [{ field: "count" }],
+            },
+          ],
+        },
+        "test",
+      ),
+    ).toThrow(/column field "\?count" does not appear in "verbs\[0\].query"/);
+  });
+
+  it("accepts a column bound via AS in the SELECT projection", () => {
+    const validated = validateStoryPackDefinition(
+      {
+        ...RECIPE_STORY,
+        verbs: [
+          {
+            verb: "categories",
+            query:
+              "SELECT ?name (COUNT(?uri) AS ?count) WHERE { ?uri ex:category ?name } GROUP BY ?name",
+            columns: [{ field: "name" }, { field: "count" }],
+          },
+        ],
+      },
+      "test",
+    );
+    expect(validated.verbs?.at(0)?.columns).toHaveLength(2);
+  });
+
+  // Reserved object-prototype keys: pack identifiers become plain-object
+  // keys at run time, so __proto__/constructor/prototype must fail at boot.
+  it("rejects a reserved object key as a column field", () => {
+    const list = {
+      ...(base.list as Record<string, unknown>),
+      query: "SELECT ?__proto__ WHERE { ?uri ex:name ?__proto__ }",
+      columns: [{ field: "__proto__" }],
+      filters: undefined,
+    };
+    expect(() =>
+      validateStoryPackDefinition({ ...base, list }, "test"),
+    ).toThrow(/reserved object key "__proto__"/);
+  });
+
+  it("rejects a reserved object key as a filter param or variable", () => {
+    const withFilter = (filter: Record<string, unknown>): unknown => ({
+      ...base,
+      list: {
+        ...(base.list as Record<string, unknown>),
+        query:
+          "SELECT ?uri ?name ?category ?constructor WHERE { ?uri ex:name ?name ; ex:category ?category ; ex:kind ?constructor }",
+        filters: [filter],
+      },
+    });
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilter({ param: "constructor", variable: "category" }),
+        "test",
+      ),
+    ).toThrow(/reserved object key "constructor"/);
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilter({ param: "kind", variable: "constructor" }),
+        "test",
+      ),
+    ).toThrow(/reserved object key "constructor"/);
+  });
+
+  it("rejects a reserved object key as a search variable", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...base,
+          list: {
+            ...(base.list as Record<string, unknown>),
+            query:
+              "SELECT ?uri ?name ?category ?prototype WHERE { ?uri ex:name ?name ; ex:category ?category ; ex:proto ?prototype }",
+            search: { variables: ["prototype"] },
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/reserved object key "prototype"/);
+  });
+
+  it("rejects a reserved object key as a lookup field or expand name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          lookup: {
+            ...RECIPE_STORY.lookup,
+            fields: [{ name: "__proto__", property: "ex:category" }],
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/reserved object key "__proto__"/);
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          lookup: {
+            ...RECIPE_STORY.lookup,
+            expand: [
+              {
+                name: "__proto__",
+                relation: "ex:ingredient",
+                select: [{ name: "label", property: "ex:label" }],
+              },
+            ],
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/reserved object key "__proto__"/);
+  });
+
+  it("rejects a reserved object key inside an expand select", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          lookup: {
+            ...RECIPE_STORY.lookup,
+            expand: [
+              {
+                name: "ingredients",
+                relation: "ex:ingredient",
+                select: [{ name: "constructor", property: "ex:label" }],
+              },
+            ],
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/reserved object key "constructor"/);
+  });
+
+  it("rejects a reserved object key as a disclosure level", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          lookup: {
+            ...RECIPE_STORY.lookup,
+            disclosure: { levels: ["summary", "prototype"] },
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/reserved object key "prototype"/);
+  });
+});
+
 // Pack v1: extra list verbs and the sample capability.
 describe("validateStoryPackDefinition — verbs and sample", () => {
   const VERB = {

@@ -707,6 +707,30 @@ describe("compilePackStories — expand", () => {
     expect(entity?.ingredients).toHaveLength(2);
   });
 
+  it("the global config.detail outranks the MCP full-data default", async () => {
+    // Counterpart of the CLI config.detail test above: a user-configured
+    // global `detail: summary` must win over the MCP surface fallback.
+    const { lookup } = compilePackStories(
+      RECIPE_STORY_DISCLOSURE,
+      "test",
+      PREFIXES,
+    );
+    const configuredRt = {
+      store: expandStore,
+      config: { detail: "summary" },
+    } as PragmaRuntime;
+    const result = await lookup?.resolve(
+      configuredRt,
+      ["Pancakes"],
+      {},
+      { surface: "mcp", detailed: false, params: {} },
+    );
+    const entity = result?.results.at(0) as
+      | { ingredients?: unknown }
+      | undefined;
+    expect(entity?.ingredients).toBeUndefined();
+  });
+
   it("an MCP alias explicitly false opts down to the base level", async () => {
     const { lookup } = compilePackStories(
       RECIPE_STORY_DISCLOSURE,
