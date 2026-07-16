@@ -357,23 +357,35 @@ function handlePageJump<T extends Item = Item>(
   }
 
   // The raw landing may be DISABLED (e.g. a menu separator). Continue in the
-  // jump direction to the nearest enabled sibling; past the edge, fall back
-  // toward the current item instead — a disabled landing must not swallow the
-  // jump while every other movement path (arrows, Home/End, type-ahead)
-  // already skips disabled nodes.
+  // jump direction to the nearest enabled sibling — a disabled landing must
+  // not swallow the jump while every other movement path (arrows, Home/End,
+  // type-ahead) already skips disabled nodes. With wrapping on, the scan
+  // follows the ring across the boundary; without it, the scan stops at the
+  // edge and falls back toward the current item instead.
   const direction = delta > 0 ? 1 : -1;
   let landingIdx = -1;
-  for (let idx = targetIdx; idx >= 0 && idx < len; idx += direction) {
-    if (!siblings[idx].disabled) {
-      landingIdx = idx;
-      break;
-    }
-  }
-  if (landingIdx === -1) {
-    for (let idx = targetIdx; idx >= 0 && idx < len; idx -= direction) {
+  if (wrapEnabled) {
+    let idx = targetIdx;
+    for (let i = 0; i < len; i++) {
       if (!siblings[idx].disabled) {
         landingIdx = idx;
         break;
+      }
+      idx = (idx + direction + len) % len;
+    }
+  } else {
+    for (let idx = targetIdx; idx >= 0 && idx < len; idx += direction) {
+      if (!siblings[idx].disabled) {
+        landingIdx = idx;
+        break;
+      }
+    }
+    if (landingIdx === -1) {
+      for (let idx = targetIdx; idx >= 0 && idx < len; idx -= direction) {
+        if (!siblings[idx].disabled) {
+          landingIdx = idx;
+          break;
+        }
       }
     }
   }

@@ -38,8 +38,11 @@ const Item = ({ item, itemProps, onSelect }: ItemProps): React.ReactElement => {
       // Stop the Space/Enter from also reaching the menu container's key handler
       // (where a bare Space would otherwise start a typeahead search).
       event.stopPropagation();
+      // Always suppress the browser default — on a focusable div a bare Space
+      // scrolls the page, so a "no-op" on a disabled item or submenu parent
+      // would not actually be a no-op. Only a selectable leaf activates.
+      event.preventDefault();
       if (isSelectable) {
-        event.preventDefault();
         onSelect();
       }
     }

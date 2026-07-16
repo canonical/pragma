@@ -666,6 +666,46 @@ describe("PAGE_DOWN/PAGE_UP landing on a disabled item", () => {
     expect(next.highlightedItems.at(-1)?.url).toBe("/i9");
   });
 
+  it("wraps the skip scan across the boundary when wrapping is on", () => {
+    // 12 items with BOTH trailing slots disabled and wrap ON: from /i1,
+    // PAGE_DOWN lands raw on index 11 (disabled); the scan must follow the
+    // ring across the boundary to index 0 rather than stopping at the edge.
+    const ringItems = items.map((item, i) =>
+      i >= 10 ? { ...item, disabled: true } : item,
+    );
+    const ringRoot = annotateTree({
+      key: "root",
+      label: "Root",
+      items: ringItems,
+    });
+    const ringIdx = prepareIndex(ringRoot);
+    const ringReduce = createNavigationReducer(ringIdx, {
+      rootItem: ringRoot,
+      orientation: "vertical",
+      wrap: true,
+    });
+    const ringState = (url: string): NavigationState => ({
+      selectedItems: [ringRoot],
+      highlightedItems: findAncestorPath(ringIdx, ringIdx[url]),
+      currentDepth: 1,
+      isOpen: false,
+      inputValue: "",
+      keysSoFar: "",
+    });
+
+    const next = ringReduce(ringState("/i1"), {
+      type: NavigationActionType.PAGE_DOWN,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/i0");
+
+    // From /i0 the ring walk comes full circle back to the current item —
+    // a no-op, not a crash or a landing on a disabled slot.
+    const full = ringReduce(ringState("/i0"), {
+      type: NavigationActionType.PAGE_DOWN,
+    });
+    expect(full.highlightedItems.at(-1)?.url).toBe("/i0");
+  });
+
   it("skips a disabled landing on PAGE_UP too", () => {
     // From /i11 with index 10 disabled... PAGE_UP (-10) lands raw on /i1
     // (enabled) — use a tree with index 1 disabled instead.

@@ -280,6 +280,21 @@ describe("ContextualMenu", () => {
       fireEvent.keyDown(parent, { key: "Enter" });
       expect(onSelect).not.toHaveBeenCalled();
     });
+
+    it("suppresses the browser default for Space on every item kind", () => {
+      // On a focusable div a bare Space scrolls the page, so the "no-op" on a
+      // disabled item or submenu parent must still preventDefault.
+      // fireEvent returns false when the default action was prevented.
+      openMenu();
+      for (const name of ["Disabled", "Parent"]) {
+        const item = screen.getByRole("menuitem", { name });
+        expect(fireEvent.keyDown(item, { key: " " })).toBe(false);
+        expect(fireEvent.keyDown(item, { key: "Enter" })).toBe(false);
+      }
+      // The leaf last: Space activates it, which closes the menu.
+      const leaf = screen.getByRole("menuitem", { name: "Leaf" });
+      expect(fireEvent.keyDown(leaf, { key: " " })).toBe(false);
+    });
   });
 
   describe("separator keyboard behaviour", () => {
