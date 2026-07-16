@@ -2,7 +2,7 @@
 
 import type { Store } from "@canonical/ke";
 import type { SchemaPluginApi } from "@canonical/ke-graphql";
-import type { PragmaConfig } from "#config";
+import type { ConfigOrigins, PragmaConfig } from "#config";
 import type { SemanticPackage } from "../semanticPackage.js";
 
 /**
@@ -19,9 +19,11 @@ export type PragmaGraphqlApi = Pick<
 /**
  * Boot-time state shared by CLI, MCP, and completions server.
  *
- * Six members:
+ * Members:
  * - `store` — the ke triple store, loaded and ready for SPARQL queries.
  * - `config` — resolved pragma config (tier, channel).
+ * - `origins` — per-field provenance for the merged config (which layer
+ *   supplied each effective value), surfaced by the state payload.
  * - `cwd` — working directory used for config and source resolution.
  * - `packages` — resolved semantic packages (for diagnostics and skills).
  * - `graphql()` — compiles the OWL-derived GraphQL schema from the loaded
@@ -35,6 +37,7 @@ export type PragmaGraphqlApi = Pick<
 export interface PragmaRuntime {
   readonly store: Store;
   readonly config: PragmaConfig;
+  readonly origins: ConfigOrigins;
   readonly cwd: string;
   readonly packages: readonly SemanticPackage[];
   /**

@@ -1,5 +1,6 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { DEFAULT_ORIGINS } from "#config";
 import { PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
@@ -138,11 +139,11 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
  * @note Impure — reads config and resolves packages from disk.
  */
 async function resolveHelpConfig(): Promise<
-  Pick<PragmaRuntime, "config" | "packages">
+  Pick<PragmaRuntime, "config" | "origins" | "packages">
 > {
   try {
-    const { readConfig } = await import("#config");
-    const config = readConfig(process.cwd());
+    const { readConfigLayers } = await import("#config");
+    const { config, origins } = readConfigLayers(process.cwd());
     const { resolveSemanticPackages } = await import(
       "../domains/shared/semanticPackage.js"
     );
@@ -156,9 +157,13 @@ async function resolveHelpConfig(): Promise<
       mergeAndParseRefs(config.packages),
       [createLocalLoader(), createGitLoader()],
     );
-    return { config, packages };
+    return { config, origins, packages };
   } catch {
-    return { config: { tier: undefined, channel: "normal" }, packages: [] };
+    return {
+      config: { tier: undefined, channel: "normal" },
+      origins: DEFAULT_ORIGINS,
+      packages: [],
+    };
   }
 }
 
@@ -207,6 +212,7 @@ async function runStoreSkip(
     store: {} as PragmaRuntime["store"],
     graphql: stubGraphql,
     config: { tier: undefined, channel: "normal" },
+    origins: DEFAULT_ORIGINS,
     cwd: process.cwd(),
     packages: [],
     dispose: () => {},

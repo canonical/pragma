@@ -1,5 +1,6 @@
 /** @module Configuration reading, writing, layered resolution, and paths. */
 export { default as configExists } from "./configExists.js";
+export { DEFAULT_ORIGINS } from "./defaultOrigins.js";
 export { default as findProjectConfigPath } from "./findProjectConfigPath.js";
 export { default as mergeConfigFileUpdate } from "./mergeConfigFileUpdate.js";
 export { default as parseConfigValues } from "./parseConfigValues.js";

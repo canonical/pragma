@@ -12,7 +12,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { VERSION } from "../constants.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
+import buildInstructions from "./instructions.js";
 import registerResources from "./registerResources.js";
+import registerStateResource from "./resources/registerStateResource.js";
 import registerAllTools from "./tools/index.js";
 
 /**
@@ -46,8 +48,12 @@ export async function createMcpServer(options?: {
 export function createMcpServerFromRuntime(runtime: PragmaRuntime): {
   server: McpServer;
 } {
-  const server = new McpServer({ name: "pragma", version: VERSION });
+  const server = new McpServer(
+    { name: "pragma", version: VERSION },
+    { instructions: buildInstructions(runtime) },
+  );
   registerAllTools(server, runtime);
   registerResources(server, runtime);
+  registerStateResource(server, runtime);
   return { server };
 }
