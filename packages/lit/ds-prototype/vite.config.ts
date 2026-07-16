@@ -16,6 +16,9 @@ const packageDir = dirname(fileURLToPath(import.meta.url));
 const libDir = resolve(packageDir, "src/lib");
 const componentEntries = readdirSync(libDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
+  // Sort by name: readdirSync order is filesystem-dependent, so sorting keeps
+  // the rollup input (and emitted chunk order) stable across platforms.
+  .sort((a, b) => a.name.localeCompare(b.name))
   .map((entry) => resolve(libDir, entry.name, "index.ts"));
 const entry = [resolve(packageDir, "src/index.ts"), ...componentEntries];
 
