@@ -1,6 +1,16 @@
-import type { HTMLAttributes, ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import type { ContentProps } from "./common/Content/types.js";
 import type { HeaderProps } from "./common/Header/types.js";
+
+type OwnProps = {
+  /**
+   * Tile.Header and Tile.Content elements
+   * DOM order: Header first, Content second (per DSL edges)
+   */
+  children:
+    | ReactElement<HeaderProps | ContentProps>
+    | ReactElement<HeaderProps | ContentProps>[];
+};
 
 /**
  * Props for the Tile component
@@ -16,15 +26,7 @@ import type { HeaderProps } from "./common/Header/types.js";
  *   - [0] tile-header (slotName: header, cardinality: 0..1)
  *   - [1] tile-content (slotName: default, cardinality: 1)
  */
-export interface TileProps extends HTMLAttributes<HTMLDivElement> {
-  /**
-   * Tile.Header and Tile.Content elements
-   * DOM order: Header first, Content second (per DSL edges)
-   */
-  children:
-    | ReactElement<HeaderProps | ContentProps>
-    | ReactElement<HeaderProps | ContentProps>[];
-}
+export type TileProps = OwnProps & Omit<ComponentProps<"div">, keyof OwnProps>;
 
 /**
  * Tile component type with attached subcomponents

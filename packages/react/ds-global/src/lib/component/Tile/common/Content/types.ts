@@ -1,4 +1,11 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+
+type OwnProps = {
+  /**
+   * Content to display in the tile body
+   */
+  children: ReactNode;
+};
 
 /**
  * Props for the Tile.Content subcomponent
@@ -10,9 +17,5 @@ import type { HTMLAttributes, ReactNode } from "react";
  * - layout.direction: vertical
  * - spacing.internal: spacing/medium
  */
-export interface ContentProps extends HTMLAttributes<HTMLDivElement> {
-  /**
-   * Content to display in the tile body
-   */
-  children: ReactNode;
-}
+export type ContentProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;
