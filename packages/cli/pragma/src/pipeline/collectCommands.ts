@@ -12,6 +12,7 @@ import {
 } from "../domains/llm/index.js";
 import { commands as modifierCommands } from "../domains/modifier/index.js";
 import { commands as ontologyCommands } from "../domains/ontology/index.js";
+import { commands as promptCommands } from "../domains/prompt/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import {
@@ -41,6 +42,7 @@ export function builtInCommands(ctx: PragmaContext): CommandDefinition[] {
     ...graphCommands(ctx),
     ...graphqlCommands(),
     ...skillCommands(ctx),
+    ...promptCommands(ctx),
     doctorCommand,
     infoCommand,
     upgradeCommand,

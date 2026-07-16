@@ -63,10 +63,23 @@ export const allSpecs: readonly ToolSpec[] = [
  * @param runtime - The pragma runtime providing store and config.
  * @returns All tool specs, in registration order.
  */
+/**
+ * Extra whole-noun reservations with no backing tool spec.
+ *
+ * The `prompt` noun is reserved even though no prompt_* tool exists: its
+ * MCP projection IS prompts/list / prompts/get (D5), so a story pack must
+ * not be able to claim prompt_list / prompt_lookup on this surface. The
+ * cross-surface parity test folds these in when deriving the MCP map.
+ */
+export const MCP_EXTRA_RESERVED: readonly (readonly [string, undefined])[] = [
+  ["prompt", undefined],
+];
+
 export function collectToolSpecs(runtime: PragmaRuntime): ToolSpec[] {
-  const reserved = deriveReservedVerbs(
-    allSpecs.map((spec) => nounVerbFromToolName(spec.name)),
-  );
+  const reserved = deriveReservedVerbs([
+    ...allSpecs.map((spec) => nounVerbFromToolName(spec.name)),
+    ...MCP_EXTRA_RESERVED,
+  ]);
   return [...allSpecs, ...compilePackToolSpecs(runtime, reserved)];
 }
 

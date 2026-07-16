@@ -7,7 +7,7 @@ import {
   nounVerbFromPath,
   nounVerbFromToolName,
 } from "../domains/shared/stories/pack/index.js";
-import { allSpecs } from "../mcp/tools/index.js";
+import { allSpecs, MCP_EXTRA_RESERVED } from "../mcp/tools/index.js";
 import createTestRuntime from "../testing/helpers/createTestRuntime.js";
 import collectCommands, { builtInCommands } from "./collectCommands.js";
 
@@ -85,6 +85,8 @@ describe("collectCommands", () => {
       "graphql serve",
       "skill list",
       "skill lookup",
+      "prompt list",
+      "prompt lookup",
       "doctor",
       "info",
       "upgrade",
@@ -151,7 +153,12 @@ describe("cross-surface reserved-verb parity", () => {
     const cliPairs = builtInCommands(makeCtx()).map((command) =>
       nounVerbFromPath(command.path),
     );
-    const mcpPairs = allSpecs.map((spec) => nounVerbFromToolName(spec.name));
+    // The MCP surface folds in its explicit no-spec reservations (the
+    // `prompt` noun — its MCP projection is prompts/list, not a tool).
+    const mcpPairs = [
+      ...allSpecs.map((spec) => nounVerbFromToolName(spec.name)),
+      ...MCP_EXTRA_RESERVED,
+    ];
 
     const cliReserved = deriveReservedVerbs(cliPairs);
     const mcpReserved = deriveReservedVerbs(mcpPairs);
