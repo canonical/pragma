@@ -147,11 +147,11 @@ export default function compose(
           type: new GraphQLNonNull(GraphQLInt),
           description:
             "Total number of items in this connection, ignoring pagination.",
-          // Every generated resolver counts the full URI set before
-          // windowing (see paginateUriWindow), so this is a plain property
-          // read; the fallback covers hand-built connections from
-          // consumer extensions that predate totalCount.
-          resolve: (parent: { totalCount?: number }) => parent.totalCount ?? 0,
+          // Every connection producer (emptyConnection, connectionFromPage,
+          // toConnection) counts the full URI set before windowing (see
+          // paginateUriWindow) and the Connection<T> contract requires
+          // totalCount, so the default property resolver suffices — exactly
+          // like `edges` and `pageInfo` above.
         },
       }),
     });

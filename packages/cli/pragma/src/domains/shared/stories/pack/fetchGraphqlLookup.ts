@@ -122,6 +122,10 @@ function unwrapProjection(
   switch (projection.kind) {
     case "scalar":
       return value === null || value === undefined ? undefined : String(value);
+    case "iri":
+      return value === null || value === undefined
+        ? undefined
+        : expandPrefixed(String(value), prefixes);
     case "entity":
       return unwrapEntityRef(value, prefixes);
     case "collection": {
@@ -196,29 +200,46 @@ function unwrapChildRow(
         : grandchildren.map((grandchild) => {
             const record: Record<string, string> = {};
             for (const leaf of child.children) {
-              const leafValue =
-                leaf.kind === "entity"
-                  ? unwrapEntityRef(grandchild[leaf.name], prefixes)
-                  : grandchild[leaf.name];
-              if (leafValue !== null && leafValue !== undefined) {
-                record[leaf.name] = String(leafValue);
+              const leafValue = unwrapLeaf(
+                grandchild[leaf.name],
+                leaf,
+                prefixes,
+              );
+              if (leafValue !== undefined) {
+                record[leaf.name] = leafValue;
               }
             }
             return record;
           });
       continue;
     }
-    const unwrapped =
-      child.kind === "entity"
-        ? unwrapEntityRef(value, prefixes)
-        : value === null || value === undefined
-          ? undefined
-          : String(value);
+    const unwrapped = unwrapLeaf(value, child, prefixes);
     if (unwrapped !== undefined) {
       row[child.name] = unwrapped;
     }
   }
   return row;
+}
+
+/**
+ * Unwrap one non-collection leaf value: entity refs and the reserved `uri`
+ * identity field normalize to full IRIs; plain scalars stringify; absent
+ * values unwrap to `undefined` (the key is omitted, as on the SPARQL path).
+ */
+function unwrapLeaf(
+  value: unknown,
+  leaf: FieldProjection,
+  prefixes: Readonly<Record<string, string>>,
+): string | undefined {
+  if (leaf.kind === "entity") {
+    return unwrapEntityRef(value, prefixes);
+  }
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  return leaf.kind === "iri"
+    ? expandPrefixed(String(value), prefixes)
+    : String(value);
 }
 
 /**

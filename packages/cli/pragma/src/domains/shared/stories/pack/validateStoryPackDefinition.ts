@@ -384,6 +384,15 @@ function validateEmptyRecovery(
     obj.cli === undefined
       ? undefined
       : requireString(obj.cli, "list.emptyRecovery.cli", source);
+  // The hint is rendered as a copy-paste command suggestion: a pack (which
+  // may ship inside a package) must not suggest arbitrary shell — only
+  // pragma invocations. Non-pragma remediation belongs in `message`.
+  if (cli !== undefined && !cli.startsWith("pragma ")) {
+    throw buildStoryConfigError(
+      source,
+      `"list.emptyRecovery.cli" must be a pragma command (start with "pragma "), got "${cli}".`,
+    );
+  }
   return { message, ...(cli !== undefined ? { cli } : {}) };
 }
 

@@ -22,9 +22,22 @@ import { isNestedExpand } from "./types.js";
  * declarations name RDF properties, and this module maps each onto the
  * OWL-derived schema using the same naming rules the ke-graphql compiler
  * applied when it generated the schema (strip `has`/`is`, pluralize for
- * multi-valued fields), validating every derived name against the actual
- * schema type so a mismatch fails fast with a `graphqlField` hint instead
- * of silently returning nulls.
+ * multi-valued fields).
+ *
+ * Missing-name semantics mirror the SPARQL path's OPTIONAL clauses: a
+ * DERIVED name that maps onto no schema field anywhere simply drops out of
+ * the document (ontology drift — e.g. a pack shipped for a richer graph —
+ * must degrade to emptiness exactly like an unbound OPTIONAL, not fail the
+ * whole lookup). An EXPLICIT `graphqlField` override that names no field is
+ * still a fail-fast error: the author asserted a schema name, so a miss is
+ * an authoring bug, and cardinality mismatches (a multi-valued property
+ * declared as a flat field or vice versa) always fail fast too.
+ *
+ * When the fragment targets an interface, a property declared on only some
+ * concrete classes (live `ds:hasSubcomponent` has domain `ds:Component`)
+ * resolves through subtype-scoped inline fragments (`... on Component
+ * { … }`) inside the interface fragment — entities of other classes just
+ * lack the key, like an unbound OPTIONAL.
  *
  * Injection safety: the document text is composed ONLY from validated pack
  * terms (identifier-shaped names) and names read from the compiled schema;
@@ -47,6 +60,15 @@ export type FieldProjection =
   | {
       /** A singular entity reference: `{ uri }` unwraps to the IRI string. */
       readonly kind: "entity";
+      readonly name: string;
+    }
+  | {
+      /**
+       * The schema's reserved `uri` identity field: a scalar whose value is
+       * a prefixed IRI, expanded to the full form on unwrap (the SPARQL
+       * path binds full IRIs).
+       */
+      readonly kind: "iri";
       readonly name: string;
     }
   | {
@@ -135,11 +157,14 @@ function buildDocumentError(source: string, message: string): PragmaError {
 /**
  * Resolve a pack term to the GraphQL field it maps to on a container type.
  *
- * With an explicit `graphqlField` the name is only checked for existence.
- * Otherwise the ontology→schema derivation is applied: local name, strip
- * `has`/`is`, and try both the singular and pluralized forms (the compiler
- * pluralizes multi-valued fields) — `preferPlural` orders the candidates
- * for the caller's cardinality expectation.
+ * With an explicit `graphqlField` the name is only checked for existence —
+ * a miss throws (the author asserted a schema name). Otherwise the
+ * ontology→schema derivation is applied: local name, strip `has`/`is`, and
+ * try both the singular and pluralized forms (the compiler pluralizes
+ * multi-valued fields) — `preferPlural` orders the candidates for the
+ * caller's cardinality expectation. A derived miss returns `undefined`
+ * so the caller can fall back to subtype scoping or omit the selection
+ * (OPTIONAL-parity for ontology drift).
  */
 function resolveGraphqlField(
   container: CompositeTypeLike,
@@ -148,7 +173,7 @@ function resolveGraphqlField(
   preferPlural: boolean,
   where: string,
   source: string,
-): { fieldName: string; type: unknown } {
+): { fieldName: string; type: unknown } | undefined {
   const fields = container.getFields();
   if (override) {
     const match = fields[override];
@@ -176,12 +201,7 @@ function resolveGraphqlField(
       return { fieldName: candidate, type: match.type };
     }
   }
-  throw buildDocumentError(
-    source,
-    `"${where}" property "${term}" derives no field on GraphQL type "${container.name}" (tried ${[
-      ...new Set(forms),
-    ].join(", ")}) — set "graphqlField" explicitly.`,
-  );
+  return undefined;
 }
 
 /** A selection line plus how to unwrap its key. */
@@ -199,15 +219,16 @@ function aliased(name: string, fieldName: string): string {
  * Build the selection for one flat pack value (field or section): scalars
  * select bare, singular entity references select `{ uri }` (the IRI is what
  * the SPARQL path binds). Multi-valued fields are rejected — packs express
- * those as expands.
+ * those as expands. Returns `undefined` when the derived name maps onto no
+ * field of the container (the caller omits or subtype-scopes it).
  */
 function buildValueSelection(
   container: CompositeTypeLike,
   value: { name: string; property: string; graphqlField?: string },
   where: string,
   source: string,
-): Selection {
-  const { fieldName, type } = resolveGraphqlField(
+): Selection | undefined {
+  const resolved = resolveGraphqlField(
     container,
     value.property,
     value.graphqlField,
@@ -215,6 +236,10 @@ function buildValueSelection(
     where,
     source,
   );
+  if (!resolved) {
+    return undefined;
+  }
+  const { fieldName, type } = resolved;
   const named = namedType(type);
   if (isConnection(named) || isListType(type)) {
     throw buildDocumentError(
@@ -228,6 +253,15 @@ function buildValueSelection(
       projection: { kind: "entity", name: value.name },
     };
   }
+  // The reserved identity field: every generated type carries `uri`, whose
+  // value is the entity's PREFIXED IRI — tag it so the unwrap expands it to
+  // the full form the SPARQL path binds.
+  if (fieldName === "uri") {
+    return {
+      text: aliased(value.name, fieldName),
+      projection: { kind: "iri", name: value.name },
+    };
+  }
   return {
     text: aliased(value.name, fieldName),
     projection: { kind: "scalar", name: value.name },
@@ -239,15 +273,17 @@ function buildValueSelection(
  * expand): Relay connections select through the `edges { node }` envelope
  * with an explicit page bound (the schema clamps at {@link MAX_PAGE_SIZE}
  * anyway — stating it makes the fetched window explicit); embedded lists
- * select children directly.
+ * select children directly. Returns `undefined` when the derived relation
+ * maps onto no field of the container, or when every child selection was
+ * itself omitted (an empty selection set is invalid GraphQL).
  */
 function buildCollectionSelection(
   container: CompositeTypeLike,
   expand: StoryPackExpand | StoryPackNestedExpand,
   where: string,
   source: string,
-): Selection {
-  const { fieldName, type } = resolveGraphqlField(
+): Selection | undefined {
+  const resolved = resolveGraphqlField(
     container,
     expand.relation,
     expand.graphqlField,
@@ -255,6 +291,10 @@ function buildCollectionSelection(
     where,
     source,
   );
+  if (!resolved) {
+    return undefined;
+  }
+  const { fieldName, type } = resolved;
   const named = namedType(type);
   const connection = isConnection(named);
   if (!connection && !isListType(type)) {
@@ -279,13 +319,18 @@ function buildCollectionSelection(
     );
   }
 
-  const children: Selection[] = expand.select.map((entry, index) => {
-    const childWhere = `${where}.select[${index}]`;
-    if (isNestedExpand(entry)) {
-      return buildCollectionSelection(nodeType, entry, childWhere, source);
-    }
-    return buildValueSelection(nodeType, entry, childWhere, source);
-  });
+  const children: Selection[] = expand.select
+    .map((entry, index) => {
+      const childWhere = `${where}.select[${index}]`;
+      if (isNestedExpand(entry)) {
+        return buildCollectionSelection(nodeType, entry, childWhere, source);
+      }
+      return buildValueSelection(nodeType, entry, childWhere, source);
+    })
+    .filter((child): child is Selection => child !== undefined);
+  if (children.length === 0) {
+    return undefined;
+  }
   const childText = children.map((child) => child.text).join(" ");
   const body = connection
     ? `(first: ${MAX_PAGE_SIZE}) { edges { node { ${childText} } } }`
@@ -302,6 +347,63 @@ function buildCollectionSelection(
 }
 
 /**
+ * The concrete object types under an interface fragment (empty for object
+ * types and unions of non-composites). Typed structurally like the rest of
+ * the module; graphql-js returns `[]` for a non-abstract type.
+ */
+function possibleSubtypes(
+  schema: PragmaGraphqlApi["schema"],
+  fragmentType: CompositeTypeLike,
+): CompositeTypeLike[] {
+  const lookup = (
+    schema as unknown as {
+      getPossibleTypes(type: unknown): readonly unknown[];
+    }
+  ).getPossibleTypes;
+  return lookup.call(schema, fragmentType).filter(isComposite);
+}
+
+/**
+ * Build one top-level selection, falling back to subtype scoping: a term
+ * that does not resolve on the fragment type itself is tried on each
+ * concrete class under it and selected inside `... on <Subtype>` fragments
+ * (a property whose rdfs:domain is one subclass — live `ds:hasSubcomponent`
+ * on `ds:Component` — compiles onto that class only). Returns `undefined`
+ * when the term resolves nowhere: the selection is omitted, mirroring an
+ * unbound SPARQL OPTIONAL.
+ */
+function buildScopedSelection(
+  schema: PragmaGraphqlApi["schema"],
+  fragmentType: CompositeTypeLike,
+  build: (container: CompositeTypeLike) => Selection | undefined,
+): Selection | undefined {
+  const direct = build(fragmentType);
+  if (direct) {
+    return direct;
+  }
+  const scoped = possibleSubtypes(schema, fragmentType)
+    .map((subtype) => {
+      const selection = build(subtype);
+      return selection === undefined
+        ? undefined
+        : {
+            ...selection,
+            text: `... on ${subtype.name} { ${selection.text} }`,
+          };
+    })
+    .filter((selection): selection is Selection => selection !== undefined);
+  if (scoped.length === 0) {
+    return undefined;
+  }
+  // Several subtypes may declare the field (same alias, disjoint types —
+  // valid overlap); they share one unwrap projection.
+  return {
+    text: scoped.map((selection) => selection.text).join(" "),
+    projection: (scoped[0] as Selection).projection,
+  };
+}
+
+/**
  * Generate the lookup document for a pack lookup at a disclosure level.
  *
  * Level-gated fields and expands below the active level simply drop out of
@@ -310,6 +412,8 @@ function buildCollectionSelection(
  * through the global-ID decoding — and an inline fragment on the pack's
  * GraphQL type, so one document serves every concrete class under an
  * interface (e.g. `UIBlock` for Component/Pattern/Layout/Subcomponent).
+ * Declared values that resolve on no schema type are omitted from the
+ * document (and thus from the entity), mirroring unbound OPTIONALs.
  *
  * @param lookup - A validated graphql-sourced lookup declaration.
  * @param schema - The runtime's compiled OWL-derived schema.
@@ -336,22 +440,26 @@ export default function buildLookupDocument(
 
   const selections: Selection[] = [
     ...activeLookupFields(lookup, level).map((field, index) =>
-      buildValueSelection(
-        fragmentType,
-        field,
-        `lookup.fields/sections[${index}]`,
-        source,
+      buildScopedSelection(schema, fragmentType, (container) =>
+        buildValueSelection(
+          container,
+          field,
+          `lookup.fields/sections[${index}]`,
+          source,
+        ),
       ),
     ),
     ...activeLookupExpands(lookup, level).map((expand, index) =>
-      buildCollectionSelection(
-        fragmentType,
-        expand,
-        `lookup.expand[${index}]`,
-        source,
+      buildScopedSelection(schema, fragmentType, (container) =>
+        buildCollectionSelection(
+          container,
+          expand,
+          `lookup.expand[${index}]`,
+          source,
+        ),
       ),
     ),
-  ];
+  ].filter((selection): selection is Selection => selection !== undefined);
 
   const body = selections.map((selection) => `      ${selection.text}`);
   const text = [

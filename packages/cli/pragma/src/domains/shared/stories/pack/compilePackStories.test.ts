@@ -766,7 +766,7 @@ describe("compilePackStories — list emptyRecovery", () => {
       ],
       emptyRecovery: {
         message: "Install the cookbook package.",
-        cli: "bun add -D cookbook",
+        cli: "pragma setup all",
       },
     },
   };
@@ -778,7 +778,7 @@ describe("compilePackStories — list emptyRecovery", () => {
       (thrown) => thrown as PragmaError,
     );
     expect(error?.code).toBe("EMPTY_RESULTS");
-    expect(error?.recovery?.cli).toBe("bun add -D cookbook");
+    expect(error?.recovery?.cli).toBe("pragma setup all");
   });
 
   it("recovers toward unfiltered listing when a filter value was active", async () => {

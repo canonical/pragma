@@ -1,7 +1,5 @@
 /** Tool catalog with behavioral hints for agent orientation. */
 
-import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
-
 export interface ToolEntry {
   readonly name: string;
   readonly category: "read" | "write" | "orientation" | "diagnostic";
@@ -21,7 +19,7 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     name: "block_lookup",
     category: "read",
     use_when:
-      "Need full anatomy, modifiers, tokens, and standards for specific blocks by name or IRI",
+      "Need anatomy, modifiers, properties, and usage guidance for specific blocks by name",
   },
   {
     name: "standard_list",
@@ -51,22 +49,16 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when:
       "Need values and usage details for specific modifier families by name",
   },
-  ...(TOKEN_READ_SURFACE_ENABLED
-    ? ([
-        {
-          name: "token_list",
-          category: "read",
-          use_when:
-            "Browsing design tokens, optionally filtered by category (color, spacing, etc.)",
-        },
-        {
-          name: "token_lookup",
-          category: "read",
-          use_when:
-            "Need theme values and resolution details for specific tokens by name or IRI",
-        },
-      ] as const)
-    : []),
+  {
+    name: "token_list",
+    category: "read",
+    use_when: "Browsing all design tokens with their type",
+  },
+  {
+    name: "token_lookup",
+    category: "read",
+    use_when: "Need type and theme values for specific tokens by name",
+  },
   {
     name: "tier_list",
     category: "read",
@@ -124,16 +116,12 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when:
       "See actual standard data shapes (with dos/donts) before querying — returns random instances each call",
   },
-  ...(TOKEN_READ_SURFACE_ENABLED
-    ? ([
-        {
-          name: "token_sample",
-          category: "read",
-          use_when:
-            "See actual token data shapes (with theme values) before querying — returns random instances each call",
-        },
-      ] as const)
-    : []),
+  {
+    name: "token_sample",
+    category: "read",
+    use_when:
+      "See actual token data shapes (with theme values) before querying — returns random instances each call",
+  },
   {
     name: "modifier_sample",
     category: "read",

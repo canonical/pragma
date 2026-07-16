@@ -186,8 +186,11 @@ ds:constraints a owl:DatatypeProperty ;
   rdfs:domain ds:BlockProperty ;
   rdfs:range xsd:string .
 
+# Domain is ds:Component (NOT ds:UIBlock), as in the live ontology — the
+# compiled field lives on the Component class only, so graphql-sourced
+# lookups fragmenting on UIBlock must reach it via subtype scoping.
 ds:hasSubcomponent a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock ;
+  rdfs:domain ds:Component ;
   rdfs:range ds:Subcomponent .
 
 cs:name a owl:DatatypeProperty ;

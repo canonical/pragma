@@ -49,8 +49,13 @@ export const tokenPack: StoryPackDefinition = {
       { field: "category", label: "Type" },
     ],
     emptyRecovery: {
-      message: "Install the design system packages that provide tokens.",
-      cli: "bun add -D @canonical/design-system",
+      // The install command lives in the message: a pack's `cli` hint is a
+      // copy-paste suggestion and must be a pragma command (validated at
+      // pack load), never arbitrary shell.
+      message:
+        "Install the design system packages that provide tokens " +
+        "(bun add -D @canonical/design-system).",
+      cli: "pragma doctor",
     },
   },
   lookup: {
