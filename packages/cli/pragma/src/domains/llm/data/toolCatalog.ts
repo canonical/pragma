@@ -19,7 +19,7 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     name: "block_lookup",
     category: "read",
     use_when:
-      "Need full anatomy, modifiers, tokens, and standards for specific blocks by name or IRI",
+      "Need anatomy, modifiers, properties, and usage guidance for specific blocks by name",
   },
   {
     name: "standard_list",
@@ -52,14 +52,12 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
   {
     name: "token_list",
     category: "read",
-    use_when:
-      "Browsing design tokens, optionally filtered by category (color, spacing, etc.)",
+    use_when: "Browsing all design tokens with their type",
   },
   {
     name: "token_lookup",
     category: "read",
-    use_when:
-      "Need theme values and resolution details for specific tokens by name or IRI",
+    use_when: "Need type and theme values for specific tokens by name",
   },
   {
     name: "tier_list",

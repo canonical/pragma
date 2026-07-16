@@ -64,6 +64,17 @@ const GBLOCK: StoryPackDefinition = validateStoryPackDefinition(
             },
           ],
         },
+        {
+          name: "subcomponents",
+          heading: "Subcomponents",
+          relation: "ds:hasSubcomponent",
+          select: [
+            { name: "name", property: "ds:name" },
+            // The reserved identity field via the escape hatch — unwraps to
+            // the FULL IRI (the `iri` projection), not the prefixed form.
+            { name: "uri", property: "ds:name", graphqlField: "uri" },
+          ],
+        },
       ],
       disclosure: { levels: ["summary", "detailed"], default: "detailed" },
     },
@@ -106,6 +117,12 @@ describe("buildLookupDocument", () => {
     );
     // ds:hasModifier derives the nested inverse-union connection.
     expect(plan.source).toMatch(/values: modifiers\(first: \d+\)/);
+    // ds:hasSubcomponent (domain ds:Component, as live) is unreachable on
+    // the UIBlock fragment itself — it resolves through a subtype-scoped
+    // inline fragment; the reserved `uri` identity field selects bare.
+    expect(plan.source).toMatch(
+      /\.\.\. on Component \{ subcomponents\(first: \d+\) \{ edges \{ node \{ name uri \} \} \} \}/,
+    );
   });
 
   it("drops level-gated selections below their level (fetch-gating)", async () => {
@@ -146,20 +163,36 @@ describe("buildLookupDocument", () => {
     ).toThrowError(/notAField/);
   });
 
-  it("rejects a property that derives no schema field, naming the hint", async () => {
+  it("omits a derived property that maps onto no schema field (OPTIONAL parity)", async () => {
+    // Ontology drift tolerance: a pack shipped for a richer graph (e.g.
+    // declaring ds:whenToUse where the live ontology superseded it) must
+    // degrade to emptiness like an unbound SPARQL OPTIONAL, not fail the
+    // lookup. Only explicit graphqlField overrides fail fast on a miss.
     const { schema } = await rt.graphql();
-    expect(() =>
-      buildLookupDocument(
-        {
-          source: "graphql",
-          by: "ds:name",
-          graphqlType: "Component",
-          fields: [{ name: "x", property: "ds:definitelyNotAProperty" }],
-        },
-        schema,
-        "test:derive",
-      ),
-    ).toThrowError(/graphqlField/);
+    const plan = buildLookupDocument(
+      {
+        source: "graphql",
+        by: "ds:name",
+        graphqlType: "Component",
+        fields: [
+          { name: "summary", property: "ds:summary" },
+          { name: "ghostField", property: "ds:definitelyNotAProperty" },
+        ],
+        expand: [
+          {
+            name: "ghosts",
+            relation: "ds:definitelyNotARelation",
+            select: [{ name: "name", property: "ds:name" }],
+          },
+        ],
+      },
+      schema,
+      "test:derive",
+    );
+    expect(plan.source).toContain("summary");
+    expect(plan.source).not.toContain("ghostField");
+    expect(plan.source).not.toContain("ghosts");
+    expect(plan.projections.map((p) => p.name)).toEqual(["summary"]);
   });
 
   it("rejects a multi-valued property declared as a flat field", async () => {
@@ -247,6 +280,13 @@ describe("graphql-sourced pack lookup (end to end)", () => {
       "default",
       "primary",
       "secondary",
+    ]);
+
+    // Child rows selecting the reserved `uri` field carry FULL IRIs — the
+    // `iri` projection expands ke-graphql's prefixed identity, keeping the
+    // GraphQL path indistinguishable from SPARQL bindings.
+    expect(entity.subcomponents).toEqual([
+      { name: "Button Icon", uri: `${DS}global.subcomponent.button.icon` },
     ]);
   });
 

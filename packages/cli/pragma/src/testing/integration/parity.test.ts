@@ -132,8 +132,20 @@ describe("block parity", () => {
         uri: string;
         name: string;
         summary?: string;
+        whenToUse?: string;
+        whenNotToUse?: string;
         anatomyDsl?: string;
+        anatomyClassic?: string;
+        figmaLink?: string;
         modifierFamilies?: Array<{ name: string; values: string[] }>;
+        properties?: Array<{
+          name: string;
+          type?: string;
+          optional?: string;
+          default?: string;
+          constraints?: string;
+        }>;
+        subcomponents?: Array<{ name: string; uri: string }>;
       }>;
       errors: unknown[];
     };
@@ -144,6 +156,17 @@ describe("block parity", () => {
     expect(entity?.name).toBe(opResult.name);
     expect(entity?.summary).toBe(opResult.summary);
     expect(entity?.anatomyDsl).toBe(opResult.anatomyDsl);
+    // The detail texts the old lookup surfaced as OPTIONAL bindings — the
+    // fixture populates every one of them on Button, so content (not mere
+    // presence) is asserted against the kept operation.
+    expect(opResult.whenToUse).toBeTruthy();
+    expect(entity?.whenToUse).toBe(opResult.whenToUse);
+    expect(opResult.whenNotToUse).toBeTruthy();
+    expect(entity?.whenNotToUse).toBe(opResult.whenNotToUse);
+    expect(opResult.anatomyClassic).toBeTruthy();
+    expect(entity?.anatomyClassic).toBe(opResult.anatomyClassic);
+    expect(opResult.figmaLink).toBeTruthy();
+    expect(entity?.figmaLink).toBe(opResult.figmaLink);
     // The 2-hop nest: every family the old domain resolved, with the same
     // values, fetched through ONE generated GraphQL document.
     const packFamilies = new Map(
@@ -154,6 +177,26 @@ describe("block parity", () => {
     );
     for (const family of opResult.modifierFamilies) {
       expect(packFamilies.get(family.name)).toEqual([...family.values].sort());
+    }
+    // Per-property parity including the restored `constraints` column.
+    expect(opResult.properties.length).toBeGreaterThan(0);
+    const packProperties = new Map(
+      (entity?.properties ?? []).map((property) => [property.name, property]),
+    );
+    for (const property of opResult.properties) {
+      const packProperty = packProperties.get(property.name);
+      expect(packProperty).toBeDefined();
+      expect(packProperty?.constraints).toBe(property.constraints ?? undefined);
+      expect(packProperty?.type).toBe(property.propertyType || undefined);
+    }
+    // Depth-1 subcomponents: same children (name AND full IRI) as the old
+    // recursive tree's first level — deeper nesting has no data.
+    expect(opResult.subcomponents.length).toBeGreaterThan(0);
+    const packSubcomponents = new Map(
+      (entity?.subcomponents ?? []).map((sub) => [sub.name, sub.uri]),
+    );
+    for (const sub of opResult.subcomponents) {
+      expect(packSubcomponents.get(sub.name)).toBe(sub.uri);
     }
   });
 
@@ -168,6 +211,18 @@ describe("block parity", () => {
     expect(body.text).toContain(`## ${opResult.name}`);
     expect(body.text).toContain("### Anatomy (DSL)");
     expect(body.text).toContain(opResult.anatomyDsl ?? "");
+    // Restored detail sections render with their old headings and content.
+    expect(body.text).toContain("### When to use");
+    expect(body.text).toContain(opResult.whenToUse ?? "");
+    expect(body.text).toContain("### When not to use");
+    expect(body.text).toContain(opResult.whenNotToUse ?? "");
+    expect(body.text).toContain("### Anatomy (classic)");
+    expect(body.text).toContain(opResult.anatomyClassic ?? "");
+    expect(body.text).toContain(opResult.figmaLink ?? "");
+    expect(body.text).toContain("### Subcomponents");
+    for (const sub of opResult.subcomponents) {
+      expect(body.text).toContain(sub.name);
+    }
     for (const family of opResult.modifierFamilies) {
       expect(body.text).toContain(family.name);
       for (const value of family.values) {
