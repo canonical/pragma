@@ -6,10 +6,12 @@ import type {
   StoryPackDisclosure,
   StoryPackExpand,
   StoryPackExpandField,
+  StoryPackExpandSelect,
   StoryPackField,
   StoryPackFilter,
   StoryPackList,
   StoryPackLookup,
+  StoryPackNestedExpand,
   StoryPackSample,
   StoryPackSearch,
   StoryPackSection,
@@ -18,6 +20,9 @@ import type {
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/** A legal GraphQL name — `graphqlField`/`graphqlType` escape hatches. */
+const GRAPHQL_NAME_PATTERN = /^[_A-Za-z][_0-9A-Za-z]*$/;
 
 /**
  * Object-prototype key names no pack identifier may take.
@@ -51,6 +56,7 @@ function rejectReservedObjectKey(
     );
   }
 }
+
 /** A prefixed name (`ex:Recipe`) — prefix + local part, no path slashes. */
 const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s]+$/;
 
@@ -492,6 +498,7 @@ function validateColumn(
 
 function validateLookup(raw: unknown, source: string): StoryPackLookup {
   const obj = requireObject(raw, "lookup", source);
+  const fetchSource = validateLookupSource(obj.source, source);
   const by = requirePredicateTerm(obj.by, "lookup.by", source);
   const type =
     obj.type === undefined
@@ -505,6 +512,26 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     obj.toolDescription === undefined
       ? undefined
       : requireString(obj.toolDescription, "lookup.toolDescription", source);
+  const types = validateTypeArray(obj.types, source);
+  if (type !== undefined && types !== undefined) {
+    throw buildStoryConfigError(
+      source,
+      '"lookup.type" and "lookup.types" are mutually exclusive.',
+    );
+  }
+  const graphqlType =
+    obj.graphqlType === undefined
+      ? undefined
+      : requireGraphqlName(obj.graphqlType, "lookup.graphqlType", source);
+
+  // A graphql-sourced lookup must name the document's fragment target: an
+  // explicit graphqlType, or a single `type` whose local name derives it.
+  if (fetchSource === "graphql" && graphqlType === undefined && !type) {
+    throw buildStoryConfigError(
+      source,
+      '"lookup.source" "graphql" requires "lookup.graphqlType" (or a single "lookup.type" to derive it from).',
+    );
+  }
 
   const fields = validateFieldArray(obj.fields, "lookup.fields", source);
   const sections = validateSectionArray(
@@ -512,11 +539,16 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
     "lookup.sections",
     source,
   );
-  const expand = validateExpandArray(obj.expand, "lookup.expand", source);
+  const expand = validateExpandArray(
+    obj.expand,
+    "lookup.expand",
+    source,
+    fetchSource,
+  );
   const disclosure = validateDisclosure(obj.disclosure, source);
   const sample = validateSample(obj.sample, source);
 
-  // Cross-check: every expand `level` must name a declared disclosure level.
+  // Cross-check: every `level` must name a declared disclosure level.
   const levels = new Set(disclosure?.levels ?? []);
   for (const entry of expand ?? []) {
     if (entry.level !== undefined && !levels.has(entry.level)) {
@@ -526,12 +558,23 @@ function validateLookup(raw: unknown, source: string): StoryPackLookup {
       );
     }
   }
+  for (const entry of [...(fields ?? []), ...(sections ?? [])]) {
+    if (entry.level !== undefined && !levels.has(entry.level)) {
+      throw buildStoryConfigError(
+        source,
+        `field "${entry.name}" level "${entry.level}" is not a declared disclosure level.`,
+      );
+    }
+  }
 
   return {
+    ...(fetchSource !== undefined ? { source: fetchSource } : {}),
     by,
     ...(type !== undefined ? { type } : {}),
     ...(description !== undefined ? { description } : {}),
     ...(toolDescription !== undefined ? { toolDescription } : {}),
+    ...(types !== undefined ? { types } : {}),
+    ...(graphqlType !== undefined ? { graphqlType } : {}),
     ...(fields ? { fields } : {}),
     ...(sections ? { sections } : {}),
     ...(expand ? { expand } : {}),
@@ -579,6 +622,36 @@ function validateSample(
     ...(description !== undefined ? { description } : {}),
     ...(toolDescription !== undefined ? { toolDescription } : {}),
   };
+}
+
+function validateLookupSource(
+  raw: unknown,
+  source: string,
+): StoryPackLookup["source"] {
+  if (raw === undefined) return undefined;
+  if (raw !== "sparql" && raw !== "graphql") {
+    throw buildStoryConfigError(
+      source,
+      '"lookup.source" must be "sparql" or "graphql".',
+    );
+  }
+  return raw;
+}
+
+function validateTypeArray(
+  raw: unknown,
+  source: string,
+): readonly string[] | undefined {
+  if (raw === undefined) return undefined;
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      '"lookup.types" must be a non-empty array.',
+    );
+  }
+  return raw.map((entry, index) =>
+    requireTerm(entry, `lookup.types[${index}]`, source),
+  );
 }
 
 function validateDisclosure(
@@ -649,6 +722,7 @@ function validateExpandArray(
   raw: unknown,
   where: string,
   source: string,
+  fetchSource: StoryPackLookup["source"],
 ): readonly StoryPackExpand[] | undefined {
   if (raw === undefined) return undefined;
   if (!Array.isArray(raw)) {
@@ -656,7 +730,12 @@ function validateExpandArray(
   }
   const names = new Set<string>();
   return raw.map((entry, index) => {
-    const expand = validateExpand(entry, `${where}[${index}]`, source);
+    const expand = validateExpand(
+      entry,
+      `${where}[${index}]`,
+      source,
+      fetchSource,
+    );
     if (names.has(expand.name)) {
       throw buildStoryConfigError(
         source,
@@ -672,6 +751,7 @@ function validateExpand(
   raw: unknown,
   where: string,
   source: string,
+  fetchSource: StoryPackLookup["source"],
 ): StoryPackExpand {
   const obj = requireObject(raw, where, source);
   const name = requireString(obj.name, `${where}.name`, source);
@@ -687,6 +767,10 @@ function validateExpand(
     `${where}.relation`,
     source,
   );
+  const graphqlField =
+    obj.graphqlField === undefined
+      ? undefined
+      : requireGraphqlName(obj.graphqlField, `${where}.graphqlField`, source);
   if (obj.kind !== undefined && obj.kind !== "list" && obj.kind !== "table") {
     throw buildStoryConfigError(
       source,
@@ -699,9 +783,24 @@ function validateExpand(
       `"${where}.select" must be a non-empty array.`,
     );
   }
-  const select: StoryPackExpandField[] = obj.select.map((entry, index) =>
-    validateField(entry, `${where}.select[${index}]`, source),
+  const select: StoryPackExpandSelect[] = obj.select.map((entry, index) =>
+    validateExpandSelect(
+      entry,
+      `${where}.select[${index}]`,
+      source,
+      fetchSource,
+    ),
   );
+  const selectNames = new Set<string>();
+  for (const entry of select) {
+    if (selectNames.has(entry.name)) {
+      throw buildStoryConfigError(
+        source,
+        `duplicate select name "${entry.name}" in "${where}.select".`,
+      );
+    }
+    selectNames.add(entry.name);
+  }
   const heading =
     obj.heading === undefined
       ? undefined
@@ -714,12 +813,73 @@ function validateExpand(
   return {
     name,
     relation,
+    ...(graphqlField !== undefined ? { graphqlField } : {}),
     select,
     ...(heading !== undefined ? { heading } : {}),
     ...(obj.kind !== undefined ? { kind: obj.kind as "list" | "table" } : {}),
     ...(obj.showWhenEmpty === true ? { showWhenEmpty: true } : {}),
     ...(level !== undefined ? { level } : {}),
   };
+}
+
+/**
+ * Validate one expand `select` entry: a plain child field, or — on
+ * graphql-sourced lookups only — one nested `{ name, relation, select }`
+ * level. A nested entry's own select admits only plain scalar fields, so
+ * nesting is bounded at exactly one extra hop by construction.
+ */
+function validateExpandSelect(
+  raw: unknown,
+  where: string,
+  source: string,
+  fetchSource: StoryPackLookup["source"],
+): StoryPackExpandSelect {
+  const obj = requireObject(raw, where, source);
+  if (obj.relation === undefined) {
+    return validateField(raw, where, source);
+  }
+  if (fetchSource !== "graphql") {
+    throw buildStoryConfigError(
+      source,
+      `"${where}" nests a relation, which requires lookup.source "graphql" ` +
+        "(the SPARQL expand sub-SELECT is single-hop).",
+    );
+  }
+  const name = requireString(obj.name, `${where}.name`, source);
+  if (!FIELD_PATTERN.test(name)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.name" must be a simple identifier.`,
+    );
+  }
+  const relation = requireTerm(obj.relation, `${where}.relation`, source);
+  const graphqlField =
+    obj.graphqlField === undefined
+      ? undefined
+      : requireGraphqlName(obj.graphqlField, `${where}.graphqlField`, source);
+  if (!Array.isArray(obj.select) || obj.select.length === 0) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}.select" must be a non-empty array.`,
+    );
+  }
+  const select: StoryPackExpandField[] = obj.select.map((entry, index) => {
+    const inner = requireObject(entry, `${where}.select[${index}]`, source);
+    if (inner.relation !== undefined) {
+      throw buildStoryConfigError(
+        source,
+        `"${where}.select[${index}]" nests deeper than one level (nested expands admit only scalar fields).`,
+      );
+    }
+    return validateField(entry, `${where}.select[${index}]`, source);
+  });
+  const nested: StoryPackNestedExpand = {
+    name,
+    relation,
+    ...(graphqlField !== undefined ? { graphqlField } : {}),
+    select,
+  };
+  return nested;
 }
 
 function validateFieldArray(
@@ -784,7 +944,38 @@ function validateField(
     obj.label === undefined
       ? undefined
       : requireString(obj.label, `${where}.label`, source);
-  return { name, property, ...(label !== undefined ? { label } : {}) };
+  const graphqlField =
+    obj.graphqlField === undefined
+      ? undefined
+      : requireGraphqlName(obj.graphqlField, `${where}.graphqlField`, source);
+  // Membership in the declared levels is cross-checked in validateLookup.
+  const level =
+    obj.level === undefined
+      ? undefined
+      : requireString(obj.level, `${where}.level`, source);
+  return {
+    name,
+    property,
+    ...(label !== undefined ? { label } : {}),
+    ...(graphqlField !== undefined ? { graphqlField } : {}),
+    ...(level !== undefined ? { level } : {}),
+  };
+}
+
+/** Require a legal GraphQL name (`graphqlField`/`graphqlType` overrides). */
+function requireGraphqlName(
+  raw: unknown,
+  where: string,
+  source: string,
+): string {
+  const value = requireString(raw, where, source);
+  if (!GRAPHQL_NAME_PATTERN.test(value)) {
+    throw buildStoryConfigError(
+      source,
+      `"${where}" must be a legal GraphQL name.`,
+    );
+  }
+  return value;
 }
 
 function requireObject(

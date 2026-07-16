@@ -27,6 +27,16 @@ import {
 } from "./renderError.js";
 import resolveCommandKind from "./resolveCommandKind.js";
 
+/**
+ * `graphql()` for store-less stub contexts (help, verb suggestions,
+ * store-skip commands): those paths never resolve a story, so this only
+ * exists to satisfy the runtime contract — and fails typed if ever reached.
+ */
+const stubGraphql = (): Promise<never> =>
+  Promise.reject(
+    PragmaError.storeError("GraphQL schema requires a booted store."),
+  );
+
 function hasCommandArg(argv: readonly string[]): boolean {
   const args = argv.slice(2);
 
@@ -100,6 +110,7 @@ async function handleDoctor(
 async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
+    graphql: stubGraphql,
     ...(await resolveHelpConfig()),
     cwd: process.cwd(),
     dispose: () => {},
@@ -232,6 +243,7 @@ async function runStoreSkip(
 ): Promise<void> {
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
+    graphql: stubGraphql,
     config: { tier: undefined, channel: "normal" },
     cwd: process.cwd(),
     packages: [],
@@ -281,6 +293,7 @@ async function suggestNounVerbs(argv: readonly string[]): Promise<void> {
   if (!noun) return;
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
+    graphql: stubGraphql,
     ...(await resolveHelpConfig()),
     cwd: process.cwd(),
     dispose: () => {},

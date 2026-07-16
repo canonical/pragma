@@ -28,6 +28,20 @@ export interface StoryPackField {
   readonly property: string;
   /** Display label (defaults to the field name). */
   readonly label?: string;
+  /**
+   * Explicit GraphQL field name for `source: "graphql"` lookups — the
+   * escape hatch for when the ontology→schema name derivation (strip
+   * `has`/`is`, pluralize) does not match the compiled schema. Ignored on
+   * the SPARQL path.
+   */
+  readonly graphqlField?: string;
+  /**
+   * Minimum disclosure level at which this value is fetched and rendered —
+   * a name from {@link StoryPackDisclosure.levels}. Omitted means the base
+   * level (always included). Below its level the value is excluded from the
+   * generated query/document, so the renderer omits the (absent) output.
+   */
+  readonly level?: string;
 }
 
 /** A long-form lookup section. */
@@ -44,6 +58,48 @@ export interface StoryPackExpandField {
   readonly property: string;
   /** Display label (defaults to the field name). */
   readonly label?: string;
+  /**
+   * Explicit GraphQL field name for `source: "graphql"` lookups (escape
+   * hatch over the derived name). Ignored on the SPARQL path.
+   */
+  readonly graphqlField?: string;
+}
+
+/**
+ * A second-hop projection inside an expand's `select` — GraphQL source only.
+ *
+ * Where a plain {@link StoryPackExpandField} reads a property of the child
+ * node, a nested expand follows one more relation from the child and
+ * projects each grandchild (e.g. block → modifier families → values). One
+ * extra level is all the data needs, so nesting stops here: a nested
+ * expand's own `select` admits only scalar fields. Rejected on
+ * `source: "sparql"` lookups, whose per-expand sub-SELECT is single-hop.
+ */
+export interface StoryPackNestedExpand {
+  /** Output field holding the grandchild values on each child record. */
+  readonly name: string;
+  /** Relation from the child node to each grandchild — prefixed name or IRI. */
+  readonly relation: string;
+  /** Explicit GraphQL field name (escape hatch over the derived name). */
+  readonly graphqlField?: string;
+  /**
+   * Scalar fields to read from each grandchild. A single-field select
+   * collapses each grandchild to that field's value (`values: ["Dense",
+   * "Comfortable"]`); a multi-field select yields one record per grandchild.
+   */
+  readonly select: readonly StoryPackExpandField[];
+}
+
+/** One entry of an expand's `select`: a child field or a nested expand. */
+export type StoryPackExpandSelect =
+  | StoryPackExpandField
+  | StoryPackNestedExpand;
+
+/** Whether an expand select entry is a nested expand (vs a plain field). */
+export function isNestedExpand(
+  entry: StoryPackExpandSelect,
+): entry is StoryPackNestedExpand {
+  return "relation" in entry;
 }
 
 /**
@@ -63,8 +119,16 @@ export interface StoryPackExpand {
   readonly kind?: "list" | "table";
   /** Relation from the entity to each child node — prefixed name, IRI, or path. */
   readonly relation: string;
-  /** Fields to read from each child node. */
-  readonly select: readonly StoryPackExpandField[];
+  /**
+   * Explicit GraphQL field name for `source: "graphql"` lookups (escape
+   * hatch over the derived name). Ignored on the SPARQL path.
+   */
+  readonly graphqlField?: string;
+  /**
+   * Fields to read from each child node. On `source: "graphql"` lookups an
+   * entry may instead be one {@link StoryPackNestedExpand} level.
+   */
+  readonly select: readonly StoryPackExpandSelect[];
   /** Render the section even when the array is empty (default: false). */
   readonly showWhenEmpty?: boolean;
   /**
@@ -182,6 +246,18 @@ export interface StoryPackSample {
  * interpolated by the author.
  */
 export interface StoryPackLookup {
+  /**
+   * Fetch strategy for the looked-up entity (default `"sparql"`).
+   *
+   * `"sparql"` resolves everything with generated SELECTs. `"graphql"`
+   * keeps the generated SPARQL name→URI resolve (the OWL-derived schema has
+   * no name-based lookup root) and then fetches all fields, sections, and
+   * expands in ONE generated GraphQL document executed in-process against
+   * the runtime's compiled schema. The result is unwrapped to the same flat
+   * entity shape the SPARQL path produces — renderers, JSON output, and the
+   * MCP envelope are identical downstream.
+   */
+  readonly source?: "sparql" | "graphql";
   /** Property whose value names the entity — prefixed name or IRI. */
   readonly by: string;
   /** Optional class constraint — prefixed name or IRI. */
@@ -190,6 +266,20 @@ export interface StoryPackLookup {
   readonly description?: string;
   /** MCP tool description (defaults to a generated one). */
   readonly toolDescription?: string;
+  /**
+   * Class constraints when entities span several classes (e.g. blocks are
+   * Components, Patterns, Layouts, or Subcomponents) — projected as a
+   * SPARQL VALUES constraint on the name resolve. Mutually exclusive with
+   * `type`.
+   */
+  readonly types?: readonly string[];
+  /**
+   * GraphQL type or interface the generated document's inline fragment
+   * targets (`source: "graphql"` only). Defaults to the local name of
+   * `type`; required when `types` is used (an interface covering all of
+   * them, e.g. `"UIBlock"`).
+   */
+  readonly graphqlType?: string;
   /** Inline fields shown under the entity title. */
   readonly fields?: readonly StoryPackField[];
   /** Long-form sections shown after the fields. */
@@ -201,6 +291,27 @@ export interface StoryPackLookup {
   /** Sample capability: `true` for defaults, or a configured sample. */
   readonly sample?: true | StoryPackSample;
 }
+
+/** A pack list row / flat lookup base: variable name → string value. */
+export type PackRow = Record<string, string>;
+
+/**
+ * A child record under an expand. Scalar values come from child fields; a
+ * nested expand contributes either a collapsed string array (single-field
+ * select) or one small record per grandchild.
+ */
+export type PackChildRow = Record<
+  string,
+  string | readonly string[] | readonly PackRow[]
+>;
+
+/**
+ * A looked-up pack entity: flat values (strings) plus any expanded child
+ * arrays. Both fetch sources (SPARQL and GraphQL) resolve to this same
+ * shape, so rendering, `--format json`, and the MCP envelope are identical
+ * downstream regardless of the fetch layer.
+ */
+export type PackEntity = Record<string, string | readonly PackChildRow[]>;
 
 /** One declarative read story: a noun with its preferred queries. */
 export interface StoryPackDefinition {
