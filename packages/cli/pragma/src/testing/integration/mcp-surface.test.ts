@@ -273,15 +273,16 @@ describe("token_lookup", () => {
 // ---------------------------------------------------------------------------
 
 describe("tier_list", () => {
-  it("returns tiers with hierarchy", async () => {
+  it("returns the tiers (bundled pack)", async () => {
     const res = await client.callTool({
       name: "tier_list",
       arguments: {},
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { path: string }[];
-    expect(data.some((t) => t.path === "global")).toBe(true);
+    // Bundled tier pack: uniform `{uri, name}` rows (no bespoke hierarchy).
+    const data = body.data as { name: string }[];
+    expect(data.some((t) => t.name === "global")).toBe(true);
   });
 });
 

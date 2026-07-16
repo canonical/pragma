@@ -1,7 +1,7 @@
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "#error";
+import { listTiers } from "../../shared/listTiers.js";
 import type { TierEntry } from "../../shared/types/index.js";
-import { listTiers } from "../../tier/operations/index.js";
 
 /** Normalise a tier path for comparison: trim and lowercase. */
 function normalizeTierPath(path: string): string {
