@@ -29,10 +29,6 @@ import { renderInfoLlm } from "../../domains/info/formatters/index.js";
 import { collectStoreSummary } from "../../domains/info/operations/index.js";
 import type { InfoData } from "../../domains/info/types.js";
 import {
-  listFormatters as modifierListFmt,
-  lookupFormatters as modifierLookupFmt,
-} from "../../domains/modifier/formatters/index.js";
-import {
   listModifiers,
   lookupModifier,
 } from "../../domains/modifier/operations/index.js";
@@ -341,49 +337,92 @@ describe("tier parity (bundled pack)", () => {
 // Modifier parity
 // ---------------------------------------------------------------------------
 
-describe("modifier parity", () => {
-  it("modifier_list: families match", async () => {
+describe("modifier parity (bundled pack)", () => {
+  // `modifier list`/`modifier lookup` are served by the bundled `modifier`
+  // story pack: the list is a declarative SELECT, the lookup rides the
+  // GraphQL fetch path (`source: "graphql"`). These tests assert *semantic*
+  // parity against the kept operations — every family and value the old
+  // TS domain returned still comes back, in the uniform pack shape.
+  it("modifier_list returns every family with its values", async () => {
     const opResult = await listModifiers(rt.store);
     const mcpRes = await client.callTool({
       name: "modifier_list",
       arguments: {},
     });
-    assertParity(opResult, mcpRes);
+    const body = parseEnvelope(mcpRes);
+    const rows = body.data as Array<{
+      uri: string;
+      name: string;
+      values?: string;
+    }>;
+
+    // Same families — none dropped or invented by the cutover.
+    expect(new Set(rows.map((row) => row.uri))).toEqual(
+      new Set(opResult.map((family) => family.uri)),
+    );
+    // Same values per family (the pack GROUP_CONCATs them for display).
+    for (const family of opResult) {
+      const row = rows.find((entry) => entry.uri === family.uri);
+      expect(row?.name).toBe(family.name);
+      const packValues = (row?.values ?? "")
+        .split(", ")
+        .filter((value) => value !== "")
+        .sort();
+      expect(packValues).toEqual([...family.values].sort());
+    }
   });
 
-  it("modifier_list condensed: matches llm formatter", async () => {
+  it("modifier_list condensed lists every family under a markdown heading", async () => {
     const opResult = await listModifiers(rt.store);
-    const expectedText = modifierListFmt.llm([...opResult]);
-
     const mcpRes = await client.callTool({
       name: "modifier_list",
       arguments: { condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain("## Modifier");
+    for (const family of opResult) {
+      expect(body.text).toContain(family.name);
+    }
   });
 
-  it("modifier_lookup: values match", async () => {
+  it("modifier_lookup resolves a family with its values via GraphQL", async () => {
     const opResult = await lookupModifier(rt.store, "importance");
     const mcpRes = await client.callTool({
       name: "modifier_lookup",
       arguments: { names: ["importance"] },
     });
     const body = parseEnvelope(mcpRes);
-    const data = body.data as { results: unknown[]; errors: unknown[] };
-    expect(data.results[0]).toEqual(opResult);
+    const data = body.data as {
+      results: Array<{
+        uri: string;
+        name: string;
+        values: Array<{ name: string }>;
+      }>;
+      errors: unknown[];
+    };
+    expect(data.errors).toEqual([]);
+    const entity = data.results[0];
+
+    // Same entity, same values — fetched through ONE GraphQL document
+    // instead of the old per-name SPARQL, unwrapped to the flat pack shape.
+    expect(entity?.uri).toBe(opResult.uri);
+    expect(entity?.name).toBe(opResult.name);
+    expect(entity?.values.map((value) => value.name).sort()).toEqual(
+      [...opResult.values].sort(),
+    );
   });
 
-  it("modifier_lookup condensed: matches llm formatter", async () => {
+  it("modifier_lookup condensed renders name and values", async () => {
     const opResult = await lookupModifier(rt.store, "importance");
-    const expectedText = modifierLookupFmt.llm(opResult);
-
     const mcpRes = await client.callTool({
       name: "modifier_lookup",
       arguments: { names: ["importance"], condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain(`## ${opResult.name}`);
+    for (const value of opResult.values) {
+      expect(body.text).toContain(value);
+    }
   });
 });
 

@@ -749,3 +749,58 @@ describe("compilePackStories — expand", () => {
     expect(entity?.ingredients).toBeUndefined();
   });
 });
+
+describe("compilePackStories — list emptyRecovery", () => {
+  const emptyDefinition: StoryPackDefinition = {
+    noun: "recipe",
+    list: {
+      query:
+        "SELECT ?uri ?name ?category WHERE { ?uri a ex:Nonesuch ; ex:name ?name ; ex:category ?category }",
+      columns: [{ field: "name" }],
+      filters: [
+        {
+          param: "category",
+          variable: "category",
+          values: ["breakfast", "soup"],
+        },
+      ],
+      emptyRecovery: {
+        message: "Install the cookbook package.",
+        cli: "bun add -D cookbook",
+      },
+    },
+  };
+
+  it("throws a typed EMPTY_RESULTS with the declared recovery when the store has no rows", async () => {
+    const { list } = compilePackStories(emptyDefinition, "test", PREFIXES);
+    const error = await list.resolve(rt, {}).then(
+      () => undefined,
+      (thrown) => thrown as PragmaError,
+    );
+    expect(error?.code).toBe("EMPTY_RESULTS");
+    expect(error?.recovery?.cli).toBe("bun add -D cookbook");
+  });
+
+  it("recovers toward unfiltered listing when a filter value was active", async () => {
+    const { list } = compilePackStories(emptyDefinition, "test", PREFIXES);
+    const error = await list.resolve(rt, { category: "soup" }).then(
+      () => undefined,
+      (thrown) => thrown as PragmaError,
+    );
+    expect(error?.code).toBe("EMPTY_RESULTS");
+    expect(error?.filters).toEqual({ category: "soup" });
+    expect(error?.recovery?.cli).toBe("pragma recipe list");
+  });
+
+  it("keeps rendering empty lists for packs without the declaration", async () => {
+    const noRecovery: StoryPackDefinition = {
+      ...emptyDefinition,
+      list: {
+        query: emptyDefinition.list.query,
+        columns: emptyDefinition.list.columns,
+      },
+    };
+    const { list } = compilePackStories(noRecovery, "test", PREFIXES);
+    await expect(list.resolve(rt, {})).resolves.toEqual([]);
+  });
+});

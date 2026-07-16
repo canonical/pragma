@@ -1,16 +1,20 @@
 /**
  * @module Modifier domain — CLI commands and operations.
  *
- * Commands: `pragma modifier list`, `pragma modifier lookup <name>`.
- * Operations: {@link lookupModifier}, {@link listModifiers}.
+ * `modifier list` and `modifier lookup` are served by the bundled
+ * `modifier` story pack (see `shared/stories/pack/bundled/modifierPack.ts`);
+ * only `pragma modifier sample` remains a built-in command here until the
+ * generic pack sample verb lands.
+ * Operations: {@link lookupModifier}, {@link listModifiers} (kept as the
+ * public API and the parity-test oracle).
  */
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
-import { listCommand, lookupCommand, sampleCommand } from "./commands/index.js";
+import { sampleCommand } from "./commands/index.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [listCommand(ctx), lookupCommand(ctx), sampleCommand(ctx)];
+  return [sampleCommand(ctx)];
 }
 
 export { specs as mcpSpecs } from "./mcp/index.js";
@@ -20,8 +24,3 @@ export {
   lookupModifier,
   sampleModifiers,
 } from "./operations/index.js";
-export {
-  modifierEmptyError,
-  resolveModifierList,
-  resolveModifierLookup,
-} from "./orchestration/index.js";

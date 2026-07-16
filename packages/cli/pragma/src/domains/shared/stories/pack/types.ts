@@ -208,6 +208,20 @@ export interface StoryPackList {
   readonly filters?: readonly StoryPackFilter[];
   /** Free-text search projected to a `--search` flag / `search` parameter. */
   readonly search?: StoryPackSearch;
+  /**
+   * Opt-in empty-result recovery. When declared and the (filtered) list
+   * resolves to zero rows, the story fails with a typed `EMPTY_RESULTS`
+   * error instead of rendering an empty list: with a filter active the
+   * recovery is to re-list unfiltered; otherwise this declaration explains
+   * how to obtain data (typically an install hint — an empty store, not a
+   * narrow query). Packs without it keep rendering empty lists.
+   */
+  readonly emptyRecovery?: {
+    /** Human-readable cause + fix (e.g. which packages provide the data). */
+    readonly message: string;
+    /** Runnable command fixing the emptiness (rendered on the CLI). */
+    readonly cli?: string;
+  };
 }
 
 /**

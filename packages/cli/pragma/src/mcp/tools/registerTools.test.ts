@@ -133,8 +133,6 @@ describe("tool listing", () => {
       "block_list",
       "block_lookup",
       "block_sample",
-      "modifier_list",
-      "modifier_lookup",
       "modifier_sample",
       ...(TOKEN_READ_SURFACE_ENABLED ? ["token_list", "token_lookup"] : []),
       "tokens_add_config",
@@ -152,20 +150,22 @@ describe("tool listing", () => {
       "info",
       "capabilities",
       "llm",
-      "create_component",
-      "create_package",
       "create_application",
       "create_domain",
       "create_route",
       "create_wrapper",
-      // Bundled packs register after the built-in tools: `tier_list` and the
-      // whole `standard` noun are served by bundled story packs — the
-      // hand-written tier and standard domains were deleted.
+      // Bundled packs register after the built-in tools, in BUNDLED_PACKS
+      // order: `tier`, then `standard`, then `modifier`. The hand-written tier,
+      // standard, and modifier list/lookup domains were deleted and are now
+      // served by bundled story packs (only the `modifier sample` built-in
+      // remnant remains above).
       "tier_list",
       "standard_list",
       "standard_lookup",
       "standard_categories",
       "standard_sample",
+      "modifier_list",
+      "modifier_lookup",
     ]);
   });
 
@@ -453,10 +453,13 @@ describe("modifier_list", () => {
       name: "modifier_list",
       arguments: {},
     });
-    const data = parseData(result) as { name: string; values: string[] }[];
+    const data = parseData(result) as { name: string; values: string }[];
     expect(data.length).toBeGreaterThan(0);
     const names = data.map((m) => m.name);
     expect(names).toContain("importance");
+    // The pack list GROUP_CONCATs values into one display column.
+    const importance = data.find((m) => m.name === "importance");
+    expect(importance?.values).toContain("primary");
   });
 });
 
@@ -467,10 +470,13 @@ describe("modifier_lookup", () => {
       arguments: { names: ["importance"] },
     });
     const data = parseData(result) as {
-      results: { name: string; values: string[] }[];
+      results: { name: string; values: { name: string }[] }[];
     };
     expect(data.results[0]?.name).toBe("importance");
-    expect(data.results[0]?.values).toContain("primary");
+    // Pack expand rows are small records; the value strings are unchanged.
+    expect(data.results[0]?.values.map((value) => value.name)).toContain(
+      "primary",
+    );
   });
 
   it("returns per-query errors for unknown modifier", async () => {

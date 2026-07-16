@@ -76,9 +76,6 @@ export {
 export {
   listModifiers,
   lookupModifier,
-  modifierEmptyError,
-  resolveModifierList,
-  resolveModifierLookup,
 } from "./domains/modifier/index.js";
 export {
   listOntologies,

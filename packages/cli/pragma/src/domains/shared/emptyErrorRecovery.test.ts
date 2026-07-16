@@ -2,9 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { PragmaError } from "#error";
 import blockSpecs from "../block/mcp/specs.js";
 import blockEmptyError from "../block/orchestration/blockEmptyError.js";
-import modifierSpecs from "../modifier/mcp/specs.js";
-import modifierEmptyError from "../modifier/orchestration/modifierEmptyError.js";
-import { TOKEN_READ_SURFACE_ENABLED } from "../token/featureFlag.js";
 import tokenSpecs from "../token/mcp/specs.js";
 import tokenEmptyError from "../token/orchestration/tokenEmptyError.js";
 import type { FilterConfig } from "./types/index.js";
@@ -39,34 +36,23 @@ const cases: ReadonlyArray<{
     toolNames: new Set(blockSpecs.map((s) => s.name)),
     storeEmpty: false,
   },
-  // The token read surface (and with it the paths that raise
-  // tokenEmptyError) is gated behind the token feature flag; its recovery
-  // hints can only point at registered tools while the surface is live.
-  ...(TOKEN_READ_SURFACE_ENABLED
-    ? [
-        {
-          domain: "token (category active)",
-          error: tokenEmptyError("color"),
-          toolNames: new Set(tokenSpecs.map((s) => s.name)),
-          storeEmpty: false,
-        },
-        {
-          domain: "token (store-empty)",
-          error: tokenEmptyError(),
-          toolNames: new Set(tokenSpecs.map((s) => s.name)),
-          storeEmpty: true,
-        },
-      ]
-    : []),
   {
-    domain: "modifier (store-empty)",
-    error: modifierEmptyError(),
-    toolNames: new Set(modifierSpecs.map((s) => s.name)),
+    domain: "token (category active)",
+    error: tokenEmptyError("color"),
+    toolNames: new Set(tokenSpecs.map((s) => s.name)),
+    storeEmpty: false,
+  },
+  {
+    domain: "token (store-empty)",
+    error: tokenEmptyError(),
+    toolNames: new Set(tokenSpecs.map((s) => s.name)),
     storeEmpty: true,
   },
-  // `standard` left this contract with its domain: the bundled pack has no
-  // emptyError hook (a pinned PARITY_GAP), so an empty standard list renders
-  // zero rows instead of an EMPTY_RESULTS recovery.
+  // `standard` and `modifier` left this cross-domain hand-written contract:
+  // both are now bundled story packs. `standard`'s pack has no emptyError hook
+  // (a pinned PARITY_GAP), so an empty standard list renders zero rows;
+  // `modifier`'s pack preserves the recovery through the pack `emptyRecovery`
+  // declaration, exercised by the pack/parity suites instead.
 ];
 
 describe("empty-error recovery contract (cross-domain)", () => {

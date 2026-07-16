@@ -1,25 +1,18 @@
 /**
- * MCP tool specs for the modifier domain — modifier_list, modifier_lookup,
- * modifier_sample.
+ * MCP tool specs for the modifier domain — modifier_sample only.
  *
- * The list and lookup tools are compiled from the modifier read stories in
- * `../stories.ts`; only the sample tool is spec'd by hand. The adapter
- * layer converts these into registered MCP tools via `registerFromSpec()`.
+ * `modifier_list` and `modifier_lookup` are compiled from the bundled
+ * `modifier` story pack; the sample tool stays spec'd by hand until the
+ * generic pack sample verb lands. The adapter layer converts these into
+ * registered MCP tools via `registerFromSpec()`.
  */
 
-import {
-  compileLookupTool,
-  compileReadTool,
-  condense,
-} from "../../shared/stories/index.js";
+import { condense } from "../../shared/stories/index.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
 import { sampleFormatters as modifierSampleFmt } from "../formatters/index.js";
 import { sampleModifiers } from "../operations/index.js";
-import { modifierListStory, modifierLookupStory } from "../stories.js";
 
 const specs: readonly ToolSpec[] = [
-  compileReadTool(modifierListStory),
-  compileLookupTool(modifierLookupStory),
   {
     name: "modifier_sample",
     description:

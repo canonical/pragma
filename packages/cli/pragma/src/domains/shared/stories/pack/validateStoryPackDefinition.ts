@@ -296,12 +296,14 @@ function validateListShape(
   }
 
   const search = validateSearch(obj.search, query, where, source);
+  const emptyRecovery = validateEmptyRecovery(obj.emptyRecovery, source);
 
   return {
     query,
     columns,
     ...(filters ? { filters } : {}),
     ...(search ? { search } : {}),
+    ...(emptyRecovery ? { emptyRecovery } : {}),
   };
 }
 
@@ -358,6 +360,24 @@ function validateSearch(
     variables,
     ...(description !== undefined ? { description } : {}),
   };
+}
+
+function validateEmptyRecovery(
+  raw: unknown,
+  source: string,
+): StoryPackList["emptyRecovery"] {
+  if (raw === undefined) return undefined;
+  const obj = requireObject(raw, "list.emptyRecovery", source);
+  const message = requireString(
+    obj.message,
+    "list.emptyRecovery.message",
+    source,
+  );
+  const cli =
+    obj.cli === undefined
+      ? undefined
+      : requireString(obj.cli, "list.emptyRecovery.cli", source);
+  return { message, ...(cli !== undefined ? { cli } : {}) };
 }
 
 /**

@@ -7,7 +7,6 @@ import {
   nounVerbFromPath,
   nounVerbFromToolName,
 } from "../domains/shared/stories/pack/index.js";
-import { TOKEN_READ_SURFACE_ENABLED } from "../domains/token/featureFlag.js";
 import { allSpecs } from "../mcp/tools/index.js";
 import createTestRuntime from "../testing/helpers/createTestRuntime.js";
 import collectCommands, { builtInCommands } from "./collectCommands.js";
@@ -71,12 +70,11 @@ describe("collectCommands", () => {
       "setup mcp",
       "setup completions",
       "setup skills",
-      "modifier list",
-      "modifier lookup",
       "modifier sample",
-      ...(TOKEN_READ_SURFACE_ENABLED ? ["token list", "token lookup"] : []),
+      "token list",
+      "token lookup",
       "tokens add-config",
-      ...(TOKEN_READ_SURFACE_ENABLED ? ["token sample"] : []),
+      "token sample",
       "block list",
       "block lookup",
       "block sample",
@@ -97,14 +95,16 @@ describe("collectCommands", () => {
     ]);
   });
 
-  it("serves `tier list` from the bundled pack, not a built-in", () => {
+  it("serves `tier list` and the modifier read verbs from bundled packs, not built-ins", () => {
     const builtInPaths = builtInCommands(makeCtx()).map((c) =>
       c.path.join(" "),
     );
     const allPaths = collectCommands(makeCtx()).map((c) => c.path.join(" "));
 
-    expect(builtInPaths).not.toContain("tier list");
-    expect(allPaths).toContain("tier list");
+    for (const path of ["tier list", "modifier list", "modifier lookup"]) {
+      expect(builtInPaths).not.toContain(path);
+      expect(allPaths).toContain(path);
+    }
   });
 
   it("serves the whole `standard` noun from the bundled pack", () => {
@@ -163,17 +163,16 @@ describe("cross-surface reserved-verb parity", () => {
     );
 
     // Sanity: the real leaf-migration targets are present, so this asserts
-    // something (a silently empty set would make the test vacuous). `tier`
-    // and `standard` are no longer here — both were cut over to bundled
-    // packs, so they are correctly absent from the built-in reserved
-    // surface on both sides. The token noun only owns read verbs while its
-    // feature flag is on.
-    const expectedReadNouns = ["block", "modifier"];
-    if (TOKEN_READ_SURFACE_ENABLED) expectedReadNouns.push("token");
-    for (const noun of expectedReadNouns) {
+    // something (a silently empty set would make the test vacuous). `tier`,
+    // `standard`, and `modifier`'s read verbs are no longer here — all were cut
+    // over to bundled packs (only the `modifier sample` built-in remnant
+    // remains), so they are correctly absent from the built-in reserved surface
+    // on both sides.
+    for (const noun of ["block", "token"]) {
       expect(readNouns.has(noun)).toBe(true);
     }
     expect(readNouns.has("standard")).toBe(false);
+    expect(readNouns.has("modifier")).toBe(false);
 
     for (const noun of readNouns) {
       for (const verb of READ_VERBS) {
