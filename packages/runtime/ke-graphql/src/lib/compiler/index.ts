@@ -20,4 +20,5 @@ export { default as compileFromExtraction } from "./compileFromExtraction.js";
 export { ARTIFACT_VERSION } from "./constants.js";
 export { default as createContextFactory } from "./createContextFactory.js";
 export { default as createStoreQueryFn } from "./createStoreQueryFn.js";
+export { pluralize, stripVerbPrefix } from "./nameMap.js";
 export type * from "./types.js";

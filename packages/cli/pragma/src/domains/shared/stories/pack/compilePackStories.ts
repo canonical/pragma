@@ -28,18 +28,24 @@ import {
   isGlobPattern,
   suggestNames,
 } from "../../suggestions/index.js";
-import type { SampleOutput } from "../../types/index.js";
+import type { PragmaRuntime, SampleOutput } from "../../types/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
 import type { LookupStory, ReadStory, StoryParam } from "../types.js";
 import applyPackFilters from "./applyPackFilters.js";
 import applyPackSearch from "./applyPackSearch.js";
 import buildLookupQuery, {
+  activeLookupExpands,
   buildExpandQuery,
   buildLookupByIriQuery,
   buildLookupNamesQuery,
+  buildNameResolveQuery,
 } from "./buildLookupQuery.js";
+import fetchGraphqlLookupEntity from "./fetchGraphqlLookup.js";
 import runSelectQuery from "./runSelectQuery.js";
 import type {
+  PackChildRow,
+  PackEntity,
+  PackRow,
   StoryPackDefinition,
   StoryPackDisclosure,
   StoryPackFilter,
@@ -48,16 +54,6 @@ import type {
   StoryPackSearch,
 } from "./types.js";
 import { isEmbeddableIri } from "./validateStoryPackDefinition.js";
-
-/** A pack entity/row: SELECT variable name → string value. */
-type PackRow = Record<string, string>;
-
-/**
- * A looked-up pack entity: flat SELECT fields plus any expanded child arrays
- * (pack v1 nested projections). Scalar fields are strings; an expand's value
- * is the array of its child rows.
- */
-type PackEntity = Record<string, string | readonly PackRow[]>;
 
 /** Resolved sample data: the drawn entities plus the population size. */
 interface PackSampleData {
@@ -311,15 +307,7 @@ function compileLookup(
         names,
       );
       const result = await lookupMany(expanded.names, (query) =>
-        lookupPackEntity(
-          rt.store,
-          lookup,
-          noun,
-          query,
-          source,
-          level,
-          prefixes,
-        ),
+        lookupPackEntity(rt, lookup, noun, query, source, prefixes, level),
       );
       return {
         ...result,
@@ -400,15 +388,7 @@ function compileSample(
       const selected = pickRandom(names, count);
       const samples = await Promise.all(
         selected.map((name) =>
-          lookupPackEntity(
-            rt.store,
-            lookup,
-            noun,
-            name,
-            source,
-            level,
-            prefixes,
-          ),
+          lookupPackEntity(rt, lookup, noun, name, source, prefixes, level),
         ),
       );
       return { samples, totalCount: names.length };
@@ -478,7 +458,8 @@ async function expandPackLookupQueries(
 }
 
 /**
- * Look up one pack entity by name, prefixed name, or absolute IRI.
+ * Look up one pack entity by name, prefixed name, or absolute IRI, via the
+ * fetch strategy the pack declares.
  *
  * A query shaped like an IRI (`https://…` or `prefix:local`) is resolved
  * through the runtime prefix map and addressed exactly via a generated
@@ -487,27 +468,41 @@ async function expandPackLookupQueries(
  * IRI is validated against the embeddable-IRI shape and names are escaped
  * as SPARQL string literals, so user input never reaches query text raw.
  *
+ * Once the entity is resolved, its values are fetched per the declared
+ * source (both share the injection-safe SPARQL name resolution above):
+ *
+ * - `"sparql"` (default): one generated SELECT for the flat values plus one
+ *   sub-SELECT per active expand, each bound to the resolved IRI.
+ * - `"graphql"`: ONE generated document covering all active fields and
+ *   expands, executed in-process against the runtime's compiled schema and
+ *   unwrapped to the identical entity shape.
+ *
  * @throws PragmaError with code `ENTITY_NOT_FOUND` and ranked suggestions
  *   when no entity matches, or `INVALID_INPUT` when an IRI-shaped query
  *   uses an unknown prefix or malformed IRI.
- * @note Impure — queries the ke store.
+ * @note Impure — queries the ke store (and compiles the GraphQL schema on
+ *   the first graphql-sourced lookup).
  */
 async function lookupPackEntity(
-  store: Store,
+  rt: Pick<PragmaRuntime, "store" | "graphql">,
   lookup: StoryPackLookup,
   noun: string,
   query: string,
   source: string,
-  level: string | undefined,
   prefixes: Readonly<Record<string, string>>,
+  level?: string,
 ): Promise<PackEntity> {
+  const { store } = rt;
+  const graphqlSourced = lookup.source === "graphql";
   const rows = await runSelectQuery(
     store,
-    buildEntityQuery(lookup, query, prefixes),
+    graphqlSourced
+      ? buildNameResolveQuery(lookup, query)
+      : buildEntityQuery(lookup, query, prefixes, level),
     source,
   );
   const base = rows.at(0);
-  if (!base) {
+  if (!base?.uri) {
     const candidates = await listEntityNames(store, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
@@ -519,25 +514,30 @@ async function lookupPackEntity(
     });
   }
 
+  if (graphqlSourced) {
+    return fetchGraphqlLookupEntity(
+      rt,
+      lookup,
+      base.uri,
+      base.name ?? query,
+      source,
+      prefixes,
+      level,
+    );
+  }
+
   // Enrich with any declared multi-valued expands (pack v1 nested projections).
   // Each expand runs a sub-SELECT bound to the resolved entity IRI (`base.uri`),
   // which is store-derived, never user input. An expand tagged with a
   // disclosure level is fetched only at/above that level — so a lower level
   // never runs the sub-SELECT and the renderer omits the (absent) section.
   const entity: PackEntity = { ...base };
-  const entityUri = base.uri;
-  if (entityUri) {
-    const levels = lookup.disclosure?.levels ?? [];
-    const activeIdx = level ? levels.indexOf(level) : Number.POSITIVE_INFINITY;
-    for (const expand of lookup.expand ?? []) {
-      const requiredIdx = expand.level ? levels.indexOf(expand.level) : 0;
-      if (activeIdx < requiredIdx) continue;
-      entity[expand.name] = await runSelectQuery(
-        store,
-        buildExpandQuery(expand, entityUri),
-        source,
-      );
-    }
+  for (const expand of activeLookupExpands(lookup, level)) {
+    entity[expand.name] = await runSelectQuery(
+      store,
+      buildExpandQuery(expand, base.uri),
+      source,
+    );
   }
   return entity;
 }
@@ -559,9 +559,10 @@ function buildEntityQuery(
   lookup: StoryPackLookup,
   query: string,
   prefixes: Readonly<Record<string, string>>,
+  level?: string,
 ): string {
   if (!looksLikeIri(query)) {
-    return buildLookupQuery(lookup, query);
+    return buildLookupQuery(lookup, query, level);
   }
   // resolveUri validates prefix membership and rejects IRI-breaking
   // characters; the embeddable-shape check adds the validator's stricter
@@ -665,7 +666,7 @@ async function listEntityNames(
 
 /** Return a value only when it is a scalar string (expands hold arrays). */
 function scalar(
-  value: string | readonly PackRow[] | undefined,
+  value: string | readonly PackChildRow[] | undefined,
 ): string | undefined {
   return typeof value === "string" ? value : undefined;
 }

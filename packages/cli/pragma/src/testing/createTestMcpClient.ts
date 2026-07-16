@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { PragmaConfig } from "../config/index.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
+import { createLazyGraphql } from "../domains/shared/runtime.js";
 import { createMcpServerFromRuntime } from "../mcp/createMcpServer.js";
 import { DS_ALL_TTL } from "./dsFixtures.js";
 import { createTestStore } from "./store.js";
@@ -41,6 +42,7 @@ export default async function createTestMcpClient(options?: {
     config,
     cwd,
     packages: [],
+    graphql: createLazyGraphql(store),
     dispose: () => cleanupStore(),
   };
 
