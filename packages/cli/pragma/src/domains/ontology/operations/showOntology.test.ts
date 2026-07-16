@@ -37,9 +37,12 @@ describe("showOntology", () => {
     const nameProp = result.properties.find((p) => p.uri.endsWith("name"));
     expect(nameProp).toBeDefined();
     // ds:name declares several domains in the fixture (UIBlock,
-    // ModifierFamily, Modifier — mirroring the live ontology's breadth);
-    // showOntology surfaces one binding per property, so accept any of them.
-    expect(nameProp?.domain).toMatch(/UIBlock|ModifierFamily|Modifier/);
+    // ModifierFamily, Modifier, BlockProperty — mirroring the live
+    // ontology's breadth); showOntology surfaces one binding per property,
+    // so accept any of them.
+    expect(nameProp?.domain).toMatch(
+      /UIBlock|ModifierFamily|Modifier|BlockProperty/,
+    );
     expect(nameProp?.type).toBe("datatype");
   });
 

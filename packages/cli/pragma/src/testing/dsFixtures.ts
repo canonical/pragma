@@ -83,6 +83,7 @@ ds:name a owl:DatatypeProperty ;
   rdfs:domain ds:UIBlock ;
   rdfs:domain ds:ModifierFamily ;
   rdfs:domain ds:Modifier ;
+  rdfs:domain ds:BlockProperty ;
   rdfs:range xsd:string .
 
 # Functional as in the live ontology: every block belongs to exactly one

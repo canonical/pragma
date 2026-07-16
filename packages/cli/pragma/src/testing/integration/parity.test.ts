@@ -14,10 +14,7 @@ import { readConfigLayers } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource } from "#package-manager";
 // ---- Formatters ----
-import {
-  listFormatters as blockListFmt,
-  lookupFormatters as blockLookupFmt,
-} from "../../domains/block/formatters/index.js";
+import { listFormatters as blockListFmt } from "../../domains/block/formatters/index.js";
 // ---- Operations ----
 import {
   listBlocks,
@@ -117,39 +114,66 @@ describe("block parity", () => {
     expect(body.text).toBe(expectedText);
   });
 
-  it("block_lookup: detailed result matches", async () => {
+  // `block_lookup` is served by the bundled `block` pack over the GraphQL
+  // fetch path (block LIST stays built-in — partial migration). Semantic
+  // parity against the kept lookupBlock operation: same entity, same
+  // summary/anatomy/modifier values, in the uniform flat pack shape.
+  it("block_lookup (bundled pack): resolves the same entity with anatomy and modifier values", async () => {
     const opResults = await lookupBlock(rt.store, "Button", rt.config);
     expect(opResults.length).toBeGreaterThan(0);
-    const opResult = opResults[0];
+    const opResult = opResults[0] as NonNullable<(typeof opResults)[0]>;
     const mcpRes = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"] },
     });
     const body = parseEnvelope(mcpRes);
-    expect(body.data).toEqual({ results: [opResult], errors: [] });
+    const data = body.data as {
+      results: Array<{
+        uri: string;
+        name: string;
+        summary?: string;
+        anatomyDsl?: string;
+        modifierFamilies?: Array<{ name: string; values: string[] }>;
+      }>;
+      errors: unknown[];
+    };
+    expect(data.errors).toEqual([]);
+    const entity = data.results[0];
+
+    expect(entity?.uri).toBe(opResult.uri);
+    expect(entity?.name).toBe(opResult.name);
+    expect(entity?.summary).toBe(opResult.summary);
+    expect(entity?.anatomyDsl).toBe(opResult.anatomyDsl);
+    // The 2-hop nest: every family the old domain resolved, with the same
+    // values, fetched through ONE generated GraphQL document.
+    const packFamilies = new Map(
+      (entity?.modifierFamilies ?? []).map((family) => [
+        family.name,
+        [...family.values].sort(),
+      ]),
+    );
+    for (const family of opResult.modifierFamilies) {
+      expect(packFamilies.get(family.name)).toEqual([...family.values].sort());
+    }
   });
 
-  it("block_lookup condensed: matches llm formatter", async () => {
+  it("block_lookup condensed renders the anatomy code block and modifier values", async () => {
     const opResults = await lookupBlock(rt.store, "Button", rt.config);
-    expect(opResults.length).toBeGreaterThan(0);
-    const opResult = opResults[0];
-    const expectedText = blockLookupFmt.llm({
-      block: opResult,
-      detailed: true,
-      aspects: {
-        anatomy: true,
-        modifiers: true,
-        tokens: true,
-        implementations: true,
-      },
-    });
-
+    const opResult = opResults[0] as NonNullable<(typeof opResults)[0]>;
     const mcpRes = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"], condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain(`## ${opResult.name}`);
+    expect(body.text).toContain("### Anatomy (DSL)");
+    expect(body.text).toContain(opResult.anatomyDsl ?? "");
+    for (const family of opResult.modifierFamilies) {
+      expect(body.text).toContain(family.name);
+      for (const value of family.values) {
+        expect(body.text).toContain(value);
+      }
+    }
   });
 });
 

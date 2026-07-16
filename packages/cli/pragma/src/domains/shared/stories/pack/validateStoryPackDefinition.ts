@@ -160,16 +160,23 @@ export default function validateStoryPackDefinition(
       ? undefined
       : requireString(obj.toolDescription, "toolDescription", source);
 
-  const list = validateList(obj.list, source);
+  const list =
+    obj.list === undefined ? undefined : validateList(obj.list, source);
   const verbs = validateVerbs(obj.verbs, source);
   const lookup =
     obj.lookup === undefined ? undefined : validateLookup(obj.lookup, source);
+  if (!list && !lookup) {
+    throw buildStoryConfigError(
+      source,
+      'a story must declare at least one of "list" or "lookup".',
+    );
+  }
 
   return {
     noun,
     ...(description !== undefined ? { description } : {}),
     ...(toolDescription !== undefined ? { toolDescription } : {}),
-    list,
+    ...(list ? { list } : {}),
     ...(verbs ? { verbs } : {}),
     ...(lookup ? { lookup } : {}),
   };

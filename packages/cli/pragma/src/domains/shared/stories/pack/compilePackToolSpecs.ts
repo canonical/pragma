@@ -39,8 +39,12 @@ export default function compilePackToolSpecs(
       prefixes,
     );
     // Registration order mirrors compilePackCommands: list, lookup,
-    // extra verbs, sample.
-    const specs = [compileReadTool(compiled.list)];
+    // extra verbs, sample. `list` is optional — a pack may serve only the
+    // lookup verb of a noun whose list stays built-in.
+    const specs: ToolSpec[] = [];
+    if (compiled.list) {
+      specs.push(compileReadTool(compiled.list));
+    }
     if (compiled.lookup) {
       specs.push(compileLookupTool(compiled.lookup));
     }

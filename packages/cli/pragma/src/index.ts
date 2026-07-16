@@ -66,7 +66,6 @@ export {
   listBlocks,
   lookupBlock,
   resolveBlockList,
-  resolveBlockLookup,
 } from "./domains/block/index.js";
 export { runChecks } from "./domains/doctor/operations/index.js";
 export {

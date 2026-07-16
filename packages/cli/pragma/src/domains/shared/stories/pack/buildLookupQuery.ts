@@ -179,6 +179,8 @@ export function buildNameResolveQuery(
     buildTypeConstraint(lookup).trimEnd(),
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
+    // Names can recur across tiers; LIMIT 1 takes the store's first match
+    // (load order), the same tie-break the SPARQL lookup path applies.
     "LIMIT 1",
   ]
     .filter((line) => line !== "")
