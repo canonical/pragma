@@ -16,9 +16,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { CommandContext, CommandResult } from "@canonical/cli-core";
 import { executeGenerator } from "@canonical/cli-core";
+import { generators as componentGenerators } from "@canonical/summon-component";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { describe, expect, it } from "vitest";
-import { COMPONENT_GENERATORS } from "../../domains/create/generators.js";
 import runSetupTask from "../../domains/setup/helpers/runSetupTask.js";
 import setupCompletions from "../../domains/setup/operations/setupCompletions.js";
 import setupLsp from "../../domains/setup/operations/setupLsp.js";
@@ -65,7 +65,7 @@ const packageParams = { name: "@canonical/example", type: "library" };
 
 describe("golden: executeGenerator — components", () => {
   for (const framework of ["react", "svelte", "lit"] as const) {
-    const gen = COMPONENT_GENERATORS[framework];
+    const gen = componentGenerators[`component/${framework}`];
 
     it(`${framework} — dry-run plan`, async () => {
       const result = await executeGenerator(

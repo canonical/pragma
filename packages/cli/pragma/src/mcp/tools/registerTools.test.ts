@@ -57,9 +57,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 31 tools", async () => {
+  it("registers 34 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(31);
+    expect(tools).toHaveLength(34);
   });
 
   it("all tools have descriptions", async () => {
@@ -152,6 +152,9 @@ describe("tool listing", () => {
       "create_component",
       "create_package",
       "create_application",
+      "create_domain",
+      "create_route",
+      "create_wrapper",
     ]);
   });
 });
@@ -756,7 +759,7 @@ describe("create_component", () => {
     const result = await client.callTool({
       name: "create_component",
       arguments: {
-        framework: "react",
+        variant: "react",
         componentPath: "src/components/Button",
       },
     });
@@ -771,7 +774,7 @@ describe("create_component", () => {
     const result = await client.callTool({
       name: "create_component",
       arguments: {
-        framework: "svelte",
+        variant: "svelte",
         componentPath: "src/lib/components/Toggle",
       },
     });
@@ -780,11 +783,11 @@ describe("create_component", () => {
     expect((data.generator as { name: string }).name).toBe("component/svelte");
   });
 
-  it("returns error for invalid framework", async () => {
+  it("returns error for invalid variant", async () => {
     const result = await client.callTool({
       name: "create_component",
       arguments: {
-        framework: "angular",
+        variant: "angular",
         componentPath: "src/components/Button",
       },
     });
@@ -1037,7 +1040,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(33);
+      expect(tools).toHaveLength(36);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 
@@ -1147,9 +1150,9 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(31);
+    expect(data.counts.total).toBe(34);
     expect(data.counts.read).toBeGreaterThan(0);
-    expect(data.counts.write).toBe(6);
+    expect(data.counts.write).toBe(9);
     expect(data.counts.orientation).toBe(2);
     expect(data.counts.diagnostic).toBe(2);
     expect(data.version).toBeDefined();

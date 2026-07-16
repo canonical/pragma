@@ -20,10 +20,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runGeneratorTask } from "@canonical/cli-core";
+import { generators as componentGenerators } from "@canonical/summon-component";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import type { Task } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { COMPONENT_GENERATORS } from "../../domains/create/generators.js";
 import setupMcp from "../../domains/setup/operations/setupMcp.js";
 
 interface Case {
@@ -37,15 +37,17 @@ const packageParams = { name: "@canonical/example", type: "library" };
 const cases: Case[] = [
   {
     name: "component/react",
-    build: () => COMPONENT_GENERATORS.react.generate(componentParams),
+    build: () =>
+      componentGenerators["component/react"].generate(componentParams),
   },
   {
     name: "component/svelte",
-    build: () => COMPONENT_GENERATORS.svelte.generate(componentParams),
+    build: () =>
+      componentGenerators["component/svelte"].generate(componentParams),
   },
   {
     name: "component/lit",
-    build: () => COMPONENT_GENERATORS.lit.generate(componentParams),
+    build: () => componentGenerators["component/lit"].generate(componentParams),
   },
   {
     name: "package/library",
