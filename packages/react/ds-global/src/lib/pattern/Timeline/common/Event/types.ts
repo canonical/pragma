@@ -1,20 +1,7 @@
 import type { ModifierFamily } from "@canonical/ds-types";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-/**
- * Props for the Timeline.Event subcomponent
- *
- * @implements dso:global.subcomponent.timeline-event
- *
- * Anatomy (from DSL):
- * - layout.type: flow
- * - layout.direction: horizontal
- * - edges:
- *   - [0] actor (role: actor, cardinality: 0..1)
- *   - [1] datetime (role: datetime, cardinality: 0..1)
- *   - [2] payload (role: payload, cardinality: 1, slotName: default)
- */
-export interface EventProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
   /**
    * Actor/user who performed the action
    * Maps to DSL role: actor (cardinality: 0..1)
@@ -35,4 +22,19 @@ export interface EventProps extends HTMLAttributes<HTMLDivElement> {
    * Maps to DSL hasModifierFamily: criticality
    */
   criticality?: ModifierFamily<"criticality">;
-}
+};
+
+/**
+ * Props for the Timeline.Event subcomponent
+ *
+ * @implements dso:global.subcomponent.timeline-event
+ *
+ * Anatomy (from DSL):
+ * - layout.type: flow
+ * - layout.direction: horizontal
+ * - edges:
+ *   - [0] actor (role: actor, cardinality: 0..1)
+ *   - [1] datetime (role: datetime, cardinality: 0..1)
+ *   - [2] payload (role: payload, cardinality: 1, slotName: default)
+ */
+export type EventProps = OwnProps & Omit<ComponentProps<"div">, keyof OwnProps>;

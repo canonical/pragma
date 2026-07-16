@@ -1,9 +1,14 @@
-import type { SVGAttributes } from "react";
+import type { ComponentProps } from "react";
+
+type OwnProps = {
+  /** Root path to the icons (default: /icons). Must be exposed to the user. */
+  rootPath?: string;
+};
 
 /**
- * The Spinner has no props of its own beyond those of the underlying icon
- * `<svg>`: it always renders the `spinner` icon and animates it. The `icon`
- * name is fixed, so it is not part of the public surface.
+ * The Spinner has no props of its own beyond `rootPath` and those of the
+ * underlying icon `<svg>`: it always renders the `spinner` icon and animates
+ * it. The `icon` name is fixed, so it is not part of the public surface.
  *
  * Like `Icon`, the Spinner is decorative by default (`aria-hidden="true"`).
  * Pass an `aria-label` (or `aria-labelledby`) when the spinner is the only
@@ -11,7 +16,5 @@ import type { SVGAttributes } from "react";
  * When the spinner sits inside a control that already announces its busy
  * state (e.g. a submitting Button), leave it decorative.
  */
-export interface SpinnerProps extends SVGAttributes<HTMLOrSVGElement> {
-  /** Root path to the icons (default: /icons). Must be exposed to the user. */
-  rootPath?: string;
-}
+export type SpinnerProps = OwnProps &
+  Omit<ComponentProps<"svg">, keyof OwnProps>;

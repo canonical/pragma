@@ -1,5 +1,5 @@
 import type { Item } from "@canonical/ds-types";
-import type { ComponentType, HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ComponentType, ReactNode } from "react";
 // The custom-link contract is shared across every link-injecting component
 // (cs:react.component.link_component). Re-exported here so existing import sites
 // (Breadcrumbs/types.ts) keep resolving it from this module unchanged.
@@ -7,14 +7,7 @@ import type { LinkComponentProps } from "../../../../types/link.js";
 
 export type { LinkComponentProps };
 
-/**
- * Props for the Breadcrumbs.Item subcomponent
- *
- * Extends navigation Item (WD405) with breadcrumb-specific props.
- *
- * @implements dso:global.subcomponent.breadcrumbs-item
- */
-export interface ItemProps extends HTMLAttributes<HTMLLIElement>, Item {
+type OwnProps = Item & {
   /**
    * The link content (text or element)
    * Falls back to `label` from Item if not provided
@@ -47,4 +40,14 @@ export interface ItemProps extends HTMLAttributes<HTMLLIElement>, Item {
    */
   // biome-ignore lint/suspicious/noExplicitAny: Component accepts any props
   Component?: ComponentType<any>;
-}
+};
+
+/**
+ * Props for the Breadcrumbs.Item subcomponent
+ *
+ * Extends navigation Item (WD405) with breadcrumb-specific props, plus the
+ * native props of its `<li>` root.
+ *
+ * @implements dso:global.subcomponent.breadcrumbs-item
+ */
+export type ItemProps = OwnProps & Omit<ComponentProps<"li">, keyof OwnProps>;

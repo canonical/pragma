@@ -1,17 +1,7 @@
-import type {
-  CSSProperties,
-  FocusEventHandler,
-  PointerEventHandler,
-  ReactNode,
-  RefObject,
-} from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface TooltipProps {
-  /* A unique identifier for the TooltipMessage */
-  id?: string;
-  /* Additional CSS classes */
-  className?: string;
-  /* Child elements */
+type OwnProps = {
+  /** Child elements */
   children: ReactNode;
   /**
    * An optional leading icon, rendered before the text and top-aligned with the
@@ -19,15 +9,16 @@ export interface TooltipProps {
    * (e.g. an `<Icon>` or inline SVG).
    */
   icon?: ReactNode;
-  /* Inline styles */
-  style?: CSSProperties;
   /** Whether the tooltip is open or not */
   isOpen?: boolean;
-  /** Ref to the tooltip, useful for calculating its dimensions */
-  ref?: RefObject<HTMLDivElement | null>;
   /** The z-index of the tooltip */
   zIndex?: number;
+};
 
-  onPointerEnter?: PointerEventHandler;
-  onFocus?: FocusEventHandler;
-}
+/**
+ * Props for the Tooltip message element, extending the native props of its
+ * `<div>` root — so `id`, `className`, `style`, `ref`, and native handlers such
+ * as `onPointerEnter`/`onFocus` are all forwarded to the DOM node.
+ */
+export type TooltipProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

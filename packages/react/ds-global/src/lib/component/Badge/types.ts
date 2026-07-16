@@ -1,8 +1,8 @@
 import type { ModifierFamily } from "@canonical/ds-types";
 import type { HumanizeNumberOptions, PluralizeOptions } from "@canonical/utils";
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
-export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
+type OwnProps = {
   /**
    * Numeric value to be displayed.
    */
@@ -28,7 +28,10 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
    * Options for the pluralization of the item being counted.
    */
   pluralizeOptions?: PluralizeOptions;
-}
+};
+
+export type BadgeProps = OwnProps &
+  Omit<ComponentProps<"span">, keyof OwnProps>;
 
 export type UseBadgeProps = Pick<
   BadgeProps,

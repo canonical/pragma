@@ -1,5 +1,5 @@
 import type { Item } from "@canonical/ds-types";
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 import type { LinkComponent } from "../../types/link.js";
 
 /**
@@ -13,12 +13,7 @@ export interface TabItem extends Item {
   className?: string;
 }
 
-/**
- * Props for the Tabs component
- *
- * @implements dso:global.component.tabs
- */
-export interface TabsProps extends HTMLAttributes<HTMLElement> {
+type OwnProps = {
   /**
    * The tab strip, as a root navigation `Item`. Its **direct children**
    * (`navigationRoot.items`) are rendered as tabs; the root node itself is a
@@ -44,4 +39,11 @@ export interface TabsProps extends HTMLAttributes<HTMLElement> {
    * distinguish this tab strip from other navigation regions.
    */
   "aria-label": string;
-}
+};
+
+/**
+ * Props for the Tabs component, extending the native props of its `<nav>` root.
+ *
+ * @implements dso:global.component.tabs
+ */
+export type TabsProps = OwnProps & Omit<ComponentProps<"nav">, keyof OwnProps>;

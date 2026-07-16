@@ -1,3 +1,7 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {}
+/**
+ * Props for the Card component. The Card has no DS-owned props of its own — it
+ * is a plain `<div>` surface — so it simply accepts every native `<div>` prop.
+ */
+export type CardProps = ComponentProps<"div">;
