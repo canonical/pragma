@@ -14,6 +14,7 @@ import { commands as traceCommands } from "../domains/trace/index.js";
 import { PragmaError } from "../error/index.js";
 import collectCommands from "./collectCommands.js";
 import createProgram from "./createProgram.js";
+import ensureFirstRun from "./firstRun.js";
 import mapExitCode from "./mapExitCode.js";
 import parseGlobalFlags, {
   readRawFormat,
@@ -319,6 +320,13 @@ export default async function runCli(argv: readonly string[]): Promise<void> {
   if (commandKind.kind === "completions-server") {
     return handleCompletionsServer();
   }
+
+  // First-run onboarding: when the global config does not exist yet, greet on
+  // stderr and create it with defaults. After the completions early-exits so
+  // the note can never leak into a shell completion buffer; stderr-only so
+  // stdout (command output, --format json, MCP stdio) stays untouched; and
+  // failure-tolerant — onboarding must never break an invocation.
+  await ensureFirstRun();
 
   // `--version`/`-V` is a global flag: print the version and exit regardless
   // of where it appears (root or after a command/verb), so `block list -V`
