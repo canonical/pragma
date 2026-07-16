@@ -26,7 +26,9 @@ export const blockListStory: ReadStory<BlockListContract, BlockListItems> = {
   verb: "list",
   description: "List blocks in the design system",
   toolDescription:
-    "List design system blocks visible under current tier and channel configuration.",
+    "List design system blocks visible under current tier and channel " +
+    "configuration. Use when browsing available components, patterns, or " +
+    "layouts under the active scope. Example: block_list { allTiers: true }.",
   params: [
     {
       name: "allTiers",

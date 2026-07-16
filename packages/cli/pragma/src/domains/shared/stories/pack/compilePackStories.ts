@@ -200,11 +200,19 @@ function compileListVerb(
         search,
         params,
       );
-      // Opt-in empty-result guard, thrown from resolve so both surfaces
-      // (CLI command and MCP tool) fail typed instead of rendering nothing.
-      const emptyRecovery = shape.emptyRecovery;
-      if (rows.length === 0 && emptyRecovery) {
-        throw buildListEmptyError(noun, filters, params, emptyRecovery);
+      // Empty-result guard, thrown from resolve so both surfaces (CLI
+      // command and MCP tool) fail typed instead of rendering nothing.
+      // Filtered-to-empty ALWAYS throws (the filter is the likely cause
+      // and the recovery is mechanical); a genuinely-empty unfiltered
+      // store only throws when the pack authored an emptyRecovery hint.
+      if (rows.length === 0) {
+        const error = buildListEmptyError(
+          noun,
+          filters,
+          params,
+          shape.emptyRecovery,
+        );
+        if (error) throw error;
       }
       return rows;
     },
@@ -346,21 +354,34 @@ function compileLookup(
 }
 
 /**
- * Build the typed empty-list error for a pack list that opted in.
+ * Build the typed empty-list error for a pack list, or `undefined` when
+ * the emptiness should render as a plain empty list.
  *
- * With a filter value active the emptiness is (likely) the filter's doing,
- * so the recovery is to re-list unfiltered; with no filters active the
- * store simply has no such data and the pack's declared recovery (an
- * install hint) applies — mirroring the hand-written domains' empty errors.
+ * With a VALUE-CONSTRAINED filter active the emptiness is (likely) the
+ * filter's doing, so the recovery is to re-list unfiltered — this branch
+ * fires for every pack list (the P3 generalization of P2's opt-in guard);
+ * the CLI error render and the MCP error envelope carry the same `filters`
+ * echo and `recovery` by construction. A value-constrained filter admits
+ * only validated values, so a valid value matching nothing means the store
+ * lacks that data — a mechanical recovery. VALUE-FREE filters (data-driven,
+ * no declared set) stay lenient: an unmatched free string is a legitimate
+ * empty (a typo or an empty data-driven category), so it renders `data: []`
+ * — preserving the value-free-filter and standard-parity contracts. With no
+ * value-constrained filter active the store simply has no such data: the
+ * pack's declared recovery (an install hint) applies when authored,
+ * otherwise `data: []` + `meta.count: 0` stand.
  */
 function buildListEmptyError(
   noun: string,
   filters: readonly StoryPackFilter[] | undefined,
   params: Record<string, unknown>,
-  emptyRecovery: NonNullable<StoryPackList["emptyRecovery"]>,
-): PragmaError {
+  emptyRecovery: StoryPackList["emptyRecovery"],
+): PragmaError | undefined {
+  // Only value-constrained filters (a declared `values` set) trigger the
+  // mechanical re-list recovery; value-free filters render empty leniently.
   const applied = (filters ?? []).filter(
-    (filter) => typeof params[filter.param] === "string",
+    (filter) =>
+      filter.values !== undefined && typeof params[filter.param] === "string",
   );
   if (applied.length > 0) {
     return PragmaError.emptyResults(noun, {
@@ -374,7 +395,10 @@ function buildListEmptyError(
       },
     });
   }
-  return PragmaError.emptyResults(noun, { recovery: emptyRecovery });
+  if (emptyRecovery) {
+    return PragmaError.emptyResults(noun, { recovery: emptyRecovery });
+  }
+  return undefined;
 }
 
 /**

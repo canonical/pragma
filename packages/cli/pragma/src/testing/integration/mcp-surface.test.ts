@@ -79,20 +79,6 @@ describe("capabilities", () => {
   });
 });
 
-describe("llm", () => {
-  it("returns orientation with decision trees", async () => {
-    const res = await client.callTool({ name: "llm", arguments: {} });
-    const body = parseEnvelope(res);
-    expect(body.ok).toBe(true);
-    const data = body.data as {
-      decisionTrees: unknown[];
-      commandReference: unknown[];
-    };
-    expect(data.decisionTrees.length).toBeGreaterThan(0);
-    expect(data.commandReference.length).toBeGreaterThan(0);
-  });
-});
-
 // ---------------------------------------------------------------------------
 // Block
 // ---------------------------------------------------------------------------

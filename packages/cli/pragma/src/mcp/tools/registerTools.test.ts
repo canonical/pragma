@@ -57,9 +57,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 35 tools", async () => {
+  it("registers 34 tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(35);
+    expect(tools).toHaveLength(34);
   });
 
   it("all tools have descriptions", async () => {
@@ -90,7 +90,6 @@ describe("tool listing", () => {
     expect(names).toContain("tokens_add_config");
     expect(names).toContain("create_component");
     expect(names).toContain("create_package");
-    expect(names).toContain("llm");
     // New tools (Group C)
     expect(names).toContain("ontology_list");
     expect(names).toContain("ontology_show");
@@ -140,7 +139,6 @@ describe("tool listing", () => {
       "doctor",
       "info",
       "capabilities",
-      "llm",
       "create_component",
       "create_package",
       "create_application",
@@ -918,29 +916,6 @@ describe("create_package", () => {
 });
 
 // =============================================================================
-// LLM Orientation
-// =============================================================================
-
-describe("llm", () => {
-  it("returns orientation data with context, trees, and commands", async () => {
-    const result = await client.callTool({
-      name: "llm",
-      arguments: {},
-    });
-    const data = parseData(result) as {
-      context: { counts: Record<string, number>; namespaces: string[] };
-      decisionTrees: { intent: string }[];
-      commandReference: { command: string }[];
-    };
-    expect(data.context.counts.blocks).toBeGreaterThan(0);
-    expect(data.context.counts.standards).toBeGreaterThan(0);
-    expect(data.context.namespaces.length).toBeGreaterThan(0);
-    expect(data.decisionTrees).toHaveLength(5);
-    expect(data.commandReference.length).toBeGreaterThan(0);
-  });
-});
-
-// =============================================================================
 // Error handling
 // =============================================================================
 
@@ -1146,7 +1121,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(37);
+      expect(tools).toHaveLength(36);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 

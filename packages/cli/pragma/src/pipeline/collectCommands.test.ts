@@ -90,7 +90,6 @@ describe("collectCommands", () => {
       "doctor",
       "info",
       "upgrade",
-      "llm",
       "capabilities",
     ]);
   });

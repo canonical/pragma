@@ -22,7 +22,11 @@ const specs: readonly ToolSpec[] = [
   {
     name: "config_tier",
     description:
-      "Set or reset the active tier. Pass a tier path to set, or reset=true to clear.",
+      "Set or reset the active tier filter (persisted in config). Pass a " +
+      "tier path to set, or reset=true to clear. Use when the durable scope " +
+      "should change — prefer allTiers: true per call for one-off wide " +
+      "queries, since config changes persist for the human too. Example: " +
+      'config_tier { path: "apps/lxd" }.',
     params: {
       path: {
         type: "string",
@@ -62,7 +66,10 @@ const specs: readonly ToolSpec[] = [
   {
     name: "config_channel",
     description:
-      "Set or reset the release channel. Pass a value to set, or reset=true to clear.",
+      "Set or reset the release channel (persisted in config). Pass a value " +
+      "to set, or reset=true to clear. Use when experimental or prerelease " +
+      "entities should become visible to lists and lookups. Example: " +
+      'config_channel { value: "experimental" }.',
     params: {
       value: {
         type: "string",

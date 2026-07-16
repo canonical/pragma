@@ -98,10 +98,6 @@ const HELP_GROUPS: readonly HelpGroup[] = [
         noun: "capabilities",
         summary: "Mirror the MCP orientation payloads (state, prompts, tools)",
       },
-      {
-        noun: "llm",
-        summary: "LLM orientation: context, decision trees, command reference",
-      },
       { noun: "mcp", summary: "Start the MCP server over stdio" },
       {
         noun: "prompt",

@@ -28,7 +28,9 @@ export const skillListStory: ReadStory<SkillListResult, SkillListInput> = {
   noun: "skill",
   verb: "list",
   description: "List available agent skills from design system packages",
-  toolDescription: "List available agent skills from design system packages.",
+  toolDescription:
+    "List available agent skills from design system packages. Use when " +
+    "discovering what packaged skills exist. Example: skill_list {}.",
   params: [
     {
       name: "detailed",
@@ -73,7 +75,9 @@ export const skillLookupStory: LookupStory<SkillDetailed, SkillDetailed> = {
   noun: "skill",
   description: "Show full instructions for a skill by name",
   toolDescription:
-    "Get full skill instructions (SKILL.md content) for one or more agent skills by name.",
+    "Get full skill instructions (SKILL.md content) for one or more agent " +
+    "skills by name. Use when loading a skill to follow its instructions. " +
+    'Example: skill_lookup { names: ["design-auditor"] }.',
   namesDescription: "Skill names",
   namesToolDescription: "Skill names to look up (e.g. ['design-auditor'])",
   complete: async (partial, cmdCtx) => {

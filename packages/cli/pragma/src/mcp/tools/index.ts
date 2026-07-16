@@ -15,7 +15,6 @@ import { specs as createSpecs } from "../../domains/create/mcp/index.js";
 import { specs as diagnosticSpecs } from "../../domains/doctor/mcp/index.js";
 import { specs as graphSpecs } from "../../domains/graph/mcp/index.js";
 import { specs as infoSpecs } from "../../domains/info/mcp/index.js";
-import { specs as orientationSpecs } from "../../domains/llm/mcp/index.js";
 import { specs as modifierSpecs } from "../../domains/modifier/mcp/index.js";
 import { specs as ontologySpecs } from "../../domains/ontology/mcp/index.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
@@ -45,11 +44,7 @@ export const allSpecs: readonly ToolSpec[] = [
   ...skillSpecs,
   ...diagnosticSpecs,
   ...infoSpecs,
-  // The capabilities aggregator registers at the position its predecessor
-  // (the llm domain's static capabilities tool) held, keeping the ordered
-  // tool surface stable.
   ...capabilitiesSpecs,
-  ...orientationSpecs,
   ...createSpecs,
 ];
 

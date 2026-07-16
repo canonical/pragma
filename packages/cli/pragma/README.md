@@ -89,11 +89,22 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | `pragma skill list` | List discovered agent skills from installed packages |
 | `pragma skill lookup <name...>` | Show full SKILL.md instructions for skills by name |
 
-### LLM
+### Prompt
 
 | Command | Description |
 |---------|-------------|
-| `pragma llm` | Print LLM orientation context (decision trees, command reference) |
+| `pragma prompt list` | List available prompts (mirrors MCP `prompts/list`) |
+| `pragma prompt lookup <name> [key=value ...]` | Hydrate one prompt (mirrors MCP `prompts/get`) |
+
+### Capabilities
+
+| Command | Description |
+|---------|-------------|
+| `pragma capabilities` | Live state: tier, channel, detail, packages (mirrors `pragma://state`) |
+| `pragma capabilities --detail prompts` | The prompt catalog (mirrors MCP `prompts/list`) |
+| `pragma capabilities --detail reference` | The full tool reference (mirrors MCP `tools/list`) |
+
+`--format json` on any level emits the exact MCP protocol payload.
 
 ### Setup
 
@@ -204,22 +215,27 @@ All tools return a consistent envelope: `{ ok: true, data, meta }` for success, 
 | `skill_list` | List discovered agent skills |
 | `skill_lookup` | Get full SKILL.md content for skills by name |
 
-#### Write Tools (5)
+#### Write Tools (6)
 
 | Tool | Description |
 |------|-------------|
 | `config_tier` | Set the project's tier |
 | `config_channel` | Set the release channel |
+| `config_detail` | Set the default disclosure level for lookups |
 | `tokens_add_config` | Add Terrazzo token build configuration |
 | `create_component` | Scaffold a new design system component |
 | `create_package` | Scaffold a new monorepo package |
 
-#### Orientation Tools (2)
+#### Orientation Tools (1)
 
 | Tool | Description |
 |------|-------------|
-| `capabilities` | List all available tools with category counts (~100 tokens) |
-| `llm` | Get full LLM orientation: context, decision trees, command reference |
+| `capabilities` | Aggregate orientation for tools-only harnesses: instructions, live state, prompt catalog, and tool reference in one call; pass `prompt` (+ `args`) for one hydrated prompt |
+
+Protocol-complete clients don't need the aggregator: the server sends
+orientation `instructions` in the `initialize` result, serves live state at
+the `pragma://state` resource, and exposes multi-step workflows via the
+standard `prompts/list` / `prompts/get` surface.
 
 #### Diagnostic Tools (2)
 
@@ -295,6 +311,11 @@ List tools that accept a `names` filter return partial results — valid items i
 
 Every subject URI in the ke graph is exposed as a discoverable MCP resource via the `pragma:{uri}` template. Reading a resource returns all properties with level-1 object relations resolved to summaries.
 
+`pragma://state` serves the live configuration state — tier, channel, detail,
+and loaded packages, each with its origin, effect, and how to change it
+(durable vs per-call). It re-reads the config layers on every read, so a
+`config_*` write during the session is reflected immediately.
+
 ## Configuration
 
 Configuration is layered: built-in defaults, then the global file at
@@ -310,7 +331,7 @@ globally, configure once, and override per project:
 }
 ```
 
-`pragma config tier|channel|framework|trace` writes to the nearest existing
+`pragma config tier|channel|detail|framework|trace` writes to the nearest existing
 project file, or to the global file when no project is configured; pass
 `--local` or `--global` to pick the layer explicitly. Every write echoes the
 file it wrote, and `pragma config show` reports which layer supplied each

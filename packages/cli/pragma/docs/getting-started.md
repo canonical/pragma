@@ -208,12 +208,20 @@ pragma info
 pragma info upgrade
 ```
 
-## LLM Orientation
+## Agent Orientation
 
-Get a complete orientation document for AI agents:
+Mirror the MCP orientation payloads from the terminal:
 
 ```bash
-pragma llm
+pragma capabilities                     # live state: tier, channel, detail, packages
+pragma capabilities --detail prompts    # the prompt catalog
+pragma capabilities --detail reference  # the full tool reference
+pragma prompt list                      # prompts with their arguments
+pragma prompt lookup implement-component component=Button
 ```
 
-This outputs decision trees for common intents and a command reference with token cost estimates. The MCP `llm` tool provides the same data structured for agents.
+`--format json` emits the exact protocol payloads (`pragma://state`,
+`prompts/list`, `tools/list`, `prompts/get`). Over MCP, protocol-complete
+clients get the same orientation natively — initialize `instructions`, the
+`pragma://state` resource, and the prompts surface; tools-only harnesses call
+the `capabilities` tool for everything in one aggregate.
