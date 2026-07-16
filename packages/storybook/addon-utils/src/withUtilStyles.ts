@@ -199,7 +199,7 @@ export const withUtilStyles = (
   }
 
   for (const el of storyContainers(context)) {
-    for (const cls of CONTAINER_CLASSES) el.classList.remove(cls);
+    el.classList.remove(...CONTAINER_CLASSES);
     el.classList.add(...containerClasses);
     for (const prop of CONTAINER_STYLE_PROPS) el.style.removeProperty(prop);
     for (const [prop, value] of Object.entries(containerStyles)) {
