@@ -55,6 +55,7 @@ export const emptyConnection = <T>(): Connection<T> => ({
     startCursor: null,
     endCursor: null,
   },
+  totalCount: 0,
 });
 
 /** DataLoader.loadMany returns (V | Error)[]; keep only real entities. */
@@ -122,7 +123,14 @@ export const paginateUriWindow = (
     start = end - page.last;
     hasPreviousPage = true;
   }
-  return { window: uris.slice(start, end), hasNextPage, hasPreviousPage };
+  return {
+    window: uris.slice(start, end),
+    hasNextPage,
+    hasPreviousPage,
+    // The connection's total is the full URI set, not the window — counted
+    // here where the unpaginated list is already in memory (no extra query).
+    totalCount: uris.length,
+  };
 };
 
 /** Build a connection from an already-paginated, hydrated page. */
@@ -142,6 +150,7 @@ export const connectionFromPage = <T extends Sortable>(
       startCursor: edges[0]?.cursor ?? null,
       endCursor: edges[edges.length - 1]?.cursor ?? null,
     },
+    totalCount: page.totalCount,
   };
 };
 
@@ -209,5 +218,6 @@ export const toConnection = <T extends Sortable>(
       startCursor: edges[0]?.cursor ?? null,
       endCursor: edges[edges.length - 1]?.cursor ?? null,
     },
+    totalCount: allItems.length,
   };
 };

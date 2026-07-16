@@ -23,6 +23,11 @@ export interface Connection<T> {
     startCursor: string | null;
     endCursor: string | null;
   };
+  /**
+   * Total number of items in the connection, ignoring pagination — the size
+   * of the full URI set the resolver windowed, so it costs no extra query.
+   */
+  totalCount: number;
 }
 
 /** Anything carrying the URI identity used for cursor encoding and sorting. */
@@ -36,6 +41,8 @@ export interface UriPage {
   window: string[];
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+  /** Size of the full URI list the window was cut from. */
+  totalCount: number;
 }
 
 /** The GraphQL scalar names a literal can be coerced to. */
