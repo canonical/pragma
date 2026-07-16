@@ -75,6 +75,14 @@ describe("compileGeneratorPack (bundled)", () => {
     // The package generator prompts for a package name.
     expect(Object.keys(pkg?.params ?? {}).length).toBeGreaterThan(0);
   });
+
+  it("never advertises params the runner pins (runInstall is forced off)", () => {
+    // The runner always executes a dry-run plan with runInstall: false, so
+    // no create tool may advertise the parameter it would ignore.
+    for (const spec of specs) {
+      expect(spec.params).not.toHaveProperty("runInstall");
+    }
+  });
 });
 
 /** Minimal synthetic generator for edge-case tests. */

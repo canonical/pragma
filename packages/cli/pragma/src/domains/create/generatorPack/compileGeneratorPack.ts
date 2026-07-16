@@ -85,10 +85,28 @@ function promptToToolParam(prompt: PromptDefinition): ToolParamDef {
   };
 }
 
-/** Build the MCP param map for a generator from its prompts. */
+/**
+ * Generator answers the MCP tool runner pins to fixed values.
+ *
+ * MCP create tools always produce a dry-run plan, so `runInstall` is forced
+ * off regardless of input. This one map drives BOTH the schema (pinned
+ * answers are excluded from the advertised params — a tool must not
+ * advertise a parameter it ignores) and the runtime override in
+ * {@link runGeneratorTool}, so the two can never drift.
+ */
+const PINNED_TOOL_ANSWERS: Readonly<Record<string, unknown>> = {
+  runInstall: false,
+};
+
+/**
+ * Build the MCP param map for a generator from its prompts, omitting
+ * prompts whose answers are pinned by {@link PINNED_TOOL_ANSWERS}.
+ */
 function toolParamsFor(gen: AnyGenerator): Record<string, ToolParamDef> {
   return Object.fromEntries(
-    gen.prompts.map((prompt) => [prompt.name, promptToToolParam(prompt)]),
+    gen.prompts
+      .filter((prompt) => !(prompt.name in PINNED_TOOL_ANSWERS))
+      .map((prompt) => [prompt.name, promptToToolParam(prompt)]),
   );
 }
 
@@ -110,9 +128,12 @@ async function runGeneratorTool(
     cwd: rt.cwd,
     globalFlags: { llm: false, format: "json" as const, verbose: false },
   };
-  // Never install during a dry-run plan; the discriminator is dispatch
-  // metadata, not a generator answer.
-  const genParams: Record<string, unknown> = { ...params, runInstall: false };
+  // Apply the pinned answers (never install during a dry-run plan); the
+  // discriminator is dispatch metadata, not a generator answer.
+  const genParams: Record<string, unknown> = {
+    ...params,
+    ...PINNED_TOOL_ANSWERS,
+  };
   if (discriminator) delete genParams[discriminator];
   try {
     const result = await executeGenerator(gen, genParams, batchCtx);
