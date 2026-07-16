@@ -1,8 +1,8 @@
 import {
   type FieldError,
-  type FieldErrorsImpl,
   type FieldValues,
   get,
+  type Path,
   useFormState,
 } from "react-hook-form";
 
@@ -23,7 +23,11 @@ import {
 function useFieldError<TFieldValues extends FieldValues = FieldValues>(
   name: string,
 ): FieldError | undefined {
-  const { errors } = useFormState({ name }) as FieldErrorsImpl<TFieldValues>;
+  // `errors` is correctly typed as FieldErrors<TFieldValues> from the generic;
+  // only the runtime `name` path is asserted to a Path of the field values.
+  const { errors } = useFormState<TFieldValues>({
+    name: name as Path<TFieldValues>,
+  });
 
   return get(errors, name) as FieldError | undefined;
 }

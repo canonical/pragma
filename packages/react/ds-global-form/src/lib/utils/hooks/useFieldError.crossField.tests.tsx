@@ -66,7 +66,10 @@ describe("useFieldError cross-field revalidation", () => {
       },
     });
 
-    const [countryInput, ageInput] = screen.getAllByRole("textbox");
+    // Query by label (TextField wires label→input via htmlFor) rather than by
+    // textbox order, so adding another field can't silently break this test.
+    const countryInput = screen.getByLabelText("Country");
+    const ageInput = screen.getByLabelText("Age");
 
     // Put the (nested) age field into an error state under the default (13) constraint.
     fireEvent.change(ageInput, { target: { value: "10" } });
