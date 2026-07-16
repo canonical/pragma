@@ -118,10 +118,13 @@ export default function collectPackStories(
 
   // Bundled transitional packs — lowest precedence, so a config- or
   // package-declared story for the same noun overrides them (the P4 handoff).
-  // Authored in-repo but still validated: an authoring slip is skipped with a
-  // warning (consistent with package stories — one bad pack cannot break boot),
-  // and the pack's own parity tests catch a bundled pack that fails to load.
-  // Also subject to the shadow/duplicate guards for symmetry.
+  // Authored in-repo but still validated: only a validation failure (an
+  // authoring slip) is skipped with a warning (consistent with package
+  // stories — one bad pack cannot break boot), and the pack's own parity tests
+  // catch a bundled pack that fails to load. When a still-reserved built-in or
+  // a higher-precedence source already owns the noun, the bundled pack yields
+  // silently (no warning) — the shadow/duplicate check below, matching the
+  // precedence order rather than flagging an error.
   for (const raw of bundled) {
     const source = `bundled:${raw.noun}`;
     let definition: StoryPackDefinition;
