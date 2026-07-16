@@ -14,7 +14,7 @@ export default defineConfig({
     include: ["src/**/*.tests.ts"],
     projects: [
       {
-        extends: "./vite.config.ts",
+        extends: true,
         test: {
           name: "client",
           browser: {
@@ -37,7 +37,7 @@ export default defineConfig({
         },
       },
       {
-        extends: "./vite.config.ts",
+        extends: true,
         test: {
           name: "ssr",
           environment: "node",
@@ -45,7 +45,7 @@ export default defineConfig({
         },
       },
       {
-        extends: "./vite.config.ts",
+        extends: true,
         test: {
           name: "server",
           environment: "node",
