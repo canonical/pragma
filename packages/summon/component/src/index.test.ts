@@ -190,6 +190,32 @@ describe("component/react generator", () => {
       expect(content).toContain("my-button");
     });
 
+    it("emits props that extend the root element's native props", () => {
+      const task = generator.generate({
+        componentPath: "src/components/MyButton",
+        withStyles: false,
+        withStories: false,
+        withSsrTests: false,
+      });
+
+      const result = dryRunWithTemplates(task);
+      const typesFile = result.effects.find(
+        (e) =>
+          e._tag === "WriteFile" &&
+          (e as { path: string }).path.endsWith("types.ts"),
+      );
+
+      const content = (typesFile as { content: string }).content;
+      // Follows the native-prop extension convention: a `type` alias
+      // intersecting DS-owned props with the root tag's ComponentProps.
+      expect(content).toContain("type OwnProps");
+      expect(content).toContain('Omit<ComponentProps<"div">, keyof OwnProps>');
+      expect(content).toContain("export type MyButtonProps = OwnProps");
+      // NOT the mis-instantiable per-element interface form.
+      expect(content).not.toContain("HTMLAttributes");
+      expect(content).not.toContain("interface MyButtonProps");
+    });
+
     it("appends export to parent index", () => {
       const task = generator.generate({
         componentPath: "src/components/Card",
