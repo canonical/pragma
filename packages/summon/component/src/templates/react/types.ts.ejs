@@ -1,6 +1,14 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface <%= name %>Props extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
 	/** Content to render inside the component */
 	children?: ReactNode;
-}
+};
+
+/**
+ * Props extend the native props of the component's root element, so every
+ * attribute that element accepts (data-*, aria-*, event handlers, …) reaches
+ * the DOM. Change "div" to the component's actual root element tag.
+ */
+export type <%= name %>Props = OwnProps &
+	Omit<ComponentProps<"div">, keyof OwnProps>;
