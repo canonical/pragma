@@ -116,4 +116,4 @@ File an issue at [canonical/pragma/issues](https://github.com/canonical/pragma/i
 
 ## Next
 
-Family A is complete. Track B (documenting your components in the design-system documentation database) is guided separately — see the [adoption index](./README.md).
+Family A is complete. If your team hasn't done it yet, [Track B — document your components](./TRACK_B_DOCUMENTATION.md) runs independently and completes the program.

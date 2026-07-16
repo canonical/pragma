@@ -3,7 +3,7 @@
 This directory contains the track guides for the 26.10 pragma adoption program. The program is organised in two independent families:
 
 - **Family A — consume pragma in your application.** Three ordered tracks: [A1 (styles, tokens, assets)](./TRACK_A1_STYLES_TOKENS_ASSETS.md) → [A2 (base components)](./TRACK_A2_BASE_COMPONENTS.md) → [A3 (form components)](./TRACK_A3_FORM_COMPONENTS.md). A1 is a prerequisite for A2 and A3.
-- **Family B — document your components** in the design-system documentation database. *Guide in preparation.*
+- **Family B — document your components** in the design-system documentation database: [Track B (documentation)](./TRACK_B_DOCUMENTATION.md). Independent of family A.
 
 Expected effort per team: about one week of engineering time and half a week of design time across all four tracks.
 
