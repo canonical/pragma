@@ -44,6 +44,10 @@ export interface BreadcrumbsProps extends BaseProps {
    * Custom renderer for every item, replacing the default `Breadcrumbs.Item`.
    * Called once per item; branch inside the snippet (e.g. on `current`) for
    * per-segment variation.
+   *
+   * If reusing the `breadcrumbs-item`/`separator` classes for styling,
+   * render the separator AFTER the link (like the default `Item`) — the
+   * shared CSS hides it on the last item assuming that order.
    */
   render?: Snippet<[BreadcrumbItem]>;
   /**

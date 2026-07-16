@@ -55,6 +55,13 @@
     color: var(--breadcrumbs-item-separator-color);
   }
 
+  /*
+   * Assumes the separator is the LAST child of the item (rendered after the
+   * link, as below) so that hiding it here hides the trailing separator. A
+   * custom `render` snippet that places the separator BEFORE the link
+   * inverts this: `:last-of-type` would then hide the separator leading
+   * into the final item instead, colliding it with the previous item.
+   */
   &:last-of-type > .separator {
     display: none;
   }

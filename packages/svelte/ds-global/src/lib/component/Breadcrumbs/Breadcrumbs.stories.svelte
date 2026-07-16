@@ -72,8 +72,8 @@ Note: the `separator` prop is not part of the core api.
 Breadcrumbs rendering each item through a custom `render` snippet instead of
 the default `Breadcrumbs.Item`.
 
-Custom renderers must render the separator BEFORE the link so that on wrap
-the separator starts the new line; it's hidden on the last item via CSS.
+The separator is rendered AFTER the link, same as the default `Item`, so it
+stays hidden on the last item via the existing `:last-of-type` CSS rule.
 -->
 <Story
   name="WithCustomRender"
@@ -89,7 +89,6 @@ the separator starts the new line; it's hidden on the last item via CSS.
     <Breadcrumbs {...args}>
       {#snippet render(item)}
         <li class="ds breadcrumbs-item">
-          <span class="separator" aria-hidden="true">/</span>
           {#if item.current}
             <strong class="link" aria-current="page">{item.label}</strong>
           {:else}
@@ -101,6 +100,7 @@ the separator starts the new line; it's hidden on the last item via CSS.
               {item.label}
             </a>
           {/if}
+          <span class="separator" aria-hidden="true">/</span>
         </li>
       {/snippet}
     </Breadcrumbs>
