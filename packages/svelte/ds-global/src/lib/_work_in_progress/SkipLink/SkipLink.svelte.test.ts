@@ -1,6 +1,6 @@
 import type { Locator } from "@vitest/browser/context";
 import { createRawSnippet } from "svelte";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { RenderResult } from "vitest-browser-svelte";
 import { render } from "vitest-browser-svelte";
 import Component from "./SkipLink.svelte";
@@ -57,6 +57,34 @@ describe("SkipLink component", () => {
     skipLink.focus();
 
     expect(document.activeElement).toBe(skipLink);
+  });
+
+  describe("focuses main element", () => {
+    let mainEl: HTMLElement;
+
+    beforeEach(() => {
+      mainEl = document.createElement("main");
+      mainEl.tabIndex = -1;
+      document.body.appendChild(mainEl);
+    });
+
+    afterEach(() => {
+      mainEl.remove();
+    });
+
+    it("moves focus to the main element when activated", async () => {
+      mainEl.id = "main";
+      const page = render(Component);
+      await componentLocator(page).click();
+      expect(document.activeElement).toBe(mainEl);
+    });
+
+    it("moves focus to a custom main element when mainId is set", async () => {
+      mainEl.id = "custom-content";
+      const page = render(Component, { mainId: "custom-content" });
+      await componentLocator(page).click();
+      expect(document.activeElement).toBe(mainEl);
+    });
   });
 });
 
