@@ -26,6 +26,13 @@ None of these are required for adoption, but they make it faster. Commands are s
 | Terrazzo token LSP | `pragma setup lsp`, or directly `bunx @canonical/terrazzo-lsp-extension` | VS Code autocompletion and documentation for pragma design tokens. The direct `bunx` form works on any OS. |
 | [web-code-standards](https://github.com/canonical/web-code-standards) | `pragma standard list`, or browse the repo | The code standards pragma follows — structured data your AI tooling can consume directly. |
 
+## Discover the components
+
+Both component libraries are browsable directly in their live Storybooks (latest Chromatic build):
+
+- [ds-react-global.canonical.com](https://ds-react-global.canonical.com/) — global components ([Track A2](./TRACK_A2_BASE_COMPONENTS.md))
+- [ds-react-global-form.canonical.com](https://ds-react-global-form.canonical.com/) — form components ([Track A3](./TRACK_A3_FORM_COMPONENTS.md))
+
 ## Design counterpart
 
 Designers adopt pragma by consuming the *Pragma — Core component library* in Figma instead of the Vanilla library. Where a pragma component exists, use it rather than its Vanilla counterpart, and watch for renamed or split components.

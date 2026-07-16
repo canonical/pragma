@@ -22,7 +22,7 @@ Components pragma does **not** yet provide are out of scope: keep your current i
 
 ## The covered set
 
-As of `@canonical/react-ds-global` 0.30.0, the 26.10 program covers:
+For the authoritative, always-current set, refer to the components available directly in the live Storybook: [ds-react-global.canonical.com](https://ds-react-global.canonical.com/) (latest Chromatic build). As a snapshot, as of `@canonical/react-ds-global` 0.30.0 the 26.10 program covers:
 
 <!-- adoption:covered-set:begin package=@canonical/react-ds-global note=curated -->
 
@@ -40,7 +40,7 @@ Plus the `Cards` and `KeyboardKeys` groups (sets of components that operate toge
 
 `Popover` and `Chip` are exported by the package but are **not** part of the 26.10 covered set — keep your existing versions for now.
 
-The package also exports a work-in-progress tier: experimental components not yet promoted to a stable tier. You **can** use them, but expect their APIs, names, and visuals to change without notice — and they must **not** be part of a public release. See *"What's in this folder?"* at the root of the `_work_in_progress` section in Storybook.
+The package also exports a work-in-progress tier: experimental components not yet promoted to a stable tier. You **can** use them, but expect their APIs, names, and visuals to change without notice — and they must **not** be part of a public release. See *"What's in this folder?"* at the root of the `_work_in_progress` section in [Storybook](https://ds-react-global.canonical.com/).
 
 ## The path
 
@@ -69,13 +69,7 @@ Work through your inventory component by component — one small PR per componen
 import { Accordion, Button } from "@canonical/react-ds-global";
 ```
 
-Be mindful that names and boundaries changed relative to Vanilla: some components were renamed, and some Vanilla components are split into several pragma components (for example, `Card` and `Tile` are distinct components in pragma). Check each component's props in its Storybook stories or type definitions before swapping — do not assume prop-for-prop compatibility.
-
-To browse the components, run the package's Storybook from a pragma checkout ([repository quick start](../../../README.md#quick-start)):
-
-```bash
-cd packages/react/ds-global && bun run storybook
-```
+Be mindful that names and boundaries changed relative to Vanilla: some components were renamed, and some Vanilla components are split into several pragma components (for example, `Card` and `Tile` are distinct components in pragma). Check each component's props in its stories at [ds-react-global.canonical.com](https://ds-react-global.canonical.com/) before swapping — do not assume prop-for-prop compatibility.
 
 ### 4. Mind the icons
 

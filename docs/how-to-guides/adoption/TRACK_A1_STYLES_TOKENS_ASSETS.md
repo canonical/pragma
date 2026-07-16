@@ -57,6 +57,8 @@ Notes:
 
 Storybook users get all of this for free: [`@canonical/storybook-config`](https://www.npmjs.com/package/@canonical/storybook-config) serves `@canonical/ds-assets` via `staticDirs` and loads `@canonical/styles/fonts` through its bundled addon, so fonts and icons work with no extra `.storybook` configuration.
 
+There is also capacity to host additional Storybooks on the company's Chromatic account — if your team would like its Storybook published alongside pragma's, [open an issue](https://github.com/canonical/pragma/issues) to get set up.
+
 ## Verify
 
 1. **Fonts** — in the browser dev tools, check that body text computes to the `Ubuntu Sans` font family.

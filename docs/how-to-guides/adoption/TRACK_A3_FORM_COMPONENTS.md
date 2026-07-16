@@ -44,7 +44,7 @@ As of `@canonical/react-ds-global-form` 0.30.0, `Field` supports these stable (n
 
 `custom` takes a `CustomComponent` prop — the escape hatch for inputs pragma doesn't provide, so one exotic widget never blocks migrating the rest of the form.
 
-Three further `inputType`s — `color`, `combobox`, and `rating` (plus the standalone `RatingInput`) — are **work in progress**. You **can** use them, but they are experimental — APIs, names, and visuals may change without notice — and they must **not** be part of a public release. See *"What's in this folder?"* at the root of the `_work_in_progress` section in Storybook.
+Three further `inputType`s — `color`, `combobox`, and `rating` (plus the standalone `RatingInput`) — are **work in progress**. You **can** use them, but they are experimental — APIs, names, and visuals may change without notice — and they must **not** be part of a public release. See *"What's in this folder?"* at the root of the `_work_in_progress` section in [Storybook](https://ds-react-global-form.canonical.com/).
 
 ## The path
 
@@ -102,11 +102,7 @@ For forms whose state must be driven from outside (multi-step wizards, programma
 
 ### 4. Browse the fields
 
-To see every field type with its props and states, run the package's Storybook from a pragma checkout ([repository quick start](../../../README.md#quick-start)):
-
-```bash
-cd packages/react/ds-global-form && bun run storybook
-```
+Every field type, with its props and states, is available directly in the live Storybook: [ds-react-global-form.canonical.com](https://ds-react-global-form.canonical.com/) (latest Chromatic build).
 
 ## Verify
 
