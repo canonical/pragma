@@ -56,6 +56,9 @@ export const RESTOptions: Story = {
   args: {
     name: "optionsField",
     inputType: "select",
+    // Start empty: the addRESTOptions middleware replaces `options` with the
+    // fetched set before the select renders.
+    options: [],
     middleware: [
       middleware.addRESTOptions("/api/options", {
         transformData: (data) => data.options,

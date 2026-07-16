@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo } from "react";
 import * as decorators from "storybook/decorators.js";
 import Component from "./Field.js";
-import type { FieldProps } from "./types.js";
+import type { FieldProps, InputProps } from "./types.js";
 
 /**
  * `Field` is the type-safe entry point to every form input: it dispatches on
@@ -102,6 +102,8 @@ export const TypeCheckbox: Story = {
   args: {
     name: "subscribe",
     inputType: "checkbox",
+    // Toggle fields require at least one of `label`/`controlLabel`.
+    controlLabel: "Subscribe to the newsletter",
   },
 };
 
@@ -150,10 +152,10 @@ export const TypeColor: Story = {
 const StarRating = ({
   value,
   onChange,
-}: {
+}: InputProps<{
   value?: number;
   onChange?: (value: number) => void;
-}) => (
+}>) => (
   <div role="radiogroup" aria-label="Rating">
     {[1, 2, 3, 4, 5].map((star) => (
       <button
@@ -185,7 +187,9 @@ export const TypeCustom: Story = {
   },
 };
 
-export const ConditionalDisplay: Story = {
+// Render-only story (it drives its own `Field`s), so it takes no args — typed
+// as a plain `StoryObj` since `Story` would require the component's args.
+export const ConditionalDisplay: StoryObj = {
   render: () => {
     const emailField: FieldProps = useMemo(
       () => ({
@@ -206,10 +210,9 @@ export const ConditionalDisplay: Story = {
         isOptional: true,
         condition: [
           ["email"],
-          (values: string[]) => {
-            const value = values[0] as string;
-            if (!value) return false;
-            return value.endsWith("@gmail.com");
+          (values: unknown[]) => {
+            const value = values[0];
+            return typeof value === "string" && value.endsWith("@gmail.com");
           },
         ],
       }),

@@ -27,57 +27,97 @@ import type { FieldProps } from "./types.js";
  *
  * `import { Field } from "@canonical/react-ds-global-form";`
  */
-const Field = ({
-  inputType,
-  CustomComponent,
-  ...props
-}: FieldProps): React.ReactElement => {
-  switch (inputType) {
-    case "textarea":
-      return <TextareaField {...props} />;
-    case "checkbox":
-      return <CheckboxField {...props} />;
-    case "switch":
-      return <SwitchField {...props} />;
-    case "rating":
-      return <RatingField {...props} />;
-    case "range":
-      return <RangeField {...props} />;
-    case "select":
-      return <SelectField {...props} />;
-    case "choices":
-      return <ChoicesField {...props} />;
-    case "combobox":
-      return <ComboboxField {...props} />;
-    case "hidden":
-      return <HiddenField {...props} />;
-    case "date":
-      return <DateField {...props} />;
-    case "time":
-      return <TimeField {...props} />;
-    case "datetime":
-      return <DateTimeField {...props} />;
-    case "file":
-      return <FileUploadField {...props} />;
-    case "color":
-      return <ColorField {...props} />;
-    case "phone":
-      return <PhoneField {...props} />;
-    case "password":
-      return <PasswordField {...props} />;
-    case "number":
-      return <NumberField {...props} />;
-    case "rich-choices":
-      return <RichChoicesField {...props} />;
-    case "custom":
+// Each branch destructures `inputType` (and, for "custom", `CustomComponent`)
+// out of the already-narrowed props, so the spread it forwards is exactly the
+// dispatched component's own prop surface. Destructuring before the switch
+// would break the discriminated-union narrowing on the rest object.
+const Field = (props: FieldProps): React.ReactElement => {
+  switch (props.inputType) {
+    case "textarea": {
+      const { inputType, ...rest } = props;
+      return <TextareaField {...rest} />;
+    }
+    case "checkbox": {
+      const { inputType, ...rest } = props;
+      return <CheckboxField {...rest} />;
+    }
+    case "switch": {
+      const { inputType, ...rest } = props;
+      return <SwitchField {...rest} />;
+    }
+    case "rating": {
+      const { inputType, ...rest } = props;
+      return <RatingField {...rest} />;
+    }
+    case "range": {
+      const { inputType, ...rest } = props;
+      return <RangeField {...rest} />;
+    }
+    case "select": {
+      const { inputType, ...rest } = props;
+      return <SelectField {...rest} />;
+    }
+    case "choices": {
+      const { inputType, ...rest } = props;
+      return <ChoicesField {...rest} />;
+    }
+    case "combobox": {
+      const { inputType, ...rest } = props;
+      return <ComboboxField {...rest} />;
+    }
+    case "hidden": {
+      const { inputType, ...rest } = props;
+      return <HiddenField {...rest} />;
+    }
+    case "date": {
+      const { inputType, ...rest } = props;
+      return <DateField {...rest} />;
+    }
+    case "time": {
+      const { inputType, ...rest } = props;
+      return <TimeField {...rest} />;
+    }
+    case "datetime": {
+      const { inputType, ...rest } = props;
+      return <DateTimeField {...rest} />;
+    }
+    case "file": {
+      const { inputType, ...rest } = props;
+      return <FileUploadField {...rest} />;
+    }
+    case "color": {
+      const { inputType, ...rest } = props;
+      return <ColorField {...rest} />;
+    }
+    case "phone": {
+      const { inputType, ...rest } = props;
+      return <PhoneField {...rest} />;
+    }
+    case "password": {
+      const { inputType, ...rest } = props;
+      return <PasswordField {...rest} />;
+    }
+    case "number": {
+      const { inputType, ...rest } = props;
+      return <NumberField {...rest} />;
+    }
+    case "rich-choices": {
+      const { inputType, ...rest } = props;
+      return <RichChoicesField {...rest} />;
+    }
+    case "custom": {
+      const { inputType, CustomComponent, ...rest } = props;
       if (!CustomComponent) {
         throw new Error(
           'Field with inputType="custom" requires a CustomComponent prop.',
         );
       }
-      return <CustomComponent {...props} />;
+      return <CustomComponent {...rest} />;
+    }
     default:
-      return <TextField inputType={inputType} {...props} />;
+      // Text-like native types ("text" | "email" | "tel" | "url"): TextField
+      // consumes `inputType` itself, so the discriminant stays in the spread.
+      return <TextField {...props} />;
   }
 };
 
