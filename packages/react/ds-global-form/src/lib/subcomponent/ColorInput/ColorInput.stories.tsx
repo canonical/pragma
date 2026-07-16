@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import * as decorators from "storybook/decorators.js";
 import { ColorInput } from "./ColorInput.js";
 
 // Presentational stories render the input directly, with no form decorator.
@@ -53,4 +54,14 @@ export const Disabled: Story = {
     value: "#6b7280",
     disabled: true,
   },
+};
+
+/**
+ * Presentational error state: the bare input wrapped in the field `.danger`
+ * context (the visual layer the Wrapper applies on a real validation error).
+ * For the react-hook-form-driven error see ColorField's `WithError`.
+ */
+export const ErrorState: Story = {
+  decorators: [decorators.danger()],
+  args: { value: "#3b82f6" },
 };

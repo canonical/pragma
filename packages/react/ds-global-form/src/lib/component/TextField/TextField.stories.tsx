@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import { TextField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
@@ -26,3 +27,6 @@ export const Email: Story = {
 export const WithPrefixAndSuffix: Story = {
   args: { name: "domain", label: "Domain", prefix: "https://", suffix: ".com" },
 };
+
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({ name: "err_text", label: "Full name" });

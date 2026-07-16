@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import { RangeField } from "./index.js";
 
 const meta = {
@@ -30,3 +31,10 @@ export const CustomSliderLabel: Story = {
     sliderLabel: "Volume (slider)",
   },
 };
+
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({
+  name: "err_range",
+  label: "Volume",
+  extraArgs: { min: 0, max: 100 },
+});

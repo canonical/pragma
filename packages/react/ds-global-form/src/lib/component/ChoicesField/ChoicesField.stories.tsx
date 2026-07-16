@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import * as fixtures from "storybook/fixtures.options.js";
 import { ChoicesField } from "./index.js";
 
@@ -81,3 +82,15 @@ export const ColumnsMultiple: Story = {
     columns: 2,
   },
 };
+
+/** Error state: touched + failing validation → the group shows `.danger` chrome + the error message. */
+export const WithError = errorStory({
+  name: "err_choices",
+  label: "Choose your operating system",
+  extraArgs: {
+    options: [
+      { value: "ubuntu", label: "Ubuntu" as React.ReactNode },
+      { value: "debian", label: "Debian" as React.ReactNode },
+    ],
+  },
+});

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import { PasswordField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
@@ -30,3 +31,9 @@ export const WithDescription: Story = {
 export const NotRevealable: Story = {
   args: { name: "password", label: "Password", revealable: false },
 };
+
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({
+  name: "err_password",
+  label: "Password",
+});

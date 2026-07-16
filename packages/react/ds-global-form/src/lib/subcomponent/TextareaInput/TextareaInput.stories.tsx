@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as decorators from "storybook/decorators.js";
 import { TextareaInput } from "./TextareaInput.js";
 
 // Presentational stories render the input directly, with no form decorator.
@@ -22,4 +23,14 @@ export const Rows: Story = {
 
 export const Disabled: Story = {
   args: { name: "content", disabled: true },
+};
+
+/**
+ * Presentational error state: the bare input wrapped in the field `.danger`
+ * context (the visual layer the Wrapper applies on a real validation error).
+ * For the react-hook-form-driven error see TextareaField's `WithError`.
+ */
+export const ErrorState: Story = {
+  decorators: [decorators.danger()],
+  args: { name: "bio" },
 };

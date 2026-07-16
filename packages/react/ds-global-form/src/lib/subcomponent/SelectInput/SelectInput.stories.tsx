@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as decorators from "storybook/decorators.js";
 import * as fixtures from "storybook/fixtures.options.js";
 import { SelectInput } from "./SelectInput.js";
 
@@ -19,4 +20,14 @@ export const Default: Story = {
 
 export const Disabled: Story = {
   args: { name: "select_disabled", options: fixtures.fruits, disabled: true },
+};
+
+/**
+ * Presentational error state: the bare input wrapped in the field `.danger`
+ * context (the visual layer the Wrapper applies on a real validation error).
+ * For the react-hook-form-driven error see SelectField's `WithError`.
+ */
+export const ErrorState: Story = {
+  decorators: [decorators.danger()],
+  args: { name: "select", options: fixtures.fruits },
 };

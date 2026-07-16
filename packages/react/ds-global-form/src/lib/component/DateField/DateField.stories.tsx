@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as decorators from "storybook/decorators.js";
+import { errorStory } from "storybook/errorStory.js";
 import { DateField } from "./index.js";
 
 // Field-tier stories run inside a form decorator (label/description/error +
@@ -68,15 +69,5 @@ export const Disabled: Story = {
   },
 };
 
-export const WithError: Story = {
-  args: {
-    name: "date_error",
-    label: "Date (required)",
-    registerProps: { required: "Date is required" },
-  },
-  decorators: [
-    decorators.form({
-      touchedFields: ["date_error"],
-    }),
-  ],
-};
+/** Error state: touched + failing validation → the field shows `.danger` chrome + the error message. */
+export const WithError = errorStory({ name: "err_date", label: "Birthday" });

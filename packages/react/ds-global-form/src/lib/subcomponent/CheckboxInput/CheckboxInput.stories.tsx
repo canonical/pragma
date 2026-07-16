@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as decorators from "storybook/decorators.js";
 import { CheckboxInput } from "./CheckboxInput.js";
 
 // Presentational stories render the input directly, with no form decorator.
@@ -60,4 +61,15 @@ export const DisabledIndeterminate: Story = {
       }}
     />
   ),
+};
+
+/**
+ * Presentational error state: the bare checkbox wrapped in the field `.danger`
+ * context. The checkbox control has no error border of its own — the error is
+ * conveyed by the `FieldError` message. For the react-hook-form-driven error
+ * see CheckboxField's `WithError`.
+ */
+export const ErrorState: Story = {
+  decorators: [decorators.danger()],
+  args: { name: "subscribe" },
 };
