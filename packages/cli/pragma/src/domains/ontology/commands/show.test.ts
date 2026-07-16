@@ -44,7 +44,25 @@ describe("ontology show command", () => {
     const result = value as OntologyDetailed;
     expect(result.prefix).toBe("ds");
     expect(result.classes.length).toBeGreaterThan(0);
-    expect(result.properties.length).toBeGreaterThan(0);
+    const propertyCount =
+      result.classes.reduce((n, c) => n + c.properties.length, 0) +
+      result.unattached.length;
+    expect(propertyCount).toBeGreaterThan(0);
+  });
+
+  it("deep-dives into a class via the class param", async () => {
+    const ctx = makeCtx();
+    const cmd = buildShowCommand(ctx);
+    const { value, text } = await executeOutput(
+      cmd,
+      { prefix: "ds", class: "Component" },
+      ctx,
+    );
+
+    const result = value as OntologyDetailed;
+    expect(result.focus?.iri).toBe("ds:Component");
+    expect(text).toContain("Component");
+    expect(text).toContain("extends:");
   });
 
   it("completes ontology prefixes", async () => {
@@ -62,8 +80,10 @@ describe("ontology show command", () => {
     const cmd = buildShowCommand(ctx);
     const { text } = await executeOutput(cmd, { prefix: "ds" }, ctx);
 
-    expect(text).toContain("Classes");
-    expect(text).toContain("Properties");
+    expect(text).toContain("Ontology ds:");
+    expect(text).toContain("classes");
+    // Hierarchy: children render beneath their parent with tree branches.
+    expect(text).toContain("└─");
   });
 
   it("renders llm output", async () => {
@@ -73,7 +93,7 @@ describe("ontology show command", () => {
     const cmd = buildShowCommand(ctx);
     const { text } = await executeOutput(cmd, { prefix: "ds" }, ctx);
 
-    expect(text).toContain("## ds:");
+    expect(text).toContain("## Ontology ds:");
     expect(text).toContain("### Classes");
   });
 

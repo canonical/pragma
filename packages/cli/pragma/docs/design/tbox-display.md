@@ -1,6 +1,6 @@
 # Displaying the TBox: design for `pragma ontology show`
 
-**Status:** proposal (2026-07)
+**Status:** implemented (2026-07) — `showOntology` returns the structure below; plain/llm/json and MCP `ontology_show` are projections of it.
 **Motivation:** `ontology show <prefix>` is the primary window into an
 ontology's schema (its TBox — classes, properties, constraints). Today it
 renders two flat alphabetical lists, which hides the one thing a schema

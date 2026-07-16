@@ -69,7 +69,8 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | Command | Description |
 |---------|-------------|
 | `pragma ontology list` | List loaded ontology namespaces |
-| `pragma ontology show <prefix>` | Show classes and properties for a namespace |
+| `pragma ontology show <prefix>` | Show the TBox: class hierarchy tree with instance counts and attached properties |
+| `pragma ontology show <prefix> --class <Class>` | Deep-dive into one class: super chain, direct/inherited properties, reverse references, sample instances |
 
 ### Graph
 

@@ -146,10 +146,14 @@ Parameters:
 
 #### `ontology_show`
 
-Show classes and properties for a single ontology namespace.
+Show the TBox for a namespace: class hierarchy (topologically ordered, with
+instance counts and attached properties), unattached properties, SHACL
+constraint summaries, and the owl:Ontology header. All IRIs are compact;
+the response carries the `prefixes` map needed to expand them.
 
 Parameters:
 - `prefix` (string, required) — namespace prefix (e.g., "ds", "cs")
+- `class` (string, optional) — deep-dive into one class (label, local name, or compact IRI): super chain, direct + inherited properties, reverse references, and sample instances (returned as `focus`)
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
 #### `graph_query`

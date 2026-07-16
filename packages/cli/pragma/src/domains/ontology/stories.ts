@@ -89,9 +89,24 @@ export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyDetailed> =
             .filter((p) => p.toLowerCase().startsWith(partial.toLowerCase()));
         },
       },
+      {
+        name: "class",
+        type: "string",
+        description:
+          "Deep-dive into one class (label, local name, or compact IRI)",
+        toolDescription:
+          "Class to deep-dive into: super chain, direct + inherited properties, reverse references, and sample instances",
+      },
     ],
-    examples: ["pragma ontology show ds", "pragma ontology show cs --llm"],
-    resolve: (rt, params) => showOntology(rt.store, params.prefix as string),
+    examples: [
+      "pragma ontology show ds",
+      "pragma ontology show cs --llm",
+      "pragma ontology show ds --class Component",
+    ],
+    resolve: (rt, params) =>
+      showOntology(rt.store, params.prefix as string, {
+        class: params.class as string | undefined,
+      }),
     toOutput: (ontology) => ontology,
     formatters: showFormatters,
     toEnvelope: (ontology) => ({ data: ontology }),

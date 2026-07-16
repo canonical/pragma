@@ -26,7 +26,10 @@ export type {
 } from "./modifier.js";
 export type {
   OntologyClass,
+  OntologyClassFocus,
+  OntologyConstraint,
   OntologyDetailed,
+  OntologyMeta,
   OntologyProperty,
   OntologySummary,
 } from "./ontology.js";

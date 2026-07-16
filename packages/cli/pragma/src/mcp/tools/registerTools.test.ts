@@ -945,7 +945,7 @@ describe("ontology_show", () => {
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);
     expect(envelope.condensed).toBe(true);
-    expect(envelope.text).toEqual(expect.stringContaining("## ds:"));
+    expect(envelope.text).toEqual(expect.stringContaining("## Ontology ds:"));
   });
 });
 
