@@ -238,6 +238,64 @@ describe("validateStoryPackDefinition — list filters", () => {
     ).toThrow(/values/);
   });
 
+  it("accepts a value-free filter (data-driven value set)", () => {
+    const validated = validateStoryPackDefinition(
+      withFilters([{ param: "category", variable: "category" }]),
+      "test",
+    );
+    expect(validated.list.filters?.at(0)).toEqual({
+      param: "category",
+      variable: "category",
+    });
+  });
+
+  it("rejects the compiled search parameter name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "search", variable: "category", values: ["x"] }]),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  it("rejects the derived detail parameter name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withFilters([{ param: "detail", variable: "category", values: ["x"] }]),
+        "test",
+      ),
+    ).toThrow(/reserved/);
+  });
+
+  /** RECIPE_STORY with the given `list.search`. */
+  function withSearch(search: unknown): unknown {
+    const list = { ...(base.list as Record<string, unknown>), search };
+    return { ...base, list };
+  }
+
+  it("accepts a search over variables the query mentions", () => {
+    const validated = validateStoryPackDefinition(
+      withSearch({ variables: ["name", "category"] }),
+      "test",
+    );
+    expect(validated.list.search?.variables).toEqual(["name", "category"]);
+  });
+
+  it("rejects a search without variables", () => {
+    expect(() =>
+      validateStoryPackDefinition(withSearch({ variables: [] }), "test"),
+    ).toThrow(/search.variables/);
+  });
+
+  it("rejects a search variable the query never mentions", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withSearch({ variables: ["season"] }),
+        "test",
+      ),
+    ).toThrow(/does not appear in "list.query"/);
+  });
+
   /** RECIPE_STORY with the given `lookup.expand`, for expand validation. */
   function withExpand(expand: unknown): unknown {
     return {

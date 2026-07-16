@@ -95,7 +95,7 @@ export interface StoryPackDisclosure {
 
 /**
  * A declarative list filter: a CLI/MCP parameter constraining one SELECT
- * variable to a declared value set.
+ * variable.
  *
  * Filters are row predicates applied AFTER the author query runs — the
  * query text is never modified, so filter input cannot inject SPARQL,
@@ -109,8 +109,27 @@ export interface StoryPackFilter {
   readonly param: string;
   /** SELECT variable the filter constrains (without `?`). */
   readonly variable: string;
-  /** Allowed values; anything else is rejected with INVALID_INPUT. */
-  readonly values: readonly string[];
+  /**
+   * Allowed values; anything else is rejected with INVALID_INPUT and the
+   * set projects to CLI select choices and an MCP enum. Omitted when the
+   * value set is data-driven (e.g. categories that live in the graph): the
+   * parameter is then a free string matched case-insensitively against the
+   * variable — still a post-query row predicate, never query text.
+   */
+  readonly values?: readonly string[];
+  /** Help text (defaults to a generated description). */
+  readonly description?: string;
+}
+
+/**
+ * Free-text search over list rows: a `--search` string parameter that
+ * keeps a row when ANY named SELECT variable's value contains the term
+ * (case-insensitive substring). Like filters, search is applied after the
+ * author query runs — user input never touches the query text.
+ */
+export interface StoryPackSearch {
+  /** SELECT variables searched (without `?`). */
+  readonly variables: readonly string[];
   /** Help text (defaults to a generated description). */
   readonly description?: string;
 }
@@ -123,6 +142,8 @@ export interface StoryPackList {
   readonly columns: readonly StoryPackColumn[];
   /** Declarative filters projected to CLI flags and MCP parameters. */
   readonly filters?: readonly StoryPackFilter[];
+  /** Free-text search projected to a `--search` flag / `search` parameter. */
+  readonly search?: StoryPackSearch;
 }
 
 /**

@@ -89,6 +89,66 @@ describe("compilePackStories — list filters", () => {
   });
 });
 
+// Pack v1: value-free filters (data-driven value sets) and free-text search.
+describe("compilePackStories — value-free filters and search", () => {
+  /** RECIPE_STORY with a value-free category filter and a name search. */
+  const SEARCHABLE_STORY: StoryPackDefinition = {
+    ...RECIPE_STORY,
+    list: {
+      ...RECIPE_STORY.list,
+      filters: [{ param: "category", variable: "category" }],
+      search: { variables: ["name"] },
+    },
+  };
+
+  it("projects a value-free filter as a plain string parameter", () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    const param = list.params.find((p) => p.name === "category");
+    expect(param?.type).toBe("string");
+    expect(param?.enum).toBeUndefined();
+  });
+
+  it("filters rows by case-insensitive equality without a declared set", async () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    const rows = await list.resolve(rt, { category: "SOUP" });
+    expect(rows.map((row) => row.name)).toEqual(["Gazpacho"]);
+  });
+
+  it("returns no rows (not an error) for an unknown filter value", async () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    await expect(list.resolve(rt, { category: "dinner" })).resolves.toEqual([]);
+  });
+
+  it("projects a `search` string parameter", () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    const param = list.params.find((p) => p.name === "search");
+    expect(param?.type).toBe("string");
+    expect(param?.description).toContain("name");
+  });
+
+  it("keeps rows whose searched variables contain the term", async () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    const rows = await list.resolve(rt, { search: "gaz" });
+    expect(rows.map((row) => row.name)).toEqual(["Gazpacho"]);
+  });
+
+  it("applies search after filters, conjunctively", async () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    const rows = await list.resolve(rt, {
+      category: "breakfast",
+      search: "gaz",
+    });
+    expect(rows).toEqual([]);
+  });
+
+  it("skips the generated filter example when no filter declares values", () => {
+    const { list } = compilePackStories(SEARCHABLE_STORY, "test", PREFIXES);
+    expect(
+      list.examples.some((example) => example.includes("--category")),
+    ).toBe(false);
+  });
+});
+
 describe("compilePackStories — lookup", () => {
   it("looks an entity up by name, case-insensitively", async () => {
     const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);

@@ -19,6 +19,7 @@ import { suggestNames } from "../../suggestions/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
 import type { LookupStory, ReadStory, StoryParam } from "../types.js";
 import applyPackFilters from "./applyPackFilters.js";
+import applyPackSearch from "./applyPackSearch.js";
 import buildLookupQuery, {
   buildExpandQuery,
   buildLookupNamesQuery,
@@ -29,6 +30,7 @@ import type {
   StoryPackDisclosure,
   StoryPackFilter,
   StoryPackLookup,
+  StoryPackSearch,
 } from "./types.js";
 
 /** A pack entity/row: SELECT variable name → string value. */
@@ -87,27 +89,34 @@ export default function compilePackStories(
   };
 
   const filters = definition.list.filters;
-  const filterExample = filters?.at(0);
+  const search = definition.list.search;
+  // The generated example uses the first filter with a declared value set —
+  // a value-free filter has no representative value to show.
+  const filterExample = filters?.find((filter) => filter.values !== undefined);
   const list: ReadStory<PackRow[], PackRow[]> = {
     noun,
     verb: "list",
     description,
     toolDescription:
       definition.toolDescription ?? `${description} (story pack: ${source}).`,
-    params: projectFilterParams(filters),
+    params: [...projectFilterParams(filters), ...projectSearchParam(search)],
     examples: [
       `pragma ${noun} list`,
       ...(filterExample
         ? [
-            `pragma ${noun} list --${filterExample.param} ${quoteExampleValue(filterExample.values.at(0) ?? "")}`,
+            `pragma ${noun} list --${filterExample.param} ${quoteExampleValue(filterExample.values?.at(0) ?? "")}`,
           ]
         : []),
       `pragma ${noun} list --llm`,
     ],
     resolve: async (rt, params) =>
-      applyPackFilters(
-        await runSelectQuery(rt.store, definition.list.query, source),
-        filters,
+      applyPackSearch(
+        applyPackFilters(
+          await runSelectQuery(rt.store, definition.list.query, source),
+          filters,
+          params,
+        ),
+        search,
         params,
       ),
     toOutput: (rows) => rows,
@@ -326,8 +335,10 @@ function quoteExampleValue(value: string): string {
 /**
  * Project declared pack filters onto kernel story parameters.
  *
- * The declared value set becomes the parameter's enum, which the kernel
- * projects to CLI select choices and an MCP enum schema.
+ * A declared value set becomes the parameter's enum, which the kernel
+ * projects to CLI select choices and an MCP enum schema. A value-free
+ * filter projects as a plain string parameter — its valid values are
+ * data-driven and enforced only as a post-query row predicate.
  */
 function projectFilterParams(
   filters: readonly StoryPackFilter[] | undefined,
@@ -337,9 +348,26 @@ function projectFilterParams(
     type: "string",
     description:
       filter.description ??
-      `Filter by ${filter.variable} (${filter.values.join(", ")})`,
-    enum: filter.values,
+      (filter.values
+        ? `Filter by ${filter.variable} (${filter.values.join(", ")})`
+        : `Filter by ${filter.variable}`),
+    ...(filter.values ? { enum: filter.values } : {}),
   }));
+}
+
+/**
+ * Project a declared free-text search onto the `search` story parameter.
+ */
+function projectSearchParam(search: StoryPackSearch | undefined): StoryParam[] {
+  if (!search) return [];
+  return [
+    {
+      name: "search",
+      type: "string",
+      description:
+        search.description ?? `Search in ${search.variables.join(", ")}`,
+    },
+  ];
 }
 
 function capitalize(value: string): string {
