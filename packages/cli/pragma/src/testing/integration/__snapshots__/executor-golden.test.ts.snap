@@ -353,7 +353,7 @@ exports[`golden: executeGenerator — components > react — json plan 1`] = `
     {
       "action": "create",
       "path": "src/components/Button/types.ts",
-      "lines": 7
+      "lines": 15
     },
     {
       "action": "create",
@@ -392,7 +392,7 @@ exports[`golden: executeGenerator — components > react — json plan 1`] = `
   ],
   "files": {
     "src/components/Button/Button.tsx": "import type React from \\"react\\";\\nimport type { ButtonProps } from \\"./types.js\\";\\nimport \\"./styles.css\\";\\n\\nconst componentCssClassName = \\"ds button\\";\\n\\n/**\\n * Button component\\n */\\nconst Button = ({\\n\\tclassName,\\n\\tchildren,\\n\\t...props\\n}: ButtonProps): React.ReactElement => {\\n\\treturn (\\n\\t\\t<div\\n\\t\\t\\tclassName={[componentCssClassName, className].filter(Boolean).join(\\" \\")}\\n\\t\\t\\t{...props}\\n\\t\\t>\\n\\t\\t\\t{children}\\n\\t\\t</div>\\n\\t);\\n};\\n\\nexport default Button;\\n",
-    "src/components/Button/types.ts": "import type { HTMLAttributes, ReactNode } from \\"react\\";\\n\\nexport interface ButtonProps extends HTMLAttributes<HTMLDivElement> {\\n\\t/** Content to render inside the component */\\n\\tchildren?: ReactNode;\\n}\\n",
+    "src/components/Button/types.ts": "import type { ComponentProps, ReactNode } from \\"react\\";\\n\\ntype OwnProps = {\\n\\t/** Content to render inside the component */\\n\\tchildren?: ReactNode;\\n};\\n\\n/**\\n * Props extend the native props of the component's root element, so every\\n * attribute that element accepts (data-*, aria-*, event handlers, …) reaches\\n * the DOM. Change \\"div\\" to the component's actual root element tag.\\n */\\nexport type ButtonProps = OwnProps &\\n\\tOmit<ComponentProps<\\"div\\">, keyof OwnProps>;\\n",
     "src/components/Button/index.ts": "export { default as Button } from \\"./Button.js\\";\\nexport type * from \\"./types.js\\";\\n",
     "src/components/Button/Button.tests.tsx": "import { describe, expect, it } from \\"vitest\\";\\nimport { render, screen } from \\"@testing-library/react\\";\\nimport Button from \\"./Button.js\\";\\n\\ndescribe(\\"Button\\", () => {\\n\\tit(\\"renders children\\", () => {\\n\\t\\trender(<Button>Test content</Button>);\\n\\t\\texpect(screen.getByText(\\"Test content\\")).toBeInTheDocument();\\n\\t});\\n\\n\\tit(\\"applies custom className\\", () => {\\n\\t\\trender(<Button className=\\"custom-class\\">Content</Button>);\\n\\t\\tconst element = screen.getByText(\\"Content\\");\\n\\t\\texpect(element.className).toContain(\\"ds button\\");\\n\\t\\texpect(element.className).toContain(\\"custom-class\\");\\n\\t});\\n\\n\\tit(\\"passes through additional props\\", () => {\\n\\t\\trender(<Button data-testid=\\"test-component\\">Content</Button>);\\n\\t\\texpect(screen.getByTestId(\\"test-component\\")).toBeInTheDocument();\\n\\t});\\n});\\n",
     "src/components/Button/Button.ssr.tests.tsx": "import { describe, expect, it } from \\"vitest\\";\\nimport { renderToString } from \\"react-dom/server\\";\\nimport Button from \\"./Button.js\\";\\n\\ndescribe(\\"Button SSR\\", () => {\\n\\tit(\\"renders without hydration errors\\", () => {\\n\\t\\tconst html = renderToString(<Button>Test content</Button>);\\n\\t\\texpect(html).toContain(\\"Test content\\");\\n\\t\\texpect(html).toContain(\\"ds button\\");\\n\\t});\\n});\\n",
@@ -427,7 +427,7 @@ exports[`golden: executeGenerator — components > react — llm plan 1`] = `
 | info | Generating React component: Button |  |
 | mkdir | src/components/Button |  |
 | create | src/components/Button/Button.tsx | 26 |
-| create | src/components/Button/types.ts | 7 |
+| create | src/components/Button/types.ts | 15 |
 | create | src/components/Button/index.ts | 3 |
 | create | src/components/Button/Button.tests.tsx | 23 |
 | create | src/components/Button/Button.ssr.tests.tsx | 12 |
@@ -472,12 +472,20 @@ export default Button;
 ### src/components/Button/types.ts
 
 \`\`\`ts
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface ButtonProps extends HTMLAttributes<HTMLDivElement> {
+type OwnProps = {
 	/** Content to render inside the component */
 	children?: ReactNode;
-}
+};
+
+/**
+ * Props extend the native props of the component's root element, so every
+ * attribute that element accepts (data-*, aria-*, event handlers, …) reaches
+ * the DOM. Change "div" to the component's actual root element tag.
+ */
+export type ButtonProps = OwnProps &
+	Omit<ComponentProps<"div">, keyof OwnProps>;
 
 \`\`\`
 
