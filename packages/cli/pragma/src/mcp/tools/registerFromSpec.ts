@@ -8,6 +8,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import type { ToolParamDef, ToolSpec } from "../../domains/shared/ToolSpec.js";
 import type { ToolPayload } from "../types.js";
@@ -31,6 +32,9 @@ function buildZodSchema(
       case "string[]":
         field = z.array(z.string());
         break;
+      case "record":
+        field = z.record(z.string());
+        break;
       case "string":
         field = def.enum
           ? z.enum(def.enum as [string, ...string[]])
@@ -49,6 +53,60 @@ function buildZodSchema(
   }
 
   return z.object(shape);
+}
+
+/** One `tools/list` entry, as the MCP SDK serializes it. */
+export interface ToolListEntry {
+  readonly name: string;
+  readonly description: string;
+  readonly inputSchema: Record<string, unknown>;
+  readonly annotations: {
+    readonly readOnlyHint: boolean;
+    readonly destructiveHint?: boolean;
+    readonly openWorldHint: boolean;
+  };
+  /** SDK-stamped: `registerTool` hardcodes `taskSupport: "forbidden"`. */
+  readonly execution: { readonly taskSupport: "forbidden" };
+}
+
+/**
+ * Project a ToolSpec onto its `tools/list` entry.
+ *
+ * THE MIRROR INVARIANT: this must serialize byte-identically to what the
+ * SDK serves for the registered tool. It therefore runs the SAME zod
+ * schema build `registerFromSpec` hands the server, through the SAME
+ * `zod-to-json-schema` conversion (and options) the SDK applies for zod
+ * v3 schemas, with the SDK's empty-object fallback. Do not hand-roll a
+ * second JSON-schema writer here — the parity suite is the referee.
+ *
+ * @param spec - The declarative tool spec.
+ * @returns The `tools/list` entry the server would serve for it.
+ */
+export function buildToolListEntry(spec: ToolSpec): ToolListEntry {
+  const zodSchema =
+    spec.params && Object.keys(spec.params).length > 0
+      ? buildZodSchema(spec.params)
+      : undefined;
+  const inputSchema = zodSchema
+    ? (zodToJsonSchema(zodSchema, {
+        strictUnions: true,
+        pipeStrategy: "input",
+      }) as Record<string, unknown>)
+    : { type: "object", properties: {} };
+
+  return {
+    name: spec.name,
+    description: spec.description,
+    inputSchema,
+    annotations: {
+      readOnlyHint: spec.readOnly,
+      ...(spec.destructive !== undefined
+        ? { destructiveHint: spec.destructive }
+        : {}),
+      openWorldHint: false,
+    },
+    execution: { taskSupport: "forbidden" },
+  };
 }
 
 /**

@@ -1,9 +1,9 @@
 /**
  * @module LLM domain barrel.
  *
- * Provides the `pragma capabilities` and `pragma llm` commands
- * for LLM orientation context generation.
+ * Provides the `pragma llm` command for LLM orientation context
+ * generation. (The redesigned `capabilities` lives in its own domain.)
  */
 
-export { buildCapabilitiesCommand, buildLlmCommand } from "./commands/index.js";
+export { buildLlmCommand } from "./commands/index.js";
 export { specs as mcpSpecs } from "./mcp/index.js";

@@ -96,7 +96,7 @@ const HELP_GROUPS: readonly HelpGroup[] = [
     nouns: [
       {
         noun: "capabilities",
-        summary: "Discover conventions, tools, and the discovery sequence",
+        summary: "Mirror the MCP orientation payloads (state, prompts, tools)",
       },
       {
         noun: "llm",

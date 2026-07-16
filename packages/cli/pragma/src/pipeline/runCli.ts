@@ -4,7 +4,6 @@ import { DEFAULT_ORIGINS } from "#config";
 import { PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
-import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
@@ -225,7 +224,6 @@ async function runStoreSkip(
     ...traceCommands(),
     ...graphqlCommands(),
     ...createCommands(),
-    buildCapabilitiesCommand(),
   ];
   const program = createProgram(commands, stubCtx);
 

@@ -324,6 +324,7 @@
         "oxigraph": "^0.5.0",
         "react": "^19.2.4",
         "zod": "^3.25.0",
+        "zod-to-json-schema": "^3.25.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",

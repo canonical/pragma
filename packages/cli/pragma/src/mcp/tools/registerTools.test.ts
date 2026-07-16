@@ -1233,38 +1233,73 @@ describe("info", () => {
 // =============================================================================
 
 describe("capabilities", () => {
-  it("returns enriched tool catalog with counts", async () => {
+  it("aggregates instructions, state, prompts, and tools (mirror payloads)", async () => {
     const result = await client.callTool({
       name: "capabilities",
       arguments: {},
     });
     const data = parseData(result) as {
-      version: string;
-      conventions: Record<string, string>;
-      discovery_sequence: { stage: number; tool: string; purpose: string }[];
-      tools: { name: string; category: string; use_when: string }[];
-      counts: {
-        total: number;
-        read: number;
-        write: number;
-        orientation: number;
-        diagnostic: number;
-      };
-      limits: Record<string, unknown>;
+      instructions: string;
+      state: { version: string; state: Record<string, unknown> };
+      prompts: { name: string }[];
+      tools: { name: string; description: string; inputSchema: unknown }[];
     };
-    const toolNames = data.tools.map((t) => t.name);
-    expect(toolNames).toContain("block_list");
-    expect(toolNames).toContain("capabilities");
-    expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(34);
-    expect(data.counts.read).toBeGreaterThan(0);
-    expect(data.counts.write).toBe(9);
-    expect(data.counts.orientation).toBe(2);
-    expect(data.counts.diagnostic).toBe(2);
-    expect(data.version).toBeDefined();
-    expect(data.conventions).toBeDefined();
-    expect(data.discovery_sequence.length).toBe(3);
-    expect(data.limits).toBeDefined();
+
+    // instructions ≡ the initialize-result instructions.
+    expect(data.instructions).toBe(client.getInstructions());
+
+    // state ≡ the JSON text of resources/read pragma://state.
+    const resource = await client.readResource({ uri: "pragma://state" });
+    const stateText = (resource.contents[0] as { text: string }).text;
+    expect(data.state).toEqual(JSON.parse(stateText));
+
+    // prompts ≡ the prompts/list result's prompts array.
+    const { prompts } = await client.listPrompts();
+    expect(data.prompts).toEqual(JSON.parse(JSON.stringify(prompts)));
+
+    // tools ≡ the tools/list result's tools array — including this tool
+    // itself (the aggregator never special-cases itself out).
+    const { tools } = await client.listTools();
+    expect(data.tools).toEqual(JSON.parse(JSON.stringify(tools)));
+    expect(data.tools.map((t) => t.name)).toContain("capabilities");
+    expect(data.tools.map((t) => t.name)).toContain("block_list");
+  });
+
+  it("hydrates one prompt via { prompt, args } (tools-only prompts/get)", async () => {
+    const result = await client.callTool({
+      name: "capabilities",
+      arguments: {
+        prompt: "implement-component",
+        args: { component: "Button" },
+      },
+    });
+    const data = parseData(result) as {
+      description: string;
+      messages: { role: string; content: { type: string; text: string } }[];
+    };
+    expect(data.messages).toHaveLength(1);
+    expect(data.messages[0]?.role).toBe("user");
+    expect(data.messages[0]?.content.text).toContain(
+      "You are implementing the Button component",
+    );
+
+    const viaProtocol = await client.getPrompt({
+      name: "implement-component",
+      arguments: { component: "Button" },
+    });
+    expect(data).toEqual(JSON.parse(JSON.stringify(viaProtocol)));
+  });
+
+  it("returns ENTITY_NOT_FOUND with suggestions for an unknown prompt", async () => {
+    const result = await client.callTool({
+      name: "capabilities",
+      arguments: { prompt: "implement-compnent" },
+    });
+    expect(result.isError).toBe(true);
+    const envelope = parseEnvelope(result);
+    const error = envelope.error as McpErrorPayload;
+    expect(error.code).toBe("ENTITY_NOT_FOUND");
+    expect(error.suggestions).toContain("implement-component");
   });
 });
 

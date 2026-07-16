@@ -1,2 +1,2 @@
-/** @module LLM domain MCP barrel — capabilities, llm. */
-export { buildCapabilitiesData, default as specs } from "./specs.js";
+/** @module LLM domain MCP barrel — llm. */
+export { default as specs } from "./specs.js";

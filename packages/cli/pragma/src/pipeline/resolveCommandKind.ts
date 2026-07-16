@@ -12,7 +12,9 @@ const STORE_SKIP_COMMANDS = new Set([
   "setup",
   "mcp",
   "update-refs",
-  "capabilities",
+  // `capabilities` is deliberately NOT here: it mirrors the MCP protocol
+  // payloads (pack tools, prompts), which need a booted store. `doctor`
+  // is the storeless diagnostic.
   "trace",
   "graphql",
   // `create` is pure scaffolding (summon generators) — it never queries the

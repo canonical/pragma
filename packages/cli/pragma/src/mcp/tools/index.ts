@@ -9,6 +9,7 @@
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { specs as blockSpecs } from "../../domains/block/mcp/index.js";
+import { specs as capabilitiesSpecs } from "../../domains/capabilities/mcp/index.js";
 import { specs as configSpecs } from "../../domains/config/mcp/index.js";
 import { specs as createSpecs } from "../../domains/create/mcp/index.js";
 import { specs as diagnosticSpecs } from "../../domains/doctor/mcp/index.js";
@@ -44,6 +45,10 @@ export const allSpecs: readonly ToolSpec[] = [
   ...skillSpecs,
   ...diagnosticSpecs,
   ...infoSpecs,
+  // The capabilities aggregator registers at the position its predecessor
+  // (the llm domain's static capabilities tool) held, keeping the ordered
+  // tool surface stable.
+  ...capabilitiesSpecs,
   ...orientationSpecs,
   ...createSpecs,
 ];
