@@ -114,3 +114,30 @@ export type WrappedComponentProps<
     BaseWrapperProps<ComponentProps> = WrapperProps<ComponentProps>,
 > = ComponentWrapperProps &
   WrapperHOCAdditionalProps<ComponentProps, ComponentWrapperProps>;
+
+/**
+ * The full public prop surface of a field component produced by `withWrapper`:
+ * the wrapped input's own props plus the wrapper chrome (`label`,
+ * `description`, `isOptional`, `requiredIndicator`, …) and the HOC extras
+ * (`middleware`, `WrapperComponent`, `condition`). Only the HOC-supplied
+ * `Component` is excluded. This is what `<XxxField {...props} />` accepts, and
+ * what each `FieldProps` variant is built from.
+ */
+export type WrappedFieldProps<
+  ComponentProps extends BaseInputProps,
+  ComponentWrapperProps extends
+    BaseWrapperProps<ComponentProps> = WrapperProps<ComponentProps>,
+> = Omit<
+  WrappedComponentProps<ComponentProps, ComponentWrapperProps>,
+  "Component"
+>;
+
+/**
+ * Public props of a toggle field (checkbox, switch) produced by
+ * `withToggleWrapper`: everything `WrappedFieldProps` accepts, but with the
+ * optional `label`/`controlLabel` replaced by the "at least one" union so a
+ * label-less toggle is a compile error rather than a runtime check.
+ */
+export type ToggleWrappedFieldProps<ComponentProps extends BaseInputProps> =
+  Omit<WrappedFieldProps<ComponentProps>, "label" | "controlLabel"> &
+    ToggleLabelProps;

@@ -81,22 +81,28 @@ export type TransformerFns = {
   ) => ExampleSettingValue;
 };
 
-export interface ExampleControlField extends FieldProps, TransformerFns {
-  /**
-   * The field's name. Used directly as the key within the active example's
-   * react-hook-form state, and (for CSS output) as the emitted variable name.
-   */
-  name: string;
-  /** Formats for which output is disabled */
-  disabledOutputFormats?: {
-    [key in ExampleOutputFormat]?: boolean;
+/**
+ * A showcase control: any of the `Field` variants (`FieldProps` is a
+ * discriminated union, so this must be a type intersection — an interface
+ * cannot extend a union) plus the showcase-specific transformer/output members.
+ */
+export type ExampleControlField = FieldProps &
+  TransformerFns & {
+    /**
+     * The field's name. Used directly as the key within the active example's
+     * react-hook-form state, and (for CSS output) as the emitted variable name.
+     */
+    name: string;
+    /** Formats for which output is disabled */
+    disabledOutputFormats?: {
+      [key in ExampleOutputFormat]?: boolean;
+    };
+    /**
+     * A default value for the control field.
+     * This is not directly consumed by the field, but it is used to set the initial value in the form state.
+     */
+    defaultValue?: ExampleSettingValue;
   };
-  /**
-   * A default value for the control field.
-   * This is not directly consumed by the field, but it is used to set the initial value in the form state.
-   */
-  defaultValue?: ExampleSettingValue;
-}
 
 /** The actual component that is rendered for an example. */
 export type ShowcaseComponent = (state: FormValues) => ReactElement;

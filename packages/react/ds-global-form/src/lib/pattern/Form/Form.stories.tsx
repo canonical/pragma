@@ -288,7 +288,12 @@ export const SideLayout: Story = {
 
 type TemplateProps = {
   fieldMap: FieldProps[];
-  otherProps?: Partial<FieldProps>;
+  /**
+   * Extra props merged into every field. Typed as the concrete cross-variant
+   * props these stories use — spreading a `Partial` of the whole union would
+   * pollute the `inputType` discriminant and defeat the narrowing.
+   */
+  otherProps?: { disabled?: boolean; isOptional?: boolean };
 };
 
 const FixtureTemplate: StoryFn<TemplateProps> = ({
