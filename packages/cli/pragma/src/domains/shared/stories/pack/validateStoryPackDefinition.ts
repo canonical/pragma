@@ -22,6 +22,18 @@ const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w-]*:[^/<>"\s]+$/;
 const EMBEDDABLE_IRI_PATTERN = /^[A-Za-z][\w+.-]*:\/\/[^<>"\s]+$/;
 
 /**
+ * Whether a resolved IRI matches the embeddable shape pack terms are held
+ * to (no whitespace or `<>"` characters, `scheme://` form).
+ *
+ * Shared with the lookup path so an IRI-addressed lookup applies the same
+ * strictness to resolved user queries as this validator applies to
+ * authored pack terms before either is embedded as `<iri>` in SPARQL.
+ */
+export function isEmbeddableIri(value: string): boolean {
+  return EMBEDDABLE_IRI_PATTERN.test(value);
+}
+
+/**
  * A filter parameter name: a single lowercase word.
  *
  * Deliberately stricter than a noun (no hyphens): the name is used

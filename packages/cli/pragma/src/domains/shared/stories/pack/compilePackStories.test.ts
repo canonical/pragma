@@ -206,6 +206,60 @@ describe("compilePackStories — lookup", () => {
   });
 });
 
+// Pack v1: IRI/prefixed-name addressing and glob expansion on lookups.
+describe("compilePackStories — lookup by IRI and glob", () => {
+  it("resolves an absolute IRI to the exact entity", async () => {
+    const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const result = await lookup?.resolve(
+      rt,
+      ["http://example.org/recipes/pancakes"],
+      {},
+    );
+    expect(result?.errors).toEqual([]);
+    expect(result?.results.at(0)?.name).toBe("Pancakes");
+  });
+
+  it("resolves a prefixed name through the merged prefix map", async () => {
+    const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const result = await lookup?.resolve(rt, ["ex:gazpacho"], {});
+    expect(result?.errors).toEqual([]);
+    expect(result?.results.at(0)?.name).toBe("Gazpacho");
+  });
+
+  it("collects an INVALID_INPUT entry for an unknown prefix", async () => {
+    const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const result = await lookup?.resolve(rt, ["zz:nonexistent"], {});
+    expect(result?.results).toHaveLength(0);
+    expect(result?.errors.at(0)?.code).toBe("INVALID_INPUT");
+  });
+
+  it("collects ENTITY_NOT_FOUND for an IRI naming no entity", async () => {
+    const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const result = await lookup?.resolve(rt, ["ex:missing"], {});
+    expect(result?.results).toHaveLength(0);
+    expect(result?.errors.at(0)?.code).toBe("ENTITY_NOT_FOUND");
+  });
+
+  it("expands glob queries against the entity name list", async () => {
+    const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const result = await lookup?.resolve(rt, ["*a*"], {});
+    expect(result?.errors).toEqual([]);
+    expect(result?.results.map((entity) => entity.name).sort()).toEqual([
+      "Gazpacho",
+      "Pancakes",
+    ]);
+  });
+
+  it("reports EMPTY_RESULTS for a glob matching nothing", async () => {
+    const { lookup } = compilePackStories(RECIPE_STORY, "test", PREFIXES);
+    const result = await lookup?.resolve(rt, ["Zebra*", "Pancakes"], {});
+    expect(result?.results.at(0)?.name).toBe("Pancakes");
+    const error = result?.errors.at(0);
+    expect(error?.code).toBe("EMPTY_RESULTS");
+    expect(error?.query).toBe("Zebra*");
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Pack v1: multi-valued expand projections (nested SPARQL)
 // ---------------------------------------------------------------------------

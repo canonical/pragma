@@ -60,6 +60,48 @@ export default function buildLookupQuery(
 }
 
 /**
+ * Build the SELECT retrieving one entity addressed directly by IRI.
+ *
+ * Mirrors {@link buildLookupQuery} but binds the already-resolved IRI to
+ * `?uri` instead of filtering on the `by` property's value, so absolute
+ * IRIs and prefixed names address an entity exactly. Injection-safe by
+ * construction: the caller resolves and validates `iri` against the
+ * embeddable-IRI shape (no whitespace or `<>"` characters) BEFORE it is
+ * interpolated here — raw user input never reaches this function.
+ *
+ * @param lookup - The pack's lookup declaration.
+ * @param iri - A resolved, validated absolute IRI.
+ * @returns SPARQL SELECT text.
+ */
+export function buildLookupByIriQuery(
+  lookup: StoryPackLookup,
+  iri: string,
+): string {
+  const fields = [...(lookup.fields ?? []), ...(lookup.sections ?? [])];
+  const vars = fields.map((field) => `?${field.name}`).join(" ");
+  const optionals = fields
+    .map(
+      (field) =>
+        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} . }`,
+    )
+    .join("\n");
+  const typeConstraint = lookup.type
+    ? `  ?uri a ${formatTerm(lookup.type)} .\n`
+    : "";
+
+  return [
+    `SELECT ?uri ?name${vars.length > 0 ? ` ${vars}` : ""} WHERE {`,
+    `  BIND(<${iri}> AS ?uri)`,
+    `  ?uri ${formatTerm(lookup.by)} ?name .`,
+    typeConstraint + optionals,
+    "}",
+    "LIMIT 1",
+  ]
+    .filter((line) => line !== "")
+    .join("\n");
+}
+
+/**
  * Build the sub-SELECT retrieving one expand's child rows for a resolved
  * entity.
  *

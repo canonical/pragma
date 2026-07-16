@@ -1,5 +1,6 @@
 import type { Store } from "@canonical/ke";
 import { PragmaError } from "#error";
+import resolveUri from "../../../graph/helpers/resolveUri.js";
 import type {
   ColumnDef,
   LookupField,
@@ -15,13 +16,18 @@ import {
   renderLookupLlm,
   renderLookupPlain,
 } from "../../renderers.js";
-import { suggestNames } from "../../suggestions/index.js";
+import {
+  expandGlob,
+  isGlobPattern,
+  suggestNames,
+} from "../../suggestions/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
 import type { LookupStory, ReadStory, StoryParam } from "../types.js";
 import applyPackFilters from "./applyPackFilters.js";
 import applyPackSearch from "./applyPackSearch.js";
 import buildLookupQuery, {
   buildExpandQuery,
+  buildLookupByIriQuery,
   buildLookupNamesQuery,
 } from "./buildLookupQuery.js";
 import runSelectQuery from "./runSelectQuery.js";
@@ -32,6 +38,7 @@ import type {
   StoryPackLookup,
   StoryPackSearch,
 } from "./types.js";
+import { isEmbeddableIri } from "./validateStoryPackDefinition.js";
 
 /** A pack entity/row: SELECT variable name → string value. */
 type PackRow = Record<string, string>;
@@ -200,13 +207,34 @@ function compileLookup(
       );
     },
     examples: [`pragma ${noun} lookup <name>`],
-    resolve: (rt, names, params) => {
+    resolve: async (rt, names, params) => {
       const level = disclosure
         ? resolveDetailLevel(params, rt.config ?? {}, disclosure)
         : undefined;
-      return lookupMany(names, (query) =>
-        lookupPackEntity(rt.store, lookup, noun, query, source, level),
+      // Glob queries (`react/*`) expand against the entity name list before
+      // resolution; a glob matching nothing becomes its own error entry.
+      const expanded = await expandPackLookupQueries(
+        rt.store,
+        lookup,
+        noun,
+        source,
+        names,
       );
+      const result = await lookupMany(expanded.names, (query) =>
+        lookupPackEntity(
+          rt.store,
+          lookup,
+          noun,
+          query,
+          source,
+          level,
+          prefixes,
+        ),
+      );
+      return {
+        ...result,
+        errors: [...result.errors, ...expanded.globErrors],
+      };
     },
     toFmtInput: (entity) => entity,
     formatters: lookupFormatters,
@@ -222,10 +250,64 @@ function compileLookup(
 }
 
 /**
- * Look up one pack entity by name via the generated query.
+ * Partition lookup queries into concrete names and expanded globs.
+ *
+ * Literal names pass through unchanged. Glob patterns expand against the
+ * pack's entity name list; a glob matching nothing produces an
+ * `EMPTY_RESULTS` error entry (mirroring the shared lookup-glob contract)
+ * instead of failing the whole batch.
+ *
+ * @note Impure — fetches the entity name list when a glob is present.
+ */
+async function expandPackLookupQueries(
+  store: Store,
+  lookup: StoryPackLookup,
+  noun: string,
+  source: string,
+  queries: readonly string[],
+): Promise<{
+  names: string[];
+  globErrors: { query: string; code: string; message: string }[];
+}> {
+  if (!queries.some(isGlobPattern)) {
+    return { names: [...queries], globErrors: [] };
+  }
+
+  const allNames = await listEntityNames(store, lookup, source);
+  const names: string[] = [];
+  const globErrors: { query: string; code: string; message: string }[] = [];
+  for (const query of queries) {
+    if (!isGlobPattern(query)) {
+      names.push(query);
+      continue;
+    }
+    const expanded = expandGlob(query, allNames);
+    if (expanded.length === 0) {
+      globErrors.push({
+        query,
+        code: "EMPTY_RESULTS",
+        message: `No ${noun} entries matching "${query}".`,
+      });
+    } else {
+      names.push(...expanded);
+    }
+  }
+  return { names, globErrors };
+}
+
+/**
+ * Look up one pack entity by name, prefixed name, or absolute IRI.
+ *
+ * A query shaped like an IRI (`https://…` or `prefix:local`) is resolved
+ * through the runtime prefix map and addressed exactly via a generated
+ * `BIND(<iri> AS ?uri)` query; anything else matches the `by` property's
+ * value case-insensitively. Both query forms are generated — the resolved
+ * IRI is validated against the embeddable-IRI shape and names are escaped
+ * as SPARQL string literals, so user input never reaches query text raw.
  *
  * @throws PragmaError with code `ENTITY_NOT_FOUND` and ranked suggestions
- *   when no entity matches.
+ *   when no entity matches, or `INVALID_INPUT` when an IRI-shaped query
+ *   uses an unknown prefix or malformed IRI.
  * @note Impure — queries the ke store.
  */
 async function lookupPackEntity(
@@ -234,11 +316,12 @@ async function lookupPackEntity(
   noun: string,
   query: string,
   source: string,
-  level?: string,
+  level: string | undefined,
+  prefixes: Readonly<Record<string, string>>,
 ): Promise<PackEntity> {
   const rows = await runSelectQuery(
     store,
-    buildLookupQuery(lookup, query),
+    buildEntityQuery(lookup, query, prefixes),
     source,
   );
   const base = rows.at(0);
@@ -275,6 +358,51 @@ async function lookupPackEntity(
     }
   }
   return entity;
+}
+
+/**
+ * Build the base entity SELECT for a lookup query.
+ *
+ * Detection mirrors the retired built-in standard lookup: a query starting
+ * with `http(s)://` or containing `:` is treated as an IRI or prefixed
+ * name and resolved through the merged prefix map. The resolved IRI must
+ * still match the embeddable shape the pack validator holds authored
+ * terms to; anything else is rejected before it can reach query text.
+ *
+ * @throws PragmaError with code `INVALID_INPUT` when the query is
+ *   IRI-shaped but uses an unknown prefix or resolves to a non-embeddable
+ *   IRI.
+ */
+function buildEntityQuery(
+  lookup: StoryPackLookup,
+  query: string,
+  prefixes: Readonly<Record<string, string>>,
+): string {
+  if (!looksLikeIri(query)) {
+    return buildLookupQuery(lookup, query);
+  }
+  // resolveUri validates prefix membership and rejects IRI-breaking
+  // characters; the embeddable-shape check adds the validator's stricter
+  // `scheme://` contract before the IRI is embedded as `<iri>`.
+  const resolved = resolveUri(query, prefixes);
+  if (!isEmbeddableIri(resolved)) {
+    throw PragmaError.invalidInput("name", query, {
+      recovery: {
+        message:
+          "Use an absolute IRI (https://…), a prefixed name (ex:thing), or a plain entity name.",
+      },
+    });
+  }
+  return buildLookupByIriQuery(lookup, resolved);
+}
+
+/** Whether a lookup query addresses an entity by IRI or prefixed name. */
+function looksLikeIri(query: string): boolean {
+  return (
+    query.startsWith("http://") ||
+    query.startsWith("https://") ||
+    query.includes(":")
+  );
 }
 
 /**
