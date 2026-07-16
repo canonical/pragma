@@ -22,23 +22,25 @@ Components pragma does **not** yet provide are out of scope: keep your current i
 
 ## The covered set
 
-As of `@canonical/react-ds-global` 0.30.0, the global tier exports these components:
+As of `@canonical/react-ds-global` 0.30.0, the 26.10 program covers:
 
-<!-- adoption:covered-set:begin package=@canonical/react-ds-global -->
+<!-- adoption:covered-set:begin package=@canonical/react-ds-global note=curated -->
 
 | Components | | |
 |---|---|---|
 | Accordion | Announcement | Badge |
 | Breadcrumbs | Button | Card |
-| Chip | ContextualMenu | Icon |
-| InlineCode | KeyboardKey | Popover |
-| Tabs | Tile | Tooltip |
+| ContextualMenu | Icon | InlineCode |
+| KeyboardKey | Tabs | Tile |
+| Tooltip | | |
 
-Plus `Spinner` from the subcomponent tier.
+Plus the `Cards` and `KeyboardKeys` groups (sets of components that operate together, from the group tier) and `Spinner` from the subcomponent tier.
 
 <!-- adoption:covered-set:end -->
 
-The package also exports a work-in-progress tier (components not yet promoted to a stable tier). WIP components are **not** part of the covered set — adopt them only by explicit agreement with the pragma team.
+`Popover` and `Chip` are exported by the package but are **not** part of the 26.10 covered set — keep your existing versions for now.
+
+The package also exports a work-in-progress tier: experimental components not yet promoted to a stable tier. You **can** use them, but expect their APIs, names, and visuals to change without notice — and they must **not** be part of a public release. See *"What's in this folder?"* at the root of the `_work_in_progress` section in Storybook.
 
 ## The path
 

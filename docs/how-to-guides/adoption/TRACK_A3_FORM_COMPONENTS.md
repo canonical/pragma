@@ -29,21 +29,22 @@ Pragma forms are built on **React Hook Form**. The package's public surface is d
 
 ## The covered set
 
-As of `@canonical/react-ds-global-form` 0.30.0, `Field` supports these `inputType`s:
+As of `@canonical/react-ds-global-form` 0.30.0, `Field` supports these stable (non-WIP) `inputType`s:
 
-<!-- adoption:covered-set:begin package=@canonical/react-ds-global-form -->
+<!-- adoption:covered-set:begin package=@canonical/react-ds-global-form note=stable-only -->
 
 | `inputType` values | | | |
 |---|---|---|---|
 | `text` (and other native text-like types) | `password` | `number` | `checkbox` |
-| `switch` | `hidden` | `range` | `rating` |
-| `select` | `combobox` | `choices` | `rich-choices` |
-| `textarea` | `date` | `time` | `datetime` |
-| `file` | `color` | `phone` | `custom` |
+| `switch` | `hidden` | `range` | `select` |
+| `choices` | `rich-choices` | `textarea` | `date` |
+| `time` | `datetime` | `file` | `phone` |
 
 <!-- adoption:covered-set:end -->
 
-`custom` takes a `CustomComponent` prop — the escape hatch for inputs pragma doesn't provide, so one exotic widget never blocks migrating the rest of the form. `RatingInput` is additionally exported standalone (work in progress) for use outside the `Field` pattern.
+`custom` takes a `CustomComponent` prop — the escape hatch for inputs pragma doesn't provide, so one exotic widget never blocks migrating the rest of the form.
+
+Three further `inputType`s — `color`, `combobox`, and `rating` (plus the standalone `RatingInput`) — are **work in progress**. You **can** use them, but they are experimental — APIs, names, and visuals may change without notice — and they must **not** be part of a public release. See *"What's in this folder?"* at the root of the `_work_in_progress` section in Storybook.
 
 ## The path
 
@@ -66,23 +67,30 @@ In your main CSS, below the imports from Track A1:
 
 ### 3. Migrate form by form
 
-Rebuild each form from the patterns:
+Define your fields **as data** and map over them — this is the recommended pattern. It takes full advantage of `Field`'s `inputType` switch: a form becomes a list of field descriptions, and changing an input type is a one-word change in data rather than a component rewrite.
 
 ```tsx
-import { Field, Form } from "@canonical/react-ds-global-form";
+import { Field, Form, type FieldProps } from "@canonical/react-ds-global-form";
 import { Button } from "@canonical/react-ds-global";
 
-function RenameBoard() {
+const fields: FieldProps[] = [
+  { name: "full_name", inputType: "text", label: "Full name" },
+  {
+    name: "email",
+    inputType: "text",
+    label: "Email address",
+    registerProps: { required: "Email is required" },
+  },
+  { name: "newsletter", inputType: "checkbox", label: "Subscribe to the newsletter" },
+];
+
+function SignUp() {
   return (
-    <Form defaultValues={{ board_name: "" }} onSubmit={(data) => save(data)}>
-      <Field
-        name="board_name"
-        inputType="text"
-        registerProps={{
-          required: { value: true, message: "A board name is required" },
-        }}
-      />
-      <Button type="submit">Save</Button>
+    <Form onSubmit={(data) => save(data)} mode="onBlur">
+      {fields.map((props) => (
+        <Field key={props.name} {...props} />
+      ))}
+      <Button type="submit">Sign up</Button>
     </Form>
   );
 }
