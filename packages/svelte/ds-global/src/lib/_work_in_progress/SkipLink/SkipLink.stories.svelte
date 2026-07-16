@@ -5,7 +5,7 @@
   import SkipLink from "./SkipLink.svelte";
 
   const { Story } = defineMeta({
-    title: "Components/SkipLink",
+    title: "_work_in_progress/pattern/SkipLink",
     component: SkipLink,
     tags: ["autodocs"],
     parameters: {
@@ -30,11 +30,13 @@
 	<SkipLink />
 	<main id="main" tabindex="-1">
 		<p>
-			Click inside this example box, then press Tab to focus the skip
-			link.
+			Click inside this example box, then press "Shift+Tab" to make the
+			skip link focused and visible.
 		</p>
 		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
-		<a href="#">After skipping to main content, this is next in focus order</a>
+		<a href="#">
+			After skipping to main content, this should be next in focus order
+		</a>
 	</main>
 </Story>
 
@@ -53,14 +55,16 @@
 	}}
 	asChild
 >
-	<SkipLink mainId="my-main-element">Skip to custom main element</SkipLink>
+	<SkipLink mainId="my-main-element" />
 	<main id="my-main-element" tabindex="-1">
 		<p>
-			Click inside this example box, then press Tab to focus the skip
-			link.
+			Click inside this example box, then press "Shift+Tab" to make the
+			skip link focused and visible.
 		</p>
 		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
-		<a href="#">After skipping to main content, this is next in focus order</a>
+		<a href="#">
+			After skipping to main content, this should be next in focus order
+		</a>
 	</main>
 </Story>
 
@@ -79,11 +83,13 @@
 	<SkipLink>Custom skip text</SkipLink>
 	<main id="main" tabindex="-1">
 		<p>
-			Click inside this example box, then press Tab to focus the skip
-			link.
+			Click inside this example box, then press "Shift+Tab" to make the
+			skip link focused and visible.
 		</p>
 		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
-		<a href="#">After skipping to main content, this is next in focus order</a>
+		<a href="#">
+			After skipping to main content, this should be next in focus order
+		</a>
 	</main>
 </Story>
 
