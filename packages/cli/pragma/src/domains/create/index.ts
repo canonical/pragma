@@ -14,7 +14,7 @@ import bundledGeneratorPacks from "./generatorPack/bundled.js";
  * Return all create command definitions, compiled from the bundled
  * generator packs.
  */
-export function commands(): CommandDefinition[] {
+export function commands(): readonly CommandDefinition[] {
   return bundledGeneratorPacks().commands;
 }
 

@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import type { AnyGenerator } from "@canonical/summon-core";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { PragmaRuntime } from "../../shared/types/index.js";
 import bundledGeneratorPacks from "./bundled.js";
+import compileGeneratorPack from "./compileGeneratorPack.js";
 
 describe("compileGeneratorPack (bundled)", () => {
   const { commands, specs } = bundledGeneratorPacks();
@@ -71,5 +74,78 @@ describe("compileGeneratorPack (bundled)", () => {
     expect(pkg?.params).toBeDefined();
     // The package generator prompts for a package name.
     expect(Object.keys(pkg?.params ?? {}).length).toBeGreaterThan(0);
+  });
+});
+
+/** Minimal synthetic generator for edge-case tests. */
+function makeGenerator(name: string, generate?: () => never): AnyGenerator {
+  return {
+    meta: {
+      name,
+      displayName: name,
+      description: `Test generator ${name}`,
+      version: "0.0.0",
+    },
+    prompts: [],
+    generate:
+      generate ??
+      (() => {
+        throw new Error("not exercised");
+      }),
+  } as unknown as AnyGenerator;
+}
+
+describe("compileGeneratorPack — edge cases", () => {
+  let warnings: string[];
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnings = [];
+    warn = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        warnings.push(String(chunk));
+        return true;
+      });
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it("warns and exposes only the first generator of a mixed bare/variant noun", () => {
+    const { commands, specs } = compileGeneratorPack({
+      thing: makeGenerator("thing"),
+      "thing/extra": makeGenerator("thing/extra"),
+    });
+    expect(commands.map((c) => c.path.join(" "))).toEqual(["create thing"]);
+    expect(specs.map((s) => s.name)).toEqual(["create_thing"]);
+    expect(warnings.join("")).toContain("mixes bare and variant keys");
+  });
+
+  it("maps a generator that throws to INVALID_INPUT with its message as recovery", async () => {
+    const throwing = makeGenerator("boom", () => {
+      throw new Error("boom requires --both flags");
+    });
+    const { specs } = compileGeneratorPack({ boom: throwing });
+    const spec = specs.at(0);
+    const rt = { cwd: "/tmp" } as PragmaRuntime;
+    await expect(spec?.execute(rt, {})).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      recovery: { message: "boom requires --both flags" },
+    });
+  });
+
+  it("rejects an unknown variant with INVALID_INPUT and the valid options", async () => {
+    const { specs } = compileGeneratorPack({
+      "widget/a": makeGenerator("widget/a"),
+      "widget/b": makeGenerator("widget/b"),
+    });
+    const spec = specs.at(0);
+    const rt = { cwd: "/tmp" } as PragmaRuntime;
+    await expect(spec?.execute(rt, { variant: "c" })).rejects.toMatchObject({
+      code: "INVALID_INPUT",
+      validOptions: ["a", "b"],
+    });
   });
 });

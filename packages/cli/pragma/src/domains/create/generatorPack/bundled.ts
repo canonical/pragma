@@ -38,14 +38,12 @@ let cached: CompiledGeneratorPack | undefined;
  * @returns The merged commands and specs across all bundled packs.
  */
 export default function bundledGeneratorPacks(): CompiledGeneratorPack {
-  if (cached) return cached;
-  const commands = [];
-  const specs = [];
-  for (const set of BUNDLED_GENERATOR_SETS) {
-    const compiled = compileGeneratorPack(set);
-    commands.push(...compiled.commands);
-    specs.push(...compiled.specs);
-  }
-  cached = { commands, specs };
+  cached ??= BUNDLED_GENERATOR_SETS.map(compileGeneratorPack).reduce(
+    (merged, pack) => ({
+      commands: [...merged.commands, ...pack.commands],
+      specs: [...merged.specs, ...pack.specs],
+    }),
+    { commands: [], specs: [] },
+  );
   return cached;
 }

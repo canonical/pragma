@@ -19,13 +19,19 @@ import {
   generatorToCommand,
   type ParameterDefinition,
 } from "@canonical/cli-core";
-import type { AnyGenerator } from "@canonical/summon-core";
+import type { AnyGenerator, PromptDefinition } from "@canonical/summon-core";
 import { PragmaError } from "#error";
 import type { ToolParamDef, ToolSpec } from "../../shared/ToolSpec.js";
 import renderGeneratorUi from "../renderGeneratorUi.js";
 
 /** A package's generator set: generator key → generator. */
 export type GeneratorSet = Readonly<Record<string, AnyGenerator>>;
+
+/** Compiled surfaces for one generator pack. */
+export interface CompiledGeneratorPack {
+  readonly commands: readonly CommandDefinition[];
+  readonly specs: readonly ToolSpec[];
+}
 
 /** A generator grouped under a noun, with its optional variant. */
 interface GroupedGenerator {
@@ -54,52 +60,46 @@ function groupByNoun(
   return groups;
 }
 
+/** Prompt type → tool param type, mirroring cli-core's `promptToParameter`. */
+const PROMPT_TYPE_MAP: Record<PromptDefinition["type"], ToolParamDef["type"]> =
+  {
+    text: "string",
+    confirm: "boolean",
+    select: "string",
+    multiselect: "string[]",
+  };
+
 /** Map a summon prompt to a neutral MCP tool parameter. */
-function promptToToolParam(prompt: {
-  type: "text" | "confirm" | "select" | "multiselect";
-  message: string;
-  default?: unknown;
-  when?: unknown;
-  choices?: ReadonlyArray<{ value: string }>;
-}): ToolParamDef {
-  const optional = prompt.default !== undefined || prompt.when != null;
-  const enumValues = prompt.choices?.map((choice) => choice.value);
-  if (prompt.type === "confirm") {
-    return { type: "boolean", description: prompt.message, optional };
-  }
-  if (prompt.type === "multiselect") {
-    return {
-      type: "string[]",
-      description: prompt.message,
-      optional,
-      ...(enumValues ? { enum: enumValues } : {}),
-    };
-  }
-  // text / select → string
+function promptToToolParam(prompt: PromptDefinition): ToolParamDef {
+  const enumValues =
+    prompt.type === "confirm"
+      ? undefined
+      : prompt.choices?.map((choice) => choice.value);
   return {
-    type: "string",
+    type: PROMPT_TYPE_MAP[prompt.type],
     description: prompt.message,
-    optional,
+    // A prompt with a default or a `when` condition is answerable without
+    // input; only an unconditional, defaultless prompt is required.
+    optional: prompt.default !== undefined || prompt.when !== undefined,
     ...(enumValues ? { enum: enumValues } : {}),
   };
 }
 
-/**
- * Build the MCP param map for a generator from its prompts.
- *
- * A generator that throws at execute (e.g. an unmet hard requirement) is
- * mapped to a typed INVALID_INPUT by {@link runGeneratorTool} instead of
- * bubbling untyped — the generic replacement for the per-generator validation
- * the hand-written specs did.
- */
+/** Build the MCP param map for a generator from its prompts. */
 function toolParamsFor(gen: AnyGenerator): Record<string, ToolParamDef> {
-  const params: Record<string, ToolParamDef> = {};
-  for (const prompt of gen.prompts) {
-    params[prompt.name] = promptToToolParam(prompt);
-  }
-  return params;
+  return Object.fromEntries(
+    gen.prompts.map((prompt) => [prompt.name, promptToToolParam(prompt)]),
+  );
 }
 
+/**
+ * Run one generator as an MCP tool call: json-mode dry-run plan.
+ *
+ * A generator that throws (e.g. an unmet hard requirement such as
+ * application's ssr/router pairing) is mapped to a typed INVALID_INPUT
+ * carrying the generator's own message as the recovery hint — the generic
+ * replacement for the per-generator validation the hand-written specs did.
+ */
 async function runGeneratorTool(
   gen: AnyGenerator,
   rt: { cwd: string },
@@ -110,6 +110,8 @@ async function runGeneratorTool(
     cwd: rt.cwd,
     globalFlags: { llm: false, format: "json" as const, verbose: false },
   };
+  // Never install during a dry-run plan; the discriminator is dispatch
+  // metadata, not a generator answer.
   const genParams: Record<string, unknown> = { ...params, runInstall: false };
   if (discriminator) delete genParams[discriminator];
   try {
@@ -118,25 +120,50 @@ async function runGeneratorTool(
       // json mode: result.value is already the structured plan.
       return { data: result.value };
     }
-    throw PragmaError.invalidInput("input", "(generation produced no plan)");
+    throw PragmaError.invalidInput("parameters", "(no plan produced)", {
+      recovery: { message: `The ${gen.meta.name} generator rejected them.` },
+    });
   } catch (error) {
     if (error instanceof PragmaError) throw error;
-    throw PragmaError.invalidInput(
-      "input",
-      error instanceof Error ? error.message : String(error),
-    );
+    throw PragmaError.invalidInput("parameters", "(rejected)", {
+      recovery: {
+        message: error instanceof Error ? error.message : String(error),
+      },
+    });
   }
 }
 
-/** Compiled surfaces for one generator pack. */
-export interface CompiledGeneratorPack {
-  readonly commands: CommandDefinition[];
-  readonly specs: ToolSpec[];
+/**
+ * Build the variant → generator resolver shared by the CLI and MCP dispatch.
+ *
+ * @returns A function resolving a raw `variant` param to its generator.
+ * @throws PragmaError with code INVALID_INPUT for a missing/unknown variant.
+ */
+function buildVariantResolver(
+  group: readonly GroupedGenerator[],
+  variants: readonly string[],
+): (variant: unknown) => AnyGenerator {
+  const byVariant = new Map(group.map((g) => [g.variant, g.gen]));
+  return (variant) => {
+    const gen =
+      typeof variant === "string" ? byVariant.get(variant) : undefined;
+    if (!gen) {
+      throw PragmaError.invalidInput(
+        "variant",
+        typeof variant === "string" ? variant : "(missing)",
+        { validOptions: [...variants] },
+      );
+    }
+    return gen;
+  };
 }
 
 /**
  * Compile a package's generator set into `create <noun>` commands and
  * `create_<noun>` MCP tools.
+ *
+ * @note Impure — warns on stderr when a degenerate group (duplicate noun
+ *   with mixed bare/variant keys) forces generators to be skipped.
  */
 export default function compileGeneratorPack(
   generators: GeneratorSet,
@@ -145,21 +172,30 @@ export default function compileGeneratorPack(
   const specs: ToolSpec[] = [];
 
   for (const [noun, group] of groupByNoun(generators)) {
+    const [first, ...rest] = group;
+    if (!first) continue; // groupByNoun never emits empty groups
+
     const variants = group
       .map((g) => g.variant)
       .filter((v): v is string => v !== undefined);
-    const multiVariant = group.length > 1 && variants.length === group.length;
 
-    if (multiVariant) {
-      commands.push(buildVariantCommand(noun, group, variants));
-      specs.push(buildVariantSpec(noun, group, variants));
-    } else {
-      // Single generator (bare noun, or a lone variant that collapses).
-      const gen = group[0]?.gen;
-      if (!gen) continue;
-      commands.push(buildSingleCommand(noun, gen));
-      specs.push(buildSingleSpec(noun, gen));
+    if (rest.length > 0 && variants.length === group.length) {
+      commands.push(buildVariantCommand(noun, first.gen, group, variants));
+      specs.push(buildVariantSpec(noun, first.gen, group, variants));
+      continue;
     }
+
+    if (rest.length > 0) {
+      // Mixed bare/variant keys under one noun is a malformed set — expose
+      // the first generator rather than none, but never drop the rest
+      // silently.
+      process.stderr.write(
+        `Warning: generator noun "${noun}" mixes bare and variant keys; ` +
+          `only "${first.gen.meta.name}" is exposed.\n`,
+      );
+    }
+    commands.push(buildSingleCommand(noun, first.gen));
+    specs.push(buildSingleSpec(noun, first.gen));
   }
 
   return { commands, specs };
@@ -177,15 +213,20 @@ function buildSingleCommand(
   };
 }
 
-/** `create <noun> <variant>` dispatch over several generators. */
+/**
+ * `create <noun> <variant>` dispatch over several generators.
+ *
+ * Help and parameters project from the reference (first-declared) generator —
+ * variants of one noun are assumed prompt-compatible, the same assumption the
+ * hand-written component command made.
+ */
 function buildVariantCommand(
   noun: string,
-  group: GroupedGenerator[],
-  variants: string[],
+  reference: AnyGenerator,
+  group: readonly GroupedGenerator[],
+  variants: readonly string[],
 ): CommandDefinition {
-  const byVariant = new Map(group.map((g) => [g.variant, g.gen]));
-  // biome-ignore lint/style/noNonNullAssertion: multiVariant guarantees ≥1 entry
-  const reference = group[0]!.gen;
+  const resolve = buildVariantResolver(group, variants);
   const base = generatorToCommand(["create", noun], reference);
   const variantParam: ParameterDefinition = {
     name: "variant",
@@ -198,16 +239,9 @@ function buildVariantCommand(
   return {
     ...base,
     parameters: [variantParam, ...base.parameters],
-    execute: (params, ctx) => {
-      const variant = params.variant as string | undefined;
-      const gen = variant ? byVariant.get(variant) : undefined;
-      if (!gen) {
-        throw PragmaError.invalidInput("variant", variant ?? "(missing)", {
-          validOptions: variants,
-        });
-      }
-      return renderGeneratorUi(gen, params, ctx);
-    },
+    // async so an unknown variant rejects instead of throwing synchronously.
+    execute: async (params, ctx) =>
+      renderGeneratorUi(resolve(params.variant), params, ctx),
   };
 }
 
@@ -223,39 +257,35 @@ function buildSingleSpec(noun: string, gen: AnyGenerator): ToolSpec {
   };
 }
 
-/** `create_<noun>` MCP tool with a `variant` discriminator. */
+/**
+ * `create_<noun>` MCP tool with a `variant` discriminator.
+ *
+ * The param schema projects from the reference generator's prompts (see
+ * {@link buildVariantCommand} for the compatibility assumption).
+ */
 function buildVariantSpec(
   noun: string,
-  group: GroupedGenerator[],
-  variants: string[],
+  reference: AnyGenerator,
+  group: readonly GroupedGenerator[],
+  variants: readonly string[],
 ): ToolSpec {
-  const byVariant = new Map(group.map((g) => [g.variant, g.gen]));
-  // biome-ignore lint/style/noNonNullAssertion: multiVariant guarantees ≥1 entry
-  const reference = group[0]!.gen;
-  const params: Record<string, ToolParamDef> = {
-    variant: {
-      type: "string",
-      description: `Which ${noun} to scaffold`,
-      optional: false,
-      enum: variants,
-    },
-    ...toolParamsFor(reference),
-  };
+  const resolve = buildVariantResolver(group, variants);
   return {
     name: `create_${noun}`,
     description: `${reference.meta.description} Returns a JSON generation plan (dry-run).`,
-    params,
+    params: {
+      variant: {
+        type: "string",
+        description: `Which ${noun} to scaffold`,
+        optional: false,
+        enum: [...variants],
+      },
+      ...toolParamsFor(reference),
+    },
     readOnly: false,
     destructive: false,
-    execute: (rt, params) => {
-      const variant = params.variant as string | undefined;
-      const gen = variant ? byVariant.get(variant) : undefined;
-      if (!gen) {
-        throw PragmaError.invalidInput("variant", variant ?? "(missing)", {
-          validOptions: variants,
-        });
-      }
-      return runGeneratorTool(gen, rt, params, "variant");
-    },
+    // async so an unknown variant rejects instead of throwing synchronously.
+    execute: async (rt, params) =>
+      runGeneratorTool(resolve(params.variant), rt, params, "variant"),
   };
 }
