@@ -48,7 +48,8 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "check:webarchitect": "webarchitect library",
-    "test": "echo 'No unit tests yet'"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
@@ -56,13 +57,18 @@
     "@canonical/typescript-config-react": "^0.30.0",
     "@canonical/webarchitect": "^0.30.0",
     "@storybook/react-vite": "^10.3.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.0",
+    "jsdom": "^28.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.2",
     "storybook": "^10.3.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^8.0.1",
+    "vitest": "^4.0.18"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

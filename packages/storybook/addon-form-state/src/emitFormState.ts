@@ -47,8 +47,11 @@ export function useFormStateEmitter(methods: UseFormReturn) {
 /**
  * FieldErrors can be nested and contain ref objects that are not serialisable.
  * Flatten to `{ [path]: message }` for display.
+ *
+ * Exported for unit tests only; not part of the package's public API
+ * (`index.ts` does not re-export it).
  */
-function flattenErrors(
+export function flattenErrors(
   errors: Record<string, unknown>,
   prefix = "",
 ): Record<string, string> {
