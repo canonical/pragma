@@ -52,6 +52,30 @@ function parseJson<T>(result: CommandResult): T {
 }
 
 describe("CLI user stories", () => {
+  it("story: a first-time user is greeted once and gets a global config", () => {
+    const workspace = createWorkspace();
+    const freshXdg = mkdtempSync(join(tmpdir(), "pragma-firstrun-e2e-"));
+    tempDirs.add(freshXdg);
+    const env = { XDG_CONFIG_HOME: freshXdg };
+
+    // First invocation: greeting on stderr, config created, stdout untouched.
+    const first = runCommand(["info", "--format", "json"], workspace, env);
+    expect(first.exitCode).toBe(0);
+    expect(first.stderr).toContain("pre-release pragma CLI");
+    expect(first.stderr).toContain(join(freshXdg, "pragma", "config.json"));
+    expect(() => JSON.parse(first.stdout)).not.toThrow();
+    expect(
+      JSON.parse(
+        readFileSync(join(freshXdg, "pragma", "config.json"), "utf-8"),
+      ),
+    ).toEqual({});
+
+    // Second invocation: no greeting — first-run happens once.
+    const second = runCommand(["info", "--format", "json"], workspace, env);
+    expect(second.exitCode).toBe(0);
+    expect(second.stderr.trim()).toBe("");
+  }, 40_000);
+
   it("story: a new contributor verifies the local installation with info", () => {
     const workspace = createWorkspace();
 
