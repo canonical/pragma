@@ -235,8 +235,12 @@ describe("modifier_lookup", () => {
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { results: { values: string[] }[] };
-    expect(data.results[0]?.values).toContain("primary");
+    // Served by the bundled modifier pack via the GraphQL fetch path; the
+    // expand's rows are {name} records carrying the same value strings.
+    const data = body.data as { results: { values: { name: string }[] }[] };
+    expect(data.results[0]?.values.map((value) => value.name)).toContain(
+      "primary",
+    );
   });
 });
 

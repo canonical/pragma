@@ -35,6 +35,15 @@ const WHOLE_NOUN = "*";
 const READ_STORY_VERBS: ReadonlySet<string> = new Set(["list", "lookup"]);
 
 /**
+ * Non-read verbs that legitimately remain on a leaf noun after its read
+ * verbs are cut over to a pack (`modifier sample` after `modifier
+ * list`/`lookup` migrate). A noun whose verbs all sit in this set is a
+ * migrated leaf remnant, NOT an operational command — it must keep per-verb
+ * reservation so its bundled pack can serve the freed read verbs.
+ */
+const LEAF_REMNANT_VERBS: ReadonlySet<string> = new Set(["sample"]);
+
+/**
  * Built-in reservations: noun → the verbs it occupies.
  *
  * The {@link WHOLE_NOUN} (`"*"`) sentinel in a noun's verb set reserves the
@@ -138,11 +147,10 @@ export function buildReservedVerbs(
  * Both the CLI and MCP surfaces route through this single derivation, so the
  * two surfaces reserve the same `list`/`lookup` verbs for every leaf noun.
  *
- * Limitation: a fully-migrated leaf noun whose only *remaining* built-in
- * verbs are non-read (e.g. `sample`/`categories` after both `list` and
- * `lookup` are deleted) would be wholesale-promoted here; that Phase-3 case
- * is served by the built-in pack's own precedence (C.07) and must be
- * revisited when it lands.
+ * A fully-migrated leaf noun whose only *remaining* built-in verbs are leaf
+ * remnants (e.g. `modifier` keeping just `sample` after `list`/`lookup` cut
+ * over) also keeps per-verb reservation — the freed read verbs belong to
+ * its bundled pack now, and the remnant verb still blocks a pack `sample`.
  *
  * @param pairs - `(noun, verb)` pairs, e.g. from {@link nounVerbFromPath}.
  * @returns The reservation map with operational nouns promoted to whole-noun.
@@ -156,12 +164,16 @@ export function deriveReservedVerbs(
     map.set(noun, new Set(verbs));
   }
 
-  // Promote every operational noun (verb-set disjoint from the read verbs)
-  // to a wholesale reservation. Bare nouns already hold `{"*"}`, so this is
-  // idempotent for them; leaf read nouns keep their per-verb sets untouched.
+  // Promote every operational noun (verb-set disjoint from the read verbs
+  // and not a pure leaf remnant) to a wholesale reservation. Bare nouns
+  // already hold `{"*"}`, so this is idempotent for them; leaf read nouns
+  // and migrated leaf remnants keep their per-verb sets untouched.
   for (const [noun, verbs] of map) {
     const ownsReadVerb = [...verbs].some((verb) => READ_STORY_VERBS.has(verb));
-    if (!ownsReadVerb) {
+    const isLeafRemnant = [...verbs].every((verb) =>
+      LEAF_REMNANT_VERBS.has(verb ?? ""),
+    );
+    if (!ownsReadVerb && !isLeafRemnant) {
       map.set(noun, new Set([WHOLE_NOUN]));
     }
   }

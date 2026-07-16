@@ -186,8 +186,8 @@ function compileListVerb(
         : []),
       `pragma ${noun} ${verb} --llm`,
     ],
-    resolve: async (rt, params) =>
-      applyPackSearch(
+    resolve: async (rt, params) => {
+      const rows = applyPackSearch(
         applyPackFilters(
           await runSelectQuery(rt.store, shape.query, source),
           filters,
@@ -195,7 +195,15 @@ function compileListVerb(
         ),
         search,
         params,
-      ),
+      );
+      // Opt-in empty-result guard, thrown from resolve so both surfaces
+      // (CLI command and MCP tool) fail typed instead of rendering nothing.
+      const emptyRecovery = shape.emptyRecovery;
+      if (rows.length === 0 && emptyRecovery) {
+        throw buildListEmptyError(noun, filters, params, emptyRecovery);
+      }
+      return rows;
+    },
     toOutput: (rows) => rows,
     formatters: listFormatters,
     toEnvelope: (rows) => ({ data: rows, meta: { count: rows.length } }),
@@ -331,6 +339,38 @@ function compileLookup(
     : undefined;
 
   return { lookup: lookupStory, ...(sample ? { sample } : {}) };
+}
+
+/**
+ * Build the typed empty-list error for a pack list that opted in.
+ *
+ * With a filter value active the emptiness is (likely) the filter's doing,
+ * so the recovery is to re-list unfiltered; with no filters active the
+ * store simply has no such data and the pack's declared recovery (an
+ * install hint) applies — mirroring the hand-written domains' empty errors.
+ */
+function buildListEmptyError(
+  noun: string,
+  filters: readonly StoryPackFilter[] | undefined,
+  params: Record<string, unknown>,
+  emptyRecovery: NonNullable<StoryPackDefinition["list"]["emptyRecovery"]>,
+): PragmaError {
+  const applied = (filters ?? []).filter(
+    (filter) => typeof params[filter.param] === "string",
+  );
+  if (applied.length > 0) {
+    return PragmaError.emptyResults(noun, {
+      filters: Object.fromEntries(
+        applied.map((filter) => [filter.param, String(params[filter.param])]),
+      ),
+      recovery: {
+        message: `List all ${noun} entries without filters.`,
+        cli: `pragma ${noun} list`,
+        mcp: { tool: `${noun}_list` },
+      },
+    });
+  }
+  return PragmaError.emptyResults(noun, { recovery: emptyRecovery });
 }
 
 /**
