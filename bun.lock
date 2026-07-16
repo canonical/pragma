@@ -1405,7 +1405,7 @@
     },
     "packages/svelte/ds-app": {
       "name": "@canonical/svelte-ds-app",
-      "version": "0.29.0-experimental.0",
+      "version": "0.30.0",
       "dependencies": {
         "@canonical/ds-assets": "^0.30.0",
         "@canonical/styles": "^0.28.0",
