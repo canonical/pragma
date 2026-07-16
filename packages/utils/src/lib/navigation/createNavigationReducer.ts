@@ -347,18 +347,39 @@ function handlePageJump<T extends Item = Item>(
 
   const siblings = parent.items;
   const currentIdx = siblings.indexOf(currentItem);
+  const len = siblings.length;
 
   let targetIdx = currentIdx + delta;
   if (wrapEnabled) {
-    targetIdx =
-      ((targetIdx % siblings.length) + siblings.length) % siblings.length;
+    targetIdx = ((targetIdx % len) + len) % len;
   } else {
-    targetIdx = Math.max(0, Math.min(siblings.length - 1, targetIdx));
+    targetIdx = Math.max(0, Math.min(len - 1, targetIdx));
   }
 
-  const target = siblings[targetIdx];
-  if (!target || target.disabled) return state;
+  // The raw landing may be DISABLED (e.g. a menu separator). Continue in the
+  // jump direction to the nearest enabled sibling; past the edge, fall back
+  // toward the current item instead — a disabled landing must not swallow the
+  // jump while every other movement path (arrows, Home/End, type-ahead)
+  // already skips disabled nodes.
+  const direction = delta > 0 ? 1 : -1;
+  let landingIdx = -1;
+  for (let idx = targetIdx; idx >= 0 && idx < len; idx += direction) {
+    if (!siblings[idx].disabled) {
+      landingIdx = idx;
+      break;
+    }
+  }
+  if (landingIdx === -1) {
+    for (let idx = targetIdx; idx >= 0 && idx < len; idx -= direction) {
+      if (!siblings[idx].disabled) {
+        landingIdx = idx;
+        break;
+      }
+    }
+  }
+  if (landingIdx === -1 || landingIdx === currentIdx) return state;
 
+  const target = siblings[landingIdx];
   return {
     ...state,
     highlightedItems: findAncestorPath(index, target),

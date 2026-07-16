@@ -311,6 +311,10 @@ describe("ContextualMenu", () => {
       expect(rovingTarget()).toHaveTextContent("Beta");
       fireEvent.keyDown(menu, { key: "Home" });
       expect(rovingTarget()).toHaveTextContent("Alpha");
+      // PageDown's raw landing clamps onto the trailing separator; the jump
+      // must fall back to the nearest enabled item, not silently no-op.
+      fireEvent.keyDown(menu, { key: "PageDown" });
+      expect(rovingTarget()).toHaveTextContent("Beta");
     });
   });
 

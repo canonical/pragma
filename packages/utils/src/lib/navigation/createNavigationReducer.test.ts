@@ -601,47 +601,100 @@ describe("HOME/END on all-disabled siblings", () => {
   });
 });
 
-describe("PAGE_DOWN landing on disabled item", () => {
-  // Tree: /a, /b (disabled), /c — page down from /a by 1 should land on /b (disabled)
-  const mixedTree: Item = {
-    key: "root",
-    label: "Root",
-    items: [
-      { url: "/first", label: "First" },
-      { url: "/disabled-mid", label: "Mid", disabled: true },
-      { url: "/last", label: "Last" },
-    ],
-  };
+describe("PAGE_DOWN/PAGE_UP landing on a disabled item", () => {
+  // 12 items where index 10 is disabled (a separator in a flat menu): a page
+  // jump whose raw landing is disabled must not swallow the jump.
+  const items = Array.from({ length: 12 }, (_, i) => ({
+    url: `/i${i}`,
+    label: `Item ${i}`,
+    disabled: i === 10,
+  }));
+  const mixedTree: Item = { key: "root", label: "Root", items };
   const root = annotateTree(mixedTree);
   const idx = prepareIndex(root);
+  const reduce = createNavigationReducer(idx, {
+    rootItem: root,
+    orientation: "vertical",
+    wrap: false,
+  });
+  const stateAt = (url: string): NavigationState => ({
+    selectedItems: [root],
+    highlightedItems: findAncestorPath(idx, idx[url]),
+    currentDepth: 1,
+    isOpen: false,
+    inputValue: "",
+    keysSoFar: "",
+  });
 
-  it("returns state when page jump lands on disabled item", () => {
-    // Use delta=1 to land exactly on the disabled item
-    // handlePageJump with delta=1 from /first → index 0+1=1 → /disabled-mid (disabled) → return state
-    const _reduce = createNavigationReducer(idx, {
-      rootItem: root,
+  it("continues in the jump direction past the disabled landing", () => {
+    // From /i0, PAGE_DOWN (+10) lands raw on /i10 (disabled) → skips to /i11.
+    const next = reduce(stateAt("/i0"), {
+      type: NavigationActionType.PAGE_DOWN,
+    });
+    expect(next.highlightedItems.at(-1)?.url).toBe("/i11");
+  });
+
+  it("falls back toward the current item at the edge", () => {
+    // 12 items with BOTH trailing slots disabled: from /i0, PAGE_DOWN lands
+    // raw on index 10 (disabled), scans forward past index 11 (disabled) off
+    // the edge, then falls back to the nearest enabled sibling at index 9.
+    const edgedItems = items.map((item, i) =>
+      i >= 10 ? { ...item, disabled: true } : item,
+    );
+    const edgedRoot = annotateTree({
+      key: "root",
+      label: "Root",
+      items: edgedItems,
+    });
+    const edgedIdx = prepareIndex(edgedRoot);
+    const edgedReduce = createNavigationReducer(edgedIdx, {
+      rootItem: edgedRoot,
       orientation: "vertical",
       wrap: false,
     });
-    const _state: NavigationState = {
-      selectedItems: [root],
-      highlightedItems: findAncestorPath(idx, idx["/first"]),
-      currentDepth: 1,
-      isOpen: false,
-      inputValue: "",
-      keysSoFar: "",
-    };
-    // PAGE_DOWN uses delta=10, but with 3 items clamped to index 2 = /last (not disabled)
-    // We need PAGE_UP from /last with delta=-1... but PAGE_UP uses delta=-10
-    // Actually, the delta is always ±10. With 3 items, from /first (idx 0), +10 → clamped to 2 = /last (not disabled)
-    // We can't easily land on a disabled item with ±10 delta and clamping.
-    // But with wrapping: from /last (idx 2), +10 → (2+10)%3 = 0 = /first (not disabled)
-    // The only way to hit L406 is if the target at the clamped/wrapped index IS disabled.
-    // With a tree where the target position IS disabled:
-    // 3 items: [/first, /disabled, /last]. From /last (2), PAGE_UP → 2-10 clamped to 0 = /first
-    // Still not disabled. This line is unreachable with normal trees.
-    // Actually with 2 items: [/ok, /disabled]. From /ok (0), PAGE_DOWN clamped to 1 = /disabled. YES!
-    expect(true).toBe(true); // placeholder
+    const next = edgedReduce(
+      {
+        selectedItems: [edgedRoot],
+        highlightedItems: findAncestorPath(edgedIdx, edgedIdx["/i0"]),
+        currentDepth: 1,
+        isOpen: false,
+        inputValue: "",
+        keysSoFar: "",
+      },
+      { type: NavigationActionType.PAGE_DOWN },
+    );
+    expect(next.highlightedItems.at(-1)?.url).toBe("/i9");
+  });
+
+  it("skips a disabled landing on PAGE_UP too", () => {
+    // From /i11 with index 10 disabled... PAGE_UP (-10) lands raw on /i1
+    // (enabled) — use a tree with index 1 disabled instead.
+    const upItems = Array.from({ length: 12 }, (_, i) => ({
+      url: `/u${i}`,
+      label: `Item ${i}`,
+      disabled: i === 1,
+    }));
+    const upRoot = annotateTree({ key: "root", label: "Root", items: upItems });
+    const upIdx = prepareIndex(upRoot);
+    const upReduce = createNavigationReducer(upIdx, {
+      rootItem: upRoot,
+      orientation: "vertical",
+      wrap: false,
+    });
+    const next = upReduce(
+      {
+        selectedItems: [upRoot],
+        highlightedItems: findAncestorPath(upIdx, upIdx["/u11"]),
+        currentDepth: 1,
+        isOpen: false,
+        inputValue: "",
+        keysSoFar: "",
+      },
+      { type: NavigationActionType.PAGE_UP },
+    );
+    // Raw landing /u1 is disabled; continuing in the jump direction (up)
+    // lands on /u0.
+    expect(next.highlightedItems.at(-1)?.url).toBe("/u0");
   });
 });
 

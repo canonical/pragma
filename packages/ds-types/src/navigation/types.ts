@@ -59,6 +59,10 @@ export interface Item {
  * union: a tree of `A | B` entries has `_Item<A | B>[]` children on every
  * member, whichever member the parent is.
  *
+ * Instantiate `_Item` with the tree's FULL entry union: `_Item<OneMember>`
+ * re-types `items` with just that member, statically hiding the other entry
+ * kinds a heterogeneous tree's children can hold at runtime.
+ *
  * @template T - The item type being annotated (defaults to the base `Item`)
  */
 export type _Item<T extends Item = Item> = _DistributiveOmit<T, "items"> & {

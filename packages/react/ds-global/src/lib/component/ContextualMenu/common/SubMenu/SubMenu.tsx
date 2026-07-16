@@ -56,7 +56,11 @@ const SubMenuParent = ({ item }: { item: _Item<MenuItem> }): ReactElement => {
   const { getItemProps, getMenuProps, getNodeStatus, onSelectItem } =
     useMenuContext();
 
-  const children = item.items ?? [];
+  // `_Item<MenuItem>` re-types annotated children with the single member, but
+  // a submenu's children genuinely include separators at runtime (the hook's
+  // prepareEntry recurses into submenus). State the heterogeneous truth
+  // explicitly so readers of `children` are prompted to handle separators.
+  const children: _Item<MenuEntry>[] = item.items ?? [];
   const status = getNodeStatus(item);
   // The submenu is keyboard-open when the highlight is in a DESCENDANT of this
   // parent — not when the parent itself is the highlighted item. `inHighlighted
