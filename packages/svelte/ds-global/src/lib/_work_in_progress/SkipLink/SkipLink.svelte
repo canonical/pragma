@@ -44,4 +44,6 @@ The `<main>` element should have a `tabindex` of `-1` to prevent it from receivi
   page content
 </main>
 ```
+
+@implements ds:site.pattern.skip_link
 -->
