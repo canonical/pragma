@@ -125,8 +125,6 @@ describe("tool listing", () => {
       "block_lookup",
       "block_sample",
       "modifier_sample",
-      "token_list",
-      "token_lookup",
       "tokens_add_config",
       "token_sample",
       "config_show",
@@ -142,15 +140,18 @@ describe("tool listing", () => {
       "info",
       "capabilities",
       "llm",
+      "create_component",
+      "create_package",
       "create_application",
       "create_domain",
       "create_route",
       "create_wrapper",
       // Bundled packs register after the built-in tools, in BUNDLED_PACKS
-      // order: `tier`, then `standard`, then `modifier`. The hand-written tier,
-      // standard, and modifier list/lookup domains were deleted and are now
-      // served by bundled story packs (only the `modifier sample` built-in
-      // remnant remains above).
+      // order: `tier`, `standard`, `modifier`, then `token`. The hand-written
+      // tier, standard, modifier list/lookup, and token list/lookup domains
+      // were deleted and are now served by bundled story packs (only the
+      // `modifier sample`, `token sample`, and `tokens_add_config` built-in
+      // remnants remain above).
       "tier_list",
       "standard_list",
       "standard_lookup",
@@ -158,6 +159,8 @@ describe("tool listing", () => {
       "standard_sample",
       "modifier_list",
       "modifier_lookup",
+      "token_list",
+      "token_lookup",
     ]);
   });
 
@@ -504,14 +507,18 @@ describe("token_lookup", () => {
       name: "token_lookup",
       arguments: { names: ["color.primary"] },
     });
+    // Served by the bundled token pack: theme values are the flat
+    // valueLight/valueDark fields (the old nested {theme, value} shape).
     const data = parseData(result) as {
       results: {
         name: string;
-        values: { theme: string; value: string }[];
+        valueLight?: string;
+        valueDark?: string;
       }[];
     };
     expect(data.results[0]?.name).toBe("color.primary");
-    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
+    expect(data.results[0]?.valueLight).toBeTruthy();
+    expect(data.results[0]?.valueDark).toBeTruthy();
   });
 
   it("returns per-query errors for unknown token", async () => {

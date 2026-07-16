@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { PragmaError } from "#error";
 import blockSpecs from "../block/mcp/specs.js";
 import blockEmptyError from "../block/orchestration/blockEmptyError.js";
-import tokenSpecs from "../token/mcp/specs.js";
-import tokenEmptyError from "../token/orchestration/tokenEmptyError.js";
 import type { FilterConfig } from "./types/index.js";
 
 const filters: FilterConfig = { tier: "Apps/WPE", channel: "normal" };
@@ -36,23 +34,12 @@ const cases: ReadonlyArray<{
     toolNames: new Set(blockSpecs.map((s) => s.name)),
     storeEmpty: false,
   },
-  {
-    domain: "token (category active)",
-    error: tokenEmptyError("color"),
-    toolNames: new Set(tokenSpecs.map((s) => s.name)),
-    storeEmpty: false,
-  },
-  {
-    domain: "token (store-empty)",
-    error: tokenEmptyError(),
-    toolNames: new Set(tokenSpecs.map((s) => s.name)),
-    storeEmpty: true,
-  },
-  // `standard` and `modifier` left this cross-domain hand-written contract:
-  // both are now bundled story packs. `standard`'s pack has no emptyError hook
-  // (a pinned PARITY_GAP), so an empty standard list renders zero rows;
-  // `modifier`'s pack preserves the recovery through the pack `emptyRecovery`
-  // declaration, exercised by the pack/parity suites instead.
+  // `standard`, `modifier`, and `token` left this cross-domain hand-written
+  // contract: all three are now bundled story packs. `standard`'s pack has no
+  // emptyError hook (a pinned PARITY_GAP), so an empty standard list renders
+  // zero rows; `modifier`'s and `token`'s packs preserve the recovery through
+  // the pack `emptyRecovery` declaration, exercised by the pack/parity suites
+  // instead.
 ];
 
 describe("empty-error recovery contract (cross-domain)", () => {
