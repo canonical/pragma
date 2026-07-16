@@ -16,7 +16,6 @@ import type { CardProps } from "./types.js";
 const meta = {
   title: "components/Card",
   component: Component,
-  tags: ["autodocs"],
   parameters: { grid: "showcase" },
 } satisfies Meta<typeof Component>;
 

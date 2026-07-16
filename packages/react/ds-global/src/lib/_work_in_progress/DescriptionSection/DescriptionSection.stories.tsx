@@ -7,7 +7,6 @@ import DescriptionSection from "./DescriptionSection.js";
 const meta: Meta<typeof DescriptionSection> = {
   title: "_work_in_progress/other/DescriptionSection",
   component: DescriptionSection,
-  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
     grid: "responsive",

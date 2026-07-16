@@ -11,7 +11,6 @@ import Component from "./Error.js";
 const meta = {
   title: "subcomponents/Field.Error",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

@@ -16,12 +16,19 @@ export default createConfig("react"); // or one of "svelte", "lit"
 
 ## Notes
 
-The [autodocs](https://storybook.js.org/docs/writing-docs/autodocs) feature is enabled by this config with ```typescript
-{
-    docs: {
-       autodocs: true,
-    },
-}
+The [autodocs](https://storybook.js.org/docs/writing-docs/autodocs) feature is enabled project-wide by setting `tags: ["autodocs"]` at preview level, so story files do not need to declare the tag themselves (a story can still opt out with `tags: ["!autodocs"]`).
+
+This package exports the shared preview configuration (`@canonical/storybook-config/preview`), which includes that default. However, Storybook statically parses each project's own `.storybook/preview.ts` and does not reliably pick up `tags` (or `storySort`) spread from an imported preview ([storybookjs/storybook#31842](https://github.com/storybookjs/storybook/issues/31842)). Consuming projects must therefore declare `tags: ["autodocs"]` inline in their own `.storybook/preview.ts`:
+
+```typescript
+import previewConfig from "@canonical/storybook-config/preview";
+
+const preview = {
+  ...previewConfig,
+  tags: ["autodocs"],
+};
+
+export default preview;
 ```
 
 

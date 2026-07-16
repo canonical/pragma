@@ -7,7 +7,6 @@ import type { PhoneValue } from "./types.js";
 const meta = {
   title: "subcomponents/PhoneInput",
   component: PhoneInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof PhoneInput>;
 
 export default meta;

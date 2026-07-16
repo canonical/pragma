@@ -7,7 +7,6 @@ import { ComboboxField } from "./index.js";
 const meta = {
   title: "_work_in_progress/component/ComboboxField",
   component: ComboboxField,
-  tags: ["autodocs"],
   decorators: [
     decorators.form({
       defaultValues: {

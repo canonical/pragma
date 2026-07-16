@@ -11,7 +11,6 @@ import { RichChoicesField } from "./index.js";
 const meta = {
   title: "components/RichChoicesField",
   component: RichChoicesField,
-  tags: ["autodocs"],
   parameters: { grid: "responsive" },
   decorators: [decorators.form()],
 } satisfies Meta<typeof RichChoicesField>;

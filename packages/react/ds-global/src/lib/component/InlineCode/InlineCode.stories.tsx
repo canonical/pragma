@@ -4,7 +4,6 @@ import Component from "./InlineCode.js";
 const meta: Meta<typeof Component> = {
   title: "components/InlineCode",
   component: Component,
-  tags: ["autodocs"],
 };
 
 export default meta;

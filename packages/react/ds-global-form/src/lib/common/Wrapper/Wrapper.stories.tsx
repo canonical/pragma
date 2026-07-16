@@ -19,7 +19,6 @@ const BoundTextarea = bindField(TextareaInput, "native");
 const meta = {
   title: "common/Wrapper",
   component: Component,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

@@ -8,7 +8,6 @@ import { ChoicesField } from "./index.js";
 const meta = {
   title: "components/ChoicesField",
   component: ChoicesField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof ChoicesField>;
 

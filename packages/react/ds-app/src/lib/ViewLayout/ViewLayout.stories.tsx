@@ -10,7 +10,6 @@ import ViewLayout from "./ViewLayout.js";
 const meta: Meta<typeof ViewLayout> = {
   title: "Layouts/ViewLayout",
   component: ViewLayout,
-  tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
   decorators: layoutDecorators,
 };

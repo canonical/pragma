@@ -6,7 +6,6 @@ import Component from "./Announcement.js";
 const meta = {
   title: "components/Announcement",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     criticality: {
       options: [undefined, ...MODIFIER_FAMILIES.criticality],

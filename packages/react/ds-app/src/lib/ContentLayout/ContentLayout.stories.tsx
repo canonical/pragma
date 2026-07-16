@@ -10,7 +10,6 @@ import ContentLayout from "./ContentLayout.js";
 const meta: Meta<typeof ContentLayout> = {
   title: "Layouts/ContentLayout",
   component: ContentLayout,
-  tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
   decorators: layoutDecorators,
 };

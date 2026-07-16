@@ -16,7 +16,6 @@ import SideNavigation from "./SideNavigation.js";
 const meta: Meta<typeof SideNavigation> = {
   title: "Components/SideNavigation",
   component: SideNavigation,
-  tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
   // withNavigationRouterProps injects currentUrl + LinkComponent from the live
   // router and keys the story so active state follows navigation; withNavLayout

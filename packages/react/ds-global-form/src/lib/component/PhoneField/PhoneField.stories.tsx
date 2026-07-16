@@ -6,7 +6,6 @@ import { PhoneField } from "./index.js";
 const meta = {
   title: "components/PhoneField",
   component: PhoneField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof PhoneField>;
 

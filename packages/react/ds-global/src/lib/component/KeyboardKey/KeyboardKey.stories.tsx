@@ -10,7 +10,6 @@ import Component from "./KeyboardKey.js";
 const meta = {
   title: "components/KeyboardKey",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     keyValue: { control: { type: "select" } },
   },

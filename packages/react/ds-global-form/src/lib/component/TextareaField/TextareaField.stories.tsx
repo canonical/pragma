@@ -7,7 +7,6 @@ import { TextareaField } from "./index.js";
 const meta = {
   title: "components/TextareaField",
   component: TextareaField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof TextareaField>;
 

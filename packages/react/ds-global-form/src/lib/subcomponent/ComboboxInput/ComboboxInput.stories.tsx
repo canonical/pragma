@@ -8,7 +8,6 @@ import { ComboboxInput } from "./ComboboxInput.js";
 const meta = {
   title: "_work_in_progress/subcomponent/ComboboxInput",
   component: ComboboxInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof ComboboxInput>;
 
 export default meta;

@@ -4,7 +4,6 @@ import Component from "./Spinner.js";
 const meta = {
   title: "subcomponents/Spinner",
   component: Component,
-  tags: ["autodocs"],
   parameters: {
     docs: {
       description: {

@@ -31,7 +31,6 @@ const meta = {
   title: "_work_in_progress/component/Popover",
   component: Component,
   decorators: [stage],
-  tags: ["autodocs"],
   parameters: {
     layout: "centered",
   },

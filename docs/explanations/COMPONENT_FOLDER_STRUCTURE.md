@@ -228,7 +228,6 @@ import Component from "./Button.js";
 const meta = {
   title: "Button",
   component: Component,
-  tags: ["autodocs"],
   args: { onClick: fn() },
 } satisfies Meta<typeof Component>;
 
@@ -249,7 +248,7 @@ export const Positive: Story = {
 };
 ```
 
-The `tags: ["autodocs"]` directive tells Storybook to generate documentation from the component's JSDoc comments and TypeScript types. This provides API reference documentation without maintaining separate docs.
+Storybook generates an API reference page for every component (autodocs) from its JSDoc comments and TypeScript types. This is enabled project-wide by the `tags: ["autodocs"]` default in each package's `.storybook/preview.ts` (the shared configuration from `@canonical/storybook-config`), so individual story files do not declare the tag themselves. A story file can opt out with `tags: ["!autodocs"]`.
 
 Each exported story represents a distinct state or variant of the component. Story names become visible in Storybook's sidebar and in Chromatic's visual comparison interface. Descriptive names like `Positive` and `Negative` help reviewers understand what each screenshot should show.
 

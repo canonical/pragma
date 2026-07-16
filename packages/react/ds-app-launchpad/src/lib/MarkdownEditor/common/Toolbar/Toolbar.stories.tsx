@@ -5,7 +5,6 @@ import Component from "./Toolbar.js";
 
 const meta = {
   title: "MarkdownEditor/Toolbar",
-  tags: ["autodocs"],
   component: Component,
   decorators: [
     (Story, { args }) => (

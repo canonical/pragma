@@ -4,7 +4,6 @@ import Component from "./Image.js";
 const meta = {
   title: "components/Card/Image",
   component: Component,
-  tags: ["autodocs"],
   argTypes: {
     src: {
       control: { type: "text" },

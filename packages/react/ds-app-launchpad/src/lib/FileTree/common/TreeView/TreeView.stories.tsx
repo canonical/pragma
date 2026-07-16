@@ -12,7 +12,6 @@ import type { TreeViewProps } from "./types.js";
 
 const meta = {
   title: "FileTree/TreeView",
-  tags: ["autodocs"],
   component: FileTree.TreeView,
 } satisfies Meta<typeof FileTree.TreeView>;
 

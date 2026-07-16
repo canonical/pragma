@@ -6,7 +6,6 @@ import { FileUploadField } from "./index.js";
 const meta = {
   title: "components/FileUploadField",
   component: FileUploadField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof FileUploadField>;
 

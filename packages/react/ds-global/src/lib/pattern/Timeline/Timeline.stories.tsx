@@ -5,7 +5,6 @@ import Timeline from "./Timeline.js";
 const meta = {
   title: "_work_in_progress/pattern/Timeline",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

@@ -5,7 +5,6 @@ import { TextareaInput } from "./TextareaInput.js";
 const meta = {
   title: "subcomponents/TextareaInput",
   component: TextareaInput,
-  tags: ["autodocs"],
 } satisfies Meta<typeof TextareaInput>;
 
 export default meta;

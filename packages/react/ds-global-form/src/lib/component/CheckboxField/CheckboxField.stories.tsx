@@ -8,7 +8,6 @@ import { CheckboxField } from "./index.js";
 const meta = {
   title: "components/CheckboxField",
   component: CheckboxField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof CheckboxField>;
 

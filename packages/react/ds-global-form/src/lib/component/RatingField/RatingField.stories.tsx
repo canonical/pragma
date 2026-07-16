@@ -5,7 +5,6 @@ import Component from "./RatingField.js";
 const meta = {
   title: "_work_in_progress/component/RatingField",
   component: Component,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof Component>;
 

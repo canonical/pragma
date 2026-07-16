@@ -7,7 +7,6 @@ import TSection from "./TSection.js";
 const meta: Meta<typeof TSection> = {
   title: "_work_in_progress/other/TSection",
   component: TSection,
-  tags: ["autodocs"],
   parameters: {
     layout: "fullscreen",
     grid: "responsive",

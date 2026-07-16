@@ -4,7 +4,6 @@ import Component from "./Rule.js";
 const meta = {
   title: "_work_in_progress/component/Rule",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;

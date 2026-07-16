@@ -13,7 +13,6 @@ import { NavTree } from "./index.js";
 const meta: Meta<typeof NavTree> = {
   title: "Components/SideNavigation/NavTree",
   component: NavTree,
-  tags: ["autodocs"],
   // Render flush to the canvas origin (no Storybook padding) so the baseline
   // overlay grid aligns to the component's own box.
   parameters: { layout: "fullscreen" },

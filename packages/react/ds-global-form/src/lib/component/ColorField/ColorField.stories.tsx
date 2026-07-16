@@ -6,7 +6,6 @@ import { ColorField } from "./index.js";
 const meta = {
   title: "_work_in_progress/component/ColorField",
   component: ColorField,
-  tags: ["autodocs"],
   decorators: [decorators.form()],
 } satisfies Meta<typeof ColorField>;
 

@@ -7,7 +7,6 @@ import { GridCard } from "./GridCard.js";
 const meta: Meta<typeof GridCard> = {
   title: "_work_in_progress/other/grid/GridCard",
   component: GridCard,
-  tags: ["autodocs"],
 };
 
 export default meta;

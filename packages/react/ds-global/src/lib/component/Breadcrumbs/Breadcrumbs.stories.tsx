@@ -5,7 +5,6 @@ import type { BreadcrumbItem } from "./types.js";
 const meta = {
   title: "components/Breadcrumbs",
   component: Component,
-  tags: ["autodocs"],
 } satisfies Meta<typeof Component>;
 
 export default meta;
