@@ -57,6 +57,9 @@ runs:
 
       # Workaround for https://github.com/oven-sh/bun/issues/19782
       # Workspace bin symlinks aren't created on first install. Remove after fix is merged.
+      # Keep after the bun.lock diff check above (see the ORDER-CRITICAL note on
+      # "Re-link compiled workspace binaries" below): a re-link `bun install` can
+      # rewrite bun.lock and would otherwise mask a stale committed lockfile.
     - name: Re-link workspace binaries
       shell: bash
       run: bun install --ignore-scripts
@@ -104,6 +107,12 @@ runs:
       # Bun only links a workspace bin once its target file exists. Compiled CLI
       # bins (e.g. @canonical/webarchitect's dist/esm/cli.js) don't exist until
       # the build above has run, so re-link once more after building.
+      #
+      # ORDER-CRITICAL: this — like every re-link `bun install` in this action —
+      # must stay AFTER the "bun install … && git diff --exit-code bun.lock"
+      # verification above. `bun install` can rewrite bun.lock in place, so a
+      # re-link running before that check would silently repair a stale committed
+      # lockfile and let it pass CI undetected. Do not reorder.
     - name: Re-link compiled workspace binaries
       shell: bash
       run: bun install --ignore-scripts
