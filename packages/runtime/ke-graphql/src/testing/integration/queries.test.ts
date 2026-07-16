@@ -162,6 +162,44 @@ describe("ds-realistic resolution", () => {
     expect(modifiers.pageInfo.hasNextPage).toBe(false);
   });
 
+  it("exposes totalCount on root and nested connections, ignoring pagination", async () => {
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    const result = await run(
+      compiled,
+      `{
+        components(first: 1) {
+          totalCount
+          edges {
+            node {
+              modifierFamilies(first: 1) {
+                totalCount
+                edges { node { modifiers { totalCount } } }
+              }
+            }
+          }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const components = result.data?.components as {
+      totalCount: number;
+      edges: Array<{
+        node: {
+          modifierFamilies: {
+            totalCount: number;
+            edges: Array<{ node: { modifiers: { totalCount: number } } }>;
+          };
+        };
+      }>;
+    };
+    // One Component instance; Button carries one family; the family's one
+    // modifier resolves through the declared inverse.
+    expect(components.totalCount).toBe(1);
+    const families = components.edges[0]?.node.modifierFamilies;
+    expect(families?.totalCount).toBe(1);
+    expect(families?.edges[0]?.node.modifiers.totalCount).toBe(1);
+  });
+
   it("rejects negative pagination arguments", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
     const result = await run(
