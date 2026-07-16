@@ -155,6 +155,50 @@ scaffolded boilerplates) **and** Bun-bundled published packages under `packages/
 the CLI at `packages/cli/pragma`). When unsure, check whether the package's build script
 runs `tsc` or a bundler.
 
+### React component props — extend the root element's native props
+
+A React component's props type **must extend the native props of the element it
+renders as its root**, so every attribute that element accepts (`data-*`,
+`aria-*`, `onMouseEnter`, `id`, `style`, …) reaches the DOM for free. Write it as
+a DS-owned `OwnProps` intersected with the root tag's `ComponentProps`, tag-indexed:
+
+```ts
+import type { ComponentProps } from "react";
+
+type OwnProps = {
+  /* DS-owned props */
+};
+
+// Change "button" to the component's actual root element tag.
+export type ButtonProps = OwnProps & Omit<ComponentProps<"button">, keyof OwnProps>;
+```
+
+Rules:
+
+1. Use **`ComponentProps<"tag">`** — the tag-indexed form. Not the per-element
+   `XxxHTMLAttributes<T>` interfaces (easy to mis-instantiate against the wrong
+   element), and not `ComponentPropsWithoutRef` (the repo peers React 19, where
+   `ref` is an ordinary prop and belongs in the surface).
+2. Use a **`type` alias with an intersection**, never `interface … extends`.
+   Intersections distribute over unions and compose predictably; `interface
+   extends` does not, and mixing it with union members silently collapses props
+   to `any` (the `FieldProps` lesson from issue #235).
+3. Always `Omit<ComponentProps<"tag">, keyof OwnProps>` so the DS-owned keys win
+   by construction. Any *further* exclusion the component deliberately controls
+   (e.g. `| "type"` when the DS fixes the button type) gets a doc comment saying
+   why.
+4. **Runtime obligation:** destructure every `OwnProps` member out, spread the
+   remaining `{...rest}` onto the root element, and set DS-controlled attributes
+   *after* the spread so they win. Merge `className`/`style` rather than letting
+   either side clobber — the repo pattern is
+   `[componentCssClassName, className].filter(Boolean).join(" ")`. No DS-internal
+   prop may leak onto the DOM node.
+5. **Variable-root components** (the root element depends on a prop) use a small
+   discriminated union of two such intersections (issue #628 precedent), one per
+   possible root tag. No polymorphic `as` generics.
+6. **Components with no single root element** (fragments, portals, pure
+   composition/wrappers) are exempt — say so in a one-line doc comment.
+
 ## PR mechanics
 
 - Branch from up-to-date `origin/main`; never push to `main` directly — **all changes
