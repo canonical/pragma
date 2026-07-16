@@ -17,4 +17,5 @@ export const DEFAULT_ORIGINS: ConfigOrigins = {
   stories: "default",
   prefixes: "default",
   detail: "default",
+  prompts: "default",
 };

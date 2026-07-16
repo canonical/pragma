@@ -13,6 +13,7 @@ import { VERSION } from "../constants.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
 import buildInstructions from "./instructions.js";
+import registerPrompts from "./prompts/registerPrompts.js";
 import registerResources from "./registerResources.js";
 import registerStateResource from "./resources/registerStateResource.js";
 import registerAllTools from "./tools/index.js";
@@ -33,7 +34,7 @@ export async function createMcpServer(options?: {
   sources?: SourceSpec[];
 }): Promise<{ server: McpServer; dispose: () => void }> {
   const runtime = await bootPragma(options);
-  const { server } = createMcpServerFromRuntime(runtime);
+  const { server } = await createMcpServerFromRuntime(runtime);
   return { server, dispose: () => runtime.dispose() };
 }
 
@@ -41,19 +42,24 @@ export async function createMcpServer(options?: {
  * Create an MCP server from an existing runtime (no boot).
  *
  * Used in testing where the test controls the runtime lifecycle.
+ * Async because the prompts surface discovers skill stubs on disk;
+ * registration still completes before the caller connects a transport.
  *
  * @param runtime - An already-booted pragma runtime.
  * @returns The MCP server instance.
  */
-export function createMcpServerFromRuntime(runtime: PragmaRuntime): {
+export async function createMcpServerFromRuntime(
+  runtime: PragmaRuntime,
+): Promise<{
   server: McpServer;
-} {
+}> {
   const server = new McpServer(
     { name: "pragma", version: VERSION },
     { instructions: buildInstructions(runtime) },
   );
-  registerAllTools(server, runtime);
+  const toolSpecs = registerAllTools(server, runtime);
   registerResources(server, runtime);
   registerStateResource(server, runtime);
+  await registerPrompts(server, runtime, toolSpecs);
   return { server };
 }

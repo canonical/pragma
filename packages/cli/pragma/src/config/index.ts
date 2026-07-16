@@ -18,5 +18,6 @@ export type {
   ConfigScope,
   ConfigUpdate,
   PragmaConfig,
+  PromptsConfig,
 } from "./types.js";
 export { default as writeConfig } from "./writeConfig.js";

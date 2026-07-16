@@ -47,7 +47,7 @@ export default async function createTestMcpClient(options?: {
     dispose: () => cleanupStore(),
   };
 
-  const { server } = createMcpServerFromRuntime(runtime);
+  const { server } = await createMcpServerFromRuntime(runtime);
 
   const [serverTransport, clientTransport] =
     InMemoryTransport.createLinkedPair();

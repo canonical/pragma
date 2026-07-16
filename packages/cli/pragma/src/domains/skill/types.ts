@@ -5,6 +5,8 @@ export interface SkillFrontmatter {
   readonly license?: string;
   readonly compatibility?: readonly string[];
   readonly metadata?: Readonly<Record<string, unknown>>;
+  /** `false` opts this skill out of the auto-projected MCP stub prompt. */
+  readonly prompt?: boolean;
 }
 
 /** A skill discovered from a hardcoded source path. */

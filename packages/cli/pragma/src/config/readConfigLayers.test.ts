@@ -45,6 +45,7 @@ describe("readConfigLayers", () => {
       stories: "default",
       prefixes: "default",
       detail: "default",
+      prompts: "default",
     });
     expect(layers.global.exists).toBe(false);
     expect(layers.project.exists).toBe(false);
@@ -79,6 +80,7 @@ describe("readConfigLayers", () => {
       stories: "default",
       prefixes: "default",
       detail: "default",
+      prompts: "default",
     });
   });
 
