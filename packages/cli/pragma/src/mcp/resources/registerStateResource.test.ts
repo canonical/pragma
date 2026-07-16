@@ -73,7 +73,7 @@ describe("pragma://state resource", () => {
 
     await mcp.client.callTool({
       name: "config_detail",
-      arguments: { value: "digest" },
+      arguments: { level: "digest" },
     });
 
     const after = parseState(

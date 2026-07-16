@@ -60,7 +60,6 @@ describe("buildReservedVerbs", () => {
     ["config", "tier"],
     ["config", "channel"],
     ["info"],
-    ["llm"],
     ["doctor"],
     ["capabilities"],
   ];
@@ -76,7 +75,7 @@ describe("buildReservedVerbs", () => {
     "token_sample",
     "tokens_add_config",
     "info",
-    "llm",
+    "capabilities",
   ];
 
   it("assembles verb sets per noun from real CLI command paths", () => {

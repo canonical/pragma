@@ -106,7 +106,7 @@ export default async function registerPrompts(
     const { definition } = entry;
     const argsSchema = buildArgsSchema(runtime, specsByName, entry);
 
-    server.registerPrompt(
+    const registered = server.registerPrompt(
       definition.name,
       {
         description: definition.description,
@@ -123,5 +123,18 @@ export default async function registerPrompts(
         return hydratePrompt(runtime, definition, argMap, toolSpecs);
       },
     );
+
+    // MIRROR INVARIANT (negative inputs): `registerPrompt` wraps the raw
+    // shape in a plain `z.object`, which STRIPS unknown keys in zod v3 —
+    // an unknown argument would silently succeed on `prompts/get` while
+    // `hydratePrompt`'s validateArgs rejects it on the CLI and aggregator
+    // surfaces. Override the stored schema with a `.strict()` object over
+    // the SAME shape (completable fields included, so completion and
+    // prompts/list projection are unchanged) so all three surfaces share
+    // one reject-unknowns boundary. The SDK's GetPrompt handler surfaces
+    // the strict-parse failure as a clean InvalidParams protocol error.
+    if (argsSchema) {
+      registered.argsSchema = z.object(argsSchema).strict();
+    }
   }
 }

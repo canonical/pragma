@@ -55,6 +55,24 @@ function buildZodSchema(
   return z.object(shape);
 }
 
+/**
+ * Build the wire `annotations` object for a spec.
+ *
+ * Shared by `registerFromSpec` and `buildToolListEntry` so the key
+ * INSERTION ORDER is identical on both paths — the SDK serves the
+ * registered object verbatim, so a second construction with a different
+ * order would break the byte-identity the mirror invariant promises.
+ */
+function buildAnnotations(spec: ToolSpec): ToolListEntry["annotations"] {
+  return {
+    readOnlyHint: spec.readOnly,
+    ...(spec.destructive !== undefined
+      ? { destructiveHint: spec.destructive }
+      : {}),
+    openWorldHint: false,
+  };
+}
+
 /** One `tools/list` entry, as the MCP SDK serializes it. */
 export interface ToolListEntry {
   readonly name: string;
@@ -98,13 +116,7 @@ export function buildToolListEntry(spec: ToolSpec): ToolListEntry {
     name: spec.name,
     description: spec.description,
     inputSchema,
-    annotations: {
-      readOnlyHint: spec.readOnly,
-      ...(spec.destructive !== undefined
-        ? { destructiveHint: spec.destructive }
-        : {}),
-      openWorldHint: false,
-    },
+    annotations: buildAnnotations(spec),
     execution: { taskSupport: "forbidden" },
   };
 }
@@ -120,25 +132,14 @@ export default function registerFromSpec(
   const toolConfig: {
     description: string;
     inputSchema?: z.ZodObject<Record<string, z.ZodTypeAny>>;
-    annotations: {
-      readOnlyHint: boolean;
-      destructiveHint?: boolean;
-      openWorldHint: boolean;
-    };
+    annotations: ToolListEntry["annotations"];
   } = {
     description: spec.description,
-    annotations: {
-      readOnlyHint: spec.readOnly,
-      openWorldHint: false,
-    },
+    annotations: buildAnnotations(spec),
   };
 
   if (spec.params && Object.keys(spec.params).length > 0) {
     toolConfig.inputSchema = buildZodSchema(spec.params);
-  }
-
-  if (spec.destructive !== undefined) {
-    toolConfig.annotations.destructiveHint = spec.destructive;
   }
 
   server.registerTool(

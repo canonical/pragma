@@ -122,7 +122,7 @@ export default function buildStatePayload(
           "Default disclosure level for lookups; unset means each surface's own default (MCP: highest declared level).",
         change: {
           durable:
-            "config_detail { value } · pragma config detail <level> [--global|--local]",
+            "config_detail { level } · pragma config detail <level> [--global|--local]",
           perCall: "detail: <level> · --detail <level>",
         },
       },

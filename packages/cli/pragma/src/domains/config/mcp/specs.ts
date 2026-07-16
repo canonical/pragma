@@ -112,9 +112,9 @@ const specs: readonly ToolSpec[] = [
       "Set or reset the default disclosure level for lookups (persisted in config). " +
       "Use when a deeper or shallower default should stick across calls — prefer the " +
       "per-call detail param for one-off queries, since config changes persist for the " +
-      'human too. Example: config_detail { value: "digest" }.',
+      'human too. Example: config_detail { level: "digest" }.',
     params: {
-      value: {
+      level: {
         type: "string",
         description:
           "Disclosure level (pack-defined; e.g. summary, digest, detailed)",
@@ -132,7 +132,7 @@ const specs: readonly ToolSpec[] = [
       },
     },
     readOnly: false,
-    async execute(rt, { value, reset, global: globalScope }) {
+    async execute(rt, { level, reset, global: globalScope }) {
       const scope = globalScope === true ? "global" : undefined;
 
       if (reset) {
@@ -140,8 +140,8 @@ const specs: readonly ToolSpec[] = [
         return { data: { detail: null, action: "reset", path: written } };
       }
 
-      if (value) {
-        const detail = validateDetail(value as string);
+      if (level) {
+        const detail = validateDetail(level as string);
         const written = writeConfig(rt.cwd, { detail }, scope);
         return { data: { detail, action: "set", path: written } };
       }

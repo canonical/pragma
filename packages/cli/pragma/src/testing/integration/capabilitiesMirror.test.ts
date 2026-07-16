@@ -12,6 +12,8 @@
  */
 
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { DEFAULT_ORIGINS } from "#config";
 import type { PragmaError } from "#error";
@@ -20,6 +22,7 @@ import buildPromptLookupCommand from "../../domains/prompt/commands/lookup.js";
 import type { PragmaContext } from "../../domains/shared/context.js";
 import { createLazyGraphql } from "../../domains/shared/runtime.js";
 import type { PragmaRuntime } from "../../domains/shared/types/index.js";
+import { createMcpServerFromRuntime } from "../../mcp/createMcpServer.js";
 import collectCommands from "../../pipeline/collectCommands.js";
 import { renderErrorJson } from "../../pipeline/renderError.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
@@ -73,6 +76,59 @@ async function runCommand(
 /** Serialize through JSON to drop `undefined` fields, like the wire does. */
 function wire(value: unknown): unknown {
   return JSON.parse(JSON.stringify(value));
+}
+
+/**
+ * Fetch the RAW `tools/list` result — the exact objects the server would
+ * `JSON.stringify` onto a stdio transport. The SDK Client re-parses every
+ * result through its zod result schemas, which rebuilds objects in
+ * schema-shape key order and so MASKS wire key order; byte-identity can
+ * only be refereed against the raw JSON-RPC response message.
+ */
+async function rawToolsList(): Promise<{
+  tools: readonly Record<string, unknown>[];
+}> {
+  const { server } = await createMcpServerFromRuntime(runtime);
+  const [serverTransport, rawTransport] = InMemoryTransport.createLinkedPair();
+  const pending = new Map<number, (msg: Record<string, unknown>) => void>();
+  rawTransport.onmessage = (message: JSONRPCMessage) => {
+    const msg = message as unknown as Record<string, unknown>;
+    if (typeof msg.id === "number") {
+      pending.get(msg.id)?.(msg);
+    }
+  };
+  await server.connect(serverTransport);
+  await rawTransport.start();
+  const request = (
+    id: number,
+    method: string,
+    params: Record<string, unknown>,
+  ) =>
+    new Promise<Record<string, unknown>>((resolve) => {
+      pending.set(id, resolve);
+      void rawTransport.send({
+        jsonrpc: "2.0",
+        id,
+        method,
+        params,
+      } as JSONRPCMessage);
+    });
+
+  try {
+    await request(1, "initialize", {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: { name: "raw-wire-client", version: "0.0.0" },
+    });
+    await rawTransport.send({
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+    } as JSONRPCMessage);
+    const response = await request(2, "tools/list", {});
+    return response.result as { tools: readonly Record<string, unknown>[] };
+  } finally {
+    await server.close();
+  }
 }
 
 /** Parse a tool-call result's envelope. */
@@ -189,6 +245,108 @@ describe("mirror invariant — aggregator ≡ protocol surfaces", () => {
 
     expect(viaAggregator.data).toEqual(wire(viaProtocol));
     expect(viaCli).toEqual(wire(viaProtocol));
+  });
+});
+
+describe("mirror invariant — byte identity with the raw wire", () => {
+  it("destructive-annotated entries serialize byte-identically to tools/list", async () => {
+    const raw = await rawToolsList();
+    // create_component declares destructive: false, so its annotations
+    // carry all three hints — the case where two construction paths could
+    // (and once did) disagree on key insertion order. `toEqual` is
+    // order-insensitive; only JSON.stringify sees the wire bytes.
+    const wireEntry = raw.tools.find(
+      (tool) => tool.name === "create_component",
+    );
+    expect(wireEntry).toBeDefined();
+    expect(
+      Object.keys((wireEntry as { annotations: object }).annotations),
+    ).toEqual(["readOnlyHint", "destructiveHint", "openWorldHint"]);
+
+    const reference = JSON.parse(
+      await runCommand(makeCtx(), buildCapabilitiesCommand, {
+        detail: "reference",
+      }),
+    ) as { tools: { name: string }[] };
+    const cliEntry = reference.tools.find(
+      (tool) => tool.name === "create_component",
+    );
+    expect(JSON.stringify(cliEntry)).toBe(JSON.stringify(wireEntry));
+
+    const envelope = parseEnvelope(
+      (await client.callTool({
+        name: "capabilities",
+        arguments: {},
+      })) as Record<string, unknown>,
+    );
+    const aggregatorEntry = (
+      envelope.data as { tools: { name: string }[] }
+    ).tools.find((tool) => tool.name === "create_component");
+    expect(JSON.stringify(aggregatorEntry)).toBe(JSON.stringify(wireEntry));
+  });
+});
+
+describe("mirror invariant — negative-input parity on the prompts/get boundary", () => {
+  it("an unknown extra arg errors on prompts/get, the aggregator, and prompt lookup", async () => {
+    // prompts/get: the strict argsSchema rejects the unknown key as a
+    // protocol-level InvalidParams error (zod v3 would otherwise strip it
+    // and silently succeed while the other two surfaces reject).
+    await expect(
+      client.getPrompt({
+        name: "implement-component",
+        arguments: { component: "Button", bogus: "x" },
+      }),
+    ).rejects.toThrow(/Invalid arguments for prompt implement-component/);
+
+    const res = await client.callTool({
+      name: "capabilities",
+      arguments: {
+        prompt: "implement-component",
+        args: { component: "Button", bogus: "x" },
+      },
+    });
+    expect(res.isError).toBe(true);
+    const mcpError = parseEnvelope(res as Record<string, unknown>).error as {
+      code: string;
+    };
+    expect(mcpError.code).toBe("INVALID_INPUT");
+
+    const ctx = makeCtx();
+    const thrown = await buildPromptLookupCommand(ctx)
+      .execute(
+        { input: ["implement-component", "component=Button", "bogus=x"] },
+        ctx,
+      )
+      .then(
+        () => undefined,
+        (error) => error as PragmaError,
+      );
+    expect(thrown?.code).toBe("INVALID_INPUT");
+  });
+
+  it("a missing required arg errors on prompts/get, the aggregator, and prompt lookup", async () => {
+    await expect(
+      client.getPrompt({ name: "implement-component", arguments: {} }),
+    ).rejects.toThrow(/Invalid arguments for prompt implement-component/);
+
+    const res = await client.callTool({
+      name: "capabilities",
+      arguments: { prompt: "implement-component" },
+    });
+    expect(res.isError).toBe(true);
+    const mcpError = parseEnvelope(res as Record<string, unknown>).error as {
+      code: string;
+    };
+    expect(mcpError.code).toBe("INVALID_INPUT");
+
+    const ctx = makeCtx();
+    const thrown = await buildPromptLookupCommand(ctx)
+      .execute({ input: ["implement-component"] }, ctx)
+      .then(
+        () => undefined,
+        (error) => error as PragmaError,
+      );
+    expect(thrown?.code).toBe("INVALID_INPUT");
   });
 });
 

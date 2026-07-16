@@ -716,7 +716,7 @@ describe("config_detail", () => {
       try {
         const setResult = await scoped.client.callTool({
           name: "config_detail",
-          arguments: { value: "digest" },
+          arguments: { level: "digest" },
         });
         expect(parseData(setResult)).toMatchObject({
           detail: "digest",
@@ -760,7 +760,7 @@ describe("config_detail", () => {
   it("returns an error for a non-token detail value", async () => {
     const result = await client.callTool({
       name: "config_detail",
-      arguments: { value: "Very Detailed" },
+      arguments: { level: "Very Detailed" },
     });
     expect(result.isError).toBe(true);
     const envelope = parseEnvelope(result);

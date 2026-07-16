@@ -17,8 +17,8 @@
  * a pack can never colonize its namespace.
  *
  * The {@link WHOLE_NOUN} sentinel (`"*"`) reserves a whole noun: single-word
- * built-ins (e.g. `info`, `llm`, `doctor`) have no verb, so they reserve every
- * verb, as do promoted operational nouns.
+ * built-ins (e.g. `info`, `doctor`, `capabilities`) have no verb, so they
+ * reserve every verb, as do promoted operational nouns.
  * @module
  */
 
