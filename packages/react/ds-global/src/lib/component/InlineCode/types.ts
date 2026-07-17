@@ -1,6 +1,10 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export interface InlineCodeProps extends HTMLAttributes<HTMLElement> {
+type OwnProps = {
   /** The code to render. */
   children?: ReactNode;
-}
+};
+
+/** Props for the InlineCode component, extending its native `<code>` root. */
+export type InlineCodeProps = OwnProps &
+  Omit<ComponentProps<"code">, keyof OwnProps>;

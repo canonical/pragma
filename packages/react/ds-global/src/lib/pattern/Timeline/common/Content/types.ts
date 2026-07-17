@@ -1,5 +1,13 @@
-import type { HTMLAttributes, ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import type { EventProps } from "../Event/types.js";
+
+type OwnProps = {
+  /**
+   * Timeline.Event elements
+   * Maps to DSL cardinality: 0..* (zero or more)
+   */
+  children?: ReactElement<EventProps> | ReactElement<EventProps>[] | null;
+};
 
 /**
  * Props for the Timeline.Content subcomponent
@@ -12,10 +20,5 @@ import type { EventProps } from "../Event/types.js";
  * - edges:
  *   - [0] timeline-event (cardinality: 0..*, slotName: default)
  */
-export interface ContentProps extends HTMLAttributes<HTMLDivElement> {
-  /**
-   * Timeline.Event elements
-   * Maps to DSL cardinality: 0..* (zero or more)
-   */
-  children?: ReactElement<EventProps> | ReactElement<EventProps>[] | null;
-}
+export type ContentProps = OwnProps &
+  Omit<ComponentProps<"div">, keyof OwnProps>;

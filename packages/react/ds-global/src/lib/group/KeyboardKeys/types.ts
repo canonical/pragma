@@ -1,3 +1,7 @@
-import type { HTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
-export interface KeyboardKeysProps extends HTMLAttributes<HTMLElement> {}
+/**
+ * Props for the KeyboardKeys group. No DS-owned props — it renders a plain
+ * `<kbd>` root, so it accepts every native `<kbd>` prop.
+ */
+export type KeyboardKeysProps = ComponentProps<"kbd">;

@@ -1,7 +1,14 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { UseDisclosureProps } from "../../../../hooks/index.js";
 
-export interface TooltipAreaProps extends Omit<UseDisclosureProps, "mode"> {
+/**
+ * Exempt from the native-prop extension convention: TooltipArea is a
+ * composition/portal wrapper with no single native root the consumer styles.
+ * Its props are the disclosure hook's configuration (the rest is forwarded to
+ * `useDisclosure`, not spread onto the DOM), plus explicit slots for the
+ * target and message elements.
+ */
+export type TooltipAreaProps = Omit<UseDisclosureProps, "mode"> & {
   /**
    * The target element to which the tooltip should be attached.
    * This can be any valid React element.
@@ -44,4 +51,4 @@ export interface TooltipAreaProps extends Omit<UseDisclosureProps, "mode"> {
    * No default is provided at the TooltipArea signature level in order to prevent the component from failing builds in server environments, where `document` is not available.
    */
   parentElement?: HTMLElement;
-}
+};

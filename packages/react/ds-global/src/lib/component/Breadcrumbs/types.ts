@@ -1,7 +1,7 @@
 import type { Item } from "@canonical/ds-types";
 import type {
+  ComponentProps,
   ComponentType,
-  HTMLAttributes,
   ReactElement,
   ReactNode,
 } from "react";
@@ -34,12 +34,7 @@ export interface BreadcrumbItem extends Item {
   Component?: ComponentType<any>;
 }
 
-/**
- * Props for the Breadcrumbs component
- *
- * @implements dso:global.pattern.breadcrumbs
- */
-export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
+type OwnProps = {
   /**
    * Navigation items to display (WD405 Item type)
    * Each item is spread onto Breadcrumbs.Item or custom Component
@@ -72,7 +67,15 @@ export interface BreadcrumbsProps extends HTMLAttributes<HTMLElement> {
    * @default "Breadcrumb"
    */
   "aria-label"?: string;
-}
+};
+
+/**
+ * Props for the Breadcrumbs component
+ *
+ * @implements dso:global.pattern.breadcrumbs
+ */
+export type BreadcrumbsProps = OwnProps &
+  Omit<ComponentProps<"nav">, keyof OwnProps>;
 
 /**
  * Breadcrumbs component type with attached subcomponents

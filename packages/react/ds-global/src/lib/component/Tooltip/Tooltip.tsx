@@ -14,26 +14,23 @@ const componentCssClassName = "ds tooltip contrasted";
  * @implements ds:global.component.tooltip
  */
 const Tooltip = ({
-  id,
   children,
   icon,
   className,
   style,
-  ref,
   isOpen = false,
   zIndex,
-  onPointerEnter,
-  onFocus,
+  ...props
 }: TooltipProps): React.ReactElement => {
   return (
+    // Native props (id, ref, onPointerEnter, onFocus, …) are spread first; the
+    // DS-controlled attributes (role, aria-hidden, merged className/style) come
+    // after so they win.
     <div
+      {...props}
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
-      ref={ref}
-      id={id}
-      aria-hidden={!isOpen}
-      onPointerEnter={onPointerEnter}
-      onFocus={onFocus}
       role="tooltip"
+      aria-hidden={!isOpen}
       style={{
         ...style,
         visibility: isOpen ? "visible" : "hidden",
