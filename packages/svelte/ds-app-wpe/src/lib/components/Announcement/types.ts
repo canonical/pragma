@@ -21,8 +21,8 @@ export interface AnnouncementProps extends BaseProps {
    */
   criticality?: ModifierFamily<"criticality">;
 
-  /** Optional heading — the subject of the announcement. Plain text only. */
-  heading?: string;
+  /** Optional heading — the subject of the announcement. */
+  heading?: Snippet | string;
 
   /** The announcement body — its detailed content. */
   children: Snippet;

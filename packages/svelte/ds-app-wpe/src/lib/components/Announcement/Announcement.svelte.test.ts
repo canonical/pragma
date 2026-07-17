@@ -21,12 +21,22 @@ describe("Announcement component", () => {
       .toBeInTheDocument();
   });
 
-  it("renders an optional heading", async () => {
+  it("renders an optional heading as string", async () => {
     const page = render(Component, {
       ...baseProps,
       heading: "System Maintenance",
     });
     await expect.element(page.getByText("System Maintenance")).toBeVisible();
+  });
+
+  it("renders an optional heading as snippet", async () => {
+    const page = render(Component, {
+      ...baseProps,
+      heading: createRawSnippet(() => ({
+        render: () => `<strong>Bold Heading</strong>`,
+      })),
+    });
+    await expect.element(page.getByText("Bold Heading")).toBeVisible();
   });
 
   it("omits the heading element when heading is not provided", async () => {

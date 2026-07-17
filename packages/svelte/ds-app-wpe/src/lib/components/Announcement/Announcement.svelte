@@ -22,7 +22,9 @@
   <span class="icon" aria-hidden="true"></span>
   <span class="text">
     {#if heading != null}
-      <span class="heading">{heading}</span>
+      <span class="heading">
+        {#if typeof heading === "string"}{heading}{:else}{@render heading()}{/if}
+      </span>
     {/if}
     <span class="content">
       {@render children()}
@@ -48,9 +50,13 @@ warnings, or upcoming deadlines.
 ```
 
 ### Rich content in the heading
-For markup inside the heading, fold it into `children` instead — there is
-no separate heading snippet. The `heading` prop is intentionally `string`
-only so it stays controllable via Storybook args.
+For markup inside the heading, pass a snippet:
+```svelte
+<Announcement criticality="information">
+  {#snippet heading()}<strong>Important</strong> notice{/snippet}
+  Body content.
+</Announcement>
+```
 
 @implements ds:global.component.announcement
 -->
