@@ -19,7 +19,9 @@ import type {
   OntologyDetailed,
   OntologySummary,
 } from "../shared/types/index.js";
+import type { OntologyShowInput } from "./formatters/index.js";
 import { listFormatters, showFormatters } from "./formatters/index.js";
+import expandOntologyIris from "./helpers/expandOntologyIris.js";
 import { listOntologies, showOntology } from "./operations/index.js";
 
 const ontologyListColumns: readonly ColumnDef<OntologySummary>[] = [
@@ -67,13 +69,13 @@ export const ontologyListStory: ReadStory<
 };
 
 /** The `ontology show <prefix>` / `ontology_show` read story. */
-export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyDetailed> =
+export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyShowInput> =
   {
     noun: "ontology",
     verb: "show",
     description: "Show ontology schema details",
     toolDescription:
-      "Show detailed schema for an ontology including classes and properties.",
+      "Show the TBox for a namespace: class hierarchy with instance counts and relations, plus metadata and constraints.",
     params: [
       {
         name: "prefix",
@@ -95,19 +97,36 @@ export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyDetailed> =
         description:
           "Deep-dive into one class (label, local name, or compact IRI)",
         toolDescription:
-          "Class to deep-dive into: super chain, direct + inherited properties, reverse references, and sample instances",
+          "Class to deep-dive into: super chain, direct + inherited properties, reverse references, sample instances, and follow-up queries",
+      },
+      {
+        name: "properties",
+        type: "boolean",
+        description:
+          "Include datatype properties (attributes); default shows relations only",
+      },
+      {
+        name: "fullUris",
+        type: "boolean",
+        description: "Show full URIs instead of compact prefixed IRIs",
       },
     ],
     examples: [
       "pragma ontology show ds",
-      "pragma ontology show cs --llm",
+      "pragma ontology show ds --properties",
+      "pragma ontology show ds --full-uris --format json",
       "pragma ontology show ds --class Component",
     ],
     resolve: (rt, params) =>
       showOntology(rt.store, params.prefix as string, {
         class: params.class as string | undefined,
       }),
-    toOutput: (ontology) => ontology,
+    // --full-uris is applied here, once, so every projection (plain, llm,
+    // json, MCP condensed) inherits the same encoding from the same place.
+    toOutput: (ontology, params) => ({
+      ontology: params.fullUris ? expandOntologyIris(ontology) : ontology,
+      showProperties: Boolean(params.properties),
+    }),
     formatters: showFormatters,
     toEnvelope: (ontology) => ({ data: ontology }),
     guardParams: (params) =>

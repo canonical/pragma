@@ -31,6 +31,7 @@ export type {
   OntologyDetailed,
   OntologyMeta,
   OntologyProperty,
+  OntologyQueryHint,
   OntologySummary,
 } from "./ontology.js";
 export type { PragmaRuntime } from "./runtime.js";

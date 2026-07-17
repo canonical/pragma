@@ -6,6 +6,7 @@ export {
   default as buildClassTree,
   flattenClassTree,
 } from "./buildClassTree.js";
+export { default as expandOntologyIris } from "./expandOntologyIris.js";
 export { default as findNamespace } from "./findNamespace.js";
 export type { RawOntologyClass } from "./queryClasses.js";
 export { default as queryClasses } from "./queryClasses.js";

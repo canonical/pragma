@@ -145,6 +145,19 @@ describe("showOntology — class focus", () => {
     expect(result.focus?.sampleInstances.length).toBeGreaterThan(0);
   });
 
+  it("emits runnable follow-up queries with compact IRIs", async () => {
+    const result = await showOntology(store, "ds", { class: "Component" });
+    const queries = result.focus?.queries ?? [];
+    expect(queries.length).toBeGreaterThan(0);
+    expect(queries[0]?.sparql).toBe(
+      "SELECT ?instance WHERE { ?instance a ds:Component } LIMIT 20",
+    );
+    // A sample-instance inspection query is included when instances exist.
+    expect(queries.some((q) => q.sparql.includes("?predicate ?object"))).toBe(
+      true,
+    );
+  });
+
   it("accepts a compact IRI and a local name", async () => {
     const byIri = await showOntology(store, "ds", { class: "ds:Component" });
     expect(byIri.focus?.iri).toBe("ds:Component");

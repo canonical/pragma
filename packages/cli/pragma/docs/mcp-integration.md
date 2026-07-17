@@ -153,7 +153,9 @@ the response carries the `prefixes` map needed to expand them.
 
 Parameters:
 - `prefix` (string, required) — namespace prefix (e.g., "ds", "cs")
-- `class` (string, optional) — deep-dive into one class (label, local name, or compact IRI): super chain, direct + inherited properties, reverse references, and sample instances (returned as `focus`)
+- `class` (string, optional) — deep-dive into one class (label, local name, or compact IRI): super chain, direct + inherited properties, reverse references, sample instances, and ready-to-run follow-up queries (returned as `focus`)
+- `properties` (boolean, optional) — include datatype properties (attributes) in condensed output; default shows relations only
+- `fullUris` (boolean, optional) — expand compact IRIs to full URIs in condensed output (the structured `data` is always canonical: compact IRIs + `prefixes` map)
 - `condensed` (boolean, optional) — return token-optimized Markdown
 
 #### `graph_query`

@@ -9,6 +9,7 @@ import type {
   OntologyDetailed,
   OntologyMeta,
   OntologyProperty,
+  OntologyQueryHint,
 } from "../../shared/types/index.js";
 import buildClassTree, { flattenClassTree } from "../helpers/buildClassTree.js";
 import queryClasses from "../helpers/queryClasses.js";
@@ -255,6 +256,10 @@ async function buildFocus(
     (uri) => compactUri(uri, ctx.compactionMap),
   );
 
+  const referencedBy = allProperties
+    .filter((p) => p.range === target.iri && p.domain !== target.iri)
+    .sort((a, b) => a.label.localeCompare(b.label));
+
   return {
     iri: target.iri,
     label: target.label,
@@ -267,11 +272,48 @@ async function buildFocus(
     instances: ctx.instanceCounts.get(fullUri) ?? 0,
     directProperties: target.properties,
     inheritedProperties,
-    referencedBy: allProperties
-      .filter((p) => p.range === target.iri && p.domain !== target.iri)
-      .sort((a, b) => a.label.localeCompare(b.label)),
+    referencedBy,
     sampleInstances,
+    queries: buildQueryHints(target, referencedBy, sampleInstances),
   };
+}
+
+/**
+ * Ready-to-run SPARQL for the natural follow-ups from a class deep dive.
+ * Compact IRIs are used throughout — `pragma graph query` resolves them
+ * against the store's prefix map, so each hint is directly pasteable.
+ */
+function buildQueryHints(
+  target: OntologyClass,
+  referencedBy: readonly OntologyProperty[],
+  sampleInstances: readonly string[],
+): OntologyQueryHint[] {
+  const hints: OntologyQueryHint[] = [
+    {
+      label: `instances of ${target.iri}`,
+      sparql: `SELECT ?instance WHERE { ?instance a ${target.iri} } LIMIT 20`,
+    },
+  ];
+
+  const relation =
+    target.properties.find((p) => p.kind === "object") ??
+    referencedBy.find((p) => p.kind === "object");
+  if (relation) {
+    hints.push({
+      label: `traverse ${relation.iri}`,
+      sparql: `SELECT ?from ?to WHERE { ?from ${relation.iri} ?to } LIMIT 10`,
+    });
+  }
+
+  const sample = sampleInstances[0];
+  if (sample !== undefined) {
+    hints.push({
+      label: `everything about ${sample}`,
+      sparql: `SELECT ?predicate ?object WHERE { ${sample} ?predicate ?object }`,
+    });
+  }
+
+  return hints;
 }
 
 function localName(iri: string): string {

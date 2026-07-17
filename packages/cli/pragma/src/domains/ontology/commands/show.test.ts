@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import createTestRuntime from "../../../testing/helpers/createTestRuntime.js";
 import type { PragmaContext } from "../../shared/context.js";
 import type { PragmaRuntime } from "../../shared/runtime.js";
-import type { OntologyDetailed } from "../../shared/types/index.js";
+import type { OntologyShowInput } from "../formatters/index.js";
 import buildShowCommand from "./show.js";
 
 let runtime: PragmaRuntime;
@@ -41,12 +41,12 @@ describe("ontology show command", () => {
     const cmd = buildShowCommand(ctx);
     const { value } = await executeOutput(cmd, { prefix: "ds" }, ctx);
 
-    const result = value as OntologyDetailed;
-    expect(result.prefix).toBe("ds");
-    expect(result.classes.length).toBeGreaterThan(0);
+    const { ontology } = value as OntologyShowInput;
+    expect(ontology.prefix).toBe("ds");
+    expect(ontology.classes.length).toBeGreaterThan(0);
     const propertyCount =
-      result.classes.reduce((n, c) => n + c.properties.length, 0) +
-      result.unattached.length;
+      ontology.classes.reduce((n, c) => n + c.properties.length, 0) +
+      ontology.unattached.length;
     expect(propertyCount).toBeGreaterThan(0);
   });
 
@@ -59,10 +59,49 @@ describe("ontology show command", () => {
       ctx,
     );
 
-    const result = value as OntologyDetailed;
-    expect(result.focus?.iri).toBe("ds:Component");
+    const { ontology } = value as OntologyShowInput;
+    expect(ontology.focus?.iri).toBe("ds:Component");
     expect(text).toContain("Component");
     expect(text).toContain("extends:");
+    // Follow-up querying: the deep dive hands over runnable SPARQL.
+    expect(text).toContain(
+      "SELECT ?instance WHERE { ?instance a ds:Component }",
+    );
+  });
+
+  it("hides attributes by default and shows them with --properties", async () => {
+    const ctx = makeCtx();
+    const cmd = buildShowCommand(ctx);
+
+    const bare = await executeOutput(cmd, { prefix: "ds" }, ctx);
+    // Attributes render as `label: range` — absent by default.
+    expect(bare.text).not.toContain(": xsd:");
+    // hasModifierFamily is an object property (relation) — always shown.
+    expect(bare.text).toContain("hasModifierFamily");
+
+    const withProps = await executeOutput(
+      cmd,
+      { prefix: "ds", properties: true },
+      ctx,
+    );
+    expect(withProps.text).toContain(": xsd:");
+  });
+
+  it("expands IRIs with --full-uris", async () => {
+    const ctx = makeCtx({
+      globalFlags: { llm: true, format: "text" as const, verbose: false },
+    });
+    const cmd = buildShowCommand(ctx);
+    const { value, text } = await executeOutput(
+      cmd,
+      { prefix: "ds", fullUris: true },
+      ctx,
+    );
+
+    const { ontology } = value as OntologyShowInput;
+    const component = ontology.classes.find((c) => c.label === "Component");
+    expect(component?.iri).toBe("https://ds.canonical.com/Component");
+    expect(text).toContain("https://ds.canonical.com/Component");
   });
 
   it("completes ontology prefixes", async () => {
@@ -104,7 +143,7 @@ describe("ontology show command", () => {
     const cmd = buildShowCommand(ctx);
     const { text } = await executeOutput(cmd, { prefix: "ds" }, ctx);
 
-    const parsed = JSON.parse(text) as OntologyDetailed;
+    const parsed = JSON.parse(text) as { prefix: string };
     expect(parsed.prefix).toBe("ds");
   });
 

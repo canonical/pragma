@@ -172,6 +172,8 @@ async function bootAndRun(
     return;
   }
 
+  await emitSchemaArtifact(runtime, globalFlags);
+
   try {
     const ctx: PragmaContext = {
       ...runtime,
@@ -185,6 +187,42 @@ async function bootAndRun(
     await handleProgramError(err, globalFlags, argv);
   } finally {
     runtime.dispose();
+  }
+}
+
+/**
+ * Keep the `schema.graphql` artifact current on every booted run.
+ *
+ * The freshness probe is a source hash against the artifact's header, so
+ * the common case costs one hash + one small read; compilation runs only
+ * when the resolved TTL sources actually changed (or on first use).
+ * Never fatal — a failed compile warns and the command proceeds.
+ */
+async function emitSchemaArtifact(
+  runtime: PragmaRuntime,
+  globalFlags: GlobalFlags,
+): Promise<void> {
+  try {
+    const { ensureSchemaArtifact } = await import(
+      "../domains/graphql/operations/index.js"
+    );
+    const result = await ensureSchemaArtifact(runtime);
+    if (result.status === "written") {
+      process.stderr.write(
+        `Updated GraphQL schema artifact (sources changed): ${result.path}\n`,
+      );
+    } else if (result.status === "failed" && globalFlags.verbose) {
+      process.stderr.write(
+        `Warning: GraphQL schema compilation failed; ${result.path} not updated. Run \`pragma graphql check\` for diagnostics.\n`,
+      );
+    }
+  } catch (err) {
+    if (globalFlags.verbose) {
+      const reason = err instanceof Error ? err.message : String(err);
+      process.stderr.write(
+        `Warning: could not update GraphQL schema artifact: ${reason}\n`,
+      );
+    }
   }
 }
 

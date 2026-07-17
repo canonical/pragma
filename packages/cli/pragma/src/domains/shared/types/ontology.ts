@@ -75,6 +75,17 @@ export interface OntologyMeta {
   readonly imports?: readonly string[];
 }
 
+/** A ready-to-run SPARQL hint for follow-up querying. */
+export interface OntologyQueryHint {
+  /** What the query answers (e.g. "instances of ds:Component"). */
+  readonly label: string;
+  /**
+   * SPARQL using compact IRIs — runnable as-is via `pragma graph query`,
+   * which resolves the store's prefix map.
+   */
+  readonly sparql: string;
+}
+
 /** Deep-dive view of one class, produced by `ontology show <ns> --class <C>`. */
 export interface OntologyClassFocus {
   /** Compact IRI of the focused class. */
@@ -95,6 +106,8 @@ export interface OntologyClassFocus {
   readonly referencedBy: readonly OntologyProperty[];
   /** Up to a few instance IRIs, as entry points for `graph inspect` / lookups. */
   readonly sampleInstances: readonly string[];
+  /** Ready-to-run SPARQL for the natural follow-up questions. */
+  readonly queries: readonly OntologyQueryHint[];
 }
 
 /**
