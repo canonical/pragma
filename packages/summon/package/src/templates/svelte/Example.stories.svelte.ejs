@@ -1,0 +1,14 @@
+<script lang="ts" module>
+  import { defineMeta } from "@storybook/addon-svelte-csf";
+  import Example from "./Example.svelte";
+
+  const { Story } = defineMeta({
+    title: "Example",
+    component: Example,
+    tags: ["autodocs"],
+  });
+</script>
+
+<Story name="Default">
+	Hello, Example!
+</Story>

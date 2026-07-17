@@ -11,7 +11,16 @@ import {
   type PromptDefinition,
   template,
 } from "@canonical/summon-core";
-import { exec, flatMap, info, mkdir, sequence_, when } from "@canonical/task";
+import {
+  exec,
+  flatMap,
+  info,
+  mkdir,
+  sequence_,
+  type Task,
+  warn,
+  when,
+} from "@canonical/task";
 import pkg from "../../package.json" with { type: "json" };
 
 import {
@@ -20,6 +29,8 @@ import {
   detectPackageManager,
   getPackageShortName,
   type PackageAnswers,
+  resolveFramework,
+  type TemplateContext,
   validatePackageName,
 } from "../shared/index.js";
 
@@ -33,15 +44,64 @@ const templatesDir = path.join(__dirname, "..", "templates");
 const templates = {
   packageJson: path.join(templatesDir, "package.json.ejs"),
   tsconfig: path.join(templatesDir, "tsconfig.json.ejs"),
-  tsconfigReact: path.join(templatesDir, "tsconfig-react.json.ejs"),
+  tsconfigBuild: path.join(templatesDir, "tsconfig.build.json.ejs"),
   biome: path.join(templatesDir, "biome.json.ejs"),
   indexTs: path.join(templatesDir, "index.ts.ejs"),
+  indexTest: path.join(templatesDir, "index.test.ts.ejs"),
   indexCss: path.join(templatesDir, "index.css.ejs"),
   cliTs: path.join(templatesDir, "cli.ts.ejs"),
   readme: path.join(templatesDir, "README.md.ejs"),
   storybookMain: path.join(templatesDir, "storybook-main.ts.ejs"),
   storybookPreview: path.join(templatesDir, "storybook-preview.ts.ejs"),
   pullRequestTemplate: path.join(templatesDir, "PULL_REQUEST_TEMPLATE.md.ejs"),
+  react: {
+    tsconfig: path.join(templatesDir, "react", "tsconfig.json.ejs"),
+    tsconfigBuild: path.join(templatesDir, "react", "tsconfig.build.json.ejs"),
+    vitestConfig: path.join(templatesDir, "react", "vitest.config.ts.ejs"),
+    vitestSetup: path.join(templatesDir, "react", "vitest.setup.ts.ejs"),
+    indexTs: path.join(templatesDir, "react", "index.ts.ejs"),
+    libIndexTs: path.join(templatesDir, "react", "lib.index.ts.ejs"),
+    exampleTsx: path.join(templatesDir, "react", "Example.tsx.ejs"),
+    exampleTypes: path.join(templatesDir, "react", "Example.types.ts.ejs"),
+    exampleIndex: path.join(templatesDir, "react", "Example.index.ts.ejs"),
+    exampleTest: path.join(templatesDir, "react", "Example.test.tsx.ejs"),
+  },
+  svelte: {
+    packageJson: path.join(templatesDir, "svelte", "package.json.ejs"),
+    svelteConfig: path.join(templatesDir, "svelte", "svelte.config.js.ejs"),
+    tsconfig: path.join(templatesDir, "svelte", "tsconfig.json.ejs"),
+    tsconfigBuild: path.join(templatesDir, "svelte", "tsconfig.build.json.ejs"),
+    viteConfig: path.join(templatesDir, "svelte", "vite.config.ts.ejs"),
+    vitestSetupClient: path.join(
+      templatesDir,
+      "svelte",
+      "vitest-setup-client.ts.ejs",
+    ),
+    biome: path.join(templatesDir, "svelte", "biome.json.ejs"),
+    readme: path.join(templatesDir, "svelte", "README.md.ejs"),
+    indexTs: path.join(templatesDir, "svelte", "index.ts.ejs"),
+    indexTest: path.join(templatesDir, "svelte", "index.test.ts.ejs"),
+    exampleSvelte: path.join(templatesDir, "svelte", "Example.svelte.ejs"),
+    exampleTypes: path.join(templatesDir, "svelte", "Example.types.ts.ejs"),
+    exampleIndex: path.join(templatesDir, "svelte", "Example.index.ts.ejs"),
+    exampleStyles: path.join(templatesDir, "svelte", "Example.styles.css.ejs"),
+    exampleClientTest: path.join(
+      templatesDir,
+      "svelte",
+      "Example.client.test.ts.ejs",
+    ),
+    exampleSsrTest: path.join(
+      templatesDir,
+      "svelte",
+      "Example.ssr.test.ts.ejs",
+    ),
+    exampleStories: path.join(
+      templatesDir,
+      "svelte",
+      "Example.stories.svelte.ejs",
+    ),
+    storybookMain: path.join(templatesDir, "svelte", "storybook-main.ts.ejs"),
+  },
 };
 
 // =============================================================================
@@ -86,10 +146,19 @@ const prompts: PromptDefinition[] = [
     group: "Package",
   },
   {
-    name: "withReact",
-    type: "confirm",
-    message: "Include React dependencies?",
-    default: false,
+    name: "framework",
+    type: "select",
+    message: "Component framework:",
+    choices: [
+      { label: "none - plain TypeScript library", value: "none" },
+      { label: "react - React component library", value: "react" },
+      {
+        label: "svelte - Svelte component library (built with svelte-package)",
+        value: "svelte",
+      },
+    ],
+    default: "none",
+    when: (answers) => answers.type === "library",
     group: "Options",
   },
   {
@@ -123,6 +192,148 @@ const prompts: PromptDefinition[] = [
 ];
 
 // =============================================================================
+// Task builders
+// =============================================================================
+
+/**
+ * Tasks for tool-ts / css / plain (framework=none) library packages.
+ */
+function baseTasks(
+  ctx: TemplateContext,
+  answers: PackageAnswers,
+  packageDir: string,
+): Task<void>[] {
+  const isCss = answers.type === "css";
+  const needsTs = !isCss;
+  const t = (source: string, dest: string): Task<void> =>
+    template({ source, dest: path.join(packageDir, dest), vars: ctx });
+
+  return [
+    mkdir(packageDir),
+    mkdir(path.join(packageDir, "src")),
+    t(templates.packageJson, "package.json"),
+    when(needsTs, t(templates.tsconfig, "tsconfig.json")),
+    when(
+      answers.type === "library",
+      t(templates.tsconfigBuild, "tsconfig.build.json"),
+    ),
+    t(templates.biome, "biome.json"),
+    when(needsTs, t(templates.indexTs, path.join("src", "index.ts"))),
+    when(needsTs, t(templates.indexTest, path.join("src", "index.test.ts"))),
+    when(isCss, t(templates.indexCss, path.join("src", "index.css"))),
+    when(
+      needsTs && answers.withCli,
+      t(templates.cliTs, path.join("src", "cli.ts")),
+    ),
+    t(templates.readme, "README.md"),
+  ];
+}
+
+/**
+ * Tasks for a React component library (type=library, framework=react).
+ */
+function reactTasks(ctx: TemplateContext, packageDir: string): Task<void>[] {
+  const exampleDir = path.join("src", "lib", "Example");
+  const t = (source: string, dest: string): Task<void> =>
+    template({ source, dest: path.join(packageDir, dest), vars: ctx });
+
+  return [
+    mkdir(packageDir),
+    mkdir(path.join(packageDir, "src")),
+    mkdir(path.join(packageDir, "src", "lib")),
+    mkdir(path.join(packageDir, exampleDir)),
+    t(templates.packageJson, "package.json"),
+    t(templates.react.tsconfig, "tsconfig.json"),
+    t(templates.react.tsconfigBuild, "tsconfig.build.json"),
+    t(templates.react.vitestConfig, "vitest.config.ts"),
+    t(templates.react.vitestSetup, "vitest.setup.ts"),
+    t(templates.biome, "biome.json"),
+    t(templates.readme, "README.md"),
+    t(templates.react.indexTs, path.join("src", "index.ts")),
+    t(templates.react.libIndexTs, path.join("src", "lib", "index.ts")),
+    t(templates.react.exampleTsx, path.join(exampleDir, "Example.tsx")),
+    t(templates.react.exampleTypes, path.join(exampleDir, "types.ts")),
+    t(templates.react.exampleIndex, path.join(exampleDir, "index.ts")),
+    t(templates.react.exampleTest, path.join(exampleDir, "Example.test.tsx")),
+  ];
+}
+
+/**
+ * Tasks for a Svelte component library (type=library, framework=svelte),
+ * built with svelte-package. Svelte owns its own package.json, configs and
+ * Storybook wiring because its layout (src/lib build input, no src/ root
+ * sources) diverges from the tsc-built variants.
+ */
+function svelteTasks(
+  ctx: TemplateContext,
+  answers: PackageAnswers,
+  packageDir: string,
+): Task<void>[] {
+  const exampleDir = path.join("src", "lib", "Example");
+  const t = (source: string, dest: string): Task<void> =>
+    template({ source, dest: path.join(packageDir, dest), vars: ctx });
+  const { svelte } = templates;
+
+  return [
+    mkdir(packageDir),
+    mkdir(path.join(packageDir, "src", "lib")),
+    mkdir(path.join(packageDir, exampleDir)),
+    t(svelte.packageJson, "package.json"),
+    t(svelte.svelteConfig, "svelte.config.js"),
+    t(svelte.tsconfig, "tsconfig.json"),
+    t(svelte.tsconfigBuild, "tsconfig.build.json"),
+    t(svelte.viteConfig, "vite.config.ts"),
+    t(svelte.vitestSetupClient, "vitest-setup-client.ts"),
+    t(svelte.biome, "biome.json"),
+    t(svelte.readme, "README.md"),
+    t(svelte.indexTs, path.join("src", "lib", "index.ts")),
+    t(svelte.indexTest, path.join("src", "lib", "index.test.ts")),
+    t(svelte.exampleSvelte, path.join(exampleDir, "Example.svelte")),
+    t(svelte.exampleTypes, path.join(exampleDir, "types.ts")),
+    t(svelte.exampleIndex, path.join(exampleDir, "index.ts")),
+    t(svelte.exampleStyles, path.join(exampleDir, "styles.css")),
+    t(
+      svelte.exampleClientTest,
+      path.join(exampleDir, "Example.svelte.test.ts"),
+    ),
+    t(svelte.exampleSsrTest, path.join(exampleDir, "Example.ssr.test.ts")),
+    when(answers.withStorybook, mkdir(path.join(packageDir, ".storybook"))),
+    when(
+      answers.withStorybook,
+      t(svelte.storybookMain, path.join(".storybook", "main.ts")),
+    ),
+    when(
+      answers.withStorybook,
+      t(templates.storybookPreview, path.join(".storybook", "preview.ts")),
+    ),
+    when(
+      answers.withStorybook,
+      t(svelte.exampleStories, path.join(exampleDir, "Example.stories.svelte")),
+    ),
+  ];
+}
+
+/**
+ * Storybook wiring shared by the tsc-built variants (tool-ts / plain library /
+ * react). Svelte handles its own Storybook files in `svelteTasks`.
+ */
+function sharedStorybookTasks(
+  ctx: TemplateContext,
+  packageDir: string,
+): Task<void>[] {
+  const t = (source: string, dest: string): Task<void> =>
+    template({ source, dest: path.join(packageDir, dest), vars: ctx });
+
+  return [
+    mkdir(path.join(packageDir, ".storybook")),
+    mkdir(path.join(packageDir, "src", "assets")),
+    mkdir(path.join(packageDir, "public")),
+    t(templates.storybookMain, path.join(".storybook", "main.ts")),
+    t(templates.storybookPreview, path.join(".storybook", "preview.ts")),
+  ];
+}
+
+// =============================================================================
 // Generator Definition
 // =============================================================================
 
@@ -149,7 +360,8 @@ PACKAGE TYPES:
             Examples: styles/primitives, styles/modes
 
 OPTIONS:
-  --with-react      Add React dependencies and TypeScript React config
+  --framework       Component framework for a library: none|react|svelte
+                    (react → tsc build, svelte → svelte-package build)
   --with-storybook  Add Storybook configuration
   --with-cli        Add CLI binary entry point (src/cli.ts)
   --with-pr-template  Add .github/PULL_REQUEST_TEMPLATE.md (for standalone
@@ -160,7 +372,8 @@ The generator auto-detects:
   - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
     examples: [
       "summon package --name=@canonical/my-tool --type=tool-ts",
-      "summon package --name=@canonical/my-lib --type=library --with-react",
+      "summon package --name=@canonical/my-lib --type=library --framework=react",
+      "summon package --name=@canonical/my-svelte-lib --type=library --framework=svelte",
       "summon package --name=@canonical/my-cli --type=tool-ts --with-cli",
       "summon package --name=my-styles --type=css",
       "summon package --name=@canonical/my-pkg --type=library --no-run-install",
@@ -169,16 +382,45 @@ The generator auto-detects:
 
   prompts,
 
-  generate: (answers) => {
+  generate: (rawAnswers) => {
+    const { answers, warnings } = resolveFramework(rawAnswers);
+    const { framework } = answers;
     const packageDir = getPackageShortName(answers.name);
     const cwd = process.cwd();
-    const isCss = answers.type === "css";
-    const needsTs = !isCss;
 
     return flatMap(detectMonorepo(cwd), (monorepoInfo) => {
       const ctx = createTemplateContext(answers, monorepoInfo);
 
+      const frameworkTasks =
+        framework === "svelte"
+          ? svelteTasks(ctx, answers, packageDir)
+          : framework === "react"
+            ? reactTasks(ctx, packageDir)
+            : baseTasks(ctx, answers, packageDir);
+
+      // Svelte wires its own Storybook (svelte-CSF stories + svelte preset).
+      const storybookTasks =
+        answers.withStorybook && framework !== "svelte"
+          ? sharedStorybookTasks(ctx, packageDir)
+          : [];
+
+      const prTemplateTasks = answers.withPrTemplate
+        ? [
+            mkdir(path.join(packageDir, ".github")),
+            template({
+              source: templates.pullRequestTemplate,
+              dest: path.join(
+                packageDir,
+                ".github",
+                "PULL_REQUEST_TEMPLATE.md",
+              ),
+              vars: ctx,
+            }),
+          ]
+        : [];
+
       return sequence_([
+        ...warnings.map((message) => warn(message)),
         info(`Creating package: ${answers.name}`),
         info(`Type: ${answers.type}`),
         when(
@@ -186,114 +428,9 @@ The generator auto-detects:
           info(`Monorepo detected, using version: ${monorepoInfo.version}`),
         ),
 
-        // Create directory structure
-        mkdir(packageDir),
-        mkdir(path.join(packageDir, "src")),
-
-        // Create package.json
-        template({
-          source: templates.packageJson,
-          dest: path.join(packageDir, "package.json"),
-          vars: ctx,
-        }),
-
-        // Create tsconfig.json (only for non-CSS packages)
-        when(
-          needsTs && answers.withReact,
-          template({
-            source: templates.tsconfigReact,
-            dest: path.join(packageDir, "tsconfig.json"),
-            vars: ctx,
-          }),
-        ),
-        when(
-          needsTs && !answers.withReact,
-          template({
-            source: templates.tsconfig,
-            dest: path.join(packageDir, "tsconfig.json"),
-            vars: ctx,
-          }),
-        ),
-
-        // Create biome.json
-        template({
-          source: templates.biome,
-          dest: path.join(packageDir, "biome.json"),
-          vars: ctx,
-        }),
-
-        // Create src/index.ts (for TS packages)
-        when(
-          needsTs,
-          template({
-            source: templates.indexTs,
-            dest: path.join(packageDir, "src", "index.ts"),
-            vars: ctx,
-          }),
-        ),
-
-        // Create src/index.css (for CSS packages)
-        when(
-          isCss,
-          template({
-            source: templates.indexCss,
-            dest: path.join(packageDir, "src", "index.css"),
-            vars: ctx,
-          }),
-        ),
-
-        // Create src/cli.ts (conditional, only for TS packages)
-        when(
-          needsTs && answers.withCli,
-          template({
-            source: templates.cliTs,
-            dest: path.join(packageDir, "src", "cli.ts"),
-            vars: ctx,
-          }),
-        ),
-
-        // Create README.md
-        template({
-          source: templates.readme,
-          dest: path.join(packageDir, "README.md"),
-          vars: ctx,
-        }),
-
-        // Create .github/PULL_REQUEST_TEMPLATE.md (opt-in: monorepos read
-        // only the repo-root template, so per-package copies are dead weight)
-        when(answers.withPrTemplate, mkdir(path.join(packageDir, ".github"))),
-        when(
-          answers.withPrTemplate,
-          template({
-            source: templates.pullRequestTemplate,
-            dest: path.join(packageDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
-            vars: ctx,
-          }),
-        ),
-
-        // Create .storybook folder (conditional)
-        when(answers.withStorybook, mkdir(path.join(packageDir, ".storybook"))),
-        when(
-          answers.withStorybook,
-          mkdir(path.join(packageDir, "src", "assets")),
-        ),
-        when(answers.withStorybook, mkdir(path.join(packageDir, "public"))),
-        when(
-          answers.withStorybook,
-          template({
-            source: templates.storybookMain,
-            dest: path.join(packageDir, ".storybook", "main.ts"),
-            vars: ctx,
-          }),
-        ),
-        when(
-          answers.withStorybook,
-          template({
-            source: templates.storybookPreview,
-            dest: path.join(packageDir, ".storybook", "preview.ts"),
-            vars: ctx,
-          }),
-        ),
+        ...frameworkTasks,
+        ...storybookTasks,
+        ...prTemplateTasks,
 
         info(`Package created at ./${packageDir}`),
 

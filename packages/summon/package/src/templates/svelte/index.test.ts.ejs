@@ -1,0 +1,8 @@
+import { describe, expect, it } from "vitest";
+import * as barrel from "./index.js";
+
+describe("library barrel", () => {
+  it("exports the Example component", () => {
+    expect(barrel.Example).toBeDefined();
+  });
+});

@@ -1,5 +1,7 @@
 export type PackageType = "tool-ts" | "library" | "css";
 
+export type PackageFramework = "none" | "react" | "svelte";
+
 export type PackageManager = "bun" | "npm" | "yarn" | "pnpm";
 
 export interface PackageAnswers {
@@ -9,8 +11,8 @@ export interface PackageAnswers {
   type: PackageType;
   /** Package description */
   description: string;
-  /** Include React dependencies */
-  withReact: boolean;
+  /** Component framework (library type only) */
+  framework: PackageFramework;
   /** Include Storybook setup */
   withStorybook: boolean;
   /** Include CLI binary entry point */
@@ -37,6 +39,8 @@ export interface TemplateContext {
   type: PackageType;
   /** Package version */
   version: string;
+  /** Version used for @canonical/* dependency ranges (monorepo version, or this generator's own lockstep version standalone) */
+  configsVersion: string;
   /** License */
   license: string;
   /** Module entry point */
@@ -49,8 +53,8 @@ export interface TemplateContext {
   needsBuild: boolean;
   /** Webarchitect ruleset */
   ruleset: string;
-  /** Include React */
-  withReact: boolean;
+  /** Component framework */
+  framework: PackageFramework;
   /** Include Storybook */
   withStorybook: boolean;
   /** Include CLI */

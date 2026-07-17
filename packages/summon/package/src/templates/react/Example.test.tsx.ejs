@@ -1,0 +1,22 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import Example from "./Example.js";
+
+describe("Example", () => {
+  it("renders children", () => {
+    render(<Example>Test content</Example>);
+    expect(screen.getByText("Test content")).toBeInTheDocument();
+  });
+
+  it("applies custom className", () => {
+    render(<Example className="custom-class">Content</Example>);
+    const element = screen.getByText("Content");
+    expect(element.className).toContain("ds example");
+    expect(element.className).toContain("custom-class");
+  });
+
+  it("passes through additional props", () => {
+    render(<Example data-testid="test-component">Content</Example>);
+    expect(screen.getByTestId("test-component")).toBeInTheDocument();
+  });
+});

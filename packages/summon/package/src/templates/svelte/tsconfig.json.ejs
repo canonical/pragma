@@ -1,0 +1,18 @@
+{
+  "extends": "@canonical/typescript-config-svelte",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "types": ["node", "svelte", "vitest/globals", "vite/client"],
+    "moduleResolution": "nodenext"
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+<% if (withStorybook) { -%>
+    ".storybook/**/*.ts",
+    ".storybook/**/*.svelte",
+<% } -%>
+    "vite.config.ts",
+    "vitest-setup-client.ts"
+  ]
+}

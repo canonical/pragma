@@ -1,0 +1,40 @@
+# <%= name %>
+
+<%= description || 'TODO: Add description' %>
+
+## Installation
+
+```bash
+bun add <%= name %>
+```
+
+## Usage
+
+```svelte
+<script lang="ts">
+  import { Example } from "<%= name %>";
+</script>
+
+<Example>Hello</Example>
+```
+
+## Development
+
+```bash
+# Run checks
+bun run check
+
+# Run tests
+bun run test
+```
+
+Client tests run in real browsers via Vitest browser mode and Playwright.
+Install the browsers once before running them:
+
+```bash
+bunx playwright install chromium firefox webkit
+```
+
+## License
+
+<%= license %>
