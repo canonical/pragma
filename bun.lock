@@ -297,6 +297,31 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/cli/next": {
+      "name": "@canonical/pragma-next",
+      "version": "0.31.0",
+      "bin": {
+        "pragma2": "dist/pragma2",
+      },
+      "dependencies": {
+        "@canonical/task": "^0.31.0",
+        "@modelcontextprotocol/sdk": "^1.12.0",
+        "chalk": "^5.6.2",
+        "commander": "^14.0.3",
+        "zod": "^3.25.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.31.0",
+        "@canonical/typescript-config": "^0.31.0",
+        "@canonical/webarchitect": "^0.31.0",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^24.12.0",
+        "@vitest/coverage-v8": "^4.0.18",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/cli/pragma": {
       "name": "@canonical/pragma-cli",
       "version": "0.31.0",
@@ -1063,9 +1088,9 @@
       "version": "0.31.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.30.0",
-        "@canonical/typescript-config": "^0.30.0",
-        "@canonical/webarchitect": "^0.30.0",
+        "@canonical/biome-config": "^0.31.0",
+        "@canonical/typescript-config": "^0.31.0",
+        "@canonical/webarchitect": "^0.31.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1804,6 +1829,8 @@
     "@canonical/lit-ds-prototype": ["@canonical/lit-ds-prototype@workspace:packages/lit/ds-prototype"],
 
     "@canonical/pragma-cli": ["@canonical/pragma-cli@workspace:packages/cli/pragma"],
+
+    "@canonical/pragma-next": ["@canonical/pragma-next@workspace:packages/cli/next"],
 
     "@canonical/react-boilerplate-vite": ["@canonical/react-boilerplate-vite@workspace:apps/react/boilerplate-vite"],
 
