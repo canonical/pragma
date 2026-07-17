@@ -53,7 +53,10 @@ const Chip = (props: ChipPropsType): React.ReactElement => {
       ...rest
     } = props;
     return (
-      <button className={className} {...rest}>
+      // Default type="button" so a Chip inside a <form> doesn't submit it on
+      // click (the native default is "submit"); placed before the spread so a
+      // caller can still override it via the native `type` prop.
+      <button type="button" className={className} {...rest}>
         {content}
       </button>
     );
