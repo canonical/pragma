@@ -17,6 +17,7 @@ import {
 import { PragmaError } from "../../error/index.js";
 import type { PackageRef } from "../refs/operations/parseRef.js";
 import { parsePackageEntry } from "../refs/operations/parseRef.js";
+import { recordBootWarning } from "./bootWarnings.js";
 import {
   createBundledLoader,
   createGitLoader,
@@ -139,12 +140,14 @@ export async function bootStore(
  * Each graph is loaded independently inside its own try/catch: a single
  * malformed TTL file (e.g. invalid Turtle emitted by an upstream authoring
  * tool) must not abort the entire boot and take the whole CLI down with it.
- * Failed graphs are skipped and surfaced as warnings, mirroring the
- * resilience the story loader already provides ("one bad file cannot break
- * boot"). A store built from N-1 good graphs is far more useful than a store
- * that refuses to boot because of one bad graph.
+ * Failed graphs are skipped and *recorded* on the unified boot-warning
+ * channel (see `bootWarnings.ts`) — the entry point flushes them once
+ * after boot as a summary line (or full lines under `--verbose`), and
+ * `pragma doctor` renders the details. A store built from N-1 good graphs
+ * is far more useful than a store that refuses to boot because of one bad
+ * graph.
  *
- * @note Impure — writes warnings to stderr on parse failure.
+ * @note Impure — records boot warnings on parse failure.
  */
 export function createGraphLoaderPlugin(
   graphs: readonly GraphContent[],
@@ -157,13 +160,11 @@ export function createGraphLoaderPlugin(
           ctx.load(graph.content, { format: graph.format });
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
-          // Name the offending file and the parse error, and point at the fix.
-          // The store still boots from the remaining graphs, so this is a
-          // warning, not a fatal error.
-          process.stderr.write(
-            `Warning: skipping malformed graph "${graph.path}" — ${reason}. ` +
-              "Check the TTL syntax of this source file; the remaining graphs still load.\n",
-          );
+          recordBootWarning({
+            kind: "malformed-graph",
+            subject: graph.path,
+            detail: reason,
+          });
         }
       }
     },

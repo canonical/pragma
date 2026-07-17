@@ -6,6 +6,7 @@ import { commands as graphqlCommands } from "../domains/graphql/index.js";
 import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
+import { flushBootWarnings } from "../domains/shared/bootWarnings.js";
 import type { PragmaContext } from "../domains/shared/context.js";
 import createInteractivePromptSession from "../domains/shared/createInteractivePromptSession.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
@@ -172,6 +173,7 @@ async function bootAndRun(
     return;
   }
 
+  flushBootWarnings(globalFlags.verbose);
   await emitSchemaArtifact(runtime, globalFlags);
 
   try {

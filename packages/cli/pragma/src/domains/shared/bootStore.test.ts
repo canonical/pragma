@@ -1,6 +1,7 @@
 import { createStore } from "@canonical/ke";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createGraphLoaderPlugin } from "./bootStore.js";
+import { clearBootWarnings, drainBootWarnings } from "./bootWarnings.js";
 
 const PREFIXES = { ds: "https://ds.canonical.com/" };
 
@@ -72,11 +73,15 @@ describe("createGraphLoaderPlugin", () => {
     expect(count).toBe(2);
   });
 
-  it("warns with the offending file path and parse error", async () => {
+  it("records the offending file path and parse error on the warning channel", async () => {
+    clearBootWarnings();
     await countTriples([badGraph("data/global/component/broken.ttl")]);
-    const text = stderrText();
-    expect(text).toContain("skipping malformed graph");
-    expect(text).toContain("data/global/component/broken.ttl");
-    expect(text).toContain("Check the TTL syntax");
+    // Nothing hits stderr at load time — entry points flush the channel.
+    expect(stderrText()).toBe("");
+    const warnings = drainBootWarnings();
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]?.kind).toBe("malformed-graph");
+    expect(warnings[0]?.subject).toBe("data/global/component/broken.ttl");
+    expect(warnings[0]?.detail).toBeTruthy();
   });
 });

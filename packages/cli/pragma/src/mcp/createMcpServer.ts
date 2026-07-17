@@ -10,6 +10,7 @@
 import type { SourceSpec } from "@canonical/ke";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { VERSION } from "../constants.js";
+import { flushBootWarnings } from "../domains/shared/bootWarnings.js";
 import type { PragmaRuntime } from "../domains/shared/runtime.js";
 import { bootPragma } from "../domains/shared/runtime.js";
 import registerResources from "./registerResources.js";
@@ -31,6 +32,9 @@ export async function createMcpServer(options?: {
   sources?: SourceSpec[];
 }): Promise<{ server: McpServer; dispose: () => void }> {
   const runtime = await bootPragma(options);
+  // Full detail once at server startup — stderr is outside the MCP
+  // protocol, and a long-running server should log each skipped source.
+  flushBootWarnings(true);
   const { server } = createMcpServerFromRuntime(runtime);
   return { server, dispose: () => runtime.dispose() };
 }

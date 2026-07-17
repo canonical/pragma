@@ -1,10 +1,13 @@
 import { collectStoreSummary } from "../../../info/operations/index.js";
 import { bootStore } from "../../../shared/bootStore.js";
+import { drainBootWarnings } from "../../../shared/bootWarnings.js";
 import type { CheckContext, CheckResult } from "../types.js";
 
 /**
- * Check that the ke store boots successfully, reporting triple count
- * and boot time.
+ * Check that the ke store boots successfully, reporting triple count and
+ * boot time — and, when the boot skipped malformed sources, listing each
+ * offending file with its parser error. This is where the boot-time
+ * warning summary ("run `pragma doctor` for details") points.
  *
  * @param ctx - Check context with the working directory.
  * @returns A CheckResult indicating pass (with triple count) or fail.
@@ -19,6 +22,25 @@ export default async function checkKeStore(
     result = await bootStore({ cwd: ctx.cwd });
     const summary = await collectStoreSummary(result.store);
     const elapsed = Math.round(performance.now() - start);
+    const skipped = drainBootWarnings();
+
+    if (skipped.length > 0) {
+      return {
+        name: "ke store",
+        status: "fail",
+        detail:
+          `${summary.tripleCount.toLocaleString()} triples in ${elapsed}ms — ` +
+          `${skipped.length} malformed source${skipped.length === 1 ? "" : "s"} skipped`,
+        items: skipped.map((warning) => ({
+          label: warning.subject,
+          detail: warning.detail,
+          status: "fail" as const,
+        })),
+        remedy:
+          "Fix the TTL syntax of the listed source files (the data repository), then re-run `pragma update-refs`.",
+      };
+    }
+
     return {
       name: "ke store",
       status: "pass",
