@@ -4,7 +4,7 @@ import type { MonorepoInfo, PackageAnswers } from "./types.js";
 
 const baseAnswers: PackageAnswers = {
   name: "@canonical/test-pkg",
-  type: "tool-ts",
+  type: "tool",
   description: "Test package",
   withReact: false,
   withStorybook: false,
@@ -53,7 +53,7 @@ describe("createTemplateContext", () => {
     expect(ctx.shortName).toBe("my-package");
   });
 
-  it("sets correct entry points for tool-ts", () => {
+  it("sets correct entry points for tool", () => {
     const monorepoInfo: MonorepoInfo = { isMonorepo: false };
     const ctx = createTemplateContext(baseAnswers, monorepoInfo);
 

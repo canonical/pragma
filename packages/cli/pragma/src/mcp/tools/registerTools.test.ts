@@ -797,7 +797,7 @@ describe("create_package", () => {
       name: "create_package",
       arguments: {
         name: "@canonical/test-pkg",
-        type: "tool-ts",
+        type: "tool",
       },
     });
     expect(result.isError).toBeFalsy();

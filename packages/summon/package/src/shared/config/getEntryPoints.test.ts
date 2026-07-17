@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import getEntryPoints from "./getEntryPoints.js";
 
 describe("getEntryPoints", () => {
-  it("returns src/ paths for tool-ts", () => {
-    const entry = getEntryPoints("tool-ts");
+  it("returns src/ paths for tool", () => {
+    const entry = getEntryPoints("tool");
     expect(entry.module).toBe("src/index.ts");
     expect(entry.types).toBe("src/index.ts");
     expect(entry.files).toContain("src");

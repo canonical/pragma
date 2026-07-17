@@ -25,10 +25,10 @@ describe("package generator", () => {
     expect(promptNames).toContain("runInstall");
   });
 
-  it("generates expected files for tool-ts package", () => {
+  it("generates expected files for tool package", () => {
     const answers: PackageAnswers = {
       name: "@canonical/my-tool",
-      type: "tool-ts",
+      type: "tool",
       description: "My tool",
       withReact: false,
       withStorybook: false,
@@ -56,7 +56,7 @@ describe("package generator", () => {
   it("generates CLI file when withCli is true", () => {
     const answers: PackageAnswers = {
       name: "@canonical/my-cli",
-      type: "tool-ts",
+      type: "tool",
       description: "My CLI",
       withReact: false,
       withStorybook: false,
@@ -106,7 +106,7 @@ describe("package generator", () => {
   it("creates directory structure using short name", () => {
     const answers: PackageAnswers = {
       name: "@canonical/my-pkg",
-      type: "tool-ts",
+      type: "tool",
       description: "",
       withReact: false,
       withStorybook: false,

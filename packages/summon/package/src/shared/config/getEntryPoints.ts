@@ -9,7 +9,7 @@ export default function getEntryPoints(type: PackageType): {
   files: string[];
   needsBuild: boolean;
 } {
-  if (type === "tool-ts") {
+  if (type === "tool") {
     return {
       module: "src/index.ts",
       types: "src/index.ts",

@@ -45,7 +45,7 @@
     "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "prepublishOnly": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
-    "check:webarchitect": "webarchitect tool-ts",
+    "check:webarchitect": "webarchitect tool",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",

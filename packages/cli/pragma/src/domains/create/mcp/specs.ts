@@ -102,7 +102,7 @@ const specs: readonly ToolSpec[] = [
         type: "string",
         description: "Package type",
         optional: false,
-        enum: ["tool-ts", "library", "css"],
+        enum: ["tool", "library", "css"],
       },
       description: {
         type: "string",

@@ -983,7 +983,7 @@ describe("executeGenerator — answer validation", () => {
       type: "select",
       choices: [
         { label: "Library", value: "library" },
-        { label: "Tool", value: "tool-ts" },
+        { label: "Tool", value: "tool" },
       ],
     },
   ];

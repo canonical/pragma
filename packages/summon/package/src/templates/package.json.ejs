@@ -3,7 +3,7 @@
   "description": "<%= description %>",
   "version": "<%= version %>",
   "type": "module",
-<% if (type === 'tool-ts') { -%>
+<% if (type === 'tool') { -%>
   "module": "src/index.ts",
   "types": "src/index.ts",
 <% } else if (type === 'css') { -%>
@@ -18,7 +18,7 @@
   },
 <% } -%>
   "files": [
-<% if (type === 'tool-ts' || type === 'css') { -%>
+<% if (type === 'tool' || type === 'css') { -%>
     "src"
 <% } else { -%>
     "dist"
@@ -38,7 +38,7 @@
   },
   "homepage": "https://github.com/canonical/pragma#readme",
   "scripts": {
-<% if (type === 'tool-ts' || type === 'css') { -%>
+<% if (type === 'tool' || type === 'css') { -%>
     "build": "echo 'No build needed'",
 <% } else { -%>
     "build": "tsc -p tsconfig.build.json",

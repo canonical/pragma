@@ -48,13 +48,11 @@ Developer tools live directly in `packages/`. The `webarchitect` package is an e
 
 ## Webarchitect rulesets
 
-Every package must declare a webarchitect ruleset. Webarchitect validates that packages conform to architectural standards, including license requirements, export structure, and configuration file presence. The three rulesets serve different package categories.
+Every package must declare a webarchitect ruleset. Webarchitect validates that packages conform to architectural standards, including license requirements, export structure, and configuration file presence. The rulesets serve different package categories.
 
 The `library` ruleset applies to packages consumed by other packages or applications. Libraries use LGPL-3.0 licensing, which permits consumption without requiring consumers to open-source their applications. Libraries must have a build step that produces distributable JavaScript and type definitions. Most packages in the monorepo are libraries.
 
-The `tool` ruleset applies to compiled CLI tools and applications. Tools use GPL-3.0 licensing and produce executable artifacts. The `tool` ruleset expects the same build infrastructure as `library` but with the stricter license.
-
-The `tool-ts` ruleset applies to TypeScript-only tools that run directly with Bun without a build step. These packages point `module` and `types` directly at TypeScript source files rather than compiled output. The `webarchitect` package itself uses this ruleset because it runs via `bun` and does not need compilation to JavaScript.
+The `tool` ruleset applies to TypeScript CLI tools that run directly with Bun without a build step. Tools use GPL-3.0 licensing. These packages point `module` and `types` directly at TypeScript source files rather than compiled output. The `webarchitect` package itself uses this ruleset because it runs via `bun` and does not need compilation to JavaScript.
 
 ## Creating a library package
 
@@ -263,7 +261,7 @@ Webarchitect validates the package.json structure, license declaration, export c
 
 Tool packages differ from libraries in three ways: they use GPL-3.0 licensing, they may not need a build step if they run directly with Bun, and they typically provide a CLI entry point.
 
-For a TypeScript-only tool that runs with Bun (the `tool-ts` ruleset), the package.json differs from a library:
+For a TypeScript-only tool that runs with Bun (the `tool` ruleset), the package.json differs from a library:
 
 ```json
 {
@@ -282,12 +280,12 @@ For a TypeScript-only tool that runs with Bun (the `tool-ts` ruleset), the packa
     "build": "echo 'No build needed - runs directly from TypeScript'",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
-    "check:webarchitect": "webarchitect tool-ts"
+    "check:webarchitect": "webarchitect tool"
   }
 }
 ```
 
-The key differences: `module` and `types` point to TypeScript source files, `files` includes `src` instead of `dist`, and `check:webarchitect` uses the `tool-ts` ruleset. The build script does nothing because Bun executes TypeScript directly.
+The key differences: `module` and `types` point to TypeScript source files, `files` includes `src` instead of `dist`, and `check:webarchitect` uses the `tool` ruleset. The build script does nothing because Bun executes TypeScript directly.
 
 > **Ship-raw-TS only works when the consumer runs Bun.** This pattern is fine for packages
 > consumed inside the monorepo or bundled into a compiled binary. A package that publishes a

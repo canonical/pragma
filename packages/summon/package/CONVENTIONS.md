@@ -21,8 +21,8 @@
 
 | ID | Rule | Gate |
 |----|------|------|
-| P1.1 | Every package has exactly one of three types: `tool-ts`, `library`, or `css` | `type ∈ {tool-ts, library, css}` |
-| P1.2 | `tool-ts` packages use `src/index.ts` as entry point, no build step | entry = `src/index.ts` |
+| P1.1 | Every package has exactly one of three types: `tool`, `library`, or `css` | `type ∈ {tool, library, css}` |
+| P1.2 | `tool` packages use `src/index.ts` as entry point, no build step | entry = `src/index.ts` |
 | P1.3 | `library` packages build to `dist/esm/index.js` via `tsc` | entry = `dist/esm/index.js` |
 | P1.4 | `css` packages use `src/index.css` as entry point, no build step | entry = `src/index.css` |
 | P1.5 | Source lives in `src/` directory | `src/` exists |
@@ -32,7 +32,7 @@
 
 | Type | License | Entry Point | Build | Use Case |
 |------|---------|-------------|-------|----------|
-| `tool-ts` | GPL-3.0 | `src/index.ts` | None | CLI tools, generators |
+| `tool` | GPL-3.0 | `src/index.ts` | None | CLI tools, generators |
 | `library` | LGPL-3.0 | `dist/esm/index.js` | `tsc` | Publishable npm packages |
 | `css` | LGPL-3.0 | `src/index.css` | None | CSS-only packages |
 
@@ -98,7 +98,7 @@
 | P6.2 | `version` field is managed by Lerna | field present |
 | P6.3 | `description` field is non-empty | field present and non-empty |
 | P6.4 | `type` field is `"module"` | type = module |
-| P6.5 | `license` is `LGPL-3.0` (library/css) or `GPL-3.0` (tool-ts) | license matches type |
+| P6.5 | `license` is `LGPL-3.0` (library/css) or `GPL-3.0` (tool) | license matches type |
 | P6.6 | `author` is `{ email: "webteam@canonical.com", name: "Canonical Webteam" }` | field present |
 | P6.7 | `repository`, `bugs`, `homepage` fields point to GitHub URLs | fields present |
 | P6.8 | Library packages have conditional `exports` map | exports field for library type |
@@ -111,7 +111,7 @@
 |----|------|------|
 | P7.1 | `@canonical/webarchitect` enforces package structure | webarchitect in devDeps |
 | P7.2 | Library packages use `library` ruleset | ruleset = library |
-| P7.3 | Tool packages use `tool-ts` ruleset | ruleset = tool-ts |
+| P7.3 | Tool packages use `tool` ruleset | ruleset = tool |
 | P7.4 | React packages use `package-react` ruleset | ruleset = package-react |
 | P7.5 | Asset packages use `assets` ruleset | ruleset = assets |
 | P7.6 | Minimal validation uses `base` ruleset | ruleset = base |
@@ -123,7 +123,7 @@
 Use this as a pass/fail gate for new packages:
 
 ```
-[ ] P1.1  Package type declared (tool-ts / library / css)
+[ ] P1.1  Package type declared (tool / library / css)
 [ ] P2.1  Name scoped under @canonical/
 [ ] P2.2  Name is lowercase kebab-case
 [ ] P3.1  tsconfig.json extends shared config

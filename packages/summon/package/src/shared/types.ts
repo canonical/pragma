@@ -1,4 +1,4 @@
-export type PackageType = "tool-ts" | "library" | "css";
+export type PackageType = "tool" | "library" | "css";
 
 export type PackageManager = "bun" | "npm" | "yarn" | "pnpm";
 

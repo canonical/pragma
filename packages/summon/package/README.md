@@ -42,20 +42,20 @@ bun link
 summon package
 
 # Direct — specify options
-summon package --name=@canonical/my-tool --type=tool-ts
+summon package --name=@canonical/my-tool --type=tool
 
 # With React support
 summon package --name=@canonical/my-lib --type=library --with-react
 
 # Preview first
-summon package --name=@canonical/my-tool --type=tool-ts --dry-run
+summon package --name=@canonical/my-tool --type=tool --dry-run
 ```
 
 ---
 
 ## Package Types
 
-### `tool-ts` — TypeScript Tool
+### `tool` — TypeScript Tool
 
 For internal tools that run directly from source. No build step needed.
 
@@ -66,7 +66,7 @@ For internal tools that run directly from source. No build step needed.
 **Entry:** `src/index.ts`
 
 ```bash
-summon package --name=@canonical/my-tool --type=tool-ts
+summon package --name=@canonical/my-tool --type=tool
 ```
 
 Creates:
@@ -176,7 +176,7 @@ packages/my-styles/
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--name` | Full package name with scope (e.g., `@canonical/my-package`) | Interactive prompt |
-| `--type` | Package type: `tool-ts`, `library`, or `css` | Interactive prompt |
+| `--type` | Package type: `tool`, `library`, or `css` | Interactive prompt |
 | `--description` | Package description for package.json | Empty |
 
 ### Feature Flags
@@ -310,7 +310,7 @@ Detects which package manager to use for the install step:
 ```bash
 summon package \
   --name=@canonical/code-checker \
-  --type=tool-ts \
+  --type=tool \
   --with-cli \
   --description="Code quality checker"
 ```
@@ -364,7 +364,7 @@ Extends the workspace TypeScript config:
 }
 ```
 
-For `tool-ts` packages, `outDir` is omitted (no build step).
+For `tool` packages, `outDir` is omitted (no build step).
 
 ### biome.json
 

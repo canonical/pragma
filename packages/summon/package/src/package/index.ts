@@ -63,8 +63,8 @@ const prompts: PromptDefinition[] = [
     message: "Package type:",
     choices: [
       {
-        label: "tool-ts - TypeScript tool (runs from src/, no build)",
-        value: "tool-ts",
+        label: "tool - TypeScript tool (runs from src/, no build)",
+        value: "tool",
       },
       {
         label: "library - Publishable library (dist/ build output)",
@@ -75,7 +75,7 @@ const prompts: PromptDefinition[] = [
         value: "css",
       },
     ],
-    default: "tool-ts",
+    default: "tool",
     group: "Package",
   },
   {
@@ -136,7 +136,7 @@ export const generator: GeneratorDefinition<PackageAnswers> = {
     help: `Generate a new npm package with proper configuration.
 
 PACKAGE TYPES:
-  tool-ts   TypeScript tool that runs directly from src/ (no build step)
+  tool      TypeScript tool that runs directly from src/ (no build step)
             License: GPL-3.0, Entry: src/index.ts
             Examples: summon, webarchitect
 
@@ -159,9 +159,9 @@ The generator auto-detects:
   - Monorepo: Uses lerna.json version when in pragma monorepo
   - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
     examples: [
-      "summon package --name=@canonical/my-tool --type=tool-ts",
+      "summon package --name=@canonical/my-tool --type=tool",
       "summon package --name=@canonical/my-lib --type=library --with-react",
-      "summon package --name=@canonical/my-cli --type=tool-ts --with-cli",
+      "summon package --name=@canonical/my-cli --type=tool --with-cli",
       "summon package --name=my-styles --type=css",
       "summon package --name=@canonical/my-pkg --type=library --no-run-install",
     ],

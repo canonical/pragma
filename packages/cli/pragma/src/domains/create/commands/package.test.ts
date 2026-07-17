@@ -18,7 +18,7 @@ describe("buildPackageCommand", () => {
     const result = await cmd.execute(
       {
         name: "@canonical/test-pkg",
-        type: "tool-ts",
+        type: "tool",
         dryRun: true,
         yes: true,
       },

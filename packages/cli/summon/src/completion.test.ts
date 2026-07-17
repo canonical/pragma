@@ -107,7 +107,7 @@ describe("getArgumentCompletions", () => {
       message: "Package type:",
       choices: [
         { value: "library", label: "Library" },
-        { value: "tool-ts", label: "Tool" },
+        { value: "tool", label: "Tool" },
         { value: "css", label: "CSS" },
       ],
     },
@@ -142,7 +142,7 @@ describe("getArgumentCompletions", () => {
     );
 
     expect(completions).toContain("library");
-    expect(completions).toContain("tool-ts");
+    expect(completions).toContain("tool");
     expect(completions).toContain("css");
   });
 
@@ -154,7 +154,7 @@ describe("getArgumentCompletions", () => {
     );
 
     expect(completions).toContain("library");
-    expect(completions).not.toContain("tool-ts");
+    expect(completions).not.toContain("tool");
     expect(completions).not.toContain("css");
   });
 

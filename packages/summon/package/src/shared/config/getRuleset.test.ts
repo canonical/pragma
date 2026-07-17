@@ -3,12 +3,12 @@ import getRuleset from "./getRuleset.js";
 
 describe("getRuleset", () => {
   it("returns package-react when withReact is true", () => {
-    expect(getRuleset("tool-ts", true)).toBe("package-react");
+    expect(getRuleset("tool", true)).toBe("package-react");
     expect(getRuleset("library", true)).toBe("package-react");
   });
 
   it("returns package type when withReact is false", () => {
-    expect(getRuleset("tool-ts", false)).toBe("tool-ts");
+    expect(getRuleset("tool", false)).toBe("tool");
     expect(getRuleset("library", false)).toBe("library");
   });
 

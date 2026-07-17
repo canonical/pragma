@@ -8,13 +8,12 @@ webarchitect library
 
 ## Built-in Rulesets
 
-Pragma uses four rulesets:
+Pragma uses three rulesets:
 
 | Ruleset | License | Use Case |
 |---------|---------|----------|
 | `library` | LGPL-3.0 | Packages consumed by other packages or applications |
-| `tool` | GPL-3.0 | Compiled CLI tools with a build step |
-| `tool-ts` | GPL-3.0 | TypeScript tools that run directly with Bun (no build) |
+| `tool` | GPL-3.0 | Compiled TypeScript CLI tools published from `dist/` |
 | `assets` | LGPL-3.0 | Asset packages (design tokens, fonts) with no build scripts |
 
 Each ruleset validates package.json structure, required scripts, TypeScript configuration, Biome setup, and license compliance.
@@ -145,7 +144,7 @@ webarchitect <ruleset> [options]
 
 Rulesets can declare **template variables** so a single ruleset can be reused across organizations or relaxed per-project without duplicating it. Variables are declared under a top-level `variables` block, referenced as `${name}` anywhere inside a rule, and overridden at the command line with `--var`/`--prefix`.
 
-The built-in rulesets use this to enforce the package-name prefix: `package` and `tool-ts` declare a `prefix` variable, and `library`, `tool`, `package-react`, and `package-svelte` inherit it via `extends`. The declaration looks like:
+The built-in rulesets use this to enforce the package-name prefix: `package` and `tool` declare a `prefix` variable, and `library`, `package-react`, and `package-svelte` inherit it via `extends`. The declaration looks like:
 
 ```jsonc
 {

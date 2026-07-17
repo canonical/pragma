@@ -9,7 +9,7 @@ import type { PackageAnswers } from "../../shared/index.js";
 
 const baseAnswers: PackageAnswers = {
   name: "@canonical/test-pkg",
-  type: "tool-ts",
+  type: "tool",
   description: "Test",
   withReact: false,
   withStorybook: false,
@@ -19,7 +19,7 @@ const baseAnswers: PackageAnswers = {
 };
 
 describe("package generator undo plan", () => {
-  it("produces undos for tool-ts package", () => {
+  it("produces undos for tool package", () => {
     const task = generator.generate(baseAnswers);
     const undos = collectUndos(task);
 
