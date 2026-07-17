@@ -1,0 +1,127 @@
+/**
+ * The one grammar. Every capability is described by this vocabulary and
+ * nothing else: the CLI projector, the MCP projector, the surface emitter,
+ * and the completion resolver all read these shapes. Do NOT add fields — a
+ * new projection need is a signal to reshape an existing field, not to grow
+ * the grammar, so the surface covenant stays the single source of truth.
+ *
+ * Naming rule: `[noun]` -> CLI `pragma2 <noun>`, tool `<noun>`;
+ * `[noun, verb]` -> CLI `pragma2 <noun> <verb>`, tool `<noun>_<verb>`.
+ * Positionals are params with `positional: true`, in declared order; every
+ * other param is a kebab-cased flag.
+ */
+
+import type { Task } from "@canonical/task";
+import type { PragmaRuntime } from "../runtime/types.js";
+
+/** MCP tool annotations mirrored onto exposed verbs. */
+export type McpAnnotations = {
+  readOnlyHint: boolean;
+  destructiveHint?: boolean;
+  openWorldHint: boolean;
+};
+
+/**
+ * Effect + exposure profile of a verb. `mutates` is the discriminator for the
+ * effect seam: reads are plain async, mutations return a `Task`. `mcp` decides
+ * whether the verb is projected as a tool (and why not, when withheld).
+ */
+export type Capability = {
+  needsStore: boolean;
+  mutates: boolean;
+  destructive?: boolean;
+  needsNetwork?: boolean;
+  interactive?: boolean;
+  mcp:
+    | { expose: true; annotations?: McpAnnotations }
+    | { expose: false; reason: string };
+};
+
+/** How a param's values are completed by the static/dynamic completion tiers. */
+export type ParamComplete =
+  | { kind: "values" }
+  | { kind: "entity"; type: string }
+  | { kind: "files" }
+  | { kind: "none" };
+
+/** A single parameter of a verb — a positional or a kebab-cased flag. */
+export type ParamSpec =
+  | {
+      kind: "string" | "boolean" | "number";
+      name: string;
+      doc: string;
+      required?: boolean;
+      default?: unknown;
+      positional?: boolean;
+      complete?: ParamComplete;
+    }
+  | {
+      kind: "enum";
+      name: string;
+      doc: string;
+      values: readonly string[];
+      required?: boolean;
+      default?: string;
+      positional?: boolean;
+      complete?: ParamComplete;
+    }
+  | {
+      kind: "string[]";
+      name: string;
+      doc: string;
+      required?: boolean;
+      positional?: boolean;
+      complete?: ParamComplete;
+    };
+
+/** The three output modes every verb must render. */
+export interface Formatters<T> {
+  readonly plain: (d: T) => string;
+  readonly llm: (d: T) => string;
+  readonly json: (d: T) => string;
+}
+
+/** A usage example shown in verb help. */
+export interface Example {
+  readonly cmd: string;
+  readonly note?: string;
+}
+
+/** Progressive-disclosure levels a verb honours, and its default. */
+export interface DisclosureSpec {
+  readonly levels: readonly string[];
+  readonly default: string;
+}
+
+/** A documented error a verb may raise, for help and the covenant. */
+export interface ErrorSpec {
+  readonly code: string;
+  readonly when: string;
+}
+
+/**
+ * A single verb: the atom the projectors consume.
+ *
+ * `run` is the effect seam — a read returns `Promise<R>`; a mutation returns a
+ * `Task<R>` the dispatcher interprets under the node / dry-run interpreters.
+ */
+export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
+  readonly path: readonly [noun: string, verb?: string];
+  readonly summary: string;
+  readonly doc?: string;
+  readonly params: readonly ParamSpec[];
+  readonly output: { schema?: unknown; formatters: Formatters<R> };
+  readonly examples?: readonly Example[];
+  readonly disclosure?: DisclosureSpec;
+  readonly capability: Capability;
+  readonly run: (p: P, rt: PragmaRuntime) => Promise<R> | Task<R>;
+  readonly errors?: readonly ErrorSpec[];
+  readonly hidden?: boolean;
+}
+
+/** A capability module: a named bundle of verbs with an optional boot hook. */
+export interface CapabilityModule {
+  readonly name: string;
+  readonly verbs: readonly VerbSpec[];
+  readonly boot?: (rt: PragmaRuntime) => void;
+}

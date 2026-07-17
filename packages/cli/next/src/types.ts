@@ -9,3 +9,15 @@
  */
 
 export type { DetailLevel, OutputFormat } from "./constants.js";
+// — Spec grammar ———————————————————————————————————————————————————————————
+export type {
+  Capability,
+  CapabilityModule,
+  DisclosureSpec,
+  Example,
+  Formatters,
+  McpAnnotations,
+  ParamComplete,
+  ParamSpec,
+  VerbSpec,
+} from "./kernel/spec/types.js";

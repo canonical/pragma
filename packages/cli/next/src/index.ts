@@ -9,4 +9,16 @@
  * @module
  */
 
-export type { DetailLevel, OutputFormat } from "./types.js";
+export type {
+  Capability,
+  CapabilityModule,
+  DetailLevel,
+  DisclosureSpec,
+  Example,
+  Formatters,
+  McpAnnotations,
+  OutputFormat,
+  ParamComplete,
+  ParamSpec,
+  VerbSpec,
+} from "./types.js";

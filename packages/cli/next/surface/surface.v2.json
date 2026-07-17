@@ -1,0 +1,294 @@
+{
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR1 emits info + config show + the fixed sections; every other noun/tool here is the designed future surface, re-snapshotted in-diff by the PR that builds it. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "nouns": {
+    "block": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "block_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "block_get"
+        },
+        {
+          "v": "sample",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "block_sample"
+        },
+        {
+          "v": "anatomy",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "block_anatomy"
+        }
+      ]
+    },
+    "standard": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "standard_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "standard_get"
+        },
+        { "v": "categories", "needsStore": true, "mcp": "standard_categories" }
+      ]
+    },
+    "modifier": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "modifier_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "modifier_get"
+        }
+      ]
+    },
+    "token": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "token_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "token_get"
+        },
+        {
+          "v": "resolve",
+          "args": ["<ref>"],
+          "needsStore": true,
+          "mcp": "token_resolve"
+        }
+      ]
+    },
+    "tier": {
+      "verbs": [{ "v": "list", "needsStore": true, "mcp": "tier_list" }]
+    },
+    "ontology": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "ontology_list" },
+        {
+          "v": "get",
+          "args": ["<uri>"],
+          "needsStore": true,
+          "mcp": "ontology_get"
+        }
+      ]
+    },
+    "skill": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "skill_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "skill_get"
+        }
+      ]
+    },
+    "graph": {
+      "verbs": [
+        {
+          "v": "query",
+          "args": ["<sparql>"],
+          "needsStore": true,
+          "mcp": "graph_query"
+        },
+        {
+          "v": "inspect",
+          "args": ["<uri>"],
+          "needsStore": true,
+          "mcp": "graph_inspect"
+        },
+        { "v": "serve", "needsStore": true, "mcp": "graph_serve" }
+      ]
+    },
+    "config": {
+      "verbs": [
+        { "v": "show", "mcp": "config_show" },
+        {
+          "v": "set",
+          "args": ["<field>", "<value>"],
+          "mutates": true,
+          "mcp": "config_set"
+        }
+      ]
+    },
+    "data": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "data_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "data_get"
+        },
+        {
+          "v": "export",
+          "mutates": true,
+          "needsStore": true,
+          "mcp": "data_export"
+        }
+      ]
+    },
+    "create": {
+      "verbs": [
+        {
+          "v": "component",
+          "args": ["<name>"],
+          "mutates": true,
+          "mcp": "create_component"
+        },
+        {
+          "v": "package",
+          "args": ["<name>"],
+          "mutates": true,
+          "mcp": "create_package"
+        },
+        { "v": "app", "args": ["<name>"], "mutates": true, "mcp": "create_app" }
+      ]
+    },
+    "setup": {
+      "verbs": [
+        { "v": "mcp", "mutates": true, "mcp": "setup_mcp" },
+        { "v": "skills", "mutates": true, "mcp": "setup_skills" },
+        { "v": "completions", "mutates": true, "mcp": "setup_completions" },
+        { "v": "lsp", "mutates": true, "mcp": "setup_lsp" }
+      ]
+    },
+    "doctor": {
+      "verbs": [{ "v": "doctor", "mcp": "doctor" }]
+    },
+    "capabilities": {
+      "verbs": [{ "v": "capabilities", "mcp": "capabilities" }]
+    },
+    "prompt": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "prompt_list" },
+        {
+          "v": "get",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "prompt_get"
+        }
+      ]
+    },
+    "info": {
+      "verbs": [{ "v": "info", "mcp": "info" }]
+    },
+    "upgrade": {
+      "verbs": [{ "v": "upgrade", "mutates": true, "mcp": "upgrade" }]
+    },
+    "mcp": {
+      "verbs": [
+        {
+          "v": "serve",
+          "mcp": false,
+          "note": "server entry, not an agent tool"
+        }
+      ]
+    }
+  },
+  "mcpSurface": {
+    "tools": [
+      "block_anatomy",
+      "block_get",
+      "block_list",
+      "block_sample",
+      "capabilities",
+      "config_set",
+      "config_show",
+      "create_app",
+      "create_component",
+      "create_package",
+      "data_export",
+      "data_get",
+      "data_list",
+      "doctor",
+      "graph_inspect",
+      "graph_query",
+      "graph_serve",
+      "info",
+      "modifier_get",
+      "modifier_list",
+      "ontology_get",
+      "ontology_list",
+      "prompt_get",
+      "prompt_list",
+      "setup_completions",
+      "setup_lsp",
+      "setup_mcp",
+      "setup_skills",
+      "skill_get",
+      "skill_list",
+      "standard_categories",
+      "standard_get",
+      "standard_list",
+      "tier_list",
+      "token_get",
+      "token_list",
+      "token_resolve",
+      "upgrade"
+    ]
+  },
+  "bins": {
+    "pragma2": "pragma v2 CLI and MCP server host (stdio)"
+  },
+  "globalFlags": [
+    { "flag": "--llm", "doc": "Condensed Markdown output for agents" },
+    { "flag": "--format <json|plain>", "doc": "Select output format" },
+    { "flag": "--verbose", "doc": "Diagnostic output on stderr" },
+    { "flag": "--detail <level>", "doc": "Progressive-disclosure level" }
+  ],
+  "detailLevels": ["summary", "standard", "detailed"],
+  "envelope": {
+    "success": { "ok": true, "data": "<payload>", "meta": "<object>" },
+    "error": {
+      "ok": false,
+      "error": {
+        "code": "<ErrorCode>",
+        "message": "<string>",
+        "suggestions": "string[]?",
+        "recovery": "Recovery?",
+        "validOptions": "string[]?",
+        "filters": "object?"
+      }
+    }
+  },
+  "exitCodes": {
+    "0": "success",
+    "1": "runtime (entity-not-found, empty, config, internal)",
+    "2": "usage (invalid/ambiguous input, unknown verb)",
+    "3": "store unavailable"
+  },
+  "mutationContract": {
+    "cli": { "dryRun": "--dry-run", "undo": "--undo", "confirm": "--yes" },
+    "mcp": {
+      "planFirst": true,
+      "confirmParam": "confirm",
+      "planMeta": { "planOnly": true, "confirmRequired": true }
+    }
+  },
+  "completion": {
+    "static": "shell script tier emitted by `setup completions`",
+    "dynamic": "hidden `__complete` resolver, storeless",
+    "paramSource": "ParamSpec.complete"
+  },
+  "configFiles": {
+    "project": "pragma.config.ts (evaluated, content-hash cached)",
+    "global": "$XDG_CONFIG_HOME/pragma/config.json",
+    "lock": "$XDG_STATE_HOME/pragma/config-cache/<sha256>.json",
+    "defaults": "built-in defaults.ts"
+  },
+  "budgets": {
+    "help": "<50ms",
+    "complete": "<50ms",
+    "projectConfigLoad": "<10ms",
+    "warmStoreVerb": "<300ms",
+    "mcpP95Warm": "<100ms",
+    "condensedSDL": "<=8000 tokens"
+  }
+}
