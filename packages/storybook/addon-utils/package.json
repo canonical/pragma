@@ -5,6 +5,7 @@
   "files": [
     "dist"
   ],
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "author": "Bartek Szopka <bartek.szopka@canonical.com>",
   "description": "Storybook addon: grid mode, color scheme, baseline grid, element outlines",
@@ -48,11 +49,12 @@
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
     "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0",
-    "check": "bun run check:biome && bun run check:ts",
+    "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
+    "check:webarchitect": "webarchitect library",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"
@@ -68,6 +70,7 @@
     "@canonical/router-react": "^0.30.0",
     "@canonical/styles": "^0.30.0",
     "@canonical/typescript-config-react": "^0.30.0",
+    "@canonical/webarchitect": "^0.30.0",
     "@storybook/addon-docs": "^10.3.1",
     "@storybook/react-vite": "^10.3.1",
     "@testing-library/jest-dom": "^6.9.1",

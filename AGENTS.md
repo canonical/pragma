@@ -116,6 +116,14 @@ CI round-trips are expensive — get the branch right locally first.
   (e.g. iterate `Map.entries()` instead of `keys()` + `get()`).
 - A **new package** needs a first manual `npm publish --access public` (a human step,
   npm 2FA) before release automation works — merging it does not make it releasable.
+- A package whose `check` invokes a **workspace bin compiled from source** (e.g.
+  `check:webarchitect` calling the `webarchitect` bin, which resolves to
+  `dist/esm/cli.js`) fails on a clean CI install: bun's isolated linker **won't create
+  the workspace `.bin` symlink until the bin's target file exists**, and the compiled
+  bin doesn't exist until the build runs. Fix is a **post-build `bun install
+  --ignore-scripts` re-link** — CI runs it after the build (see the "Re-link compiled
+  workspace binaries" step in `.github/actions/setup-env/action.yml`) so the `.bin`
+  symlink is created before `check`.
 
 > Per-package `check` = `check:biome` (lint+format) → `check:ts` (`tsc --noEmit`) →
 > `check:webarchitect` (architecture ruleset). `check:fix` auto-fixes biome then
