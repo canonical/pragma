@@ -177,9 +177,19 @@ function footer(ontology: OntologyDetailed): string {
   const seed =
     ontology.classes.find((c) => (c.instances ?? 0) > 0) ?? ontology.classes[0];
   const query = seed
-    ? ` · pragma graph query "SELECT ?s WHERE { ?s a ${seed.iri} } LIMIT 10"`
+    ? ` · pragma graph query "SELECT ?s WHERE { ?s a ${sparqlTerm(seed.iri)} } LIMIT 10"`
     : "";
   return `Next: pragma ontology show ${ontology.prefix} --class <Class>${query}`;
+}
+
+/**
+ * Render an IRI as a valid SPARQL term: full URIs (present under
+ * `--full-uris`) need `<...>`; compact prefixed IRIs are usable as-is.
+ */
+function sparqlTerm(iri: string): string {
+  return iri.startsWith("http://") || iri.startsWith("https://")
+    ? `<${iri}>`
+    : iri;
 }
 
 /** Properties a class renders inline: relations always, attributes on demand. */

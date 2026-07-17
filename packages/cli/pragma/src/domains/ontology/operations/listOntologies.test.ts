@@ -80,6 +80,39 @@ describe("listOntologies", () => {
     }
   });
 
+  it("derives namespaces from short path-only URIs", async () => {
+    const scoped = await createTestStore({
+      ttl: `@prefix owl: <http://www.w3.org/2002/07/owl#> .
+<http://a/b> a owl:Class .`,
+    });
+    try {
+      const result = await listOntologies(scoped.store);
+      expect(result.find((o) => o.namespace === "http://a/")?.classCount).toBe(
+        1,
+      );
+    } finally {
+      scoped.cleanup();
+    }
+  });
+
+  it("lists a namespace that only contributes SHACL shapes", async () => {
+    const scoped = await createTestStore({
+      ttl: `@prefix sh: <http://www.w3.org/ns/shacl#> .
+<http://shapes.example.org/ontology#OnlyShape> a sh:NodeShape .`,
+    });
+    try {
+      const result = await listOntologies(scoped.store);
+      const shapeOnly = result.find(
+        (o) => o.namespace === "http://shapes.example.org/ontology#",
+      );
+      expect(shapeOnly).toBeDefined();
+      expect(shapeOnly?.shapeCount).toBe(1);
+      expect(shapeOnly?.classCount).toBe(0);
+    } finally {
+      scoped.cleanup();
+    }
+  });
+
   it("returns sorted by prefix", async () => {
     const result = await listOntologies(store);
     const prefixes = result.map((o) => o.prefix);

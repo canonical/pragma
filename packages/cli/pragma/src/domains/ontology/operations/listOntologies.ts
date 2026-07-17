@@ -32,9 +32,12 @@ function add(
 function deriveNamespace(uri: string): string | undefined {
   const hash = uri.lastIndexOf("#");
   if (hash > 0) return uri.slice(0, hash + 1);
+  // Scheme-agnostic: any slash after the `scheme://` authority separator
+  // marks a path segment; a URI with no path (http://host) has none.
+  const authority = uri.indexOf("://");
+  if (authority < 0) return undefined;
   const slash = uri.lastIndexOf("/");
-  if (slash > "https://".length) return uri.slice(0, slash + 1);
-  return undefined;
+  return slash > authority + 2 ? uri.slice(0, slash + 1) : undefined;
 }
 
 /**
@@ -154,11 +157,15 @@ export default async function listOntologies(
     }
   }
 
+  // A namespace that only contributes SHACL shapes still surfaces; one
+  // that only declares an owl:Ontology header (no terms at all) does not —
+  // an empty TBox is not a listable ontology.
   const allNamespaces = new Set([
     ...classCounts.keys(),
     ...relationCounts.keys(),
     ...attributeCounts.keys(),
     ...anatomyCounts.keys(),
+    ...shapeCounts.keys(),
   ]);
 
   const summaries = [...allNamespaces].map((namespace) => {

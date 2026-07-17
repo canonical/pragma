@@ -18,7 +18,14 @@
  * previous artifact in place and the boot proceeds with a warning.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { createStore, definePlugin, type InlineSource } from "@canonical/ke";
 import { hashSources } from "@canonical/ke-graphql";
@@ -90,11 +97,8 @@ export default async function ensureSchemaArtifact(
 
   const hash = hashSources(sources.map((source) => source.content));
 
-  if (existsSync(path)) {
-    const firstLine = readFileSync(path, "utf-8").split("\n", 1)[0];
-    if (firstLine === `${HASH_HEADER}${hash}`) {
-      return { path, status: "fresh" };
-    }
+  if (existsSync(path) && readFirstLine(path) === `${HASH_HEADER}${hash}`) {
+    return { path, status: "fresh" };
   }
 
   // Mirror boot's "one bad file cannot break boot": compile from the
@@ -125,6 +129,23 @@ export default async function ensureSchemaArtifact(
   );
 
   return { path, status: "written" };
+}
+
+/**
+ * Read just the artifact's header line — the freshness probe runs on every
+ * booted invocation, so it must not scale with the SDL's size.
+ */
+function readFirstLine(path: string, max = 96): string {
+  const fd = openSync(path, "r");
+  try {
+    const buffer = Buffer.alloc(max);
+    const bytes = readSync(fd, buffer, 0, max, 0);
+    const text = buffer.subarray(0, bytes).toString("utf-8");
+    const newline = text.indexOf("\n");
+    return newline === -1 ? text : text.slice(0, newline);
+  } finally {
+    closeSync(fd);
+  }
 }
 
 /**

@@ -102,6 +102,8 @@ describe("ontology show command", () => {
     const component = ontology.classes.find((c) => c.label === "Component");
     expect(component?.iri).toBe("https://ds.canonical.com/Component");
     expect(text).toContain("https://ds.canonical.com/Component");
+    // The seeded footer query must stay valid SPARQL: full URIs need <...>.
+    expect(text).toMatch(/\?s a <https:\/\/ds\.canonical\.com\//);
   });
 
   it("completes ontology prefixes", async () => {

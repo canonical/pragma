@@ -10,13 +10,17 @@ import { P } from "../../shared/prefixes.js";
  *
  * Completion runs before the prefix positional is resolvable from the
  * completion context, so candidates span all namespaces — the operation
- * scopes the actual lookup to the requested namespace.
+ * scopes the actual lookup to the requested namespace. Results are capped
+ * at `limit` so a huge graph cannot flood the shell; an empty partial
+ * still completes (class sets are small and the query is one indexed
+ * type-scan).
  *
  * @note Queries ke store
  */
 export default async function completeClassNames(
   store: Store,
   partial: string,
+  limit = 50,
 ): Promise<string[]> {
   const result = await store.query(
     buildQuery(`
@@ -35,5 +39,5 @@ export default async function completeClassNames(
     if (local.toLowerCase().startsWith(needle)) names.add(local);
   }
 
-  return [...names].sort();
+  return [...names].sort().slice(0, limit);
 }
