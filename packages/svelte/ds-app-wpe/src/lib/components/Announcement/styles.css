@@ -1,0 +1,55 @@
+/**
+ * Announcement styles
+ * @implements ds:global.component.announcement
+ *
+ * The `criticality` prop applies a modifier class from the criticality modifier
+ * family, which remaps the `--modifier-color-*` channels. These channels drive
+ * the side bar colour, background, and icon glyph. Text colour is always the
+ * root `--color-text` regardless of criticality.
+ */
+
+.ds.announcement {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--dimension-100);
+
+  /* Side bar: leading rule carrying the criticality colour. */
+  border-inline-start-style: solid;
+  border-inline-start-width: var(--dimension-stroke-thickness-large);
+  border-inline-start-color: var(--modifier-color-border);
+
+  padding: var(--dimension-100);
+
+  /* Text stays the neutral root colour on every criticality level. */
+  color: var(--color-text);
+  background-color: var(--modifier-color-foreground-secondary);
+
+  /* Icon — masked box; glyph and fill driven by the criticality modifier channels. */
+  & > .icon {
+    flex: 0 0 auto;
+    inline-size: var(--dimension-200);
+    block-size: var(--dimension-200);
+    background-color: var(--modifier-color-icon);
+    mask-image: var(--modifier-icon);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    -webkit-mask-image: var(--modifier-icon);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    -webkit-mask-size: contain;
+  }
+
+  & > .text {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--dimension-050);
+    min-width: 0;
+  }
+
+  & .heading {
+    font-weight: var(--typography-text-primary-bold-font-weight);
+  }
+}
