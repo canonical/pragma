@@ -12,8 +12,8 @@ type BaseProps = SvelteHTMLElements["div"];
 export interface AnnouncementProps extends BaseProps {
   /**
    * Criticality modifier — the type of announcement. Drives the icon,
-   * side-bar colour, background, and text treatment via the criticality
-   * modifier family. Defaults to `"information"`.
+   * side-bar colour, and background via the criticality modifier family.
+   * Defaults to `"information"`.
    * - `"information"`: neutral, informative (default)
    * - `"success"`: positive status
    * - `"warning"`: cautionary status
