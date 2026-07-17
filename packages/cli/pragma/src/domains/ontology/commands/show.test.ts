@@ -114,6 +114,21 @@ describe("ontology show command", () => {
     expect(matches).toContain("ds");
   });
 
+  it("completes class names for --class", async () => {
+    const ctx = makeCtx();
+    const cmd = buildShowCommand(ctx);
+    const classParam = cmd.parameters.find((p) => p.name === "class");
+    const complete = classParam?.complete;
+
+    expect(complete).toBeTypeOf("function");
+    const matches = await complete?.("comp", ctx);
+    expect(matches).toContain("Component");
+    // Case-insensitive prefix match, sorted, no non-matches.
+    expect(matches?.every((m) => m.toLowerCase().startsWith("comp"))).toBe(
+      true,
+    );
+  });
+
   it("renders plain output", async () => {
     const ctx = makeCtx();
     const cmd = buildShowCommand(ctx);

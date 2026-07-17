@@ -21,15 +21,18 @@ import type {
 } from "../shared/types/index.js";
 import type { OntologyShowInput } from "./formatters/index.js";
 import { listFormatters, showFormatters } from "./formatters/index.js";
+import completeClassNames from "./helpers/completeClassNames.js";
 import expandOntologyIris from "./helpers/expandOntologyIris.js";
 import { listOntologies, showOntology } from "./operations/index.js";
 
 const ontologyListColumns: readonly ColumnDef<OntologySummary>[] = [
   { key: "prefix", label: "Prefix" },
   { key: "namespace", label: "Namespace" },
+  { key: "version", label: "Version" },
   { key: "classCount", label: "Classes" },
-  { key: "propertyCount", label: "Properties" },
-  { key: "anatomyCount", label: "Anatomies" },
+  { key: "relationCount", label: "Relations" },
+  { key: "attributeCount", label: "Attributes" },
+  { key: "shapeCount", label: "Shapes" },
 ];
 
 /** The `ontology list` / `ontology_list` read story. */
@@ -88,7 +91,11 @@ export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyShowInput> =
           const all = await listOntologies(ctx.store);
           return all
             .map((o) => o.prefix)
-            .filter((p) => p.toLowerCase().startsWith(partial.toLowerCase()));
+            .filter(
+              (p) =>
+                p.length > 0 &&
+                p.toLowerCase().startsWith(partial.toLowerCase()),
+            );
         },
       },
       {
@@ -98,6 +105,10 @@ export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyShowInput> =
           "Deep-dive into one class (label, local name, or compact IRI)",
         toolDescription:
           "Class to deep-dive into: super chain, direct + inherited properties, reverse references, sample instances, and follow-up queries",
+        complete: async (partial, cmdCtx) => {
+          const ctx = requirePragmaContext(cmdCtx);
+          return completeClassNames(ctx.store, partial);
+        },
       },
       {
         name: "properties",

@@ -24,8 +24,32 @@ describe("listOntologies", () => {
     expect(ds).toBeDefined();
     expect(ds?.namespace).toBe(DEFAULT_PREFIX_MAP.ds);
     expect(ds?.classCount).toBeGreaterThan(0);
-    expect(ds?.propertyCount).toBeGreaterThan(0);
+    expect(ds?.relationCount).toBeGreaterThan(0);
+    expect(ds?.attributeCount).toBeGreaterThan(0);
     expect(ds?.anatomyCount).toBeGreaterThan(0);
+  });
+
+  it("splits relations from attributes", async () => {
+    const result = await listOntologies(store);
+    const ds = result.find((o) => o.prefix === "ds");
+    // ds:tier is an object property; ds:name is a datatype property.
+    expect(ds?.relationCount).toBeGreaterThan(0);
+    expect(ds?.attributeCount).toBeGreaterThan(0);
+  });
+
+  it("carries the owl:Ontology header and SHACL shape count", async () => {
+    const result = await listOntologies(store);
+    const ds = result.find((o) => o.prefix === "ds");
+    expect(ds?.title).toBe("Design System Ontology");
+    expect(ds?.version).toBe("0.1.0-test");
+    expect(ds?.shapeCount).toBeGreaterThan(0);
+  });
+
+  it("omits header fields for namespaces without an owl:Ontology node", async () => {
+    const result = await listOntologies(store);
+    const cs = result.find((o) => o.prefix === "cs");
+    expect(cs?.title).toBeUndefined();
+    expect(cs?.version).toBeUndefined();
   });
 
   it("includes cs namespace", async () => {
@@ -34,6 +58,26 @@ describe("listOntologies", () => {
     expect(cs).toBeDefined();
     expect(cs?.classCount).toBeGreaterThan(0);
     expect(cs?.anatomyCount).toBe(0);
+  });
+
+  it("lists namespaces without a registered prefix", async () => {
+    const scoped = await createTestStore({
+      ttl: `@prefix owl: <http://www.w3.org/2002/07/owl#> .
+<http://unprefixed.example.org/ontology#Widget> a owl:Class .
+<http://unprefixed.example.org/ontology#partOf> a owl:ObjectProperty .`,
+    });
+    try {
+      const result = await listOntologies(scoped.store);
+      const anon = result.find(
+        (o) => o.namespace === "http://unprefixed.example.org/ontology#",
+      );
+      expect(anon).toBeDefined();
+      expect(anon?.prefix).toBe("");
+      expect(anon?.classCount).toBe(1);
+      expect(anon?.relationCount).toBe(1);
+    } finally {
+      scoped.cleanup();
+    }
   });
 
   it("returns sorted by prefix", async () => {

@@ -2,14 +2,22 @@
 
 /** Summary of a loaded ontology namespace from `ontology list`. */
 export interface OntologySummary {
-  /** Short prefix alias (e.g., `"ds"`, `"cs"`). */
+  /** Short prefix alias (e.g., `"ds"`), or `""` when none is registered. */
   readonly prefix: string;
   /** Full namespace URI the prefix expands to. */
   readonly namespace: string;
+  /** rdfs:label of the namespace's owl:Ontology header, when declared. */
+  readonly title?: string;
+  /** owl:versionInfo of the namespace's owl:Ontology header, when declared. */
+  readonly version?: string;
   /** Number of OWL/RDFS classes defined in this namespace. */
   readonly classCount: number;
-  /** Number of properties (object + datatype) defined in this namespace. */
-  readonly propertyCount: number;
+  /** Number of object properties (class-to-class relations). */
+  readonly relationCount: number;
+  /** Number of datatype properties (literal-valued attributes). */
+  readonly attributeCount: number;
+  /** Number of SHACL node shapes constraining this namespace. */
+  readonly shapeCount: number;
   readonly anatomyCount: number;
 }
 
