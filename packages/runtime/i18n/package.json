@@ -1,7 +1,7 @@
 {
   "name": "@canonical/i18n-core",
   "description": "Framework-agnostic internationalization core (native Intl): locale negotiation, message catalogs, translators, memoized formatters, and a reactive locale source.",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **styles:** 4px baseline in styles-main + debug overlay ([#803](https://github.com/canonical/pragma/issues/803)) ([35308ae](https://github.com/canonical/pragma/commit/35308ae07ca9d5364626af85c66f80a2ecebe35f))
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

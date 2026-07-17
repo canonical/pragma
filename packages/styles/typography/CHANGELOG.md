@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **styles:** 4px baseline shim + typography example upgrade ([#790](https://github.com/canonical/pragma/issues/790)) ([1b11a25](https://github.com/canonical/pragma/commit/1b11a25f5c361186db8c7613fdf66f8cbf14c0c9))
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

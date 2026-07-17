@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **lit:** per-component export paths for tree-shaking ([#833](https://github.com/canonical/pragma/issues/833)) ([566a9f4](https://github.com/canonical/pragma/commit/566a9f4322acdfb4e3ad746d443009cb89c285a3)), closes [#480](https://github.com/canonical/pragma/issues/480) [#480](https://github.com/canonical/pragma/issues/480)
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 **Note:** Version bump only for package @canonical/lit-ds-prototype

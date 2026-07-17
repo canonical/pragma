@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **cli:** generator validation, --no- flags, auto-LLM detection, coverage ([#816](https://github.com/canonical/pragma/issues/816)) ([c9436f4](https://github.com/canonical/pragma/commit/c9436f471095edc2034157a21afce0cce50edfe7))
+* **deps:** bump stale ^0.29.0 peerDependencies to ^0.30.0 ([#799](https://github.com/canonical/pragma/issues/799)) ([0702733](https://github.com/canonical/pragma/commit/0702733c48bd7838658be95589483192b5593cbe))
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

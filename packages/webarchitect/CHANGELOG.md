@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **webarchitect:** require exports map in the svelte package ruleset ([#827](https://github.com/canonical/pragma/issues/827)) ([7ad80ec](https://github.com/canonical/pragma/commit/7ad80ecc4dc22ce3ba90700a048ccb5d113e79e7)), closes [#407](https://github.com/canonical/pragma/issues/407)
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 **Note:** Version bump only for package @canonical/webarchitect

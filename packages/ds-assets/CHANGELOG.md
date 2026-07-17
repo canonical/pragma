@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **ds-assets:** add image-registries icon ([#823](https://github.com/canonical/pragma/issues/823)) ([0d91182](https://github.com/canonical/pragma/commit/0d91182c9473702acdf4a6b1dbdb1673799e325e)), closes [#720](https://github.com/canonical/pragma/issues/720)
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 **Note:** Version bump only for package @canonical/ds-assets

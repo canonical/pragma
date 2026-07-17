@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **ds-global:** Implement Svelte `<Breadcrumbs>`, a11y improvements to React `<Breadcrumbs>` ([#739](https://github.com/canonical/pragma/issues/739)) ([c47d403](https://github.com/canonical/pragma/commit/c47d403629b00cb602382fec81341bba3a36c725))
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

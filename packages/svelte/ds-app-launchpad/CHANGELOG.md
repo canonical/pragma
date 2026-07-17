@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Features
+
+* **ds-app-launchpad:** start migration to pragma design tokens ([#808](https://github.com/canonical/pragma/issues/808)) ([87a2b13](https://github.com/canonical/pragma/commit/87a2b13d14046b47344e1161a1d7285572d01267))
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

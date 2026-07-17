@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **density:** seat ds-global Button + restore control sizes ([#813](https://github.com/canonical/pragma/issues/813)) ([#814](https://github.com/canonical/pragma/issues/814)) ([78c8ed1](https://github.com/canonical/pragma/commit/78c8ed1ee4d21ec20c863edc2f7d68f4c3643dc6)), closes [#803](https://github.com/canonical/pragma/issues/803) [#812](https://github.com/canonical/pragma/issues/812) [#812](https://github.com/canonical/pragma/issues/812)
+* **ds-global-form:** min/max & file validation, helper story, danger label ([#802](https://github.com/canonical/pragma/issues/802)) ([5cc9cec](https://github.com/canonical/pragma/commit/5cc9cec114ed3486ec51880295b1573a43add4e6))
+* **ds-global,ds-global-form,styles:** token, colour & typography corrections from design review ([#764](https://github.com/canonical/pragma/issues/764)) ([89f8d44](https://github.com/canonical/pragma/commit/89f8d440a98f4ff0b3d42f17611f134e835d4295)), closes [#748](https://github.com/canonical/pragma/issues/748) [#748](https://github.com/canonical/pragma/issues/748)
+* **ds-global:** sizing, spacing & alignment from design review ([#766](https://github.com/canonical/pragma/issues/766)) ([a78939a](https://github.com/canonical/pragma/commit/a78939afaa20d63f96225f3ff484fac02d15ffc2)), closes [#764](https://github.com/canonical/pragma/issues/764) [#801](https://github.com/canonical/pragma/issues/801)
+* **react/ds-global-form:** re-render field error when message changes on cross-field revalidation ([#850](https://github.com/canonical/pragma/issues/850)) ([749ecb7](https://github.com/canonical/pragma/commit/749ecb76a4d88cca3da440987a68bb13dc3ea802))
+
+
+### Features
+
+* **density:** density model + 2×3 form-channel matrix, prose partition, guides ([#805](https://github.com/canonical/pragma/issues/805)) ([2f04495](https://github.com/canonical/pragma/commit/2f0449508fc25ccffeecf01942756eca66832ba7)), closes [#804](https://github.com/canonical/pragma/issues/804) [#806](https://github.com/canonical/pragma/issues/806)
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

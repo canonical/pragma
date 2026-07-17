@@ -1,7 +1,7 @@
 {
   "name": "@canonical/i18n-react",
   "description": "React bindings for @canonical/i18n-core: I18nProvider and the useTranslation, useLocale, and useFormatters hooks.",
-  "version": "0.30.0",
+  "version": "0.31.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -45,14 +45,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/i18n-core": "^0.30.0",
+    "@canonical/i18n-core": "^0.31.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.27.1-experimental.0",
-    "@canonical/typescript-config-react": "^0.30.0",
+    "@canonical/typescript-config-react": "^0.31.0",
     "@canonical/webarchitect": "^0.27.1-experimental.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

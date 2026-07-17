@@ -3,6 +3,53 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **cli:** boot the ke store resiliently and name the offending file ([#798](https://github.com/canonical/pragma/issues/798)) ([dda93bb](https://github.com/canonical/pragma/commit/dda93bb9cc588e7a186ba8ab8d4a5d60ec424728))
+* **cli:** core input/output correctness — completions, exit codes, validation ([#815](https://github.com/canonical/pragma/issues/815)) ([26b761d](https://github.com/canonical/pragma/commit/26b761d00c145a6e0a564c9f70d001805240e139))
+* **cli:** don't boot the ke store for `create` scaffolding ([#797](https://github.com/canonical/pragma/issues/797)) ([298f8c4](https://github.com/canonical/pragma/commit/298f8c4233db0dafd89a7a801aeb45bdf9c5c9a8))
+* **cli:** flag & command UX — unknown-verb, --version, config, graph query ([#817](https://github.com/canonical/pragma/issues/817)) ([82816d0](https://github.com/canonical/pragma/commit/82816d05e9e5308ff9747dcb361115994d8d70a3))
+* **cli:** generator validation, --no- flags, auto-LLM detection, coverage ([#816](https://github.com/canonical/pragma/issues/816)) ([c9436f4](https://github.com/canonical/pragma/commit/c9436f471095edc2034157a21afce0cce50edfe7))
+* **cli:** setup real-execution + harness detection, hang & help fixes, validation ([#818](https://github.com/canonical/pragma/issues/818)) ([59fea44](https://github.com/canonical/pragma/commit/59fea4471a036d8dc24f12ddbd3cd3f859c3a0d0))
+* **density:** seat ds-global Button + restore control sizes ([#813](https://github.com/canonical/pragma/issues/813)) ([#814](https://github.com/canonical/pragma/issues/814)) ([78c8ed1](https://github.com/canonical/pragma/commit/78c8ed1ee4d21ec20c863edc2f7d68f4c3643dc6)), closes [#803](https://github.com/canonical/pragma/issues/803) [#812](https://github.com/canonical/pragma/issues/812) [#812](https://github.com/canonical/pragma/issues/812)
+* **deps:** bump stale ^0.29.0 peerDependencies to ^0.30.0 ([#799](https://github.com/canonical/pragma/issues/799)) ([0702733](https://github.com/canonical/pragma/commit/0702733c48bd7838658be95589483192b5593cbe))
+* **ds-global-form:** min/max & file validation, helper story, danger label ([#802](https://github.com/canonical/pragma/issues/802)) ([5cc9cec](https://github.com/canonical/pragma/commit/5cc9cec114ed3486ec51880295b1573a43add4e6))
+* **ds-global,ds-global-form,styles:** token, colour & typography corrections from design review ([#764](https://github.com/canonical/pragma/issues/764)) ([89f8d44](https://github.com/canonical/pragma/commit/89f8d440a98f4ff0b3d42f17611f134e835d4295)), closes [#748](https://github.com/canonical/pragma/issues/748) [#748](https://github.com/canonical/pragma/issues/748)
+* **ds-global:** sizing, spacing & alignment from design review ([#766](https://github.com/canonical/pragma/issues/766)) ([a78939a](https://github.com/canonical/pragma/commit/a78939afaa20d63f96225f3ff484fac02d15ffc2)), closes [#764](https://github.com/canonical/pragma/issues/764) [#801](https://github.com/canonical/pragma/issues/801)
+* **react/ds-global-form:** re-render field error when message changes on cross-field revalidation ([#850](https://github.com/canonical/pragma/issues/850)) ([749ecb7](https://github.com/canonical/pragma/commit/749ecb76a4d88cca3da440987a68bb13dc3ea802))
+* **react/ds-global:** SSR-safe portal gating via shared useIsMounted hook ([#822](https://github.com/canonical/pragma/issues/822)) ([2274577](https://github.com/canonical/pragma/commit/2274577be9b31344b671d93d77797740379e48a3)), closes [#663](https://github.com/canonical/pragma/issues/663)
+* **storybook/addon-utils:** framework-agnostic withUtilStyles — stop wrapping stories in React elements ([#846](https://github.com/canonical/pragma/issues/846)) ([f98c071](https://github.com/canonical/pragma/commit/f98c07116c2a419d2b048d304fe122c93c7b0c61)), closes [#807](https://github.com/canonical/pragma/issues/807) [#839](https://github.com/canonical/pragma/issues/839) [pre-#807](https://github.com/pre-/issues/807) [#839](https://github.com/canonical/pragma/issues/839)
+
+
+### Features
+
+* **addon-utils:** density / context / grid Storybook toolbar ([#804](https://github.com/canonical/pragma/issues/804)) ([13233b0](https://github.com/canonical/pragma/commit/13233b00c68de20c227a4f6b130707afbe7b3b15))
+* **cli:** add `create application` generator (CLI + MCP) ([#828](https://github.com/canonical/pragma/issues/828)) ([fbc8797](https://github.com/canonical/pragma/commit/fbc8797edc922aa31d40deed9aa1f917e08b3cb1))
+* **cli:** bundled story-pack mechanism; migrate tier to a pack (P1, re-land) ([#844](https://github.com/canonical/pragma/issues/844)) ([7b6580b](https://github.com/canonical/pragma/commit/7b6580b23e03fd221ada608bae95fd55a46cafc6))
+* **cli:** first-run onboarding — welcome note + global config creation ([#843](https://github.com/canonical/pragma/issues/843)) ([ea11862](https://github.com/canonical/pragma/commit/ea118628bb82301ef886ffe963ffb224ae958bcd))
+* **cli:** generator packs — data-driven create surface ([#835](https://github.com/canonical/pragma/issues/835)) ([125ffbd](https://github.com/canonical/pragma/commit/125ffbd7519f9bb8f9266a87d1f6cbc901de766c))
+* **cli:** package-declared prefixes + bare-core boot (P0) ([#824](https://github.com/canonical/pragma/issues/824)) ([b4f8a4a](https://github.com/canonical/pragma/commit/b4f8a4abbe36a89c47b472aec0cb94139a928dc4))
+* **cli:** pragma create reuses summon's rich Ink UI when interactive ([#819](https://github.com/canonical/pragma/issues/819)) ([23d88b0](https://github.com/canonical/pragma/commit/23d88b0f080650da5e50546e0d416b9e844bb6ae))
+* **cli:** task-oriented root --help with real descriptions ([#809](https://github.com/canonical/pragma/issues/809)) ([6c0c065](https://github.com/canonical/pragma/commit/6c0c065f40a22f27fa9a6e8717176714acb59a77))
+* **density:** density model + 2×3 form-channel matrix, prose partition, guides ([#805](https://github.com/canonical/pragma/issues/805)) ([2f04495](https://github.com/canonical/pragma/commit/2f0449508fc25ccffeecf01942756eca66832ba7)), closes [#804](https://github.com/canonical/pragma/issues/804) [#806](https://github.com/canonical/pragma/issues/806)
+* **doctor:** legible output with sub-items and inline remedies ([#800](https://github.com/canonical/pragma/issues/800)) ([d1ea747](https://github.com/canonical/pragma/commit/d1ea747950867a2f4b1695ecfc88c6261c1f6eeb))
+* **ds-app-launchpad:** start migration to pragma design tokens ([#808](https://github.com/canonical/pragma/issues/808)) ([87a2b13](https://github.com/canonical/pragma/commit/87a2b13d14046b47344e1161a1d7285572d01267))
+* **ds-assets:** add image-registries icon ([#823](https://github.com/canonical/pragma/issues/823)) ([0d91182](https://github.com/canonical/pragma/commit/0d91182c9473702acdf4a6b1dbdb1673799e325e)), closes [#720](https://github.com/canonical/pragma/issues/720)
+* **ds-global:** Cards group — shared-subgrid card layout with aligned sections ([#807](https://github.com/canonical/pragma/issues/807)) ([550fdc0](https://github.com/canonical/pragma/commit/550fdc0dd2d1877bde7836dbe0a788107e0b580b))
+* **ds-global:** Implement Svelte `<Breadcrumbs>`, a11y improvements to React `<Breadcrumbs>` ([#739](https://github.com/canonical/pragma/issues/739)) ([c47d403](https://github.com/canonical/pragma/commit/c47d403629b00cb602382fec81341bba3a36c725))
+* **lit:** per-component export paths for tree-shaking ([#833](https://github.com/canonical/pragma/issues/833)) ([566a9f4](https://github.com/canonical/pragma/commit/566a9f4322acdfb4e3ad746d443009cb89c285a3)), closes [#480](https://github.com/canonical/pragma/issues/480) [#480](https://github.com/canonical/pragma/issues/480)
+* **styles:** 4px baseline in styles-main + debug overlay ([#803](https://github.com/canonical/pragma/issues/803)) ([35308ae](https://github.com/canonical/pragma/commit/35308ae07ca9d5364626af85c66f80a2ecebe35f))
+* **styles:** 4px baseline shim + typography example upgrade ([#790](https://github.com/canonical/pragma/issues/790)) ([1b11a25](https://github.com/canonical/pragma/commit/1b11a25f5c361186db8c7613fdf66f8cbf14c0c9))
+* **svelte-wpe:** Add `Announcement` component ([#858](https://github.com/canonical/pragma/issues/858)) ([32233b9](https://github.com/canonical/pragma/commit/32233b944a2619fd8c30e23ce76e09dd783c1c8b))
+* **webarchitect:** require exports map in the svelte package ruleset ([#827](https://github.com/canonical/pragma/issues/827)) ([7ad80ec](https://github.com/canonical/pragma/commit/7ad80ecc4dc22ce3ba90700a048ccb5d113e79e7)), closes [#407](https://github.com/canonical/pragma/issues/407)
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 

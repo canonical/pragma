@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* **storybook/addon-utils:** framework-agnostic withUtilStyles — stop wrapping stories in React elements ([#846](https://github.com/canonical/pragma/issues/846)) ([f98c071](https://github.com/canonical/pragma/commit/f98c07116c2a419d2b048d304fe122c93c7b0c61)), closes [#807](https://github.com/canonical/pragma/issues/807) [#839](https://github.com/canonical/pragma/issues/839) [pre-#807](https://github.com/pre-/issues/807) [#839](https://github.com/canonical/pragma/issues/839)
+
+
+### Features
+
+* **addon-utils:** density / context / grid Storybook toolbar ([#804](https://github.com/canonical/pragma/issues/804)) ([13233b0](https://github.com/canonical/pragma/commit/13233b00c68de20c227a4f6b130707afbe7b3b15))
+* **ds-global:** Cards group — shared-subgrid card layout with aligned sections ([#807](https://github.com/canonical/pragma/issues/807)) ([550fdc0](https://github.com/canonical/pragma/commit/550fdc0dd2d1877bde7836dbe0a788107e0b580b))
+
+
+
+
+
 # [0.30.0](https://github.com/canonical/pragma/compare/v0.29.1...v0.30.0) (2026-07-14)
 
 **Note:** Version bump only for package @canonical/storybook-addon-utils
