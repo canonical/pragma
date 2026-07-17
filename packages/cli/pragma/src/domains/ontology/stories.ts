@@ -19,15 +19,20 @@ import type {
   OntologyDetailed,
   OntologySummary,
 } from "../shared/types/index.js";
+import type { OntologyShowInput } from "./formatters/index.js";
 import { listFormatters, showFormatters } from "./formatters/index.js";
+import completeClassNames from "./helpers/completeClassNames.js";
+import expandOntologyIris from "./helpers/expandOntologyIris.js";
 import { listOntologies, showOntology } from "./operations/index.js";
 
 const ontologyListColumns: readonly ColumnDef<OntologySummary>[] = [
   { key: "prefix", label: "Prefix" },
   { key: "namespace", label: "Namespace" },
+  { key: "version", label: "Version" },
   { key: "classCount", label: "Classes" },
-  { key: "propertyCount", label: "Properties" },
-  { key: "anatomyCount", label: "Anatomies" },
+  { key: "relationCount", label: "Relations" },
+  { key: "attributeCount", label: "Attributes" },
+  { key: "shapeCount", label: "Shapes" },
 ];
 
 /** The `ontology list` / `ontology_list` read story. */
@@ -67,13 +72,13 @@ export const ontologyListStory: ReadStory<
 };
 
 /** The `ontology show <prefix>` / `ontology_show` read story. */
-export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyDetailed> =
+export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyShowInput> =
   {
     noun: "ontology",
     verb: "show",
     description: "Show ontology schema details",
     toolDescription:
-      "Show detailed schema for an ontology including classes and properties.",
+      "Show the TBox for a namespace: class hierarchy with instance counts and relations, plus metadata and constraints.",
     params: [
       {
         name: "prefix",
@@ -86,13 +91,53 @@ export const ontologyShowStory: ReadStory<OntologyDetailed, OntologyDetailed> =
           const all = await listOntologies(ctx.store);
           return all
             .map((o) => o.prefix)
-            .filter((p) => p.toLowerCase().startsWith(partial.toLowerCase()));
+            .filter(
+              (p) =>
+                p.length > 0 &&
+                p.toLowerCase().startsWith(partial.toLowerCase()),
+            );
         },
       },
+      {
+        name: "class",
+        type: "string",
+        description:
+          "Deep-dive into one class (label, local name, or compact IRI)",
+        toolDescription:
+          "Class to deep-dive into: super chain, direct + inherited properties, reverse references, sample instances, and follow-up queries",
+        complete: async (partial, cmdCtx) => {
+          const ctx = requirePragmaContext(cmdCtx);
+          return completeClassNames(ctx.store, partial);
+        },
+      },
+      {
+        name: "properties",
+        type: "boolean",
+        description:
+          "Include datatype properties (attributes); default shows relations only",
+      },
+      {
+        name: "fullUris",
+        type: "boolean",
+        description: "Show full URIs instead of compact prefixed IRIs",
+      },
     ],
-    examples: ["pragma ontology show ds", "pragma ontology show cs --llm"],
-    resolve: (rt, params) => showOntology(rt.store, params.prefix as string),
-    toOutput: (ontology) => ontology,
+    examples: [
+      "pragma ontology show ds",
+      "pragma ontology show ds --properties",
+      "pragma ontology show ds --full-uris --format json",
+      "pragma ontology show ds --class Component",
+    ],
+    resolve: (rt, params) =>
+      showOntology(rt.store, params.prefix as string, {
+        class: params.class as string | undefined,
+      }),
+    // --full-uris is applied here, once, so every projection (plain, llm,
+    // json, MCP condensed) inherits the same encoding from the same place.
+    toOutput: (ontology, params) => ({
+      ontology: params.fullUris ? expandOntologyIris(ontology) : ontology,
+      showProperties: Boolean(params.properties),
+    }),
     formatters: showFormatters,
     toEnvelope: (ontology) => ({ data: ontology }),
     guardParams: (params) =>

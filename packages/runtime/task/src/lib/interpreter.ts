@@ -124,6 +124,29 @@ export const executeEffect = async (
     }
 
     case "DeleteDirectory": {
+      if (effect.onlyIfEmpty) {
+        try {
+          await fs.rmdir(effect.path);
+        } catch (error) {
+          // Missing (ENOENT), non-empty (ENOTEMPTY, or EEXIST/EBUSY on some
+          // platforms) directories are left alone: this variant only cleans
+          // up directories the task itself emptied.
+          if (
+            !(
+              error &&
+              typeof error === "object" &&
+              "code" in error &&
+              (error.code === "ENOENT" ||
+                error.code === "ENOTEMPTY" ||
+                error.code === "EEXIST" ||
+                error.code === "EBUSY")
+            )
+          ) {
+            throw error;
+          }
+        }
+        return undefined;
+      }
       await fs.rm(effect.path, { recursive: true, force: true });
       return undefined;
     }

@@ -2,11 +2,20 @@ import type { Store } from "@canonical/ke";
 import { buildQuery } from "../../shared/buildQuery.js";
 import extractLocalName from "../../shared/extractLocalName.js";
 import { P } from "../../shared/prefixes.js";
-import type { OntologyProperty } from "../../shared/types/index.js";
+
+/** A property row as stored — full URIs. */
+export interface RawOntologyProperty {
+  readonly uri: string;
+  readonly label: string;
+  readonly kind: "object" | "datatype";
+  readonly domain?: string;
+  readonly range?: string;
+  readonly functional: boolean;
+}
 
 /**
  * Queries all `owl:ObjectProperty` and `owl:DatatypeProperty` definitions
- * within a namespace.
+ * within a namespace, marking those also typed `owl:FunctionalProperty`.
  *
  * Deduplicates by property URI -- when a property has multiple `rdfs:domain`
  * or `rdfs:range` values, only the first encountered is kept.
@@ -15,12 +24,12 @@ import type { OntologyProperty } from "../../shared/types/index.js";
  *
  * @param store - The ke store to query.
  * @param namespace - The namespace URI to filter properties by.
- * @returns An array of {@link OntologyProperty} entries.
+ * @returns An array of {@link RawOntologyProperty} entries.
  */
 export default async function queryProperties(
   store: Store,
   namespace: string,
-): Promise<OntologyProperty[]> {
+): Promise<RawOntologyProperty[]> {
   const result = await store.query(
     buildQuery(`
       SELECT ?prop ?label ?domain ?range ?propType
@@ -38,7 +47,9 @@ export default async function queryProperties(
 
   if (result.type !== "select") return [];
 
-  const seen = new Map<string, OntologyProperty>();
+  const functional = await queryFunctionalProperties(store, namespace);
+
+  const seen = new Map<string, RawOntologyProperty>();
   for (const b of result.bindings) {
     const uri = b.prop ?? "";
     if (seen.has(uri)) continue;
@@ -47,11 +58,33 @@ export default async function queryProperties(
       label: b.label ?? extractLocalName(uri),
       ...(b.domain ? { domain: b.domain } : {}),
       ...(b.range ? { range: b.range } : {}),
-      type: b.propType?.includes("ObjectProperty")
+      kind: b.propType?.includes("ObjectProperty")
         ? ("object" as const)
         : ("datatype" as const),
+      functional: functional.has(uri),
     });
   }
 
   return [...seen.values()];
+}
+
+/** URIs within the namespace typed `owl:FunctionalProperty`. */
+async function queryFunctionalProperties(
+  store: Store,
+  namespace: string,
+): Promise<Set<string>> {
+  const result = await store.query(
+    buildQuery(`
+      SELECT ?prop
+      WHERE {
+        ?prop a ${P.owl}FunctionalProperty .
+        FILTER(STRSTARTS(STR(?prop), "${namespace}"))
+      }
+    `),
+  );
+
+  if (result.type !== "select") return new Set();
+  return new Set(
+    result.bindings.map((b) => b.prop).filter((p): p is string => Boolean(p)),
+  );
 }

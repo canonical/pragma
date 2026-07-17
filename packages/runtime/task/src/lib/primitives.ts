@@ -106,15 +106,20 @@ export const deleteFile = (path: string, opts?: UndoOptions): Task<void> =>
   effect(deleteFileEffect(path, opts));
 
 /**
- * Delete a directory recursively.
+ * Delete a directory recursively — or non-recursively, skipping missing and
+ * non-empty directories, when `{ onlyIfEmpty: true }` is passed.
  * No default undo — provide `{ undo: yourTask }` to make it undoable.
  */
-export const deleteDirectory = (path: string, opts?: UndoOptions): Task<void> =>
-  effect(deleteDirectoryEffect(path, opts));
+export const deleteDirectory = (
+  path: string,
+  opts?: UndoOptions & { onlyIfEmpty?: boolean },
+): Task<void> => effect(deleteDirectoryEffect(path, opts));
 
 /**
  * Create a directory (recursively by default).
- * Default undo: delete the directory.
+ * Default undo: delete the directory only if it is empty at undo time —
+ * a directory that existed before the forward run (or that gained files
+ * the task did not create) is never removed.
  */
 export const mkdir = (
   path: string,

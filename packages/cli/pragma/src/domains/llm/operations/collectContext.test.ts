@@ -2,6 +2,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { FilterConfig } from "../../shared/types/index.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
 import { renderLlmOrientation } from "../formatters/index.js";
 import type { LlmData } from "../types.js";
 import collectContext from "./collectContext.js";
@@ -50,10 +51,14 @@ describe("collectContext", () => {
       commandReference: [],
     };
 
-    expect(contextBlock(renderLlmOrientation(data))).toMatchInlineSnapshot(`
-      "tier: (none) | channel: prerelease
-      data: 5 blocks, 3 standards, 2 modifier families, 2 tokens
-      namespaces: cs, ds"
-    `);
+    // The token count only renders while the token read surface is enabled.
+    const tokenSegment = TOKEN_READ_SURFACE_ENABLED ? ", 2 tokens" : "";
+    expect(contextBlock(renderLlmOrientation(data))).toBe(
+      [
+        "tier: (none) | channel: prerelease",
+        `data: 5 blocks, 3 standards, 2 modifier families${tokenSegment}`,
+        "namespaces: cs, ds",
+      ].join("\n"),
+    );
   });
 });

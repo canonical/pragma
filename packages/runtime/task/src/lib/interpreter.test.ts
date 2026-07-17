@@ -1064,6 +1064,81 @@ describe("Interpreter - executeEffect for DeleteDirectory", () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
+
+  it("with onlyIfEmpty removes an empty directory", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-deldir-"));
+
+    try {
+      const dir = join(tempDir, "empty");
+      mkdirSync(dir);
+
+      await executeEffect(
+        { _tag: "DeleteDirectory", path: dir, onlyIfEmpty: true },
+        new Map(),
+      );
+
+      expect(existsSync(dir)).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("with onlyIfEmpty leaves a non-empty directory intact", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-deldir-"));
+
+    try {
+      const dir = join(tempDir, "occupied");
+      mkdirSync(dir);
+      writeFileSync(join(dir, "keep.txt"), "x", "utf8");
+
+      await executeEffect(
+        { _tag: "DeleteDirectory", path: dir, onlyIfEmpty: true },
+        new Map(),
+      );
+
+      expect(existsSync(join(dir, "keep.txt"))).toBe(true);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("with onlyIfEmpty ignores a missing directory", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-deldir-"));
+
+    try {
+      await expect(
+        executeEffect(
+          {
+            _tag: "DeleteDirectory",
+            path: join(tempDir, "absent"),
+            onlyIfEmpty: true,
+          },
+          new Map(),
+        ),
+      ).resolves.toBeUndefined();
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("with onlyIfEmpty rethrows unexpected errors", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-deldir-"));
+
+    try {
+      // rmdir on a regular file fails with ENOTDIR, which must propagate.
+      const file = join(tempDir, "not-a-dir.txt");
+      writeFileSync(file, "x", "utf8");
+
+      await expect(
+        executeEffect(
+          { _tag: "DeleteDirectory", path: file, onlyIfEmpty: true },
+          new Map(),
+        ),
+      ).rejects.toThrow();
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
 });
 
 // =============================================================================

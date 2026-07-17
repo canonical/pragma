@@ -22,7 +22,7 @@ See [docs/getting-started.md](docs/getting-started.md) for a full walkthrough.
 
 ## CLI Commands
 
-pragma organizes commands into 17 domains — counting every directory under `src/domains/` except `shared/`, which holds cross-domain infrastructure rather than commands. The 14 day-to-day domains are documented below; the remaining three are specialised: `graphql` (compile TTL ontologies into GraphQL schema artifacts), `refs` (`pragma update-refs`, package reference data), and `trace` (query access tracing). Every command supports three output modes: plain text (default), `--llm` (condensed Markdown), and `--format json` (structured JSON).
+pragma organizes commands into 17 domains — counting every directory under `src/domains/` except `shared/`, which holds cross-domain infrastructure rather than commands. The day-to-day domains are documented below; two are specialised and not covered here: `graphql` (compile TTL ontologies into GraphQL schema artifacts) and `trace` (query access tracing). Every command supports three output modes: plain text (default), `--llm` (condensed Markdown), and `--format json` (structured JSON).
 
 ### Block
 
@@ -36,7 +36,7 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | Command | Description |
 |---------|-------------|
 | `pragma standard list` | List all code standards |
-| `pragma standard lookup <name>` | Show standard with do/don't examples |
+| `pragma standard lookup <name>` | Show standard details (`--detailed` adds do/don't examples) |
 | `pragma standard categories` | List standard categories with counts |
 
 ### Modifier
@@ -46,13 +46,17 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | `pragma modifier list` | List all modifier families |
 | `pragma modifier lookup <name>` | Show modifier family with values |
 
-### Token
+### Tokens
 
 | Command | Description |
 |---------|-------------|
-| `pragma token list` | List all design tokens |
-| `pragma token lookup <name>` | Show token with theme values |
-| `pragma token add-config` | Add Terrazzo config for token build |
+| `pragma tokens add-config` | Add Terrazzo config for token build |
+
+> **Note:** The token *read* commands (`token list`, `token lookup`, `token sample`)
+> are currently disabled behind a feature flag
+> (`src/domains/token/featureFlag.ts`) because the published design-system
+> data does not yet contain token instances. They will return once token
+> data ships.
 
 ### Tier
 
@@ -65,7 +69,10 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 | Command | Description |
 |---------|-------------|
 | `pragma ontology list` | List loaded ontology namespaces |
-| `pragma ontology show <prefix>` | Show classes and properties for a namespace |
+| `pragma ontology show <prefix>` | Show the TBox: name, metadata, class hierarchy tree with instance counts and relations |
+| `pragma ontology show <prefix> --properties` | Also show datatype properties (attributes) |
+| `pragma ontology show <prefix> --full-uris` | Show full URIs instead of compact prefixed IRIs |
+| `pragma ontology show <prefix> --class <Class>` | Deep-dive into one class: super chain, direct/inherited properties, reverse references, sample instances, and ready-to-run follow-up queries |
 
 ### Graph
 
@@ -97,15 +104,16 @@ pragma organizes commands into 17 domains — counting every directory under `sr
 
 ### Setup
 
-All setup commands support `--dry-run`, `--yes`, and `--undo`.
+All setup commands support `--dry-run`; `--yes` and `--undo` are supported
+where shown below.
 
 | Command | Description |
 |---------|-------------|
-| `pragma setup all` | Run all setup steps (MCP + completions + skills) |
-| `pragma setup mcp` | Configure pragma MCP server for AI harnesses |
-| `pragma setup completions` | Install shell completions (bash/zsh/fish) |
-| `pragma setup skills` | Symlink agent skills into harness config |
-| `pragma setup lsp` | Configure LSP integration |
+| `pragma setup` | Run all setup steps (completions + LSP + MCP); supports `--yes`, `--undo` |
+| `pragma setup mcp` | Configure pragma MCP server for AI harnesses; supports `--yes`, `--undo` |
+| `pragma setup completions` | Install shell completions (bash/zsh/fish); supports `--undo` |
+| `pragma setup skills` | Symlink agent skills into harness config; supports `--yes` |
+| `pragma setup lsp` | Install the Terrazzo LSP VS Code extension; supports `--undo` |
 
 ### Create
 
@@ -113,8 +121,9 @@ Create commands scaffold new code using summon generators. They support `--undo`
 
 | Command | Description |
 |---------|-------------|
-| `pragma create component <name>` | Scaffold a new design system component |
-| `pragma create package <name>` | Scaffold a new monorepo package |
+| `pragma create component <framework> [path]` | Scaffold a new design system component |
+| `pragma create package` | Scaffold a new monorepo package (`--name`, `--type`, …) |
+| `pragma create application [path]` | Scaffold a complete React application with SSR and routing |
 
 ### Doctor
 
@@ -126,8 +135,19 @@ Create commands scaffold new code using summon generators. They support `--undo`
 
 | Command | Description |
 |---------|-------------|
-| `pragma info` | Show pragma version, store summary, installed packages |
-| `pragma info upgrade` | Check for newer pragma versions on the registry |
+| `pragma info` | Show pragma version, config, update status, and store summary |
+
+### Upgrade
+
+| Command | Description |
+|---------|-------------|
+| `pragma upgrade` | Upgrade the pragma CLI to the latest version (`--dry-run` to check only) |
+
+### Refs
+
+| Command | Description |
+|---------|-------------|
+| `pragma update-refs` | Fetch or clone git-referenced semantic packages into the local cache (needed before `skill list` can discover skills) |
 
 ## Global Flags
 
@@ -144,7 +164,7 @@ Setup and create commands support `--undo` to reverse previous operations. The u
 ```bash
 pragma setup mcp --undo             # Remove MCP configuration
 pragma setup completions --undo     # Remove shell completions
-pragma create component Foo --undo  # Remove scaffolded component files
+pragma create component react src/lib/Foo --undo  # Remove scaffolded component files
 ```
 
 ## MCP Integration
@@ -174,27 +194,27 @@ Or add manually to your `.mcp.json`:
 }
 ```
 
-### MCP Tools (30)
+### MCP Tools (28)
 
 All tools return a consistent envelope: `{ ok: true, data, meta }` for success, `{ ok: true, condensed: true, text, tokens }` for condensed mode, or `{ ok: false, error }` with structured recovery on failure.
 
-#### Read Tools (21)
+#### Read Tools (18)
+
+Lookup tools accept a `names` array, so several entities can be fetched in
+one call (partial results are returned alongside per-name errors).
 
 | Tool | Description |
 |------|-------------|
 | `block_list` | List blocks with optional tier filtering and disclosure levels |
 | `block_lookup` | Look up detailed block info (anatomy, modifiers, tokens, standards) |
-| `block_batch_lookup` | Look up multiple blocks by name in a single call |
+| `block_sample` | Return random complete block instances for shape discovery |
 | `standard_list` | List code standards with optional category/search filtering |
 | `standard_lookup` | Look up standard with do/don't code examples |
-| `standard_batch_lookup` | Look up multiple standards by name in a single call |
 | `standard_categories` | List standard categories with counts |
+| `standard_sample` | Return random complete standard instances for shape discovery |
 | `modifier_list` | List modifier families |
 | `modifier_lookup` | Look up modifier family with values |
-| `modifier_batch_lookup` | Look up multiple modifier families by name in a single call |
-| `token_list` | List design tokens with optional category filtering |
-| `token_lookup` | Look up token with theme-resolved values |
-| `token_batch_lookup` | Look up multiple tokens by name in a single call |
+| `modifier_sample` | Return random complete modifier instances for shape discovery |
 | `tier_list` | List all tiers in the hierarchy |
 | `config_show` | Show current tier and channel configuration |
 | `ontology_list` | List loaded ontology namespaces with class/property counts |
@@ -204,7 +224,10 @@ All tools return a consistent envelope: `{ ok: true, data, meta }` for success, 
 | `skill_list` | List discovered agent skills |
 | `skill_lookup` | Get full SKILL.md content for skills by name |
 
-#### Write Tools (5)
+`token_list`, `token_lookup`, and `token_sample` are feature-flagged off
+until token data ships (see the Tokens note above).
+
+#### Write Tools (6)
 
 | Tool | Description |
 |------|-------------|
@@ -213,6 +236,7 @@ All tools return a consistent envelope: `{ ok: true, data, meta }` for success, 
 | `tokens_add_config` | Add Terrazzo token build configuration |
 | `create_component` | Scaffold a new design system component |
 | `create_package` | Scaffold a new monorepo package |
+| `create_application` | Scaffold a complete React application |
 
 #### Orientation Tools (2)
 
@@ -282,12 +306,12 @@ Error responses include a `recovery` object that tells agents what tool to call 
 
 ### Batch Results
 
-List tools that accept a `names` filter return partial results — valid items in `results`, failures in `errors`:
+Lookup tools accept a `names` array and return partial results — valid items in `results`, failures in `errors`:
 
 ```json
 {
   "results": [{ "name": "Button", ... }],
-  "errors": [{ "name": "Buton", "code": "ENTITY_NOT_FOUND", "message": "..." }]
+  "errors": [{ "query": "Buton", "code": "ENTITY_NOT_FOUND", "message": "...", "suggestions": ["Button"] }]
 }
 ```
 
@@ -358,16 +382,21 @@ format is experimental and may change.
 
 ## Error Handling
 
-Errors follow a three-part structure: message, context (suggestions or valid options), and recovery hint.
+Lookup errors report each failed name with typo suggestions:
 
 ```
-Error: block "Buton" not found.
+**Errors:**
+- Buton: block "Buton" not found.
+  Did you mean: Button?
+```
 
-Did you mean?
-  - Button
-  - ButtonGroup
+Other errors carry a code and, where available, a recovery hint:
 
-Run `pragma block list`
+```
+## Error: EMPTY_RESULTS
+No standards found.
+Filters: category=nope
+Recovery: `pragma standard list`
 ```
 
 With `--format json`, errors are returned as structured JSON with error code, suggestions, and recovery. With `--llm`, errors are rendered as Markdown.

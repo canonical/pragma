@@ -1,5 +1,7 @@
 /** Tool catalog with behavioral hints for agent orientation. */
 
+import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
+
 export interface ToolEntry {
   readonly name: string;
   readonly category: "read" | "write" | "orientation" | "diagnostic";
@@ -49,18 +51,22 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when:
       "Need values and usage details for specific modifier families by name",
   },
-  {
-    name: "token_list",
-    category: "read",
-    use_when:
-      "Browsing design tokens, optionally filtered by category (color, spacing, etc.)",
-  },
-  {
-    name: "token_lookup",
-    category: "read",
-    use_when:
-      "Need theme values and resolution details for specific tokens by name or IRI",
-  },
+  ...(TOKEN_READ_SURFACE_ENABLED
+    ? ([
+        {
+          name: "token_list",
+          category: "read",
+          use_when:
+            "Browsing design tokens, optionally filtered by category (color, spacing, etc.)",
+        },
+        {
+          name: "token_lookup",
+          category: "read",
+          use_when:
+            "Need theme values and resolution details for specific tokens by name or IRI",
+        },
+      ] as const)
+    : []),
   {
     name: "tier_list",
     category: "read",
@@ -118,12 +124,16 @@ export const TOOL_CATALOG: readonly ToolEntry[] = [
     use_when:
       "See actual standard data shapes (with dos/donts) before querying — returns random instances each call",
   },
-  {
-    name: "token_sample",
-    category: "read",
-    use_when:
-      "See actual token data shapes (with theme values) before querying — returns random instances each call",
-  },
+  ...(TOKEN_READ_SURFACE_ENABLED
+    ? ([
+        {
+          name: "token_sample",
+          category: "read",
+          use_when:
+            "See actual token data shapes (with theme values) before querying — returns random instances each call",
+        },
+      ] as const)
+    : []),
   {
     name: "modifier_sample",
     category: "read",

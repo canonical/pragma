@@ -7,6 +7,7 @@ import {
   nounVerbFromPath,
   nounVerbFromToolName,
 } from "../domains/shared/stories/pack/index.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../domains/token/featureFlag.js";
 import { allSpecs } from "../mcp/tools/index.js";
 import createTestRuntime from "../testing/helpers/createTestRuntime.js";
 import collectCommands, { builtInCommands } from "./collectCommands.js";
@@ -73,10 +74,9 @@ describe("collectCommands", () => {
       "modifier list",
       "modifier lookup",
       "modifier sample",
-      "token list",
-      "token lookup",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token list", "token lookup"] : []),
       "tokens add-config",
-      "token sample",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token sample"] : []),
       "block list",
       "block lookup",
       "block sample",
@@ -166,8 +166,11 @@ describe("cross-surface reserved-verb parity", () => {
     // something (a silently empty set would make the test vacuous). `tier`
     // and `standard` are no longer here — both were cut over to bundled
     // packs, so they are correctly absent from the built-in reserved
-    // surface on both sides.
-    for (const noun of ["block", "modifier", "token"]) {
+    // surface on both sides. The token noun only owns read verbs while its
+    // feature flag is on.
+    const expectedReadNouns = ["block", "modifier"];
+    if (TOKEN_READ_SURFACE_ENABLED) expectedReadNouns.push("token");
+    for (const noun of expectedReadNouns) {
       expect(readNouns.has(noun)).toBe(true);
     }
     expect(readNouns.has("standard")).toBe(false);

@@ -3,6 +3,7 @@ import type { Store } from "@canonical/ke";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestStore, DS_ALL_TTL } from "#testing";
 import type { PragmaContext } from "../shared/context.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../token/featureFlag.js";
 import { buildLlmCommand } from "./commands/index.js";
 import type { LlmData } from "./types.js";
 
@@ -72,14 +73,21 @@ describe("buildLlmCommand", () => {
     expect(value.context.namespaces.length).toBeGreaterThan(0);
   });
 
-  it("includes all 5 decision trees", async () => {
+  it("includes all decision trees", async () => {
     const ctx = makeCtx();
     const cmd = buildLlmCommand(ctx);
     const { value, text } = await executeOutput(cmd, ctx);
-    expect(value.decisionTrees).toHaveLength(5);
+    // "Find a token" is gated behind the token read-surface feature flag.
+    expect(value.decisionTrees).toHaveLength(
+      TOKEN_READ_SURFACE_ENABLED ? 5 : 4,
+    );
     expect(text).toContain("Build a block");
     expect(text).toContain("Audit standards");
-    expect(text).toContain("Find a token");
+    if (TOKEN_READ_SURFACE_ENABLED) {
+      expect(text).toContain("Find a token");
+    } else {
+      expect(text).not.toContain("Find a token");
+    }
     expect(text).toContain("Explore the design system");
     expect(text).toContain("Configure");
   });

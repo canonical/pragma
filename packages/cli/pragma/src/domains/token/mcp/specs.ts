@@ -9,6 +9,7 @@ import { writeFileSync } from "node:fs";
 import { PragmaError } from "#error";
 import { lookupToolMeta } from "../../shared/lookupMany.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../featureFlag.js";
 import {
   createLookupFormatters as createTokenLookupFmt,
   listFormatters as tokenListFmt,
@@ -20,7 +21,7 @@ import {
   resolveTokenLookup,
 } from "../orchestration/index.js";
 
-const specs: readonly ToolSpec[] = [
+const allSpecs: readonly ToolSpec[] = [
   {
     name: "token_list",
     description:
@@ -191,5 +192,16 @@ const specs: readonly ToolSpec[] = [
     },
   },
 ] as const;
+
+/** Token read tools gated by {@link TOKEN_READ_SURFACE_ENABLED}. */
+const TOKEN_READ_TOOLS = new Set([
+  "token_list",
+  "token_lookup",
+  "token_sample",
+]);
+
+const specs: readonly ToolSpec[] = TOKEN_READ_SURFACE_ENABLED
+  ? allSpecs
+  : allSpecs.filter((spec) => !TOKEN_READ_TOOLS.has(spec.name));
 
 export default specs;

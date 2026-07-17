@@ -228,6 +228,20 @@ cs:code a owl:DatatypeProperty ;
 cs:extends a owl:ObjectProperty ;
   rdfs:domain cs:CodeStandard ;
   rdfs:range cs:CodeStandard .
+
+# ---- TBox extras (header, comments, functional typing, SHACL) ----
+
+ds:ontology a owl:Ontology ;
+  rdfs:label "Design System Ontology" ;
+  owl:versionInfo "0.1.0-test" .
+
+ds:Component rdfs:comment "A reusable UI building block." .
+
+ds:tier a owl:FunctionalProperty .
+
+ds:ComponentShape a <http://www.w3.org/ns/shacl#NodeShape> ;
+  <http://www.w3.org/ns/shacl#targetClass> ds:Component ;
+  <http://www.w3.org/ns/shacl#property> ds:shapeName, ds:shapeTier .
 `;
 
 // =============================================================================

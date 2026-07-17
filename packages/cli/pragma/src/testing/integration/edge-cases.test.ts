@@ -10,6 +10,7 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import createTestMcpClient from "../helpers/createTestMcpClient.js";
 import createTestRuntime from "../helpers/createTestRuntime.js";
 
@@ -122,21 +123,24 @@ describe("all-fail batch lookups", () => {
     expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 
-  it("token_lookup: unknown token → error", async () => {
-    const res = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.nonexistent"] },
-    });
-    const body = parseEnvelope(res);
-    expect(body.ok).toBe(true);
-    const data = body.data as {
-      results: unknown[];
-      errors: { query: string; code: string }[];
-    };
-    expect(data.results).toHaveLength(0);
-    expect(data.errors).toHaveLength(1);
-    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
-  });
+  it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+    "token_lookup: unknown token → error",
+    async () => {
+      const res = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.nonexistent"] },
+      });
+      const body = parseEnvelope(res);
+      expect(body.ok).toBe(true);
+      const data = body.data as {
+        results: unknown[];
+        errors: { query: string; code: string }[];
+      };
+      expect(data.results).toHaveLength(0);
+      expect(data.errors).toHaveLength(1);
+      expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -158,21 +162,24 @@ describe("empty result sets", () => {
     expect((body.meta as { count: number }).count).toBe(0);
   });
 
-  it("token_list with nonexistent category → empty or error", async () => {
-    const res = await client.callTool({
-      name: "token_list",
-      arguments: { category: "NonexistentType" },
-    });
-    const body = parseEnvelope(res);
-    if (body.ok) {
-      const data = body.data as unknown[];
-      expect(data).toHaveLength(0);
-    } else {
-      // Token list may throw on empty results
-      const error = body.error as { code: string };
-      expect(error.code).toBeDefined();
-    }
-  });
+  it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+    "token_list with nonexistent category → empty or error",
+    async () => {
+      const res = await client.callTool({
+        name: "token_list",
+        arguments: { category: "NonexistentType" },
+      });
+      const body = parseEnvelope(res);
+      if (body.ok) {
+        const data = body.data as unknown[];
+        expect(data).toHaveLength(0);
+      } else {
+        // Token list may throw on empty results
+        const error = body.error as { code: string };
+        expect(error.code).toBeDefined();
+      }
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -247,19 +254,22 @@ describe("condensed mode error rendering", () => {
     expect(text).toContain("nonexistent");
   });
 
-  it("token_lookup condensed: includes error for unknown token", async () => {
-    const res = await client.callTool({
-      name: "token_lookup",
-      arguments: {
-        names: ["color.primary", "color.nonexistent"],
-        condensed: true,
-      },
-    });
-    const body = parseEnvelope(res);
-    expect(body.condensed).toBe(true);
-    const text = body.text as string;
-    expect(text).toContain("color.primary");
-    expect(text).toContain("Errors");
-    expect(text).toContain("color.nonexistent");
-  });
+  it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+    "token_lookup condensed: includes error for unknown token",
+    async () => {
+      const res = await client.callTool({
+        name: "token_lookup",
+        arguments: {
+          names: ["color.primary", "color.nonexistent"],
+          condensed: true,
+        },
+      });
+      const body = parseEnvelope(res);
+      expect(body.condensed).toBe(true);
+      const text = body.text as string;
+      expect(text).toContain("color.primary");
+      expect(text).toContain("Errors");
+      expect(text).toContain("color.nonexistent");
+    },
+  );
 });

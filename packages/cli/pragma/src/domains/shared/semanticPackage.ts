@@ -94,15 +94,22 @@ export interface PackageLoader {
  * returns a result wins — subsequent loaders are skipped for that ref.
  * Refs that no loader can resolve are silently dropped.
  *
+ * A package instance that resolves for more than one ref (the bundled
+ * loader returns one cached aggregate for every ref it serves) is
+ * included only once: loading the same graphs repeatedly re-mints their
+ * blank nodes on each parse, duplicating blank-node subgraphs (e.g.
+ * standard do/don't examples) in the store.
+ *
  * @param refs - Parsed package references from config merge.
  * @param loaders - Loaders in precedence order (local > git > bundled).
- * @returns Array of resolved semantic packages.
+ * @returns Array of resolved semantic packages, deduplicated by identity.
  */
 export async function resolveSemanticPackages(
   refs: ReadonlyArray<PackageRef>,
   loaders: ReadonlyArray<PackageLoader>,
 ): Promise<SemanticPackage[]> {
   const packages: SemanticPackage[] = [];
+  const seen = new Set<SemanticPackage>();
 
   for (const ref of refs) {
     let resolved: SemanticPackage | undefined;
@@ -110,7 +117,8 @@ export async function resolveSemanticPackages(
       resolved = await loader.resolve(ref);
       if (resolved) break;
     }
-    if (resolved) {
+    if (resolved && !seen.has(resolved)) {
+      seen.add(resolved);
       packages.push(resolved);
     }
   }

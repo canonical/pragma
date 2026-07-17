@@ -52,8 +52,10 @@ describe("ontology list command", () => {
     const { text } = await executeOutput(cmd, {}, ctx);
 
     expect(text).toContain("ds");
-    expect(text).toContain("classes:");
-    expect(text).toContain("anatomy:");
+    expect(text).toContain("classes");
+    expect(text).toContain("relations");
+    expect(text).toContain("attributes");
+    expect(text).toContain("Next: pragma ontology show <prefix>");
   });
 
   it("renders llm output", async () => {
@@ -65,7 +67,7 @@ describe("ontology list command", () => {
 
     expect(text).toContain("## Ontologies");
     expect(text).toContain("**ds:**");
-    expect(text).toContain("anatomy:");
+    expect(text).toContain("relations");
   });
 
   it("renders json output", async () => {

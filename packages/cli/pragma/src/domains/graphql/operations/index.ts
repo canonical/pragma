@@ -10,3 +10,8 @@ export type {
   SchemaServer,
 } from "./createSchemaServer.js";
 export { default as createSchemaServer } from "./createSchemaServer.js";
+export type { SchemaArtifactResult } from "./ensureSchemaArtifact.js";
+export {
+  default as ensureSchemaArtifact,
+  resolveSchemaArtifactPath,
+} from "./ensureSchemaArtifact.js";

@@ -26,8 +26,12 @@ export type {
 } from "./modifier.js";
 export type {
   OntologyClass,
+  OntologyClassFocus,
+  OntologyConstraint,
   OntologyDetailed,
+  OntologyMeta,
   OntologyProperty,
+  OntologyQueryHint,
   OntologySummary,
 } from "./ontology.js";
 export type { PragmaRuntime } from "./runtime.js";

@@ -15,7 +15,12 @@ import {
   RECIPE_STORY,
   RECIPE_TTL,
 } from "#testing";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import type { McpErrorPayload } from "../types.js";
+
+// token_list, token_lookup, and token_sample are gated behind the token
+// read-surface feature flag.
+const EXPECTED_TOOL_COUNT = TOKEN_READ_SURFACE_ENABLED ? 34 : 31;
 
 let client: Client;
 let cleanup: () => Promise<void>;
@@ -57,9 +62,9 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 34 tools", async () => {
+  it("registers the expected number of tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(34);
+    expect(tools).toHaveLength(EXPECTED_TOOL_COUNT);
   });
 
   it("all tools have descriptions", async () => {
@@ -80,8 +85,10 @@ describe("tool listing", () => {
     expect(names).toContain("standard_categories");
     expect(names).toContain("modifier_list");
     expect(names).toContain("modifier_lookup");
-    expect(names).toContain("token_list");
-    expect(names).toContain("token_lookup");
+    if (TOKEN_READ_SURFACE_ENABLED) {
+      expect(names).toContain("token_list");
+      expect(names).toContain("token_lookup");
+    }
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
@@ -102,7 +109,9 @@ describe("tool listing", () => {
     // Sample tools
     expect(names).toContain("block_sample");
     expect(names).toContain("standard_sample");
-    expect(names).toContain("token_sample");
+    if (TOKEN_READ_SURFACE_ENABLED) {
+      expect(names).toContain("token_sample");
+    }
     expect(names).toContain("modifier_sample");
   });
 
@@ -127,10 +136,9 @@ describe("tool listing", () => {
       "modifier_list",
       "modifier_lookup",
       "modifier_sample",
-      "token_list",
-      "token_lookup",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_list", "token_lookup"] : []),
       "tokens_add_config",
-      "token_sample",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_sample"] : []),
       "config_show",
       "config_tier",
       "config_channel",
@@ -481,7 +489,7 @@ describe("modifier_lookup", () => {
 // Token tools
 // =============================================================================
 
-describe("token_list", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
   it("returns tokens", async () => {
     const result = await client.callTool({
       name: "token_list",
@@ -492,7 +500,7 @@ describe("token_list", () => {
   });
 });
 
-describe("token_lookup", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
   it("returns token with theme values", async () => {
     const result = await client.callTool({
       name: "token_lookup",
@@ -847,7 +855,7 @@ describe("llm", () => {
     expect(data.context.counts.blocks).toBeGreaterThan(0);
     expect(data.context.counts.standards).toBeGreaterThan(0);
     expect(data.context.namespaces.length).toBeGreaterThan(0);
-    expect(data.decisionTrees).toHaveLength(5);
+    expect(data.decisionTrees).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 5 : 4);
     expect(data.commandReference.length).toBeGreaterThan(0);
   });
 });
@@ -861,7 +869,9 @@ describe("error handling", () => {
     const notFoundCalls = [
       { name: "block_lookup", arguments: { names: ["X"] } },
       { name: "modifier_lookup", arguments: { names: ["X"] } },
-      { name: "token_lookup", arguments: { names: ["X"] } },
+      ...(TOKEN_READ_SURFACE_ENABLED
+        ? [{ name: "token_lookup", arguments: { names: ["X"] } }]
+        : []),
       { name: "standard_lookup", arguments: { names: ["X"] } },
     ] as const;
 
@@ -935,7 +945,7 @@ describe("ontology_show", () => {
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);
     expect(envelope.condensed).toBe(true);
-    expect(envelope.text).toEqual(expect.stringContaining("## ds:"));
+    expect(envelope.text).toEqual(expect.stringContaining("## Ontology ds:"));
   });
 });
 
@@ -1058,7 +1068,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(36);
+      expect(tools).toHaveLength(EXPECTED_TOOL_COUNT + 2);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 
@@ -1168,7 +1178,7 @@ describe("capabilities", () => {
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
     expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(34);
+    expect(data.counts.total).toBe(EXPECTED_TOOL_COUNT);
     expect(data.counts.read).toBeGreaterThan(0);
     expect(data.counts.write).toBe(9);
     expect(data.counts.orientation).toBe(2);
@@ -1251,14 +1261,17 @@ describe("condensed parameter", () => {
     expect((envelope.text as string).length).toBeGreaterThan(0);
   });
 
-  it("token_lookup returns condensed text", async () => {
-    const result = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.primary"], condensed: true },
-    });
-    const envelope = parseEnvelope(result);
-    expect(envelope.ok).toBe(true);
-    expect(envelope.condensed).toBe(true);
-    expect(typeof envelope.text).toBe("string");
-  });
+  it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+    "token_lookup returns condensed text",
+    async () => {
+      const result = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.primary"], condensed: true },
+      });
+      const envelope = parseEnvelope(result);
+      expect(envelope.ok).toBe(true);
+      expect(envelope.condensed).toBe(true);
+      expect(typeof envelope.text).toBe("string");
+    },
+  );
 });

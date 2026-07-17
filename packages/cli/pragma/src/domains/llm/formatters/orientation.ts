@@ -1,3 +1,4 @@
+import { TOKEN_READ_SURFACE_ENABLED } from "../../token/featureFlag.js";
 import type { LlmData } from "../types.js";
 
 /**
@@ -22,8 +23,11 @@ export default function renderLlmOrientation(data: LlmData): string {
   lines.push("");
   lines.push("## Context");
   lines.push(`tier: ${tierDisplay} | channel: ${ctx.channel}`);
+  const tokenCount = TOKEN_READ_SURFACE_ENABLED
+    ? `, ${ctx.counts.tokens} tokens`
+    : "";
   lines.push(
-    `data: ${ctx.counts.blocks} blocks, ${ctx.counts.standards} standards, ${ctx.counts.modifierFamilies} modifier families, ${ctx.counts.tokens} tokens`,
+    `data: ${ctx.counts.blocks} blocks, ${ctx.counts.standards} standards, ${ctx.counts.modifierFamilies} modifier families${tokenCount}`,
   );
   lines.push(`namespaces: ${ctx.namespaces.join(", ")}`);
   lines.push("");
