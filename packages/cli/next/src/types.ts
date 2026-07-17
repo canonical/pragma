@@ -9,6 +9,18 @@
  */
 
 export type { DetailLevel, OutputFormat } from "./constants.js";
+// — Error model —————————————————————————————————————————————————————————————
+export type {
+  ErrorCode,
+  ErrorPayload,
+  PragmaErrorData,
+  Recovery,
+} from "./kernel/error/types.js";
+// — Render / envelope ———————————————————————————————————————————————————————
+export type {
+  ErrorEnvelope,
+  SuccessEnvelope,
+} from "./kernel/render/envelope.js";
 // — Spec grammar ———————————————————————————————————————————————————————————
 export type {
   Capability,
