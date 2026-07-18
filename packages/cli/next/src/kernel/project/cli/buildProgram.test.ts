@@ -119,6 +119,110 @@ describe("buildProgram — lazy dispatch", () => {
   });
 });
 
+/** A read verb whose run body renders a distinguishable marker, for routing. */
+function recordingVerb(path: [string, string?], marker: string): VerbSpec {
+  return {
+    path,
+    summary: `${path.filter(Boolean).join(" ")} summary`,
+    params: [],
+    output: {
+      formatters: {
+        plain: () => marker,
+        llm: () => marker,
+        json: () => JSON.stringify({ marker }),
+      },
+    },
+    capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+    run: async () => marker,
+  };
+}
+
+/** A mutating self-verb, to prove mutation flags land on the noun parent. */
+function mutatingSelfVerb(noun: string): VerbSpec {
+  return {
+    path: [noun],
+    summary: `${noun} summary`,
+    params: [],
+    output: {
+      formatters: {
+        plain: () => noun,
+        llm: () => noun,
+        json: () => JSON.stringify({ noun }),
+      },
+    },
+    capability: { needsStore: false, mutates: true, mcp: { expose: true } },
+    // A mutation returns a Task; a bare no-op is enough for structural checks.
+    run: () => ({ _tag: "Pure", value: noun }) as never,
+  };
+}
+
+describe("buildProgram — mixed self+sub-verb noun (setup shape)", () => {
+  /** A noun that is BOTH directly runnable and has sub-verbs — setup's shape. */
+  const mixed: CapabilityModule = {
+    name: "kitish",
+    verbs: [
+      recordingVerb(["kit"], "SELF"),
+      recordingVerb(["kit", "mcp"], "SUB_MCP"),
+      recordingVerb(["kit", "skills"], "SUB_SKILLS"),
+    ],
+  };
+
+  it("registers the noun parent exactly once", () => {
+    const program = projectCli([mixed]);
+    const kits = program.commands.filter((c) => c.name() === "kit");
+    expect(kits).toHaveLength(1);
+    const kit = kits[0];
+    expect(kit?.commands.map((c) => c.name()).sort()).toEqual([
+      "mcp",
+      "skills",
+    ]);
+  });
+
+  it("`kit` (bare) dispatches the self-verb", async () => {
+    const program = projectCli([mixed]);
+    const writes: string[] = [];
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        writes.push(String(chunk));
+        return true;
+      });
+    await program.parseAsync(["kit"], { from: "user" });
+    spy.mockRestore();
+    expect(writes.join("")).toContain("SELF");
+    expect(writes.join("")).not.toContain("SUB_");
+  });
+
+  it("`kit mcp` dispatches the sub-verb, not the self-verb", async () => {
+    const program = projectCli([mixed]);
+    const writes: string[] = [];
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        writes.push(String(chunk));
+        return true;
+      });
+    await program.parseAsync(["kit", "mcp"], { from: "user" });
+    spy.mockRestore();
+    expect(writes.join("")).toContain("SUB_MCP");
+    expect(writes.join("")).not.toContain("SELF");
+  });
+
+  it("carries a mutating self-verb's mutation flags onto the noun parent", () => {
+    const module: CapabilityModule = {
+      name: "kit2ish",
+      verbs: [mutatingSelfVerb("kit2"), recordingVerb(["kit2", "one"], "ONE")],
+    };
+    const program = projectCli([module]);
+    const kit2 = program.commands.find((c) => c.name() === "kit2");
+    expect(kit2?.options.map((o) => o.long)).toEqual(
+      expect.arrayContaining(["--dry-run", "--undo", "--yes"]),
+    );
+    // The sub-verb is still reachable under the same parent.
+    expect(kit2?.commands.map((c) => c.name())).toContain("one");
+  });
+});
+
 describe("formatRootHelp — grouping", () => {
   const help = formatRootHelp("pragma2", "pragma test", [
     makeVerb(["info"]),

@@ -126,6 +126,55 @@ function attachVerb(
 }
 
 /**
+ * Attach a noun that has sub-verbs, creating its parent command exactly once.
+ *
+ * When the noun also has a SELF-verb (`["setup"]`), the parent command doubles
+ * as that verb — it carries the self-verb's own params/mutation flags and
+ * `.action()` AND hosts the sub-commands, so `pragma2 setup` runs the self-verb
+ * while `pragma2 setup mcp` routes to the sub. Commander resolves a registered
+ * sub-command name before the parent's action, so the two never collide — but
+ * only because the one covenant noun shaped this way (`setup`) has NO positional
+ * on its self-verb, so `<noun> <sub>` can never be read as a positional value.
+ * A noun with only sub-verbs keeps a plain, action-less group parent.
+ *
+ * @param program - The root program.
+ * @param noun - The noun to attach.
+ * @param selfVerb - The self-verb (`path.length === 1`), if the noun has one.
+ * @param subVerbs - The noun's sub-verbs (`path.length > 1`).
+ * @param programName - The binary name shown in help.
+ * @param globalFlags - Global flags closed over by every action.
+ * @param live - All non-hidden verbs, for noun-level help.
+ */
+function attachNounGroup(
+  program: Command,
+  noun: string,
+  selfVerb: VerbSpec | undefined,
+  subVerbs: readonly VerbSpec[],
+  programName: string,
+  globalFlags: GlobalFlags,
+  live: readonly VerbSpec[],
+): void {
+  const parent = program.command(noun);
+  parent.enablePositionalOptions();
+  useDesignedHelp(parent, () => formatNounHelp(programName, noun, live));
+
+  if (selfVerb) {
+    parent.description(selfVerb.summary);
+    registerParams(parent, selfVerb);
+    parent.action(async (...actionArgs: unknown[]) => {
+      const { positionals: positionalArgs, opts } = splitActionArgs(actionArgs);
+      await dispatch(selfVerb, positionalArgs, opts, globalFlags);
+    });
+  } else {
+    parent.description(`${noun} commands`);
+  }
+
+  for (const verb of subVerbs) {
+    attachVerb(parent, verb, verb.path[1] as string, programName, globalFlags);
+  }
+}
+
+/**
  * Build the Commander program for a set of verbs.
  *
  * @param verbs - The verbs to project (hidden verbs are excluded).
@@ -159,25 +208,30 @@ export function buildProgram(
   }
 
   for (const [noun, bucket] of groups) {
-    for (const verb of bucket.filter((v) => v.path.length === 1)) {
-      attachVerb(program, verb, noun, programName, options.globalFlags);
+    const selfVerbs = bucket.filter((v) => v.path.length === 1);
+    const subVerbs = bucket.filter((v) => v.path.length > 1);
+
+    // Pure self-verb noun(s) — attach each leaf directly to the root, as before.
+    if (subVerbs.length === 0) {
+      for (const verb of selfVerbs) {
+        attachVerb(program, verb, noun, programName, options.globalFlags);
+      }
+      continue;
     }
 
-    const subVerbs = bucket.filter((v) => v.path.length > 1);
-    if (subVerbs.length > 0) {
-      const parent = program.command(noun).description(`${noun} commands`);
-      parent.enablePositionalOptions();
-      useDesignedHelp(parent, () => formatNounHelp(programName, noun, live));
-      for (const verb of subVerbs) {
-        attachVerb(
-          parent,
-          verb,
-          verb.path[1] as string,
-          programName,
-          options.globalFlags,
-        );
-      }
-    }
+    // Has sub-verbs (and, for the mixed noun `setup`, also a self-verb): the
+    // noun parent is created ONCE. A pre-fold buildProgram registered
+    // `program.command(noun)` twice for such a noun (self leaf + sub parent) —
+    // Commander then saw a duplicate `setup` command.
+    attachNounGroup(
+      program,
+      noun,
+      selfVerbs[0],
+      subVerbs,
+      programName,
+      options.globalFlags,
+      live,
+    );
   }
 
   return program;
