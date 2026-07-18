@@ -251,6 +251,69 @@ describe("buildProgram — mixed self+sub-verb noun (setup shape)", () => {
   });
 });
 
+describe("buildProgram — sub-verb-only noun invoked bare (U2)", () => {
+  /** A noun with ONLY sub-verbs and no self-verb — block/config/… shape. */
+  const subOnly: CapabilityModule = {
+    name: "gadgetish",
+    verbs: [
+      recordingVerb(["gadget", "list"], "GADGET_LIST"),
+      recordingVerb(["gadget", "show"], "GADGET_SHOW"),
+    ],
+  };
+
+  /** Parse `argv`, capturing everything written to stdout and any thrown exit. */
+  async function run(argv: string[]): Promise<{ out: string; threw: unknown }> {
+    const program = projectCli([subOnly]);
+    const writes: string[] = [];
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        writes.push(String(chunk));
+        return true;
+      });
+    let threw: unknown;
+    try {
+      await program.parseAsync(argv, { from: "user" });
+    } catch (error) {
+      threw = error;
+    } finally {
+      spy.mockRestore();
+    }
+    return { out: writes.join(""), threw };
+  }
+
+  it("`gadget` (bare) prints the SAME page as `gadget --help`, exit 0", async () => {
+    const bare = await run(["gadget"]);
+    const help = await run(["gadget", "--help"]);
+
+    // The bare action returns normally (exit 0) — it never throws the way
+    // `--help` does (commander.helpDisplayed).
+    expect(bare.threw).toBeUndefined();
+    expect(bare.out).toContain("Usage: pragma gadget <verb> [flags]");
+    expect(bare.out).toContain("list");
+    expect(bare.out).toContain("show");
+    // Byte-for-byte identical to the designed `--help` page.
+    expect(bare.out).toBe(help.out);
+  });
+
+  it("`gadget list` still routes to the sub-verb, not the bare-help action", async () => {
+    const routed = await run(["gadget", "list"]);
+    expect(routed.out).toContain("GADGET_LIST");
+    expect(routed.out).not.toContain("Usage: pragma gadget <verb>");
+  });
+
+  it("`gadget bogus` re-raises unknownCommand so the bin can suggest a verb", async () => {
+    // The regression guard: the bare-help action must NOT swallow an
+    // unrecognized sub-verb into a generic "too many arguments" — it re-raises
+    // the same commander.unknownCommand the suggester routes on.
+    const bogus = await run(["gadget", "bogus"]);
+    expect(bogus.out).not.toContain("Usage: pragma gadget <verb>");
+    expect((bogus.threw as { code?: string })?.code).toBe(
+      "commander.unknownCommand",
+    );
+  });
+});
+
 describe("formatRootHelp — grouping", () => {
   const help = formatRootHelp("pragma", "pragma test", [
     makeVerb(["info"]),
@@ -279,5 +342,33 @@ describe("formatRootHelp — grouping", () => {
     expect(help).toContain("Global flags");
     expect(help).toContain("--llm");
     expect(help).toContain("--detail <level>");
+  });
+
+  it("renders the unified root page (restyle golden)", () => {
+    expect(help).toMatchInlineSnapshot(`
+      "pragma — pragma test
+
+      Usage: pragma <command> [subcommand] [flags]
+
+      Explore the design system
+        block   Inspect components & patterns and their anatomy
+
+      Set up & maintain
+        config  Read and write pragma configuration
+        info    Show version, config, and update status
+
+      For AI agents
+        mcp     Start the MCP server over stdio
+
+      Global flags
+        --llm                  Condensed Markdown output for agents
+        --format <json|plain>  Select output format
+        --detail <level>       Progressive-disclosure level (summary, standard, detailed)
+        --verbose              Diagnostic output on stderr
+        --help                 Show help (works on any command)
+        --version              Show the CLI version
+
+      Run \`pragma <command> --help\` for details, or \`pragma capabilities\` to get oriented."
+    `);
   });
 });

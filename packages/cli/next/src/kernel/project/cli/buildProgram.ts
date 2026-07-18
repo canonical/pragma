@@ -180,6 +180,35 @@ function attachNounGroup(
     });
   } else {
     parent.description(`${noun} commands`);
+    // A sub-verb-only noun invoked bare (`pragma block`) prints its own help
+    // and exits 0 — byte-for-byte the `pragma block --help` page, because it
+    // runs the SAME Commander help machinery `--help` runs (`outputHelp`),
+    // minus the `helpDisplayed` throw, so it returns 0. Commander resolves a
+    // registered sub-command name BEFORE the parent action (the invariant the
+    // mixed-noun path above relies on), so `pragma block list` still routes to
+    // the sub-verb; only the bare noun reaches this action.
+    //
+    // An UNRECOGNIZED sub-verb (`pragma block bogus`) must keep its "Did you
+    // mean?" suggestion. Adding an action turns Commander's default
+    // unknown-command error into a generic "too many arguments" (the action
+    // declares no positional), so we opt into excess args and re-raise the
+    // SAME `unknownCommand` error the bin's suggester already routes on — the
+    // bin re-derives the offending token from argv, so its message is cosmetic.
+    parent.allowExcessArguments(true);
+    parent.action(async () => {
+      // The unrecognized sub-verb lands in `parent.args` (excess operands), not
+      // as a declared action parameter, since the parent declares none.
+      const excess = parent.args[0];
+      if (excess !== undefined) {
+        const { CommanderError } = await import("commander");
+        throw new CommanderError(
+          2,
+          "commander.unknownCommand",
+          `error: unknown command '${excess}'`,
+        );
+      }
+      parent.outputHelp();
+    });
   }
 
   for (const verb of subVerbs) {
