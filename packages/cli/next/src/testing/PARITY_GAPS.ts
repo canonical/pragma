@@ -93,6 +93,12 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
       "`skill list`/`skill lookup` are pure filesystem discovery (`needsStore: false`) — they never touch the knowledge-graph store. Every other read noun in this ledger's scope is store-backed; `skill` is the one deliberate exception.",
   },
   {
+    id: "plan-first-meta-differs",
+    area: "mutation plan-first",
+    description:
+      "A CLI `--dry-run` and an unconfirmed MCP call describe the SAME effects (`data.plan`), but under intentionally DIFFERENT `meta` shapes: `{dryRun:true}` (dispatch.ts#renderPlan) vs `{planOnly:true,confirmRequired:true}` (registerVerb.ts#mutateHandler). They are different REQUESTS — one an explicit preview, one an implicit not-yet-confirmed call — so the envelope names the mode differently rather than forcing one vocabulary onto both.",
+  },
+  {
     id: "index-fields-trimmed",
     area: "pack index",
     description:
