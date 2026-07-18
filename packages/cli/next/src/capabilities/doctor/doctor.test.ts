@@ -89,6 +89,7 @@ function throwingStoreRuntime(cwd: string): PragmaRuntime {
     async get() {
       throw new Error("store down");
     },
+    invalidate() {},
   };
   return {
     cwd,

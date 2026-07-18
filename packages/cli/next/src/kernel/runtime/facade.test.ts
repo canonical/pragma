@@ -84,6 +84,9 @@ describe("query facade round-trip (PROTECTED)", () => {
         booted = true;
         return session;
       },
+      invalidate() {
+        booted = false;
+      },
     };
     const facade = createQueryFacade(store);
 
@@ -108,6 +111,9 @@ describe("query facade round-trip (PROTECTED)", () => {
         const session = await readPack(dir);
         booted = true;
         return session;
+      },
+      invalidate() {
+        booted = false;
       },
     };
     const facade = createQueryFacade(store);

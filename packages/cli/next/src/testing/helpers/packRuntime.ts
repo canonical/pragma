@@ -77,6 +77,9 @@ export async function buildFixtureRuntime(
       booted = true;
       return session;
     },
+    invalidate() {
+      booted = false;
+    },
   };
 
   const layers: ConfigLayers = {

@@ -52,15 +52,20 @@ export interface StoreSession {
 }
 
 /**
- * The lazy store handle. `get()` memoizes an immutable {@link StoreSession} and
- * throws STORE_UNAVAILABLE when the store is cold; `booted` reports whether the
- * store has actually been constructed (the storeless-guarantee spy target).
+ * The lazy store handle. `get()` memoizes a successful {@link StoreSession}
+ * boot (a rejected boot is not memoized — a cold store throws STORE_UNAVAILABLE
+ * and a later `get()` retries); `booted` reports whether the store has actually
+ * been constructed (the storeless-guarantee spy target); `invalidate()` drops
+ * the memoized session (and the config memo it depends on) so the next `get()`
+ * re-boots — the long-lived MCP server calls it after every real mutation.
  */
 export interface LazyStore {
   /** Boot (once) and return the store session; throws STORE_UNAVAILABLE cold. */
   get(): Promise<StoreSession>;
   /** Whether the store has been constructed yet (spy target). */
   readonly booted: boolean;
+  /** Drop the memoized session so the next `get()` re-boots against disk. */
+  invalidate(): void;
 }
 
 /**

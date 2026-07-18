@@ -7,6 +7,13 @@
  * dynamic import so the config reader (and its zod) never lands on the
  * `--help`/`__complete` fast path. No eager I/O happens here — a storeless verb
  * that only reads `globalFlags`/`cwd` touches neither the store nor config.
+ *
+ * The store's boot reads config through `loadConfig`, so the two memos are
+ * coupled: `store.invalidate()` (called by the MCP projector after a real
+ * mutation) also clears `configPromise` via the `onInvalidate` hook, so a
+ * re-boot re-reads config from disk instead of reusing a stale layer. On a
+ * long-lived MCP server that is what makes a `config_set` visible to the next
+ * read tool; on a one-shot CLI nothing calls `invalidate`, so it never fires.
  */
 
 import { VERSION } from "../../constants.js";
@@ -37,7 +44,15 @@ export function bootRuntime(
     return configPromise;
   };
 
-  const store = createLazyStore({ cwd, loadConfig });
+  const store = createLazyStore({
+    cwd,
+    loadConfig,
+    // Invalidating the store must also drop the config memo its boot depends on,
+    // so a re-boot after a mutation re-reads config from disk (never stale).
+    onInvalidate: () => {
+      configPromise = undefined;
+    },
+  });
   const query = createQueryFacade(store);
 
   return { cwd, version: VERSION, globalFlags, loadConfig, store, query };
