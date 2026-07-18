@@ -28,7 +28,7 @@ export async function serveMcp(
 ): Promise<void> {
   const dir = cwd ?? process.cwd();
   const effective = await loadEffectiveModules(modules, dir);
-  const server = buildServer(effective, dir);
+  const server = await buildServer(effective, dir);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

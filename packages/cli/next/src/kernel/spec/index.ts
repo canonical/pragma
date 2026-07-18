@@ -27,6 +27,7 @@ export type {
   Example,
   Formatters,
   McpAnnotations,
+  McpResourceProvider,
   ParamComplete,
   ParamSpec,
   VerbSpec,

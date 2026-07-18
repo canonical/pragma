@@ -54,6 +54,22 @@ const LABEL_PREDICATES = [
   "http://schema.org/name",
 ];
 
+/** Description predicates, in preference order. */
+const DESCRIPTION_PREDICATES = [
+  "http://www.w3.org/2000/01/rdf-schema#comment",
+  "http://purl.org/dc/terms/description",
+  "http://www.w3.org/2004/02/skos/core#definition",
+  "http://schema.org/description",
+];
+
+/** Local name of an IRI (`…#Thing`/`…/Thing` → `Thing`). */
+function localName(uri: string): string {
+  const hash = uri.lastIndexOf("#");
+  if (hash !== -1) return uri.slice(hash + 1);
+  const slash = uri.lastIndexOf("/");
+  return slash !== -1 ? uri.slice(slash + 1) : uri;
+}
+
 const isStdVocab = (uri: string): boolean =>
   STD_VOCAB_PREFIXES.some((ns) => uri.startsWith(ns));
 
@@ -92,12 +108,15 @@ export async function buildIndex(
   prefixes: Readonly<Record<string, string>>,
   contentHash: string,
 ): Promise<PackIndex> {
-  const [typesResult, labelResult] = await Promise.all([
+  const [typesResult, labelResult, descResult] = await Promise.all([
     store.query(
       `SELECT ?s ?type WHERE { ?s <${RDF_TYPE}> ?type }` as never,
     ) as Promise<import("@canonical/ke").SelectResult>,
     store.query(
       `SELECT ?s ?label WHERE { ?s ?p ?label . VALUES ?p { ${valuesList(LABEL_PREDICATES)} } }` as never,
+    ) as Promise<import("@canonical/ke").SelectResult>,
+    store.query(
+      `SELECT ?s ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
     ) as Promise<import("@canonical/ke").SelectResult>,
   ]);
 
@@ -122,25 +141,49 @@ export async function buildIndex(
     }
   }
 
+  const descBySubject = new Map<string, string>();
+  for (const term of descResult.termBindings) {
+    if (term.s?.termType !== "NamedNode") continue;
+    const subject = term.s.value;
+    if (!descBySubject.has(subject) && term.desc?.value) {
+      descBySubject.set(subject, term.desc.value);
+    }
+  }
+
   const entities: PackIndexEntity[] = [];
   for (const [subject, fullTypes] of typesBySubject) {
     const classification = classify(fullTypes);
     if (classification === null) continue;
     const prefixed = compactUri(subject, prefixes);
+    const primaryFull = classification.primary;
+    const isIndividual = classification.box === "abox";
+    const category = isIndividual
+      ? "individual"
+      : CLASS_METATYPES.has(primaryFull)
+        ? "class"
+        : "property";
     entities.push({
       name: prefixed,
-      type: compactUri(classification.primary, prefixes),
+      type: compactUri(primaryFull, prefixes),
       uri: subject,
       prefixed,
       types: fullTypes.map((t) => compactUri(t, prefixes)),
       label: labelBySubject.get(subject) ?? null,
       box: classification.box,
+      category,
+      // The domain class is meaningful only for an individual; schema subjects
+      // carry a null primaryType (their `type` is the metatype).
+      primaryType: isIndividual ? compactUri(primaryFull, prefixes) : null,
+      primaryTypeLabel: isIndividual
+        ? (labelBySubject.get(primaryFull) ?? localName(primaryFull))
+        : null,
+      description: descBySubject.get(subject) ?? null,
     });
   }
   entities.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   return {
-    version: 1,
+    version: 2,
     contentHash,
     prefixes,
     entities,

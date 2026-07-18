@@ -27,6 +27,12 @@ export interface McpHarness {
   ): Promise<Record<string, unknown>>;
   /** List the registered tools. */
   listTools(): Promise<ToolInfo[]>;
+  /** List the resources exposed by the `{+uri}` template's list callback. */
+  listResources(): Promise<{ uri: string; name: string }[]>;
+  /** Read one resource by URI; returns the first content's parsed/raw text. */
+  readResource(uri: string): Promise<{ mimeType?: string; text: string }>;
+  /** Complete a resource-template variable against a partial value. */
+  completeResource(partial: string): Promise<string[]>;
   /** Close the client and server. */
   cleanup(): Promise<void>;
 }
@@ -43,7 +49,7 @@ export async function projectMcp(
   modules: readonly CapabilityModule[],
   cwd?: string,
 ): Promise<McpHarness> {
-  const server = buildServer(modules, cwd);
+  const server = await buildServer(modules, cwd);
   const [serverTransport, clientTransport] =
     InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "pragma-test-client", version: "0.0.0" });
@@ -69,6 +75,27 @@ export async function projectMcp(
         name: tool.name,
         annotations: tool.annotations as Record<string, unknown> | undefined,
       }));
+    },
+    async listResources() {
+      const { resources } = await client.listResources();
+      return resources.map((r) => ({ uri: r.uri, name: r.name }));
+    },
+    async readResource(uri) {
+      const result = await client.readResource({ uri });
+      const first = result.contents[0] as
+        | { mimeType?: string; text?: string }
+        | undefined;
+      return {
+        ...(first?.mimeType ? { mimeType: first.mimeType } : {}),
+        text: first?.text ?? "",
+      };
+    },
+    async completeResource(partial) {
+      const result = await client.complete({
+        ref: { type: "ref/resource", uri: "pragma:{+uri}" },
+        argument: { name: "uri", value: partial },
+      });
+      return result.completion.values;
     },
     async cleanup() {
       await client.close();

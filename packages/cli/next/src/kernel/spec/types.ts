@@ -127,9 +127,26 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly hidden?: boolean;
 }
 
-/** A capability module: a named bundle of verbs with an optional boot hook. */
+/**
+ * An MCP resource provider — the ONE non-tool projection a module may add.
+ *
+ * `register` installs a `{+uri}` resource template on the server (listing +
+ * autocomplete are storeless over the pack index; a read is store-backed and
+ * shares the CLI's entity reader). Resources are NOT tools, so they never enter
+ * the emitted tool surface; the projector calls this per module that declares it.
+ */
+export interface McpResourceProvider {
+  readonly register: (
+    server: import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+    rt: PragmaRuntime,
+  ) => void;
+}
+
+/** A capability module: a named bundle of verbs with optional boot/resources hooks. */
 export interface CapabilityModule {
   readonly name: string;
   readonly verbs: readonly VerbSpec[];
   readonly boot?: (rt: PragmaRuntime) => void;
+  /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
+  readonly mcpResources?: McpResourceProvider;
 }

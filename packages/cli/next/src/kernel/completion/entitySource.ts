@@ -23,6 +23,16 @@ import { lockPath, packDir } from "../runtime/paths.js";
 /** The pack index filename (kept local so this path never imports the zod schema). */
 const INDEX_FILE = "index.json";
 
+/**
+ * Read the active pack's storeless index (the locked pack, else the embedded
+ * fallback), for the resource browser's list/autocomplete. Never boots the
+ * store, never validates with zod — a plain `JSON.parse` off disk. Returns
+ * `undefined` when no index is reachable, so callers degrade to a recovery hint.
+ */
+export function readPackIndex(cwd: string): PackIndex | undefined {
+  return loadActiveIndex(cwd);
+}
+
 /** Load the active pack's index: the locked pack, else the embedded fallback. */
 function loadActiveIndex(cwd: string): PackIndex | undefined {
   try {

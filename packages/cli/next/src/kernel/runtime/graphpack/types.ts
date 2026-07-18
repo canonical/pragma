@@ -46,11 +46,26 @@ export interface PackIndexEntity {
   readonly label?: string | null;
   /** Schema (`tbox`) vs individual (`abox`). */
   readonly box?: "tbox" | "abox";
+  /** Fine-grained kind (v2 enrichment) — for the resource browser. */
+  readonly category?: "class" | "property" | "individual";
+  /** Prefixed primary domain class of an individual (`null` for schema). */
+  readonly primaryType?: string | null;
+  /** Human label of the primary type (the type's local name when unlabelled). */
+  readonly primaryTypeLabel?: string | null;
+  /** Short description (rdfs:comment / dcterms:description / skos:definition). */
+  readonly description?: string | null;
 }
 
-/** The storeless entity index a pack ships as `index.json`. */
+/**
+ * The storeless entity index a pack ships as `index.json`.
+ *
+ * `version` is `2` for packs built by this kernel (the v2 enrichment fields on
+ * each entity + the resource browser depend on it); `1` is a legacy artifact
+ * whose enrichment is absent — the resources provider degrades to a "run
+ * `pragma sources update`" hint rather than a live re-index.
+ */
 export interface PackIndex {
-  readonly version: 1;
+  readonly version: 1 | 2;
   /** The pack's content hash (matches its cache directory name). */
   readonly contentHash: string;
   readonly prefixes: Readonly<Record<string, string>>;
@@ -68,11 +83,15 @@ export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
   types: z.array(z.string()).optional(),
   label: z.string().nullable().optional(),
   box: z.enum(["tbox", "abox"]).optional(),
+  category: z.enum(["class", "property", "individual"]).optional(),
+  primaryType: z.string().nullable().optional(),
+  primaryTypeLabel: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
 });
 
 /** zod schema validating a persisted {@link PackIndex}. */
 export const packIndexSchema: z.ZodType<PackIndex> = z.object({
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   contentHash: z.string(),
   prefixes: z.record(z.string(), z.string()),
   entities: z.array(packIndexEntitySchema),

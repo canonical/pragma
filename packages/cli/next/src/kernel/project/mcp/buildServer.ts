@@ -28,17 +28,22 @@ const MCP_FLAGS: GlobalFlags = {
 };
 
 /**
- * Assemble the MCP server, registering all exposed verbs as tools.
+ * Assemble the MCP server, registering all exposed verbs as tools and any
+ * module resource surfaces.
+ *
+ * Async because a module's `mcpResources.register` dynamic-imports the SDK's
+ * `ResourceTemplate` (so the resource browser never lands on the storeless
+ * `--help`/`__complete` fast path).
  *
  * @param modules - The capability modules to project.
  * @param cwd - The working directory for the server's runtime.
  * @returns The configured MCP server, ready to `connect` to a transport.
  * @note Impure by default — reads `process.cwd()` unless `cwd` is provided.
  */
-export function buildServer(
+export async function buildServer(
   modules: readonly CapabilityModule[],
   cwd: string = process.cwd(),
-): McpServer {
+): Promise<McpServer> {
   const server = new McpServer({ name: MCP_SERVER_NAME, version: VERSION });
   const runtime = bootRuntime(MCP_FLAGS, cwd);
 
@@ -48,6 +53,8 @@ export function buildServer(
         registerVerb(server, verb, runtime);
       }
     }
+    // A module's optional resource surface (NOT a tool) — the `{+uri}` template.
+    await module.mcpResources?.register(server, runtime);
   }
 
   return server;
