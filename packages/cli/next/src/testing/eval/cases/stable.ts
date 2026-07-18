@@ -68,7 +68,7 @@ export const stableEvalCases: readonly EvalCase[] = [
     id: "tool-sparql-count-positive",
     kind: "tool",
     input:
-      "SPARQL COUNT(*) over the embedded pack resolves > 0 — the same escape-hatch facade the future graph_query verb (PR6) will call (PARITY_GAPS: graph-query-deferred).",
+      "SPARQL COUNT(*) over the embedded pack resolves > 0 — the same escape-hatch facade the live `graph query` verb (PR6, tool graph_query) delegates to (PARITY_GAPS: graph-query-deferred).",
     async expect({ runtime }) {
       const result = await runtime.query.sparql(
         "SELECT (COUNT(*) AS ?c) WHERE { ?s ?p ?o }",

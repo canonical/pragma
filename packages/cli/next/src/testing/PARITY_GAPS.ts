@@ -90,7 +90,49 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     id: "graph-query-deferred",
     area: "graph",
     description:
-      'The covenant reserves `graph query` (arbitrary SPARQL, tool `graph_query`), but PR3 ships only `graph inspect` (`graph/index.ts`: "query lands in PR6"). PR4\'s SPARQL-escape-hatch behavioral coverage (B2) exercises `PragmaRuntime.query.sparql` directly — the same seam the future verb will call — rather than a live tool that does not exist yet.',
+      "CLOSED by PR6: `graph query` (arbitrary SPARQL, tool `graph_query`) is now live (`capabilities/graph/query.verb.ts`), with its own SELECT/ASK/CONSTRUCT + parity coverage. Two residual divergences remain recorded: a query failure raises INVALID_INPUT (exit 2) with an `ontology list` recovery, NOT the retired v1 `STORE_ERROR`; and B2/the eval seed (`agentSession.mcp.test.ts`, `eval/cases/stable.ts`) still exercise the shared `PragmaRuntime.query.sparql` facade directly — the exact seam the live verb delegates to — rather than re-driving through the tool.",
+  },
+  {
+    id: "config-field-query-via-show",
+    area: "config setters",
+    description:
+      "The covenant gives each `config <field>` setter exactly ONE required positional, so the old per-verb QUERY mode (`pragma config tier` with no arg → print current) is impossible without breaking conformance. Reading a field is `config show` (which reports every field + provenance). Set-only setters (`config/fields.ts`).",
+  },
+  {
+    id: "config-field-reset-sentinel",
+    area: "config setters",
+    description:
+      "No `--reset` flag exists (a flag would emit `flags:[...]` and break the covenant). `tier` (a free string with a meaningful 'no value') resets via a reserved sentinel (`none`/`default`/`-` → removes the field, `writeConfigField(field, undefined)`); `channel`/`detail` reset by setting their default (`normal`/`standard`). `config/runField.ts`.",
+  },
+  {
+    id: "config-global-write-only",
+    area: "config setters",
+    description:
+      "v2 `writeConfigField` writes the GLOBAL layer only ('project configs are authored by hand'), so the old `--scope`/`--local` selectors are dropped. A setter never edits a project `pragma.config.ts`. `kernel/config/writeConfigField.ts`.",
+  },
+  {
+    id: "config-tier-no-ontology-validation",
+    area: "config setters",
+    description:
+      "The covenant `config_tier` has no `needsStore`, so it is storeless — the old store-backed `validateTier` (which queried the ontology for valid tier paths) is DROPPED. `config tier <anything>` writes the value verbatim; an unknown tier simply yields empty scoped reads later. `config/fields.ts`.",
+  },
+  {
+    id: "doctor-exit-zero-with-failures",
+    area: "doctor",
+    description:
+      "The old `doctor` set `process.exitCode = 1` when checks failed. v2 `doctor` is a read (`mutates:false`) and ALWAYS exits 0 — failures live in the `{ failed }` count of the envelope (agents read the data; CI greps `failed`). The dispatcher only maps `PragmaError` codes to non-zero exits, and doctor raises none. `capabilities/doctor/doctor.verb.ts`.",
+  },
+  {
+    id: "info-entitycount-storeless-not-triplecount",
+    area: "info",
+    description:
+      "`info`'s entity total comes from the storeless pack index (`readPackIndex` → sum of `instanceCountByType`), NEVER a store boot — so the storeless invariant (`store.booted === false`) holds. The old `collectStoreSummary`'s SPARQL triple-count is DROPPED (`sources status` owns the per-source breakdown; info shows one total). `capabilities/info/collectInfo.ts`.",
+  },
+  {
+    id: "setup-skills-undo-recompute",
+    area: "setup",
+    description:
+      "Setup ops recompute their plan against real fs each run (preview-accuracy), so `setup skills --undo` AFTER a real `setup skills` sees the now-correct symlink as 'skipped' and emits no symlink effect — there is nothing left to reverse. Writes that always re-emit their undo (`setup completions`' file write) DO reverse cleanly under `--undo`. The symlink effect itself carries a `deleteFile` undo (asserted structurally). `capabilities/setup/operations/setupSkills.ts`.",
   },
   {
     id: "digest-renamed-standard",

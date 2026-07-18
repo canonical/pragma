@@ -139,12 +139,14 @@ assuming a mismatch is a bug:
   `create component/package/application` dry-run/real/byte-equality. Add
   `journeys.create.test.ts` here plus its own eval cases.
 - **PR6 (config mutation, info enrichment, doctor, upgrade, setup, `graph
-  query`)** — `C2`/`C3`/`C4`. Also: `graph query` (tool `graph_query`) is
-  reserved in the covenant but not yet built (`PARITY_GAPS`
-  `graph-query-deferred`) — B2's SPARQL-escape-hatch coverage exercises the
-  underlying `PragmaRuntime.query.sparql` facade directly; once the real verb
-  lands, promote that coverage to go through the tool the way B1-B6 do for
-  every other read noun, and retire the PARITY_GAPS entry.
+  query`)** — `C2`/`C3`/`C4` — **BUILT**. Each new verb ships its own
+  in-diff coverage: `config/field.test.ts`, `info/info.test.ts`,
+  `doctor/doctor.test.ts`, `upgrade/upgrade.test.ts`, `setup/setup.test.ts`,
+  `graph/query.test.ts`. `graph query` (tool `graph_query`) is now LIVE
+  (`PARITY_GAPS` `graph-query-deferred` reworded to record its two residual
+  divergences); B2's SPARQL-escape-hatch coverage continues to exercise the
+  shared `PragmaRuntime.query.sparql` facade the live verb delegates to. Future
+  work may re-drive B2 through the tool the way B1-B6 do for the read nouns.
 - **PR7 (capabilities catalog, MCP prompts, budget activation)** — `C5`. The
   eval harness (`testing/eval/`) is seeded with 14 representative cases across
   all 4 kinds (tool/content/disclosure/prompt) — populate the full matrix on
