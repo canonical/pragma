@@ -131,12 +131,11 @@
     },
     "sources": {
       "verbs": [
-        { "v": "status", "needsStore": true, "mcp": "sources_status" },
+        { "v": "status", "mcp": "sources_status" },
         {
           "v": "update",
           "flags": ["--frozen"],
           "mutates": true,
-          "needsStore": true,
           "mcp": "sources_update"
         }
       ]

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { configModule } from "../../capabilities/config/index.js";
 import { infoModule } from "../../capabilities/info/index.js";
 import { completeVerb } from "../../capabilities/meta/complete.verb.js";
+import { sourcesModule } from "../../capabilities/sources/index.js";
 import { executeVerb } from "../project/cli/dispatch.js";
 import type { GlobalFlags, VerbSpec } from "../spec/types.js";
 import { bootRuntime } from "./boot.js";
@@ -19,6 +20,7 @@ const FLAGS: GlobalFlags = {
 
 const infoVerb = infoModule.verbs[0] as VerbSpec;
 const showVerb = configModule.verbs[0] as VerbSpec;
+const sourcesStatusVerb = sourcesModule.verbs[0] as VerbSpec;
 
 /** A needs-store READ verb whose body never touches the store — so a `booted`
  * flag flipping to true proves the *dispatcher* booted it for `needsStore`. */
@@ -54,6 +56,13 @@ describe("storeless guarantee — the store never boots for storeless verbs (PRO
   it("config show does not construct the store", async () => {
     const runtime = bootRuntime(FLAGS, freshCwd());
     await executeVerb(showVerb, {}, NO_MUT, runtime);
+    expect(runtime.store.booted).toBe(false);
+  });
+
+  it("sources status does not construct the store (reports a cold store)", async () => {
+    const runtime = bootRuntime(FLAGS, freshCwd());
+    const outcome = await executeVerb(sourcesStatusVerb, {}, NO_MUT, runtime);
+    expect(outcome.exitCode).toBe(0);
     expect(runtime.store.booted).toBe(false);
   });
 

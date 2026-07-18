@@ -23,19 +23,37 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(() => assertConforms(emitted, golden)).not.toThrow();
   });
 
-  it("emits exactly the PR1 entries: info + config show", () => {
+  it("emits info + config show + the storeless sources noun", () => {
     expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
     expect(emitted.nouns.config?.verbs).toEqual([
       { v: "show", mcp: "config_show" },
+    ]);
+    // The sources noun is storeless BY DESIGN — no `needsStore` on either verb
+    // (status must report a cold store; update is what builds it). The covenant
+    // was reconciled to match in this PR.
+    expect(emitted.nouns.sources?.verbs).toEqual([
+      { v: "status", mcp: "sources_status" },
+      {
+        v: "update",
+        flags: ["--frozen"],
+        mutates: true,
+        mcp: "sources_update",
+      },
     ]);
     // Hidden meta verbs (__complete, mcp) are excluded from the surface.
     expect(emitted.nouns.mcp).toBeUndefined();
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
-  it("emits the info and config_show tools, both blessed by the covenant", () => {
-    expect(emitted.mcpSurface.tools).toEqual(["config_show", "info"]);
-    expect(golden.mcpSurface.tools).toContain("info");
-    expect(golden.mcpSurface.tools).toContain("config_show");
+  it("emits the info, config_show, and sources tools, all blessed by the covenant", () => {
+    expect(emitted.mcpSurface.tools).toEqual([
+      "config_show",
+      "info",
+      "sources_status",
+      "sources_update",
+    ]);
+    for (const tool of emitted.mcpSurface.tools) {
+      expect(golden.mcpSurface.tools).toContain(tool);
+    }
   });
 });

@@ -13,10 +13,12 @@ import type { CapabilityModule } from "../kernel/spec/types.js";
 import { configModule } from "./config/index.js";
 import { infoModule } from "./info/index.js";
 import { metaModule } from "./meta/index.js";
+import { sourcesModule } from "./sources/index.js";
 
 /** Every capability module, in authoring order. */
 export const capabilities: readonly CapabilityModule[] = [
   infoModule,
   configModule,
+  sourcesModule,
   metaModule,
 ];

@@ -103,7 +103,11 @@ export interface ErrorSpec {
  * A single verb: the atom the projectors consume.
  *
  * `run` is the effect seam — a read returns `Promise<R>`; a mutation returns a
- * `Task<R>` the dispatcher interprets under the node / dry-run interpreters.
+ * `Task<R>` the dispatcher interprets under the node / dry-run interpreters. A
+ * mutation that needs async setup before its effects are known (e.g.
+ * `sources update` resolves and builds before locking) returns a
+ * `Promise<Task<R>>`, which the dispatcher awaits — a `Task` seen through the
+ * `Task<R>` arm of this union (kept narrow so read-verb inference is unaffected).
  */
 export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly path: readonly [noun: string, verb?: string];
