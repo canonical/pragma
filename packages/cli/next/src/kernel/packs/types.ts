@@ -305,6 +305,12 @@ export interface PackDefinition {
   readonly verbs?: readonly PackVerb[];
   /** The lookup story. */
   readonly lookup?: PackLookup;
+  /**
+   * Markdown narrating how this pack's domain is made — its ontology/graph
+   * story. Data, like the queries. Surfaced storelessly (off the effective
+   * modules) by `pragma colophon`, after pragma's own built-in colophon.
+   */
+  readonly colophon?: string;
 }
 
 /** A validated pack definition paired with where it was declared. */

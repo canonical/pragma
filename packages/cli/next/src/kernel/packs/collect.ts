@@ -72,6 +72,7 @@ export function assembleEffectiveModules(
     dynamic.push({
       name: definition.noun,
       verbs: compilePack(definition, "config", prefixes),
+      colophon: definition.colophon,
     });
   }
 

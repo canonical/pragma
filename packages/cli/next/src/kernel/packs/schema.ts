@@ -199,6 +199,7 @@ const definitionSchema = z
     list: listSchema.optional(),
     verbs: z.array(verbSchema).min(1).optional(),
     lookup: lookupSchema.optional(),
+    colophon: z.string().optional(),
   })
   .strict()
   .superRefine((def, ctx) => {

@@ -315,7 +315,7 @@ describe("storeless guarantee (PROTECTED)", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe("config\n");
+    expect(result.stdout).toBe("colophon\nconfig\n");
     expect(result.stderr).toBe("");
     // Storeless and config-free: no first-run marker, no config cache, no
     // store artifacts — the fast path must leave the environment untouched.

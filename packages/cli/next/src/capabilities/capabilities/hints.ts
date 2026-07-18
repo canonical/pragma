@@ -55,6 +55,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "See actual block data shapes before querying — returns random instances each call, prevents guessing at property names",
   },
+  colophon: {
+    category: "read",
+    use_when:
+      "Understanding how pragma and the active domain are built — the toolchain + design-system colophon, for onboarding or a demo",
+  },
   config_show: {
     category: "read",
     use_when: "Checking active tier and channel before querying",

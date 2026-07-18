@@ -19,4 +19,7 @@ export const blockModule: CapabilityModule = {
     blockListVerb,
     ...compilePack(blockPack, "bundled:block", DEFAULT_PREFIX_MAP),
   ],
+  // The bundled design-system domain colophon (authored on the flagship UI-block
+  // noun), surfaced by `pragma colophon` after pragma's own.
+  colophon: blockPack.colophon,
 };

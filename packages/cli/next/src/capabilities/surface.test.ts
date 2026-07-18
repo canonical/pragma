@@ -136,6 +136,13 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
   });
 
+  it("emits the PR10 colophon self-verb (storeless read)", () => {
+    // colophon is a storeless read self-verb — no args, no flags, no needsStore.
+    expect(emitted.nouns.colophon?.verbs).toEqual([
+      { v: "colophon", mcp: "colophon" },
+    ]);
+  });
+
   it("emits setup as a mixed self+sub noun (self is a tool, sub-verbs are mcp:false)", () => {
     // The one covenant noun both directly runnable AND with sub-verbs. The self
     // verb is the `setup` tool; the four installers are CLI-only (mcp:false).
@@ -164,6 +171,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "standard_sample",
       "tier_list",
       "config_show",
+      "colophon",
     ]) {
       expect(tools).toContain(tool);
     }
@@ -176,14 +184,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 39) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 40) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(39);
+    expect(emitted.mcpSurface.tools).toHaveLength(40);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

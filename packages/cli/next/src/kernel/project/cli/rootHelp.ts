@@ -94,6 +94,10 @@ const HELP_GROUPS: readonly HelpGroup[] = [
         summary: "Discover conventions, tools, and the discovery sequence",
       },
       {
+        noun: "colophon",
+        summary: "Read how pragma and the active domain are made",
+      },
+      {
         noun: "skill",
         summary: "Browse agent skills from design-system packages",
       },
