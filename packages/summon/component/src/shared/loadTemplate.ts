@@ -68,12 +68,20 @@ function qualifiedKey(source: string): string | undefined {
 
 /**
  * Load a template from disk, or — when the disk read fails (a compiled binary) —
- * from the injected embedded manifest.
+ * from the injected embedded manifest. SYNCHRONOUS.
  *
  * Disk is consulted FIRST: a source run reads the real file, and the compiled
  * binary's absolute `/$bunfs/…` source paths never exist on a user's disk, so it
  * always falls through to the manifest. A source run and a compiled run are
  * therefore byte-identical (the manifest is generated from the same files).
+ *
+ * This is synchronous (both branches — `readFileSync` and the in-memory manifest
+ * lookup — are), so a generator can load its templates LAZILY inside its
+ * synchronous `generate(answers): Task` call rather than via a module-eval
+ * top-level `await`. That is the whole point of the sync form: a READ command
+ * (which never calls `generate()`) then never touches a template, regardless of
+ * whether bun's `--compile` code-splitting kept the generator module lazy — the
+ * exact fragility that crashed `pragma block list` on some bun versions.
  *
  * @param source - Absolute path to the template file.
  * @returns Loaded template with path and content.
@@ -81,9 +89,7 @@ function qualifiedKey(source: string): string | undefined {
  *   loud rather than return `""`, which callers do not guard against and would
  *   silently write as empty files (notably in a compiled binary).
  */
-export default async function loadTemplate(
-  source: string,
-): Promise<LoadedTemplate> {
+export function loadTemplateSync(source: string): LoadedTemplate {
   // Filesystem first (source runs / tests).
   try {
     return { source, content: readFileSync(source, "utf-8") };
@@ -104,4 +110,17 @@ export default async function loadTemplate(
       key === undefined ? "this path" : `'${key}'`
     }).`,
   );
+}
+
+/**
+ * Async wrapper over {@link loadTemplateSync}, kept for callers that await a
+ * template load. The body is fully synchronous.
+ *
+ * @param source - Absolute path to the template file.
+ * @returns Loaded template with path and content.
+ */
+export default async function loadTemplate(
+  source: string,
+): Promise<LoadedTemplate> {
+  return loadTemplateSync(source);
 }

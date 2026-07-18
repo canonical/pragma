@@ -33,6 +33,21 @@ const pragmaBin = join(cliNextDir, "src/bin.ts");
 const compiledBin = join(cliNextDir, "dist/pragma");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 
+// Build the standalone binary ONCE for every describe in this file (create +
+// the READ smoke share it), so the tests always exercise the current bundle +
+// embedded manifest rather than a stale `dist/pragma`.
+beforeAll(() => {
+  const result = spawnSync("bun", ["run", "scripts/build.ts"], {
+    cwd: cliNextDir,
+    stdio: "pipe",
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `failed to build dist/pragma:\n${result.stderr?.toString() ?? ""}`,
+    );
+  }
+}, 180_000);
+
 /** Read a directory tree into a sorted map of relative path → contents. */
 function snapshot(dir: string): Map<string, string> {
   const out = new Map<string, string>();
@@ -73,20 +88,6 @@ function createComponent(
 }
 
 describe("compiled pragma create component (PROTECTED)", () => {
-  beforeAll(() => {
-    // Build the standalone binary fresh so the test always exercises the current
-    // bundle + embedded manifest (the perf globalSetup only builds if missing).
-    const result = spawnSync("bun", ["run", "scripts/build.ts"], {
-      cwd: cliNextDir,
-      stdio: "pipe",
-    });
-    if (result.status !== 0) {
-      throw new Error(
-        `failed to build dist/pragma:\n${result.stderr?.toString() ?? ""}`,
-      );
-    }
-  }, 180_000);
-
   for (const framework of ["react", "svelte", "lit"] as const) {
     it(`${framework}: compiled binary ≡ source run, byte-for-byte`, () => {
       // (1) The real standalone binary — templates come from the embedded manifest.
@@ -104,5 +105,48 @@ describe("compiled pragma create component (PROTECTED)", () => {
         expect(source.get(path), `content of ${path}`).toBe(content);
       }
     }, 120_000);
+  }
+});
+
+/**
+ * PROTECTED — the compiled-binary READ guard (U1-orig).
+ *
+ * A READ command (`block list`, `--help`) never calls a generator's
+ * `generate()`, so — with the generators loading their templates LAZILY on first
+ * `generate()` rather than at module-eval — it must never touch a `.ejs`
+ * template that the standalone binary lacks. This is the exact gap the
+ * create-only smoke above missed: the component generators used to load
+ * templates via a top-level `await`, so a READ crashed with `Template not found`
+ * on any bun version whose `--compile` code-splitting did not keep the generator
+ * modules lazy. The lazy load makes a READ template-free regardless of bun.
+ */
+describe("compiled pragma READ smoke (PROTECTED)", () => {
+  // A cold store cleanly reports STORE_UNAVAILABLE (exit 3); `--help` never needs
+  // a store (exit 0). Both fully exercise startup + dispatch — the phase where an
+  // eager generator template load would have crashed — without a store or writes.
+  const READS: ReadonlyArray<{
+    args: readonly string[];
+    okExit: readonly number[];
+  }> = [
+    { args: ["block", "list"], okExit: [0, 3] },
+    { args: ["--help"], okExit: [0] },
+  ];
+
+  for (const { args, okExit } of READS) {
+    it(`\`${args.join(" ")}\` runs without a Template-not-found crash`, () => {
+      const result = spawnSync(compiledBin, [...args], {
+        cwd: freshCwd(),
+        stdio: "pipe",
+        encoding: "utf-8",
+      });
+      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      // The exact crash the lazy-template fix closes: a READ never loads a
+      // generator, so it never touches a `.ejs` the standalone binary lacks.
+      expect(output).not.toMatch(/Template not found/);
+      // Nor does it collapse to the internal-bug path (the crash's other tell).
+      expect(output).not.toMatch(/Internal error/);
+      // It reaches a clean dispatch outcome, not an uncaught startup crash.
+      expect(okExit).toContain(result.status);
+    }, 30_000);
   }
 });
