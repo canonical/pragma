@@ -44,7 +44,9 @@ export const ontologyListStory: ReadStory<
   verb: "list",
   description: "List loaded ontologies",
   toolDescription:
-    "List all ontologies loaded in the knowledge graph with class and property counts.",
+    "List all ontologies loaded in the knowledge graph with class and " +
+    "property counts. Use when discovering namespaces and prefixes before " +
+    "addressing entities by IRI. Example: ontology_list {}.",
   params: [],
   examples: ["pragma ontology list", "pragma ontology list --llm"],
   resolve: (rt) => listOntologies(rt.store),

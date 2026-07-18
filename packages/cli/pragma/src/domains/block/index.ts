@@ -1,16 +1,19 @@
 /**
  * @module Block domain — CLI commands and operations.
  *
- * Commands: `pragma block list`, `pragma block lookup <name>`.
- * Operations: {@link lookupBlock}, {@link listBlocks}.
+ * Commands: `pragma block list` (config-filtered, built-in), `pragma block
+ * sample`. `block lookup` is served by the bundled `block` story pack
+ * (see `shared/stories/pack/bundled/blockPack.ts`).
+ * Operations: {@link lookupBlock} (kept as the public API and the
+ * parity-test oracle), {@link listBlocks}.
  */
 
 import type { CommandDefinition } from "@canonical/cli-core";
 import type { PragmaContext } from "../shared/context.js";
-import { listCommand, lookupCommand, sampleCommand } from "./commands/index.js";
+import { listCommand, sampleCommand } from "./commands/index.js";
 
 export function commands(ctx: PragmaContext): CommandDefinition[] {
-  return [listCommand(ctx), lookupCommand(ctx), sampleCommand(ctx)];
+  return [listCommand(ctx), sampleCommand(ctx)];
 }
 
 export { blockConfig } from "./blockConfig.js";
@@ -21,5 +24,4 @@ export {
   buildBlockFilters,
   enrichBlocks,
   resolveBlockList,
-  resolveBlockLookup,
 } from "./orchestration/index.js";

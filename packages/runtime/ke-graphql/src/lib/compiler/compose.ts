@@ -143,6 +143,16 @@ export default function compose(
           type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(edge))),
         },
         pageInfo: { type: new GraphQLNonNull(pageInfo) },
+        totalCount: {
+          type: new GraphQLNonNull(GraphQLInt),
+          description:
+            "Total number of items in this connection, ignoring pagination.",
+          // Every connection producer (emptyConnection, connectionFromPage,
+          // toConnection) counts the full URI set before windowing (see
+          // paginateUriWindow) and the Connection<T> contract requires
+          // totalCount, so the default property resolver suffices — exactly
+          // like `edges` and `pageInfo` above.
+        },
       }),
     });
     connectionTypes.set(`${base}Connection`, connection);

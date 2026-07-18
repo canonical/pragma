@@ -18,10 +18,6 @@ import {
 import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import type { McpErrorPayload } from "../types.js";
 
-// token_list, token_lookup, and token_sample are gated behind the token
-// read-surface feature flag.
-const EXPECTED_TOOL_COUNT = TOKEN_READ_SURFACE_ENABLED ? 34 : 31;
-
 let client: Client;
 let cleanup: () => Promise<void>;
 
@@ -64,7 +60,9 @@ function parseData(result: Record<string, unknown>): unknown {
 describe("tool listing", () => {
   it("registers the expected number of tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(EXPECTED_TOOL_COUNT);
+    // Token read surface (token_list, token_lookup, token_sample) is
+    // feature-flagged off until token data ships.
+    expect(tools).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 34 : 31);
   });
 
   it("all tools have descriptions", async () => {
@@ -93,10 +91,10 @@ describe("tool listing", () => {
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
     expect(names).toContain("config_channel");
+    expect(names).toContain("config_detail");
     expect(names).toContain("tokens_add_config");
     expect(names).toContain("create_component");
     expect(names).toContain("create_package");
-    expect(names).toContain("llm");
     // New tools (Group C)
     expect(names).toContain("ontology_list");
     expect(names).toContain("ontology_show");
@@ -131,17 +129,14 @@ describe("tool listing", () => {
 
     expect(names).toEqual([
       "block_list",
-      "block_lookup",
       "block_sample",
-      "modifier_list",
-      "modifier_lookup",
       "modifier_sample",
-      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_list", "token_lookup"] : []),
       "tokens_add_config",
       ...(TOKEN_READ_SURFACE_ENABLED ? ["token_sample"] : []),
       "config_show",
       "config_tier",
       "config_channel",
+      "config_detail",
       "ontology_list",
       "ontology_show",
       "graph_query",
@@ -151,21 +146,30 @@ describe("tool listing", () => {
       "doctor",
       "info",
       "capabilities",
-      "llm",
       "create_component",
       "create_package",
       "create_application",
       "create_domain",
       "create_route",
       "create_wrapper",
-      // Bundled packs register after the built-in tools: `tier_list` and the
-      // whole `standard` noun are served by bundled story packs — the
-      // hand-written tier and standard domains were deleted.
+      // Bundled packs register after the built-in tools, in BUNDLED_PACKS
+      // order: `tier`, `standard`, `modifier`, then `token`. The hand-written
+      // tier, standard, modifier list/lookup, and token list/lookup domains
+      // were deleted and are now served by bundled story packs (only the
+      // `modifier sample` and `tokens_add_config` built-in remnants remain
+      // above; `token sample` is part of the flag-gated token read surface).
+      // The `token` pack (token_list/token_lookup) is bundled only while the
+      // token read surface is feature-flagged on.
       "tier_list",
       "standard_list",
       "standard_lookup",
       "standard_categories",
       "standard_sample",
+      "modifier_list",
+      "modifier_lookup",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_list", "token_lookup"] : []),
+      // block is a partial migration: only the lookup verb is pack-served.
+      "block_lookup",
     ]);
   });
 
@@ -285,6 +289,9 @@ describe("block_list", () => {
 
 describe("block_lookup", () => {
   it("returns detailed block data by default", async () => {
+    // Served by the bundled block pack (GraphQL fetch path): the default
+    // disclosure level is `detailed`, so anatomy, modifier families with
+    // values, and properties arrive without any parameter.
     const result = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"] },
@@ -293,22 +300,26 @@ describe("block_lookup", () => {
       results: Record<string, unknown>[];
     };
     expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]).toHaveProperty("modifierValues");
-    expect(data.results[0]).toHaveProperty("implementationPaths");
-    expect(data.results[0]).toHaveProperty("tokens");
+    expect(data.results[0]).toHaveProperty("anatomyDsl");
+    expect(data.results[0]).toHaveProperty("modifierFamilies");
+    expect(data.results[0]).toHaveProperty("properties");
   });
 
-  it("returns summary when detailed=false", async () => {
+  it("returns the base view when detail=summary", async () => {
+    // The pack's `--detail` disclosure parameter replaces the old boolean
+    // `detailed` flag; the base level fetch-gates the detailed sections
+    // (they are never queried, not just hidden).
     const result = await client.callTool({
       name: "block_lookup",
-      arguments: { names: ["Button"], detailed: false },
+      arguments: { names: ["Button"], detail: "summary" },
     });
     const data = parseData(result) as {
       results: Record<string, unknown>[];
     };
     expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]).not.toHaveProperty("modifierValues");
-    expect(data.results[0]).not.toHaveProperty("implementationPaths");
+    expect(data.results[0]).toHaveProperty("summary");
+    expect(data.results[0]).not.toHaveProperty("anatomyDsl");
+    expect(data.results[0]).not.toHaveProperty("modifierFamilies");
   });
 
   it("returns structured per-query errors for unknown blocks", async () => {
@@ -453,10 +464,13 @@ describe("modifier_list", () => {
       name: "modifier_list",
       arguments: {},
     });
-    const data = parseData(result) as { name: string; values: string[] }[];
+    const data = parseData(result) as { name: string; values: string }[];
     expect(data.length).toBeGreaterThan(0);
     const names = data.map((m) => m.name);
     expect(names).toContain("importance");
+    // The pack list GROUP_CONCATs values into one display column.
+    const importance = data.find((m) => m.name === "importance");
+    expect(importance?.values).toContain("primary");
   });
 });
 
@@ -467,10 +481,13 @@ describe("modifier_lookup", () => {
       arguments: { names: ["importance"] },
     });
     const data = parseData(result) as {
-      results: { name: string; values: string[] }[];
+      results: { name: string; values: { name: string }[] }[];
     };
     expect(data.results[0]?.name).toBe("importance");
-    expect(data.results[0]?.values).toContain("primary");
+    // Pack expand rows are small records; the value strings are unchanged.
+    expect(data.results[0]?.values.map((value) => value.name)).toContain(
+      "primary",
+    );
   });
 
   it("returns per-query errors for unknown modifier", async () => {
@@ -506,14 +523,18 @@ describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
       name: "token_lookup",
       arguments: { names: ["color.primary"] },
     });
+    // Served by the bundled token pack: theme values are the flat
+    // valueLight/valueDark fields (the old nested {theme, value} shape).
     const data = parseData(result) as {
       results: {
         name: string;
-        values: { theme: string; value: string }[];
+        valueLight?: string;
+        valueDark?: string;
       }[];
     };
     expect(data.results[0]?.name).toBe("color.primary");
-    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
+    expect(data.results[0]?.valueLight).toBeTruthy();
+    expect(data.results[0]?.valueDark).toBeTruthy();
   });
 
   it("returns per-query errors for unknown token", async () => {
@@ -691,6 +712,71 @@ describe("config_channel", () => {
   });
 });
 
+describe("config_detail", () => {
+  it("sets, queries, and resets detail in workspace config", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-detail-"));
+    // Seed a project file so global-first writes stay in this workspace.
+    writeFileSync(join(dir, "pragma.config.json"), "{}");
+
+    try {
+      const scoped = await createTestMcpClient({ cwd: dir });
+
+      try {
+        const setResult = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: { level: "digest" },
+        });
+        expect(parseData(setResult)).toMatchObject({
+          detail: "digest",
+          action: "set",
+        });
+
+        const queryResult = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: {},
+        });
+        expect(parseData(queryResult)).toEqual({
+          detail: "digest",
+          action: "query",
+        });
+
+        const resetResult = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: { reset: true },
+        });
+        expect(parseData(resetResult)).toMatchObject({
+          detail: null,
+          action: "reset",
+        });
+
+        const queriedAfterReset = await scoped.client.callTool({
+          name: "config_detail",
+          arguments: {},
+        });
+        expect(parseData(queriedAfterReset)).toEqual({
+          detail: null,
+          action: "query",
+        });
+      } finally {
+        await scoped.cleanup();
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("returns an error for a non-token detail value", async () => {
+    const result = await client.callTool({
+      name: "config_detail",
+      arguments: { level: "Very Detailed" },
+    });
+    expect(result.isError).toBe(true);
+    const envelope = parseEnvelope(result);
+    const error = envelope.error as McpErrorPayload;
+    expect(error.code).toBe("INVALID_INPUT");
+  });
+});
+
 describe("tokens_add_config", () => {
   it("writes a token config file and reports its path", async () => {
     const dir = mkdtempSync(join(tmpdir(), "pragma-mcp-token-config-"));
@@ -838,29 +924,6 @@ describe("create_package", () => {
 });
 
 // =============================================================================
-// LLM Orientation
-// =============================================================================
-
-describe("llm", () => {
-  it("returns orientation data with context, trees, and commands", async () => {
-    const result = await client.callTool({
-      name: "llm",
-      arguments: {},
-    });
-    const data = parseData(result) as {
-      context: { counts: Record<string, number>; namespaces: string[] };
-      decisionTrees: { intent: string }[];
-      commandReference: { command: string }[];
-    };
-    expect(data.context.counts.blocks).toBeGreaterThan(0);
-    expect(data.context.counts.standards).toBeGreaterThan(0);
-    expect(data.context.namespaces.length).toBeGreaterThan(0);
-    expect(data.decisionTrees).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 5 : 4);
-    expect(data.commandReference.length).toBeGreaterThan(0);
-  });
-});
-
-// =============================================================================
 // Error handling
 // =============================================================================
 
@@ -869,6 +932,7 @@ describe("error handling", () => {
     const notFoundCalls = [
       { name: "block_lookup", arguments: { names: ["X"] } },
       { name: "modifier_lookup", arguments: { names: ["X"] } },
+      // token_lookup is only registered while the token read surface is on.
       ...(TOKEN_READ_SURFACE_ENABLED
         ? [{ name: "token_lookup", arguments: { names: ["X"] } }]
         : []),
@@ -1068,7 +1132,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(EXPECTED_TOOL_COUNT + 2);
+      expect(tools).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 36 : 33);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 
@@ -1155,38 +1219,73 @@ describe("info", () => {
 // =============================================================================
 
 describe("capabilities", () => {
-  it("returns enriched tool catalog with counts", async () => {
+  it("aggregates instructions, state, prompts, and tools (mirror payloads)", async () => {
     const result = await client.callTool({
       name: "capabilities",
       arguments: {},
     });
     const data = parseData(result) as {
-      version: string;
-      conventions: Record<string, string>;
-      discovery_sequence: { stage: number; tool: string; purpose: string }[];
-      tools: { name: string; category: string; use_when: string }[];
-      counts: {
-        total: number;
-        read: number;
-        write: number;
-        orientation: number;
-        diagnostic: number;
-      };
-      limits: Record<string, unknown>;
+      instructions: string;
+      state: { version: string; state: Record<string, unknown> };
+      prompts: { name: string }[];
+      tools: { name: string; description: string; inputSchema: unknown }[];
     };
-    const toolNames = data.tools.map((t) => t.name);
-    expect(toolNames).toContain("block_list");
-    expect(toolNames).toContain("capabilities");
-    expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(EXPECTED_TOOL_COUNT);
-    expect(data.counts.read).toBeGreaterThan(0);
-    expect(data.counts.write).toBe(9);
-    expect(data.counts.orientation).toBe(2);
-    expect(data.counts.diagnostic).toBe(2);
-    expect(data.version).toBeDefined();
-    expect(data.conventions).toBeDefined();
-    expect(data.discovery_sequence.length).toBe(3);
-    expect(data.limits).toBeDefined();
+
+    // instructions ≡ the initialize-result instructions.
+    expect(data.instructions).toBe(client.getInstructions());
+
+    // state ≡ the JSON text of resources/read pragma://state.
+    const resource = await client.readResource({ uri: "pragma://state" });
+    const stateText = (resource.contents[0] as { text: string }).text;
+    expect(data.state).toEqual(JSON.parse(stateText));
+
+    // prompts ≡ the prompts/list result's prompts array.
+    const { prompts } = await client.listPrompts();
+    expect(data.prompts).toEqual(JSON.parse(JSON.stringify(prompts)));
+
+    // tools ≡ the tools/list result's tools array — including this tool
+    // itself (the aggregator never special-cases itself out).
+    const { tools } = await client.listTools();
+    expect(data.tools).toEqual(JSON.parse(JSON.stringify(tools)));
+    expect(data.tools.map((t) => t.name)).toContain("capabilities");
+    expect(data.tools.map((t) => t.name)).toContain("block_list");
+  });
+
+  it("hydrates one prompt via { prompt, args } (tools-only prompts/get)", async () => {
+    const result = await client.callTool({
+      name: "capabilities",
+      arguments: {
+        prompt: "implement-component",
+        args: { component: "Button" },
+      },
+    });
+    const data = parseData(result) as {
+      description: string;
+      messages: { role: string; content: { type: string; text: string } }[];
+    };
+    expect(data.messages).toHaveLength(1);
+    expect(data.messages[0]?.role).toBe("user");
+    expect(data.messages[0]?.content.text).toContain(
+      "You are implementing the Button component",
+    );
+
+    const viaProtocol = await client.getPrompt({
+      name: "implement-component",
+      arguments: { component: "Button" },
+    });
+    expect(data).toEqual(JSON.parse(JSON.stringify(viaProtocol)));
+  });
+
+  it("returns ENTITY_NOT_FOUND with suggestions for an unknown prompt", async () => {
+    const result = await client.callTool({
+      name: "capabilities",
+      arguments: { prompt: "implement-compnent" },
+    });
+    expect(result.isError).toBe(true);
+    const envelope = parseEnvelope(result);
+    const error = envelope.error as McpErrorPayload;
+    expect(error.code).toBe("ENTITY_NOT_FOUND");
+    expect(error.suggestions).toContain("implement-component");
   });
 });
 

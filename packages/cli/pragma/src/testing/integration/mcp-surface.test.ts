@@ -42,37 +42,41 @@ function parseEnvelope(
 // ---------------------------------------------------------------------------
 
 describe("capabilities", () => {
-  it("returns enriched tool catalog with conventions", async () => {
+  it("returns the aggregate of every orientation surface", async () => {
     const res = await client.callTool({ name: "capabilities", arguments: {} });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
-      version: string;
-      conventions: Record<string, string>;
-      tools: { name: string; category: string; use_when: string }[];
-      counts: Record<string, number>;
+      instructions: string;
+      state: { version: string; state: Record<string, unknown> };
+      prompts: { name: string }[];
+      tools: { name: string }[];
     };
+    expect(data.instructions).toContain("pragma://state");
+    expect(Object.keys(data.state.state)).toEqual([
+      "tier",
+      "channel",
+      "detail",
+      "packages",
+    ]);
+    expect(data.prompts.map((p) => p.name)).toContain("implement-component");
     const toolNames = data.tools.map((t) => t.name);
     expect(toolNames).toContain("block_list");
     expect(toolNames).toContain("capabilities");
-    expect(data.tools.every((t) => t.use_when.length > 0)).toBe(true);
-    expect(data.counts.total).toBe(TOKEN_READ_SURFACE_ENABLED ? 34 : 31);
-    expect(data.conventions).toBeDefined();
-    expect(data.version).toBeDefined();
   });
-});
 
-describe("llm", () => {
-  it("returns orientation with decision trees", async () => {
-    const res = await client.callTool({ name: "llm", arguments: {} });
+  it("returns one hydrated prompt when prompt is passed", async () => {
+    const res = await client.callTool({
+      name: "capabilities",
+      arguments: { prompt: "fix-empty-results" },
+    });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
     const data = body.data as {
-      decisionTrees: unknown[];
-      commandReference: unknown[];
+      messages: { content: { text: string } }[];
     };
-    expect(data.decisionTrees.length).toBeGreaterThan(0);
-    expect(data.commandReference.length).toBeGreaterThan(0);
+    expect(data.messages).toHaveLength(1);
+    expect(data.messages[0]?.content.text.length).toBeGreaterThan(0);
   });
 });
 
@@ -117,21 +121,21 @@ describe("block_lookup", () => {
     expect(body.ok).toBe(true);
     const data = body.data as { results: Record<string, unknown>[] };
     expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]).toHaveProperty("modifierValues");
+    expect(data.results[0]).toHaveProperty("modifierFamilies");
   });
 
-  it("resolves block lookup by prefixed IRI", async () => {
+  it("reports IRI queries as not found (name-based lookup only)", async () => {
+    // The bundled block pack looks up by ds:name; IRI-based lookup is a
+    // flat-compiler primitive that arrives with the P1.5 slice. Until then
+    // an IRI query fails typed, with name suggestions.
     const res = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["ds:global.component.button"] },
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { results: { name: string; uri: string }[] };
-    expect(data.results[0]?.name).toBe("Button");
-    expect(data.results[0]?.uri).toBe(
-      "https://ds.canonical.com/global.component.button",
-    );
+    const data = body.data as { errors: { code: string }[] };
+    expect(data.errors[0]?.code).toBe("ENTITY_NOT_FOUND");
   });
 
   it("returns structured per-query errors for unknown blocks", async () => {
@@ -236,8 +240,12 @@ describe("modifier_lookup", () => {
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
-    const data = body.data as { results: { values: string[] }[] };
-    expect(data.results[0]?.values).toContain("primary");
+    // Served by the bundled modifier pack via the GraphQL fetch path; the
+    // expand's rows are {name} records carrying the same value strings.
+    const data = body.data as { results: { values: { name: string }[] }[] };
+    expect(data.results[0]?.values.map((value) => value.name)).toContain(
+      "primary",
+    );
   });
 });
 
@@ -265,11 +273,14 @@ describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
     });
     const body = parseEnvelope(res);
     expect(body.ok).toBe(true);
+    // Served by the bundled token pack: theme values are the flat
+    // valueLight/valueDark fields (the old nested {theme, value} shape).
     const data = body.data as {
-      results: { name: string; values: unknown[] }[];
+      results: { name: string; valueLight?: string; valueDark?: string }[];
     };
     expect(data.results[0]?.name).toBe("color.primary");
-    expect((data.results[0]?.values ?? []).length).toBeGreaterThan(0);
+    expect(data.results[0]?.valueLight).toBeTruthy();
+    expect(data.results[0]?.valueDark).toBeTruthy();
   });
 });
 
@@ -332,6 +343,20 @@ describe("config_channel", () => {
     const data = body.data as { channel: string; action: string };
     expect(data.action).toBe("query");
     expect(data.channel).toBe("normal");
+  });
+});
+
+describe("config_detail", () => {
+  it("queries current detail", async () => {
+    const res = await client.callTool({
+      name: "config_detail",
+      arguments: {},
+    });
+    const body = parseEnvelope(res);
+    expect(body.ok).toBe(true);
+    const data = body.data as { detail: string | null; action: string };
+    expect(data.action).toBe("query");
+    expect(data.detail).toBeNull();
   });
 });
 

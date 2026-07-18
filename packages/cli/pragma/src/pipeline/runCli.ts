@@ -1,9 +1,9 @@
 import type { GlobalFlags } from "@canonical/cli-core";
 import { CommanderError } from "commander";
+import { DEFAULT_ORIGINS } from "#config";
 import { PROGRAM_NAME, VERSION } from "../constants.js";
 import { commands as createCommands } from "../domains/create/index.js";
 import { commands as graphqlCommands } from "../domains/graphql/index.js";
-import { buildCapabilitiesCommand } from "../domains/llm/index.js";
 import { commands as refsCommands } from "../domains/refs/index.js";
 import { commands as setupCommands } from "../domains/setup/index.js";
 import type { PragmaContext } from "../domains/shared/context.js";
@@ -26,6 +26,16 @@ import {
   renderErrorPlain,
 } from "./renderError.js";
 import resolveCommandKind from "./resolveCommandKind.js";
+
+/**
+ * `graphql()` for store-less stub contexts (help, verb suggestions,
+ * store-skip commands): those paths never resolve a story, so this only
+ * exists to satisfy the runtime contract — and fails typed if ever reached.
+ */
+const stubGraphql = (): Promise<never> =>
+  Promise.reject(
+    PragmaError.storeError("GraphQL schema requires a booted store."),
+  );
 
 function hasCommandArg(argv: readonly string[]): boolean {
   const args = argv.slice(2);
@@ -100,6 +110,7 @@ async function handleDoctor(
 async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
+    graphql: stubGraphql,
     ...(await resolveHelpConfig()),
     cwd: process.cwd(),
     dispose: () => {},
@@ -127,11 +138,11 @@ async function handleRootHelp(globalFlags: GlobalFlags): Promise<void> {
  * @note Impure — reads config and resolves packages from disk.
  */
 async function resolveHelpConfig(): Promise<
-  Pick<PragmaRuntime, "config" | "packages">
+  Pick<PragmaRuntime, "config" | "origins" | "packages">
 > {
   try {
-    const { readConfig } = await import("#config");
-    const config = readConfig(process.cwd());
+    const { readConfigLayers } = await import("#config");
+    const { config, origins } = readConfigLayers(process.cwd());
     const { resolveSemanticPackages } = await import(
       "../domains/shared/semanticPackage.js"
     );
@@ -145,9 +156,13 @@ async function resolveHelpConfig(): Promise<
       mergeAndParseRefs(config.packages),
       [createLocalLoader(), createGitLoader()],
     );
-    return { config, packages };
+    return { config, origins, packages };
   } catch {
-    return { config: { tier: undefined, channel: "normal" }, packages: [] };
+    return {
+      config: { tier: undefined, channel: "normal" },
+      origins: DEFAULT_ORIGINS,
+      packages: [],
+    };
   }
 }
 
@@ -232,7 +247,9 @@ async function runStoreSkip(
 ): Promise<void> {
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
+    graphql: stubGraphql,
     config: { tier: undefined, channel: "normal" },
+    origins: DEFAULT_ORIGINS,
     cwd: process.cwd(),
     packages: [],
     dispose: () => {},
@@ -245,7 +262,6 @@ async function runStoreSkip(
     ...traceCommands(),
     ...graphqlCommands(),
     ...createCommands(),
-    buildCapabilitiesCommand(),
   ];
   const program = createProgram(commands, stubCtx);
 
@@ -281,6 +297,7 @@ async function suggestNounVerbs(argv: readonly string[]): Promise<void> {
   if (!noun) return;
   const stubCtx: PragmaContext = {
     store: {} as PragmaRuntime["store"],
+    graphql: stubGraphql,
     ...(await resolveHelpConfig()),
     cwd: process.cwd(),
     dispose: () => {},

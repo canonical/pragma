@@ -14,10 +14,7 @@ import { readConfigLayers } from "#config";
 import { VERSION } from "#constants";
 import { detectInstallSource } from "#package-manager";
 // ---- Formatters ----
-import {
-  listFormatters as blockListFmt,
-  lookupFormatters as blockLookupFmt,
-} from "../../domains/block/formatters/index.js";
+import { listFormatters as blockListFmt } from "../../domains/block/formatters/index.js";
 // ---- Operations ----
 import {
   listBlocks,
@@ -28,10 +25,6 @@ import { resolveConfigShow } from "../../domains/config/operations/index.js";
 import { renderInfoLlm } from "../../domains/info/formatters/index.js";
 import { collectStoreSummary } from "../../domains/info/operations/index.js";
 import type { InfoData } from "../../domains/info/types.js";
-import {
-  listFormatters as modifierListFmt,
-  lookupFormatters as modifierLookupFmt,
-} from "../../domains/modifier/formatters/index.js";
 import {
   listModifiers,
   lookupModifier,
@@ -46,10 +39,6 @@ import { listTiers } from "../../domains/shared/listTiers.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import { listDomainNames } from "../../domains/shared/suggestions/index.js";
 import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
-import {
-  createLookupFormatters as createTokenLookupFmt,
-  listFormatters as tokenListFmt,
-} from "../../domains/token/formatters/index.js";
 import {
   listTokens,
   lookupToken,
@@ -126,39 +115,121 @@ describe("block parity", () => {
     expect(body.text).toBe(expectedText);
   });
 
-  it("block_lookup: detailed result matches", async () => {
+  // `block_lookup` is served by the bundled `block` pack over the GraphQL
+  // fetch path (block LIST stays built-in — partial migration). Semantic
+  // parity against the kept lookupBlock operation: same entity, same
+  // summary/anatomy/modifier values, in the uniform flat pack shape.
+  it("block_lookup (bundled pack): resolves the same entity with anatomy and modifier values", async () => {
     const opResults = await lookupBlock(rt.store, "Button", rt.config);
     expect(opResults.length).toBeGreaterThan(0);
-    const opResult = opResults[0];
+    const opResult = opResults[0] as NonNullable<(typeof opResults)[0]>;
     const mcpRes = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"] },
     });
     const body = parseEnvelope(mcpRes);
-    expect(body.data).toEqual({ results: [opResult], errors: [] });
+    const data = body.data as {
+      results: Array<{
+        uri: string;
+        name: string;
+        summary?: string;
+        whenToUse?: string;
+        whenNotToUse?: string;
+        anatomyDsl?: string;
+        anatomyClassic?: string;
+        figmaLink?: string;
+        modifierFamilies?: Array<{ name: string; values: string[] }>;
+        properties?: Array<{
+          name: string;
+          type?: string;
+          optional?: string;
+          default?: string;
+          constraints?: string;
+        }>;
+        subcomponents?: Array<{ name: string; uri: string }>;
+      }>;
+      errors: unknown[];
+    };
+    expect(data.errors).toEqual([]);
+    const entity = data.results[0];
+
+    expect(entity?.uri).toBe(opResult.uri);
+    expect(entity?.name).toBe(opResult.name);
+    expect(entity?.summary).toBe(opResult.summary);
+    expect(entity?.anatomyDsl).toBe(opResult.anatomyDsl);
+    // The detail texts the old lookup surfaced as OPTIONAL bindings — the
+    // fixture populates every one of them on Button, so content (not mere
+    // presence) is asserted against the kept operation.
+    expect(opResult.whenToUse).toBeTruthy();
+    expect(entity?.whenToUse).toBe(opResult.whenToUse);
+    expect(opResult.whenNotToUse).toBeTruthy();
+    expect(entity?.whenNotToUse).toBe(opResult.whenNotToUse);
+    expect(opResult.anatomyClassic).toBeTruthy();
+    expect(entity?.anatomyClassic).toBe(opResult.anatomyClassic);
+    expect(opResult.figmaLink).toBeTruthy();
+    expect(entity?.figmaLink).toBe(opResult.figmaLink);
+    // The 2-hop nest: every family the old domain resolved, with the same
+    // values, fetched through ONE generated GraphQL document.
+    const packFamilies = new Map(
+      (entity?.modifierFamilies ?? []).map((family) => [
+        family.name,
+        [...family.values].sort(),
+      ]),
+    );
+    for (const family of opResult.modifierFamilies) {
+      expect(packFamilies.get(family.name)).toEqual([...family.values].sort());
+    }
+    // Per-property parity including the restored `constraints` column.
+    expect(opResult.properties.length).toBeGreaterThan(0);
+    const packProperties = new Map(
+      (entity?.properties ?? []).map((property) => [property.name, property]),
+    );
+    for (const property of opResult.properties) {
+      const packProperty = packProperties.get(property.name);
+      expect(packProperty).toBeDefined();
+      expect(packProperty?.constraints).toBe(property.constraints ?? undefined);
+      expect(packProperty?.type).toBe(property.propertyType || undefined);
+    }
+    // Depth-1 subcomponents: same children (name AND full IRI) as the old
+    // recursive tree's first level — deeper nesting has no data.
+    expect(opResult.subcomponents.length).toBeGreaterThan(0);
+    const packSubcomponents = new Map(
+      (entity?.subcomponents ?? []).map((sub) => [sub.name, sub.uri]),
+    );
+    for (const sub of opResult.subcomponents) {
+      expect(packSubcomponents.get(sub.name)).toBe(sub.uri);
+    }
   });
 
-  it("block_lookup condensed: matches llm formatter", async () => {
+  it("block_lookup condensed renders the anatomy code block and modifier values", async () => {
     const opResults = await lookupBlock(rt.store, "Button", rt.config);
-    expect(opResults.length).toBeGreaterThan(0);
-    const opResult = opResults[0];
-    const expectedText = blockLookupFmt.llm({
-      block: opResult,
-      detailed: true,
-      aspects: {
-        anatomy: true,
-        modifiers: true,
-        tokens: true,
-        implementations: true,
-      },
-    });
-
+    const opResult = opResults[0] as NonNullable<(typeof opResults)[0]>;
     const mcpRes = await client.callTool({
       name: "block_lookup",
       arguments: { names: ["Button"], condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain(`## ${opResult.name}`);
+    expect(body.text).toContain("### Anatomy (DSL)");
+    expect(body.text).toContain(opResult.anatomyDsl ?? "");
+    // Restored detail sections render with their old headings and content.
+    expect(body.text).toContain("### When to use");
+    expect(body.text).toContain(opResult.whenToUse ?? "");
+    expect(body.text).toContain("### When not to use");
+    expect(body.text).toContain(opResult.whenNotToUse ?? "");
+    expect(body.text).toContain("### Anatomy (classic)");
+    expect(body.text).toContain(opResult.anatomyClassic ?? "");
+    expect(body.text).toContain(opResult.figmaLink ?? "");
+    expect(body.text).toContain("### Subcomponents");
+    for (const sub of opResult.subcomponents) {
+      expect(body.text).toContain(sub.name);
+    }
+    for (const family of opResult.modifierFamilies) {
+      expect(body.text).toContain(family.name);
+      for (const value of family.values) {
+        expect(body.text).toContain(value);
+      }
+    }
   });
 });
 
@@ -341,49 +412,92 @@ describe("tier parity (bundled pack)", () => {
 // Modifier parity
 // ---------------------------------------------------------------------------
 
-describe("modifier parity", () => {
-  it("modifier_list: families match", async () => {
+describe("modifier parity (bundled pack)", () => {
+  // `modifier list`/`modifier lookup` are served by the bundled `modifier`
+  // story pack: the list is a declarative SELECT, the lookup rides the
+  // GraphQL fetch path (`source: "graphql"`). These tests assert *semantic*
+  // parity against the kept operations — every family and value the old
+  // TS domain returned still comes back, in the uniform pack shape.
+  it("modifier_list returns every family with its values", async () => {
     const opResult = await listModifiers(rt.store);
     const mcpRes = await client.callTool({
       name: "modifier_list",
       arguments: {},
     });
-    assertParity(opResult, mcpRes);
+    const body = parseEnvelope(mcpRes);
+    const rows = body.data as Array<{
+      uri: string;
+      name: string;
+      values?: string;
+    }>;
+
+    // Same families — none dropped or invented by the cutover.
+    expect(new Set(rows.map((row) => row.uri))).toEqual(
+      new Set(opResult.map((family) => family.uri)),
+    );
+    // Same values per family (the pack GROUP_CONCATs them for display).
+    for (const family of opResult) {
+      const row = rows.find((entry) => entry.uri === family.uri);
+      expect(row?.name).toBe(family.name);
+      const packValues = (row?.values ?? "")
+        .split(", ")
+        .filter((value) => value !== "")
+        .sort();
+      expect(packValues).toEqual([...family.values].sort());
+    }
   });
 
-  it("modifier_list condensed: matches llm formatter", async () => {
+  it("modifier_list condensed lists every family under a markdown heading", async () => {
     const opResult = await listModifiers(rt.store);
-    const expectedText = modifierListFmt.llm([...opResult]);
-
     const mcpRes = await client.callTool({
       name: "modifier_list",
       arguments: { condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain("## Modifier");
+    for (const family of opResult) {
+      expect(body.text).toContain(family.name);
+    }
   });
 
-  it("modifier_lookup: values match", async () => {
+  it("modifier_lookup resolves a family with its values via GraphQL", async () => {
     const opResult = await lookupModifier(rt.store, "importance");
     const mcpRes = await client.callTool({
       name: "modifier_lookup",
       arguments: { names: ["importance"] },
     });
     const body = parseEnvelope(mcpRes);
-    const data = body.data as { results: unknown[]; errors: unknown[] };
-    expect(data.results[0]).toEqual(opResult);
+    const data = body.data as {
+      results: Array<{
+        uri: string;
+        name: string;
+        values: Array<{ name: string }>;
+      }>;
+      errors: unknown[];
+    };
+    expect(data.errors).toEqual([]);
+    const entity = data.results[0];
+
+    // Same entity, same values — fetched through ONE GraphQL document
+    // instead of the old per-name SPARQL, unwrapped to the flat pack shape.
+    expect(entity?.uri).toBe(opResult.uri);
+    expect(entity?.name).toBe(opResult.name);
+    expect(entity?.values.map((value) => value.name).sort()).toEqual(
+      [...opResult.values].sort(),
+    );
   });
 
-  it("modifier_lookup condensed: matches llm formatter", async () => {
+  it("modifier_lookup condensed renders name and values", async () => {
     const opResult = await lookupModifier(rt.store, "importance");
-    const expectedText = modifierLookupFmt.llm(opResult);
-
     const mcpRes = await client.callTool({
       name: "modifier_lookup",
       arguments: { names: ["importance"], condensed: true },
     });
     const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
+    expect(body.text).toContain(`## ${opResult.name}`);
+    for (const value of opResult.values) {
+      expect(body.text).toContain(value);
+    }
   });
 });
 
@@ -391,52 +505,94 @@ describe("modifier parity", () => {
 // Token parity
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token parity", () => {
-  it("token_list: count matches", async () => {
-    const opResult = await listTokens(rt.store);
-    const mcpRes = await client.callTool({
-      name: "token_list",
-      arguments: {},
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+  "token parity (bundled pack)",
+  () => {
+    // `token list`/`token lookup` are served by the bundled `token` story
+    // pack. Semantic parity against the kept operations: same tokens, same
+    // type and theme values, in the uniform flat pack shape.
+    it("token_list returns every token with its type", async () => {
+      const opResult = await listTokens(rt.store);
+      const mcpRes = await client.callTool({
+        name: "token_list",
+        arguments: {},
+      });
+      const body = parseEnvelope(mcpRes);
+      const rows = body.data as Array<{
+        uri: string;
+        name: string;
+        category?: string;
+      }>;
+
+      expect(new Set(rows.map((row) => row.uri))).toEqual(
+        new Set(opResult.map((token) => token.uri)),
+      );
+      for (const token of opResult) {
+        const row = rows.find((entry) => entry.uri === token.uri);
+        expect(row?.name).toBe(token.name);
+        expect(row?.category ?? "").toBe(token.category);
+      }
     });
-    assertParity(opResult, mcpRes);
-  });
 
-  it("token_list condensed: matches llm formatter", async () => {
-    const opResult = await listTokens(rt.store);
-    const expectedText = tokenListFmt.llm([...opResult]);
-
-    const mcpRes = await client.callTool({
-      name: "token_list",
-      arguments: { condensed: true },
+    it("token_list condensed lists every token under a markdown heading", async () => {
+      const opResult = await listTokens(rt.store);
+      const mcpRes = await client.callTool({
+        name: "token_list",
+        arguments: { condensed: true },
+      });
+      const body = parseCondensed(mcpRes);
+      expect(body.text).toContain("## Token");
+      for (const token of opResult) {
+        expect(body.text).toContain(token.name);
+      }
     });
-    const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
-  });
 
-  it("token_lookup: values match", async () => {
-    const opResult = await lookupToken(rt.store, "color.primary");
-    const mcpRes = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.primary"] },
+    it("token_lookup resolves a token with its theme values", async () => {
+      const opResult = await lookupToken(rt.store, "color.primary");
+      const mcpRes = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.primary"] },
+      });
+      const body = parseEnvelope(mcpRes);
+      const data = body.data as {
+        results: Array<{
+          uri: string;
+          name: string;
+          category?: string;
+          valueLight?: string;
+          valueDark?: string;
+        }>;
+        errors: unknown[];
+      };
+      expect(data.errors).toEqual([]);
+      const entity = data.results[0];
+
+      // Same token, same values — the pack flattens the old
+      // `values: [{theme, value}]` nesting to valueLight/valueDark fields.
+      expect(entity?.uri).toBe(opResult.uri);
+      expect(entity?.name).toBe(opResult.name);
+      expect(entity?.category).toBe(opResult.category);
+      const byTheme = new Map(
+        opResult.values.map((value) => [value.theme, value.value]),
+      );
+      expect(entity?.valueLight).toBe(byTheme.get("light"));
+      expect(entity?.valueDark).toBe(byTheme.get("dark"));
     });
-    const body = parseEnvelope(mcpRes);
-    const data = body.data as { results: unknown[]; errors: unknown[] };
-    expect(data.results[0]).toEqual(opResult);
-  });
 
-  it("token_lookup condensed: matches llm formatter", async () => {
-    const opResult = await lookupToken(rt.store, "color.primary");
-    const fmt = createTokenLookupFmt({ detailed: true });
-    const expectedText = fmt.llm(opResult);
-
-    const mcpRes = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.primary"], condensed: true },
+    it("token_lookup condensed renders name, type, and values", async () => {
+      const opResult = await lookupToken(rt.store, "color.primary");
+      const mcpRes = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.primary"], condensed: true },
+      });
+      const body = parseCondensed(mcpRes);
+      expect(body.text).toContain(`## ${opResult.name}`);
+      for (const value of opResult.values) {
+        expect(body.text).toContain(value.value);
+      }
     });
-    const body = parseCondensed(mcpRes);
-    expect(body.text).toBe(expectedText);
-  });
-});
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Ontology parity

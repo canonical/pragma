@@ -1,36 +1,20 @@
 /**
- * Block read stories — the single declaration of `block list` and
- * `block lookup` for both surfaces.
+ * Block read stories — the single declaration of `block list` for both
+ * surfaces.
  *
- * The story kernel compiles these into the CLI commands and MCP tools,
- * so descriptions, parameters, resolution, and rendering live here once.
+ * `block lookup` is served by the bundled `block` story pack over the
+ * GraphQL fetch path (see `shared/stories/pack/bundled/blockPack.ts`); the
+ * config-filtered list deliberately stays built-in (tier chain, channel,
+ * --all-tiers, digest/detailed enrichment are not declarative yet).
  */
 
-import { PragmaError } from "#error";
-import { createListView, createLookupView } from "#tui";
+import { createListView } from "#tui";
 import type { ColumnDef } from "../shared/contracts.js";
-import {
-  type LookupStory,
-  type LookupStoryView,
-  type ReadStory,
-  requirePragmaContext,
-} from "../shared/stories/index.js";
-import type { BlockDetailed } from "../shared/types/index.js";
+import type { ReadStory } from "../shared/stories/index.js";
 import { blockConfig } from "./blockConfig.js";
-import {
-  createLookupOptions,
-  listFormatters,
-  lookupFormatters,
-} from "./formatters/index.js";
-import type { BlockLookupInput } from "./formatters/types.js";
-import { resolveAspects } from "./helpers/index.js";
-import { listBlocks } from "./operations/index.js";
-import {
-  buildBlockFilters,
-  resolveBlockList,
-  resolveBlockLookup,
-} from "./orchestration/index.js";
-import type { AspectFlags, BlockListContract } from "./types.js";
+import { listFormatters } from "./formatters/index.js";
+import { resolveBlockList } from "./orchestration/index.js";
+import type { BlockListContract } from "./types.js";
 
 type BlockListItems = BlockListContract["result"]["items"];
 
@@ -42,7 +26,9 @@ export const blockListStory: ReadStory<BlockListContract, BlockListItems> = {
   verb: "list",
   description: "List blocks in the design system",
   toolDescription:
-    "List design system blocks visible under current tier and channel configuration.",
+    "List design system blocks visible under current tier and channel " +
+    "configuration. Use when browsing available components, patterns, or " +
+    "layouts under the active scope. Example: block_list { allTiers: true }.",
   params: [
     {
       name: "allTiers",
@@ -100,153 +86,6 @@ export const blockListStory: ReadStory<BlockListContract, BlockListItems> = {
       columns: reorderColumns(blockConfig.listColumns, LIST_COLUMN_ORDER),
     }),
 };
-
-/** The `block lookup` / `block_lookup` read story. */
-export const blockLookupStory: LookupStory<BlockDetailed, BlockLookupInput> = {
-  noun: "block",
-  description: "Look up block details",
-  toolDescription:
-    "Get detailed information about one or more design system blocks including anatomy, modifiers, tokens, and applicable standards.",
-  namesDescription: "Block names or IRIs",
-  namesToolDescription:
-    "Block names or IRIs to look up (e.g. ['Button', 'ds:global.component.card'])",
-  complete: async (partial, cmdCtx) => {
-    const ctx = requirePragmaContext(cmdCtx);
-    const all = await listBlocks(ctx.store, ctx.config);
-    const lower = partial.toLowerCase();
-    // Block names recur across tiers/packages; dedupe so completion offers each
-    // name once.
-    const unique = new Set(
-      all
-        .map((block) => block.name)
-        .filter((name) => name.toLowerCase().startsWith(lower)),
-    );
-    return [...unique];
-  },
-  detailedParam: {
-    description:
-      "Show full details including anatomy, modifiers, tokens, and implementations",
-    toolDescription: "Return full details (default: true for MCP)",
-  },
-  params: [
-    {
-      name: "anatomy",
-      type: "boolean",
-      description: "Show anatomy tree",
-      default: false,
-      surfaces: "cli",
-    },
-    {
-      name: "modifiers",
-      type: "boolean",
-      description: "Show modifier values",
-      default: false,
-      surfaces: "cli",
-    },
-    {
-      name: "tokens",
-      type: "boolean",
-      description: "Show token references",
-      default: false,
-      surfaces: "cli",
-    },
-    {
-      name: "implementations",
-      type: "boolean",
-      description: "Show implementation paths",
-      default: false,
-      surfaces: "cli",
-    },
-  ],
-  parameterGroups: {
-    "Aspect filters": ["anatomy", "modifiers", "tokens", "implementations"],
-  },
-  examples: [
-    "pragma block lookup Button",
-    "pragma block lookup Button Card",
-    "pragma block lookup Button --detailed",
-    "pragma block lookup Button --anatomy --modifiers",
-    "pragma block lookup Button --detailed --llm",
-    "pragma block lookup ds:global.component.button",
-  ],
-  resolve: async (rt, names) => {
-    const contract = await resolveBlockLookup(
-      rt.store,
-      names,
-      buildBlockFilters(rt),
-    );
-    return contract.result;
-  },
-  resolveDetailed: (surface, params) => {
-    if (surface === "mcp") {
-      return ((params.detailed as boolean | undefined) ?? true) === true;
-    }
-    return params.detailed === true || isAspectSelected(params);
-  },
-  toFmtInput: (block, view) => ({
-    block,
-    detailed: view.detailed,
-    aspects: resolveViewAspects(view),
-  }),
-  formatters: lookupFormatters,
-  project: (block) => {
-    const {
-      uri,
-      name,
-      type,
-      tier,
-      modifiers,
-      implementations,
-      nodeCount,
-      tokenCount,
-      summary,
-    } = block;
-    return {
-      uri,
-      name,
-      type,
-      tier,
-      modifiers,
-      implementations,
-      nodeCount,
-      tokenCount,
-      summary,
-    };
-  },
-  emptyNamesError: () =>
-    PragmaError.invalidInput("names", "(empty)", {
-      recovery: {
-        message: "List available blocks.",
-        cli: "pragma block list",
-        mcp: { tool: "block_list" },
-      },
-    }),
-  renderInk: (result, view) =>
-    createLookupView({
-      results: result.results,
-      errors: result.errors,
-      domain: "block",
-      options: createLookupOptions(view.detailed, resolveViewAspects(view)),
-    }),
-};
-
-function isAspectSelected(params: Record<string, unknown>): boolean {
-  return (
-    params.anatomy === true ||
-    params.modifiers === true ||
-    params.tokens === true ||
-    params.implementations === true
-  );
-}
-
-function resolveViewAspects(view: LookupStoryView): AspectFlags {
-  return resolveAspects({
-    anatomy: view.params.anatomy === true,
-    modifiers: view.params.modifiers === true,
-    tokens: view.params.tokens === true,
-    implementations: view.params.implementations === true,
-  });
-}
 
 function reorderColumns<T>(
   columns: readonly ColumnDef<T>[],

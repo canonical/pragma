@@ -18,7 +18,10 @@ import type { InfoData } from "../types.js";
 const specs: readonly ToolSpec[] = [
   {
     name: "info",
-    description: "Show pragma version, configuration, and store summary.",
+    description:
+      "Show pragma version, configuration, and store summary. Use when " +
+      "checking the installed version or whether the store loaded. " +
+      "Example: info {}.",
     params: {
       condensed: {
         type: "boolean",

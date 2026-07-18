@@ -9,7 +9,10 @@ const specs: readonly ToolSpec[] = [
   {
     name: "graph_query",
     description:
-      "Execute a SPARQL query against the knowledge graph. Returns raw query results. Use ontology_list to discover available namespaces and prefixes.",
+      "Execute a SPARQL query against the knowledge graph, returning raw " +
+      "results. Use when a complex join or aggregation cannot be expressed " +
+      "by other tools (ontology_list discovers prefixes first). Example: " +
+      'graph_query { sparql: "SELECT ?s WHERE { ?s a ds:Component } LIMIT 5" }.',
     params: {
       sparql: {
         type: "string",
@@ -41,7 +44,9 @@ const specs: readonly ToolSpec[] = [
   {
     name: "graph_inspect",
     description:
-      "Inspect a URI in the knowledge graph. Returns all predicates and objects for the given subject.",
+      "Inspect a URI in the knowledge graph, returning all predicates and " +
+      "objects for the subject. Use when examining every triple on one " +
+      'entity. Example: graph_inspect { uri: "ds:global.component.button" }.',
     params: {
       uri: {
         type: "string",

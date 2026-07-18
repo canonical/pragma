@@ -12,7 +12,9 @@ const specs: readonly ToolSpec[] = [
   {
     name: "doctor",
     description:
-      "Run health checks on the pragma environment. Validates config, store, completions, skills, and more.",
+      "Run health checks on the pragma environment (config, store, " +
+      "completions, skills, MCP). Use when diagnosing environment issues — " +
+      "it works even when the store cannot boot. Example: doctor {}.",
     params: {
       condensed: {
         type: "boolean",

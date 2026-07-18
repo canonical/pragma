@@ -100,6 +100,7 @@ export default function parseFrontmatter(
   return {
     name: parsed.name,
     description: parsed.description,
+    ...(typeof parsed.prompt === "boolean" && { prompt: parsed.prompt }),
     ...(typeof parsed.license === "string" && { license: parsed.license }),
     ...(Array.isArray(parsed.compatibility) && {
       compatibility: parsed.compatibility,

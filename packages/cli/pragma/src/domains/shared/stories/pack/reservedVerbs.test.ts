@@ -60,7 +60,6 @@ describe("buildReservedVerbs", () => {
     ["config", "tier"],
     ["config", "channel"],
     ["info"],
-    ["llm"],
     ["doctor"],
     ["capabilities"],
   ];
@@ -76,7 +75,7 @@ describe("buildReservedVerbs", () => {
     "token_sample",
     "tokens_add_config",
     "info",
-    "llm",
+    "capabilities",
   ];
 
   it("assembles verb sets per noun from real CLI command paths", () => {
@@ -200,6 +199,20 @@ describe("deriveReservedVerbs", () => {
     expect(derived.get("standard")).toEqual(
       new Set(["list", "lookup", "categories", "sample"]),
     );
+  });
+
+  it("keeps a migrated leaf remnant per-verb (noun left with only `sample`)", () => {
+    // After a full read cutover the built-in noun keeps only its sample
+    // verb (e.g. `modifier sample`). It must NOT promote to a whole-noun
+    // reservation: the freed read verbs belong to the bundled pack now.
+    const remnant = deriveReservedVerbs([["modifier", "sample"]] as const);
+
+    // The remnant verb itself stays reserved...
+    expect(isReserved(remnant, "modifier", "sample")).toBe(true);
+    expect(remnant.get("modifier")).toEqual(new Set(["sample"]));
+    // ...while the pack's list/lookup are admitted.
+    expect(isReserved(remnant, "modifier", "list")).toBe(false);
+    expect(isReserved(remnant, "modifier", "lookup")).toBe(false);
   });
 
   it("leaves a bare whole-noun reservation idempotent", () => {

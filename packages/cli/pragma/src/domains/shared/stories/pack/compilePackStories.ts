@@ -28,18 +28,24 @@ import {
   isGlobPattern,
   suggestNames,
 } from "../../suggestions/index.js";
-import type { SampleOutput } from "../../types/index.js";
+import type { PragmaRuntime, SampleOutput } from "../../types/index.js";
 import requirePragmaContext from "../requirePragmaContext.js";
 import type { LookupStory, ReadStory, StoryParam } from "../types.js";
 import applyPackFilters from "./applyPackFilters.js";
 import applyPackSearch from "./applyPackSearch.js";
 import buildLookupQuery, {
+  activeLookupExpands,
   buildExpandQuery,
   buildLookupByIriQuery,
   buildLookupNamesQuery,
+  buildNameResolveQuery,
 } from "./buildLookupQuery.js";
+import fetchGraphqlLookupEntity from "./fetchGraphqlLookup.js";
 import runSelectQuery from "./runSelectQuery.js";
 import type {
+  PackChildRow,
+  PackEntity,
+  PackRow,
   StoryPackDefinition,
   StoryPackDisclosure,
   StoryPackFilter,
@@ -49,16 +55,6 @@ import type {
 } from "./types.js";
 import { isEmbeddableIri } from "./validateStoryPackDefinition.js";
 
-/** A pack entity/row: SELECT variable name → string value. */
-type PackRow = Record<string, string>;
-
-/**
- * A looked-up pack entity: flat SELECT fields plus any expanded child arrays
- * (pack v1 nested projections). Scalar fields are strings; an expand's value
- * is the array of its child rows.
- */
-type PackEntity = Record<string, string | readonly PackRow[]>;
-
 /** Resolved sample data: the drawn entities plus the population size. */
 interface PackSampleData {
   readonly samples: PackEntity[];
@@ -67,7 +63,8 @@ interface PackSampleData {
 
 /** The read stories a pack definition compiles to. */
 export interface CompiledPackStories {
-  readonly list: ReadStory<PackRow[], PackRow[]>;
+  /** The list story, when the pack declares one. */
+  readonly list?: ReadStory<PackRow[], PackRow[]>;
   /** Extra list-shaped verbs (e.g. `categories`), in declaration order. */
   readonly verbs: readonly ReadStory<PackRow[], PackRow[]>[];
   readonly lookup?: LookupStory<PackEntity, PackEntity>;
@@ -98,16 +95,19 @@ export default function compilePackStories(
   const { noun } = definition;
   const description = definition.description ?? `List ${noun} entries`;
 
-  const list = compileListVerb(definition.list, {
-    noun,
-    verb: "list",
-    heading: capitalize(noun),
-    description,
-    toolDescription:
-      definition.toolDescription ?? `${description} (story pack: ${source}).`,
-    source,
-    prefixes,
-  });
+  const list = definition.list
+    ? compileListVerb(definition.list, {
+        noun,
+        verb: "list",
+        heading: capitalize(noun),
+        description,
+        toolDescription:
+          definition.toolDescription ??
+          `${description} (story pack: ${source}).`,
+        source,
+        prefixes,
+      })
+    : undefined;
 
   const verbs = (definition.verbs ?? []).map((verb) => {
     const verbDescription = verb.description ?? `List ${noun} ${verb.verb}`;
@@ -128,7 +128,7 @@ export default function compilePackStories(
     : undefined;
 
   return {
-    list,
+    ...(list ? { list } : {}),
     verbs,
     ...(compiled ? { lookup: compiled.lookup } : {}),
     ...(compiled?.sample ? { sample: compiled.sample } : {}),
@@ -190,8 +190,8 @@ function compileListVerb(
         : []),
       `pragma ${noun} ${verb} --llm`,
     ],
-    resolve: async (rt, params) =>
-      applyPackSearch(
+    resolve: async (rt, params) => {
+      const rows = applyPackSearch(
         applyPackFilters(
           await runSelectQuery(rt.store, shape.query, source),
           filters,
@@ -199,7 +199,23 @@ function compileListVerb(
         ),
         search,
         params,
-      ),
+      );
+      // Empty-result guard, thrown from resolve so both surfaces (CLI
+      // command and MCP tool) fail typed instead of rendering nothing.
+      // Filtered-to-empty ALWAYS throws (the filter is the likely cause
+      // and the recovery is mechanical); a genuinely-empty unfiltered
+      // store only throws when the pack authored an emptyRecovery hint.
+      if (rows.length === 0) {
+        const error = buildListEmptyError(
+          noun,
+          filters,
+          params,
+          shape.emptyRecovery,
+        );
+        if (error) throw error;
+      }
+      return rows;
+    },
     toOutput: (rows) => rows,
     formatters: listFormatters,
     toEnvelope: (rows) => ({ data: rows, meta: { count: rows.length } }),
@@ -311,15 +327,7 @@ function compileLookup(
         names,
       );
       const result = await lookupMany(expanded.names, (query) =>
-        lookupPackEntity(
-          rt.store,
-          lookup,
-          noun,
-          query,
-          source,
-          level,
-          prefixes,
-        ),
+        lookupPackEntity(rt, lookup, noun, query, source, prefixes, level),
       );
       return {
         ...result,
@@ -343,6 +351,54 @@ function compileLookup(
     : undefined;
 
   return { lookup: lookupStory, ...(sample ? { sample } : {}) };
+}
+
+/**
+ * Build the typed empty-list error for a pack list, or `undefined` when
+ * the emptiness should render as a plain empty list.
+ *
+ * With a VALUE-CONSTRAINED filter active the emptiness is (likely) the
+ * filter's doing, so the recovery is to re-list unfiltered — this branch
+ * fires for every pack list (the P3 generalization of P2's opt-in guard);
+ * the CLI error render and the MCP error envelope carry the same `filters`
+ * echo and `recovery` by construction. A value-constrained filter admits
+ * only validated values, so a valid value matching nothing means the store
+ * lacks that data — a mechanical recovery. VALUE-FREE filters (data-driven,
+ * no declared set) stay lenient: an unmatched free string is a legitimate
+ * empty (a typo or an empty data-driven category), so it renders `data: []`
+ * — preserving the value-free-filter and standard-parity contracts. With no
+ * value-constrained filter active the store simply has no such data: the
+ * pack's declared recovery (an install hint) applies when authored,
+ * otherwise `data: []` + `meta.count: 0` stand.
+ */
+function buildListEmptyError(
+  noun: string,
+  filters: readonly StoryPackFilter[] | undefined,
+  params: Record<string, unknown>,
+  emptyRecovery: StoryPackList["emptyRecovery"],
+): PragmaError | undefined {
+  // Only value-constrained filters (a declared `values` set) trigger the
+  // mechanical re-list recovery; value-free filters render empty leniently.
+  const applied = (filters ?? []).filter(
+    (filter) =>
+      filter.values !== undefined && typeof params[filter.param] === "string",
+  );
+  if (applied.length > 0) {
+    return PragmaError.emptyResults(noun, {
+      filters: Object.fromEntries(
+        applied.map((filter) => [filter.param, String(params[filter.param])]),
+      ),
+      recovery: {
+        message: `List all ${noun} entries without filters.`,
+        cli: `pragma ${noun} list`,
+        mcp: { tool: `${noun}_list` },
+      },
+    });
+  }
+  if (emptyRecovery) {
+    return PragmaError.emptyResults(noun, { recovery: emptyRecovery });
+  }
+  return undefined;
 }
 
 /**
@@ -400,15 +456,7 @@ function compileSample(
       const selected = pickRandom(names, count);
       const samples = await Promise.all(
         selected.map((name) =>
-          lookupPackEntity(
-            rt.store,
-            lookup,
-            noun,
-            name,
-            source,
-            level,
-            prefixes,
-          ),
+          lookupPackEntity(rt, lookup, noun, name, source, prefixes, level),
         ),
       );
       return { samples, totalCount: names.length };
@@ -478,7 +526,8 @@ async function expandPackLookupQueries(
 }
 
 /**
- * Look up one pack entity by name, prefixed name, or absolute IRI.
+ * Look up one pack entity by name, prefixed name, or absolute IRI, via the
+ * fetch strategy the pack declares.
  *
  * A query shaped like an IRI (`https://…` or `prefix:local`) is resolved
  * through the runtime prefix map and addressed exactly via a generated
@@ -487,27 +536,41 @@ async function expandPackLookupQueries(
  * IRI is validated against the embeddable-IRI shape and names are escaped
  * as SPARQL string literals, so user input never reaches query text raw.
  *
+ * Once the entity is resolved, its values are fetched per the declared
+ * source (both share the injection-safe SPARQL name resolution above):
+ *
+ * - `"sparql"` (default): one generated SELECT for the flat values plus one
+ *   sub-SELECT per active expand, each bound to the resolved IRI.
+ * - `"graphql"`: ONE generated document covering all active fields and
+ *   expands, executed in-process against the runtime's compiled schema and
+ *   unwrapped to the identical entity shape.
+ *
  * @throws PragmaError with code `ENTITY_NOT_FOUND` and ranked suggestions
  *   when no entity matches, or `INVALID_INPUT` when an IRI-shaped query
  *   uses an unknown prefix or malformed IRI.
- * @note Impure — queries the ke store.
+ * @note Impure — queries the ke store (and compiles the GraphQL schema on
+ *   the first graphql-sourced lookup).
  */
 async function lookupPackEntity(
-  store: Store,
+  rt: Pick<PragmaRuntime, "store" | "graphql">,
   lookup: StoryPackLookup,
   noun: string,
   query: string,
   source: string,
-  level: string | undefined,
   prefixes: Readonly<Record<string, string>>,
+  level?: string,
 ): Promise<PackEntity> {
+  const { store } = rt;
+  const graphqlSourced = lookup.source === "graphql";
   const rows = await runSelectQuery(
     store,
-    buildEntityQuery(lookup, query, prefixes),
+    graphqlSourced
+      ? buildNameResolveQuery(lookup, query)
+      : buildEntityQuery(lookup, query, prefixes, level),
     source,
   );
   const base = rows.at(0);
-  if (!base) {
+  if (!base?.uri) {
     const candidates = await listEntityNames(store, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
@@ -519,25 +582,30 @@ async function lookupPackEntity(
     });
   }
 
+  if (graphqlSourced) {
+    return fetchGraphqlLookupEntity(
+      rt,
+      lookup,
+      base.uri,
+      base.name ?? query,
+      source,
+      prefixes,
+      level,
+    );
+  }
+
   // Enrich with any declared multi-valued expands (pack v1 nested projections).
   // Each expand runs a sub-SELECT bound to the resolved entity IRI (`base.uri`),
   // which is store-derived, never user input. An expand tagged with a
   // disclosure level is fetched only at/above that level — so a lower level
   // never runs the sub-SELECT and the renderer omits the (absent) section.
   const entity: PackEntity = { ...base };
-  const entityUri = base.uri;
-  if (entityUri) {
-    const levels = lookup.disclosure?.levels ?? [];
-    const activeIdx = level ? levels.indexOf(level) : Number.POSITIVE_INFINITY;
-    for (const expand of lookup.expand ?? []) {
-      const requiredIdx = expand.level ? levels.indexOf(expand.level) : 0;
-      if (activeIdx < requiredIdx) continue;
-      entity[expand.name] = await runSelectQuery(
-        store,
-        buildExpandQuery(expand, entityUri),
-        source,
-      );
-    }
+  for (const expand of activeLookupExpands(lookup, level)) {
+    entity[expand.name] = await runSelectQuery(
+      store,
+      buildExpandQuery(expand, base.uri),
+      source,
+    );
   }
   return entity;
 }
@@ -559,9 +627,10 @@ function buildEntityQuery(
   lookup: StoryPackLookup,
   query: string,
   prefixes: Readonly<Record<string, string>>,
+  level?: string,
 ): string {
   if (!looksLikeIri(query)) {
-    return buildLookupQuery(lookup, query);
+    return buildLookupQuery(lookup, query, level);
   }
   // resolveUri validates prefix membership and rejects IRI-breaking
   // characters; the embeddable-shape check adds the validator's stricter
@@ -665,7 +734,7 @@ async function listEntityNames(
 
 /** Return a value only when it is a scalar string (expands hold arrays). */
 function scalar(
-  value: string | readonly PackRow[] | undefined,
+  value: string | readonly PackChildRow[] | undefined,
 ): string | undefined {
   return typeof value === "string" ? value : undefined;
 }

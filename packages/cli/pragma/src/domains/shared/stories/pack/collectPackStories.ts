@@ -14,13 +14,14 @@ export interface PackStoryEntry {
 
 /**
  * The verbs a pack definition compiles to — mirrors `compilePackStories`,
- * which always emits `list`, adds any declared extra verbs, and adds
- * `lookup`/`sample` only when declared. The reserved-verb guard sees the
- * FULL emission so a pack cannot shadow any built-in verb.
+ * which emits `list`/`lookup` only when each is declared (a lookup-only pack
+ * shadows nothing on a noun whose list stays built-in), adds any declared
+ * extra verbs, and adds `sample` when the lookup declares it. The reserved-verb
+ * guard sees the FULL emission so a pack cannot shadow any built-in verb.
  */
 function emittedVerbs(definition: StoryPackDefinition): string[] {
   return [
-    "list",
+    ...(definition.list ? ["list"] : []),
     ...(definition.verbs ?? []).map((verb) => verb.verb),
     ...(definition.lookup ? ["lookup"] : []),
     ...(definition.lookup?.sample ? ["sample"] : []),

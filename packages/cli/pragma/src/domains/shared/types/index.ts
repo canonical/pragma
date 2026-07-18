@@ -34,7 +34,7 @@ export type {
   OntologyQueryHint,
   OntologySummary,
 } from "./ontology.js";
-export type { PragmaRuntime } from "./runtime.js";
+export type { PragmaGraphqlApi, PragmaRuntime } from "./runtime.js";
 export type { SampleOutput, SampleResult } from "./sample.js";
 export type { StandardRef } from "./standard.js";
 export type { TierEntry } from "./tier.js";

@@ -66,7 +66,6 @@ export {
   listBlocks,
   lookupBlock,
   resolveBlockList,
-  resolveBlockLookup,
 } from "./domains/block/index.js";
 export { runChecks } from "./domains/doctor/operations/index.js";
 export {
@@ -76,9 +75,6 @@ export {
 export {
   listModifiers,
   lookupModifier,
-  modifierEmptyError,
-  resolveModifierList,
-  resolveModifierLookup,
 } from "./domains/modifier/index.js";
 export {
   listOntologies,
@@ -93,9 +89,6 @@ export {
 export {
   listTokens,
   lookupToken,
-  resolveTokenList,
-  resolveTokenLookup,
-  tokenEmptyError,
 } from "./domains/token/index.js";
 
 // — Domain Types ——————————————————————————————————————————————————————————————

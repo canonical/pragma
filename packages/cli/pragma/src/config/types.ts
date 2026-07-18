@@ -44,6 +44,17 @@ interface PragmaConfig {
    * (e.g. `"digest"`, `"detailed"`). An explicit `--detail` flag overrides it.
    */
   detail?: string | undefined;
+  /**
+   * Prompt-surface options. `skillStubs: false` disables the automatic
+   * skill-stub prompts entirely; an array of names disables just those.
+   */
+  prompts?: PromptsConfig | undefined;
+}
+
+/** Options for the MCP prompts surface. */
+interface PromptsConfig {
+  /** `false` = no skill stubs at all; array = these skill names off. */
+  readonly skillStubs?: boolean | readonly string[] | undefined;
 }
 
 /** Partial update payload for writing config changes. */
@@ -58,6 +69,8 @@ interface ConfigUpdate {
   trace?: boolean | undefined;
   /** New preferred framework, `undefined` to remove the field. */
   framework?: Framework | undefined;
+  /** New default disclosure level, `undefined` to remove the field. */
+  detail?: string | undefined;
 }
 
 /**
@@ -73,6 +86,7 @@ interface ConfigFileValues {
   readonly stories?: ReadonlyArray<StoryPackDefinition>;
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly detail?: string;
+  readonly prompts?: PromptsConfig;
 }
 
 /** Which config layer supplied an effective field value. */
@@ -88,6 +102,7 @@ interface ConfigOrigins {
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
   readonly detail: ConfigOrigin;
+  readonly prompts: ConfigOrigin;
 }
 
 /** A resolved config file layer. */
@@ -125,4 +140,5 @@ export type {
   ConfigScope,
   ConfigUpdate,
   PragmaConfig,
+  PromptsConfig,
 };

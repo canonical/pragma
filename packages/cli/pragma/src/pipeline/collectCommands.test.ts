@@ -8,7 +8,7 @@ import {
   nounVerbFromToolName,
 } from "../domains/shared/stories/pack/index.js";
 import { TOKEN_READ_SURFACE_ENABLED } from "../domains/token/featureFlag.js";
-import { allSpecs } from "../mcp/tools/index.js";
+import { allSpecs, MCP_EXTRA_RESERVED } from "../mcp/tools/index.js";
 import createTestRuntime from "../testing/helpers/createTestRuntime.js";
 import collectCommands, { builtInCommands } from "./collectCommands.js";
 
@@ -57,6 +57,7 @@ describe("collectCommands", () => {
     expect(paths).toEqual([
       "config tier",
       "config channel",
+      "config detail",
       "config trace",
       "config framework",
       "config show",
@@ -71,14 +72,11 @@ describe("collectCommands", () => {
       "setup mcp",
       "setup completions",
       "setup skills",
-      "modifier list",
-      "modifier lookup",
       "modifier sample",
-      ...(TOKEN_READ_SURFACE_ENABLED ? ["token list", "token lookup"] : []),
       "tokens add-config",
+      // `token sample` is part of the flag-gated token read surface.
       ...(TOKEN_READ_SURFACE_ENABLED ? ["token sample"] : []),
       "block list",
-      "block lookup",
       "block sample",
       "ontology list",
       "ontology show",
@@ -89,22 +87,42 @@ describe("collectCommands", () => {
       "graphql serve",
       "skill list",
       "skill lookup",
+      "prompt list",
+      "prompt lookup",
       "doctor",
       "info",
       "upgrade",
-      "llm",
       "capabilities",
     ]);
   });
 
-  it("serves `tier list` from the bundled pack, not a built-in", () => {
+  it("serves `tier list` and the modifier read verbs from bundled packs, not built-ins", () => {
     const builtInPaths = builtInCommands(makeCtx()).map((c) =>
       c.path.join(" "),
     );
     const allPaths = collectCommands(makeCtx()).map((c) => c.path.join(" "));
 
-    expect(builtInPaths).not.toContain("tier list");
-    expect(allPaths).toContain("tier list");
+    for (const path of [
+      "tier list",
+      "modifier list",
+      "modifier lookup",
+      // The `token` pack (token list/lookup) is bundled only while the token
+      // read surface is feature-flagged on.
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token list", "token lookup"] : []),
+      // block is a PARTIAL migration: only the lookup verb is pack-served,
+      // while the config-filtered `block list` stays built-in.
+      "block lookup",
+    ]) {
+      expect(builtInPaths).not.toContain(path);
+      expect(allPaths).toContain(path);
+    }
+
+    // With the token read surface off, the token pack is not bundled at all,
+    // so neither verb is served on any surface.
+    if (!TOKEN_READ_SURFACE_ENABLED) {
+      expect(allPaths).not.toContain("token list");
+      expect(allPaths).not.toContain("token lookup");
+    }
   });
 
   it("serves the whole `standard` noun from the bundled pack", () => {
@@ -144,7 +162,12 @@ describe("cross-surface reserved-verb parity", () => {
     const cliPairs = builtInCommands(makeCtx()).map((command) =>
       nounVerbFromPath(command.path),
     );
-    const mcpPairs = allSpecs.map((spec) => nounVerbFromToolName(spec.name));
+    // The MCP surface folds in its explicit no-spec reservations (the
+    // `prompt` noun — its MCP projection is prompts/list, not a tool).
+    const mcpPairs = [
+      ...allSpecs.map((spec) => nounVerbFromToolName(spec.name)),
+      ...MCP_EXTRA_RESERVED,
+    ];
 
     const cliReserved = deriveReservedVerbs(cliPairs);
     const mcpReserved = deriveReservedVerbs(mcpPairs);
@@ -163,17 +186,18 @@ describe("cross-surface reserved-verb parity", () => {
     );
 
     // Sanity: the real leaf-migration targets are present, so this asserts
-    // something (a silently empty set would make the test vacuous). `tier`
-    // and `standard` are no longer here — both were cut over to bundled
-    // packs, so they are correctly absent from the built-in reserved
-    // surface on both sides. The token noun only owns read verbs while its
-    // feature flag is on.
-    const expectedReadNouns = ["block", "modifier"];
-    if (TOKEN_READ_SURFACE_ENABLED) expectedReadNouns.push("token");
-    for (const noun of expectedReadNouns) {
+    // something (a silently empty set would make the test vacuous). `tier`,
+    // `standard`, `modifier`, and `token` read verbs are no longer here — all
+    // were cut over to bundled packs (only the `modifier sample`/`token sample`/
+    // `tokens add-config` built-in remnants remain), so they are correctly
+    // absent from the built-in reserved surface on both sides. `block` is the
+    // last hand-written read domain.
+    for (const noun of ["block"]) {
       expect(readNouns.has(noun)).toBe(true);
     }
     expect(readNouns.has("standard")).toBe(false);
+    expect(readNouns.has("modifier")).toBe(false);
+    expect(readNouns.has("token")).toBe(false);
 
     for (const noun of readNouns) {
       for (const verb of READ_VERBS) {

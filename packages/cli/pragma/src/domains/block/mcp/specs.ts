@@ -1,30 +1,28 @@
 /**
- * MCP tool specs for the block domain — block_list, block_lookup,
- * block_sample.
+ * MCP tool specs for the block domain — block_list and block_sample.
  *
- * The list and lookup tools are compiled from the block read stories in
- * `../stories.ts`; only the sample tool is spec'd by hand. The adapter
- * layer converts these into registered MCP tools via `registerFromSpec()`.
+ * `block_lookup` is compiled from the bundled `block` story pack; the list
+ * tool is compiled from the built-in block read story (config-filtered),
+ * and the sample tool is spec'd by hand. The adapter layer converts these
+ * into registered MCP tools via `registerFromSpec()`.
  */
 
-import {
-  compileLookupTool,
-  compileReadTool,
-  condense,
-} from "../../shared/stories/index.js";
+import { compileReadTool, condense } from "../../shared/stories/index.js";
 import type { ToolSpec } from "../../shared/ToolSpec.js";
 import { sampleFormatters as blockSampleFmt } from "../formatters/index.js";
 import { sampleBlocks } from "../operations/index.js";
 import { buildBlockFilters } from "../orchestration/index.js";
-import { blockListStory, blockLookupStory } from "../stories.js";
+import { blockListStory } from "../stories.js";
 
 const specs: readonly ToolSpec[] = [
   compileReadTool(blockListStory),
-  compileLookupTool(blockLookupStory),
   {
     name: "block_sample",
     description:
-      "Return 1–5 randomly selected complete block instances as exemplars. Use BEFORE writing queries to see actual data shapes, property names, and value formats. Each call returns different instances.",
+      "Return 1–5 randomly selected complete block instances as exemplars " +
+      "(different each call). Use when new to block data — see actual " +
+      "shapes, property names, and value formats BEFORE writing queries. " +
+      'Example: block_sample { count: "2" }.',
     params: {
       count: {
         type: "string",

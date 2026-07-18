@@ -96,13 +96,13 @@ const HELP_GROUPS: readonly HelpGroup[] = [
     nouns: [
       {
         noun: "capabilities",
-        summary: "Discover conventions, tools, and the discovery sequence",
-      },
-      {
-        noun: "llm",
-        summary: "LLM orientation: context, decision trees, command reference",
+        summary: "Mirror the MCP orientation payloads (state, prompts, tools)",
       },
       { noun: "mcp", summary: "Start the MCP server over stdio" },
+      {
+        noun: "prompt",
+        summary: "List and hydrate prompts (mirrors MCP prompts/get)",
+      },
       {
         noun: "skill",
         summary: "Browse agent skills from design-system packages",

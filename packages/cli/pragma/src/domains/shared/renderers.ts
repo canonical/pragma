@@ -300,8 +300,16 @@ function formatCollectionEntry(
   }
 
   const object = value as Record<string, unknown>;
-  return Object.entries(object)
-    .filter(([, entryValue]) => !isEmptyValue(entryValue))
+  const entries = Object.entries(object).filter(
+    ([, entryValue]) => !isEmptyValue(entryValue),
+  );
+  // A one-value record labels nothing worth reading (`name: primary`) —
+  // render the bare value, so single-field expands list like plain values.
+  const only = entries.length === 1 ? entries[0] : undefined;
+  if (only) {
+    return formatInlineValue(only[1], prefixes);
+  }
+  return entries
     .map(
       ([key, entryValue]) =>
         `${key}: ${formatInlineValue(entryValue, prefixes)}`,

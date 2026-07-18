@@ -193,13 +193,23 @@ describe("helpers", () => {
 
   it("encodes a null uri as the empty-string cursor", () => {
     // Embedded blank-node entities carry uri: null → toBase64("") cursor.
-    const page = { window: [], hasNextPage: false, hasPreviousPage: false };
+    const page = {
+      window: [],
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalCount: 0,
+    };
     const connection = connectionFromPage([{ uri: null }], page);
     expect(connection.edges[0]?.cursor).toBe(toBase64(""));
   });
 
   it("yields null cursors for an empty hydrated page", () => {
-    const page = { window: [], hasNextPage: false, hasPreviousPage: false };
+    const page = {
+      window: [],
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalCount: 0,
+    };
     const connection = connectionFromPage([], page);
     expect(connection.edges).toEqual([]);
     expect(connection.pageInfo.startCursor).toBeNull();
@@ -214,5 +224,30 @@ describe("helpers", () => {
     );
     expect(connection.edges.map((e) => e.node.uri)).toEqual([null, null, "a"]);
     expect(connection.edges[0]?.cursor).toBe(toBase64(""));
+  });
+});
+
+describe("totalCount", () => {
+  it("counts the full item set regardless of pagination", () => {
+    const all = toConnection(items(["a", "b", "c"]), {});
+    expect(all.totalCount).toBe(3);
+    const page = toConnection(items(["a", "b", "c"]), {
+      first: 1,
+      after: toBase64("a"),
+    });
+    expect(page.edges).toHaveLength(1);
+    expect(page.totalCount).toBe(3);
+  });
+
+  it("carries the pre-window total through paginateUriWindow", () => {
+    const page = paginateUriWindow(["a", "b", "c", "d"], { first: 2 });
+    expect(page.window).toEqual(["a", "b"]);
+    expect(page.totalCount).toBe(4);
+    const connection = connectionFromPage(items([...page.window]), page);
+    expect(connection.totalCount).toBe(4);
+  });
+
+  it("is zero on the empty connection", () => {
+    expect(emptyConnection().totalCount).toBe(0);
   });
 });

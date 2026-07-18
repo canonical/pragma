@@ -163,21 +163,19 @@ describe("empty result sets", () => {
   });
 
   it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
-    "token_list with nonexistent category → empty or error",
+    "token_list ignores the retired free-string category parameter",
     async () => {
+      // The bundled token pack dropped the old `--category` free-string
+      // filter (pack filters are closed enums, and the live graph has no
+      // token-type vocabulary to enumerate). The MCP layer tolerates unknown
+      // parameters, so the listing simply comes back unfiltered.
       const res = await client.callTool({
         name: "token_list",
         arguments: { category: "NonexistentType" },
       });
       const body = parseEnvelope(res);
-      if (body.ok) {
-        const data = body.data as unknown[];
-        expect(data).toHaveLength(0);
-      } else {
-        // Token list may throw on empty results
-        const error = body.error as { code: string };
-        expect(error.code).toBeDefined();
-      }
+      expect(body.ok).toBe(true);
+      expect((body.data as unknown[]).length).toBeGreaterThan(0);
     },
   );
 });

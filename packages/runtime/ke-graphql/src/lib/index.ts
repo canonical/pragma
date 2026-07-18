@@ -39,6 +39,7 @@ export {
   type OntologyIR,
   type PassResult,
   type PropertyNode,
+  pluralize,
   type QueryFn,
   type RangeSpec,
   type RawExtraction,
@@ -50,6 +51,7 @@ export {
   type SchemaPluginOptions,
   type SerializedExtraction,
   serializeExtraction,
+  stripVerbPrefix,
   type TripleSet,
   type TripleValue,
 } from "./compiler/index.js";

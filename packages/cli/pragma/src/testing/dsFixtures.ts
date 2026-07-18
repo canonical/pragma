@@ -75,12 +75,22 @@ cs:Category a owl:Class ;
 
 # ---- Properties ----
 
+# ds:name mirrors the live ontology's breadth (domain ds:Entity there): it
+# names UI blocks, modifier families, and modifiers alike, so the compiled
+# GraphQL schema exposes \`name\` on all three (graphql-sourced pack lookups
+# select it on nested modifier nodes).
 ds:name a owl:DatatypeProperty ;
   rdfs:domain ds:UIBlock ;
+  rdfs:domain ds:ModifierFamily ;
+  rdfs:domain ds:Modifier ;
+  rdfs:domain ds:BlockProperty ;
   rdfs:range xsd:string .
 
-ds:tier a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock .
+# Functional as in the live ontology: every block belongs to exactly one
+# tier, so the compiled GraphQL field is the singular \`tier\`.
+ds:tier a owl:ObjectProperty, owl:FunctionalProperty ;
+  rdfs:domain ds:UIBlock ;
+  rdfs:range ds:Tier .
 
 ds:release a owl:ObjectProperty ;
   rdfs:domain ds:UIBlock .
@@ -92,6 +102,15 @@ ds:hasModifierFamily a owl:ObjectProperty ;
 ds:modifierFamily a owl:ObjectProperty ;
   rdfs:domain ds:Modifier ;
   rdfs:range ds:ModifierFamily .
+
+# Declared inverse pair, as in the live ontology. Fixture modifiers assert
+# only the ds:modifierFamily direction, so the compiled
+# \`ModifierFamily.modifiers\` field resolves through the inverse union.
+ds:hasModifier a owl:ObjectProperty ;
+  rdfs:domain ds:ModifierFamily ;
+  rdfs:range ds:Modifier ;
+  owl:inverseOf ds:modifierFamily ;
+  rdfs:label "hasModifier" .
 
 ds:tokenId a owl:DatatypeProperty ;
   rdfs:domain ds:Token ;
@@ -187,8 +206,11 @@ ds:constraints a owl:DatatypeProperty ;
   rdfs:domain ds:BlockProperty ;
   rdfs:range xsd:string .
 
+# Domain is ds:Component (NOT ds:UIBlock), as in the live ontology — the
+# compiled field lives on the Component class only, so graphql-sourced
+# lookups fragmenting on UIBlock must reach it via subtype scoping.
 ds:hasSubcomponent a owl:ObjectProperty ;
-  rdfs:domain ds:UIBlock ;
+  rdfs:domain ds:Component ;
   rdfs:range ds:Subcomponent .
 
 cs:name a owl:DatatypeProperty ;

@@ -37,24 +37,25 @@ function parseEnvelope(
 
 describe("agent sessions", () => {
   it("journey: build a component", async () => {
-    // 1. Probe capabilities
+    // 1. Orient via the capabilities aggregate: instructions, live state,
+    //    the prompt catalog, and the tool reference in one call.
     const caps = parseEnvelope(
       await client.callTool({ name: "capabilities", arguments: {} }),
     );
     expect(caps.ok).toBe(true);
-
-    // 2. Orient via LLM
-    const orientation = parseEnvelope(
-      await client.callTool({ name: "llm", arguments: {} }),
-    );
-    expect(orientation.ok).toBe(true);
-    const llmData = orientation.data as {
-      decisionTrees: { intent: string }[];
+    const capsData = caps.data as {
+      instructions: string;
+      prompts: { name: string }[];
+      tools: { name: string }[];
     };
-    const buildTree = llmData.decisionTrees.find(
-      (t) => t.intent === "Build a block",
+    expect(capsData.instructions.length).toBeGreaterThan(0);
+    expect(capsData.tools.map((t) => t.name)).toContain("block_list");
+
+    // 2. Pick the multi-step workflow from the prompts surface (the
+    //    protocol-native replacement for the old decision trees).
+    expect(capsData.prompts.map((p) => p.name)).toContain(
+      "implement-component",
     );
-    expect(buildTree).toBeDefined();
 
     // 3. Discover blocks
     const list = parseEnvelope(

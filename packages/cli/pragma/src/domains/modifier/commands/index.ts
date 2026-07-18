@@ -1,5 +1,3 @@
-/** @module Re-exports modifier command builders (`list`, `lookup`, `sample`). */
+/** @module Re-exports modifier command builders (`sample`). */
 
-export { default as listCommand } from "./list.js";
-export { default as lookupCommand } from "./lookup.js";
 export { default as sampleCommand } from "./sample.js";
