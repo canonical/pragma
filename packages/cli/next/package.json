@@ -51,6 +51,10 @@
   "dependencies": {
     "@canonical/ke": "^0.31.0",
     "@canonical/ke-graphql": "^0.31.0",
+    "@canonical/summon-application": "^0.31.0",
+    "@canonical/summon-component": "^0.31.0",
+    "@canonical/summon-core": "^0.31.0",
+    "@canonical/summon-package": "^0.31.0",
     "@canonical/task": "^0.31.0",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "chalk": "^5.6.2",
