@@ -4,8 +4,10 @@
  * Declared as a verb so the grammar is the single registry (every command is a
  * verb, even internal ones), but `hidden` so it never shows in help or the
  * surface, and withheld from MCP with a reason. The bin fast-paths `__complete`
- * for latency; this spec's lazy `run` is the same resolution, reachable if a
- * future tier dispatches it. Storeless — surface-only static matches in PR1.
+ * for latency; this spec's lazy `run` is the same resolution — the full
+ * completion engine, fed by the active pack's index through
+ * `indexCompletionEnv(runtime.cwd)` — reachable if a future tier dispatches it.
+ * Storeless: the entity tier reads the index off disk, never booting the store.
  */
 
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -38,12 +40,13 @@ export const completeVerb: VerbSpec<Record<string, unknown>, string[]> = {
   run: (params, runtime) =>
     Promise.all([
       import("../../kernel/completion/complete.js"),
+      import("../../kernel/completion/entitySource.js"),
       import("../index.js"),
-    ]).then(([completion, caps]) =>
+    ]).then(([completion, entitySource, caps]) =>
       completion.runComplete(
         (params.words as string[] | undefined) ?? [],
         caps.capabilities,
-        runtime.cwd,
+        entitySource.indexCompletionEnv(runtime.cwd),
       ),
     ),
 };

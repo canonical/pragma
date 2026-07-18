@@ -1,16 +1,38 @@
 /**
- * Completion kernel barrel — the static script emitter and the dynamic
- * `__complete` resolver, both driven off the grammar so the two tiers agree.
+ * Completion kernel barrel — the shared model, the `__complete` resolver
+ * pipeline (parse → resolve → rank), the static script emitter, and the
+ * dynamic-tier entity seam. Both tiers are driven off the grammar via
+ * `buildCompletionModel`, so they can never disagree.
  */
 
-export type { CompletionModel, EntityReader } from "./complete.js";
-export {
-  buildCompletionModel,
-  COMPLETION_GLOBAL_FLAGS,
-  complete,
-  runComplete,
-} from "./complete.js";
-export type { Shell } from "./emitScripts.js";
+export { runComplete } from "./complete.js";
 export { emitScripts } from "./emitScripts.js";
-export { createIndexEntityReader } from "./entitySource.js";
-export { bashScript, fishScript, zshScript } from "./templates.js";
+export {
+  createIndexEntityReader,
+  emptyEntityReader,
+  indexCompletionEnv,
+  indexEntityReader,
+} from "./entitySource.js";
+export {
+  assertSafeToken,
+  buildCompletionModel,
+  findNoun,
+  SAFE_TOKEN_RE,
+} from "./model.js";
+export { parseWords } from "./parse.js";
+export { filterPrefix, MAX_CANDIDATES, rankCandidates } from "./rank.js";
+export { completionDebug, resolveRequest } from "./resolve.js";
+export type {
+  Candidate,
+  CompletionContext,
+  CompletionEnv,
+  CompletionModel,
+  CompletionRequest,
+  CompletionSource,
+  EntityNameReader,
+  FlagEntry,
+  NounEntry,
+  PositionalEntry,
+  Shell,
+  VerbEntry,
+} from "./types.js";

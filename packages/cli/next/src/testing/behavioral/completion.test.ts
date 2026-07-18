@@ -1,37 +1,23 @@
 /**
- * B10 — the THIN main-line `__complete` candidate contract (§6 boundary).
+ * B10 — the LIVE `__complete` candidate contract over the live read surface.
  *
- * PR-C (`claude/pragma-v2-completion`, merging at PR8) owns the FULL
- * completion engine: shell drivers, script goldens, rank/parse/resolve. This
- * pins only what the pr4-base main-line `kernel/completion/complete.ts`
- * actually does today, verified empirically (not assumed from the old
- * socket-daemon covenant — see the ADAPTATION notes below), parameterized
- * over the live read-noun surface.
+ * The full completion engine (`kernel/completion`: parse → resolve → rank, the
+ * spec-derived model, the entity seam) owns the unit-level guarantees; this
+ * pins the behaviour end-to-end against the LIVE capabilities and — for the
+ * entity tier — against a REAL built pack index on disk (the locked-pack branch
+ * of the storeless reader, which the engine's own tests exercise only via the
+ * embedded fallback). Parameterized over the live read surface so noun/verb
+ * renames never churn it.
  *
- * ADAPTATIONS (R2 — verified against the live engine):
- * - Noun-level candidates ARE sorted (`buildCompletionModel` sorts `nouns`)
- *   and entity-param candidates ARE sorted (`createIndexEntityReader`) — but
- *   VERB-level candidates are in AUTHORING order, not alphabetically sorted
- *   (`model.verbs[noun]` is never `.sort()`ed). Asserted as a SET here, not an
- *   order, so this test doesn't encode an accidental property as a contract.
- *   Left as a note for PR8: if the durable candidate covenant wants verb-level
- *   sorting too, that's PR-C's fuller engine to decide/carry.
- * - The main-line engine has NO per-verb FLAG completion at all — a `-`
- *   prefixed partial always resolves against the GLOBAL flags
- *   (`COMPLETION_GLOBAL_FLAGS`), never a verb's own params (confirmed: typing
- *   `block list --a<TAB>` does not offer `--all-tiers`). "Kebab-cased flags"
- *   is instead pinned at the EMISSION layer (`emitSurface`'s `kebabCase`),
- *   which is the real, live guarantee today; the completion-time flag offer
- *   is PR-C's to add.
+ * The engine's `runComplete(words, modules, env)` is async and never throws;
+ * the entity tier is fed by `indexCompletionEnv(cwd)` — a storeless read of the
+ * active pack's `index.json`, never a store boot.
  */
 
 import { describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
-import {
-  buildCompletionModel,
-  complete,
-  runComplete,
-} from "../../kernel/completion/complete.js";
+import { runComplete } from "../../kernel/completion/complete.js";
+import { indexCompletionEnv } from "../../kernel/completion/entitySource.js";
 import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import {
   ALL_VISIBLE_CONFIG,
@@ -50,18 +36,27 @@ for (const v of liveVerbs) {
 }
 
 describe("noun-level candidates: sorted, prefix-filtered, program name stripped", () => {
-  it("a live prefix resolves exactly the matching live nouns, sorted", () => {
+  it("a live prefix resolves exactly the matching live nouns, sorted", async () => {
     const expected = liveNouns.filter((n) => n.startsWith("s")).sort();
     expect(expected.length).toBeGreaterThan(0); // sanity: the sweep covers something
-    expect(runComplete(["s"], capabilities)).toEqual(expected);
+    await expect(runComplete(["s"], capabilities)).resolves.toEqual(expected);
   });
 
-  it("an unknown prefix resolves to nothing", () => {
-    expect(runComplete(["zzz-not-a-noun"], capabilities)).toEqual([]);
+  it("an unknown prefix resolves to nothing", async () => {
+    await expect(
+      runComplete(["zzz-not-a-noun"], capabilities),
+    ).resolves.toEqual([]);
+  });
+
+  it("strips a leading program name some shells include", async () => {
+    const expected = liveNouns.filter((n) => n.startsWith("s")).sort();
+    await expect(runComplete(["pragma2", "s"], capabilities)).resolves.toEqual(
+      expected,
+    );
   });
 });
 
-describe("verb-level candidates: the SET matches the live surface (order not asserted)", () => {
+describe("verb-level candidates: the SET matches the live surface", () => {
   const multiVerbNouns = [...verbsByNoun.entries()].filter(
     ([, verbs]) => verbs.length > 1,
   );
@@ -72,8 +67,8 @@ describe("verb-level candidates: the SET matches the live surface (order not ass
 
   it.each(
     multiVerbNouns,
-  )("%s: candidates == its live verb set", (noun, verbs) => {
-    const candidates = runComplete([noun, ""], capabilities);
+  )("%s: candidates == its live verb set", async (noun, verbs) => {
+    const candidates = await runComplete([noun, ""], capabilities);
     expect([...candidates].sort()).toEqual([...verbs].sort());
   });
 });
@@ -94,27 +89,32 @@ describe("flags are kebab-cased at emission (the live, testable guarantee)", () 
   });
 });
 
-describe("entity params resolve from the index (B10)", () => {
-  it("a lookup's entity positional completes from the built pack index, sorted", async () => {
+describe("entity params resolve from a real built pack index (B10)", () => {
+  it("a lookup's entity positional completes from the built pack index", async () => {
     const fixture = await bootFixtureRuntime({
       ttl: CANONICAL_TTL,
       config: ALL_VISIBLE_CONFIG,
     });
     try {
-      const all = runComplete(
+      // The locked-pack branch of the storeless reader: a real index.json on
+      // disk under the fixture cwd, read without booting the store.
+      const all = await runComplete(
         ["block", "lookup", ""],
         capabilities,
-        fixture.cwd,
+        indexCompletionEnv(fixture.cwd),
       );
-      expect(all).toEqual([...all].sort());
       expect(all.length).toBeGreaterThan(0);
 
-      const narrowed = runComplete(
+      const narrowed = await runComplete(
         ["block", "lookup", "ds:b"],
         capabilities,
-        fixture.cwd,
+        indexCompletionEnv(fixture.cwd),
       );
-      expect(narrowed.every((name) => name.startsWith("ds:b"))).toBe(true);
+      // Every ranked candidate carries the partial (case-insensitive), and the
+      // filter is strictly narrowing — the index tier really ran.
+      expect(
+        narrowed.every((name) => name.toLowerCase().includes("ds:b")),
+      ).toBe(true);
       expect(narrowed.length).toBeGreaterThan(0);
       expect(narrowed.length).toBeLessThan(all.length);
     } finally {
@@ -124,8 +124,9 @@ describe("entity params resolve from the index (B10)", () => {
 });
 
 describe("global flags complete for a dash prefix, at any position", () => {
-  it("completes global flags regardless of position", () => {
-    const model = buildCompletionModel(capabilities);
-    expect(complete(["--l"], model)).toEqual(["--llm"]);
+  it("completes global flags regardless of position", async () => {
+    await expect(runComplete(["--l"], capabilities)).resolves.toEqual([
+      "--llm",
+    ]);
   });
 });

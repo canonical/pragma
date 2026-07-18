@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
-import { buildCompletionModel, complete } from "./complete.js";
-import { createIndexEntityReader } from "./entitySource.js";
+import { runComplete } from "./complete.js";
+import { createIndexEntityReader, indexCompletionEnv } from "./entitySource.js";
 
 /** A fresh cwd with no lock → the reader falls back to the embedded pack. */
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-entity-"));
@@ -78,13 +78,19 @@ describe("__complete entity tier wiring", () => {
     ],
   };
 
-  it("resolves a positional entity param through the reader", () => {
-    const model = buildCompletionModel([lookupModule]);
-    const read = createIndexEntityReader(freshCwd());
-    expect(complete(["block", "lookup", "ex:B"], model, read)).toEqual([
-      "ex:Button",
-    ]);
-    // Without a reader, the entity tier yields nothing (grammar-only).
-    expect(complete(["block", "lookup", "ex:B"], model)).toEqual([]);
+  it("resolves a positional entity param through the wired env", async () => {
+    // The bin fast path and the __complete verb wire this exact env: the
+    // index-backed reader over cwd, adapted to the resolver's EntityNameReader.
+    await expect(
+      runComplete(
+        ["block", "lookup", "ex:B"],
+        [lookupModule],
+        indexCompletionEnv(freshCwd()),
+      ),
+    ).resolves.toEqual(["ex:Button"]);
+    // Without the env, the entity tier yields nothing (grammar-only).
+    await expect(
+      runComplete(["block", "lookup", "ex:B"], [lookupModule]),
+    ).resolves.toEqual([]);
   });
 });
