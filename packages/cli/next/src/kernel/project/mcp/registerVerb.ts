@@ -100,6 +100,27 @@ function asPragmaError(error: unknown): PragmaError {
       );
 }
 
+/**
+ * Apply the injected `detail` argument to a per-call runtime.
+ *
+ * A verb with a {@link DisclosureSpec} gains a `detail` enum tool param (see
+ * {@link registerVerb}); when the agent sets it, this seeds `globalFlags.detail`
+ * for THIS call so the verb's `run` resolves the level through the same uniform
+ * `resolveDetail` the CLI `--detail` flag feeds — no VerbSpec field, no
+ * Formatters-signature change, no MCP-opts-out asymmetry.
+ */
+function withDetail(
+  verb: VerbSpec,
+  runtime: PragmaRuntime,
+  args: Record<string, unknown>,
+): PragmaRuntime {
+  if (!verb.disclosure || typeof args.detail !== "string") return runtime;
+  return {
+    ...runtime,
+    globalFlags: { ...runtime.globalFlags, detail: args.detail as never },
+  };
+}
+
 /** The tool handler for a read verb: run, project, envelope. */
 function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
@@ -107,7 +128,7 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       if (verb.capability.needsStore) await runtime.store.get();
       const params = paramsFromArgs(verb, args);
       const result = await Promise.resolve(
-        verb.run(params, runtime) as Promise<unknown>,
+        verb.run(params, withDetail(verb, runtime, args)) as Promise<unknown>,
       );
       return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
     } catch (error) {
@@ -169,6 +190,17 @@ export function registerVerb(
   runtime: PragmaRuntime,
 ): void {
   const shape = buildZodSchema(verb.params);
+  // A verb with progressive disclosure gains a `detail` enum param derived from
+  // its DisclosureSpec (Risk2 — NO new VerbSpec field). The handler seeds
+  // globalFlags.detail from it per call, so MCP and CLI share one resolveDetail.
+  if (verb.disclosure) {
+    shape.detail = z
+      .enum(verb.disclosure.levels as unknown as [string, ...string[]])
+      .optional()
+      .describe(
+        `Progressive-disclosure level (${verb.disclosure.levels.join(", ")}); default ${verb.disclosure.default}.`,
+      );
+  }
   if (verb.capability.mutates) {
     shape.confirm = z
       .boolean()
