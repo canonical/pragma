@@ -4,8 +4,10 @@
  * The real update command is NEVER spawned: offline / already-latest carry no
  * exec (safe real runs); the update-needed path is asserted via `dryRun(task)`
  * (which mocks the exec and exposes both the plan and the returned value); the
- * exec-failure mapping is proven with a synthetic failing-exec verb. Also covers
- * the `checkRegistryVersion` unit contract and MCP plan-first/confirm.
+ * exec-failure mapping is proven with a synthetic verb that RUNS a command
+ * exiting nonzero (plus an ENOENT case), exercising the `assertExecOk` guard the
+ * real consumers apply. Also covers the `checkRegistryVersion` unit contract and
+ * MCP plan-first/confirm.
  */
 
 import { mkdtempSync, rmSync } from "node:fs";
@@ -21,6 +23,7 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
+import { assertExecOk } from "../shared/assertExecOk.js";
 import {
   checkRegistryVersion,
   REGISTRY_TIMEOUT_MS,
@@ -175,44 +178,103 @@ describe("upgrade — update needed", () => {
   });
 });
 
-describe("upgrade — exec failure maps to INTERNAL_ERROR (exit 1)", () => {
-  it("a failing exec throws, and the boundary maps it to INTERNAL_ERROR", async () => {
-    // Mirrors upgrade's exec seam: a failing exec effect propagates a
-    // TaskExecutionError that asPragmaError maps to INTERNAL_ERROR (exit 1).
-    const failVerb: VerbSpec<Record<string, unknown>, unknown> = {
+describe("assertExecOk — the exec-exitCode guard", () => {
+  it("returns on a zero exit and throws INTERNAL_ERROR (with stderr) on nonzero", () => {
+    expect(() =>
+      assertExecOk("cmd", { stdout: "", stderr: "", exitCode: 0 }),
+    ).not.toThrow();
+
+    let thrown: unknown;
+    try {
+      assertExecOk("npm i -g @canonical/pragma-cli", {
+        stdout: "",
+        stderr: "  npm ERR! code EACCES  ",
+        exitCode: 13,
+      });
+    } catch (error) {
+      thrown = error;
+    }
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("INTERNAL_ERROR");
+    // Surfaces the command + exit code + the captured stderr (trimmed).
+    expect(err.message).toContain("npm i -g @canonical/pragma-cli");
+    expect(err.message).toContain("code 13");
+    expect(err.message).toContain("npm ERR! code EACCES");
+  });
+});
+
+describe("upgrade — a failed exec maps to INTERNAL_ERROR (exit 1)", () => {
+  // A minimal verb whose sole effect is the given exec seam — the same shape
+  // runUpgrade/setupLsp use (exec then assertExecOk), driven through dispatch.
+  const failVerbWith = (
+    run: (p: Record<string, unknown>, rt: PragmaRuntime) => Task<unknown>,
+  ): VerbSpec => {
+    const verb: VerbSpec<Record<string, unknown>, unknown> = {
       path: ["failx"],
       summary: "test",
       params: [],
       output: {
-        formatters: {
-          plain: () => "",
-          llm: () => "",
-          json: () => "{}",
-        },
+        formatters: { plain: () => "", llm: () => "", json: () => "{}" },
       },
       capability: {
         needsStore: false,
         mutates: true,
         mcp: { expose: false, reason: "test" },
       },
-      run: (_p, rt) =>
-        gen(function* () {
-          yield* $(exec("pragma2-nonexistent-binary-xyz", [], rt.cwd));
-          return {};
-        }) as Task<unknown>,
+      run,
     };
+    return verb as VerbSpec;
+  };
 
-    let thrown: unknown;
+  const runToError = async (verb: VerbSpec): Promise<unknown> => {
     try {
-      await executeVerb(
-        failVerb as VerbSpec,
-        {},
-        REAL,
-        bootRuntime(FLAGS_JSON, tmpCwd()),
-      );
+      await executeVerb(verb, {}, REAL, bootRuntime(FLAGS_JSON, tmpCwd()));
     } catch (error) {
-      thrown = error;
+      return error;
     }
+    return undefined;
+  };
+
+  it("a command that RUNS and exits nonzero is surfaced, not silently succeeded", async () => {
+    // The interpreter RESOLVES exec on a nonzero exit (only ENOENT rejects), so
+    // the guard the consumers apply (assertExecOk) is what turns a failed
+    // install into a failure. Without that guard this verb would return {} —
+    // the masked "silent false success" the old ENOENT-only test never caught.
+    const thrown = await runToError(
+      failVerbWith(
+        (_p, rt) =>
+          gen(function* () {
+            const result = yield* $(
+              exec(
+                "sh",
+                ["-c", "echo boom-from-installer >&2; exit 7"],
+                rt.cwd,
+              ),
+            );
+            assertExecOk("sh -c 'exit 7'", result);
+            return {};
+          }) as Task<unknown>,
+      ),
+    );
+    expect(thrown).toBeDefined();
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("INTERNAL_ERROR");
+    expect(mapExitCode(err.code)).toBe(1);
+    // The subprocess's own stderr is surfaced, not discarded.
+    expect(err.message).toContain("boom-from-installer");
+    expect(err.message).toContain("code 7");
+  });
+
+  it("a spawn error (ENOENT) also maps to INTERNAL_ERROR", async () => {
+    const thrown = await runToError(
+      failVerbWith(
+        (_p, rt) =>
+          gen(function* () {
+            yield* $(exec("pragma2-nonexistent-binary-xyz", [], rt.cwd));
+            return {};
+          }) as Task<unknown>,
+      ),
+    );
     expect(thrown).toBeDefined();
     const err = asPragmaError(thrown);
     expect(err.code).toBe("INTERNAL_ERROR");

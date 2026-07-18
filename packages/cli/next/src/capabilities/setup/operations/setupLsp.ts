@@ -8,6 +8,7 @@
 
 import { $, exec, gen, info, type Task } from "@canonical/task";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import { assertExecOk } from "../../shared/assertExecOk.js";
 import { applyPromptStrategy } from "../promptStrategy.js";
 import type { SetupResult } from "../types.js";
 
@@ -25,7 +26,12 @@ export async function setupLsp(rt: PragmaRuntime): Promise<Task<SetupResult>> {
     yield* $(
       info("Ensuring the Terrazzo LSP VS Code extension is installed..."),
     );
-    yield* $(exec("bunx", ["@canonical/terrazzo-lsp-extension"], cwd));
+    const result = yield* $(
+      exec("bunx", ["@canonical/terrazzo-lsp-extension"], cwd),
+    );
+    // The interpreter RESOLVES on a nonzero exit — a failed installer must fail
+    // loudly (surfacing its stderr), not report a false "ensured".
+    assertExecOk("bunx @canonical/terrazzo-lsp-extension", result);
     return { kind: "lsp" as const, ensured: true };
   });
 }

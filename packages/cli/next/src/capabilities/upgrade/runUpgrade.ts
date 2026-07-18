@@ -9,8 +9,9 @@
  * - `--dry-run` (dispatcher `dryRun`) MOCKS the exec and describes the plan —
  *   both the `Log` version-delta line AND the `Execute: <command>` line show,
  *   and nothing runs.
- * - `--yes` / MCP `confirm` runs the exec for real; a failed exec throws, which
- *   the boundary maps to INTERNAL_ERROR (exit 1).
+ * - `--yes` / MCP `confirm` runs the exec for real; a nonzero exit (or a spawn
+ *   error) is surfaced by `assertExecOk` as INTERNAL_ERROR (exit 1) — the
+ *   interpreter RESOLVES on a nonzero exit, so the check is the consumer's job.
  * - offline / already-latest carry NO exec — a real run just returns the status.
  *
  * The whole registry read is preview-safe, so no `mutation.preview` gating is
@@ -21,6 +22,7 @@
 
 import { $, exec, gen, info, type Task, warn } from "@canonical/task";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { assertExecOk } from "../shared/assertExecOk.js";
 import {
   detectInstallSource,
   pmUpdateCommand,
@@ -98,7 +100,11 @@ export async function runUpgrade(
     // The version-delta rides a Log effect, so `--dry-run` describes it too.
     yield* $(info(`${current} → ${registry.latest}`));
     // The one mutation — mocked under dry-run, run for real under --yes/confirm.
-    yield* $(exec(bin, args, rt.cwd));
+    // The interpreter RESOLVES on a nonzero exit (only a spawn error rejects),
+    // so inspect the result: a failed install (e.g. EACCES on a global
+    // `npm i -g`) must fail loudly, not report a silent success.
+    const result = yield* $(exec(bin, args, rt.cwd));
+    assertExecOk(command, result);
     return data;
   });
 }
