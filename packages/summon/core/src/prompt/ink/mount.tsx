@@ -23,7 +23,6 @@ export interface MountedSession {
   reportEffectComplete: (effect: Effect, duration: number) => void;
   reportLog: (level: LogLevel, message: string) => void;
   dispose: () => void;
-  wasInterrupted: () => boolean;
 }
 
 /**
@@ -63,6 +62,5 @@ export function mountPromptSession(
       signal?.removeEventListener("abort", onAbort);
       instance.unmount();
     },
-    wasInterrupted: () => controller.wasInterrupted(),
   };
 }

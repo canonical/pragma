@@ -28,8 +28,7 @@ export interface InkPromptOptions {
 
 /**
  * A running Ink session's seam surface: the prompt handler plus the effect
- * callbacks the runner wires into `runtime.exec`, its teardown, and whether the
- * user interrupted it.
+ * callbacks the runner wires into `runtime.exec`, and its teardown.
  */
 export interface InkSession {
   /** The `promptHandler` the runner interprets `Prompt` effects with. */
@@ -42,8 +41,6 @@ export interface InkSession {
   readonly onLog: (level: LogLevel, message: string) => void;
   /** Tear down the Ink render. Safe to call more than once. */
   readonly dispose: () => void;
-  /** Whether the user interrupted the wizard (Ctrl-C / cancel at a gate). */
-  readonly wasInterrupted: () => boolean;
 }
 
 /** The handle {@link mountPromptSession} returns (in `./ink/mount.js`). */
@@ -53,7 +50,6 @@ interface MountedSession {
   reportEffectComplete: (effect: Effect, duration: number) => void;
   reportLog: (level: LogLevel, message: string) => void;
   dispose: () => void;
-  wasInterrupted: () => boolean;
 }
 
 /**
@@ -74,7 +70,6 @@ export default function inkPrompt(
 ): InkSession {
   let mountP: Promise<MountedSession> | undefined;
   let mounted: MountedSession | undefined;
-  let interrupted = false;
 
   const ensure = (): Promise<MountedSession> => {
     mountP ??= import("./ink/mount.js").then((mod) => {
@@ -84,14 +79,12 @@ export default function inkPrompt(
     return mountP;
   };
 
+  // Cancellation propagates by REJECTION: controller.cancel() rejects the
+  // pending answer promise, so a declined/aborted run fails the task straight
+  // through here — no separate interrupted flag to read.
   const promptHandler: PromptHandler = async (effect) => {
     const session = await ensure();
-    try {
-      return await session.answerPrompt(effect);
-    } catch (error) {
-      if (session.wasInterrupted()) interrupted = true;
-      throw error;
-    }
+    return session.answerPrompt(effect);
   };
 
   return {
@@ -101,6 +94,5 @@ export default function inkPrompt(
       mounted?.reportEffectComplete(effect, duration),
     onLog: (level, message) => mounted?.reportLog(level, message),
     dispose: () => mounted?.dispose(),
-    wasInterrupted: () => interrupted,
   };
 }

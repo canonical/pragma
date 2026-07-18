@@ -77,7 +77,6 @@ export class SessionController {
     readonly resolve: (value: unknown) => void;
     readonly reject: (error: unknown) => void;
   };
-  private interrupted = false;
   private executionStart = 0;
 
   constructor(generator: GeneratorDefinition) {
@@ -199,17 +198,15 @@ export class SessionController {
     pending.resolve(proceed);
   }
 
-  /** The user cancelled (Ctrl-C / escape at a gate). */
+  /**
+   * The user cancelled (Ctrl-C / escape at a gate). Rejecting the pending
+   * answer fails the task straight through the prompt handler — that rejection
+   * IS the cancellation signal (no interrupted flag to read back).
+   */
   cancel(): void {
-    this.interrupted = true;
     const pending = this.pending;
     this.pending = undefined;
     this.set({ phase: "cancelled" });
     pending?.reject(new Error("Cancelled by user."));
-  }
-
-  /** Whether the user interrupted the wizard. */
-  wasInterrupted(): boolean {
-    return this.interrupted;
   }
 }

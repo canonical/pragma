@@ -1,5 +1,5 @@
 /**
- * The value {@link execute} produces, and the progress-event alias.
+ * The value {@link execute} produces.
  *
  * `execute` returns a `Task<GeneratorResult>`; the runner interprets it. The
  * result carries what a front-end needs to render an outcome summary — the
@@ -7,10 +7,10 @@
  * generation performed (paths, and best-effort content for embedded-template
  * generators). Progress does NOT ride a bespoke event channel: it rides the
  * runner's `onEffectStart`/`onEffectComplete`/`onLog` callbacks and the task
- * alphabet's own {@link TaskEvent}, of which `GeneratorEvent` is a thin alias.
+ * alphabet's own `TaskEvent` — summon-core invents no parallel event system.
  */
 
-import type { Effect, TaskEvent } from "@canonical/task";
+import type { Effect } from "@canonical/task";
 import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 
 /** The outcome of running a generator through {@link execute}. */
@@ -22,9 +22,3 @@ export interface GeneratorResult {
   /** A dry-run preview of the effects the generation performed. */
   readonly effects: Effect[];
 }
-
-/**
- * Progress event for a generator run — a thin alias of the task alphabet's
- * {@link TaskEvent}, so summon-core invents no parallel event system.
- */
-export type GeneratorEvent = TaskEvent<GeneratorResult>;

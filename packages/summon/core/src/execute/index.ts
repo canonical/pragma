@@ -7,5 +7,5 @@ export {
   GENERATOR_CANCELLED,
   GENERATOR_INVALID_ANSWER,
 } from "./execute.js";
-export type { GeneratorEvent, GeneratorResult } from "./GeneratorResult.js";
+export type { GeneratorResult } from "./GeneratorResult.js";
 export { default as validateAnswers } from "./validateAnswers.js";

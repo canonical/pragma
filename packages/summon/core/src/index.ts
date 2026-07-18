@@ -41,7 +41,6 @@ export {
 export type {
   AnswerablePrompt,
   ExecuteContext,
-  GeneratorEvent,
   GeneratorResult,
 } from "./execute/index.js";
 export {

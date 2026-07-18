@@ -117,12 +117,12 @@ describe("SessionController", () => {
     expect(c2.getSnapshot().phase).toBe("cancelled");
   });
 
-  it("cancel rejects a pending prompt and flags interruption", async () => {
+  it("cancel rejects the pending prompt (the cancellation signal)", async () => {
     const c = new SessionController(gen);
     const p = c.request(ask("path"));
     c.cancel();
     await expect(p).rejects.toThrow();
-    expect(c.wasInterrupted()).toBe(true);
+    expect(c.getSnapshot().phase).toBe("cancelled");
   });
 
   it("ignores answer/confirm submitted against the wrong pending kind", () => {
