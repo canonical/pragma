@@ -13,9 +13,49 @@
 
 import type { PackDefinition } from "../../kernel/packs/types.js";
 
+/**
+ * The bundled design-system domain colophon — the ontology + graph story,
+ * surfaced by `pragma colophon` after pragma's own. Authored on the flagship
+ * UI-block noun because `block` most embodies the design system; it narrates the
+ * DOMAIN (what the graph models), not the toolchain (pragma's built-in section).
+ */
+const DESIGN_SYSTEM_COLOPHON = `The Canonical design system is a **knowledge graph**, not a component library.
+Every block, token, modifier, standard, and tier is a node in an RDF store,
+described by the \`ds:\` ontology and queried the same way whether you reach it
+over GraphQL or raw SPARQL.
+
+## What the graph models
+
+- **Blocks** — components, patterns, layouts, and subcomponents (the \`ds:UIBlock\`
+  family). A block carries its anatomy, guidelines, and \`when to use\` / \`when
+  not to use\` narrative as graph properties, not prose in a wiki.
+- **Modifiers** — families of variant values (\`ds:hasModifierFamily\` →
+  \`ds:hasModifier\`) a block composes, so a variant is a relationship, not a
+  string.
+- **Tokens** — the themeable design values, resolved per theme.
+- **Standards** — the do / don't coding guidance, categorized and linked to the
+  blocks they govern.
+
+## How it fits together
+
+- **Tiers** are a hierarchy (\`global\` > \`apps\` > \`apps/lxd\`): a lower tier
+  inherits and overrides the blocks of its ancestors, so scoping a query to a
+  tier walks that chain.
+- **Channels** (\`normal\`, \`experimental\`, \`prerelease\`) gate visibility, so an
+  in-progress block never leaks into a stable answer.
+
+## Why RDF
+
+One graph makes every relationship first-class and queryable: \`block lookup\`
+follows edges to modifiers and subcomponents, \`graph query\` runs arbitrary
+SPARQL, and \`ontology show\` reads the schema itself. The store is built once
+by \`sources update\` and addressed by content hash, so the domain you query is
+exactly the domain that was published.`;
+
 export const blockPack: PackDefinition = {
   noun: "block",
   description: "Look up design system blocks.",
+  colophon: DESIGN_SYSTEM_COLOPHON,
   lookup: {
     source: "graphql",
     toolDescription:

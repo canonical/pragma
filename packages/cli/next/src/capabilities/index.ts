@@ -12,6 +12,7 @@
 import type { CapabilityModule } from "../kernel/spec/types.js";
 import { blockModule } from "./block/index.js";
 import { capabilitiesModule } from "./capabilities/index.js";
+import { colophonModule } from "./colophon/index.js";
 import { configModule } from "./config/index.js";
 import { createModule } from "./create/index.js";
 import { doctorModule } from "./doctor/index.js";
@@ -48,5 +49,6 @@ export const capabilities: readonly CapabilityModule[] = [
   upgradeModule,
   setupModule,
   capabilitiesModule,
+  colophonModule,
   metaModule,
 ];
