@@ -643,6 +643,28 @@ export interface MemoryAdapter extends PlatformAdapter {
   forward(): void;
 }
 
+/**
+ * A host-supplied source of location state for the memory adapter.
+ *
+ * When a delegate is provided, the adapter owns no location state of its own:
+ * `getLocation` reads the delegate, `onNavigate` receives every navigation, and
+ * `subscribe` is the seam through which the host announces location changes.
+ * `onBack` and `onForward` are optional history hooks---omit them and the
+ * adapter's `back`/`forward` become no-ops, because a host that owns location
+ * owns its own history model.
+ */
+export interface MemoryHistoryDelegate {
+  getLocation(): string | URL;
+  onNavigate(url: string, options?: PlatformNavigateOptions): void;
+  subscribe(listener: (location: string | URL) => void): () => void;
+  onBack?(): void;
+  onForward?(): void;
+}
+
+export interface MemoryAdapterOptions {
+  readonly history?: MemoryHistoryDelegate;
+}
+
 export interface RouterDehydratedState<TRoutes extends RouteMap = RouteMap> {
   readonly href: string;
   readonly kind: "route" | "not-found" | "unmatched";

@@ -316,6 +316,24 @@ const testRouter = createRouter(routes, {
 });
 ```
 
+### Externally owned location
+
+By default `createMemoryAdapter()` owns its location: it keeps an internal entries array and index that `navigate`, `back`, and `forward` mutate. Some hosts already own navigation state and need the router as a pure resolver rather than a second state owner — an application store that decides what is shown, a replay harness driving location from a recorded sequence, a state machine where "where we are" is derived state. For those, pass a `history` delegate and the adapter keeps no entries array and no index of its own:
+
+```ts
+const adapter = createMemoryAdapter("/", {
+  history: {
+    getLocation: () => store.currentUrl, // the single source of the current location
+    onNavigate: (url, options) => store.go(url, options), // every navigate forwards here
+    subscribe: (listener) => store.subscribe(listener), // host announces location changes
+    onBack: () => store.back(), // optional — omit and back() becomes a no-op
+    onForward: () => store.forward(), // optional — omit and forward() becomes a no-op
+  },
+});
+```
+
+With a delegate, `getLocation` reads the delegate, `navigate(to, options)` forwards to `onNavigate` and mutates nothing locally, and the adapter's `subscribe` is the seam through which the host announces changes. `back` and `forward` forward to the optional `onBack`/`onForward` hooks; when the host omits them they are no-ops, because a host that owns location owns its own history model. The `initialUrl` argument is ignored when a delegate is present. The entire route-resolution surface — matching, params, group wrappers — is unchanged.
+
 ## Accessibility
 
 The router auto-wires browser-side accessibility orchestration:
