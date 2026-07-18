@@ -58,9 +58,11 @@ export function liveTools(modules: readonly CapabilityModule[]): string[] {
 }
 
 /**
- * Build the discovery sequence, deriving the stage-2 sample list from the tools
- * that ACTUALLY exist (v2 ships block/standard/modifier/token samples). Wording
- * is ported from the old `buildCapabilitiesData`.
+ * Build the discovery sequence, deriving the sample list from the tools that
+ * ACTUALLY exist (v2 ships block/standard/modifier/token samples). Wording is
+ * ported from the old `buildCapabilitiesData`, plus a store-state pre-check so a
+ * cold agent is never sent into `*_sample` (or any store read) blind — every
+ * store read fails STORE_UNAVAILABLE until `sources_update` has built the store.
  */
 export function buildDiscoverySequence(
   tools: readonly string[],
@@ -75,11 +77,17 @@ export function buildDiscoverySequence(
     },
     {
       stage: 2,
+      tool: "sources_status",
+      purpose:
+        "Confirm the store is built before any query. If it reports unavailable, call sources_update (confirm: true) first — otherwise the sample and domain reads below fail with STORE_UNAVAILABLE.",
+    },
+    {
+      stage: 3,
       tool: "*_sample",
       purpose: `Call ${sampleList} tools to see real data shapes before querying. Prevents guessing at property names.`,
     },
     {
-      stage: 3,
+      stage: 4,
       tool: "domain tools",
       purpose:
         "Query specific entities — block_list, standard_lookup, etc. Use the use_when hints above to pick the right tool.",

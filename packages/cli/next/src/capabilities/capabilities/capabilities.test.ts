@@ -70,13 +70,28 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     expect(counts.write).toBe(mutatingTools(capabilities).size);
   });
 
-  it("the discovery sequence stage 2 lists the live *_sample tools", () => {
+  it("the discovery sequence's sample stage lists the live *_sample tools", () => {
     const samples = tools.filter((tool) => tool.endsWith("_sample"));
-    const stage2 = data.discovery_sequence.find((stage) => stage.stage === 2);
-    expect(stage2).toBeDefined();
+    const sampleStage = data.discovery_sequence.find(
+      (stage) => stage.tool === "*_sample",
+    );
+    expect(sampleStage).toBeDefined();
     for (const sample of samples) {
-      expect(stage2?.purpose).toContain(sample);
+      expect(sampleStage?.purpose).toContain(sample);
     }
+  });
+
+  it("the discovery sequence pre-checks the store before the sample stage (store-blind guard)", () => {
+    const seq = data.discovery_sequence;
+    const storeCheck = seq.findIndex(
+      (stage) => stage.tool === "sources_status",
+    );
+    const sample = seq.findIndex((stage) => stage.tool === "*_sample");
+    // A cold agent must be told to verify/build the store BEFORE being sent into
+    // a store read, or it walks straight into STORE_UNAVAILABLE.
+    expect(storeCheck).toBeGreaterThanOrEqual(0);
+    expect(storeCheck).toBeLessThan(sample);
+    expect(seq[storeCheck]?.purpose).toContain("sources_update");
   });
 
   it("reports the v2 output limits (plain/json/llm, condensed retired)", () => {
