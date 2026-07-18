@@ -108,6 +108,8 @@ export const FIXED_SURFACE = {
     defaults: "built-in defaults.ts",
   },
   budgets: {
+    $comment:
+      "help/complete are the designed <50ms aspiration; the ENFORCED ceilings (budgets.test.ts) are 130ms help / 100ms complete — ~2× the measured median on the build hardware, recorded in BUDGETS.md. Designed-aspiration vs enforced-measured.",
     help: "<50ms",
     complete: "<50ms",
     projectConfigLoad: "<10ms",

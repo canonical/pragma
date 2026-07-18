@@ -1,12 +1,21 @@
-import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { runTask } from "@canonical/task/node";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { evaluateProjectConfig } from "./evaluateProjectConfig.js";
 import { findProjectConfig } from "./findProjectConfig.js";
+import { readGlobalConfig } from "./globalConfig.js";
 import { configCacheDir, globalConfigPath } from "./paths.js";
 import { readConfig } from "./readConfig.js";
+import { writeConfigField } from "./writeConfigField.js";
 
 const originalConfigHome = process.env.XDG_CONFIG_HOME;
 const originalStateHome = process.env.XDG_STATE_HOME;
@@ -83,6 +92,56 @@ describe("readConfig — layering + provenance", () => {
   });
 });
 
+describe("global config — corrupt-file recovery", () => {
+  /** Backup siblings the recovery created next to the config file. */
+  function corruptBackups(): string[] {
+    return readdirSync(dirname(globalConfigPath())).filter((f) =>
+      f.includes(".corrupt-"),
+    );
+  }
+
+  it("readGlobalConfig backs up, resets, and degrades to defaults", () => {
+    freshXdg();
+    writeGlobal("{ this is: not valid json");
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+
+    const read = readGlobalConfig();
+    spy.mockRestore();
+
+    // Never bricks: degrades to defaults rather than throwing.
+    expect(read.values).toEqual({});
+    expect(read.exists).toBe(true);
+    expect(errs.join("")).toMatch(/not valid JSON/);
+    // Never silently discards: the corrupt content is preserved in a backup…
+    expect(corruptBackups()).toHaveLength(1);
+    // …and the live file self-heals to defaults.
+    expect(JSON.parse(readFileSync(globalConfigPath(), "utf-8"))).toEqual({});
+  });
+
+  it("writeConfigField backs up a corrupt config before overwriting", async () => {
+    freshXdg();
+    writeGlobal("{ broken");
+    const logs: string[] = [];
+
+    await runTask(writeConfigField("channel", "experimental"), {
+      onLog: (_level, message) => logs.push(message),
+    });
+
+    expect(corruptBackups()).toHaveLength(1);
+    expect(logs.join("")).toMatch(/backed it up/i);
+    // The new field is written over the reset defaults — no silent loss.
+    expect(JSON.parse(readFileSync(globalConfigPath(), "utf-8"))).toEqual({
+      channel: "experimental",
+    });
+  });
+});
+
 describe("findProjectConfig — walk-up", () => {
   it("finds a config in an ancestor directory", () => {
     const root = projectWith("export default {};");
@@ -92,25 +151,48 @@ describe("findProjectConfig — walk-up", () => {
   });
 });
 
-describe("evaluateProjectConfig — content-hash cache", () => {
-  it("serves the cached value on a hash hit (no re-evaluation)", async () => {
+describe("evaluateProjectConfig — mtime+VERSION cache", () => {
+  it("serves the cached value on a key hit (no re-evaluation)", async () => {
     freshXdg();
     const dir = projectWith('export default { channel: "normal" };');
     const path = join(dir, "pragma.config.ts");
-    const source = 'export default { channel: "normal" };';
-    const hash = createHash("sha256").update(source).digest("hex");
 
-    // Seed a *different* value at the source's hash — a genuine evaluation
-    // would return "normal", so returning "experimental" proves a cache hit.
-    mkdirSync(configCacheDir(), { recursive: true });
+    // Prime the cache with a cold evaluation.
+    expect(await evaluateProjectConfig(path)).toEqual({ channel: "normal" });
+
+    // Tamper the single cached entry: a genuine re-evaluation would still read
+    // "normal", so returning "experimental" proves the warm path served the
+    // cache without re-importing.
+    const [cached] = readdirSync(configCacheDir());
     writeFileSync(
-      join(configCacheDir(), `${hash}.json`),
+      join(configCacheDir(), cached as string),
       JSON.stringify({ channel: "experimental" }),
     );
 
     expect(await evaluateProjectConfig(path)).toEqual({
       channel: "experimental",
     });
+  });
+
+  it("invalidates the cache when the entry file's mtime changes", async () => {
+    freshXdg();
+    const dir = projectWith('export default { tier: "core" };');
+    const path = join(dir, "pragma.config.ts");
+
+    // Prime, then poison the primed entry so a stale-key read would be visible.
+    await evaluateProjectConfig(path);
+    const [primed] = readdirSync(configCacheDir());
+    writeFileSync(
+      join(configCacheDir(), primed as string),
+      JSON.stringify({ tier: "STALE" }),
+    );
+
+    // Bump the entry's mtime (content unchanged): the key changes, so the
+    // poisoned entry is bypassed and the real value is recomputed.
+    const later = new Date(Date.now() + 5000);
+    utimesSync(path, later, later);
+
+    expect(await evaluateProjectConfig(path)).toEqual({ tier: "core" });
   });
 
   it("evaluates and writes the cache on a miss", async () => {

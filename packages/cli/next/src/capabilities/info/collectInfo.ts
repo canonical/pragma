@@ -15,20 +15,23 @@ import type { InfoData } from "./types.js";
  * Detect how the binary was installed — package manager and scope.
  *
  * A storeless, networkless heuristic over the process — the v1 detector's full
- * package.json walk returns with the store-backed capabilities.
+ * package.json walk returns with the store-backed capabilities. The package
+ * manager comes from npm's `npm_config_user_agent` (set by npm/pnpm/yarn/bun
+ * when they invoke a script); with no agent we report the honest runtime rather
+ * than guessing, since `process.execPath` is the runtime, not the installer.
  */
 function detectInstallSource(): string {
   const bin = process.argv[1] ?? "";
   const scope = bin.includes("node_modules") ? "local" : "global";
-  const exec = process.execPath.toLowerCase();
-  const pm = exec.includes("bun")
-    ? "bun"
-    : exec.includes("pnpm")
-      ? "pnpm"
-      : exec.includes("yarn")
-        ? "yarn"
-        : "node";
-  return `${pm} (${scope})`;
+  return `${packageManager()} (${scope})`;
+}
+
+/** The package manager from npm's user-agent, else the honest runtime. */
+function packageManager(): string {
+  const agent = process.env.npm_config_user_agent;
+  const name = agent?.split("/")[0];
+  if (name) return name;
+  return process.versions.bun ? "bun" : "node";
 }
 
 /**

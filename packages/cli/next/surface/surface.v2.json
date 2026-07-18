@@ -5,76 +5,77 @@
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "block_list" },
         {
-          "v": "get",
+          "v": "lookup",
           "args": ["<name>"],
           "needsStore": true,
-          "mcp": "block_get"
+          "mcp": "block_lookup"
         },
-        {
-          "v": "sample",
-          "args": ["<name>"],
-          "needsStore": true,
-          "mcp": "block_sample"
-        },
-        {
-          "v": "anatomy",
-          "args": ["<name>"],
-          "needsStore": true,
-          "mcp": "block_anatomy"
-        }
+        { "v": "sample", "needsStore": true, "mcp": "block_sample" }
       ]
     },
     "standard": {
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "standard_list" },
         {
-          "v": "get",
+          "v": "lookup",
           "args": ["<name>"],
           "needsStore": true,
-          "mcp": "standard_get"
+          "mcp": "standard_lookup"
         },
-        { "v": "categories", "needsStore": true, "mcp": "standard_categories" }
+        { "v": "categories", "needsStore": true, "mcp": "standard_categories" },
+        { "v": "sample", "needsStore": true, "mcp": "standard_sample" }
       ]
     },
     "modifier": {
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "modifier_list" },
         {
-          "v": "get",
+          "v": "lookup",
           "args": ["<name>"],
           "needsStore": true,
-          "mcp": "modifier_get"
-        }
+          "mcp": "modifier_lookup"
+        },
+        { "v": "sample", "needsStore": true, "mcp": "modifier_sample" }
       ]
     },
     "token": {
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "token_list" },
         {
-          "v": "get",
+          "v": "lookup",
           "args": ["<name>"],
           "needsStore": true,
-          "mcp": "token_get"
+          "mcp": "token_lookup"
         },
+        { "v": "sample", "needsStore": true, "mcp": "token_sample" },
         {
-          "v": "resolve",
-          "args": ["<ref>"],
+          "v": "add-config",
+          "mutates": true,
           "needsStore": true,
-          "mcp": "token_resolve"
+          "mcp": "token_add-config"
         }
       ]
     },
     "tier": {
-      "verbs": [{ "v": "list", "needsStore": true, "mcp": "tier_list" }]
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "tier_list" },
+        {
+          "v": "lookup",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "tier_lookup"
+        }
+      ]
     },
     "ontology": {
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "ontology_list" },
         {
-          "v": "get",
-          "args": ["<uri>"],
+          "v": "show",
+          "args": ["<prefix>"],
+          "flags": ["--properties", "--full-uris", "--class"],
           "needsStore": true,
-          "mcp": "ontology_get"
+          "mcp": "ontology_show"
         }
       ]
     },
@@ -82,10 +83,10 @@
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "skill_list" },
         {
-          "v": "get",
+          "v": "lookup",
           "args": ["<name>"],
           "needsStore": true,
-          "mcp": "skill_get"
+          "mcp": "skill_lookup"
         }
       ]
     },
@@ -102,35 +103,41 @@
           "args": ["<uri>"],
           "needsStore": true,
           "mcp": "graph_inspect"
-        },
-        { "v": "serve", "needsStore": true, "mcp": "graph_serve" }
+        }
       ]
     },
     "config": {
       "verbs": [
         { "v": "show", "mcp": "config_show" },
         {
-          "v": "set",
-          "args": ["<field>", "<value>"],
+          "v": "tier",
+          "args": ["<path>"],
           "mutates": true,
-          "mcp": "config_set"
+          "mcp": "config_tier"
+        },
+        {
+          "v": "channel",
+          "args": ["<name>"],
+          "mutates": true,
+          "mcp": "config_channel"
+        },
+        {
+          "v": "detail",
+          "args": ["<level>"],
+          "mutates": true,
+          "mcp": "config_detail"
         }
       ]
     },
-    "data": {
+    "sources": {
       "verbs": [
-        { "v": "list", "needsStore": true, "mcp": "data_list" },
+        { "v": "status", "needsStore": true, "mcp": "sources_status" },
         {
-          "v": "get",
-          "args": ["<name>"],
-          "needsStore": true,
-          "mcp": "data_get"
-        },
-        {
-          "v": "export",
+          "v": "update",
+          "flags": ["--frozen"],
           "mutates": true,
           "needsStore": true,
-          "mcp": "data_export"
+          "mcp": "sources_update"
         }
       ]
     },
@@ -138,25 +145,26 @@
       "verbs": [
         {
           "v": "component",
-          "args": ["<name>"],
+          "args": ["<framework>", "[path]"],
           "mutates": true,
           "mcp": "create_component"
         },
+        { "v": "package", "mutates": true, "mcp": "create_package" },
         {
-          "v": "package",
-          "args": ["<name>"],
+          "v": "application",
+          "args": ["[path]"],
           "mutates": true,
-          "mcp": "create_package"
-        },
-        { "v": "app", "args": ["<name>"], "mutates": true, "mcp": "create_app" }
+          "mcp": "create_application"
+        }
       ]
     },
     "setup": {
       "verbs": [
-        { "v": "mcp", "mutates": true, "mcp": "setup_mcp" },
-        { "v": "skills", "mutates": true, "mcp": "setup_skills" },
-        { "v": "completions", "mutates": true, "mcp": "setup_completions" },
-        { "v": "lsp", "mutates": true, "mcp": "setup_lsp" }
+        { "v": "setup", "mutates": true, "mcp": "setup" },
+        { "v": "mcp", "mutates": true, "mcp": false },
+        { "v": "completions", "mutates": true, "mcp": false },
+        { "v": "skills", "mutates": true, "mcp": false },
+        { "v": "lsp", "mutates": true, "mcp": false }
       ]
     },
     "doctor": {
@@ -169,10 +177,10 @@
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "prompt_list" },
         {
-          "v": "get",
+          "v": "lookup",
           "args": ["<name>"],
           "needsStore": true,
-          "mcp": "prompt_get"
+          "mcp": "prompt_lookup"
         }
       ]
     },
@@ -194,43 +202,43 @@
   },
   "mcpSurface": {
     "tools": [
-      "block_anatomy",
-      "block_get",
       "block_list",
+      "block_lookup",
       "block_sample",
       "capabilities",
-      "config_set",
+      "config_channel",
+      "config_detail",
       "config_show",
-      "create_app",
+      "config_tier",
+      "create_application",
       "create_component",
       "create_package",
-      "data_export",
-      "data_get",
-      "data_list",
       "doctor",
       "graph_inspect",
       "graph_query",
-      "graph_serve",
       "info",
-      "modifier_get",
       "modifier_list",
-      "ontology_get",
+      "modifier_lookup",
+      "modifier_sample",
       "ontology_list",
-      "prompt_get",
+      "ontology_show",
       "prompt_list",
-      "setup_completions",
-      "setup_lsp",
-      "setup_mcp",
-      "setup_skills",
-      "skill_get",
+      "prompt_lookup",
+      "setup",
       "skill_list",
+      "skill_lookup",
+      "sources_status",
+      "sources_update",
       "standard_categories",
-      "standard_get",
       "standard_list",
+      "standard_lookup",
+      "standard_sample",
       "tier_list",
-      "token_get",
+      "tier_lookup",
+      "token_add-config",
       "token_list",
-      "token_resolve",
+      "token_lookup",
+      "token_sample",
       "upgrade"
     ]
   },
@@ -284,6 +292,7 @@
     "defaults": "built-in defaults.ts"
   },
   "budgets": {
+    "$comment": "help/complete are the designed <50ms aspiration; the ENFORCED ceilings (budgets.test.ts) are 130ms help / 100ms complete — ~2× the measured median on the build hardware, recorded in BUDGETS.md. Designed-aspiration vs enforced-measured.",
     "help": "<50ms",
     "complete": "<50ms",
     "projectConfigLoad": "<10ms",

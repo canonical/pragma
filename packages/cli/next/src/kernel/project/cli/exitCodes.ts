@@ -33,7 +33,7 @@ const USAGE_CODES = new Set<ErrorCode>([
  *
  * Usage codes map to {@link EXIT.USAGE}, an unavailable store to
  * {@link EXIT.STORE_UNAVAILABLE}, and every other code — entity-not-found,
- * empty results, store error, config error, internal error — to the generic
+ * empty results, config error, internal error — to the generic
  * {@link EXIT.RUNTIME}.
  *
  * @param code - The error code to map.

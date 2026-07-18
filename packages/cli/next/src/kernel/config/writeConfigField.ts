@@ -10,7 +10,9 @@
  * The Task effect vocabulary has no rename effect, so the write is a single
  * `WriteFile` (the interpreter creates the parent dir) rather than the
  * temp-file-plus-rename the v1 sync writer used — the closest atomicity the
- * effect model expresses.
+ * effect model expresses. If the existing file is corrupt (unparseable), it is
+ * backed up to a timestamped sibling before the overwrite — consistent with the
+ * read path (globalConfig) so a torn write is never silently discarded.
  */
 
 import { dirname } from "node:path";
@@ -21,8 +23,10 @@ import {
   mkdir,
   readFile,
   type Task,
+  warn,
   writeFile,
 } from "@canonical/task";
+import { corruptBackupPath } from "./globalConfig.js";
 import { globalConfigPath } from "./paths.js";
 import type { RawConfig } from "./types.js";
 
@@ -52,6 +56,14 @@ export function writeConfigField(
       try {
         current = JSON.parse(raw) as Record<string, unknown>;
       } catch {
+        // Corrupt/torn existing config: preserve it in a timestamped backup and
+        // warn (routed to stderr by the dispatcher's interpreter) before we
+        // overwrite with defaults + the new field — never a silent discard.
+        const backup = corruptBackupPath(path);
+        yield* $(writeFile(backup, raw));
+        yield* $(
+          warn(`${path} was not valid JSON; backed it up to ${backup}.`),
+        );
         current = {};
       }
     }

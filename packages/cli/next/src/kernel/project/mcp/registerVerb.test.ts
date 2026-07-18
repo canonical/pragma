@@ -2,8 +2,14 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { fixtureModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { projectMcp } from "../../../testing/helpers/projectMcp.js";
-import type { ParamSpec } from "../../spec/types.js";
+import type { CapabilityModule, ParamSpec } from "../../spec/types.js";
 import { buildZodSchema } from "./registerVerb.js";
+
+const passthroughFormatters = {
+  plain: (d: unknown) => String(d),
+  llm: (d: unknown) => String(d),
+  json: (d: unknown) => JSON.stringify(d),
+};
 
 describe("buildZodSchema (params → zod)", () => {
   const params: ParamSpec[] = [
@@ -47,6 +53,48 @@ describe("buildZodSchema (params → zod)", () => {
         withHistory: true,
       }).success,
     ).toBe(true);
+  });
+
+  it("applies a declared default when the field is omitted (CLI parity)", () => {
+    const withDefault = z.object(
+      buildZodSchema([
+        { kind: "string", name: "mode", doc: "m", default: "fast" },
+      ]),
+    );
+    expect(withDefault.parse({})).toEqual({ mode: "fast" });
+    expect(withDefault.parse({ mode: "slow" })).toEqual({ mode: "slow" });
+  });
+});
+
+describe("tool error envelope parity", () => {
+  it("wraps a thrown non-PragmaError as the INTERNAL_ERROR envelope", async () => {
+    const boom: CapabilityModule = {
+      name: "boom",
+      verbs: [
+        {
+          path: ["boom", "go"],
+          summary: "Throws a plain Error.",
+          params: [],
+          output: { formatters: passthroughFormatters },
+          capability: {
+            needsStore: false,
+            mutates: false,
+            mcp: { expose: true },
+          },
+          run: async () => {
+            throw new Error("kaboom");
+          },
+        },
+      ],
+    };
+    const mcp = await projectMcp([boom]);
+    const envelope = await mcp.callTool("boom_go");
+    await mcp.cleanup();
+
+    expect(envelope.ok).toBe(false);
+    const error = envelope.error as { code: string; message: string };
+    expect(error.code).toBe("INTERNAL_ERROR");
+    expect(error.message).toContain("kaboom");
   });
 });
 

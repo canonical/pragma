@@ -21,7 +21,6 @@ describe("exit codes (PROTECTED)", () => {
   const table: Record<ErrorCode, number> = {
     ENTITY_NOT_FOUND: 1,
     EMPTY_RESULTS: 1,
-    STORE_ERROR: 1,
     CONFIG_ERROR: 1,
     INTERNAL_ERROR: 1,
     INVALID_INPUT: 2,

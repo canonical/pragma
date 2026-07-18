@@ -34,6 +34,15 @@ export interface MutationFlags {
   readonly yes: boolean;
 }
 
+/**
+ * Route a Task's log effects to stderr. The interpreter otherwise falls back to
+ * `console.log` (stdout), which would corrupt the `--format json` / MCP stdio
+ * data stream; diagnostics belong on stderr.
+ */
+const logToStderr = (_level: string, message: string): void => {
+  process.stderr.write(`${message}\n`);
+};
+
 /** The result of running a verb: what to write where, and the exit code. */
 export interface DispatchOutcome {
   readonly stdout?: string;
@@ -195,10 +204,15 @@ export async function executeVerb(
       return renderPlan(flags, dryRun(task).effects.map(describeEffect));
     }
     if (mutation.undo) {
-      const { undoCount } = await runUndo(task);
+      const { undoCount } = await runUndo(task, { onLog: logToStderr });
       return renderUndo(flags, undoCount);
     }
-    return renderData(verb, flags, await runTask(task), {});
+    return renderData(
+      verb,
+      flags,
+      await runTask(task, { onLog: logToStderr }),
+      {},
+    );
   }
 
   const data = await Promise.resolve(

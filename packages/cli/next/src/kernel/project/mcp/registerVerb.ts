@@ -51,7 +51,13 @@ export function buildZodSchema(params: readonly ParamSpec[]): z.ZodRawShape {
   for (const param of params) {
     let field = zodForParam(param);
     if (param.doc) field = field.describe(param.doc);
-    if (!param.required) field = field.optional();
+    // Apply a declared default so the MCP schema matches the CLI, which fills
+    // ParamSpec.default when a flag is omitted (dispatch.extractParams).
+    if ("default" in param && param.default !== undefined) {
+      field = field.default(param.default);
+    } else if (!param.required) {
+      field = field.optional();
+    }
     shape[param.name] = field;
   }
   return shape;
@@ -80,6 +86,20 @@ function paramsFromArgs(
   return params;
 }
 
+/**
+ * Coerce a thrown value into a {@link PragmaError} so the tool always returns
+ * the `{ ok: false, error: { code, message } }` envelope — mirroring the CLI
+ * dispatcher (dispatch.ts) so a non-PragmaError bug surfaces identically on both
+ * surfaces rather than as a bare SDK error.
+ */
+function asPragmaError(error: unknown): PragmaError {
+  return error instanceof PragmaError
+    ? error
+    : PragmaError.internalError(
+        error instanceof Error ? error.message : String(error),
+      );
+}
+
 /** The tool handler for a read verb: run, project, envelope. */
 function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
@@ -90,8 +110,7 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       );
       return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
     } catch (error) {
-      if (error instanceof PragmaError) return toolError(error);
-      throw error;
+      return toolError(asPragmaError(error));
     }
   };
 }
@@ -109,8 +128,7 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       const result = await runTask(task);
       return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
     } catch (error) {
-      if (error instanceof PragmaError) return toolError(error);
-      throw error;
+      return toolError(asPragmaError(error));
     }
   };
 }

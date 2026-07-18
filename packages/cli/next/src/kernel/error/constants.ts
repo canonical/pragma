@@ -5,7 +5,9 @@
  * to a process exit code and the covenant freezes the exit-code table. Ported
  * from the v1 error kernel with two additions for the v2 exit model:
  * `STORE_UNAVAILABLE` (its own exit code, D2) and `UNKNOWN_VERB` (the usage
- * class the unknown-command suggester resolves to).
+ * class the unknown-command suggester resolves to). A store failure is either
+ * `STORE_UNAVAILABLE` (can't reach it) or a plain `INTERNAL_ERROR`, so no
+ * distinct `STORE_ERROR` code is carried.
  */
 
 /** All recognized pragma error codes as a const tuple. */
@@ -15,7 +17,6 @@ const ERROR_CODES = [
   "INVALID_INPUT",
   "AMBIGUOUS_INPUT",
   "UNKNOWN_VERB",
-  "STORE_ERROR",
   "STORE_UNAVAILABLE",
   "CONFIG_ERROR",
   "INTERNAL_ERROR",
