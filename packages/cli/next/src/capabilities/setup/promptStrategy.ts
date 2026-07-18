@@ -26,21 +26,16 @@ type PromptEffect = Effect & { _tag: "Prompt" };
 /**
  * Answer a prompt with its declared default (the dry-run interpreter's rule).
  * Used for `--yes`, a non-TTY CLI, and every MCP call.
+ *
+ * Setup emits ONLY `ConfirmPrompt` (setupAll/setupMcp are its sole prompt
+ * sources), so only confirm is handled — a non-confirm prompt (which setup
+ * never emits) declines rather than fabricating a typed default.
  */
 export async function autoAnswerDefaults(
   effect: PromptEffect,
 ): Promise<unknown> {
-  const question = effect.question;
-  switch (question.type) {
-    case "confirm":
-      return question.default ?? false;
-    case "text":
-      return question.default ?? "";
-    case "select":
-      return question.default ?? question.choices[0]?.value ?? "";
-    case "multiselect":
-      return question.default ?? [];
-  }
+  const { question } = effect;
+  return question.type === "confirm" ? (question.default ?? false) : false;
 }
 
 /** A readline yes/no confirm session for an attended TTY. Prompts on stderr. */

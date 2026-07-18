@@ -2,8 +2,8 @@
  * `setup lsp` — ensure the Terrazzo LSP VS Code extension is installed.
  *
  * A single `exec` effect (the sole mutation) — mocked under `--dry-run`, run for
- * real otherwise. The extension installer is idempotent, so this reports
- * "ensured", not a fresh install.
+ * real otherwise. The extension installer is idempotent, so a successful run
+ * reports it installed (up to date), not a fresh install.
  */
 
 import { $, exec, gen, info, type Task } from "@canonical/task";
@@ -30,8 +30,8 @@ export async function setupLsp(rt: PragmaRuntime): Promise<Task<SetupResult>> {
       exec("bunx", ["@canonical/terrazzo-lsp-extension"], cwd),
     );
     // The interpreter RESOLVES on a nonzero exit — a failed installer must fail
-    // loudly (surfacing its stderr), not report a false "ensured".
+    // loudly (surfacing its stderr), not report a false success.
     assertExecOk("bunx @canonical/terrazzo-lsp-extension", result);
-    return { kind: "lsp" as const, ensured: true };
+    return { kind: "lsp" as const };
   });
 }

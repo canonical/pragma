@@ -74,7 +74,7 @@ afterEach(() => {
 });
 
 describe("autoAnswerDefaults", () => {
-  it("answers each prompt kind with its declared default", async () => {
+  it("answers a confirm prompt with its declared default", async () => {
     expect(
       await autoAnswerDefaults({
         _tag: "Prompt",
@@ -87,12 +87,6 @@ describe("autoAnswerDefaults", () => {
         question: { type: "confirm", name: "b", message: "?", default: false },
       } as Effect & { _tag: "Prompt" }),
     ).toBe(false);
-    expect(
-      await autoAnswerDefaults({
-        _tag: "Prompt",
-        question: { type: "text", name: "c", message: "?", default: "x" },
-      } as Effect & { _tag: "Prompt" }),
-    ).toBe("x");
   });
 });
 

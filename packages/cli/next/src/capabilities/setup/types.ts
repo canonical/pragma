@@ -29,7 +29,7 @@ export type SetupResult =
       readonly path: string | null;
       readonly installed: boolean;
     }
-  | { readonly kind: "lsp"; readonly ensured: boolean }
+  | { readonly kind: "lsp" }
   | { readonly kind: "mcp"; readonly configured: readonly string[] }
   | { readonly kind: "skills"; readonly result: SetupSkillsResult }
   | { readonly kind: "all"; readonly steps: readonly string[] };

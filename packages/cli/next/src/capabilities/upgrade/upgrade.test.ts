@@ -100,9 +100,11 @@ describe("checkRegistryVersion — unit contract", () => {
       }),
     );
 
+    // Each channel selects its dist-tag; the RETURNED version proves the
+    // mapping (normal→latest→1.0.0, etc.) — the dist-tag is internal now.
     expect(
       await checkRegistryVersion("@canonical/pragma-cli", "normal"),
-    ).toEqual({ latest: "1.0.0", distTag: "latest" });
+    ).toEqual({ latest: "1.0.0" });
     expect(calls[0]?.url).toBe(
       "https://registry.npmjs.org/%40canonical%2Fpragma-cli",
     );
@@ -110,14 +112,11 @@ describe("checkRegistryVersion — unit contract", () => {
     expect(calls[0]?.opts.signal).toBeInstanceOf(AbortSignal);
     expect(REGISTRY_TIMEOUT_MS).toBe(3000);
 
-    expect((await checkRegistryVersion("x", "experimental"))?.distTag).toBe(
-      "experimental",
-    );
     expect((await checkRegistryVersion("x", "experimental"))?.latest).toBe(
       "1.1.0-exp",
     );
-    expect((await checkRegistryVersion("x", "prerelease"))?.distTag).toBe(
-      "next",
+    expect((await checkRegistryVersion("x", "prerelease"))?.latest).toBe(
+      "1.2.0-next",
     );
   });
 

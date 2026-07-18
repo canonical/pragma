@@ -20,8 +20,8 @@ import type { Channel } from "../../kernel/config/types.js";
  */
 export const PRAGMA_PACKAGE = "@canonical/pragma-cli";
 
-/** Maps each release channel to its corresponding npm dist-tag. */
-export const DIST_TAG_MAP: Record<Channel, string> = {
+/** Maps each release channel to its corresponding npm dist-tag (internal). */
+const DIST_TAG_MAP: Record<Channel, string> = {
   normal: "latest",
   experimental: "experimental",
   prerelease: "next",
@@ -33,7 +33,6 @@ export const REGISTRY_TIMEOUT_MS = 3_000;
 /** Result of checking the npm registry for the latest package version. */
 export interface RegistryCheckResult {
   readonly latest: string;
-  readonly distTag: string;
 }
 
 /**
@@ -65,7 +64,7 @@ export async function checkRegistryVersion(
     const version = data["dist-tags"]?.[distTag];
     if (!version) return undefined;
 
-    return { latest: version, distTag };
+    return { latest: version };
   } catch {
     return undefined;
   }

@@ -10,12 +10,10 @@
  * dropped — only this heuristic and the update-command map survive.
  */
 
-/** The install source: package manager, scope, and a display label. */
+/** The install source: package manager and a display label. */
 export interface InstallSource {
   /** Package-manager name (`bun`/`npm`/`pnpm`/`yarn`), else the honest runtime. */
   readonly pm: string;
-  /** Whether the binary is a local `node_modules` install or global. */
-  readonly scope: "local" | "global";
   /** `${pm} (${scope})` — the string `info`/`doctor` display. */
   readonly label: string;
 }
@@ -31,16 +29,14 @@ function packageManager(): string {
 /**
  * Detect how the binary was installed — package manager and scope.
  *
- * @returns The install source (pm, scope, label).
+ * @returns The install source (pm, label).
  * @note Impure — reads `process.argv`/`process.env`.
  */
 export function detectInstallSource(): InstallSource {
   const bin = process.argv[1] ?? "";
-  const scope: "local" | "global" = bin.includes("node_modules")
-    ? "local"
-    : "global";
+  const scope = bin.includes("node_modules") ? "local" : "global";
   const pm = packageManager();
-  return { pm, scope, label: `${pm} (${scope})` };
+  return { pm, label: `${pm} (${scope})` };
 }
 
 /** The npm global-update command — also the fallback for an unknown manager. */

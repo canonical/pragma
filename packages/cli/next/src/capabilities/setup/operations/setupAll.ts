@@ -10,7 +10,6 @@
 
 import { $, gen, info, promptConfirm, type Task, when } from "@canonical/task";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import { applyPromptStrategy } from "../promptStrategy.js";
 import type { SetupResult } from "../types.js";
 import { setupCompletions } from "./setupCompletions.js";
 import { setupLsp } from "./setupLsp.js";
@@ -27,8 +26,8 @@ export async function setupAll(rt: PragmaRuntime): Promise<Task<SetupResult>> {
   const completionsTask = await setupCompletions(rt);
   const lspTask = await setupLsp(rt);
   const mcpTask = await setupMcp(rt);
-  // Sub-ops each wired rt.exec; re-assert so the run-all handler is authoritative.
-  applyPromptStrategy(rt);
+  // Each sub-op already wired rt.exec from the unchanged rt.interaction (the
+  // handler is identical), so no re-assert is needed here.
 
   return gen(function* () {
     yield* $(info("Setting up pragma for this project..."));
