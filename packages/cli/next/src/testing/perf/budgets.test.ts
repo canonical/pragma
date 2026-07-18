@@ -3,10 +3,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { capabilities } from "../../capabilities/index.js";
 import { evaluateProjectConfig } from "../../kernel/config/evaluateProjectConfig.js";
+import { projectMcp } from "../helpers/projectMcp.js";
 import {
   BUDGET_COMPLETE_MS,
   BUDGET_HELP_MS,
+  BUDGET_MCP_P95_WARM_MS,
   BUDGET_PROJECT_CONFIG_MS,
   BUDGET_WARM_STORE_MS,
 } from "./budgets.js";
@@ -82,6 +85,35 @@ describe("perf budgets (PROTECTED)", () => {
     });
     expect(result.medianMs).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
     expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
+  });
+
+  it("warm in-process MCP tool call stays under budget (mcpP95Warm)", {
+    retry: 2,
+  }, async () => {
+    // In-process (NOT a binary spawn): the warm cost of the MCP call path over
+    // the full 38-tool catalog. `capabilities` is storeless + network-free, so
+    // this isolates envelope + dispatch overhead without store/network noise.
+    const mcp = await projectMcp(capabilities);
+    try {
+      await mcp.callTool("capabilities"); // warm-up, excluded from the sample
+      const samples: number[] = [];
+      for (let i = 0; i < 25; i++) {
+        const start = performance.now();
+        await mcp.callTool("capabilities");
+        samples.push(performance.now() - start);
+      }
+      samples.sort((a, b) => a - b);
+      // Enforce on the robust trimmed mean; keep p95 as a signal with headroom
+      // (the __complete precedent) so a lone scheduler spike never flakes red.
+      expect(trimmedMean(samples, 0.1)).toBeLessThanOrEqual(
+        BUDGET_MCP_P95_WARM_MS,
+      );
+      expect(percentile(samples, 0.95)).toBeLessThanOrEqual(
+        BUDGET_MCP_P95_WARM_MS,
+      );
+    } finally {
+      await mcp.cleanup();
+    }
   });
 
   it("warm project-config load stays under budget", { retry: 2 }, async () => {

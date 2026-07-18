@@ -15,6 +15,7 @@ discard warmups, and assert median/p95 against the ceilings in
 | project `pragma.config.ts`   | < 10 ms warm    |
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
+| condensed SDL (tool catalog) | ≤ 8000 tokens   |
 
 ## Measured (day-1 perf spike, commit 6)
 
@@ -64,6 +65,37 @@ the ~15 ms of command-tree work. Per the plan, each ceiling is set to roughly
 the assertion silently. The 50 ms target is retained as the aspiration in the
 surface covenant's `budgets` block; a faster runtime or a lighter start closes
 the gap.
+
+## PR7 — `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
+
+PR7 completes the MCP surface (38 tools), so the two budgets PR4 seeded now go
+enforced. They are split by MEASUREMENT TYPE:
+
+- **`mcpP95Warm` (latency → serial perf pass).** Enforced in `budgets.test.ts`
+  (the `(PROTECTED)` suite, run by the isolated serial `test:perf` pass so
+  in-process timing isn't inflated by coverage-worker contention). It measures a
+  warm, IN-PROCESS `callTool("capabilities")` — a storeless, network-free tool,
+  so it isolates envelope + dispatch overhead over the full catalog. Measured
+  here: **p95 ≈ 0.4 ms, median ≈ 0.3 ms** across 25 warm calls — enormous
+  headroom under the **100 ms** ceiling, so it guards a gross regression without
+  flaking. Enforced on the trimmed mean with p95 as a second check (both ≤ 100).
+  `info` is deliberately NOT the probe: its network update-check makes a warm
+  call ~55 ms, which would measure the registry, not the call path. The old
+  `mcpP95Warm.seed.test.ts` is retired.
+
+- **`condensedSDL` (deterministic → content assertion).** A pure char-count of
+  the aggregate tool catalog (name + description + inputSchema), so CPU
+  contention cannot affect it — it stays a deterministic assertion in the eval
+  harness (`cases/stable.ts#content-condensed-sdl-token-budget`, coverage pass),
+  NOT the serial perf pass. Re-measured over the full 38-tool catalog:
+  **11 068 chars ≈ 2767 tokens** (~4 chars/token), comfortably under the **8000**
+  ceiling. The budget now genuinely constrains description length — verbose
+  `use_when`/tool descriptions are what it guards against.
+
+| Budget         | Measured (full catalog)      | Ceiling      | Pass                 |
+| -------------- | ---------------------------- | ------------ | -------------------- |
+| `mcpP95Warm`   | p95 ≈ 0.4 ms (in-process)    | 100 ms       | serial perf (`test:perf`) |
+| `condensedSDL` | 2767 tokens (38 tools)       | 8000 tokens  | eval/coverage        |
 
 Confirmed by the spike:
 

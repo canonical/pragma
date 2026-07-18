@@ -12,11 +12,21 @@ import { capabilities } from "../../capabilities/index.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { TEST_FLAGS } from "../helpers/projectCli.js";
 import { projectMcp } from "../helpers/projectMcp.js";
+import { assemblyEvalCases } from "./cases/assembly.js";
+import { effectfulEvalCases } from "./cases/effectful.js";
 import { readNounEvalCases } from "./cases/readNouns.js";
 import { stableEvalCases } from "./cases/stable.js";
 import { type EvalCaseResult, type EvalEnv, runEvals } from "./harness.js";
 
-const allSeedCases = [...stableEvalCases, ...readNounEvalCases];
+// PR7 populates the full MCP eval matrix on PR4's seed: read nouns (PR3),
+// effectful nouns (PR6 + PR7 mutations/graph/prompt content), and the assembly
+// orientation surface (PR7 capabilities/instructions/native prompts).
+const allSeedCases = [
+  ...stableEvalCases,
+  ...readNounEvalCases,
+  ...effectfulEvalCases,
+  ...assemblyEvalCases,
+];
 
 /** Strip the (only-populated-on-failure) `detail` so a green report snapshots
  * as pure signal — a failure's message is diagnostic noise in the golden, not
@@ -56,9 +66,9 @@ describe("eval harness — seed gate", () => {
     }
     expect(report.failed).toBe(0);
     expect(report.passed).toBe(allSeedCases.length);
-    // The plan's seed target: ~10-15 representative cases.
-    expect(report.cases.length).toBeGreaterThanOrEqual(10);
-    expect(report.cases.length).toBeLessThanOrEqual(15);
+    // PR7 grows the seed into the fuller MCP matrix (kinds × PR3/6/7 nouns).
+    expect(report.cases.length).toBeGreaterThanOrEqual(35);
+    expect(report.cases.length).toBeLessThanOrEqual(60);
     expect(normalize(report.cases)).toMatchSnapshot();
   });
 });

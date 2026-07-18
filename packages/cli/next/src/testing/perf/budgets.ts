@@ -25,3 +25,13 @@ export const BUDGET_PROJECT_CONFIG_MS = 10;
  * measured median and needs no relaxation (see BUDGETS.md).
  */
 export const BUDGET_WARM_STORE_MS = 300;
+
+/**
+ * Warm in-process MCP tool-call ceiling (ms) — PR7 graduates this from seeded to
+ * ENFORCED. Measured over a warm, storeless tool (`capabilities`): pure envelope
+ * + dispatch, no store boot, no network, so it isolates the per-call overhead of
+ * the grown 38-tool catalog. Measured p95 is ~0.4 ms here (huge headroom), so
+ * 100 ms guards against a gross regression without flaking. `info` is
+ * deliberately NOT used — its network update-check makes it ~55 ms (see BUDGETS.md).
+ */
+export const BUDGET_MCP_P95_WARM_MS = 100;
