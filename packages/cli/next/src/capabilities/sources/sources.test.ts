@@ -16,7 +16,7 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
 import { readLock } from "../../kernel/runtime/lock.js";
-import { lockPath } from "../../kernel/runtime/paths.js";
+import { lockPath, packDir } from "../../kernel/runtime/paths.js";
 import { createLazyStore } from "../../kernel/runtime/store.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -157,6 +157,90 @@ describe("sources lock round-trip (PROTECTED)", () => {
     const { runUndo } = await import("@canonical/task/node");
     await runUndo(await buildUpdateTask(runtime, false));
     // Prior lock was absent, so undo removes the file.
+    expect(readLock(cwd)).toBeUndefined();
+  });
+});
+
+describe("sources update — package-declared prefixes (M1)", () => {
+  it("compacts a package's own namespace to its declared prefix in the index", async () => {
+    // The fixture TTL declares `@prefix ex: <https://ex.test/#>`, but the config
+    // carries NO `ex` prefix. Without harvesting the package's own prologue, the
+    // index falls back to full URIs (breaking prefixed-type completion and PR3
+    // reads); with it, names compact to `ex:Widget` / `ex:one`.
+    const pkg = filePackage();
+    const cwd = tmp("pragma2-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    const result = await runTask(await buildUpdateTask(runtime, false));
+    const index = JSON.parse(
+      readFileSync(join(packDir(result.contentHash), "index.json"), "utf-8"),
+    ) as {
+      prefixes: Record<string, string>;
+      entities: { name: string; type: string }[];
+    };
+
+    // The harvested prefix is persisted (so boot reads the same names).
+    expect(index.prefixes.ex).toBe("https://ex.test/#");
+    const names = index.entities.map((entity) => entity.name);
+    expect(names).toContain("ex:Widget");
+    expect(names).toContain("ex:one");
+    // No entity NAME leaks a full URI (the pre-fix regression).
+    for (const name of names) expect(name).not.toMatch(/^https?:/);
+    // The primary type filter key is prefixed too — completion filters on it.
+    expect(
+      index.entities.find((entity) => entity.name === "ex:one")?.type,
+    ).toBe("ex:Widget");
+  });
+});
+
+describe("sources update — network-free preview (M2)", () => {
+  const updateVerb = sourcesModule.verbs[1] as VerbSpec;
+  const DRY_RUN = { dryRun: true, undo: false, yes: false };
+  // A source that can ONLY be satisfied by a clone. If a preview resolved it,
+  // the git clone would fail and the run would error (or hang on the network) —
+  // so a clean plan proves nothing was fetched or built.
+  const UNREACHABLE = "git+file:///pragma-does-not-exist-42/repo.git#main";
+
+  it("CLI --dry-run previews the refs offline, resolving nothing", async () => {
+    const cwd = tmp("pragma2-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-remote", source: UNREACHABLE },
+    ]);
+
+    const outcome = await executeVerb(updateVerb, {}, DRY_RUN, runtime);
+
+    // A successful plan — the unreachable clone was never attempted.
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("Resolve and build 1 package(s)");
+    expect(outcome.stdout).toContain(UNREACHABLE);
+    // The one project mutation is previewed, not performed.
+    expect(outcome.stdout).toContain("pragma.lock.json");
+    expect(readLock(cwd)).toBeUndefined();
+    // The store was never even asked for.
+    expect(runtime.store.booted).toBe(false);
+  });
+
+  it("MCP sources_update without confirm returns a plan, fetching nothing", async () => {
+    const cwd = tmp("pragma2-proj-");
+    writeFileSync(
+      join(cwd, "pragma.config.ts"),
+      `export default { packages: [{ name: "pkg-remote", source: "${UNREACHABLE}" }] };\n`,
+    );
+
+    const mcp = await projectMcp([sourcesModule], cwd);
+    const envelope = await mcp.callTool("sources_update"); // no confirm
+    await mcp.cleanup();
+
+    expect(envelope.ok).toBe(true);
+    expect(envelope.meta).toMatchObject({
+      planOnly: true,
+      confirmRequired: true,
+    });
+    const plan = (envelope.data as { plan: string[] }).plan;
+    expect(plan.some((line) => line.includes(UNREACHABLE))).toBe(true);
+    // Plan-first withheld the write — no lock landed.
     expect(readLock(cwd)).toBeUndefined();
   });
 });

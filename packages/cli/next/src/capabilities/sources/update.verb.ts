@@ -4,9 +4,11 @@
  * A mutation (`mutates: true`) that needs the network (`needsNetwork: true`)
  * but NOT the pre-booted store (`needsStore: false`): update is what *creates*
  * the store, so the dispatcher must not try to boot it first (a cold boot would
- * throw STORE_UNAVAILABLE). `run` is async — it resolves and builds eagerly,
- * then returns the lock-writing Task — so the dispatcher awaits it. `--frozen`
- * re-resolves to the lock's pinned revisions and never advances.
+ * throw STORE_UNAVAILABLE). `run` returns a `Promise<Task<R>>` — the union's
+ * third arm — which the dispatcher awaits: for a real execution it resolves and
+ * builds before handing back the lock-writing Task; for a preview
+ * (`runtime.mutation.preview`) it stays network-free and hands back a
+ * plan-only Task. `--frozen` re-resolves to the lock's pinned revisions.
  */
 
 import type { Task } from "@canonical/task";
@@ -43,9 +45,14 @@ export const updateVerb: VerbSpec<{ frozen?: boolean }, SourcesUpdateData> = {
       annotations: { readOnlyHint: false, openWorldHint: true },
     },
   },
-  // Async setup: resolve + build eagerly, then hand back the lock-writing Task.
-  // The dispatcher awaits the promise; the cast presents it through the union's
-  // `Task` arm (kept narrow so read verbs' inference is unaffected).
+  // `run` really returns `Promise<Task<R>>`: `buildUpdateTask` awaits config
+  // (and, on a real execution, resolves + builds) before handing back the
+  // lock-writing Task — or, when `runtime.mutation.preview` is set, a
+  // network-free plan Task. The dispatcher and MCP handler both `await` this
+  // promise into a `Task`. The `VerbSpec.run` union is deliberately two-armed
+  // (`Promise<R> | Task<R>`) — a third `Promise<Task<R>>` arm would poison async
+  // read-verb inference — so the awaited-away Promise is presented through the
+  // `Task<R>` arm by this single, honest cast.
   run: (params, runtime) =>
     import("./runUpdate.js").then((module) =>
       module.buildUpdateTask(runtime, params.frozen === true),

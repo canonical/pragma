@@ -116,20 +116,38 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   };
 }
 
+/**
+ * Route a Task's log effects to STDERR. The default interpreter logs to
+ * `console.log` (stdout), which would corrupt the MCP stdio JSON-RPC frame;
+ * diagnostics belong on stderr. Mirrors the CLI dispatcher's `logToStderr`.
+ */
+const logToStderr = (_level: string, message: string): void => {
+  process.stderr.write(`${message}\n`);
+};
+
 /** The tool handler for a mutating verb: plan-first unless `confirm: true`. */
 function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
     try {
       if (verb.capability.needsStore) await runtime.store.get();
       const params = paramsFromArgs(verb, args);
+      // Without `confirm`, this is a plan-only preview: tell the verb so a
+      // network-touching mutation stays offline and never fetches on discovery.
+      const preview = args.confirm !== true;
+      const mutationRuntime: PragmaRuntime = {
+        ...runtime,
+        mutation: { preview },
+      };
       const task = await Promise.resolve(
-        verb.run(params, runtime) as Task<unknown> | Promise<Task<unknown>>,
+        verb.run(params, mutationRuntime) as
+          | Task<unknown>
+          | Promise<Task<unknown>>,
       );
-      if (args.confirm !== true) {
+      if (preview) {
         const plan = dryRun(task).effects.map(describeEffect);
         return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });
       }
-      const result = await runTask(task);
+      const result = await runTask(task, { onLog: logToStderr });
       return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
     } catch (error) {
       return toolError(asPragmaError(error));

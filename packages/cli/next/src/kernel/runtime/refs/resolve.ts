@@ -78,6 +78,41 @@ function readTtlSources(
 }
 
 /**
+ * A Turtle/SPARQL prefix prologue declaration: `@prefix ex: <iri> .` or the
+ * keyword-form `PREFIX ex: <iri>`. Both are legal in Turtle 1.1; the keyword is
+ * case-insensitive and the leading `@` is optional, so `@?prefix` with the `i`
+ * flag covers every spelling. The label group requires at least one character,
+ * so the default-namespace form (`@prefix : <iri>`) is skipped — its `:local`
+ * tokens are not the named-prefix contract the index freezes.
+ */
+const PREFIX_DECL = /(?:^|\s)@?prefix\s+([^\s:]+):\s*<([^>]*)>/gi;
+
+/**
+ * Harvest a package's own `@prefix` / `PREFIX` declarations from its TTL text.
+ *
+ * ke's `createStore` does NOT fold parsed-Turtle prefixes into `store.prefixes`
+ * (TTL `@prefix` applies only within a file during parsing), so a package's
+ * namespaces are invisible to the index unless we lift them out of the source
+ * ourselves. The returned map (label → namespace IRI) is merged BELOW config
+ * precedence so the pack's own names compact to `pfx:Local` in the index.
+ *
+ * @param sources - The package's labelled RDF sources.
+ * @returns A prefix map of every named declaration found (last wins on clash).
+ */
+export function harvestPrefixes(
+  sources: readonly { readonly content: string }[],
+): Record<string, string> {
+  const prefixes: Record<string, string> = {};
+  for (const { content } of sources) {
+    for (const match of content.matchAll(PREFIX_DECL)) {
+      const [, label, iri] = match;
+      if (label !== undefined && iri !== undefined) prefixes[label] = iri;
+    }
+  }
+  return prefixes;
+}
+
+/**
  * Resolve a package reference to its revision and RDF sources.
  *
  * @param ref - The parsed package reference.

@@ -105,9 +105,13 @@ export interface ErrorSpec {
  * `run` is the effect seam — a read returns `Promise<R>`; a mutation returns a
  * `Task<R>` the dispatcher interprets under the node / dry-run interpreters. A
  * mutation that needs async setup before its effects are known (e.g.
- * `sources update` resolves and builds before locking) returns a
- * `Promise<Task<R>>`, which the dispatcher awaits — a `Task` seen through the
- * `Task<R>` arm of this union (kept narrow so read-verb inference is unaffected).
+ * `sources update` resolves and builds before locking) actually returns a
+ * `Promise<Task<R>>`, which the dispatcher and MCP handler both `await` into a
+ * `Task<R>` before interpreting. That third shape is presented through the
+ * `Task<R>` arm by a cast at the one call site (`update.verb.ts`): adding a
+ * literal `Promise<Task<R>>` arm here poisons the contextual inference of every
+ * async read verb (they widen to `Promise<R | Task<R>>`), so the union is kept
+ * at two arms and the async-setup case carries an honest, commented cast.
  */
 export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly path: readonly [noun: string, verb?: string];

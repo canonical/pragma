@@ -206,8 +206,16 @@ export async function executeVerb(
   }
 
   if (verb.capability.mutates) {
+    // Tell the verb whether this is a plan-only preview (`--dry-run`) or a real
+    // execution, so a network-touching mutation can stay offline for the plan.
+    const mutationRuntime: PragmaRuntime = {
+      ...runtime,
+      mutation: { preview: mutation.dryRun },
+    };
     const task = await Promise.resolve(
-      verb.run(params, runtime) as Task<unknown> | Promise<Task<unknown>>,
+      verb.run(params, mutationRuntime) as
+        | Task<unknown>
+        | Promise<Task<unknown>>,
     );
     if (mutation.dryRun) {
       return renderPlan(flags, dryRun(task).effects.map(describeEffect));

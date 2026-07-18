@@ -79,6 +79,19 @@ export interface QueryFacade {
 }
 
 /**
+ * Mutation-invocation context — present only for a mutating verb, set by the
+ * CLI/MCP projector just before `run`. `preview` is true for a plan-only
+ * invocation (`--dry-run` on the CLI, or an MCP tool call without `confirm`): a
+ * mutating verb reads it to describe its intended effects WITHOUT performing
+ * network or heavy setup, so a preview stays side-effect-free. Real execution
+ * leaves it false. This is the generic seam every mutation verb copies.
+ */
+export interface MutationRuntime {
+  /** True for a plan-only preview; false for a real execution. */
+  readonly preview: boolean;
+}
+
+/**
  * Per-invocation runtime handed to every verb `run`. Storeless verbs use only
  * `cwd`/`version`/`globalFlags`/`loadConfig`; store-backed verbs reach the graph
  * through `store`/`query`. The dispatcher boots the store only for
@@ -97,4 +110,6 @@ export interface PragmaRuntime {
   readonly store: LazyStore;
   /** The query facade over the lazy store. */
   readonly query: QueryFacade;
+  /** Mutation context, set by the projector for a mutating verb (else absent). */
+  readonly mutation?: MutationRuntime;
 }
