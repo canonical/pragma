@@ -5,15 +5,16 @@
  *
  * `ParamSpec.complete` resolution (defaults when the field is absent):
  *
- * | declared        | param kind             | source                     |
- * | --------------- | ---------------------- | -------------------------- |
- * | absent          | enum                   | values (the enum's values) |
- * | absent          | boolean                | none (flag name only)      |
- * | absent          | string/number/string[] | none                       |
- * | `{values}`      | enum only              | values                     |
- * | `{entity,type}` | string/string[]        | entity (dynamic tier)      |
- * | `{files}`       | string/string[]        | files (native shell)       |
- * | `{none}`        | any                    | none                       |
+ * | declared         | param kind             | source                     |
+ * | ---------------- | ---------------------- | -------------------------- |
+ * | absent           | enum                   | values (the enum's values) |
+ * | absent           | boolean                | none (flag name only)      |
+ * | absent           | string/number/string[] | none                       |
+ * | `{values}`       | enum only              | values                     |
+ * | `{names,source}` | string/string[]        | names (dynamic tier)       |
+ * | `{names,off}`    | any                    | none (opt-out)             |
+ * | `{files}`        | string/string[]        | files (native shell)       |
+ * | `{none}`         | any                    | none                       |
  *
  * Injection safety, primary gate: every token the static tier would inline
  * (nouns, verb labels, flag names, enum values) must match
@@ -114,8 +115,15 @@ function resolveSource(param: ParamSpec): CompletionSource {
       return param.kind === "enum"
         ? { kind: "values", values: param.values }
         : none();
-    case "entity":
-      return { kind: "entity", type: declared.type };
+    case "names":
+      // The per-family opt-out (`enabled:false`) collapses to no completion.
+      if (declared.enabled === false) return none();
+      return {
+        kind: "names",
+        ref: declared.source,
+        match: declared.match ?? "substring",
+        caseSensitive: declared.caseSensitive ?? false,
+      };
     case "files":
       return { kind: "files" };
     case "none":
@@ -130,12 +138,12 @@ function assertSafeSource(source: CompletionSource, where: string): void {
       assertSafeToken(value, `${where} value`);
     }
   }
-  if (source.kind === "entity" && source.type !== "") {
-    // The type key is never inlined into a script (only entity NAMES are, at
-    // runtime, through the same allowlist) — but keep any non-empty type
-    // well-formed anyway. An empty type is the legitimate "any entity type"
-    // query (`graph inspect`), matched against every entity by the reader.
-    assertSafeToken(source.type, `${where} entity type`);
+  if (source.kind === "names" && source.ref.type && source.ref.type !== "") {
+    // The type key is never inlined into a script (only NAMES are, at runtime,
+    // through the same allowlist) — but keep any non-empty type well-formed
+    // anyway. An empty/absent type is the legitimate "any type" query (`graph
+    // inspect`), matched against every entity by the index reader.
+    assertSafeToken(source.ref.type, `${where} names type`);
   }
 }
 

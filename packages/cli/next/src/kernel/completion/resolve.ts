@@ -16,7 +16,7 @@
  */
 
 import { findNoun, SAFE_TOKEN_RE } from "./model.js";
-import { filterPrefix, rankCandidates } from "./rank.js";
+import { filterPrefix, MAX_CANDIDATES, rankCandidates } from "./rank.js";
 import type {
   CompletionEnv,
   CompletionModel,
@@ -58,18 +58,24 @@ async function resolveSource(
   switch (source.kind) {
     case "values":
       return rankCandidates(sanitize(source.values), partial);
-    case "entity": {
+    case "names": {
       let names: readonly string[];
       try {
-        names = await env.entities.names(source.type);
+        names = await env.names(source.ref);
       } catch (error) {
-        // The reader contract is never-throw; degrade anyway, never break TAB.
+        // The seam contract is never-throw; degrade anyway, never break TAB.
         completionDebug(
-          `entity read failed: ${error instanceof Error ? error.message : String(error)}`,
+          `name source read failed: ${error instanceof Error ? error.message : String(error)}`,
         );
         return [];
       }
-      return rankCandidates(sanitize(names), partial);
+      return rankCandidates(
+        sanitize(names),
+        partial,
+        MAX_CANDIDATES,
+        source.match,
+        source.caseSensitive,
+      );
     }
     case "files":
       // Consumer rule: files are completed natively by the shell scripts

@@ -44,6 +44,12 @@ export interface PackIndexEntity {
   readonly types?: readonly string[];
   /** Human label (rdfs:label / skos:prefLabel / dcterms:title / schema:name). */
   readonly label?: string | null;
+  /**
+   * Alternative completable names — the `ds:name` values a family (e.g.
+   * `ds:Tier`, matched by `tier lookup`) is addressed by, when they differ from
+   * `name`/`label`. Enrichment for the storeless name-completion sources.
+   */
+  readonly altNames?: readonly string[];
   /** Schema (`tbox`) vs individual (`abox`). */
   readonly box?: "tbox" | "abox";
   /** Short description (rdfs:comment / dcterms:description / skos:definition). */
@@ -76,6 +82,7 @@ export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
   prefixed: z.string().optional(),
   types: z.array(z.string()).optional(),
   label: z.string().nullable().optional(),
+  altNames: z.array(z.string()).optional(),
   box: z.enum(["tbox", "abox"]).optional(),
   description: z.string().nullable().optional(),
 });

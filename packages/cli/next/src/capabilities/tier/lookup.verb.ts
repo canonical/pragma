@@ -21,6 +21,7 @@ const tierLookupSpec: VerbSpec<Record<string, unknown>, TierLookupData> = {
       doc: "The tier name (e.g. apps/lxd).",
       positional: true,
       required: true,
+      complete: { kind: "names", source: { from: "tiers" } },
     },
   ],
   output: { formatters: tierLookupFormatters },

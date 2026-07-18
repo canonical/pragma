@@ -10,6 +10,8 @@
  * conformance pins to the golden.
  */
 
+import type { CompletionMatch, CompletionSourceRef } from "../spec/types.js";
+
 /** The shells the static completion tier can emit scripts for. */
 export type Shell = "bash" | "zsh" | "fish";
 
@@ -23,8 +25,17 @@ export type Candidate = string;
 export type CompletionSource =
   /** A closed value set (enum params) — inlined by the static tier. */
   | { readonly kind: "values"; readonly values: readonly string[] }
-  /** Entity names of a type — the dynamic tier reads them via the seam. */
-  | { readonly kind: "entity"; readonly type: string }
+  /**
+   * Names of a storeless source (index/skills/tiers/prompts/prefixes) — the
+   * dynamic tier reads them via the seam and ranks them with `match`/case. The
+   * static scripts exec `__complete` for every name source, one code path.
+   */
+  | {
+      readonly kind: "names";
+      readonly ref: CompletionSourceRef;
+      readonly match: CompletionMatch;
+      readonly caseSensitive: boolean;
+    }
   /** File paths — the static scripts delegate to native shell completion. */
   | { readonly kind: "files" }
   /** Nothing to offer. */
@@ -123,20 +134,20 @@ export interface CompletionRequest {
 }
 
 /**
- * The dynamic-tier seam: reads entity names for `{kind:"entity"}` sources.
- * PR-C ships only {@link import("./entitySource.js").emptyEntityReader}; the
- * index-backed reader (`createIndexEntityReader`) lands with the PR2 rebase.
+ * The dynamic-tier seam: reads candidate names for a `{kind:"names"}` source.
+ * One source-dispatched reader serves every family — index, skills, tiers,
+ * prompts, prefixes — so the resolver ranks them uniformly. The default
+ * ({@link import("./entitySource.js").emptyNameSource}) yields nothing, so
+ * structural completion never pays a read; {@link
+ * import("./entitySource.js").indexCompletionEnv} wires the storeless sources.
  */
-export interface EntityNameReader {
-  /**
-   * The known names of a type (`ds:Block`), or none when unavailable.
-   * May be sync or async; failures must surface as an empty list, never throw.
-   */
-  names(type: string): Promise<readonly string[]> | readonly string[];
-}
-
-/** The environment the resolver runs in — the entity seam, nothing else. */
 export interface CompletionEnv {
-  /** The entity-name reader for `{kind:"entity"}` sources. */
-  readonly entities: EntityNameReader;
+  /**
+   * The candidate names for a source ref (full list, canonical casing), or none
+   * when unavailable. May be sync or async; failures must surface as an empty
+   * list, never throw — the resolver filters/ranks against the partial.
+   */
+  names(
+    ref: CompletionSourceRef,
+  ): Promise<readonly string[]> | readonly string[];
 }

@@ -111,16 +111,53 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
     expect(list?.capability.mcp.expose).toBe(true);
   });
 
-  it("projects the lookup as a variadic entity-completing positional + disclosure", () => {
+  it("projects the lookup as a variadic name-completing positional + disclosure", () => {
     const verbs = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
     const lookup = verbs.find((v) => verbKey(v.path) === "widget lookup");
     const name = lookup?.params.at(0);
     expect(name?.kind).toBe("string[]");
     expect(name?.positional).toBe(true);
-    expect(name?.complete).toEqual({ kind: "entity", type: "ex:Widget" });
+    expect(name?.complete).toEqual({
+      kind: "names",
+      source: { from: "index", type: "ex:Widget" },
+    });
     expect(lookup?.disclosure).toEqual({
       levels: ["summary", "standard", "detailed"],
       default: "summary",
+    });
+  });
+
+  it("honors the pack completion override (opt-out + tune)", () => {
+    const baseLookup = WIDGET_PACK.lookup as NonNullable<
+      PackDefinition["lookup"]
+    >;
+    const nameParam = (def: PackDefinition) =>
+      compilePack(def, "bundled:widget", PREFIXES)
+        .find((v) => verbKey(v.path) === "widget lookup")
+        ?.params.at(0);
+
+    // enabled:false opts the family out of completion entirely.
+    expect(
+      nameParam({
+        ...WIDGET_PACK,
+        lookup: { ...baseLookup, completion: { enabled: false } },
+      })?.complete,
+    ).toBeUndefined();
+
+    // match/minChars tune the derived index heuristic.
+    expect(
+      nameParam({
+        ...WIDGET_PACK,
+        lookup: {
+          ...baseLookup,
+          completion: { match: "prefix", minChars: 3 },
+        },
+      })?.complete,
+    ).toEqual({
+      kind: "names",
+      source: { from: "index", type: "ex:Widget" },
+      match: "prefix",
+      minChars: 3,
     });
   });
 });

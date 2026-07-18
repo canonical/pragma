@@ -71,6 +71,27 @@ describe("perf budgets (PROTECTED)", () => {
     expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_COMPLETE_MS * 1.5);
   });
 
+  it("pragma __complete skill lookup stays under budget", { retry: 3 }, () => {
+    // A NAME-source completion (the storeless `skills` filesystem walk) — the
+    // guard the "watch skill discovery" perf caveat calls for. Fresh XDG data
+    // dir → an empty walk, but it exercises the discoverSkills path per spawn;
+    // enforce the same robust statistic as the noun case.
+    const result = measureCommand(
+      BINARY,
+      ["__complete", "skill", "lookup", "do"],
+      {
+        runs: 30,
+        warmups: 5,
+        env: {
+          ...perfEnv,
+          XDG_DATA_HOME: mkdtempSync(join(tmpdir(), "pragma-perf-data-")),
+        },
+      },
+    );
+    expect(result.trimmedMeanMs).toBeLessThanOrEqual(BUDGET_COMPLETE_MS);
+    expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_COMPLETE_MS * 1.5);
+  });
+
   it("warm store-backed verb stays under budget", { retry: 2 }, () => {
     // __store-probe boots the embedded pack from its n-quads cache and queries
     // it — the full store-backed verb cost in the compiled binary. The first

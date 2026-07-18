@@ -83,6 +83,7 @@ const showVerb: VerbSpec<Record<string, unknown>, OntologyShowData> = {
       doc: "The namespace prefix (ds) or full URI.",
       positional: true,
       required: true,
+      complete: { kind: "names", source: { from: "prefixes" } },
     },
     {
       kind: "boolean",

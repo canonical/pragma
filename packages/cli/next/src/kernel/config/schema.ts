@@ -18,6 +18,12 @@ const packageEntrySchema = z.union([
   z.object({ name: z.string().min(1), source: z.string().optional() }),
 ]);
 
+const completionSchema = z.object({
+  minChars: z.number().int().min(0).optional(),
+  caseSensitive: z.boolean().optional(),
+  families: z.record(z.string(), z.boolean()).optional(),
+});
+
 const rawConfigSchema = z.object({
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),
@@ -26,6 +32,7 @@ const rawConfigSchema = z.object({
   stories: z.array(z.unknown()).optional(),
   prefixes: z.record(z.string(), z.string()).optional(),
   prompts: z.record(z.string(), z.unknown()).optional(),
+  completion: completionSchema.optional(),
 });
 
 /**

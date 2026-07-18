@@ -222,6 +222,20 @@ export interface PackSample {
 }
 
 /**
+ * Per-family autocomplete override for a lookup's `<name>` positional. Name
+ * completion is DERIVED-BY-DEFAULT from the family's index type; this tunes or
+ * opts out of it. Absent means "completion on, engine defaults".
+ */
+export interface PackCompletion {
+  /** `false` opts the family out of name completion (default: on). */
+  readonly enabled?: boolean;
+  /** Match strategy against the partial (default: substring). */
+  readonly match?: "prefix" | "substring" | "fuzzy";
+  /** Minimum typed chars before the shell execs completion (default: global). */
+  readonly minChars?: number;
+}
+
+/**
  * The lookup half of a pack. The query is generated from `by` and `type`/`types`
  * — user-supplied names are escaped by the generator, never interpolated by the
  * author. The `source` selects the field-fetch strategy; the name→URI resolve is
@@ -265,6 +279,8 @@ export interface PackLookup {
   readonly disclosure?: PackDisclosure;
   /** Sample capability: `true` for defaults, or a configured sample. */
   readonly sample?: true | PackSample;
+  /** Autocomplete override for the `<name>` positional (derive-by-default). */
+  readonly completion?: PackCompletion;
 }
 
 /** A pack list row / flat lookup base: variable name → string value. */

@@ -121,13 +121,18 @@ describe("buildCompletionModel — flags and sources", () => {
     });
   });
 
-  it("resolves entity positionals with required/variadic markers", () => {
+  it("resolves name positionals with required/variadic markers", () => {
     expect(get?.positionals).toEqual([
       {
         name: "ref",
         required: true,
         variadic: false,
-        source: { kind: "entity", type: "ds:Block" },
+        source: {
+          kind: "names",
+          ref: { from: "index", type: "ds:Block" },
+          match: "substring",
+          caseSensitive: false,
+        },
       },
     ]);
     const diff = findNoun(model, "block")?.verbs.find(
@@ -135,7 +140,10 @@ describe("buildCompletionModel — flags and sources", () => {
     );
     expect(diff?.positionals[0]).toMatchObject({
       variadic: true,
-      source: { kind: "entity", type: "ds:Block" },
+      source: {
+        kind: "names",
+        ref: { from: "index", type: "ds:Block" },
+      },
     });
   });
 
@@ -169,6 +177,73 @@ describe("buildCompletionModel — flags and sources", () => {
       }),
     ]);
     expect(findNoun(bad, "thing")?.selfVerb?.positionals[0]?.source).toEqual({
+      kind: "none",
+    });
+  });
+
+  it("carries a names heuristic's match + caseSensitive, defaulting both", () => {
+    const built = buildCompletionModel([
+      moduleWith({
+        params: [
+          {
+            kind: "string",
+            name: "q",
+            doc: "q",
+            positional: true,
+            complete: {
+              kind: "names",
+              source: { from: "skills" },
+              match: "prefix",
+              caseSensitive: true,
+            },
+          },
+        ],
+      }),
+    ]);
+    expect(findNoun(built, "thing")?.selfVerb?.positionals[0]?.source).toEqual({
+      kind: "names",
+      ref: { from: "skills" },
+      match: "prefix",
+      caseSensitive: true,
+    });
+    // Defaults when unspecified: substring + case-insensitive.
+    const defaulted = buildCompletionModel([
+      moduleWith({
+        params: [
+          {
+            kind: "string",
+            name: "q",
+            doc: "q",
+            positional: true,
+            complete: { kind: "names", source: { from: "prefixes" } },
+          },
+        ],
+      }),
+    ]);
+    expect(
+      findNoun(defaulted, "thing")?.selfVerb?.positionals[0]?.source,
+    ).toMatchObject({ match: "substring", caseSensitive: false });
+  });
+
+  it("resolves an opted-out (enabled:false) names heuristic to none", () => {
+    const built = buildCompletionModel([
+      moduleWith({
+        params: [
+          {
+            kind: "string",
+            name: "q",
+            doc: "q",
+            positional: true,
+            complete: {
+              kind: "names",
+              source: { from: "tiers" },
+              enabled: false,
+            },
+          },
+        ],
+      }),
+    ]);
+    expect(findNoun(built, "thing")?.selfVerb?.positionals[0]?.source).toEqual({
       kind: "none",
     });
   });

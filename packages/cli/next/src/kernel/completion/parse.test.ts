@@ -226,7 +226,12 @@ describe("parseWords — positionals (PROTECTED)", () => {
       context: {
         kind: "positional",
         name: "ref",
-        source: { kind: "entity", type: "ds:Block" },
+        source: {
+          kind: "names",
+          ref: { from: "index", type: "ds:Block" },
+          match: "substring",
+          caseSensitive: false,
+        },
       },
       partial: "",
     });
@@ -259,7 +264,12 @@ describe("parseWords — positionals (PROTECTED)", () => {
     expect(parse(["block", "diff", "a", "b", "c", ""]).context).toEqual({
       kind: "positional",
       name: "refs",
-      source: { kind: "entity", type: "ds:Block" },
+      source: {
+        kind: "names",
+        ref: { from: "index", type: "ds:Block" },
+        match: "substring",
+        caseSensitive: false,
+      },
     });
   });
 
@@ -268,7 +278,12 @@ describe("parseWords — positionals (PROTECTED)", () => {
       context: {
         kind: "positional",
         name: "ref",
-        source: { kind: "entity", type: "ds:Block" },
+        source: {
+          kind: "names",
+          ref: { from: "index", type: "ds:Block" },
+          match: "substring",
+          caseSensitive: false,
+        },
       },
       partial: "-weird",
     });

@@ -71,6 +71,43 @@ describe("emitScripts — static tier contract", () => {
   });
 });
 
+describe("emitScripts — minChars gate + family opt-out", () => {
+  it("gates only the name exec, never the inlined enum arms", () => {
+    // The gate lives inside the shared _dynamic (bash/zsh) and each fish name
+    // rule; enum values stay inlined and complete on bare TAB. (Substrings drop
+    // the leading `$` to keep the parameter expansion out of a JS string.)
+    expect(scripts.bash).toContain("#cur} -ge 2 ] || return 0");
+    expect(scripts.zsh).toContain("#cur} >= 2 )) || return 0");
+    expect(scripts.fish).toContain("__pragma_minchars 2");
+    expect(scripts.bash).toContain('compgen -W "anatomy full summary"');
+    expect(scripts.zsh).toContain("compadd -- anatomy full summary");
+  });
+
+  it("bakes a custom minChars and drops the gate at 0", () => {
+    expect(emitScripts([completionFixture], { minChars: 3 }).bash).toContain(
+      "#cur} -ge 3 ] || return 0",
+    );
+    const off = emitScripts([completionFixture], { minChars: 0 });
+    expect(off.bash).not.toContain("-ge");
+    // (`#cur} >=` avoids the `zsh >= 5` shell-floor comment in the header.)
+    expect(off.zsh).not.toContain("#cur} >=");
+    expect(off.fish).not.toContain("__pragma_minchars");
+  });
+
+  it("disabledFamilies drops a noun's name completion (config opt-out)", () => {
+    const off = emitScripts([completionFixture], {
+      disabledFamilies: ["block"],
+    });
+    // block's only-positional name verb loses its exec entirely…
+    expect(scripts.bash).toContain("block/diff)");
+    expect(off.bash).not.toContain("block/diff)");
+    expect(off.fish).not.toContain("__pragma_at block diff");
+    // …while a non-disabled family (standard) still execs the resolver.
+    expect(off.bash).toContain("standard/)");
+    expect(off.bash).toContain("_pragma_dynamic");
+  });
+});
+
 describe("emitScripts — binName parameterization (PR8 seam)", () => {
   it("defaults to pragma", () => {
     expect(scripts.bash).toContain("complete -F _pragma pragma");

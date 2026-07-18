@@ -27,7 +27,7 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
       doc: "The subject URI — a prefixed name or absolute IRI.",
       positional: true,
       required: true,
-      complete: { kind: "entity", type: "" },
+      complete: { kind: "names", source: { from: "index", type: "" } },
     },
   ],
   output: { formatters: inspectFormatters },

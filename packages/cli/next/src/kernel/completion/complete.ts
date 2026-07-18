@@ -25,20 +25,20 @@
  *   value-taking flag as transparent.
  *
  * The static scripts (see `emitScripts`) answer structure without exec and
- * invoke `__complete` only for `{kind:"entity"}` value contexts; the resolver
+ * invoke `__complete` only for `{kind:"names"}` value contexts; the resolver
  * is nevertheless a complete standalone answer for EVERY context, so the
  * whole grammar is testable through this one function.
  */
 
 import type { CapabilityModule } from "../spec/types.js";
-import { emptyEntityReader } from "./entitySource.js";
+import { emptyNameSource } from "./entitySource.js";
 import { buildCompletionModel } from "./model.js";
 import { parseWords } from "./parse.js";
 import { completionDebug, resolveRequest } from "./resolve.js";
 import type { CompletionEnv } from "./types.js";
 
-/** The default environment: no entity tier yet (PR2 wires the index reader). */
-const DEFAULT_ENV: CompletionEnv = { entities: emptyEntityReader };
+/** The default environment: no name sources (callers wire `indexCompletionEnv`). */
+const DEFAULT_ENV: CompletionEnv = { names: emptyNameSource };
 
 /**
  * Resolve completions for the given words against the capability modules.

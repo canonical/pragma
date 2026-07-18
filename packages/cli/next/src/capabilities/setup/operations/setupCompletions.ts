@@ -5,7 +5,8 @@
  * `--dry-run` preview is ACCURATE (the write effect is what the dry-run
  * interpreter mocks, not the detection). The script body is the grammar-driven
  * `emitScripts(capabilities)` output — exactly the static tier the covenant
- * names ("shell script tier emitted by `setup completions`").
+ * names ("shell script tier emitted by `setup completions`") — with the
+ * `completion` config (minChars, per-family opt-out) baked in at emit time.
  */
 
 import { dirname } from "node:path";
@@ -50,11 +51,28 @@ export async function setupCompletions(
     });
   }
 
-  const [{ capabilities }, { emitScripts }] = await Promise.all([
-    import("../../index.js"),
-    import("../../../kernel/completion/emitScripts.js"),
-  ]);
-  const script = emitScripts(capabilities)[shell];
+  const [{ capabilities }, { emitScripts }, { readConfig }] = await Promise.all(
+    [
+      import("../../index.js"),
+      import("../../../kernel/completion/emitScripts.js"),
+      import("../../../kernel/config/readConfig.js"),
+    ],
+  );
+  const { config } = await readConfig(rt.cwd);
+  const completion = config.completion;
+  const disabledFamilies = completion?.families
+    ? Object.entries(completion.families)
+        .filter(([, enabled]) => enabled === false)
+        .map(([family]) => family)
+    : undefined;
+  const script = emitScripts(capabilities, {
+    ...(completion?.minChars !== undefined
+      ? { minChars: completion.minChars }
+      : {}),
+    ...(disabledFamilies && disabledFamilies.length > 0
+      ? { disabledFamilies }
+      : {}),
+  })[shell];
   const path = completionScriptPath(shell);
 
   return gen(function* () {

@@ -58,6 +58,10 @@ export async function readConfig(
   const stories = pick("stories");
   const prefixes = pick("prefixes");
   const prompts = pick("prompts");
+  // `completion` is read at `setup completions` emit time (not on any fast
+  // path) and carries no `config show` provenance, so it merges into the
+  // effective config but is deliberately absent from ConfigOrigins.
+  const completion = pick("completion");
 
   const config: PragmaConfig = {
     channel: (channel.value ?? defaults.channel) as Channel,
@@ -67,6 +71,7 @@ export async function readConfig(
     ...(stories.value !== undefined ? { stories: stories.value } : {}),
     ...(prefixes.value !== undefined ? { prefixes: prefixes.value } : {}),
     ...(prompts.value !== undefined ? { prompts: prompts.value } : {}),
+    ...(completion.value !== undefined ? { completion: completion.value } : {}),
   };
 
   return {
