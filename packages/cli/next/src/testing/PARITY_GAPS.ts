@@ -39,6 +39,12 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
       "Every bundled/dynamic pack's `list` returns the full row set in one response — no pagination/cursor/page-size flags. A noun with a large population relies on `--search`/declared filters (or `sample` for shape discovery) to narrow it, not paging.",
   },
   {
+    id: "read-meta-always-empty",
+    area: "envelope",
+    description:
+      "`dispatch.ts#executeVerb`'s read branch always renders with `meta: {}` — there is no `meta.count`/`meta.total` field on a list/lookup envelope (verified empirically). An empty (possibly filtered) list is `{ok:true, data:[], meta:{}}`; the only way to know it's empty is `data.length === 0`, not a meta field.",
+  },
+  {
     id: "no-empty-hook-on-free-filter",
     area: "pack list / EMPTY_RESULTS",
     description:
@@ -55,6 +61,12 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     area: "pack list / lookup",
     description:
       "Every pack row/entity is a flat `Record<string,string>` (list rows: `PackRow`; lookup/expand: `PackEntity`/`PackChildRow`), typed and rendered generically by column/field/section METADATA the pack declares — never a per-noun bespoke record class or hand-authored template.",
+  },
+  {
+    id: "sample-is-nondeterministic-across-calls",
+    area: "sample verb",
+    description:
+      "`kernel/packs/sample.ts#pickRandom` draws an independent random selection on EVERY call. Two separate invocations of the same `<noun> sample` — even back-to-back, even CLI vs MCP — are not expected to return identical entities. Content-equality parity (`helpers/parity.ts`) is scoped to deterministic verbs; sample's STRUCTURE (population size, requested count, envelope shape) is what B4's callable-envelope sweep checks instead.",
   },
   {
     id: "positional-sample-count",
@@ -87,10 +99,22 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
       "The old `digest` disclosure level is named `standard` in v2's canonical three-level index (`summary < standard < detailed`, `constants.DETAIL_LEVELS`). Gating is by canonical INDEX, not by a pack-declared level name matching a fixed string.",
   },
   {
+    id: "completion-verb-level-not-sorted",
+    area: "completion",
+    description:
+      "The pr4-base main-line `kernel/completion/complete.ts` sorts NOUN-level candidates (`buildCompletionModel`) and ENTITY-param candidates (`createIndexEntityReader`), but VERB-level candidates are in AUTHORING order (`model.verbs[noun]` is never sorted) — verified empirically (`standard` completes as `[list, categories, lookup, sample]`, not alphabetical). It also offers NO per-verb flag completion at all (a `-`-prefixed partial always resolves against the global flags only). B10 (`completion.test.ts`) asserts verb candidates as a SET, not an order, and pins kebab-casing at the emission layer rather than a nonexistent completion-time flag offer. PR-C's fuller engine (merging at PR8) may close both gaps — flagged here for that review, not fixed by PR4 (R6: completion engine work is PR-C's).",
+  },
+  {
     id: "skill-noun-storeless",
     area: "skill",
     description:
       "`skill list`/`skill lookup` are pure filesystem discovery (`needsStore: false`) — they never touch the knowledge-graph store. Every other read noun in this ledger's scope is store-backed; `skill` is the one deliberate exception.",
+  },
+  {
+    id: "single-lookup-miss-fails-batch-partial-reports",
+    area: "pack lookup",
+    description:
+      "`kernel/packs/runBodies.ts#makeLookupRun` throws (the call fails, `ok:false`) on a TOTAL miss — a single unresolved name, or a batch where EVERY name misses. Only a PARTIAL batch (at least one name resolves) reports the miss in `data.errors` while returning `ok:true` with the hits in `data.results`. Verified empirically (`agentSession.mcp.test.ts` / `errorMatrix.mcp.test.ts`) — a single-name miss is a failed call, not a reported one.",
   },
   {
     id: "plan-first-meta-differs",

@@ -1,15 +1,50 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`eval harness — seed gate > runs the stable seed cases clean 1`] = `
+exports[`eval harness — seed gate > runs the full seed (stable + read-noun) cases clean 1`] = `
 [
+  {
+    "id": "content-canonical-graph-has-4-components",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-code-function-purity-description-mentions-pure",
+    "kind": "content",
+    "passed": true,
+  },
   {
     "id": "content-condensed-sdl-token-budget",
     "kind": "content",
     "passed": true,
   },
   {
+    "id": "content-importance-family-includes-primary",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-normal-channel-drops-beta-only-block",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-standard-list-length-equals-category-count-sum",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "disclosure-block-lookup-detailed-adds-anatomy",
+    "kind": "disclosure",
+    "passed": true,
+  },
+  {
     "id": "disclosure-summary-omits-standard-and-detailed-fields",
     "kind": "disclosure",
+    "passed": true,
+  },
+  {
+    "id": "prompt-block-question-maps-to-block-lookup",
+    "kind": "prompt",
     "passed": true,
   },
   {
@@ -23,7 +58,17 @@ exports[`eval harness — seed gate > runs the stable seed cases clean 1`] = `
     "passed": true,
   },
   {
+    "id": "tool-block-lookup-button-has-modifier-families",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-sparql-count-positive",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-standard-lookup-has-dos-and-donts",
     "kind": "tool",
     "passed": true,
   },

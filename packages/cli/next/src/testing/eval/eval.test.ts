@@ -12,8 +12,11 @@ import { capabilities } from "../../capabilities/index.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { TEST_FLAGS } from "../helpers/projectCli.js";
 import { projectMcp } from "../helpers/projectMcp.js";
+import { readNounEvalCases } from "./cases/readNouns.js";
 import { stableEvalCases } from "./cases/stable.js";
 import { type EvalCaseResult, type EvalEnv, runEvals } from "./harness.js";
+
+const allSeedCases = [...stableEvalCases, ...readNounEvalCases];
 
 /** Strip the (only-populated-on-failure) `detail` so a green report snapshots
  * as pure signal — a failure's message is diagnostic noise in the golden, not
@@ -41,8 +44,8 @@ describe("eval harness — seed gate", () => {
     await cleanup();
   });
 
-  it("runs the stable seed cases clean", async () => {
-    const report = await runEvals(stableEvalCases, env);
+  it("runs the full seed (stable + read-noun) cases clean", async () => {
+    const report = await runEvals(allSeedCases, env);
     if (report.failed > 0) {
       const failures = report.cases.filter((c) => !c.passed);
       throw new Error(
@@ -52,8 +55,10 @@ describe("eval harness — seed gate", () => {
       );
     }
     expect(report.failed).toBe(0);
-    expect(report.passed).toBe(stableEvalCases.length);
-    expect(report.cases.length).toBeGreaterThanOrEqual(5);
+    expect(report.passed).toBe(allSeedCases.length);
+    // The plan's seed target: ~10-15 representative cases.
+    expect(report.cases.length).toBeGreaterThanOrEqual(10);
+    expect(report.cases.length).toBeLessThanOrEqual(15);
     expect(normalize(report.cases)).toMatchSnapshot();
   });
 });
