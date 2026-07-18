@@ -16,6 +16,7 @@ import type { SessionController, WizardState } from "./session.js";
 const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
   const files = new Set<string>();
   const dirs = new Set<string>();
+  const links = new Set<string>();
   let commands = 0;
   for (const effect of effects) {
     switch (effect._tag) {
@@ -25,6 +26,9 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
         break;
       case "MakeDir":
         dirs.add(effect.path);
+        break;
+      case "Symlink":
+        links.add(effect.path);
         break;
       case "Exec":
         commands++;
@@ -41,6 +45,11 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
     rows.push({
       label: `Director${dirs.size > 1 ? "ies" : "y"} to create`,
       count: dirs.size,
+    });
+  if (links.size > 0)
+    rows.push({
+      label: `Symlink${links.size > 1 ? "s" : ""} to create`,
+      count: links.size,
     });
   if (commands > 0)
     rows.push({
@@ -179,9 +188,25 @@ export const Wizard = ({ controller }: WizardProps) => {
         </Box>
       )}
 
-      {state.phase === "cancelled" && (
-        <Text color="yellow">✗ Cancelled. No files were written.</Text>
-      )}
+      {state.phase === "cancelled" &&
+        (() => {
+          // Truthful (H2): a Ctrl-C mid-execution may have written some files
+          // before the abort landed, so count the completed write-like effects
+          // the session already tracked rather than always claiming none.
+          const written = state.progress.filter((t) =>
+            ["WriteFile", "AppendFile", "Symlink", "CopyFile"].includes(
+              t.effect._tag,
+            ),
+          ).length;
+          return (
+            <Text color="yellow">
+              ✗ Cancelled.{" "}
+              {written === 0
+                ? "No files were written."
+                : `${written} file(s) were written.`}
+            </Text>
+          );
+        })()}
 
       {state.phase === "error" && (
         <Text color="red">✗ Error: {state.error?.message}</Text>

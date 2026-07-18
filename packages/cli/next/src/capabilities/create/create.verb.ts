@@ -304,7 +304,7 @@ async function runCreate(
     throw new PragmaError({ code: "INVALID_INPUT", message: invalid });
   }
 
-  const { isTTY, transport, yes, signal } = rt.interaction ?? {
+  const { isTTY, transport, yes, signal, abort } = rt.interaction ?? {
     isTTY: false,
     transport: "cli" as const,
     yes: true,
@@ -315,7 +315,10 @@ async function runCreate(
   // session both answers prompts and renders live effect progress, so its
   // callbacks ride runtime.exec alongside the shared stamping transform.
   if (isTTY && !yes) {
-    const session = summon.inkPrompt(generator, { signal });
+    // `onCancel` (H2): an in-Ink Ctrl-C during execution aborts the run so the
+    // interpreter stops writing — raw mode swallows the SIGINT, so the wizard
+    // drives the abort. Shared with setup by construction.
+    const session = summon.inkPrompt(generator, { signal, onCancel: abort });
     // Thread the per-call write root: the interpreter resolves the generator's
     // relative output paths against `rt.cwd` — the SAME dir the SEC-2 jail
     // validated above — so the write can never escape the checked directory.

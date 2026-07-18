@@ -205,4 +205,84 @@ describe("dispatch — errors", () => {
     // A deliberate cancel is a success exit under the frozen exit-code covenant.
     expect(process.exitCode).toBe(0);
   });
+
+  it("renders an interrupt (SIGINT / mid-run Ctrl-C) as a clean cancel, exit 130 (M1)", async () => {
+    // A --yes/CI run aborted by SIGINT fails the task with TASK_INTERRUPTED.
+    // The boundary must render it as a clean cancel (not a bug), but exit with
+    // the UNIX 128+SIGINT code 130 — out-of-band from the frozen {0,1,2,3}.
+    const interrupting: VerbSpec = {
+      ...make,
+      run: () =>
+        fail({ code: "TASK_INTERRUPTED", message: "Task interrupted" }),
+    };
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    process.exitCode = 0;
+    await dispatch(interrupting, [], { yes: true }, PLAIN);
+    spy.mockRestore();
+    const out = errs.join("");
+    expect(out).toContain("Cancelled.");
+    expect(out).not.toContain("INTERNAL_ERROR");
+    expect(out).not.toMatch(/report this issue/i);
+    expect(process.exitCode).toBe(130);
+  });
+});
+
+describe("executeVerb — interactivity gate (H3)", () => {
+  const setTTY = (
+    stream: NodeJS.ReadStream | NodeJS.WriteStream,
+    value: boolean | undefined,
+  ): void => {
+    (stream as { isTTY?: boolean }).isTTY = value;
+  };
+  const savedIn = process.stdin.isTTY;
+  const savedOut = process.stdout.isTTY;
+  const savedErr = process.stderr.isTTY;
+  afterEach(() => {
+    setTTY(process.stdin, savedIn);
+    setTTY(process.stdout, savedOut);
+    setTTY(process.stderr, savedErr);
+  });
+
+  /** A mutating verb that records the interaction context it was handed. */
+  const captureTTY = (sink: { isTTY?: boolean }): VerbSpec => ({
+    ...make,
+    run: (_p, rt) => {
+      sink.isTTY = rt.interaction?.isTTY;
+      return succeed({ made: true });
+    },
+  });
+
+  it("is NON-interactive when stderr is redirected, even with a stdout TTY (2>/dev/null)", async () => {
+    setTTY(process.stdin, true);
+    setTTY(process.stdout, true);
+    setTTY(process.stderr, false); // the Ink UI's stream is gone
+    const sink: { isTTY?: boolean } = {};
+    await executeVerb(
+      captureTTY(sink),
+      {},
+      { dryRun: false, undo: false, yes: false },
+      bootRuntime(PLAIN),
+    );
+    expect(sink.isTTY).toBe(false);
+  });
+
+  it("is interactive on a stdin+stderr TTY, even when stdout is piped (gate is stderr, not stdout)", async () => {
+    setTTY(process.stdin, true);
+    setTTY(process.stdout, false); // piped stdout must NOT force non-interactive
+    setTTY(process.stderr, true);
+    const sink: { isTTY?: boolean } = {};
+    await executeVerb(
+      captureTTY(sink),
+      {},
+      { dryRun: false, undo: false, yes: false },
+      bootRuntime(PLAIN),
+    );
+    expect(sink.isTTY).toBe(true);
+  });
 });

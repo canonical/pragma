@@ -19,6 +19,9 @@ import { PragmaError } from "./PragmaError.js";
 /** summon-core's task-error code for a run declined at the confirm gate. */
 const GENERATOR_CANCELLED = "GENERATOR_CANCELLED";
 
+/** The interpreter's task-error code for a run aborted mid-flight (SIGINT). */
+const TASK_INTERRUPTED = "TASK_INTERRUPTED";
+
 /** summon-core task-error codes for absent/invalid non-interactive answers. */
 const ANSWER_USAGE_CODES = new Set<string>([
   "MISSING_REQUIRED_ANSWER",
@@ -44,6 +47,19 @@ function taskErrorCode(error: unknown): string | undefined {
  */
 export function isCancellation(error: unknown): boolean {
   return taskErrorCode(error) === GENERATOR_CANCELLED;
+}
+
+/**
+ * True when the throw is the interpreter aborting a run mid-flight — a SIGINT
+ * on a `--yes`/CI run, or an in-wizard Ctrl-C DURING execution (which aborts
+ * the run's controller). Distinct from {@link isCancellation}: a cancel is a
+ * clean user decline (exit 0), an interruption stopped work already underway
+ * (exit 130, UNIX 128+SIGINT). The boundary renders both with the same clean
+ * "Cancelled." line — neither is a bug to report — but with different exit
+ * codes.
+ */
+export function isInterruption(error: unknown): boolean {
+  return taskErrorCode(error) === TASK_INTERRUPTED;
 }
 
 /**

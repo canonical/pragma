@@ -16,8 +16,12 @@ import {
   type Effect,
   type LogLevel,
   type TaskError,
+  TaskExecutionError,
 } from "@canonical/task";
-import { CONFIRM_ANSWER_KEY } from "../../execute/execute.js";
+import {
+  CONFIRM_ANSWER_KEY,
+  GENERATOR_CANCELLED,
+} from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import type { PromptEffect } from "../types.js";
 
@@ -79,7 +83,19 @@ export class SessionController {
   };
   private executionStart = 0;
 
-  constructor(generator: GeneratorDefinition) {
+  /**
+   * @param generator - The generator being run.
+   * @param onUserCancel - Invoked once when the user cancels (Ctrl-C / escape).
+   *   The seam wires this to the run's `AbortController.abort()`, so a Ctrl-C
+   *   DURING execution actually interrupts the interpreter (its
+   *   `checkInterrupted` fires between effects) instead of only rejecting a
+   *   — by then non-existent — pending prompt. `abort()` is idempotent, so the
+   *   signal→cancel→abort path cannot loop.
+   */
+  constructor(
+    generator: GeneratorDefinition,
+    private readonly onUserCancel?: () => void,
+  ) {
     this.current = {
       phase: "idle",
       generator,
@@ -199,14 +215,32 @@ export class SessionController {
   }
 
   /**
-   * The user cancelled (Ctrl-C / escape at a gate). Rejecting the pending
-   * answer fails the task straight through the prompt handler — that rejection
-   * IS the cancellation signal (no interrupted flag to read back).
+   * The user cancelled (Ctrl-C / escape). Two things must happen, and both are
+   * safe to run whether or not a prompt is pending:
+   *
+   * 1. (H2) Abort the run via `onUserCancel` — a Ctrl-C mid-execution has no
+   *    pending prompt to reject, so the abort is what actually stops the
+   *    interpreter (its `checkInterrupted` throws `TASK_INTERRUPTED`).
+   * 2. (H1) Reject any pending prompt with a `TaskExecutionError` carrying
+   *    `GENERATOR_CANCELLED` — NOT a bare `Error`. The interpreter only
+   *    preserves a thrown error's `.code` for a `TaskExecutionError`; a bare
+   *    Error flattens to `INTERNAL`, which the CLI boundary renders as a scary
+   *    "please report this issue" (exit 1). Carrying the code routes an
+   *    at-prompt cancel through the same clean "Cancelled." (exit 0) path as
+   *    declining the confirm gate. The reject fails the current `Prompt` effect
+   *    before the drive loop reaches its next `checkInterrupted`, so it wins
+   *    deterministically over the concurrent abort.
    */
   cancel(): void {
     const pending = this.pending;
     this.pending = undefined;
+    this.onUserCancel?.();
     this.set({ phase: "cancelled" });
-    pending?.reject(new Error("Cancelled by user."));
+    pending?.reject(
+      new TaskExecutionError({
+        code: GENERATOR_CANCELLED,
+        message: "Cancelled.",
+      }),
+    );
   }
 }

@@ -20,10 +20,19 @@ import type { Effect, LogLevel } from "@canonical/task";
 import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 import type { PromptEffect, PromptHandler } from "./types.js";
 
-/** Options for the Ink session (currently just the abort signal). */
+/** Options for the Ink session: the abort signal and the cancel callback. */
 export interface InkPromptOptions {
   /** Abort signal — tears the session down when the run is cancelled. */
   readonly signal?: AbortSignal;
+  /**
+   * Invoked when the user cancels IN the wizard (Ctrl-C / escape). Threaded to
+   * the {@link SessionController} so an in-Ink cancel aborts the run (H2): a
+   * Ctrl-C during execution — where Ink's raw mode swallows SIGINT — has no
+   * pending prompt, so this callback (wired to the run's `AbortController`) is
+   * what stops the interpreter. Distinct from `signal`, which fires the OTHER
+   * way (an external abort tears the render down).
+   */
+  readonly onCancel?: () => void;
 }
 
 /**

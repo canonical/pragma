@@ -37,7 +37,9 @@ export function mountPromptSession(
   generator: GeneratorDefinition,
   options: InkPromptOptions = {},
 ): MountedSession {
-  const controller = new SessionController(generator);
+  // Thread the run's cancel (H2): an in-Ink Ctrl-C/escape calls
+  // controller.cancel(), which invokes this to abort the interpreter.
+  const controller = new SessionController(generator, options.onCancel);
   const instance = render(<Wizard controller={controller} />, {
     stdout: process.stderr as unknown as NodeJS.WriteStream,
     stdin: process.stdin,

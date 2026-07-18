@@ -105,7 +105,13 @@ export interface MutationRuntime {
  * NOTE (PR6): interactive setup mutations reuse this exact shape.
  */
 export interface InteractionRuntime {
-  /** Both stdin and stdout are a TTY (CLI); always false over MCP. */
+  /**
+   * Both stdin and STDERR are a TTY (CLI); always false over MCP. Gated on
+   * stderr — not stdout — because the interactive Ink wizard renders to stderr
+   * and reads stdin, so `pragma <verb> 2>/dev/null` (stderr redirected) must
+   * fall to the non-interactive path rather than mounting an invisible render
+   * that blocks on stdin.
+   */
   readonly isTTY: boolean;
   /** Which projector is driving this run. */
   readonly transport: "cli" | "mcp";
@@ -113,6 +119,14 @@ export interface InteractionRuntime {
   readonly yes: boolean;
   /** Abort signal for the run, if the projector wired one. */
   readonly signal?: AbortSignal;
+  /**
+   * Abort the run (internal seam field, NOT covenant surface). An interactive
+   * verb threads this into its wizard so an in-Ink Ctrl-C — which Ink's raw
+   * mode swallows before it can become a SIGINT — aborts the run's
+   * `AbortController`, firing the interpreter's `checkInterrupted` between
+   * effects. The projector wires it alongside `signal`.
+   */
+  readonly abort?: () => void;
 }
 
 /**
