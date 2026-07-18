@@ -21,13 +21,13 @@ Valid options: stable, beta",
     "llm": "## Error: ENTITY_NOT_FOUND
 block "Buton" not found.
 Suggestions: Button
-Recovery: \`pragma block list\`",
+Recovery: List available blocks. \`pragma block list\`",
     "plain": "Error: block "Buton" not found.
 
 Did you mean?
   - Button
 
-Run \`pragma block list\`",
+List available blocks. Run \`pragma block list\`",
   },
 }
 `;

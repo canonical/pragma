@@ -80,7 +80,10 @@ export const FIXED_SURFACE = {
     { flag: "--llm", doc: "Condensed Markdown output for agents" },
     { flag: "--format <json|plain>", doc: "Select output format" },
     { flag: "--verbose", doc: "Diagnostic output on stderr" },
-    { flag: "--detail <level>", doc: "Progressive-disclosure level" },
+    {
+      flag: "--detail <level>",
+      doc: "Progressive-disclosure level (summary, standard, detailed)",
+    },
   ],
   detailLevels: ["summary", "standard", "detailed"],
   envelope: {

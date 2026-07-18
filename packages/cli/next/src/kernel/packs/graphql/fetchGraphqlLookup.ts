@@ -32,7 +32,7 @@ import {
  * @param level - Active canonical level (gates fields/expands at fetch).
  * @returns The unwrapped pack entity.
  * @throws PragmaError STORE_UNAVAILABLE when execution reports errors,
- *   CONFIG_ERROR when the pack does not map onto the schema.
+ *   ENTITY_NOT_FOUND when a resolved IRI has no typed node in the schema.
  * @note Impure — reads the compiled schema and queries the store.
  */
 export async function fetchGraphqlLookup(
@@ -56,23 +56,27 @@ export async function fetchGraphqlLookup(
       .join("; ");
     throw PragmaError.storeUnavailable(`GraphQL lookup failed: ${messages}`, {
       recovery: {
-        message: "Inspect the compiled schema for this graph.",
-        cli: "pragma graph inspect",
+        message: "Check the loaded ontology and namespaces.",
+        // `graph inspect` needs a <uri>; `ontology list` is runnable as-is.
+        cli: "pragma ontology list",
+        mcp: { tool: "ontology_list" },
       },
     });
   }
 
   const node = (result.data as { node?: unknown } | null | undefined)?.node;
   if (node === null || node === undefined || typeof node !== "object") {
-    throw PragmaError.storeUnavailable(
-      `GraphQL lookup could not resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
-      {
-        recovery: {
-          message: "Inspect the entity's triples.",
-          cli: `pragma graph inspect ${entityUri}`,
-        },
+    // The name→URI resolve DID find this IRI, so the store is available — the
+    // entity simply has no typed node (its rdf:type is missing from the loaded
+    // ontology). That is a runtime not-found, not an unavailable store (exit 3).
+    throw new PragmaError({
+      code: "ENTITY_NOT_FOUND",
+      message: `Could not resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
+      recovery: {
+        message: "Inspect the entity's triples to check its rdf:type.",
+        cli: `pragma graph inspect ${entityUri}`,
       },
-    );
+    });
   }
 
   const entity: PackEntity = { uri: entityUri, name: entityName };

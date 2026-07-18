@@ -43,7 +43,6 @@ const HELP_GROUPS: readonly HelpGroup[] = [
         summary: "Explore the loaded ontologies (classes, properties)",
       },
       { noun: "tier", summary: "List the design-system tiers" },
-      { noun: "data", summary: "Inspect and export raw design data" },
     ],
   },
   {
@@ -68,6 +67,10 @@ const HELP_GROUPS: readonly HelpGroup[] = [
       {
         noun: "setup",
         summary: "Configure MCP, skills, completions, and the LSP",
+      },
+      {
+        noun: "sources",
+        summary: "Build and refresh the local store from packages",
       },
       { noun: "config", summary: "Read and write pragma configuration" },
       { noun: "info", summary: "Show version, config, and update status" },
@@ -175,8 +178,11 @@ export function formatRootHelp(
   lines.push(chalk.bold("Global flags"));
   const flags: [string, string][] = [
     ["--llm", "Condensed Markdown output for agents"],
-    ["--format json", "Machine-readable JSON output"],
-    ["--detail <level>", "Progressive-disclosure level"],
+    ["--format <json|plain>", "Select output format"],
+    [
+      "--detail <level>",
+      "Progressive-disclosure level (summary, standard, detailed)",
+    ],
     ["--verbose", "Diagnostic output on stderr"],
     ["--help", "Show help (works on any command)"],
     ["--version", "Show the CLI version"],

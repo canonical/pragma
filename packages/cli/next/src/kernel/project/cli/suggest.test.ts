@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fixtureModule } from "../../../testing/fixtures/fixtureCapability.js";
-import {
-  nounVerbMap,
-  resolveUnknownCommand,
-  suggestMessage,
-} from "./suggest.js";
+import { nounVerbMap, resolveUnknownCommand } from "./suggest.js";
 import { suggestNames } from "./suggestNames.js";
 
 const verbs = [...fixtureModule.verbs];
@@ -37,20 +33,6 @@ describe("resolveUnknownCommand", () => {
   it("resolves a valid command to undefined", () => {
     expect(resolveUnknownCommand(["widget", "list"], map)).toBeUndefined();
     expect(resolveUnknownCommand([], map)).toBeUndefined();
-  });
-});
-
-describe("suggestMessage", () => {
-  it('produces a "Did you mean" line for a near miss', () => {
-    expect(suggestMessage("widgt", ["widget"])).toBe(
-      'Unknown command "widgt".\nDid you mean: widget?',
-    );
-  });
-
-  it("omits the suggestion line when nothing ranks", () => {
-    expect(suggestMessage("zzzzz", ["widget"])).toBe(
-      'Unknown command "zzzzz".',
-    );
   });
 });
 

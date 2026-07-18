@@ -90,7 +90,9 @@ export const CONFIG_FIELDS: readonly ConfigFieldSpec[] = [
 
 /** The single required positional for a field, shaped per its `kind`. */
 function fieldPositional(spec: ConfigFieldSpec): ParamSpec {
-  const doc = `The ${spec.field} value to write.`;
+  // Name the positional by its usage token (`<path>`/`<name>`/`<level>`) so the
+  // doc and the token agree (was "The tier value to write." for a `<path>`).
+  const doc = `The ${spec.field} ${spec.positional} to write.`;
   if (spec.kind === "enum") {
     return {
       kind: "enum",

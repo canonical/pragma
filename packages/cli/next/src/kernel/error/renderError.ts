@@ -39,9 +39,11 @@ function renderErrorPlain(error: PragmaError): string {
 
   if (error.recovery) {
     lines.push("");
+    // Keep the human guidance AND the runnable command — dropping the message
+    // when a `cli` is present loses the WHY (e.g. "Build the local store …").
     lines.push(
       error.recovery.cli
-        ? `Run \`${error.recovery.cli}\``
+        ? `${error.recovery.message} Run \`${error.recovery.cli}\``
         : error.recovery.message,
     );
   }
@@ -74,9 +76,11 @@ function renderErrorLlm(error: PragmaError): string {
   }
 
   if (error.recovery) {
+    // Keep both the guidance and the runnable command (message was dropped when
+    // a `cli` was present).
     lines.push(
       error.recovery.cli
-        ? `Recovery: \`${error.recovery.cli}\``
+        ? `Recovery: ${error.recovery.message} \`${error.recovery.cli}\``
         : `Recovery: ${error.recovery.message}`,
     );
   }

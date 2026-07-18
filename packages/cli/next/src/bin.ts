@@ -222,8 +222,9 @@ async function handleProgramError(
       return;
     }
     if (error.code === "commander.unknownCommand") {
-      const { nounVerbMap, resolveUnknownCommand, suggestMessage } =
-        await import("./kernel/project/cli/suggest.js");
+      const { nounVerbMap, resolveUnknownCommand } = await import(
+        "./kernel/project/cli/suggest.js"
+      );
       const { stripGlobalFlags } = await import(
         "./kernel/project/cli/globalFlags.js"
       );
@@ -232,26 +233,27 @@ async function handleProgramError(
       );
       const unknown = resolveUnknownCommand(positionals, nounVerbMap(verbs));
       if (unknown) {
-        if (jsonMode) {
-          const [{ PragmaError }, { renderErrorJson }, { suggestNames }] =
-            await Promise.all([
-              import("./kernel/error/PragmaError.js"),
-              import("./kernel/error/renderError.js"),
-              import("./kernel/project/cli/suggestNames.js"),
-            ]);
-          const suggestions = suggestNames(unknown.token, [
-            ...unknown.candidates,
-          ]);
-          process.stderr.write(
-            `${renderErrorJson(
-              PragmaError.unknownVerb(unknown.token, { suggestions }),
-            )}\n`,
-          );
-        } else {
-          process.stderr.write(
-            `${suggestMessage(unknown.token, unknown.candidates)}\n`,
-          );
-        }
+        // Route through the same PragmaError + renderers as every other error,
+        // so the plain path gets the `Error:` prefix and the shared "Did you
+        // mean?" list instead of a second, inline rendering.
+        const [
+          { PragmaError },
+          { renderErrorPlain, renderErrorJson },
+          { suggestNames },
+        ] = await Promise.all([
+          import("./kernel/error/PragmaError.js"),
+          import("./kernel/error/renderError.js"),
+          import("./kernel/project/cli/suggestNames.js"),
+        ]);
+        const suggestions = suggestNames(unknown.token, [
+          ...unknown.candidates,
+        ]);
+        const unknownError = PragmaError.unknownVerb(unknown.token, {
+          suggestions,
+        });
+        process.stderr.write(
+          `${jsonMode ? renderErrorJson(unknownError) : renderErrorPlain(unknownError)}\n`,
+        );
       }
       process.exitCode = 2;
       return;

@@ -29,9 +29,18 @@ export async function runQuery(
     return await rt.query.sparql(sparql);
   } catch (error) {
     if (error instanceof PragmaError) throw error;
-    throw PragmaError.invalidInput("sparql", "(query)", {
+    // Keep the parser's own message — the WHY (bad token, line/column, an
+    // unknown prefix) — instead of an opaque "(query)" placeholder.
+    const detail = (
+      error instanceof Error ? error.message : String(error)
+    ).trim();
+    throw new PragmaError({
+      code: "INVALID_INPUT",
+      message: detail
+        ? `Invalid SPARQL query: ${detail}`
+        : "Invalid SPARQL query.",
       recovery: {
-        message: "Check your SPARQL syntax and see the loaded namespaces.",
+        message: "Check your SPARQL syntax and the loaded namespaces.",
         cli: "pragma ontology list",
         mcp: { tool: "ontology_list" },
       },

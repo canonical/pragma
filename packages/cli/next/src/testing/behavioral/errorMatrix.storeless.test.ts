@@ -73,10 +73,12 @@ describe("error/recovery matrix — render shapes (A8, storeless)", () => {
     if (error.suggestions.length > 0) expect(text).toContain("Did you mean?");
     if (error.filters) expect(text).toContain("Active filters:");
     if (error.validOptions) expect(text).toContain("Valid options:");
-    if (error.recovery?.cli)
-      expect(text).toContain(`Run \`${error.recovery.cli}\``);
-    if (error.recovery && !error.recovery.cli) {
+    if (error.recovery) {
+      // The human guidance is ALWAYS shown — even when a runnable `cli` is
+      // present (it used to be dropped, losing the WHY).
       expect(text).toContain(error.recovery.message);
+      if (error.recovery.cli)
+        expect(text).toContain(`Run \`${error.recovery.cli}\``);
     }
   });
 
@@ -86,8 +88,10 @@ describe("error/recovery matrix — render shapes (A8, storeless)", () => {
     if (error.suggestions.length > 0) expect(text).toContain("Suggestions:");
     if (error.filters) expect(text).toContain("Filters:");
     if (error.validOptions) expect(text).toContain("Valid options:");
-    if (error.recovery?.cli) {
-      expect(text).toContain(`Recovery: \`${error.recovery.cli}\``);
+    if (error.recovery) {
+      expect(text).toContain(`Recovery: ${error.recovery.message}`);
+      if (error.recovery.cli)
+        expect(text).toContain(`\`${error.recovery.cli}\``);
     }
   });
 

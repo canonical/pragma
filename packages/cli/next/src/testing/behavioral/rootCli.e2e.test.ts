@@ -32,7 +32,8 @@ describe("unknown verb / noun → suggestion + exit 2 (A3, e2e)", () => {
     const result = runCli(["blck"]);
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('Unknown command "blck"');
-    expect(result.stderr).toContain("Did you mean: block?");
+    expect(result.stderr).toContain("Did you mean?");
+    expect(result.stderr).toContain("- block");
   });
 
   it("an unknown verb under a known noun ranks that noun's verbs", () => {
@@ -41,7 +42,7 @@ describe("unknown verb / noun → suggestion + exit 2 (A3, e2e)", () => {
     const result = runCli(["config", "sho"]);
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('Unknown command "sho"');
-    expect(result.stderr).toContain("Did you mean: show?");
+    expect(result.stderr).toContain("- show");
   });
 });
 

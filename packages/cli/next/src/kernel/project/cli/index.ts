@@ -16,10 +16,6 @@ export {
   stripGlobalFlags,
 } from "./globalFlags.js";
 export { formatRootHelp } from "./rootHelp.js";
-export {
-  nounVerbMap,
-  resolveUnknownCommand,
-  suggestMessage,
-} from "./suggest.js";
+export { nounVerbMap, resolveUnknownCommand } from "./suggest.js";
 export { suggestNames } from "./suggestNames.js";
 export { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
