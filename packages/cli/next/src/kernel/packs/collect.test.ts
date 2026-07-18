@@ -92,6 +92,18 @@ describe("assembleEffectiveModules (PROTECTED)", () => {
     ]);
   });
 
+  it("carries a config story's colophon onto its module (for `pragma colophon`)", () => {
+    const effective = assembleEffectiveModules(
+      STATIC,
+      layers([{ ...validPack("recipe"), colophon: "How recipes are made." }]),
+    );
+    const recipe = effective.find((m) => m.name === "recipe");
+    expect(recipe?.colophon).toBe("How recipes are made.");
+    // A story without a colophon carries `undefined` (the field is optional).
+    const plain = assembleEffectiveModules(STATIC, layers([validPack("stew")]));
+    expect(plain.find((m) => m.name === "stew")?.colophon).toBeUndefined();
+  });
+
   it("rejects a story claiming a non-pack authored noun", () => {
     expect(() =>
       assembleEffectiveModules(STATIC, layers([validPack("config")])),

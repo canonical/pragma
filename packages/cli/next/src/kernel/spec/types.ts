@@ -170,6 +170,13 @@ export interface McpPromptProvider {
 export interface CapabilityModule {
   readonly name: string;
   readonly verbs: readonly VerbSpec[];
+  /**
+   * Optional Markdown narrating how this module's domain is made — surfaced by
+   * `pragma colophon`. Module-level metadata (like `boot`/`mcpResources`/
+   * `mcpPrompts`), NOT a `VerbSpec` field, so `emitSurface` never reads it and
+   * it has zero covenant impact.
+   */
+  readonly colophon?: string;
   readonly boot?: (rt: PragmaRuntime) => void;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
