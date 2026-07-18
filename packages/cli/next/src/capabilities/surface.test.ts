@@ -54,6 +54,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(emitted.nouns.token?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
+      "add-config",
     ]);
     expect(emitted.nouns.block?.verbs).toEqual([
       {

@@ -181,6 +181,10 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Building or refreshing the knowledge-graph pack from the configured packages",
   },
+  "token_add-config": {
+    category: "write",
+    use_when: "Generating a tokens.config.mjs for the terrazzo token pipeline",
+  },
   upgrade: {
     category: "write",
     use_when: "Upgrading the pragma CLI itself to the latest release",
