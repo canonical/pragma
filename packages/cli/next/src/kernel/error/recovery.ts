@@ -27,14 +27,23 @@ export function assertRecoveryCli(cli: string): void {
 
 /**
  * Build a {@link Recovery} whose `cli` command is guaranteed to carry the
- * canonical prefix.
+ * canonical prefix, optionally pairing it with an MCP tool an agent can call.
+ *
+ * A recovery may need to speak to BOTH surfaces: the `cli` string guides a human,
+ * while `mcp` names the tool an agent invokes (an agent cannot run a shell
+ * command). The single human `message` is shared by both.
  *
  * @param cli - The full recovery command, including the `pragma ` prefix.
  * @param message - Human-readable guidance shown alongside the command.
+ * @param mcp - The MCP tool (and optional params) an agent calls to recover.
  * @returns A validated recovery hint.
  * @throws Error when `cli` does not begin with `pragma `.
  */
-export function cliRecovery(cli: string, message: string): Recovery {
+export function cliRecovery(
+  cli: string,
+  message: string,
+  mcp?: Recovery["mcp"],
+): Recovery {
   assertRecoveryCli(cli);
-  return { message, cli };
+  return { message, cli, ...(mcp ? { mcp } : {}) };
 }

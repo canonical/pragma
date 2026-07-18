@@ -127,3 +127,27 @@ describe("graphpack hash stability (PROTECTED)", () => {
     expect(result.dir.endsWith(result.contentHash)).toBe(true);
   });
 });
+
+describe("graphpack read — incomplete pack recovery (CLI + MCP)", () => {
+  it("an incomplete pack is STORE_UNAVAILABLE with a `sources_update` tool recovery", async () => {
+    // A dir with no manifest is an incomplete pack — readPack rejects before any
+    // store boot. The recovery names both the CLI command and the MCP tool an
+    // agent calls, so a cold agent isn't left with a CLI-only hint it can't run.
+    const emptyDir = mkdtempSync(join(tmpdir(), "pragma-incomplete-pack-"));
+    try {
+      let caught: unknown;
+      try {
+        await readPack(emptyDir);
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toMatchObject({ code: "STORE_UNAVAILABLE" });
+      const recovery = (caught as { recovery?: Record<string, unknown> })
+        .recovery;
+      expect(recovery?.cli).toBe("pragma sources update");
+      expect(recovery?.mcp).toMatchObject({ tool: "sources_update" });
+    } finally {
+      rmSync(emptyDir, { recursive: true, force: true });
+    }
+  });
+});

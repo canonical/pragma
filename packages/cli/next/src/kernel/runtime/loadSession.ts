@@ -43,6 +43,9 @@ export async function loadStoreSession(
       recovery: cliRecovery(
         `${RECOVERY_CLI_PREFIX}sources update`,
         "Build the local store from the configured packages.",
+        // An agent recovers by calling the tool (then retrying — PR9's C1 cold-
+        // store retry makes a post-update retry succeed).
+        { tool: "sources_update" },
       ),
     });
   }
