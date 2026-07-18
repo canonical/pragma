@@ -7,6 +7,7 @@
 
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import { configFieldVerbs } from "./fields.js";
 import { configShowFormatters } from "./show.render.js";
 import type { ConfigShowData } from "./types.js";
 
@@ -32,8 +33,11 @@ const showVerb: VerbSpec<Record<string, unknown>, ConfigShowData> = {
     import("./collectConfigShow.js").then((m) => m.collectConfigShow(runtime)),
 };
 
-/** The `config` capability module (PR1: `show` only). */
+/**
+ * The `config` capability module: the `show` reader (PR1) plus the storeless
+ * `tier`/`channel`/`detail` setters (PR6), emitted in covenant order.
+ */
 export const configModule: CapabilityModule = {
   name: "config",
-  verbs: [asVerb(showVerb)],
+  verbs: [asVerb(showVerb), ...configFieldVerbs],
 };

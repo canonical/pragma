@@ -13,3 +13,15 @@ export interface ConfigShowData {
   readonly projectExists: boolean;
   readonly globalExists: boolean;
 }
+
+/** The outcome of a `config <field>` setter (set, or reset via sentinel). */
+export interface ConfigFieldResult {
+  /** The config field written (`tier` / `channel` / `detail`). */
+  readonly field: string;
+  /** The value written, or absent when the field was reset (removed). */
+  readonly value?: string;
+  /** The global config file the write landed in. */
+  readonly path: string;
+  /** True when a reset sentinel removed the field rather than setting a value. */
+  readonly reset: boolean;
+}

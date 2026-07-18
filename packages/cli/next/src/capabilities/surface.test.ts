@@ -23,10 +23,14 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(() => assertConforms(emitted, golden)).not.toThrow();
   });
 
-  it("keeps config_show unchanged from PR1", () => {
+  it("emits config show + the PR6 storeless setters, in covenant order", () => {
     expect(emitted.nouns.config?.verbs).toEqual([
       { v: "show", mcp: "config_show" },
+      { v: "tier", args: ["<path>"], mutates: true, mcp: "config_tier" },
+      { v: "channel", args: ["<name>"], mutates: true, mcp: "config_channel" },
+      { v: "detail", args: ["<level>"], mutates: true, mcp: "config_detail" },
     ]);
+    // info stays a data-only enrichment — its emitted verb is unchanged.
     expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
     // Hidden meta verbs (__complete, mcp) are excluded from the surface.
     expect(emitted.nouns.mcp).toBeUndefined();
