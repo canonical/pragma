@@ -45,11 +45,8 @@ function layersWith(packagesOrigin: "default" | "project"): ConfigLayers {
   };
 }
 
-/** Materialize a COMPLETE pack (manifest + non-empty dump) at the given hash. */
-function writeCompletePack(hash: string): string {
-  const dir = packDir(hash);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
+/** Write a pack's manifest.json at the given hash (the completeness marker). */
+function writeManifest(dir: string, hash: string): void {
   writeFileSync(
     join(dir, "manifest.json"),
     JSON.stringify({
@@ -61,6 +58,16 @@ function writeCompletePack(hash: string): string {
       createdAt: new Date().toISOString(),
     }),
   );
+}
+
+/** Materialize a COMPLETE pack — manifest + non-empty dump, schema, and index. */
+function writeCompletePack(hash: string): string {
+  const dir = packDir(hash);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
+  writeFileSync(join(dir, "schema.json"), "{}");
+  writeFileSync(join(dir, "index.json"), "{}");
+  writeManifest(dir, hash);
   return dir;
 }
 
@@ -89,6 +96,25 @@ describe("resolveSources decision table", () => {
     const cwd = tmp();
     // A lock whose content-addressed pack is absent from the cache.
     writeLock(cwd, { version: 1, contentHash: "b".repeat(64), packs: [] });
+
+    expect(resolveSources(layersWith("default"), cwd)).toEqual({
+      kind: "unavailable",
+      reason: "the locked pack is missing from the cache",
+    });
+  });
+
+  it("lock present + pack with a torn schema/index → STORE_UNAVAILABLE", () => {
+    const cwd = tmp();
+    const hash = "c".repeat(64);
+    // manifest + non-empty dump present, but the extracted schema/index are
+    // missing (a torn or partially-evicted pack). This used to slip through
+    // `packIsComplete` and then crash at read time as an INTERNAL error; it must
+    // now be treated as not-built so the boot surfaces STORE_UNAVAILABLE.
+    const dir = packDir(hash);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
+    writeManifest(dir, hash);
+    writeLock(cwd, { version: 1, contentHash: hash, packs: [] });
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "unavailable",

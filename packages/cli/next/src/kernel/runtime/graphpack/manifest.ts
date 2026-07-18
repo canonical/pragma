@@ -9,9 +9,11 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
   DATA_FILE,
+  INDEX_FILE,
   MANIFEST_FILE,
   type Manifest,
   manifestSchema,
+  SCHEMA_FILE,
 } from "./types.js";
 
 /**
@@ -31,18 +33,23 @@ export function readManifest(dir: string): Manifest | undefined {
   }
 }
 
-/** Whether a pack directory holds a complete pack: a valid manifest AND a
- * non-empty `data.nq` dump. The manifest alone is not enough — an intact
- * manifest beside a missing or truncated `data.nq` is a corrupt pack (ke would
- * boot it EMPTY and rewrite an empty dump — a silent, then permanent, loss).
- * Requiring a non-empty dump here makes the boot decision surface
- * STORE_UNAVAILABLE and makes `buildPack` rebuild it instead of reusing the
- * ruin. */
+/** Whether a pack directory holds a complete pack: a valid manifest AND every
+ * non-empty query artifact — the `data.nq` dump, the extracted `schema.json`,
+ * and the entity `index.json`. The manifest alone is not enough: an intact
+ * manifest beside a missing/truncated `data.nq` boots EMPTY (a silent, then
+ * permanent, loss), and a torn or evicted `schema.json`/`index.json` (manifest +
+ * dump intact) would be REUSED by `buildPack` and then fail at BOOT as an
+ * internal error. Requiring all three present + non-empty makes `buildPack`
+ * rebuild a torn pack and makes the boot decision surface STORE_UNAVAILABLE
+ * (the ordinary "not built" recovery) instead of a "please report this" crash. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
-  try {
-    return statSync(join(dir, DATA_FILE)).size > 0;
-  } catch {
-    return false;
+  for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE]) {
+    try {
+      if (statSync(join(dir, file)).size <= 0) return false;
+    } catch {
+      return false;
+    }
   }
+  return true;
 }

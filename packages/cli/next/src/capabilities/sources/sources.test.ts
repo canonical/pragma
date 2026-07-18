@@ -353,6 +353,32 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(readLock(cwd)).toBeUndefined();
   });
 
+  it("classifies a git clone failure, naming the package (not INTERNAL)", async () => {
+    // A git+file:// ref to a path that does not exist → the clone fails
+    // immediately (hermetic, no network). On base this raw execFileSync throw
+    // escapes as INTERNAL_ERROR "report this issue"; it must be a named data error.
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      {
+        name: "pkg-remote",
+        source: "git+file:///pragma-nope-42/repo.git#main",
+      },
+    ]);
+
+    let caught: unknown;
+    try {
+      await buildUpdateTask(runtime, false);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(PragmaError);
+    const err = caught as PragmaError;
+    expect(err.code).toBe("CONFIG_ERROR");
+    expect(err.message).toContain("pkg-remote");
+    expect(err.message).not.toContain("Internal error");
+    expect(readLock(cwd)).toBeUndefined();
+  });
+
   it("names the SPECIFIC bad file among several good ones", async () => {
     const pkg = tmp("pragma-badpkg-mixed-");
     mkdirSync(join(pkg, "definitions"), { recursive: true });

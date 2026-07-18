@@ -293,7 +293,7 @@ export async function classifySourceBuildError(
   const detail = culprit?.message ?? parserMessage;
   const where = culprit
     ? `Package source "${culprit.path}" could not be parsed`
-    : "A configured package source could not be parsed";
+    : "The configured package sources could not be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
     recovery: cliRecovery(
       `${RECOVERY_CLI_PREFIX}sources update --verbose`,
