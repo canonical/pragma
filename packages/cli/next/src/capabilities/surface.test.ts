@@ -23,12 +23,18 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(() => assertConforms(emitted, golden)).not.toThrow();
   });
 
-  it("emits config show + the PR6 storeless setters, in covenant order", () => {
+  it("emits config show + the PR6 setters + the PR9 additive set, in covenant order", () => {
     expect(emitted.nouns.config?.verbs).toEqual([
       { v: "show", mcp: "config_show" },
       { v: "tier", args: ["<path>"], mutates: true, mcp: "config_tier" },
       { v: "channel", args: ["<name>"], mutates: true, mcp: "config_channel" },
       { v: "detail", args: ["<level>"], mutates: true, mcp: "config_detail" },
+      {
+        v: "set",
+        args: ["<key>", "<value>"],
+        mutates: true,
+        mcp: "config_set",
+      },
     ]);
     // info stays a data-only enrichment — its emitted verb is unchanged.
     expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
@@ -170,14 +176,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 38) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 39) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(38);
+    expect(emitted.mcpSurface.tools).toHaveLength(39);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

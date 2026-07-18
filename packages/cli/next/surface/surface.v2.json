@@ -136,6 +136,12 @@
           "args": ["<level>"],
           "mutates": true,
           "mcp": "config_detail"
+        },
+        {
+          "v": "set",
+          "args": ["<key>", "<value>"],
+          "mutates": true,
+          "mcp": "config_set"
         }
       ]
     },
@@ -238,6 +244,7 @@
       "capabilities",
       "config_channel",
       "config_detail",
+      "config_set",
       "config_show",
       "config_tier",
       "create_application",

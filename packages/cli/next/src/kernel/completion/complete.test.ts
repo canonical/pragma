@@ -21,6 +21,7 @@ describe("runComplete — the __complete pipeline", () => {
     await expect(runComplete(["config", ""], capabilities)).resolves.toEqual([
       "channel",
       "detail",
+      "set",
       "show",
       "tier",
     ]);

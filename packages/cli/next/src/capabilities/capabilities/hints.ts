@@ -175,6 +175,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Setting the default progressive-disclosure level (summary, standard, detailed)",
   },
+  config_set: {
+    category: "write",
+    use_when:
+      "Setting any config field by name in one call — tier, channel, or detail",
+  },
   create_component: {
     category: "write",
     use_when:

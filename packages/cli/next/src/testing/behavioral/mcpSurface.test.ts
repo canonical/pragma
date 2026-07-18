@@ -64,34 +64,44 @@ afterAll(async () => {
   await fixture.dispose();
 });
 
-/** Build representative args for one verb's required positional(s), if any. */
+/** Build representative args for EVERY required positional (e.g. config_set's
+ * `<key>` + `<value>`), so a multi-positional tool's zod schema is satisfied. */
 function representativeArgs(v: LiveVerb): Record<string, unknown> {
   const required = v.spec.params.filter((p) => p.positional && p.required);
-  if (required.length === 0) return {};
-  const param = required[0];
-  if (!param) return {};
+  const args: Record<string, unknown> = {};
+  for (const param of required) {
+    args[param.name] = representativeValue(v, param);
+  }
+  return args;
+}
 
+/** A representative value for one required positional. */
+function representativeValue(
+  v: LiveVerb,
+  param: LiveVerb["spec"]["params"][number],
+): unknown {
   if (param.name === "prefix") {
     const prefix = Object.keys(readPackIndex(fixture.cwd)?.prefixes ?? {}).find(
       (p) => p !== "owl" && p !== "rdfs" && p !== "rdf" && p !== "xsd",
     );
-    return { prefix: prefix ?? "ds" };
+    return prefix ?? "ds";
   }
   if (param.name === "uri") {
     const entity = readPackIndex(fixture.cwd)?.entities.find(
       (e) => e.box === "abox",
     );
-    return { uri: entity?.prefixed ?? entity?.name ?? "" };
+    return entity?.prefixed ?? entity?.name ?? "";
   }
-  // An enum positional (e.g. `config channel <name>`) must get a real member —
-  // a placeholder would fail the tool's zod schema at the SDK layer, before the
-  // handler, yielding a protocol error rather than a well-formed envelope.
+  // An enum positional (e.g. `config channel <name>`, `config set <key>`) must
+  // get a real member — a placeholder would fail the tool's zod schema at the
+  // SDK layer, before the handler, yielding a protocol error rather than a
+  // well-formed envelope.
   if (param.kind === "enum") {
-    return { [param.name]: param.values[0] };
+    return param.values[0];
   }
 
   const known = firstNameByNoun.get(v.noun) ?? "placeholder";
-  return { [param.name]: param.kind === "string[]" ? [known] : known };
+  return param.kind === "string[]" ? [known] : known;
 }
 
 describe("every MCP tool is callable and returns a well-formed envelope (B4)", () => {
