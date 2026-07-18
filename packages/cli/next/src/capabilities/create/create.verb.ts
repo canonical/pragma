@@ -295,12 +295,11 @@ async function runCreate(
   // callbacks ride runtime.exec alongside the shared stamping transform.
   if (isTTY && !yes) {
     const session = summon.inkPrompt(generator, { signal });
-    // NOTE (PR7): no per-call `cwd` is threaded here. The node interpreter
-    // resolves effect paths against `process.cwd()` (which equals `rt.cwd`
-    // today), and the SEC-2 jail validates against `rt.cwd`; PR7 owns per-call
-    // cwd and MUST thread it into the runner AND the jail atomically, or a
-    // write dir the jail never validated would be a jail bypass.
+    // Thread the per-call write root: the interpreter resolves the generator's
+    // relative output paths against `rt.cwd` — the SAME dir the SEC-2 jail
+    // validated above — so the write can never escape the checked directory.
     rt.exec = {
+      cwd: rt.cwd,
       promptHandler: session.promptHandler,
       onEffectStart: summon.createStampOnEffectStart(
         stamp,
@@ -321,8 +320,10 @@ async function runCreate(
   // Non-interactive: MCP → params-or-error; CLI/--yes/CI → flags+defaults.
   const prompt =
     transport === "mcp" ? summon.mcpPrompt(params) : summon.autoPrompt(params);
-  // NOTE (PR7): per-call `cwd` deferred — see the PR7 note on the Ink branch.
+  // Same per-call write root as the Ink branch: `rt.cwd` feeds both the SEC-2
+  // jail and the interpreter's effect-path base, atomically.
   rt.exec = {
+    cwd: rt.cwd,
     promptHandler: prompt,
     onEffectStart: summon.createStampOnEffectStart(stamp),
     onLog: (_level, message) => process.stderr.write(`${message}\n`),

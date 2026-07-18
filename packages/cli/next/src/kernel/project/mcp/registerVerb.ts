@@ -10,16 +10,50 @@
  * for real.
  */
 
+import { statSync } from "node:fs";
+import { isAbsolute } from "node:path";
 import { describeEffect, dryRun, type Task } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { asPragmaError } from "../../error/fromTaskError.js";
+import { PragmaError } from "../../error/PragmaError.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
 import { toolName } from "../../spec/emitSurface.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
 import { toolError, toolSuccess } from "./envelope.js";
+
+/**
+ * Resolve the effective per-call write root for a mutating tool call.
+ *
+ * The MCP-only injected `cwd` arg lets an agent target a project directory other
+ * than the server's launch dir. It MUST be an absolute, existing directory —
+ * this is the SINGLE cwd the SEC-2 jail validates AND the interpreter resolves
+ * effect paths against, so a write dir the jail never checked can never exist.
+ *
+ * @throws PragmaError INVALID_INPUT for a relative or non-directory `cwd`.
+ */
+export function resolveEffectiveCwd(rawCwd: unknown, fallback: string): string {
+  if (typeof rawCwd !== "string" || rawCwd === "") return fallback;
+  if (!isAbsolute(rawCwd)) {
+    throw PragmaError.invalidInput("cwd", rawCwd, {
+      recovery: { message: "Provide an absolute project directory path." },
+    });
+  }
+  let isDir = false;
+  try {
+    isDir = statSync(rawCwd).isDirectory();
+  } catch {
+    isDir = false;
+  }
+  if (!isDir) {
+    throw PragmaError.invalidInput("cwd", rawCwd, {
+      recovery: { message: "The cwd must be an existing directory." },
+    });
+  }
+  return rawCwd;
+}
 
 /** The base zod type for a param, before `.describe()`/`.optional()`. */
 function zodForParam(param: ParamSpec): z.ZodTypeAny {
@@ -136,6 +170,10 @@ const logToStderr = (_level: string, message: string): void => {
 function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
     try {
+      // The SINGLE per-call write root: validated here (absolute + existing dir)
+      // and threaded as `rt.cwd`, so the SEC-2 jail and the interpreter's
+      // effect-path base are literally the same value — no jail bypass.
+      const effectiveCwd = resolveEffectiveCwd(args.cwd, runtime.cwd);
       if (verb.capability.needsStore) await runtime.store.get();
       const params = paramsFromArgs(verb, args);
       // Without `confirm`, this is a plan-only preview: tell the verb so a
@@ -151,6 +189,7 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       };
       const mutationRuntime: PragmaRuntime = {
         ...runtime,
+        cwd: effectiveCwd,
         mutation: { preview },
         interaction,
       };
@@ -210,6 +249,16 @@ export function registerVerb(
       .boolean()
       .default(false)
       .describe("Set true to execute; otherwise a plan is returned.");
+    // Injected MCP-only per-call write root — added to the zod shape but NOT to
+    // verb.params (like `confirm`/`detail`), so `emitVerb` never emits it and the
+    // surface golden is untouched. The handler validates it and threads it as the
+    // single `rt.cwd` the jail + interpreter share (SEC-2 atomicity).
+    shape.cwd = z
+      .string()
+      .optional()
+      .describe(
+        "Absolute project directory to write into; defaults to the server's working directory.",
+      );
   }
 
   const config: {

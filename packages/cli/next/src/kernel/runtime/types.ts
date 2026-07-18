@@ -135,11 +135,15 @@ export interface RunnerOptions {
   ) => void;
   /** Route task log output. */
   onLog?: (level: "debug" | "info" | "warn" | "error", message: string) => void;
-  // NOTE (PR7): no `cwd` here on purpose. The node interpreter's RunTaskOptions
-  // has no cwd — effect paths resolve against `process.cwd()` — so a `cwd` field
-  // would be inert. PR7 threads a per-call cwd into BOTH the runner and the
-  // SEC-2 path jail atomically (a write dir the jail never validated is a jail
-  // bypass); until then the field is deliberately absent rather than a no-op.
+  /**
+   * The per-call write root: relative fs-effect paths resolve against it in the
+   * node interpreter (`RunTaskOptions.cwd`), and it is the SAME `rt.cwd` the
+   * SEC-2 path jail validates — so a mutating verb's output can never land
+   * outside the directory the jail checked (no jail bypass). Absolute effect
+   * paths are unchanged; omitting it falls back to `process.cwd()`. Honest as of
+   * PR7 (the node interpreter now honours `RunTaskOptions.cwd`).
+   */
+  cwd?: string;
   /** Abort signal, forwarded to the interpreter. */
   signal?: AbortSignal;
   /** Teardown run by the projector after the task settles (e.g. unmount Ink). */
