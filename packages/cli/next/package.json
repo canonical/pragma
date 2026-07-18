@@ -45,7 +45,8 @@
     "check:ts": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "eval": "bun run src/testing/eval/report.ts"
   },
   "dependencies": {
     "@canonical/ke": "^0.31.0",

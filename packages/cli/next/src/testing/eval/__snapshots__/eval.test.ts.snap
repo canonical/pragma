@@ -1,0 +1,31 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`eval harness — seed gate > runs the stable seed cases clean 1`] = `
+[
+  {
+    "id": "content-condensed-sdl-token-budget",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "disclosure-summary-omits-standard-and-detailed-fields",
+    "kind": "disclosure",
+    "passed": true,
+  },
+  {
+    "id": "prompt-config-question-maps-to-config-show",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-version-check-maps-to-info",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "tool-sparql-count-positive",
+    "kind": "tool",
+    "passed": true,
+  },
+]
+`;

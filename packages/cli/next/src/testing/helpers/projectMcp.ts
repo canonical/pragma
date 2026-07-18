@@ -12,10 +12,14 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { buildServer } from "../../kernel/project/mcp/buildServer.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 
-/** A description of a registered tool (name + annotations). */
+/** A description of a registered tool (name + annotations + full schema). */
 export interface ToolInfo {
   readonly name: string;
   readonly annotations?: Record<string, unknown>;
+  /** The tool's one-line description, as an agent sees it in the catalog. */
+  readonly description?: string;
+  /** The tool's JSON-schema input shape, as an agent sees it in the catalog. */
+  readonly inputSchema?: unknown;
 }
 
 /** An in-process MCP harness. */
@@ -74,6 +78,8 @@ export async function projectMcp(
       return tools.map((tool) => ({
         name: tool.name,
         annotations: tool.annotations as Record<string, unknown> | undefined,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
       }));
     },
     async listResources() {
