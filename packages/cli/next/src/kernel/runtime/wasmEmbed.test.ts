@@ -42,22 +42,25 @@ afterAll(() => {
   rmSync(workdir, { recursive: true, force: true });
 });
 
+/** Run the compiled binary in a scratch cwd with isolated XDG dirs (no local
+ * node_modules, no real cache) — proves the binary is self-contained. */
+const runBinary = (args: string[]) =>
+  spawnSync(binary, args, {
+    cwd: workdir,
+    stdio: "pipe",
+    encoding: "utf-8",
+    env: {
+      ...process.env,
+      HOME: workdir,
+      XDG_CACHE_HOME: join(workdir, "cache"),
+      XDG_STATE_HOME: join(workdir, "state"),
+      XDG_CONFIG_HOME: join(workdir, "config"),
+    },
+  });
+
 describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)", () => {
-  it("dist binary boots the embedded store via __store-probe", () => {
-    // Run in a scratch cwd with isolated XDG dirs — no local node_modules, no
-    // real cache: proves the binary is self-contained.
-    const run = spawnSync(binary, ["__store-probe"], {
-      cwd: workdir,
-      stdio: "pipe",
-      encoding: "utf-8",
-      env: {
-        ...process.env,
-        HOME: workdir,
-        XDG_CACHE_HOME: join(workdir, "cache"),
-        XDG_STATE_HOME: join(workdir, "state"),
-        XDG_CONFIG_HOME: join(workdir, "config"),
-      },
-    });
+  it("dist binary boots the embedded store via __store-probe (needsStore path)", () => {
+    const run = runBinary(["__store-probe"]);
     expect(run.status, run.stderr).toBe(0);
     const out = JSON.parse(run.stdout.trim()) as {
       ok: boolean;
@@ -67,5 +70,18 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
     expect(out.ok).toBe(true);
     expect(out.entities).toBe(6);
     expect(Number(out.triples)).toBeGreaterThan(0);
+  });
+
+  it("dist binary runs storeless sources status", () => {
+    const run = runBinary(["sources", "status", "--format", "json"]);
+    expect(run.status, run.stderr).toBe(0);
+    const envelope = JSON.parse(run.stdout.trim()) as {
+      ok: boolean;
+      data: { lockPresent: boolean; cached: boolean };
+    };
+    expect(envelope.ok).toBe(true);
+    // A fresh install: no lock, store not yet built.
+    expect(envelope.data.lockPresent).toBe(false);
+    expect(envelope.data.cached).toBe(false);
   });
 });
