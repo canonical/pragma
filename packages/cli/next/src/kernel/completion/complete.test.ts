@@ -36,9 +36,9 @@ describe("runComplete — the __complete pipeline", () => {
   });
 
   it("strips a leading bin name", async () => {
-    await expect(runComplete(["pragma2", "co"], capabilities)).resolves.toEqual(
-      ["config"],
-    );
+    await expect(runComplete(["pragma", "co"], capabilities)).resolves.toEqual([
+      "config",
+    ]);
   });
 
   it("resolves entity contexts through the provided env", async () => {

@@ -44,7 +44,7 @@ const DRY = { dryRun: true, undo: false, yes: false };
 
 const roots: string[] = [];
 const tmpCwd = (): string => {
-  const dir = mkdtempSync(join(tmpdir(), "pragma2-upgrade-"));
+  const dir = mkdtempSync(join(tmpdir(), "pragma-upgrade-"));
   roots.push(dir);
   return dir;
 };
@@ -275,7 +275,7 @@ describe("upgrade — a failed exec maps to an actionable runtime error (exit 1)
       failVerbWith(
         (_p, rt) =>
           gen(function* () {
-            yield* $(exec("pragma2-nonexistent-binary-xyz", [], rt.cwd));
+            yield* $(exec("pragma-nonexistent-binary-xyz", [], rt.cwd));
             return {};
           }) as Task<unknown>,
       ),

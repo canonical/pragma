@@ -25,7 +25,7 @@ describe("exit-code covenant, spawn-observed (A4, e2e)", () => {
   });
 
   it("1 — runtime failure (entity not found)", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pragma2-exit1-"));
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-exit1-"));
     const result = runCli(["skill", "lookup", "does-not-exist"], { cwd });
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("not found");
@@ -38,7 +38,7 @@ describe("exit-code covenant, spawn-observed (A4, e2e)", () => {
   });
 
   it("3 — store unavailable (configured packages, never built)", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pragma2-exit3-"));
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-exit3-"));
     // A pragma.config.ts with custom `packages` flips `origins.packages` to
     // "project" — with no `pragma.lock.json`, resolveSources refuses to boot
     // (no network probing) rather than fall back to the embedded pack.

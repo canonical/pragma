@@ -4,9 +4,9 @@ import { PragmaError } from "./PragmaError.js";
 import { assertRecoveryCli, cliRecovery } from "./recovery.js";
 
 describe("recovery.cli invariant (D5)", () => {
-  it("keeps the prefix literal `pragma ` during the v2 window", () => {
-    // The bin is `pragma2`, but recovery hints quote the stable documented
-    // name — the prefix must not track the binary rename.
+  it("keeps the recovery prefix literal as `pragma `", () => {
+    // Recovery hints quote the stable, documented command name via the fixed
+    // `pragma ` prefix, so they never drift from the published command.
     expect(RECOVERY_CLI_PREFIX).toBe("pragma ");
   });
 
@@ -17,7 +17,9 @@ describe("recovery.cli invariant (D5)", () => {
 
   it("rejects a command missing the prefix", () => {
     expect(() => assertRecoveryCli("info")).toThrow(/must start with/);
-    expect(() => assertRecoveryCli("pragma2 info")).toThrow(/must start with/);
+    expect(() => assertRecoveryCli("pragmatic info")).toThrow(
+      /must start with/,
+    );
     expect(() => assertRecoveryCli("pragmainfo")).toThrow(/must start with/);
   });
 

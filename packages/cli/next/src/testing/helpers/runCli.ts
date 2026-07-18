@@ -1,5 +1,5 @@
 /**
- * Test helper: spawn-and-CAPTURE the real `pragma2` binary.
+ * Test helper: spawn-and-CAPTURE the real `pragma` binary.
  *
  * {@link measureCommand} (the perf helper) discards stdout/stderr — it only
  * times spawns. This is the complementary helper for tests that need to READ
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 
 /** The compiled binary the perf `globalSetup` guarantees exists before tests run. */
 const COMPILED_BINARY = fileURLToPath(
-  new URL("../../../dist/pragma2", import.meta.url),
+  new URL("../../../dist/pragma", import.meta.url),
 );
 
 /** The `bin.ts` entry point, for fast source-mode spawns (no rebuild). */
@@ -37,7 +37,7 @@ export interface RunCliOptions {
    */
   readonly env?: Record<string, string | undefined>;
   /**
-   * `"compiled"` (default) spawns `dist/pragma2` — the true release boundary.
+   * `"compiled"` (default) spawns `dist/pragma` — the true release boundary.
    * `"source"` spawns `bun src/bin.ts` — faster, no rebuild required, for
    * journeys that do not test the compiled-binary boundary itself.
    */
@@ -66,7 +66,7 @@ export interface RunCliResult {
 let seededConfigHome: string | undefined;
 function seededXdgConfigHome(): string {
   if (seededConfigHome !== undefined) return seededConfigHome;
-  const dir = mkdtempSync(join(tmpdir(), "pragma2-runcli-seeded-xdg-"));
+  const dir = mkdtempSync(join(tmpdir(), "pragma-runcli-seeded-xdg-"));
   mkdirSync(join(dir, "pragma"), { recursive: true });
   writeFileSync(join(dir, "pragma", "config.json"), "{}\n");
   seededConfigHome = dir;
@@ -74,9 +74,9 @@ function seededXdgConfigHome(): string {
 }
 
 /**
- * Spawn the real `pragma2` CLI and capture its output.
+ * Spawn the real `pragma` CLI and capture its output.
  *
- * @param args - Argv passed to the binary (no `pragma2`/`bun` prefix).
+ * @param args - Argv passed to the binary (no `pragma`/`bun` prefix).
  * @param options - cwd, env overrides, mode, and timeout.
  * @returns The captured stdout/stderr/exitCode/signal.
  * @note Impure — spawns a child process.
@@ -122,7 +122,7 @@ export function runCli(
  * @note Impure — creates a temp directory.
  */
 export function freshXdgEnv(): Record<string, string> {
-  const configHome = mkdtempSync(join(tmpdir(), "pragma2-runcli-fresh-cfg-"));
-  const stateHome = mkdtempSync(join(tmpdir(), "pragma2-runcli-fresh-state-"));
+  const configHome = mkdtempSync(join(tmpdir(), "pragma-runcli-fresh-cfg-"));
+  const stateHome = mkdtempSync(join(tmpdir(), "pragma-runcli-fresh-state-"));
   return { XDG_CONFIG_HOME: configHome, XDG_STATE_HOME: stateHome };
 }

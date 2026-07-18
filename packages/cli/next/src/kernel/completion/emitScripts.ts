@@ -27,7 +27,7 @@ import type { Shell } from "./types.js";
 
 /** Options for {@link emitScripts}. */
 export interface EmitScriptsOptions {
-  /** The binary to complete; defaults to {@link BIN_NAME} (`pragma2`). */
+  /** The binary to complete; defaults to {@link BIN_NAME} (`pragma`). */
   readonly binName?: string;
 }
 
@@ -35,7 +35,7 @@ export interface EmitScriptsOptions {
  * Emit the completion scripts for every supported shell.
  *
  * @param modules - The capability modules to derive completions from.
- * @param options - The bin name to target (defaults to `pragma2`).
+ * @param options - The bin name to target (defaults to `pragma`).
  * @returns A map of shell to its completion script.
  * @throws Error when any inlinable token fails the safety allowlist.
  */

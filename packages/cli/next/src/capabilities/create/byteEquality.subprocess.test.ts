@@ -1,6 +1,6 @@
 /**
  * PROTECTED — the cross-binary subprocess guard (one representative generator):
- * the real `pragma2` bin's `create component … --yes` vs an independently
+ * the real `pragma` bin's `create component … --yes` vs an independently
  * launched summon-core `execute` process (the summon bin's exact core path).
  * A byte-for-byte match across two SEPARATE processes catches bin-level stamp /
  * version / path divergence that an in-process test could mask.
@@ -23,7 +23,7 @@ const repoRoot = resolve(here, "../../../../../..");
 const pragmaBin = join(repoRoot, "packages/cli/next/src/bin.ts");
 const summonCore = join(repoRoot, "packages/summon/core/dist/esm/index.js");
 const pickGen = join(here, "pickGenerator.ts");
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-xbin-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-xbin-"));
 
 function snapshot(dir: string): Map<string, string> {
   const out = new Map<string, string>();
@@ -39,8 +39,8 @@ function snapshot(dir: string): Map<string, string> {
 }
 
 describe("cross-binary byte-equality (PROTECTED)", () => {
-  it("pragma2 bin create ≡ summon-core execute across two processes", () => {
-    // (1) The real pragma2 bin, run in its own process.
+  it("pragma bin create ≡ summon-core execute across two processes", () => {
+    // (1) The real pragma bin, run in its own process.
     const pragmaDir = freshCwd();
     execFileSync(
       "bun",

@@ -32,7 +32,7 @@ describe("parseWords — nouns and verbs (PROTECTED)", () => {
   });
 
   it("strips a leading bin name", () => {
-    expect(parse(["pragma2", "blo"])).toEqual({
+    expect(parse(["pragma", "blo"])).toEqual({
       context: { kind: "noun" },
       partial: "blo",
     });

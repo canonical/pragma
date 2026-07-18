@@ -41,7 +41,7 @@ import {
 import { projectMcp } from "../helpers/projectMcp.js";
 import { listVerbs, liveVerbs, lookupVerbs } from "./liveReadSurface.js";
 
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-parity-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-parity-"));
 
 describe("assertCliMcpParity — the shared helper, over stable-now nouns (A5)", () => {
   it("info: CLI --format json == MCP tool data", async () => {

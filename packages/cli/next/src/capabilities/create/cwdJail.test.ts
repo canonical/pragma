@@ -21,7 +21,7 @@ import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { createModule } from "./index.js";
 
 const freshDir = (tag: string): string =>
-  mkdtempSync(join(tmpdir(), `pragma2-cwdjail-${tag}-`));
+  mkdtempSync(join(tmpdir(), `pragma-cwdjail-${tag}-`));
 
 const COMPONENT_ARGS = {
   framework: "react",

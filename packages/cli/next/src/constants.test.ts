@@ -11,8 +11,8 @@ import {
 } from "./constants.js";
 
 describe("constants", () => {
-  it("names the v2 bin pragma2 but keeps the MCP server as pragma", () => {
-    expect(BIN_NAME).toBe("pragma2");
+  it("names the v2 bin and the MCP server pragma", () => {
+    expect(BIN_NAME).toBe("pragma");
     expect(MCP_SERVER_NAME).toBe("pragma");
   });
 

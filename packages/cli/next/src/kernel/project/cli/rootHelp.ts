@@ -1,5 +1,5 @@
 /**
- * Curated root `--help` for `pragma2`.
+ * Curated root `--help` for `pragma`.
  *
  * The front door is hand-curated, not auto-generated: nouns are grouped into
  * task-oriented sections with real one-line summaries, and each section is
@@ -116,7 +116,7 @@ function fallbackSummary(noun: string, verbs: readonly VerbSpec[]): string {
 /**
  * Build the curated root help string.
  *
- * @param programName - The CLI binary name (`pragma2`).
+ * @param programName - The CLI binary name (`pragma`).
  * @param description - The program description shown in the header.
  * @param verbs - All registered verbs, used to derive the live noun set.
  * @returns The formatted, colorized help text.

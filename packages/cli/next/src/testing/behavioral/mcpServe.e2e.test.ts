@@ -1,5 +1,5 @@
 /**
- * A7 — `pragma2 mcp` serve boot, observed through the real compiled binary.
+ * A7 — `pragma mcp` serve boot, observed through the real compiled binary.
  *
  * Replaces the old mocked-SIGINT unit test: `runCli` spawns with no `input`,
  * which gives the child an immediately-EOF stdin (verified equivalent to

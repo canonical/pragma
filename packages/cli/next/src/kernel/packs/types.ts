@@ -289,7 +289,7 @@ export type PackEntity = Record<string, string | readonly PackChildRow[]>;
 
 /** One declarative read story: a noun with its preferred queries. */
 export interface PackDefinition {
-  /** Command noun (kebab-case), e.g. `"standard"` → `pragma2 standard list`. */
+  /** Command noun (kebab-case), e.g. `"standard"` → `pragma standard list`. */
   readonly noun: string;
   /** CLI description for the list command. */
   readonly description?: string;

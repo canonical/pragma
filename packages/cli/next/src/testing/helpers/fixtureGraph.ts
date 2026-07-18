@@ -112,8 +112,8 @@ function configField(key: string, value: unknown): string {
 export async function bootFixtureRuntime(
   options: FixtureGraphOptions,
 ): Promise<FixtureGraph> {
-  const cwd = mkdtempSync(join(tmpdir(), "pragma2-fixture-proj-"));
-  const pkgDir = mkdtempSync(join(tmpdir(), "pragma2-fixture-pkg-"));
+  const cwd = mkdtempSync(join(tmpdir(), "pragma-fixture-proj-"));
+  const pkgDir = mkdtempSync(join(tmpdir(), "pragma-fixture-pkg-"));
   mkdirSync(join(pkgDir, "definitions"), { recursive: true });
   writeFileSync(join(pkgDir, "definitions", "fixture.ttl"), options.ttl);
 

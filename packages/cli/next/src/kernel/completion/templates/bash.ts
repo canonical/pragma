@@ -7,7 +7,7 @@
  * generator-validated LITERAL `compgen -W` tables (never a variable, never
  * anything `compgen -W` could evaluate). File params use native `compgen -f`.
  * Only `{kind:"entity"}` contexts exec the CLI: `mapfile` ingests
- * `pragma2 __complete` output line-by-line, so candidates are never
+ * `pragma __complete` output line-by-line, so candidates are never
  * word-split or evaluated. No `eval`, no backticks, `--` guards throughout.
  */
 
@@ -25,7 +25,7 @@ import {
   wordList,
 } from "./shared.js";
 
-/** A shell-safe function-name base for the bin (`pragma2` -> `_pragma2`). */
+/** A shell-safe function-name base for the bin (`pragma` -> `_pragma`). */
 function fnBase(binName: string): string {
   return `_${binName.replace(/[^A-Za-z0-9_]/g, "_")}`;
 }

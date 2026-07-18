@@ -20,7 +20,7 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-caps-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-caps-"));
 const tools = liveTools(capabilities);
 const data = buildCapabilitiesData(capabilities);
 

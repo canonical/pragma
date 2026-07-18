@@ -16,16 +16,16 @@ import {
 import { measureCommand, percentile, trimmedMean } from "./measure.js";
 
 /** The compiled binary the perf globalSetup guarantees exists. */
-const BINARY = fileURLToPath(new URL("../../../dist/pragma2", import.meta.url));
+const BINARY = fileURLToPath(new URL("../../../dist/pragma", import.meta.url));
 
 /** Fresh XDG dirs so spawned runs never touch real state (and first-run is isolated). */
 const perfEnv = {
-  XDG_CONFIG_HOME: mkdtempSync(join(tmpdir(), "pragma2-perf-cfg-")),
-  XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma2-perf-state-")),
+  XDG_CONFIG_HOME: mkdtempSync(join(tmpdir(), "pragma-perf-cfg-")),
+  XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma-perf-state-")),
 };
 
 /**
- * Protected budget suite. Spawns the standalone `dist/pragma2`, discards
+ * Protected budget suite. Spawns the standalone `dist/pragma`, discards
  * warmups, and asserts median + p95 against the ceilings in budgets.ts. Given
  * spawn-time variance, each spawn case retries.
  */
@@ -44,7 +44,7 @@ describe("perf budgets (PROTECTED)", () => {
     expect(trimmedMean([], 0.1)).toBeNaN();
   });
 
-  it("pragma2 --help stays under budget", { retry: 2 }, () => {
+  it("pragma --help stays under budget", { retry: 2 }, () => {
     const result = measureCommand(BINARY, ["--help"], {
       runs: 15,
       warmups: 3,
@@ -54,7 +54,7 @@ describe("perf budgets (PROTECTED)", () => {
     expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_HELP_MS);
   });
 
-  it("pragma2 __complete stays under budget", { retry: 3 }, () => {
+  it("pragma __complete stays under budget", { retry: 3 }, () => {
     const result = measureCommand(BINARY, ["__complete", "config"], {
       runs: 30,
       warmups: 5,
@@ -80,7 +80,7 @@ describe("perf budgets (PROTECTED)", () => {
       warmups: 3,
       env: {
         ...perfEnv,
-        XDG_CACHE_HOME: mkdtempSync(join(tmpdir(), "pragma2-perf-cache-")),
+        XDG_CACHE_HOME: mkdtempSync(join(tmpdir(), "pragma-perf-cache-")),
       },
     });
     expect(result.medianMs).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
@@ -118,9 +118,9 @@ describe("perf budgets (PROTECTED)", () => {
 
   it("warm project-config load stays under budget", { retry: 2 }, async () => {
     const savedState = process.env.XDG_STATE_HOME;
-    process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "pragma2-warm-"));
+    process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "pragma-warm-"));
     try {
-      const dir = mkdtempSync(join(tmpdir(), "pragma2-warm-proj-"));
+      const dir = mkdtempSync(join(tmpdir(), "pragma-warm-proj-"));
       const path = join(dir, "pragma.config.ts");
       writeFileSync(path, 'export default { tier: "core" };');
 

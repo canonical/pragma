@@ -40,7 +40,7 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 const YES: MutationFlags = { dryRun: false, undo: false, yes: true };
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-create-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-create-"));
 
 /** Run a create verb inside `dir` (relative generator paths resolve there). */
 async function runIn(

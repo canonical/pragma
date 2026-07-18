@@ -39,7 +39,7 @@ let cacheHome: string;
 
 beforeAll(() => {
   savedCacheHome = process.env.XDG_CACHE_HOME;
-  cacheHome = mkdtempSync(join(tmpdir(), "pragma2-graphpack-"));
+  cacheHome = mkdtempSync(join(tmpdir(), "pragma-graphpack-"));
   process.env.XDG_CACHE_HOME = cacheHome;
 });
 

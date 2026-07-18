@@ -24,7 +24,7 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 const freshCwd = (): string =>
-  mkdtempSync(join(tmpdir(), "pragma2-create-mcp-"));
+  mkdtempSync(join(tmpdir(), "pragma-create-mcp-"));
 
 let cleanup: (() => Promise<void>) | undefined;
 afterEach(async () => {

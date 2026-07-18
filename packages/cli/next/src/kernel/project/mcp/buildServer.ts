@@ -1,8 +1,8 @@
 /**
  * Build the MCP server from the grammar.
  *
- * Constructs an {@link McpServer} keeping the stable `pragma` identity (not
- * `pragma2`, so existing agent wiring resolves it), then registers every
+ * Constructs an {@link McpServer} under the stable `pragma` identity (matching
+ * the CLI bin, so existing agent wiring resolves it), then registers every
  * exposed verb as a tool and each module's optional `mcpResources` surface (the
  * graph resource browser, wired below via `module.mcpResources?.register`). One
  * runtime is booted for the server's lifetime and shared by every tool; the

@@ -55,8 +55,8 @@ beforeEach(() => {
   prevXdg = process.env.XDG_CONFIG_HOME;
   // Empty HOME/XDG so `~`-based harness signals, rc files, and the global config
   // are all absent — the harness/config/completion checks become deterministic.
-  process.env.HOME = tmp("pragma2-doctor-home-");
-  process.env.XDG_CONFIG_HOME = tmp("pragma2-doctor-xdg-");
+  process.env.HOME = tmp("pragma-doctor-home-");
+  process.env.XDG_CONFIG_HOME = tmp("pragma-doctor-xdg-");
 });
 afterEach(() => {
   process.env.HOME = prevHome;
@@ -105,7 +105,7 @@ const byName = (data: DoctorData, name: string) =>
 
 describe("doctor — shape & spread", () => {
   it("returns 9 checks whose tallies sum, each with a valid status", async () => {
-    const data = await runChecks(bootRuntime(FLAGS, tmp("pragma2-proj-")));
+    const data = await runChecks(bootRuntime(FLAGS, tmp("pragma-proj-")));
     expect(data.checks).toHaveLength(9);
     expect(data.passed + data.failed + data.skipped).toBe(9);
     for (const check of data.checks) {
@@ -130,7 +130,7 @@ describe("doctor — shape & spread", () => {
 
 describe("doctor — the store check", () => {
   it("a store that fails to boot is an attributable fail, not a crash", async () => {
-    const data = await runChecks(throwingStoreRuntime(tmp("pragma2-proj-")));
+    const data = await runChecks(throwingStoreRuntime(tmp("pragma-proj-")));
     expect(data.checks).toHaveLength(9);
     const keStore = byName(data, "ke store");
     expect(keStore?.status).toBe("fail");
@@ -156,13 +156,13 @@ describe("doctor — dispatch & MCP", () => {
       doctorVerb,
       {},
       NO_MUT,
-      bootRuntime(FLAGS, tmp("pragma2-proj-")),
+      bootRuntime(FLAGS, tmp("pragma-proj-")),
     );
     expect(outcome.exitCode).toBe(0);
   });
 
   it("MCP doctor is read-only and returns the checks envelope", async () => {
-    const mcp = await projectMcp([doctorModule], tmp("pragma2-proj-"));
+    const mcp = await projectMcp([doctorModule], tmp("pragma-proj-"));
     const tools = await mcp.listTools();
     const doctorTool = tools.find((t) => t.name === "doctor");
     expect(

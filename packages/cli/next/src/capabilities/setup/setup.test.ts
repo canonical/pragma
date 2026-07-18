@@ -63,7 +63,7 @@ let prevShell: string | undefined;
 beforeEach(() => {
   prevHome = process.env.HOME;
   prevShell = process.env.SHELL;
-  process.env.HOME = tmp("pragma2-setup-home-");
+  process.env.HOME = tmp("pragma-setup-home-");
   process.env.SHELL = "/usr/bin/zsh";
 });
 afterEach(() => {
@@ -97,7 +97,7 @@ describe("setup completions", () => {
       completionsVerb,
       {},
       YES,
-      bootRuntime(FLAGS, tmp("pragma2-setup-proj-")),
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
     );
     expect(outcome.exitCode).toBe(0);
     expect(existsSync(path)).toBe(true);
@@ -110,7 +110,7 @@ describe("setup completions", () => {
       completionsVerb,
       {},
       DRY,
-      bootRuntime(FLAGS, tmp("pragma2-setup-proj-")),
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
     );
     expect(outcome.stdout).toContain("Write file");
     expect(outcome.stdout).toContain(path);
@@ -123,7 +123,7 @@ describe("setup completions", () => {
       completionsVerb,
       {},
       YES,
-      bootRuntime(FLAGS, tmp("pragma2-setup-proj-")),
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
     );
     expect(outcome.exitCode).toBe(0);
     expect(existsSync(completionScriptPath("zsh"))).toBe(false);
@@ -131,7 +131,7 @@ describe("setup completions", () => {
 
   it("--undo reverses the write", async () => {
     const path = completionScriptPath("zsh");
-    const cwd = tmp("pragma2-setup-proj-");
+    const cwd = tmp("pragma-setup-proj-");
     await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
     expect(existsSync(path)).toBe(true);
     await executeVerb(completionsVerb, {}, UNDO, bootRuntime(FLAGS, cwd));
@@ -141,7 +141,7 @@ describe("setup completions", () => {
 
 describe("setup mcp — harness gate", () => {
   it("the confirm gate resolves via the injected prompt handler", async () => {
-    const cwd = tmp("pragma2-setup-proj-");
+    const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // makes Cursor detected
     const configPath = join(cwd, ".cursor", "mcp.json");
 
@@ -162,7 +162,7 @@ describe("setup mcp — harness gate", () => {
   });
 
   it("auto-confirms under the default handler (never hangs)", async () => {
-    const cwd = tmp("pragma2-setup-proj-");
+    const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true });
     // executeVerb with --yes wires autoAnswerDefaults (default true → configured).
     const outcome = await executeVerb(
@@ -178,14 +178,14 @@ describe("setup mcp — harness gate", () => {
 
 describe("setup skills", () => {
   it("empty skills raise EMPTY_RESULTS", async () => {
-    const cwd = tmp("pragma2-setup-proj-");
+    const cwd = tmp("pragma-setup-proj-");
     await expect(setupSkills(bootRuntime(FLAGS, cwd))).rejects.toMatchObject({
       code: "EMPTY_RESULTS",
     });
   });
 
   it("plans a symlink whose effect carries an undo (created action)", async () => {
-    const cwd = tmp("pragma2-setup-proj-");
+    const cwd = tmp("pragma-setup-proj-");
     const skillDir = join(cwd, ".pragma", "skills", "my-skill");
     mkdirSync(skillDir, { recursive: true });
     writeFileSync(
@@ -233,7 +233,7 @@ describe("setup — mixed-noun wiring & MCP surface", () => {
   });
 
   it("exposes only the `setup` tool over MCP; plan-first without confirm", async () => {
-    const cwd = tmp("pragma2-setup-proj-");
+    const cwd = tmp("pragma-setup-proj-");
     const mcp = await projectMcp([setupModule], cwd);
     const tools = (await mcp.listTools()).map((t) => t.name);
     expect(tools).toEqual(["setup"]); // sub-verbs are mcp:false

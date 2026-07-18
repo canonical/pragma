@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
  * The SERIAL perf-budget pass — deliberately split out of the default
  * (parallel, coverage-instrumented) `vitest.config.ts`.
  *
- * The budget tests (`src/testing/perf/**`) spawn the compiled `dist/pragma2`
+ * The budget tests (`src/testing/perf/**`) spawn the compiled `dist/pragma`
  * and time its wall-clock cost against tight ceilings (budgets.ts). Run inside
  * the 65-file parallel coverage suite they measure spawn latency while ~64
  * v8-instrumented workers saturate every core, so the whole latency
@@ -23,7 +23,7 @@ export default defineConfig({
     globals: true,
     include: ["src/testing/perf/**/*.test.ts"],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],
-    // Builds dist/pragma2 once if missing — the binary the budgets spawn.
+    // Builds dist/pragma once if missing — the binary the budgets spawn.
     globalSetup: ["./src/testing/perf/globalSetup.ts"],
     environment: "node",
     // No cross-file parallelism: the perf tests run one at a time (never

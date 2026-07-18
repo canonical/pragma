@@ -23,8 +23,8 @@ const originalConfigHome = process.env.XDG_CONFIG_HOME;
 
 /** A fresh XDG config home + a fresh cwd, so config resolves deterministically. */
 function freshEnv(): string {
-  process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "pragma2-rt-cfg-"));
-  return mkdtempSync(join(tmpdir(), "pragma2-rt-cwd-"));
+  process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "pragma-rt-cfg-"));
+  return mkdtempSync(join(tmpdir(), "pragma-rt-cwd-"));
 }
 
 afterEach(() => {

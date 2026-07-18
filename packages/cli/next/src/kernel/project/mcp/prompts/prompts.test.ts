@@ -9,7 +9,7 @@ import type { CapabilityModule } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
 
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-prompts-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-prompts-"));
 
 /** A synthetic module that installs the native prompt surface (commit 3 wires
  * the real prompt module; commit 2 proves the hook mechanism in isolation). */

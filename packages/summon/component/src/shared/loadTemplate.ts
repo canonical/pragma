@@ -35,7 +35,7 @@ let embeddedTemplates: Readonly<Record<string, string>> = {};
 
 /**
  * Inject the embedded-template manifest — the compiled-binary fallback. Called
- * once by the host (the `pragma2` `create` runtime) before the component
+ * once by the host (the `pragma` `create` runtime) before the component
  * generators are imported, so their eager `loadTemplate` calls can resolve from
  * it when the disk read fails. Passing an empty map (the default) restores pure
  * disk loading.

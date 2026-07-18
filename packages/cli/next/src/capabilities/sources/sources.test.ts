@@ -87,7 +87,7 @@ afterEach(() => {
 
 /** A local package directory with a definitions TTL. */
 function filePackage(): string {
-  const pkg = tmp("pragma2-pkg-");
+  const pkg = tmp("pragma-pkg-");
   mkdirSync(join(pkg, "definitions"), { recursive: true });
   writeFileSync(join(pkg, "definitions", "widget.ttl"), TTL);
   return pkg;
@@ -96,7 +96,7 @@ function filePackage(): string {
 describe("sources lock round-trip (PROTECTED)", () => {
   it("file source: builds, locks, and --frozen rewrites a byte-identical lock", async () => {
     const pkg = filePackage();
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
@@ -117,7 +117,7 @@ describe("sources lock round-trip (PROTECTED)", () => {
   });
 
   it("git source: resolves and locks a commit SHA, --frozen pins it", async () => {
-    const repo = tmp("pragma2-repo-");
+    const repo = tmp("pragma-repo-");
     const git = (args: string[]) =>
       execFileSync("git", args, {
         cwd: repo,
@@ -136,7 +136,7 @@ describe("sources lock round-trip (PROTECTED)", () => {
     git(["add", "-A"]);
     git(["commit", "-m", "init"]);
 
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-git", source: `git+file://${repo}#main` },
     ]);
@@ -152,7 +152,7 @@ describe("sources lock round-trip (PROTECTED)", () => {
 
   it("undo restores the prior lock (no prior → removed)", async () => {
     const pkg = filePackage();
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
@@ -170,7 +170,7 @@ describe("sources update — package-declared prefixes (M1)", () => {
     // index falls back to full URIs (breaking prefixed-type completion and PR3
     // reads); with it, names compact to `ex:Widget` / `ex:one`.
     const pkg = filePackage();
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
@@ -206,7 +206,7 @@ describe("sources update — network-free preview (M2)", () => {
   const UNREACHABLE = "git+file:///pragma-does-not-exist-42/repo.git#main";
 
   it("CLI --dry-run previews the refs offline, resolving nothing", async () => {
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-remote", source: UNREACHABLE },
     ]);
@@ -225,7 +225,7 @@ describe("sources update — network-free preview (M2)", () => {
   });
 
   it("MCP sources_update without confirm returns a plan, fetching nothing", async () => {
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     writeFileSync(
       join(cwd, "pragma.config.ts"),
       `export default { packages: [{ name: "pkg-remote", source: "${UNREACHABLE}" }] };\n`,
@@ -250,7 +250,7 @@ describe("sources update — network-free preview (M2)", () => {
 describe("sources update — reproducible-or-fail (m5)", () => {
   it("--frozen refuses a package that has no lock entry", async () => {
     const pkg = filePackage();
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
@@ -266,7 +266,7 @@ describe("sources update — reproducible-or-fail (m5)", () => {
 
 describe("npm resolution tolerates restrictive exports (m6)", () => {
   it("resolvePackageJson walks up past an exports map hiding ./package.json", () => {
-    const pkgDir = tmp("pragma2-npm-");
+    const pkgDir = tmp("pragma-npm-");
     writeFileSync(
       join(pkgDir, "package.json"),
       JSON.stringify({
@@ -309,7 +309,7 @@ describe("sources status CLI-json == MCP tool (PROTECTED)", () => {
   it("a cold store's status is byte-equal on both surfaces", async () => {
     // Both surfaces boot from the SAME cwd + isolated config (default packages,
     // no lock), so the storeless status must be identical.
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const cli = await executeVerb(
       statusVerb,
       {},

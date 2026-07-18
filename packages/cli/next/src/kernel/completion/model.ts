@@ -181,7 +181,7 @@ function bareSelfVerb(label: string): VerbEntry {
  * Derive the completion model from the capability modules.
  *
  * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
- * The bin-served `mcp` entry is injected so `pragma2 mc<Tab>` completes it,
+ * The bin-served `mcp` entry is injected so `pragma mc<Tab>` completes it,
  * matching the root help.
  * TODO(spec): drop the injection when `mcp` lands as a real (non-hidden) spec.
  *

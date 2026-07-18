@@ -25,8 +25,8 @@ let workdir: string;
 let binary: string;
 
 beforeAll(() => {
-  workdir = mkdtempSync(join(tmpdir(), "pragma2-wasm-smoke-"));
-  binary = join(workdir, "pragma2-smoke");
+  workdir = mkdtempSync(join(tmpdir(), "pragma-wasm-smoke-"));
+  binary = join(workdir, "pragma-smoke");
   const build = spawnSync(
     "bun",
     [

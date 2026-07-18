@@ -1,8 +1,8 @@
 /**
  * PROTECTED — the compiled-binary `create` guard.
  *
- * Builds the real standalone `dist/pragma2` (`bun build --compile`) and spawns
- * `pragma2 create component … --yes` for react, svelte AND lit, asserting each
+ * Builds the real standalone `dist/pragma` (`bun build --compile`) and spawns
+ * `pragma create component … --yes` for react, svelte AND lit, asserting each
  * tree is BYTE-IDENTICAL to a source run of the same generator (`bun src/bin.ts
  * …`, which reads the `.ejs` templates from disk).
  *
@@ -30,8 +30,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
 const cliNextDir = join(repoRoot, "packages/cli/next");
 const pragmaBin = join(cliNextDir, "src/bin.ts");
-const compiledBin = join(cliNextDir, "dist/pragma2");
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-compiled-"));
+const compiledBin = join(cliNextDir, "dist/pragma");
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 
 /** Read a directory tree into a sorted map of relative path → contents. */
 function snapshot(dir: string): Map<string, string> {
@@ -72,7 +72,7 @@ function createComponent(
   return snapshot(dir);
 }
 
-describe("compiled pragma2 create component (PROTECTED)", () => {
+describe("compiled pragma create component (PROTECTED)", () => {
   beforeAll(() => {
     // Build the standalone binary fresh so the test always exercises the current
     // bundle + embedded manifest (the perf globalSetup only builds if missing).
@@ -82,7 +82,7 @@ describe("compiled pragma2 create component (PROTECTED)", () => {
     });
     if (result.status !== 0) {
       throw new Error(
-        `failed to build dist/pragma2:\n${result.stderr?.toString() ?? ""}`,
+        `failed to build dist/pragma:\n${result.stderr?.toString() ?? ""}`,
       );
     }
   }, 180_000);

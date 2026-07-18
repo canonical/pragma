@@ -7,7 +7,7 @@ import { runComplete } from "./complete.js";
 import { createIndexEntityReader, indexCompletionEnv } from "./entitySource.js";
 
 /** A fresh cwd with no lock → the reader falls back to the embedded pack. */
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-entity-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-entity-"));
 
 describe("entity source contract (PROTECTED)", () => {
   it("reads the embedded index storelessly, filtering by type + partial", () => {

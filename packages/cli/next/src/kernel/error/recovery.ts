@@ -2,8 +2,8 @@
  * The recovery-string invariant (D5).
  *
  * Every `recovery.cli` hint quotes the stable, documented command name, so it
- * must begin with the literal `pragma ` prefix — even while the v2 binary is
- * installed as `pragma2`. Recovery hints are authored through {@link cliRecovery}
+ * must begin with the literal `pragma ` prefix, matching the installed `pragma`
+ * binary. Recovery hints are authored through {@link cliRecovery}
  * so the prefix can never drift; {@link assertRecoveryCli} is the single guard,
  * exercised by the invariant test.
  */

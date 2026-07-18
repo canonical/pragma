@@ -31,5 +31,5 @@ export function projectCli(
   globalFlags: GlobalFlags = TEST_FLAGS,
 ): Command {
   const verbs: VerbSpec[] = modules.flatMap((module) => [...module.verbs]);
-  return buildProgram(verbs, { globalFlags, programName: "pragma2" });
+  return buildProgram(verbs, { globalFlags, programName: "pragma" });
 }

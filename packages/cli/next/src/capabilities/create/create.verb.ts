@@ -246,7 +246,7 @@ async function loadCreateRuntime(kind: CreateKind) {
   if (IS_COMPILED_BINARY && kind !== "component") {
     throw new PragmaError({
       code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled pragma2 binary yet — only \`create component\` is embedded. Run it from a source checkout, or use the \`summon\` CLI.`,
+      message: `\`create ${kind}\` is not available in the compiled pragma binary yet — only \`create component\` is embedded. Run it from a source checkout, or use the \`summon\` CLI.`,
       recovery: {
         message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
       },

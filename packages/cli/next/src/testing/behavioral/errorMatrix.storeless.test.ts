@@ -109,7 +109,7 @@ describe("error/recovery matrix — render shapes (A8, storeless)", () => {
 
 describe("error/recovery matrix — grounded in a real spawn (A8, e2e)", () => {
   it("skill lookup <unknown> renders suggestions + recovery on stderr", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "pragma2-errmatrix-skill-"));
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-errmatrix-skill-"));
     const result = runCli(["skill", "lookup", "docz"], {
       cwd,
       // Force plain (not the piped-stdout auto-llm default) — this test grounds

@@ -1,8 +1,8 @@
-# Performance budgets — `pragma2`
+# Performance budgets — `pragma`
 
 The compiled binary must stay fast enough that agents and humans reach for it
 without hesitation. These budgets are enforced by the protected perf tests
-(`src/testing/perf/*`), which spawn the standalone `dist/pragma2` binary,
+(`src/testing/perf/*`), which spawn the standalone `dist/pragma` binary,
 discard warmups, and assert median/p95 against the ceilings in
 `src/testing/perf/budgets.ts`.
 
@@ -10,8 +10,8 @@ discard warmups, and assert median/p95 against the ceilings in
 
 | Path                         | Designed target |
 | ---------------------------- | --------------- |
-| `pragma2 --help`             | < 50 ms         |
-| `pragma2 __complete …`       | < 50 ms         |
+| `pragma --help`             | < 50 ms         |
+| `pragma __complete …`       | < 50 ms         |
 | project `pragma.config.ts`   | < 10 ms warm    |
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
@@ -20,7 +20,7 @@ discard warmups, and assert median/p95 against the ceilings in
 ## Measured (day-1 perf spike, commit 6)
 
 Environment: Linux x64, Bun v1.3.11, `bun build --compile --minify`
-(`dist/pragma2`). Method: `measureCommand` spawns the standalone binary 30×,
+(`dist/pragma`). Method: `measureCommand` spawns the standalone binary 30×,
 discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 (un-skipped) re-measure a batch of spawns and assert against the ceilings below.
 
@@ -44,9 +44,9 @@ unchanged; only the statistic it is asserted against was made reliable.
 
 | Path                       | Median  | p95     | Budget  | Basis                     |
 | -------------------------- | ------- | ------- | ------- | ------------------------- |
-| `pragma2 --version` (cold) | 45.5 ms | 50.1 ms | —       | reference (cold start)    |
-| `pragma2 --help`           | 61.0 ms | 66.1 ms | 130 ms  | 2× median (50 ms target)  |
-| `pragma2 __complete`       | 46.1 ms | 51.3 ms | 100 ms  | 2× median (50 ms target)  |
+| `pragma --version` (cold) | 45.5 ms | 50.1 ms | —       | reference (cold start)    |
+| `pragma --help`           | 61.0 ms | 66.1 ms | 130 ms  | 2× median (50 ms target)  |
+| `pragma __complete`       | 46.1 ms | 51.3 ms | 100 ms  | 2× median (50 ms target)  |
 | `config show`              | 63.5 ms | 68.9 ms | —       | reference (storeless run) |
 | project config load (warm) | < 1 ms  | < 1 ms  | 10 ms   | cache hit (in-process)    |
 | `__store-probe` (store)    | ~147 ms | ~176 ms | 300 ms  | designed (~2× median)     |

@@ -101,7 +101,7 @@ export const fixtureModule: CapabilityModule = {
  */
 export function touchPath(name: string): string {
   const base = process.env.XDG_STATE_HOME ?? tmpdir();
-  return join(base, "pragma2-touch", name);
+  return join(base, "pragma-touch", name);
 }
 
 const passthroughFormatters = {

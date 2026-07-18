@@ -158,7 +158,7 @@ describe("script safety (PROTECTED)", () => {
     ].map((use) => use[1]);
     expect(substitutions.length).toBeGreaterThan(0);
     for (const substitution of substitutions) {
-      expect(substitution).toMatch(/^pragma2 __complete -- /);
+      expect(substitution).toMatch(/^pragma __complete -- /);
     }
   });
 
@@ -283,7 +283,7 @@ describe("storeless guarantee (PROTECTED)", () => {
       ],
     };
     // Fresh cwd → no lock → the reader falls back to the embedded pack index.
-    const cwd = mkdtempSync(join(tmpdir(), "pragma2-storespy-"));
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-storespy-"));
     const matches = await runComplete(
       ["block", "lookup", "ex:B"],
       [lookupModule],
@@ -296,13 +296,13 @@ describe("storeless guarantee (PROTECTED)", () => {
   });
 
   it("the spawned __complete fast path answers without touching any state", () => {
-    // The perf globalSetup guarantees dist/pragma2 exists.
+    // The perf globalSetup guarantees dist/pragma exists.
     const binary = fileURLToPath(
-      new URL("../../../dist/pragma2", import.meta.url),
+      new URL("../../../dist/pragma", import.meta.url),
     );
-    const xdgConfig = mkdtempSync(join(tmpdir(), "pragma2-storeless-cfg-"));
-    const xdgState = mkdtempSync(join(tmpdir(), "pragma2-storeless-state-"));
-    const xdgCache = mkdtempSync(join(tmpdir(), "pragma2-storeless-cache-"));
+    const xdgConfig = mkdtempSync(join(tmpdir(), "pragma-storeless-cfg-"));
+    const xdgState = mkdtempSync(join(tmpdir(), "pragma-storeless-state-"));
+    const xdgCache = mkdtempSync(join(tmpdir(), "pragma-storeless-cache-"));
 
     const result = spawnSync(binary, ["__complete", "--", "co"], {
       encoding: "utf-8",
@@ -326,14 +326,14 @@ describe("storeless guarantee (PROTECTED)", () => {
 
   it("the spawned fast path emits zero bytes for zero candidates, exit 0", () => {
     const binary = fileURLToPath(
-      new URL("../../../dist/pragma2", import.meta.url),
+      new URL("../../../dist/pragma", import.meta.url),
     );
     const result = spawnSync(binary, ["__complete", "--", "bogus", ""], {
       encoding: "utf-8",
       env: {
         ...process.env,
-        XDG_CONFIG_HOME: mkdtempSync(join(tmpdir(), "pragma2-zb-cfg-")),
-        XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma2-zb-state-")),
+        XDG_CONFIG_HOME: mkdtempSync(join(tmpdir(), "pragma-zb-cfg-")),
+        XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma-zb-state-")),
       },
     });
     expect(result.status).toBe(0);

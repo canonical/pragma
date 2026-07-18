@@ -1,7 +1,7 @@
 /**
  * Vitest global setup for the perf suite.
  *
- * The budget tests spawn the compiled `dist/pragma2`. Build it once, before the
+ * The budget tests spawn the compiled `dist/pragma`. Build it once, before the
  * suite, if it is missing — so `bun run test` on a clean checkout still
  * exercises the protected perf budgets without a manual build step.
  */
@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 export default function setup(): void {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
   const binary = fileURLToPath(
-    new URL("../../../dist/pragma2", import.meta.url),
+    new URL("../../../dist/pragma", import.meta.url),
   );
   if (existsSync(binary)) return;
 
@@ -22,6 +22,6 @@ export default function setup(): void {
     stdio: "inherit",
   });
   if (result.status !== 0) {
-    throw new Error("perf globalSetup: failed to build dist/pragma2");
+    throw new Error("perf globalSetup: failed to build dist/pragma");
   }
 }

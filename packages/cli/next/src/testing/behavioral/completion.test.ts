@@ -50,7 +50,7 @@ describe("noun-level candidates: sorted, prefix-filtered, program name stripped"
 
   it("strips a leading program name some shells include", async () => {
     const expected = liveNouns.filter((n) => n.startsWith("s")).sort();
-    await expect(runComplete(["pragma2", "s"], capabilities)).resolves.toEqual(
+    await expect(runComplete(["pragma", "s"], capabilities)).resolves.toEqual(
       expected,
     );
   });

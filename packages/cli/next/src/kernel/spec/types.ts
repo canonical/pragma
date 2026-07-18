@@ -5,8 +5,8 @@
  * new projection need is a signal to reshape an existing field, not to grow
  * the grammar, so the surface covenant stays the single source of truth.
  *
- * Naming rule: `[noun]` -> CLI `pragma2 <noun>`, tool `<noun>`;
- * `[noun, verb]` -> CLI `pragma2 <noun> <verb>`, tool `<noun>_<verb>`.
+ * Naming rule: `[noun]` -> CLI `pragma <noun>`, tool `<noun>`;
+ * `[noun, verb]` -> CLI `pragma <noun> <verb>`, tool `<noun>_<verb>`.
  * Positionals are params with `positional: true`, in declared order; every
  * other param is a kebab-cased flag.
  */

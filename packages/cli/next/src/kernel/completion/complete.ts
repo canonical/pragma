@@ -1,7 +1,7 @@
 /**
  * `runComplete` — the `__complete` resolver entry point. THE PROTOCOL:
  *
- * Invocation: `pragma2 __complete -- <word1> … <current>`
+ * Invocation: `pragma __complete -- <word1> … <current>`
  * - The bin fast-paths `argv[0] === "__complete"` literally, BEFORE
  *   global-flag parsing, Commander, config reads, or first-run — the resolver
  *   is storeless and config-free by construction. The first `--` after

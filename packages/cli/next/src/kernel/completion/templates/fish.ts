@@ -16,7 +16,7 @@
 import type { CompletionModel, FlagEntry, VerbEntry } from "../types.js";
 import { globalValueFlags, nounNames, verbViews, wordList } from "./shared.js";
 
-/** A shell-safe function-name base for the bin (`pragma2` -> `__pragma2`). */
+/** A shell-safe function-name base for the bin (`pragma` -> `__pragma`). */
 function fnBase(binName: string): string {
   return `__${binName.replace(/[^A-Za-z0-9_]/g, "_")}`;
 }

@@ -24,7 +24,7 @@ import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
 export interface BuildProgramOptions {
   /** Global flags for this invocation, closed over by every verb action. */
   readonly globalFlags: GlobalFlags;
-  /** Binary name (defaults to `pragma2`). */
+  /** Binary name (defaults to `pragma`). */
   readonly programName?: string;
   /** Program description shown in root help. */
   readonly description?: string;
@@ -130,8 +130,8 @@ function attachVerb(
  *
  * When the noun also has a SELF-verb (`["setup"]`), the parent command doubles
  * as that verb — it carries the self-verb's own params/mutation flags and
- * `.action()` AND hosts the sub-commands, so `pragma2 setup` runs the self-verb
- * while `pragma2 setup mcp` routes to the sub. Commander resolves a registered
+ * `.action()` AND hosts the sub-commands, so `pragma setup` runs the self-verb
+ * while `pragma setup mcp` routes to the sub. Commander resolves a registered
  * sub-command name before the parent's action, so the two never collide — but
  * only because the one covenant noun shaped this way (`setup`) has NO positional
  * on its self-verb, so `<noun> <sub>` can never be read as a positional value.

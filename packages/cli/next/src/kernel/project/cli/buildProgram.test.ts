@@ -252,7 +252,7 @@ describe("buildProgram — mixed self+sub-verb noun (setup shape)", () => {
 });
 
 describe("formatRootHelp — grouping", () => {
-  const help = formatRootHelp("pragma2", "pragma test", [
+  const help = formatRootHelp("pragma", "pragma test", [
     makeVerb(["info"]),
     makeVerb(["config", "show"]),
     makeVerb(["block", "list"]),

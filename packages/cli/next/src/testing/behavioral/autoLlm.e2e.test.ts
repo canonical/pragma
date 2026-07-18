@@ -3,7 +3,7 @@
  *
  * `parseGlobalFlags`'s auto-LLM RULE is PR1-protected at the unit level
  * (`globalFlags.test.ts`, with an injected `OutputEnvironment`). What only a
- * spawn can prove is the OBSERVABLE consequence: a piped `pragma2` process
+ * spawn can prove is the OBSERVABLE consequence: a piped `pragma` process
  * (the shape an agent captures) really does default to condensed Markdown
  * with no flag. `runCli`/`spawnSync` always pipes stdout — there is no
  * practical way to allocate a real TTY in this harness to exercise the

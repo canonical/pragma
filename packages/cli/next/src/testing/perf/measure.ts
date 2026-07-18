@@ -1,5 +1,5 @@
 /**
- * Perf measurement helper for the compiled `pragma2` binary.
+ * Perf measurement helper for the compiled `pragma` binary.
  *
  * Spawns the standalone binary N times, discards warmups, and reports the
  * median and p95 of the wall-clock durations. Kept dependency-free (only

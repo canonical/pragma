@@ -16,7 +16,7 @@ import { resolveSources } from "./resolveSources.js";
 
 let roots: string[] = [];
 const tmp = (): string => {
-  const dir = mkdtempSync(join(tmpdir(), "pragma2-resolvesrc-"));
+  const dir = mkdtempSync(join(tmpdir(), "pragma-resolvesrc-"));
   roots.push(dir);
   return dir;
 };

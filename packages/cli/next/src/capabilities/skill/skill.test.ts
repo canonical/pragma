@@ -36,7 +36,7 @@ function writeSkill(name: string, body: string): void {
 }
 
 beforeAll(() => {
-  projectDir = mkdtempSync(join(tmpdir(), "pragma2-skills-"));
+  projectDir = mkdtempSync(join(tmpdir(), "pragma-skills-"));
   writeSkill(
     "docx",
     "---\nname: docx\ndescription: Work with Word documents.\n---\nUse this for .docx files.",
@@ -90,8 +90,8 @@ describe("skill precedence (project overrides installed)", () => {
   let precedenceRt: PragmaRuntime;
 
   beforeAll(() => {
-    precedenceDir = mkdtempSync(join(tmpdir(), "pragma2-skills-proj-"));
-    installedHome = mkdtempSync(join(tmpdir(), "pragma2-skills-installed-"));
+    precedenceDir = mkdtempSync(join(tmpdir(), "pragma-skills-proj-"));
+    installedHome = mkdtempSync(join(tmpdir(), "pragma-skills-installed-"));
     // An installed skill and a project skill both claim the name `shared`.
     const installed = join(installedHome, "pragma", "skills", "shared");
     mkdirSync(installed, { recursive: true });

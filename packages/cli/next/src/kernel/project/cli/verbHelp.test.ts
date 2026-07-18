@@ -38,10 +38,10 @@ const list: VerbSpec = {
 };
 
 describe("formatVerbHelp", () => {
-  const help = formatVerbHelp("pragma2", get);
+  const help = formatVerbHelp("pragma", get);
 
   it("renders the usage line with the positional", () => {
-    expect(help).toContain("Usage: pragma2 block get <name> [flags]");
+    expect(help).toContain("Usage: pragma block get <name> [flags]");
   });
 
   it("renders summary, extended doc, the kebab flag, and examples", () => {
@@ -55,15 +55,15 @@ describe("formatVerbHelp", () => {
 
 describe("formatNounHelp", () => {
   it("lists the noun's verbs with summaries", () => {
-    const help = formatNounHelp("pragma2", "block", [get, list]);
-    expect(help).toContain("Usage: pragma2 block <verb> [options]");
+    const help = formatNounHelp("pragma", "block", [get, list]);
+    expect(help).toContain("Usage: pragma block <verb> [options]");
     expect(help).toContain("get");
     expect(help).toContain("list");
     expect(help).toContain("Get a block by name.");
   });
 
   it("handles a noun with no verbs", () => {
-    expect(formatNounHelp("pragma2", "ghost", [])).toBe(
+    expect(formatNounHelp("pragma", "ghost", [])).toBe(
       'No commands found for "ghost".',
     );
   });

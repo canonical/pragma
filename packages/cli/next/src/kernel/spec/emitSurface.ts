@@ -74,7 +74,7 @@ export interface EmittedSurface {
  */
 export const FIXED_SURFACE = {
   bins: {
-    pragma2: "pragma v2 CLI and MCP server host (stdio)",
+    pragma: "pragma v2 CLI and MCP server host (stdio)",
   },
   globalFlags: [
     { flag: "--llm", doc: "Condensed Markdown output for agents" },

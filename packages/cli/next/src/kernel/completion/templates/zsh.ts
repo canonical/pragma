@@ -7,7 +7,7 @@
  * the grammar must never open. Structure is inlined as literal `compadd --`
  * arguments (the `--` guard keeps dash-leading candidates data); files go
  * through `_files`; only `{kind:"entity"}` contexts exec the CLI, ingesting
- * `pragma2 __complete` output via the newline-split `${(f)...}` expansion —
+ * `pragma __complete` output via the newline-split `${(f)...}` expansion —
  * candidates are never word-split or evaluated. No `eval`, no backticks.
  */
 
@@ -25,7 +25,7 @@ import {
   wordList,
 } from "./shared.js";
 
-/** A shell-safe function-name base for the bin (`pragma2` -> `_pragma2`). */
+/** A shell-safe function-name base for the bin (`pragma` -> `_pragma`). */
 function fnBase(binName: string): string {
   return `_${binName.replace(/[^A-Za-z0-9_]/g, "_")}`;
 }

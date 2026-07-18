@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * CLI entry point for `pragma2` (v2 kernel).
+ * CLI entry point for `pragma` (v2 kernel).
  *
  * The composition root. Ordered early exits keep the hot paths minimal and
  * side-effect-free: `mcp` serves over stdio (D9); `__complete` resolves
@@ -19,7 +19,7 @@ import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "./constants.js";
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
-  // 1. MCP server entry (D9) — `pragma2 mcp` serves over stdio.
+  // 1. MCP server entry (D9) — `pragma mcp` serves over stdio.
   if (argv[0] === "mcp") {
     const [{ serveMcp }, { capabilities }] = await Promise.all([
       import("./kernel/project/mcp/serve.js"),
@@ -30,7 +30,7 @@ async function main(): Promise<void> {
   }
 
   // 2. Completion resolver — storeless, before first-run so no banner leaks.
-  //    Protocol: `pragma2 __complete -- <words…>`; the first `--` is framing
+  //    Protocol: `pragma __complete -- <words…>`; the first `--` is framing
   //    (tolerated absent) and is stripped here so a later bare `--` stays the
   //    user's end-of-options. Candidates go to stdout newline-delimited (zero
   //    candidates → zero bytes); the entity tier reads the active pack's index

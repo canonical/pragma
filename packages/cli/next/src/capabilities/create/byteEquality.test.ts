@@ -32,7 +32,7 @@ const FLAGS: GlobalFlags = {
   format: "plain",
   verbose: false,
 };
-const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma2-golden-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-golden-"));
 
 /** Read a directory tree into a sorted map of relative path → contents. */
 function snapshot(dir: string): Map<string, string> {

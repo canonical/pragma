@@ -8,7 +8,7 @@ import { globalConfigPath } from "./paths.js";
 const originalConfigHome = process.env.XDG_CONFIG_HOME;
 
 function freshConfigHome(): void {
-  process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "pragma2-first-"));
+  process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "pragma-first-"));
 }
 
 afterEach(() => {

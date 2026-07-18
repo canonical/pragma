@@ -2,7 +2,7 @@
  * The hidden `mcp` verb — the MCP server entry point.
  *
  * The server is not an agent tool, so it is withheld from MCP with a reason and
- * `hidden` from the CLI surface/help. The bin special-cases `pragma2 mcp` to
+ * `hidden` from the CLI surface/help. The bin special-cases `pragma mcp` to
  * serve over stdio (D9); this spec's lazy `run` is the same serve, reachable if
  * a future tier dispatches it.
  */

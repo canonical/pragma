@@ -43,8 +43,7 @@ const needsStoreVerb: VerbSpec = {
   run: async () => ({ ok: true }),
 };
 
-const freshCwd = (): string =>
-  mkdtempSync(join(tmpdir(), "pragma2-storeless-"));
+const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-storeless-"));
 
 describe("storeless guarantee — the store never boots for storeless verbs (PROTECTED)", () => {
   it("info does not construct the store", async () => {

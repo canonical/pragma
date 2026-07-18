@@ -51,7 +51,7 @@ const tmp = (prefix: string): string => {
 
 beforeEach(() => {
   prevXdg = process.env.XDG_CONFIG_HOME;
-  process.env.XDG_CONFIG_HOME = tmp("pragma2-cfgfield-xdg-");
+  process.env.XDG_CONFIG_HOME = tmp("pragma-cfgfield-xdg-");
 });
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = prevXdg;
@@ -88,7 +88,7 @@ describe("config setters — covenant-exact emission (PROTECTED)", () => {
 
 describe("config setters — write & reset", () => {
   it("set writes the field to the GLOBAL config and never boots the store", async () => {
-    const rt: PragmaRuntime = bootRuntime(FLAGS, tmp("pragma2-proj-"));
+    const rt: PragmaRuntime = bootRuntime(FLAGS, tmp("pragma-proj-"));
     const outcome = await executeVerb(tierVerb, { path: "apps/lxd" }, REAL, rt);
 
     expect(outcome.exitCode).toBe(0);
@@ -99,7 +99,7 @@ describe("config setters — write & reset", () => {
   });
 
   it("channel/detail write their enum value", async () => {
-    const rt = bootRuntime(FLAGS, tmp("pragma2-proj-"));
+    const rt = bootRuntime(FLAGS, tmp("pragma-proj-"));
     await executeVerb(channelVerb, { name: "experimental" }, REAL, rt);
     await executeVerb(detailVerb, { level: "detailed" }, REAL, rt);
     const written = readGlobal();
@@ -108,7 +108,7 @@ describe("config setters — write & reset", () => {
   });
 
   it("a reset sentinel removes the tier field", async () => {
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     await executeVerb(
       tierVerb,
       { path: "apps/lxd" },
@@ -153,7 +153,7 @@ describe("config setters — enum rejection", () => {
 
 describe("config setters — dry-run plan", () => {
   it("--dry-run shows the WriteFile plan and writes nothing", async () => {
-    const rt = bootRuntime(FLAGS, tmp("pragma2-proj-"));
+    const rt = bootRuntime(FLAGS, tmp("pragma-proj-"));
     const outcome = await executeVerb(tierVerb, { path: "apps/lxd" }, DRY, rt);
 
     expect(outcome.exitCode).toBe(0);
@@ -165,7 +165,7 @@ describe("config setters — dry-run plan", () => {
 
 describe("config setters — MCP plan-first / confirm parity", () => {
   it("config_tier returns a plan without confirm, writes with confirm:true", async () => {
-    const cwd = tmp("pragma2-proj-");
+    const cwd = tmp("pragma-proj-");
     const mcp = await projectMcp([configModule], cwd);
 
     const plan = await mcp.callTool("config_tier", { path: "apps/lxd" });

@@ -30,11 +30,11 @@ describe("emitScripts — static tier contract", () => {
 
   it("delegates only entity contexts to __complete", () => {
     expect(scripts.bash).toContain(
-      'mapfile -t COMPREPLY < <("pragma2" __complete --',
+      'mapfile -t COMPREPLY < <("pragma" __complete --',
     );
-    expect(scripts.zsh).toContain("${(f)$(pragma2 __complete --");
+    expect(scripts.zsh).toContain("${(f)$(pragma __complete --");
     expect(scripts.fish).toContain(
-      '-a "(pragma2 __complete -- (__pragma2_words) 2>/dev/null)"',
+      '-a "(pragma __complete -- (__pragma_words) 2>/dev/null)"',
     );
   });
 
@@ -55,7 +55,7 @@ describe("emitScripts — static tier contract", () => {
       .split("\n")
       .filter((line) => line.includes("--version"));
     expect(bashRoot.length).toBe(1);
-    expect(scripts.fish).toContain(`-n "__pragma2_at ''" -l version`);
+    expect(scripts.fish).toContain(`-n "__pragma_at ''" -l version`);
   });
 
   it("hidden verbs never reach a script", () => {
@@ -72,19 +72,19 @@ describe("emitScripts — static tier contract", () => {
 });
 
 describe("emitScripts — binName parameterization (PR8 seam)", () => {
-  it("defaults to pragma2", () => {
-    expect(scripts.bash).toContain("complete -F _pragma2 pragma2");
-    expect(scripts.zsh.startsWith("#compdef pragma2")).toBe(true);
+  it("defaults to pragma", () => {
+    expect(scripts.bash).toContain("complete -F _pragma pragma");
+    expect(scripts.zsh.startsWith("#compdef pragma")).toBe(true);
   });
 
   it("targets a custom bin everywhere", () => {
-    const renamed = emitScripts([completionFixture], { binName: "pragma9" });
+    const renamed = emitScripts([completionFixture], { binName: "widget9" });
     for (const shell of ["bash", "zsh", "fish"] as const) {
-      expect(renamed[shell]).not.toContain("pragma2");
-      expect(renamed[shell]).toContain("pragma9");
+      expect(renamed[shell]).not.toContain("pragma");
+      expect(renamed[shell]).toContain("widget9");
     }
-    expect(renamed.bash).toContain("complete -F _pragma9 pragma9");
-    expect(renamed.fish).toContain("__pragma9_at");
+    expect(renamed.bash).toContain("complete -F _widget9 widget9");
+    expect(renamed.fish).toContain("__widget9_at");
   });
 
   it("throws on a bin name outside the allowlist", () => {

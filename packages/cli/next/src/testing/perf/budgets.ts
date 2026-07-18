@@ -1,5 +1,5 @@
 /**
- * Performance budgets for the compiled `pragma2` binary.
+ * Performance budgets for the compiled `pragma` binary.
  *
  * The ceilings the protected budget tests assert against. The surface
  * covenant's designed target for `--help`/`__complete` is 50 ms; the day-1 perf
@@ -9,10 +9,10 @@
  * Measured numbers and environment are recorded in BUDGETS.md.
  */
 
-/** `pragma2 --help` ceiling (ms). Designed 50; measured median ~61 → 2×. */
+/** `pragma --help` ceiling (ms). Designed 50; measured median ~61 → 2×. */
 export const BUDGET_HELP_MS = 130;
 
-/** `pragma2 __complete …` ceiling (ms). Designed 50; measured median ~46 → 2×. */
+/** `pragma __complete …` ceiling (ms). Designed 50; measured median ~46 → 2×. */
 export const BUDGET_COMPLETE_MS = 100;
 
 /** Warm project-config (`pragma.config.ts`) load ceiling (ms). Cache hit is sub-ms. */

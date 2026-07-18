@@ -3,18 +3,18 @@
  *
  * Program metadata (bin name, MCP server name, description, version) plus the
  * stable cross-cutting enums (output formats, detail levels). The CLI binary
- * is `pragma2` during the v2 rebuild window; the MCP server keeps the stable
- * `pragma` identity so existing agent wiring keeps resolving it.
+ * and the MCP server share the single `pragma` identity, so existing agent
+ * wiring keeps resolving the server unchanged.
  */
 
 import pkg from "../package.json" with { type: "json" };
 
-/** CLI binary name for the v2 kernel (installed as `pragma2`). */
-const BIN_NAME = "pragma2";
+/** CLI binary name for the v2 kernel (installed as `pragma`). */
+const BIN_NAME = "pragma";
 
 /**
- * MCP server identity. Kept as `pragma` (not `pragma2`) so agents already
- * pointed at the pragma server resolve it unchanged across the rebuild.
+ * MCP server identity — `pragma`, matching the CLI bin, so agents already
+ * pointed at the pragma server resolve it unchanged.
  */
 const MCP_SERVER_NAME = "pragma";
 
@@ -25,10 +25,9 @@ const PROGRAM_DESCRIPTION = "CLI and MCP server for Canonical's design system.";
 const VERSION: string = pkg.version;
 
 /**
- * Literal prefix for every `recovery.cli` hint. Held at `pragma ` (not
- * `pragma2 `) during the v2 window: recovery strings quote the stable,
- * documented command name, and the cosmetic mismatch with the `pragma2`
- * bin is accepted (D5). The recovery invariant test enforces this.
+ * Literal prefix for every `recovery.cli` hint (`pragma `): recovery strings
+ * quote the stable, documented command name — matching the bin (D5). The
+ * recovery invariant test enforces this.
  */
 const RECOVERY_CLI_PREFIX = "pragma ";
 

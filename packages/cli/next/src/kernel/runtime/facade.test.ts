@@ -50,7 +50,7 @@ let dir: string;
 
 beforeAll(async () => {
   savedCacheHome = process.env.XDG_CACHE_HOME;
-  cacheHome = mkdtempSync(join(tmpdir(), "pragma2-facade-"));
+  cacheHome = mkdtempSync(join(tmpdir(), "pragma-facade-"));
   process.env.XDG_CACHE_HOME = cacheHome;
   // Building the pack is the ONE place the live compile runs.
   const built = await buildPack([{ path: "a.ttl", content: TTL }], {

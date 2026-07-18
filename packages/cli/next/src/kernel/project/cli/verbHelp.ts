@@ -90,7 +90,7 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
 
 /**
  * Render noun-level help — the list of verbs under a noun parent
- * (`pragma2 config --help`).
+ * (`pragma config --help`).
  *
  * @param programName - The CLI binary name shown in the usage line.
  * @param noun - The noun whose verbs are listed.

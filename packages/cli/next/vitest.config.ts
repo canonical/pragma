@@ -8,7 +8,7 @@ export default defineConfig({
     // SERIAL pass (vitest.perf.config.ts / the `test:perf` script): spawning +
     // timing the compiled binary inside this parallel, coverage-instrumented
     // run measures CPU contention, not the binary, so the ceilings flake red.
-    // They stay ENFORCED, just out of this pass. No perf test needs dist/pragma2
+    // They stay ENFORCED, just out of this pass. No perf test needs dist/pragma
     // here, so the binary-building globalSetup lives only in the perf config.
     exclude: [...configDefaults.exclude, "src/testing/perf/**"],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],

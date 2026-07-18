@@ -22,8 +22,8 @@ const originalStateHome = process.env.XDG_STATE_HOME;
 
 /** Point XDG at fresh temp dirs so each test gets isolated global/cache layers. */
 function freshXdg(): void {
-  process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "pragma2-cfg-"));
-  process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "pragma2-state-"));
+  process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "pragma-cfg-"));
+  process.env.XDG_STATE_HOME = mkdtempSync(join(tmpdir(), "pragma-state-"));
 }
 
 /** Write the global config JSON. */
@@ -35,7 +35,7 @@ function writeGlobal(json: string): void {
 
 /** Create a temp project directory with the given `pragma.config.ts` body. */
 function projectWith(body: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "pragma2-proj-"));
+  const dir = mkdtempSync(join(tmpdir(), "pragma-proj-"));
   writeFileSync(join(dir, "pragma.config.ts"), body);
   return dir;
 }
@@ -72,7 +72,7 @@ describe("readConfig — layering + provenance", () => {
 
   it("falls back to defaults when no layer sets a field", async () => {
     freshXdg();
-    const dir = mkdtempSync(join(tmpdir(), "pragma2-empty-"));
+    const dir = mkdtempSync(join(tmpdir(), "pragma-empty-"));
 
     const { config, origins, project } = await readConfig(dir);
 

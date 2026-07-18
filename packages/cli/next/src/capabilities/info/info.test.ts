@@ -31,7 +31,7 @@ const NO_MUT = { dryRun: false, undo: false, yes: false };
 
 const roots: string[] = [];
 const tmpCwd = (): string => {
-  const dir = mkdtempSync(join(tmpdir(), "pragma2-info-"));
+  const dir = mkdtempSync(join(tmpdir(), "pragma-info-"));
   roots.push(dir);
   return dir;
 };
