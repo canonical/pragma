@@ -192,24 +192,21 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
  *   dispatcher/MCP handler awaits into a Task before interpreting.
  */
 /**
- * A dynamic import through a computed specifier, so bun's `--compile` bundler
- * cannot statically analyse it: the summon runtime + generators (and their Ink
- * UI) therefore stay OUT of the standalone binary, keeping every non-create fast
- * path's cold-start unchanged. From source and in tests (node_modules present)
- * this resolves normally; `create` in the compiled binary is a source-run
- * feature until its template assets are embedded (see scripts/build.ts, and the
- * graceful gate in {@link loadCreateRuntime}).
+ * The standalone `bun build --compile` binary resolves every bundled module
+ * under the virtual `/$bunfs` filesystem — a marker absent from any source or
+ * `bun`-run module URL. `create component` is fully embedded and runs from the
+ * binary; `create package` / `create application` are NOT (application also
+ * copies non-`.ejs` assets), so they are gated to a source run below.
  */
-const importRuntime = <T>(specifier: string): Promise<T> =>
-  import(specifier) as Promise<T>;
+const IS_COMPILED_BINARY = import.meta.url.includes("/$bunfs/");
 
 /**
- * True when a dynamic import failed because the module could not be RESOLVED —
- * the signature of running `create` inside the compiled `pragma2` binary, where
- * the computed specifier above deliberately excludes summon-core + the
- * generators (and their `.ejs` assets are not embedded). Matched structurally
- * across bun (`ResolveMessage`) and node (`ERR_MODULE_NOT_FOUND`) so a genuine
- * runtime error from a source build still propagates unchanged.
+ * True when a dynamic import failed because the module could not be RESOLVED.
+ * summon-core + the generators are now bundled into the binary, so this should
+ * not arise; {@link loadCreateRuntime} keeps it as a defensive backstop that
+ * turns a resolution failure into a clean gate rather than a raw "internal bug"
+ * report. Matched structurally across bun (`ResolveMessage`) and node
+ * (`ERR_MODULE_NOT_FOUND`) so a genuine runtime error still propagates.
  */
 export function isModuleNotFound(cause: unknown): boolean {
   if (!cause || typeof cause !== "object") return false;
@@ -228,21 +225,44 @@ export function isModuleNotFound(cause: unknown): boolean {
 }
 
 /**
- * Load the create runtime (the generator selector + summon-core) through the
- * computed specifier, converting the compiled-binary "module not found" failure
- * into a clear, actionable {@link PragmaError} — instead of a raw
- * module-resolution error that the boundary would otherwise report as an
- * internal bug ("please report this issue"). From source / in tests this
- * resolves normally. The `.ejs` asset-embedding that unblocks compiled create
- * is tracked in scripts/build.ts (PR7/PR8).
+ * Load the create runtime: inject the embedded template manifest, then import
+ * the generator selector + summon-core (STATIC dynamic imports, so bun's
+ * `--compile` bundler includes them — they stay behind this lazy boundary, so
+ * the fast paths and `create --yes` still load neither summon-core nor React).
+ *
+ * The manifest is injected BEFORE `pickGenerator` — importing the generator
+ * packages runs a top-level `await loadTemplate`, and the component loader
+ * consults the manifest when its disk read fails (the compiled binary). It is
+ * imported from summon-component's `loadTemplate` submodule so this does not
+ * evaluate the generator index first. In a source run the disk read wins and the
+ * manifest is inert.
+ *
+ * `create package` / `create application` are not yet embedded for the compiled
+ * binary (application also copies non-`.ejs` assets), so they are gated to a
+ * source run here. A stale resolution failure is a defensive backstop
+ * {@link isModuleNotFound} turns into the same clean gate.
  */
-async function loadCreateRuntime() {
+async function loadCreateRuntime(kind: CreateKind) {
+  if (IS_COMPILED_BINARY && kind !== "component") {
+    throw new PragmaError({
+      code: "UNSUPPORTED",
+      message: `\`create ${kind}\` is not available in the compiled pragma2 binary yet — only \`create component\` is embedded. Run it from a source checkout, or use the \`summon\` CLI.`,
+      recovery: {
+        message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
+      },
+    });
+  }
   try {
+    // Inject the embedded manifest before the generators evaluate.
+    const [{ setEmbeddedTemplates }, { TEMPLATES }] = await Promise.all([
+      import("@canonical/summon-component/embedded"),
+      import("./templates.embedded.generated.js"),
+    ]);
+    setEmbeddedTemplates(TEMPLATES);
+
     const [pick, summon] = await Promise.all([
-      importRuntime<typeof import("./pickGenerator.js")>("./pickGenerator.js"),
-      importRuntime<typeof import("@canonical/summon-core")>(
-        "@canonical/summon-core",
-      ),
+      import("./pickGenerator.js"),
+      import("@canonical/summon-core"),
     ]);
     return { pickGenerator: pick.pickGenerator, summon };
   } catch (cause) {
@@ -250,7 +270,7 @@ async function loadCreateRuntime() {
       throw new PragmaError({
         code: "UNSUPPORTED",
         message:
-          "`create` is not available in the compiled pragma2 binary yet — its generator template assets are not embedded. Run it from a source checkout, or use the `summon` CLI.",
+          "`create` could not load its generator runtime. Run it from a source checkout, or use the `summon` CLI.",
         recovery: {
           message: "Run `create` from a source checkout, or use `summon`.",
         },
@@ -266,9 +286,10 @@ async function runCreate(
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
   // Lazy: importing these runs the generators' top-level template loads and
-  // pulls summon-core — kept off every non-create path (and out of the binary).
-  // A compiled-binary resolution failure becomes a clean gate, not a raw crash.
-  const { pickGenerator, summon } = await loadCreateRuntime();
+  // pulls summon-core — kept off every non-create path. Now STATIC dynamic
+  // imports so `--compile` bundles them; the generators' `.ejs` are embedded and
+  // injected here. `package`/`application` stay a source-run feature in the binary.
+  const { pickGenerator, summon } = await loadCreateRuntime(kind);
 
   const generator = pickGenerator(kind, params);
 
