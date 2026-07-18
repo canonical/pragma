@@ -67,6 +67,33 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
   });
 
+  it("emits the authored read nouns (ontology TBox, storeless skill, graph inspect)", () => {
+    expect(emitted.nouns.ontology?.verbs).toEqual([
+      { v: "list", needsStore: true, mcp: "ontology_list" },
+      {
+        v: "show",
+        args: ["<prefix>"],
+        flags: ["--properties", "--full-uris", "--class"],
+        needsStore: true,
+        mcp: "ontology_show",
+      },
+    ]);
+    // skill discovery is storeless (filesystem) — no needsStore.
+    expect(emitted.nouns.skill?.verbs).toEqual([
+      { v: "list", mcp: "skill_list" },
+      { v: "lookup", args: ["<name>"], mcp: "skill_lookup" },
+    ]);
+    // graph ships only inspect in PR3 (query lands in PR6).
+    expect(emitted.nouns.graph?.verbs).toEqual([
+      {
+        v: "inspect",
+        args: ["<uri>"],
+        needsStore: true,
+        mcp: "graph_inspect",
+      },
+    ]);
+  });
+
   it("emits sorted tools, every one blessed by the covenant", () => {
     const { tools } = emitted.mcpSurface;
     expect(tools).toEqual([...tools].sort());

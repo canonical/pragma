@@ -96,13 +96,8 @@
     },
     "skill": {
       "verbs": [
-        { "v": "list", "needsStore": true, "mcp": "skill_list" },
-        {
-          "v": "lookup",
-          "args": ["<name>"],
-          "needsStore": true,
-          "mcp": "skill_lookup"
-        }
+        { "v": "list", "mcp": "skill_list" },
+        { "v": "lookup", "args": ["<name>"], "mcp": "skill_lookup" }
       ]
     },
     "graph": {

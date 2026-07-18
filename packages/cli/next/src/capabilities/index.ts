@@ -12,9 +12,12 @@
 import type { CapabilityModule } from "../kernel/spec/types.js";
 import { blockModule } from "./block/index.js";
 import { configModule } from "./config/index.js";
+import { graphModule } from "./graph/index.js";
 import { infoModule } from "./info/index.js";
 import { metaModule } from "./meta/index.js";
 import { modifierModule } from "./modifier/index.js";
+import { ontologyModule } from "./ontology/index.js";
+import { skillModule } from "./skill/index.js";
 import { sourcesModule } from "./sources/index.js";
 import { standardModule } from "./standard/index.js";
 import { tierModule } from "./tier/index.js";
@@ -30,5 +33,8 @@ export const capabilities: readonly CapabilityModule[] = [
   modifierModule,
   tokenModule,
   blockModule,
+  ontologyModule,
+  skillModule,
+  graphModule,
   metaModule,
 ];
