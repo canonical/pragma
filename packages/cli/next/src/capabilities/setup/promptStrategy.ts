@@ -10,10 +10,13 @@
  * `rt.exec`, which the dispatcher (and the MCP handler) spread into the node
  * interpreter on the REAL-run branch only.
  *
- * NOTE (PR7): `rt.exec` carries NO `cwd` — the PR5 fold removed it from
- * RunnerOptions (the node interpreter resolves paths against `process.cwd()`,
- * and per-call cwd is PR7's job, threaded into the runner AND the path jail
- * atomically). So this sets `promptHandler`/`onLog`/`signal` only, like `create`.
+ * NOTE: `rt.exec` carries no `cwd`. Unlike `create` — whose generator emits
+ * RELATIVE output paths and so threads `rt.cwd` as the interpreter's per-call
+ * write root — setup's operations build ABSOLUTE effect paths themselves from
+ * `rt.cwd` (`skillsPath(cwd)`, `resolve(cwd, …)`, `completionScriptPath`). The
+ * interpreter resolves relative fs paths against `RunTaskOptions.cwd` and leaves
+ * absolute paths unchanged, so setup's already-absolute paths need no per-call
+ * base here — this sets `promptHandler`/`onLog`/`signal` only.
  */
 
 import { createInterface } from "node:readline";

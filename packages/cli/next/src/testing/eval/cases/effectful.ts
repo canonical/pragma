@@ -212,4 +212,34 @@ export const effectfulEvalCases: readonly EvalCase[] = [
       });
     },
   },
+  {
+    id: "tool-modifier-sample-returns-exemplars",
+    kind: "tool",
+    input:
+      "modifier_sample (the no-argument PR7 sample) returns complete modifier exemplars for shape discovery.",
+    async expect() {
+      await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
+        const result = await mcp.callTool("modifier_sample");
+        assert.equal(result.ok, true);
+        const data = result.data as { samples: unknown[]; totalCount: number };
+        assert.ok(data.samples.length > 0, "expected at least one exemplar");
+        assert.ok(data.totalCount >= data.samples.length);
+      });
+    },
+  },
+  {
+    id: "tool-token-sample-returns-exemplars",
+    kind: "tool",
+    input:
+      "token_sample (the no-argument PR7 sample) returns complete token exemplars for shape discovery.",
+    async expect() {
+      await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
+        const result = await mcp.callTool("token_sample");
+        assert.equal(result.ok, true);
+        const data = result.data as { samples: unknown[]; totalCount: number };
+        assert.ok(data.samples.length > 0, "expected at least one exemplar");
+        assert.ok(data.totalCount >= data.samples.length);
+      });
+    },
+  },
 ];

@@ -170,4 +170,10 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     description:
       "`index.json` (PackIndex v2) does not carry `category`/`primaryType`/`primaryTypeLabel` — dropped at the pr3-fold review as zero-consumer fields. Completion and the MCP resource browser read only `{name,type,uri,prefixed,types,label,box,description}` plus `instanceCountByType`.",
   },
+  {
+    id: "mcp-prompts-empty-without-project-prompts",
+    area: "mcp/prompts",
+    description:
+      "The native MCP `prompts/list` (and the `prompt_list`/`prompt_lookup` content tools) project `ds:Prompt` KG entities read from the ACTIVE pack index (`kernel/project/mcp/prompts/source.ts#listPromptSummaries`) — project-supplied data, NOT shipped in the embedded/bundled pack. A bare install (no project-authored `ds:Prompt`) advertises the prompts capability but lists ZERO prompts, never booting the store on the list path. Non-empty listings are exercised only against the seeded fixture graph (`testing/fixtures/graph/canonical.ts`); the storeless empty-by-default case is pinned by `prompts.test.ts` ('lists zero prompts … when no prompt entities exist').",
+  },
 ] as const;

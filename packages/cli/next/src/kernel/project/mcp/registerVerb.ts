@@ -34,7 +34,7 @@ import { toolError, toolSuccess } from "./envelope.js";
  *
  * @throws PragmaError INVALID_INPUT for a relative or non-directory `cwd`.
  */
-export function resolveEffectiveCwd(rawCwd: unknown, fallback: string): string {
+function resolveEffectiveCwd(rawCwd: unknown, fallback: string): string {
   if (typeof rawCwd !== "string" || rawCwd === "") return fallback;
   if (!isAbsolute(rawCwd)) {
     throw PragmaError.invalidInput("cwd", rawCwd, {

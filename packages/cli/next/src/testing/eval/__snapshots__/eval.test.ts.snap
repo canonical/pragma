@@ -158,6 +158,11 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "tool-modifier-sample-returns-exemplars",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
     "id": "tool-prompt-list-resolves-authored-prompts",
     "kind": "tool",
     "passed": true,
@@ -179,6 +184,11 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
   },
   {
     "id": "tool-token-add-config-is-plan-first",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-token-sample-returns-exemplars",
     "kind": "tool",
     "passed": true,
   },
