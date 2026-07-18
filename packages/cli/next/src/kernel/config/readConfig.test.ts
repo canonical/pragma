@@ -90,6 +90,20 @@ describe("readConfig — layering + provenance", () => {
     expect(config.packages).toEqual(["@acme/only"]);
     expect(origins.packages).toBe("project");
   });
+
+  it("merges the completion policy into the effective config", async () => {
+    freshXdg();
+    const dir = projectWith(
+      "export default { completion: { minChars: 3, families: { skill: false } } };",
+    );
+
+    const { config } = await readConfig(dir);
+
+    expect(config.completion).toEqual({
+      minChars: 3,
+      families: { skill: false },
+    });
+  });
 });
 
 describe("global config — corrupt-file recovery", () => {

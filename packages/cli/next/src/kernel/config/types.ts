@@ -22,6 +22,21 @@ export interface PackageDeclaration {
 /** A `packages` entry: a bare npm name or a `{ name, source }` declaration. */
 export type PackageEntry = string | PackageDeclaration;
 
+/**
+ * Completion policy, read at `setup completions` emit time (never on the
+ * storeless `__complete` fast path). Derive-by-default, tune-by-exception:
+ * `minChars` gates the `__complete` exec in the generated scripts, and
+ * `families` opts a noun out of name completion (`{ <family>: false }`).
+ */
+export interface CompletionConfig {
+  /** Minimum typed chars before the shell execs `__complete` (default 2). */
+  readonly minChars?: number;
+  /** Match case-sensitively (default false — loose match, canonical emit). */
+  readonly caseSensitive?: boolean;
+  /** Per-family opt-out: a noun mapped to `false` drops its name completion. */
+  readonly families?: Readonly<Record<string, boolean>>;
+}
+
 /** The effective, resolved configuration. `channel` always has a value. */
 export interface PragmaConfig {
   /** Active tier path, or absent when no tier is configured. */
@@ -38,6 +53,8 @@ export interface PragmaConfig {
   readonly prefixes?: Readonly<Record<string, string>>;
   /** Named prompt overrides (global machine state). */
   readonly prompts?: Readonly<Record<string, unknown>>;
+  /** Completion policy (read at `setup completions` emit time). */
+  readonly completion?: CompletionConfig;
 }
 
 /**
@@ -53,6 +70,7 @@ export interface RawConfig {
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly prompts?: Readonly<Record<string, unknown>>;
+  readonly completion?: CompletionConfig;
 }
 
 /** Which layer supplied an effective field value. */
