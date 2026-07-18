@@ -3,10 +3,15 @@
   "nouns": {
     "block": {
       "verbs": [
-        { "v": "list", "needsStore": true, "mcp": "block_list" },
+        {
+          "v": "list",
+          "flags": ["--all-tiers"],
+          "needsStore": true,
+          "mcp": "block_list"
+        },
         {
           "v": "lookup",
-          "args": ["<name>"],
+          "args": ["<name...>"],
           "needsStore": true,
           "mcp": "block_lookup"
         },
@@ -15,15 +20,25 @@
     },
     "standard": {
       "verbs": [
-        { "v": "list", "needsStore": true, "mcp": "standard_list" },
+        {
+          "v": "list",
+          "flags": ["--category", "--search"],
+          "needsStore": true,
+          "mcp": "standard_list"
+        },
         {
           "v": "lookup",
-          "args": ["<name>"],
+          "args": ["<name...>"],
           "needsStore": true,
           "mcp": "standard_lookup"
         },
         { "v": "categories", "needsStore": true, "mcp": "standard_categories" },
-        { "v": "sample", "needsStore": true, "mcp": "standard_sample" }
+        {
+          "v": "sample",
+          "args": ["[count]"],
+          "needsStore": true,
+          "mcp": "standard_sample"
+        }
       ]
     },
     "modifier": {
@@ -31,7 +46,7 @@
         { "v": "list", "needsStore": true, "mcp": "modifier_list" },
         {
           "v": "lookup",
-          "args": ["<name>"],
+          "args": ["<name...>"],
           "needsStore": true,
           "mcp": "modifier_lookup"
         },
@@ -43,7 +58,7 @@
         { "v": "list", "needsStore": true, "mcp": "token_list" },
         {
           "v": "lookup",
-          "args": ["<name>"],
+          "args": ["<name...>"],
           "needsStore": true,
           "mcp": "token_lookup"
         },

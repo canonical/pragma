@@ -10,15 +10,25 @@
  */
 
 import type { CapabilityModule } from "../kernel/spec/types.js";
+import { blockModule } from "./block/index.js";
 import { configModule } from "./config/index.js";
 import { infoModule } from "./info/index.js";
 import { metaModule } from "./meta/index.js";
+import { modifierModule } from "./modifier/index.js";
 import { sourcesModule } from "./sources/index.js";
+import { standardModule } from "./standard/index.js";
+import { tierModule } from "./tier/index.js";
+import { tokenModule } from "./token/index.js";
 
 /** Every capability module, in authoring order. */
 export const capabilities: readonly CapabilityModule[] = [
   infoModule,
   configModule,
   sourcesModule,
+  standardModule,
+  tierModule,
+  modifierModule,
+  tokenModule,
+  blockModule,
   metaModule,
 ];

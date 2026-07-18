@@ -23,37 +23,68 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(() => assertConforms(emitted, golden)).not.toThrow();
   });
 
-  it("emits info + config show + the storeless sources noun", () => {
-    expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
+  it("keeps config_show unchanged from PR1", () => {
     expect(emitted.nouns.config?.verbs).toEqual([
       { v: "show", mcp: "config_show" },
     ]);
-    // The sources noun is storeless BY DESIGN — no `needsStore` on either verb
-    // (status must report a cold store; update is what builds it). The covenant
-    // was reconciled to match in this PR.
-    expect(emitted.nouns.sources?.verbs).toEqual([
-      { v: "status", mcp: "sources_status" },
-      {
-        v: "update",
-        flags: ["--frozen"],
-        mutates: true,
-        mcp: "sources_update",
-      },
-    ]);
+    expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
     // Hidden meta verbs (__complete, mcp) are excluded from the surface.
     expect(emitted.nouns.mcp).toBeUndefined();
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
-  it("emits the info, config_show, and sources tools, all blessed by the covenant", () => {
-    expect(emitted.mcpSurface.tools).toEqual([
-      "config_show",
-      "info",
-      "sources_status",
-      "sources_update",
+  it("emits the read nouns/verbs the packs add (block list hand-written, sample only where declared)", () => {
+    expect(emitted.nouns.standard?.verbs.map((v) => v.v)).toEqual([
+      "list",
+      "categories",
+      "lookup",
+      "sample",
     ]);
-    for (const tool of emitted.mcpSurface.tools) {
+    // tier is list-only; modifier/token add lookup but no sample; block is
+    // list (hand-written, --all-tiers) + graphql lookup.
+    expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual(["list"]);
+    expect(emitted.nouns.modifier?.verbs.map((v) => v.v)).toEqual([
+      "list",
+      "lookup",
+    ]);
+    expect(emitted.nouns.token?.verbs.map((v) => v.v)).toEqual([
+      "list",
+      "lookup",
+    ]);
+    expect(emitted.nouns.block?.verbs).toEqual([
+      {
+        v: "list",
+        flags: ["--all-tiers"],
+        needsStore: true,
+        mcp: "block_list",
+      },
+      {
+        v: "lookup",
+        args: ["<name...>"],
+        needsStore: true,
+        mcp: "block_lookup",
+      },
+    ]);
+  });
+
+  it("emits sorted tools, every one blessed by the covenant", () => {
+    const { tools } = emitted.mcpSurface;
+    expect(tools).toEqual([...tools].sort());
+    for (const tool of tools) {
       expect(golden.mcpSurface.tools).toContain(tool);
+    }
+    // The ratified read tool names are load-bearing (lookup, NOT get).
+    for (const tool of [
+      "standard_lookup",
+      "block_lookup",
+      "modifier_lookup",
+      "token_lookup",
+      "standard_categories",
+      "standard_sample",
+      "tier_list",
+      "config_show",
+    ]) {
+      expect(tools).toContain(tool);
     }
   });
 });
