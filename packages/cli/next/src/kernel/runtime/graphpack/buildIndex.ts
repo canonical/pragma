@@ -62,6 +62,14 @@ const DESCRIPTION_PREDICATES = [
   "http://schema.org/description",
 ];
 
+/**
+ * Alternative-name predicates: `ds:name`, the property `tier lookup` (and other
+ * `ds:name`-addressed families) match on. Projected into `altNames` so the
+ * storeless name-completion sources can offer those tokens exactly, without a
+ * store boot. Distinct from the display `label` — a subject may carry both.
+ */
+const ALT_NAME_PREDICATES = ["https://ds.canonical.com/name"];
+
 const isStdVocab = (uri: string): boolean =>
   STD_VOCAB_PREFIXES.some((ns) => uri.startsWith(ns));
 
@@ -117,6 +125,27 @@ function preferredBySubject(
 }
 
 /**
+ * Collect ALL matching object values per subject (deduped, insertion order) —
+ * for multi-valued enrichment like `altNames`, where every value is a
+ * completable token rather than a single preferred one.
+ */
+function allBySubject(
+  result: import("@canonical/ke").SelectResult,
+  valueVar: string,
+): Map<string, string[]> {
+  const collected = new Map<string, string[]>();
+  for (const term of result.termBindings) {
+    if (term.s?.termType !== "NamedNode") continue;
+    const value = term[valueVar]?.value;
+    if (!value) continue;
+    const bucket = collected.get(term.s.value) ?? [];
+    if (!bucket.includes(value)) bucket.push(value);
+    collected.set(term.s.value, bucket);
+  }
+  return collected;
+}
+
+/**
  * Build the entity index from a populated store.
  *
  * @param store - The ke store to query.
@@ -130,17 +159,21 @@ export async function buildIndex(
   prefixes: Readonly<Record<string, string>>,
   contentHash: string,
 ): Promise<PackIndex> {
-  const [typesResult, labelResult, descResult] = await Promise.all([
-    store.query(
-      `SELECT ?s ?type WHERE { ?s <${RDF_TYPE}> ?type }` as never,
-    ) as Promise<import("@canonical/ke").SelectResult>,
-    store.query(
-      `SELECT ?s ?p ?label WHERE { ?s ?p ?label . VALUES ?p { ${valuesList(LABEL_PREDICATES)} } }` as never,
-    ) as Promise<import("@canonical/ke").SelectResult>,
-    store.query(
-      `SELECT ?s ?p ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
-    ) as Promise<import("@canonical/ke").SelectResult>,
-  ]);
+  const [typesResult, labelResult, descResult, altNameResult] =
+    await Promise.all([
+      store.query(
+        `SELECT ?s ?type WHERE { ?s <${RDF_TYPE}> ?type }` as never,
+      ) as Promise<import("@canonical/ke").SelectResult>,
+      store.query(
+        `SELECT ?s ?p ?label WHERE { ?s ?p ?label . VALUES ?p { ${valuesList(LABEL_PREDICATES)} } }` as never,
+      ) as Promise<import("@canonical/ke").SelectResult>,
+      store.query(
+        `SELECT ?s ?p ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
+      ) as Promise<import("@canonical/ke").SelectResult>,
+      store.query(
+        `SELECT ?s ?p ?alt WHERE { ?s ?p ?alt . VALUES ?p { ${valuesList(ALT_NAME_PREDICATES)} } }` as never,
+      ) as Promise<import("@canonical/ke").SelectResult>,
+    ]);
 
   const typesBySubject = new Map<string, string[]>();
   const instanceCountByType: Record<string, number> = {};
@@ -164,12 +197,14 @@ export async function buildIndex(
     "desc",
     DESCRIPTION_PREDICATES,
   );
+  const altNamesBySubject = allBySubject(altNameResult, "alt");
 
   const entities: PackIndexEntity[] = [];
   for (const [subject, fullTypes] of typesBySubject) {
     const classification = classify(fullTypes);
     if (classification === null) continue;
     const prefixed = compactUri(subject, prefixes);
+    const altNames = altNamesBySubject.get(subject);
     entities.push({
       name: prefixed,
       type: compactUri(classification.primary, prefixes),
@@ -177,6 +212,7 @@ export async function buildIndex(
       prefixed,
       types: fullTypes.map((t) => compactUri(t, prefixes)),
       label: labelBySubject.get(subject) ?? null,
+      ...(altNames && altNames.length > 0 ? { altNames } : {}),
       box: classification.box,
       description: descBySubject.get(subject) ?? null,
     });
