@@ -654,8 +654,24 @@ export interface MemoryAdapter extends PlatformAdapter {
  * owns its own history model.
  */
 export interface MemoryHistoryDelegate {
+  /** The single source of the current location. */
   getLocation(): string | URL;
+  /**
+   * Receives every navigation the adapter is asked to perform.
+   *
+   * The host must apply the navigation and notify `subscribe` listeners
+   * synchronously, before `onNavigate` returns. The router core suppresses the
+   * echo of its own navigations through a single-slot guard that only holds
+   * for a synchronous notification; a host that batches notifications
+   * (microtask or later) will cause router-initiated navigations to resolve
+   * twice. An error thrown here propagates to the `navigate` caller.
+   */
   onNavigate(url: string, options?: PlatformNavigateOptions): void;
+  /**
+   * The seam through which the host announces location changes. Must fire
+   * synchronously within `onNavigate` for navigations the adapter forwarded;
+   * see `onNavigate` for why.
+   */
   subscribe(listener: (location: string | URL) => void): () => void;
   onBack?(): void;
   onForward?(): void;

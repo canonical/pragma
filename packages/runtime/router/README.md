@@ -334,6 +334,12 @@ const adapter = createMemoryAdapter("/", {
 
 With a delegate, `getLocation` reads the delegate, `navigate(to, options)` forwards to `onNavigate` and mutates nothing locally, and the adapter's `subscribe` is the seam through which the host announces changes. `back` and `forward` forward to the optional `onBack`/`onForward` hooks; when the host omits them they are no-ops, because a host that owns location owns its own history model. The `initialUrl` argument is ignored when a delegate is present. The entire route-resolution surface — matching, params, group wrappers — is unchanged.
 
+Host values are normalized at the boundary: `getLocation` reads and subscription notifications both hand consumers a fresh `URL`, so a host mutating its own URL object cannot reach router internals, and a delegate may return bare path strings. An error thrown by `onNavigate` propagates to the `navigate` caller.
+
+**The host must notify synchronously.** When the router navigates, it suppresses the echo of its own navigation through a guard that only holds for a notification fired synchronously within `onNavigate`. A host that batches change notifications (microtask, animation frame, or later) will miss the guard and every router-initiated navigation will resolve twice. If your store batches, notify the adapter's listener directly and synchronously inside `onNavigate`.
+
+`createMemoryRouter(routes, initialUrl, { history })` forwards the delegate to its internal adapter, so the convenience factory supports externally owned location too.
+
 ## Accessibility
 
 The router auto-wires browser-side accessibility orchestration:

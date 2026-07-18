@@ -43,4 +43,48 @@ describe("createMemoryRouter", () => {
       expect(router.getState().location.pathname).toBe("/about");
     });
   });
+
+  it("forwards the history delegate to the memory adapter", async () => {
+    const listeners = new Set<(location: string | URL) => void>();
+    let current = "/about";
+    const onNavigate = vi.fn((url: string) => {
+      current = url;
+
+      for (const listener of listeners) {
+        listener(current);
+      }
+    });
+    const router = createMemoryRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      "/ignored-when-delegated",
+      {
+        history: {
+          getLocation: () => current,
+          onNavigate,
+          subscribe: (listener) => {
+            listeners.add(listener);
+
+            return () => {
+              listeners.delete(listener);
+            };
+          },
+        },
+      },
+    );
+
+    // The initial load reads the delegate, not the initialUrl argument.
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+
+    router.navigate("home");
+
+    await vi.waitFor(() => {
+      expect(onNavigate).toHaveBeenCalledTimes(1);
+      expect(router.getState().location.pathname).toBe("/");
+    });
+  });
 });

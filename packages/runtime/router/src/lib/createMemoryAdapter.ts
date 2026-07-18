@@ -27,6 +27,15 @@ function resolveUrl(input: string | URL, base: string | URL): URL {
  * `onBack`/`onForward` hooks when the host provides them; when it does not they
  * are no-ops, because a host that owns location owns its own history model and
  * the adapter has no stack of its own to walk.
+ *
+ * Host values are normalized at the boundary: `getLocation` reads and
+ * subscription notifications both hand consumers a fresh `URL` resolved
+ * against the router-local base, matching the fresh-value guarantee of the
+ * default path, so a host mutating its own URL object afterwards cannot reach
+ * consumers through the adapter.
+ *
+ * An error thrown by `onNavigate` propagates to the `navigate` caller; the
+ * adapter neither catches nor retries.
  */
 function createDelegatedMemoryAdapter(
   delegate: MemoryHistoryDelegate,
@@ -39,13 +48,15 @@ function createDelegatedMemoryAdapter(
       delegate.onForward?.();
     },
     getLocation() {
-      return delegate.getLocation();
+      return resolveUrl(delegate.getLocation(), ROUTER_LOCAL_BASE);
     },
     navigate(url, navigationOptions) {
       delegate.onNavigate(url, navigationOptions);
     },
     subscribe(callback) {
-      return delegate.subscribe(callback);
+      return delegate.subscribe((location) => {
+        callback(resolveUrl(location, ROUTER_LOCAL_BASE));
+      });
     },
   };
 }
