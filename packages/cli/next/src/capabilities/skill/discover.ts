@@ -103,15 +103,26 @@ export function parseFrontmatter(content: string): SkillFrontmatter | null {
 }
 
 /**
+ * The installed-skills root: `$XDG_DATA_HOME/pragma/skills`. This is where
+ * `sources update` INSTALLS package-provided skills (U10) — a symlink per skill
+ * — and the second discovery root below reads them back. The single source of
+ * truth for both, so the install target and the discovery root can never drift.
+ */
+export function installedSkillsDir(): string {
+  const dataHome =
+    process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share");
+  return join(dataHome, "pragma", "skills");
+}
+
+/**
  * The conventional roots skills are discovered from, in PRECEDENCE order: the
  * project root (`<cwd>/.pragma/skills`) FIRST so a project-local skill overrides
  * an installed skill of the same name (`discoverSkills` dedups first-seen-wins),
- * then installed skills under `$XDG_DATA_HOME/pragma/skills`.
+ * then installed skills under `$XDG_DATA_HOME/pragma/skills` (where package
+ * skills land on `sources update`).
  */
 export function skillRoots(cwd: string): string[] {
-  const dataHome =
-    process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share");
-  return [join(cwd, ".pragma", "skills"), join(dataHome, "pragma", "skills")];
+  return [join(cwd, ".pragma", "skills"), installedSkillsDir()];
 }
 
 /** Immediate subdirectories of `root` (each a candidate skill folder). */

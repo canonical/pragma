@@ -21,7 +21,9 @@ import {
   symlink,
   type Task,
 } from "@canonical/task";
+import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../../kernel/error/recovery.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import { applyPromptStrategy } from "../promptStrategy.js";
 import type { SetupResult, SymlinkAction } from "../types.js";
@@ -61,13 +63,14 @@ export async function setupSkills(
 
   const skills = discoverSkills(cwd);
   if (skills.length === 0) {
+    // Recovery points at where skills COME FROM (U8): package skills install on
+    // `sources update`, not by re-running the command that just found none.
     throw PragmaError.emptyResults("skill", {
       message: "No skills found to link.",
-      recovery: {
-        message:
-          "Install a design-system package that ships skills, then retry.",
-        cli: "pragma setup skills",
-      },
+      recovery: cliRecovery(
+        `${RECOVERY_CLI_PREFIX}sources update`,
+        "Add a design-system package that ships skills to your config, then run `pragma sources update` to install them.",
+      ),
     });
   }
 

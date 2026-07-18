@@ -30,26 +30,41 @@ import {
   getParentDir,
   PACKAGE_NAME,
 } from "../shared/index.js";
-import loadTemplate from "../shared/loadTemplate.js";
+import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { LitAnswers } from "./types.js";
 
 // =============================================================================
-// Template Paths & Content (loaded eagerly via top-level await)
+// Template Paths & Content (loaded LAZILY on first generate())
 // =============================================================================
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
-const litTemplates = {
-  component: await loadTemplate(
-    path.join(templatesDir, "lit", "component.ts.ejs"),
-  ),
-  index: await loadTemplate(path.join(templatesDir, "lit", "index.ts.ejs")),
-  types: await loadTemplate(path.join(templatesDir, "lit", "types.ts.ejs")),
-  tests: await loadTemplate(path.join(templatesDir, "lit", "tests.ts.ejs")),
-  stories: await loadTemplate(path.join(templatesDir, "lit", "stories.ts.ejs")),
-  styles: await loadTemplate(path.join(templatesDir, "lit", "styles.css.ejs")),
-};
+/** Read every Lit template from disk (or the embedded manifest). */
+function loadLitTemplates() {
+  return {
+    component: loadTemplateSync(
+      path.join(templatesDir, "lit", "component.ts.ejs"),
+    ),
+    index: loadTemplateSync(path.join(templatesDir, "lit", "index.ts.ejs")),
+    types: loadTemplateSync(path.join(templatesDir, "lit", "types.ts.ejs")),
+    tests: loadTemplateSync(path.join(templatesDir, "lit", "tests.ts.ejs")),
+    stories: loadTemplateSync(path.join(templatesDir, "lit", "stories.ts.ejs")),
+    styles: loadTemplateSync(path.join(templatesDir, "lit", "styles.css.ejs")),
+  };
+}
+
+/**
+ * Memoized template bundle. Loaded on the FIRST `generate()` call, never at
+ * module-eval — so importing this generator never reads a template, and a READ
+ * command (which never calls `generate()`) never touches the `.ejs` a compiled
+ * binary lacks. See the react generator for the full rationale.
+ */
+let litTemplatesCache: ReturnType<typeof loadLitTemplates> | undefined;
+function litTemplates(): ReturnType<typeof loadLitTemplates> {
+  litTemplatesCache ??= loadLitTemplates();
+  return litTemplatesCache;
+}
 
 // =============================================================================
 // Custom Prompts (without SSR tests)
@@ -118,6 +133,7 @@ with the custom element tag 'button'.`,
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
     const ctx = createTemplateContext(answers, "lit");
+    const t = litTemplates();
 
     return sequence_([
       info(`Generating Lit web component: ${componentName}`),
@@ -127,32 +143,32 @@ with the custom element tag 'button'.`,
 
       debug("Creating main component file"),
       template({
-        source: litTemplates.component.source,
-        content: litTemplates.component.content,
+        source: t.component.source,
+        content: t.component.content,
         dest: path.join(componentDir, `${componentName}.ts`),
         vars: ctx,
       }),
 
       debug("Creating index barrel file"),
       template({
-        source: litTemplates.index.source,
-        content: litTemplates.index.content,
+        source: t.index.source,
+        content: t.index.content,
         dest: path.join(componentDir, "index.ts"),
         vars: ctx,
       }),
 
       debug("Creating types file"),
       template({
-        source: litTemplates.types.source,
-        content: litTemplates.types.content,
+        source: t.types.source,
+        content: t.types.content,
         dest: path.join(componentDir, "types.ts"),
         vars: ctx,
       }),
 
       debug("Creating test file"),
       template({
-        source: litTemplates.tests.source,
-        content: litTemplates.tests.content,
+        source: t.tests.source,
+        content: t.tests.content,
         dest: path.join(componentDir, `${componentName}.tests.ts`),
         vars: ctx,
       }),
@@ -161,8 +177,8 @@ with the custom element tag 'button'.`,
       when(
         answers.withStories,
         template({
-          source: litTemplates.stories.source,
-          content: litTemplates.stories.content,
+          source: t.stories.source,
+          content: t.stories.content,
           dest: path.join(componentDir, `${componentName}.stories.ts`),
           vars: ctx,
         }),
@@ -172,8 +188,8 @@ with the custom element tag 'button'.`,
       when(
         answers.withStyles,
         template({
-          source: litTemplates.styles.source,
-          content: litTemplates.styles.content,
+          source: t.styles.source,
+          content: t.styles.content,
           dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),

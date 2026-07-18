@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -10,9 +11,10 @@ import type { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runTask } from "@canonical/task/node";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VERSION } from "../../constants.js";
 import type { ConfigLayers, PackageEntry } from "../../kernel/config/types.js";
+import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
@@ -23,6 +25,7 @@ import { createLazyStore } from "../../kernel/runtime/store.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
+import { discoverSkills } from "../skill/discover.js";
 import { sourcesModule } from "./index.js";
 import { buildUpdateTask } from "./runUpdate.js";
 
@@ -302,6 +305,237 @@ describe("npm resolution tolerates restrictive exports (m6)", () => {
       },
     } as unknown as ReturnType<typeof createRequire>;
     expect(resolvePackageJson(missing, "faux")).toBeUndefined();
+  });
+});
+
+describe("sources update — data-failure classification (U6)", () => {
+  /** A local package whose definitions TTL is malformed (bad triple). */
+  function badFilePackage(): string {
+    const pkg = tmp("pragma-badpkg-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    // A predicate with no object → ke/Oxigraph throws a Turtle parser error,
+    // exactly the class that used to escape as INTERNAL_ERROR "report this issue".
+    writeFileSync(
+      join(pkg, "definitions", "broken.ttl"),
+      "@prefix ex: <https://ex.test/#> .\nex:One a ex:Widget .\nex:Two ex:brokenPredicate .\n",
+    );
+    return pkg;
+  }
+
+  it("classifies a bad triple as a NAMED data error, not 'report this issue'", async () => {
+    const pkg = badFilePackage();
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "bad-pkg", source: `file://${pkg}` },
+    ]);
+
+    let caught: unknown;
+    try {
+      await buildUpdateTask(runtime, false);
+    } catch (error) {
+      caught = error;
+    }
+
+    // A classified data error (exit-1 CONFIG_ERROR), NOT INTERNAL_ERROR.
+    expect(caught).toBeInstanceOf(PragmaError);
+    const err = caught as PragmaError;
+    expect(err.code).toBe("CONFIG_ERROR");
+    // It NAMES the offending package/file …
+    expect(err.message).toContain("bad-pkg/definitions/broken.ttl");
+    // … carries the parser's own detail …
+    expect(err.message.toLowerCase()).toContain("parser error");
+    // … and is NOT the internal-bug "please report this issue" path.
+    expect(err.message).not.toContain("Internal error");
+    expect(err.recovery?.message ?? "").not.toContain("report this issue");
+    // The recovery points the user at a runnable, useful next step.
+    expect(err.recovery?.cli).toBe("pragma sources update --verbose");
+    // Nothing was locked on failure.
+    expect(readLock(cwd)).toBeUndefined();
+  });
+
+  it("classifies a git clone failure, naming the package (not INTERNAL)", async () => {
+    // A git+file:// ref to a path that does not exist → the clone fails
+    // immediately (hermetic, no network). On base this raw execFileSync throw
+    // escapes as INTERNAL_ERROR "report this issue"; it must be a named data error.
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      {
+        name: "pkg-remote",
+        source: "git+file:///pragma-nope-42/repo.git#main",
+      },
+    ]);
+
+    let caught: unknown;
+    try {
+      await buildUpdateTask(runtime, false);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(PragmaError);
+    const err = caught as PragmaError;
+    expect(err.code).toBe("CONFIG_ERROR");
+    expect(err.message).toContain("pkg-remote");
+    expect(err.message).not.toContain("Internal error");
+    expect(readLock(cwd)).toBeUndefined();
+  });
+
+  it("names the SPECIFIC bad file among several good ones", async () => {
+    const pkg = tmp("pragma-badpkg-mixed-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    writeFileSync(join(pkg, "definitions", "aaa-good.ttl"), TTL);
+    writeFileSync(
+      join(pkg, "definitions", "zzz-bad.ttl"),
+      "@prefix ex: <https://ex.test/#> .\nex:Broken ex:noObject .\n",
+    );
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [{ name: "mix", source: `file://${pkg}` }]);
+
+    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    let caught: unknown;
+    try {
+      await buildUpdateTask(runtime, false);
+    } catch (error) {
+      caught = error;
+    }
+    // Per-source isolation pins the bad file, not the good sibling.
+    expect((caught as PragmaError).message).toContain(
+      "mix/definitions/zzz-bad.ttl",
+    );
+    expect((caught as PragmaError).message).not.toContain("aaa-good.ttl");
+  });
+});
+
+describe("sources update — progress streaming (U7/U11)", () => {
+  const updateVerb = sourcesModule.verbs[1] as VerbSpec;
+
+  /** Capture everything written to stderr while `fn` runs. */
+  async function captureStderr(fn: () => Promise<void>): Promise<string> {
+    const lines: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array): boolean => {
+        lines.push(typeof chunk === "string" ? chunk : chunk.toString());
+        return true;
+      });
+    try {
+      await fn();
+    } finally {
+      spy.mockRestore();
+    }
+    return lines.join("");
+  }
+
+  it("streams stage lines to stderr during a real update", async () => {
+    const pkg = filePackage();
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    const stderr = await captureStderr(async () => {
+      const outcome = await executeVerb(updateVerb, {}, NO_MUT, runtime);
+      expect(outcome.exitCode).toBe(0);
+    });
+
+    // The clone/parse/build phases each announce themselves (no more silence).
+    expect(stderr).toContain("Reading pkg-a");
+    expect(stderr).toContain("Building store from 1 source(s)");
+    // Built fresh or reused from cache — either way the phase is reported.
+    expect(stderr).toMatch(/(Built|Reused) store/);
+    // Non-verbose omits the per-file lines.
+    expect(stderr).not.toContain("parse pkg-a/definitions/widget.ttl");
+  });
+
+  it("--verbose adds a line per source file", async () => {
+    const pkg = filePackage();
+    const cwd = tmp("pragma-proj-");
+    const runtime: PragmaRuntime = {
+      ...runtimeFor(cwd, [{ name: "pkg-a", source: `file://${pkg}` }]),
+      globalFlags: { ...FLAGS, verbose: true },
+    };
+
+    const stderr = await captureStderr(async () => {
+      await executeVerb(updateVerb, {}, NO_MUT, runtime);
+    });
+
+    expect(stderr).toContain("parse pkg-a/definitions/widget.ttl");
+  });
+});
+
+describe("sources update — installs package skills (U10)", () => {
+  let savedDataHome: string | undefined;
+  let dataHome: string;
+
+  /** A local package that also ships `skills/<name>/SKILL.md`. */
+  function skillPackage(skillName: string): string {
+    const pkg = filePackage(); // definitions/widget.ttl → the build succeeds
+    const skillDir = join(pkg, "skills", skillName);
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      `---\nname: ${skillName}\ndescription: From a package.\n---\nBody.`,
+    );
+    return pkg;
+  }
+
+  beforeEach(() => {
+    savedDataHome = process.env.XDG_DATA_HOME;
+    dataHome = tmp("pragma-datahome-");
+    process.env.XDG_DATA_HOME = dataHome;
+  });
+  afterEach(() => {
+    if (savedDataHome === undefined) delete process.env.XDG_DATA_HOME;
+    else process.env.XDG_DATA_HOME = savedDataHome;
+  });
+
+  it("symlinks a package skill into the installed root so `skill list` finds it", async () => {
+    const pkg = skillPackage("foo");
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    await runTask(await buildUpdateTask(runtime, false));
+
+    // Installed as a symlink into $XDG_DATA_HOME/pragma/skills …
+    const linked = join(dataHome, "pragma", "skills", "foo");
+    expect(existsSync(linked)).toBe(true);
+    // … and discovery now sees it.
+    expect(discoverSkills(cwd).map((s) => s.name)).toContain("foo");
+  });
+
+  it("keeps project .pragma/skills precedence over an installed same-name skill", async () => {
+    const pkg = skillPackage("shared");
+    const cwd = tmp("pragma-proj-");
+    const projSkill = join(cwd, ".pragma", "skills", "shared");
+    mkdirSync(projSkill, { recursive: true });
+    writeFileSync(
+      join(projSkill, "SKILL.md"),
+      "---\nname: shared\ndescription: PROJECT copy.\n---\n",
+    );
+
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    await runTask(await buildUpdateTask(runtime, false));
+
+    const shared = discoverSkills(cwd).filter((s) => s.name === "shared");
+    expect(shared).toHaveLength(1);
+    expect(shared[0]?.description).toBe("PROJECT copy.");
+  });
+
+  it("is reversible — undo removes the installed skill symlink", async () => {
+    const pkg = skillPackage("bar");
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    const { runUndo } = await import("@canonical/task/node");
+    await runUndo(await buildUpdateTask(runtime, false));
+
+    expect(existsSync(join(dataHome, "pragma", "skills", "bar"))).toBe(false);
   });
 });
 

@@ -26,6 +26,12 @@ export interface ResolvedPackage {
   readonly source: string;
   /** The resolved commit / version / absolute path. */
   readonly resolved: string;
+  /**
+   * The package's on-disk root — the local `file:` path, the npm install dir, or
+   * the git clone dir. Everything the package ships lives under it, so
+   * `sources update` can also discover a package's `skills/` (U10) from here.
+   */
+  readonly root: string;
   /** The labelled RDF sources (path label + content). */
   readonly sources: { readonly path: string; readonly content: string }[];
 }
@@ -43,6 +49,24 @@ const TTL_DIRS = ["definitions", "data"];
 
 /** Sanitize a ref for use as a cache path segment. */
 const sanitize = (value: string): string => value.replace(/[/\\:*?"<>|]/g, "_");
+
+/** A concise reason from a thrown subprocess/parse error: prefer captured
+ * stderr (git writes the real reason there under `stdio: "pipe"`), else the
+ * message. Used to name WHY a resolve failed without dumping a raw stack. */
+function errorDetail(error: unknown): string {
+  if (error && typeof error === "object") {
+    const { stderr, message } = error as {
+      stderr?: unknown;
+      message?: unknown;
+    };
+    if (stderr != null) {
+      const text = String(stderr).trim();
+      if (text) return text;
+    }
+    if (typeof message === "string" && message.trim()) return message.trim();
+  }
+  return String(error);
+}
 
 /** Recursively collect `*.ttl` files under a directory (a manual walk — the
  * compiled binary's node:fs globSync mishandles `**`, so we avoid it). */
@@ -201,6 +225,7 @@ export async function resolvePackage(
         name: ref.pkg,
         source: ref.source,
         resolved: ref.path,
+        root: ref.path,
         sources: readTtlSources(ref.path, ref.pkg),
       };
     }
@@ -214,13 +239,23 @@ export async function resolvePackage(
         );
       }
       const dir = dirname(pkgJsonPath);
-      const version =
-        (JSON.parse(readFileSync(pkgJsonPath, "utf-8")).version as string) ??
-        "0.0.0";
+      let version: string;
+      try {
+        version =
+          (JSON.parse(readFileSync(pkgJsonPath, "utf-8")).version as string) ??
+          "0.0.0";
+      } catch (error) {
+        // A malformed `package.json` for an otherwise-installed package: name it
+        // as a data error, not an INTERNAL_ERROR "please report this issue".
+        throw PragmaError.configError(
+          `Package "${ref.pkg}" has an invalid package.json (${pkgJsonPath}): ${errorDetail(error)}`,
+        );
+      }
       return {
         name: ref.pkg,
         source: ref.source,
         resolved: version,
+        root: dir,
         sources: readTtlSources(dir, ref.pkg),
       };
     }
@@ -233,19 +268,46 @@ export async function resolvePackage(
         sanitize(useCommit ? (options.pinned as string) : ref.ref),
       );
       let resolved: string;
-      if (useCommit) {
-        checkoutCommit(ref.url, options.pinned as string, dir);
-        resolved = options.pinned as string;
-      } else if (existsSync(dir)) {
-        resolved = fetchRef(ref.url, ref.ref, dir);
-      } else {
-        cloneRef(ref.url, ref.ref, dir);
-        resolved = headCommit(dir);
+      try {
+        if (useCommit) {
+          checkoutCommit(ref.url, options.pinned as string, dir);
+          resolved = options.pinned as string;
+        } else if (existsSync(dir)) {
+          resolved = fetchRef(ref.url, ref.ref, dir);
+        } else {
+          cloneRef(ref.url, ref.ref, dir);
+          resolved = headCommit(dir);
+        }
+      } catch (error) {
+        // A git clone/fetch/checkout failed — an unreachable remote, a moved or
+        // deleted ref, an auth/credential problem, or (under --frozen) a pinned
+        // commit that is gone. Name the package + ref with git's own reason so
+        // it reads as a fixable data/reproducibility error, not INTERNAL_ERROR.
+        throw useCommit
+          ? PragmaError.configError(
+              `Cannot reproduce "${ref.pkg}" under --frozen: commit ${options.pinned} could not be checked out from ${ref.url}. ${errorDetail(error)}`,
+              {
+                recovery: {
+                  message:
+                    "The pinned commit may have been force-pushed away or the remote is unreachable. Restore access to it, or re-run `pragma sources update` without --frozen to re-pin.",
+                },
+              },
+            )
+          : PragmaError.configError(
+              `Cannot resolve "${ref.pkg}" from ${ref.url}#${ref.ref}: ${errorDetail(error)}`,
+              {
+                recovery: {
+                  message:
+                    "Check the git URL and ref, your network, and your git credentials, then re-run the update.",
+                },
+              },
+            );
       }
       return {
         name: ref.pkg,
         source: ref.source,
         resolved,
+        root: dir,
         sources: readTtlSources(dir, ref.pkg),
       };
     }

@@ -17,6 +17,7 @@ import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TEST_FLAGS } from "../../testing/helpers/projectCli.js";
 import type { DiscoveredSkill } from "./discover.js";
 import { skillModule } from "./index.js";
+import { skillListFormatters } from "./render.js";
 import type { SkillLookup } from "./verbs.js";
 
 const listVerb = skillModule.verbs.find(
@@ -80,6 +81,21 @@ describe("skill lookup (storeless)", () => {
     await expect(lookupVerb.run({ name: "docs" }, rt)).rejects.toThrow(
       /not found/i,
     );
+  });
+});
+
+describe("skill list empty-state (U5)", () => {
+  it("plain output is non-blank and guides toward package sources", () => {
+    const plain = skillListFormatters.plain([]);
+    expect(plain).not.toBe("");
+    expect(plain).toContain("No skills found");
+    expect(plain).toContain("pragma sources update");
+  });
+
+  it("llm output announces zero and guides, json stays []", () => {
+    expect(skillListFormatters.llm([])).toContain("Skills (0)");
+    expect(skillListFormatters.llm([])).toContain("pragma sources update");
+    expect(skillListFormatters.json([])).toBe("[]");
   });
 });
 

@@ -24,18 +24,23 @@ import {
   deleteFile,
   gen,
   info,
+  mkdir,
+  symlink,
   type Task,
   writeFile,
 } from "@canonical/task";
-import { VERSION } from "../../constants.js";
+import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
 import type { PackageEntry } from "../../kernel/config/types.js";
+import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
 import {
   type PragmaLock,
   readLock,
   serializeLock,
 } from "../../kernel/runtime/lock.js";
-import { lockPath } from "../../kernel/runtime/paths.js";
+import { LOCK_BASENAME, lockPath } from "../../kernel/runtime/paths.js";
+import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
 import { parsePackageEntry } from "../../kernel/runtime/refs/parseRef.js";
 import {
   harvestPrefixes,
@@ -43,6 +48,8 @@ import {
   resolvePackage,
 } from "../../kernel/runtime/refs/resolve.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { installedSkillsDir } from "../skill/discover.js";
+import { planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";
 
 /** Generic-core prefixes; config `prefixes` merge over them (config wins). */
@@ -130,6 +137,12 @@ export async function buildUpdateTask(
 ): Promise<Task<SourcesUpdateData>> {
   if (runtime.mutation?.preview) return buildUpdatePlan(runtime);
 
+  // Progress seam (U7/U11): stream stage lines while the heavy EAGER work — the
+  // clone/parse/build below — runs, so the long op is never silent. Unset over
+  // MCP (a no-op there); `--verbose` adds a line per source (U11).
+  const report = runtime.report;
+  const verbose = runtime.globalFlags.verbose;
+
   const layers = await runtime.loadConfig();
   const entries = layers.config.packages ?? [];
   const existing = readLock(runtime.cwd);
@@ -138,6 +151,7 @@ export async function buildUpdateTask(
   const resolved: ResolvedPackage[] = [];
   for (const entry of entries) {
     const ref = parsePackageEntry(entry);
+    report?.(resolveProgress(ref));
     const pinned = existing?.packs.find((pack) => pack.name === ref.pkg);
     resolved.push(
       await resolvePackage(ref, {
@@ -159,12 +173,26 @@ export async function buildUpdateTask(
     ...harvestPrefixes(inputs),
     ...(layers.config.prefixes ?? {}),
   };
-  const built = await buildPack(inputs, {
-    name: "pragma",
-    version: VERSION,
-    sourceRef: entries.map(entryName).join(",") || "embedded",
-    prefixes,
-  });
+  report?.(`Building store from ${inputs.length} source(s)`);
+  if (verbose) for (const input of inputs) report?.(`  parse ${input.path}`);
+
+  // Build the pack. On a parse/build failure, classify it as a NAMED data error
+  // (U6) — not INTERNAL_ERROR's "please report this issue" — identifying the
+  // offending package source, since ke's parser error carries only line/column.
+  let built: Awaited<ReturnType<typeof buildPack>>;
+  try {
+    built = await buildPack(inputs, {
+      name: "pragma",
+      version: VERSION,
+      sourceRef: entries.map(entryName).join(",") || "embedded",
+      prefixes,
+    });
+  } catch (error) {
+    throw await classifySourceBuildError(error, inputs);
+  }
+  report?.(
+    `${built.reused ? "Reused" : "Built"} store ${built.contentHash.slice(0, 12)}`,
+  );
 
   const now = new Date().toISOString();
   const lock: PragmaLock = {
@@ -198,8 +226,106 @@ export async function buildUpdateTask(
     priorContent !== undefined
       ? writeFile(path, priorContent)
       : deleteFile(path);
+
+  // Install package-provided skills (U10): symlink each resolved package's
+  // `skills/*` into the installed-skills root, so `skill list` / `setup skills`
+  // see them after an update. Kept in this Task (reversible: created links carry
+  // an unlink undo) so `sources update --undo` also removes them.
+  const skillLinks = planSkillInstall(resolved).filter(
+    (link) => link.action !== "skipped",
+  );
+  if (skillLinks.length > 0)
+    report?.(`Installing ${skillLinks.length} skill(s)`);
+
+  report?.(`Writing ${LOCK_BASENAME}`);
   return gen(function* () {
     yield* $(writeFile(path, newContent, { undo }));
+    if (skillLinks.length > 0) {
+      yield* $(mkdir(installedSkillsDir(), true));
+      for (const link of skillLinks) {
+        if (link.action === "replaced") yield* $(deleteFile(link.linkPath));
+        yield* $(
+          symlink(link.target, link.linkPath, {
+            undo: deleteFile(link.linkPath),
+          }),
+        );
+      }
+    }
     return data;
   });
+}
+
+/** Progress line for a package about to be resolved, phrased by ref kind. */
+function resolveProgress(ref: PackageRef): string {
+  switch (ref.kind) {
+    case "git":
+      return `Cloning ${ref.pkg} from ${ref.url}`;
+    case "file":
+      return `Reading ${ref.pkg} from ${ref.path}`;
+    case "npm":
+      return `Resolving ${ref.pkg}`;
+  }
+}
+
+/**
+ * Classify a pack-build failure as a NAMED data error (U6).
+ *
+ * ke/Oxigraph parses each source's Turtle, but its thrown parser error carries
+ * only the line/column — NOT which source produced it (it sees a content string,
+ * not a path). So on failure we re-parse each source in ISOLATION to find the
+ * first that throws — the culprit — and raise a `CONFIG_ERROR` naming its
+ * `pkg/relative-path` with the parser's own message and an actionable recovery.
+ * This runs only on the error path, so the per-source re-parse cost is paid once.
+ * A `PragmaError` from resolution (e.g. a missing file) is already classified and
+ * passes through untouched.
+ *
+ * @param error - The value thrown by `buildPack`.
+ * @param inputs - The labelled sources handed to the build.
+ * @returns A classified {@link PragmaError} (never INTERNAL_ERROR for bad data).
+ */
+export async function classifySourceBuildError(
+  error: unknown,
+  inputs: readonly { readonly path: string; readonly content: string }[],
+): Promise<PragmaError> {
+  if (error instanceof PragmaError) return error;
+  const parserMessage = error instanceof Error ? error.message : String(error);
+  const culprit = await isolateBadSource(inputs);
+  const detail = culprit?.message ?? parserMessage;
+  const where = culprit
+    ? `Package source "${culprit.path}" could not be parsed`
+    : "The configured package sources could not be built into a store";
+  return PragmaError.configError(`${where}: ${detail}`, {
+    recovery: cliRecovery(
+      `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+      "Re-run with --verbose to see each file as it parses. If a package ships malformed RDF, report it to that package's maintainer.",
+    ),
+  });
+}
+
+/**
+ * Re-parse each source alone to find the first that fails to parse.
+ *
+ * @param inputs - The labelled sources.
+ * @returns The offending source's path + parser message, or `undefined` if none
+ *   fails in isolation (a build failure unrelated to a single bad source).
+ * @note Impure — boots a throwaway ke store per source; error path only.
+ */
+async function isolateBadSource(
+  inputs: readonly { readonly path: string; readonly content: string }[],
+): Promise<{ path: string; message: string } | undefined> {
+  const { createStore } = await import("@canonical/ke");
+  for (const input of inputs) {
+    try {
+      const store = await createStore({
+        sources: [{ content: input.content, path: input.path }],
+      });
+      store.dispose();
+    } catch (error) {
+      return {
+        path: input.path,
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+  return undefined;
 }

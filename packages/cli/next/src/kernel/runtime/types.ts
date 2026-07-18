@@ -174,6 +174,15 @@ export interface PragmaRuntime {
   /** How this run reaches the user, set by the projector for a mutating verb. */
   readonly interaction?: InteractionRuntime;
   /**
+   * Progress seam for a long mutating verb. Set by the projector (the CLI writes
+   * each message to stderr) so a verb can STREAM stage lines while it does heavy
+   * EAGER work — the resolve/parse/build that runs before its Task is even
+   * returned, which the Task interpreter's `onLog` therefore never sees. A verb
+   * emits through `runtime.report?.(…)`; unset (e.g. over MCP) makes it a no-op.
+   * Diagnostic-only: progress goes to stderr, never the stdout data stream.
+   */
+  readonly report?: (message: string) => void;
+  /**
    * The runner options a mutating verb's `run` assembles for its real
    * execution. NOT readonly: the verb writes it as its last act before
    * returning the Task, and the projector reads it back on the real-run branch.
