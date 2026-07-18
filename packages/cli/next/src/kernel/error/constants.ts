@@ -22,8 +22,9 @@ const ERROR_CODES = [
   "INTERNAL_ERROR",
   // A capability that is genuinely unavailable in this build/environment — not
   // a bug and not a usage mistake, so it must NOT collapse to INTERNAL_ERROR's
-  // "please report this issue". Today: `create` in the compiled binary, whose
-  // generator assets are not embedded (maps to the generic runtime exit 1).
+  // "please report this issue". Today: `create package` / `create application`
+  // in the compiled binary, whose generator assets are not embedded there
+  // (`create component` is embedded and runs). Maps to the generic runtime exit 1.
   "UNSUPPORTED",
 ] as const;
 
