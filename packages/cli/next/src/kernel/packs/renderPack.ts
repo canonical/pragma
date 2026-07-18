@@ -42,8 +42,18 @@ export interface SampleOutput {
 /** Presentation facts shared by every formatter a pack noun compiles. */
 export interface RenderMeta {
   readonly heading: string;
+  /** The noun, used to phrase the empty-state message. */
+  readonly noun: string;
   readonly prefixes: Readonly<Record<string, string>>;
 }
+
+/**
+ * The default empty-state hint when a pack authors no `emptyRecovery`: an empty
+ * list on a BUILT store (a cold store would have failed with STORE_UNAVAILABLE
+ * first) means "nothing matched", so point at both possible fixes.
+ */
+const DEFAULT_EMPTY_HINT =
+  "If you haven't built the store yet, run `pragma sources update`; otherwise broaden your filter or channel.";
 
 /** Build the list formatters for a list-shaped verb (list or an extra verb). */
 export function listFormatters(
@@ -54,10 +64,20 @@ export function listFormatters(
     key: column.field,
     label: column.label ?? column.field,
   }));
+  // Zero results is a calm success, not an error (see runBodies.makeListRun):
+  // render a non-blank message, exit 0, JSON stays []. A pack's authored
+  // `emptyRecovery` becomes the hint; otherwise the generic build/broaden hint.
+  const emptyHint = shape.emptyRecovery
+    ? `${shape.emptyRecovery.message}${
+        shape.emptyRecovery.cli ? ` Run \`${shape.emptyRecovery.cli}\`.` : ""
+      }`
+    : DEFAULT_EMPTY_HINT;
   const options: RenderListOptions<PackRow> = {
     heading: meta.heading,
     columns,
     prefixes: meta.prefixes,
+    emptyMessage: `No ${meta.noun} entries found.`,
+    emptyHint,
   };
   return {
     plain: (rows) => renderListPlain(rows, options),

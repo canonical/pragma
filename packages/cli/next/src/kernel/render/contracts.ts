@@ -49,6 +49,14 @@ export interface RenderListOptions<T> {
   readonly heading: string;
   readonly columns: readonly ColumnDef<T>[];
   readonly prefixes?: Readonly<Record<string, string>>;
+  /**
+   * The message shown when the list is empty, so zero results read as a calm,
+   * non-blank success (exit 0) rather than an empty screen. Omit to keep the
+   * bare-empty behavior (plain renders "", llm renders the `(0)` heading only).
+   */
+  readonly emptyMessage?: string;
+  /** An optional second line under {@link emptyMessage} — how to get results. */
+  readonly emptyHint?: string;
 }
 
 /** Options controlling the generic lookup renderer. */

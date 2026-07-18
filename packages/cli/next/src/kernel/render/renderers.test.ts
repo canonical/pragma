@@ -110,6 +110,29 @@ describe("render matrix (list/lookup/empty × plain/llm/json × detail)", () => 
     expect(matrix).toMatchSnapshot();
   });
 
+  it("renders an empty-state message (+ hint) when items are empty", () => {
+    const options = {
+      heading: "Widgets",
+      columns: columnsFor("summary"),
+      emptyMessage: "No widget entries found.",
+      emptyHint: "Run `pragma sources update`.",
+    };
+    // Plain: message then hint on the next line — a non-blank exit-0 body.
+    expect(renderListPlain([], options)).toBe(
+      "No widget entries found.\nRun `pragma sources update`.",
+    );
+    // Llm: the `(0)` heading, then the same message + hint.
+    expect(renderListLlm([], options)).toBe(
+      "## Widgets (0)\n\nNo widget entries found.\nRun `pragma sources update`.",
+    );
+  });
+
+  it("keeps the bare-empty behavior when no emptyMessage is declared", () => {
+    const options = { heading: "Widgets", columns: columnsFor("summary") };
+    expect(renderListPlain([], options)).toBe("");
+    expect(renderListLlm([], options)).toBe("## Widgets (0)\n");
+  });
+
   it("resolves disclosure level from ordered sources", () => {
     expect(resolveDetail({ flag: "detailed", config: "summary" })).toBe(
       "detailed",

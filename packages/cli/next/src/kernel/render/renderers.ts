@@ -18,10 +18,23 @@ import { DEFAULT_PREFIX_MAP } from "./prefixes.js";
 
 type RenderMode = "plain" | "llm";
 
+/**
+ * The empty-state body — the message plus its optional hint on a second line,
+ * or "" when the caller declared no message (bare-empty behavior preserved).
+ */
+function emptyBody<T>(options: RenderListOptions<T>): string {
+  if (!options.emptyMessage) return "";
+  return options.emptyHint
+    ? `${options.emptyMessage}\n${options.emptyHint}`
+    : options.emptyMessage;
+}
+
 export function renderListPlain<T>(
   items: readonly T[],
   options: RenderListOptions<T>,
 ): string {
+  if (items.length === 0) return emptyBody(options);
+
   const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
   const rows = items.map((item) =>
     options.columns
@@ -55,6 +68,11 @@ export function renderListLlm<T>(
 ): string {
   const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
   const lines = [`## ${options.heading} (${items.length})`, ""];
+
+  if (items.length === 0) {
+    const body = emptyBody(options);
+    return body ? `${lines[0]}\n\n${body}` : lines.join("\n");
+  }
 
   for (const item of items) {
     const values = options.columns

@@ -61,6 +61,13 @@ const listOptions: RenderListOptions<BlockRow> = {
   heading: "Blocks",
   columns: listColumns,
   prefixes: DEFAULT_PREFIX_MAP,
+  // Zero blocks is a calm success (exit 0), not an error — the list is scoped by
+  // the active tier chain and channel, so the message names that scope and the
+  // hint offers the escape hatches (a cold store fails earlier with
+  // STORE_UNAVAILABLE, so reaching here means the store is built).
+  emptyMessage: "No blocks found under the current tier and channel.",
+  emptyHint:
+    "Use --all-tiers to ignore the tier filter, or run `pragma sources update` if the store is empty.",
 };
 
 const listFormatters: Formatters<BlockRow[]> = {

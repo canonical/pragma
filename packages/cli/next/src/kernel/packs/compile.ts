@@ -130,6 +130,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
     output: {
       formatters: listFormatters(shape, {
         heading: `${capitalize(meta.noun)}${meta.verb === "list" ? "" : ` ${meta.verb}`}`,
+        noun: meta.noun,
         prefixes: meta.prefixes,
       }),
     },
@@ -149,10 +150,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeListRun(shape, { noun: meta.noun, source: meta.source })(
-          params,
-          rt,
-        ),
+        m.makeListRun(shape, { source: meta.source })(params, rt),
       ),
   };
   return asVerb(verb);

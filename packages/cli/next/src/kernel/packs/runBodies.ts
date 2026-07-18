@@ -29,17 +29,24 @@ const HIGHEST_LEVEL = "detailed";
 
 /** Facts a list-shaped run body needs beyond its `shape`. */
 export interface ListRunMeta {
-  readonly noun: string;
   readonly source: string;
 }
 
-/** Build the run body for a list-shaped verb (`list` or an extra verb). */
+/**
+ * Build the run body for a list-shaped verb (`list` or an extra verb).
+ *
+ * Zero rows is a plain empty list — a SUCCESS, not an error. It returns `[]`
+ * (JSON stays `[]`, exit 0); the formatter turns the emptiness into a non-blank
+ * message (a pack's `emptyRecovery` becomes that message's hint). Routing zero
+ * results through EMPTY_RESULTS would map to exit 1 and break the uniform
+ * `ok:true` list contract, so the run body never throws on emptiness.
+ */
 export function makeListRun(
   shape: PackList,
   meta: ListRunMeta,
 ): (params: Record<string, unknown>, rt: PragmaRuntime) => Promise<PackRow[]> {
-  return async (params, rt) => {
-    const rows = applyPackSearch(
+  return async (params, rt) =>
+    applyPackSearch(
       applyPackFilters(
         await runSelect(rt, shape.query, meta.source),
         shape.filters,
@@ -48,12 +55,6 @@ export function makeListRun(
       shape.search,
       params,
     );
-    if (rows.length === 0) {
-      const error = buildListEmptyError(meta.noun, shape, params);
-      if (error) throw error;
-    }
-    return rows;
-  };
 }
 
 /** Build the run body for a lookup verb (variadic names → resolved entities). */
@@ -153,37 +154,4 @@ function readNames(params: Record<string, unknown>): string[] {
   if (Array.isArray(raw))
     return raw.filter((n): n is string => typeof n === "string");
   return typeof raw === "string" ? [raw] : [];
-}
-
-/**
- * The typed empty-list error for a pack list, or `undefined` when the emptiness
- * should render as a plain empty list. A value-constrained filter active ⇒ the
- * filter is the likely cause (re-list unfiltered); otherwise the pack's declared
- * `emptyRecovery` applies when authored, else `[]` stands.
- */
-function buildListEmptyError(
-  noun: string,
-  shape: PackList,
-  params: Record<string, unknown>,
-): PragmaError | undefined {
-  const applied = (shape.filters ?? []).filter(
-    (filter) =>
-      filter.values !== undefined && typeof params[filter.param] === "string",
-  );
-  if (applied.length > 0) {
-    return PragmaError.emptyResults(noun, {
-      filters: Object.fromEntries(
-        applied.map((filter) => [filter.param, String(params[filter.param])]),
-      ),
-      recovery: {
-        message: `List all ${noun} entries without filters.`,
-        cli: `pragma ${noun} list`,
-        mcp: { tool: `${noun}_list` },
-      },
-    });
-  }
-  if (shape.emptyRecovery) {
-    return PragmaError.emptyResults(noun, { recovery: shape.emptyRecovery });
-  }
-  return undefined;
 }
