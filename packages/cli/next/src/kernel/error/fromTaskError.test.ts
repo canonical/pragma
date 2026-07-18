@@ -4,6 +4,7 @@ import {
   asPragmaError,
   CANCELLED_MESSAGE,
   isCancellation,
+  isInterruption,
 } from "./fromTaskError.js";
 import { PragmaError } from "./PragmaError.js";
 
@@ -26,6 +27,31 @@ describe("fromTaskError bridge", () => {
     ).toBe(false);
     expect(isCancellation("nope")).toBe(false);
     expect(isCancellation(null)).toBe(false);
+    // An interrupt is NOT a cancellation (different exit code).
+    expect(
+      isCancellation(
+        new TaskExecutionError({ code: "TASK_INTERRUPTED", message: "x" }),
+      ),
+    ).toBe(false);
+  });
+
+  it("recognises an interpreter interrupt (SIGINT / in-wizard Ctrl-C mid-run)", () => {
+    const err = new TaskExecutionError({
+      code: "TASK_INTERRUPTED",
+      message: "Task interrupted",
+    });
+    expect(isInterruption(err)).toBe(true);
+    // A decline is not an interruption, and vice-versa — they exit differently.
+    expect(
+      isInterruption(
+        new TaskExecutionError({
+          code: "GENERATOR_CANCELLED",
+          message: "Cancelled.",
+        }),
+      ),
+    ).toBe(false);
+    expect(isInterruption(new Error("boom"))).toBe(false);
+    expect(isInterruption(null)).toBe(false);
   });
 
   it("maps absent/invalid answer codes to a usage error (INVALID_INPUT)", () => {

@@ -117,11 +117,23 @@ describe("SessionController", () => {
     expect(c2.getSnapshot().phase).toBe("cancelled");
   });
 
-  it("cancel rejects the pending prompt (the cancellation signal)", async () => {
+  it("cancel rejects the pending prompt with a GENERATOR_CANCELLED code (H1)", async () => {
     const c = new SessionController(gen);
     const p = c.request(ask("path"));
     c.cancel();
-    await expect(p).rejects.toThrow();
+    // A bare Error would flatten to INTERNAL at the boundary ("please report");
+    // the code is what routes an at-prompt cancel to a clean exit 0.
+    await expect(p).rejects.toMatchObject({ code: "GENERATOR_CANCELLED" });
+    expect(c.getSnapshot().phase).toBe("cancelled");
+  });
+
+  it("cancel invokes the injected onUserCancel exactly once (H2)", () => {
+    let aborts = 0;
+    const c = new SessionController(gen, () => aborts++);
+    // No pending prompt (models a Ctrl-C DURING execution): the abort is the
+    // only thing that stops the run, so it must still fire.
+    c.cancel();
+    expect(aborts).toBe(1);
     expect(c.getSnapshot().phase).toBe("cancelled");
   });
 

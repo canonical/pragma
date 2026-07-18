@@ -17,6 +17,7 @@ import {
   asPragmaError,
   CANCELLED_MESSAGE,
   isCancellation,
+  isInterruption,
 } from "../../error/fromTaskError.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import {
@@ -34,7 +35,7 @@ import type {
   PragmaRuntime,
 } from "../../runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
-import { mapExitCode } from "./exitCodes.js";
+import { EXIT, mapExitCode } from "./exitCodes.js";
 
 /** The CLI-only mutation flags auto-injected onto every mutating verb. */
 export interface MutationFlags {
@@ -224,10 +225,17 @@ export async function executeVerb(
     // prompts), so `--dry-run`/`--undo` are unchanged by this seam.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
-      isTTY: process.stdin.isTTY === true && process.stdout.isTTY === true,
+      // Gate on STDERR (H3): the Ink wizard renders to stderr and reads stdin,
+      // so `<verb> 2>/dev/null` must be non-interactive — gating on stdout would
+      // mount an invisible render that blocks on stdin.
+      isTTY: process.stdin.isTTY === true && process.stderr.isTTY === true,
       transport: "cli",
       yes: mutation.yes,
       signal: controller.signal,
+      // Let an interactive verb's wizard abort the run on an in-Ink Ctrl-C (H2):
+      // raw mode swallows SIGINT, so the keypress can't reach the SIGINT handler
+      // below — the wizard drives this instead. `abort()` is idempotent.
+      abort: () => controller.abort(),
     };
     const mutationRuntime: PragmaRuntime = {
       ...runtime,
@@ -304,13 +312,20 @@ export async function dispatch(
     };
     outcome = await executeVerb(verb, params, mutation, runtime);
   } catch (error) {
-    // Declining the interactive confirm gate is a clean cancellation — a deliberate
-    // user choice, not a failure to report: a plain "Cancelled." and a success exit.
+    // Two clean, non-bug outcomes print the same "Cancelled." line but exit
+    // differently — both set DIRECTLY here, out-of-band from `mapExitCode`'s
+    // frozen {0,1,2,3} (see exitCodes.ts):
+    //   - a DECLINE (confirm gate / at-prompt Ctrl-C) is a deliberate user
+    //     choice, not a failure → success exit 0; and
+    //   - an INTERRUPT (SIGINT on --yes/CI, or an in-wizard Ctrl-C mid-run) is
+    //     an abort of work already underway → UNIX 128+SIGINT exit 130.
     // Everything else maps through the shared task-error bridge (which turns a
     // bad/absent non-interactive answer into a usage error, not an internal bug).
     outcome = isCancellation(error)
-      ? { stderr: `${CANCELLED_MESSAGE}\n`, exitCode: 0 }
-      : renderError(asPragmaError(error), globalFlags);
+      ? { stderr: `${CANCELLED_MESSAGE}\n`, exitCode: EXIT.OK }
+      : isInterruption(error)
+        ? { stderr: `${CANCELLED_MESSAGE}\n`, exitCode: EXIT.INTERRUPTED }
+        : renderError(asPragmaError(error), globalFlags);
   }
 
   if (outcome.stdout) writeStdout(outcome.stdout);

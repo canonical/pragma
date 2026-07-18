@@ -118,3 +118,35 @@ describe("create wizard (PROTECTED)", () => {
     }
   }, 20000);
 });
+
+describe("cancelled frame is truthful about files written (H2)", () => {
+  // These render an ALREADY-cancelled controller — a single static frame, no
+  // interactive input loop — so they don't hit the one-live-render caveat above.
+  it("counts the completed write-like effects when some were written", async () => {
+    const c = new SessionController(gen);
+    // Two files landed before the user hit Ctrl-C mid-execution.
+    c.reportEffectComplete(writeFileEffect("a.ts", "x"), 1);
+    c.reportEffectComplete(writeFileEffect("b.ts", "y"), 1);
+    c.cancel();
+    const { lastFrame, unmount } = render(<Wizard controller={c} />);
+    try {
+      await waitFor(() => (lastFrame() ?? "").includes("Cancelled."));
+      expect(lastFrame()).toContain("2 file(s) were written.");
+      expect(lastFrame()).not.toContain("No files were written.");
+    } finally {
+      unmount();
+    }
+  }, 20000);
+
+  it("says no files were written when the cancel landed before any write", async () => {
+    const c = new SessionController(gen);
+    c.cancel();
+    const { lastFrame, unmount } = render(<Wizard controller={c} />);
+    try {
+      await waitFor(() => (lastFrame() ?? "").includes("Cancelled."));
+      expect(lastFrame()).toContain("No files were written.");
+    } finally {
+      unmount();
+    }
+  }, 20000);
+});
