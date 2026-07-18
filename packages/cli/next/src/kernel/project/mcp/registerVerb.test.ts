@@ -1,9 +1,28 @@
-import { describe, expect, it } from "vitest";
+import { existsSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import { z } from "zod";
-import { fixtureModule } from "../../../testing/fixtures/fixtureCapability.js";
+import {
+  fixtureEffectsModule,
+  fixtureModule,
+  touchPath,
+} from "../../../testing/fixtures/fixtureCapability.js";
 import { projectMcp } from "../../../testing/helpers/projectMcp.js";
-import type { CapabilityModule, ParamSpec } from "../../spec/types.js";
-import { buildZodSchema } from "./registerVerb.js";
+import { bootRuntime } from "../../runtime/boot.js";
+import type {
+  GlobalFlags,
+  LazyStore,
+  PragmaRuntime,
+} from "../../runtime/types.js";
+import type {
+  CapabilityModule,
+  ParamSpec,
+  VerbSpec,
+} from "../../spec/types.js";
+import { buildZodSchema, registerVerb } from "./registerVerb.js";
 
 const passthroughFormatters = {
   plain: (d: unknown) => String(d),
@@ -127,6 +146,93 @@ describe("tool registration", () => {
     expect(internal?.capability.mcp).toEqual({
       expose: false,
       reason: "internal probe, not an agent tool",
+    });
+  });
+});
+
+describe("real MCP mutation invalidates the shared server-lifetime store (C2 hook)", () => {
+  const MCP_FLAGS: GlobalFlags = {
+    llm: true,
+    autoLlm: false,
+    format: "json",
+    verbose: false,
+  };
+  const touchVerb = fixtureEffectsModule.verbs.find(
+    (v) => v.path[1] === "touch",
+  ) as VerbSpec;
+
+  /**
+   * A real `bootRuntime` (real cwd/config), but with its store swapped for one
+   * whose `invalidate` is observable. `probe touch` is `needsStore: false`, so
+   * `get()` is never called — only the mutate handler's post-run invalidation is.
+   */
+  function runtimeWithSpyStore(): { runtime: PragmaRuntime; invalidate: Mock } {
+    const base = bootRuntime(
+      MCP_FLAGS,
+      mkdtempSync(join(tmpdir(), "pragma-c2-hook-")),
+    );
+    const invalidate = vi.fn();
+    const store: LazyStore = {
+      get booted() {
+        return base.store.booted;
+      },
+      get: base.store.get.bind(base.store),
+      invalidate,
+    };
+    return { runtime: { ...base, store }, invalidate };
+  }
+
+  /** Register `touchVerb` and hand back the raw tool handler (no transport). */
+  function captureHandler(
+    runtime: PragmaRuntime,
+  ): (args: Record<string, unknown>) => Promise<CallToolResult> {
+    let handler:
+      | ((args: Record<string, unknown>) => Promise<CallToolResult>)
+      | undefined;
+    const server = {
+      registerTool: (
+        _name: string,
+        _config: unknown,
+        h: (args: Record<string, unknown>) => Promise<CallToolResult>,
+      ) => {
+        handler = h;
+      },
+    } as unknown as McpServer;
+    registerVerb(server, touchVerb, runtime);
+    if (!handler) throw new Error("registerVerb registered no handler");
+    return handler;
+  }
+
+  const envelopeOf = (result: CallToolResult): Record<string, unknown> =>
+    JSON.parse((result.content[0] as { text: string }).text);
+
+  it("invalidates the store after a real (confirm:true) mutation settles", async () => {
+    const { runtime, invalidate } = runtimeWithSpyStore();
+    const handler = captureHandler(runtime);
+    const name = `c2-confirm-${Date.now()}`;
+
+    const result = await handler({ name, confirm: true });
+
+    // The real run wrote the file AND dropped the shared server-lifetime caches
+    // afterwards, so the next read tool re-boots against the new on-disk state.
+    expect(existsSync(touchPath(name))).toBe(true);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(envelopeOf(result).ok).toBe(true);
+  });
+
+  it("does NOT invalidate the store on a plan-only preview (no confirm)", async () => {
+    const { runtime, invalidate } = runtimeWithSpyStore();
+    const handler = captureHandler(runtime);
+    const name = `c2-preview-${Date.now()}`;
+
+    const result = await handler({ name });
+
+    // A preview touches no disk and leaves the caches intact — no invalidation.
+    expect(existsSync(touchPath(name))).toBe(false);
+    expect(invalidate).not.toHaveBeenCalled();
+    expect(envelopeOf(result).meta).toEqual({
+      planOnly: true,
+      confirmRequired: true,
     });
   });
 });
