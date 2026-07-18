@@ -33,6 +33,21 @@ export function readPackIndex(cwd: string): PackIndex | undefined {
   return loadActiveIndex(cwd);
 }
 
+/**
+ * Sum a pack index's per-type instance counts — the "total entities" figure
+ * `info` and `doctor` report. Works over any {@link PackIndex}, whether read
+ * storelessly via {@link readPackIndex} or taken from a booted store session.
+ *
+ * @param index - A pack index.
+ * @returns The total number of indexed entity instances across every type.
+ */
+export function entityTotal(index: PackIndex): number {
+  return Object.values(index.instanceCountByType).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
+}
+
 /** Load the active pack's index: the locked pack, else the embedded fallback. */
 function loadActiveIndex(cwd: string): PackIndex | undefined {
   try {

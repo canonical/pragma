@@ -1,3 +1,4 @@
+import { entityTotal } from "../../../kernel/completion/entitySource.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { CheckResult } from "../types.js";
 
@@ -19,10 +20,7 @@ export async function checkKeStore(rt: PragmaRuntime): Promise<CheckResult> {
   const start = performance.now();
   try {
     const session = await rt.store.get();
-    const total = Object.values(session.index.instanceCountByType).reduce(
-      (sum, n) => sum + n,
-      0,
-    );
+    const total = entityTotal(session.index);
     const elapsed = Math.round(performance.now() - start);
     return {
       name: "ke store",

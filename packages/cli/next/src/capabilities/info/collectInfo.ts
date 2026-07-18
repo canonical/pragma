@@ -12,7 +12,10 @@
  * building the command tree never pulls it onto the `--help` fast path.
  */
 
-import { readPackIndex } from "../../kernel/completion/entitySource.js";
+import {
+  entityTotal,
+  readPackIndex,
+} from "../../kernel/completion/entitySource.js";
 import { readConfig } from "../../kernel/config/readConfig.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import {
@@ -49,9 +52,7 @@ export async function collectInfo(runtime: PragmaRuntime): Promise<InfoData> {
 
   // Entity total: storeless — the same pack-index reader `sources status` uses.
   const index = readPackIndex(runtime.cwd);
-  const entities = index
-    ? Object.values(index.instanceCountByType).reduce((sum, n) => sum + n, 0)
-    : undefined;
+  const entities = index ? entityTotal(index) : undefined;
 
   return {
     version: runtime.version,

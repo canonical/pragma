@@ -8,7 +8,10 @@
  * configured packages is the "run `sources update`" case.
  */
 
-import { readPackIndex } from "../../../kernel/completion/entitySource.js";
+import {
+  entityTotal,
+  readPackIndex,
+} from "../../../kernel/completion/entitySource.js";
 import type { PackageEntry } from "../../../kernel/config/types.js";
 import { readLock } from "../../../kernel/runtime/lock.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
@@ -30,9 +33,7 @@ export async function checkPackageRefs(
   const entries = (await rt.loadConfig()).config.packages ?? [];
   const lock = readLock(rt.cwd);
   const index = readPackIndex(rt.cwd);
-  const totalEntities = index
-    ? Object.values(index.instanceCountByType).reduce((sum, n) => sum + n, 0)
-    : 0;
+  const totalEntities = index ? entityTotal(index) : 0;
 
   if (entries.length === 0) {
     return {
