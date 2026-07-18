@@ -4,6 +4,13 @@
 
 import type { ShellId } from "./shell.js";
 
+/**
+ * Which setup entry point is running: the run-all self-verb or one sub-verb.
+ * Lives here (a leaf type module) so `setup.verb.ts` can name it WITHOUT a
+ * static import of the generator ops — keeping them dynamic-only (lazy-React).
+ */
+export type SetupMode = "all" | "completions" | "lsp" | "mcp" | "skills";
+
 /** One symlink create/skip/replace action performed during skill setup. */
 export interface SymlinkAction {
   readonly skillName: string;

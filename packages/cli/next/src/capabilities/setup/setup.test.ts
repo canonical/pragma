@@ -1,12 +1,16 @@
 /**
- * `pragma setup` + its sub-verbs — the PR5-coupled environment installer.
+ * `pragma setup` + its sub-verbs — now synthesized as summon generators routed
+ * through the shared `execute` seam (accumulate → recap → execute-with-progress),
+ * exactly like `create`.
  *
- * Never spawns the real LSP installer (bunx) and never writes outside isolated
- * HOME/cwd temps. Covers: the auto-answer handler, completions (exact
- * emitScripts output / preview-accurate dry-run / undo reversal), the mcp gate
- * resolving via an injected prompt handler + auto-confirm, skills
- * (empty → EMPTY_RESULTS, symlink effect carries an undo), the mixed-noun
- * routing wiring, and MCP plan-first with the sub-verbs absent from the catalog.
+ * Never spawns the real LSP installer (bunx) — every LSP path is exercised only
+ * under `--dry-run` / plan-first, which MOCK the exec — and never writes outside
+ * isolated HOME/cwd temps. Covers: completions (exact emitScripts output /
+ * preview-accurate dry-run / undo reversal / no-shell warn), the MCP recap gate
+ * (auto-confirm writes, decline writes nothing), skills (empty → EMPTY_RESULTS,
+ * symlink effect carries an undo), the run-all wizard previewing every detected
+ * step, the lazy-React guard (a `--yes` run mounts no Ink), the mixed-noun
+ * routing, and MCP plan-first with the sub-verbs absent from the catalog.
  */
 
 import {
@@ -19,6 +23,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { execute } from "@canonical/summon-core";
 import { dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -30,12 +35,10 @@ import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
-import { setupMcp } from "./operations/setupMcp.js";
-import { setupSkills } from "./operations/setupSkills.js";
-import { autoAnswerDefaults } from "./promptStrategy.js";
+import { buildSetupPlan } from "./operations/setupGenerator.js";
+import { composeSkills, detectSkills } from "./operations/setupSkills.js";
 import { setupModule } from "./setup.verb.js";
 import { completionScriptPath } from "./shell.js";
-import type { SetupResult } from "./types.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -49,6 +52,7 @@ const UNDO = { dryRun: false, undo: true, yes: false };
 
 const verbOf = (v: string): VerbSpec =>
   setupModule.verbs.find((s) => (s.path[1] ?? s.path[0]) === v) as VerbSpec;
+const setupSelfVerb = verbOf("setup");
 const completionsVerb = verbOf("completions");
 
 const roots: string[] = [];
@@ -71,23 +75,6 @@ afterEach(() => {
   process.env.SHELL = prevShell;
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
   roots.length = 0;
-});
-
-describe("autoAnswerDefaults", () => {
-  it("answers a confirm prompt with its declared default", async () => {
-    expect(
-      await autoAnswerDefaults({
-        _tag: "Prompt",
-        question: { type: "confirm", name: "a", message: "?", default: true },
-      } as Effect & { _tag: "Prompt" }),
-    ).toBe(true);
-    expect(
-      await autoAnswerDefaults({
-        _tag: "Prompt",
-        question: { type: "confirm", name: "b", message: "?", default: false },
-      } as Effect & { _tag: "Prompt" }),
-    ).toBe(false);
-  });
 });
 
 describe("setup completions", () => {
@@ -114,6 +101,8 @@ describe("setup completions", () => {
     );
     expect(outcome.stdout).toContain("Write file");
     expect(outcome.stdout).toContain(path);
+    // The confirm gate / answer prompts are never part of a plan.
+    expect(outcome.stdout).not.toContain("Prompt");
     expect(existsSync(path)).toBe(false);
   });
 
@@ -139,32 +128,12 @@ describe("setup completions", () => {
   });
 });
 
-describe("setup mcp — harness gate", () => {
-  it("the confirm gate resolves via the injected prompt handler", async () => {
+describe("setup mcp — recap gate", () => {
+  it("auto-confirms the detected harness under --yes (writes the pragma server)", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // makes Cursor detected
     const configPath = join(cwd, ".cursor", "mcp.json");
 
-    // Decline via a stub handler → nothing is written.
-    const declineTask = await setupMcp(bootRuntime(FLAGS, cwd));
-    await runTask(declineTask, { promptHandler: async () => false });
-    expect(existsSync(configPath)).toBe(false);
-
-    // Accept via a stub handler → the pragma server is written.
-    const acceptTask = await setupMcp(bootRuntime(FLAGS, cwd));
-    const result = (await runTask(acceptTask, {
-      promptHandler: async () => true,
-    })) as SetupResult;
-    expect(existsSync(configPath)).toBe(true);
-    const config = JSON.parse(readFileSync(configPath, "utf-8"));
-    expect(config.mcpServers?.pragma?.command).toBe("pragma");
-    expect(result.kind === "mcp" && result.configured).toContain("Cursor");
-  });
-
-  it("auto-confirms under the default handler (never hangs)", async () => {
-    const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".cursor"), { recursive: true });
-    // executeVerb with --yes wires autoAnswerDefaults (default true → configured).
     const outcome = await executeVerb(
       verbOf("mcp"),
       {},
@@ -172,19 +141,37 @@ describe("setup mcp — harness gate", () => {
       bootRuntime(FLAGS, cwd),
     );
     expect(outcome.exitCode).toBe(0);
-    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(true);
+    expect(existsSync(configPath)).toBe(true);
+    const config = JSON.parse(readFileSync(configPath, "utf-8"));
+    expect(config.mcpServers?.pragma?.command).toBe("pragma");
+  });
+
+  it("a declined recap gate writes nothing (clean GENERATOR_CANCELLED)", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const configPath = join(cwd, ".cursor", "mcp.json");
+
+    const { generator } = await buildSetupPlan(bootRuntime(FLAGS, cwd), "mcp");
+    // A handler that declines EVERYTHING (incl. execute's "Proceed?" gate) must
+    // fail the run cleanly — the GENERATOR_CANCELLED code the boundary renders
+    // as a plain "Cancelled." — and write nothing.
+    const task = execute(generator, { prompt: async () => false, params: {} });
+    await expect(
+      runTask(task as Task<unknown>, { promptHandler: async () => false }),
+    ).rejects.toMatchObject({ code: "GENERATOR_CANCELLED" });
+    expect(existsSync(configPath)).toBe(false);
   });
 });
 
 describe("setup skills", () => {
-  it("empty skills raise EMPTY_RESULTS", async () => {
+  it("empty skills raise EMPTY_RESULTS on the direct sub-verb", async () => {
     const cwd = tmp("pragma-setup-proj-");
-    await expect(setupSkills(bootRuntime(FLAGS, cwd))).rejects.toMatchObject({
-      code: "EMPTY_RESULTS",
-    });
+    await expect(
+      executeVerb(verbOf("skills"), {}, YES, bootRuntime(FLAGS, cwd)),
+    ).rejects.toMatchObject({ code: "EMPTY_RESULTS" });
   });
 
-  it("plans a symlink whose effect carries an undo (created action)", async () => {
+  it("detects a created action and composes a symlink carrying an undo", async () => {
     const cwd = tmp("pragma-setup-proj-");
     const skillDir = join(cwd, ".pragma", "skills", "my-skill");
     mkdirSync(skillDir, { recursive: true });
@@ -193,23 +180,74 @@ describe("setup skills", () => {
       "---\nname: my-skill\ndescription: A test skill.\n---\n",
     );
 
-    const task = (await setupSkills(
-      bootRuntime(FLAGS, cwd),
-    )) as Task<SetupResult>;
-    const { value, effects } = dryRun(task);
-    expect(value.kind).toBe("skills");
-    if (value.kind === "skills") {
-      expect(value.result.skillCount).toBe(1);
-      expect(value.result.actions.some((a) => a.action === "created")).toBe(
-        true,
-      );
-    }
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    expect(detected.available).toBe(true);
+    expect(detected.skillCount).toBe(1);
+    expect(detected.actions.some((a) => a.action === "created")).toBe(true);
+
+    const { effects } = dryRun(composeSkills(detected));
     const symlinkEffect = effects.find((e) => e._tag === "Symlink") as
       | (Effect & { _tag: "Symlink"; undo?: unknown })
       | undefined;
     expect(symlinkEffect).toBeDefined();
     expect(symlinkEffect?.undo).toBeDefined();
     expect(existsSync(join(cwd, ".agents", "skills", "my-skill"))).toBe(false);
+  });
+});
+
+describe("setup (run-all wizard)", () => {
+  it("--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // harness detected
+    const outcome = await executeVerb(
+      setupSelfVerb,
+      {},
+      DRY,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const plan = outcome.stdout ?? "";
+    expect(plan).toContain(completionScriptPath("zsh")); // completions step
+    expect(plan).toContain("terrazzo-lsp-extension"); // lsp step (exec, mocked)
+    expect(plan).toContain("mcp.json"); // mcp step
+    expect(plan).not.toContain("Prompt"); // recap gate / multiselects filtered
+    // Nothing is written by a preview.
+    expect(existsSync(completionScriptPath("zsh"))).toBe(false);
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
+  });
+
+  it("omits skills gracefully when none are discovered (no mid-wizard EMPTY_RESULTS)", async () => {
+    // A run-all in a project with no skills must NOT throw — it just doesn't
+    // offer the skills step. Reaching a clean plan proves the graceful degrade.
+    const outcome = await executeVerb(
+      setupSelfVerb,
+      {},
+      DRY,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("terrazzo-lsp-extension"); // lsp still there
+  });
+});
+
+describe("lazy-React discipline (PROTECTED)", () => {
+  it("running a --yes setup never loads React or Ink", async () => {
+    // A real run through the seam (autoPrompt, no wizard) must not mount Ink.
+    await executeVerb(
+      completionsVerb,
+      {},
+      YES,
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+    );
+    const isReactPkg = (k: string) =>
+      /[\\/](react|react-dom|ink|ink-select-input|ink-text-input|ink-spinner)@\d/.test(
+        k,
+      ) ||
+      /[\\/]node_modules[\\/](react|react-dom|ink|ink-select-input|ink-text-input|ink-spinner)[\\/]/.test(
+        k,
+      );
+    const loaded = Object.keys(require.cache ?? {});
+    expect(loaded.filter(isReactPkg)).toEqual([]);
   });
 });
 
