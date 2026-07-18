@@ -29,6 +29,32 @@ function buildTypeConstraint(lookup: PackLookup): string {
 }
 
 /**
+ * The gated projection shared by both lookup forms: the `?uri ?name <vars>`
+ * SELECT header, the class constraint, and the OPTIONAL field triples, all
+ * restricted to the fields active at `level`. The name- and IRI-addressed forms
+ * differ ONLY in how `?uri` is bound (a `FILTER` on the escaped name vs a `BIND`
+ * of the resolved IRI), so both thread the active level through here and gate
+ * identically — an IRI-addressed lookup honours `--detail` just like a name one.
+ */
+function lookupProjection(
+  lookup: PackLookup,
+  level: string | undefined,
+): { header: string; body: string } {
+  const fields = activeFields(lookup, level);
+  const vars = fields.map((field) => `?${field.name}`).join(" ");
+  const optionals = fields
+    .map(
+      (field) =>
+        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} . }`,
+    )
+    .join("\n");
+  return {
+    header: `SELECT ?uri ?name${vars.length > 0 ? ` ${vars}` : ""} WHERE {`,
+    body: buildTypeConstraint(lookup) + optionals,
+  };
+}
+
+/**
  * Build the SELECT retrieving one named entity with its declared fields.
  *
  * @param lookup - The pack's lookup declaration.
@@ -41,20 +67,11 @@ export function buildLookupQuery(
   name: string,
   level?: string,
 ): string {
-  const fields = activeFields(lookup, level);
-  const vars = fields.map((field) => `?${field.name}`).join(" ");
-  const optionals = fields
-    .map(
-      (field) =>
-        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} . }`,
-    )
-    .join("\n");
-  const typeConstraint = buildTypeConstraint(lookup);
-
+  const { header, body } = lookupProjection(lookup, level);
   return [
-    `SELECT ?uri ?name${vars.length > 0 ? ` ${vars}` : ""} WHERE {`,
+    header,
     `  ?uri ${formatTerm(lookup.by)} ?name .`,
-    typeConstraint + optionals,
+    body,
     `  FILTER (LCASE(STR(?name)) = LCASE("${escapeSparqlString(name)}"))`,
     "}",
     "LIMIT 1",
@@ -67,28 +84,26 @@ export function buildLookupQuery(
  * Build the SELECT retrieving one entity addressed directly by IRI.
  *
  * Binds the already-resolved IRI to `?uri` instead of filtering on the `by`
- * value. Injection-safe by construction: the caller validates `iri` against the
- * embeddable-IRI shape BEFORE it is interpolated here — raw user input never
- * reaches this function.
+ * value; otherwise identical to the name form, including level-gating. Injection-
+ * safe by construction: the caller validates `iri` against the embeddable-IRI
+ * shape BEFORE it is interpolated here — raw user input never reaches this
+ * function.
+ *
+ * @param lookup - The pack's lookup declaration.
+ * @param iri - The already-resolved, embeddable entity IRI.
+ * @param level - Active canonical level; gated fields below it are excluded.
  */
-export function buildLookupByIriQuery(lookup: PackLookup, iri: string): string {
-  const fields = [...(lookup.fields ?? []), ...(lookup.sections ?? [])];
-  const vars = fields.map((field) => `?${field.name}`).join(" ");
-  const optionals = fields
-    .map(
-      (field) =>
-        `  OPTIONAL { ?uri ${formatTerm(field.property)} ?${field.name} . }`,
-    )
-    .join("\n");
-  const typeConstraint = lookup.type
-    ? `  ?uri a ${formatTerm(lookup.type)} .\n`
-    : "";
-
+export function buildLookupByIriQuery(
+  lookup: PackLookup,
+  iri: string,
+  level?: string,
+): string {
+  const { header, body } = lookupProjection(lookup, level);
   return [
-    `SELECT ?uri ?name${vars.length > 0 ? ` ${vars}` : ""} WHERE {`,
+    header,
     `  BIND(<${iri}> AS ?uri)`,
     `  ?uri ${formatTerm(lookup.by)} ?name .`,
-    typeConstraint + optionals,
+    body,
     "}",
     "LIMIT 1",
   ]

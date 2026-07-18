@@ -51,7 +51,10 @@ export interface ListedResource {
 export function buildResourceList(
   index: PackIndex | undefined,
 ): ListedResource[] {
-  if (!index || index.version < 2) {
+  // readPackIndex returns raw JSON.parse output (no zod), so guard structurally:
+  // a malformed index missing `version` must degrade to the recovery hint, not
+  // fall through to `[...index.entities]` (a TypeError inside the MCP handler).
+  if (!index || index.version !== 2 || !Array.isArray(index.entities)) {
     return [
       {
         uri: "pragma:sources",

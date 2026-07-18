@@ -95,6 +95,36 @@ const valuesList = (uris: readonly string[]): string =>
   uris.map((uri) => `<${uri}>`).join(" ");
 
 /**
+ * Per subject, keep the object whose predicate ranks HIGHEST (lowest index) in
+ * `preference`. The `?p` binding is projected so the winner is chosen by declared
+ * preference order: SPARQL returns solutions in an unspecified order, so keeping
+ * the first row per subject would be store-order-dependent (an entity carrying
+ * both `rdfs:label` and `skos:prefLabel` could index either), not ranked.
+ */
+function preferredBySubject(
+  result: import("@canonical/ke").SelectResult,
+  valueVar: string,
+  preference: readonly string[],
+): Map<string, string> {
+  const best = new Map<string, { value: string; rank: number }>();
+  for (const term of result.termBindings) {
+    if (term.s?.termType !== "NamedNode") continue;
+    const value = term[valueVar]?.value;
+    const predicate = term.p?.value;
+    if (!value || predicate === undefined) continue;
+    const rank = preference.indexOf(predicate);
+    if (rank === -1) continue;
+    const current = best.get(term.s.value);
+    if (current === undefined || rank < current.rank) {
+      best.set(term.s.value, { value, rank });
+    }
+  }
+  const picked = new Map<string, string>();
+  for (const [subject, entry] of best) picked.set(subject, entry.value);
+  return picked;
+}
+
+/**
  * Build the entity index from a populated store.
  *
  * @param store - The ke store to query.
@@ -113,10 +143,10 @@ export async function buildIndex(
       `SELECT ?s ?type WHERE { ?s <${RDF_TYPE}> ?type }` as never,
     ) as Promise<import("@canonical/ke").SelectResult>,
     store.query(
-      `SELECT ?s ?label WHERE { ?s ?p ?label . VALUES ?p { ${valuesList(LABEL_PREDICATES)} } }` as never,
+      `SELECT ?s ?p ?label WHERE { ?s ?p ?label . VALUES ?p { ${valuesList(LABEL_PREDICATES)} } }` as never,
     ) as Promise<import("@canonical/ke").SelectResult>,
     store.query(
-      `SELECT ?s ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
+      `SELECT ?s ?p ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
     ) as Promise<import("@canonical/ke").SelectResult>,
   ]);
 
@@ -132,23 +162,16 @@ export async function buildIndex(
     instanceCountByType[typeUri] = (instanceCountByType[typeUri] ?? 0) + 1;
   }
 
-  const labelBySubject = new Map<string, string>();
-  for (const term of labelResult.termBindings) {
-    if (term.s?.termType !== "NamedNode") continue;
-    const subject = term.s.value;
-    if (!labelBySubject.has(subject) && term.label?.value) {
-      labelBySubject.set(subject, term.label.value);
-    }
-  }
-
-  const descBySubject = new Map<string, string>();
-  for (const term of descResult.termBindings) {
-    if (term.s?.termType !== "NamedNode") continue;
-    const subject = term.s.value;
-    if (!descBySubject.has(subject) && term.desc?.value) {
-      descBySubject.set(subject, term.desc.value);
-    }
-  }
+  const labelBySubject = preferredBySubject(
+    labelResult,
+    "label",
+    LABEL_PREDICATES,
+  );
+  const descBySubject = preferredBySubject(
+    descResult,
+    "desc",
+    DESCRIPTION_PREDICATES,
+  );
 
   const entities: PackIndexEntity[] = [];
   for (const [subject, fullTypes] of typesBySubject) {

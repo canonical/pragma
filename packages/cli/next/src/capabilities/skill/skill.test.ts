@@ -82,3 +82,45 @@ describe("skill lookup (storeless)", () => {
     );
   });
 });
+
+describe("skill precedence (project overrides installed)", () => {
+  let precedenceDir: string;
+  let installedHome: string;
+  let savedDataHome: string | undefined;
+  let precedenceRt: PragmaRuntime;
+
+  beforeAll(() => {
+    precedenceDir = mkdtempSync(join(tmpdir(), "pragma2-skills-proj-"));
+    installedHome = mkdtempSync(join(tmpdir(), "pragma2-skills-installed-"));
+    // An installed skill and a project skill both claim the name `shared`.
+    const installed = join(installedHome, "pragma", "skills", "shared");
+    mkdirSync(installed, { recursive: true });
+    writeFileSync(
+      join(installed, "SKILL.md"),
+      "---\nname: shared\ndescription: INSTALLED copy.\n---\nInstalled body.",
+    );
+    const project = join(precedenceDir, ".pragma", "skills", "shared");
+    mkdirSync(project, { recursive: true });
+    writeFileSync(
+      join(project, "SKILL.md"),
+      "---\nname: shared\ndescription: PROJECT copy.\n---\nProject body.",
+    );
+    savedDataHome = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = installedHome;
+    precedenceRt = bootRuntime(TEST_FLAGS, precedenceDir);
+  });
+
+  afterAll(() => {
+    if (savedDataHome === undefined) delete process.env.XDG_DATA_HOME;
+    else process.env.XDG_DATA_HOME = savedDataHome;
+    rmSync(precedenceDir, { recursive: true, force: true });
+    rmSync(installedHome, { recursive: true, force: true });
+  });
+
+  it("returns the project skill, not the installed one, on a name clash", async () => {
+    const skills = (await listVerb.run({}, precedenceRt)) as DiscoveredSkill[];
+    const shared = skills.filter((s) => s.name === "shared");
+    expect(shared).toHaveLength(1);
+    expect(shared[0]?.description).toBe("PROJECT copy.");
+  });
+});

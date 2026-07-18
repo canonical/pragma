@@ -113,6 +113,18 @@ export function makeSampleRun(
   return async (params, rt) => {
     const count = parseSampleCount(params.count ?? defaultCount);
     const names = await listEntityNames(rt, lookup, source);
+    // An empty population is a clean EMPTY_RESULTS (nothing to sample), not the
+    // "(empty)" INVALID_INPUT resolveLookup would raise on a zero-length batch.
+    if (names.length === 0) {
+      throw PragmaError.emptyResults(noun, {
+        message: `No ${noun} entries to sample.`,
+        recovery: {
+          message: `List available ${noun} entries.`,
+          cli: `pragma ${noun} list`,
+          mcp: { tool: `${noun}_list` },
+        },
+      });
+    }
     const selected = pickRandom(names, count);
     const output = await resolveLookup(
       rt,

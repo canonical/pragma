@@ -3,10 +3,11 @@
  *
  * A skill is a folder with a `SKILL.md` carrying YAML frontmatter (`name`,
  * `description`, and the #856 `prompt` flag among others). Skills are discovered
- * from conventional roots — installed skills under `$XDG_DATA_HOME/pragma/skills`
- * and project skills under `<cwd>/.pragma/skills` — with missing files and
- * invalid frontmatter skipped gracefully. Reads only the filesystem, never the
- * graph store, so `skill list`/`lookup` are storeless (needsStore: false).
+ * from conventional roots — project skills under `<cwd>/.pragma/skills`, which
+ * take precedence, then installed skills under `$XDG_DATA_HOME/pragma/skills` —
+ * with missing files and invalid frontmatter skipped gracefully. Reads only the
+ * filesystem, never the graph store, so `skill list`/`lookup` are storeless
+ * (needsStore: false).
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -109,11 +110,16 @@ export function parseFrontmatter(content: string): SkillFrontmatter | null {
   };
 }
 
-/** The conventional roots skills are discovered from. */
+/**
+ * The conventional roots skills are discovered from, in PRECEDENCE order: the
+ * project root (`<cwd>/.pragma/skills`) FIRST so a project-local skill overrides
+ * an installed skill of the same name (`discoverSkills` dedups first-seen-wins),
+ * then installed skills under `$XDG_DATA_HOME/pragma/skills`.
+ */
 export function skillRoots(cwd: string): string[] {
   const dataHome =
     process.env.XDG_DATA_HOME ?? join(homedir(), ".local", "share");
-  return [join(dataHome, "pragma", "skills"), join(cwd, ".pragma", "skills")];
+  return [join(cwd, ".pragma", "skills"), join(dataHome, "pragma", "skills")];
 }
 
 /** Immediate subdirectories of `root` (each a candidate skill folder). */

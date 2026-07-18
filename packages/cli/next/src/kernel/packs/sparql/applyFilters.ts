@@ -3,10 +3,10 @@
  *
  * Filters are row predicates on projected SELECT variables — the author query is
  * never modified, so user input cannot inject SPARQL and the query's ordering is
- * preserved. With declared `values` the input is matched against the canonical
- * set (NFC, case-insensitive); without them the input is a free term matched on
- * case-insensitive equality. A row lacking the variable never matches. Several
- * filters combine conjunctively.
+ * preserved. With declared `values` the input is canonicalized against the set
+ * (NFC, case-insensitive) and rows are matched case-insensitively; without them
+ * the input is a free term matched the same way. A row lacking the variable never
+ * matches. Several filters combine conjunctively.
  */
 
 import { PragmaError } from "../../error/PragmaError.js";
@@ -37,9 +37,14 @@ export function applyPackFilters(
       );
       continue;
     }
-    const canonical = canonicalizeFilterValue(provided, filter, values);
+    const canonical = canonicalizeFilterValue(
+      provided,
+      filter,
+      values,
+    ).toLowerCase();
     result = result.filter(
-      (row) => row[filter.variable]?.normalize("NFC") === canonical,
+      (row) =>
+        row[filter.variable]?.normalize("NFC").toLowerCase() === canonical,
     );
   }
   return result;

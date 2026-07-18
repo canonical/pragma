@@ -89,6 +89,10 @@ export async function resolvePackDetail(
   return resolveDetail({
     flag: rt.globalFlags.detail,
     config: configDetail,
-    specDefault: disclosure.default,
+    // Mirror the projector's normalization (compile.disclosureSpec): a pack that
+    // declares `levels` but omits `default` defaults to its FIRST declared level,
+    // not the canonical `standard`. Without this the advertised default (help /
+    // MCP `detail` param) and the resolved fetch level diverge for dynamic packs.
+    specDefault: disclosure.default ?? disclosure.levels[0],
   });
 }

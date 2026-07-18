@@ -209,7 +209,7 @@ function buildEntityQuery(
       },
     });
   }
-  return buildLookupByIriQuery(lookup, resolved);
+  return buildLookupByIriQuery(lookup, resolved, level);
 }
 
 /** Whether a lookup query addresses an entity by IRI or prefixed name. */

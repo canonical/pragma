@@ -145,7 +145,23 @@ const disclosureSchema = z
     levels: z.array(z.enum(DETAIL_LEVELS)).min(1),
     default: z.enum(DETAIL_LEVELS).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((disclosure, ctx) => {
+    // `default` must name a DECLARED level, not merely a canonical one — else the
+    // injected MCP `detail` enum offers only the declared levels while the
+    // advertised/resolved default is unselectable (compounds the divergence
+    // resolvePackDetail guards at runtime).
+    if (
+      disclosure.default !== undefined &&
+      !disclosure.levels.includes(disclosure.default)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `disclosure default "${disclosure.default}" is not one of the declared levels [${disclosure.levels.join(", ")}].`,
+        path: ["default"],
+      });
+    }
+  });
 
 const sampleSchema = z.union([
   z.literal(true),
