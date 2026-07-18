@@ -11,6 +11,18 @@
 import { kebabCase } from "../../spec/emitSurface.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
 
+/**
+ * A verb's `doc` doubles as its MCP tool description, so a pack's authored
+ * `toolDescription` may end with an MCP tool-call example — `Example:
+ * token_lookup { names: ["…"] }`. That `noun_verb {…}` syntax is MCP-transport
+ * shape, meaningless on the CLI, so the CLI projector drops the trailing example
+ * sentence; the MCP projector keeps the authored text whole. Hand-written docs
+ * carry no such example and pass through untouched.
+ */
+function stripToolCallExample(doc: string): string {
+  return doc.replace(/\s*Example:\s+[a-z][a-z0-9_]*\s*\{[^{}]*\}\.?\s*$/, "");
+}
+
 /** The positional usage token for a param (`<name>` / `[name]`, `...` variadic). */
 function positionalToken(param: ParamSpec): string {
   const variadic = param.kind === "string[]" ? "..." : "";
@@ -50,7 +62,8 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
   ];
 
   if (verb.doc) {
-    lines.push("", verb.doc);
+    const cliDoc = stripToolCallExample(verb.doc);
+    if (cliDoc) lines.push("", cliDoc);
   }
 
   if (flags.length > 0) {

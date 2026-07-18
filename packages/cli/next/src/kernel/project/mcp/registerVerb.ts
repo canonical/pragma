@@ -266,7 +266,11 @@ export function registerVerb(
     inputSchema?: z.ZodRawShape;
     annotations: McpAnnotations;
   } = {
-    description: verb.summary,
+    // The agent-facing tool description is the verb's richer `doc` when present
+    // (pack `toolDescription`s compile into it; hand-written verbs author it
+    // directly), falling back to the one-line `summary`. Tool descriptions are
+    // NOT part of the frozen surface, so this stays covenant-safe.
+    description: verb.doc ?? verb.summary,
     annotations: annotationsFor(verb),
   };
   if (Object.keys(shape).length > 0) config.inputSchema = shape;

@@ -74,6 +74,7 @@ export function compilePack(
         noun,
         verb: "list",
         summary: definition.description ?? `List ${noun} entries.`,
+        doc: definition.toolDescription,
         source,
         prefixes,
       }),
@@ -86,6 +87,7 @@ export function compilePack(
         noun,
         verb: verb.verb,
         summary: verb.description ?? `List ${noun} ${verb.verb}.`,
+        doc: verb.toolDescription,
         source,
         prefixes,
       }),
@@ -107,6 +109,8 @@ interface ListVerbMeta {
   readonly noun: string;
   readonly verb: string;
   readonly summary: string;
+  /** The authored MCP tool description (from `toolDescription`), if any. */
+  readonly doc?: string;
   readonly source: string;
   readonly prefixes: Readonly<Record<string, string>>;
 }
@@ -121,6 +125,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
   const verb: VerbSpec<Record<string, unknown>, PackRow[]> = {
     path: [meta.noun, meta.verb],
     summary: meta.summary,
+    ...(meta.doc ? { doc: meta.doc } : {}),
     params,
     output: {
       formatters: listFormatters(shape, {
