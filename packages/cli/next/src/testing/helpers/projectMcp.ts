@@ -8,7 +8,10 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type {
+  CallToolResult,
+  ServerCapabilities,
+} from "@modelcontextprotocol/sdk/types.js";
 import { buildServer } from "../../kernel/project/mcp/buildServer.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 
@@ -37,6 +40,17 @@ export interface McpHarness {
   readResource(uri: string): Promise<{ mimeType?: string; text: string }>;
   /** Complete a resource-template variable against a partial value. */
   completeResource(partial: string): Promise<string[]>;
+  /** The server capabilities negotiated at initialize (tools/resources/prompts). */
+  serverCapabilities(): ServerCapabilities | undefined;
+  /** The server `instructions` string sent at initialize. */
+  instructions(): string | undefined;
+  /** List the native MCP prompts (`prompts/list`). */
+  listPrompts(): Promise<{ name: string; description?: string }[]>;
+  /** Get one native MCP prompt (`prompts/get`), with optional arguments. */
+  getPrompt(
+    name: string,
+    args?: Record<string, string>,
+  ): Promise<{ description?: string; messages: unknown[] }>;
   /** Close the client and server. */
   cleanup(): Promise<void>;
 }
@@ -102,6 +116,26 @@ export async function projectMcp(
         argument: { name: "uri", value: partial },
       });
       return result.completion.values;
+    },
+    serverCapabilities() {
+      return client.getServerCapabilities();
+    },
+    instructions() {
+      return client.getInstructions();
+    },
+    async listPrompts() {
+      const { prompts } = await client.listPrompts();
+      return prompts.map((prompt) => ({
+        name: prompt.name,
+        ...(prompt.description ? { description: prompt.description } : {}),
+      }));
+    },
+    async getPrompt(name, args) {
+      const result = await client.getPrompt({ name, arguments: args });
+      return {
+        ...(result.description ? { description: result.description } : {}),
+        messages: result.messages,
+      };
     },
     async cleanup() {
       await client.close();

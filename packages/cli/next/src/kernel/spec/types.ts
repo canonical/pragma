@@ -142,11 +142,30 @@ export interface McpResourceProvider {
   ) => void;
 }
 
-/** A capability module: a named bundle of verbs with optional boot/resources hooks. */
+/**
+ * An MCP prompt provider — a module's native `prompts/*` surface.
+ *
+ * Parallel to {@link McpResourceProvider}: `register` installs the server's
+ * `prompts/list` + `prompts/get` handlers (and advertises the `prompts`
+ * capability). Listing is storeless over the pack index; a get is store-backed.
+ * Prompts are NOT tools, so they never enter the emitted tool surface; the
+ * projector calls this per module that declares it. Async because it
+ * dynamic-imports the SDK request schemas (kept off the fast path).
+ */
+export interface McpPromptProvider {
+  readonly register: (
+    server: import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
+    rt: PragmaRuntime,
+  ) => Promise<void> | void;
+}
+
+/** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */
 export interface CapabilityModule {
   readonly name: string;
   readonly verbs: readonly VerbSpec[];
   readonly boot?: (rt: PragmaRuntime) => void;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
+  /** An optional MCP prompt surface (NOT a VerbSpec field — a module hook). */
+  readonly mcpPrompts?: McpPromptProvider;
 }

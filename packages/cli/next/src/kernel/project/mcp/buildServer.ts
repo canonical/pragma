@@ -14,6 +14,7 @@ import { MCP_SERVER_NAME, VERSION } from "../../../constants.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import type { CapabilityModule } from "../../spec/types.js";
+import { buildInstructions } from "./instructions.js";
 import { registerVerb } from "./registerVerb.js";
 
 /**
@@ -45,7 +46,12 @@ export async function buildServer(
   modules: readonly CapabilityModule[],
   cwd: string = process.cwd(),
 ): Promise<McpServer> {
-  const server = new McpServer({ name: MCP_SERVER_NAME, version: VERSION });
+  const server = new McpServer(
+    { name: MCP_SERVER_NAME, version: VERSION },
+    // Handshake orientation (sent once at initialize), derived from the SAME
+    // conventions/discovery as the `capabilities` tool so the two never diverge.
+    { instructions: buildInstructions(modules) },
+  );
   const runtime = bootRuntime(MCP_FLAGS, cwd);
 
   for (const module of modules) {
@@ -56,6 +62,8 @@ export async function buildServer(
     }
     // A module's optional resource surface (NOT a tool) — the `{+uri}` template.
     await module.mcpResources?.register(server, runtime);
+    // A module's optional native prompt surface (NOT a tool) — `prompts/*`.
+    await module.mcpPrompts?.register(server, runtime);
   }
 
   return server;
