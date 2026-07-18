@@ -221,6 +221,34 @@ describe("buildProgram — mixed self+sub-verb noun (setup shape)", () => {
     // The sub-verb is still reachable under the same parent.
     expect(kit2?.commands.map((c) => c.name())).toContain("one");
   });
+
+  it("throws at build time when a mixed-noun self-verb declares a positional", () => {
+    // The documented invariant, now enforced: a self-verb sharing a noun with
+    // sub-verbs must have NO positional (else `<noun> <sub>` would shadow the
+    // positional value and Commander would silently drop it from the model).
+    const selfWithPositional: VerbSpec = {
+      path: ["kit3"],
+      summary: "kit3 summary",
+      params: [
+        {
+          kind: "string",
+          name: "target",
+          doc: "a positional",
+          positional: true,
+        },
+      ],
+      output: {
+        formatters: { plain: () => "", llm: () => "", json: () => "{}" },
+      },
+      capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+      run: async () => null,
+    };
+    const module: CapabilityModule = {
+      name: "kit3ish",
+      verbs: [selfWithPositional, recordingVerb(["kit3", "one"], "ONE")],
+    };
+    expect(() => projectCli([module])).toThrow(/must have no positional/);
+  });
 });
 
 describe("formatRootHelp — grouping", () => {

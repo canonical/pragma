@@ -159,6 +159,19 @@ function attachNounGroup(
   useDesignedHelp(parent, () => formatNounHelp(programName, noun, live));
 
   if (selfVerb) {
+    // A mixed noun (self-verb + sub-verbs) MUST have no positional on its
+    // self-verb: Commander resolves a registered sub-command name before the
+    // parent action, so a positional would be shadowed by `<noun> <sub>` and
+    // silently dropped from the parent's model. Enforce the invariant the
+    // JSDoc above documents, turning a latent footgun into a build-time error.
+    const positional = selfVerb.params.find((param) => param.positional);
+    if (positional) {
+      throw new Error(
+        `buildProgram: mixed noun "${noun}" self-verb declares positional ` +
+          `"${positional.name}"; a mixed noun's self-verb must have no ` +
+          "positional (it collides with sub-verb routing).",
+      );
+    }
     parent.description(selfVerb.summary);
     registerParams(parent, selfVerb);
     parent.action(async (...actionArgs: unknown[]) => {
