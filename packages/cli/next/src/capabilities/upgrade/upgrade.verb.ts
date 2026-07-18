@@ -22,7 +22,7 @@ import { upgradeFormatters } from "./upgrade.render.js";
 const upgradeVerb: VerbSpec<Record<string, unknown>, UpgradeData> = {
   path: ["upgrade"],
   summary: "Upgrade the pragma CLI to the latest version.",
-  doc: "Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview it with --dry-run.",
+  doc: "Checks the registry for the active channel's latest release and runs your package manager's global-update command. Preview the update before applying it.",
   params: [],
   output: { formatters: upgradeFormatters },
   examples: [

@@ -66,7 +66,7 @@ function subVerb(
 const setupAllVerb: VerbSpec<Record<string, unknown>, SetupResult> = {
   path: ["setup"],
   summary: "Configure MCP, completions, and the LSP for this project.",
-  doc: "Runs the shell-completions, LSP, and MCP installers, each behind a confirmation. Preview with --dry-run; skip prompts with --yes.",
+  doc: "Runs the shell-completions, LSP, and MCP installers, each behind a confirmation. Preview the planned changes before applying them.",
   params: [],
   output: { formatters: setupFormatters },
   examples: [

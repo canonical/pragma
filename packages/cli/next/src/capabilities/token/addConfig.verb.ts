@@ -15,7 +15,7 @@ import type { AddConfigResult } from "./runAddConfig.js";
 const addConfigVerb: VerbSpec<Record<string, unknown>, AddConfigResult> = {
   path: ["token", "add-config"],
   summary: "Generate a tokens.config.mjs for the terrazzo token pipeline.",
-  doc: "Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packages. Store-backed so it reports how many tokens the active graph holds. Plan-first: preview without `confirm`/`--yes`.",
+  doc: "Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packages. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.",
   params: [],
   output: { formatters: addConfigFormatters },
   examples: [

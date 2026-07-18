@@ -22,7 +22,7 @@ type QueryResult = import("@canonical/ke").QueryResult;
 const queryVerb: VerbSpec<Record<string, unknown>, QueryResult> = {
   path: ["graph", "query"],
   summary: "Run a raw SPARQL query against the loaded graph.",
-  doc: "Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map — see `pragma ontology list`.",
+  doc: "Executes an arbitrary SPARQL query (SELECT / ASK / CONSTRUCT) against the store. Prefixes are applied automatically from the pack's namespace map; list the ontology namespaces to discover the available prefixes.",
   params: [
     {
       kind: "string",
