@@ -20,3 +20,8 @@ process.env.XDG_DATA_HOME = mkdtempSync(
 process.env.XDG_STATE_HOME = mkdtempSync(
   join(tmpdir(), "pragma2-test-xdg-state-"),
 );
+// The store layer writes the content-addressed pack cache under
+// $XDG_CACHE_HOME — isolate it too so tests never touch the real cache.
+process.env.XDG_CACHE_HOME = mkdtempSync(
+  join(tmpdir(), "pragma2-test-xdg-cache-"),
+);

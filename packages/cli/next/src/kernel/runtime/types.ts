@@ -9,6 +9,7 @@
  */
 
 import type { DetailLevel, OutputFormat } from "../../constants.js";
+import type { ConfigLayers } from "../config/types.js";
 
 /**
  * Global flags parsed once, before the command tree runs, and shared by every
@@ -51,9 +52,37 @@ export interface StoreSession {
 }
 
 /**
- * Per-invocation runtime handed to every verb `run`. Storeless in PR1 — the
- * store handle and query facade join with the runtime/store layer (the
- * dispatcher boots the store only for `capability.needsStore` verbs).
+ * The lazy store handle. `get()` memoizes an immutable {@link StoreSession} and
+ * throws STORE_UNAVAILABLE when the store is cold; `booted` reports whether the
+ * store has actually been constructed (the storeless-guarantee spy target).
+ */
+export interface LazyStore {
+  /** Boot (once) and return the store session; throws STORE_UNAVAILABLE cold. */
+  get(): Promise<StoreSession>;
+  /** Whether the store has been constructed yet (spy target). */
+  readonly booted: boolean;
+}
+
+/**
+ * The query facade: `graphql` is the default typed spine (executed against the
+ * pack's precompiled schema); `sparql` is the raw, auto-prefixed escape hatch.
+ * Both boot the store lazily on first use.
+ */
+export interface QueryFacade {
+  /** Execute a GraphQL document against the pack's precompiled schema. */
+  graphql(
+    document: string,
+    variables?: Record<string, unknown> | null,
+  ): Promise<import("graphql").ExecutionResult>;
+  /** Execute a raw SPARQL query against the store (prefixes auto-applied). */
+  sparql(text: string): Promise<import("@canonical/ke").QueryResult>;
+}
+
+/**
+ * Per-invocation runtime handed to every verb `run`. Storeless verbs use only
+ * `cwd`/`version`/`globalFlags`/`loadConfig`; store-backed verbs reach the graph
+ * through `store`/`query`. The dispatcher boots the store only for
+ * `capability.needsStore` verbs, so a storeless verb never constructs it.
  */
 export interface PragmaRuntime {
   /** Directory the invocation resolves project state (config) against. */
@@ -62,4 +91,10 @@ export interface PragmaRuntime {
   readonly version: string;
   /** Global flags for this invocation. */
   readonly globalFlags: GlobalFlags;
+  /** Memoized layered-config loader (resolved once per invocation). */
+  readonly loadConfig: () => Promise<ConfigLayers>;
+  /** The lazy store — booted only for `needsStore` verbs. */
+  readonly store: LazyStore;
+  /** The query facade over the lazy store. */
+  readonly query: QueryFacade;
 }

@@ -104,6 +104,7 @@ function asPragmaError(error: unknown): PragmaError {
 function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
     try {
+      if (verb.capability.needsStore) await runtime.store.get();
       const params = paramsFromArgs(verb, args);
       const result = await Promise.resolve(
         verb.run(params, runtime) as Promise<unknown>,
@@ -119,8 +120,11 @@ function readHandler(verb: VerbSpec, runtime: PragmaRuntime) {
 function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
   return async (args: Record<string, unknown>): Promise<CallToolResult> => {
     try {
+      if (verb.capability.needsStore) await runtime.store.get();
       const params = paramsFromArgs(verb, args);
-      const task = verb.run(params, runtime) as Task<unknown>;
+      const task = await Promise.resolve(
+        verb.run(params, runtime) as Task<unknown> | Promise<Task<unknown>>,
+      );
       if (args.confirm !== true) {
         const plan = dryRun(task).effects.map(describeEffect);
         return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });

@@ -1,14 +1,18 @@
 /**
  * Build the per-invocation {@link PragmaRuntime}.
  *
- * PR1 is storeless: the runtime carries only what every verb needs regardless
- * of the store — the working directory, the CLI version, and the parsed global
- * flags. The store handle (and resolved config/packages) join this shape when
- * the first store-backed capability lands, so a verb only ever sees fields that
- * are actually populated by the time it runs.
+ * The runtime stays cheap and storeless to construct: `store` is a lazy handle
+ * (nothing boots until a `needsStore` verb calls `store.get()`), `query` is the
+ * facade over it, and `loadConfig` memoizes the layered-config read behind a
+ * dynamic import so the config reader (and its zod) never lands on the
+ * `--help`/`__complete` fast path. No eager I/O happens here — a storeless verb
+ * that only reads `globalFlags`/`cwd` touches neither the store nor config.
  */
 
 import { VERSION } from "../../constants.js";
+import type { ConfigLayers } from "../config/types.js";
+import { createQueryFacade } from "./facade.js";
+import { createLazyStore } from "./store.js";
 import type { GlobalFlags, PragmaRuntime } from "./types.js";
 
 /**
@@ -17,12 +21,24 @@ import type { GlobalFlags, PragmaRuntime } from "./types.js";
  * @param globalFlags - The parsed global flags for this invocation.
  * @param cwd - The directory to resolve project state against (defaults to the
  *   process working directory).
- * @returns The storeless runtime handed to every verb `run`.
- * @note Impure by default — reads `process.cwd()` unless `cwd` is provided.
+ * @returns The runtime handed to every verb `run`.
+ * @note Impure by default — reads `process.cwd()` unless `cwd` is provided; the
+ *   store/config handles it exposes do their own I/O only when used.
  */
 export function bootRuntime(
   globalFlags: GlobalFlags,
   cwd: string = process.cwd(),
 ): PragmaRuntime {
-  return { cwd, version: VERSION, globalFlags };
+  let configPromise: Promise<ConfigLayers> | undefined;
+  const loadConfig = (): Promise<ConfigLayers> => {
+    configPromise ??= import("../config/readConfig.js").then((module) =>
+      module.readConfig(cwd),
+    );
+    return configPromise;
+  };
+
+  const store = createLazyStore({ cwd, loadConfig });
+  const query = createQueryFacade(store);
+
+  return { cwd, version: VERSION, globalFlags, loadConfig, store, query };
 }

@@ -198,8 +198,17 @@ export async function executeVerb(
 ): Promise<DispatchOutcome> {
   const flags = runtime.globalFlags;
 
+  // The lazy-store seam: boot the store (once, memoized) only for verbs that
+  // declare they need it. A storeless verb never reaches the store factory, so
+  // the storeless guarantee holds by construction (no STORE_SKIP triage).
+  if (verb.capability.needsStore) {
+    await runtime.store.get();
+  }
+
   if (verb.capability.mutates) {
-    const task = verb.run(params, runtime) as Task<unknown>;
+    const task = await Promise.resolve(
+      verb.run(params, runtime) as Task<unknown> | Promise<Task<unknown>>,
+    );
     if (mutation.dryRun) {
       return renderPlan(flags, dryRun(task).effects.map(describeEffect));
     }

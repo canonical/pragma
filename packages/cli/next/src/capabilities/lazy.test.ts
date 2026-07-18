@@ -58,4 +58,25 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     expect(has(graph, "kernel/config/schema.ts")).toBe(false);
     expect(has(graph, "kernel/spec/validate.ts")).toBe(false);
   });
+
+  // The store code (ke / ke-graphql / oxigraph) must be dynamic-import-only:
+  // no file statically reachable from capabilities/index may `import … from`
+  // any of them, so building the command tree — or the __complete fast path —
+  // never loads the WASM runtime. Dynamic `import("…")` (used by the lazy
+  // store) has no `from`, so it is allowed.
+  it("capabilities/index pulls no ke/ke-graphql/oxigraph into the static graph (PROTECTED)", () => {
+    const heavy = ["@canonical/ke", "@canonical/ke-graphql", "oxigraph"];
+    const graph = staticImportGraph(resolve(here, "index.ts"));
+    for (const file of graph) {
+      const source = readFileSync(file, "utf-8");
+      for (const pkg of heavy) {
+        const escaped = pkg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const staticImport = new RegExp(`from\\s*["']${escaped}["']`);
+        expect(
+          staticImport.test(source),
+          `${file} statically imports ${pkg}`,
+        ).toBe(false);
+      }
+    }
+  });
 });
