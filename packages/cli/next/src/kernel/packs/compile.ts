@@ -163,16 +163,32 @@ function compileLookupVerb(
   source: string,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec {
+  // Derive-by-default: every lookup completes its `<name>` from the pack index
+  // (empty type = any, the reader handles it), UNLESS the pack opts out
+  // (`completion.enabled:false`). `match`/`minChars` tune the derived heuristic.
   const completeType = lookup.type ?? lookup.types?.at(0) ?? "";
+  const completion = lookup.completion;
   const nameParam: ParamSpec = {
     kind: "string[]",
     name: "name",
     doc: `${capitalize(noun)} names, prefixed names/IRIs, or glob patterns.`,
     positional: true,
     required: true,
-    ...(completeType
-      ? { complete: { kind: "entity" as const, type: completeType } }
-      : {}),
+    ...(completion?.enabled === false
+      ? {}
+      : {
+          complete: {
+            kind: "names" as const,
+            source: {
+              from: "index" as const,
+              ...(completeType ? { type: completeType } : {}),
+            },
+            ...(completion?.match ? { match: completion.match } : {}),
+            ...(completion?.minChars !== undefined
+              ? { minChars: completion.minChars }
+              : {}),
+          },
+        }),
   };
   const verb: VerbSpec<Record<string, unknown>, LookupOutput> = {
     path: [noun, "lookup"],

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
 import {
   completionFixture,
-  fixtureEntityReader,
+  fixtureNameEnv,
 } from "../../testing/fixtures/completionFixture.js";
 import type { CapabilityModule } from "../spec/types.js";
 import { runComplete } from "./complete.js";
@@ -42,15 +42,13 @@ describe("runComplete — the __complete pipeline", () => {
     ]);
   });
 
-  it("resolves entity contexts through the provided env", async () => {
+  it("resolves name contexts through the provided env", async () => {
     await expect(
-      runComplete(["block", "get", "but"], [completionFixture], {
-        entities: fixtureEntityReader,
-      }),
+      runComplete(["block", "get", "but"], [completionFixture], fixtureNameEnv),
     ).resolves.toEqual(["button", "button-group"]);
   });
 
-  it("defaults to the empty entity reader (zero entity candidates)", async () => {
+  it("defaults to the empty name source (zero name candidates)", async () => {
     await expect(
       runComplete(["block", "get", "but"], [completionFixture]),
     ).resolves.toEqual([]);

@@ -5,13 +5,18 @@
  * `buildCompletionModel`, so they can never disagree.
  */
 
+export type {
+  AutocompleteHeuristic,
+  CompletionFrom,
+  CompletionMatch,
+  CompletionSourceRef,
+} from "../spec/types.js";
 export { runComplete } from "./complete.js";
 export { emitScripts } from "./emitScripts.js";
 export {
   createIndexEntityReader,
-  emptyEntityReader,
+  emptyNameSource,
   indexCompletionEnv,
-  indexEntityReader,
 } from "./entitySource.js";
 export {
   assertSafeToken,
@@ -29,7 +34,6 @@ export type {
   CompletionModel,
   CompletionRequest,
   CompletionSource,
-  EntityNameReader,
   FlagEntry,
   NounEntry,
   PositionalEntry,

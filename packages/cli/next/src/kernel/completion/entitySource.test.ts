@@ -1,13 +1,112 @@
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import { runComplete } from "./complete.js";
 import { createIndexEntityReader, indexCompletionEnv } from "./entitySource.js";
 
 /** A fresh cwd with no lock → the reader falls back to the embedded pack. */
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-entity-"));
+
+/** A project whose lock points at a crafted index.json in a temp pack cache. */
+function projectWithIndex(index: unknown): string {
+  const cwd = mkdtempSync(join(tmpdir(), "pragma-idx-cwd-"));
+  const cache = mkdtempSync(join(tmpdir(), "pragma-idx-cache-"));
+  vi.stubEnv("XDG_CACHE_HOME", cache);
+  writeFileSync(
+    join(cwd, "pragma.lock.json"),
+    JSON.stringify({ contentHash: "testhash" }),
+  );
+  const packDir = join(cache, "pragma", "packs", "testhash");
+  mkdirSync(packDir, { recursive: true });
+  writeFileSync(join(packDir, "index.json"), JSON.stringify(index));
+  return cwd;
+}
+
+/** A crafted index exercising the index / prompts / tiers / prefixes sources. */
+const CRAFTED_INDEX = {
+  version: 2,
+  contentHash: "testhash",
+  prefixes: { ex: "https://example.com/", ds: "https://ds.canonical.com/" },
+  instanceCountByType: {},
+  entities: [
+    { name: "ex:Button", type: "ex:Component" },
+    { name: "ds:prompt.build", type: "ds:Prompt", label: "build-a-block" },
+    {
+      name: "ds:tier.lxd",
+      type: "ds:Tier",
+      label: "LXD",
+      altNames: ["apps/lxd"],
+    },
+    { name: "ds:tier.core", type: "ds:Tier", label: "core" },
+  ],
+};
+
+describe("indexCompletionEnv — multi-source names(ref)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("index: entity names of a prefixed type", async () => {
+    const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
+    expect(await env.names({ from: "index", type: "ex:Component" })).toEqual([
+      "ex:Button",
+    ]);
+  });
+
+  it("prompts: ds:Prompt entities emit label || name", async () => {
+    const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
+    expect(await env.names({ from: "prompts" })).toEqual(["build-a-block"]);
+  });
+
+  it("tiers: emit ds:name (altNames) when present, else label ?? name", async () => {
+    const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
+    // apps/lxd from altNames (the ds:name); core from the label fallback.
+    expect(await env.names({ from: "tiers" })).toEqual(["apps/lxd", "core"]);
+  });
+
+  it("prefixes: the index's prefixes ∪ the default display map", async () => {
+    const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
+    const prefixes = await env.names({ from: "prefixes" });
+    expect(prefixes).toContain("ex"); // from the index
+    expect(prefixes).toContain("ds"); // default map
+    expect(prefixes).toContain("rdfs"); // default map
+  });
+
+  it("skills: names from the project skills root, walked once (memoized)", async () => {
+    const cwd = projectWithIndex(CRAFTED_INDEX);
+    vi.stubEnv(
+      "XDG_DATA_HOME",
+      mkdtempSync(join(tmpdir(), "pragma-idx-data-")),
+    );
+    const skillDir = join(cwd, ".pragma", "skills", "docx");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: docx\ndescription: Word docs.\n---\n",
+    );
+    const env = indexCompletionEnv(cwd);
+    expect(await env.names({ from: "skills" })).toEqual(["docx"]);
+    // A second read returns the same list (one filesystem walk per env).
+    expect(await env.names({ from: "skills" })).toEqual(["docx"]);
+  });
+
+  it("missing sources degrade to [] (prefixes still lists the default map)", async () => {
+    const env = indexCompletionEnv(
+      projectWithIndex({
+        version: 2,
+        contentHash: "testhash",
+        prefixes: {},
+        instanceCountByType: {},
+        entities: [{ name: "ex:Button", type: "ex:Component" }],
+      }),
+    );
+    expect(await env.names({ from: "prompts" })).toEqual([]);
+    expect(await env.names({ from: "tiers" })).toEqual([]);
+    expect(await env.names({ from: "prefixes" })).toContain("ds");
+  });
+});
 
 describe("entity source contract (PROTECTED)", () => {
   it("reads the embedded index storelessly, filtering by type + partial", () => {
@@ -58,7 +157,10 @@ describe("__complete entity tier wiring", () => {
             doc: "The block name.",
             positional: true,
             required: true,
-            complete: { kind: "entity", type: "ex:Component" },
+            complete: {
+              kind: "names",
+              source: { from: "index", type: "ex:Component" },
+            },
           },
         ],
         output: {

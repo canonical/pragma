@@ -5,6 +5,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createStore } from "@canonical/ke";
 import { describe, expect, it, vi } from "vitest";
+import { capabilities } from "../../capabilities/index.js";
 import { completionFixture } from "../../testing/fixtures/completionFixture.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import { runComplete } from "./complete.js";
@@ -84,7 +85,7 @@ describe("injection safety (PROTECTED)", () => {
       "ok-name",
     ];
     const matches = await resolveRequest(request, model, {
-      entities: { names: () => hostile },
+      names: () => hostile,
     });
     expect(matches).toEqual(["ok-name"]);
   });
@@ -95,7 +96,7 @@ describe("injection safety (PROTECTED)", () => {
     const request = parseWords(["block", "get", ""], model);
     const legitimate = ["button", "ds:Block", "a.b_c+d@e/f", "0numeric"];
     const matches = await resolveRequest(request, model, {
-      entities: { names: () => legitimate },
+      names: () => legitimate,
     });
     expect([...matches].sort()).toEqual([...legitimate].sort());
   });
@@ -263,7 +264,10 @@ describe("storeless guarantee (PROTECTED)", () => {
               doc: "The block name.",
               positional: true,
               required: true,
-              complete: { kind: "entity", type: "ex:Component" },
+              complete: {
+                kind: "names",
+                source: { from: "index", type: "ex:Component" },
+              },
             },
           ],
           output: {
@@ -292,6 +296,33 @@ describe("storeless guarantee (PROTECTED)", () => {
     // It DID read the index (a real name came back)…
     expect(matches).toEqual(["ex:Button"]);
     // …and it did so without ever constructing the store.
+    expect(vi.mocked(createStore)).not.toHaveBeenCalled();
+  });
+
+  it("the non-index name sources resolve without constructing the store", async () => {
+    // skills (filesystem), prompts/tiers (index filter), prefixes (index ∪
+    // default map) — every family completes storelessly against the live
+    // capabilities. A fresh cwd → no lock → the embedded fallback index.
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-storeless-src-"));
+    const env = indexCompletionEnv(cwd);
+
+    // prefixes: `ds` is in the default display map, so it comes back for `d`.
+    await expect(
+      runComplete(["ontology", "show", "d"], capabilities, env),
+    ).resolves.toContain("ds");
+
+    // skills / prompts / tiers: no data here, but the point is they never boot
+    // the store — an empty list is the correct storeless answer.
+    for (const words of [
+      ["skill", "lookup", "do"],
+      ["prompt", "lookup", "bu"],
+      ["tier", "lookup", "ap"],
+    ]) {
+      await expect(
+        runComplete(words, capabilities, env),
+      ).resolves.toBeInstanceOf(Array);
+    }
+
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
 

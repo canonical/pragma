@@ -63,6 +63,7 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
       doc: "The prompt name (e.g. build-a-block).",
       positional: true,
       required: true,
+      complete: { kind: "names", source: { from: "prompts" } },
     },
   ],
   output: { formatters: promptLookupFormatters },

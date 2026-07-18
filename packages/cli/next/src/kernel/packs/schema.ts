@@ -174,6 +174,14 @@ const sampleSchema = z.union([
     .strict(),
 ]);
 
+const completionSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    match: z.enum(["prefix", "substring", "fuzzy"]).optional(),
+    minChars: z.number().int().min(0).optional(),
+  })
+  .strict();
+
 const lookupSchema = z
   .object({
     source: z.enum(["sparql", "graphql"]).optional(),
@@ -188,6 +196,7 @@ const lookupSchema = z
     expand: z.array(expandSchema).min(1).optional(),
     disclosure: disclosureSchema.optional(),
     sample: sampleSchema.optional(),
+    completion: completionSchema.optional(),
   })
   .strict();
 

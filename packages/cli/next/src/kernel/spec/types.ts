@@ -37,12 +37,60 @@ export type Capability = {
     | { expose: false; reason: string };
 };
 
-/** How a param's values are completed by the static/dynamic completion tiers. */
+/**
+ * A storeless name source the completion engine resolves candidates against.
+ * `__complete` never boots the graph, so every source is disk-readable: the
+ * precomputed pack index, the filesystem, or the prefix table.
+ */
+export type CompletionFrom =
+  | "index"
+  | "skills"
+  | "tiers"
+  | "prompts"
+  | "prefixes";
+
+/** A reference to one name source (with an optional prefixed type filter). */
+export interface CompletionSourceRef {
+  /** Which storeless source to read candidate names from. */
+  readonly from: CompletionFrom;
+  /** Prefixed type filter — meaningful only for `from: "index"` (empty = any). */
+  readonly type?: string;
+}
+
+/** How a partial word is matched against candidate names. */
+export type CompletionMatch = "prefix" | "substring" | "fuzzy";
+
+/**
+ * The declared autocomplete policy the engine executes generically — the
+ * "name-source" mode of {@link ParamComplete}. Derive-by-default, tune-by-field.
+ */
+export interface AutocompleteHeuristic {
+  /** Where the completable names come from. */
+  readonly source: CompletionSourceRef;
+  /** Match strategy against the partial (default `"substring"`). */
+  readonly match?: CompletionMatch;
+  /**
+   * Minimum typed chars before the generated shell script execs `__complete`
+   * for this source (default 2). Enforced at emit time; see `emitScripts`.
+   */
+  readonly minChars?: number;
+  /** Match case-sensitively (default `false` — loose match, canonical emit). */
+  readonly caseSensitive?: boolean;
+  /** Opt-out knob — `false` disables completion for the param (default `true`). */
+  readonly enabled?: boolean;
+}
+
+/**
+ * How a param's values are completed by the static/dynamic completion tiers.
+ * The `names` arm carries the {@link AutocompleteHeuristic}; `values`/`files`/
+ * `none` are unchanged. (Was `{ kind: "entity"; type }` — generalized so every
+ * object family, not only graph-backed reads, completes at the cursor.)
+ */
 export type ParamComplete =
   | { kind: "values" }
-  | { kind: "entity"; type: string }
   | { kind: "files" }
-  | { kind: "none" };
+  | { kind: "none" }
+  | ({ kind: "names" } & AutocompleteHeuristic);
 
 /** A single parameter of a verb — a positional or a kebab-cased flag. */
 export type ParamSpec =

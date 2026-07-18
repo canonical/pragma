@@ -43,6 +43,40 @@ describe("rankCandidates (PROTECTED)", () => {
       "name-02",
     ]);
   });
+
+  it("match=prefix rejects substring-only matches", () => {
+    const candidates = ["abutton", "button-group", "Button"];
+    // substring (default) keeps abutton; prefix drops it.
+    expect(rankCandidates(candidates, "button")).toContain("abutton");
+    expect(
+      rankCandidates(candidates, "button", MAX_CANDIDATES, "prefix"),
+    ).toEqual(["Button", "button-group"]);
+  });
+
+  it("match=fuzzy accepts an in-order subsequence, ranked lowest", () => {
+    const candidates = ["button", "bacon", "chip"];
+    // "bn" is a subsequence of button/bacon but a substring of neither.
+    expect(
+      rankCandidates(candidates, "bn", MAX_CANDIDATES, "substring"),
+    ).toEqual([]);
+    expect(
+      rankCandidates(candidates, "bn", MAX_CANDIDATES, "fuzzy").sort(),
+    ).toEqual(["bacon", "button"]);
+    // A prefix match still outranks a fuzzy subsequence.
+    expect(
+      rankCandidates(["breadcrumb", "button"], "bu", MAX_CANDIDATES, "fuzzy"),
+    ).toEqual(["button", "breadcrumb"]);
+  });
+
+  it("caseSensitive matches without folding case", () => {
+    const candidates = ["Button", "button-group"];
+    expect(
+      rankCandidates(candidates, "Bu", MAX_CANDIDATES, "substring", true),
+    ).toEqual(["Button"]);
+    expect(
+      rankCandidates(candidates, "bu", MAX_CANDIDATES, "substring", true),
+    ).toEqual(["button-group"]);
+  });
 });
 
 describe("filterPrefix (PROTECTED)", () => {

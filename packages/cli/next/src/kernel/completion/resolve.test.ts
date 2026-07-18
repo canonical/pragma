@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   completionFixture,
-  fixtureEntityReader,
+  fixtureNameEnv,
 } from "../../testing/fixtures/completionFixture.js";
 import { buildCompletionModel } from "./model.js";
 import { parseWords } from "./parse.js";
@@ -13,8 +13,8 @@ import type {
 } from "./types.js";
 
 const model = buildCompletionModel([completionFixture]);
-const env: CompletionEnv = { entities: fixtureEntityReader };
-const emptyEnv: CompletionEnv = { entities: { names: () => [] } };
+const env: CompletionEnv = fixtureNameEnv;
+const emptyEnv: CompletionEnv = { names: () => [] };
 
 /** A flag-value request with the given source and partial. */
 function valueRequest(
@@ -83,7 +83,7 @@ describe("resolveRequest — source table (PROTECTED)", () => {
     ]);
   });
 
-  it("entity: ranks names from the reader (exact > prefix > substring)", async () => {
+  it("names: ranks names from the source (exact > prefix > substring)", async () => {
     await expect(complete(["block", "get", "button"])).resolves.toEqual([
       "button",
       "button-group",
@@ -93,25 +93,48 @@ describe("resolveRequest — source table (PROTECTED)", () => {
     ]);
   });
 
-  it("entity: supports async readers", async () => {
+  it("names: emits canonical casing and honors the source's match", async () => {
+    const namesSource = (
+      over: Partial<Extract<CompletionSource, { kind: "names" }>> = {},
+    ): CompletionSource => ({
+      kind: "names",
+      ref: { from: "index" },
+      match: "substring",
+      caseSensitive: false,
+      ...over,
+    });
+    const canonEnv: CompletionEnv = { names: () => ["Button", "abutton"] };
+    // Case-insensitive match, canonical casing preserved (`bu` → `Button`).
+    await expect(
+      resolveRequest(valueRequest(namesSource(), "bu"), model, canonEnv),
+    ).resolves.toEqual(["Button", "abutton"]);
+    // A prefix-match source drops the substring-only candidate.
+    await expect(
+      resolveRequest(
+        valueRequest(namesSource({ match: "prefix" }), "bu"),
+        model,
+        canonEnv,
+      ),
+    ).resolves.toEqual(["Button"]);
+  });
+
+  it("names: supports async sources", async () => {
     const asyncEnv: CompletionEnv = {
-      entities: { names: async () => ["alpha", "beta"] },
+      names: async () => ["alpha", "beta"],
     };
     await expect(complete(["block", "get", "al"], asyncEnv)).resolves.toEqual([
       "alpha",
     ]);
   });
 
-  it("entity: the empty reader (PR-C default) yields zero candidates", async () => {
+  it("names: the empty source (the default) yields zero candidates", async () => {
     await expect(complete(["block", "get", ""], emptyEnv)).resolves.toEqual([]);
   });
 
-  it("entity: a throwing reader degrades to zero candidates", async () => {
+  it("names: a throwing source degrades to zero candidates", async () => {
     const hostileEnv: CompletionEnv = {
-      entities: {
-        names: () => {
-          throw new Error("boom");
-        },
+      names: () => {
+        throw new Error("boom");
       },
     };
     await expect(complete(["block", "get", ""], hostileEnv)).resolves.toEqual(
@@ -144,13 +167,11 @@ describe("resolveRequest — source table (PROTECTED)", () => {
 
   it("caps ranked candidates at 50", async () => {
     const bigEnv: CompletionEnv = {
-      entities: {
-        names: () =>
-          Array.from(
-            { length: 80 },
-            (_, i) => `name-${String(i).padStart(2, "0")}`,
-          ),
-      },
+      names: () =>
+        Array.from(
+          { length: 80 },
+          (_, i) => `name-${String(i).padStart(2, "0")}`,
+        ),
     };
     const matches = await complete(["block", "get", "name"], bigEnv);
     expect(matches.length).toBe(50);

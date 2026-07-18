@@ -16,11 +16,23 @@ const fn = z.custom<(...args: unknown[]) => unknown>(
   { message: "expected a function" },
 );
 
+const completionSourceRefSchema = z.object({
+  from: z.enum(["index", "skills", "tiers", "prompts", "prefixes"]),
+  type: z.string().optional(),
+});
+
 const paramCompleteSchema = z.union([
   z.object({ kind: z.literal("values") }),
-  z.object({ kind: z.literal("entity"), type: z.string() }),
   z.object({ kind: z.literal("files") }),
   z.object({ kind: z.literal("none") }),
+  z.object({
+    kind: z.literal("names"),
+    source: completionSourceRefSchema,
+    match: z.enum(["prefix", "substring", "fuzzy"]).optional(),
+    minChars: z.number().int().min(0).optional(),
+    caseSensitive: z.boolean().optional(),
+    enabled: z.boolean().optional(),
+  }),
 ]);
 
 const positionalFields = {

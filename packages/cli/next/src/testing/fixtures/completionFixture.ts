@@ -10,6 +10,7 @@
  */
 
 import { succeed } from "@canonical/task";
+import type { CompletionEnv } from "../../kernel/completion/types.js";
 import type {
   CapabilityModule,
   Formatters,
@@ -39,7 +40,7 @@ const blockGet: VerbSpec = {
       doc: "The block to get.",
       positional: true,
       required: true,
-      complete: { kind: "entity", type: "ds:Block" },
+      complete: { kind: "names", source: { from: "index", type: "ds:Block" } },
     },
     {
       kind: "enum",
@@ -92,7 +93,7 @@ const blockDiff: VerbSpec = {
       doc: "The blocks to diff.",
       positional: true,
       required: true,
-      complete: { kind: "entity", type: "ds:Block" },
+      complete: { kind: "names", source: { from: "index", type: "ds:Block" } },
     },
   ],
   output: { formatters: passthrough },
@@ -145,7 +146,10 @@ const standardSelf: VerbSpec = {
       name: "query",
       doc: "The standard to look up.",
       positional: true,
-      complete: { kind: "entity", type: "ds:Standard" },
+      complete: {
+        kind: "names",
+        source: { from: "index", type: "ds:Standard" },
+      },
     },
   ],
   output: { formatters: passthrough },
@@ -197,11 +201,11 @@ export const completionFixture: CapabilityModule = {
 };
 
 /**
- * A compact per-type name table backing {@link fixtureEntityReader} — the
- * hand-built stand-in the resolver's RANKING tests (resolve/complete) drive,
- * NOT PR2's on-disk `PackIndex` (that is a flat `entities[{name,type}]` array).
- * The real PR2-shape ⟷ reader agreement is proven live, against a freshly
- * built index, by `kernel/runtime/graphpack/completionSeam.test.ts`.
+ * A compact per-type name table backing {@link fixtureNameEnv} — the hand-built
+ * stand-in the resolver's RANKING tests (resolve/complete) drive, NOT the
+ * on-disk `PackIndex` (a flat `entities[{name,type}]` array). The real index
+ * shape ⟷ reader agreement is proven live, against a freshly built index, by
+ * `kernel/runtime/graphpack/completionSeam.test.ts`.
  */
 export const fixtureIndex = {
   version: 1,
@@ -220,13 +224,16 @@ export const fixtureIndex = {
   },
 } as const;
 
-/** An entity reader serving {@link fixtureIndex} (the PR-C stand-in for PR2). */
-export const fixtureEntityReader = {
-  names: (type: string): readonly string[] =>
+/**
+ * A completion env serving {@link fixtureIndex} by the source ref's `type`
+ * (the `from:"index"` stand-in the ranking tests drive).
+ */
+export const fixtureNameEnv: CompletionEnv = {
+  names: (ref): readonly string[] =>
     (
       fixtureIndex.entities as Record<
         string,
         { names: readonly string[] } | undefined
       >
-    )[type]?.names ?? [],
+    )[ref.type ?? ""]?.names ?? [],
 };

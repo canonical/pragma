@@ -49,6 +49,7 @@ const lookupVerb: VerbSpec<Record<string, unknown>, SkillLookup> = {
       doc: "The skill name.",
       positional: true,
       required: true,
+      complete: { kind: "names", source: { from: "skills" } },
     },
   ],
   output: { formatters: skillLookupFormatters },
