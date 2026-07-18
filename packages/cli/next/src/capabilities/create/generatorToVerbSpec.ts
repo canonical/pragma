@@ -28,6 +28,26 @@ import type { ParamSpec } from "../../kernel/spec/types.js";
 const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);
 
 /**
+ * Derive a declarative param `doc` from a generator prompt's `message`.
+ *
+ * A prompt `message` is a wizard QUESTION (`Include styles?`, `Package name:`),
+ * but a {@link ParamSpec.doc} is help text shown in CLI `--help` and the MCP
+ * arg schema, where every other param reads as a declarative statement. We
+ * DERIVE the doc rather than editing the mirrors' `message` — the generator
+ * parity test couples `message` to the live generators, so the question must
+ * stay verbatim for the interactive wizard while the flag/MCP doc reads well.
+ * Strip the trailing `?`/`:` and end with a period.
+ */
+export function declarativeDoc(message: string): string {
+  const trimmed = message
+    .trim()
+    .replace(/\s*[?:]+$/, "")
+    .trim();
+  if (trimmed === "") return trimmed;
+  return /[.!]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+/**
  * Convert one generator prompt to a grammar param.
  *
  * @param prompt - The generator's prompt definition.
@@ -42,7 +62,7 @@ export function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "boolean",
         name: prompt.name,
-        doc: prompt.message,
+        doc: declarativeDoc(prompt.message),
         required,
         positional,
         ...(prompt.default !== undefined
@@ -53,7 +73,7 @@ export function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "enum",
         name: prompt.name,
-        doc: prompt.message,
+        doc: declarativeDoc(prompt.message),
         values: (prompt.choices ?? []).map((choice) => choice.value),
         required,
         positional,
@@ -65,7 +85,7 @@ export function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "string[]",
         name: prompt.name,
-        doc: prompt.message,
+        doc: declarativeDoc(prompt.message),
         required,
         positional,
         complete: { kind: "values" },
@@ -74,7 +94,7 @@ export function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "string",
         name: prompt.name,
-        doc: prompt.message,
+        doc: declarativeDoc(prompt.message),
         required,
         positional,
         ...(prompt.default !== undefined ? { default: prompt.default } : {}),
