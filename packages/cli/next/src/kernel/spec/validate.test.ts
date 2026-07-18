@@ -56,6 +56,67 @@ describe("validateModule", () => {
     expect(() => validateModule(bad)).toThrow();
   });
 
+  it('rejects a {kind:"values"} completion on a non-enum param', () => {
+    const bad = {
+      name: "badcomplete",
+      verbs: [
+        {
+          path: ["x"],
+          summary: "x",
+          params: [
+            {
+              kind: "string",
+              name: "q",
+              doc: "d",
+              complete: { kind: "values" },
+            },
+          ],
+          output: {
+            formatters: { plain: () => "", llm: () => "", json: () => "" },
+          },
+          capability: {
+            needsStore: false,
+            mutates: false,
+            mcp: { expose: true },
+          },
+          run: async () => null,
+        },
+      ],
+    } as unknown as CapabilityModule;
+    expect(() => validateModule(bad)).toThrow(/requires an enum param/);
+  });
+
+  it('accepts a {kind:"values"} completion on an enum param', () => {
+    const good = {
+      name: "goodcomplete",
+      verbs: [
+        {
+          path: ["x"],
+          summary: "x",
+          params: [
+            {
+              kind: "enum",
+              name: "q",
+              doc: "d",
+              values: ["a", "b"],
+              complete: { kind: "values" },
+            },
+          ],
+          output: {
+            formatters: { plain: () => "", llm: () => "", json: () => "" },
+          },
+          capability: {
+            needsStore: false,
+            mutates: false,
+            mcp: { expose: true },
+          },
+          run: async () => null,
+        },
+      ],
+    } as unknown as CapabilityModule;
+    expect(() => validateModule(good)).not.toThrow();
+  });
+
   it("rejects a run that is not a function", () => {
     const bad = {
       name: "notfn",

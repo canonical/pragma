@@ -1,25 +1,63 @@
 /**
- * The storeless entity-completion seam PR-C consumes.
+ * The dynamic-tier seam: where `{kind:"entity"}` completions get their names.
  *
- * `createIndexEntityReader(cwd)` returns a fast, synchronous reader over the
- * active pack's `index.json`: given a prefixed type filter and a partial token,
- * it returns matching entity names, sorted. It NEVER boots the store — it reads
- * the locked pack's index straight off disk (falling back to the embedded
- * pack's inlined index), and parses with plain `JSON.parse` so the `__complete`
- * fast path stays free of both oxigraph and zod. It relies only on the FROZEN
- * `{ name, type }` index minimum, so PR-C can enrich the index without breaking
- * completion.
+ * Two readers live here, meeting the resolver's {@link EntityNameReader}
+ * contract from `types.ts`:
+ *
+ * - {@link emptyEntityReader} — the PR-C default: no index tier, no names. The
+ *   resolver defaults to it, so structural completion never pays a read.
+ * - {@link createIndexEntityReader} — the PR2 storeless reader over the active
+ *   pack's `index.json`: a lazy `readFileSync` + `JSON.parse` (never a store,
+ *   facade, config evaluator, or zod schema), unioning per-type name tables,
+ *   with any I/O or parse error degrading to `[]`. {@link indexEntityReader}
+ *   and {@link indexCompletionEnv} adapt it to the resolver's `names(type)`
+ *   shape so the `__complete` fast path (bin) and the `__complete` verb wire a
+ *   real entity tier.
+ *
+ * The index document shape is the FROZEN `{ name, type }` minimum of PR2's
+ * `PackIndex` (`kernel/runtime/graphpack/types.ts`); PR-C may enrich the index
+ * without breaking completion.
+ *
+ * Storeless-graph note: the pack-cache path is INLINED here rather than
+ * imported from `kernel/runtime/paths` — that module reaches `kernel/config`,
+ * which the storeless-guarantee test (safety.test.ts) forbids on the
+ * completion import graph. The two lines of XDG resolution are duplicated on
+ * purpose to keep the fast path free of the config layer.
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join } from "node:path";
 // Inlined embedded index (strings only — no store, no zod).
 import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/pack.generated.js";
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
-import { lockPath, packDir } from "../runtime/paths.js";
+import type { CompletionEnv, EntityNameReader } from "./types.js";
 
+/** The PR-C default reader: no index tier yet, so no entity names. */
+export const emptyEntityReader: EntityNameReader = {
+  names: () => [],
+};
+
+/** The committed project lock basename (mirrors `kernel/runtime/paths`). */
+const LOCK_BASENAME = "pragma.lock.json";
 /** The pack index filename (kept local so this path never imports the zod schema). */
 const INDEX_FILE = "index.json";
+
+/**
+ * `$XDG_CACHE_HOME/pragma/packs/<hash>` — a pack's cache directory.
+ *
+ * Inlined from `kernel/config/paths` + `kernel/runtime/paths` so the completion
+ * fast path stays off the config layer (see the module docblock).
+ */
+function packDir(contentHash: string): string {
+  const base = process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache");
+  return join(base, "pragma", "packs", contentHash);
+}
+
+/** The committed project lock file for a working directory. */
+function lockPath(cwd: string): string {
+  return join(cwd, LOCK_BASENAME);
+}
 
 /** Load the active pack's index: the locked pack, else the embedded fallback. */
 function loadActiveIndex(cwd: string): PackIndex | undefined {
@@ -54,7 +92,7 @@ function matchesType(entity: PackIndexEntity, type: string): boolean {
 }
 
 /**
- * Build a storeless entity-name reader for a working directory.
+ * Build a storeless entity-name reader for a working directory (PR2).
  *
  * @param cwd - The project directory (to resolve the active pack).
  * @returns `(type, partial) => string[]` — sorted entity names of `type`
@@ -79,4 +117,32 @@ export function createIndexEntityReader(
     }
     return [...names].sort();
   };
+}
+
+/**
+ * Adapt {@link createIndexEntityReader} to the resolver's {@link EntityNameReader}.
+ *
+ * PR2's reader is `(type, partial) => string[]`; PR-C's resolver wants
+ * `names(type)` and does its own case-insensitive ranking against the partial.
+ * So the adapter asks the index for ALL names of the type (empty partial) and
+ * lets the resolver's `rankCandidates` filter — PR-C's ranking semantics win,
+ * and the lazy index load is shared across `names()` calls.
+ *
+ * @param cwd - The project directory (to resolve the active pack).
+ * @returns An entity-name reader backed by the active pack's index.
+ */
+export function indexEntityReader(cwd: string): EntityNameReader {
+  const read = createIndexEntityReader(cwd);
+  return { names: (type) => read(type, "") };
+}
+
+/**
+ * The completion environment whose entity tier reads the active pack's index.
+ * Wired at the `__complete` fast path (bin) and the `__complete` verb.
+ *
+ * @param cwd - The project directory (to resolve the active pack).
+ * @returns A {@link CompletionEnv} with the index-backed entity reader.
+ */
+export function indexCompletionEnv(cwd: string): CompletionEnv {
+  return { entities: indexEntityReader(cwd) };
 }

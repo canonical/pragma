@@ -1,58 +1,96 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
-import { buildCompletionModel, complete, runComplete } from "./complete.js";
-import { emitScripts } from "./emitScripts.js";
+import {
+  completionFixture,
+  fixtureEntityReader,
+} from "../../testing/fixtures/completionFixture.js";
+import type { CapabilityModule } from "../spec/types.js";
+import { runComplete } from "./complete.js";
 
-const model = buildCompletionModel(capabilities);
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
 
-describe("buildCompletionModel", () => {
-  it("collects live nouns (incl. mcp) and per-noun verbs, hiding internals", () => {
-    expect(model.nouns).toContain("info");
-    expect(model.nouns).toContain("config");
-    expect(model.nouns).toContain("mcp");
-    expect(model.nouns).not.toContain("__complete");
-    expect(model.verbs.config).toEqual(["show"]);
+describe("runComplete — the __complete pipeline", () => {
+  it("resolves against the live capabilities (storeless static matches)", async () => {
+    await expect(runComplete(["co"], capabilities)).resolves.toEqual([
+      "config",
+    ]);
+    await expect(runComplete(["config", ""], capabilities)).resolves.toEqual([
+      "show",
+    ]);
+    await expect(runComplete(["mc"], capabilities)).resolves.toEqual(["mcp"]);
+    await expect(runComplete(["--l"], capabilities)).resolves.toEqual([
+      "--llm",
+    ]);
+  });
+
+  it("hidden verbs never complete", async () => {
+    const matches = await runComplete(["__com"], capabilities);
+    expect(matches).toEqual([]);
+  });
+
+  it("strips a leading bin name", async () => {
+    await expect(runComplete(["pragma2", "co"], capabilities)).resolves.toEqual(
+      ["config"],
+    );
+  });
+
+  it("resolves entity contexts through the provided env", async () => {
+    await expect(
+      runComplete(["block", "get", "but"], [completionFixture], {
+        entities: fixtureEntityReader,
+      }),
+    ).resolves.toEqual(["button", "button-group"]);
+  });
+
+  it("defaults to the empty entity reader (zero entity candidates)", async () => {
+    await expect(
+      runComplete(["block", "get", "but"], [completionFixture]),
+    ).resolves.toEqual([]);
   });
 });
 
-describe("complete — storeless static matches", () => {
-  it('completes a noun prefix ("co" -> "config")', () => {
-    expect(complete(["co"], model)).toEqual(["config"]);
+describe("runComplete — never-throw guard (PROTECTED)", () => {
+  const poisoned = [
+    { name: "poisoned", verbs: [{ path: ['x"; rm -rf ~'] }] },
+  ] as unknown as CapabilityModule[];
+
+  it("returns zero candidates instead of throwing on a poisoned model", async () => {
+    await expect(runComplete([""], poisoned)).resolves.toEqual([]);
   });
 
-  it("completes a verb under a known noun", () => {
-    expect(complete(["config", ""], model)).toEqual(["show"]);
-    expect(complete(["config", "sh"], model)).toEqual(["show"]);
+  it("stays silent on stderr without the debug flag", async () => {
+    vi.stubEnv("PRAGMA_COMPLETE_DEBUG", "");
+    const write = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    await runComplete([""], poisoned);
+    await runComplete(["co"], capabilities);
+    expect(write).not.toHaveBeenCalled();
   });
 
-  it("completes global flags for a dash prefix", () => {
-    expect(complete(["--"], model)).toContain("--format");
-    expect(complete(["--l"], model)).toEqual(["--llm"]);
+  it("reports the error on the debug channel when enabled", async () => {
+    vi.stubEnv("PRAGMA_COMPLETE_DEBUG", "1");
+    const write = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    await runComplete([""], poisoned);
+    expect(write).toHaveBeenCalledWith(
+      expect.stringContaining("[complete] error:"),
+    );
   });
 
-  it("runComplete resolves against the capabilities directly", () => {
-    expect(runComplete(["co"], capabilities)).toEqual(["config"]);
-  });
-});
-
-describe("emitScripts — static tier", () => {
-  const scripts = emitScripts(capabilities);
-
-  it.each([
-    "bash",
-    "zsh",
-    "fish",
-  ] as const)("inlines nouns, verbs, and the llm flag in %s", (shell) => {
-    const script = scripts[shell];
-    expect(script).toContain("info");
-    expect(script).toContain("config");
-    expect(script).toContain("show");
-    // fish declares long options as `-l "llm"`; bash/zsh inline `--llm`.
-    expect(script).toContain("llm");
-  });
-
-  it("inlines global flags with the -- prefix for bash and zsh", () => {
-    expect(scripts.bash).toContain("--llm");
-    expect(scripts.zsh).toContain("--llm");
+  it("logs context, candidate count, and timing under debug", async () => {
+    vi.stubEnv("PRAGMA_COMPLETE_DEBUG", "1");
+    const write = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    await runComplete(["co"], capabilities);
+    const lines = write.mock.calls.map((call) => String(call[0]));
+    expect(lines.join("")).toMatch(
+      /\[complete\] context=noun partial="co" candidates=1 in \d+(\.\d+)?ms/,
+    );
   });
 });

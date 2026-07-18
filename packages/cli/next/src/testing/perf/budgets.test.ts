@@ -44,7 +44,8 @@ describe("perf budgets (PROTECTED)", () => {
   });
 
   it("pragma2 __complete stays under budget", { retry: 2 }, () => {
-    const result = measureCommand(BINARY, ["__complete", "config"], {
+    // The protocol form the shell scripts use: framing `--`, then the words.
+    const result = measureCommand(BINARY, ["__complete", "--", "co"], {
       runs: 15,
       warmups: 3,
       env: perfEnv,

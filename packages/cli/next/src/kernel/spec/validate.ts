@@ -31,20 +31,27 @@ const positionalFields = {
   complete: paramCompleteSchema.optional(),
 };
 
-const paramSpecSchema = z.union([
-  z.object({
-    ...positionalFields,
-    kind: z.enum(["string", "boolean", "number"]),
-    default: z.unknown().optional(),
-  }),
-  z.object({
-    ...positionalFields,
-    kind: z.literal("enum"),
-    values: z.array(z.string()).min(1),
-    default: z.string().optional(),
-  }),
-  z.object({ ...positionalFields, kind: z.literal("string[]") }),
-]);
+const paramSpecSchema = z
+  .union([
+    z.object({
+      ...positionalFields,
+      kind: z.enum(["string", "boolean", "number"]),
+      default: z.unknown().optional(),
+    }),
+    z.object({
+      ...positionalFields,
+      kind: z.literal("enum"),
+      values: z.array(z.string()).min(1),
+      default: z.string().optional(),
+    }),
+    z.object({ ...positionalFields, kind: z.literal("string[]") }),
+  ])
+  // {kind:"values"} means "complete from the enum's values" — it is only
+  // meaningful (and only legal) on an enum param.
+  .refine(
+    (param) => param.complete?.kind !== "values" || param.kind === "enum",
+    { message: 'complete {kind:"values"} requires an enum param' },
+  );
 
 const mcpAnnotationsSchema = z.object({
   readOnlyHint: z.boolean(),

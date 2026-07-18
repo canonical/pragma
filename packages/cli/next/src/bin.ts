@@ -30,12 +30,23 @@ async function main(): Promise<void> {
   }
 
   // 2. Completion resolver — storeless, before first-run so no banner leaks.
+  //    Protocol (see kernel/completion/complete.ts): the first `--` after
+  //    `__complete` is framing (tolerated absent); candidates go to stdout
+  //    newline-delimited (zero candidates → zero bytes); exit is always 0. The
+  //    entity tier reads the active pack's index (storeless), never the store.
   if (argv[0] === "__complete") {
-    const [{ runComplete }, { capabilities }] = await Promise.all([
-      import("./kernel/completion/complete.js"),
-      import("./capabilities/index.js"),
-    ]);
-    const matches = runComplete(argv.slice(1), capabilities);
+    const [{ runComplete }, { capabilities }, { indexCompletionEnv }] =
+      await Promise.all([
+        import("./kernel/completion/complete.js"),
+        import("./capabilities/index.js"),
+        import("./kernel/completion/entitySource.js"),
+      ]);
+    const words = argv[1] === "--" ? argv.slice(2) : argv.slice(1);
+    const matches = await runComplete(
+      words,
+      capabilities,
+      indexCompletionEnv(process.cwd()),
+    );
     if (matches.length > 0) process.stdout.write(`${matches.join("\n")}\n`);
     return;
   }
