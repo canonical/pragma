@@ -1,5 +1,5 @@
 {
-  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL 38 tools (emitted == covenant) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation). Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation). Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
   "nouns": {
     "block": {
       "verbs": [

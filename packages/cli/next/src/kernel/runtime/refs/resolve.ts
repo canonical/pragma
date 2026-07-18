@@ -17,7 +17,7 @@ import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import { refsCacheDir } from "../paths.js";
 import { checkoutCommit, cloneRef, fetchRef, headCommit } from "./gitOps.js";
-import type { PackageRef } from "./parseRef.js";
+import { type PackageRef, redactUrl } from "./parseRef.js";
 
 /** A resolved package: its pinned revision and labelled RDF sources. */
 export interface ResolvedPackage {
@@ -285,7 +285,7 @@ export async function resolvePackage(
         // it reads as a fixable data/reproducibility error, not INTERNAL_ERROR.
         throw useCommit
           ? PragmaError.configError(
-              `Cannot reproduce "${ref.pkg}" under --frozen: commit ${options.pinned} could not be checked out from ${ref.url}. ${errorDetail(error)}`,
+              `Cannot reproduce "${ref.pkg}" under --frozen: commit ${options.pinned} could not be checked out from ${redactUrl(ref.url)}. ${errorDetail(error)}`,
               {
                 recovery: {
                   message:
@@ -294,7 +294,7 @@ export async function resolvePackage(
               },
             )
           : PragmaError.configError(
-              `Cannot resolve "${ref.pkg}" from ${ref.url}#${ref.ref}: ${errorDetail(error)}`,
+              `Cannot resolve "${ref.pkg}" from ${redactUrl(ref.url)}#${ref.ref}: ${errorDetail(error)}`,
               {
                 recovery: {
                   message:

@@ -41,7 +41,10 @@ import {
 } from "../../kernel/runtime/lock.js";
 import { LOCK_BASENAME, lockPath } from "../../kernel/runtime/paths.js";
 import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
-import { parsePackageEntry } from "../../kernel/runtime/refs/parseRef.js";
+import {
+  parsePackageEntry,
+  redactUrl,
+} from "../../kernel/runtime/refs/parseRef.js";
 import {
   harvestPrefixes,
   type ResolvedPackage,
@@ -259,7 +262,7 @@ export async function buildUpdateTask(
 function resolveProgress(ref: PackageRef): string {
   switch (ref.kind) {
     case "git":
-      return `Cloning ${ref.pkg} from ${ref.url}`;
+      return `Cloning ${ref.pkg} from ${redactUrl(ref.url)}`;
     case "file":
       return `Reading ${ref.pkg} from ${ref.path}`;
     case "npm":

@@ -85,3 +85,19 @@ export function parsePackageEntry(entry: PackageEntry): PackageRef {
     `Invalid source for "${name}": "${source}". Expected file://, git+https://, git+ssh://, or git+file://.`,
   );
 }
+
+/**
+ * Strip any userinfo (`user:pass@` / `token@`) from a URL for display.
+ *
+ * A git source can inline credentials (`git+https://user:TOKEN@host/…`); those
+ * must never reach progress or error output, which lands in stderr logs and —
+ * via `toolError` — MCP-agent-visible responses. Applied only where a URL is
+ * interpolated for a human/agent; `PackageRef.url` keeps the credential verbatim
+ * so git can still authenticate.
+ *
+ * @param url - A URL that may carry userinfo before the host.
+ * @returns The URL with any leading `userinfo@` replaced by `***@`.
+ */
+export function redactUrl(url: string): string {
+  return url.replace(/^([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^/@]+@/, "$1***@");
+}

@@ -211,15 +211,16 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
         const result = await runTask(task, { onLog: logToStderr, ...exec });
         return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
       } finally {
-        await exec.dispose?.();
         // A real mutation may have changed the pack/config on disk. This runtime
         // is booted ONCE for the whole server lifetime and shared by every tool,
         // so drop its server-lifetime caches (store session + the config memo the
-        // boot depends on) — the next read re-boots against the new state instead
-        // of serving a stale pack/config. `mutationRuntime` spreads `runtime`, so
-        // this is the same shared LazyStore. Only reached on the real-run branch
-        // (`confirm: true`); the plan-only preview above never touches disk.
+        // boot depends on) FIRST — before teardown, so a throwing `dispose` can
+        // never skip the cache-drop — then the next read re-boots against the new
+        // state instead of serving a stale pack/config. `mutationRuntime` spreads
+        // `runtime`, so this is the same shared LazyStore. Only reached on the
+        // real-run branch (`confirm: true`); the plan-only preview never mutates.
         runtime.store.invalidate();
+        await exec.dispose?.();
       }
     } catch (error) {
       return toolError(asPragmaError(error));

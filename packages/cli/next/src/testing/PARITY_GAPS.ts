@@ -46,9 +46,9 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
   },
   {
     id: "no-empty-hook-on-free-filter",
-    area: "pack list / EMPTY_RESULTS",
+    area: "pack list / empty-state",
     description:
-      "`kernel/packs/runBodies.ts#buildListEmptyError` raises a typed EMPTY_RESULTS only when an ENUM-valued filter (`PackFilter.values` declared) is active, or the pack declares `emptyRecovery` and the list is unconditionally empty. A FREE-STRING filter (e.g. `standard list --category nonexistent`) or an unmatched `--search` narrows to zero rows silently: `ok:true, data:[], meta` with no error. No PR3 read noun currently declares an enum-valued list filter, so the `error.filters` envelope shape is unit-tested at the kernel level but has no live end-to-end trigger yet.",
+      "A zero-row pack list — whether narrowed by a declared filter, an unmatched `--search`, or unconditionally empty — returns `ok:true, data:[], meta:{}` at exit 0 with a calm `emptyMessage`/`emptyHint`; pragma v2 never raises a typed EMPTY_RESULTS error for an empty list. (U5 removed the former enum-filter-only `buildListEmptyError` hook, making the empty-state uniform across every list verb.)",
   },
   {
     id: "raw-iri-in-data",
