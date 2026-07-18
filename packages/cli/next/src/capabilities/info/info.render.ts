@@ -20,13 +20,25 @@ export const infoFormatters: Formatters<InfoData> = {
       `  tier: ${config.tier ?? "(none)"}${originMarker(config.origins.tier)}`,
       `  channel: ${config.channel}${originMarker(config.origins.channel)}`,
       `  detail: ${config.detail ?? "standard"}${originMarker(config.origins.detail)}`,
+    ];
+    if (data.entities !== undefined) {
+      lines.push(`  entities: ${data.entities.toLocaleString()}`);
+    }
+    lines.push(
       "",
       "Config files:",
       `  global:  ${config.globalConfigPath}${config.globalExists ? "" : " (not found)"}`,
       `  project: ${config.projectConfigPath ?? "(none)"}${
         config.projectConfigPath && !config.projectExists ? " (not found)" : ""
       }`,
-    ];
+    );
+    if (data.update) {
+      lines.push(
+        "",
+        `Update available: ${data.update.current} → ${data.update.latest}`,
+        `  Run: ${data.update.command}`,
+      );
+    }
     return lines.join("\n");
   },
 
@@ -42,6 +54,14 @@ export const infoFormatters: Formatters<InfoData> = {
     ];
     if (config.projectConfigPath) {
       lines.push(`- Project config: ${config.projectConfigPath}`);
+    }
+    if (data.entities !== undefined) {
+      lines.push(`- Entities: ${data.entities.toLocaleString()}`);
+    }
+    if (data.update) {
+      lines.push(
+        `- Update available: ${data.update.current} → ${data.update.latest} (\`${data.update.command}\`)`,
+      );
     }
     return lines.join("\n");
   },

@@ -13,8 +13,8 @@ import type { InfoData } from "./types.js";
 
 const infoVerb: VerbSpec<Record<string, unknown>, InfoData> = {
   path: ["info"],
-  summary: "Show version, resolved config, and provenance.",
-  doc: "Storeless and networkless — reports the CLI version, how it was installed, and the layered config with per-field origins.",
+  summary: "Show version, resolved config, provenance, and update status.",
+  doc: "Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.",
   params: [],
   output: { formatters: infoFormatters },
   examples: [
@@ -27,7 +27,9 @@ const infoVerb: VerbSpec<Record<string, unknown>, InfoData> = {
   capability: {
     needsStore: false,
     mutates: false,
-    needsNetwork: false,
+    // Network-aware (PR6 enrichment): the update-check reads the registry. This
+    // does NOT affect the emitted surface — `emitVerb` ignores `needsNetwork`.
+    needsNetwork: true,
     mcp: {
       expose: true,
       annotations: { readOnlyHint: true, openWorldHint: false },

@@ -3,4 +3,4 @@
  */
 
 export { infoModule } from "./info.verb.js";
-export type { InfoConfig, InfoData } from "./types.js";
+export type { InfoConfig, InfoData, InfoUpdate } from "./types.js";

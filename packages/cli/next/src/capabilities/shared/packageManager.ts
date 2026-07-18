@@ -42,3 +42,25 @@ export function detectInstallSource(): InstallSource {
   const pm = packageManager();
   return { pm, scope, label: `${pm} (${scope})` };
 }
+
+/** The npm global-update command — also the fallback for an unknown manager. */
+const npmUpdateCommand = (pkg: string): string => `npm i -g ${pkg}`;
+
+/** The global-update command per package manager (install-style). */
+const PM_UPDATE_COMMAND: Record<string, (pkg: string) => string> = {
+  bun: (pkg) => `bun add -g ${pkg}`,
+  npm: npmUpdateCommand,
+  pnpm: (pkg) => `pnpm add -g ${pkg}`,
+  yarn: (pkg) => `yarn global add ${pkg}`,
+};
+
+/**
+ * The command that updates `pkg` globally for a package manager.
+ *
+ * @param pm - The package-manager name (`bun`/`npm`/`pnpm`/`yarn`).
+ * @param pkg - The package to update.
+ * @returns The shell command; falls back to npm for an unknown manager.
+ */
+export function pmUpdateCommand(pm: string, pkg: string): string {
+  return (PM_UPDATE_COMMAND[pm] ?? npmUpdateCommand)(pkg);
+}
