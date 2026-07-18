@@ -18,13 +18,7 @@ import {
   listEntityNames,
   resolveLookup,
 } from "./resolveEntity.js";
-import {
-  DEFAULT_SAMPLE_COUNT,
-  MAX_SAMPLE_COUNT,
-  MIN_SAMPLE_COUNT,
-  parseSampleCount,
-  pickRandom,
-} from "./sample.js";
+import { parseSampleCount, pickRandom } from "./sample.js";
 import { applyPackFilters } from "./sparql/applyFilters.js";
 import { applyPackSearch } from "./sparql/applySearch.js";
 import { runSelect } from "./sparql/runSelect.js";
@@ -141,15 +135,6 @@ export function makeSampleRun(
   };
 }
 
-/** The default sample count declared by a lookup, or the built-in default. */
-export function sampleDefaultCount(lookup: PackLookup): number {
-  const sample = lookup.sample;
-  if (sample && sample !== true && typeof sample.count === "number") {
-    return sample.count;
-  }
-  return DEFAULT_SAMPLE_COUNT;
-}
-
 /** Read the variadic `name` positional as a string array. */
 function readNames(params: Record<string, unknown>): string[] {
   const raw = params.name;
@@ -190,5 +175,3 @@ function buildListEmptyError(
   }
   return undefined;
 }
-
-export { MAX_SAMPLE_COUNT, MIN_SAMPLE_COUNT };

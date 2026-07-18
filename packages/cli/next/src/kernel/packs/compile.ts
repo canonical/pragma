@@ -11,6 +11,7 @@
  * run closures (behind the lazy runtime facade).
  */
 
+import type { PragmaRuntime } from "../runtime/types.js";
 import { asVerb } from "../spec/asVerb.js";
 import type { DisclosureSpec, ParamSpec, VerbSpec } from "../spec/types.js";
 import {
@@ -23,11 +24,8 @@ import type { LookupOutput } from "./resolveEntity.js";
 import {
   MAX_SAMPLE_COUNT,
   MIN_SAMPLE_COUNT,
-  makeListRun,
-  makeLookupRun,
-  makeSampleRun,
   sampleDefaultCount,
-} from "./runBodies.js";
+} from "./sample.js";
 import type {
   PackDefinition,
   PackFilter,
@@ -36,6 +34,11 @@ import type {
   PackRow,
   PackSearch,
 } from "./types.js";
+
+// The run bodies pull the SPARQL/GraphQL fetch layer; they are dynamic-imported
+// per invocation so `compilePack` (reached on the storeless --help/__complete
+// fast path via capabilities/index) never statically loads them.
+const runBodies = () => import("./runBodies.js");
 
 /** The read capability every pack verb carries (store-backed, exposed to MCP). */
 const READ_CAPABILITY = {
@@ -137,7 +140,13 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
       { cmd: `pragma ${meta.noun} ${meta.verb} --llm` },
     ],
     capability: READ_CAPABILITY,
-    run: makeListRun(shape, { noun: meta.noun, source: meta.source }),
+    run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
+      runBodies().then((m) =>
+        m.makeListRun(shape, { noun: meta.noun, source: meta.source })(
+          params,
+          rt,
+        ),
+      ),
   };
   return asVerb(verb);
 }
@@ -172,7 +181,10 @@ function compileLookupVerb(
       ? { disclosure: disclosureSpec(lookup.disclosure) }
       : {}),
     capability: READ_CAPABILITY,
-    run: makeLookupRun(lookup, noun, source, prefixes),
+    run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
+      runBodies().then((m) =>
+        m.makeLookupRun(lookup, noun, source, prefixes)(params, rt),
+      ),
   };
   return asVerb(verb);
 }
@@ -206,7 +218,16 @@ function compileSampleVerb(
       { cmd: `pragma ${noun} sample 3` },
     ],
     capability: READ_CAPABILITY,
-    run: makeSampleRun(lookup, noun, source, prefixes, defaultCount),
+    run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
+      runBodies().then((m) =>
+        m.makeSampleRun(
+          lookup,
+          noun,
+          source,
+          prefixes,
+          defaultCount,
+        )(params, rt),
+      ),
   };
   return asVerb(verb);
 }

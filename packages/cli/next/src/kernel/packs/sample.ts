@@ -7,6 +7,7 @@
  */
 
 import { PragmaError } from "../error/PragmaError.js";
+import type { PackLookup } from "./types.js";
 
 /** Smallest number of samples the `sample` verb returns. */
 export const MIN_SAMPLE_COUNT = 1;
@@ -14,6 +15,15 @@ export const MIN_SAMPLE_COUNT = 1;
 export const MAX_SAMPLE_COUNT = 5;
 /** Number of samples returned when the count is omitted. */
 export const DEFAULT_SAMPLE_COUNT = 2;
+
+/** The default sample count a lookup declares, or the built-in default. */
+export function sampleDefaultCount(lookup: PackLookup): number {
+  const sample = lookup.sample;
+  if (sample && sample !== true && typeof sample.count === "number") {
+    return sample.count;
+  }
+  return DEFAULT_SAMPLE_COUNT;
+}
 
 /**
  * Resolve the raw `count` arg into a clamped sample count.
