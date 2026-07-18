@@ -23,6 +23,7 @@ describe("exit codes (PROTECTED)", () => {
     EMPTY_RESULTS: 1,
     CONFIG_ERROR: 1,
     INTERNAL_ERROR: 1,
+    UNSUPPORTED: 1,
     INVALID_INPUT: 2,
     AMBIGUOUS_INPUT: 2,
     UNKNOWN_VERB: 2,

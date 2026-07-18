@@ -1,4 +1,4 @@
-import { succeed } from "@canonical/task";
+import { fail, succeed } from "@canonical/task";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PragmaError } from "../../error/PragmaError.js";
 import { bootRuntime } from "../../runtime/boot.js";
@@ -178,5 +178,31 @@ describe("dispatch — errors", () => {
     spy.mockRestore();
     expect(errs.join("")).toContain('thing "Nope" not found.');
     expect(process.exitCode).toBe(1);
+  });
+
+  it("renders a declined confirm gate as a clean cancellation, not a bug report", async () => {
+    // A TTY user declining execute()'s "Proceed?" gate fails the task with
+    // GENERATOR_CANCELLED; the boundary must treat it as a clean cancel, never
+    // the scary INTERNAL_ERROR "please report this issue" / exit 1.
+    const cancelling: VerbSpec = {
+      ...make,
+      run: () => fail({ code: "GENERATOR_CANCELLED", message: "Cancelled." }),
+    };
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    process.exitCode = 0;
+    await dispatch(cancelling, [], { yes: true }, PLAIN);
+    spy.mockRestore();
+    const out = errs.join("");
+    expect(out).toContain("Cancelled.");
+    expect(out).not.toContain("INTERNAL_ERROR");
+    expect(out).not.toMatch(/report this issue/i);
+    // A deliberate cancel is a success exit under the frozen exit-code covenant.
+    expect(process.exitCode).toBe(0);
   });
 });

@@ -33,7 +33,7 @@ afterEach(async () => {
 });
 
 describe("create over MCP (PROTECTED)", () => {
-  it("exposes create_component with non-read-only annotations", async () => {
+  it("exposes create_component as mutating but NON-destructive", async () => {
     const dir = freshCwd();
     const mcp = await projectMcp([createModule], dir);
     cleanup = mcp.cleanup;
@@ -42,8 +42,13 @@ describe("create over MCP (PROTECTED)", () => {
     expect(component).toBeDefined();
     expect(component?.annotations).toMatchObject({
       readOnlyHint: false,
+      destructiveHint: false,
       openWorldHint: false,
     });
+    // Explicit: create only writes NEW files. An unset destructiveHint on a
+    // non-read-only tool defaults to `true`, so it must be emitted as false —
+    // agents otherwise treat scaffolding as a destructive operation (D4).
+    expect(component?.annotations?.destructiveHint).toBe(false);
   });
 
   it("plan-first: no confirm → a plan, no files written", async () => {

@@ -20,6 +20,11 @@ const ERROR_CODES = [
   "STORE_UNAVAILABLE",
   "CONFIG_ERROR",
   "INTERNAL_ERROR",
+  // A capability that is genuinely unavailable in this build/environment — not
+  // a bug and not a usage mistake, so it must NOT collapse to INTERNAL_ERROR's
+  // "please report this issue". Today: `create` in the compiled binary, whose
+  // generator assets are not embedded (maps to the generic runtime exit 1).
+  "UNSUPPORTED",
 ] as const;
 
 export { ERROR_CODES };

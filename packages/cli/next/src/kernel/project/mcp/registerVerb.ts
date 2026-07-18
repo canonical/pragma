@@ -15,7 +15,7 @@ import { runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { PragmaError } from "../../error/PragmaError.js";
+import { asPragmaError } from "../../error/fromTaskError.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
 import { toolName } from "../../spec/emitSurface.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
@@ -84,20 +84,6 @@ function paramsFromArgs(
     if (param.name in args) params[param.name] = args[param.name];
   }
   return params;
-}
-
-/**
- * Coerce a thrown value into a {@link PragmaError} so the tool always returns
- * the `{ ok: false, error: { code, message } }` envelope — mirroring the CLI
- * dispatcher (dispatch.ts) so a non-PragmaError bug surfaces identically on both
- * surfaces rather than as a bare SDK error.
- */
-function asPragmaError(error: unknown): PragmaError {
-  return error instanceof PragmaError
-    ? error
-    : PragmaError.internalError(
-        error instanceof Error ? error.message : String(error),
-      );
 }
 
 /**

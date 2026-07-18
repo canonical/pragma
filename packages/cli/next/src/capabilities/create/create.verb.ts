@@ -197,10 +197,68 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
  * UI) therefore stay OUT of the standalone binary, keeping every non-create fast
  * path's cold-start unchanged. From source and in tests (node_modules present)
  * this resolves normally; `create` in the compiled binary is a source-run
- * feature until its template assets are embedded (see scripts/build.ts).
+ * feature until its template assets are embedded (see scripts/build.ts, and the
+ * graceful gate in {@link loadCreateRuntime}).
  */
 const importRuntime = <T>(specifier: string): Promise<T> =>
   import(specifier) as Promise<T>;
+
+/**
+ * True when a dynamic import failed because the module could not be RESOLVED —
+ * the signature of running `create` inside the compiled `pragma2` binary, where
+ * the computed specifier above deliberately excludes summon-core + the
+ * generators (and their `.ejs` assets are not embedded). Matched structurally
+ * across bun (`ResolveMessage`) and node (`ERR_MODULE_NOT_FOUND`) so a genuine
+ * runtime error from a source build still propagates unchanged.
+ */
+export function isModuleNotFound(cause: unknown): boolean {
+  if (!cause || typeof cause !== "object") return false;
+  const { code, name, message } = cause as {
+    code?: unknown;
+    name?: unknown;
+    message?: unknown;
+  };
+  return (
+    code === "ERR_MODULE_NOT_FOUND" ||
+    code === "MODULE_NOT_FOUND" ||
+    name === "ResolveMessage" ||
+    (typeof message === "string" &&
+      /cannot find (module|package)/i.test(message))
+  );
+}
+
+/**
+ * Load the create runtime (the generator selector + summon-core) through the
+ * computed specifier, converting the compiled-binary "module not found" failure
+ * into a clear, actionable {@link PragmaError} — instead of a raw
+ * module-resolution error that the boundary would otherwise report as an
+ * internal bug ("please report this issue"). From source / in tests this
+ * resolves normally. The `.ejs` asset-embedding that unblocks compiled create
+ * is tracked in scripts/build.ts (PR7/PR8).
+ */
+async function loadCreateRuntime() {
+  try {
+    const [pick, summon] = await Promise.all([
+      importRuntime<typeof import("./pickGenerator.js")>("./pickGenerator.js"),
+      importRuntime<typeof import("@canonical/summon-core")>(
+        "@canonical/summon-core",
+      ),
+    ]);
+    return { pickGenerator: pick.pickGenerator, summon };
+  } catch (cause) {
+    if (isModuleNotFound(cause)) {
+      throw new PragmaError({
+        code: "UNSUPPORTED",
+        message:
+          "`create` is not available in the compiled pragma2 binary yet — its generator template assets are not embedded. Run it from a source checkout, or use the `summon` CLI.",
+        recovery: {
+          message: "Run `create` from a source checkout, or use `summon`.",
+        },
+      });
+    }
+    throw cause;
+  }
+}
 
 async function runCreate(
   kind: CreateKind,
@@ -209,12 +267,8 @@ async function runCreate(
 ): Promise<Task<GeneratorResult>> {
   // Lazy: importing these runs the generators' top-level template loads and
   // pulls summon-core — kept off every non-create path (and out of the binary).
-  const [{ pickGenerator }, summon] = await Promise.all([
-    importRuntime<typeof import("./pickGenerator.js")>("./pickGenerator.js"),
-    importRuntime<typeof import("@canonical/summon-core")>(
-      "@canonical/summon-core",
-    ),
-  ]);
+  // A compiled-binary resolution failure becomes a clean gate, not a raw crash.
+  const { pickGenerator, summon } = await loadCreateRuntime();
 
   const generator = pickGenerator(kind, params);
 
@@ -241,6 +295,11 @@ async function runCreate(
   // callbacks ride runtime.exec alongside the shared stamping transform.
   if (isTTY && !yes) {
     const session = summon.inkPrompt(generator, { signal });
+    // NOTE (PR7): no per-call `cwd` is threaded here. The node interpreter
+    // resolves effect paths against `process.cwd()` (which equals `rt.cwd`
+    // today), and the SEC-2 jail validates against `rt.cwd`; PR7 owns per-call
+    // cwd and MUST thread it into the runner AND the jail atomically, or a
+    // write dir the jail never validated would be a jail bypass.
     rt.exec = {
       promptHandler: session.promptHandler,
       onEffectStart: summon.createStampOnEffectStart(
@@ -250,7 +309,6 @@ async function runCreate(
       onEffectComplete: session.onEffectComplete,
       onLog: session.onLog,
       dispose: session.dispose,
-      cwd: rt.cwd,
       signal,
     };
     return summon.execute(generator, {
@@ -263,20 +321,28 @@ async function runCreate(
   // Non-interactive: MCP → params-or-error; CLI/--yes/CI → flags+defaults.
   const prompt =
     transport === "mcp" ? summon.mcpPrompt(params) : summon.autoPrompt(params);
+  // NOTE (PR7): per-call `cwd` deferred — see the PR7 note on the Ink branch.
   rt.exec = {
     promptHandler: prompt,
     onEffectStart: summon.createStampOnEffectStart(stamp),
     onLog: (_level, message) => process.stderr.write(`${message}\n`),
-    cwd: rt.cwd,
     signal,
   };
   return summon.execute(generator, { prompt, params, signal });
 }
 
-/** The shared capability: storeless, mutating, interactive, MCP-exposed. */
+/**
+ * The shared capability: storeless, mutating, interactive, MCP-exposed.
+ *
+ * `destructive: false` is load-bearing (D4): create only WRITES NEW files, so it
+ * is explicitly non-destructive. Without it `annotationsFor` emits no
+ * `destructiveHint`, and MCP clients default an unset hint on a non-read-only
+ * tool to `true` — advertising create as destructive, the opposite of intent.
+ */
 const CREATE_CAPABILITY = {
   needsStore: false,
   mutates: true,
+  destructive: false,
   interactive: true,
   mcp: {
     expose: true as const,

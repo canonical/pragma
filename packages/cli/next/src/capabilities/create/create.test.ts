@@ -12,7 +12,6 @@ import {
   readdirSync,
   readFileSync,
   symlinkSync,
-  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -25,7 +24,13 @@ import {
 } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
-import { createComponentVerb } from "./create.verb.js";
+import type { ParamSpec } from "../../kernel/spec/types.js";
+import {
+  createApplicationVerb,
+  createComponentVerb,
+  createPackageVerb,
+  isModuleNotFound,
+} from "./create.verb.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
 
 const FLAGS: GlobalFlags = {
@@ -246,27 +251,153 @@ describe("lazy-React discipline (PROTECTED)", () => {
 });
 
 describe("generator→grammar adapter parity (PROTECTED)", () => {
-  it("the component mirror matches the real react generator's prompts", async () => {
+  // The static mirrors in create.verb.ts are AUTHORITATIVE for omitted CLI
+  // flags: dispatch.extractParams fills ParamSpec.default when a flag is absent,
+  // so a drifted mirror default silently overrides the generator's own default.
+  // These guards assert the EMITTED grammar (names, kinds, defaults, choices)
+  // still matches the real generators for all three create nouns — the
+  // byte-equality goldens can't catch this (they pass every param explicitly).
+
+  /** Drop `doc` (help text is intentionally paraphrased in the mirrors) so the
+   * comparison is purely behavioural: names, kinds, defaults, choices. */
+  const behavioural = (
+    params: readonly ParamSpec[],
+  ): Record<string, unknown>[] =>
+    params.map((p) => {
+      const clone: Record<string, unknown> = { ...p };
+      delete clone.doc;
+      return clone;
+    });
+
+  /** `runInstall` is a DELIBERATE divergence (package + application): the real
+   * generators default it `true`, but the CLI grammar has no `--no-` form, so
+   * the mirror makes install opt-in (`default:false`, enabled by `--run-install`).
+   * Apply that same override to the generator side before comparing. */
+  const applyRunInstallOverride = (params: readonly ParamSpec[]): ParamSpec[] =>
+    params.map((p) =>
+      p.name === "runInstall" ? ({ ...p, default: false } as ParamSpec) : p,
+    );
+
+  it("component: framework collapse + shared confirms match the react generator", async () => {
     const { generators } = await import("@canonical/summon-component");
-    const reactGen = (generators as Record<string, { prompts: unknown[] }>)[
-      "component/react"
-    ];
-    const params = generatorToParams(reactGen.prompts as never);
-    const names = params.map((p) => p.name);
-    // Every real prompt is represented (componentPath + the shared confirms).
-    expect(names).toEqual([
-      "componentPath",
-      "withStyles",
-      "withStories",
-      "withSsrTests",
-    ]);
-    // componentPath is a positional string with file completion.
-    expect(params[0]).toMatchObject({
+    const real = generatorToParams(
+      (generators as Record<string, { prompts: unknown[] }>)["component/react"]
+        .prompts as never,
+    );
+    const verb = createComponentVerb.params;
+
+    // The verb SYNTHESIZES a `framework` enum (the 3 framework generators
+    // collapse to one verb): react|svelte|lit, default react — no generator
+    // prompt corresponds to it.
+    expect(verb.find((p) => p.name === "framework")).toMatchObject({
+      kind: "enum",
+      values: ["react", "svelte", "lit"],
+      default: "react",
+    });
+
+    // componentPath deliberately drops its ParamSpec default so the SELECTED
+    // framework's own prompt default applies (react vs svelte/lit differ).
+    const verbPath = verb.find((p) => p.name === "componentPath") as
+      | Record<string, unknown>
+      | undefined;
+    const realPath = real.find((p) => p.name === "componentPath") as
+      | Record<string, unknown>
+      | undefined;
+    expect(verbPath).toMatchObject({
       kind: "string",
       positional: true,
       complete: { kind: "files" },
     });
-    // The shared options are booleans.
-    expect(params.slice(1).every((p) => p.kind === "boolean")).toBe(true);
+    expect(verbPath?.default).toBeUndefined();
+    expect(realPath?.default).toBe("src/components/MyComponent");
+
+    // Every other prompt (the shared confirms) must match names, kinds, AND
+    // defaults exactly — the silent-drift surface.
+    const shared = (ps: readonly ParamSpec[]) =>
+      behavioural(
+        ps.filter((p) => p.name !== "framework" && p.name !== "componentPath"),
+      );
+    expect(shared(verb)).toEqual(shared(real));
+  });
+
+  it("package: mirror matches the package generator (defaults + type choices)", async () => {
+    const { generators } = await import("@canonical/summon-package");
+    const real = generatorToParams(
+      (generators as Record<string, { prompts: unknown[] }>).package
+        .prompts as never,
+    );
+    // The package verb's grammar IS generatorToParams(PACKAGE_MIRROR).
+    expect(behavioural(createPackageVerb.params)).toEqual(
+      behavioural(applyRunInstallOverride(real)),
+    );
+
+    // Guard the intentional runInstall override so it can't silently flip.
+    const realRunInstall = real.find((p) => p.name === "runInstall") as
+      | Record<string, unknown>
+      | undefined;
+    const mirrorRunInstall = createPackageVerb.params.find(
+      (p) => p.name === "runInstall",
+    ) as Record<string, unknown> | undefined;
+    expect(realRunInstall?.default).toBe(true);
+    expect(mirrorRunInstall?.default).toBe(false);
+
+    // The `--type` enum choices are load-bearing and must match exactly.
+    const realType = real.find((p) => p.name === "type");
+    expect(realType).toMatchObject({
+      kind: "enum",
+      values: ["tool-ts", "library", "css"],
+      default: "tool-ts",
+    });
+  });
+
+  it("application: mirror matches the application/react generator (defaults)", async () => {
+    const { generators } = await import("@canonical/summon-application");
+    const real = generatorToParams(
+      (generators as Record<string, { prompts: unknown[] }>)[
+        "application/react"
+      ].prompts as never,
+    );
+    expect(behavioural(createApplicationVerb.params)).toEqual(
+      behavioural(applyRunInstallOverride(real)),
+    );
+
+    const realRunInstall = real.find((p) => p.name === "runInstall") as
+      | Record<string, unknown>
+      | undefined;
+    const mirrorRunInstall = createApplicationVerb.params.find(
+      (p) => p.name === "runInstall",
+    ) as Record<string, unknown> | undefined;
+    expect(realRunInstall?.default).toBe(true);
+    expect(mirrorRunInstall?.default).toBe(false);
+
+    // appPath is the positional entry point (its default carries across).
+    expect(
+      createApplicationVerb.params.find((p) => p.name === "appPath"),
+    ).toMatchObject({ kind: "string", positional: true, default: "my-app" });
+  });
+});
+
+describe("compiled-binary create gate (M4)", () => {
+  it("detects a module-resolution failure but not a genuine runtime error", () => {
+    // bun --compile's unresolved-specifier error (the shipped-binary case).
+    expect(
+      isModuleNotFound({
+        name: "ResolveMessage",
+        message: "Cannot find module './pickGenerator.js'",
+      }),
+    ).toBe(true);
+    // node ESM's resolution error.
+    expect(
+      isModuleNotFound(
+        Object.assign(new Error("x"), { code: "ERR_MODULE_NOT_FOUND" }),
+      ),
+    ).toBe(true);
+    // A REAL runtime bug in a source build must still propagate (not be masked
+    // as "run from source").
+    expect(
+      isModuleNotFound(new TypeError("cannot read properties of undefined")),
+    ).toBe(false);
+    expect(isModuleNotFound(null)).toBe(false);
+    expect(isModuleNotFound("nope")).toBe(false);
   });
 });

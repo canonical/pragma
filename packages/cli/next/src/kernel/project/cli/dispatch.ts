@@ -13,6 +13,11 @@
 
 import { describeEffect, dryRun, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
+import {
+  asPragmaError,
+  CANCELLED_MESSAGE,
+  isCancellation,
+} from "../../error/fromTaskError.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import {
   renderErrorJson,
@@ -295,13 +300,13 @@ export async function dispatch(
     };
     outcome = await executeVerb(verb, params, mutation, runtime);
   } catch (error) {
-    const pragmaError =
-      error instanceof PragmaError
-        ? error
-        : PragmaError.internalError(
-            error instanceof Error ? error.message : String(error),
-          );
-    outcome = renderError(pragmaError, globalFlags);
+    // Declining the interactive confirm gate is a clean cancellation — a deliberate
+    // user choice, not a failure to report: a plain "Cancelled." and a success exit.
+    // Everything else maps through the shared task-error bridge (which turns a
+    // bad/absent non-interactive answer into a usage error, not an internal bug).
+    outcome = isCancellation(error)
+      ? { stderr: `${CANCELLED_MESSAGE}\n`, exitCode: 0 }
+      : renderError(asPragmaError(error), globalFlags);
   }
 
   if (outcome.stdout) writeStdout(outcome.stdout);
