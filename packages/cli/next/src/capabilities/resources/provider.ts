@@ -25,6 +25,11 @@ import type { McpResourceProvider } from "../../kernel/spec/types.js";
 /** Max autocomplete suggestions returned for a partial URI. */
 const COMPLETION_LIMIT = 50;
 
+/** MCP annotation priority for a schema (TBox) entry — surfaced above individuals. */
+const CLASS_PRIORITY = 0.9;
+/** MCP annotation priority for an individual (ABox) entry. */
+const INDIVIDUAL_PRIORITY = 0.3;
+
 /** The `pragma:` URI scheme + the single reserved-expansion template variable. */
 const URI_TEMPLATE = "pragma:{+uri}";
 
@@ -33,12 +38,26 @@ const TEMPLATE_DESCRIPTION =
   "URI (e.g. pragma:ds:button); autocomplete matches URI or label substrings. " +
   "Content mirrors `pragma graph inspect <uri>`.";
 
+/** Agent-navigability annotations mirrored onto a listed resource. */
+export interface ResourceAnnotations {
+  /** MCP audience roles (the SDK's literal union) — always the assistant here. */
+  readonly audience: ("user" | "assistant")[];
+  readonly priority: number;
+}
+
+/** The audience every listed resource carries (assistant-facing). */
+const ASSISTANT_AUDIENCE: ("user" | "assistant")[] = ["assistant"];
+
 /** One resource entry in the listing. */
 export interface ListedResource {
   readonly uri: string;
   readonly name: string;
   readonly description?: string;
   readonly mimeType: "application/json";
+  /** Audience + priority (schema surfaced above individuals). */
+  readonly annotations?: ResourceAnnotations;
+  /** Taxonomy metadata: `pragma/box` (tbox|abox) + optional instance count. */
+  readonly _meta?: Record<string, unknown>;
 }
 
 /**
@@ -69,12 +88,34 @@ export function buildResourceList(
     const boxRank = (e: typeof a) => (e.box === "tbox" ? 0 : 1);
     return boxRank(a) - boxRank(b) || a.name.localeCompare(b.name);
   });
-  return ordered.map((entity) => ({
-    uri: `pragma:${entity.prefixed ?? entity.name}`,
-    name: entity.label || entity.name,
-    ...(entity.description ? { description: entity.description } : {}),
-    mimeType: "application/json" as const,
-  }));
+  return ordered.map((entity) => {
+    const isTbox = entity.box === "tbox";
+    // Port of the old shell's `_meta` taxonomy: `pragma/box` + a priority that
+    // ranks schema (classes/properties) above individuals, so an agent browsing
+    // the resource list sees the schema first. `pragma/instanceCount` is the
+    // per-type count carried in the index for a TBox class entry.
+    // `instanceCountByType` is keyed by the full type IRI; a TBox class entry's
+    // own IRI is that key, so it carries the count of its individuals.
+    const instanceCount =
+      isTbox && entity.uri ? index.instanceCountByType[entity.uri] : undefined;
+    const meta: Record<string, unknown> = {
+      "pragma/box": entity.box ?? "abox",
+    };
+    if (typeof instanceCount === "number") {
+      meta["pragma/instanceCount"] = instanceCount;
+    }
+    return {
+      uri: `pragma:${entity.prefixed ?? entity.name}`,
+      name: entity.label || entity.name,
+      ...(entity.description ? { description: entity.description } : {}),
+      mimeType: "application/json" as const,
+      annotations: {
+        audience: ASSISTANT_AUDIENCE,
+        priority: isTbox ? CLASS_PRIORITY : INDIVIDUAL_PRIORITY,
+      },
+      _meta: meta,
+    };
+  });
 }
 
 /**
@@ -132,6 +173,9 @@ function readUriVariable(value: string | string[] | undefined): string {
 
 /** The graph-entity resource provider (registered by buildServer). */
 export const resourceProvider: McpResourceProvider = {
+  // The single authoring point for the template id — the surface emitter reads
+  // this so `mcpSurface.resources` cannot drift from what `register` installs.
+  surface: { templates: [URI_TEMPLATE] },
   async register(server, runtime) {
     const { ResourceTemplate } = await import(
       "@modelcontextprotocol/sdk/server/mcp.js"

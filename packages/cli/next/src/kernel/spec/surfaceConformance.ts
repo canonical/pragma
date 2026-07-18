@@ -29,7 +29,14 @@ const FIXED_SECTIONS = [
 /** The covenant document shape (the parsed golden), navigated defensively. */
 export interface Covenant {
   readonly nouns: Record<string, { verbs: readonly EmittedVerb[] }>;
-  readonly mcpSurface: { tools: readonly string[] };
+  readonly mcpSurface: {
+    readonly tools: readonly string[];
+    /** Non-tool MCP surface (PR7 covenant extension) — optional so a synthetic
+     * covenant that pins only `tools` still conforms. */
+    readonly resources?: readonly string[];
+    readonly prompts?: boolean;
+    readonly instructions?: boolean;
+  };
   readonly [section: string]: unknown;
 }
 
@@ -90,6 +97,32 @@ export function assertConforms(
     if (!blessed.has(tool)) {
       throw new Error(`surface: emitted tool "${tool}" is not in the covenant`);
     }
+  }
+
+  // Non-tool MCP surface (PR7 covenant extension), checked with the same subset
+  // semantics as tools and ONLY when the covenant declares the section — so an
+  // emitted-empty surface still conforms and synthetic tool-only covenants pass.
+  const cov = covenant.mcpSurface;
+  if (cov.resources) {
+    const blessedResources = new Set(cov.resources);
+    for (const template of emitted.mcpSurface.resources) {
+      if (!blessedResources.has(template)) {
+        throw new Error(
+          `surface: emitted resource template "${template}" is not in the covenant`,
+        );
+      }
+    }
+  }
+  if (cov.prompts !== undefined && emitted.mcpSurface.prompts && !cov.prompts) {
+    throw new Error(
+      "surface: emitted a prompts surface the covenant does not bless",
+    );
+  }
+  if (
+    cov.instructions !== undefined &&
+    emitted.mcpSurface.instructions !== cov.instructions
+  ) {
+    throw new Error("surface: instructions marker does not match the covenant");
   }
 
   for (const section of FIXED_SECTIONS) {

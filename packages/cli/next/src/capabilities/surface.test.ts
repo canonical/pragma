@@ -44,16 +44,21 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "lookup",
       "sample",
     ]);
-    // tier is list-only; modifier/token add lookup but no sample; block is
-    // list (hand-written, --all-tiers) + graphql lookup.
-    expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual(["list"]);
+    // PR7 completes the surface: tier gains a bespoke single-name lookup;
+    // block/modifier/token gain no-argument samples (fixedCount).
+    expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual([
+      "list",
+      "lookup",
+    ]);
     expect(emitted.nouns.modifier?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
+      "sample",
     ]);
     expect(emitted.nouns.token?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
+      "sample",
       "add-config",
     ]);
     expect(emitted.nouns.block?.verbs).toEqual([
@@ -69,7 +74,16 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         needsStore: true,
         mcp: "block_lookup",
       },
+      { v: "sample", needsStore: true, mcp: "block_sample" },
     ]);
+    // The bespoke tier lookup emits the SINGLE-name positional the covenant
+    // freezes (a pack lookup would emit the variadic `<name...>`).
+    expect(emitted.nouns.tier?.verbs).toContainEqual({
+      v: "lookup",
+      args: ["<name>"],
+      needsStore: true,
+      mcp: "tier_lookup",
+    });
   });
 
   it("emits the authored read nouns (ontology TBox, storeless skill, graph inspect)", () => {
@@ -147,5 +161,34 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]) {
       expect(tools).toContain(tool);
     }
+  });
+});
+
+describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
+  const emitted = emitSurface(capabilities);
+
+  // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
+  // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
+  // surface-complete milestone. After PR7, every covenant tool is realized.
+  it("emits every covenant tool (all 38) — set equality with the covenant", () => {
+    const emittedTools = new Set(emitted.mcpSurface.tools);
+    const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
+    expect(missing).toEqual([]);
+    expect([...emitted.mcpSurface.tools].sort()).toEqual(
+      [...golden.mcpSurface.tools].sort(),
+    );
+    expect(emitted.mcpSurface.tools).toHaveLength(38);
+  });
+
+  // The covenant edit: the non-tool MCP surface is frozen too.
+  it("freezes the non-tool MCP surface (resources/prompts/instructions)", () => {
+    expect(emitted.mcpSurface.resources).toEqual(["pragma:{+uri}"]);
+    expect(emitted.mcpSurface.resources).toEqual(golden.mcpSurface.resources);
+    expect(emitted.mcpSurface.prompts).toBe(true);
+    expect(emitted.mcpSurface.prompts).toBe(golden.mcpSurface.prompts);
+    expect(emitted.mcpSurface.instructions).toBe(true);
+    expect(emitted.mcpSurface.instructions).toBe(
+      golden.mcpSurface.instructions,
+    );
   });
 });

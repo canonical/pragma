@@ -106,5 +106,10 @@ export const blockPack: PackDefinition = {
       },
     ],
     disclosure: { levels: ["summary", "detailed"], default: "detailed" },
+    sample: {
+      fixedCount: true,
+      toolDescription:
+        "Return randomly selected complete design-system blocks as exemplars. Use BEFORE writing queries to see actual data shapes, anatomy, and property names.",
+    },
   },
 };

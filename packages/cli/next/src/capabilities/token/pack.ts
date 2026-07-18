@@ -49,5 +49,10 @@ export const tokenPack: PackDefinition = {
       { name: "valueLight", property: "ds:valueLight", label: "Light value" },
       { name: "valueDark", property: "ds:valueDark", label: "Dark value" },
     ],
+    sample: {
+      fixedCount: true,
+      toolDescription:
+        "Return randomly selected complete design tokens (with theme values) as exemplars. Use BEFORE writing queries to see actual data shapes.",
+    },
   },
 };

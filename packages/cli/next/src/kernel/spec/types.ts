@@ -140,6 +140,13 @@ export interface McpResourceProvider {
     server: import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
     rt: PragmaRuntime,
   ) => void;
+  /**
+   * A static declaration of the resource template ids this provider installs
+   * (e.g. `["pragma:{+uri}"]`). The surface emitter projects it into
+   * `mcpSurface.resources` so the covenant freezes the non-tool surface without
+   * booting a server — the single authoring point, so the id cannot drift.
+   */
+  readonly surface?: { readonly templates: readonly string[] };
 }
 
 /**

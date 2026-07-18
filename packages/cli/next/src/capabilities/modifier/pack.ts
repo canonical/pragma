@@ -55,5 +55,10 @@ export const modifierPack: PackDefinition = {
         select: [{ name: "name", property: "ds:name" }],
       },
     ],
+    sample: {
+      fixedCount: true,
+      toolDescription:
+        "Return randomly selected complete modifier families (with value lists) as exemplars. Use BEFORE writing queries to see actual data shapes.",
+    },
   },
 };

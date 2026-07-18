@@ -58,9 +58,20 @@ function buildLiveVerbs(): readonly LiveVerb[] {
 /** Every live, non-hidden verb across the whole capability catalog. */
 export const liveVerbs: readonly LiveVerb[] = buildLiveVerbs();
 
-/** Read nouns' `lookup` verbs, MCP-exposed, store-backed. */
+/**
+ * Read nouns' `lookup` verbs, MCP-exposed, store-backed — restricted to the
+ * PACK-lookup contract (a variadic `<name...>` positional), which the B-tier
+ * list→lookup→batch suites drive uniformly. Bespoke single-name lookups
+ * (`tier_lookup`, `prompt_lookup`) have their own tests, so they are excluded
+ * here structurally (by param shape, not by naming the noun — R2).
+ */
 export const lookupVerbs: readonly LiveVerb[] = liveVerbs.filter(
-  (v) => v.verb === "lookup" && v.tool !== false && v.needsStore && !v.mutates,
+  (v) =>
+    v.verb === "lookup" &&
+    v.tool !== false &&
+    v.needsStore &&
+    !v.mutates &&
+    v.spec.params.some((p) => p.positional && p.kind === "string[]"),
 );
 
 /** Read nouns' `list` verbs, MCP-exposed, store-backed. */

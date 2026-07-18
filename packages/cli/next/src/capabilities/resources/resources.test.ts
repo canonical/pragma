@@ -44,6 +44,21 @@ describe("resource listing (storeless, over the pack index)", () => {
     expect(componentIdx).toBeLessThan(buttonIdx);
   });
 
+  it("enriches each entry with the _meta taxonomy (pragma/box + priority)", () => {
+    const resources = buildResourceList(readPackIndex(process.cwd()));
+    const component = resources.find((r) => r.uri === "pragma:ex:Component");
+    const button = resources.find((r) => r.uri === "pragma:ex:Button");
+    // A schema class: tbox, higher priority, carries its instance count.
+    expect(component?._meta?.["pragma/box"]).toBe("tbox");
+    expect(component?.annotations?.audience).toEqual(["assistant"]);
+    expect(component?.annotations?.priority).toBe(0.9);
+    expect(component?._meta?.["pragma/instanceCount"]).toBe(3);
+    // An individual: abox, lower priority, no instance count.
+    expect(button?._meta?.["pragma/box"]).toBe("abox");
+    expect(button?.annotations?.priority).toBe(0.3);
+    expect(button?._meta?.["pragma/instanceCount"]).toBeUndefined();
+  });
+
   it("ranks autocomplete over prefixed URI and label", () => {
     const index = readPackIndex(process.cwd());
     const hits = rankUriCompletions(index?.entities ?? [], "but", 10);

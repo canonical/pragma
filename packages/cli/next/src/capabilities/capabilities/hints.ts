@@ -50,6 +50,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Need full anatomy, modifiers, tokens, and standards for specific blocks by name or IRI",
   },
+  block_sample: {
+    category: "read",
+    use_when:
+      "See actual block data shapes before querying — returns random instances each call, prevents guessing at property names",
+  },
   config_show: {
     category: "read",
     use_when: "Checking active tier and channel before querying",
@@ -72,6 +77,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "read",
     use_when:
       "Need values and usage details for specific modifier families by name",
+  },
+  modifier_sample: {
+    category: "read",
+    use_when:
+      "See actual modifier data shapes (with value lists) before querying — returns random instances each call",
   },
   ontology_list: {
     category: "read",
@@ -130,6 +140,10 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "read",
     use_when: "Understanding the tier hierarchy before setting a tier filter",
   },
+  tier_lookup: {
+    category: "read",
+    use_when: "Need the blocks scoped to a specific tier by name",
+  },
   token_list: {
     category: "read",
     use_when:
@@ -139,6 +153,11 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "read",
     use_when:
       "Need theme values and resolution details for specific tokens by name or IRI",
+  },
+  token_sample: {
+    category: "read",
+    use_when:
+      "See actual token data shapes (with theme values) before querying — returns random instances each call",
   },
 
   // — Write ——————————————————————————————————————————————————————————————————

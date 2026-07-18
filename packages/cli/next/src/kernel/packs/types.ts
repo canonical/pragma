@@ -209,6 +209,12 @@ export interface PackVerb extends PackList {
 export interface PackSample {
   /** Default sample count when none is requested (1–5; default 2). */
   readonly count?: number;
+  /**
+   * Omit the `[count]` positional — the sample always returns {@link count}
+   * (default 2) entries. Used where the covenant freezes a no-argument sample
+   * (`block`/`modifier`/`token`); `standard` keeps the `[count]` positional.
+   */
+  readonly fixedCount?: boolean;
   /** CLI description for the command. */
   readonly description?: string;
   /** MCP tool description (defaults to the CLI description). */

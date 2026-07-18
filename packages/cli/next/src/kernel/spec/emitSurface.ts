@@ -37,10 +37,25 @@ export interface EmittedVerb {
   readonly note?: string;
 }
 
+/**
+ * The MCP surface the covenant freezes: the tool set PLUS the non-tool surfaces
+ * (PR7 covenant extension). `resources` are the resource template ids providers
+ * declare; `prompts` marks whether any module offers the native `prompts/*`
+ * surface; `instructions` marks that the server carries handshake instructions
+ * (always true — buildServer sets it unconditionally). Prompt NAMES are graph
+ * DATA, not grammar, so they are guarded by the prompt tests, not frozen here.
+ */
+export interface McpSurface {
+  readonly tools: string[];
+  readonly resources: string[];
+  readonly prompts: boolean;
+  readonly instructions: boolean;
+}
+
 /** The full surface document: live nouns/tools plus the fixed kernel sections. */
 export interface EmittedSurface {
   readonly nouns: Record<string, { verbs: EmittedVerb[] }>;
-  readonly mcpSurface: { tools: string[] };
+  readonly mcpSurface: McpSurface;
   readonly bins: typeof FIXED_SURFACE.bins;
   readonly globalFlags: typeof FIXED_SURFACE.globalFlags;
   readonly detailLevels: typeof FIXED_SURFACE.detailLevels;
@@ -162,6 +177,8 @@ export function emitSurface(
 ): EmittedSurface {
   const nouns: Record<string, { verbs: EmittedVerb[] }> = {};
   const tools: string[] = [];
+  const resources: string[] = [];
+  let prompts = false;
 
   for (const module of modules) {
     for (const verb of module.verbs) {
@@ -172,11 +189,24 @@ export function emitSurface(
       bucket.verbs.push(emitVerb(verb));
       if (verb.capability.mcp.expose) tools.push(toolName(verb.path));
     }
+    // Non-tool MCP surfaces (module hooks, NOT verbs): the resource template ids
+    // the provider declares, and whether a native prompt surface is offered.
+    if (module.mcpResources?.surface) {
+      resources.push(...module.mcpResources.surface.templates);
+    }
+    if (module.mcpPrompts) prompts = true;
   }
 
   return {
     nouns,
-    mcpSurface: { tools: tools.sort() },
+    mcpSurface: {
+      tools: tools.sort(),
+      resources: resources.sort(),
+      prompts,
+      // The server always carries handshake instructions (buildServer sets them
+      // unconditionally), so this is an invariant true — a stable presence marker.
+      instructions: true,
+    },
     bins: FIXED_SURFACE.bins,
     globalFlags: FIXED_SURFACE.globalFlags,
     detailLevels: FIXED_SURFACE.detailLevels,

@@ -200,24 +200,30 @@ function compileSampleVerb(
 ): VerbSpec {
   const defaultCount = sampleDefaultCount(lookup);
   const config = lookup.sample === true ? undefined : lookup.sample;
+  // Most samples take a `[count]` positional; where the covenant freezes a
+  // no-argument sample the pack sets `fixedCount`, so the compiler omits it and
+  // the sample always returns the default count.
+  const countParam: ParamSpec[] = config?.fixedCount
+    ? []
+    : [
+        {
+          kind: "string",
+          name: "count",
+          doc: `Number of samples (${MIN_SAMPLE_COUNT}–${MAX_SAMPLE_COUNT}, default ${defaultCount}).`,
+          positional: true,
+        },
+      ];
   const verb: VerbSpec<Record<string, unknown>, SampleOutput> = {
     path: [noun, "sample"],
     summary:
       config?.description ??
       `Return randomly selected complete ${noun} entries as exemplars.`,
     ...(config?.toolDescription ? { doc: config.toolDescription } : {}),
-    params: [
-      {
-        kind: "string",
-        name: "count",
-        doc: `Number of samples (${MIN_SAMPLE_COUNT}–${MAX_SAMPLE_COUNT}, default ${defaultCount}).`,
-        positional: true,
-      },
-    ],
+    params: countParam,
     output: { formatters: sampleFormatters(lookup, noun, prefixes) },
     examples: [
       { cmd: `pragma ${noun} sample` },
-      { cmd: `pragma ${noun} sample 3` },
+      ...(config?.fixedCount ? [] : [{ cmd: `pragma ${noun} sample 3` }]),
     ],
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
