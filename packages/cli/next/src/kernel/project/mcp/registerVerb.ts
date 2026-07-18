@@ -16,7 +16,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { PragmaError } from "../../error/PragmaError.js";
-import type { PragmaRuntime } from "../../runtime/types.js";
+import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
 import { toolName } from "../../spec/emitSurface.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
 import { toolError, toolSuccess } from "./envelope.js";
@@ -155,9 +155,18 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       // Without `confirm`, this is a plan-only preview: tell the verb so a
       // network-touching mutation stays offline and never fetches on discovery.
       const preview = args.confirm !== true;
+      // MCP has no interactive channel: transport "mcp" makes an interactive
+      // verb pick the params-or-error prompt strategy, so a tool call can never
+      // hang waiting for input.
+      const interaction: InteractionRuntime = {
+        isTTY: false,
+        transport: "mcp",
+        yes: args.confirm === true,
+      };
       const mutationRuntime: PragmaRuntime = {
         ...runtime,
         mutation: { preview },
+        interaction,
       };
       const task = await Promise.resolve(
         verb.run(params, mutationRuntime) as
@@ -165,11 +174,20 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
           | Promise<Task<unknown>>,
       );
       if (preview) {
-        const plan = dryRun(task).effects.map(describeEffect);
+        const plan = dryRun(task)
+          .effects.filter((effect) => effect._tag !== "Prompt")
+          .map(describeEffect);
         return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });
       }
-      const result = await runTask(task, { onLog: logToStderr });
-      return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
+      // Real execution: spread the verb's runner options (prompt handler,
+      // stamping) into the interpreter; run teardown afterwards.
+      const exec = mutationRuntime.exec ?? {};
+      try {
+        const result = await runTask(task, { onLog: logToStderr, ...exec });
+        return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
+      } finally {
+        await exec.dispose?.();
+      }
     } catch (error) {
       return toolError(asPragmaError(error));
     }

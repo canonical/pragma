@@ -92,6 +92,58 @@ export interface MutationRuntime {
 }
 
 /**
+ * How this invocation reaches the user — populated by the projector for a
+ * mutating verb. An interactive verb reads it to pick its prompt strategy: an
+ * attended CLI without `--yes` gets a wizard; a non-interactive CLI (or `--yes`)
+ * gets flags+defaults; MCP gets params-or-error. `signal` aborts a run.
+ *
+ * NOTE (PR6): interactive setup mutations reuse this exact shape.
+ */
+export interface InteractionRuntime {
+  /** Both stdin and stdout are a TTY (CLI); always false over MCP. */
+  readonly isTTY: boolean;
+  /** Which projector is driving this run. */
+  readonly transport: "cli" | "mcp";
+  /** The user asked to skip an interactive confirmation (`--yes` / MCP confirm). */
+  readonly yes: boolean;
+  /** Abort signal for the run, if the projector wired one. */
+  readonly signal?: AbortSignal;
+}
+
+/**
+ * The opaque runner options a mutating verb's `run` assembles and the projector
+ * spreads into the node interpreter on the REAL-run branch only (never on
+ * dry-run/undo, which stay handler-free and mock prompts). It carries the
+ * interactivity + progress seam: the prompt handler, the stamping/progress
+ * effect callbacks, log routing, and an optional teardown the projector runs in
+ * a `finally` (e.g. to dispose an Ink render).
+ *
+ * The task-effect types are referenced inline so this module carries no static
+ * import of the node interpreter — the runtime stays cheap to construct.
+ */
+export interface RunnerOptions {
+  /** Resolve each interactive `Prompt` effect (the injected UI strategy). */
+  promptHandler?: (
+    effect: import("@canonical/task").Effect & { _tag: "Prompt" },
+  ) => Promise<unknown>;
+  /** Called before each effect — the stamping + progress seam. */
+  onEffectStart?: (effect: import("@canonical/task").Effect) => void;
+  /** Called after each effect completes (with its duration). */
+  onEffectComplete?: (
+    effect: import("@canonical/task").Effect,
+    duration: number,
+  ) => void;
+  /** Route task log output. */
+  onLog?: (level: "debug" | "info" | "warn" | "error", message: string) => void;
+  /** The working directory the run resolves relative paths against. */
+  cwd?: string;
+  /** Abort signal, forwarded to the interpreter. */
+  signal?: AbortSignal;
+  /** Teardown run by the projector after the task settles (e.g. unmount Ink). */
+  dispose?: () => void | Promise<void>;
+}
+
+/**
  * Per-invocation runtime handed to every verb `run`. Storeless verbs use only
  * `cwd`/`version`/`globalFlags`/`loadConfig`; store-backed verbs reach the graph
  * through `store`/`query`. The dispatcher boots the store only for
@@ -112,4 +164,12 @@ export interface PragmaRuntime {
   readonly query: QueryFacade;
   /** Mutation context, set by the projector for a mutating verb (else absent). */
   readonly mutation?: MutationRuntime;
+  /** How this run reaches the user, set by the projector for a mutating verb. */
+  readonly interaction?: InteractionRuntime;
+  /**
+   * The runner options a mutating verb's `run` assembles for its real
+   * execution. NOT readonly: the verb writes it as its last act before
+   * returning the Task, and the projector reads it back on the real-run branch.
+   */
+  exec?: RunnerOptions;
 }

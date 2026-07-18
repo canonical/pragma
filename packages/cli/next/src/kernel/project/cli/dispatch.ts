@@ -23,7 +23,11 @@ import { successEnvelope } from "../../render/envelope.js";
 import { selectFormatter } from "../../render/formatters.js";
 import { writeStdout } from "../../render/writeStdout.js";
 import { bootRuntime } from "../../runtime/boot.js";
-import type { GlobalFlags, PragmaRuntime } from "../../runtime/types.js";
+import type {
+  GlobalFlags,
+  InteractionRuntime,
+  PragmaRuntime,
+} from "../../runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
 import { mapExitCode } from "./exitCodes.js";
 
@@ -208,9 +212,22 @@ export async function executeVerb(
   if (verb.capability.mutates) {
     // Tell the verb whether this is a plan-only preview (`--dry-run`) or a real
     // execution, so a network-touching mutation can stay offline for the plan.
+    // Also hand it the interaction context so an interactive verb can pick its
+    // prompt strategy. The verb's `run` sets `mutationRuntime.exec` (the runner
+    // options) as its last act; the projector reads it back on the real-run
+    // branch only — the dry-run/undo branches stay handler-free (they mock
+    // prompts), so `--dry-run`/`--undo` are unchanged by this seam.
+    const controller = new AbortController();
+    const interaction: InteractionRuntime = {
+      isTTY: process.stdin.isTTY === true && process.stdout.isTTY === true,
+      transport: "cli",
+      yes: mutation.yes,
+      signal: controller.signal,
+    };
     const mutationRuntime: PragmaRuntime = {
       ...runtime,
       mutation: { preview: mutation.dryRun },
+      interaction,
     };
     const task = await Promise.resolve(
       verb.run(params, mutationRuntime) as
@@ -218,18 +235,32 @@ export async function executeVerb(
         | Promise<Task<unknown>>,
     );
     if (mutation.dryRun) {
-      return renderPlan(flags, dryRun(task).effects.map(describeEffect));
+      // A plan is the effects a mutation WOULD apply — a `Prompt` is not one, so
+      // the interactive confirm gate / answer prompts never clutter the preview.
+      return renderPlan(
+        flags,
+        dryRun(task)
+          .effects.filter((effect) => effect._tag !== "Prompt")
+          .map(describeEffect),
+      );
     }
     if (mutation.undo) {
       const { undoCount } = await runUndo(task, { onLog: logToStderr });
       return renderUndo(flags, undoCount);
     }
-    return renderData(
-      verb,
-      flags,
-      await runTask(task, { onLog: logToStderr }),
-      {},
-    );
+    // Real execution: spread the verb's runner options into the node
+    // interpreter (prompt handler, stamping/progress callbacks, log routing,
+    // signal). Teardown (e.g. unmount an Ink render) runs in `finally`.
+    const exec = mutationRuntime.exec ?? {};
+    const onSigint = (): void => controller.abort();
+    process.once("SIGINT", onSigint);
+    try {
+      const value = await runTask(task, { onLog: logToStderr, ...exec });
+      return renderData(verb, flags, value, {});
+    } finally {
+      process.removeListener("SIGINT", onSigint);
+      await exec.dispose?.();
+    }
   }
 
   const data = await Promise.resolve(
