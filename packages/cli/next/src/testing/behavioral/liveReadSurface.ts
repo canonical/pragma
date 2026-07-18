@@ -67,13 +67,3 @@ export const lookupVerbs: readonly LiveVerb[] = liveVerbs.filter(
 export const listVerbs: readonly LiveVerb[] = liveVerbs.filter(
   (v) => v.verb === "list" && v.tool !== false && v.needsStore && !v.mutates,
 );
-
-/** Every store-backed, MCP-exposed, non-mutating (read) verb. */
-export const storeBackedReadVerbs: readonly LiveVerb[] = liveVerbs.filter(
-  (v) => v.needsStore && v.tool !== false && !v.mutates,
-);
-
-/** Every MCP-exposed, non-mutating (read) verb — storeless or store-backed. */
-export const readVerbs: readonly LiveVerb[] = liveVerbs.filter(
-  (v) => v.tool !== false && !v.mutates,
-);

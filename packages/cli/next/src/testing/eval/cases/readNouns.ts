@@ -156,6 +156,10 @@ export const readNounEvalCases: readonly EvalCase[] = [
           (sum, row) => sum + Number(row.count),
           0,
         );
+        assert.ok(
+          listLength > 0,
+          "standard_list must be non-empty for the count-parity invariant to be meaningful",
+        );
         assert.equal(listLength, categorySum);
       });
     },

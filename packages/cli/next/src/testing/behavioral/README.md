@@ -32,7 +32,7 @@ the emitted set legitimately grows PR-by-PR.
 
 | File | What it proves |
 |---|---|
-| `liveReadSurface.ts` | The parameterization helper — every other file imports `liveVerbs`/`listVerbs`/`lookupVerbs`/`readVerbs` from here rather than deriving its own. |
+| `liveReadSurface.ts` | The parameterization helper — every other file imports `liveVerbs`/`listVerbs`/`lookupVerbs` from here rather than deriving its own. |
 | `harness.foundation.test.ts` | The framework itself boots (fixture graph, foreign-namespace pack, `runCli`, the golden normalizer). |
 | `firstRun.e2e.test.ts`, `rootCli.e2e.test.ts`, `exitCodes.e2e.test.ts`, `mcpServe.e2e.test.ts`, `autoLlm.e2e.test.ts` | The THIN spawn-e2e layer — the real process boundary, kept to exactly these cases (R7). Everything else in this package runs in-process. |
 | `parity.test.ts` | The uniform CLI-json == MCP-json helper (`helpers/parity.ts`), proven on the stable nouns and swept across every read noun (B5). |
