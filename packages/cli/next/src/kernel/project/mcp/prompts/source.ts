@@ -76,14 +76,19 @@ export function listPromptSummaries(rt: PragmaRuntime): PromptSummary[] {
   return summaries.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Rows the prompt SELECT returns (one per argument; body repeats). */
+/**
+ * Rows the prompt SELECT returns (one per argument; body repeats). The facade's
+ * SELECT bindings are keyed by variable name with PLAIN string values (an
+ * unbound OPTIONAL variable is simply absent) — the same shape `runSelect`
+ * consumes.
+ */
 interface PromptRow {
-  readonly name?: { value?: string };
-  readonly description?: { value?: string };
-  readonly body?: { value?: string };
-  readonly argName?: { value?: string };
-  readonly argDescription?: { value?: string };
-  readonly argRequired?: { value?: string };
+  readonly name?: string;
+  readonly description?: string;
+  readonly body?: string;
+  readonly argName?: string;
+  readonly argDescription?: string;
+  readonly argRequired?: string;
 }
 
 /** The SPARQL that materializes prompts (all, or one when `label` is bound). */
@@ -116,24 +121,22 @@ function foldPromptRows(rows: readonly PromptRow[]): PromptEntry[] {
     { description?: string; body: string; args: Map<string, PromptArgument> }
   >();
   for (const row of rows) {
-    const name = row.name?.value;
+    const name = row.name;
     if (!name) continue;
     let entry = byName.get(name);
     if (!entry) {
       entry = { body: "", args: new Map() };
-      if (row.description?.value) entry.description = row.description.value;
+      if (row.description) entry.description = row.description;
       byName.set(name, entry);
     }
-    if (row.body?.value) entry.body = row.body.value;
-    const argName = row.argName?.value;
+    if (row.body) entry.body = row.body;
+    const argName = row.argName;
     if (argName && !entry.args.has(argName)) {
       entry.args.set(argName, {
         name: argName,
-        ...(row.argDescription?.value
-          ? { description: row.argDescription.value }
-          : {}),
-        ...(row.argRequired
-          ? { required: row.argRequired.value === "true" }
+        ...(row.argDescription ? { description: row.argDescription } : {}),
+        ...(row.argRequired !== undefined
+          ? { required: row.argRequired === "true" }
           : {}),
       });
     }
@@ -148,12 +151,11 @@ function foldPromptRows(rows: readonly PromptRow[]): PromptEntry[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Extract the binding rows from a SPARQL select result, tolerating shapes. */
+/** Extract the SELECT binding rows from a facade query result. */
 function selectRows(result: unknown): PromptRow[] {
-  if (Array.isArray(result)) return result as PromptRow[];
-  const bindings = (result as { results?: { bindings?: unknown } })?.results
-    ?.bindings;
-  return Array.isArray(bindings) ? (bindings as PromptRow[]) : [];
+  const typed = result as { type?: string; bindings?: unknown };
+  if (typed.type !== "select" || !Array.isArray(typed.bindings)) return [];
+  return typed.bindings as PromptRow[];
 }
 
 /**

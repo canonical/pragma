@@ -83,6 +83,16 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Exploring the full schema of a namespace — classes, properties, and hierarchy",
   },
+  prompt_list: {
+    category: "read",
+    use_when:
+      "Browsing the workflow prompt templates the design-system graph offers",
+  },
+  prompt_lookup: {
+    category: "read",
+    use_when:
+      "Fetching a specific workflow prompt template's body and arguments by name",
+  },
   skill_list: {
     category: "read",
     use_when: "Discovering agent skills provided by installed packages",

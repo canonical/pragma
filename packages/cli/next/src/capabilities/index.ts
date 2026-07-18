@@ -20,6 +20,7 @@ import { infoModule } from "./info/index.js";
 import { metaModule } from "./meta/index.js";
 import { modifierModule } from "./modifier/index.js";
 import { ontologyModule } from "./ontology/index.js";
+import { promptModule } from "./prompt/index.js";
 import { setupModule } from "./setup/index.js";
 import { skillModule } from "./skill/index.js";
 import { sourcesModule } from "./sources/index.js";
@@ -42,6 +43,7 @@ export const capabilities: readonly CapabilityModule[] = [
   ontologyModule,
   skillModule,
   graphModule,
+  promptModule,
   doctorModule,
   upgradeModule,
   setupModule,

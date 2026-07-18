@@ -117,6 +117,51 @@ cs:code.function.purity a cs:CodeStandard ;
   cs:hasCategory cs:cat.code .
 `;
 
+/** The `ds:Prompt` workflow templates — the ONE source both the `prompt_list`/
+ * `prompt_lookup` content tools and the native MCP `prompts/*` surface project.
+ * Adapted from the old shell's `DECISION_TREES`. `rdfs:label` is the prompt name
+ * (indexed → storeless native list); `ds:promptBody` + `ds:promptArgument`
+ * blank nodes are store-backed. Arguments are untyped blank nodes so they never
+ * enter the entity index (the same shape `cs:do`/`cs:dont` examples use). */
+const PROMPT_TTL = `
+ds:Prompt a owl:Class .
+ds:promptBody a owl:DatatypeProperty ; rdfs:domain ds:Prompt ; rdfs:range xsd:string .
+ds:promptArgument a owl:ObjectProperty ; rdfs:domain ds:Prompt .
+ds:argName a owl:DatatypeProperty ; rdfs:range xsd:string .
+ds:argRequired a owl:DatatypeProperty ; rdfs:range xsd:boolean .
+
+ds:prompt.build-a-block a ds:Prompt ;
+  rdfs:label "build-a-block" ;
+  rdfs:comment "Scaffold and wire a design-system block end to end." ;
+  ds:promptBody "You are building the {{blockName}} block. 1) If unfamiliar with block data, call block_sample for real shapes. 2) block_list to browse, or block_lookup {{blockName}} --detail detailed for anatomy, modifiers, and properties. 3) Follow the relevant standards via standard_lookup." ;
+  ds:promptArgument [ ds:argName "blockName" ; rdfs:comment "The block to build (e.g. Button)." ; ds:argRequired false ] .
+
+ds:prompt.audit-standards a ds:Prompt ;
+  rdfs:label "audit-standards" ;
+  rdfs:comment "Audit code against the design system's coding standards." ;
+  ds:promptBody "Audit code against the {{category}} standards. 1) standard_categories to see categories. 2) standard_list --category {{category}}. 3) standard_lookup <name> --detail detailed for do/don't examples, then reconcile the code." ;
+  ds:promptArgument [ ds:argName "category" ; rdfs:comment "Standard category slug (e.g. react)." ; ds:argRequired false ] .
+
+ds:prompt.explore-design-system a ds:Prompt ;
+  rdfs:label "explore-design-system" ;
+  rdfs:comment "Orient in an unfamiliar design system before querying." ;
+  ds:promptBody "Explore the design system. 1) capabilities for the tool map. 2) block_sample / modifier_sample for real data shapes. 3) ontology_list then ontology_show <ns> for the schema. 4) tier_list for the tier hierarchy. 5) graph_query for raw SPARQL joins." .
+
+ds:prompt.configure a ds:Prompt ;
+  rdfs:label "configure" ;
+  rdfs:comment "Set the active tier and release channel scope." ;
+  ds:promptBody "Configure pragma's scope. Set the tier with config_tier {{tier}}, the channel with config_channel {{channel}} (normal|experimental|prerelease), then confirm with config_show." ;
+  ds:promptArgument [ ds:argName "tier" ; rdfs:comment "Tier path (e.g. apps/lxd)." ; ds:argRequired false ] ;
+  ds:promptArgument [ ds:argName "channel" ; rdfs:comment "Release channel." ; ds:argRequired false ] .
+
+ds:prompt.scaffold-component a ds:Prompt ;
+  rdfs:label "scaffold-component" ;
+  rdfs:comment "Scaffold a new component and align it to the standards." ;
+  ds:promptBody "Scaffold the {{componentName}} component in {{framework}}. Use create_component with the component path and --framework {{framework}}, then review the generated files against the react/component standards via standard_lookup." ;
+  ds:promptArgument [ ds:argName "componentName" ; rdfs:comment "Component name/path (e.g. Button)." ; ds:argRequired true ] ;
+  ds:promptArgument [ ds:argName "framework" ; rdfs:comment "react | svelte | lit." ; ds:argRequired false ] .
+`;
+
 /** The prefixes the canonical store is built and queried with. */
 export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
@@ -124,7 +169,7 @@ export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
 };
 
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */
-export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}`;
+export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}`;
 
 /** Default viewing config: no tier set, `normal` channel — drops the beta-only block. */
 export const CANONICAL_CONFIG = { channel: "normal" as const };
