@@ -7,6 +7,7 @@ import {
   nounVerbFromPath,
   nounVerbFromToolName,
 } from "../domains/shared/stories/pack/index.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../domains/token/featureFlag.js";
 import { allSpecs, MCP_EXTRA_RESERVED } from "../mcp/tools/index.js";
 import createTestRuntime from "../testing/helpers/createTestRuntime.js";
 import collectCommands, { builtInCommands } from "./collectCommands.js";
@@ -73,7 +74,8 @@ describe("collectCommands", () => {
       "setup skills",
       "modifier sample",
       "tokens add-config",
-      "token sample",
+      // `token sample` is part of the flag-gated token read surface.
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token sample"] : []),
       "block list",
       "block sample",
       "ontology list",
@@ -104,14 +106,22 @@ describe("collectCommands", () => {
       "tier list",
       "modifier list",
       "modifier lookup",
-      "token list",
-      "token lookup",
+      // The `token` pack (token list/lookup) is bundled only while the token
+      // read surface is feature-flagged on.
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token list", "token lookup"] : []),
       // block is a PARTIAL migration: only the lookup verb is pack-served,
       // while the config-filtered `block list` stays built-in.
       "block lookup",
     ]) {
       expect(builtInPaths).not.toContain(path);
       expect(allPaths).toContain(path);
+    }
+
+    // With the token read surface off, the token pack is not bundled at all,
+    // so neither verb is served on any surface.
+    if (!TOKEN_READ_SURFACE_ENABLED) {
+      expect(allPaths).not.toContain("token list");
+      expect(allPaths).not.toContain("token lookup");
     }
   });
 

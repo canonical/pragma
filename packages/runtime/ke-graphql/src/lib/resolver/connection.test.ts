@@ -193,13 +193,23 @@ describe("helpers", () => {
 
   it("encodes a null uri as the empty-string cursor", () => {
     // Embedded blank-node entities carry uri: null → toBase64("") cursor.
-    const page = { window: [], hasNextPage: false, hasPreviousPage: false };
+    const page = {
+      window: [],
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalCount: 0,
+    };
     const connection = connectionFromPage([{ uri: null }], page);
     expect(connection.edges[0]?.cursor).toBe(toBase64(""));
   });
 
   it("yields null cursors for an empty hydrated page", () => {
-    const page = { window: [], hasNextPage: false, hasPreviousPage: false };
+    const page = {
+      window: [],
+      hasNextPage: false,
+      hasPreviousPage: false,
+      totalCount: 0,
+    };
     const connection = connectionFromPage([], page);
     expect(connection.edges).toEqual([]);
     expect(connection.pageInfo.startCursor).toBeNull();

@@ -15,6 +15,7 @@ import {
   RECIPE_STORY,
   RECIPE_TTL,
 } from "#testing";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import type { McpErrorPayload } from "../types.js";
 
 let client: Client;
@@ -57,9 +58,11 @@ function parseData(result: Record<string, unknown>): unknown {
 // =============================================================================
 
 describe("tool listing", () => {
-  it("registers 34 tools", async () => {
+  it("registers the expected number of tools", async () => {
     const { tools } = await client.listTools();
-    expect(tools).toHaveLength(34);
+    // Token read surface (token_list, token_lookup, token_sample) is
+    // feature-flagged off until token data ships.
+    expect(tools).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 34 : 31);
   });
 
   it("all tools have descriptions", async () => {
@@ -80,8 +83,10 @@ describe("tool listing", () => {
     expect(names).toContain("standard_categories");
     expect(names).toContain("modifier_list");
     expect(names).toContain("modifier_lookup");
-    expect(names).toContain("token_list");
-    expect(names).toContain("token_lookup");
+    if (TOKEN_READ_SURFACE_ENABLED) {
+      expect(names).toContain("token_list");
+      expect(names).toContain("token_lookup");
+    }
     expect(names).toContain("tier_list");
     expect(names).toContain("config_show");
     expect(names).toContain("config_tier");
@@ -102,7 +107,9 @@ describe("tool listing", () => {
     // Sample tools
     expect(names).toContain("block_sample");
     expect(names).toContain("standard_sample");
-    expect(names).toContain("token_sample");
+    if (TOKEN_READ_SURFACE_ENABLED) {
+      expect(names).toContain("token_sample");
+    }
     expect(names).toContain("modifier_sample");
   });
 
@@ -125,7 +132,7 @@ describe("tool listing", () => {
       "block_sample",
       "modifier_sample",
       "tokens_add_config",
-      "token_sample",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_sample"] : []),
       "config_show",
       "config_tier",
       "config_channel",
@@ -149,8 +156,10 @@ describe("tool listing", () => {
       // order: `tier`, `standard`, `modifier`, then `token`. The hand-written
       // tier, standard, modifier list/lookup, and token list/lookup domains
       // were deleted and are now served by bundled story packs (only the
-      // `modifier sample`, `token sample`, and `tokens_add_config` built-in
-      // remnants remain above).
+      // `modifier sample` and `tokens_add_config` built-in remnants remain
+      // above; `token sample` is part of the flag-gated token read surface).
+      // The `token` pack (token_list/token_lookup) is bundled only while the
+      // token read surface is feature-flagged on.
       "tier_list",
       "standard_list",
       "standard_lookup",
@@ -158,8 +167,7 @@ describe("tool listing", () => {
       "standard_sample",
       "modifier_list",
       "modifier_lookup",
-      "token_list",
-      "token_lookup",
+      ...(TOKEN_READ_SURFACE_ENABLED ? ["token_list", "token_lookup"] : []),
       // block is a partial migration: only the lookup verb is pack-served.
       "block_lookup",
     ]);
@@ -498,7 +506,7 @@ describe("modifier_lookup", () => {
 // Token tools
 // =============================================================================
 
-describe("token_list", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_list", () => {
   it("returns tokens", async () => {
     const result = await client.callTool({
       name: "token_list",
@@ -509,7 +517,7 @@ describe("token_list", () => {
   });
 });
 
-describe("token_lookup", () => {
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)("token_lookup", () => {
   it("returns token with theme values", async () => {
     const result = await client.callTool({
       name: "token_lookup",
@@ -924,7 +932,10 @@ describe("error handling", () => {
     const notFoundCalls = [
       { name: "block_lookup", arguments: { names: ["X"] } },
       { name: "modifier_lookup", arguments: { names: ["X"] } },
-      { name: "token_lookup", arguments: { names: ["X"] } },
+      // token_lookup is only registered while the token read surface is on.
+      ...(TOKEN_READ_SURFACE_ENABLED
+        ? [{ name: "token_lookup", arguments: { names: ["X"] } }]
+        : []),
       { name: "standard_lookup", arguments: { names: ["X"] } },
     ] as const;
 
@@ -998,7 +1009,7 @@ describe("ontology_show", () => {
     const envelope = parseEnvelope(result);
     expect(envelope.ok).toBe(true);
     expect(envelope.condensed).toBe(true);
-    expect(envelope.text).toEqual(expect.stringContaining("## ds:"));
+    expect(envelope.text).toEqual(expect.stringContaining("## Ontology ds:"));
   });
 });
 
@@ -1121,7 +1132,7 @@ describe("story-pack tools", () => {
       const tools = (await scoped.client.listTools()).tools.map(
         (tool) => tool.name,
       );
-      expect(tools).toHaveLength(36);
+      expect(tools).toHaveLength(TOKEN_READ_SURFACE_ENABLED ? 36 : 33);
       expect(tools).toContain("recipe_list");
       expect(tools).toContain("recipe_lookup");
 
@@ -1349,14 +1360,17 @@ describe("condensed parameter", () => {
     expect((envelope.text as string).length).toBeGreaterThan(0);
   });
 
-  it("token_lookup returns condensed text", async () => {
-    const result = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.primary"], condensed: true },
-    });
-    const envelope = parseEnvelope(result);
-    expect(envelope.ok).toBe(true);
-    expect(envelope.condensed).toBe(true);
-    expect(typeof envelope.text).toBe("string");
-  });
+  it.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+    "token_lookup returns condensed text",
+    async () => {
+      const result = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.primary"], condensed: true },
+      });
+      const envelope = parseEnvelope(result);
+      expect(envelope.ok).toBe(true);
+      expect(envelope.condensed).toBe(true);
+      expect(typeof envelope.text).toBe("string");
+    },
+  );
 });

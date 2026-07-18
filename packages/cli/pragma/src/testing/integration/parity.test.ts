@@ -38,6 +38,7 @@ import { resolveTierChain } from "../../domains/shared/filters/buildTierFilter.j
 import { listTiers } from "../../domains/shared/listTiers.js";
 import type { PragmaRuntime } from "../../domains/shared/runtime.js";
 import { listDomainNames } from "../../domains/shared/suggestions/index.js";
+import { TOKEN_READ_SURFACE_ENABLED } from "../../domains/token/featureFlag.js";
 import {
   listTokens,
   lookupToken,
@@ -504,91 +505,94 @@ describe("modifier parity (bundled pack)", () => {
 // Token parity
 // ---------------------------------------------------------------------------
 
-describe("token parity (bundled pack)", () => {
-  // `token list`/`token lookup` are served by the bundled `token` story
-  // pack. Semantic parity against the kept operations: same tokens, same
-  // type and theme values, in the uniform flat pack shape.
-  it("token_list returns every token with its type", async () => {
-    const opResult = await listTokens(rt.store);
-    const mcpRes = await client.callTool({
-      name: "token_list",
-      arguments: {},
-    });
-    const body = parseEnvelope(mcpRes);
-    const rows = body.data as Array<{
-      uri: string;
-      name: string;
-      category?: string;
-    }>;
-
-    expect(new Set(rows.map((row) => row.uri))).toEqual(
-      new Set(opResult.map((token) => token.uri)),
-    );
-    for (const token of opResult) {
-      const row = rows.find((entry) => entry.uri === token.uri);
-      expect(row?.name).toBe(token.name);
-      expect(row?.category ?? "").toBe(token.category);
-    }
-  });
-
-  it("token_list condensed lists every token under a markdown heading", async () => {
-    const opResult = await listTokens(rt.store);
-    const mcpRes = await client.callTool({
-      name: "token_list",
-      arguments: { condensed: true },
-    });
-    const body = parseCondensed(mcpRes);
-    expect(body.text).toContain("## Token");
-    for (const token of opResult) {
-      expect(body.text).toContain(token.name);
-    }
-  });
-
-  it("token_lookup resolves a token with its theme values", async () => {
-    const opResult = await lookupToken(rt.store, "color.primary");
-    const mcpRes = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.primary"] },
-    });
-    const body = parseEnvelope(mcpRes);
-    const data = body.data as {
-      results: Array<{
+describe.skipIf(!TOKEN_READ_SURFACE_ENABLED)(
+  "token parity (bundled pack)",
+  () => {
+    // `token list`/`token lookup` are served by the bundled `token` story
+    // pack. Semantic parity against the kept operations: same tokens, same
+    // type and theme values, in the uniform flat pack shape.
+    it("token_list returns every token with its type", async () => {
+      const opResult = await listTokens(rt.store);
+      const mcpRes = await client.callTool({
+        name: "token_list",
+        arguments: {},
+      });
+      const body = parseEnvelope(mcpRes);
+      const rows = body.data as Array<{
         uri: string;
         name: string;
         category?: string;
-        valueLight?: string;
-        valueDark?: string;
       }>;
-      errors: unknown[];
-    };
-    expect(data.errors).toEqual([]);
-    const entity = data.results[0];
 
-    // Same token, same values — the pack flattens the old
-    // `values: [{theme, value}]` nesting to valueLight/valueDark fields.
-    expect(entity?.uri).toBe(opResult.uri);
-    expect(entity?.name).toBe(opResult.name);
-    expect(entity?.category).toBe(opResult.category);
-    const byTheme = new Map(
-      opResult.values.map((value) => [value.theme, value.value]),
-    );
-    expect(entity?.valueLight).toBe(byTheme.get("light"));
-    expect(entity?.valueDark).toBe(byTheme.get("dark"));
-  });
-
-  it("token_lookup condensed renders name, type, and values", async () => {
-    const opResult = await lookupToken(rt.store, "color.primary");
-    const mcpRes = await client.callTool({
-      name: "token_lookup",
-      arguments: { names: ["color.primary"], condensed: true },
+      expect(new Set(rows.map((row) => row.uri))).toEqual(
+        new Set(opResult.map((token) => token.uri)),
+      );
+      for (const token of opResult) {
+        const row = rows.find((entry) => entry.uri === token.uri);
+        expect(row?.name).toBe(token.name);
+        expect(row?.category ?? "").toBe(token.category);
+      }
     });
-    const body = parseCondensed(mcpRes);
-    expect(body.text).toContain(`## ${opResult.name}`);
-    for (const value of opResult.values) {
-      expect(body.text).toContain(value.value);
-    }
-  });
-});
+
+    it("token_list condensed lists every token under a markdown heading", async () => {
+      const opResult = await listTokens(rt.store);
+      const mcpRes = await client.callTool({
+        name: "token_list",
+        arguments: { condensed: true },
+      });
+      const body = parseCondensed(mcpRes);
+      expect(body.text).toContain("## Token");
+      for (const token of opResult) {
+        expect(body.text).toContain(token.name);
+      }
+    });
+
+    it("token_lookup resolves a token with its theme values", async () => {
+      const opResult = await lookupToken(rt.store, "color.primary");
+      const mcpRes = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.primary"] },
+      });
+      const body = parseEnvelope(mcpRes);
+      const data = body.data as {
+        results: Array<{
+          uri: string;
+          name: string;
+          category?: string;
+          valueLight?: string;
+          valueDark?: string;
+        }>;
+        errors: unknown[];
+      };
+      expect(data.errors).toEqual([]);
+      const entity = data.results[0];
+
+      // Same token, same values — the pack flattens the old
+      // `values: [{theme, value}]` nesting to valueLight/valueDark fields.
+      expect(entity?.uri).toBe(opResult.uri);
+      expect(entity?.name).toBe(opResult.name);
+      expect(entity?.category).toBe(opResult.category);
+      const byTheme = new Map(
+        opResult.values.map((value) => [value.theme, value.value]),
+      );
+      expect(entity?.valueLight).toBe(byTheme.get("light"));
+      expect(entity?.valueDark).toBe(byTheme.get("dark"));
+    });
+
+    it("token_lookup condensed renders name, type, and values", async () => {
+      const opResult = await lookupToken(rt.store, "color.primary");
+      const mcpRes = await client.callTool({
+        name: "token_lookup",
+        arguments: { names: ["color.primary"], condensed: true },
+      });
+      const body = parseCondensed(mcpRes);
+      expect(body.text).toContain(`## ${opResult.name}`);
+      for (const value of opResult.values) {
+        expect(body.text).toContain(value.value);
+      }
+    });
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Ontology parity
