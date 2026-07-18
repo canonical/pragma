@@ -29,8 +29,31 @@ export interface GlobalFlags {
 }
 
 /**
+ * A booted store session: the immutable bundle a pack read produces. ke/graphql
+ * types are referenced inline so this module carries no static import of the
+ * heavy runtime — the store code stays dynamic-import-only.
+ */
+export interface StoreSession {
+  /** The ke triple store (booted from the pack's n-quads cache). */
+  readonly store: import("@canonical/ke").Store;
+  /** The executable GraphQL schema (rebuilt from the extraction artifact). */
+  readonly schema: import("graphql").GraphQLSchema;
+  /** Create a fresh execution context bound to a store (accepts a Promise). */
+  readonly createContext: (
+    store:
+      | import("@canonical/ke").Store
+      | Promise<import("@canonical/ke").Store>,
+  ) => import("@canonical/ke-graphql").CompilerContext;
+  /** The prefixes the store (and every query) was built with. */
+  readonly prefixes: Readonly<Record<string, string>>;
+  /** The storeless entity index shipped with the pack. */
+  readonly index: import("./graphpack/types.js").PackIndex;
+}
+
+/**
  * Per-invocation runtime handed to every verb `run`. Storeless in PR1 — the
- * store handle joins when the first store-backed capability lands.
+ * store handle and query facade join with the runtime/store layer (the
+ * dispatcher boots the store only for `capability.needsStore` verbs).
  */
 export interface PragmaRuntime {
   /** Directory the invocation resolves project state (config) against. */

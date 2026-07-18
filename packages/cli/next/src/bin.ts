@@ -40,6 +40,14 @@ async function main(): Promise<void> {
     return;
   }
 
+  // 2b. Internal store smoke probe — boots the embedded pack (oxigraph WASM +
+  //     pack cache). Not a user command; the WASM-embed smoke test spawns it.
+  if (argv[0] === "__store-probe") {
+    const { runStoreProbe } = await import("./kernel/runtime/probe.js");
+    process.stdout.write(`${await runStoreProbe()}\n`);
+    return;
+  }
+
   const { parseGlobalFlags, readRawFormat, stripGlobalFlags } = await import(
     "./kernel/project/cli/globalFlags.js"
   );
