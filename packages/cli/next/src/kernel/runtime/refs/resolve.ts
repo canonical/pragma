@@ -9,7 +9,7 @@
  * machine-independent. Reached only from the `sources update` Task body.
  */
 
-import { existsSync, globSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import { PragmaError } from "../../error/PragmaError.js";
@@ -36,10 +36,33 @@ export interface ResolveOptions {
   readonly pinned?: string;
 }
 
-const TTL_GLOBS = ["definitions/**/*.ttl", "data/**/*.ttl"];
+/** The package subdirectories scanned for `.ttl` sources. */
+const TTL_DIRS = ["definitions", "data"];
 
 /** Sanitize a ref for use as a cache path segment. */
 const sanitize = (value: string): string => value.replace(/[/\\:*?"<>|]/g, "_");
+
+/** Recursively collect `*.ttl` files under a directory (a manual walk — the
+ * compiled binary's node:fs globSync mishandles `**`, so we avoid it). */
+function walkTtl(
+  dir: string,
+  base: string,
+  label: string,
+  out: { path: string; content: string }[],
+): void {
+  if (!existsSync(dir)) return;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkTtl(full, base, label, out);
+    } else if (entry.isFile() && entry.name.endsWith(".ttl")) {
+      out.push({
+        path: `${label}/${relative(base, full)}`,
+        content: readFileSync(full, "utf-8"),
+      });
+    }
+  }
+}
 
 /** Read a package's `definitions/**` and `data/**` TTL, with stable labels. */
 function readTtlSources(
@@ -47,14 +70,10 @@ function readTtlSources(
   label: string,
 ): { path: string; content: string }[] {
   const sources: { path: string; content: string }[] = [];
-  for (const pattern of TTL_GLOBS) {
-    for (const file of globSync(join(rootDir, pattern))) {
-      sources.push({
-        path: `${label}/${relative(rootDir, file)}`,
-        content: readFileSync(file, "utf-8"),
-      });
-    }
+  for (const sub of TTL_DIRS) {
+    walkTtl(join(rootDir, sub), rootDir, label, sources);
   }
+  sources.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return sources;
 }
 

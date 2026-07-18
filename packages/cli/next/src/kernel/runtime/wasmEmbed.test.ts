@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -83,5 +89,54 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
     // A fresh install: no lock, store not yet built.
     expect(envelope.data.lockPresent).toBe(false);
     expect(envelope.data.cached).toBe(false);
+  });
+
+  // Regression guard: `sources update` walks a package's TTL directories. The
+  // compiled binary's node:fs globSync mishandles `**` (returns bogus paths),
+  // which the in-process suite could not catch — so exercise the real binary.
+  it("dist binary runs sources update end-to-end (build + lock + status)", () => {
+    const pkg = join(workdir, "pkg");
+    const proj = join(workdir, "proj");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    mkdirSync(proj, { recursive: true });
+    writeFileSync(
+      join(pkg, "definitions", "w.ttl"),
+      `@prefix ex: <https://ex.test/#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+ex:Widget a owl:Class ; rdfs:label "Widget" .
+ex:one a ex:Widget ; rdfs:label "One" .
+`,
+    );
+    writeFileSync(
+      join(proj, "pragma.config.ts"),
+      `export default { packages: [{ name: "pkg-a", source: "file://${pkg}" }] };\n`,
+    );
+
+    const env = {
+      HOME: workdir,
+      XDG_CACHE_HOME: join(workdir, "cache"),
+      XDG_STATE_HOME: join(workdir, "state"),
+      XDG_CONFIG_HOME: join(workdir, "config"),
+    };
+    const inProj = (args: string[]) =>
+      spawnSync(binary, args, {
+        cwd: proj,
+        stdio: "pipe",
+        encoding: "utf-8",
+        env: { ...process.env, ...env },
+      });
+
+    const update = inProj(["sources", "update", "--yes", "--format", "json"]);
+    expect(update.status, update.stderr).toBe(0);
+    expect(existsSync(join(proj, "pragma.lock.json"))).toBe(true);
+
+    const status = inProj(["sources", "status", "--format", "json"]);
+    const envelope = JSON.parse(status.stdout.trim()) as {
+      data: { lockPresent: boolean; cached: boolean; entityCount: number };
+    };
+    expect(envelope.data.lockPresent).toBe(true);
+    expect(envelope.data.cached).toBe(true);
+    expect(envelope.data.entityCount).toBe(2);
   });
 });
