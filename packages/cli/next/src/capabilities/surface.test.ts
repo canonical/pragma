@@ -115,6 +115,18 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
   });
 
+  it("emits setup as a mixed self+sub noun (self is a tool, sub-verbs are mcp:false)", () => {
+    // The one covenant noun both directly runnable AND with sub-verbs. The self
+    // verb is the `setup` tool; the four installers are CLI-only (mcp:false).
+    expect(emitted.nouns.setup?.verbs).toEqual([
+      { v: "setup", mutates: true, mcp: "setup" },
+      { v: "mcp", mutates: true, mcp: false },
+      { v: "completions", mutates: true, mcp: false },
+      { v: "skills", mutates: true, mcp: false },
+      { v: "lsp", mutates: true, mcp: false },
+    ]);
+  });
+
   it("emits sorted tools, every one blessed by the covenant", () => {
     const { tools } = emitted.mcpSurface;
     expect(tools).toEqual([...tools].sort());
