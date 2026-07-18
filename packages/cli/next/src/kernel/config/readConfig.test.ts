@@ -206,4 +206,26 @@ describe("evaluateProjectConfig — mtime+VERSION cache", () => {
     // A second evaluation returns the same (now warm) value.
     expect(await evaluateProjectConfig(path)).toEqual({ tier: "core" });
   });
+
+  it("a config that throws while evaluating is a named CONFIG_ERROR, not INTERNAL_ERROR", async () => {
+    freshXdg();
+    // A malformed project config: references an undefined symbol → the module
+    // throws at evaluation. Left unwrapped this collapsed to INTERNAL_ERROR
+    // ("please report this issue") on EVERY command that reads config.
+    const dir = projectWith("export default { tier: definitelyNotDefined };");
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    // Names the offending file so the user knows WHAT to fix.
+    expect((caught as { message: string }).message).toContain(path);
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).not.toContain("report this issue");
+  });
 });

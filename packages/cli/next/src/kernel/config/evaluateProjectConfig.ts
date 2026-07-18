@@ -34,6 +34,7 @@ import {
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { VERSION } from "../../constants.js";
+import { PragmaError } from "../error/PragmaError.js";
 import { configCacheDir } from "./paths.js";
 import { parseRawConfig } from "./schema.js";
 import type { RawConfig } from "./types.js";
@@ -91,7 +92,27 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
   // the module cache is path-keyed and ignores it, but a fresh process always
   // re-reads, so cross-process correctness holds regardless.
   const url = `${pathToFileURL(path).href}?v=${key}`;
-  const module = (await import(url)) as { default?: unknown };
+  // Evaluating real TypeScript can throw for reasons `parseRawConfig` never sees:
+  // a syntax error, a bad import, or a top-level throw in the config module. Left
+  // unwrapped, that raw throw collapses to INTERNAL_ERROR ("please report this
+  // issue") on EVERY command that reads config. Name it: a CONFIG_ERROR that
+  // identifies the offending file and the underlying reason.
+  let module: { default?: unknown };
+  try {
+    module = (await import(url)) as { default?: unknown };
+  } catch (error) {
+    if (error instanceof PragmaError) throw error;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw PragmaError.configError(
+      `Could not load project config ${path}: ${reason}`,
+      {
+        recovery: {
+          message:
+            "Fix the error in your pragma.config.ts (it must evaluate to a default export), then try again.",
+        },
+      },
+    );
+  }
   const config = parseRawConfig(module.default, path);
   writeCache(cachePath, config);
   return config;

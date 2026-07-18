@@ -8,7 +8,7 @@
 
 import { $, exec, gen, info, type Task } from "@canonical/task";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import { assertExecOk } from "../../shared/assertExecOk.js";
+import { assertExecOk, guardMissingBinary } from "../../shared/assertExecOk.js";
 import { applyPromptStrategy } from "../promptStrategy.js";
 import type { SetupResult } from "../types.js";
 
@@ -22,16 +22,26 @@ import type { SetupResult } from "../types.js";
 export async function setupLsp(rt: PragmaRuntime): Promise<Task<SetupResult>> {
   applyPromptStrategy(rt);
   const cwd = rt.cwd;
-  return gen(function* () {
-    yield* $(
-      info("Ensuring the Terrazzo LSP VS Code extension is installed..."),
-    );
-    const result = yield* $(
-      exec("bunx", ["@canonical/terrazzo-lsp-extension"], cwd),
-    );
-    // The interpreter RESOLVES on a nonzero exit — a failed installer must fail
-    // loudly (surfacing its stderr), not report a false success.
-    assertExecOk("bunx @canonical/terrazzo-lsp-extension", result);
-    return { kind: "lsp" as const };
-  });
+  // Guard the spawn: without Bun installed, `bunx` is absent from PATH and the
+  // exec REJECTS with ENOENT — surface a named "`bunx` not found on PATH" rather
+  // than collapsing to INTERNAL_ERROR ("please report this issue").
+  return guardMissingBinary(
+    "bunx",
+    {
+      message:
+        "Install Bun (https://bun.sh) to provide `bunx`, then run this again.",
+    },
+    gen(function* () {
+      yield* $(
+        info("Ensuring the Terrazzo LSP VS Code extension is installed..."),
+      );
+      const result = yield* $(
+        exec("bunx", ["@canonical/terrazzo-lsp-extension"], cwd),
+      );
+      // The interpreter RESOLVES on a nonzero exit — a failed installer must fail
+      // loudly (surfacing its stderr), not report a false success.
+      assertExecOk("bunx @canonical/terrazzo-lsp-extension", result);
+      return { kind: "lsp" as const };
+    }),
+  );
 }
