@@ -1,12 +1,12 @@
 {
-  "name": "@canonical/pragma-next",
+  "name": "@canonical/pragma-cli",
   "description": "Next-generation CLI and MCP kernel for Canonical's design system (pragma v2).",
   "version": "0.31.0",
   "type": "module",
   "module": "src/index.ts",
   "types": "src/index.ts",
   "bin": {
-    "pragma2": "dist/pragma2"
+    "pragma": "dist/pragma"
   },
   "files": [
     "src",
@@ -36,7 +36,7 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
-    "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma2",
+    "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect tool-ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",

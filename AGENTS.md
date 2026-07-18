@@ -152,7 +152,7 @@ not the directory. Most libraries under `packages/` are `tsc`-built and are in s
 Code that a **bundler** compiles may still use `#` aliases, because the bundler inlines
 them so nothing is published verbatim: this covers Vite-bundled apps (`apps/*` and
 scaffolded boilerplates) **and** Bun-bundled published packages under `packages/` (e.g.
-the CLI at `packages/cli/pragma`). When unsure, check whether the package's build script
+the CLI at `packages/cli/next`). When unsure, check whether the package's build script
 runs `tsc` or a bundler.
 
 ## PR mechanics

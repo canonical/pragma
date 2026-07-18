@@ -13,10 +13,9 @@
 import type { Channel } from "../../kernel/config/types.js";
 
 /**
- * The published package `info`/`upgrade` check for updates. Held at the STABLE
- * published name (`@canonical/pragma-cli`), NOT the rebuild-window
- * `@canonical/pragma-next`: the check answers "is a newer release of the tool
- * users installed available", and users installed `pragma-cli`.
+ * The published package `info`/`upgrade` check for updates: the stable name
+ * users installed, so the check answers "is a newer release of the tool
+ * available".
  */
 export const PRAGMA_PACKAGE = "@canonical/pragma-cli";
 

@@ -1,5 +1,5 @@
 /**
- * Public, types-only API surface for `@canonical/pragma-next`.
+ * Public, types-only API surface for `@canonical/pragma-cli`.
  *
  * Per the tool-ts convention this barrel exports types only — no runtime
  * values cross the package boundary. Consumers (and the surface emitter's
