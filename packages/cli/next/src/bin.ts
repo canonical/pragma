@@ -101,19 +101,38 @@ async function main(): Promise<void> {
     import("./kernel/project/cli/buildProgram.js"),
     import("./capabilities/index.js"),
   ]);
-  const verbs = capabilities.flatMap((module) => [...module.verbs]);
   const args = stripGlobalFlags(argv);
 
   // 7. A bare invocation (no command token — argv empty or only global flags)
-  //    prints the curated front door instead of exiting silently.
+  //    prints the curated front door instead of exiting silently. Uses the
+  //    static capabilities — the front door never reads config or stories.
   if (!args.some((arg) => !arg.startsWith("-"))) {
     const { formatRootHelp } = await import("./kernel/project/cli/rootHelp.js");
-    const live = verbs.filter((verb) => !verb.hidden);
+    const live = capabilities
+      .flatMap((module) => [...module.verbs])
+      .filter((verb) => !verb.hidden);
     process.stdout.write(
       `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live)}\n`,
     );
     return;
   }
+
+  // A real command merges config-declared story packs into the tree (DISPATCH
+  // only); `--help` stays on the static, storeless capabilities so its budget
+  // and the golden hold. An invalid config story surfaces as a rendered error.
+  let modules = capabilities;
+  if (!explicitHelp) {
+    try {
+      const { loadEffectiveModules } = await import(
+        "./kernel/packs/collect.js"
+      );
+      modules = await loadEffectiveModules(capabilities, process.cwd());
+    } catch (error) {
+      await renderStartupError(error, globalFlags.format === "json");
+      return;
+    }
+  }
+  const verbs = modules.flatMap((module) => [...module.verbs]);
 
   const program = buildProgram(verbs, {
     globalFlags,
@@ -131,6 +150,36 @@ async function main(): Promise<void> {
   } catch (error) {
     await handleProgramError(error, argv, globalFlags.format === "json", verbs);
   }
+}
+
+/**
+ * Render a startup error (e.g. an invalid config story pack) before the command
+ * tree is built, mapping it to stderr + an exit code — the same envelope
+ * dispatch uses, so a bad `stories` entry surfaces identically to a run error.
+ */
+async function renderStartupError(
+  error: unknown,
+  jsonMode: boolean,
+): Promise<void> {
+  const [
+    { PragmaError },
+    { renderErrorPlain, renderErrorJson },
+    { mapExitCode },
+  ] = await Promise.all([
+    import("./kernel/error/PragmaError.js"),
+    import("./kernel/error/renderError.js"),
+    import("./kernel/project/cli/exitCodes.js"),
+  ]);
+  const pragmaError =
+    error instanceof PragmaError
+      ? error
+      : PragmaError.internalError(
+          error instanceof Error ? error.message : String(error),
+        );
+  process.stderr.write(
+    `${jsonMode ? renderErrorJson(pragmaError) : renderErrorPlain(pragmaError)}\n`,
+  );
+  process.exitCode = mapExitCode(pragmaError.code);
 }
 
 /** Silence Commander's built-in stderr writer on a command and all descendants. */

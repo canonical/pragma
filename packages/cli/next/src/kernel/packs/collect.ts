@@ -82,3 +82,26 @@ export function assembleEffectiveModules(
   assertUniqueVerbs(effective.flatMap((module) => [...module.verbs]));
   return effective;
 }
+
+/**
+ * Load the effective modules for a real invocation: read the layered config and
+ * merge its story packs into the static capabilities.
+ *
+ * Reached only at DISPATCH (real command / MCP serve), never on the
+ * `--help`/`__complete` fast path, so the config read and zod validation never
+ * cost the storeless paths. The config reader is dynamic-imported to keep even
+ * this module's static graph free of it.
+ *
+ * @param staticModules - The static capabilities (bundled + authored).
+ * @param cwd - The directory to resolve project config against.
+ * @returns The effective modules (static when no config stories are declared).
+ * @note Impure — reads the project/global config.
+ */
+export async function loadEffectiveModules(
+  staticModules: readonly CapabilityModule[],
+  cwd: string,
+): Promise<readonly CapabilityModule[]> {
+  const { readConfig } = await import("../config/readConfig.js");
+  const layers = await readConfig(cwd);
+  return assembleEffectiveModules(staticModules, layers);
+}
