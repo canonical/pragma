@@ -87,13 +87,19 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       { v: "list", mcp: "skill_list" },
       { v: "lookup", args: ["<name>"], mcp: "skill_lookup" },
     ]);
-    // graph ships only inspect in PR3 (query lands in PR6).
+    // graph adds the SPARQL escape hatch (`query`) in PR6, alongside `inspect`.
     expect(emitted.nouns.graph?.verbs).toEqual([
       {
         v: "inspect",
         args: ["<uri>"],
         needsStore: true,
         mcp: "graph_inspect",
+      },
+      {
+        v: "query",
+        args: ["<sparql>"],
+        needsStore: true,
+        mcp: "graph_query",
       },
     ]);
   });

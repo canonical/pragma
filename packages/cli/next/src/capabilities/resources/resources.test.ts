@@ -63,9 +63,13 @@ describe("resource surface over the server (embedded pack)", () => {
   it("registers the {+uri} template and lists resources (not tools)", async () => {
     const resources = await harness.listResources();
     expect(resources.some((r) => r.uri === "pragma:ex:Button")).toBe(true);
-    // Resources are NOT tools — only graph_inspect appears in the tool surface.
+    // Resources are NOT tools — the graph module's tools (inspect + the PR6
+    // SPARQL escape hatch) are what appear in the tool surface.
     const tools = await harness.listTools();
-    expect(tools.map((t) => t.name)).toEqual(["graph_inspect"]);
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "graph_inspect",
+      "graph_query",
+    ]);
   });
 
   it("autocompletes a partial URI through the template", async () => {

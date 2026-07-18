@@ -30,7 +30,9 @@ describe("buildCompletionModel", () => {
     expect(model.nouns).toContain("config");
     expect(model.nouns).toContain("mcp");
     expect(model.nouns).not.toContain("__complete");
-    expect(model.verbs.config).toEqual(["show"]);
+    // config grew its storeless setters in PR6 (authoring order — verb-level
+    // candidates are unsorted, per PARITY_GAP completion-verb-level-not-sorted).
+    expect(model.verbs.config).toEqual(["show", "tier", "channel", "detail"]);
   });
 });
 
@@ -72,7 +74,12 @@ describe("complete — storeless static matches", () => {
   });
 
   it("completes a verb under a known noun", () => {
-    expect(complete(["config", ""], model)).toEqual(["show"]);
+    expect(complete(["config", ""], model)).toEqual([
+      "show",
+      "tier",
+      "channel",
+      "detail",
+    ]);
     expect(complete(["config", "sh"], model)).toEqual(["show"]);
   });
 

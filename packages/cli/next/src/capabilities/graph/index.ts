@@ -1,12 +1,12 @@
 /**
- * The `graph` capability module (PR3: `inspect` only).
- *
- * `graph query` (arbitrary SPARQL) lands in PR6; the covenant already blesses it.
+ * The `graph` capability module — `inspect` (single-entity read) plus `query`
+ * (the raw SPARQL escape hatch, PR6). The covenant blesses both.
  */
 
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 import { resourceProvider } from "../resources/index.js";
 import { graphInspectVerb } from "./inspect.verb.js";
+import { graphQueryVerb } from "./query.verb.js";
 
 /**
  * The `graph` capability module. Carries the MCP resource browser: `graph
@@ -16,6 +16,6 @@ import { graphInspectVerb } from "./inspect.verb.js";
  */
 export const graphModule: CapabilityModule = {
   name: "graph",
-  verbs: [graphInspectVerb],
+  verbs: [graphInspectVerb, graphQueryVerb],
   mcpResources: resourceProvider,
 };

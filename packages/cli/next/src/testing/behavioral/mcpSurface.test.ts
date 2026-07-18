@@ -83,6 +83,12 @@ function representativeArgs(v: LiveVerb): Record<string, unknown> {
     );
     return { uri: entity?.prefixed ?? entity?.name ?? "" };
   }
+  // An enum positional (e.g. `config channel <name>`) must get a real member —
+  // a placeholder would fail the tool's zod schema at the SDK layer, before the
+  // handler, yielding a protocol error rather than a well-formed envelope.
+  if (param.kind === "enum") {
+    return { [param.name]: param.values[0] };
+  }
 
   const known = firstNameByNoun.get(v.noun) ?? "placeholder";
   return { [param.name]: param.kind === "string[]" ? [known] : known };
