@@ -46,12 +46,6 @@ export interface PackIndexEntity {
   readonly label?: string | null;
   /** Schema (`tbox`) vs individual (`abox`). */
   readonly box?: "tbox" | "abox";
-  /** Fine-grained kind (v2 enrichment) — for the resource browser. */
-  readonly category?: "class" | "property" | "individual";
-  /** Prefixed primary domain class of an individual (`null` for schema). */
-  readonly primaryType?: string | null;
-  /** Human label of the primary type (the type's local name when unlabelled). */
-  readonly primaryTypeLabel?: string | null;
   /** Short description (rdfs:comment / dcterms:description / skos:definition). */
   readonly description?: string | null;
 }
@@ -83,9 +77,6 @@ export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
   types: z.array(z.string()).optional(),
   label: z.string().nullable().optional(),
   box: z.enum(["tbox", "abox"]).optional(),
-  category: z.enum(["class", "property", "individual"]).optional(),
-  primaryType: z.string().nullable().optional(),
-  primaryTypeLabel: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
 });
 

@@ -62,14 +62,6 @@ const DESCRIPTION_PREDICATES = [
   "http://schema.org/description",
 ];
 
-/** Local name of an IRI (`…#Thing`/`…/Thing` → `Thing`). */
-function localName(uri: string): string {
-  const hash = uri.lastIndexOf("#");
-  if (hash !== -1) return uri.slice(hash + 1);
-  const slash = uri.lastIndexOf("/");
-  return slash !== -1 ? uri.slice(slash + 1) : uri;
-}
-
 const isStdVocab = (uri: string): boolean =>
   STD_VOCAB_PREFIXES.some((ns) => uri.startsWith(ns));
 
@@ -178,28 +170,14 @@ export async function buildIndex(
     const classification = classify(fullTypes);
     if (classification === null) continue;
     const prefixed = compactUri(subject, prefixes);
-    const primaryFull = classification.primary;
-    const isIndividual = classification.box === "abox";
-    const category = isIndividual
-      ? "individual"
-      : CLASS_METATYPES.has(primaryFull)
-        ? "class"
-        : "property";
     entities.push({
       name: prefixed,
-      type: compactUri(primaryFull, prefixes),
+      type: compactUri(classification.primary, prefixes),
       uri: subject,
       prefixed,
       types: fullTypes.map((t) => compactUri(t, prefixes)),
       label: labelBySubject.get(subject) ?? null,
       box: classification.box,
-      category,
-      // The domain class is meaningful only for an individual; schema subjects
-      // carry a null primaryType (their `type` is the metatype).
-      primaryType: isIndividual ? compactUri(primaryFull, prefixes) : null,
-      primaryTypeLabel: isIndividual
-        ? (labelBySubject.get(primaryFull) ?? localName(primaryFull))
-        : null,
       description: descBySubject.get(subject) ?? null,
     });
   }

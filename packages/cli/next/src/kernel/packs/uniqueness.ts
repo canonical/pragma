@@ -33,11 +33,3 @@ export function assertUniqueVerbs(verbs: readonly VerbSpec[]): void {
     seen.add(key);
   }
 }
-
-/** Whether adding `verbs` would collide with any already-claimed `(noun, verb)`. */
-export function collides(
-  claimed: ReadonlySet<string>,
-  verbs: readonly VerbSpec[],
-): boolean {
-  return verbs.some((verb) => claimed.has(verbKey(verb.path)));
-}

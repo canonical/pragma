@@ -21,8 +21,6 @@ export interface SkillFrontmatter {
   /** #856 — whether this skill also registers as an MCP prompt. */
   readonly prompt?: boolean;
   readonly license?: string;
-  readonly compatibility?: readonly string[];
-  readonly metadata?: Readonly<Record<string, unknown>>;
 }
 
 /** A discovered skill: its frontmatter plus where it was found. */
@@ -101,12 +99,6 @@ export function parseFrontmatter(content: string): SkillFrontmatter | null {
     description: parsed.description,
     ...(typeof parsed.prompt === "boolean" ? { prompt: parsed.prompt } : {}),
     ...(typeof parsed.license === "string" ? { license: parsed.license } : {}),
-    ...(Array.isArray(parsed.compatibility)
-      ? { compatibility: parsed.compatibility as string[] }
-      : {}),
-    ...(typeof parsed.metadata === "object" && parsed.metadata !== null
-      ? { metadata: parsed.metadata as Record<string, unknown> }
-      : {}),
   };
 }
 
