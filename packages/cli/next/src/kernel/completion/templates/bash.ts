@@ -6,9 +6,11 @@
  * Structure — nouns, verbs, flag names, enum values — is inlined into
  * generator-validated LITERAL `compgen -W` tables (never a variable, never
  * anything `compgen -W` could evaluate). File params use native `compgen -f`.
- * Only `{kind:"entity"}` contexts exec the CLI: `mapfile` ingests
+ * Only `{kind:"names"}` contexts exec the CLI: `mapfile` ingests
  * `pragma __complete` output line-by-line, so candidates are never
- * word-split or evaluated. No `eval`, no backticks, `--` guards throughout.
+ * word-split or evaluated. That exec is gated by `minChars` (structure + enum
+ * values still complete on bare TAB with zero exec). No `eval`, no backticks,
+ * `--` guards throughout.
  */
 
 import type { CompletionModel, CompletionSource } from "../types.js";
@@ -40,7 +42,7 @@ function sourceAction(
       return `COMPREPLY=($(compgen -W "${wordList(source.values, "bash values")}" -- "$cur"))`;
     case "files":
       return 'COMPREPLY=($(compgen -f -- "$cur"))';
-    case "entity":
+    case "names":
       return `${fn}_dynamic`;
     case "none":
       return undefined;
@@ -137,9 +139,14 @@ function caseBlock(
  *
  * @param model - The completion model.
  * @param binName - The binary to complete (function names derive from it).
+ * @param minChars - Minimum typed chars before a name source execs `__complete`.
  * @returns The script text.
  */
-export function bashScript(model: CompletionModel, binName: string): string {
+export function bashScript(
+  model: CompletionModel,
+  binName: string,
+  minChars: number,
+): string {
   const fn = fnBase(binName);
   const positionalArms = verbViews(model).flatMap((view) => {
     const arm = positionalArm(model, view, fn);
@@ -166,6 +173,7 @@ export function bashScript(model: CompletionModel, binName: string): string {
     `# entity arguments call \`${binName} __complete\` (storeless, never-throw);`,
     "# file arguments use native completion. Requires bash >= 4 (mapfile).",
     `${fn}_dynamic() {`,
+    ...(minChars > 0 ? [`  [ \${#cur} -ge ${minChars} ] || return 0`] : []),
     `  mapfile -t COMPREPLY < <("${binName}" __complete -- "\${COMP_WORDS[@]:1:COMP_CWORD-1}" "$cur" 2>/dev/null)`,
     "}",
     `${fn}_pos() {`,

@@ -6,9 +6,10 @@
  * would interpolate param docs into its spec strings, an injection surface
  * the grammar must never open. Structure is inlined as literal `compadd --`
  * arguments (the `--` guard keeps dash-leading candidates data); files go
- * through `_files`; only `{kind:"entity"}` contexts exec the CLI, ingesting
+ * through `_files`; only `{kind:"names"}` contexts exec the CLI, ingesting
  * `pragma __complete` output via the newline-split `${(f)...}` expansion —
- * candidates are never word-split or evaluated. No `eval`, no backticks.
+ * candidates are never word-split or evaluated. That exec is gated by
+ * `minChars`. No `eval`, no backticks.
  */
 
 import type { CompletionModel, CompletionSource } from "../types.js";
@@ -40,7 +41,7 @@ function sourceAction(
       return `compadd -- ${wordList(source.values, "zsh values")}`;
     case "files":
       return "_files";
-    case "entity":
+    case "names":
       return `${fn}_dynamic`;
     case "none":
       return undefined;
@@ -135,9 +136,14 @@ function caseBlock(
  *
  * @param model - The completion model.
  * @param binName - The binary to complete (function names derive from it).
+ * @param minChars - Minimum typed chars before a name source execs `__complete`.
  * @returns The script text.
  */
-export function zshScript(model: CompletionModel, binName: string): string {
+export function zshScript(
+  model: CompletionModel,
+  binName: string,
+  minChars: number,
+): string {
   const fn = fnBase(binName);
   const positionalArms = verbViews(model).flatMap((view) => {
     const arm = positionalArm(model, view, fn);
@@ -164,6 +170,7 @@ export function zshScript(model: CompletionModel, binName: string): string {
     `# entity arguments call \`${binName} __complete\` (storeless, never-throw);`,
     "# file arguments use _files. Requires zsh >= 5.",
     `${fn}_dynamic() {`,
+    ...(minChars > 0 ? [`  (( \${#cur} >= ${minChars} )) || return 0`] : []),
     "  local -a _matches",
     `  _matches=("\${(f)$(${binName} __complete -- "\${(@)words[2,CURRENT]}" 2>/dev/null)}")`,
     '  (( ${#_matches[@]} == 1 )) && [[ -z "${_matches[1]}" ]] && return 0',
