@@ -106,7 +106,7 @@ function buildQuery(
 const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
   path: ["block", "list"],
   summary: "List blocks visible under the current tier and channel.",
-  doc: "List design system blocks visible under the active tier chain and channel. Use --all-tiers to ignore the tier filter.",
+  doc: "List design system blocks visible under the active tier chain and channel. Optionally list across every tier, ignoring the tier filter.",
   params: [
     {
       kind: "boolean",

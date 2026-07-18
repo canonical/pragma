@@ -137,13 +137,18 @@ describe("resolveSources decision table", () => {
 });
 
 describe("loadStoreSession recovery", () => {
-  it("surfaces the single `pragma sources update` recovery when cold", async () => {
+  it("surfaces the `pragma sources update` recovery (CLI + MCP tool) when cold", async () => {
     const cwd = tmp();
     const ctx = { cwd, loadConfig: async () => layersWith("project") };
 
+    // An agent can't run a shell command — the recovery also names the tool it
+    // calls (then retries: PR9 C1 cold-store retry makes the retry succeed).
     await expect(loadStoreSession(ctx)).rejects.toMatchObject({
       code: "STORE_UNAVAILABLE",
-      recovery: { cli: "pragma sources update" },
+      recovery: {
+        cli: "pragma sources update",
+        mcp: { tool: "sources_update" },
+      },
     });
   });
 });

@@ -46,6 +46,18 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
       "design-system knowledge graph",
     );
   });
+
+  it("orients a cold agent to check/build the store before any store read", () => {
+    // Store-blind guard: the handshake must point a cold agent at the store
+    // pre-check (sources_status → sources_update) BEFORE the sample/query steps,
+    // or it walks straight into STORE_UNAVAILABLE.
+    const text = buildInstructions(capabilities);
+    const storeCheck = text.indexOf("sources_status");
+    const sample = text.indexOf("_sample");
+    expect(storeCheck).toBeGreaterThanOrEqual(0);
+    expect(text).toContain("sources_update");
+    expect(storeCheck).toBeLessThan(sample);
+  });
 });
 
 describe("MCP handshake — capabilities advertised (PROTECTED)", () => {

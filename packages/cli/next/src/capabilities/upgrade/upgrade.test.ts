@@ -23,7 +23,11 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
-import { assertExecOk } from "../shared/assertExecOk.js";
+import {
+  assertExecOk,
+  guardMissingBinary,
+  isMissingBinaryError,
+} from "../shared/assertExecOk.js";
 import {
   checkRegistryVersion,
   REGISTRY_TIMEOUT_MS,
@@ -270,20 +274,79 @@ describe("upgrade — a failed exec maps to an actionable runtime error (exit 1)
     expect(err.message).toContain("code 7");
   });
 
-  it("a spawn error (ENOENT) also maps to INTERNAL_ERROR", async () => {
+  it("a missing-binary spawn (ENOENT) at a guarded site is a named UNSUPPORTED, not INTERNAL_ERROR", async () => {
+    // The same wrapper `runUpgrade`/`setupLsp` apply: a spawn ENOENT REJECTS the
+    // exec, which used to collapse to INTERNAL_ERROR ("please report this issue").
+    // `guardMissingBinary` names it instead.
     const thrown = await runToError(
-      failVerbWith(
-        (_p, rt) =>
+      failVerbWith((_p, rt) =>
+        guardMissingBinary(
+          "pragma-nonexistent-binary-xyz",
+          { message: "Install it and ensure it is on your PATH." },
           gen(function* () {
             yield* $(exec("pragma-nonexistent-binary-xyz", [], rt.cwd));
             return {};
           }) as Task<unknown>,
+        ),
       ),
     );
     expect(thrown).toBeDefined();
     const err = asPragmaError(thrown);
-    expect(err.code).toBe("INTERNAL_ERROR");
+    // NOT INTERNAL_ERROR — a named environment condition with actionable recovery.
+    expect(err.code).toBe("UNSUPPORTED");
     expect(mapExitCode(err.code)).toBe(1);
+    expect(err.message).toContain("pragma-nonexistent-binary-xyz");
+    expect(err.message).toMatch(/not found on your PATH/i);
+    expect(err.recovery?.message).not.toContain("report this issue");
+    expect(err.recovery?.message).toMatch(/PATH/);
+  });
+
+  it("guardMissingBinary is transparent to a nonzero exit (still assertExecOk's UNSUPPORTED)", async () => {
+    // A command that RUNS and exits nonzero RESOLVES the effect; assertExecOk's
+    // synchronous throw bypasses the guard's effect-failure handler, so the
+    // subprocess stderr is preserved (not masked as a missing binary).
+    const thrown = await runToError(
+      failVerbWith((_p, rt) =>
+        guardMissingBinary(
+          "sh",
+          { message: "unused" },
+          gen(function* () {
+            const result = yield* $(
+              exec("sh", ["-c", "echo boom >&2; exit 7"], rt.cwd),
+            );
+            assertExecOk("sh -c 'exit 7'", result);
+            return {};
+          }) as Task<unknown>,
+        ),
+      ),
+    );
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("UNSUPPORTED");
+    expect(err.message).toContain("boom");
+    expect(err.message).toContain("code 7");
+    expect(err.message).not.toMatch(/not found on your PATH/i);
+  });
+});
+
+describe("isMissingBinaryError — ENOENT recognition (raw + normalised)", () => {
+  it("recognises a raw spawn ENOENT and the interpreter's normalised TaskError", () => {
+    // Raw spawn reject (Node/Bun) carries `.code === "ENOENT"`.
+    expect(isMissingBinaryError({ code: "ENOENT" })).toBe(true);
+    // The task interpreter normalises it to FILE_NOT_FOUND, tucking the raw spawn
+    // error under `.cause` — unwrap one level.
+    expect(
+      isMissingBinaryError({
+        code: "FILE_NOT_FOUND",
+        cause: { code: "ENOENT", syscall: "spawn npm" },
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects unrelated errors", () => {
+    expect(isMissingBinaryError({ code: "EACCES" })).toBe(false);
+    expect(isMissingBinaryError(new Error("boom"))).toBe(false);
+    expect(isMissingBinaryError(undefined)).toBe(false);
+    expect(isMissingBinaryError("nope")).toBe(false);
   });
 });
 

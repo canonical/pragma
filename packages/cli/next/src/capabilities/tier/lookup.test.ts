@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { CANONICAL_TTL } from "../../testing/fixtures/graph/canonical.js";
 import {
   bootFixtureRuntime,
@@ -7,6 +8,7 @@ import {
 import type { McpHarness } from "../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
+import { runTierLookup } from "./runLookup.js";
 
 let fixture: FixtureGraph;
 let mcp: McpHarness;
@@ -36,5 +38,31 @@ describe("tier_lookup — bespoke single-name lookup (PROTECTED)", () => {
     expect(result.ok).toBe(false);
     const error = result.error as { code: string };
     expect(error.code).toBe("ENTITY_NOT_FOUND");
+  });
+});
+
+describe("tier_lookup — cold/unseeded store (ROOT A)", () => {
+  it("remaps a 'Prefix not found' to STORE_UNAVAILABLE, not INTERNAL_ERROR", async () => {
+    // The bespoke lookup used to call `rt.query.sparql` directly, bypassing the
+    // `runSelect` remap — so a cold store's raw "Prefix not found" collapsed to
+    // INTERNAL_ERROR. It now routes through `runSelect`, inheriting the remap.
+    const coldRuntime = {
+      query: {
+        sparql: async () => {
+          throw new Error("Prefix not found: ds");
+        },
+      },
+    } as unknown as PragmaRuntime;
+
+    let caught: unknown;
+    try {
+      await runTierLookup(coldRuntime, "apps/lxd");
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: "STORE_UNAVAILABLE" });
+    expect(
+      (caught as { recovery?: { mcp?: { tool: string } } }).recovery?.mcp,
+    ).toMatchObject({ tool: "sources_update" });
   });
 });

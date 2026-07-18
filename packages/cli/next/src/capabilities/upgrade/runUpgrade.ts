@@ -22,7 +22,7 @@
 
 import { $, exec, gen, info, type Task, warn } from "@canonical/task";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import { assertExecOk } from "../shared/assertExecOk.js";
+import { assertExecOk, guardMissingBinary } from "../shared/assertExecOk.js";
 import {
   detectInstallSource,
   pmUpdateCommand,
@@ -96,15 +96,24 @@ export async function runUpgrade(
   const parts = command.split(" ");
   const bin = parts[0] ?? "npm";
   const args = parts.slice(1);
-  return gen(function* () {
-    // The version-delta rides a Log effect, so `--dry-run` describes it too.
-    yield* $(info(`${current} → ${registry.latest}`));
-    // The one mutation — mocked under dry-run, run for real under --yes/confirm.
-    // The interpreter RESOLVES on a nonzero exit (only a spawn error rejects),
-    // so inspect the result: a failed install (e.g. EACCES on a global
-    // `npm i -g`) must fail loudly, not report a silent success.
-    const result = yield* $(exec(bin, args, rt.cwd));
-    assertExecOk(command, result);
-    return data;
-  });
+  // Guard the spawn: an absent package manager (`bin` not on PATH) REJECTS the
+  // exec with ENOENT, which would collapse to INTERNAL_ERROR ("please report
+  // this issue"). Surface it as a named "`<pm>` not found on PATH" instead.
+  return guardMissingBinary(
+    bin,
+    {
+      message: `Install ${pm} (or your package manager) and ensure it is on your PATH, then try again.`,
+    },
+    gen(function* () {
+      // The version-delta rides a Log effect, so `--dry-run` describes it too.
+      yield* $(info(`${current} → ${registry.latest}`));
+      // The one mutation — mocked under dry-run, run for real under --yes/confirm.
+      // The interpreter RESOLVES on a nonzero exit (only a spawn error rejects),
+      // so inspect the result: a failed install (e.g. EACCES on a global
+      // `npm i -g`) must fail loudly, not report a silent success.
+      const result = yield* $(exec(bin, args, rt.cwd));
+      assertExecOk(command, result);
+      return data;
+    }),
+  );
 }

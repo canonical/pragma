@@ -49,6 +49,9 @@ async function queryOrRemap(rt: Pick<PragmaRuntime, "query">, query: string) {
           recovery: cliRecovery(
             `${RECOVERY_CLI_PREFIX}sources update`,
             "Build the local store from the configured design-system packages.",
+            // An agent recovers by calling the tool, then retrying (PR9 C1 cold-
+            // store retry makes the post-update retry succeed).
+            { tool: "sources_update" },
           ),
         },
       );

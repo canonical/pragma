@@ -8,15 +8,11 @@
  */
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { TierLookupData } from "./lookup.render.js";
-
-interface Row {
-  readonly uri?: string;
-  readonly blockName?: string;
-}
 
 /**
  * Look up one tier by name.
@@ -24,7 +20,8 @@ interface Row {
  * @param rt - The runtime (its store is booted by the projector for needsStore).
  * @param name - The tier name (its `ds:name`, e.g. `apps/lxd`).
  * @returns The tier's IRI, name, and directly-scoped block names.
- * @throws PragmaError ENTITY_NOT_FOUND when no tier has that name.
+ * @throws PragmaError ENTITY_NOT_FOUND when no tier has that name;
+ *   STORE_UNAVAILABLE (exit 3) when the store is unseeded for this project.
  */
 export async function runTierLookup(
   rt: PragmaRuntime,
@@ -39,11 +36,11 @@ export async function runTierLookup(
     "ORDER BY ?blockName",
   ].join("\n");
 
-  const result = (await rt.query.sparql(query)) as {
-    type?: string;
-    bindings?: Row[];
-  };
-  const rows = result.type === "select" ? (result.bindings ?? []) : [];
+  // Route through `runSelect` (not `rt.query.sparql` directly) so a cold/unseeded
+  // store — a generated `ds:` query hitting an unknown prefix — is remapped to an
+  // actionable STORE_UNAVAILABLE with `pragma sources update` recovery, instead of
+  // a raw "Prefix not found" collapsing to INTERNAL_ERROR at the boundary.
+  const rows = await runSelect(rt, query, "tier");
   const uri = rows[0]?.uri;
   if (!uri) {
     throw PragmaError.notFound("tier", name, {
@@ -55,7 +52,8 @@ export async function runTierLookup(
     });
   }
   const blocks = rows
-    .map((row) => row.blockName)
+    // `blockName` rides an OPTIONAL, so the key is absent for a memberless tier.
+    .map((row) => row.blockName as string | undefined)
     .filter((block): block is string => Boolean(block));
   return { uri: compactUri(uri, DEFAULT_PREFIX_MAP), name, blocks };
 }
