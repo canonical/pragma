@@ -6,9 +6,11 @@
  * source (`sparql`/`graphql`) is a run-body detail invisible to the projectors.
  *
  * Pure, storeless spec-generation: it builds paths, params, formatters, and run
- * closures without touching the store or zod, so `compileBundledPacks` can run
- * it on the `--help`/`__complete` fast path. The heavy work is deferred into the
- * run closures (behind the lazy runtime facade).
+ * closures without touching the store or zod, so it runs on the
+ * `--help`/`__complete` fast path (the bundled packs compile at import; the
+ * dynamic merge is `collect.assembleEffectiveModules`/`loadEffectiveModules`).
+ * The heavy work is deferred into the run closures (behind the lazy runtime
+ * facade).
  */
 
 import type { PragmaRuntime } from "../runtime/types.js";

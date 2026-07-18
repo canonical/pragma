@@ -3,9 +3,10 @@
  *
  * Constructs an {@link McpServer} keeping the stable `pragma` identity (not
  * `pragma2`, so existing agent wiring resolves it), then registers every
- * exposed verb as a tool. No resources or prompts in PR1 — those arrive with
- * the store-backed capabilities. Storeless: one runtime is booted for the
- * server's lifetime and shared by every tool.
+ * exposed verb as a tool and each module's optional `mcpResources` surface (the
+ * graph resource browser, wired below via `module.mcpResources?.register`). One
+ * runtime is booted for the server's lifetime and shared by every tool; the
+ * store stays lazy, booting only when a resource read needs it.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

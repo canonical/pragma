@@ -5,9 +5,11 @@
  * The ONE reader shared by the `graph inspect` CLI verb and the MCP resource
  * `read` — so a resource read and a `graph inspect` of the same URI return
  * identical content (the mirror contract). The URI is resolved through the
- * store's merged prefix map and validated to the embeddable shape before it is
- * interpolated, so a prefixed name or absolute IRI addresses the subject
- * exactly and user input never reaches the query text raw.
+ * store's merged prefix map and validated safe for `<iri>` embedding — via
+ * `resolveUri` → `assertSafeIri`, which rejects every IRI-breaking character
+ * (`<>"{}|\^\`` + whitespace) — before it is interpolated, so a prefixed name or
+ * absolute IRI addresses the subject exactly and user input never reaches the
+ * query text raw.
  *
  * Reached only behind the lazy store (a `needsStore` verb / a resource read), so
  * it never lands on the storeless fast path.

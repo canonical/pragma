@@ -16,6 +16,13 @@ export interface MeasureResult {
   readonly medianMs: number;
   /** 95th-percentile duration across the kept samples, in milliseconds. */
   readonly p95Ms: number;
+  /**
+   * 10%-trimmed mean across the kept samples, in milliseconds — the robust
+   * central estimate the budget suite enforces. Unlike a nearest-rank p95 over a
+   * small sample (effectively the max), it is not dominated by a single
+   * GC/scheduler spike, so it holds a ceiling reliably under CPU contention.
+   */
+  readonly trimmedMeanMs: number;
   /** Every kept sample (warmups already discarded), in milliseconds. */
   readonly samplesMs: readonly number[];
 }
@@ -36,6 +43,20 @@ export function percentile(sorted: readonly number[], p: number): number {
   const rank = Math.ceil(p * sorted.length);
   const index = Math.min(Math.max(rank, 1), sorted.length) - 1;
   return sorted[index] as number;
+}
+
+/**
+ * The mean of a sorted sample after trimming the fastest and slowest `trim`
+ * fraction from each end. Far less sensitive than a small-sample p95 (which is
+ * effectively the max) to the occasional spawn spike, so it estimates typical
+ * latency and holds a ceiling reliably under whole-suite CPU contention.
+ */
+export function trimmedMean(sorted: readonly number[], trim = 0.1): number {
+  if (sorted.length === 0) return Number.NaN;
+  const cut = Math.floor(sorted.length * trim);
+  const body =
+    2 * cut < sorted.length ? sorted.slice(cut, sorted.length - cut) : sorted;
+  return body.reduce((sum, value) => sum + value, 0) / body.length;
 }
 
 /**
@@ -70,6 +91,7 @@ export function measureCommand(
   return {
     medianMs: percentile(sorted, 0.5),
     p95Ms: percentile(sorted, 0.95),
+    trimmedMeanMs: trimmedMean(sorted, 0.1),
     samplesMs: samples,
   };
 }

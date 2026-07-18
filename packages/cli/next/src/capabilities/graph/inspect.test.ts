@@ -67,4 +67,14 @@ describe("graph inspect", () => {
       /not found/i,
     );
   });
+
+  it("rejects an injection payload in the URI instead of embedding it", async () => {
+    // A prefixed name whose local part tries to break out of the `<iri>` token:
+    // resolveUri → assertSafeIri rejects the IRI-breaking characters (`>`, `}`,
+    // whitespace) BEFORE any SPARQL is built, so the payload never reaches the
+    // query text. It must surface as INVALID_INPUT, not a benign not-found.
+    await expect(
+      inspectVerb.run({ uri: 'ds:button> } INSERT { ?s ?p "x" } #' }, rt),
+    ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  });
 });
