@@ -154,14 +154,35 @@
       "verbs": [
         {
           "v": "component",
-          "args": ["<framework>", "[path]"],
+          "args": ["[componentPath]"],
+          "flags": [
+            "--framework",
+            "--with-styles",
+            "--with-stories",
+            "--with-ssr-tests"
+          ],
           "mutates": true,
           "mcp": "create_component"
         },
-        { "v": "package", "mutates": true, "mcp": "create_package" },
+        {
+          "v": "package",
+          "flags": [
+            "--name",
+            "--type",
+            "--description",
+            "--with-react",
+            "--with-storybook",
+            "--with-cli",
+            "--with-pr-template",
+            "--run-install"
+          ],
+          "mutates": true,
+          "mcp": "create_package"
+        },
         {
           "v": "application",
-          "args": ["[path]"],
+          "args": ["[appPath]"],
+          "flags": ["--ssr", "--router", "--forms", "--relay", "--run-install"],
           "mutates": true,
           "mcp": "create_application"
         }
