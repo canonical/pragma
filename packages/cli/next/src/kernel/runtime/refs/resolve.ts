@@ -26,6 +26,12 @@ export interface ResolvedPackage {
   readonly source: string;
   /** The resolved commit / version / absolute path. */
   readonly resolved: string;
+  /**
+   * The package's on-disk root — the local `file:` path, the npm install dir, or
+   * the git clone dir. Everything the package ships lives under it, so
+   * `sources update` can also discover a package's `skills/` (U10) from here.
+   */
+  readonly root: string;
   /** The labelled RDF sources (path label + content). */
   readonly sources: { readonly path: string; readonly content: string }[];
 }
@@ -201,6 +207,7 @@ export async function resolvePackage(
         name: ref.pkg,
         source: ref.source,
         resolved: ref.path,
+        root: ref.path,
         sources: readTtlSources(ref.path, ref.pkg),
       };
     }
@@ -221,6 +228,7 @@ export async function resolvePackage(
         name: ref.pkg,
         source: ref.source,
         resolved: version,
+        root: dir,
         sources: readTtlSources(dir, ref.pkg),
       };
     }
@@ -246,6 +254,7 @@ export async function resolvePackage(
         name: ref.pkg,
         source: ref.source,
         resolved,
+        root: dir,
         sources: readTtlSources(dir, ref.pkg),
       };
     }

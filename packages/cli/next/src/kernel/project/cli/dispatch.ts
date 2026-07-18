@@ -233,6 +233,10 @@ export async function executeVerb(
       ...runtime,
       mutation: { preview: mutation.dryRun },
       interaction,
+      // Progress seam (U7): a long mutation's eager resolve/build runs before its
+      // Task is returned, so `onLog` can't reach it — stream stage lines straight
+      // to stderr instead, keeping stdout (the JSON/data stream) clean.
+      report: (message: string) => process.stderr.write(`${message}\n`),
     };
     const task = await Promise.resolve(
       verb.run(params, mutationRuntime) as
