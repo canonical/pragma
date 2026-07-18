@@ -12,7 +12,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
+import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
+import { cliRecovery } from "../../error/recovery.js";
 import { refsCacheDir } from "../paths.js";
 import { checkoutCommit, cloneRef, fetchRef, headCommit } from "./gitOps.js";
 import type { PackageRef } from "./parseRef.js";
@@ -113,18 +115,81 @@ export function harvestPrefixes(
 }
 
 /**
+ * Locate a package's `package.json` from the project.
+ *
+ * The direct `require.resolve("<pkg>/package.json")` throws
+ * `ERR_PACKAGE_PATH_NOT_EXPORTED` for a package whose `exports` map does not
+ * expose `./package.json` (common with modern packages) — which would be
+ * misreported as "not installed". So on failure it falls back to resolving the
+ * package entry and walking up to the `package.json` whose `name` matches.
+ *
+ * @param require - A `createRequire` bound to the project directory.
+ * @param pkg - The package name.
+ * @returns The absolute `package.json` path, or `undefined` when not installed.
+ */
+export function resolvePackageJson(
+  require: ReturnType<typeof createRequire>,
+  pkg: string,
+): string | undefined {
+  try {
+    return require.resolve(`${pkg}/package.json`);
+  } catch {
+    // `exports` may not expose ./package.json — resolve the entry and walk up.
+  }
+  let current: string;
+  try {
+    current = dirname(require.resolve(pkg));
+  } catch {
+    return undefined;
+  }
+  for (let depth = 0; depth < 64; depth++) {
+    const candidate = join(current, "package.json");
+    if (existsSync(candidate)) {
+      try {
+        const parsed = JSON.parse(readFileSync(candidate, "utf-8")) as {
+          name?: unknown;
+        };
+        if (parsed.name === pkg) return candidate;
+      } catch {
+        // Unreadable or non-JSON — keep walking up.
+      }
+    }
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return undefined;
+}
+
+/**
  * Resolve a package reference to its revision and RDF sources.
  *
  * @param ref - The parsed package reference.
  * @param options - The cwd, frozen flag, and any pinned revision.
  * @returns The resolved package.
  * @throws PragmaError on a missing file path or unresolvable npm package.
+ * @throws PragmaError under `--frozen` when the package has no lock entry.
  * @note Impure — may clone/fetch git, reads TTL from disk.
  */
 export async function resolvePackage(
   ref: PackageRef,
   options: ResolveOptions,
 ): Promise<ResolvedPackage> {
+  // `--frozen` means "reproduce the locked state exactly". A configured package
+  // with no lock entry has nothing to reproduce, so refuse rather than silently
+  // resolving it fresh (which would advance the very state the lock pins).
+  if (options.frozen && options.pinned === undefined) {
+    throw PragmaError.configError(
+      `Cannot resolve "${ref.pkg}" under --frozen: it has no entry in the lock.`,
+      {
+        recovery: cliRecovery(
+          `${RECOVERY_CLI_PREFIX}sources update`,
+          "Update the lock without --frozen, then commit it.",
+        ),
+      },
+    );
+  }
+
   switch (ref.kind) {
     case "file": {
       if (!existsSync(ref.path)) {
@@ -142,10 +207,8 @@ export async function resolvePackage(
 
     case "npm": {
       const require = createRequire(join(options.cwd, "noop.js"));
-      let pkgJsonPath: string;
-      try {
-        pkgJsonPath = require.resolve(`${ref.pkg}/package.json`);
-      } catch {
+      const pkgJsonPath = resolvePackageJson(require, ref.pkg);
+      if (pkgJsonPath === undefined) {
         throw PragmaError.configError(
           `Package "${ref.pkg}" is not installed. Add it to the project.`,
         );
@@ -174,7 +237,7 @@ export async function resolvePackage(
         checkoutCommit(ref.url, options.pinned as string, dir);
         resolved = options.pinned as string;
       } else if (existsSync(dir)) {
-        resolved = fetchRef(ref.url, ref.ref, dir).newHead;
+        resolved = fetchRef(ref.url, ref.ref, dir);
       } else {
         cloneRef(ref.url, ref.ref, dir);
         resolved = headCommit(dir);

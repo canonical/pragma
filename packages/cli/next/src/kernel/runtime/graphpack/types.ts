@@ -85,8 +85,6 @@ export const manifestSchema = z.object({
   version: z.string(),
   /** The config `packages` ref this pack was built from (verbatim), or a label. */
   sourceRef: z.string(),
-  /** The resolved git commit / npm version / file path, when applicable. */
-  resolvedCommit: z.string().optional(),
   contentHash: z.string(),
   prefixes: z.record(z.string(), z.string()),
   createdAt: z.string(),

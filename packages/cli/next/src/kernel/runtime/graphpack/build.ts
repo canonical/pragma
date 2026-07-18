@@ -47,10 +47,6 @@ export interface BuildPackInput {
   readonly path: string;
   /** Raw RDF content. */
   readonly content: string;
-  /** Serialization format (default `turtle`). */
-  readonly format?: "turtle" | "ntriples" | "rdfxml";
-  /** Named graph to load into (default graph when omitted). */
-  readonly graph?: string;
 }
 
 /** Provenance and options for a pack build. */
@@ -59,12 +55,8 @@ export interface BuildPackOptions {
   readonly version: string;
   /** The config `packages` ref (verbatim) or a label. */
   readonly sourceRef: string;
-  readonly resolvedCommit?: string;
   /** Prefixes the store (and every query) is built with. */
   readonly prefixes?: Readonly<Record<string, string>>;
-  /** ke-graphql compiler options (mappings, extensions, …). */
-  // biome-ignore lint/suspicious/noExplicitAny: ke-graphql SchemaPluginOptions, kept opaque here
-  readonly compilerOptions?: any;
 }
 
 /** The outcome of a pack build (or cache hit). */
@@ -80,7 +72,7 @@ export interface BuildPackResult {
  * Build (or reuse) the pack for a set of source inputs.
  *
  * @param inputs - The RDF sources (path + content).
- * @param options - Provenance, prefixes, and compiler options.
+ * @param options - Provenance and the prefixes to build with.
  * @returns The pack directory, its content hash, and whether it was reused.
  * @note Impure — creates a store, compiles the schema, writes the pack.
  */
@@ -93,8 +85,14 @@ export async function buildPack(
   );
   const dir = packDir(hash);
 
-  const cached = readManifest(dir);
-  if (cached) return { dir, contentHash: hash, manifest: cached, reused: true };
+  // Reuse only a COMPLETE pack (manifest + non-empty dump). A corrupt cache
+  // (intact manifest, ruined `data.nq`) must rebuild, not be reused — otherwise
+  // an emptied dump would be permanent.
+  if (packIsComplete(dir)) {
+    const cached = readManifest(dir);
+    if (cached)
+      return { dir, contentHash: hash, manifest: cached, reused: true };
+  }
 
   mkdirSync(packsCacheDir(), { recursive: true });
   const temp = mkdtempSync(
@@ -106,8 +104,6 @@ export async function buildPack(
       sources: inputs.map((input) => ({
         content: input.content,
         path: input.path,
-        ...(input.format ? { format: input.format } : {}),
-        ...(input.graph ? { graph: input.graph } : {}),
       })),
       prefixes,
       // ke writes the n-quads dump here after loading — our `data.nq`.
@@ -115,11 +111,7 @@ export async function buildPack(
     });
 
     try {
-      const compiled = await compile(
-        createStoreQueryFn(store),
-        store.prefixes,
-        options.compilerOptions,
-      );
+      const compiled = await compile(createStoreQueryFn(store), store.prefixes);
       const sourcesHash = hashSources(inputs.map((input) => input.content));
       writeFileSync(
         join(temp, SCHEMA_FILE),
@@ -133,9 +125,6 @@ export async function buildPack(
         name: options.name,
         version: options.version,
         sourceRef: options.sourceRef,
-        ...(options.resolvedCommit
-          ? { resolvedCommit: options.resolvedCommit }
-          : {}),
         contentHash: hash,
         prefixes: { ...store.prefixes },
         createdAt: new Date().toISOString(),

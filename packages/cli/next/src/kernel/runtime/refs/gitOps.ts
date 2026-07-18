@@ -9,7 +9,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 /** Whether a ref looks like a commit SHA (7-40 hex chars). */
@@ -55,19 +55,13 @@ export function cloneRef(url: string, ref: string, dest: string): void {
 /**
  * Fetch a ref into an existing cached clone and check it out.
  *
- * @returns The new resolved HEAD and whether it changed.
+ * @returns The newly resolved HEAD commit.
  * @note Impure — runs git, updates the checkout.
  */
-export function fetchRef(
-  url: string,
-  ref: string,
-  dest: string,
-): { updated: boolean; oldHead: string; newHead: string } {
-  const oldHead = gitOutput(dest, ["rev-parse", "HEAD"]);
+export function fetchRef(url: string, ref: string, dest: string): string {
   git(dest, ["fetch", "--depth", "1", url, ref]);
   git(dest, ["checkout", "FETCH_HEAD"]);
-  const newHead = gitOutput(dest, ["rev-parse", "HEAD"]);
-  return { updated: oldHead !== newHead, oldHead, newHead };
+  return gitOutput(dest, ["rev-parse", "HEAD"]);
 }
 
 /** Check out an exact commit in an existing clone (fetching it if needed). */
@@ -91,9 +85,4 @@ export function checkoutCommit(
 /** The resolved HEAD commit of a checkout. */
 export function headCommit(dest: string): string {
   return gitOutput(dest, ["rev-parse", "HEAD"]);
-}
-
-/** Remove a cached directory. */
-export function pruneCache(dir: string): void {
-  if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
 }

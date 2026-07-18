@@ -5,9 +5,14 @@
  * manifest means "treat the pack as not there".
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { MANIFEST_FILE, type Manifest, manifestSchema } from "./types.js";
+import {
+  DATA_FILE,
+  MANIFEST_FILE,
+  type Manifest,
+  manifestSchema,
+} from "./types.js";
 
 /**
  * Read and validate a pack directory's manifest.
@@ -26,7 +31,18 @@ export function readManifest(dir: string): Manifest | undefined {
   }
 }
 
-/** Whether a pack directory holds a complete (manifest-marked) pack. */
+/** Whether a pack directory holds a complete pack: a valid manifest AND a
+ * non-empty `data.nq` dump. The manifest alone is not enough — an intact
+ * manifest beside a missing or truncated `data.nq` is a corrupt pack (ke would
+ * boot it EMPTY and rewrite an empty dump — a silent, then permanent, loss).
+ * Requiring a non-empty dump here makes the boot decision surface
+ * STORE_UNAVAILABLE and makes `buildPack` rebuild it instead of reusing the
+ * ruin. */
 export function packIsComplete(dir: string): boolean {
-  return readManifest(dir) !== undefined;
+  if (readManifest(dir) === undefined) return false;
+  try {
+    return statSync(join(dir, DATA_FILE)).size > 0;
+  } catch {
+    return false;
+  }
 }

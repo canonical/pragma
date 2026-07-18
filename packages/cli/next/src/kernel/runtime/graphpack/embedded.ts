@@ -22,12 +22,8 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { packDir, packsCacheDir } from "../paths.js";
-import {
-  dataNq,
-  indexJson,
-  manifestJson,
-  schemaJson,
-} from "./embedded/pack.generated.js";
+import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
+import { indexJson } from "./embedded/pack.index.generated.js";
 import { packIsComplete } from "./manifest.js";
 import {
   DATA_FILE,

@@ -6,6 +6,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import type { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runTask } from "@canonical/task/node";
@@ -17,6 +18,7 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
 import { readLock } from "../../kernel/runtime/lock.js";
 import { lockPath, packDir } from "../../kernel/runtime/paths.js";
+import { resolvePackageJson } from "../../kernel/runtime/refs/resolve.js";
 import { createLazyStore } from "../../kernel/runtime/store.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -242,6 +244,64 @@ describe("sources update — network-free preview (M2)", () => {
     expect(plan.some((line) => line.includes(UNREACHABLE))).toBe(true);
     // Plan-first withheld the write — no lock landed.
     expect(readLock(cwd)).toBeUndefined();
+  });
+});
+
+describe("sources update — reproducible-or-fail (m5)", () => {
+  it("--frozen refuses a package that has no lock entry", async () => {
+    const pkg = filePackage();
+    const cwd = tmp("pragma2-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    // No prior lock → nothing to reproduce → refuse rather than silently
+    // advance. The throw is raised during setup, before any Task is returned.
+    await expect(buildUpdateTask(runtime, true)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    expect(readLock(cwd)).toBeUndefined();
+  });
+});
+
+describe("npm resolution tolerates restrictive exports (m6)", () => {
+  it("resolvePackageJson walks up past an exports map hiding ./package.json", () => {
+    const pkgDir = tmp("pragma2-npm-");
+    writeFileSync(
+      join(pkgDir, "package.json"),
+      JSON.stringify({
+        name: "faux",
+        version: "9.9.9",
+        exports: { ".": "./index.js" },
+      }),
+    );
+    // Emulate Node throwing ERR_PACKAGE_PATH_NOT_EXPORTED for `<pkg>/package.json`
+    // while the bare entry still resolves.
+    const require = {
+      resolve(request: string): string {
+        if (request === "faux/package.json") {
+          const err = new Error("no ./package.json export") as Error & {
+            code: string;
+          };
+          err.code = "ERR_PACKAGE_PATH_NOT_EXPORTED";
+          throw err;
+        }
+        if (request === "faux") return join(pkgDir, "index.js");
+        throw new Error(`cannot resolve ${request}`);
+      },
+    } as unknown as ReturnType<typeof createRequire>;
+
+    expect(resolvePackageJson(require, "faux")).toBe(
+      join(pkgDir, "package.json"),
+    );
+
+    // A genuinely-absent package still yields undefined (→ "not installed").
+    const missing = {
+      resolve(): string {
+        throw new Error("not found");
+      },
+    } as unknown as ReturnType<typeof createRequire>;
+    expect(resolvePackageJson(missing, "faux")).toBeUndefined();
   });
 });
 
