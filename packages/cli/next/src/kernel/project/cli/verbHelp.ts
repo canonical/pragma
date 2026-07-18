@@ -10,6 +10,13 @@
 
 import { kebabCase } from "../../spec/emitSurface.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import {
+  helpColumns,
+  helpDim,
+  helpHeading,
+  helpTerm,
+  helpUsage,
+} from "./helpFormat.js";
 
 /**
  * A verb's `doc` doubles as its MCP tool description, so a pack's authored
@@ -56,7 +63,7 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
   const positionalStr = positionals.map(positionalToken).join(" ");
   const usageSuffix = positionalStr ? ` ${positionalStr}` : "";
   const lines: string[] = [
-    `Usage: ${programName} ${commandPath}${usageSuffix} [flags]`,
+    helpUsage(`${programName} ${commandPath}${usageSuffix} [flags]`),
     "",
     verb.summary,
   ];
@@ -67,25 +74,39 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
   }
 
   if (flags.length > 0) {
-    lines.push("", "Flags:");
-    const displays = flags.map(flagDisplay);
-    const width = Math.max(...displays.map((d) => d.length));
-    flags.forEach((flag, index) => {
-      const display = displays[index] as string;
-      const padding = " ".repeat(width - display.length + 4);
-      lines.push(`  ${display}${padding}${flag.doc}`);
-    });
+    lines.push(
+      "",
+      helpHeading("Flags"),
+      ...helpColumns(flags.map((flag) => [flagDisplay(flag), flag.doc])),
+    );
   }
 
   if (verb.examples && verb.examples.length > 0) {
-    lines.push("", "Examples:");
+    lines.push("", helpHeading("Examples"));
     for (const example of verb.examples) {
-      lines.push(`  ${example.cmd}`);
-      if (example.note) lines.push(`    ${example.note}`);
+      lines.push(`  ${helpTerm(example.cmd)}`);
+      if (example.note) lines.push(`    ${helpDim(example.note)}`);
     }
   }
 
+  lines.push("", verbHelpFooter(programName, verb));
+
   return lines.join("\n");
+}
+
+/**
+ * The footer pointing at the next help level: a sub-verb points UP to its noun
+ * page (`pragma block --help`), a self-verb points to the root (`pragma
+ * --help`). Uniform across every verb page — the leaf pages used to have none.
+ */
+function verbHelpFooter(programName: string, verb: VerbSpec): string {
+  if (verb.path.length > 1) {
+    const noun = verb.path[0];
+    return helpDim(
+      `Run \`${programName} ${noun} --help\` to see all ${noun} commands.`,
+    );
+  }
+  return helpDim(`Run \`${programName} --help\` to see all commands.`);
 }
 
 /**
@@ -108,19 +129,16 @@ export function formatNounHelp(
   if (nounVerbs.length === 0) return `No commands found for "${noun}".`;
 
   const lines: string[] = [
-    `Usage: ${programName} ${noun} <verb> [options]`,
+    helpUsage(`${programName} ${noun} <verb> [flags]`),
     "",
-    "Verbs:",
+    helpHeading("Verbs"),
+    ...helpColumns(
+      nounVerbs.map((verb) => [verb.path[1] as string, verb.summary]),
+    ),
+    "",
+    helpDim(
+      `Run \`${programName} ${noun} <verb> --help\` for details on a verb.`,
+    ),
   ];
-  const width = Math.max(...nounVerbs.map((v) => (v.path[1] as string).length));
-  for (const verb of nounVerbs) {
-    const label = verb.path[1] as string;
-    const padding = " ".repeat(width - label.length + 4);
-    lines.push(`  ${label}${padding}${verb.summary}`);
-  }
-  lines.push(
-    "",
-    `Run \`${programName} ${noun} <verb> --help\` for verb-specific help.`,
-  );
   return lines.join("\n");
 }

@@ -37,6 +37,16 @@ const list: VerbSpec = {
   run: async () => null,
 };
 
+/** A self-verb (`path.length === 1`) to exercise the root-pointing footer. */
+const selfVerb: VerbSpec = {
+  path: ["doctor"],
+  summary: "Check environment health.",
+  params: [],
+  output: { formatters: passthrough },
+  capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+  run: async () => null,
+};
+
 describe("formatVerbHelp", () => {
   const help = formatVerbHelp("pragma", get);
 
@@ -51,15 +61,60 @@ describe("formatVerbHelp", () => {
     expect(help).toContain("pragma block get Button");
     expect(help).toContain("the primary button");
   });
+
+  it("closes a sub-verb page with a footer pointing at the noun page", () => {
+    expect(help).toContain(
+      "Run `pragma block --help` to see all block commands.",
+    );
+  });
+
+  it("closes a self-verb page with a footer pointing at the root", () => {
+    expect(formatVerbHelp("pragma", selfVerb)).toContain(
+      "Run `pragma --help` to see all commands.",
+    );
+  });
+
+  it("renders the unified verb page (restyle golden)", () => {
+    expect(help).toMatchInlineSnapshot(`
+      "Usage: pragma block get <name> [flags]
+
+      Get a block by name.
+
+      Resolves the block and prints its anatomy.
+
+      Flags
+        --with-anatomy  Include the anatomy tree.
+
+      Examples
+        pragma block get Button
+          the primary button
+
+      Run \`pragma block --help\` to see all block commands."
+    `);
+  });
 });
 
 describe("formatNounHelp", () => {
   it("lists the noun's verbs with summaries", () => {
     const help = formatNounHelp("pragma", "block", [get, list]);
-    expect(help).toContain("Usage: pragma block <verb> [options]");
+    expect(help).toContain("Usage: pragma block <verb> [flags]");
     expect(help).toContain("get");
     expect(help).toContain("list");
     expect(help).toContain("Get a block by name.");
+  });
+
+  it("renders the unified noun page (restyle golden)", () => {
+    expect(
+      formatNounHelp("pragma", "block", [get, list]),
+    ).toMatchInlineSnapshot(`
+      "Usage: pragma block <verb> [flags]
+
+      Verbs
+        get   Get a block by name.
+        list  List blocks.
+
+      Run \`pragma block <verb> --help\` for details on a verb."
+    `);
   });
 
   it("handles a noun with no verbs", () => {

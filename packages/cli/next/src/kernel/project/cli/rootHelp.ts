@@ -9,8 +9,14 @@
  * the grammar and the v2 noun set (no `llm`/`graphql`/`trace`/`tokens`).
  */
 
-import chalk from "chalk";
 import type { VerbSpec } from "../../spec/types.js";
+import {
+  helpColumns,
+  helpDim,
+  helpHeading,
+  helpTerm,
+  helpUsage,
+} from "./helpFormat.js";
 
 interface NounSummary {
   readonly noun: string;
@@ -153,29 +159,37 @@ export function formatRootHelp(
       : []),
   ].filter((g) => g.nouns.length > 0);
 
+  // One column width across ALL groups so the noun column aligns section to
+  // section, not just within a section.
   const nounWidth = Math.max(
     ...groups.flatMap((g) => g.nouns.map((n) => n.noun.length)),
     0,
   );
 
   const lines: string[] = [
-    `${chalk.bold(programName)} — ${description}`,
+    `${helpHeading(programName)} — ${description}`,
     "",
-    `${chalk.dim("Usage:")} ${programName} ${chalk.cyan("<command>")} ${chalk.dim("[subcommand] [flags]")}`,
+    helpUsage(
+      `${programName} ${helpTerm("<command>")} ${helpDim("[subcommand] [flags]")}`,
+    ),
     "",
   ];
 
   for (const group of groups) {
-    lines.push(chalk.bold(group.title));
-    for (const { noun, summary } of group.nouns) {
-      lines.push(
-        `  ${chalk.cyan(noun.padEnd(nounWidth))}  ${chalk.dim(summary)}`,
-      );
-    }
+    lines.push(helpHeading(group.title));
+    lines.push(
+      ...helpColumns(
+        group.nouns.map((n) => [n.noun, n.summary] as const),
+        nounWidth,
+      ),
+    );
     lines.push("");
   }
 
-  lines.push(chalk.bold("Global flags"));
+  // The frozen global-flags block: these doc strings MUST stay byte-consistent
+  // with FIXED_SURFACE.globalFlags (emitSurface.ts) — restyle the LAYOUT only,
+  // never these strings.
+  lines.push(helpHeading("Global flags"));
   const flags: [string, string][] = [
     ["--llm", "Condensed Markdown output for agents"],
     ["--format <json|plain>", "Select output format"],
@@ -187,14 +201,11 @@ export function formatRootHelp(
     ["--help", "Show help (works on any command)"],
     ["--version", "Show the CLI version"],
   ];
-  const flagWidth = Math.max(...flags.map(([f]) => f.length));
-  for (const [flag, desc] of flags) {
-    lines.push(`  ${chalk.cyan(flag.padEnd(flagWidth))}  ${chalk.dim(desc)}`);
-  }
+  lines.push(...helpColumns(flags));
   lines.push("");
 
   lines.push(
-    chalk.dim(
+    helpDim(
       `Run \`${programName} <command> --help\` for details, or \`${programName} capabilities\` to get oriented.`,
     ),
   );
