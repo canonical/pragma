@@ -137,6 +137,7 @@ async function buildUpdatePlan(
 export async function buildUpdateTask(
   runtime: PragmaRuntime,
   frozen: boolean,
+  skipInvalid = false,
 ): Promise<Task<SourcesUpdateData>> {
   if (runtime.mutation?.preview) return buildUpdatePlan(runtime);
 
@@ -182,16 +183,57 @@ export async function buildUpdateTask(
   // Build the pack. On a parse/build failure, classify it as a NAMED data error
   // (U6) — not INTERNAL_ERROR's "please report this issue" — identifying the
   // offending package source, since ke's parser error carries only line/column.
+  // With `--skip-invalid`, drop the unparseable sources (warning LOUDLY about
+  // each — never a silent partial graph) and build from the rest instead of
+  // failing the whole update.
+  const sourceRef = entries.map(entryName).join(",") || "embedded";
   let built: Awaited<ReturnType<typeof buildPack>>;
   try {
     built = await buildPack(inputs, {
       name: "pragma",
       version: VERSION,
-      sourceRef: entries.map(entryName).join(",") || "embedded",
+      sourceRef,
       prefixes,
     });
   } catch (error) {
-    throw await classifySourceBuildError(error, inputs);
+    if (!skipInvalid) throw await classifySourceBuildError(error, inputs);
+    const bad = await collectBadSources(inputs);
+    // A build failure not attributable to a single unparseable source (e.g. a
+    // cross-file conflict) can't be skipped away — surface the named error.
+    if (bad.length === 0) throw await classifySourceBuildError(error, inputs);
+    const badPaths = new Set(bad.map((entry) => entry.path));
+    const usableInputs = inputs.filter((input) => !badPaths.has(input.path));
+    for (const entry of bad)
+      report?.(`  skipped invalid source ${entry.path}: ${entry.message}`);
+    report?.(
+      `Skipped ${bad.length} invalid source(s); building from ${usableInputs.length} of ${inputs.length}`,
+    );
+    if (usableInputs.length === 0)
+      throw PragmaError.configError(
+        `All ${inputs.length} configured source(s) failed to parse — nothing to build.`,
+        {
+          recovery: cliRecovery(
+            `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+            "Fix the reported sources, then re-run.",
+          ),
+        },
+      );
+    try {
+      built = await buildPack(usableInputs, {
+        name: "pragma",
+        version: VERSION,
+        sourceRef,
+        // Re-harvest prefixes from only the sources that survived, so a dropped
+        // file's declarations don't skew compaction.
+        prefixes: {
+          ...CORE_PREFIXES,
+          ...harvestPrefixes(usableInputs),
+          ...(layers.config.prefixes ?? {}),
+        },
+      });
+    } catch (rebuildError) {
+      throw await classifySourceBuildError(rebuildError, usableInputs);
+    }
   }
   report?.(
     `${built.reused ? "Reused" : "Built"} store ${built.contentHash.slice(0, 12)}`,
@@ -331,4 +373,35 @@ async function isolateBadSource(
     }
   }
   return undefined;
+}
+
+/**
+ * Re-parse each source in isolation and collect EVERY one that fails to parse.
+ *
+ * Backs `--skip-invalid`: {@link isolateBadSource} returns just the first
+ * culprit (for the error message), whereas the skip path needs the full set to
+ * drop before rebuilding. Error path only — one throwaway ke store per source.
+ *
+ * @param inputs - The labelled sources.
+ * @returns Every source that fails to parse alone, with its parser message.
+ */
+async function collectBadSources(
+  inputs: readonly { readonly path: string; readonly content: string }[],
+): Promise<{ path: string; message: string }[]> {
+  const { createStore } = await import("@canonical/ke");
+  const bad: { path: string; message: string }[] = [];
+  for (const input of inputs) {
+    try {
+      const store = await createStore({
+        sources: [{ content: input.content, path: input.path }],
+      });
+      store.dispose();
+    } catch (error) {
+      bad.push({
+        path: input.path,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return bad;
 }

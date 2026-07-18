@@ -407,6 +407,82 @@ describe("sources update — data-failure classification (U6)", () => {
   });
 });
 
+describe("sources update — hidden files and --skip-invalid", () => {
+  const BAD_TTL =
+    "@prefix ex: <https://ex.test/#> .\nex:Broken ex:noObject .\n";
+
+  /** The good widget package plus one extra definitions file. */
+  function packageWithExtra(name: string, content: string): string {
+    const pkg = filePackage();
+    writeFileSync(join(pkg, "definitions", name), content);
+    return pkg;
+  }
+
+  it("skips dot-prefixed files rather than ingesting them (hidden artifacts)", async () => {
+    // A malformed `.hidden.ttl` beside the good widget.ttl: on base the walker
+    // ingests it and the build fails; hidden files must be skipped entirely.
+    const pkg = packageWithExtra(".hidden.ttl", BAD_TTL);
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    const result = await runTask(await buildUpdateTask(runtime, false));
+    expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(readLock(cwd)?.packs).toHaveLength(1);
+  });
+
+  it("without --skip-invalid, one malformed source fails the whole update", async () => {
+    const pkg = packageWithExtra("bad.ttl", BAD_TTL);
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    await expect(buildUpdateTask(runtime, false, false)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    expect(readLock(cwd)).toBeUndefined();
+  });
+
+  it("with --skip-invalid, drops the bad source, warns loudly, and builds from the rest", async () => {
+    const pkg = packageWithExtra("bad.ttl", BAD_TTL);
+    const cwd = tmp("pragma-proj-");
+    const reports: string[] = [];
+    const runtime: PragmaRuntime = {
+      ...runtimeFor(cwd, [{ name: "pkg-a", source: `file://${pkg}` }]),
+      report: (message: string) => reports.push(message),
+    };
+
+    const result = await runTask(await buildUpdateTask(runtime, false, true));
+    // Built from the good widget.ttl, not aborted.
+    expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(readLock(cwd)?.packs).toHaveLength(1);
+    // Loud per-source warning names the dropped file …
+    expect(
+      reports.some(
+        (r) => r.includes("skipped invalid source") && r.includes("bad.ttl"),
+      ),
+    ).toBe(true);
+    // … plus a summary of how many were dropped.
+    expect(reports.some((r) => /Skipped 1 invalid source/.test(r))).toBe(true);
+  });
+
+  it("with --skip-invalid, still errors when EVERY source is invalid", async () => {
+    const pkg = tmp("pragma-allbad-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    writeFileSync(join(pkg, "definitions", "bad.ttl"), BAD_TTL);
+    const cwd = tmp("pragma-proj-");
+    const runtime: PragmaRuntime = {
+      ...runtimeFor(cwd, [{ name: "pkg-a", source: `file://${pkg}` }]),
+      report: () => {},
+    };
+    await expect(buildUpdateTask(runtime, false, true)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    expect(readLock(cwd)).toBeUndefined();
+  });
+});
+
 describe("sources update — progress streaming (U7/U11)", () => {
   const updateVerb = sourcesModule.verbs[1] as VerbSpec;
 

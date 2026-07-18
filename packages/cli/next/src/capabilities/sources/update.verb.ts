@@ -17,7 +17,10 @@ import type { SourcesUpdateData } from "./types.js";
 import { updateFormatters } from "./update.render.js";
 
 /** The `sources update` verb spec. */
-export const updateVerb: VerbSpec<{ frozen?: boolean }, SourcesUpdateData> = {
+export const updateVerb: VerbSpec<
+  { frozen?: boolean; skipInvalid?: boolean },
+  SourcesUpdateData
+> = {
   path: ["sources", "update"],
   summary: "Resolve configured packages, build the local store, and lock it.",
   doc: "Resolves each configured package (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.",
@@ -27,6 +30,11 @@ export const updateVerb: VerbSpec<{ frozen?: boolean }, SourcesUpdateData> = {
       name: "frozen",
       doc: "Re-resolve to the lock's pinned revisions exactly; never advance.",
     },
+    {
+      kind: "boolean",
+      name: "skipInvalid",
+      doc: "Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update.",
+    },
   ],
   output: { formatters: updateFormatters },
   examples: [
@@ -34,6 +42,10 @@ export const updateVerb: VerbSpec<{ frozen?: boolean }, SourcesUpdateData> = {
     {
       cmd: "pragma sources update --frozen",
       note: "reproduce the locked state",
+    },
+    {
+      cmd: "pragma sources update --skip-invalid",
+      note: "build from the parseable sources, warning about any dropped",
     },
   ],
   capability: {
@@ -55,6 +67,10 @@ export const updateVerb: VerbSpec<{ frozen?: boolean }, SourcesUpdateData> = {
   // `Task<R>` arm by this single, honest cast.
   run: (params, runtime) =>
     import("./runUpdate.js").then((module) =>
-      module.buildUpdateTask(runtime, params.frozen === true),
+      module.buildUpdateTask(
+        runtime,
+        params.frozen === true,
+        params.skipInvalid === true,
+      ),
     ) as unknown as Task<SourcesUpdateData>,
 };

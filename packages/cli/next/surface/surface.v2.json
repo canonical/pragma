@@ -150,7 +150,7 @@
         { "v": "status", "mcp": "sources_status" },
         {
           "v": "update",
-          "flags": ["--frozen"],
+          "flags": ["--frozen", "--skip-invalid"],
           "mutates": true,
           "mcp": "sources_update"
         }

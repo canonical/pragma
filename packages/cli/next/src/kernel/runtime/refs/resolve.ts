@@ -78,6 +78,11 @@ function walkTtl(
 ): void {
   if (!existsSync(dir)) return;
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // Skip hidden entries (dot-prefixed): editor/partial/generated artifacts
+    // like `.modifier.dark.ttl`, and tooling dirs like `.git`, are never
+    // intended graph sources — and ingesting them ships malformed RDF into the
+    // build (a `.`-prefixed Turtle local name isn't even valid).
+    if (entry.name.startsWith(".")) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       walkTtl(full, base, label, out);
