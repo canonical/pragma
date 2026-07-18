@@ -104,10 +104,14 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
   });
 
-  it("emits the PR6 effect/diagnostic self-verbs (doctor)", () => {
+  it("emits the PR6 effect/diagnostic self-verbs (doctor, upgrade)", () => {
     // doctor is a storeless read self-verb — no args, no flags, no needsStore.
     expect(emitted.nouns.doctor?.verbs).toEqual([
       { v: "doctor", mcp: "doctor" },
+    ]);
+    // upgrade is a storeless mutation self-verb — mutates, no args, no needsStore.
+    expect(emitted.nouns.upgrade?.verbs).toEqual([
+      { v: "upgrade", mutates: true, mcp: "upgrade" },
     ]);
   });
 

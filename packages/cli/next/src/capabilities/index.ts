@@ -24,6 +24,7 @@ import { sourcesModule } from "./sources/index.js";
 import { standardModule } from "./standard/index.js";
 import { tierModule } from "./tier/index.js";
 import { tokenModule } from "./token/index.js";
+import { upgradeModule } from "./upgrade/index.js";
 
 /** Every capability module, in authoring order. */
 export const capabilities: readonly CapabilityModule[] = [
@@ -40,5 +41,6 @@ export const capabilities: readonly CapabilityModule[] = [
   skillModule,
   graphModule,
   doctorModule,
+  upgradeModule,
   metaModule,
 ];
