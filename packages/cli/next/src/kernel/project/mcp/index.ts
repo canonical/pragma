@@ -5,3 +5,4 @@
 export { buildServer } from "./buildServer.js";
 export { toolError, toolSuccess } from "./envelope.js";
 export { buildZodSchema, registerVerb } from "./registerVerb.js";
+export { serveMcp } from "./serve.js";

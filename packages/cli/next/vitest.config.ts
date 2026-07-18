@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     include: ["src/**/*.test.ts"],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],
+    globalSetup: ["./src/testing/perf/globalSetup.ts"],
     environment: "node",
     coverage: {
       provider: "v8",
