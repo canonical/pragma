@@ -35,7 +35,7 @@ export const completeVerb: VerbSpec<Record<string, unknown>, string[]> = {
     mutates: false,
     mcp: { expose: false, reason: "internal shell-completion resolver" },
   },
-  run: (params) =>
+  run: (params, runtime) =>
     Promise.all([
       import("../../kernel/completion/complete.js"),
       import("../index.js"),
@@ -43,6 +43,7 @@ export const completeVerb: VerbSpec<Record<string, unknown>, string[]> = {
       completion.runComplete(
         (params.words as string[] | undefined) ?? [],
         caps.capabilities,
+        runtime.cwd,
       ),
     ),
 };
