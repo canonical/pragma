@@ -304,6 +304,7 @@
         "pragma2": "dist/pragma2",
       },
       "dependencies": {
+        "@canonical/harnesses": "^0.31.0",
         "@canonical/ke": "^0.31.0",
         "@canonical/ke-graphql": "^0.31.0",
         "@canonical/summon-application": "^0.31.0",
@@ -1014,13 +1015,13 @@
       "name": "@canonical/harnesses",
       "version": "0.31.0",
       "dependencies": {
-        "@canonical/task": "^0.30.0",
+        "@canonical/task": "^0.31.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.30.0",
-        "@canonical/typescript-config": "^0.30.0",
-        "@canonical/webarchitect": "^0.30.0",
+        "@canonical/biome-config": "^0.31.0",
+        "@canonical/typescript-config": "^0.31.0",
+        "@canonical/webarchitect": "^0.31.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",

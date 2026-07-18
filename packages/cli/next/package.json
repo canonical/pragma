@@ -51,6 +51,7 @@
     "eval": "bun run src/testing/eval/report.ts"
   },
   "dependencies": {
+    "@canonical/harnesses": "^0.31.0",
     "@canonical/ke": "^0.31.0",
     "@canonical/ke-graphql": "^0.31.0",
     "@canonical/summon-application": "^0.31.0",

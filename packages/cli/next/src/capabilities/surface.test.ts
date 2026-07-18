@@ -104,6 +104,13 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
   });
 
+  it("emits the PR6 effect/diagnostic self-verbs (doctor)", () => {
+    // doctor is a storeless read self-verb — no args, no flags, no needsStore.
+    expect(emitted.nouns.doctor?.verbs).toEqual([
+      { v: "doctor", mcp: "doctor" },
+    ]);
+  });
+
   it("emits sorted tools, every one blessed by the covenant", () => {
     const { tools } = emitted.mcpSurface;
     expect(tools).toEqual([...tools].sort());
