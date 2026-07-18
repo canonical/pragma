@@ -15,16 +15,23 @@ const ERROR_CODES = [
   "ENTITY_NOT_FOUND",
   "EMPTY_RESULTS",
   "INVALID_INPUT",
+  // RESERVED: declared and exit-mapped (usage, exit 2) for forward-compat and
+  // advertised in the covenant, but not yet raised by any site. Reserved for a
+  // future ambiguous glob/lookup match (a name resolving to several entities);
+  // until then no factory exists, so it cannot be raised by accident.
   "AMBIGUOUS_INPUT",
   "UNKNOWN_VERB",
   "STORE_UNAVAILABLE",
   "CONFIG_ERROR",
   "INTERNAL_ERROR",
-  // A capability that is genuinely unavailable in this build/environment — not
-  // a bug and not a usage mistake, so it must NOT collapse to INTERNAL_ERROR's
-  // "please report this issue". Today: `create package` / `create application`
-  // in the compiled binary, whose generator assets are not embedded there
-  // (`create component` is embedded and runs). Maps to the generic runtime exit 1.
+  // A runtime condition that is NOT a bug and NOT a usage mistake, so it must
+  // NOT collapse to INTERNAL_ERROR's "please report this issue": a capability
+  // genuinely unavailable in this build/environment (`create package` /
+  // `create application` in the compiled binary, whose generator assets are not
+  // embedded — `create component` is embedded and runs), OR an external command
+  // that RAN and failed for a fixable environment reason (a denied global
+  // `npm i -g`, a network/registry failure — see `shared/assertExecOk`). Both
+  // carry an actionable recovery and map to the generic runtime exit 1.
   "UNSUPPORTED",
 ] as const;
 

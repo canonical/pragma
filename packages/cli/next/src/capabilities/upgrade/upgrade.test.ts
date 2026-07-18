@@ -178,7 +178,7 @@ describe("upgrade — update needed", () => {
 });
 
 describe("assertExecOk — the exec-exitCode guard", () => {
-  it("returns on a zero exit and throws INTERNAL_ERROR (with stderr) on nonzero", () => {
+  it("returns on a zero exit and throws an actionable UNSUPPORTED (with stderr) on nonzero", () => {
     expect(() =>
       assertExecOk("cmd", { stdout: "", stderr: "", exitCode: 0 }),
     ).not.toThrow();
@@ -194,7 +194,11 @@ describe("assertExecOk — the exec-exitCode guard", () => {
       thrown = error;
     }
     const err = asPragmaError(thrown);
-    expect(err.code).toBe("INTERNAL_ERROR");
+    // A denied `npm i -g` is user-fixable, NOT a bug — so it must not tell the
+    // user to "please report this issue" (that is INTERNAL_ERROR's recovery).
+    expect(err.code).toBe("UNSUPPORTED");
+    expect(err.recovery?.message).not.toContain("report this issue");
+    expect(err.recovery?.message).toMatch(/permissions or network/i);
     // Surfaces the command + exit code + the captured stderr (trimmed).
     expect(err.message).toContain("npm i -g @canonical/pragma-cli");
     expect(err.message).toContain("code 13");
@@ -202,7 +206,7 @@ describe("assertExecOk — the exec-exitCode guard", () => {
   });
 });
 
-describe("upgrade — a failed exec maps to INTERNAL_ERROR (exit 1)", () => {
+describe("upgrade — a failed exec maps to an actionable runtime error (exit 1)", () => {
   // A minimal verb whose sole effect is the given exec seam — the same shape
   // runUpgrade/setupLsp use (exec then assertExecOk), driven through dispatch.
   const failVerbWith = (
@@ -257,7 +261,9 @@ describe("upgrade — a failed exec maps to INTERNAL_ERROR (exit 1)", () => {
     );
     expect(thrown).toBeDefined();
     const err = asPragmaError(thrown);
-    expect(err.code).toBe("INTERNAL_ERROR");
+    // A command that RAN and failed is user-fixable (permissions/network), so
+    // it is UNSUPPORTED (exit 1) with an actionable recovery — not a bug report.
+    expect(err.code).toBe("UNSUPPORTED");
     expect(mapExitCode(err.code)).toBe(1);
     // The subprocess's own stderr is surfaced, not discarded.
     expect(err.message).toContain("boom-from-installer");

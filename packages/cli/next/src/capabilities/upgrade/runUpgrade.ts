@@ -9,9 +9,9 @@
  * - `--dry-run` (dispatcher `dryRun`) MOCKS the exec and describes the plan —
  *   both the `Log` version-delta line AND the `Execute: <command>` line show,
  *   and nothing runs.
- * - `--yes` / MCP `confirm` runs the exec for real; a nonzero exit (or a spawn
- *   error) is surfaced by `assertExecOk` as INTERNAL_ERROR (exit 1) — the
- *   interpreter RESOLVES on a nonzero exit, so the check is the consumer's job.
+ * - `--yes` / MCP `confirm` runs the exec for real; a nonzero exit is surfaced
+ *   by `assertExecOk` as an actionable UNSUPPORTED (exit 1) — the interpreter
+ *   RESOLVES on a nonzero exit, so the check is the consumer's job.
  * - offline / already-latest carry NO exec — a real run just returns the status.
  *
  * The whole registry read is preview-safe, so no `mutation.preview` gating is
