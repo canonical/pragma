@@ -8,6 +8,7 @@ import {
   BUDGET_COMPLETE_MS,
   BUDGET_HELP_MS,
   BUDGET_PROJECT_CONFIG_MS,
+  BUDGET_WARM_STORE_MS,
 } from "./budgets.js";
 import { measureCommand, percentile } from "./measure.js";
 
@@ -50,6 +51,22 @@ describe("perf budgets (PROTECTED)", () => {
     });
     expect(result.medianMs).toBeLessThanOrEqual(BUDGET_COMPLETE_MS);
     expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_COMPLETE_MS);
+  });
+
+  it("warm store-backed verb stays under budget", { retry: 2 }, () => {
+    // __store-probe boots the embedded pack from its n-quads cache and queries
+    // it — the full store-backed verb cost in the compiled binary. The first
+    // spawn materializes the pack; warmups absorb it, then it is a cache hit.
+    const result = measureCommand(BINARY, ["__store-probe"], {
+      runs: 12,
+      warmups: 3,
+      env: {
+        ...perfEnv,
+        XDG_CACHE_HOME: mkdtempSync(join(tmpdir(), "pragma2-perf-cache-")),
+      },
+    });
+    expect(result.medianMs).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
+    expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
   });
 
   it("warm project-config load stays under budget", { retry: 2 }, async () => {

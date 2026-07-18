@@ -31,6 +31,14 @@ p95 against the ceilings below.
 | `pragma2 __complete`       | 46.1 ms | 51.3 ms | 100 ms  | 2× median (50 ms target)  |
 | `config show`              | 63.5 ms | 68.9 ms | —       | reference (storeless run) |
 | project config load (warm) | < 1 ms  | < 1 ms  | 10 ms   | cache hit (in-process)    |
+| `__store-probe` (store)    | ~147 ms | ~176 ms | 300 ms  | designed (~2× median)     |
+
+The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
+cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
+measures ~147 ms median here — already ~2× under the designed 300 ms, so unlike
+`--help`/`__complete` the designed target holds without relaxation. Boot loads
+the n-quads dump (no TTL parse) and rebuilds the schema from the extraction
+artifact (no live 7-pass compile), which is what keeps it in budget.
 
 The designed 50 ms target for `--help`/`__complete` proved unrealistic here:
 cold Bun process start alone (`--version`) is ~45 ms, leaving no headroom for

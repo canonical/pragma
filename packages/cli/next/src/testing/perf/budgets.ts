@@ -17,3 +17,11 @@ export const BUDGET_COMPLETE_MS = 100;
 
 /** Warm project-config (`pragma.config.ts`) load ceiling (ms). Cache hit is sub-ms. */
 export const BUDGET_PROJECT_CONFIG_MS = 10;
+
+/**
+ * Warm store-backed verb ceiling (ms) — a store boot from the cached n-quads
+ * dump plus a query, in the compiled binary. The designed 300 ms holds: the
+ * measured median (`__store-probe`) is ~150 ms here, so 300 is already ~2× the
+ * measured median and needs no relaxation (see BUDGETS.md).
+ */
+export const BUDGET_WARM_STORE_MS = 300;
