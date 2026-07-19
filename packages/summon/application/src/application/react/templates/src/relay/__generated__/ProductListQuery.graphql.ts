@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<dce8cdbb66e817eb63b1c8d044cdd730>>
+ * @generated SignedSource<<4a78ea6f25a5f5f01866f23299cb1067>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -102,7 +101,7 @@ v5 = {
 };
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductListQuery",
@@ -115,17 +114,17 @@ return {
         "name": "viewer",
         "plural": false,
         "selections": [
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
-            "args": (v2/*: any*/),
+            "args": (v2/*:: as any*/),
             "concreteType": "ProductConnection",
             "kind": "LinkedField",
             "name": "products",
             "plural": false,
             "selections": [
-              (v3/*: any*/),
-              (v4/*: any*/),
+              (v3/*:: as any*/),
+              (v4/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -142,7 +141,7 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v5/*: any*/),
+                      (v5/*:: as any*/),
                       {
                         "args": null,
                         "kind": "FragmentSpread",
@@ -166,7 +165,7 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ProductListQuery",
     "selections": [
@@ -178,17 +177,17 @@ return {
         "name": "viewer",
         "plural": false,
         "selections": [
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
-            "args": (v2/*: any*/),
+            "args": (v2/*:: as any*/),
             "concreteType": "ProductConnection",
             "kind": "LinkedField",
             "name": "products",
             "plural": false,
             "selections": [
-              (v3/*: any*/),
-              (v4/*: any*/),
+              (v3/*:: as any*/),
+              (v4/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -205,8 +204,8 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v5/*: any*/),
-                      (v1/*: any*/),
+                      (v5/*:: as any*/),
+                      (v1/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,

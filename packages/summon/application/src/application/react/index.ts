@@ -18,6 +18,7 @@ import {
 } from "@canonical/task";
 import { pickPackageManager } from "../../shared/packageManager.js";
 import { resolvePragmaVersion } from "../../shared/versions.js";
+import { findEnclosingWorkspaceRoot } from "../../shared/workspace.js";
 
 export interface ApplicationReactAnswers {
   readonly appPath: string;
@@ -144,6 +145,15 @@ Requires both --ssr and --router flags.`,
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
     const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
 
+    // Whether the app lands inside a bun workspace decides who owns dependency
+    // patching: bun resolves `patchedDependencies` paths from the WORKSPACE
+    // ROOT, so an app-local block inside a workspace aborts `bun install`
+    // ("Couldn't find patch file") and leaves the workspace unlinked. Inside a
+    // workspace the root owns patching and the scaffold emits no patches;
+    // standalone apps get their own patches/ + patchedDependencies.
+    const workspaceRoot = findEnclosingWorkspaceRoot(path.resolve(appPath));
+    const standalone = workspaceRoot === null;
+
     // Resolve the @canonical/* version range first (latest from npm, with an
     // offline fallback), then build the rest of the pipeline with it baked into
     // the template vars.
@@ -152,6 +162,7 @@ Requires both --ssr and --router flags.`,
         name,
         forms: answers.forms,
         relay: answers.relay,
+        standalone,
         pragmaVersion,
       });
 
@@ -341,16 +352,46 @@ Requires both --ssr and --router flags.`,
         ),
         when(answers.relay, copy("src/domains/catalog/routes.ts")),
 
-        // Standalone dependency patches (when --relay is enabled): a generated
-        // app cannot inherit the monorepo's patches/, so they ship with the
-        // scaffold and are applied via "patchedDependencies" in package.json.
+        // Standalone dependency patches (when --relay is enabled): a
+        // standalone app cannot inherit a workspace's patches/, so they ship
+        // with the scaffold and are applied via "patchedDependencies" in
+        // package.json. Inside a bun workspace the WORKSPACE ROOT owns
+        // patching — bun resolves patch paths from the root, so an app-local
+        // block would abort `bun install` ("Couldn't find patch file") —
+        // hence neither patches/ nor patchedDependencies are emitted there.
+        when(
+          answers.relay && !standalone,
+          info(
+            `Scaffolding into the bun workspace at "${workspaceRoot}" — ` +
+              "dependency patches are owned by the workspace root, so no " +
+              "app-local patches/ or patchedDependencies were emitted. " +
+              "Ensure the workspace root patches react-relay, relay-runtime " +
+              "and relay-runtime-network (see the app README).",
+          ),
+        ),
         // react-relay: cjs-module-lexer export hints so named imports survive
         // Node SSR externalisation.
-        when(answers.relay, copy("patches/react-relay@18.2.0.patch")),
+        when(
+          answers.relay && standalone,
+          copy("patches/react-relay@21.0.1.patch"),
+        ),
+        // relay-runtime: real `module.exports.X = undefined;` assignments for
+        // type-only names (ConcreteRequest, ReaderFragment, FragmentRefs…)
+        // that relay-compiler's TypeScript artifacts import as values —
+        // strict ESM-CJS interop (Node ESM, Vite's SSR module runner, Bun)
+        // rejects them otherwise. Real assignments, not a dead-branch lexer
+        // hint: Bun's interop reflects the actual runtime exports object.
+        when(
+          answers.relay && standalone,
+          copy("patches/relay-runtime@21.0.1.patch"),
+        ),
         // relay-runtime-network: fixes the broken package `imports` map.
         // Temporary until the fixed upstream release lands (advl/lit-relay#32);
         // then this patch and its patchedDependencies entry can be dropped.
-        when(answers.relay, copy("patches/relay-runtime-network@0.1.0.patch")),
+        when(
+          answers.relay && standalone,
+          copy("patches/relay-runtime-network@0.1.0.patch"),
+        ),
 
         // Routes (EJS — conditionally includes contact + catalog domains)
         template({

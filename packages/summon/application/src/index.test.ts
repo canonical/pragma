@@ -1,4 +1,12 @@
-import { readdirSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dryRun, sequence_ } from "@canonical/task";
@@ -257,11 +265,59 @@ describe("application/react generator", () => {
     );
     expect(filePaths).toContain("my-app/src/lib/ClientOnly/index.ts");
 
-    // Standalone dependency patches applied via patchedDependencies
-    expect(filePaths).toContain("my-app/patches/react-relay@18.2.0.patch");
+    // Standalone dependency patches applied via patchedDependencies. The
+    // relative "my-app" resolves under this package's directory, which no
+    // workspace glob of the pragma root covers — so the dry-run takes the
+    // standalone path and the patches are emitted.
+    expect(filePaths).toContain("my-app/patches/react-relay@21.0.1.patch");
+    expect(filePaths).toContain("my-app/patches/relay-runtime@21.0.1.patch");
     expect(filePaths).toContain(
       "my-app/patches/relay-runtime-network@0.1.0.patch",
     );
+  });
+
+  it("omits patches when the app path is inside a bun workspace", () => {
+    // Real-filesystem fixture: workspace detection walks the actual disk, so
+    // build a throwaway workspace root whose globs cover the app path. Only
+    // ancestors are probed — the app directory itself never needs to exist.
+    const workspaceRoot = mkdtempSync(path.join(tmpdir(), "summon-app-ws-"));
+    try {
+      writeFileSync(
+        path.join(workspaceRoot, "package.json"),
+        JSON.stringify({ name: "ws-root", workspaces: ["apps/*"] }),
+      );
+      mkdirSync(path.join(workspaceRoot, "apps"), { recursive: true });
+      const appPath = path.join(workspaceRoot, "apps", "my-app");
+
+      const result = dryRun(
+        generators["application/react"].generate({
+          appPath,
+          ssr: true,
+          router: true,
+          forms: false,
+          relay: true,
+          runInstall: false,
+        }),
+      );
+
+      const filePaths = result.effects
+        .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
+        .map(
+          (e) =>
+            (e as { path?: string; dest?: string }).path ??
+            (e as { dest?: string }).dest,
+        );
+
+      // The relay layer itself is still scaffolded…
+      expect(filePaths).toContain(path.join(appPath, "relay.config.json"));
+      expect(filePaths).toContain(
+        path.join(appPath, "src/relay/environment.ts"),
+      );
+      // …but the workspace root owns patching: no patches/ directory at all.
+      expect(filePaths.filter((p) => p?.includes("/patches/"))).toEqual([]);
+    } finally {
+      rmSync(workspaceRoot, { recursive: true, force: true });
+    }
   });
 
   it("excludes the relay layer, catalog domain, and patches when relay=false", () => {
