@@ -23,6 +23,7 @@ import type {
 } from "@canonical/summon-core";
 import { sequence_, type Task, when } from "@canonical/task";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import { guardMissingBinary } from "../../shared/assertExecOk.js";
 import type { SetupMode, SetupResult } from "../types.js";
 import {
   type CompletionsDetection,
@@ -77,6 +78,25 @@ const mcpSelection = (
     ? (answers.mcpHarnesses as string[])
     : d.harnesses.map((h) => h.harness.id);
 
+/**
+ * The LSP-install step, guarded at its use site. An absent `bunx` (no Bun on
+ * PATH) REJECTS the exec with ENOENT, which would otherwise collapse to
+ * INTERNAL_ERROR ("please report this issue") at the CLI/MCP boundary;
+ * `guardMissingBinary` names it a UNSUPPORTED "`bunx` not found on PATH" with an
+ * actionable install recovery instead. Preview-transparent — a dry-run mocks the
+ * exec (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`
+ * is combinator-built), so it survives `execute`'s double interpretation.
+ */
+const composeGuardedLsp = (rt: PragmaRuntime): Task<void> =>
+  guardMissingBinary(
+    "bunx",
+    {
+      message:
+        "Install Bun (https://bun.sh) to provide `bunx`, then run this again.",
+    },
+    composeLsp(rt.cwd),
+  );
+
 /** Build a generator's `meta` (no stamping — the version is just header text). */
 const metaFor = (
   rt: PragmaRuntime,
@@ -111,7 +131,7 @@ const mcpHarnessesPrompt = (
 /** Gather EVERY step's detection up front (real reads), for the run-all. */
 async function gatherDetection(rt: PragmaRuntime): Promise<SetupDetection> {
   const [completions, mcp, skills] = await Promise.all([
-    detectCompletions(),
+    detectCompletions(rt.cwd),
     detectMcp(rt),
     detectSkills(rt),
   ]);
@@ -190,7 +210,7 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
           chosen.includes("completions"),
           composeCompletions(detected.completions),
         ),
-        when(chosen.includes("lsp"), composeLsp(rt.cwd)),
+        when(chosen.includes("lsp"), composeGuardedLsp(rt)),
         when(
           chosen.includes("mcp"),
           composeMcp(detected.mcp, mcpSelection(detected.mcp, answers)),
@@ -237,7 +257,7 @@ export async function buildSetupPlan(
       return runAllPlan(rt, await gatherDetection(rt));
 
     case "completions": {
-      const d = await detectCompletions();
+      const d = await detectCompletions(rt.cwd);
       return {
         generator: singleStep(rt, "pragma setup completions", [], () =>
           composeCompletions(d),
@@ -254,7 +274,7 @@ export async function buildSetupPlan(
     case "lsp":
       return {
         generator: singleStep(rt, "pragma setup lsp", [], () =>
-          composeLsp(rt.cwd),
+          composeGuardedLsp(rt),
         ),
         toResult: () => ({ kind: "lsp" }),
       };

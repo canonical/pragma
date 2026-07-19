@@ -159,7 +159,7 @@ const setupAllVerb = setupVerb(
   "all",
   SELF_CAPABILITY,
   {
-    doc: "Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. Preview with --dry-run; skip prompts with --yes.",
+    doc: "Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply.",
     examples: [
       { cmd: "pragma setup" },
       { cmd: "pragma setup --dry-run", note: "preview every step's effects" },
