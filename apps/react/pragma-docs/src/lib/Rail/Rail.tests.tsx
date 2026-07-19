@@ -94,6 +94,21 @@ describe("Rail", () => {
     expect(router.getState().location.pathname).toBe("/");
   });
 
+  it("leaves digits alone mid-IME composition", async () => {
+    const { router } = renderRail("/");
+    fireEvent.keyDown(document, { key: "2", isComposing: true });
+    // Give a queued navigation a beat to (wrongly) land before asserting.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(router.getState().location.pathname).toBe("/");
+  });
+
+  it("leaves auto-repeated digits alone (a held key is not a command)", async () => {
+    const { router } = renderRail("/");
+    fireEvent.keyDown(document, { key: "2", repeat: true });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(router.getState().location.pathname).toBe("/");
+  });
+
   it("detaches the listener on unmount (the ephemeral contract)", async () => {
     const { router, view } = renderRail("/");
     view.unmount();

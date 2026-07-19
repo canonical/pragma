@@ -26,8 +26,12 @@
  * Alongside the markup claim, the stylesheet claims: the four layout
  * tokens and the four z-axis tokens are each DEFINED exactly once across
  * the app's stylesheets (regions consume, never re-define), and exactly
- * one viewport-conditional media query exists in the app — the sanctioned
- * AX.1 collapse in Rail/styles.css.
+ * one LAYOUT-CAPABLE conditional at-rule — `@media` with any real
+ * condition, every `@container`, every `@supports` — exists in the app:
+ * the sanctioned AX.1 collapse in Rail/styles.css. Feature queries that
+ * cannot reflow layout by design (`prefers-color-scheme`, `forced-colors`,
+ * `prefers-reduced-motion`) are exempt, matched by query TEXT, never by
+ * file — and only while no other condition rides along in the prelude.
  *
  * Head elements are outside the measurement on purpose: titles are
  * route-owned document state (a11y requires them to change), not chrome.
@@ -174,6 +178,19 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     }
   });
 
+  it("counts every raw aria-current occurrence against the model — anchors or not", () => {
+    // BEFORE normalisation, and blind to the carrying element: the
+    // anchor-scoped href check above cannot see a stray `aria-current` on a
+    // non-anchor, but the normaliser would still forgive it. This count
+    // closes that gap — any extra carrier on any element breaks it.
+    for (const [url, { frame }] of getPages()) {
+      expect(
+        (frame.match(/aria-current="page"/g) ?? []).length,
+        `raw aria-current count on ${url}`,
+      ).toBe(EXPECTED_ARIA_CURRENT[url].length);
+    }
+  });
+
   it("frames are byte-identical once the accounted-for delta is normalised", () => {
     const base = normalizeFrame(mustGet("/").frame);
     for (const url of LENS_URLS.slice(1)) {
@@ -223,9 +240,32 @@ describe("the shared tokens are defined once (the stylesheet half)", () => {
     expect(definitions).toHaveLength(1);
   });
 
-  it("has exactly one viewport-conditional media query — the sanctioned collapse", () => {
-    const viewportQueries =
-      allCss.match(/@media[^{]*(?:max-width|min-width)/g) ?? [];
-    expect(viewportQueries).toHaveLength(1);
+  /**
+   * The layout-capable census. Every conditional at-rule prelude
+   * (`@media` / `@container` / `@supports`) counts unless it is a media
+   * query built ONLY of feature queries that cannot reflow layout by
+   * design: `prefers-color-scheme`, `forced-colors`,
+   * `prefers-reduced-motion`. The exemption matches query TEXT, never
+   * files: stripping the exempt features from the prelude must leave no
+   * condition behind, so an exempt feature riding with a width term is
+   * still caught. `@container` and `@supports` always count — both can
+   * gate layout.
+   */
+  const layoutCapableConditionals = (): string[] =>
+    (allCss.match(/@(?:media|container|supports)[^{]*/g) ?? []).filter(
+      (prelude) => {
+        if (!prelude.startsWith("@media")) return true;
+        const residue = prelude.replaceAll(
+          /\((?:prefers-color-scheme|forced-colors|prefers-reduced-motion)[^)]*\)/g,
+          "",
+        );
+        return residue.includes("(");
+      },
+    );
+
+  it("allows exactly one layout-capable conditional at-rule — the sanctioned AX.1 collapse", () => {
+    const conditionals = layoutCapableConditionals();
+    expect(conditionals).toHaveLength(1);
+    expect(conditionals[0]).toMatch(/^@media[^{]*max-width/);
   });
 });
