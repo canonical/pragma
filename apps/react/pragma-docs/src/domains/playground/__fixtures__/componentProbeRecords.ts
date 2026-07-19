@@ -6,8 +6,10 @@
  * booting `dev:bun` and copying `relay.records` from a `/playground`
  * response's `__INITIAL_DATA__` script.
  *
- * A TS module rather than `.json` because the workspace tsconfig does not
- * enable `resolveJsonModule`.
+ * A TS module rather than `.json` — not for `resolveJsonModule` (the base
+ * config's `module: "NodeNext"` already implies it): the `.ts` module
+ * carries its `RecordMap` type inline and avoids the `with { type: "json" }`
+ * import-attribute ceremony NodeNext requires for `.json` imports.
  */
 
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";

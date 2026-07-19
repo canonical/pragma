@@ -137,6 +137,11 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(playgroundHtml).toContain(
               "Buttons trigger actions within an interface",
             );
+            // Modifier families too: every field the unit fixture
+            // (componentProbeRecords) freezes is asserted against the live
+            // graph here, so an upstream rename rots loudly, not silently.
+            expect(playgroundHtml).toContain("Anticipation");
+            expect(playgroundHtml).toContain("Importance");
             // The serialised record map is embedded for hydration.
             expect(playgroundHtml).toContain("__INITIAL_DATA__");
             expect(playgroundHtml).toContain('"relay"');
@@ -157,6 +162,11 @@ describe("server matrix (2×3) serves correctly", () => {
             };
             expect(graphqlBody.data?.__typename).toBe("Query");
             await waitForLog(server, `${GRAPHQL_HIT_MARKER} #1`);
+            // `logs()` grows from async pipe chunks, so a stray `#2` (a page
+            // load counted after the POST) could still sit undelivered when
+            // `#1` lands — give trailing chunks a beat to flush before the
+            // zero-#2 assertion.
+            await new Promise((resolve) => setTimeout(resolve, 50));
             // …and it is the ONLY hit: had the page load reached /graphql
             // over HTTP (with its log line lagging past the assertion
             // above), this POST would have been counted as #2.

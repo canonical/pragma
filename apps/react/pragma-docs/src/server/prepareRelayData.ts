@@ -68,18 +68,23 @@ export const toBackendFetchFn =
 
 /**
  * Execute the matched route's query and serialise the store. Returns
- * `undefined` when the route maps to no query — and on execution failure,
- * logging it: the page then renders without server data and the client
- * fetches over HTTP, which is the pre-P-2 behaviour rather than a 500.
+ * `undefined` when the route maps to no query — and on any failure
+ * (malformed route meta, execution error), logging it: the page then renders
+ * without server data and the client fetches over HTTP, which is the pre-P-2
+ * behaviour rather than a 500.
  *
  * @note Impure — boots the shared backend singleton on first mapped request.
  */
 export const prepareRelayData = async (
   url: string,
 ): Promise<PreparedRelayData | undefined> => {
-  const matched = matchRouteQuery(url);
-  if (!matched) return undefined;
   try {
+    // Matching happens INSIDE the try: the collector behind `matchRouteQuery`
+    // walks EVERY route's meta for every URL, so one malformed `ssrQuery`
+    // entry would otherwise escape the catch and turn all server renders
+    // into 500s instead of degrading to the no-server-data path below.
+    const matched = matchRouteQuery(url);
+    if (!matched) return undefined;
     const backend = await getGraphqlBackend();
     // A dedicated per-request execution environment (never a shared one), so
     // the serialised snapshot contains exactly this route's data (P-2 D9).
