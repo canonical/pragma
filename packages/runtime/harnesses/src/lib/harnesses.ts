@@ -6,6 +6,7 @@
  * ranges to handle config format changes across versions.
  */
 
+import { userHome } from "./platformPaths.js";
 import type { HarnessDefinition } from "./types.js";
 
 const harnesses: readonly HarnessDefinition[] = [
@@ -13,11 +14,15 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "claude-code",
     name: "Claude Code",
     version: "*",
+    scope: "both",
     detect: [
       { type: "directory", path: "~/.claude" },
       { type: "file", path: ".mcp.json" },
+      { type: "process", name: "claude" },
     ],
     configPath: (root) => `${root}/.mcp.json`,
+    // VERIFY(7b): claude-code reads the user MCP config from ~/.claude.json.
+    homeConfigPath: (p) => `${userHome(p)}/.claude.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.claude/skills`,
@@ -26,6 +31,7 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "cursor",
     name: "Cursor",
     version: "*",
+    scope: "project",
     detect: [{ type: "directory", path: ".cursor" }],
     configPath: (root) => `${root}/.cursor/mcp.json`,
     configFormat: "json",
@@ -36,37 +42,24 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "windsurf",
     name: "Windsurf",
     version: "*",
+    scope: "global",
     detect: [
       { type: "directory", path: ".windsurf" },
       { type: "file", path: "~/.codeium/windsurf/mcp_config.json" },
     ],
-    /* v8 ignore start -- ?? "" defensive: HOME is always set in test environments */
-    configPath: () =>
-      `${process.env.HOME ?? ""}/.codeium/windsurf/mcp_config.json`,
-    /* v8 ignore stop */
+    // Windsurf is global-only; this project path is never resolved (its band is
+    // always global) but the type requires one.
+    configPath: (root) => `${root}/.windsurf/mcp_config.json`,
+    homeConfigPath: (p) => `${userHome(p)}/.codeium/windsurf/mcp_config.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
     skillsPath: (root) => `${root}/.windsurf/skills`,
   },
-  // Cline is disabled: it shares .vscode/mcp.json with VS Code, causing
-  // duplicate prompts and double-writes during `pragma setup mcp`.
-  // {
-  //   id: "cline",
-  //   name: "Cline",
-  //   version: "*",
-  //   detect: [
-  //     { type: "directory", path: ".vscode" },
-  //     { type: "extension", id: "saoudrizwan.claude-dev" },
-  //   ],
-  //   configPath: (root) => `${root}/.vscode/mcp.json`,
-  //   configFormat: "json",
-  //   mcpKey: "mcpServers",
-  //   skillsPath: (root) => `${root}/.agents/skills`,
-  // },
   {
     id: "roo-code",
     name: "Roo Code",
     version: "*",
+    scope: "project",
     detect: [
       { type: "directory", path: ".roo" },
       { type: "extension", id: "rooveterinaryinc.roo-cline" },
@@ -80,7 +73,11 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "opencode",
     name: "OpenCode",
     version: "*",
-    detect: [{ type: "file", path: "opencode.json" }],
+    scope: "project",
+    detect: [
+      { type: "file", path: "opencode.json" },
+      { type: "process", name: "opencode" },
+    ],
     configPath: (root) => `${root}/opencode.json`,
     configFormat: "json",
     mcpKey: "mcp",
@@ -90,7 +87,11 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "gemini-cli",
     name: "Gemini CLI",
     version: "*",
-    detect: [{ type: "directory", path: ".gemini" }],
+    scope: "project",
+    detect: [
+      { type: "directory", path: ".gemini" },
+      { type: "process", name: "gemini" },
+    ],
     configPath: (root) => `${root}/.gemini/settings.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
@@ -100,7 +101,11 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "codex",
     name: "Codex",
     version: "*",
-    detect: [{ type: "directory", path: ".codex" }],
+    scope: "project",
+    detect: [
+      { type: "directory", path: ".codex" },
+      { type: "process", name: "codex" },
+    ],
     configPath: (root) => `${root}/.codex/config.toml`,
     configFormat: "toml",
     mcpKey: "mcp_servers",
@@ -110,6 +115,7 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "vscode",
     name: "VS Code",
     version: "*",
+    scope: "project",
     detect: [
       { type: "directory", path: ".vscode" },
       { type: "file", path: ".vscode/mcp.json" },
