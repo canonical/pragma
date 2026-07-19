@@ -17,7 +17,7 @@ import {
   runTask,
   TaskExecutionError,
 } from "./interpreter.js";
-import { info, succeed, warn } from "./primitives.js";
+import { info, succeed, warn, writeFile } from "./primitives.js";
 import {
   $,
   effect,
@@ -528,6 +528,37 @@ describe("Interpreter - executeEffect for DeleteFile", () => {
       expect(existsSync(filePath)).toBe(false);
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// =============================================================================
+// runTask - cwd (per-call write root)
+// =============================================================================
+
+describe("Interpreter - runTask with cwd", () => {
+  it("resolves a relative effect path under cwd and leaves an absolute path unchanged", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "task-cwd-"));
+    const outside = mkdtempSync(join(tmpdir(), "task-cwd-abs-"));
+
+    try {
+      // (a) A relative fs-effect path resolves UNDER `cwd`.
+      await runTask(writeFile(join("nested", "rel.txt"), "relative"), { cwd });
+      const relTarget = join(cwd, "nested", "rel.txt");
+      expect(existsSync(relTarget)).toBe(true);
+      expect(readFileSync(relTarget, "utf8")).toBe("relative");
+
+      // (b) An absolute fs-effect path is unchanged — it lands exactly where
+      // named, not re-rooted under `cwd` (path.resolve semantics).
+      const absTarget = join(outside, "abs.txt");
+      await runTask(writeFile(absTarget, "absolute"), { cwd });
+      expect(existsSync(absTarget)).toBe(true);
+      expect(readFileSync(absTarget, "utf8")).toBe("absolute");
+      // It was NOT reinterpreted as a basename under `cwd`.
+      expect(existsSync(join(cwd, "abs.txt"))).toBe(false);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
     }
   });
 });

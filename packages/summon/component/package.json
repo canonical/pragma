@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./embedded": {
+      "types": "./dist/types/shared/loadTemplate.d.ts",
+      "import": "./dist/esm/shared/loadTemplate.js"
     }
   },
   "files": [

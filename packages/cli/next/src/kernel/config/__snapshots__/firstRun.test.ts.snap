@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`first run > greets on stderr and seeds the global config 1`] = `
+[
+  "Hello! Thanks for taking the time to try the pre-release pragma CLI.",
+  "Please file issues and feedback at https://github.com/canonical/pragma/issues.",
+  "Pragma stores its configuration in <CONFIG> (just created with defaults).",
+  "A \`pragma.config.ts\` in this directory or above it overrides it per project.",
+  "",
+]
+`;

@@ -1,0 +1,39 @@
+# Embedded fallback pack source — a small, self-contained sample ontology.
+#
+# Compiled by `scripts/genEmbedded.ts` into `pack.generated.ts`. It exists so a
+# fresh install (no configured packages, no lock) can answer store-backed reads
+# without a network round-trip. Keep it tiny: it ships inside the binary.
+
+@prefix ex:   <https://pragma.canonical.com/sample#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Component a owl:Class ;
+  rdfs:label "Component" ;
+  rdfs:comment "A reusable design-system building block." .
+
+ex:componentName a owl:DatatypeProperty ;
+  rdfs:label "component name" ;
+  rdfs:domain ex:Component ;
+  rdfs:range xsd:string .
+
+ex:dependsOn a owl:ObjectProperty ;
+  rdfs:label "depends on" ;
+  rdfs:domain ex:Component ;
+  rdfs:range ex:Component .
+
+ex:Button a ex:Component ;
+  rdfs:label "Button" ;
+  ex:componentName "Button" .
+
+ex:Card a ex:Component ;
+  rdfs:label "Card" ;
+  ex:componentName "Card" ;
+  ex:dependsOn ex:Button .
+
+ex:Dialog a ex:Component ;
+  rdfs:label "Dialog" ;
+  ex:componentName "Dialog" ;
+  ex:dependsOn ex:Button , ex:Card .

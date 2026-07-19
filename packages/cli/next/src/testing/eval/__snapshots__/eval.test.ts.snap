@@ -1,0 +1,201 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`eval harness — seed gate > runs the full seed (stable + read-noun) cases clean 1`] = `
+[
+  {
+    "id": "content-canonical-graph-has-4-components",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-capabilities-counts-derived-from-categories",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-capabilities-covers-listtools",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-capabilities-selfconsistent-with-emitsurface",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-code-function-purity-description-mentions-pure",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-condensed-sdl-token-budget",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-handshake-advertises-tools-resources-prompts",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-importance-family-includes-primary",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-instructions-present-and-mentions-discovery",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-native-prompt-get-fills-arguments",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-native-prompts-list-nonempty",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-normal-channel-drops-beta-only-block",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "content-standard-list-length-equals-category-count-sum",
+    "kind": "content",
+    "passed": true,
+  },
+  {
+    "id": "disclosure-block-lookup-detailed-adds-anatomy",
+    "kind": "disclosure",
+    "passed": true,
+  },
+  {
+    "id": "disclosure-summary-omits-standard-and-detailed-fields",
+    "kind": "disclosure",
+    "passed": true,
+  },
+  {
+    "id": "prompt-block-question-maps-to-block-lookup",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-browse-prompts-maps-to-prompt-list",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-config-question-maps-to-config-show",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-environment-maps-to-doctor",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-scaffold-maps-to-create-component",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-set-tier-maps-to-config-tier",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-sparql-maps-to-graph-query",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-tokens-config-maps-to-token-add-config",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "prompt-version-check-maps-to-info",
+    "kind": "prompt",
+    "passed": true,
+  },
+  {
+    "id": "tool-block-lookup-button-has-modifier-families",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-block-sample-returns-exemplars",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-capabilities-annotates-every-live-tool",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-config-tier-is-plan-first",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-doctor-reports-check-tallies",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-graph-query-counts-components",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-graph-query-invalid-is-invalid-input",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-modifier-sample-returns-exemplars",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-prompt-list-resolves-authored-prompts",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-sparql-count-positive",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-standard-lookup-has-dos-and-donts",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-tier-lookup-lists-scoped-blocks",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-token-add-config-is-plan-first",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-token-sample-returns-exemplars",
+    "kind": "tool",
+    "passed": true,
+  },
+  {
+    "id": "tool-upgrade-is-plan-first",
+    "kind": "tool",
+    "passed": true,
+  },
+]
+`;

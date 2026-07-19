@@ -29,8 +29,76 @@ export type {
 export type { RunTaskWithStampOptions } from "./stamp/index.js";
 export {
   applyStamp,
+  createGeneratorStamp,
+  createStampOnEffectStart,
   runTaskWithStamp,
 } from "./stamp/index.js";
+
+// =============================================================================
+// The summon↔pragma seam: execute() + answer collection/validation
+// =============================================================================
+
+export type {
+  AnswerablePrompt,
+  ExecuteContext,
+  GeneratorResult,
+} from "./execute/index.js";
+export {
+  CONFIRM_ANSWER_KEY,
+  collectAnswers,
+  execute,
+  GENERATOR_CANCELLED,
+  GENERATOR_INVALID_ANSWER,
+  validateAnswers,
+} from "./execute/index.js";
+
+// =============================================================================
+// Prompt strategies (the injected UI seam). NOTE: `inkPrompt` reaches its React
+// UI ONLY via a dynamic import — importing this barrel loads no ink/react.
+// =============================================================================
+
+export type {
+  ConfirmPrompt,
+  InkPromptOptions,
+  InkSession,
+  MultiselectPrompt,
+  PromptEffect,
+  PromptHandler,
+  PromptQuestion,
+  SelectPrompt,
+  TextPrompt,
+} from "./prompt/index.js";
+export {
+  answerPromptWithDefaults,
+  autoPrompt,
+  inkPrompt,
+  MISSING_REQUIRED_ANSWER,
+  mcpPrompt,
+  missingRequiredError,
+} from "./prompt/index.js";
+
+// =============================================================================
+// The UI-free execution core + effect formatting
+// =============================================================================
+
+export {
+  buildReplayCommand,
+  formatContentPreview,
+  formatEffectLine,
+  formatEffectWithContent,
+  formatLlmHelp,
+  formatLlmJson,
+  formatLlmMarkdown,
+  getActionColor,
+  getActionLabel,
+  getEffectPayload,
+  getLanguageHint,
+  getLlmActionLabel,
+  getLlmEffectPath,
+  isVisibleEffect,
+} from "./format/index.js";
+export type { RunGeneratorTaskOptions } from "./run/index.js";
+export { runGeneratorTask } from "./run/index.js";
 
 // =============================================================================
 // Templates
