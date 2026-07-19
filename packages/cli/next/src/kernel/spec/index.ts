@@ -6,6 +6,8 @@
  * `--help`/`__complete` path that reaches it — stays free of zod.
  */
 
+export type { ReferenceDocs } from "./emitReference.js";
+export { emitReference } from "./emitReference.js";
 export type {
   EmittedSurface,
   EmittedVerb,
