@@ -11,14 +11,35 @@
     padding: 0;
   }
 
-  /* Control row: the input sits at the start of the label's first line, so a
-     multi-line (sentence) label wraps below the input rather than centring on
-     it. */
+  /* Control row: the control centres on the label's FIRST line, and a multi-line
+     (sentence) label wraps below — never centring the box on the whole paragraph
+     (AV-325). `align-items: start` tops the row so wrapped lines flow under the
+     first; the control is then nudged down half a line-box to sit centred on the
+     first line (see the control rule below). The first-line box is one density
+     line-height (`--density-line-height-effective`, set on the density scope;
+     falls back to `1lh` outside a density context). */
   & > .field-toggle-control {
+    --toggle-control-line: var(--density-line-height-effective, 1lh);
+
     display: flex;
     flex-direction: row;
-    align-items: baseline;
+    align-items: start;
     column-gap: var(--form-field-inline-gap);
+
+    /* Every direct child that ISN'T the label is the control (checkbox / switch
+       input): a fixed 16px-tall box (--dimension-200 — checkbox 16×16, switch
+       track 16 high). Centre it on the first line by pushing it down half the
+       leftover between the line-box and the control's own height. The control
+       keeps its intrinsic size — only its vertical offset changes, so the click
+       target is untouched. */
+    & > :not(.ds.field-label) {
+      --toggle-control-size: var(--dimension-200);
+      align-self: start;
+      margin-block-start: max(
+        0px,
+        calc((var(--toggle-control-line) - var(--toggle-control-size)) / 2)
+      );
+    }
 
     /* The control label is often a full clickable sentence, so it reads as
        regular body prose (not the bold heading weight the field label uses by
