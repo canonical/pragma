@@ -6,6 +6,7 @@ export {
   removeMcpConfigFrom,
   resolveConfigTarget,
   writeMcpConfig,
+  writeMcpConfigTargets,
   writeMcpConfigTo,
 } from "./config.js";
 export {

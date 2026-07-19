@@ -12,10 +12,12 @@ import {
   removeMcpConfig,
   resolveConfigTarget,
   writeMcpConfig,
+  writeMcpConfigTargets,
 } from "./config.js";
 import findHarnessById from "./findHarnessById.js";
 import harnesses from "./harnesses.js";
 import type { PlatformEnv } from "./platformPaths.js";
+import type { ConfigTarget } from "./types.js";
 
 const claude = harnesses[0];
 
@@ -513,6 +515,68 @@ describe("scope-aware read/write (explicit band + platform)", () => {
     const written = JSON.parse(writeEffects[0].content);
     expect(written.mcpServers.pragma).toBeUndefined();
     expect(written.mcpServers.keep).toEqual({ command: "k" });
+  });
+});
+
+describe("writeMcpConfigTargets — shared-file multi-key write", () => {
+  const vscodeTarget: ConfigTarget = {
+    path: "/project/.vscode/mcp.json",
+    configFormat: "json",
+    mcpKey: "servers",
+    scope: "project",
+  };
+  const clineTarget: ConfigTarget = {
+    path: "/project/.vscode/mcp.json",
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    scope: "project",
+  };
+
+  it("creates one file with the server under BOTH keys in a single write", () => {
+    const result = dryRunWith(
+      writeMcpConfigTargets([clineTarget, vscodeTarget], "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1); // single read-modify-write
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.servers.pragma.command).toBe("pragma");
+    expect(written.mcpServers.pragma.command).toBe("pragma");
+  });
+
+  it("merges into an existing shared file, preserving the other key", () => {
+    const existing = JSON.stringify({
+      servers: { existing: { command: "other" } },
+    });
+    const result = dryRunWith(
+      writeMcpConfigTargets([clineTarget, vscodeTarget], "pragma", {
+        command: "pragma",
+      }),
+      buildMocks({
+        Exists: existsMock(() => true),
+        ReadFile: readFileMock(existing),
+        WriteFile: writeMock,
+      }),
+    );
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.servers.existing).toEqual({ command: "other" });
+    expect(written.servers.pragma).toEqual({ command: "pragma" });
+    expect(written.mcpServers.pragma).toEqual({ command: "pragma" });
+  });
+
+  it("throws when given no targets", () => {
+    expect(() =>
+      writeMcpConfigTargets([], "pragma", { command: "pragma" }),
+    ).toThrow(/at least one target/);
   });
 });
 

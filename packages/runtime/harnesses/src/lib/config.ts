@@ -21,6 +21,7 @@ import {
   mkdir,
   pure,
   readFile,
+  sequence_,
   type Task,
   writeFile,
 } from "@canonical/task";
@@ -151,11 +152,85 @@ export const readMcpConfigFrom = (
   );
 };
 
+/** The TOML field record for a server config (command + optional args/cwd). */
+const tomlFields = (config: McpServerConfig): Record<string, unknown> => {
+  const fields: Record<string, unknown> = { command: config.command };
+  if (config.args) fields.args = config.args;
+  if (config.cwd) fields.cwd = config.cwd;
+  return fields;
+};
+
+/**
+ * Write or merge one server entry under EVERY `mcpKey` of a shared config file,
+ * in a SINGLE read-modify-write. Preserves every other server and every other
+ * top-level key (so two harnesses sharing a file under different keys each
+ * preserve the other), and — being one write per file — never re-reads a file
+ * it just created, so a dry-run of a multi-key group is well-defined. A file
+ * that is not valid JSON/JSONC fails closed rather than being overwritten.
+ *
+ * @param path - The config file path.
+ * @param configFormat - Its serialization format.
+ * @param mcpKeys - The server-map keys to write the entry under (≥1).
+ * @param serverName - The server entry name.
+ * @param config - The server config.
+ * @param undoTask - The task that reverses this write.
+ * @returns A Task performing the merge/create (with an undo).
+ * @note Impure — reads and writes the filesystem via Task effects.
+ */
+const writeServerUnderKeys = (
+  path: string,
+  configFormat: ConfigTarget["configFormat"],
+  mcpKeys: readonly string[],
+  serverName: string,
+  config: McpServerConfig,
+  undoTask: Task<void>,
+): Task<void> => {
+  if (configFormat === "toml") {
+    const fields = tomlFields(config);
+    return ifElseM(
+      exists(path),
+      flatMap(readFile(path), (content) => {
+        let merged = content;
+        for (const key of mcpKeys) {
+          merged = mergeTomlSection(merged, key, serverName, fields);
+        }
+        return writeFile(path, merged, { undo: undoTask });
+      }),
+      flatMap(mkdir(dirname(path), true), () => {
+        const body = mcpKeys
+          .map((key) => serializeTomlSection(key, { [serverName]: fields }))
+          .join("");
+        return writeFile(path, body, { undo: undoTask });
+      }),
+    );
+  }
+
+  return ifElseM(
+    exists(path),
+    flatMap(readFile(path), (content) => {
+      const parsed = parseJsonc(content);
+      if (parsed === undefined) {
+        return unparseableConfig(path);
+      }
+      for (const key of mcpKeys) {
+        const servers = asServerRecord(parsed[key]);
+        servers[serverName] = config;
+        parsed[key] = servers;
+      }
+      return writeFile(path, formatJson(parsed), { undo: undoTask });
+    }),
+    flatMap(mkdir(dirname(path), true), () => {
+      const initial: Record<string, unknown> = {};
+      for (const key of mcpKeys) initial[key] = { [serverName]: config };
+      return writeFile(path, formatJson(initial), { undo: undoTask });
+    }),
+  );
+};
+
 /**
  * Write or merge an MCP server entry into a resolved config target. Preserves
- * every other server (and every other top-level key, so two harnesses that
- * share a file but use different `mcpKey`s never clobber each other). A file
- * that is not valid JSON/JSONC fails closed rather than being overwritten.
+ * every other server (and every other top-level key). A file that is not valid
+ * JSON/JSONC fails closed rather than being overwritten.
  *
  * @param target - The resolved config location.
  * @param serverName - The server entry name to write.
@@ -170,54 +245,47 @@ export const writeMcpConfigTo = (
   target: ConfigTarget,
   serverName: string,
   config: McpServerConfig,
+): Task<void> =>
+  writeServerUnderKeys(
+    target.path,
+    target.configFormat,
+    [target.mcpKey],
+    serverName,
+    config,
+    removeMcpConfigFrom(target, serverName),
+  );
+
+/**
+ * Write one server entry across a group of targets that share ONE file under
+ * (possibly) different `mcpKey`s — VS Code (`servers`) + Cline (`mcpServers`) in
+ * `.vscode/mcp.json` — in a single read-modify-write, so each key preserves the
+ * other and a dry-run of the group is well-defined.
+ *
+ * @param targets - The group's per-key targets (non-empty, sharing a file).
+ * @param serverName - The server entry name to write.
+ * @param config - The server config to write.
+ * @returns A Task writing the entry under every target's `mcpKey`.
+ * @note Impure — reads and writes the filesystem via Task effects.
+ */
+export const writeMcpConfigTargets = (
+  targets: readonly ConfigTarget[],
+  serverName: string,
+  config: McpServerConfig,
 ): Task<void> => {
-  const undoTask = removeMcpConfigFrom(target, serverName);
-
-  if (target.configFormat === "toml") {
-    const fields: Record<string, unknown> = { command: config.command };
-    if (config.args) fields.args = config.args;
-    if (config.cwd) fields.cwd = config.cwd;
-
-    return ifElseM(
-      exists(target.path),
-      flatMap(readFile(target.path), (content) => {
-        const merged = mergeTomlSection(
-          content,
-          target.mcpKey,
-          serverName,
-          fields,
-        );
-        return writeFile(target.path, merged, { undo: undoTask });
-      }),
-      flatMap(mkdir(dirname(target.path), true), () =>
-        writeFile(
-          target.path,
-          serializeTomlSection(target.mcpKey, { [serverName]: fields }),
-          { undo: undoTask },
-        ),
-      ),
-    );
+  const first = targets.at(0);
+  if (first === undefined) {
+    throw new Error("writeMcpConfigTargets: at least one target is required");
   }
-
-  return ifElseM(
-    exists(target.path),
-    flatMap(readFile(target.path), (content) => {
-      const parsed = parseJsonc(content);
-      if (parsed === undefined) {
-        return unparseableConfig(target.path);
-      }
-      const servers = asServerRecord(parsed[target.mcpKey]);
-      servers[serverName] = config;
-      parsed[target.mcpKey] = servers;
-      return writeFile(target.path, formatJson(parsed), { undo: undoTask });
-    }),
-    flatMap(mkdir(dirname(target.path), true), () =>
-      writeFile(
-        target.path,
-        formatJson({ [target.mcpKey]: { [serverName]: config } }),
-        { undo: undoTask },
-      ),
-    ),
+  const undoTask = sequence_(
+    targets.map((t) => removeMcpConfigFrom(t, serverName)),
+  );
+  return writeServerUnderKeys(
+    first.path,
+    first.configFormat,
+    targets.map((t) => t.mcpKey),
+    serverName,
+    config,
+    undoTask,
   );
 };
 
