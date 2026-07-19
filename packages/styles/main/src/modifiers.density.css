@@ -161,10 +161,20 @@
   );
 }
 
-/* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
- * Snapped UP so fractional cases lift (apps-comfy 5.33→6) while exact multiples
- * stay (apps-dense 4.0, sites-comfy 6.0). Matches: apps 32→6th/24→4th,
- * sites 36→6th/28→5th. */
+/* ── Target baseline = round(nearest, height × 2/3) ─────────────────────────
+ * The control text seats where line-height × 2/3 lands on the grid — the optical
+ * centre of the box — snapped to the NEAREST grid line, not the next one up.
+ * Nearest (not up) because up over-lifts the one cell where lh × 2/3 is
+ * fractional: apps-comfortable is 32 × 2/3 = 21.33px, which round(up) forced a
+ * whole step onto the 24px line (6th), a baseline too low. round(nearest) seats
+ * it on the 20px line (5th) — Diana's F-O2 "move text 1 baseline up in
+ * apps/comfortable" (AV-323). The exact-multiple cells are unaffected:
+ *   apps-comfy   21.33 → 20 (5th)   ← the fix; was 24
+ *   apps-dense   16.00 → 16 (4th)   unchanged (exact)
+ *   sites-comfy  24.00 → 24 (6th)   unchanged (exact)
+ *   sites-dense  18.67 → 20 (5th)   unchanged (nearest == up here)
+ * So it's a self-correcting rule, not a per-cell offset: any future fractional
+ * cell snaps to its nearest line too. */
 :where(.comfortable, .dense, .app, .site, .docs) {
   /* Effective line-height with the SAME fallback chain a control box uses
      (--density-line-height → context --density-lh-comfy → apps-comfy literal).
@@ -177,7 +187,7 @@
     var(--density-lh-comfy, calc(var(--baseline-height) * 8))
   );
   --density-target-baseline-px: round(
-    up,
+    nearest,
     calc(var(--density-line-height-effective) * 2 / 3),
     var(--baseline-height)
   );
