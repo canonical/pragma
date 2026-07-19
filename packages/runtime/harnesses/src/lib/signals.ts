@@ -80,16 +80,21 @@ const checkProcess = (
 /**
  * Check an `extension` signal: whether any installed VS Code-family extension
  * directory matches `<id>-<version>`. Extensions live under `~/.vscode/extensions`
- * (the same layout on every platform), so that home-based dir is globbed.
+ * (the same layout on every platform), so that home-based dir is globbed — but
+ * only after confirming it exists, since globbing a missing directory throws.
  */
 const checkExtension = (
   signal: Extract<DetectionSignal, { type: "extension" }>,
   ctx: DetectContext,
 ): Task<boolean> => {
   const extensionsDir = join(userHome(ctx.platform), ".vscode", "extensions");
-  return map(
-    glob(`${signal.id}-*`, extensionsDir),
-    (matches) => matches.length > 0,
+  return flatMap(exists(extensionsDir), (dirExists) =>
+    dirExists
+      ? map(
+          glob(`${signal.id}-*`, extensionsDir),
+          (matches) => matches.length > 0,
+        )
+      : pure(false),
   );
 };
 
