@@ -14,13 +14,16 @@ Preview what it would write first with `pragma setup --dry-run`.
 
 ## Run the server manually
 
-The server speaks JSON-RPC over stdio. Launch it directly with the `pragma mcp` entry point:
+The server speaks JSON-RPC over stdio through the `pragma mcp` entry point. A harness launches it by running the `pragma` binary with the `mcp` argument — a typical stdio-server configuration:
 
-```bash
-pragma mcp
+```json
+{
+  "command": "pragma",
+  "args": ["mcp"]
+}
 ```
 
-A harness configures it as a stdio server whose command is `pragma` and whose argument is `mcp`. The process reads requests on stdin and writes responses on stdout; diagnostics go to stderr so they never corrupt the protocol stream.
+The process reads requests on stdin and writes responses on stdout; diagnostics go to stderr so they never corrupt the protocol stream.
 
 ## The handshake
 

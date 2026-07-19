@@ -36,10 +36,19 @@ function readDoc(relPath: string): string {
   );
 }
 
-const commands = [
-  ...extractPragmaCommands(readDoc("../../../README.md")),
-  ...extractPragmaCommands(readDoc("../../../docs/getting-started.md")),
+/** Every hand-written doc whose fenced `pragma` examples must be real grammar. */
+const HAND_WRITTEN_DOCS = [
+  "../../../README.md",
+  "../../../docs/getting-started.md",
+  "../../../docs/mcp-integration.md",
+  "../../../docs/config-model.md",
+  "../../../docs/architecture.md",
+  "../../../docs/skills.md",
 ];
+
+const commands = HAND_WRITTEN_DOCS.flatMap((doc) =>
+  extractPragmaCommands(readDoc(doc)),
+);
 
 /** Every non-hidden verb, flattened from the live catalog. */
 const allVerbs: VerbSpec[] = capabilities
