@@ -40,7 +40,7 @@
     "check:biome:fix": "biome check --write"
   },
   "peerDependencies": {
-    "@canonical/design-tokens": "0.6.2-contrasted.0"
+    "@canonical/design-tokens": "0.8.1"
   },
   "peerDependenciesMeta": {
     "@canonical/design-tokens": {

@@ -43,7 +43,7 @@
     "test:vitest:watch": "vitest"
   },
   "dependencies": {
-    "@canonical/design-tokens": "0.6.2-contrasted.0",
+    "@canonical/design-tokens": "0.8.1",
     "@canonical/ds-assets": "^0.31.0",
     "@canonical/react-hooks": "^0.31.0",
     "@canonical/storybook-config": "^0.31.0",

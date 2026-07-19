@@ -64,7 +64,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.31.0",
-    "@canonical/design-tokens": "0.6.2-contrasted.0",
+    "@canonical/design-tokens": "0.8.1",
     "@canonical/router-core": "^0.31.0",
     "@canonical/router-react": "^0.31.0",
     "@canonical/storybook-addon-utils": "^0.31.0",
