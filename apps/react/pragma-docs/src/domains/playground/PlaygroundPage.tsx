@@ -8,11 +8,8 @@
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import ErrorBoundary from "#lib/ErrorBoundary/index.js";
-import { ClientOnly } from "#lib/index.js";
 import ComponentProbe from "./ComponentProbe.js";
-
-/** The entity the probe renders — Button, the pilot's exemplar. */
-const PROBE_URI = "ds:global.component.button";
+import { PROBE_URI } from "./probeQuery.js";
 
 export default function PlaygroundPage(): ReactElement {
   useHead({ title: "Playground — pragma docs" });
@@ -26,25 +23,24 @@ export default function PlaygroundPage(): ReactElement {
         schema at <code>/graphql</code> — the same endpoint GraphiQL serves.
       </p>
       {/*
-        SSR guard: `useLazyLoadQuery` fetches (and suspends) while rendering,
-        and server-side data serialization/hydration is the P-2 track's
-        deliverable. Until it lands, `ClientOnly` keeps the query off the
-        server render path: the server streams the fallback and the browser
-        fetches after hydration.
+        No `ClientOnly` guard any more (P-2 Stage 1): the SSR dev servers
+        execute the route's query in-process before rendering and seed the
+        per-request Relay environment, so the hook below reads the warm store
+        without suspending. The Suspense boundary still serves the SPA cells
+        (and any cell whose prepare step degraded), where the query fetches
+        over HTTP after hydration.
       */}
-      <ClientOnly fallback={<p>Loading the graph…</p>}>
-        <ErrorBoundary
-          fallback={
-            <p role="alert">
-              The graph query failed. Is the dev backend up? Reload to retry.
-            </p>
-          }
-        >
-          <Suspense fallback={<p>Loading the graph…</p>}>
-            <ComponentProbe uri={PROBE_URI} />
-          </Suspense>
-        </ErrorBoundary>
-      </ClientOnly>
+      <ErrorBoundary
+        fallback={
+          <p role="alert">
+            The graph query failed. Is the dev backend up? Reload to retry.
+          </p>
+        }
+      >
+        <Suspense fallback={<p>Loading the graph…</p>}>
+          <ComponentProbe uri={PROBE_URI} />
+        </Suspense>
+      </ErrorBoundary>
     </section>
   );
 }

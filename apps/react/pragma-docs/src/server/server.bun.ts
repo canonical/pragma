@@ -29,8 +29,15 @@ import * as process from "node:process";
 import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
 import { getGraphqlBackend } from "./graphql.js";
+import { prepareRelayData } from "./prepareRelayData.js";
 
 const PORT = Number(process.env.PORT) || 5174;
+
+// HTTP hits on the /graphql brick, logged per request so the e2e suite can
+// assert that a server-rendered first load makes ZERO of them (the prepare
+// step executes in-process and never appears here). Keep the log line in
+// sync with GRAPHQL_HIT_MARKER in test/e2e/servers.e2e.ts.
+let graphqlHits = 0;
 
 const vite = await createViteServer({
   server: { middlewareMode: true },
@@ -52,6 +59,8 @@ Bun.serve({
       // a second store in this process otherwise.
       if (url.pathname === "/graphql") {
         const { handle } = await getGraphqlBackend();
+        graphqlHits += 1;
+        console.info(`[graphql] http hit #${graphqlHits}`);
         return handle(req);
       }
 
@@ -85,6 +94,11 @@ Bun.serve({
       );
 
       const { theme } = extractPreferences(req.headers.get("cookie"));
+      // Execute the matched route's query in-process and serialise the store
+      // BEFORE the renderer is constructed — initialData is embedded eagerly
+      // (P-2 Stage 1). `relay` is omitted (not `undefined`) on unmapped
+      // routes so the embedded JSON carries no dangling key.
+      const relay = await prepareRelayData(requestUrl);
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach
@@ -93,6 +107,7 @@ Bun.serve({
         {
           url: requestUrl,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          ...(relay ? { relay } : {}),
         },
         { htmlString: html },
       );

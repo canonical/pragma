@@ -7,6 +7,7 @@ import { hydrateRoot } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
 import { createEnvironment } from "#relay/environment.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
+import type { InitialData } from "../server/entry.js";
 import "#styles/index.css";
 
 const router = createBrowserRouter(appRoutes, {
@@ -14,9 +15,21 @@ const router = createBrowserRouter(appRoutes, {
   notFound: notFoundRoute,
 });
 
+// The SSR servers embed `__INITIAL_DATA__` via the renderer's bootstrap
+// script, which executes before this module (module scripts are deferred).
+// The two SPA cells have no such global at all — hence every step of the
+// chain below is optional.
+const initialData = (
+  window as Window & { readonly __INITIAL_DATA__?: InitialData }
+).__INITIAL_DATA__;
+
 // One Relay environment (network + normalized store) for the whole browser
-// session — module scope, so client-side navigations share the cache.
-const relayEnvironment = createEnvironment();
+// session — module scope, so client-side navigations share the cache. Seeded
+// from the server-serialised records, so the hydration render reads the same
+// bytes the server rendered from and nothing refetches.
+const relayEnvironment = createEnvironment({
+  records: initialData?.relay?.records,
+});
 
 const root = document.getElementById("root");
 if (!root) {

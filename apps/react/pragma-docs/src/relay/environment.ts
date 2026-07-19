@@ -7,9 +7,11 @@
  * servers (see `src/server/graphql.ts`); `VITE_GRAPHQL_URL` (or an explicit
  * `graphqlUrl`) points it elsewhere.
  *
- * The server render never fetches through this environment today: query
- * components sit behind `ClientOnly` until the P-2 SSR data-hydration track
- * lands, so the per-request server environment stays empty by construction.
+ * Two options serve the P-2 SSR data track (one factory, both runtimes):
+ * `records` seeds the store from a serialised snapshot — the server render
+ * and the client hydration consume the same bytes, so nothing refetches —
+ * and `fetchFn` replaces the HTTP network wholesale so the server's prepare
+ * step executes operations in-process through `executeLocal`.
  */
 
 import {
@@ -20,6 +22,7 @@ import {
   RecordSource,
   Store,
 } from "relay-runtime";
+import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import {
   createRelayRuntimeNetwork,
   httpExecutor,
@@ -34,14 +37,35 @@ const DEFAULT_GRAPHQL_URL = "/graphql";
 export interface CreateEnvironmentOptions {
   /**
    * GraphQL endpoint URL. Overrides the `VITE_GRAPHQL_URL` env var; when
-   * neither is set the same-origin `/graphql` endpoint is used.
+   * neither is set the same-origin `/graphql` endpoint is used. Ignored when
+   * `fetchFn` is provided.
    */
   readonly graphqlUrl?: string;
+  /**
+   * Serialised record map to seed the store with — the output of
+   * `environment.getStore().getSource().toJSON()` on the server, delivered
+   * to the client via `window.__INITIAL_DATA__.relay.records`. A fully
+   * walkable snapshot renders without any network request (no
+   * `queryCacheExpirationTime` is configured, so restored records are never
+   * considered stale).
+   */
+  readonly records?: RecordMap;
+  /**
+   * Replaces the HTTP network entirely: every operation executes through
+   * this function. The server bricks pass an adapter over the in-process
+   * ke-graphql backend so the prepare step never leaves the process.
+   */
+  readonly fetchFn?: FetchFunction;
 }
 
-/** Reads the endpoint URL from Vite's env, treating the empty string as unset. */
+/**
+ * Reads the endpoint URL from Vite's env, treating the empty string as unset.
+ * `import.meta.env` is optional-chained: it only exists under Vite — the
+ * server bricks import this factory natively (no Vite transform), where the
+ * property is undefined.
+ */
 const readConfiguredGraphqlUrl = (): string | undefined => {
-  const configured: unknown = import.meta.env.VITE_GRAPHQL_URL;
+  const configured: unknown = import.meta.env?.VITE_GRAPHQL_URL;
   return typeof configured === "string" && configured.length > 0
     ? configured
     : undefined;
@@ -79,12 +103,16 @@ const toFetchFunction =
 export const createEnvironment = (
   options: CreateEnvironmentOptions = {},
 ): Environment => {
-  const graphqlUrl =
-    options.graphqlUrl ?? readConfiguredGraphqlUrl() ?? DEFAULT_GRAPHQL_URL;
-  const network = createHttpNetwork(graphqlUrl);
+  const fetchFn =
+    options.fetchFn ??
+    toFetchFunction(
+      createHttpNetwork(
+        options.graphqlUrl ?? readConfiguredGraphqlUrl() ?? DEFAULT_GRAPHQL_URL,
+      ).fetch,
+    );
 
   return new Environment({
-    network: Network.create(toFetchFunction(network.fetch)),
-    store: new Store(new RecordSource()),
+    network: Network.create(fetchFn),
+    store: new Store(RecordSource.create(options.records)),
   });
 };

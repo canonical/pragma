@@ -1,11 +1,19 @@
 import type { ReactElement } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import type { ComponentProbeQuery } from "#relay/__generated__/ComponentProbeQuery.graphql.js";
+import componentProbeQueryNode from "#relay/__generated__/ComponentProbeQuery.graphql.js";
+import { RELATION_PAGE_SIZE } from "./probeQuery.js";
 
-/** How many related entities each connection lists in the probe. */
-const RELATION_PAGE_SIZE = 12;
-
-const componentProbeQuery = graphql`
+/**
+ * Codegen source of truth for `ComponentProbeQuery` — relay-compiler reads
+ * this tag to (re)generate the artifact imported above. The hook below uses
+ * the GENERATED node directly because this module sits on the server bricks'
+ * native import chain (routes → PlaygroundPage → here), where no Vite
+ * transform rewrites tags and an evaluated tag throws at module scope. The
+ * wrapper arrow is never invoked, so the tag is never evaluated at runtime;
+ * deleting it would make the next `bun run relay` prune the artifact.
+ */
+const componentProbeQuerySource = (): unknown => graphql`
   query ComponentProbeQuery($uri: String!, $count: Int!) {
     component(uri: $uri) {
       id
@@ -36,6 +44,7 @@ const componentProbeQuery = graphql`
     }
   }
 `;
+void componentProbeQuerySource;
 
 export interface ComponentProbeProps {
   /** The prefixed URI of the component to render (e.g. `ds:global.component.button`). */
@@ -47,13 +56,15 @@ export interface ComponentProbeProps {
  * its subcomponent/modifier-family neighborhoods.
  *
  * The hook suspends while the query is in flight, so render this inside a
- * `Suspense` boundary — and, until the P-2 SSR data-hydration track lands,
- * only on the client (see `PlaygroundPage`).
+ * `Suspense` boundary. On the SSR paths the store is seeded by the server's
+ * prepare step (same operation, same variables — see `probeQuery.ts`), so the
+ * hook renders from the warm store without fetching; on the SPA paths it
+ * fetches over HTTP as before.
  */
 export default function ComponentProbe({
   uri,
 }: ComponentProbeProps): ReactElement {
-  const data = useLazyLoadQuery<ComponentProbeQuery>(componentProbeQuery, {
+  const data = useLazyLoadQuery<ComponentProbeQuery>(componentProbeQueryNode, {
     uri,
     count: RELATION_PAGE_SIZE,
   });

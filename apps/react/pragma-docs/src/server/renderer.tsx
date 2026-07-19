@@ -39,6 +39,11 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
  * (`serve-bun`) or a Node `IncomingMessage` (`serve-express`); it derives the
  * URL for routing and the cookie-backed theme so the first paint matches the
  * user's preference, passing both as the renderer's initial data.
+ *
+ * No `relay` prepare step here yet: the preview servers carry no graph
+ * backend, and bundling the Oxigraph WASM store into the compiled
+ * `dist/server` output is an unverified spike that gates them (P-2 design
+ * note §3) — the dev bricks integrate `prepareRelayData` first.
  */
 export default function createAppRenderer(request: Request | IncomingMessage) {
   const { theme } = extractPreferences(cookieHeader(request));

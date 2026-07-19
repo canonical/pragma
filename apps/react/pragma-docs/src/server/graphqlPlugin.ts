@@ -11,7 +11,7 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
-import { getGraphqlBackend } from "./graphql.js";
+import { type GraphqlBackend, getGraphqlBackend } from "./graphql.js";
 
 const GRAPHQL_ROUTE = "/graphql";
 
@@ -24,12 +24,16 @@ const readBody = (req: IncomingMessage): Promise<Buffer> =>
     req.on("error", reject);
   });
 
-/** Adapt a Node request/response pair to the fetch-native handler. */
-const handleNodeRequest = async (
+/**
+ * Adapt a Node request/response pair to the fetch-native handler. Exported
+ * for the Express dev server, which mounts `/graphql` itself (ahead of
+ * Vite's middleware stack) with the natively imported backend singleton.
+ */
+export const handleNodeRequest = async (
   req: IncomingMessage,
   res: ServerResponse,
+  handle: GraphqlBackend["handle"],
 ): Promise<void> => {
-  const { handle } = await getGraphqlBackend();
   const method = req.method ?? "GET";
   const host = req.headers.host ?? "localhost";
   const body =
@@ -67,13 +71,15 @@ const handleNodeRequest = async (
 /** The `/graphql` middleware, shared by dev and preview servers. */
 const mountGraphql = (middlewares: import("vite").Connect.Server): void => {
   middlewares.use(GRAPHQL_ROUTE, (req, res) => {
-    handleNodeRequest(req, res).catch((error: unknown) => {
-      console.error("[graphql] request failed", error);
-      if (!res.headersSent) {
-        res.writeHead(500, { "content-type": "application/json" });
-      }
-      res.end(JSON.stringify({ errors: [{ message: "Internal error" }] }));
-    });
+    getGraphqlBackend()
+      .then(({ handle }) => handleNodeRequest(req, res, handle))
+      .catch((error: unknown) => {
+        console.error("[graphql] request failed", error);
+        if (!res.headersSent) {
+          res.writeHead(500, { "content-type": "application/json" });
+        }
+        res.end(JSON.stringify({ errors: [{ message: "Internal error" }] }));
+      });
   });
 };
 

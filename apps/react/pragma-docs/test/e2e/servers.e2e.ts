@@ -35,12 +35,20 @@ interface Cell {
    * `*:bun`/`*:express` cells render it from the sitemap renderer.
    */
   ssr: boolean;
+  /**
+   * Whether this cell serves `/playground` with server-executed Relay data
+   * (P-2 Stage 1). Only the two dev SSR cells so far: the preview cells have
+   * no graph backend until the Oxigraph-bundle spike closes. Requires the
+   * pragma refs cache (`pragma sources update`), like the `/graphql`
+   * endpoint those cells already mount.
+   */
+  probe?: boolean;
 }
 
 const MATRIX: Cell[] = [
   { script: "dev", timeoutMs: DEV_READY_MS, ssr: false },
-  { script: "dev:bun", timeoutMs: DEV_READY_MS, ssr: true },
-  { script: "dev:express", timeoutMs: DEV_READY_MS, ssr: true },
+  { script: "dev:bun", timeoutMs: DEV_READY_MS, ssr: true, probe: true },
+  { script: "dev:express", timeoutMs: DEV_READY_MS, ssr: true, probe: true },
   { script: "preview", timeoutMs: PREVIEW_READY_MS, ssr: false },
   { script: "preview:bun", timeoutMs: PREVIEW_READY_MS, ssr: true },
   { script: "preview:express", timeoutMs: PREVIEW_READY_MS, ssr: true },
@@ -48,6 +56,31 @@ const MATRIX: Cell[] = [
 
 /** A JS/TS module or CSS-as-JS asset must never come back as the HTML page. */
 const JS_CONTENT_TYPE = /javascript/;
+
+/**
+ * The per-request line the dev servers' `/graphql` bricks log — keep in sync
+ * with `server.bun.ts` / `server.express.ts`. Its absence after a page load
+ * is the "zero HTTP hits" proof; its appearance after a direct POST proves
+ * the counter (and the endpoint) still works.
+ */
+const GRAPHQL_HIT_MARKER = "[graphql] http hit";
+
+/** Poll the server log until `marker` appears (child stdout is async). */
+async function waitForLog(
+  server: { logs: () => string },
+  marker: string,
+  timeoutMs = 5_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (!server.logs().includes(marker)) {
+    if (Date.now() > deadline) {
+      throw new Error(
+        `log marker ${JSON.stringify(marker)} not seen within ${timeoutMs}ms`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
 
 describe("server matrix (2×3) serves correctly", () => {
   for (const cell of MATRIX) {
@@ -88,6 +121,46 @@ describe("server matrix (2×3) serves correctly", () => {
             const xml = await sitemap.text();
             expect(xml).toContain("<urlset");
             expect(xml).toContain("<loc>");
+          }
+
+          // 5. P-2 Stage 1: /playground carries the probe's REAL graph data in
+          //    the raw HTML (no client JS ran), the serialised store rides
+          //    __INITIAL_DATA__.relay, and the whole load made ZERO HTTP
+          //    /graphql requests — the query executed in-process.
+          if (cell.probe) {
+            const playground = await fetch(`${server.base}/playground`);
+            expect(playground.status).toBe(200);
+            const playgroundHtml = await playground.text();
+            // Server-rendered probe content: heading, URI, summary text.
+            expect(playgroundHtml).toContain("<h2>Button</h2>");
+            expect(playgroundHtml).toContain("ds:global.component.button");
+            expect(playgroundHtml).toContain(
+              "Buttons trigger actions within an interface",
+            );
+            // The serialised record map is embedded for hydration.
+            expect(playgroundHtml).toContain("__INITIAL_DATA__");
+            expect(playgroundHtml).toContain('"relay"');
+            expect(playgroundHtml).toContain('"records"');
+            // Zero /graphql HTTP hits during everything above.
+            expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
+
+            // Teeth: a direct POST does reach the endpoint and the counter
+            // records it — the zero-assertion above is not vacuous.
+            const graphqlResponse = await fetch(`${server.base}/graphql`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ query: "{ __typename }" }),
+            });
+            expect(graphqlResponse.status).toBe(200);
+            const graphqlBody = (await graphqlResponse.json()) as {
+              data?: { __typename?: string };
+            };
+            expect(graphqlBody.data?.__typename).toBe("Query");
+            await waitForLog(server, `${GRAPHQL_HIT_MARKER} #1`);
+            // …and it is the ONLY hit: had the page load reached /graphql
+            // over HTTP (with its log line lagging past the assertion
+            // above), this POST would have been counted as #2.
+            expect(server.logs()).not.toContain(`${GRAPHQL_HIT_MARKER} #2`);
           }
         } finally {
           await server.stop();

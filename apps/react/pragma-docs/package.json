@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:express": "node --import tsx src/server/server.express.ts",
+    "dev:express": "node --import tsx --import ./src/server/nodeCssNoop.ts src/server/server.express.ts",
     "dev:bun": "bun src/server/server.bun.ts",
     "preview": "bun run build:client && vite preview --outDir dist/client",
     "preview:bun": "bun run build:client && bun run build:server && bun src/server/preview.bun.ts",

@@ -22,6 +22,8 @@ import { fileURLToPath } from "node:url";
 import { createStore, type Plugin } from "@canonical/ke";
 import {
   createSchemaPlugin,
+  executeLocal,
+  type LocalExecutionResult,
   type SchemaPluginApi,
 } from "@canonical/ke-graphql";
 import { createGraphQLHandler } from "@canonical/ke-graphql/http";
@@ -135,9 +137,30 @@ const harvestPrefixes = (
   return prefixes;
 };
 
+/**
+ * Arguments for {@link GraphqlBackend.execute}: query *text* plus values.
+ *
+ * Deliberately narrower than ke-graphql's `ExecuteLocalArgs` — no `document`
+ * member exists here, and none is ever forwarded. Two graphql versions
+ * coexist in this process (the app's v16, ke-graphql's pinned v17 RC), which
+ * is safe only while the boundary is text-only: a pre-parsed AST built by the
+ * app's graphql 16 must never cross into the v17 executor.
+ */
+export interface GraphqlExecuteArgs {
+  readonly source: string;
+  readonly variableValues?: Record<string, unknown> | null;
+  readonly operationName?: string | null;
+}
+
 export interface GraphqlBackend {
   readonly handle: (request: Request) => Promise<Response>;
   readonly api: SchemaPluginApi;
+  /**
+   * Execute a query in-process — no HTTP hop, no serialization. Binds
+   * `executeLocal` to the booted store with a fresh context per call
+   * (ke-graphql contexts must not be retained across requests).
+   */
+  readonly execute: (args: GraphqlExecuteArgs) => Promise<LocalExecutionResult>;
 }
 
 /**
@@ -173,10 +196,20 @@ const bootGraphqlBackend = async (): Promise<GraphqlBackend> => {
     cors: true,
     incremental: true,
   });
+  // Members are passed one by one (never spread) so a caller-smuggled
+  // `document` AST can never reach executeLocal — see GraphqlExecuteArgs.
+  const execute = (args: GraphqlExecuteArgs): Promise<LocalExecutionResult> =>
+    executeLocal({
+      schema: api.schema,
+      contextValue: api.createContext(store),
+      source: args.source,
+      variableValues: args.variableValues,
+      operationName: args.operationName,
+    });
   console.info(
     `[graphql] schema compiled from ${sources.length} TTL sources (${api.diagnostics.length} diagnostics) — SDL written to ${relative(process.cwd(), SDL_OUTPUT_PATH)}`,
   );
-  return { handle, api };
+  return { handle, api, execute };
 };
 
 let backendPromise: Promise<GraphqlBackend> | undefined;

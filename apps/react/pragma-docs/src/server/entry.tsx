@@ -5,6 +5,7 @@ import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
 import { createStaticRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { RelayEnvironmentProvider } from "react-relay";
+import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay/environment.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/app.css";
@@ -13,6 +14,15 @@ interface InitialData extends Record<string, unknown> {
   readonly url?: string;
   /** Colour-scheme preference resolved from the request cookie, if any. */
   readonly theme?: "light" | "dark";
+  /**
+   * Relay hydration payload from the server's prepare step: the serialised
+   * record map of the route's executed query. `__INITIAL_DATA__` is an
+   * app-level namespaced map owned by `JSXRenderer` (P-2 D8); `relay` is its
+   * first data namespace (`router` stays reserved).
+   */
+  readonly relay?: {
+    readonly records?: RecordMap;
+  };
 }
 
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
@@ -24,11 +34,14 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   });
 
   // A fresh Relay environment per server render, so no store state leaks
-  // between requests. Nothing fetches through it yet: components that issue
-  // queries are wrapped in `ClientOnly` (see CatalogPage) until data
-  // serialization/hydration is supported; the provider is here so any
-  // component touching Relay context renders without branching on runtime.
-  const relayEnvironment = createEnvironment();
+  // between requests — seeded from the prepare step's serialised records
+  // (the same bytes the client hydrates from, so data-driven hydration
+  // mismatch is excluded by construction). With a warm store the page's
+  // queries render without fetching; nothing fetches through this
+  // environment otherwise (Stage 2 injects a live executor for @defer).
+  const relayEnvironment = createEnvironment({
+    records: initialData.relay?.records,
+  });
 
   // Paint the cookie-resolved theme on <html> for a flash-free first render —
   // the same element `usePreferredTheme` toggles on the client, and one React

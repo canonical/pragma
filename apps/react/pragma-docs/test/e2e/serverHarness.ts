@@ -9,6 +9,12 @@ export interface RunningServer {
   base: string;
   /** Stop the server and its whole process group. */
   stop: () => Promise<void>;
+  /**
+   * The tail of the server's combined stdout+stderr, for request-log
+   * assertions (e.g. the `/graphql` hit counter). Grows as the child writes;
+   * poll it rather than reading once after a request.
+   */
+  logs: () => string;
 }
 
 /** Reserve a free TCP port by opening an ephemeral listener and reading it back. */
@@ -81,17 +87,23 @@ export async function startServer(
   const port = await getFreePort();
   const base = `http://localhost:${port}`;
   // Capture stderr so a boot crash surfaces the real cause instead of an opaque
-  // readiness timeout.
+  // readiness timeout, and stdout too for request-log assertions (`logs()`).
   const child: ChildProcess = spawn("bun", ["run", script], {
     cwd,
     env: { ...process.env, PORT: String(port) },
     detached: true,
-    stdio: ["ignore", "ignore", "pipe"],
+    stdio: ["ignore", "pipe", "pipe"],
   });
 
   let stderrTail = "";
+  let logTail = "";
+  const appendLog = (chunk: Buffer): void => {
+    logTail = (logTail + chunk.toString()).slice(-16_000);
+  };
+  child.stdout?.on("data", appendLog);
   child.stderr?.on("data", (chunk: Buffer) => {
     stderrTail = (stderrTail + chunk.toString()).slice(-4000);
+    appendLog(chunk);
   });
 
   // Reject readiness immediately if the child exits before it starts serving.
@@ -149,5 +161,5 @@ export async function startServer(
   // Surface (and swallow) the now-irrelevant rejection so it isn't unhandled.
   exited.catch(() => {});
 
-  return { base, stop };
+  return { base, stop, logs: () => logTail };
 }
