@@ -86,6 +86,10 @@ export const WithError: Story = {
     label: "Email",
     registerProps: {
       required: { value: true, message: "Email is required" },
+      pattern: {
+        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+        message: "Enter a valid email address",
+      },
     },
   },
 };

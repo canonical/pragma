@@ -42,9 +42,12 @@
   --form-field-block-gap: var(
     --container-gap-loose
   ); /* 24px — block: gap BETWEEN fields */
+  /* Design review (15/07): flat 8px label→input gap (was --container-gap-default,
+   * 16px). See the density-channel mapping below for the matrix-vs-review note. */
   --form-field-label-gap: var(
-    --container-gap-default
-  ); /* 16px — block: gap from a field's LABEL down to its control */
+    --space-100
+  ); /* 8px — block: gap from a field's LABEL down to its control */
+  /* --form-field-label-gap: var(--container-gap-default); */ /* 16px (pre-review) */
   --form-group-gap: var(
     --space-100
   ); /* 8px — block: gap from desc/error to the input */
@@ -137,7 +140,10 @@
   --form-input-border-color-error: var(--color-border-error);
   --form-input-background-disabled: var(--color-foreground-input-disabled);
   --form-input-color-disabled: var(--disabled--color-text);
-  --form-input-border-color-disabled: var(--disabled--color-border);
+  /* Design review (15/07): a disabled control shows no border. Default the
+   * disabled border to transparent; a theme wanting a visible disabled border
+   * can still override this token (e.g. back to `--disabled--color-border`). */
+  --form-input-border-color-disabled: transparent;
 
   /* ── Focus ring ─────────────────────────────────────────────────── */
 
@@ -171,10 +177,17 @@
     --density-space-lg,
     calc(var(--baseline-height) * 6)
   );
-  --form-field-label-gap: var(
+  /* Design review (15/07): the label→input gap should be a flat 8px, not the
+   * density `space-md` rung (16px app / 20px site). Diana's 15/07 field-spacing
+   * numbers diverge from the shipped density matrix (see pragma-adrs U.01); until
+   * that matrix-vs-review tension is resolved we pin 8px here and KEEP the
+   * density mapping below, commented, so it can be restored in one line once the
+   * matrix decision lands. 8px = one `space-md`-equivalent held at 2 baseline units. */
+  --form-field-label-gap: calc(var(--baseline-height) * 2); /* 8px */
+  /* --form-field-label-gap: var(
     --density-space-md,
     calc(var(--baseline-height) * 4)
-  );
+  ); */
   --form-group-gap: var(--density-space-sm, calc(var(--baseline-height) * 2));
 }
 
@@ -266,11 +279,18 @@
     box-shadow: 0 0 0 1px var(--form-focus-ring-color);
   }
 
+  /* Disabled — per design review (15/07): a disabled control needs no border.
+   * The border BOX is kept (transparent) so the border-box height is unchanged
+   * and a disabled control lines up with an enabled one; only the paint is
+   * dropped. `--form-input-border-color-disabled` defaults to transparent (see
+   * :root) but stays a themeable override point. The background + muted text
+   * carry the disabled affordance instead. */
   &:disabled,
   &:has(input:disabled) {
     border-color: var(--form-input-border-color-disabled);
     border-top-color: var(--form-input-border-color-disabled);
     border-right-color: var(--form-input-border-color-disabled);
+    border-bottom-color: var(--form-input-border-color-disabled);
     border-left-color: var(--form-input-border-color-disabled);
     background-color: var(--form-input-background-disabled);
     color: var(--form-input-color-disabled);
@@ -279,12 +299,19 @@
 }
 
 /* ── Danger ──────────────────────────────────────────────────────────
- * The field label recolours to the error token on any invalid field. This is
- * the group-level affordance for controls whose payload has no single border to
- * paint — notably the borderless `.ds.form-choices` fieldset, where the
- * `<legend>` (a `.ds.field-label`) carries the error alongside the FieldError
- * message, rather than lighting up every option box. */
-.danger > .ds.field-label {
+ * Per design review (15/07): a validation colour change must be confined to the
+ * validation MESSAGE and the input's BOTTOM border — it must not repaint the
+ * label or the full box outline. So the general label recolour is gone; the
+ * error signal on a normal bordered input is carried by its bottom border alone
+ * (below), and the FieldError message carries the error colour in its own text.
+ *
+ * EXCEPTION — the borderless choices fieldset. A choices group (radios/checkboxes)
+ * has no single input border to paint (each option is its own borderless control),
+ * so its `<legend>` (a `.ds.field-label`) is the ONLY place an error can be shown
+ * without lighting up every option box. Such a group renders its Wrapper label as
+ * a `<legend>` (the `mockLabel` path), so the recolour is SCOPED to a legend
+ * label — a normal field's `<label>` is untouched. */
+.danger > legend.ds.field-label {
   color: var(--form-error-color);
 
   /* The required "*" marker recolours WITH the label (it pins its own colour to
@@ -296,9 +323,12 @@
   }
 }
 
-/* Input chrome: bottom border only (matches normal theme); focus shows all four */
+/* Input chrome: recolour ONLY the bottom border (the base theme keeps the other
+ * three sides transparent). Setting the bottom-border override token — not the
+ * four-side `border-color` shorthand — means the error signal cannot bleed onto
+ * the top/right/left sides. Focus still lights all four (below). */
 .danger > .payload .ds.input.chrome {
-  border-color: var(--form-input-border-color-error);
+  --form-input-border-color-bottom: var(--form-input-border-color-error);
 }
 
 .danger > .payload .ds.input.chrome:focus-visible,
