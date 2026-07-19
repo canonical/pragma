@@ -1,9 +1,12 @@
 /**
- * Vitest global setup for the perf suite.
+ * Vitest global setup: build the compiled `dist/pragma` once, before the suite,
+ * if it is missing.
  *
- * The budget tests spawn the compiled `dist/pragma`. Build it once, before the
- * suite, if it is missing — so `bun run test` on a clean checkout still
- * exercises the protected perf budgets without a manual build step.
+ * Shared by both configs, because two suites spawn the binary: the perf budgets
+ * (src/testing/perf/**, `test:perf`) and the storeless-guarantee guards in
+ * src/kernel/completion/safety.test.ts (the main `test:vitest` pass). Wiring it
+ * into both means `bun run test` on a clean checkout provisions the binary with
+ * no manual build step — neither suite may assume it is pre-built.
  */
 
 import { spawnSync } from "node:child_process";
