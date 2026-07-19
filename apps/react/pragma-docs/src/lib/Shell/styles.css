@@ -34,7 +34,11 @@
    * plate       = document (the canvas sheet the mode renders on);
    * chrome      = instrument (rail, strip, footer — things you operate);
    * overlay     = ephemera (peeks, palettes, sheets — never inline,
-   *               never pushing content; zero layout shift by design). */
+   *               never pushing content; zero layout shift by design).
+   * Four tokens for AX.7's three strata: plate and chrome are the two rungs
+   * of AX.7's single "sheet" stratum, split because chrome must always
+   * paint OVER the plate — the refinement is implementation detail, not a
+   * fourth semantic stratum. */
   --z-underground: 0;
   --z-plate: 1;
   --z-chrome: 2;

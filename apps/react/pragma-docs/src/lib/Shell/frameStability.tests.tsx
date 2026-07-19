@@ -4,11 +4,17 @@
  * The P-4.1 certification: switching lenses moves ONLY the canvas plate —
  * proven by measurement, not eyeballing.
  *
- * Method. Render the REAL server composition (`EntryServer`: static router,
- * Relay environment, the full `<html>` document) to a string per lens URL —
- * node environment, so `renderToString` walks the exact SSR branch
- * production walks. Split each page's `<body>` at the canvas plate's stable
- * structural identity (the single `<main data-region="canvas">` element):
+ * Method. Render `EntryServer`'s tree (static router, Relay environment,
+ * the `<html>` document) to a string per lens URL — node environment, so
+ * `renderToString` walks the exact SSR branch production walks. Called
+ * directly, WITHOUT the `JSXRenderer` wrapper production puts around it:
+ * the head/script wrapping `JSXRenderer` adds (`otherHeadElements`,
+ * `scriptElements`, `linkElements`, the `__INITIAL_DATA__` injection) is out
+ * of frame by construction — all of it lands in `<head>` or as scripts,
+ * never inside `<body>`, which is exactly why the body-frame measurement
+ * below stays valid without it. Split each page's `<body>` at the canvas
+ * plate's stable structural identity (the single `<main
+ * data-region="canvas">` element):
  * FRAME = body with the canvas's children cut out (the canvas open tag
  * itself is frame — its attributes are chrome). Then:
  *
@@ -57,6 +63,10 @@ const LENS_URLS = [
  * `aria-current="page"`. Home has two — the brand link and the Home lens
  * entry both point at "/". */
 const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
+  // Two carriers, deliberately: the router marks BOTH same-destination links
+  // exact-match on "/", so screen readers announce current-page twice on
+  // Home. Assessed LOW-2 in the P-4.1 review and kept as-modelled; the fix,
+  // if it ever bothers, is suppressing aria-current on the brand link.
   "/": ["/", "/"],
   "/components": ["/components"],
   "/definitions": ["/definitions"],
