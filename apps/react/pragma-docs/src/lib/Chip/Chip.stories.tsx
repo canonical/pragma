@@ -159,6 +159,31 @@ export const InProse: Story = {
   ),
 };
 
+/**
+ * A narrow container forces a long label to wrap across lines, so
+ * `box-decoration-break: clone` (padding, border and corners cloned onto
+ * each fragment; the lifecycle dot only on the first) is visually
+ * inspectable rather than merely asserted in the stylesheet comment.
+ */
+export const Wrapping: Story = {
+  render: () => (
+    <p style={{ maxWidth: "14rem" }}>
+      Compose a form around the{" "}
+      <Chip
+        href={resolveChipHref(
+          "ds:global.pattern.multi-step-form-wizard",
+          "pattern",
+        )}
+        kind="pattern"
+        label="Multi-step form wizard"
+        lifecycle="beta"
+        uri="ds:global.pattern.multi-step-form-wizard"
+      />{" "}
+      pattern when a single page grows too long to submit at once.
+    </p>
+  ),
+};
+
 /** The legend generates from the same rows that drive rendering. */
 export const Legend: Story = {
   render: () => <ChipLegend />,

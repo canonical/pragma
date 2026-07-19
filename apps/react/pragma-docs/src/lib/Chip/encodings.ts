@@ -16,6 +16,22 @@
  * payload behind `var(--chip-…, fallback)` hooks: themes restyle a channel by
  * defining the hook (see the `.dark` block in `styles.css`) without touching
  * any logic here.
+ *
+ * Accepted WCAG 1.4.1 posture: the tint (and every other channel here) is
+ * enrichment, not information — a chip's label and its `href` already carry
+ * everything a reader must act on, so colour is never the sole means of
+ * conveying anything actionable, and the same holds with styling ignored
+ * entirely (the reads-as-text invariant). The one channel that is meaning
+ * rather than decoration, lifecycle, does not rely on the dot's colour
+ * either: `Chip` also folds the lifecycle word into `aria-description`, so
+ * it reaches assistive tech alongside sighted readers.
+ *
+ * Follow-ups queued, not owed by this pass: browser-mode computed-style
+ * tests (closing the TS↔CSS custom-property contract this file only
+ * asserts through string values) belong to the e2e track. Binding the
+ * lifecycle dot colours to the design-system's constructive/warning/error
+ * tokens, rather than this file's own oklch literals, is a queued
+ * upstream-consistency improvement.
  */
 
 import { DEFAULT_NAMESPACE } from "./constants.js";
