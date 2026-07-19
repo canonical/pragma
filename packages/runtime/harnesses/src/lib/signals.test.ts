@@ -84,6 +84,7 @@ describe("checkSignal — extension", () => {
   it("globs the home VS Code extensions dir and matches when non-empty", () => {
     const seen: { pattern: string; cwd: string }[] = [];
     const result = check(signal, ctx(), {
+      Exists: existsAt((path) => path === "/home/tester/.vscode/extensions"),
       Glob: (effect) => {
         const glob = effect as Effect & { _tag: "Glob" };
         seen.push({ pattern: glob.pattern, cwd: glob.cwd });
@@ -97,8 +98,26 @@ describe("checkSignal — extension", () => {
     });
   });
 
-  it("returns false when no extension directory matches", () => {
-    expect(check(signal, ctx(), { Glob: () => [] })).toBe(false);
+  it("returns false (without globbing) when the extensions dir is absent", () => {
+    let globbed = false;
+    const result = check(signal, ctx(), {
+      Exists: existsAt(() => false),
+      Glob: () => {
+        globbed = true;
+        return [];
+      },
+    });
+    expect(result).toBe(false);
+    expect(globbed).toBe(false);
+  });
+
+  it("returns false when the dir exists but no extension matches", () => {
+    expect(
+      check(signal, ctx(), {
+        Exists: existsAt(() => true),
+        Glob: () => [],
+      }),
+    ).toBe(false);
   });
 });
 
