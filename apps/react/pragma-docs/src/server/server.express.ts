@@ -68,6 +68,9 @@ async function start() {
     getGraphqlBackend()
       .then(({ handle }) => {
         graphqlHits += 1;
+        // Counts HTTP requests reaching the brick, not successful
+        // executions — a malformed-JSON 400 still increments this, since it
+        // runs before `handle` sees the request.
         console.info(`[graphql] http hit #${graphqlHits}`);
         return handleNodeRequest(req, res, handle);
       })

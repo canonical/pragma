@@ -89,6 +89,9 @@ const componentProbeRecords = {
     id: "ds:global.modifier_family.importance",
     name: "Importance",
   },
+  // The literal above is wider than `RecordMap`'s nominal record type (and
+  // `RecordMap` isn't root-exported from relay-runtime — hence the deep
+  // import above) — hence the double cast.
 } as unknown as RecordMap;
 
 export default componentProbeRecords;

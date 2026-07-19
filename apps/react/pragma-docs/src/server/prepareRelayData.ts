@@ -96,6 +96,9 @@ export const prepareRelayData = async (
       matched.query,
       matched.variables,
     ).toPromise();
+    // `RecordMap` isn't root-exported from relay-runtime (hence the deep
+    // import above) and `toJSON()` returns the untyped JSON shape — hence
+    // the cast back to the nominal type here.
     const records = environment.getStore().getSource().toJSON() as RecordMap;
     return { records };
   } catch (error) {

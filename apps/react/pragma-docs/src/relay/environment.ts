@@ -60,9 +60,12 @@ export interface CreateEnvironmentOptions {
 
 /**
  * Reads the endpoint URL from Vite's env, treating the empty string as unset.
- * `import.meta.env` is optional-chained: it only exists under Vite — the
- * server bricks import this factory natively (no Vite transform), where the
- * property is undefined.
+ * `import.meta.env` is optional-chained because its presence depends on the
+ * runtime: under node/tsx (the server bricks import this factory natively,
+ * no Vite transform) it is undefined and the `?.` is load-bearing; under Bun
+ * native it IS defined (Bun populates it from `process.env`); under Vite the
+ * whole `?.` expression is statically replaced, so the chain costs nothing
+ * there either.
  */
 const readConfiguredGraphqlUrl = (): string | undefined => {
   const configured: unknown = import.meta.env?.VITE_GRAPHQL_URL;

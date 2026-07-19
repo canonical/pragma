@@ -60,6 +60,9 @@ Bun.serve({
       if (url.pathname === "/graphql") {
         const { handle } = await getGraphqlBackend();
         graphqlHits += 1;
+        // Counts HTTP requests reaching the brick, not successful
+        // executions — a malformed-JSON 400 still increments this, since it
+        // runs before `handle` sees the request.
         console.info(`[graphql] http hit #${graphqlHits}`);
         return handle(req);
       }
