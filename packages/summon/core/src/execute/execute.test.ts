@@ -1,7 +1,15 @@
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { dryRun, mkdir, sequence_, writeFile } from "@canonical/task";
+import {
+  $,
+  dryRun,
+  gen,
+  mkdir,
+  sequence_,
+  type Task,
+  writeFile,
+} from "@canonical/task";
 import { runTask } from "@canonical/task/node";
 import { describe, expect, it } from "vitest";
 import autoPrompt from "../prompt/autoPrompt.js";
@@ -91,5 +99,50 @@ describe("execute — the summon↔pragma seam", () => {
     ).rejects.toMatchObject({
       taskError: { code: "MISSING_REQUIRED_ANSWER" },
     });
+  });
+});
+
+describe("execute — generate() re-interpretation parity (no single-use gen() under generate)", () => {
+  // execute performs `const built = generate(answers); dryRun(built).effects;
+  // yield* $(built)` — it interprets the generate() result TWICE (preview then
+  // perform). The composed task must therefore survive a second drive, so
+  // pragma's create/setup generators compose with re-runnable combinators
+  // (sequence_/when), never a single-use gen(). These pin that invariant.
+  it("interprets a generate() result twice (dryRun then real) with identical effects", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gen-parity-"));
+    const answers = { path: "out.txt", flavor: "a" };
+    const built = fixture.generate(answers);
+
+    // #1 — the pure preview (what execute shows and --dry-run applies).
+    const preview = dryRun(built).effects.map((e) => e._tag);
+    expect(preview).toContain("WriteFile");
+
+    // #2 — the SAME task, driven for real: it was not consumed by the preview.
+    await runTask(built, { cwd: dir, promptHandler: autoPrompt(answers) });
+    expect(readFileSync(join(dir, "out.txt"), "utf-8")).toBe("flavor=a\n");
+
+    // #3 — re-preview after the real run: still identical (an immutable task,
+    // not a spent generator). This parity is exactly what execute relies on.
+    expect(dryRun(built).effects.map((e) => e._tag)).toEqual(preview);
+  });
+
+  it("a single-use gen() generate loses parity on the second drive (the guarded hazard)", () => {
+    // The SAME two steps composed with gen() instead of sequence_: gen() closes
+    // over ONE iterator, so the first drive exhausts it and the second
+    // truncates — precisely why a generator's `generate` must not use gen().
+    const genBuilt: Task<void> = gen(function* () {
+      yield* $(mkdir("."));
+      yield* $(writeFile("out.txt", "x"));
+    });
+    const first = dryRun(genBuilt).effects.map((e) => e._tag);
+    const second = dryRun(genBuilt).effects.map((e) => e._tag);
+    expect(first.length).toBeGreaterThan(second.length); // truncated re-drive
+    expect(second).not.toEqual(first);
+
+    // sequence_ (what generate actually uses) is stable across drives.
+    const seqBuilt = sequence_([mkdir("."), writeFile("out.txt", "x")]);
+    expect(dryRun(seqBuilt).effects.map((e) => e._tag)).toEqual(
+      dryRun(seqBuilt).effects.map((e) => e._tag),
+    );
   });
 });
