@@ -72,6 +72,12 @@ function listEntriesForChannel(channel: Channel): readonly LegendEntry[] {
         description: row.description,
         channels: { ...SWATCH_BASELINE, lifecycle: row.value },
       }));
+    default: {
+      // Exhaustiveness survives the return-type annotation being removed:
+      // a new Channel without a case fails to assign to `never` here.
+      const _exhaustive: never = channel;
+      throw new Error(`ChipLegend: unknown channel "${String(_exhaustive)}"`);
+    }
   }
 }
 

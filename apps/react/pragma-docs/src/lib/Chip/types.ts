@@ -32,14 +32,20 @@ export interface ChipProps {
    * Click callback for router integration, called with the chip's URI before
    * the browser follows `href` (call `event.preventDefault()` to take over).
    * Only fires on the anchor form — a chip without an href stays inert.
+   * Future router adapter: `onNavigate` implementations should check
+   * `event.metaKey`/`ctrlKey`/`shiftKey`/`button !== 0` before calling
+   * `preventDefault()`, so modified clicks keep their native behaviour
+   * (new tab, new window, download).
    */
   readonly onNavigate?: (
     uri: string,
     event: MouseEvent<HTMLAnchorElement>,
   ) => void;
   /**
-   * One-line definition revealed on hover as a lightweight peek (native
-   * `title` tooltip for v1 — the full definition peek is a later component).
+   * One-line definition exposed as the chip's `aria-description` (with the
+   * lifecycle folded in when asserted) and echoed as a native `title` hover
+   * peek — the full definition peek is a later component. Both are string
+   * attributes, so the chip still reads as plain text.
    */
   readonly summary?: string;
   /** Additional CSS classes. */

@@ -44,6 +44,14 @@ const Chip = ({
   assertNonEmptyString(label, "label");
 
   const resolvedNamespace = namespace ?? deriveNamespaceFromUri(uri);
+  // The v1 definition peek, with the lifecycle folded in so what the dot
+  // shows visually also reaches assistive tech.
+  const description =
+    summary === undefined
+      ? undefined
+      : lifecycle === "none"
+        ? summary
+        : `${summary} (${lifecycle})`;
   const sharedProps = {
     className: [CHIP_CSS_CLASS_NAME, className].filter(Boolean).join(" "),
     // The channel payloads; typed as ChipChannelStyle, cast for React's
@@ -54,9 +62,12 @@ const Chip = ({
       box,
       lifecycle,
     }) as CSSProperties,
-    // The v1 definition peek. `title` (not aria-describedby to a hidden
-    // node) keeps the surrounding text's textContent equal to the visible
-    // prose — the reads-as-text invariant.
+    // The peek's primary channel is `aria-description` (assistive tech
+    // announces it; `title` alone is unreliable there); `title` stays as a
+    // redundant visual hover affordance. Both are string attributes, never
+    // text nodes, so the surrounding text's textContent stays equal to the
+    // visible prose — the reads-as-text invariant.
+    "aria-description": description,
     title: summary,
     // Identity and channel values as data attributes, for tooling, tests
     // and the stylesheet's structural selectors (e.g. hiding the dot).

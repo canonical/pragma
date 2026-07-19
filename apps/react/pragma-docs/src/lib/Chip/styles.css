@@ -74,13 +74,23 @@ a.ds.chip:hover {
 }
 
 a.ds.chip:focus-visible {
-  outline: 2px solid var(--chip-tint, currentColor);
-  outline-offset: 1px;
+  /* Not the chip's own tint: the ring would share the fill's hue and sink
+   * into it. `--chip-focus` is the theme hook; its default is the token
+   * set's theme-neutral, guaranteed-contrast colour (black on light, white
+   * on dark), with `currentColor` as the last-resort fallback. */
+  outline: 2px solid
+    var(--chip-focus, var(--color-background-contrasted, currentColor));
+  outline-offset: 2px;
 }
 
 /* Theme hooks: dark values for the tint and dot palettes. The component sets
  * `var(--chip-tint-<ns>, <light value>)` inline, so defining the hook here
- * wins at use-time — themes restyle without touching logic. */
+ * wins at use-time — themes restyle without touching logic.
+ *
+ * `--chip-fill-weight-instance` drops from 15% to 8% in dark: the lighter
+ * dark-mode tints pull a 15% fill close enough to the text that tint-on-fill
+ * contrast falls below the 4.5:1 AA floor; 8% keeps every namespace above it
+ * (regression-tested in `encodings.tests.ts`). */
 :root.dark {
   --chip-tint-ds: oklch(0.78 0.11 155);
   --chip-tint-cs: oklch(0.78 0.1 285);
@@ -88,6 +98,7 @@ a.ds.chip:focus-visible {
   --chip-dot-canonical: oklch(0.7 0.14 150);
   --chip-dot-beta: oklch(0.78 0.14 85);
   --chip-dot-deprecated: oklch(0.68 0.17 25);
+  --chip-fill-weight-instance: 8%;
 }
 
 /* System-dark fallback for pages rendered before the theme class applies. */
@@ -99,6 +110,39 @@ a.ds.chip:focus-visible {
     --chip-dot-canonical: oklch(0.7 0.14 150);
     --chip-dot-beta: oklch(0.78 0.14 85);
     --chip-dot-deprecated: oklch(0.68 0.17 25);
+    --chip-fill-weight-instance: 8%;
+  }
+}
+
+/* Forced colors (Windows High Contrast): the UA flattens `background` and
+ * repaints `border-color` with system colours, so both the instance fill and
+ * the class/instance weight distinction disappear. `border-style` is the one
+ * border channel forced-colors preserves, so class-vs-instance re-encodes as
+ * dashed-vs-solid on the always-present 1px border (whose transparent
+ * instance colour becomes a visible system colour here). The lifecycle dot
+ * is meaning, not decoration — `forced-color-adjust: none` keeps its colour
+ * so the channel stays perceivable. */
+@media (forced-colors: active) {
+  .ds.chip {
+    border-style: solid;
+  }
+
+  .ds.chip[data-box="class"] {
+    border-style: dashed;
+  }
+
+  .ds.chip::before {
+    forced-color-adjust: none;
+  }
+
+  /* Linked mentions keep the system link colour, not the (flattened) tint. */
+  a.ds.chip {
+    color: LinkText;
+  }
+
+  /* Let the UA's high-contrast focus ring win over `--chip-focus`. */
+  a.ds.chip:focus-visible {
+    outline-color: Highlight;
   }
 }
 

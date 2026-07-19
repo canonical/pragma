@@ -30,7 +30,8 @@ describe("Chip", () => {
 
   it("keeps a paragraph's textContent intact — chips read as plain text", () => {
     // Bet H1: ignored, a chip never blocks the reading path. The summary
-    // must not leak into the text either (it is a title, not a text node).
+    // must not leak into the text either — it travels as attributes
+    // (aria-description, title), never as a text node.
     render(
       <p data-testid="prose">
         Use the{" "}
@@ -127,6 +128,50 @@ describe("Chip", () => {
   it("omits the title when no summary is given", () => {
     render(<Chip kind="term" label="density" uri="docs:glossary.density" />);
     expect(screen.getByText("density")).not.toHaveAttribute("title");
+  });
+
+  it("exposes the summary to assistive tech via aria-description", () => {
+    render(
+      <Chip
+        kind="term"
+        label="density"
+        summary="How tightly a layout packs its controls."
+        uri="docs:glossary.density"
+      />,
+    );
+    expect(screen.getByText("density")).toHaveAttribute(
+      "aria-description",
+      "How tightly a layout packs its controls.",
+    );
+  });
+
+  it("folds an asserted lifecycle into the aria-description", () => {
+    // The dot's meaning must reach assistive tech, not just sighted readers.
+    render(
+      <Chip
+        kind="component"
+        label="Button"
+        lifecycle="deprecated"
+        summary="The primary action component."
+        uri="ds:global.component.button"
+      />,
+    );
+    expect(screen.getByText("Button")).toHaveAttribute(
+      "aria-description",
+      "The primary action component. (deprecated)",
+    );
+  });
+
+  it("omits aria-description without a summary, even with a lifecycle", () => {
+    render(
+      <Chip
+        kind="component"
+        label="Button"
+        lifecycle="beta"
+        uri="ds:global.component.button"
+      />,
+    );
+    expect(screen.getByText("Button")).not.toHaveAttribute("aria-description");
   });
 
   it("calls onNavigate with the uri when the link is clicked", () => {

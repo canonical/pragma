@@ -75,7 +75,9 @@ export interface KindEncoding extends EncodingRow<Kind> {
 
 /**
  * Box channel row: `color-mix` percentages of the tint applied to the fill
- * and to the (always-present, so metrics never shift) 1px stroke.
+ * and to the (always-present, so metrics never shift) 1px stroke. The
+ * instance fill weight routes through a theme hook: dark mode lowers it
+ * (see `styles.css`) so the tint-on-fill text contrast stays ≥ 4.5:1 AA.
  */
 export interface BoxEncoding extends EncodingRow<Box> {
   readonly fillWeight: string;
@@ -180,7 +182,7 @@ const BOX_INDEX: EncodingIndex<Box, BoxEncoding> = {
     value: "instance",
     label: "Instance (ABox)",
     description: "One concrete thing — filled, no outline.",
-    fillWeight: "15%",
+    fillWeight: "var(--chip-fill-weight-instance, 15%)",
     strokeWeight: "0%",
   },
 };
@@ -318,12 +320,23 @@ export function getLifecycleEncoding(lifecycle: Lifecycle): LifecycleEncoding {
 /**
  * Derives the namespace from a prefixed URI (`ds:global.component.button` →
  * `ds`). Unknown or missing prefixes degrade to the docsite's own namespace
- * rather than throwing — a mention must never block the prose around it.
+ * rather than throwing — a mention must never block the prose around it —
+ * but the degradation is observable: a dev-only warning names the prefix
+ * and URI so a typo'd vocabulary doesn't silently render as `docs`.
  */
 export function deriveNamespaceFromUri(uri: string): Namespace {
   assertNonEmptyString(uri, "uri");
   const prefix = uri.split(":").at(0);
-  return isNamespace(prefix) ? prefix : DEFAULT_NAMESPACE;
+  if (isNamespace(prefix)) {
+    return prefix;
+  }
+  if (import.meta.env.DEV) {
+    console.warn(
+      `Chip: unknown namespace prefix "${prefix}" in uri "${uri}" — ` +
+        `falling back to "${DEFAULT_NAMESPACE}"`,
+    );
+  }
+  return DEFAULT_NAMESPACE;
 }
 
 /* ------------------------------------------------------------------ */
