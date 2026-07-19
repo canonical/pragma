@@ -79,8 +79,9 @@ function compareDocVerbs(a: VerbSpec, b: VerbSpec): number {
   if (nounA !== nounB) return nounA < nounB ? -1 : 1;
   const labelA = verbLabel(a.path);
   const labelB = verbLabel(b.path);
-  /* v8 ignore next -- unreachable: verb paths are unique, so no two doc verbs
-     share a noun+label; the equal tie-break is defensive. */
+  /* v8 ignore next -- unreachable: no registered grammar produces a `[noun,
+     noun]` path (a verb equal to its own noun), so within one noun every
+     verb-label is unique and this equal tie-break never fires. */
   if (labelA === labelB) return 0;
   return labelA < labelB ? -1 : 1;
 }

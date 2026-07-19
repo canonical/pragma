@@ -26,6 +26,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { join, relative } from "node:path";
@@ -128,19 +129,30 @@ const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
  * Write the generated Markdown reference (`emitReference(capabilities)`) into
  * `docs/reference/`, one file per page. Deterministic, so — like
  * {@link generateTemplateManifest} — a page is written ONLY when its bytes
- * differ, keeping a rebuild a working-tree no-op.
+ * differ, keeping a rebuild a working-tree no-op. Any committed `.md` the
+ * emitter no longer produces (a removed noun's page) is pruned, so the tree
+ * self-heals instead of leaning on the drift-guard to catch the orphan.
  *
  * @returns The number of pages actually written (changed).
- * @note Impure — reads and writes the `docs/reference` tree.
+ * @note Impure — reads, writes, and prunes the `docs/reference` tree.
  */
 function writeReferenceDocs(): number {
   mkdirSync(REFERENCE_DIR, { recursive: true });
+  const emitted = emitReference(capabilities);
   let written = 0;
-  for (const [relPath, content] of emitReference(capabilities)) {
+  for (const [relPath, content] of emitted) {
     const out = join(REFERENCE_DIR, relPath);
     if (!existsSync(out) || readFileSync(out, "utf-8") !== content) {
       writeFileSync(out, content);
       written += 1;
+    }
+  }
+  // Prune orphans deterministically: unlink any top-level `.md` the emitter did
+  // not just produce (sorted for a stable order), so a removed page disappears
+  // on the next build rather than lingering until the drift-guard flags it.
+  for (const name of readdirSync(REFERENCE_DIR).sort()) {
+    if (name.endsWith(".md") && !emitted.has(name)) {
+      unlinkSync(join(REFERENCE_DIR, name));
     }
   }
   return written;
