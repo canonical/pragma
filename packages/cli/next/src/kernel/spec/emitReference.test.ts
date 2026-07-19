@@ -3,6 +3,7 @@ import {
   fixtureModule,
   fixtureReferenceModule,
 } from "../../testing/fixtures/fixtureCapability.js";
+import { ERROR_CODES } from "../error/constants.js";
 import { emitReference } from "./emitReference.js";
 
 /** The four pages every reference doc set carries. */
@@ -35,12 +36,13 @@ describe("emitReference", () => {
 
   describe("index.md", () => {
     it("reports counts derived from the live grammar", () => {
-      // gizmo + ping = 2 nouns; scan/wipe/local/ping = 4 commands (hidden dropped);
-      // scan/wipe/ping = 3 tools (local withheld); no resource templates.
+      // gizmo + ping = 2 nouns; local/scan/tidy/wipe/ping = 5 commands (hidden
+      // dropped); scan/tidy/wipe/ping = 4 tools (local withheld); 1 resource
+      // template (the module's `mcpResources` surface).
       expect(index).toContain("**2** command nouns");
-      expect(index).toContain("**4** CLI commands");
-      expect(index).toContain("**3** MCP tools");
-      expect(index).toContain("**0** resource template(s)");
+      expect(index).toContain("**5** CLI commands");
+      expect(index).toContain("**4** MCP tools");
+      expect(index).toContain("**1** resource template(s)");
     });
 
     it("links the three sibling pages with relative paths", () => {
@@ -126,6 +128,15 @@ describe("emitReference", () => {
       );
     });
 
+    it("marks a non-destructive mutating tool as such", () => {
+      const tidy = tools.slice(tools.indexOf("### gizmo_tidy"));
+      expect(tidy).toContain("| `confirm` | boolean | no |");
+      // The `destructive: false` branch of `formatToolAnnotations`.
+      expect(tools).toContain(
+        "Mutation — plan-first (set `confirm: true` to apply). Non-destructive.",
+      );
+    });
+
     it("omits verbs withheld from MCP", () => {
       expect(tools).not.toContain("gizmo_local");
     });
@@ -135,12 +146,14 @@ describe("emitReference", () => {
       expect(ping.slice(0, 200)).toContain("_No input parameters._");
     });
 
-    it("describes the non-tool surface without resources or prompts for this module", () => {
+    it("renders every non-tool surface bullet the module declares", () => {
       expect(tools).toContain("## Non-tool surface");
+      // The module declares an `mcpResources` template surface (its `surface.
+      // templates` id) and an `mcpPrompts` native surface, so all three bullets
+      // render — exercising both optional branches of `renderNonToolSurface`.
+      expect(tools).toContain("- **Resources**: `gizmo:{+uri}`");
+      expect(tools).toContain("- **Prompts**:");
       expect(tools).toContain("- **Instructions**:");
-      // This module declares neither, so those bullets are absent.
-      expect(tools).not.toContain("- **Resources**:");
-      expect(tools).not.toContain("- **Prompts**:");
     });
   });
 
@@ -150,6 +163,17 @@ describe("emitReference", () => {
       expect(errors).toContain("| `3` | store unavailable |");
       expect(errors).toContain("| `ENTITY_NOT_FOUND` |");
       expect(errors).toContain("| `UNSUPPORTED` |");
+    });
+
+    it("lists every code in the closed ERROR_CODES tuple (exhaustive)", () => {
+      // Non-circular exhaustiveness: iterate the source-of-truth tuple and
+      // assert each code's `catalog` row is present, so a code added to the
+      // kernel without a catalog entry fails here (not just the 2 spot-checks).
+      for (const code of ERROR_CODES) {
+        expect(errors, `errors.md is missing \`${code}\``).toContain(
+          `\`${code}\``,
+        );
+      }
     });
 
     it("embeds the response envelope as a JSON block", () => {
