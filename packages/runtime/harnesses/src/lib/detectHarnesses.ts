@@ -12,6 +12,7 @@ import {
   type Task,
   traverse,
 } from "@canonical/task";
+import { defaultBandOf, resolveConfigTarget } from "./config.js";
 import harnesses from "./harnesses.js";
 import { type PlatformEnv, readPlatformEnv } from "./platformPaths.js";
 import {
@@ -41,7 +42,15 @@ const detectOne = (
       const confidence = scoreConfidence(results, harness.detect);
       if (!confidence) return pure(null);
 
-      const configPath = harness.configPath(ctx.projectRoot);
+      // Report the harness's DEFAULT-band file (the home config for a
+      // global-only harness, the project file otherwise) so the recap and
+      // doctor point at the location the default `setup` would write.
+      const { path: configPath } = resolveConfigTarget(
+        harness,
+        ctx.projectRoot,
+        defaultBandOf(harness),
+        ctx.platform,
+      );
       return map(
         exists(configPath),
         (configExists): DetectedHarness => ({

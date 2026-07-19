@@ -6,10 +6,29 @@ import {
   filterEffects,
 } from "@canonical/task";
 import { describe, expect, it } from "vitest";
-import { readMcpConfig, removeMcpConfig, writeMcpConfig } from "./config.js";
+import {
+  defaultBandOf,
+  readMcpConfig,
+  removeMcpConfig,
+  resolveConfigTarget,
+  writeMcpConfig,
+} from "./config.js";
+import findHarnessById from "./findHarnessById.js";
 import harnesses from "./harnesses.js";
+import type { PlatformEnv } from "./platformPaths.js";
 
 const claude = harnesses[0];
+
+/** A fixed host so home-band paths resolve deterministically. */
+const PLATFORM: PlatformEnv = {
+  platform: "linux",
+  env: {},
+  home: "/home/tester",
+  isWsl: false,
+};
+
+const cursor = findHarnessById("cursor") as (typeof harnesses)[number];
+const windsurf = findHarnessById("windsurf") as (typeof harnesses)[number];
 
 type MockSpec = Record<string, (effect: Effect) => unknown>;
 
@@ -398,6 +417,102 @@ describe("TOML config (Codex)", () => {
     expect(writeEffects.length).toBe(1);
     expect(writeEffects[0].content).toContain("[mcp_servers.figma]");
     expect(writeEffects[0].content).not.toContain("[mcp_servers.pragma]");
+  });
+});
+
+describe("defaultBandOf", () => {
+  it("defaults a global-only harness to the global band", () => {
+    expect(defaultBandOf(windsurf)).toBe("global");
+  });
+
+  it("defaults project and both harnesses to the project band", () => {
+    expect(defaultBandOf(cursor)).toBe("project");
+    expect(defaultBandOf(claude)).toBe("project");
+  });
+});
+
+describe("resolveConfigTarget", () => {
+  it("resolves the project band to the harness project path", () => {
+    const target = resolveConfigTarget(claude, "/project", "project", PLATFORM);
+    expect(target.path).toBe("/project/.mcp.json");
+    expect(target.mcpKey).toBe("mcpServers");
+    expect(target.scope).toBe("both");
+  });
+
+  it("resolves the global band to the harness home path", () => {
+    const target = resolveConfigTarget(claude, "/project", "global", PLATFORM);
+    expect(target.path).toBe("/home/tester/.claude.json");
+  });
+
+  it("throws for a global band on a harness with no homeConfigPath", () => {
+    expect(() =>
+      resolveConfigTarget(cursor, "/project", "global", PLATFORM),
+    ).toThrow(/homeConfigPath/);
+  });
+});
+
+describe("scope-aware read/write (explicit band + platform)", () => {
+  it("writes the pragma server into the home config for the global band", () => {
+    const result = dryRunWith(
+      writeMcpConfig(
+        claude,
+        "/project",
+        "pragma",
+        { command: "pragma", args: ["mcp"] },
+        "global",
+        PLATFORM,
+      ),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects.length).toBe(1);
+    expect(writeEffects[0].path).toBe("/home/tester/.claude.json");
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.pragma).toEqual({
+      command: "pragma",
+      args: ["mcp"],
+    });
+  });
+
+  it("reads the home config for the global band", () => {
+    const result = dryRunWith(
+      readMcpConfig(claude, "/project", "global", PLATFORM),
+      buildMocks({
+        Exists: existsMock((path) => path === "/home/tester/.claude.json"),
+        ReadFile: readFileMock(
+          JSON.stringify({ mcpServers: { pragma: { command: "pragma" } } }),
+        ),
+      }),
+    );
+    expect(result.value).toEqual({ pragma: { command: "pragma" } });
+  });
+
+  it("removes from the home config for the global band", () => {
+    const result = dryRunWith(
+      removeMcpConfig(claude, "/project", "pragma", "global", PLATFORM),
+      buildMocks({
+        Exists: existsMock((path) => path === "/home/tester/.claude.json"),
+        ReadFile: readFileMock(
+          JSON.stringify({
+            mcpServers: {
+              pragma: { command: "pragma" },
+              keep: { command: "k" },
+            },
+          }),
+        ),
+        WriteFile: writeMock,
+      }),
+    );
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    expect(writeEffects[0].path).toBe("/home/tester/.claude.json");
+    const written = JSON.parse(writeEffects[0].content);
+    expect(written.mcpServers.pragma).toBeUndefined();
+    expect(written.mcpServers.keep).toEqual({ command: "k" });
   });
 });
 
