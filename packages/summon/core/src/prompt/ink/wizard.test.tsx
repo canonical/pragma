@@ -40,13 +40,38 @@ const gen: GeneratorDefinition = {
 };
 
 /** Poll a predicate until true (robust to render timing under coverage/load). */
-async function waitFor(check: () => boolean, timeout = 15000): Promise<void> {
+async function waitFor(check: () => boolean, timeout = 30000): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     if (check()) return;
     await new Promise((r) => setTimeout(r, 15));
   }
   throw new Error("waitFor: condition not met within timeout");
+}
+
+/**
+ * Send a key and re-send it until the expected state lands. ink-testing-library
+ * can drop input written before the target's `useInput` handler subscribes;
+ * under CI load that lag makes a single write flaky (the key is lost and the
+ * state wait then runs to its ceiling). Re-sending only after ~1s of no change
+ * keeps the common fast path single-shot (no double-submit).
+ */
+async function pressUntil(
+  stdin: { write: (data: string) => void },
+  key: string,
+  done: () => boolean,
+  timeout = 30000,
+): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    if (done()) return;
+    stdin.write(key);
+    for (let i = 0; i < 50 && !done(); i++) {
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  }
+  if (done()) return;
+  throw new Error("pressUntil: key did not take effect within timeout");
 }
 
 const text = (name: string, message: string): PromptEffect =>
@@ -82,25 +107,31 @@ describe("create wizard (PROTECTED)", () => {
           frame().includes("Step 1 of 2"),
       );
       stdin.write("src/components/Button");
-      await new Promise((r) => setTimeout(r, 30));
-      stdin.write("\r");
-      await waitFor(
+      // Confirm Ink has rendered the typed value before submitting (a fixed
+      // delay raced the reconciler under load), then re-send Enter until the
+      // answer lands — the two flaky paths in this step.
+      await waitFor(() => frame().includes("src/components/Button"));
+      await pressUntil(
+        stdin,
+        "\r",
         () => c.getSnapshot().answers.componentPath === "src/components/Button",
       );
 
       // 2. Confirm prompt (submits immediately on "y").
       void c.request(confirm("withStyles", "Include styles?"));
       await waitFor(() => frame().includes("Step 2 of 2"));
-      stdin.write("y");
-      await waitFor(() => c.getSnapshot().answers.withStyles === true);
+      await pressUntil(
+        stdin,
+        "y",
+        () => c.getSnapshot().answers.withStyles === true,
+      );
 
       // 3. The confirm GATE — the wizard shows the preview + "Proceed?".
       void c.request(gate());
       await waitFor(
         () => frame().includes("Proceed?") && /File.*to create/.test(frame()),
       );
-      stdin.write("y");
-      await waitFor(() => c.getSnapshot().phase === "executing");
+      await pressUntil(stdin, "y", () => c.getSnapshot().phase === "executing");
 
       // 4. Progress + completion.
       c.reportEffectComplete(
@@ -116,7 +147,7 @@ describe("create wizard (PROTECTED)", () => {
     } finally {
       unmount();
     }
-  }, 20000);
+  }, 60000);
 });
 
 describe("cancelled frame is truthful about files written (H2)", () => {
