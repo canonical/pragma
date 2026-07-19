@@ -121,6 +121,13 @@ describe("server matrix (2×3) serves correctly", () => {
             const xml = await sitemap.text();
             expect(xml).toContain("<urlset");
             expect(xml).toContain("<loc>");
+
+            // 4b. The shell frame SSRs through the real pipeline (P-4.1):
+            //     the page fetched in step 1 already carries the rail and
+            //     the canvas plate's structural identity. SPA cells serve
+            //     the empty HTML shell, so they are exempt.
+            expect(html).toContain('data-region="primary-nav"');
+            expect(html).toContain('data-region="canvas"');
           }
 
           // 5. P-2 Stage 1: /playground carries the probe's REAL graph data in
