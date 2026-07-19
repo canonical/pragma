@@ -97,7 +97,7 @@ pragma prompt list
 pragma prompt lookup build-a-block
 ```
 
-- `capabilities` returns the conventions, a three-stage discovery sequence, and the annotated tool catalog — call it first at session start.
+- `capabilities` returns the conventions, a four-stage discovery sequence, and the annotated tool catalog — call it first at session start.
 - `colophon` narrates how pragma and the active design-system domain are made.
 - `prompt list` browses the workflow prompt templates the design system ships; `prompt lookup <name>` prints one template's body and arguments.
 

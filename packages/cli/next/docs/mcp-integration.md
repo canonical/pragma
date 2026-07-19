@@ -10,7 +10,7 @@ The quickest path is the installer, which detects your AI harnesses and register
 pragma setup mcp
 ```
 
-Preview what it would write first with `pragma setup --dry-run`.
+Preview what it would write first with `pragma setup mcp --dry-run`.
 
 ## Run the server manually
 
@@ -43,7 +43,7 @@ The server advertises a catalog of read and scaffold tools. Rather than hard-cod
 pragma capabilities
 ```
 
-`capabilities` returns the conventions, a three-stage discovery sequence, and every live tool annotated with a behavioural `use_when` hint and a category — all derived from the live grammar, so the catalog never drifts from the code. The [tool reference](./reference/tools.md) lists every tool and its input schema.
+`capabilities` returns the conventions, a four-stage discovery sequence, and every live tool annotated with a behavioural `use_when` hint and a category — all derived from the live grammar, so the catalog never drifts from the code. The [tool reference](./reference/tools.md) lists every tool and its input schema.
 
 ## Non-tool surface
 
