@@ -113,6 +113,31 @@ inside the canvas renders happily, just anchored to the wrong box, and
 nothing warns until the first floating tenant arrives (P-5's inspector is
 the likely candidate). The law is written down before there is a corpse.
 
+## 6 — The entity aside wanted a container query; the census said no (P-5)
+
+**What.** The component entity view is a two-tenant row: reading column
+west, quick-facts aside east (`--aside-w`). The obvious modern move is a
+`@container canvas (inline-size < …)` rule that stacks the aside under the
+article on narrow canvases — the canvas is even a named query container
+already. But the at-rule census (`frameStability.tests.tsx`) sanctions
+exactly ONE layout-capable conditional in the app, the Rail collapse, and
+a second one would erode the AX.1 posture one "just this once" at a time.
+
+**Fix.** Flex, intrinsically: the body is `display: flex; flex-wrap: wrap`,
+the article `flex: 1 1 32rem; min-inline-size: 0`, the aside
+`flex: 0 1 var(--aside-w); min-inline-size: 0`. On a wide canvas both fit
+on the row and the aside holds its token basis; as the canvas narrows the
+aside first SHRINKS (flex-shrink 1 — no scrollbar), and when the article
+can no longer make its 32rem basis the wrap breaks the aside below it.
+The breakpoint emerges from content bases, not from a viewport or
+container measurement — the collapse point is wherever `32rem + gap +
+aside` stops fitting, which is the honest intrinsic answer.
+
+**Why logged.** The first composed-layout tenant to CONSUME `--aside-w`
+(AX.6's "regions consume, never re-define" finally has a consumer), and
+the precedent for every future two-column mode: reach for wrap + basis
+before asking the census for a second conditional.
+
 ---
 
 ## Round notes (P-4.1 review)

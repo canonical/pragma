@@ -12,6 +12,7 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
+import componentsRoutes from "#domains/components/routes.js";
 import lensRoutes from "#domains/lenses/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
 import playgroundRoutes from "#domains/playground/routes.js";
@@ -108,14 +109,19 @@ const [playground] = group(publicLayout, [
 ] as const);
 
 // The v1 lens set (owner-ruled order): Home · Components · Definitions ·
-// Standards · Guides. Home is marketingRoutes.home above; the other four
-// are stubs until P-5 builds their views.
-const [components, definitions, standards, guides] = group(publicLayout, [
-  lensRoutes.components,
-  lensRoutes.definitions,
-  lensRoutes.standards,
-  lensRoutes.guides,
-] as const);
+// Standards · Guides. Home is marketingRoutes.home above; Components'
+// entity view (`/components/:uri`, P-5) is live, the rest are stubs until
+// P-5 builds their views.
+const [components, definitions, standards, guides, componentEntity] = group(
+  publicLayout,
+  [
+    lensRoutes.components,
+    lensRoutes.definitions,
+    lensRoutes.standards,
+    lensRoutes.guides,
+    componentsRoutes.componentEntity,
+  ] as const,
+);
 
 const appRoutes = {
   guide,
@@ -127,6 +133,7 @@ const appRoutes = {
   definitions,
   standards,
   guides,
+  componentEntity,
 } as const;
 
 export type AppRoutes = typeof appRoutes;

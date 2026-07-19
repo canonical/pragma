@@ -19,15 +19,26 @@
  * itself is frame — its attributes are chrome). Then:
  *
  *   1. every canvas is pairwise distinct (the comparison is not vacuous);
- *   2. raw frames pairwise DIFFER — the one accounted-for delta, the
- *      router's `aria-current="page"`, is really present and visible to
- *      this measurement (the extraction has eyes on the rail);
+ *   2. raw frames pairwise DIFFER — the accounted-for deltas (the
+ *      router's `aria-current="page"`, and since P-5 the mode strip's
+ *      claimed context text) are really present and visible to this
+ *      measurement (the extraction has eyes on the rail and the strip);
  *   3. the aria-current placements are exactly the modelled expectation
- *      per URL (Home carries two: brand + Home lens, both `href="/"`);
- *   4. after normalising ONLY that attribute, all frames are
+ *      per URL (Home carries two: brand + Home lens, both `href="/"`),
+ *      and the strip's `data-slot="context"` text equals the per-URL
+ *      model RAW — normalisation can never hide a wrong claim, because
+ *      the raw text is asserted first;
+ *   4. after normalising ONLY those two deltas (strip the attribute,
+ *      blank exactly the context slot's text), all frames are
  *      byte-identical (`toBe` on the strings);
  *   5. the normaliser forgives nothing else — a synthetic one-byte frame
- *      perturbation survives normalisation and fails the comparison.
+ *      perturbation survives normalisation and fails the comparison, and
+ *      so does text planted in any OTHER strip slot.
+ *
+ * Since P-5 the measured set also carries a non-lens URL — the Button
+ * entity page — rendered from its captured fixture records (initialData,
+ * exactly what the dev servers embed), so its canvas is real content and
+ * nothing in the render path waits on a network that node does not have.
  *
  * Alongside the markup claim, the stylesheet claims: the four layout
  * tokens and the four z-axis tokens are each DEFINED exactly once across
@@ -47,7 +58,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { renderToString } from "react-dom/server";
+import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it } from "vitest";
+import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import EntryServer from "../../server/entry.js";
 
 /** The v1 lens URLs, owner-ruled order. */
@@ -59,9 +72,24 @@ const LENS_URLS = [
   "/guides",
 ] as const;
 
-/** Per-URL expectation for the accounted-for delta: the hrefs carrying
- * `aria-current="page"`. Home has two — the brand link and the Home lens
- * entry both point at "/". */
+/** The P-5 entity exemplar: a non-lens URL whose frame must still be the
+ * same instrument body. Exact-match linking means NO rail entry carries
+ * `aria-current` here (ruling R3). */
+const BUTTON_ENTITY_URL = "/components/ds%3Aglobal.component.button";
+
+/** Every URL the certification measures. */
+const MEASURED_URLS = [...LENS_URLS, BUTTON_ENTITY_URL] as const;
+
+/** Data-bearing pages render from their captured fixture records — the
+ * `initialData` a dev server would embed — so canvases are real content. */
+const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
+  [BUTTON_ENTITY_URL]: componentEntityRecordsButton,
+};
+
+/** Per-URL expectation for the first accounted-for delta: the hrefs
+ * carrying `aria-current="page"`. Home has two — the brand link and the
+ * Home lens entry both point at "/". The entity URL has NONE: the rail's
+ * Components entry is an exact-match link (R3). */
 const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   // Two carriers, deliberately: the router marks BOTH same-destination links
   // exact-match on "/", so screen readers announce current-page twice on
@@ -72,10 +100,32 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   "/definitions": ["/definitions"],
   "/standards": ["/standards"],
   "/guides": ["/guides"],
+  [BUTTON_ENTITY_URL]: [],
+};
+
+/** Per-URL expectation for the second accounted-for delta: the mode
+ * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
+ * stubs claim nothing; the Components views claim the lens name. */
+const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
+  "/": "",
+  "/components": "",
+  "/definitions": "",
+  "/standards": "",
+  "/guides": "",
+  [BUTTON_ENTITY_URL]: "Components",
 };
 
 const renderPage = (url: string): string =>
-  renderToString(<EntryServer initialData={{ url }} />);
+  renderToString(
+    <EntryServer
+      initialData={{
+        url,
+        ...(PAGE_RECORDS[url]
+          ? { relay: { records: PAGE_RECORDS[url] } }
+          : undefined),
+      }}
+    />,
+  );
 
 /** Body-scoped page markup (chrome + canvas; head excluded by design). */
 const extractBody = (html: string): string => {
@@ -104,9 +154,26 @@ const splitAtCanvas = (body: string): { frame: string; canvas: string } => {
   };
 };
 
-/** Forgive exactly the accounted-for delta, nothing else. */
+/** The strip's context slot, as the ModeStrip renders it. The pattern pins
+ * the slot's full identity (class + data-slot) so it can never latch onto
+ * another element; content is text-only by the claim contract (a string). */
+const STRIP_CONTEXT_PATTERN =
+  /(<div class="strip-context" data-slot="context">)([^<]*)(<\/div>)/;
+
+/** The context slot's RAW text — asserted against the model BEFORE any
+ * normalisation, so blanking below can never hide a wrong claim. */
+const extractStripContext = (frame: string): string => {
+  const match = STRIP_CONTEXT_PATTERN.exec(frame);
+  expect(match, "frame carries exactly one context slot").not.toBeNull();
+  return (match as RegExpExecArray)[2];
+};
+
+/** Forgive exactly the accounted-for deltas, nothing else: strip the
+ * router's aria-current attribute, blank ONLY the context slot's text. */
 const normalizeFrame = (frame: string): string =>
-  frame.replaceAll(' aria-current="page"', "");
+  frame
+    .replaceAll(' aria-current="page"', "")
+    .replace(STRIP_CONTEXT_PATTERN, "$1$3");
 
 /** The hrefs of anchors carrying aria-current, in document order. */
 const ariaCurrentHrefs = (frame: string): string[] =>
@@ -125,7 +192,10 @@ interface LensPage {
 let pagesCache: Map<string, LensPage> | undefined;
 const getPages = (): Map<string, LensPage> => {
   pagesCache ??= new Map(
-    LENS_URLS.map((url) => [url, splitAtCanvas(extractBody(renderPage(url)))]),
+    MEASURED_URLS.map((url) => [
+      url,
+      splitAtCanvas(extractBody(renderPage(url))),
+    ]),
   );
   return pagesCache;
 };
@@ -137,10 +207,10 @@ const mustGet = (url: string): LensPage => {
 };
 
 describe("frame stability across lens switches (the P-4.1 certification)", () => {
-  it("renders every lens's canvas distinctly (the comparison has content)", () => {
+  it("renders every measured canvas distinctly (the comparison has content)", () => {
     const canvases = [...getPages().values()].map(({ canvas }) => canvas);
-    expect(new Set(canvases).size).toBe(LENS_URLS.length);
-    // And each canvas holds ITS lens, not a fallback:
+    expect(new Set(canvases).size).toBe(MEASURED_URLS.length);
+    // And each canvas holds ITS page, not a fallback:
     expect(mustGet("/").canvas).toContain('id="home-title"');
     expect(mustGet("/components").canvas).toContain(
       'id="lens-components-title"',
@@ -150,6 +220,14 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     );
     expect(mustGet("/standards").canvas).toContain('id="lens-standards-title"');
     expect(mustGet("/guides").canvas).toContain('id="lens-guides-title"');
+    // The entity page renders its REAL data from the fixture records, not
+    // a loading state — the whole view SSRs from a warm store.
+    expect(mustGet(BUTTON_ENTITY_URL).canvas).toContain(
+      'data-view="component-entity"',
+    );
+    expect(mustGet(BUTTON_ENTITY_URL).canvas).toContain(
+      '<h1 id="component-entity-title">Button</h1>',
+    );
   });
 
   it("carries the full frame on every lens", () => {
@@ -201,14 +279,25 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     }
   });
 
-  it("frames are byte-identical once the accounted-for delta is normalised", () => {
+  it("carries the strip context exactly as modelled, per URL — RAW", () => {
+    // The raw slot text is the assertion; the normaliser below only blanks
+    // what THIS test has already proven correct. A route claiming the
+    // wrong context (or a stub suddenly claiming one) fails here first.
+    for (const [url, { frame }] of getPages()) {
+      expect(extractStripContext(frame), `strip context on ${url}`).toBe(
+        EXPECTED_STRIP_CONTEXT[url],
+      );
+    }
+  });
+
+  it("frames are byte-identical once the accounted-for deltas are normalised", () => {
     const base = normalizeFrame(mustGet("/").frame);
-    for (const url of LENS_URLS.slice(1)) {
+    for (const url of MEASURED_URLS.slice(1)) {
       expect(normalizeFrame(mustGet(url).frame), `frame of ${url}`).toBe(base);
     }
   });
 
-  it("the normaliser forgives nothing but aria-current (its own teeth)", () => {
+  it("the normaliser forgives nothing but the modelled deltas (its own teeth)", () => {
     const frame = mustGet("/components").frame;
     const perturbed = frame.replace(
       'data-region="primary-nav"',
@@ -216,6 +305,25 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     );
     expect(perturbed).not.toBe(frame);
     expect(normalizeFrame(perturbed)).not.toBe(normalizeFrame(frame));
+  });
+
+  it("the context normaliser forgives ONLY the context slot's text", () => {
+    const frame = mustGet(BUTTON_ENTITY_URL).frame;
+    // Forgiven: the modelled slot's text. Blanking makes two different
+    // claims compare equal — which is exactly why the RAW model assertion
+    // above exists.
+    const contextChanged = frame.replace(STRIP_CONTEXT_PATTERN, "$1Impostor$3");
+    expect(contextChanged).not.toBe(frame);
+    expect(normalizeFrame(contextChanged)).toBe(normalizeFrame(frame));
+    // NOT forgiven: text planted in a sibling slot (status) survives
+    // normalisation and breaks byte-identity — the normaliser's scope is
+    // one slot, not "the strip".
+    const statusPlanted = frame.replace(
+      /(<div class="strip-status" data-slot="status">)(<\/div>)/,
+      "$1planted$2",
+    );
+    expect(statusPlanted).not.toBe(frame);
+    expect(normalizeFrame(statusPlanted)).not.toBe(normalizeFrame(frame));
   });
 });
 

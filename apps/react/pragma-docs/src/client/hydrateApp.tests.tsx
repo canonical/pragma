@@ -17,9 +17,12 @@ import type { Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
+import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "#relay/environment.js";
+import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import type { InitialData } from "../server/entry.js";
 import { hydrateApp } from "./hydrateApp.js";
@@ -38,22 +41,50 @@ const createFetchSpy = () =>
     FetchFunction;
 
 /**
- * Server HTML of the app tree at `/playground` from a store seeded with the
- * captured fixture — the same composition `EntryServer` renders inside
- * `#root` (static router in, browser router out), so the seam hydrates the
- * bytes a dev server would actually serve.
+ * The seeded pages the seam must hydrate silently. The P-5 lens routes
+ * carry `prefetch` hooks that FIRE during these tests (the browser
+ * router's initial `performLoad`), so the zero-fetch assertion also proves
+ * `warmRouteQuery`'s check guard: without it, the initial pass would
+ * refetch the very page the server just seeded.
  */
-const renderSeededServerHtml = (fetchFn: FetchFunction): string =>
+const SEEDED_PAGES = [
+  {
+    name: "playground probe",
+    url: PLAYGROUND_URL,
+    records: componentProbeRecords,
+    serverMarker: "<h2>Button</h2>",
+    liveSelector: "h2",
+  },
+  {
+    name: "component entity",
+    url: "/components/ds%3Aglobal.component.button",
+    records: componentEntityRecordsButton,
+    serverMarker: '<h1 id="component-entity-title">Button</h1>',
+    liveSelector: "#component-entity-title",
+  },
+] as const;
+
+/**
+ * Server HTML of the app tree at `url` from a store seeded with `records`
+ * — the same composition `EntryServer` renders inside `#root` (static
+ * router in, browser router out), so the seam hydrates the bytes a dev
+ * server would actually serve.
+ */
+const renderSeededServerHtml = (
+  fetchFn: FetchFunction,
+  url: string = PLAYGROUND_URL,
+  records: RecordMap = componentProbeRecords,
+): string =>
   renderToString(
     <HeadProvider>
       <RelayEnvironmentProvider
         environment={createEnvironment({
-          records: componentProbeRecords,
+          records,
           fetchFn,
         })}
       >
         <RouterProvider
-          router={createStaticRouter(appRoutes, PLAYGROUND_URL, {
+          router={createStaticRouter(appRoutes, url, {
             middleware: [...middleware],
             notFound: notFoundRoute,
           })}
@@ -98,8 +129,6 @@ describe("hydrateApp over the seeded SSR output", () => {
     );
     globalFetch = createFetchSpy();
     vi.stubGlobal("fetch", globalFetch);
-    // The browser router reads the location the seam hydrates at.
-    window.history.pushState({}, "", PLAYGROUND_URL);
   });
 
   afterEach(async () => {
@@ -113,6 +142,14 @@ describe("hydrateApp over the seeded SSR output", () => {
     }
     delete (window as TestWindow).__INITIAL_DATA__;
     window.history.pushState({}, "", "/");
+    // `hydrateApp` publishes its environment in the MODULE-scope prefetch
+    // holder, which this file's tests would otherwise share: the next
+    // test's `renderSeededServerHtml` builds a static router whose initial
+    // load fires route prefetch hooks, and a stale environment there would
+    // fetch against the WRONG store. Production has no such leak (the
+    // server registries never call the setter); clearing restores exactly
+    // that posture per test.
+    setPrefetchEnvironment(undefined);
     vi.unstubAllGlobals();
   });
 
@@ -129,30 +166,43 @@ describe("hydrateApp over the seeded SSR output", () => {
     return { container, onRecoverableError };
   }
 
-  it("hydrates from the seeded store: no recoverable error, no fetch", async () => {
+  it.each(
+    SEEDED_PAGES,
+  )("hydrates the $name from the seeded store: no recoverable error, no fetch", async ({
+    url,
+    records,
+    serverMarker,
+    liveSelector,
+  }) => {
     const serverFetchFn = createFetchSpy();
-    const serverHtml = renderSeededServerHtml(serverFetchFn);
+    const serverHtml = renderSeededServerHtml(serverFetchFn, url, records);
     // The server render itself came from the warm store, not the network.
-    expect(serverHtml).toContain("<h2>Button</h2>");
+    expect(serverHtml).toContain(serverMarker);
     expect(serverFetchFn).not.toHaveBeenCalled();
 
+    // The browser router reads the location the seam hydrates at.
+    window.history.pushState({}, "", url);
     (window as TestWindow).__INITIAL_DATA__ = {
-      url: PLAYGROUND_URL,
-      relay: { records: componentProbeRecords },
+      url,
+      relay: { records },
     };
     const { container, onRecoverableError } = await hydrateInto(serverHtml);
 
     // React 19's hydration-mismatch channel stayed silent…
     expect(onRecoverableError).not.toHaveBeenCalled();
-    // …the probe's content is live in the hydrated tree…
-    expect(container.querySelector("h2")?.textContent).toBe("Button");
-    // …and the network was NEVER consulted: hydration read the records the
-    // seam seeded from `__INITIAL_DATA__`. Discarding them in `hydrateApp`
-    // (`records: undefined`) turns exactly this assertion red.
+    // …the page's content is live in the hydrated tree…
+    expect(container.querySelector(liveSelector)?.textContent).toBe("Button");
+    // …and the network was NEVER consulted: hydration read the records
+    // the seam seeded from `__INITIAL_DATA__`, and the route prefetch the
+    // initial load fires found the store already warm (`warmRouteQuery`'s
+    // check guard). Discarding the records in `hydrateApp`
+    // (`records: undefined`) or the guard in `warmRouteQuery` turns
+    // exactly this assertion red.
     expect(globalFetch).not.toHaveBeenCalled();
   });
 
   it("control: discarding the seeded records makes hydration fetch", async () => {
+    window.history.pushState({}, "", PLAYGROUND_URL);
     const serverHtml = renderSeededServerHtml(createFetchSpy());
     // No `__INITIAL_DATA__` on `window`: the seam finds no records, the
     // store starts cold, and the probe's query goes over HTTP — the exact
@@ -164,6 +214,7 @@ describe("hydrateApp over the seeded SSR output", () => {
   });
 
   it("control: hydrating over tampered server HTML reports a recoverable error", async () => {
+    window.history.pushState({}, "", PLAYGROUND_URL);
     const serverHtml = renderSeededServerHtml(createFetchSpy());
     const tampered = serverHtml.replace("<h2>Button</h2>", "<h2>Impostor</h2>");
     expect(tampered).not.toBe(serverHtml);
