@@ -1,0 +1,140 @@
+/*
+ * Chip — an inline mention of a graph entity.
+ *
+ * All decoration derives from four custom properties, one per encoding
+ * channel, set inline by the component from the rows in `encodings.ts`:
+ *
+ *   --chip-tint           tint          → namespace
+ *   --chip-radius         shape         → kind
+ *   --chip-fill-weight    border-vs-fill → class/instance (fill side)
+ *   --chip-stroke-weight  border-vs-fill → class/instance (stroke side)
+ *   --chip-dot            status dot    → lifecycle
+ *
+ * The inline values are `var(--chip-…-<value>, fallback)` references, so a
+ * theme restyles a channel by defining the hook (see the dark blocks below)
+ * without touching any component logic.
+ */
+
+.ds.chip {
+  /* Inline, inheriting the surrounding font: with CSS off (or these rules
+   * ignored) the chip reads as plain text in the flow of its sentence. */
+  display: inline;
+  font: inherit;
+  color: var(--chip-tint, inherit);
+  text-decoration: none;
+
+  /* Shape channel. */
+  border-radius: var(--chip-radius, 0.375em);
+
+  /* Border-vs-fill channel: fill and stroke mix the namespace tint at the
+   * weight the box row dictates. The 1px stroke is always present (merely
+   * transparent for instances) so class and instance chips share identical
+   * metrics and switching one never reflows the prose around it. */
+  background: color-mix(
+    in oklab,
+    var(--chip-tint, currentColor) var(--chip-fill-weight, 0%),
+    transparent
+  );
+  border: 1px solid
+    color-mix(
+      in oklab,
+      var(--chip-tint, currentColor) var(--chip-stroke-weight, 0%),
+      transparent
+    );
+  padding-inline: 0.4em;
+  padding-block: 0.0625em;
+
+  /* Chips may wrap across lines like any other text; clone the decoration
+   * onto each fragment so a wrapped mention still reads as one chip. */
+  box-decoration-break: clone;
+}
+
+/* Lifecycle channel: a leading dot, coloured by the row, absent when the
+ * mention asserts no lifecycle. Pseudo-element content never contributes to
+ * textContent, preserving the reads-as-text invariant. */
+.ds.chip::before {
+  content: "";
+  display: inline-block;
+  inline-size: 0.4em;
+  block-size: 0.4em;
+  margin-inline-end: 0.3em;
+  border-radius: 50%;
+  background: var(--chip-dot, transparent);
+  vertical-align: 0.0625em;
+}
+
+.ds.chip[data-lifecycle="none"]::before {
+  content: none;
+}
+
+/* Linked chips (the noun's canonical home) reveal their affordance only on
+ * approach — at rest they sit in the reading path undecorated. */
+a.ds.chip:hover {
+  text-decoration: underline;
+}
+
+a.ds.chip:focus-visible {
+  outline: 2px solid var(--chip-tint, currentColor);
+  outline-offset: 1px;
+}
+
+/* Theme hooks: dark values for the tint and dot palettes. The component sets
+ * `var(--chip-tint-<ns>, <light value>)` inline, so defining the hook here
+ * wins at use-time — themes restyle without touching logic. */
+:root.dark {
+  --chip-tint-ds: oklch(0.78 0.11 155);
+  --chip-tint-cs: oklch(0.78 0.1 285);
+  --chip-tint-docs: oklch(0.8 0.11 70);
+  --chip-dot-canonical: oklch(0.7 0.14 150);
+  --chip-dot-beta: oklch(0.78 0.14 85);
+  --chip-dot-deprecated: oklch(0.68 0.17 25);
+}
+
+/* System-dark fallback for pages rendered before the theme class applies. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --chip-tint-ds: oklch(0.78 0.11 155);
+    --chip-tint-cs: oklch(0.78 0.1 285);
+    --chip-tint-docs: oklch(0.8 0.11 70);
+    --chip-dot-canonical: oklch(0.7 0.14 150);
+    --chip-dot-beta: oklch(0.78 0.14 85);
+    --chip-dot-deprecated: oklch(0.68 0.17 25);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Legend                                                              */
+/* ------------------------------------------------------------------ */
+
+.ds.chip-legend {
+  display: grid;
+  gap: var(--container-gap-default, 1rem);
+}
+
+.ds.chip-legend .chip-legend-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ds.chip-legend .chip-legend-summary {
+  margin: 0;
+  color: var(--color-foreground-secondary, inherit);
+}
+
+.ds.chip-legend .chip-legend-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.ds.chip-legend .chip-legend-entries li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.ds.chip-legend .chip-legend-note {
+  color: var(--color-foreground-secondary, inherit);
+}
