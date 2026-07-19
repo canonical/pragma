@@ -578,6 +578,32 @@ describe("writeMcpConfigTargets — shared-file multi-key write", () => {
       writeMcpConfigTargets([], "pragma", { command: "pragma" }),
     ).toThrow(/at least one target/);
   });
+
+  it("forces env to an object for a normalizeEnv (OpenDesign) target (7g)", () => {
+    const odTarget: ConfigTarget = {
+      path: "/project/.od/mcp-config.json",
+      configFormat: "json",
+      mcpKey: "mcpServers",
+      scope: "both",
+      normalizeEnv: true,
+    };
+    const result = dryRunWith(
+      // pragma writes no env — normalization must add an empty object, not omit it.
+      writeMcpConfigTargets([odTarget], "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    const written = JSON.parse(writeEffects[0].content);
+    expect(typeof written.mcpServers.pragma.env).toBe("object");
+    expect(written.mcpServers.pragma.env).toEqual({});
+  });
 });
 
 // SEC-1: a JSONC config (comments, trailing commas — valid in Cursor/VS Code/

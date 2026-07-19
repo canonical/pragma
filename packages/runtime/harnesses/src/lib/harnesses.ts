@@ -143,6 +143,30 @@ const harnesses: readonly HarnessDefinition[] = [
     mcpKey: "servers",
     skillsPath: (root) => `${root}/.agents/skills`,
   },
+  {
+    id: "opendesign",
+    name: "OpenDesign",
+    version: "*",
+    scope: "both",
+    // VERIFY(7g): OpenDesign requires the MCP server `env` to be a JSON map.
+    normalizeEnv: true,
+    detect: [
+      { type: "directory", path: ".od" },
+      {
+        type: "process",
+        name: "od",
+        // VERIFY(7g): guard the Unix `od` (octal dump) false-positive — only a
+        // binary whose --version identifies OpenDesign counts.
+        verify: { args: ["--version"], match: /open-?design/i },
+      },
+    ],
+    // VERIFY(7g): OpenDesign project + home MCP config paths and skills dir.
+    configPath: (root) => `${root}/.od/mcp-config.json`,
+    homeConfigPath: (p) => `${userHome(p)}/.od/mcp-config.json`,
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    skillsPath: (root) => `${root}/.od/skills`,
+  },
 ];
 
 export default harnesses;
