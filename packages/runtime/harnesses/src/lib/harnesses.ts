@@ -56,6 +56,24 @@ const harnesses: readonly HarnessDefinition[] = [
     skillsPath: (root) => `${root}/.windsurf/skills`,
   },
   {
+    id: "cline",
+    name: "Cline",
+    version: "*",
+    scope: "project",
+    detect: [
+      { type: "directory", path: ".vscode" },
+      { type: "extension", id: "saoudrizwan.claude-dev" },
+    ],
+    configPath: (root) => `${root}/.vscode/mcp.json`,
+    // VERIFY(7a): if Cline reads 'servers' (like VS Code) rather than
+    // 'mcpServers', collapse this to a single shared write with VS Code. Today
+    // Cline uses `mcpServers` and VS Code uses `servers`, so the two-level dedup
+    // writes both keys into .vscode/mcp.json, each preserving the other.
+    configFormat: "json",
+    mcpKey: "mcpServers",
+    skillsPath: (root) => `${root}/.agents/skills`,
+  },
+  {
     id: "roo-code",
     name: "Roo Code",
     version: "*",
