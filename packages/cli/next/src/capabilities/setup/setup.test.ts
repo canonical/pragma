@@ -28,6 +28,7 @@ import { dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { emitScripts } from "../../kernel/completion/emitScripts.js";
+import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
@@ -89,6 +90,39 @@ describe("setup completions", () => {
     expect(outcome.exitCode).toBe(0);
     expect(existsSync(path)).toBe(true);
     expect(readFileSync(path, "utf-8")).toBe(emitScripts(capabilities).zsh);
+  });
+
+  it("bakes the completion config (minChars + per-family opt-out) into the emitted script", async () => {
+    // Proves the reconciled `detectCompletions(cwd)` reads `completion` config
+    // and threads {minChars, disabledFamilies} into `emitScripts` — a silent
+    // regression if the fold had dropped autocomplete's config-threading for
+    // setup's argument-free detect.
+    const cwd = tmp("pragma-setup-proj-");
+    writeFileSync(
+      join(cwd, "pragma.config.ts"),
+      "export default { completion: { minChars: 5, families: { block: false } } };\n",
+    );
+    const path = completionScriptPath("zsh");
+    const outcome = await executeVerb(
+      completionsVerb,
+      {},
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const written = readFileSync(path, "utf-8");
+    // The installed script is EXACTLY the config-baked emit (minChars 5, the
+    // `block` family scrubbed) — the config was threaded end to end.
+    expect(written).toBe(
+      emitScripts(capabilities, {
+        minChars: 5,
+        disabledFamilies: ["block"],
+      }).zsh,
+    );
+    // Both knobs actually moved the output: it differs from the default emit
+    // (minChars), and from the minChars-only emit (the family opt-out).
+    expect(written).not.toBe(emitScripts(capabilities).zsh);
+    expect(written).not.toBe(emitScripts(capabilities, { minChars: 5 }).zsh);
   });
 
   it("--dry-run previews the write against the detected shell, writing nothing", async () => {
@@ -192,6 +226,38 @@ describe("setup skills", () => {
     expect(symlinkEffect).toBeDefined();
     expect(symlinkEffect?.undo).toBeDefined();
     expect(existsSync(join(cwd, ".agents", "skills", "my-skill"))).toBe(false);
+  });
+});
+
+describe("setup lsp — missing-binary guard (bunx absent)", () => {
+  it("surfaces a NAMED UNSUPPORTED (not INTERNAL_ERROR) when bunx is off PATH", async () => {
+    // Drives the REAL composeLsp exec (YES — not a dry-run mock) with `bunx`
+    // removed from PATH, so the spawn REJECTS with ENOENT. The reconciled guard
+    // at composeLsp's use site names it; without the guard the raw reject
+    // collapses to INTERNAL_ERROR ("please report this issue") at the boundary.
+    const prevPath = process.env.PATH;
+    process.env.PATH = tmp("pragma-empty-path-"); // empty dir ⇒ bunx unresolvable
+    let thrown: unknown;
+    try {
+      await executeVerb(
+        verbOf("lsp"),
+        {},
+        YES,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+    } catch (error) {
+      thrown = error;
+    } finally {
+      process.env.PATH = prevPath;
+    }
+    expect(thrown).toBeDefined();
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("UNSUPPORTED");
+    expect(err.code).not.toBe("INTERNAL_ERROR");
+    expect(err.message).toContain("bunx");
+    expect(err.message).toMatch(/not found on your PATH/i);
+    // The recovery is the actionable install hint, not "report this issue".
+    expect(err.recovery?.message ?? "").not.toMatch(/report this issue/i);
   });
 });
 
