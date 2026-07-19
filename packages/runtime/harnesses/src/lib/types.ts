@@ -9,7 +9,19 @@ export type DetectionSignal =
   | { readonly type: "directory"; readonly path: string }
   | { readonly type: "file"; readonly path: string }
   | { readonly type: "extension"; readonly id: string }
-  | { readonly type: "process"; readonly name: string }
+  | {
+      readonly type: "process";
+      readonly name: string;
+      /**
+       * When present, a bare PATH hit is not enough: the binary is run with
+       * `args` and its stdout must match `match` (guards against a same-named
+       * binary belonging to a different tool).
+       */
+      readonly verify?: {
+        readonly args: readonly string[];
+        readonly match: RegExp;
+      };
+    }
   | { readonly type: "env"; readonly key: string; readonly value?: string };
 
 /**
