@@ -1,9 +1,22 @@
-import { describe, expect, it, vi } from "vitest";
+import chalk from "chalk";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { VERSION } from "../../../constants.js";
 import { fixtureModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { projectCli } from "../../../testing/helpers/projectCli.js";
 import type { CapabilityModule, VerbSpec } from "../../spec/types.js";
 import { formatRootHelp } from "./rootHelp.js";
+
+// Root/noun/verb help styling (helpFormat.ts) routes through chalk, whose
+// `supports-color` enables color when GITHUB_ACTIONS is set — even off a TTY —
+// so CI would paint ANSI into these plain goldens and the bare-noun `--help`
+// comparison. Pin the level to 0 for deterministic, color-free renders (the same
+// guard colophon.render.test.ts / verbHelp.test.ts use). Module scope so the
+// collection-time formatRootHelp() call below renders plain too.
+const prevChalkLevel = chalk.level;
+chalk.level = 0;
+afterAll(() => {
+  chalk.level = prevChalkLevel;
+});
 
 /** A minimal verb under an arbitrary path, for help-grouping tests. */
 function makeVerb(path: [string, string?]): VerbSpec {

@@ -1,6 +1,19 @@
-import { describe, expect, it } from "vitest";
+import chalk from "chalk";
+import { afterAll, describe, expect, it } from "vitest";
 import type { VerbSpec } from "../../spec/types.js";
 import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
+
+// Help styling (helpFormat.ts) routes through chalk, whose `supports-color`
+// enables color when GITHUB_ACTIONS is set — even off a TTY — so CI would paint
+// ANSI into these plain goldens (locally chalk stays at level 0, which is why it
+// only failed in CI). Pin the level to 0 for a deterministic, color-free render
+// (the same guard colophon.render.test.ts uses). Set at module scope so the
+// collection-time formatVerbHelp() call below renders plain too.
+const prevChalkLevel = chalk.level;
+chalk.level = 0;
+afterAll(() => {
+  chalk.level = prevChalkLevel;
+});
 
 const passthrough = {
   plain: (d: unknown) => String(d),
