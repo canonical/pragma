@@ -17,6 +17,7 @@ import {
 } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
 import { createEnvironment } from "#relay/environment.js";
+import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import type { InitialData } from "../server/entry.js";
 
@@ -47,6 +48,12 @@ export const hydrateApp = (
   const relayEnvironment = createEnvironment({
     records: initialData?.relay?.records,
   });
+
+  // Publish the environment for route prefetch hooks BEFORE the router
+  // exists: creating the browser router fires an initial `performLoad`,
+  // whose prefetch hooks must already see the seeded store (warmRouteQuery's
+  // `check` guard is what keeps that initial pass network-silent).
+  setPrefetchEnvironment(relayEnvironment);
 
   const router = createBrowserRouter(appRoutes, {
     middleware: [...middleware],
