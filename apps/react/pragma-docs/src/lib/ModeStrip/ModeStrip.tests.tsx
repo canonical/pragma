@@ -5,20 +5,45 @@ import { describe, expect, it } from "vitest";
 import ModeStrip from "./ModeStrip.js";
 
 describe("ModeStrip", () => {
-  it("renders children", () => {
-    render(<ModeStrip>Test content</ModeStrip>);
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+  it("renders the three slot sockets with stable identities, empty", () => {
+    render(<ModeStrip data-testid="strip" />);
+    const strip = screen.getByTestId("strip");
+    expect(strip.dataset.region).toBe("mode-strip");
+    for (const slot of ["context", "controls", "status"]) {
+      const socket = strip.querySelector(`[data-slot="${slot}"]`);
+      expect(socket, `socket ${slot}`).not.toBeNull();
+      // A sensible empty: the socket exists and holds nothing.
+      expect(socket?.textContent).toBe("");
+    }
   });
 
-  it("applies custom className", () => {
-    render(<ModeStrip className="custom-class">Content</ModeStrip>);
-    const element = screen.getByText("Content");
-    expect(element.className).toContain("ds mode-strip");
-    expect(element.className).toContain("custom-class");
+  it("mounts claimed content into the matching socket", () => {
+    render(
+      <ModeStrip
+        context="Components"
+        controls={<button type="button">Filter</button>}
+        data-testid="strip"
+        status={<span>142 components</span>}
+      />,
+    );
+    const strip = screen.getByTestId("strip");
+    expect(strip.querySelector('[data-slot="context"]')?.textContent).toBe(
+      "Components",
+    );
+    expect(
+      strip
+        .querySelector('[data-slot="controls"]')
+        ?.contains(screen.getByRole("button", { name: "Filter" })),
+    ).toBe(true);
+    expect(strip.querySelector('[data-slot="status"]')?.textContent).toBe(
+      "142 components",
+    );
   });
 
-  it("passes through additional props", () => {
-    render(<ModeStrip data-testid="test-component">Content</ModeStrip>);
-    expect(screen.getByTestId("test-component")).toBeInTheDocument();
+  it("applies custom className alongside the component class", () => {
+    render(<ModeStrip className="custom-class" data-testid="strip" />);
+    const strip = screen.getByTestId("strip");
+    expect(strip.className).toContain("ds mode-strip");
+    expect(strip.className).toContain("custom-class");
   });
 });

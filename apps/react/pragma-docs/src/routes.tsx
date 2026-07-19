@@ -12,9 +12,10 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
+import lensRoutes from "#domains/lenses/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
 import playgroundRoutes from "#domains/playground/routes.js";
-import Navigation from "#lib/Navigation/index.js";
+import Shell from "#lib/Shell/index.js";
 
 const protectedPaths = new Set(["/account"]);
 
@@ -70,15 +71,15 @@ export function withAuth(loginPath: string): RouteMiddleware {
   }) as RouteMiddleware;
 }
 
+/**
+ * Every public route mounts inside the DocsShell — the one shell instance
+ * of `layout.shell` (P-4.1). The wrapper is deliberately just the Shell:
+ * the frame owns rail/strip/canvas/footer, routes own only their canvas.
+ */
 const publicLayout = wrapper<ReactElement>({
   id: "public-layout",
   component: ({ children }: { children: ReactNode }) => (
-    <div className="subgrid app-shell">
-      <header className="subgrid shell-header">
-        <Navigation />
-      </header>
-      <main className="subgrid">{children}</main>
-    </div>
+    <Shell>{children}</Shell>
   ),
 });
 
@@ -106,12 +107,26 @@ const [playground] = group(publicLayout, [
   playgroundRoutes.playground,
 ] as const);
 
+// The v1 lens set (owner-ruled order): Home · Components · Definitions ·
+// Standards · Guides. Home is marketingRoutes.home above; the other four
+// are stubs until P-5 builds their views.
+const [components, definitions, standards, guides] = group(publicLayout, [
+  lensRoutes.components,
+  lensRoutes.definitions,
+  lensRoutes.standards,
+  lensRoutes.guides,
+] as const);
+
 const appRoutes = {
   guide,
   home,
   account,
   login,
   playground,
+  components,
+  definitions,
+  standards,
+  guides,
 } as const;
 
 export type AppRoutes = typeof appRoutes;

@@ -5,9 +5,16 @@ import { describe, expect, it } from "vitest";
 import ModeStrip from "./ModeStrip.js";
 
 describe("ModeStrip SSR", () => {
-  it("renders without hydration errors", () => {
-    const html = renderToString(<ModeStrip>Test content</ModeStrip>);
-    expect(html).toContain("Test content");
+  it("renders the empty sockets on the server", () => {
+    const html = renderToString(<ModeStrip />);
     expect(html).toContain("ds mode-strip");
+    expect(html).toContain('data-slot="context"');
+    expect(html).toContain('data-slot="controls"');
+    expect(html).toContain('data-slot="status"');
+  });
+
+  it("renders claimed socket content on the server", () => {
+    const html = renderToString(<ModeStrip context="Definitions" />);
+    expect(html).toContain("Definitions");
   });
 });

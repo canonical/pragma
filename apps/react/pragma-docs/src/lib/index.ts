@@ -6,7 +6,6 @@ export { default as ErrorBoundary } from "./ErrorBoundary/index.js";
 export { ExampleComponent } from "./ExampleComponent/index.js";
 export { default as LazyComponent } from "./LazyComponent/index.js";
 export * from "./ModeStrip/index.js";
-export { default as Navigation } from "./Navigation/index.js";
 export * from "./Rail/index.js";
 export * from "./Shell/index.js";
 export { default as ThemeSelector } from "./ThemeSelector/index.js";

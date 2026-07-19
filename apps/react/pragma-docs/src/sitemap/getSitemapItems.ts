@@ -23,8 +23,13 @@ import type { SitemapItem } from "@canonical/react-ssr/renderer";
 export default async function getSitemapItems(): Promise<SitemapItem[]> {
   return [
     { loc: "/", changefreq: "weekly", priority: 1.0 },
-    { loc: "/guides/router-core", changefreq: "monthly", priority: 0.8 },
-    { loc: "/catalog", changefreq: "weekly", priority: 0.7 },
+    // The v1 lens routes (P-4.1). "/catalog" was boilerplate with no route
+    // behind it; the real lens URLs replace it.
+    { loc: "/components", changefreq: "weekly", priority: 0.8 },
+    { loc: "/definitions", changefreq: "weekly", priority: 0.8 },
+    { loc: "/standards", changefreq: "weekly", priority: 0.8 },
+    { loc: "/guides", changefreq: "weekly", priority: 0.8 },
+    { loc: "/guides/router-core", changefreq: "monthly", priority: 0.7 },
     { loc: "/account", changefreq: "monthly", priority: 0.5 },
     { loc: "/login", changefreq: "yearly", priority: 0.3 },
   ];

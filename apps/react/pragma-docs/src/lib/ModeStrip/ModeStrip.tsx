@@ -7,20 +7,44 @@ import "./styles.css";
 const componentCssClassName = "ds mode-strip";
 
 /**
- * ModeStrip component
+ * The mode strip — the horizontal band atop the mode viewport where the
+ * composed layout's `controls` and `status` regions materialise (A.06 §2:
+ * mode furniture, not shell chrome — Guides' strip is nearly empty, the
+ * explorer's is dense).
+ *
+ * P-4.1 renders the slot SOCKETS only: three stable mounts (`context` ·
+ * `controls` · `status`, each carrying its `data-slot` identity) with
+ * sensible empties. A composed layout claims them through its route's
+ * `SHELL_STRIP_META_KEY` meta entry, which the Shell reads and passes down
+ * as these props (the P-5 handshake) — this component stays a pure
+ * projection of its props.
+ *
+ * The band itself is stationary frame (AX.6): `--strip-h` tall on every
+ * lens, so the canvas plate below never jumps on a lens switch.
  */
 const ModeStrip = ({
   className,
-  children,
+  context,
+  controls,
+  status,
   ...props
 }: ModeStripProps): React.ReactElement => {
   return (
-    <div
+    <header
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      data-region="mode-strip"
       {...props}
     >
-      {children}
-    </div>
+      <div className="strip-context" data-slot="context">
+        {context}
+      </div>
+      <div className="strip-controls" data-slot="controls">
+        {controls}
+      </div>
+      <div className="strip-status" data-slot="status">
+        {status}
+      </div>
+    </header>
   );
 };
 

@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import ModeStrip from "./ModeStrip.js";
 
 const meta: Meta<typeof ModeStrip> = {
-  title: "Components/ModeStrip",
+  title: "Shell/ModeStrip",
   component: ModeStrip,
   tags: ["autodocs"],
 };
@@ -12,15 +12,19 @@ const meta: Meta<typeof ModeStrip> = {
 export default meta;
 type Story = StoryObj<typeof ModeStrip>;
 
-export const Default: Story = {
-  args: {
-    children: "Hello, ModeStrip!",
-  },
-};
+/** The P-4.1 state: every socket renders its sensible empty. */
+export const EmptySockets: Story = {};
 
-export const WithCustomClass: Story = {
+/** A dense strip, as the explorer will claim it (P-5). */
+export const Claimed: Story = {
   args: {
-    children: "Custom styled",
-    className: "custom-class",
+    context: "Definitions",
+    controls: (
+      <>
+        <button type="button">Validated</button>
+        <button type="button">Proposal</button>
+      </>
+    ),
+    status: <span>19 of 31 classes validated</span>,
   },
 };

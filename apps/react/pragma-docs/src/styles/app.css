@@ -1,16 +1,13 @@
-.app-shell {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding-inline: var(--grid-gap, 1.5rem);
-  padding-block: var(--container-gap-loose, 1.5rem);
-}
+/*
+ * App-level global styles. The DocsShell owns the viewport (its grid,
+ * layout tokens, and z-axis live in src/lib/Shell/styles.css); this file
+ * only prepares the page for a full-viewport frame.
+ */
 
-.shell-header {
-  padding-block-end: var(--container-gap-default, 1rem);
-}
-
-.shell-header nav {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: var(--container-gap-default, 1rem);
+/* normalize.css zeroes this too, but inside `@layer normalize`, where any
+ * unlayered author rule could override it. The shell's viewport discipline
+ * (100dvh frame, the page never scrolls — A.06 §1.3) depends on a
+ * zero-margin body, so the app asserts it unlayered. */
+body {
+  margin: 0;
 }

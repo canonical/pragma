@@ -2,7 +2,12 @@
 
 import type { HTMLAttributes, ReactNode } from "react";
 
-export interface ModeStripProps extends HTMLAttributes<HTMLDivElement> {
-  /** Content to render inside the component */
-  children?: ReactNode;
+export interface ModeStripProps
+  extends Omit<HTMLAttributes<HTMLElement>, "children"> {
+  /** The mode's context/title, west slot. Empty until a layout claims it. */
+  context?: string;
+  /** The composed layout's controls region content (`ControlsRegion`). */
+  controls?: ReactNode;
+  /** The composed layout's status region content (`StatusRegion`). */
+  status?: ReactNode;
 }
