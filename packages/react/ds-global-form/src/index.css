@@ -39,15 +39,19 @@
      then tune each axis independently, and the names stay honest):
        BLOCK (vertical):  field-block-gap · field-label-gap · group-gap
        INLINE (horizontal): field-inline-gap                                    */
-  --form-field-block-gap: var(
-    --container-gap-loose
-  ); /* 24px — block: gap BETWEEN fields */
-  /* Design review (15/07): flat 8px label→input gap (was --container-gap-default,
-   * 16px). See the density-channel mapping below for the matrix-vs-review note. */
+  /* No-density-class defaults — mirror the density matrix's app/comfortable cell
+     (F-O4, 15/07 review). The density-scoped block further down re-derives these
+     per cell when a context/density class is present. */
+  --form-field-block-gap: calc(
+    var(--baseline-height) *
+    10
+  ); /* 40px — block: gap BETWEEN fields */
   --form-field-label-gap: var(
     --space-100
   ); /* 8px — block: gap from a field's LABEL down to its control */
-  /* --form-field-label-gap: var(--container-gap-default); */ /* 16px (pre-review) */
+  --form-field-label-description-gap: var(
+    --space-050
+  ); /* 4px — block: gap from a LABEL down to a leading description */
   --form-group-gap: var(
     --space-100
   ); /* 8px — block: gap from desc/error to the input */
@@ -126,7 +130,10 @@
 
   /* ── Description ────────────────────────────────────────────────── */
 
-  --form-description-font-size: var(--typography-text-primary-font-size);
+  /* Description reads the SECONDARY type ramp (design review): it is subordinate
+     supporting text, so it takes the smaller secondary size, not the primary
+     body size. Colour is already the muted token. */
+  --form-description-font-size: var(--typography-text-secondary-font-size);
   --form-description-color: var(--color-text-muted);
 
   /* ── Error ──────────────────────────────────────────────────────── */
@@ -166,29 +173,30 @@
  *   INLINE (horizontal): control padding + label↔input / prefix-suffix gap
  *     → --density-padding-inline
  *   BLOCK (vertical), by magnitude:
- *     between-fields   → --density-space-lg   (widest structural gap)
- *     label → control  → --density-space-md   (label to its own control)
- *     desc/error → input → --density-space-sm (tight annotation gap)
- *   All rungs are whole baseline multiples, so vertical rhythm holds. */
+ *     between-fields     → --density-space-lg  (widest structural gap, 40px app)
+ *     label → control    → --density-space-md  (label to its own control, 8px app)
+ *     desc/error → input → --density-space-sm  (tight annotation gap, 8px)
+ *     label → description → --density-space-xs (tightest, 4px)
+ *   All rungs are whole baseline multiples, so vertical rhythm holds.
+ *   (space-md/-lg were retuned + space-xs added per the 15/07 review — F-O4;
+ *    the density matrix now carries Diana's numbers directly, so the form maps
+ *    straight onto the rungs rather than pinning literals.) */
 :where(.comfortable, .dense, .app, .site, .docs) {
   --form-input-padding-inline: var(--density-padding-inline, var(--space-200));
   --form-field-inline-gap: var(--density-padding-inline, var(--space-200));
   --form-field-block-gap: var(
     --density-space-lg,
-    calc(var(--baseline-height) * 6)
+    calc(var(--baseline-height) * 10)
   );
-  /* Design review (15/07): the label→input gap should be a flat 8px, not the
-   * density `space-md` rung (16px app / 20px site). Diana's 15/07 field-spacing
-   * numbers diverge from the shipped density matrix (see pragma-adrs U.01); until
-   * that matrix-vs-review tension is resolved we pin 8px here and KEEP the
-   * density mapping below, commented, so it can be restored in one line once the
-   * matrix decision lands. 8px = one `space-md`-equivalent held at 2 baseline units. */
-  --form-field-label-gap: calc(var(--baseline-height) * 2); /* 8px */
-  /* --form-field-label-gap: var(
+  --form-field-label-gap: var(
     --density-space-md,
-    calc(var(--baseline-height) * 4)
-  ); */
+    calc(var(--baseline-height) * 2)
+  );
   --form-group-gap: var(--density-space-sm, calc(var(--baseline-height) * 2));
+  --form-field-label-description-gap: var(
+    --density-space-xs,
+    calc(var(--baseline-height) * 1)
+  );
 }
 
 /* ── .ds.input.chrome — shared input chrome ─────────────────────────

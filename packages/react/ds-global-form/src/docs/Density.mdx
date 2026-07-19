@@ -34,9 +34,10 @@ The matrix, in baseline units (1 bU = `--baseline-height` = 4px):
                    comfy   dense       comfy   dense
   line-height      32 (8)  24 (6)      36 (9)  28 (7)
   padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
-  space-lg         24 (6)  16 (4)      28 (7)  20 (5)   ← between fields
-  space-md         16 (4)   8 (2)      20 (5)  12 (3)   ← label → control
+  space-lg         40 (10) 32 (8)      44 (11) 36 (9)   ← between fields
+  space-md          8 (2)   4 (1)       8 (2)   8 (2)   ← label → control
   space-sm          8 (2)   4 (1)       8 (2)   8 (2)   ← desc/error → input
+  space-xs          4 (1)   4 (1)       4 (1)   4 (1)   ← label → description
 ```
 
 Context sets the `*-comfy` / `*-dense` pair for every value; density picks within
@@ -52,13 +53,15 @@ the site's pairs. Read straight down that column:
 - **line-height** — 28px, so a control is a 7 bU box (`--baseline-height * 7`).
 - **padding-inline** — 12px = 3 bU of inline padding inside the control and on
   the horizontal label↔input gap.
-- **space-lg** — 20px = 5 bU between one field and the next.
-- **space-md** — 12px = 3 bU from a field's label down to its control.
+- **space-lg** — 36px = 9 bU between one field and the next.
+- **space-md** — 8px = 2 bU from a field's label down to its control.
 - **space-sm** — 8px = 2 bU from a description or error across to the input.
+- **space-xs** — 4px = 1 bU from a field's label down to a leading description.
 
-Compare that to **app / dense** one baseline tighter: the box is 24px (6 bU) and
-the inline padding drops to 8px (2 bU). The site column never goes below its 8px
-`space-sm` — a site stays a touch airier than an app even when dense.
+Compare that to **app / dense** one baseline tighter: the box is 24px (6 bU), the
+inline padding drops to 8px (2 bU), and the label→control / desc→input gaps
+tighten to 4px. The site column never goes below its 8px `space-md`/`space-sm` —
+a site stays a touch airier than an app even when dense.
 
 ## How to apply density
 
@@ -121,11 +124,12 @@ The model is layered so each layer knows only about the one below it:
    place a field concept meets a density value:
 
 ```css
---form-input-padding-inline: var(--density-padding-inline);   /* inline */
---form-field-inline-gap:     var(--density-padding-inline);   /* inline */
---form-field-block-gap:      var(--density-space-lg);         /* between fields   */
---form-field-label-gap:      var(--density-space-md);         /* label → control  */
---form-group-gap:            var(--density-space-sm);         /* desc/error → input */
+--form-input-padding-inline:       var(--density-padding-inline); /* inline */
+--form-field-inline-gap:           var(--density-padding-inline); /* inline */
+--form-field-block-gap:            var(--density-space-lg);  /* between fields    */
+--form-field-label-gap:            var(--density-space-md);  /* label → control   */
+--form-group-gap:                  var(--density-space-sm);  /* desc/error → input */
+--form-field-label-description-gap: var(--density-space-xs); /* label → description */
 ```
 
 ### Why the layering direction matters

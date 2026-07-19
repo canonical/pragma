@@ -4,7 +4,7 @@ import type React from "react";
 import { useMemo } from "react";
 import { createPortal } from "react-dom";
 import {
-  MENU_PLACEMENT,
+  MENU_ROOT_PLACEMENT,
   useContextualMenu,
   useIsMounted,
 } from "../../hooks/index.js";
@@ -55,10 +55,11 @@ const ContextualMenu = ({
   const menu = useContextualMenu({
     root,
     isOpen: open,
-    // Open toward the trigger's leading edge, top-aligned, flipping side/
-    // alignment as space runs out. MENU_PLACEMENT is logical (inline-*), so the
-    // hook mirrors it in RTL automatically — no direction read here.
-    preferredDirections: preferredDirections ?? MENU_PLACEMENT,
+    // Open BELOW the trigger, leading-aligned, flipping above then to the side
+    // as space runs out (design review). MENU_ROOT_PLACEMENT is logical, so the
+    // hook mirrors alignment in RTL automatically — no direction read here.
+    // (Submenus keep the side-opening MENU_PLACEMENT — see SubMenu.)
+    preferredDirections: preferredDirections ?? MENU_ROOT_PLACEMENT,
     distance,
     gutter,
     maxWidth,
