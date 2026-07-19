@@ -31,5 +31,13 @@
       text-align: start;
       cursor: pointer;
     }
+
+    /* Label BEFORE the control (switch convention): the DOM stays
+       control-then-label for accessibility, so `row-reverse` moves the control
+       to the trailing (right) edge and the label to the leading (left) edge.
+       Logical `row-reverse` mirrors correctly in RTL. */
+    &.label-before {
+      flex-direction: row-reverse;
+    }
   }
 }

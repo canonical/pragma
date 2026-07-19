@@ -15,6 +15,8 @@
   --tabs-tab-padding-inline: var(--space-200); /* 16px */
   /* 5bU = 40px tab height on the 8px baseline grid. */
   --tabs-tab-min-block-size: calc(var(--baseline-height) * 5);
+  --tabs-tab-focus-ring-width: var(--dimension-strokeThickness-large, 2px);
+  --tabs-tab-focus-ring-color: var(--color-focusRing);
 }
 
 .ds.tabs-item {
@@ -38,6 +40,16 @@
   /* Transparent underline reserved so the row never shifts when a border
      appears on hover/active. */
   border-bottom: var(--tabs-tab-border-width) solid transparent;
+
+  /* Keyboard focus: a design-system focus ring (design review) instead of the
+     UA default outline. Inset offset so the ring hugs the tab and the row's
+     `overflow` never clips it; :focus-visible only, so pointer clicks stay
+     quiet. */
+  &:focus-visible {
+    outline: var(--tabs-tab-focus-ring-width) solid
+      var(--tabs-tab-focus-ring-color);
+    outline-offset: calc(-1 * var(--tabs-tab-focus-ring-width));
+  }
 }
 
 /* Hover: a muted bottom border hints the tab is navigable, and settles faster
