@@ -2,6 +2,13 @@
  * Data shapes for `pragma doctor` (ported verbatim from the old shell).
  */
 
+/**
+ * One of the two config bands a check can concern. Mirrors the harnesses
+ * `ScopeBand` structurally but is redeclared here so this statically-reachable
+ * type module never pulls the harnesses runtime into the fast-path module graph.
+ */
+export type ScopeBand = "project" | "global";
+
 /** Status of a doctor check or one of its sub-items. */
 export type CheckStatus = "pass" | "fail" | "skip";
 
@@ -30,6 +37,13 @@ export interface CheckResult {
   readonly items?: readonly CheckItem[];
   /** Remedial instruction shown inline under a failing check. */
   readonly remedy?: string;
+  /**
+   * Which config band the check concerns, if any: `global` for the user/machine
+   * level (shell completions), `project` for per-repo config (MCP, skills). The
+   * renderer groups banded checks into MACHINE/PROJECT sections; environment
+   * checks (Node, versions, store) carry no band.
+   */
+  readonly band?: ScopeBand;
 }
 
 /** Aggregated results from all doctor checks. */

@@ -50,17 +50,24 @@ const tmp = (prefix: string): string => {
 
 let prevHome: string | undefined;
 let prevXdg: string | undefined;
+let prevPath: string | undefined;
 beforeEach(() => {
   prevHome = process.env.HOME;
   prevXdg = process.env.XDG_CONFIG_HOME;
+  prevPath = process.env.PATH;
   // Empty HOME/XDG so `~`-based harness signals, rc files, and the global config
   // are all absent — the harness/config/completion checks become deterministic.
   process.env.HOME = tmp("pragma-doctor-home-");
   process.env.XDG_CONFIG_HOME = tmp("pragma-doctor-xdg-");
+  // Point PATH at an empty dir so no harness `process` signal fires off the
+  // ambient PATH (e.g. a `claude`/`codex` binary on the CI/dev host) — keeping
+  // "no harnesses detected" deterministic regardless of what is installed.
+  process.env.PATH = tmp("pragma-doctor-path-");
 });
 afterEach(() => {
   process.env.HOME = prevHome;
   process.env.XDG_CONFIG_HOME = prevXdg;
+  process.env.PATH = prevPath;
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
   roots.length = 0;
 });

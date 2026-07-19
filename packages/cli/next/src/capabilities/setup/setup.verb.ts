@@ -23,9 +23,52 @@ import type { GeneratorResult } from "@canonical/summon-core";
 import { $, gen, type Task } from "@canonical/task";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import type {
+  CapabilityModule,
+  ParamSpec,
+  VerbSpec,
+} from "../../kernel/spec/types.js";
 import { setupFormatters } from "./setup.render.js";
-import type { SetupMode, SetupResult } from "./types.js";
+import type { ScopeSelection, SetupMode, SetupResult } from "./types.js";
+
+/**
+ * The `--scope` flag + its `--global`/`--local` boolean sugars, shared by the
+ * band-aware verbs (`setup`/`mcp`/`skills`). `completions`/`lsp` never carry
+ * them — they are single-band installers.
+ */
+const SCOPE_PARAMS: readonly ParamSpec[] = [
+  {
+    kind: "enum",
+    name: "scope",
+    doc: "Which config band(s) to configure: project, global, or both.",
+    values: ["project", "global", "both"],
+    default: "both",
+  },
+  {
+    kind: "boolean",
+    name: "global",
+    doc: "Shorthand for --scope global (configure the user/home band).",
+  },
+  {
+    kind: "boolean",
+    name: "local",
+    doc: "Shorthand for --scope project (configure the per-project band).",
+  },
+];
+
+/**
+ * Resolve the `--scope`/`--global`/`--local` params into a single selection.
+ * The boolean sugars win over `--scope`; `--global` wins over `--local`.
+ *
+ * @param params - The coerced param bag.
+ * @returns The resolved scope selection (defaults to `both`).
+ */
+function resolveScope(params: Record<string, unknown>): ScopeSelection {
+  if (params.global === true) return "global";
+  if (params.local === true) return "project";
+  const scope = params.scope;
+  return scope === "global" || scope === "project" ? scope : "both";
+}
 
 /** The exposed-to-MCP capability the run-all self-verb declares. */
 const SELF_CAPABILITY = {
@@ -76,6 +119,7 @@ const SUB_CAPABILITY = {
 async function runSetup(
   mode: SetupMode,
   rt: PragmaRuntime,
+  scope: ScopeSelection,
 ): Promise<Task<SetupResult>> {
   // Lazy dynamic imports (R1 lazy-React discipline): summon-core's barrel is
   // React-free, and the non-TTY branch picks autoPrompt/mcpPrompt (never mounts
@@ -85,7 +129,7 @@ async function runSetup(
     import("./operations/setupGenerator.js"),
   ]);
 
-  const { generator, toResult } = await ops.buildSetupPlan(rt, mode);
+  const { generator, toResult } = await ops.buildSetupPlan(rt, mode, scope);
 
   const { isTTY, transport, yes, signal, abort } = rt.interaction ?? {
     isTTY: false,
@@ -149,7 +193,8 @@ function setupVerb(
     output: { formatters: setupFormatters },
     capability,
     ...extras,
-    run: (_params, rt) => runSetup(mode, rt) as unknown as Task<SetupResult>,
+    run: (params, rt) =>
+      runSetup(mode, rt, resolveScope(params)) as unknown as Task<SetupResult>,
   };
 }
 
@@ -159,10 +204,15 @@ const setupAllVerb = setupVerb(
   "all",
   SELF_CAPABILITY,
   {
-    doc: "Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply.",
+    params: SCOPE_PARAMS,
+    doc: "Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.",
     examples: [
       { cmd: "pragma setup" },
       { cmd: "pragma setup --dry-run", note: "preview every step's effects" },
+      {
+        cmd: "pragma setup --global",
+        note: "configure only the user/home band",
+      },
       { cmd: "pragma setup mcp", note: "just the MCP server registration" },
     ],
   },
@@ -173,6 +223,7 @@ const mcpVerb = setupVerb(
   "Register the pragma MCP server in detected AI harnesses.",
   "mcp",
   SUB_CAPABILITY,
+  { params: SCOPE_PARAMS },
 );
 
 const completionsVerb = setupVerb(
@@ -187,6 +238,7 @@ const skillsVerb = setupVerb(
   "Symlink discovered skills into each AI harness.",
   "skills",
   SUB_CAPABILITY,
+  { params: SCOPE_PARAMS },
 );
 
 const lspVerb = setupVerb(

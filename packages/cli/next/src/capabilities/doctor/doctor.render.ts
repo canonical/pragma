@@ -70,23 +70,49 @@ function formatSummary(data: DoctorData): string {
   return `  ${parts.join(chalk.dim(" · "))}`;
 }
 
+/**
+ * Partition checks into ordered bands: environment (no band), MACHINE (global),
+ * PROJECT (project). Declaration order is preserved within each band, so the
+ * report stays deterministic.
+ */
+function partitionByBand(checks: readonly CheckResult[]): {
+  environment: CheckResult[];
+  machine: CheckResult[];
+  project: CheckResult[];
+} {
+  return {
+    environment: checks.filter((c) => c.band === undefined),
+    machine: checks.filter((c) => c.band === "global"),
+    project: checks.filter((c) => c.band === "project"),
+  };
+}
+
 export const doctorFormatters: Formatters<DoctorData> = {
   plain(data) {
     const nameWidth = Math.max(...data.checks.map((c) => c.name.length), 0);
     const lines: string[] = [chalk.bold("pragma doctor"), ""];
-    for (const check of data.checks) {
-      lines.push(...formatCheckPlain(check, nameWidth));
-    }
-    lines.push("", formatSummary(data));
+    const { environment, machine, project } = partitionByBand(data.checks);
+    const section = (heading: string, checks: CheckResult[]): void => {
+      if (checks.length === 0) return;
+      if (heading) lines.push(chalk.bold(heading));
+      for (const check of checks)
+        lines.push(...formatCheckPlain(check, nameWidth));
+      lines.push("");
+    };
+    // Environment checks lead (no header); MACHINE then PROJECT are the two
+    // banded sections before the tally.
+    section("", environment);
+    section("MACHINE", machine);
+    section("PROJECT", project);
+    lines.push(formatSummary(data));
     return lines.join("\n");
   },
 
   llm(data) {
-    const lines: string[] = ["## Doctor", ""];
-    for (const check of data.checks) {
+    const renderCheck = (check: CheckResult): string[] => {
       const icon =
         check.status === "pass" ? "✓" : check.status === "fail" ? "✗" : "○";
-      lines.push(`- ${icon} **${check.name}**: ${check.detail}`);
+      const out = [`- ${icon} **${check.name}**: ${check.detail}`];
       for (const item of check.items ?? []) {
         const itemIcon =
           item.status === "pass"
@@ -97,12 +123,24 @@ export const doctorFormatters: Formatters<DoctorData> = {
                 ? "○ "
                 : "";
         const detail = item.detail ? `: ${item.detail}` : "";
-        lines.push(`  - ${itemIcon}${item.label}${detail}`);
+        out.push(`  - ${itemIcon}${item.label}${detail}`);
       }
       if (check.status === "fail" && check.remedy) {
-        lines.push(`  - _fix:_ \`${check.remedy}\``);
+        out.push(`  - _fix:_ \`${check.remedy}\``);
       }
-    }
+      return out;
+    };
+
+    const lines: string[] = ["## Doctor", ""];
+    const { environment, machine, project } = partitionByBand(data.checks);
+    const section = (heading: string, checks: CheckResult[]): void => {
+      if (checks.length === 0) return;
+      if (heading) lines.push(`### ${heading}`, "");
+      for (const check of checks) lines.push(...renderCheck(check));
+    };
+    section("", environment);
+    section("Machine", machine);
+    section("Project", project);
     lines.push(
       "",
       `_${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped_`,
