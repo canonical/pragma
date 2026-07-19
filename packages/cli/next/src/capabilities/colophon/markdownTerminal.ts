@@ -13,6 +13,26 @@
 
 import chalk from "chalk";
 
+/** Full ANSI escape sequences (`ESC [ … final-letter`) — colour/cursor codes. */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: deliberate control-char scrub
+const ANSI_ESCAPE = /\x1b\[[0-9;]*[A-Za-z]/g;
+/** Stray C0 control chars + DEL, keeping tab (`\x09`) and newline (`\x0a`). */
+// biome-ignore lint/suspicious/noControlCharactersInRegex: deliberate control-char scrub
+const C0_CONTROLS = /[\x00-\x08\x0b-\x1f\x7f]/g;
+
+/**
+ * Strip ANSI escape sequences and stray C0/DEL control characters from a line.
+ *
+ * The colophon body carries pack-authored domain text (the "domain-as-data"
+ * model), so a hostile or careless pack could otherwise smuggle raw terminal
+ * control codes — cursor moves, colour resets, screen clears — straight to the
+ * terminal. We apply our OWN styling via `chalk` afterwards, so any control char
+ * in the source is unwanted; scrub each line before styling.
+ */
+function stripControl(line: string): string {
+  return line.replace(ANSI_ESCAPE, "").replace(C0_CONTROLS, "");
+}
+
 /** Style inline `**bold**` and `` `code` `` spans within one line. */
 function styleInline(text: string): string {
   return text
@@ -30,7 +50,10 @@ export function renderMarkdownToTerminal(markdown: string): string {
   const lines: string[] = [];
   let inFence = false;
 
-  for (const raw of markdown.split("\n")) {
+  for (const rawLine of markdown.split("\n")) {
+    // Scrub pack-authored terminal control codes BEFORE our own chalk styling
+    // (colophon bodies are domain-as-data — never a channel for raw ANSI).
+    const raw = stripControl(rawLine);
     // A fence toggles code mode; the ``` markers themselves are dropped.
     if (raw.trimStart().startsWith("```")) {
       inFence = !inFence;
