@@ -31,10 +31,16 @@
  *                    comfy   dense       comfy   dense
  *   line-height      32 (8)  24 (6)      36 (9)  28 (7)
  *   padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
- *   space-lg         24 (6)  16 (4)      28 (7)  20 (5)
- *   space-md         16 (4)   8 (2)      20 (5)  12 (3)
- *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)
+ *   space-lg         40 (10) 32 (8)      44 (11) 36 (9)   ← between fields
+ *   space-md          8 (2)   4 (1)       8 (2)   8 (2)   ← label → control
+ *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)   ← desc/error → input
+ *   space-xs          4 (1)   4 (1)       4 (1)   4 (1)   ← label → description
  *   (parenthesised = baseline units; 1 bU = --baseline-height = 4px)
+ *
+ * NB the space-lg / space-md values were retuned from Diana's 15/07 review
+ * (label→input 8px, between-fields 40px), and space-xs (label→description 4px)
+ * added, replacing the earlier graded 16/24 rungs. The values stay whole
+ * baseline multiples, so vertical rhythm holds.
  */
 
 /* ── Context family: the comfortable/dense PAIR per surface ──────────────────
@@ -49,12 +55,14 @@
   --density-lh-dense: calc(var(--baseline-height) * 6); /* 24px */
   --density-pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
   --density-pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
-  --density-space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
-  --density-space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
-  --density-space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --density-space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-lg-comfy: calc(var(--baseline-height) * 10); /* 40px */
+  --density-space-lg-dense: calc(var(--baseline-height) * 8); /* 32px */
+  --density-space-md-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-md-dense: calc(var(--baseline-height) * 1); /*  4px */
   --density-space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
   --density-space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
+  --density-space-xs-comfy: calc(var(--baseline-height) * 1); /*  4px */
+  --density-space-xs-dense: calc(var(--baseline-height) * 1); /*  4px */
 
   /* Back-compat aliases (pre-namespace names). Remove once no consumer reads them. */
   --lh-comfy: var(--density-lh-comfy);
@@ -74,12 +82,14 @@
   --density-lh-dense: calc(var(--baseline-height) * 7); /* 28px */
   --density-pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
   --density-pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
-  --density-space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
-  --density-space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
-  --density-space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
-  --density-space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --density-space-lg-comfy: calc(var(--baseline-height) * 11); /* 44px */
+  --density-space-lg-dense: calc(var(--baseline-height) * 9); /* 36px */
+  --density-space-md-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
   --density-space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
   --density-space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-xs-comfy: calc(var(--baseline-height) * 1); /*  4px */
+  --density-space-xs-dense: calc(var(--baseline-height) * 1); /*  4px */
 
   /* Back-compat aliases (pre-namespace names). Remove once no consumer reads them. */
   --lh-comfy: var(--density-lh-comfy);
@@ -109,15 +119,19 @@
   );
   --density-space-lg: var(
     --density-space-lg-comfy,
-    calc(var(--baseline-height) * 6)
+    calc(var(--baseline-height) * 10)
   );
   --density-space-md: var(
     --density-space-md-comfy,
-    calc(var(--baseline-height) * 4)
+    calc(var(--baseline-height) * 2)
   );
   --density-space-sm: var(
     --density-space-sm-comfy,
     calc(var(--baseline-height) * 2)
+  );
+  --density-space-xs: var(
+    --density-space-xs-comfy,
+    calc(var(--baseline-height) * 1)
   );
 }
 .dense {
@@ -131,14 +145,18 @@
   );
   --density-space-lg: var(
     --density-space-lg-dense,
-    calc(var(--baseline-height) * 4)
+    calc(var(--baseline-height) * 8)
   );
   --density-space-md: var(
     --density-space-md-dense,
-    calc(var(--baseline-height) * 2)
+    calc(var(--baseline-height) * 1)
   );
   --density-space-sm: var(
     --density-space-sm-dense,
+    calc(var(--baseline-height) * 1)
+  );
+  --density-space-xs: var(
+    --density-space-xs-dense,
     calc(var(--baseline-height) * 1)
   );
 }

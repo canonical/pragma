@@ -39,6 +39,7 @@ const ToggleWrapper = <ComponentProps extends BaseInputProps>({
   description,
   label,
   controlLabel,
+  labelPosition = "after",
   isOptional,
   requiredIndicator,
   registerProps: userRegisterProps,
@@ -90,8 +91,13 @@ const ToggleWrapper = <ComponentProps extends BaseInputProps>({
       )}
 
       {/* The control and its inline true label, side by side. The label is
-          often a full sentence, so it wraps as prose beside the control. */}
-      <div className="field-toggle-control">
+          often a full sentence, so it wraps as prose beside the control. DOM
+          order stays control-then-label; `labelPosition: "before"` visually
+          moves the label to the LEFT via CSS (the switch convention), keeping
+          the accessible order stable. */}
+      <div
+        className={["field-toggle-control", `label-${labelPosition}`].join(" ")}
+      >
         <Component {...componentProps} />
         <Label
           name={name}
