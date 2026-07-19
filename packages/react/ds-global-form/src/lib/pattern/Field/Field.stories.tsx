@@ -14,6 +14,17 @@ const meta = {
   title: "patterns/Field",
   component: Component,
   decorators: [decorators.form()],
+  // `description` is editable from the Controls panel — type text to see the
+  // field's description slot (its type ramp and the label→description gap) live.
+  argTypes: {
+    description: {
+      control: "text",
+      description: "Supporting text shown under the label, above the control.",
+    },
+  },
+  args: {
+    description: "Supporting help text for this field.",
+  },
 } satisfies Meta<typeof Component>;
 
 export default meta;
