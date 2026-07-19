@@ -83,7 +83,7 @@ pragma block sample
 
 Discover pragma conventions, the annotated tool catalog, and the discovery sequence.
 
-Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a 3-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.
+Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.
 
 ```
 pragma capabilities
