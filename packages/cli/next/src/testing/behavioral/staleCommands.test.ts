@@ -52,6 +52,11 @@ const BANNED: readonly BannedPattern[] = [
   },
 ];
 
+// Every shipped doc must be free of retired vocabulary: the README plus every
+// page under `docs/`. CHANGELOG.md (at the package root, outside `docs/`) is
+// DELIBERATELY exempt — its migration table legitimately cites the retired
+// names (`data`, `update-refs`, plural `tokens`) to tell readers what they
+// became, so scanning it would false-positive on that historical vocabulary.
 const files = [
   join(packageRoot, "README.md"),
   ...collectMarkdown(join(packageRoot, "docs")),

@@ -5,16 +5,20 @@
  *
  * - Tier 1 (grammar) — every extracted command's noun/verb resolves and every
  *   `--flag` is one the verb (or the global/mutation set) declares. Storeless.
- * - Tier 2 (execution) — a curated set of read commands is booted against the
- *   canonical fixture graph and asserted to exit 0, proving the documented
- *   reads run, not just parse.
+ * - Tier 2 (execution) — a curated set of read commands is PARSED through the
+ *   real CLI grammar (so the param bag is derived from the documented string,
+ *   never hand-supplied) and then booted against the canonical fixture graph
+ *   and asserted to exit 0, proving the documented reads run, not just parse.
  */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
-import { executeVerb } from "../../kernel/project/cli/dispatch.js";
+import {
+  executeVerb,
+  extractParams,
+} from "../../kernel/project/cli/dispatch.js";
 import {
   nounVerbMap,
   resolveUnknownCommand,
@@ -27,6 +31,7 @@ import {
 } from "../fixtures/graph/canonical.js";
 import { extractPragmaCommands } from "../helpers/extractSnippets.js";
 import { bootFixtureRuntime } from "../helpers/fixtureGraph.js";
+import { projectCli } from "../helpers/projectCli.js";
 
 /** Read a shipped doc exactly as a reader (or lychee) would. */
 function readDoc(relPath: string): string {
@@ -136,7 +141,11 @@ describe("doc examples — Tier 1: every documented command is grammatical", () 
   });
 });
 
-/** One curated read: its documented form, its spec key, and its param bag. */
+/**
+ * One curated read: its documented form, the verb key it must route to, and the
+ * param bag the real parser must derive from {@link ReadCase.command} (the
+ * oracle Tier 2 asserts the parse against before executing).
+ */
 interface ReadCase {
   readonly command: string;
   readonly key: string;
@@ -165,6 +174,65 @@ const READ_CASES: readonly ReadCase[] = [
 
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
 
+/**
+ * Thrown by the capture hook to halt a parse at the resolved verb — before the
+ * real dispatch (and its runtime boot) fires — carrying the routed path plus the
+ * Commander-parsed operands and options.
+ */
+class ParsedCommand extends Error {
+  constructor(
+    readonly path: readonly string[],
+    readonly positionals: string[],
+    readonly opts: Record<string, unknown>,
+  ) {
+    super("parsed");
+  }
+}
+
+/**
+ * Parse a documented `pragma …` line through the REAL CLI grammar and return the
+ * verb it routes to plus the coerced param bag {@link extractParams} derives —
+ * WITHOUT running it. A `preAction` hook captures the resolved command and
+ * throws before its action, so no runtime boots. Deriving the bag from the
+ * STRING (rather than hand-supplying it) is what closes the Tier-2 gap: a
+ * documented positional in the wrong slot now yields a different bag, instead of
+ * a hand-fed bag masking the mistake.
+ *
+ * @param command - The documented `pragma …` command line.
+ * @returns The routed verb key, its spec, and the parser-derived param bag.
+ */
+async function parseDocumented(
+  command: string,
+): Promise<{ key: string; spec: VerbSpec; params: Record<string, unknown> }> {
+  const program = projectCli(capabilities);
+  program.hook("preAction", (_root, action) => {
+    const parentName = action.parent?.name();
+    const routed =
+      parentName !== undefined && parentName !== "pragma"
+        ? [parentName, action.name()]
+        : [action.name()];
+    throw new ParsedCommand(routed, [...action.args], action.opts());
+  });
+
+  const argv = command.split(/\s+/).slice(1); // drop the leading `pragma`
+  try {
+    await program.parseAsync(argv, { from: "user" });
+  } catch (error) {
+    if (!(error instanceof ParsedCommand)) throw error;
+    const key = error.path.join(" ");
+    const spec = specByKey.get(key);
+    if (spec === undefined) {
+      throw new Error(`documented command routed to unknown verb: ${key}`);
+    }
+    return {
+      key,
+      spec,
+      params: extractParams(spec.params, error.positionals, error.opts),
+    };
+  }
+  throw new Error(`documented command reached no verb action: ${command}`);
+}
+
 describe("doc examples — Tier 2: curated read commands run green", () => {
   let fixture: Awaited<ReturnType<typeof bootFixtureRuntime>> | undefined;
   const documented = new Set(commands);
@@ -181,17 +249,28 @@ describe("doc examples — Tier 2: curated read commands run green", () => {
   });
 
   for (const readCase of READ_CASES) {
-    it(`\`${readCase.command}\` is documented and exits 0`, async () => {
+    it(`\`${readCase.command}\` parses to its verb and exits 0`, async () => {
       expect(
         documented.has(readCase.command),
         `not documented: ${readCase.command}`,
       ).toBe(true);
-      const spec = specByKey.get(readCase.key);
-      expect(spec, `no spec for key: ${readCase.key}`).toBeDefined();
-      if (!spec || !fixture) return;
+
+      // Derive the verb + param bag from the DOCUMENTED string via the real
+      // grammar, then assert both against the oracle: a mis-slotted positional
+      // would route elsewhere or yield a different bag, failing here.
+      const parsed = await parseDocumented(readCase.command);
+      expect(parsed.key, `routed to the wrong verb: ${readCase.command}`).toBe(
+        readCase.key,
+      );
+      expect(
+        parsed.params,
+        `parsed bag ≠ expected for: ${readCase.command}`,
+      ).toEqual(readCase.params);
+
+      if (!fixture) return;
       const outcome = await executeVerb(
-        spec,
-        readCase.params,
+        parsed.spec,
+        parsed.params,
         NO_MUTATION,
         fixture.runtime,
       );
