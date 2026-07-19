@@ -1,0 +1,26 @@
+diff --git a/node_modules/relay-runtime/.bun-tag-be2ff370f245fe53 b/.bun-tag-be2ff370f245fe53
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/index.js b/index.js
+index fec955baf6b7659b1365c9f6be3696ae30bd59a4..4dfe28979fe0d055148e3ec15931bec20c30d8ae 100644
+--- a/index.js
++++ b/index.js
+@@ -8,3 +8,18 @@
+  */
+ 
+ module.exports = require('./lib/index.js');
++
++// Patch (pragma): relay-compiler's TypeScript artifacts emit value imports for
++// names that exist only as types (`import { ConcreteRequest } from
++// 'relay-runtime'`), which fail strict ESM-CJS interop checks (Node ESM and
++// Vite's dev SSR module runner) because the names are not runtime exports.
++// Real `module.exports.X =` assignments — not a dead-branch lexer hint — are
++// required: Node's cjs-module-lexer detects them statically, and Bun's interop
++// reflects the runtime exports object, which a never-executed hint would not
++// touch. The bindings stay undefined, which is fine for names only ever used
++// in erased type positions.
++module.exports.ConcreteRequest = undefined;
++module.exports.ReaderFragment = undefined;
++module.exports.ReaderInlineDataFragment = undefined;
++module.exports.FragmentRefs = undefined;
++module.exports.ConcreteUpdatableQuery = undefined;

@@ -121,14 +121,27 @@ yet, so the catalog page wraps its query subtree in `ClientOnly`
 (`src/lib/ClientOnly/`): the server streams the fallback and the browser
 fetches after hydration.
 
-**Patched dependencies.** `patches/` carries two package patches applied via
+<% if (standalone) { -%>
+**Patched dependencies.** `patches/` carries three package patches applied via
 `patchedDependencies` in `package.json` (a bun feature — with another package
-manager, apply the equivalent mechanism): `react-relay@18.2.0` needs a
-cjs-module-lexer export hint so named imports survive Node SSR, and
-`relay-runtime-network@0.1.0` ships a broken `imports` map. The latter patch
-is temporary until the fixed upstream release lands
+manager, apply the equivalent mechanism): `react-relay@21.0.1` needs a
+cjs-module-lexer export hint so named imports survive Node SSR,
+`relay-runtime@21.0.1` needs real runtime bindings for type-only names its
+compiler artifacts import as values (`ConcreteRequest`, `ReaderFragment`,
+`FragmentRefs`), and `relay-runtime-network@0.1.0` ships a broken `imports`
+map. The last patch is temporary until the fixed upstream release lands
 ([advl/lit-relay#32](https://github.com/advl/lit-relay/pull/32)); drop it and
 its `patchedDependencies` entry once a fixed version is published.
+<% } else { -%>
+**Patched dependencies.** This app was scaffolded inside a bun workspace, so
+dependency patching is owned by the workspace root — bun resolves
+`patchedDependencies` paths from the root, which is why the scaffold emitted
+no app-local `patches/` directory or `patchedDependencies` block. The root's
+`patches/` must carry the `react-relay@21.0.1`, `relay-runtime@21.0.1` and
+`relay-runtime-network@0.1.0` patches (named imports under Node SSR, runtime
+bindings for type-only artifact imports, and a broken `imports` map,
+respectively).
+<% } -%>
 
 **Not yet on npm.** `@canonical/storybook-addon-relay` and the fixed
 `relay-runtime-network` release have not been published yet, so a fresh

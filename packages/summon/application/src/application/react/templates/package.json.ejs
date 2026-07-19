@@ -60,8 +60,8 @@
 <% } -%>
     "react": "^19.2.4",
     "react-dom": "^19.2.4"<% if (relay) { %>,
-    "react-relay": "^18.2.0",
-    "relay-runtime": "^18.2.0",
+    "react-relay": "^21.0.1",
+    "relay-runtime": "^21.0.1",
     "relay-runtime-network": "^0.1.0"<% } %>
   },
   "devDependencies": {
@@ -77,8 +77,8 @@
     "@types/react-dom": "^19.2.3",
 <% if (relay) { -%>
     "@types/react-relay": "^18.2.1",
-    "@types/relay-runtime": "^19.0.3",
-    "@types/relay-test-utils": "^18.0.0",
+    "@types/relay-runtime": "^20.1.1",
+    "@types/relay-test-utils": "^19.0.0",
 <% } -%>
     "@vitejs/plugin-react": "^6.0.0",
     "@vitest/coverage-v8": "^4.0.18",
@@ -87,8 +87,8 @@
     "jsdom": "^28.1.0",
     "lightningcss": "^1.32.0",
 <% if (relay) { -%>
-    "relay-compiler": "^18.2.0",
-    "relay-test-utils": "^18.2.0",
+    "relay-compiler": "^21.0.1",
+    "relay-test-utils": "^21.0.1",
 <% } -%>
     "storybook": "^10.3.1",
     "tsx": "^4.19.0",
@@ -98,9 +98,10 @@
     "vite-plugin-relay-lite": "^0.12.0",
 <% } -%>
     "vitest": "^4.0.18"
-  }<% if (relay) { %>,
+  }<% if (relay && standalone) { %>,
   "patchedDependencies": {
-    "react-relay@18.2.0": "patches/react-relay@18.2.0.patch",
+    "react-relay@21.0.1": "patches/react-relay@21.0.1.patch",
+    "relay-runtime@21.0.1": "patches/relay-runtime@21.0.1.patch",
     "relay-runtime-network@0.1.0": "patches/relay-runtime-network@0.1.0.patch"
   }<% } %>
 }
