@@ -12,8 +12,8 @@ import {
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
-import catalogRoutes from "#domains/catalog/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
+import playgroundRoutes from "#domains/playground/routes.js";
 import Navigation from "#lib/Navigation/index.js";
 
 const protectedPaths = new Set(["/account"]);
@@ -102,14 +102,16 @@ const [account, login] = group(publicLayout, [
   accountRoutes.login,
 ] as const);
 
-const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
+const [playground] = group(publicLayout, [
+  playgroundRoutes.playground,
+] as const);
 
 const appRoutes = {
   guide,
   home,
   account,
   login,
-  catalog,
+  playground,
 } as const;
 
 export type AppRoutes = typeof appRoutes;

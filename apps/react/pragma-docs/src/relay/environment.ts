@@ -2,14 +2,14 @@
  * Relay environment factory.
  *
  * Builds the app's Relay `Environment` on top of `relay-runtime-network`'s
- * middleware-driven fetch pipeline, in one of two modes:
+ * middleware-driven fetch pipeline, posting operations to the graph GraphQL
+ * endpoint. The default is the same-origin `/graphql` mounted by the dev
+ * servers (see `src/server/graphql.ts`); `VITE_GRAPHQL_URL` (or an explicit
+ * `graphqlUrl`) points it elsewhere.
  *
- * - **local (default)** — a `localGraphExecutor` resolves every operation
- *   in-process against the mock catalog schema (`./schema.ts`), so the
- *   boilerplate runs with zero backend.
- * - **endpoint** — when `VITE_GRAPHQL_URL` is set (or a URL is passed
- *   explicitly), an `httpExecutor` + `urlMiddleware` posts operations to a
- *   real GraphQL server.
+ * The server render never fetches through this environment today: query
+ * components sit behind `ClientOnly` until the P-2 SSR data-hydration track
+ * lands, so the per-request server environment stays empty by construction.
  */
 
 import {
@@ -23,17 +23,18 @@ import {
 import {
   createRelayRuntimeNetwork,
   httpExecutor,
-  localGraphExecutor,
-  type RelayFetchContext,
   type RelayRuntimeFetch,
   urlMiddleware,
 } from "relay-runtime-network";
+
+/** The same-origin endpoint the dev servers mount. */
+const DEFAULT_GRAPHQL_URL = "/graphql";
 
 /** Options for {@link createEnvironment}. */
 export interface CreateEnvironmentOptions {
   /**
    * GraphQL endpoint URL. Overrides the `VITE_GRAPHQL_URL` env var; when
-   * neither is set the environment executes against the local mock schema.
+   * neither is set the same-origin `/graphql` endpoint is used.
    */
   readonly graphqlUrl?: string;
 }
@@ -45,35 +46,6 @@ const readConfiguredGraphqlUrl = (): string | undefined => {
     ? configured
     : undefined;
 };
-
-/**
- * Builds the in-process network that executes against the mock schema.
- *
- * The schema module (and its `graphql` dependency) is loaded lazily inside
- * the executor — `execute` already returns a promise, so the dynamic import
- * adds no async boundary — keeping graphql-js and the mock catalog out of
- * the main bundle, and unparsed, whenever the endpoint path is taken.
- */
-const createLocalNetwork = () =>
-  createRelayRuntimeNetwork({
-    fetch: {
-      executor: localGraphExecutor({
-        execute: async (context: RelayFetchContext) => {
-          const { text } = context.operation;
-          if (!text) {
-            throw new Error(
-              "The local mock schema requires full operation text; persisted queries are not supported.",
-            );
-          }
-          const { executeLocalOperation } = await import("./schema.js");
-          return executeLocalOperation({
-            text,
-            variables: context.variables,
-          });
-        },
-      }),
-    },
-  });
 
 /** Builds the HTTP network that posts operations to `graphqlUrl`. */
 const createHttpNetwork = (graphqlUrl: string) =>
@@ -107,10 +79,9 @@ const toFetchFunction =
 export const createEnvironment = (
   options: CreateEnvironmentOptions = {},
 ): Environment => {
-  const graphqlUrl = options.graphqlUrl ?? readConfiguredGraphqlUrl();
-  const network = graphqlUrl
-    ? createHttpNetwork(graphqlUrl)
-    : createLocalNetwork();
+  const graphqlUrl =
+    options.graphqlUrl ?? readConfiguredGraphqlUrl() ?? DEFAULT_GRAPHQL_URL;
+  const network = createHttpNetwork(graphqlUrl);
 
   return new Environment({
     network: Network.create(toFetchFunction(network.fetch)),

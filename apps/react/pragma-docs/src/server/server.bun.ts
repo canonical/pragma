@@ -28,6 +28,7 @@ import fs from "node:fs";
 import * as process from "node:process";
 import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
+import { getGraphqlBackend } from "./graphql.js";
 
 const PORT = Number(process.env.PORT) || 5174;
 
@@ -46,6 +47,14 @@ Bun.serve({
     const requestUrl = url.pathname + url.search;
 
     try {
+      // The graph endpoint comes first so it never reaches the Vite
+      // middleware stack — the config-registered plugin instance would boot
+      // a second store in this process otherwise.
+      if (url.pathname === "/graphql") {
+        const { handle } = await getGraphqlBackend();
+        return handle(req);
+      }
+
       const asset = await handleAsset(req);
       if (asset) return asset;
 

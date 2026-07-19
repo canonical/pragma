@@ -5,6 +5,7 @@ import browserslist from "browserslist";
 import { browserslistToTargets } from "lightningcss";
 import { defineConfig } from "vite";
 import relay from "vite-plugin-relay-lite";
+import { graphqlPlugin } from "./src/server/graphqlPlugin.js";
 
 // Path aliases (#lib, #domains, #styles) are declared as Node subpath imports
 // in package.json "imports" and resolved natively by Vite — no resolver plugin.
@@ -29,7 +30,11 @@ export default defineConfig(({ mode }) => ({
   // backtick-quote a graphql file name in a comment. `codegen: false` because
   // artifacts are committed and regenerated explicitly via the `relay` /
   // `relay:watch` scripts.
-  plugins: [relay({ codegen: false }), react()],
+  // graphqlPlugin mounts the in-process ke-graphql endpoint at /graphql for
+  // plain `vite` dev, the Express dev server (via vite.middlewares), and
+  // `vite preview`; the Bun dev server mounts the same backend as its own
+  // first brick instead, so the store boots exactly once per process.
+  plugins: [relay({ codegen: false }), react(), graphqlPlugin()],
   // Honour the PORT env var for `dev` (SPA) and `preview` so all server scripts
   // — including the SSR ones, which already read PORT — respond to it uniformly.
   server: { port: PORT },

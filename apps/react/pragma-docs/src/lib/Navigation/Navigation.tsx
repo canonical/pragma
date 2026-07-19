@@ -11,7 +11,7 @@ export default function Navigation(): ReactElement {
       <Link params={{ slug: "router-core" }} to="guide">
         Guide
       </Link>
-      <Link to="catalog">Catalog</Link>
+      <Link to="playground">Playground</Link>
       <Link search={{ auth: "1" }} to="account">
         Demo sign-in
       </Link>

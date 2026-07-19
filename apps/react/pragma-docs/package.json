@@ -36,6 +36,8 @@
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
+    "@canonical/ke": "^0.31.0",
+    "@canonical/ke-graphql": "^0.31.0",
     "@canonical/react-ds-global": "^0.31.0",
     "@canonical/react-head": "^0.31.0",
     "@canonical/react-hooks": "^0.31.0",

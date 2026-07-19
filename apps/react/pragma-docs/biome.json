@@ -1,6 +1,12 @@
 {
   "extends": ["@canonical/biome-config"],
   "files": {
-    "includes": ["src", "*.json", "vite.config.ts", "!src/relay/__generated__"]
+    "includes": [
+      "src",
+      "*.json",
+      "vite.config.ts",
+      "!src/relay/__generated__",
+      "!src/relay/schema.graphql"
+    ]
   }
 }
