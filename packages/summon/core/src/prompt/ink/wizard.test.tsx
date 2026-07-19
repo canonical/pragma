@@ -106,11 +106,13 @@ describe("create wizard (PROTECTED)", () => {
           frame().includes("Component path:") &&
           frame().includes("Step 1 of 2"),
       );
-      stdin.write("src/components/Button");
-      // Confirm Ink has rendered the typed value before submitting (a fixed
-      // delay raced the reconciler under load), then re-send Enter until the
-      // answer lands — the two flaky paths in this step.
-      await waitFor(() => frame().includes("src/components/Button"));
+      // Type the value, re-sending until the frame reflects it — the text write
+      // races the useInput subscription just like the keystrokes (a dropped
+      // write left the field empty and hung the frame wait under CI load). Then
+      // re-send Enter until the answer lands.
+      await pressUntil(stdin, "src/components/Button", () =>
+        frame().includes("src/components/Button"),
+      );
       await pressUntil(
         stdin,
         "\r",
