@@ -69,6 +69,12 @@ export interface HarnessDefinition {
   readonly configFormat: "json" | "jsonc" | "toml";
   readonly mcpKey: string;
   readonly skillsPath: (projectRoot: string) => string;
+  /**
+   * When true, a written server entry's `env` is forced to a JSON object/map
+   * (OpenDesign requires it — see VERIFY(7g)). Omitted (falsy) for harnesses
+   * that leave `env` as authored.
+   */
+  readonly normalizeEnv?: boolean;
 }
 
 /**
@@ -81,6 +87,8 @@ export interface ConfigTarget {
   readonly configFormat: "json" | "jsonc" | "toml";
   readonly mcpKey: string;
   readonly scope: HarnessScope;
+  /** Force a written entry's `env` to a JSON object/map (OpenDesign — 7g). */
+  readonly normalizeEnv?: boolean;
 }
 
 /**

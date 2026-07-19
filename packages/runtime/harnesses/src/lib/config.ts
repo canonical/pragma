@@ -116,6 +116,16 @@ export const resolveConfigTarget = (
   configFormat: harness.configFormat,
   mcpKey: harness.mcpKey,
   scope: harness.scope,
+  normalizeEnv: harness.normalizeEnv,
+});
+
+/**
+ * Coerce a server config's `env` to a JSON object/map — dropping a non-object
+ * `env` to `{}` — for harnesses (OpenDesign, 7g) that reject a non-map `env`.
+ */
+const normalizeOdEnv = (config: McpServerConfig): McpServerConfig => ({
+  ...config,
+  env: asServerRecord(config.env) as Record<string, string>,
 });
 
 /**
@@ -182,9 +192,11 @@ const writeServerUnderKeys = (
   configFormat: ConfigTarget["configFormat"],
   mcpKeys: readonly string[],
   serverName: string,
-  config: McpServerConfig,
+  rawConfig: McpServerConfig,
+  normalizeEnv: boolean,
   undoTask: Task<void>,
 ): Task<void> => {
+  const config = normalizeEnv ? normalizeOdEnv(rawConfig) : rawConfig;
   if (configFormat === "toml") {
     const fields = tomlFields(config);
     return ifElseM(
@@ -252,6 +264,7 @@ export const writeMcpConfigTo = (
     [target.mcpKey],
     serverName,
     config,
+    target.normalizeEnv === true,
     removeMcpConfigFrom(target, serverName),
   );
 
@@ -285,6 +298,7 @@ export const writeMcpConfigTargets = (
     targets.map((t) => t.mcpKey),
     serverName,
     config,
+    first.normalizeEnv === true,
     undoTask,
   );
 };
