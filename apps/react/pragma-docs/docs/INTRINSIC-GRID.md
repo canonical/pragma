@@ -86,3 +86,42 @@ this reading: its `.strip` never unmounts; only the per-mode `sgroup`s
 toggle. Measured consequence: the five lens frames are byte-identical
 (modulo the router's own `aria-current`) through the real SSR pipeline —
 `frameStability.tests.tsx` pins it.
+
+## 5 — `container-type` makes the canvas a containing block: the fixed/sticky trap (P-4.1)
+
+**What.** `.shell-canvas` carries `container-type: inline-size` (AX.1
+container-driven intrinsics) — and size containment of any axis establishes
+LAYOUT containment, so the canvas becomes the containing block for
+`position: fixed` and `position: absolute` descendants. Today's overlays
+(Tooltip, Popover, ContextualMenu) survive only because they portal to
+`document.body`, outside the canvas subtree; `TooltipArea` portals to
+`parentElement || document.body`, so a consumer passing an in-canvas
+`parentElement` gets canvas-relative fixed math. Any future bare in-canvas
+`position: fixed` element — a FAB, a floating inspector — silently anchors
+to the canvas box instead of the viewport, and `position: sticky` semantics
+shift under the same containment.
+
+**Fix.** Keep the query container: container-driven intrinsics are
+load-bearing for AX.1 (components inside respond to the REGION's width,
+never the viewport's). The recorded law instead: in-canvas `fixed`/`sticky`
+must not assume the viewport. Overlays keep portalling to `document.body`;
+anything that wants viewport anchoring must live — or portal — outside the
+canvas subtree.
+
+**Why logged.** A preemption with no alarm attached: a bare fixed element
+inside the canvas renders happily, just anchored to the wrong box, and
+nothing warns until the first floating tenant arrives (P-5's inspector is
+the likely candidate). The law is written down before there is a corpse.
+
+---
+
+## Round notes (P-4.1 review)
+
+One-line rulings that need a record but not a fight entry:
+
+- **Utility cluster scope.** v1's cluster (Playground · Demo sign-in ·
+  Theme) is scoped to routes that exist; A.06 §3's Contribute / API-channel
+  / help entries land when their targets do.
+- **Collapse stage 2.** The spec's drawer stage is deferred — it would need
+  a second viewport MQ (breaking the AX.1 single-collapse certification) or
+  JS, and no narrow-viewport need is proven yet.

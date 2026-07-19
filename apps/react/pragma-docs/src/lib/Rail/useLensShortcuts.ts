@@ -5,8 +5,13 @@
  * owned by the router; the listener itself owns nothing).
  *
  * Guards: no modifier chords (the browser's own `Alt+digit` etc. stay
- * untouched) and no firing while the user types in an editable target —
- * digits belong to the text field then, not the compass.
+ * untouched); no firing while the user types in an editable target —
+ * digits belong to the text field then, not the compass; no firing
+ * mid-IME-composition (the digit is text being composed, not a command)
+ * and none on key auto-repeat (a held digit navigates once).
+ *
+ * WCAG 2.1.4 close-out (user disable toggle in the utility cluster) is
+ * deferred — the guards here narrow the surface, they do not satisfy 2.1.4.
  */
 
 import { useRouter } from "@canonical/router-react";
@@ -33,6 +38,9 @@ export const useLensShortcuts = (): void => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return;
+      }
+      if (event.isComposing || event.repeat) {
         return;
       }
       if (isEditableTarget(event.target)) {

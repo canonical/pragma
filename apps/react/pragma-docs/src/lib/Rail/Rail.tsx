@@ -53,11 +53,14 @@ const Rail = ({ className, ...props }: RailProps): React.ReactElement => {
             <li key={to}>
               {/* aria-label pins the accessible name to the lens name alone:
                   the displayed kbd digit stays out of it (the shortcut
-                  reaches AT through aria-keyshortcuts instead). */}
+                  reaches AT through aria-keyshortcuts instead). title gives
+                  the collapsed icon-only entry a pointer-hover affordance —
+                  identical on every lens, so the frame stays byte-stable. */}
               <Link
                 aria-keyshortcuts={hint}
                 aria-label={label}
                 className="rail-item"
+                title={label}
                 to={to}
               >
                 <Icon />
@@ -77,7 +80,11 @@ const Rail = ({ className, ...props }: RailProps): React.ReactElement => {
       <ul aria-labelledby="rail-utilities-label" className="rail-utilities">
         <li>
           {/* The SSR-certified demo canvas keeps a door (P-4.1 brief). */}
-          <Link className="rail-item rail-util" to="playground">
+          <Link
+            className="rail-item rail-util"
+            title="Playground"
+            to="playground"
+          >
             <PlaygroundIcon />
             <span className="rail-label">Playground</span>
           </Link>
@@ -86,6 +93,7 @@ const Rail = ({ className, ...props }: RailProps): React.ReactElement => {
           <Link
             className="rail-item rail-util"
             search={{ auth: "1" }}
+            title="Demo sign-in"
             to="account"
           >
             <SignInIcon />

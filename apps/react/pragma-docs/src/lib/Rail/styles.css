@@ -80,6 +80,17 @@
   color: var(--color-text, #000);
 }
 
+/* Focus: an explicit ring drawn INSIDE the padding box (negative offset),
+ * so the rail's own overflow-y scroll container can never clip it at the
+ * edges. Colour per Chip's `--chip-focus` pattern: a component theme hook
+ * defaulting to the token set's theme-neutral, guaranteed-contrast colour,
+ * with `currentColor` as the last-resort fallback. */
+.ds.rail .rail-item:focus-visible {
+  outline: 2px solid
+    var(--rail-focus, var(--color-background-contrasted, currentColor));
+  outline-offset: -1px;
+}
+
 /* Active lens: styled from the router's own aria-current attribute — the
  * rail's ONLY route-dependent bit, and an attribute rather than a class,
  * so the frame-stability measurement can name it precisely. */
@@ -165,5 +176,16 @@
    * of hiding — a truncated but operable control beats an invisible one. */
   .ds.rail .rail-theme select {
     inline-size: 100%;
+  }
+}
+
+/* Reduced motion: the approach transitions (entry background, hint
+ * opacity) snap instead of easing — the states themselves stay. A
+ * non-layout feature query, exempt from the AX.1 single-collapse
+ * certification by its text. */
+@media (prefers-reduced-motion: reduce) {
+  .ds.rail .rail-item,
+  .ds.rail .rail-kbd {
+    transition: none;
   }
 }
