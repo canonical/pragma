@@ -6,6 +6,18 @@ import {
 } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import detectHarnesses from "./detectHarnesses.js";
+import type { PlatformEnv } from "./platformPaths.js";
+
+/**
+ * A fixed platform so the `~/…` signal paths and any `PATH`-based process probe
+ * resolve deterministically (never against the CI host's real HOME/PATH).
+ */
+const PLATFORM: PlatformEnv = {
+  platform: "linux",
+  env: { PATH: "/usr/bin:/bin" },
+  home: "/home/tester",
+  isWsl: false,
+};
 
 const mockExists =
   (predicate: (path: string) => boolean) =>
@@ -26,7 +38,7 @@ describe("detectHarnesses", () => {
 
   it("detects Claude Code when ~/.claude and .mcp.json exist", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks(
         (path) => path.includes(".claude") || path === "/project/.mcp.json",
       ),
@@ -41,7 +53,7 @@ describe("detectHarnesses", () => {
 
   it("detects Cursor when .cursor directory exists", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks((path) => path.includes(".cursor")),
     );
 
@@ -52,7 +64,7 @@ describe("detectHarnesses", () => {
 
   it("detects Windsurf when .windsurf directory exists", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks((path) => path.includes(".windsurf")),
     );
 
@@ -63,7 +75,7 @@ describe("detectHarnesses", () => {
 
   it("detects multiple harnesses simultaneously", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks(
         (path) =>
           path.includes(".claude") ||
@@ -80,7 +92,7 @@ describe("detectHarnesses", () => {
 
   it("returns empty array when no signals match", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks(() => false),
     );
 
@@ -89,7 +101,7 @@ describe("detectHarnesses", () => {
 
   it("sorts results by confidence (high first)", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks(
         (path) =>
           path.includes(".claude") ||
@@ -109,7 +121,7 @@ describe("detectHarnesses", () => {
   // Cline is disabled: it shares .vscode/mcp.json with VS Code
   it("does not detect Cline (disabled harness)", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks((path) => path.includes(".vscode")),
     );
 
@@ -119,7 +131,7 @@ describe("detectHarnesses", () => {
 
   it("reports configExists as false when config file is missing", () => {
     const result = dryRunWith(
-      detectHarnesses("/project"),
+      detectHarnesses("/project", PLATFORM),
       mocks((path) => path.includes(".cursor") && !path.endsWith("mcp.json")),
     );
 
