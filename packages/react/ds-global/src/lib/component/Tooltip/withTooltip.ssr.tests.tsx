@@ -1,6 +1,8 @@
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import TooltipArea from "./TooltipArea.js";
+import { withTooltip } from "./index.js";
+
+const Trigger = () => <span>Target</span>;
 
 /**
  * The server-rendered floor. The portalled message is deferred until after
@@ -8,23 +10,15 @@ import TooltipArea from "./TooltipArea.js";
  * association but not the message itself — the same output the first client
  * render produces, which is what keeps hydration free of mismatches.
  */
-describe("TooltipArea (SSR)", () => {
+describe("withTooltip (SSR)", () => {
   it("renders to static HTML without throwing", () => {
-    expect(() =>
-      renderToString(
-        <TooltipArea Message="Helpful message">
-          <span>Target</span>
-        </TooltipArea>,
-      ),
-    ).not.toThrow();
+    const Tooltipped = withTooltip(Trigger, "Helpful message");
+    expect(() => renderToString(<Tooltipped />)).not.toThrow();
   });
 
   it("emits the target with aria-describedby but not the deferred message", () => {
-    const html = renderToString(
-      <TooltipArea Message="Helpful message">
-        <span>Target</span>
-      </TooltipArea>,
-    );
+    const Tooltipped = withTooltip(Trigger, "Helpful message");
+    const html = renderToString(<Tooltipped />);
 
     expect(html).toContain("ds tooltip-area");
     expect(html).toContain("Target");

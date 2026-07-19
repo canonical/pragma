@@ -1,3 +1,20 @@
+/* The tooltip engine wrapper (rendered by `withTooltip`) — a relatively
+   positioned inline span around the target. The `.target` child carries the
+   measuring ref and strips margins from its content so placement is exact. */
+.ds.tooltip-area {
+  position: relative;
+  & .target {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+
+    & > * {
+      /* biome-ignore lint/complexity/noImportantStyles: The tooltip targets must have no margin in order for tooltip placements to work correctly */
+      margin: 0 !important;
+    }
+  }
+}
+
 /* Component tokens — sourced from @canonical/design-tokens.
    The tooltip runs on the `contrasted` surface so its colours invert against
    the ambient theme (dark chip on a light UI, light chip on a dark UI). The

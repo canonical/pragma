@@ -1,5 +1,5 @@
-import { Button, TooltipArea } from "@canonical/react-ds-global";
-import { lazy, Suspense, useState } from "react";
+import { Button, withTooltip } from "@canonical/react-ds-global";
+import { lazy, Suspense, useMemo, useState } from "react";
 import canonicalLogo from "./assets/canonical.svg";
 import reactLogo from "./assets/react.svg";
 import "#styles/app.css";
@@ -14,6 +14,17 @@ const LazyButton = lazy(
 
 function App() {
   const [count, setCount] = useState(0);
+
+  // `withTooltip` bakes the message + options in at wrap time, so re-wrap when
+  // the count-dependent message changes. The Button's onClick reads the latest
+  // count via the functional updater, so it stays correct across re-wraps.
+  const CountButton = useMemo(
+    () =>
+      withTooltip(Button, `Increment count to ${count + 1}`, {
+        preferredDirections: ["inline-end", "block-end"],
+      }),
+    [count],
+  );
 
   return (
     <div className="grid responsive">
@@ -36,14 +47,9 @@ function App() {
         <LazyButton />
       </Suspense>
       <div className="card">
-        <TooltipArea
-          preferredDirections={["inline-end", "block-end"]}
-          Message={`Increment count to ${count + 1}`}
-        >
-          <Button onClick={() => setCount((count) => count + 1)}>
-            Count: {count}
-          </Button>
-        </TooltipArea>
+        <CountButton onClick={() => setCount((count) => count + 1)}>
+          Count: {count}
+        </CountButton>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR
         </p>

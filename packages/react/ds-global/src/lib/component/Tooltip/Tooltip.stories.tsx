@@ -3,7 +3,7 @@ import { Icon } from "../../component/Icon/index.js";
 import Component from "./Tooltip.js";
 
 /**
- * A tall, centred stage on a real surface — matching the TooltipArea, Popover,
+ * A tall, centred stage on a real surface — matching the withTooltip, Popover,
  * and ContextualMenu stories. `.surface` defines the `--surface-color-*`
  * channels and the div paints itself with them (surfaces consume themselves),
  * so the `.contrasted` tooltip inverts against a genuine surface.
@@ -42,7 +42,7 @@ type Story = StoryObj<typeof meta>;
 /**
  * The presentational tooltip. Its arrow only appears when a placement class
  * (`top`/`bottom`/`left`/`right`) is set — that class is normally supplied by
- * the positioning layer (TooltipArea / useDisclosure). Here it is set directly
+ * the positioning layer (withTooltip / useDisclosure). Here it is set directly
  * so the arrow is visible in isolation.
  */
 export const Default: Story = {

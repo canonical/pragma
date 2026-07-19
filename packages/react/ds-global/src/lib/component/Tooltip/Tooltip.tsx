@@ -9,7 +9,7 @@ const componentCssClassName = "ds tooltip contrasted";
 /**
  * The Tooltip component renders the message part of a tooltip. It has no
  * interactivity or positioning logic and is generally consumed via
- * TooltipArea or the withTooltip HOC.
+ * the withTooltip HOC.
  *
  * @implements ds:global.component.tooltip
  */
