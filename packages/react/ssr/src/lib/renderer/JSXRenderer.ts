@@ -14,6 +14,20 @@ const reactRenderToReadableStream = ReactDOMServer.renderToReadableStream;
 const reactRenderToString = ReactDOMServer.renderToString;
 
 /**
+ * Serialize data as JSON with every character escaped that could break an
+ * inline `<script>` context: `<` and `>` (element/comment breakout, e.g.
+ * `</script>` or `<!--`) and U+2028/U+2029 (valid JSON, invalid JS string
+ * literals). Mirrors the router package's `renderToStream` escaping so both
+ * `__INITIAL_DATA__` writers embed identically.
+ */
+const safeJsonStringify = (data: unknown): string =>
+  JSON.stringify(data).replace(
+    /[<>\u2028\u2029]/g,
+    (character) =>
+      `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+
+/**
  * `renderToPipeableStream` from `react-dom/server`, or `undefined` if the
  * current runtime doesn't export it.
  *
@@ -195,7 +209,7 @@ export default class JSXRenderer<
 
     if (!enrichedOptions.bootstrapScriptContent) {
       if (props.initialData) {
-        enrichedOptions.bootstrapScriptContent = `window.${INITIAL_DATA_KEY} = ${JSON.stringify(props.initialData).replace(/</g, "\\u003c")}`;
+        enrichedOptions.bootstrapScriptContent = `window.${INITIAL_DATA_KEY} = ${safeJsonStringify(props.initialData)}`;
       }
     }
     if (!enrichedOptions.bootstrapScripts) {

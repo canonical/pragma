@@ -171,6 +171,25 @@ describe("JSXRenderer", () => {
       );
     });
 
+    it("escapes every script-context breaker: <, >, U+2028, U+2029", () => {
+      const data = {
+        tricky: "a<b>c\u2028d\u2029e",
+      };
+      const renderer = new JSXRenderer(TestComponent, data);
+      const props = asInternals(renderer).getComponentProps();
+      const options = asInternals(renderer).enrichRendererOptions(props);
+      const content = options.bootstrapScriptContent as string;
+      expect(content).toContain("\\u003c");
+      expect(content).toContain("\\u003e");
+      expect(content).toContain("\\u2028");
+      expect(content).toContain("\\u2029");
+      // None of the raw characters survive into the embedded JSON payload.
+      const payload = content.slice(content.indexOf("=") + 1);
+      expect(payload).not.toMatch(/[<>\u2028\u2029]/);
+      // The escaping is JSON-transparent: parsing restores the original data.
+      expect(JSON.parse(payload)).toEqual(data);
+    });
+
     it("does not override user-provided bootstrapScriptContent", () => {
       const renderer = new JSXRenderer(
         TestComponent,
