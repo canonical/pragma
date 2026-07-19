@@ -6,6 +6,21 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 # Unreleased
 
 
+### BREAKING CHANGES
+
+The v2 CLI reshapes the command surface. Migrate as follows:
+
+| v1 | v2 | Notes |
+| --- | --- | --- |
+| `pragma data …` | `pragma sources …` | The `data` noun is renamed `sources`. Build the store with `pragma sources update`; inspect it with `pragma sources status`. |
+| `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package, builds the store, and writes `pragma.lock.json` in one step. |
+| the `llm` tool | `pragma capabilities` + MCP handshake instructions | The `llm` orientation tool is retired. Agents are oriented by the MCP handshake `instructions` sent on `initialize` and by the `capabilities` tool/verb, both derived from the live grammar. |
+| `pragma tokens …` / `tokens_*` tools | `pragma token …` / `token_*` tools | The token noun and its tools are singular now: `token list`, `token lookup`, `token sample`, `token add-config`. |
+| `--format text` | `--format plain` | The default text format is renamed `plain`. Output modes are `--format plain`, `--format json`, and the `--llm` condensed-Markdown flag (auto-on when piped) — there is no `llm` format value. |
+
+See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and [docs/reference/index.md](./docs/reference/index.md) for the full command and tool surface.
+
+
 ### Features
 
 * **cli:** add `pragma colophon` — a self-describing, pack-extensible toolchain colophon (storeless self-verb + MCP tool + a pack-grammar `colophon` markdown field), rendered plain/llm/json
