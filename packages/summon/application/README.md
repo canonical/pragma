@@ -80,13 +80,21 @@ The `--relay` flag (off by default) mirrors the boilerplate's Relay data layer:
   SSR data serialization/hydration is supported: the server streams the
   fallback and the browser fetches after hydration. It is emitted only with
   `--relay` because the catalog page is its only consumer today.
-- **`patches/` + `"patchedDependencies"`** — a generated app is standalone and
-  cannot inherit the monorepo's `patches/`, so the two bun patches ship with
-  the scaffold: `react-relay@18.2.0` (cjs-module-lexer export hints so named
-  imports survive Node SSR externalisation) and `relay-runtime-network@0.1.0`
-  (fixes its broken package `imports` map — temporary until the fixed
-  upstream release lands, advl/lit-relay#32, after which the patch and its
-  `patchedDependencies` entry can be dropped).
+- **`patches/` + `"patchedDependencies"`** — emitted only for STANDALONE
+  apps. bun resolves `patchedDependencies` paths from the workspace root, so
+  when the target path is inside a bun workspace (detected by walking up for
+  a `package.json` whose `workspaces` globs cover the app) the workspace root
+  owns patching and the scaffold emits neither the `patches/` directory nor
+  the `patchedDependencies` block — an app-local block there would abort
+  `bun install` with "Couldn't find patch file". A standalone app cannot
+  inherit anyone's `patches/`, so three bun patches ship with the scaffold:
+  `react-relay@21.0.1` (cjs-module-lexer export hints so named imports
+  survive Node SSR externalisation), `relay-runtime@21.0.1` (real runtime
+  bindings for type-only names the compiler artifacts import as values —
+  `ConcreteRequest`, `ReaderFragment`, `FragmentRefs`), and
+  `relay-runtime-network@0.1.0` (fixes its broken package `imports` map —
+  temporary until the fixed upstream release lands, advl/lit-relay#32, after
+  which the patch and its `patchedDependencies` entry can be dropped).
 - **Wiring** — `RelayEnvironmentProvider` in both entries (one environment
   per browser session on the client, a fresh one per request on the server),
   `vite-plugin-relay-lite` in `vite.config.ts` (`codegen: false`; artifacts
