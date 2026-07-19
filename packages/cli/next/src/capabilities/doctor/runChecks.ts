@@ -35,7 +35,7 @@ function buildChecks(
     ["pragma config", checkConfigFile(rt)],
     ["package refs", checkPackageRefs(rt)],
     ["ke store", checkKeStore(rt)],
-    ["Shell completions", checkShellCompletions()],
+    ["Shell completions", checkShellCompletions(rt.cwd)],
     ["MCP configured", checkMcpConfigured(rt.cwd)],
     ["MCP commands", checkMcpCommands(rt.cwd)],
     ["Skills symlinked", checkSkillsSymlinked(rt.cwd)],

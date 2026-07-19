@@ -20,7 +20,12 @@ import {
   warn,
   writeFile,
 } from "@canonical/task";
-import { completionScriptPath, detectShell, type ShellId } from "../shell.js";
+import {
+  activationHint,
+  completionScriptPath,
+  detectShell,
+  type ShellId,
+} from "../shell.js";
 
 /**
  * The detected completion install target: the shell, the absolute script path,
@@ -93,10 +98,11 @@ export function composeCompletions(d: CompletionsDetection): Task<void> {
       "Could not detect your shell — set $SHELL to zsh, bash, or fish.",
     );
   }
-  const { path, script } = d;
+  const { path, script, shell } = d;
   return sequence_([
-    info(`Installing ${d.shell} completions to ${path}...`),
+    info(`Installing ${shell} completions to ${path}...`),
     mkdir(dirname(path), true),
     writeFile(path, script, { undo: deleteFile(path) }),
+    info(activationHint(shell)),
   ]);
 }
