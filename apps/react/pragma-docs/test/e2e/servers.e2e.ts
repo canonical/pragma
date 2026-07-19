@@ -37,10 +37,11 @@ interface Cell {
   ssr: boolean;
   /**
    * Whether this cell serves `/playground` with server-executed Relay data
-   * (P-2 Stage 1). Only the two dev SSR cells so far: the preview cells have
-   * no graph backend until the Oxigraph-bundle spike closes. Requires the
-   * pragma refs cache (`pragma sources update`), like the `/graphql`
-   * endpoint those cells already mount.
+   * (P-2 Stage 1). All four SSR cells: the dev cells boot the backend
+   * natively, the preview cells from the compiled `dist/server/graphql.js`
+   * (ke + ke-graphql externalised — see `ssr.external` in vite.config.ts).
+   * Requires the pragma refs cache (`pragma sources update`), like the
+   * `/graphql` endpoint those cells already mount.
    */
   probe?: boolean;
 }
@@ -50,8 +51,18 @@ const MATRIX: Cell[] = [
   { script: "dev:bun", timeoutMs: DEV_READY_MS, ssr: true, probe: true },
   { script: "dev:express", timeoutMs: DEV_READY_MS, ssr: true, probe: true },
   { script: "preview", timeoutMs: PREVIEW_READY_MS, ssr: false },
-  { script: "preview:bun", timeoutMs: PREVIEW_READY_MS, ssr: true },
-  { script: "preview:express", timeoutMs: PREVIEW_READY_MS, ssr: true },
+  {
+    script: "preview:bun",
+    timeoutMs: PREVIEW_READY_MS,
+    ssr: true,
+    probe: true,
+  },
+  {
+    script: "preview:express",
+    timeoutMs: PREVIEW_READY_MS,
+    ssr: true,
+    probe: true,
+  },
 ];
 
 /** A JS/TS module or CSS-as-JS asset must never come back as the HTML page. */

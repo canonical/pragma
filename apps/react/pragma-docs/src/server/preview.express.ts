@@ -4,11 +4,13 @@
  * The request path is a chain of small, independent pieces snapped together —
  * the first that can handle the request wins:
  *
- *   1. static file      — any extension-bearing path that exists under
+ *   1. graph endpoint   — `/graphql` → the COMPILED ke-graphql backend
+ *                          (`dist/server/graphql.js`), same brick order as dev.
+ *   2. static file      — any extension-bearing path that exists under
  *                          `dist/client` (`/robots.txt`, `/favicon.*`, the
  *                          hashed `/assets/*`); extensionless routes fall through.
- *   2. sitemap renderer — `/sitemap.xml` → the XML `SitemapRenderer`.
- *   3. JSX app renderer — everything else → the HTML app.
+ *   3. sitemap renderer — `/sitemap.xml` → the XML `SitemapRenderer`.
+ *   4. JSX app renderer — everything else → the HTML app.
  *
  * The two renderers are separate Lego bricks, each built and imported
  * individually (`createAppRenderer` from the compiled `renderer.js`,
@@ -26,20 +28,50 @@
  */
 import * as process from "node:process";
 import express from "express";
-// The compiled renderers (built by `build:server`) — the same bundled artifacts
-// a production deploy ships. The build output has no `.d.ts`; each default
-// export matches its source factory.
+// The compiled bricks (built by `build:server`) — the same bundled artifacts
+// a production deploy ships. The build output has no `.d.ts`; each export
+// matches its source module.
+// @ts-expect-error — importing a build artifact with no declarations
+import { getGraphqlBackend } from "../../dist/server/graphql.js";
 // @ts-expect-error — importing a build artifact with no declarations
 import createAppRenderer from "../../dist/server/renderer.js";
 // @ts-expect-error — importing a build artifact with no declarations
 import createSitemapRenderer from "../../dist/server/sitemap.js";
+// The Node→fetch adapter is a pure helper. Importing it does evaluate the
+// SOURCE `graphql.ts` module alongside (graphqlPlugin re-exports nothing from
+// it, but shares its import chain) — harmless, since the backend singleton
+// there boots lazily and is never called from this process: the HANDLE the
+// adapter receives below is always the compiled backend's.
+import { handleNodeRequest } from "./graphqlPlugin.js";
 
 type CreateAppRenderer = typeof import("./renderer.js").default;
 type CreateSitemapRenderer = typeof import("../sitemap/renderer.js").default;
+type GetGraphqlBackend = typeof import("./graphql.js").getGraphqlBackend;
 
 const PORT = Number(process.env.PORT) || 5174;
 
+// HTTP hits on the /graphql brick, logged per request so the e2e suite can
+// assert that a server-rendered first load makes ZERO of them (the prepare
+// step inside the compiled renderer executes in-process and never appears
+// here). Keep the log line in sync with GRAPHQL_HIT_MARKER in
+// test/e2e/servers.e2e.ts.
+let graphqlHits = 0;
+
 const app = express();
+
+// The graph endpoint comes first, mirroring the dev server's brick order —
+// served from the COMPILED backend (`dist/server/graphql.js`), the same store
+// singleton the compiled renderer's prepare step uses (rollup hoists the
+// shared module into one chunk).
+app.use("/graphql", (req, res, next) => {
+  (getGraphqlBackend as GetGraphqlBackend)()
+    .then(({ handle }) => {
+      graphqlHits += 1;
+      console.info(`[graphql] http hit #${graphqlHits}`);
+      return handleNodeRequest(req, res, handle);
+    })
+    .catch(next);
+});
 
 // Serve any real file under `dist/client` — `/robots.txt`, `/favicon.*`, the
 // hashed `/assets/*`. `express.static` falls through (calls `next`) when the
@@ -52,7 +84,7 @@ app.use(async (req, res, next) => {
     const renderer =
       req.path === "/sitemap.xml"
         ? (createSitemapRenderer as CreateSitemapRenderer)()
-        : (createAppRenderer as CreateAppRenderer)(req);
+        : await (createAppRenderer as CreateAppRenderer)(req);
     const result = renderer.renderToPipeableStream();
 
     await renderer.statusReady;

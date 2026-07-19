@@ -21,6 +21,7 @@ import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
 import EntryServer, { type InitialData } from "./entry.js";
+import { prepareRelayData } from "./prepareRelayData.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -40,16 +41,24 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
  * URL for routing and the cookie-backed theme so the first paint matches the
  * user's preference, passing both as the renderer's initial data.
  *
- * No `relay` prepare step here yet: the preview servers carry no graph
- * backend, and bundling the Oxigraph WASM store into the compiled
- * `dist/server` output is an unverified spike that gates them (P-2 design
- * note §3) — the dev bricks integrate `prepareRelayData` first.
+ * Like the dev bricks, it runs the `prepareRelayData` step before the
+ * renderer is constructed (P-2 Stage 1): the matched route's query executes
+ * in-process against the compiled graph backend (ke + ke-graphql stay
+ * external in the server build, so Oxigraph loads from node_modules exactly
+ * as in dev — see `ssr.external` in vite.config.ts) and the serialised store
+ * rides `initialData.relay`. Unmapped routes omit `relay` entirely, and a
+ * failed prepare degrades to a data-less render inside `prepareRelayData`.
  */
-export default function createAppRenderer(request: Request | IncomingMessage) {
+export default async function createAppRenderer(
+  request: Request | IncomingMessage,
+) {
   const { theme } = extractPreferences(cookieHeader(request));
+  const url = getRequestUrl(request);
+  const relay = await prepareRelayData(url);
   const initialData: InitialData = {
-    url: getRequestUrl(request),
+    url,
     theme: theme === "light" || theme === "dark" ? theme : undefined,
+    ...(relay ? { relay } : {}),
   };
   return new JSXRenderer(EntryServer, initialData, { htmlString });
 }

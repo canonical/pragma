@@ -64,6 +64,12 @@ export default defineConfig(({ mode }) => ({
             input: {
               renderer: "src/server/renderer.tsx",
               sitemap: "src/sitemap/renderer.ts",
+              // The graph backend, compiled as its own brick so the preview
+              // servers can mount /graphql from `dist/server/graphql.js`.
+              // Rollup hoists the module into a chunk SHARED with the
+              // renderer entry (which reaches it via `prepareRelayData`), so
+              // the lazy store singleton stays one-per-process.
+              graphql: "src/server/graphql.ts",
             },
           },
         }
@@ -87,5 +93,20 @@ export default defineConfig(({ mode }) => ({
     // and Vite's dev module runner), and relay-runtime-network@0.1.0 ships an
     // `imports` map pointing at its unpublished src/ directory.
     noExternal: [/^@canonical\//],
+    // The server build carves TWO exceptions out of that noExternal scope:
+    // ke and ke-graphql stay native-required at runtime (`ssr.external` wins
+    // over `noExternal` for explicit entries). Bundling them would poison the
+    // graph backend two ways: (1) ke-graphql pins graphql@17.0.0-rc.0 (nested
+    // in its node_modules) while the app externalises relay's graphql@16 —
+    // a bundled ke-graphql chunk would keep `import "graphql"` external and
+    // resolve the WRONG major at runtime; (2) oxigraph's node entry is CJS
+    // that reads `${__dirname}/node_bg.wasm` at module scope, so it only
+    // works from its real package directory. Externalised, the compiled
+    // bricks load ke exactly like the dev servers' native imports do — the
+    // runtime-proven path. Both packages ship proper `exports` maps and no
+    // CSS side effects, so neither reason behind the noExternal rule applies.
+    ...(mode === "server"
+      ? { external: ["@canonical/ke", "@canonical/ke-graphql"] }
+      : undefined),
   },
 }));

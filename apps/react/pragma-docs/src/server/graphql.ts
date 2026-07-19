@@ -17,7 +17,7 @@
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createStore, type Plugin } from "@canonical/ke";
 import {
@@ -44,10 +44,25 @@ const REF_NAME = "main";
  */
 const PREFIX_DECL = /(?:^|\s)@?prefix\s+([^\s:]+):\s*<([^>]*)>/gi;
 
-/** The emitted SDL destination — the file relay-compiler reads. */
+/**
+ * The emitted SDL destination — the file relay-compiler reads. Relative to
+ * this module, so it lands in `src/relay/` when the dev servers import the
+ * source natively, and under `dist/` when the compiled server bundle runs.
+ * The latter directory does not exist (and relay-compiler never reads it),
+ * so the emit is skipped when its home is absent — see `resolveSdlOutput`.
+ */
 const SDL_OUTPUT_PATH = fileURLToPath(
   new URL("../relay/schema.graphql", import.meta.url),
 );
+
+/**
+ * The SDL emit target, or `undefined` when its directory is missing —
+ * which is exactly the compiled-bundle case (`dist/relay/` is never built).
+ * ke-graphql writes the file without creating directories, so passing the
+ * dangling path would fail the whole backend boot for a dev-only artifact.
+ */
+const resolveSdlOutput = (): string | undefined =>
+  existsSync(dirname(SDL_OUTPUT_PATH)) ? SDL_OUTPUT_PATH : undefined;
 
 interface TtlSource {
   readonly path: string;
@@ -172,9 +187,10 @@ export interface GraphqlBackend {
 const bootGraphqlBackend = async (): Promise<GraphqlBackend> => {
   const sources = collectTtlSources();
   const prefixes = harvestPrefixes(sources);
+  const sdlOutput = resolveSdlOutput();
   const graphql = createSchemaPlugin({
     incremental: true,
-    sdlOutput: SDL_OUTPUT_PATH,
+    ...(sdlOutput ? { sdlOutput } : {}),
   });
   // biome-ignore lint: Plugin generic variance requires explicit unknown
   const plugins: Plugin<any>[] = [graphql];
@@ -207,7 +223,11 @@ const bootGraphqlBackend = async (): Promise<GraphqlBackend> => {
       operationName: args.operationName,
     });
   console.info(
-    `[graphql] schema compiled from ${sources.length} TTL sources (${api.diagnostics.length} diagnostics) — SDL written to ${relative(process.cwd(), SDL_OUTPUT_PATH)}`,
+    `[graphql] schema compiled from ${sources.length} TTL sources (${api.diagnostics.length} diagnostics)${
+      sdlOutput
+        ? ` — SDL written to ${relative(process.cwd(), sdlOutput)}`
+        : " — SDL emit skipped (compiled bundle)"
+    }`,
   );
   return { handle, api, execute };
 };
