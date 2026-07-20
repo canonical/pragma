@@ -93,10 +93,15 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Discovering loaded namespaces, prefixes, and class/property counts",
   },
+  ontology_lookup: {
+    category: "read",
+    use_when:
+      "Exploring the full schema of a namespace by name — classes, properties, and hierarchy",
+  },
   ontology_show: {
     category: "read",
     use_when:
-      "Exploring the full schema of a namespace — classes, properties, and hierarchy",
+      "Deprecated alias of ontology_lookup — exploring a namespace's schema (prefer ontology_lookup)",
   },
   prompt_list: {
     category: "read",
