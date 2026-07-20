@@ -10,6 +10,7 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
 import { verbKey } from "../../kernel/packs/uniqueness.js";
@@ -114,6 +115,23 @@ describe("resource surface over the server (embedded pack)", () => {
 
     expect(fromResource).toEqual(fromCli);
     expect(fromResource.uri).toBe("https://pragma.canonical.com/sample#Button");
+  });
+
+  it("rejects a read of an absent entity as InvalidParams carrying ENTITY_NOT_FOUND", async () => {
+    // The warm embedded pack resolves the `ex:` prefix but holds no `Nonexistent`
+    // subject, so the read fails ENTITY_NOT_FOUND — the caller's fault, which
+    // `mcpErrorFrom` maps to JSON-RPC InvalidParams, NOT the InternalError a cold
+    // store (STORE_UNAVAILABLE) earns.
+    const error = await harness.readResource("pragma:ex:Nonexistent").then(
+      () => undefined,
+      (caught: unknown) => caught,
+    );
+    expect(error, "the read must throw, not swallow to content").toBeDefined();
+    expect((error as Error).message).toMatch(/not found/i);
+    const failure = error as { code?: number; data?: { code?: string } };
+    expect(failure.data?.code).toBe("ENTITY_NOT_FOUND");
+    expect(failure.code).toBe(ErrorCode.InvalidParams);
+    expect(failure.code).not.toBe(ErrorCode.InternalError);
   });
 });
 
