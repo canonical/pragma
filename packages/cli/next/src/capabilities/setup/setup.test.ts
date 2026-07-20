@@ -185,7 +185,11 @@ describe("setup mcp — recap gate", () => {
     mkdirSync(join(cwd, ".cursor"), { recursive: true });
     const configPath = join(cwd, ".cursor", "mcp.json");
 
-    const { generator } = await buildSetupPlan(bootRuntime(FLAGS, cwd), "mcp");
+    const { generator } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "mcp",
+      "both",
+    );
     // A handler that declines EVERYTHING (incl. execute's "Proceed?" gate) must
     // fail the run cleanly — the GENERATOR_CANCELLED code the boundary renders
     // as a plain "Cancelled." — and write nothing.
@@ -194,6 +198,76 @@ describe("setup mcp — recap gate", () => {
       runTask(task as Task<unknown>, { promptHandler: async () => false }),
     ).rejects.toMatchObject({ code: "GENERATOR_CANCELLED" });
     expect(existsSync(configPath)).toBe(false);
+  });
+});
+
+describe("setup mcp — scope & dedup", () => {
+  // Isolate PATH so a `claude`/`codex` on the host PATH can't inject harnesses
+  // via a `process` signal — detection is driven only by the dirs each test makes.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = tmp("pragma-scope-path-");
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  it("writes both VS Code and Cline keys into one .vscode/mcp.json (7a dedup)", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".vscode"), { recursive: true }); // VS Code + Cline
+    const outcome = await executeVerb(
+      verbOf("mcp"),
+      {},
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const config = JSON.parse(
+      readFileSync(join(cwd, ".vscode", "mcp.json"), "utf-8"),
+    );
+    // VS Code writes under `servers`, Cline under `mcpServers` — the two-level
+    // dedup makes two writes to one file, each preserving the other's key.
+    expect(config.servers?.pragma?.command).toBe("pragma");
+    expect(config.mcpServers?.pragma?.command).toBe("pragma");
+  });
+
+  it("--local writes the project config and skips a global-only harness", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const home = process.env.HOME ?? "";
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project scope
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // global scope
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(true);
+    expect(
+      existsSync(join(home, ".codeium", "windsurf", "mcp_config.json")),
+    ).toBe(false);
+  });
+
+  it("--global writes a global harness's home config, skipping project harnesses", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const home = process.env.HOME ?? "";
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // global scope
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project scope
+    await executeVerb(
+      verbOf("mcp"),
+      { global: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    const windsurfHome = JSON.parse(
+      readFileSync(
+        join(home, ".codeium", "windsurf", "mcp_config.json"),
+        "utf-8",
+      ),
+    );
+    expect(windsurfHome.mcpServers?.pragma?.command).toBe("pragma");
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
   });
 });
 

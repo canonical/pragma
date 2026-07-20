@@ -11,6 +11,11 @@
  * it more than once (the confirm-gate preview + the build), so all real reads
  * belong in detection, never in `generate`.
  *
+ * The `--scope` selection is threaded through detection so `availableSteps` only
+ * offers steps whose band the scope runs, and the MCP step targets exactly the
+ * deduped files for that scope. Per-file narrowing is opt-in (Item 6): the "all"
+ * default never springs a per-file question — it configures every deduped file.
+ *
  * This module carries NO static import of `@canonical/summon-core` VALUES or of
  * React/Ink — it only `import type`s the generator shape and builds plain object
  * literals over `@canonical/task`. It is itself reached only through the verb's
@@ -24,7 +29,7 @@ import type {
 import { sequence_, type Task, when } from "@canonical/task";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import { guardMissingBinary } from "../../shared/assertExecOk.js";
-import type { SetupMode, SetupResult } from "../types.js";
+import type { ScopeSelection, SetupMode, SetupResult } from "../types.js";
 import {
   type CompletionsDetection,
   composeCompletions,
@@ -36,6 +41,8 @@ import {
   detectMcp,
   type McpDetection,
   mcpConfigured,
+  mcpTargets,
+  selectedGroups,
 } from "./setupMcp.js";
 import {
   composeSkills,
@@ -69,14 +76,18 @@ interface SetupDetection {
 const stepsOf = (answers: Record<string, unknown>): string[] =>
   Array.isArray(answers.steps) ? (answers.steps as string[]) : [];
 
-/** Read `answers.mcpHarnesses`, falling back to ALL detected ids. */
-const mcpSelection = (
+/** Read `answers.mcpTargets` (selected file paths), falling back to ALL files. */
+const mcpPathSelection = (
   d: McpDetection,
   answers: Record<string, unknown>,
 ): string[] =>
-  Array.isArray(answers.mcpHarnesses)
-    ? (answers.mcpHarnesses as string[])
-    : d.harnesses.map((h) => h.harness.id);
+  Array.isArray(answers.mcpTargets)
+    ? (answers.mcpTargets as string[])
+    : d.groups.map((g) => g.path);
+
+/** The groups the user chose (or all, under the "all" default). */
+const chosenGroups = (d: McpDetection, answers: Record<string, unknown>) =>
+  selectedGroups(d, mcpPathSelection(d, answers));
 
 /**
  * The LSP-install step, guarded at its use site. An absent `bunx` (no Bun on
@@ -108,20 +119,31 @@ const metaFor = (
   version: rt.version,
 });
 
-/** The MCP-harness multiselect follow-up (offered only when harnesses exist). */
-const mcpHarnessesPrompt = (
+/** The opt-in "customize which files" gate (Item 6) — defaults to false. */
+const customizePrompt = (
+  when?: PromptDefinition["when"],
+): PromptDefinition => ({
+  name: "customize",
+  type: "confirm",
+  message: "Customize which files pragma configures?",
+  default: false,
+  when,
+});
+
+/** The per-file MCP multiselect — one row per deduped {@link TargetGroup} file. */
+const mcpTargetsPrompt = (
   d: McpDetection,
   when?: PromptDefinition["when"],
 ): PromptDefinition => ({
-  name: "mcpHarnesses",
+  name: "mcpTargets",
   type: "multiselect",
-  message: "Configure MCP for which harnesses?",
+  message: "Configure MCP for which files?",
   when,
-  choices: d.harnesses.map((h) => ({
-    label: h.harness.name,
-    value: h.harness.id,
+  choices: d.groups.map((g) => ({
+    label: `${g.path} — ${g.harnessNames.join(", ")} [${g.scope}]`,
+    value: g.path,
   })),
-  default: d.harnesses.map((h) => h.harness.id),
+  default: d.groups.map((g) => g.path),
 });
 
 // =============================================================================
@@ -129,39 +151,48 @@ const mcpHarnessesPrompt = (
 // =============================================================================
 
 /** Gather EVERY step's detection up front (real reads), for the run-all. */
-async function gatherDetection(rt: PragmaRuntime): Promise<SetupDetection> {
+async function gatherDetection(
+  rt: PragmaRuntime,
+  scope: ScopeSelection,
+): Promise<SetupDetection> {
   const [completions, mcp, skills] = await Promise.all([
     detectCompletions(rt.cwd),
-    detectMcp(rt),
+    detectMcp(rt, scope),
     detectSkills(rt),
   ]);
   return { completions, mcp, skills };
 }
 
 /**
- * The steps worth OFFERING, given detection — undetectable steps are omitted so
- * the run-all degrades gracefully instead of throwing a mid-wizard
- * EMPTY_RESULTS (skills with no skills, mcp with no harnesses, completions with
- * no shell). LSP is always offered (its install is a self-contained exec).
+ * The steps worth OFFERING, given detection AND the scope selection. An
+ * undetectable step is omitted so the run-all degrades gracefully instead of
+ * throwing a mid-wizard EMPTY_RESULTS; a step whose band the scope does not run
+ * is omitted too (completions/lsp are global-band, skills are project-band, MCP
+ * spans both via its resolved groups).
  */
 function availableSteps(
   detected: SetupDetection,
+  scope: ScopeSelection,
 ): { label: string; value: StepId }[] {
+  const hasProject = scope !== "global";
+  const hasGlobal = scope !== "project";
   const choices: { label: string; value: StepId }[] = [];
-  if (detected.completions.shell) {
+  if (detected.completions.shell && hasGlobal) {
     choices.push({
       label: `Shell completions (${detected.completions.shell})`,
       value: "completions",
     });
   }
-  choices.push({ label: "Terrazzo LSP extension", value: "lsp" });
-  if (detected.mcp.harnesses.length > 0) {
+  if (hasGlobal) {
+    choices.push({ label: "Terrazzo LSP extension", value: "lsp" });
+  }
+  if (detected.mcp.groups.length > 0) {
     choices.push({
-      label: `MCP config (${detected.mcp.harnesses.length} harness(es))`,
+      label: `MCP config (${detected.mcp.groups.length} file(s))`,
       value: "mcp",
     });
   }
-  if (detected.skills.available) {
+  if (detected.skills.available && hasProject) {
     choices.push({
       label: `Link skills (${detected.skills.skillCount})`,
       value: "skills",
@@ -176,7 +207,7 @@ function availableSteps(
 
 /** The run-all self-verb: a step multiselect + per-step composition. */
 function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
-  const steps = availableSteps(detected);
+  const steps = availableSteps(detected, "both");
   const prompts: PromptDefinition[] = [
     {
       name: "steps",
@@ -186,11 +217,16 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
       default: steps.map((c) => c.value), // --yes / non-TTY ⇒ every step
     },
   ];
-  if (detected.mcp.harnesses.length > 0) {
+  // Item 6: per-file narrowing is opt-in. The "customize?" gate (default false)
+  // only surfaces when MCP is chosen and there is more than one file; the
+  // per-file multiselect only surfaces after an explicit yes — so the "all"
+  // default configures every deduped file without an extra question.
+  if (detected.mcp.groups.length > 0) {
     prompts.push(
-      mcpHarnessesPrompt(
+      customizePrompt((a) => stepsOf(a).includes("mcp")),
+      mcpTargetsPrompt(
         detected.mcp,
-        (a) => stepsOf(a).includes("mcp"), // only when mcp is chosen
+        (a) => a.customize === true && stepsOf(a).includes("mcp"),
       ),
     );
   }
@@ -213,7 +249,7 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
         when(chosen.includes("lsp"), composeGuardedLsp(rt)),
         when(
           chosen.includes("mcp"),
-          composeMcp(detected.mcp, mcpSelection(detected.mcp, answers)),
+          composeMcp(detected.mcp, chosenGroups(detected.mcp, answers)),
         ),
         when(chosen.includes("skills"), composeSkills(detected.skills)),
       ]);
@@ -244,6 +280,7 @@ function singleStep(
  *
  * @param rt - The per-invocation runtime.
  * @param mode - The entry point (`all` or one sub-verb).
+ * @param scope - The resolved `--scope` selection (project/global/both).
  * @returns The generator + result mapper.
  * @throws PragmaError EMPTY_RESULTS for a direct `setup skills` with no skills.
  * @note Impure — performs each step's real detection.
@@ -251,10 +288,11 @@ function singleStep(
 export async function buildSetupPlan(
   rt: PragmaRuntime,
   mode: SetupMode,
+  scope: ScopeSelection,
 ): Promise<SetupPlan> {
   switch (mode) {
     case "all":
-      return runAllPlan(rt, await gatherDetection(rt));
+      return runAllPlan(rt, await gatherDetection(rt, scope));
 
     case "completions": {
       const d = await detectCompletions(rt.cwd);
@@ -280,16 +318,26 @@ export async function buildSetupPlan(
       };
 
     case "mcp": {
-      const d = await detectMcp(rt);
-      const prompts = d.harnesses.length > 0 ? [mcpHarnessesPrompt(d)] : [];
+      const d = await detectMcp(rt, scope);
+      const prompts: PromptDefinition[] =
+        d.groups.length > 0
+          ? [
+              customizePrompt(),
+              mcpTargetsPrompt(d, (a) => a.customize === true),
+            ]
+          : [];
       return {
         generator: singleStep(rt, "pragma setup mcp", prompts, (answers) =>
-          composeMcp(d, mcpSelection(d, answers)),
+          composeMcp(d, chosenGroups(d, answers)),
         ),
-        toResult: (answers) => ({
-          kind: "mcp",
-          configured: mcpConfigured(d, mcpSelection(d, answers)),
-        }),
+        toResult: (answers) => {
+          const sel = chosenGroups(d, answers);
+          return {
+            kind: "mcp",
+            configured: mcpConfigured(sel),
+            targets: mcpTargets(sel),
+          };
+        },
       };
     }
 

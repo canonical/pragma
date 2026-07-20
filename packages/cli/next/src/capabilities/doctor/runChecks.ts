@@ -18,7 +18,27 @@ import { checkPackageRefs } from "./checks/checkPackageRefs.js";
 import { checkPragmaVersion } from "./checks/checkPragmaVersion.js";
 import { checkShellCompletions } from "./checks/checkShellCompletions.js";
 import { checkSkillsSymlinked } from "./checks/checkSkillsSymlinked.js";
-import type { CheckResult, DoctorData } from "./types.js";
+import type { CheckResult, DoctorData, ScopeBand } from "./types.js";
+
+/**
+ * Which band each check concerns, by name. Per-project config checks (MCP,
+ * skills) are project-band; the shell-completion check is global (user/machine).
+ * The rest are environment checks with no band. (A simplification: an aggregate
+ * MCP/skills check spans whatever harnesses were detected, but the default band
+ * for the common project/both harnesses is `project`.)
+ */
+const CHECK_BANDS: Record<string, ScopeBand> = {
+  "MCP configured": "project",
+  "MCP commands": "project",
+  "Skills symlinked": "project",
+  "Shell completions": "global",
+};
+
+/** Attach a band tag to a check result by name, if one is defined. */
+function withBand(result: CheckResult): CheckResult {
+  const band = CHECK_BANDS[result.name];
+  return band ? { ...result, band } : result;
+}
 
 /**
  * Each check paired with the display name used if it rejects. The fallback name
@@ -53,16 +73,16 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
   const checks: CheckResult[] = await Promise.all(
     buildChecks(rt).map(async ([name, promise]): Promise<CheckResult> => {
       try {
-        return await promise;
+        return withBand(await promise);
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
-        return {
+        return withBand({
           name,
           status: "fail",
           detail: `Check threw an unexpected error: ${reason}`,
           remedy:
             "Re-run `pragma doctor`; if it persists, report this as a bug.",
-        };
+        });
       }
     }),
   );
