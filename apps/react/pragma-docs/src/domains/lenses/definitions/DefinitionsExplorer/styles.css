@@ -18,9 +18,29 @@
     minmax(var(--subnav-w), 16rem)
     minmax(0, 1fr)
     minmax(var(--aside-w), 24rem);
-  gap: var(--space-300, 1.5rem);
+  /* ZERO gap — the full-bleed move. The three tracks stay ADJACENT (the
+   * layout.explorer contract declares exactly three adjacent tracks, and
+   * that contract is freefold-marked), but with no gutter between them the
+   * canvas meets the rail and the inspector edge to edge, so it reads as
+   * one continuous surface the panels sit on rather than as a third card
+   * floating in a sea of padding. The separating hairlines move onto the
+   * rail and inspector below; nothing here overlays anything. */
+  gap: 0;
   block-size: 100%;
   min-block-size: 0;
+}
+
+/* The hairlines that the gap used to imply, now drawn by the flanking
+ * panels — the canvas itself gets no border, which is what lets it read as
+ * continuous with the frame. */
+.ds.definitions-explorer > .definitions-explorer-rail {
+  border-inline-end: 1px solid var(--color-border-muted, #ddd);
+  padding-inline-end: var(--space-200, 1rem);
+}
+
+.ds.definitions-explorer > .term-inspector {
+  border-inline-start: 1px solid var(--color-border-muted, #ddd);
+  padding-inline-start: var(--space-200, 1rem);
 }
 
 /* The west column: the search box is stationary and the term list scrolls

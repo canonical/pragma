@@ -1,16 +1,41 @@
 /*
  * HierarchyWell — the explorer's centre panel: the class graph sunk into
  * the shell's underground well (`.underground` supplies the depression's
- * surface; this file only sizes the well and raises the nodes). The
- * panel's width comes from the explorer's grid template; React Flow fills
- * the well and positions everything ABSOLUTELY inside its own wrapper —
- * never `position: fixed`, which the canvas's containment would re-anchor
- * (INTRINSIC-GRID.md entry 5). Zero conditional at-rules (the census).
+ * surface; this file sizes the well, takes it FULL BLEED, raises the
+ * nodes, and hangs the canvas-local furniture). The panel's width comes
+ * from the explorer's grid template; React Flow fills the well and
+ * positions everything ABSOLUTELY inside its own wrapper — never
+ * `position: fixed`, which the canvas's containment would re-anchor
+ * (INTRINSIC-GRID.md entry 5).
+ *
+ * At-rules: one `prefers-reduced-motion` block at the foot. It is EXEMPT
+ * from the layout-capable census (frameStability.tests.tsx matches query
+ * TEXT and exempts motion/colour/contrast features, which cannot reflow
+ * layout), so the app's sanctioned layout-capable count stays at one.
  */
 
+/* FULL BLEED. The shared `.underground` hook (Shell/styles.css) gives every
+ * well a rounded, bordered, inset card — right for a well sitting IN a
+ * padded page, wrong here, where the canvas is the page. We keep the
+ * depression (the background and the inset shadow, which is what makes it
+ * a recess you look INTO — AX.3) and drop the card-ness: no radius, no
+ * block borders, so the surface runs edge to edge between the rail's and
+ * the inspector's hairlines. The hook itself is untouched — other tenants
+ * still get the card. This is an override at the tenant, not a change to
+ * the contract.
+ *
+ * `position: relative` makes this box the containing block for the
+ * floating furniture below. NEVER `position: fixed` inside here: the
+ * canvas is a `container-type: inline-size` query container, so fixed
+ * resolves against IT, not the viewport (INTRINSIC-GRID.md entry 5's
+ * containment law) — a fixed child would anchor to a box nobody expects. */
 .ds.hierarchy-well {
+  position: relative;
   min-block-size: 0;
   overflow: hidden;
+  border-radius: 0;
+  border-block: none;
+  border-inline: none;
 }
 
 /* The flow fills the well; panning happens inside it, the well itself
@@ -130,6 +155,58 @@
 .ds.hierarchy-well .react-flow__handle {
   opacity: 0;
   pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- */
+/* Floating furniture — what actually creates the "laid over" feel   */
+/* ---------------------------------------------------------------- */
+
+/* The exhibit does NOT float its panels over a full-bleed canvas; its
+ * three tracks are adjacent and opaque. What hovers is small, canvas-LOCAL
+ * furniture: a hint at the top centre and a legend at the bottom left.
+ * That is what we reproduce — absolutely positioned against the well
+ * (which is `position: relative` above), never `position: fixed`, and
+ * raised to --z-plate, a token this file CONSUMES and never defines. */
+.ds.hierarchy-well .hierarchy-furniture {
+  position: absolute;
+  z-index: var(--z-plate);
+  pointer-events: none;
+}
+
+/* The hint: centred at the top, purely informational, never a click
+ * target — so it stays out of the way of the graph it describes. */
+.ds.hierarchy-well .hierarchy-hint {
+  inset-block-start: var(--space-150, 0.75rem);
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: fit-content;
+  max-inline-size: calc(100% - var(--space-300, 1.5rem));
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: color-mix(
+    in oklab,
+    var(--color-background, #fff) 85%,
+    transparent
+  );
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #666);
+}
+
+/* The legend: bottom left, the exhibit's placement. It explains the
+ * per-node encoding, so it has to sit where the nodes are. */
+.ds.hierarchy-well .hierarchy-legend {
+  inset-block-end: var(--space-150, 0.75rem);
+  inset-inline-start: var(--space-150, 0.75rem);
+  max-inline-size: calc(100% - var(--space-300, 1.5rem));
+  padding: var(--space-100, 0.5rem) var(--space-150, 0.75rem);
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: 0.5rem;
+  background: var(--color-background, #fff);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 6px 24px rgb(0 0 0 / 0.07);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #666);
 }
 
 /* Fade and lift are the well's only motion; drop them when asked. The
