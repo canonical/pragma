@@ -1,0 +1,11 @@
+:root {
+  --keyboard-keys-gap: var(--dimension-050);
+  --keyboard-keys-margin-inline: var(--dimension-050);
+}
+
+.ds.keyboard-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--keyboard-keys-gap);
+  margin-inline: var(--keyboard-keys-margin-inline);
+}
