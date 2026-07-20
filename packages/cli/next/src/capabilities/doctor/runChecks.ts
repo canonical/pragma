@@ -21,21 +21,25 @@ import { checkSkillsSymlinked } from "./checks/checkSkillsSymlinked.js";
 import type { CheckResult, DoctorData, ScopeBand } from "./types.js";
 
 /**
- * Which band each check concerns, by name. Per-project config checks (MCP,
- * skills) are project-band; the shell-completion check is global (user/machine).
- * The rest are environment checks with no band. (A simplification: an aggregate
- * MCP/skills check spans whatever harnesses were detected, but the default band
- * for the common project/both harnesses is `project`.)
+ * The band a check statically concerns, by name — for checks whose band is
+ * fixed by construction: skills always symlink into the per-repo project dir
+ * (`skillsPath` is project-rooted), and completions install into the user/home
+ * shell dir. The MCP checks are NOT here: they detect harnesses across BOTH
+ * bands, so each derives its own band from what it found (see `deriveBand`) and
+ * sets it on its own result — {@link attachBand} preserves that.
  */
 const CHECK_BANDS: Record<string, ScopeBand> = {
-  "MCP configured": "project",
-  "MCP commands": "project",
   "Skills symlinked": "project",
   "Shell completions": "global",
 };
 
-/** Attach a band tag to a check result by name, if one is defined. */
-function withBand(result: CheckResult): CheckResult {
+/**
+ * Attach a band tag to a check result. A check that already set its own band
+ * (the harness-derived MCP checks) keeps it; otherwise the static
+ * {@link CHECK_BANDS} map fills one in by name, if defined.
+ */
+function attachBand(result: CheckResult): CheckResult {
+  if (result.band !== undefined) return result;
   const band = CHECK_BANDS[result.name];
   return band ? { ...result, band } : result;
 }
@@ -73,10 +77,10 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
   const checks: CheckResult[] = await Promise.all(
     buildChecks(rt).map(async ([name, promise]): Promise<CheckResult> => {
       try {
-        return withBand(await promise);
+        return attachBand(await promise);
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
-        return withBand({
+        return attachBand({
           name,
           status: "fail",
           detail: `Check threw an unexpected error: ${reason}`,

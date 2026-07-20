@@ -215,7 +215,19 @@ describe("setup mcp — scope & dedup", () => {
 
   it("writes both VS Code and Cline keys into one .vscode/mcp.json (7a dedup)", async () => {
     const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".vscode"), { recursive: true }); // VS Code + Cline
+    mkdirSync(join(cwd, ".vscode"), { recursive: true }); // VS Code (dir signal)
+    // Cline is detected by its extension (NOT the .vscode dir), so install a fake
+    // one under the isolated HOME — both harnesses then resolve to the SAME
+    // .vscode/mcp.json, which is what the two-level dedup write must handle. The
+    // extension is matched by its `package.json` manifest, so write one.
+    const clineExt = join(
+      process.env.HOME ?? "",
+      ".vscode",
+      "extensions",
+      "saoudrizwan.claude-dev-1.0.0",
+    );
+    mkdirSync(clineExt, { recursive: true });
+    writeFileSync(join(clineExt, "package.json"), "{}");
     const outcome = await executeVerb(
       verbOf("mcp"),
       {},
@@ -268,6 +280,125 @@ describe("setup mcp — scope & dedup", () => {
     );
     expect(windsurfHome.mcpServers?.pragma?.command).toBe("pragma");
     expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
+  });
+
+  // The `--scope <enum>` values (project/global/both) resolve independently of
+  // the `--global`/`--local` boolean sugars above — a distinct resolveScope arm.
+  it("--scope project (the enum) writes the project config, skipping a global harness", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const home = process.env.HOME ?? "";
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project scope
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // global scope
+    await executeVerb(
+      verbOf("mcp"),
+      { scope: "project" },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(true);
+    expect(
+      existsSync(join(home, ".codeium", "windsurf", "mcp_config.json")),
+    ).toBe(false);
+  });
+
+  it("--scope global (the enum) writes the home config, skipping a project harness", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const home = process.env.HOME ?? "";
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // global scope
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project scope
+    await executeVerb(
+      verbOf("mcp"),
+      { scope: "global" },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(
+      existsSync(join(home, ".codeium", "windsurf", "mcp_config.json")),
+    ).toBe(true);
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
+  });
+});
+
+describe("setup mcp — customize opt-in gate (Item 6)", () => {
+  it("gates the per-file multiselect behind an explicit customize=true", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // ⇒ one MCP target group
+    const { generator } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "mcp",
+      "both",
+    );
+    const customize = generator.prompts.find((p) => p.name === "customize");
+    const targets = generator.prompts.find((p) => p.name === "mcpTargets");
+    // The gate is an opt-in confirm that defaults to NOT customizing.
+    expect(customize?.type).toBe("confirm");
+    expect(customize?.default).toBe(false);
+    // The per-file multiselect only surfaces after an explicit yes — so the
+    // "all" default configures every deduped file without an extra question.
+    expect(targets?.when?.({})).toBe(false);
+    expect(targets?.when?.({ customize: false })).toBe(false);
+    expect(targets?.when?.({ customize: true })).toBe(true);
+  });
+});
+
+describe("setup (run-all wizard) — scope threading", () => {
+  // Isolate PATH so an ambient `claude`/`codex` can't inject a harness via a
+  // `process` signal — detection is driven only by the dirs each test makes.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = tmp("pragma-runall-path-");
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  /** Seed a discoverable skill so the project-band skills step is offerable. */
+  const seedSkill = (cwd: string): void => {
+    const dir = join(cwd, ".pragma", "skills", "s");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "SKILL.md"),
+      "---\nname: s\ndescription: A skill.\n---\n",
+    );
+  };
+
+  it("--local omits the global-band completions + lsp steps, keeping project steps", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // project-band MCP target
+    seedSkill(cwd); // project-band skills step
+    const outcome = await executeVerb(
+      setupSelfVerb,
+      { local: true },
+      DRY,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const plan = outcome.stdout ?? "";
+    // The global-band steps are gone under --local (the bug: they used to run).
+    expect(plan).not.toContain(completionScriptPath("zsh"));
+    expect(plan).not.toContain("terrazzo-lsp-extension");
+    // The project-band steps remain: MCP into .cursor, skills into .agents/skills.
+    expect(plan).toContain("mcp.json");
+    expect(plan).toContain(".agents/skills");
+  });
+
+  it("--global omits the project-band skills step, keeping global steps", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    seedSkill(cwd); // WOULD be offered under the default `both`
+    const outcome = await executeVerb(
+      setupSelfVerb,
+      { global: true },
+      DRY,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    const plan = outcome.stdout ?? "";
+    // The global-band steps are present under --global.
+    expect(plan).toContain(completionScriptPath("zsh"));
+    expect(plan).toContain("terrazzo-lsp-extension");
+    // The project-band skills step is gone (the bug: it used to run under --global).
+    expect(plan).not.toContain(".agents/skills");
   });
 });
 

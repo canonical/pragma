@@ -11,10 +11,11 @@
  * it more than once (the confirm-gate preview + the build), so all real reads
  * belong in detection, never in `generate`.
  *
- * The `--scope` selection is threaded through detection so `availableSteps` only
- * offers steps whose band the scope runs, and the MCP step targets exactly the
- * deduped files for that scope. Per-file narrowing is opt-in (Item 6): the "all"
- * default never springs a per-file question — it configures every deduped file.
+ * The `--scope` selection is threaded through detection AND step-offering so
+ * `listAvailableSteps` only offers steps whose band the scope runs, and the MCP
+ * step targets exactly the deduped files for that scope. Per-file narrowing is
+ * opt-in (Item 6): the "all" default never springs a per-file question — it
+ * configures every deduped file.
  *
  * This module carries NO static import of `@canonical/summon-core` VALUES or of
  * React/Ink — it only `import type`s the generator shape and builds plain object
@@ -73,11 +74,11 @@ interface SetupDetection {
 }
 
 /** Read `answers.steps` (the run-all multiselect) as a string array. */
-const stepsOf = (answers: Record<string, unknown>): string[] =>
+const readSteps = (answers: Record<string, unknown>): string[] =>
   Array.isArray(answers.steps) ? (answers.steps as string[]) : [];
 
 /** Read `answers.mcpTargets` (selected file paths), falling back to ALL files. */
-const mcpPathSelection = (
+const resolveMcpPaths = (
   d: McpDetection,
   answers: Record<string, unknown>,
 ): string[] =>
@@ -86,8 +87,10 @@ const mcpPathSelection = (
     : d.groups.map((g) => g.path);
 
 /** The groups the user chose (or all, under the "all" default). */
-const chosenGroups = (d: McpDetection, answers: Record<string, unknown>) =>
-  selectedGroups(d, mcpPathSelection(d, answers));
+const selectChosenGroups = (
+  d: McpDetection,
+  answers: Record<string, unknown>,
+) => selectedGroups(d, resolveMcpPaths(d, answers));
 
 /**
  * The LSP-install step, guarded at its use site. An absent `bunx` (no Bun on
@@ -109,7 +112,7 @@ const composeGuardedLsp = (rt: PragmaRuntime): Task<void> =>
   );
 
 /** Build a generator's `meta` (no stamping — the version is just header text). */
-const metaFor = (
+const buildMeta = (
   rt: PragmaRuntime,
   title: string,
 ): GeneratorDefinition["meta"] => ({
@@ -120,7 +123,7 @@ const metaFor = (
 });
 
 /** The opt-in "customize which files" gate (Item 6) — defaults to false. */
-const customizePrompt = (
+const buildCustomizePrompt = (
   when?: PromptDefinition["when"],
 ): PromptDefinition => ({
   name: "customize",
@@ -131,7 +134,7 @@ const customizePrompt = (
 });
 
 /** The per-file MCP multiselect — one row per deduped {@link TargetGroup} file. */
-const mcpTargetsPrompt = (
+const buildMcpTargetsPrompt = (
   d: McpDetection,
   when?: PromptDefinition["when"],
 ): PromptDefinition => ({
@@ -168,9 +171,15 @@ async function gatherDetection(
  * undetectable step is omitted so the run-all degrades gracefully instead of
  * throwing a mid-wizard EMPTY_RESULTS; a step whose band the scope does not run
  * is omitted too (completions/lsp are global-band, skills are project-band, MCP
- * spans both via its resolved groups).
+ * spans both via its resolved groups). Threading `scope` here is what makes
+ * `setup --local` skip completions+lsp and `setup --global` skip skills — the
+ * MCP groups are already scoped by {@link detectMcp}.
+ *
+ * @param detected - Every step's up-front detection.
+ * @param scope - The resolved `--scope` selection (project/global/both).
+ * @returns The offerable steps, in composition/display order.
  */
-function availableSteps(
+function listAvailableSteps(
   detected: SetupDetection,
   scope: ScopeSelection,
 ): { label: string; value: StepId }[] {
@@ -205,9 +214,18 @@ function availableSteps(
 // Plan builders
 // =============================================================================
 
-/** The run-all self-verb: a step multiselect + per-step composition. */
-function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
-  const steps = availableSteps(detected, "both");
+/**
+ * The run-all self-verb: a step multiselect + per-step composition. The resolved
+ * `scope` narrows BOTH the offered steps (via {@link listAvailableSteps}) and the
+ * MCP target groups (already scoped by {@link detectMcp}), so `--local` omits the
+ * global-band completions+lsp and `--global` omits the project-band skills.
+ */
+function buildRunAllPlan(
+  rt: PragmaRuntime,
+  detected: SetupDetection,
+  scope: ScopeSelection,
+): SetupPlan {
+  const steps = listAvailableSteps(detected, scope);
   const prompts: PromptDefinition[] = [
     {
       name: "steps",
@@ -223,10 +241,10 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
   // default configures every deduped file without an extra question.
   if (detected.mcp.groups.length > 0) {
     prompts.push(
-      customizePrompt((a) => stepsOf(a).includes("mcp")),
-      mcpTargetsPrompt(
+      buildCustomizePrompt((a) => readSteps(a).includes("mcp")),
+      buildMcpTargetsPrompt(
         detected.mcp,
-        (a) => a.customize === true && stepsOf(a).includes("mcp"),
+        (a) => a.customize === true && readSteps(a).includes("mcp"),
       ),
     );
   }
@@ -237,10 +255,10 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
   // reads already happened up front). Composing an unchosen step is harmless:
   // `when(false, …)` discards the (side-effect-free) task it was handed.
   const generator: GeneratorDefinition = {
-    meta: metaFor(rt, "pragma setup"),
+    meta: buildMeta(rt, "pragma setup"),
     prompts,
     generate: (answers) => {
-      const chosen = stepsOf(answers);
+      const chosen = readSteps(answers);
       return sequence_([
         when(
           chosen.includes("completions"),
@@ -249,7 +267,7 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
         when(chosen.includes("lsp"), composeGuardedLsp(rt)),
         when(
           chosen.includes("mcp"),
-          composeMcp(detected.mcp, chosenGroups(detected.mcp, answers)),
+          composeMcp(detected.mcp, selectChosenGroups(detected.mcp, answers)),
         ),
         when(chosen.includes("skills"), composeSkills(detected.skills)),
       ]);
@@ -258,18 +276,18 @@ function runAllPlan(rt: PragmaRuntime, detected: SetupDetection): SetupPlan {
 
   return {
     generator,
-    toResult: (answers) => ({ kind: "all", steps: stepsOf(answers) }),
+    toResult: (answers) => ({ kind: "all", steps: readSteps(answers) }),
   };
 }
 
 /** A single-step generator (no run-all multiselect) for one sub-verb. */
-function singleStep(
+function buildSingleStep(
   rt: PragmaRuntime,
   title: string,
   prompts: PromptDefinition[],
   generate: (answers: Record<string, unknown>) => Task<void>,
 ): GeneratorDefinition {
-  return { meta: metaFor(rt, title), prompts, generate };
+  return { meta: buildMeta(rt, title), prompts, generate };
 }
 
 /**
@@ -292,12 +310,12 @@ export async function buildSetupPlan(
 ): Promise<SetupPlan> {
   switch (mode) {
     case "all":
-      return runAllPlan(rt, await gatherDetection(rt, scope));
+      return buildRunAllPlan(rt, await gatherDetection(rt, scope), scope);
 
     case "completions": {
       const d = await detectCompletions(rt.cwd);
       return {
-        generator: singleStep(rt, "pragma setup completions", [], () =>
+        generator: buildSingleStep(rt, "pragma setup completions", [], () =>
           composeCompletions(d),
         ),
         toResult: () => ({
@@ -311,7 +329,7 @@ export async function buildSetupPlan(
 
     case "lsp":
       return {
-        generator: singleStep(rt, "pragma setup lsp", [], () =>
+        generator: buildSingleStep(rt, "pragma setup lsp", [], () =>
           composeGuardedLsp(rt),
         ),
         toResult: () => ({ kind: "lsp" }),
@@ -322,16 +340,16 @@ export async function buildSetupPlan(
       const prompts: PromptDefinition[] =
         d.groups.length > 0
           ? [
-              customizePrompt(),
-              mcpTargetsPrompt(d, (a) => a.customize === true),
+              buildCustomizePrompt(),
+              buildMcpTargetsPrompt(d, (a) => a.customize === true),
             ]
           : [];
       return {
-        generator: singleStep(rt, "pragma setup mcp", prompts, (answers) =>
-          composeMcp(d, chosenGroups(d, answers)),
+        generator: buildSingleStep(rt, "pragma setup mcp", prompts, (answers) =>
+          composeMcp(d, selectChosenGroups(d, answers)),
         ),
         toResult: (answers) => {
-          const sel = chosenGroups(d, answers);
+          const sel = selectChosenGroups(d, answers);
           return {
             kind: "mcp",
             configured: mcpConfigured(sel),
@@ -345,7 +363,7 @@ export async function buildSetupPlan(
       const d = await detectSkills(rt);
       if (!d.available) throw skillsEmptyError();
       return {
-        generator: singleStep(rt, "pragma setup skills", [], () =>
+        generator: buildSingleStep(rt, "pragma setup skills", [], () =>
           composeSkills(d),
         ),
         toResult: () => ({ kind: "skills", result: toSkillsResult(d) }),

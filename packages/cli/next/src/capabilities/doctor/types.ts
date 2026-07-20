@@ -38,10 +38,11 @@ export interface CheckResult {
   /** Remedial instruction shown inline under a failing check. */
   readonly remedy?: string;
   /**
-   * Which config band the check concerns, if any: `global` for the user/machine
-   * level (shell completions), `project` for per-repo config (MCP, skills). The
-   * renderer groups banded checks into MACHINE/PROJECT sections; environment
-   * checks (Node, versions, store) carry no band.
+   * Which config band the check concerns, if any: `global` for the user/home
+   * level (shell completions), `project` for per-repo config (skills). The MCP
+   * checks derive their band from the harnesses they found. The renderer groups
+   * banded checks into Global/Project sections; environment checks (Node,
+   * versions, store) carry no band.
    */
   readonly band?: ScopeBand;
 }

@@ -4,6 +4,7 @@ import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import { runTask } from "@canonical/task/node";
 import type { CheckItem, CheckResult } from "../types.js";
+import { deriveBand } from "./deriveBand.js";
 
 const NAME = "MCP commands";
 
@@ -56,6 +57,9 @@ export async function checkMcpCommands(cwd: string): Promise<CheckResult> {
     return { name: NAME, status: "skip", detail: "no MCP configs found" };
   }
 
+  // Band the finding by the harnesses whose configs were actually examined, so
+  // a global-scope harness's broken command is reported under the global band.
+  const band = deriveBand(withConfig);
   const broken: CheckItem[] = [];
   let checked = 0;
 
@@ -94,6 +98,7 @@ export async function checkMcpCommands(cwd: string): Promise<CheckResult> {
       name: NAME,
       status: "pass",
       detail: `${checked} command${checked === 1 ? "" : "s"} resolve on PATH`,
+      band,
     };
   }
 
@@ -104,5 +109,6 @@ export async function checkMcpCommands(cwd: string): Promise<CheckResult> {
     items: broken,
     remedy:
       "Install the missing command or remove the entry — every agent session tries and fails to boot it.",
+    band,
   };
 }

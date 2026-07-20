@@ -2,9 +2,13 @@ import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import { runTask } from "@canonical/task/node";
 import type { CheckResult } from "../types.js";
+import { deriveBand } from "./deriveBand.js";
 
 /**
- * Check that at least one AI harness has pragma configured as an MCP server.
+ * Check that at least one AI harness has pragma configured as an MCP server. The
+ * result's band is derived from the harnesses actually found (Windsurf ⇒ global,
+ * Cursor ⇒ project), not the check name — so a global-scope harness is not
+ * mislabeled PROJECT.
  *
  * @param cwd - The project root to detect harnesses against.
  * @returns A CheckResult listing configured harnesses, or fail with a remedy.
@@ -32,12 +36,12 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
     };
   }
 
-  const configured: string[] = [];
+  const configured: DetectedHarness[] = [];
   for (const d of detected) {
     if (!d.configExists) continue;
     try {
       const servers = await runTask(readMcpConfig(d.harness, cwd));
-      if ("pragma" in servers) configured.push(d.harness.name);
+      if ("pragma" in servers) configured.push(d);
     } catch {
       // Config unreadable — skip.
     }
@@ -47,7 +51,8 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
     return {
       name: "MCP configured",
       status: "pass",
-      detail: configured.join(", "),
+      detail: configured.map((d) => d.harness.name).join(", "),
+      band: deriveBand(configured),
     };
   }
 
@@ -57,5 +62,6 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
     status: "fail",
     detail: `detected ${names} but pragma not configured`,
     remedy: "pragma setup mcp",
+    band: deriveBand(detected),
   };
 }

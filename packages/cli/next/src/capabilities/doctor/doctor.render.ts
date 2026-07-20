@@ -7,6 +7,7 @@
 
 import chalk from "chalk";
 import type { Formatters } from "../../kernel/spec/types.js";
+import { BAND_LABELS } from "../shared/bands.js";
 import type { CheckResult, CheckStatus, DoctorData } from "./types.js";
 
 /** Status icons for pass/fail/skip results (checks and sub-items). */
@@ -71,8 +72,8 @@ function formatSummary(data: DoctorData): string {
 }
 
 /**
- * Partition checks into ordered bands: environment (no band), MACHINE (global),
- * PROJECT (project). Declaration order is preserved within each band, so the
+ * Partition checks into ordered bands: environment (no band), then the global
+ * and project bands. Declaration order is preserved within each band, so the
  * report stays deterministic.
  */
 function partitionByBand(checks: readonly CheckResult[]): {
@@ -99,11 +100,11 @@ export const doctorFormatters: Formatters<DoctorData> = {
         lines.push(...formatCheckPlain(check, nameWidth));
       lines.push("");
     };
-    // Environment checks lead (no header); MACHINE then PROJECT are the two
-    // banded sections before the tally.
+    // Environment checks lead (no header); the global then project bands are the
+    // two banded sections before the tally.
     section("", environment);
-    section("MACHINE", machine);
-    section("PROJECT", project);
+    section(BAND_LABELS.global, machine);
+    section(BAND_LABELS.project, project);
     lines.push(formatSummary(data));
     return lines.join("\n");
   },
@@ -139,8 +140,8 @@ export const doctorFormatters: Formatters<DoctorData> = {
       for (const check of checks) lines.push(...renderCheck(check));
     };
     section("", environment);
-    section("Machine", machine);
-    section("Project", project);
+    section(BAND_LABELS.global, machine);
+    section(BAND_LABELS.project, project);
     lines.push(
       "",
       `_${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped_`,
