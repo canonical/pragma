@@ -137,6 +137,8 @@ ex:one a ex:Widget ; rdfs:label "One" .
     };
     expect(envelope.data.lockPresent).toBe(true);
     expect(envelope.data.cached).toBe(true);
-    expect(envelope.data.entityCount).toBe(2);
+    // Distinct abox subjects: the one individual (ex:one). The ex:Widget class
+    // is tbox schema, not an entity — the raw entity count would double this (A1).
+    expect(envelope.data.entityCount).toBe(1);
   });
 });
