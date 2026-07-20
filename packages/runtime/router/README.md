@@ -27,6 +27,8 @@ const routes = {
 } as const;
 ```
 
+A data route declares its UI through exactly one of two fields: `component` (preferred — a component receiving `{ params, search }` props, rendered with its own fiber by framework adapters such as `@canonical/router-react`) or the deprecated `content` render-function form shown above. `route()` throws when both or neither are declared.
+
 ### 2. Create a router
 
 ```ts

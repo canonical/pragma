@@ -334,3 +334,56 @@ describe("Outlet hook ownership (AV-340)", () => {
     });
   });
 });
+
+describe("Outlet component field (AV-340 phase 2)", () => {
+  it("renders routes declared with the component field, with hooks", async () => {
+    function ItemPage({
+      params,
+    }: {
+      readonly params: { readonly id: string };
+    }): ReactElement {
+      const [prefix] = useState("item");
+
+      return (
+        <span>
+          {prefix}-{params.id}
+        </span>
+      );
+    }
+
+    const componentRoutes = {
+      item: route({ url: "/items/:id", component: ItemPage }),
+      legacy: route({ url: "/legacy", content: () => <span>legacy</span> }),
+    };
+    const router = createRouter(componentRoutes, {
+      adapter: createMemoryAdapter("/items/7"),
+    });
+
+    render(
+      <RouterProvider router={router}>
+        <Outlet />
+      </RouterProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("item-7")).toBeTruthy();
+    });
+
+    // The deprecated content form keeps working alongside component routes.
+    await act(async () => {
+      await router.navigate("legacy");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("legacy")).toBeTruthy();
+    });
+
+    await act(async () => {
+      await router.navigate("item", { params: { id: "8" } });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("item-8")).toBeTruthy();
+    });
+  });
+});

@@ -678,6 +678,19 @@ describe("createRouter", () => {
     await clientRouter.load("/pages/hello");
   });
 
+  it("renders component-form routes through render()", async () => {
+    const router = createRouter({
+      item: route({
+        url: "/items/:id",
+        component: ({ params }) => `item:${params.id}`,
+      }),
+    });
+
+    await router.load("/items/7");
+
+    expect(router.render()).toBe("item:7");
+  });
+
   it("dehydrates not-found and unmatched states and returns null before the first load", async () => {
     const notFoundRoute = route({
       url: "/*",

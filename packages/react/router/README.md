@@ -20,11 +20,11 @@ import { createRouter, route } from "@canonical/router-core";
 export const routes = {
   home: route({
     url: "/",
-    content: () => <h1>Home</h1>,
+    component: () => <h1>Home</h1>,
   }),
   docs: route({
     url: "/docs/:slug",
-    content: ({ params }) => <h1>{params.slug}</h1>,
+    component: ({ params }) => <h1>{params.slug}</h1>,
   }),
 } as const;
 
@@ -37,7 +37,8 @@ Route authoring story, in short:
 
 - define every route with `route()`
 - give it a `url` pattern such as `/docs/:slug`
-- optionally add `prefetch`, `content`, and `wrappers`
+- give it a `component` receiving `{ params, search }` props (the deprecated `content` render-function form still works)
+- optionally add `prefetch` and `wrappers`
 - create one router from the full flat route map
 - let the router match incoming URLs — React renders the result
 
@@ -115,9 +116,9 @@ Important distinction:
 
 ## Data ownership
 
-The router does not own data. `content()` receives `params` and `search` — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
+The router does not own data. A route's `component` receives `params` and `search` props — not data. Components fetch their own data from their cache library (Relay, TanStack Query, SWR, etc.).
 
-The optional `prefetch()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to `content()`.
+The optional `prefetch()` on routes is a fire-and-forget navigation-time hook. Use it to warm caches, preload assets, or run side effects before the component renders. It does not pass data to the route component.
 
 ```tsx
 const userRoute = route({
@@ -125,7 +126,7 @@ const userRoute = route({
   prefetch: async ({ id }) => {
     await queryClient.prefetchQuery(["user", id], () => fetchUser(id));
   },
-  content: ({ params }) => <UserProfile id={params.id} />,
+  component: ({ params }) => <UserProfile id={params.id} />,
 });
 
 function UserProfile({ id }: { id: string }) {
@@ -268,18 +269,18 @@ import { createRouter, route } from "@canonical/router-core";
 const routes = {
   home: route({
     url: "/",
-    content: () => <h1>Home</h1>,
+    component: () => <h1>Home</h1>,
   }),
   docs: route({
     url: "/docs/:slug",
     prefetch: async ({ slug }) => {
       await queryClient.prefetchQuery(["doc", slug], () => fetchDoc(slug));
     },
-    content: ({ params }) => <DocPage slug={params.slug} />,
+    component: ({ params }) => <DocPage slug={params.slug} />,
   }),
   accountSettings: route({
     url: "/account/settings",
-    content: () => <h1>Settings</h1>,
+    component: () => <h1>Settings</h1>,
   }),
 } as const;
 
