@@ -153,7 +153,45 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(playgroundHtml).toContain("__INITIAL_DATA__");
             expect(playgroundHtml).toContain('"relay"');
             expect(playgroundHtml).toContain('"records"');
-            // Zero /graphql HTTP hits during everything above.
+
+            // 5b. P-5: the Components lens SSRs from the live graph too.
+            //     These are the live-graph tripwires for the unit
+            //     fixtures' frozen fields (Stage-1 split): an upstream
+            //     rename rots loudly here, not silently.
+            //     The catalog carries real cards and encoded entity hrefs
+            //     in the raw HTML plus the serialised store.
+            const catalog = await fetch(`${server.base}/components`);
+            expect(catalog.status).toBe(200);
+            const catalogHtml = await catalog.text();
+            expect(catalogHtml).toContain("Accordion");
+            expect(catalogHtml).toContain(
+              'href="/components/ds%3Aglobal.component.accordion"',
+            );
+            expect(catalogHtml).toContain("__INITIAL_DATA__");
+            expect(catalogHtml).toContain('"records"');
+
+            //     The Button entity page: properties (incl. the raw
+            //     variantSpecial name) and both modifier families.
+            const buttonEntity = await fetch(
+              `${server.base}/components/ds%3Aglobal.component.button`,
+            );
+            expect(buttonEntity.status).toBe(200);
+            const buttonHtml = await buttonEntity.text();
+            expect(buttonHtml).toContain("Button");
+            expect(buttonHtml).toContain("variantSpecial");
+            expect(buttonHtml).toContain("Anticipation");
+            expect(buttonHtml).toContain("Importance");
+
+            //     The Card entity page: populated subcomponents.
+            const cardEntity = await fetch(
+              `${server.base}/components/ds%3Aglobal.component.card`,
+            );
+            expect(cardEntity.status).toBe(200);
+            const cardHtml = await cardEntity.text();
+            expect(cardHtml).toContain("Card.Content");
+
+            // Zero /graphql HTTP hits during everything above — the
+            // catalog and both entity pages executed in-process too.
             expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
 
             // Teeth: a direct POST does reach the endpoint and the counter
