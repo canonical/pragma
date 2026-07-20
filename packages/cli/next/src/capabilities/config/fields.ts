@@ -88,6 +88,23 @@ export const CONFIG_FIELDS: readonly ConfigFieldSpec[] = [
   },
 ];
 
+/**
+ * The soft deprecation hint (B3) appended to each frozen field-verb's help/MCP
+ * description, steering writers toward the unified `config set <field> <value>`.
+ *
+ * PR9 added `config set` additively, so `config tier apps/lxd` and `config set
+ * tier apps/lxd` both write the same field — two ways to write one value. The
+ * field-verbs are FROZEN tools, so they stay callable; this is a documentation
+ * nudge only (covenant-safe — `doc` is not part of the emitted surface). Whether
+ * to formally retire the field-verbs is a covenant decision left to a maintainer.
+ *
+ * @param field - The config field name (`tier`/`channel`/`detail`).
+ * @returns The hint sentence to append to the field-verb doc.
+ */
+function preferSetHint(field: ConfigFieldSpec["field"]): string {
+  return `Prefer the unified \`config set ${field} <value>\` form for writing config.`;
+}
+
 /** The single required positional for a field, shaped per its `kind`. */
 function fieldPositional(spec: ConfigFieldSpec): ParamSpec {
   // Name the positional by its usage token (`<path>`/`<name>`/`<level>`) so the
@@ -128,7 +145,7 @@ export function fieldVerb(
   return {
     path: ["config", spec.field],
     summary: spec.summary,
-    doc: spec.doc,
+    doc: `${spec.doc} ${preferSetHint(spec.field)}`,
     params: [fieldPositional(spec)],
     output: { formatters: configFieldFormatters },
     examples: [...spec.examples],
