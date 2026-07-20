@@ -379,14 +379,16 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
       ),
     ).toEqual(behavioural(applyRunInstallOverride(real)));
 
-    // Guard the B8 rename itself: the application include-flags ARE on the
-    // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`), not the
-    // bare `ssr`/`router`/`forms` booleans.
+    // Guard the B8 rename itself: ALL application include-flags ARE on the
+    // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`/
+    // `withRelay`), not the bare `ssr`/`router`/`forms`/`relay` booleans.
     const names = createApplicationVerb.params.map((p) => p.name);
     expect(names).toContain("withSsr");
     expect(names).toContain("withRouter");
     expect(names).toContain("withForms");
+    expect(names).toContain("withRelay");
     expect(names).not.toContain("ssr");
+    expect(names).not.toContain("relay");
 
     const realRunInstall = real.find((p) => p.name === "runInstall") as
       | Record<string, unknown>
