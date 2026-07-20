@@ -51,7 +51,7 @@ describe.skipIf(!bashOk)("generated bash — --flag=value wordbreak (M1)", () =>
   it("routes --format=<TAB> to the format values (not nouns/positionals)", () => {
     // Default COMP_WORDBREAKS split: `--format` `=` `` (empty current word).
     const reply = driveBash(["pragma", "--format", "=", ""], 3);
-    expect(reply.sort()).toEqual(["json", "plain"]);
+    expect(reply.sort()).toEqual(["json", "llm", "plain"]);
   });
 
   it("filters the value by the partial typed after =", () => {
@@ -63,11 +63,11 @@ describe.skipIf(!bashOk)("generated bash — --flag=value wordbreak (M1)", () =>
     // After a noun/verb the value must still route as a flag value, never as
     // block's positional (which would offer entity/enum candidates instead).
     const reply = driveBash(["pragma", "block", "get", "--format", "=", ""], 5);
-    expect(reply.sort()).toEqual(["json", "plain"]);
+    expect(reply.sort()).toEqual(["json", "llm", "plain"]);
   });
 
   it("still completes the space form --format <TAB> (unbroken)", () => {
     const reply = driveBash(["pragma", "--format", ""], 2);
-    expect(reply.sort()).toEqual(["json", "plain"]);
+    expect(reply.sort()).toEqual(["json", "llm", "plain"]);
   });
 });

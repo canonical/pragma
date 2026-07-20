@@ -129,6 +129,13 @@ const PACKAGE_MIRROR: PromptDefinition[] = [
   },
 ];
 
+// The include-flag prompts carry the CLI grammar's `--with-X` names
+// (`withSsr`/`withRouter`/`withForms`/`withRelay`, AV-228 B8) rather than the
+// summon generator's bare prompt names (`ssr`/`router`/`forms`/`relay`). {@link
+// INCLUDE_FLAG_ALIASES} maps them back at the CLI↔generator boundary so the
+// generator prompt names — and their embedded templates + byte-equality
+// goldens — stay stable. `--run-install` (default false) is an action flag, not
+// an include, so it keeps its spelling.
 const APPLICATION_MIRROR: PromptDefinition[] = [
   {
     name: "appPath",
@@ -137,21 +144,21 @@ const APPLICATION_MIRROR: PromptDefinition[] = [
     default: "my-app",
     positional: true,
   },
-  { name: "ssr", type: "confirm", message: "Include SSR?", default: true },
+  { name: "withSsr", type: "confirm", message: "Include SSR?", default: true },
   {
-    name: "router",
+    name: "withRouter",
     type: "confirm",
     message: "Include router?",
     default: true,
   },
   {
-    name: "forms",
+    name: "withForms",
     type: "confirm",
     message: "Include form components?",
     default: true,
   },
   {
-    name: "relay",
+    name: "withRelay",
     type: "confirm",
     message: "Include a Relay (GraphQL) data layer?",
     default: false,
@@ -163,6 +170,50 @@ const APPLICATION_MIRROR: PromptDefinition[] = [
     default: false,
   },
 ];
+
+/**
+ * CLI include-flag names → summon generator prompt names, per create kind
+ * (AV-228 B8). All four `create application` include-flags are exposed on the
+ * unified `--with-X` convention, so their params arrive keyed `withSsr`/
+ * `withRouter`/`withForms`/`withRelay`; the summon generator reads the bare
+ * `ssr`/`router`/`forms`/`relay`. We normalize at the ONE CLI↔generator seam
+ * ({@link toGeneratorAnswers}), keeping the generator prompt names (and their
+ * templates/goldens) untouched. Component and package already use `--with-X`
+ * names that match their prompts, so their maps are empty.
+ */
+export const INCLUDE_FLAG_ALIASES: Record<
+  CreateKind,
+  Readonly<Record<string, string>>
+> = {
+  component: {},
+  package: {},
+  application: {
+    withSsr: "ssr",
+    withRouter: "router",
+    withForms: "forms",
+    withRelay: "relay",
+  },
+};
+
+/**
+ * Re-key a param bag's CLI include-flag aliases to the generator prompt names,
+ * so the summon generator reads `ssr` where the CLI grammar exposes `--with-ssr`.
+ *
+ * @param kind - The create noun (selects the alias map).
+ * @param params - The coerced CLI/MCP param bag.
+ * @returns A new bag with aliased keys renamed to the generator prompt names.
+ */
+export function toGeneratorAnswers(
+  kind: CreateKind,
+  params: Readonly<Record<string, unknown>>,
+): Record<string, unknown> {
+  const aliases = INCLUDE_FLAG_ALIASES[kind];
+  const answers: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(params)) {
+    answers[aliases[key] ?? key] = value;
+  }
+  return answers;
+}
 
 const componentParams: ParamSpec[] = [
   FRAMEWORK_PARAM,
@@ -291,15 +342,20 @@ async function runCreate(
   // injected here. `package`/`application` stay a source-run feature in the binary.
   const { pickGenerator, summon } = await loadCreateRuntime(kind);
 
-  const generator = pickGenerator(kind, params);
+  // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
+  // (AV-228 B8) once, at this seam; every summon interaction below reads the
+  // generator-facing `answers` bag so the generator prompt names stay stable.
+  const answers = toGeneratorAnswers(kind, params);
+
+  const generator = pickGenerator(kind, answers);
 
   // SEC-2: reject a path escaping the workspace BEFORE any effect runs.
   const pathParam = PATH_PARAM[kind];
-  if (pathParam) assertInsideWorkspace(pathParam, params[pathParam], rt.cwd);
+  if (pathParam) assertInsideWorkspace(pathParam, answers[pathParam], rt.cwd);
 
   // Reject a flag/arg-provided answer that fails its prompt's own constraint,
   // with a clean INVALID_INPUT (execute re-validates as a backstop).
-  const invalid = summon.validateAnswers(generator.prompts, params);
+  const invalid = summon.validateAnswers(generator.prompts, answers);
   if (invalid !== null) {
     throw new PragmaError({ code: "INVALID_INPUT", message: invalid });
   }
@@ -336,14 +392,16 @@ async function runCreate(
     };
     return summon.execute(generator, {
       prompt: session.promptHandler,
-      params,
+      params: answers,
       signal,
     });
   }
 
   // Non-interactive: MCP → params-or-error; CLI/--yes/CI → flags+defaults.
   const prompt =
-    transport === "mcp" ? summon.mcpPrompt(params) : summon.autoPrompt(params);
+    transport === "mcp"
+      ? summon.mcpPrompt(answers)
+      : summon.autoPrompt(answers);
   // Same per-call write root as the Ink branch: `rt.cwd` feeds both the SEC-2
   // jail and the interpreter's effect-path base, atomically.
   rt.exec = {
@@ -353,7 +411,7 @@ async function runCreate(
     onLog: (_level, message) => process.stderr.write(`${message}\n`),
     signal,
   };
-  return summon.execute(generator, { prompt, params, signal });
+  return summon.execute(generator, { prompt, params: answers, signal });
 }
 
 /**
@@ -430,6 +488,6 @@ export const createApplicationVerb = createVerb(
   applicationParams,
   [
     { cmd: "pragma create application my-app" },
-    { cmd: "pragma create application my-app --relay" },
+    { cmd: "pragma create application my-app --with-relay" },
   ],
 );

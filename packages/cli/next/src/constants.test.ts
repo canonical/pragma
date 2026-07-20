@@ -25,7 +25,7 @@ describe("constants", () => {
   });
 
   it("exposes the stable output formats and detail levels", () => {
-    expect(OUTPUT_FORMATS).toEqual(["plain", "json"]);
+    expect(OUTPUT_FORMATS).toEqual(["plain", "llm", "json"]);
     expect(DETAIL_LEVELS).toEqual(["summary", "standard", "detailed"]);
     expect(DETAIL_LEVELS).toContain(DEFAULT_DETAIL_LEVEL);
     expect(PROGRAM_DESCRIPTION.length).toBeGreaterThan(0);

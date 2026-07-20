@@ -70,12 +70,15 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "tool-config-tier-is-plan-first",
+    id: "tool-config-set-is-plan-first",
     kind: "tool",
     input:
-      "config_tier without `confirm` returns a plan (planOnly) and writes nothing — the uniform plan-first mutation contract.",
+      "config_set without `confirm` returns a plan (planOnly) and writes nothing — the uniform plan-first mutation contract.",
     async expect({ mcp }) {
-      const result = await mcp.callTool("config_tier", { path: "apps/lxd" });
+      const result = await mcp.callTool("config_set", {
+        key: "tier",
+        value: "apps/lxd",
+      });
       assert.equal(result.ok, true);
       const meta = result.meta as { planOnly?: boolean };
       assert.equal(meta.planOnly, true);

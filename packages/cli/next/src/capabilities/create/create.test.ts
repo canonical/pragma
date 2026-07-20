@@ -29,6 +29,7 @@ import {
   createApplicationVerb,
   createComponentVerb,
   createPackageVerb,
+  INCLUDE_FLAG_ALIASES,
   isModuleNotFound,
 } from "./create.verb.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
@@ -350,6 +351,18 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     });
   });
 
+  /** Map a mirror's CLI `--with-X` include-flag names back to the generator
+   * prompt names (AV-228 B8) so the parity comparison still checks kinds and
+   * defaults against the real generator despite the deliberate flag rename. */
+  const toGeneratorNames = (
+    kind: "application",
+    params: readonly ParamSpec[],
+  ): ParamSpec[] =>
+    params.map((p) => {
+      const generatorName = INCLUDE_FLAG_ALIASES[kind][p.name];
+      return generatorName ? ({ ...p, name: generatorName } as ParamSpec) : p;
+    });
+
   it("application: mirror matches the application/react generator (defaults)", async () => {
     const { generators } = await import("@canonical/summon-application");
     const real = generatorToParams(
@@ -357,9 +370,25 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
         "application/react"
       ].prompts as never,
     );
-    expect(behavioural(createApplicationVerb.params)).toEqual(
-      behavioural(applyRunInstallOverride(real)),
-    );
+    // Bridge the B8 include-flag rename before comparing: the CLI grammar
+    // exposes `withSsr`/`withRouter`/`withForms`, which map back to the
+    // generator's `ssr`/`router`/`forms`.
+    expect(
+      behavioural(
+        toGeneratorNames("application", createApplicationVerb.params),
+      ),
+    ).toEqual(behavioural(applyRunInstallOverride(real)));
+
+    // Guard the B8 rename itself: ALL application include-flags ARE on the
+    // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`/
+    // `withRelay`), not the bare `ssr`/`router`/`forms`/`relay` booleans.
+    const names = createApplicationVerb.params.map((p) => p.name);
+    expect(names).toContain("withSsr");
+    expect(names).toContain("withRouter");
+    expect(names).toContain("withForms");
+    expect(names).toContain("withRelay");
+    expect(names).not.toContain("ssr");
+    expect(names).not.toContain("relay");
 
     const realRunInstall = real.find((p) => p.name === "runInstall") as
       | Record<string, unknown>

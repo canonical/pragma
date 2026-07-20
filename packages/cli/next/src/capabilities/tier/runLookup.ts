@@ -9,10 +9,33 @@
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
+import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { TierLookupData } from "./lookup.render.js";
+
+/**
+ * Read every tier name in the store (its `ds:name`), ordered.
+ *
+ * The bespoke lookup already holds the machinery to reach the store, so a
+ * name-not-found can rank "did you mean?" candidates the same way every other
+ * entity lookup does — the tier list is a single cheap SELECT away.
+ *
+ * @param rt - The runtime (its store is booted by the projector for needsStore).
+ * @returns The tier names, ordered.
+ * @note Impure — queries the store through `runSelect`.
+ */
+async function selectTierNames(rt: PragmaRuntime): Promise<string[]> {
+  const rows = await runSelect(
+    rt,
+    "SELECT ?name WHERE { ?tier a ds:Tier ; ds:name ?name } ORDER BY ?name",
+    "tier",
+  );
+  return rows
+    .map((row) => row.name as string | undefined)
+    .filter((name): name is string => Boolean(name));
+}
 
 /**
  * Look up one tier by name.
@@ -43,7 +66,12 @@ export async function runTierLookup(
   const rows = await runSelect(rt, query, "tier");
   const uri = rows[0]?.uri;
   if (!uri) {
+    // Rank "did you mean?" candidates from the full tier list — the only entity
+    // lookup that used to omit suggestions, though (like the others) it has the
+    // names in hand. The suggestion query runs only on this cold, not-found path.
+    const suggestions = suggestNames(name, await selectTierNames(rt));
     throw PragmaError.notFound("tier", name, {
+      suggestions,
       recovery: {
         message: "List available tiers.",
         cli: "pragma tier list",

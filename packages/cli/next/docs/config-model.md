@@ -33,12 +33,12 @@ Read the resolved config and its provenance:
 pragma config show
 ```
 
-The setters write to the **global** layer only — project configs are authored by hand. Each writable field has its own verb, plus a one-command `set`:
+The setters write to the **global** layer only — project configs are authored by hand. Each writable field is set with `config set <field> <value>`:
 
 ```bash
-pragma config tier apps/lxd
-pragma config channel experimental
-pragma config detail detailed
+pragma config set tier apps/lxd
+pragma config set channel experimental
+pragma config set detail detailed
 pragma config set tier none
 ```
 

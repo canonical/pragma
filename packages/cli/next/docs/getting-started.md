@@ -52,16 +52,16 @@ Every read noun also offers `lookup` and (where declared) `sample` — call `sam
 
 pragma renders every command in one of three modes:
 
-- **plain** (default) — human-readable text for a terminal.
-- **`--llm`** — condensed Markdown tuned for agents. It turns on **automatically** when output is piped (a non-TTY), so agent tooling gets the compact form without asking.
+- **`--format plain`** (default) — human-readable text for a terminal.
+- **`--format llm`** — condensed Markdown tuned for agents. It turns on **automatically** when output is piped (a non-TTY), so agent tooling gets the compact form without asking.
 - **`--format json`** — the full `{ ok, data, meta }` envelope for scripts.
 
 ```bash
-pragma block lookup Button --llm
+pragma block lookup Button --format llm
 pragma block list --format json
 ```
 
-`--format` accepts only `json` or `plain`. There is no separate `llm` format — reach for the `--llm` flag when you want condensed Markdown.
+`--format` accepts `plain`, `llm`, or `json`. When omitted, pragma auto-detects — `llm` when output is piped, `plain` on an attended terminal.
 
 ## Configuration and state
 
@@ -74,8 +74,8 @@ pragma config show
 Two fields scope what the read commands see. Set the active tier and release channel (written to your global config):
 
 ```bash
-pragma config tier apps/lxd
-pragma config channel experimental
+pragma config set tier apps/lxd
+pragma config set channel experimental
 ```
 
 `info` reports the version, install provenance, an entity total, and (silently, over the network) whether a newer release exists:

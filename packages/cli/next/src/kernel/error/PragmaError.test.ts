@@ -26,10 +26,10 @@ describe("PragmaError factories", () => {
 
   it("invalidInput enumerates valid options", () => {
     const error = PragmaError.invalidInput("format", "yaml", {
-      validOptions: ["plain", "json"],
+      validOptions: ["plain", "llm", "json"],
     });
     expect(error.code).toBe("INVALID_INPUT");
-    expect(error.validOptions).toEqual(["plain", "json"]);
+    expect(error.validOptions).toEqual(["plain", "llm", "json"]);
   });
 
   it("unknownVerb names the token", () => {
@@ -105,14 +105,14 @@ describe("envelope builders", () => {
 
   it("wraps an error into the failure envelope", () => {
     const error = PragmaError.invalidInput("format", "yaml", {
-      validOptions: ["plain", "json"],
+      validOptions: ["plain", "llm", "json"],
     });
     expect(errorEnvelope(error)).toEqual({
       ok: false,
       error: {
         code: "INVALID_INPUT",
         message: 'Invalid format "yaml".',
-        validOptions: ["plain", "json"],
+        validOptions: ["plain", "llm", "json"],
       },
     });
   });

@@ -1,12 +1,12 @@
 /**
- * `config set <key> <value>` — the additive one-command setter (PR9, COVENANT).
+ * `config set <key> <value>` — the one-command config setter (PR9, COVENANT).
  *
  * Pins the emitted covenant slice (`{ v:"set", args:["<key>","<value>"],
- * mutates:true, mcp:"config_set" }`), proves it shares the per-field write path
- * (set / reset-sentinel / enum-backstop), rejects an unknown key and an
- * out-of-set enum value with INVALID_INPUT, and holds MCP plan-first/confirm
- * parity. The frozen `config tier/channel/detail` verbs are UNTOUCHED — this is
- * purely additive.
+ * mutates:true, mcp:"config_set" }`), proves it drives the shared per-field
+ * write path (set / reset-sentinel / enum-backstop), rejects an unknown key and
+ * an out-of-set enum value with INVALID_INPUT, and holds MCP plan-first/confirm
+ * parity. Since AV-228 B3 retired `config tier/channel/detail`, `config set` is
+ * the sole config setter — `config set <field> <value>` is the migration path.
  */
 
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";

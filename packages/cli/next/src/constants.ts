@@ -31,8 +31,8 @@ const VERSION: string = pkg.version;
  */
 const RECOVERY_CLI_PREFIX = "pragma ";
 
-/** The two machine/human output formats the renderer selects between. */
-const OUTPUT_FORMATS = ["plain", "json"] as const;
+/** The output formats the renderer selects between (`llm` = condensed Markdown). */
+const OUTPUT_FORMATS = ["plain", "llm", "json"] as const;
 
 /** A selected output format. `--format text` is normalised to `plain`. */
 type OutputFormat = (typeof OUTPUT_FORMATS)[number];

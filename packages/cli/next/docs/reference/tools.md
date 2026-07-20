@@ -27,7 +27,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `name` | string[] | yes | Block names, prefixed names/IRIs, or glob patterns. |
-| `detail` | enum(summary, detailed) | no | Progressive-disclosure level (default detailed). |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default detailed). |
 
 ### block_sample
 
@@ -59,34 +59,6 @@ Read-only.
 
 _No input parameters._
 
-### config_channel
-
-Writes the `channel` field to the global config. Reset by setting the default, `normal`.
-
-Mutation — plan-first (set `confirm: true` to apply).
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | enum(normal, experimental, prerelease) | yes | The channel name to write. (one of: normal, experimental, prerelease) |
-| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
-| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
-
-### config_detail
-
-Writes the `detail` field to the global config. Reset by setting the default, `standard`.
-
-Mutation — plan-first (set `confirm: true` to apply).
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `level` | enum(summary, standard, detailed) | yes | The detail level to write. (one of: summary, standard, detailed) |
-| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
-| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
-
 ### config_set
 
 Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.
@@ -112,20 +84,6 @@ Read-only.
 
 _No input parameters._
 
-### config_tier
-
-Writes the `tier` field to the global config. Pass `none`, `default`, or `-` to clear it. Written to the global layer only — project configs are authored by hand.
-
-Mutation — plan-first (set `confirm: true` to apply).
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `path` | string | yes | The tier path to write. |
-| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
-| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
-
 ### create_application
 
 Scaffold a full React application with SSR and routing.
@@ -137,10 +95,10 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `appPath` | string | no | Application directory. (default: my-app) |
-| `ssr` | boolean | no | Include SSR. (default: true) |
-| `router` | boolean | no | Include router. (default: true) |
-| `forms` | boolean | no | Include form components. (default: true) |
-| `relay` | boolean | no | Include a Relay (GraphQL) data layer. (default: false) |
+| `withSsr` | boolean | no | Include SSR. (default: true) |
+| `withRouter` | boolean | no | Include router. (default: true) |
+| `withForms` | boolean | no | Include form components. (default: true) |
+| `withRelay` | boolean | no | Include a Relay (GraphQL) data layer. (default: false) |
 | `runInstall` | boolean | no | Install dependencies now. (default: false) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
@@ -270,9 +228,9 @@ Read-only.
 
 _No input parameters._
 
-### ontology_show
+### ontology_lookup
 
-Show a namespace's classes (hierarchy + counts) and properties.
+Look up a namespace's classes (hierarchy + counts) and properties.
 
 Read-only.
 
@@ -281,9 +239,26 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `prefix` | string | yes | The namespace prefix (ds) or full URI. |
-| `properties` | boolean | no | Include the properties section. |
+| `properties` | boolean | no | Include the properties section (also implied by --detail standard or higher). |
 | `fullUris` | boolean | no | Show full IRIs instead of prefixed. |
 | `class` | string | no | Focus on one class and its properties. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default summary). |
+
+### ontology_show
+
+Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `prefix` | string | yes | The namespace prefix (ds) or full URI. |
+| `properties` | boolean | no | Include the properties section (also implied by --detail standard or higher). |
+| `fullUris` | boolean | no | Show full IRIs instead of prefixed. |
+| `class` | string | no | Focus on one class and its properties. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default summary). |
 
 ### prompt_list
 
@@ -309,7 +284,7 @@ Read-only.
 
 ### setup
 
-Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply.
+Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -317,6 +292,9 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
+| `scope` | enum(project, global, both) | no | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `global` | boolean | no | Shorthand for --scope global (configure the user/home band). |
+| `local` | boolean | no | Shorthand for --scope project (configure the per-project band). |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 

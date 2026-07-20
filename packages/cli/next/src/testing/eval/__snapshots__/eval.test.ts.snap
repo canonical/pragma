@@ -103,7 +103,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "prompt-set-tier-maps-to-config-tier",
+    "id": "prompt-set-tier-maps-to-config-set",
     "kind": "prompt",
     "passed": true,
   },
@@ -138,7 +138,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "tool-config-tier-is-plan-first",
+    "id": "tool-config-set-is-plan-first",
     "kind": "tool",
     "passed": true,
   },

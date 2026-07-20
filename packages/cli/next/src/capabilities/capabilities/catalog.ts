@@ -33,7 +33,7 @@ export const CONVENTIONS = {
   system:
     "Pragma is a CLI and MCP server for querying a design system knowledge graph — blocks, tokens, modifiers, standards, and ontologies.",
   model:
-    "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_tier and config_channel.",
+    "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
   querying:
     "All queries run against an RDF triple store. Prefixed IRIs (e.g. ds:global.component.button) identify entities. Use ontology_list to discover namespaces.",
 } as const;

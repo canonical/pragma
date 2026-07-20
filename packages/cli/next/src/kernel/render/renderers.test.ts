@@ -14,6 +14,7 @@ import {
   renderLookupLlm,
   renderLookupPlain,
 } from "./renderers.js";
+import { type RenderStyle, styleFor } from "./style.js";
 
 interface Widget {
   readonly uri: string;
@@ -141,6 +142,39 @@ describe("render matrix (list/lookup/empty × plain/llm/json × detail)", () => 
     expect(resolveDetail({ specDefault: "detailed" })).toBe("detailed");
     expect(resolveDetail({})).toBe("standard");
     expect(resolveDetail({ flag: "bogus" })).toBe("standard");
+  });
+});
+
+describe("lookup beautify (TTY style seam)", () => {
+  const lookupOpts = {
+    title: (w: Widget) => w.name,
+    fields: fieldsFor("standard"),
+    sections: sectionsFor("standard"),
+  };
+
+  it("bolds the title, dims the rule, and cyans field labels on a TTY", () => {
+    const tagged: RenderStyle = {
+      enabled: true,
+      bold: (t) => `B(${t})`,
+      dim: (t) => `D(${t})`,
+      cyan: (t) => `C(${t})`,
+      green: (t) => t,
+      yellow: (t) => t,
+    };
+    const lines = renderLookupPlain(
+      widgets[0] as Widget,
+      lookupOpts,
+      tagged,
+    ).split("\n");
+    expect(lines.at(0)).toBe("B(Button)");
+    expect(lines.at(1)).toBe(`D(${"═".repeat(24)})`);
+    expect(lines).toContain("  C(Kind): component");
+  });
+
+  it("is byte-identical to the plain lookup when the styler is disabled", () => {
+    expect(
+      renderLookupPlain(widgets[0] as Widget, lookupOpts, styleFor(false)),
+    ).toBe(`Button\n${"═".repeat(24)}\n\n  Kind: component`);
   });
 });
 

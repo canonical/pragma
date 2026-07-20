@@ -23,12 +23,11 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(() => assertConforms(emitted, golden)).not.toThrow();
   });
 
-  it("emits config show + the PR6 setters + the PR9 additive set, in covenant order", () => {
+  it("emits config show + the one-command config set, in covenant order (field-verbs retired, B3)", () => {
+    // AV-228 B3 retired the per-field `tier`/`channel`/`detail` setters; the
+    // config noun is now just the `show` reader and the `set <key> <value>` writer.
     expect(emitted.nouns.config?.verbs).toEqual([
       { v: "show", mcp: "config_show" },
-      { v: "tier", args: ["<path>"], mutates: true, mcp: "config_tier" },
-      { v: "channel", args: ["<name>"], mutates: true, mcp: "config_channel" },
-      { v: "detail", args: ["<level>"], mutates: true, mcp: "config_detail" },
       {
         v: "set",
         args: ["<key>", "<value>"],
@@ -95,6 +94,15 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
   it("emits the authored read nouns (ontology TBox, storeless skill, graph inspect)", () => {
     expect(emitted.nouns.ontology?.verbs).toEqual([
       { v: "list", needsStore: true, mcp: "ontology_list" },
+      {
+        v: "lookup",
+        args: ["<prefix>"],
+        flags: ["--properties", "--full-uris", "--class"],
+        needsStore: true,
+        mcp: "ontology_lookup",
+      },
+      // `show` is the deprecated alias of `lookup` (AV-228 B1) — same shape,
+      // both blessed in the covenant.
       {
         v: "show",
         args: ["<prefix>"],
@@ -201,14 +209,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 40) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 38) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(40);
+    expect(emitted.mcpSurface.tools).toHaveLength(38);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

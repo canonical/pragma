@@ -2,6 +2,7 @@
  * Formatters for the `prompt` content noun — plain, llm, json.
  */
 
+import { defaultStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type {
   PromptArgument,
@@ -29,7 +30,8 @@ export const promptListFormatters: Formatters<PromptListData> = {
   },
   llm(data) {
     if (data.prompts.length === 0) return "_No prompts in the store._";
-    const lines = ["# Prompts"];
+    // H2 for a content read — consistent with the shared list renderer (B2).
+    const lines = ["## Prompts"];
     for (const prompt of data.prompts) {
       lines.push(
         `- \`${prompt.name}\` — ${prompt.description ?? ""}`.trimEnd(),
@@ -45,23 +47,38 @@ export const promptListFormatters: Formatters<PromptListData> = {
 
 export const promptLookupFormatters: Formatters<PromptLookupData> = {
   plain(data) {
-    const lines = [data.name];
+    // Full delegation to `renderLookupPlain` is infeasible: the description line
+    // carries no field label and the template body is appended raw, whereas the
+    // shared renderer only emits `label: value` fields + indented sections. So
+    // route the TITLE + rule + field label through the SAME style seam it uses
+    // (bold title, dim rule, cyan label) — closing the TTY drift where a prompt
+    // title stayed unstyled — and keep the bespoke body inline. Off a TTY the
+    // styler is inert, so piped output stays byte-stable (B7).
+    const style = defaultStyle();
+    const rule = "═".repeat(Math.max(data.name.length, 24));
+    const lines = [style.bold(data.name), style.dim(rule), ""];
     if (data.description) lines.push(`  ${data.description}`);
-    lines.push(`  args: ${argTokens(data.arguments)}`, "", data.body);
+    lines.push(
+      `  ${style.cyan("args")}: ${argTokens(data.arguments)}`,
+      "",
+      data.body,
+    );
     return lines.join("\n");
   },
   llm(data) {
-    const lines = [`# ${data.name}`];
+    // H2 entity title with H3 sub-sections — the hierarchy the shared
+    // `renderLookupLlm` uses (`## title` / `### section`) (B2).
+    const lines = [`## ${data.name}`];
     if (data.description) lines.push(data.description);
     if (data.arguments.length > 0) {
-      lines.push("", "## Arguments");
+      lines.push("", "### Arguments");
       for (const arg of data.arguments) {
         lines.push(
           `- \`${arg.name}\`${arg.required ? " (required)" : ""}${arg.description ? ` — ${arg.description}` : ""}`,
         );
       }
     }
-    lines.push("", "## Template", data.body);
+    lines.push("", "### Template", data.body);
     return lines.join("\n");
   },
   json(data) {

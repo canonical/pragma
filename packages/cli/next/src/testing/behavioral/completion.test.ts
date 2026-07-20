@@ -125,8 +125,8 @@ describe("entity params resolve from a real built pack index (B10)", () => {
 
 describe("global flags complete for a dash prefix, at any position", () => {
   it("completes global flags regardless of position", async () => {
-    await expect(runComplete(["--l"], capabilities)).resolves.toEqual([
-      "--llm",
+    await expect(runComplete(["--d"], capabilities)).resolves.toEqual([
+      "--detail",
     ]);
   });
 });

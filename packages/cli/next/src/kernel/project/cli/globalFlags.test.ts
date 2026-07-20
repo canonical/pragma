@@ -9,9 +9,17 @@ const TTY = { isTty: true, noAutoLlm: false };
 const PIPE = { isTty: false, noAutoLlm: false };
 
 describe("parseGlobalFlags", () => {
-  it("honours an explicit --llm", () => {
-    expect(parseGlobalFlags(["--llm"], TTY)).toMatchObject({
+  it("honours an explicit --format llm (condensed even on a TTY)", () => {
+    expect(parseGlobalFlags(["--format", "llm"], TTY)).toMatchObject({
       llm: true,
+      autoLlm: false,
+      format: "llm",
+    });
+  });
+
+  it("forces human output with --format plain down a pipe", () => {
+    expect(parseGlobalFlags(["--format", "plain"], PIPE)).toMatchObject({
+      llm: false,
       autoLlm: false,
       format: "plain",
     });
@@ -69,7 +77,7 @@ describe("stripGlobalFlags", () => {
       "list",
     ]);
     expect(
-      stripGlobalFlags(["block", "--llm", "list", "--detail", "detailed"]),
+      stripGlobalFlags(["block", "--verbose", "list", "--detail", "detailed"]),
     ).toEqual(["block", "list"]);
     expect(stripGlobalFlags(["--format=json", "config", "show"])).toEqual([
       "config",
@@ -90,7 +98,7 @@ describe("readRawFormat", () => {
 
   it("reports a valueless --format as empty string", () => {
     expect(readRawFormat(["--format"])).toBe("");
-    expect(readRawFormat(["--format", "--llm"])).toBe("");
+    expect(readRawFormat(["--format", "--verbose"])).toBe("");
   });
 
   it("returns undefined when --format is absent", () => {

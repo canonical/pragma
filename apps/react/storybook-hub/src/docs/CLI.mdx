@@ -155,7 +155,8 @@ Runs checks on: Node version, pragma version, config file, knowledge store, shel
 
 ## Output modes
 
-Every command supports three output formats:
+Every command renders through one of three output formats, selected with a single
+`--format {plain|llm|json}` flag:
 
 <table>
   <thead>
@@ -166,11 +167,20 @@ Every command supports three output formats:
     </tr>
   </thead>
   <tbody>
-    <tr><td>(default)</td><td>Plain terminal</td><td>Human reading in a terminal</td></tr>
-    <tr><td><code>--llm</code></td><td>Condensed Markdown</td><td>Token-efficient output for AI assistants</td></tr>
-    <tr><td><code>--format json</code></td><td>Structured JSON</td><td>Programmatic consumption, piping</td></tr>
+    <tr><td><code>--format plain</code></td><td>Plain terminal</td><td>Human reading in a terminal</td></tr>
+    <tr><td><code>--format llm</code></td><td>Condensed Markdown</td><td>Token-efficient output for AI assistants</td></tr>
+    <tr><td><code>--format json</code></td><td>Structured JSON</td><td>Programmatic consumption</td></tr>
   </tbody>
 </table>
+
+When `--format` is omitted the format is **auto-detected** from stdout: an
+interactive terminal gets `plain`, while a non-interactive stdout — a pipe, a
+redirect, or an MCP/agent capture — auto-selects `llm`, so downstream tools get
+token-efficient Markdown with no flag. Pass `--format plain` to force
+human-readable output down a pipe, or `--format json` for structured data.
+
+> The standalone `--llm` flag has been removed; use `--format llm` (or rely on
+> the auto-detection above).
 
 ## MCP server
 
