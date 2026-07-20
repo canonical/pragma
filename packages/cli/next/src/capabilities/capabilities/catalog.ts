@@ -26,8 +26,10 @@ import type {
 } from "./types.js";
 
 /**
- * The three orientation conventions, verbatim from the old shell. They describe
- * the KG / tier-channel / SPARQL model and are still accurate for v2.
+ * The four orientation conventions. The first three (system/model/querying) are
+ * verbatim from the old shell — they describe the KG / tier-channel / SPARQL
+ * model and are still accurate for v2; `mutations` is new in v2, surfacing the
+ * plan-first/confirm gate.
  */
 export const CONVENTIONS = {
   system:

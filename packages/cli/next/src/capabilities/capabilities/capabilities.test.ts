@@ -99,10 +99,11 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     expect(data.limits.condensed_available).toBe(false);
   });
 
-  it("carries the three orientation conventions", () => {
+  it("carries the four orientation conventions", () => {
     expect(data.conventions.system.length).toBeGreaterThan(0);
     expect(data.conventions.model).toContain("tier");
     expect(data.conventions.querying).toContain("RDF");
+    expect(data.conventions.mutations.length).toBeGreaterThan(0);
   });
 
   it("surfaces the plan-first/confirm convention so the confirm gate isn't trial-and-error (D2)", () => {
