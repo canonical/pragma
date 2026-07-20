@@ -6,6 +6,7 @@ import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsE
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
+import { allNamespacesFilter } from "../lensFilter.js";
 import TermRail from "./TermRail.js";
 
 const bareRoutes = {
@@ -21,7 +22,15 @@ const RailFromQuery = (): ReactElement => {
     definitionsExplorerQueryNode,
     definitionsExplorerVariables(undefined),
   );
-  return <TermRail ontologies={data.ontologies} />;
+  // The unfiltered seed, exactly as the explorer builds it.
+  return (
+    <TermRail
+      filter={allNamespacesFilter(
+        data.ontologies.map((ontology) => ontology.prefix),
+      )}
+      ontologies={data.ontologies}
+    />
+  );
 };
 
 const meta: Meta<typeof TermRail> = {

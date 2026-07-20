@@ -131,6 +131,7 @@ export const buildClassTree = (
             term: prefixed,
             label: klass.label ?? prefixed,
             isAbstract: klass.isAbstract,
+            prefix: ontology.prefix,
           },
         });
         const superclassUri = klass.superclass?.uri;

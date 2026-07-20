@@ -10,32 +10,32 @@
   font-size: 0.875rem;
 }
 
-.ds.term-rail .term-rail-filter {
-  margin-block: 0 var(--space-200, 1rem);
-}
-
-.ds.term-rail .term-rail-filter label {
-  display: grid;
-  gap: var(--space-050, 0.25rem);
-  color: var(--color-text-muted, #666);
-}
-
-.ds.term-rail .term-rail-filter input {
-  inline-size: 100%;
-  min-inline-size: 0;
-}
-
 .ds.term-rail h2 {
   margin-block: var(--space-200, 1rem) var(--space-100, 0.5rem);
   font-size: 1rem;
 }
 
 .ds.term-rail h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-100, 0.5rem);
   margin-block: var(--space-100, 0.5rem) var(--space-050, 0.25rem);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted, #666);
+}
+
+/* The honest count beside each heading: how many of this group's terms
+ * currently match. Because the rail never removes an item, this figure is
+ * the only place the filter's effect is stated in WORDS — which is what a
+ * screen reader (and anyone who cannot see the dimming) reads. */
+.ds.term-rail .term-rail-count {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.75;
 }
 
 .ds.term-rail ul {
@@ -50,6 +50,18 @@
   gap: var(--space-050, 0.25rem);
   padding-block: 0.125rem;
   min-inline-size: 0;
+  transition: opacity 0.15s ease;
+}
+
+/* THE ASYMMETRY, in one declaration: a filtered-out rail item DIMS and
+ * stays exactly where it was. The graph is what hides (HierarchyWell); the
+ * rail is the stable, complete index — items must never move under the
+ * cursor, and the number of terms that exist must never appear to change.
+ * The exhibit's own value (.38) reads as clearly-secondary without
+ * vanishing. Dimmed items stay focusable and clickable: they are still
+ * real terms, merely out of the current view's interest. */
+.ds.term-rail li[data-dimmed] {
+  opacity: 0.38;
 }
 
 .ds.term-rail li a {
@@ -69,4 +81,15 @@
   margin-block: 0;
   font-size: 0.75rem;
   color: var(--color-text-muted, #666);
+}
+
+/* The dim transition is the only motion this rail has; honour the user's
+ * stated preference and drop it. This at-rule is census-EXEMPT: the
+ * layout-capable census (frameStability.tests.tsx) matches query TEXT and
+ * exempts `prefers-reduced-motion` outright, since it cannot reflow
+ * layout. The count of sanctioned layout-capable at-rules stays at one. */
+@media (prefers-reduced-motion: reduce) {
+  .ds.term-rail li {
+    transition: none;
+  }
 }

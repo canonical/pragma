@@ -23,9 +23,34 @@
   min-block-size: 0;
 }
 
+/* The west column: the search box is stationary and the term list scrolls
+ * under it, so the control that drives the filter never scrolls away from
+ * the list it is filtering. */
+.ds.definitions-explorer > .definitions-explorer-rail {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+.ds.definitions-explorer .definitions-explorer-search {
+  margin-block: 0 var(--space-200, 1rem);
+}
+
+.ds.definitions-explorer .definitions-explorer-search label {
+  display: grid;
+  gap: var(--space-050, 0.25rem);
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #666);
+}
+
+.ds.definitions-explorer .definitions-explorer-search input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
 /* Rail and inspector own their scroll; the well pans instead (React Flow
  * owns the centre's navigation) and must never scroll as a box. */
-.ds.definitions-explorer > .term-rail,
+.ds.definitions-explorer .term-rail,
 .ds.definitions-explorer > .term-inspector {
   overflow: auto;
   min-block-size: 0;

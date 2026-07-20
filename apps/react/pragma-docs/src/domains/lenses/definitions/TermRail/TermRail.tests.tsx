@@ -1,10 +1,12 @@
 /**
  * The rail's contracts, driven through the real page over the captured
  * records: per-ontology Classes/Properties grouping with prefixed term
- * addresses, and the EPHEMERAL text filter (component state, P-D7
- * transient tier — the URL never changes while filtering). Mounts are
- * consolidated (the full-triptych render is heavy) and carry explicit
- * timeouts for fully-parallel runs.
+ * addresses, and — the load-bearing one — THE ASYMMETRY: the rail DIMS
+ * under a filter and never HIDES, so the index stays complete and stable
+ * while the graph is what disappears. The filter itself stays EPHEMERAL
+ * (component state, P-D7 transient tier — the URL never changes while
+ * filtering). Mounts are consolidated (the full-triptych render is heavy)
+ * and carry explicit timeouts for fully-parallel runs.
  */
 
 import "../__fixtures__/stubReactFlowGlobals.js";
@@ -76,35 +78,80 @@ describe("TermRail", () => {
     expect(uiBlockItem?.textContent).toContain("abstract");
   });
 
-  it("filters ephemerally: typing narrows the lists, the URL stays put", {
+  it("DIMS under a filter and never HIDES — the index stays complete", {
     timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
-    const rail = renderRail();
+    render(
+      definitionsPageAt(
+        UIBLOCK_TERM,
+        definitionsExplorerRecords,
+        createFetchSpy(),
+      ),
+    );
+    const rail = screen.getByRole("navigation", { name: "Ontology terms" });
     const urlBefore = window.location.pathname;
+    const countAll = within(rail).getAllByRole("link").length;
+    expect(countAll).toBeGreaterThan(1);
 
-    fireEvent.change(within(rail).getByLabelText("Filter terms"), {
+    fireEvent.change(screen.getByLabelText("Filter terms"), {
       target: { value: "UI Block" },
     });
 
-    expect(
-      within(rail).getByRole("link", { name: "UI Block" }),
-    ).toBeInTheDocument();
-    expect(
-      within(rail).queryByRole("link", { name: "Code Standard" }),
-    ).not.toBeInTheDocument();
-    // Properties that do not match report their empty state honestly.
-    expect(
-      within(rail).getAllByText("No matching properties.").length,
-    ).toBeGreaterThanOrEqual(1);
+    // NOTHING is removed: the same number of links is still mounted, in
+    // the same document order. This is the exact behaviour the previous
+    // implementation got backwards, and the TTL contract's demand.
+    expect(within(rail).getAllByRole("link")).toHaveLength(countAll);
+    const match = within(rail).getByRole("link", { name: "UI Block" });
+    const nonMatch = within(rail).getByRole("link", { name: "Code Standard" });
+    expect(nonMatch).toBeInTheDocument();
+
+    // The non-match is DIMMED; the match is not.
+    expect(nonMatch.closest("li")).toHaveAttribute("data-dimmed", "true");
+    expect(match.closest("li")).not.toHaveAttribute("data-dimmed");
+    // …and the state reaches assistive tech, not just the eye.
+    expect(nonMatch.closest("li")).toHaveAttribute("aria-disabled", "true");
+
     // The filter is view state, never address state (P-D7).
     expect(window.location.pathname).toBe(urlBefore);
 
-    // Clearing restores everything.
-    fireEvent.change(within(rail).getByLabelText("Filter terms"), {
+    // Clearing un-dims everything.
+    fireEvent.change(screen.getByLabelText("Filter terms"), {
       target: { value: "" },
     });
     expect(
-      within(rail).getByRole("link", { name: "Code Standard" }),
-    ).toBeInTheDocument();
+      within(rail).getByRole("link", { name: "Code Standard" }).closest("li"),
+    ).not.toHaveAttribute("data-dimmed");
+  });
+
+  it("reports each group's match count in words, not only in opacity", {
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
+  }, () => {
+    render(
+      definitionsPageAt(
+        UIBLOCK_TERM,
+        definitionsExplorerRecords,
+        createFetchSpy(),
+      ),
+    );
+    const rail = screen.getByRole("navigation", { name: "Ontology terms" });
+    const dsGroup = within(rail).getByRole("region", { name: "ds" });
+    const classCount = within(dsGroup)
+      .getByRole("heading", { name: /^Classes/ })
+      .textContent?.replace("Classes", "")
+      .trim();
+    // Unfiltered: every class in the group matches.
+    expect(classCount).toMatch(/^(\d+) of \1$/);
+
+    fireEvent.change(screen.getByLabelText("Filter terms"), {
+      target: { value: "UI Block" },
+    });
+
+    // Filtered: the numerator drops, the denominator (what EXISTS) does
+    // not — the count says how many match, never how many there are.
+    const filtered = within(dsGroup)
+      .getByRole("heading", { name: /^Classes/ })
+      .textContent?.replace("Classes", "")
+      .trim();
+    expect(filtered).toBe(`1 of ${classCount?.split(" of ").at(1)}`);
   });
 });

@@ -1,9 +1,9 @@
 import { Link } from "@canonical/router-react";
 import type React from "react";
-import { useState } from "react";
 import { graphql, useFragment } from "react-relay";
 import type { TermRail_ontologies$key } from "#relay/__generated__/TermRail_ontologies.graphql.js";
 import termRailFragmentNode from "#relay/__generated__/TermRail_ontologies.graphql.js";
+import { matchesChips, matchesText } from "../lensFilter.js";
 import { toPrefixedUri } from "../uris.js";
 import type { TermRailProps } from "./types.js";
 import "./styles.css";
@@ -42,16 +42,6 @@ const termLabel = (
   prefixed: string,
 ): string => label ?? prefixed;
 
-/** Case-insensitive substring match over a term's label and prefixed URI. */
-const matchesFilter = (
-  filter: string,
-  label: string | null | undefined,
-  prefixed: string,
-): boolean =>
-  filter.length === 0 ||
-  termLabel(label, prefixed).toLowerCase().includes(filter) ||
-  prefixed.toLowerCase().includes(filter);
-
 /**
  * The explorer's west rail: every term the ontologies carry, grouped per
  * ontology into Classes and Properties, each item a term link. This rail
@@ -60,24 +50,38 @@ const matchesFilter = (
  * canvas never has to be traversed to reach anything — the well is a
  * spatial view over the same nouns, not the only path (WCAG 2.1.3).
  *
+ * THE ASYMMETRY (the exhibit's central heuristic, and our TTL contract's
+ * demand): the rail DIMS, it never HIDES. Every term stays mounted in
+ * document order under every filter, marked `data-dimmed` when it falls
+ * out — so the index stays complete and stable, items never jump under the
+ * cursor, and the number of things that exist never appears to change.
+ * Only the graph hides (see `HierarchyWell`). This also sidesteps the
+ * exhibit's own tree-filter quirk: because nothing is removed, a matching
+ * term can never end up orphaned under a filtered-out ancestor.
+ *
+ * Dimmed items take `aria-disabled` so assistive tech hears the state the
+ * opacity shows, and each heading reports its own match count, so a filter
+ * that dims everything still says so in words rather than by silence.
+ *
+ * Both filter axes reach this rail: the text query (rail-only by
+ * contract — it never re-shapes the graph) and the chips (which govern
+ * both). All of it is EPHEMERAL view state owned by `DefinitionsExplorer`
+ * (the P-D7 transient tier), never the URL — a filtered rail is a way of
+ * looking, not a place to link to.
+ *
  * Selection needs no wiring here: the router's `Link` stamps
  * `aria-current="page"` on the item whose address is the current URL, and
  * hovering any item prefetches its term through the route's warm-up seam.
- *
- * The text filter is EPHEMERAL view state (the P-D7 transient tier):
- * component state only, never the URL — a filtered rail is a way of
- * looking, not a place to link to.
  */
 const TermRail = ({
   className,
+  filter,
   ontologies,
 }: TermRailProps): React.ReactElement => {
   const data = useFragment<TermRail_ontologies$key>(
     termRailFragmentNode,
     ontologies,
   );
-  const [filter, setFilter] = useState("");
-  const normalizedFilter = filter.trim().toLowerCase();
 
   return (
     <nav
@@ -85,84 +89,88 @@ const TermRail = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       data-slot="explorer-rail"
     >
-      <p className="term-rail-filter">
-        <label>
-          Filter terms
-          <input
-            onChange={(event) => {
-              setFilter(event.target.value);
-            }}
-            type="search"
-            value={filter}
-          />
-        </label>
-      </p>
       {data.map((ontology) => {
         const namespaces = [ontology];
-        const classes = ontology.classes.filter((term) =>
-          matchesFilter(
-            normalizedFilter,
-            term.label,
-            toPrefixedUri(term.uri, namespaces),
-          ),
-        );
-        const properties = ontology.properties.filter((term) =>
-          matchesFilter(
-            normalizedFilter,
-            term.label,
-            toPrefixedUri(term.uri, namespaces),
-          ),
-        );
+
+        // Every term is rendered; `dimmed` decides only how it LOOKS.
+        // Classes answer to both axes; properties answer to the text axis
+        // and their ontology's namespace chip (a property has no
+        // abstraction of its own, so the abstraction chips leave it be).
+        const classes = ontology.classes.map((term) => {
+          const prefixed = toPrefixedUri(term.uri, namespaces);
+          return {
+            term,
+            prefixed,
+            dimmed:
+              !matchesText(filter.text, term.label, prefixed) ||
+              !matchesChips(filter, term.isAbstract, ontology.prefix),
+          };
+        });
+        const properties = ontology.properties.map((term) => {
+          const prefixed = toPrefixedUri(term.uri, namespaces);
+          return {
+            term,
+            prefixed,
+            dimmed:
+              !matchesText(filter.text, term.label, prefixed) ||
+              !filter.namespaces.includes(ontology.prefix),
+          };
+        });
+
+        const classMatches = classes.filter((row) => !row.dimmed).length;
+        const propertyMatches = properties.filter((row) => !row.dimmed).length;
         const headingId = `term-rail-${ontology.prefix}`;
 
         return (
           <section aria-labelledby={headingId} key={ontology.prefix}>
             <h2 id={headingId}>{ontology.label ?? ontology.prefix}</h2>
-            <h3>Classes</h3>
-            {classes.length === 0 ? (
-              <p className="term-rail-empty">No matching classes.</p>
-            ) : (
-              <ul>
-                {classes.map((term) => {
-                  const prefixed = toPrefixedUri(term.uri, namespaces);
-                  return (
-                    <li key={term.uri}>
-                      <Link params={{ term: prefixed }} to="definitionsTerm">
-                        {termLabel(term.label, prefixed)}
-                      </Link>
-                      {term.isAbstract ? (
-                        <span className="term-rail-note">abstract</span>
-                      ) : null}
-                      {term.instanceCount > 0 ? (
-                        <span className="term-rail-note">
-                          {term.instanceCount}
-                        </span>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <h3>Properties</h3>
-            {properties.length === 0 ? (
-              <p className="term-rail-empty">No matching properties.</p>
-            ) : (
-              <ul>
-                {properties.map((term) => {
-                  const prefixed = toPrefixedUri(term.uri, namespaces);
-                  return (
-                    <li key={term.uri}>
-                      <Link params={{ term: prefixed }} to="definitionsTerm">
-                        {termLabel(term.label, prefixed)}
-                      </Link>
-                      <span className="term-rail-note">
-                        {term.kind.toLowerCase()}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <h3>
+              Classes
+              <span className="term-rail-count">
+                {classMatches} of {classes.length}
+              </span>
+            </h3>
+            <ul>
+              {classes.map(({ term, prefixed, dimmed }) => (
+                <li
+                  aria-disabled={dimmed || undefined}
+                  data-dimmed={dimmed || undefined}
+                  key={term.uri}
+                >
+                  <Link params={{ term: prefixed }} to="definitionsTerm">
+                    {termLabel(term.label, prefixed)}
+                  </Link>
+                  {term.isAbstract ? (
+                    <span className="term-rail-note">abstract</span>
+                  ) : null}
+                  {term.instanceCount > 0 ? (
+                    <span className="term-rail-note">{term.instanceCount}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <h3>
+              Properties
+              <span className="term-rail-count">
+                {propertyMatches} of {properties.length}
+              </span>
+            </h3>
+            <ul>
+              {properties.map(({ term, prefixed, dimmed }) => (
+                <li
+                  aria-disabled={dimmed || undefined}
+                  data-dimmed={dimmed || undefined}
+                  key={term.uri}
+                >
+                  <Link params={{ term: prefixed }} to="definitionsTerm">
+                    {termLabel(term.label, prefixed)}
+                  </Link>
+                  <span className="term-rail-note">
+                    {term.kind.toLowerCase()}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </section>
         );
       })}

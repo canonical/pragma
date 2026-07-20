@@ -6,6 +6,7 @@ import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsE
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
+import { allNamespacesFilter } from "../lensFilter.js";
 import HierarchyWell from "./HierarchyWell.js";
 
 const bareRoutes = {
@@ -25,9 +26,14 @@ const WellFromQuery = ({
     definitionsExplorerQueryNode,
     definitionsExplorerVariables(undefined),
   );
+  // The unfiltered seed, exactly as the explorer builds it: every
+  // ontology the query returned, lit.
+  const filter = allNamespacesFilter(
+    data.ontologies.map((ontology) => ontology.prefix),
+  );
   return (
     <div style={{ blockSize: "24rem" }}>
-      <HierarchyWell ontologies={data.ontologies} term={term} />
+      <HierarchyWell filter={filter} ontologies={data.ontologies} term={term} />
     </div>
   );
 };

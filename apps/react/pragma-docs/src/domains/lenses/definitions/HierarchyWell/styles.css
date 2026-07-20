@@ -19,8 +19,20 @@
   background: transparent;
 }
 
-/* Nodes float as raised panels on the well floor (AX.3: content ON the
- * floor renders raised again). Each node is one term link. */
+/* The node shell owns the fixed geometry buildClassTree assigns; the link
+ * fills it and the abstract tag rides at its foot, outside the anchor (so
+ * the node's accessible name stays the term alone). */
+.ds.hierarchy-well .hierarchy-node-shell {
+  position: relative;
+  inline-size: 100%;
+  block-size: 100%;
+}
+
+/* Nodes float as raised chips on the well floor (AX.3: content ON the
+ * floor renders raised again). The drop shadow is what makes them read as
+ * floating in the depression rather than printed on it — the well already
+ * has the recess, this gives the nodes their lift. Each node is one term
+ * link. */
 .ds.hierarchy-well .hierarchy-node {
   display: flex;
   align-items: center;
@@ -37,19 +49,73 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.12));
+  transition:
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
 }
 
+/* Abstract classes: dashed border and italic label, plus the small
+ * ABSTRACT tag below. Real text, not colour — the distinction survives
+ * with styling ignored. */
 .ds.hierarchy-well .hierarchy-node-abstract {
   border-style: dashed;
   font-style: italic;
 }
 
+.ds.hierarchy-well .hierarchy-node-tag {
+  position: absolute;
+  inset-block-end: -0.9rem;
+  inset-inline: 0;
+  text-align: center;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #666);
+  pointer-events: none;
+}
+
 /* Selection is the address: the router stamps aria-current on the current
- * term's node link. */
+ * term's node link. Thicker stroke AND a tinted fill, so the selected node
+ * is legible at a glance even inside a faded neighbourhood. */
 .ds.hierarchy-well .hierarchy-node[aria-current="page"] {
   border-color: var(--color-text, #000);
   border-width: 2px;
   font-weight: 600;
+  background: color-mix(
+    in oklab,
+    var(--color-text, #000) 6%,
+    var(--color-background, #fff)
+  );
+}
+
+/* ---------------------------------------------------------------- */
+/* The ego-fade and the filter's hiding — the asymmetry's graph half */
+/* ---------------------------------------------------------------- */
+
+/* Non-neighbours recede but stay readable; edges fade HARDER than nodes,
+ * so what survives around the focus is its connective tissue rather than
+ * an even wash. The exhibit's own values (.16 nodes, .06 edges). */
+.ds.hierarchy-well .react-flow__node.is-faded {
+  opacity: 0.16;
+}
+
+.ds.hierarchy-well .react-flow__edge.is-faded {
+  opacity: 0.06;
+}
+
+/* THE ASYMMETRY: the graph HIDES what the filter excludes (the rail only
+ * dims). Positions are untouched, so restoring a chip restores the exact
+ * picture — we never re-run a layout. */
+.ds.hierarchy-well .react-flow__node.is-hidden,
+.ds.hierarchy-well .react-flow__edge.is-hidden {
+  display: none;
+}
+
+.ds.hierarchy-well .react-flow__node,
+.ds.hierarchy-well .react-flow__edge {
+  transition: opacity 0.15s ease;
 }
 
 /* React Flow's default node chrome is replaced by the custom term node;
@@ -64,4 +130,16 @@
 .ds.hierarchy-well .react-flow__handle {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Fade and lift are the well's only motion; drop them when asked. The
+ * at-rule is census-EXEMPT (frameStability.tests.tsx matches query TEXT
+ * and exempts prefers-reduced-motion, which cannot reflow layout), so the
+ * count of layout-capable conditionals stays at one. */
+@media (prefers-reduced-motion: reduce) {
+  .ds.hierarchy-well .hierarchy-node,
+  .ds.hierarchy-well .react-flow__node,
+  .ds.hierarchy-well .react-flow__edge {
+    transition: none;
+  }
 }
