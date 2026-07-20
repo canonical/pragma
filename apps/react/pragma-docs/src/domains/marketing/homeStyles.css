@@ -1,0 +1,101 @@
+/*
+ * The Home lobby — editorial bands stacked in one column. `layout.lobby`
+ * states `layout.type: stack` / `direction: vertical` and calls itself
+ * "nearly slotless by design: one canvas, no chrome", so there is no
+ * multi-region grid here and NO layout token consumption: the lobby has
+ * no secondary nav or aside to place, and the frame's --subnav-w column
+ * (which the standards index consumes) would be meaningless on a stack.
+ *
+ * Zero conditional at-rules (the frame suite's census allows exactly one
+ * in the app — the sanctioned AX.1 rail collapse). The exemplar strip
+ * reflows without a media query: `auto-fill` + `minmax` does the work.
+ * Logical properties throughout; DS tokens with fallbacks.
+ */
+
+.ds.lobby {
+  display: grid;
+  gap: var(--space-500, 2.5rem);
+  align-content: start;
+}
+
+/* ── hero ─────────────────────────────────────────────────────────── */
+
+.ds.lobby .lobby-hero {
+  display: grid;
+  gap: var(--space-200, 1rem);
+  /* Measured prose: the hero is read, not scanned. */
+  max-inline-size: 68ch;
+}
+
+.ds.lobby .lobby-hero h1 {
+  margin: 0;
+}
+
+.ds.lobby .lobby-hero p {
+  margin: 0;
+}
+
+.ds.lobby .lobby-lead {
+  font-size: var(--font-size-300, 1.125rem);
+  line-height: var(--line-height-300, 1.6);
+}
+
+/* ── examples strip ───────────────────────────────────────────────── */
+
+.ds.lobby .lobby-examples {
+  display: grid;
+  gap: var(--space-200, 1rem);
+}
+
+.ds.lobby .lobby-examples h2,
+.ds.lobby .lobby-doors h2 {
+  margin: 0;
+}
+
+.ds.lobby .lobby-examples p {
+  margin: 0;
+  max-inline-size: 68ch;
+  color: var(--color-text-muted, #666);
+}
+
+.ds.lobby .lobby-exemplars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-100, 0.5rem) var(--space-300, 1.5rem);
+}
+
+/* ── doors ────────────────────────────────────────────────────────── */
+
+.ds.lobby .lobby-doors {
+  display: grid;
+  gap: var(--space-200, 1rem);
+}
+
+.ds.lobby .lobby-door-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  /* Reflows from four columns to one on its own — no media query. */
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-300, 1.5rem);
+}
+
+.ds.lobby .lobby-door-list > li {
+  display: grid;
+  gap: var(--space-100, 0.5rem);
+  align-content: start;
+}
+
+.ds.lobby .lobby-door-list > li > a {
+  font-size: var(--font-size-200, 1.0625rem);
+  font-weight: var(--font-weight-bold, 600);
+}
+
+.ds.lobby .lobby-door-list p {
+  margin: 0;
+  color: var(--color-text-muted, #666);
+}
