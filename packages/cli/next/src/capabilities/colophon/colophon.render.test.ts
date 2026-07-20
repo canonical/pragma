@@ -78,10 +78,37 @@ describe("colophon render golden — color-free (chalk.level = 0)", () => {
   });
 });
 
-describe("colophon render — color ON", () => {
-  it("plain emits ANSI escapes when chalk color is enabled", () => {
+/** Run `body` with stdout's `isTTY` forced to `value`, then restore it. */
+function withStdoutTty(value: boolean | undefined, body: () => void): void {
+  const stream = process.stdout as { isTTY?: boolean };
+  const saved = stream.isTTY;
+  stream.isTTY = value;
+  try {
+    body();
+  } finally {
+    stream.isTTY = saved;
+  }
+}
+
+describe("colophon render — color ON (attended TTY)", () => {
+  it("plain emits ANSI escapes on a color-capable TTY", () => {
     chalk.level = 1;
-    // biome-ignore lint/suspicious/noControlCharactersInRegex: asserting the literal ESC byte is the point
-    expect(colophonFormatters.plain(FIXTURE)).toMatch(/\x1b\[/);
+    withStdoutTty(true, () => {
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: asserting the literal ESC byte is the point
+      expect(colophonFormatters.plain(FIXTURE)).toMatch(/\x1b\[/);
+    });
+  });
+});
+
+describe("colophon render — piped output is ANSI-free (F1)", () => {
+  it("plain emits ZERO ANSI off a TTY even when chalk reports color (CI/FORCE_COLOR)", () => {
+    // The CI leak: `supports-color` sets a non-zero level off a TTY under
+    // GITHUB_ACTIONS / FORCE_COLOR, so gating on `chalk.level` alone bled ANSI
+    // into `colophon --format plain | tee`. The isTTY gate closes it.
+    chalk.level = 3;
+    withStdoutTty(undefined, () => {
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: asserting NO ESC byte survives
+      expect(colophonFormatters.plain(FIXTURE)).not.toMatch(/\x1b\[/);
+    });
   });
 });
