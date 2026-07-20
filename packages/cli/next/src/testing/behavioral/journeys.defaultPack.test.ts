@@ -167,9 +167,15 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
       expect(readLock(cwd)?.contentHash).toMatch(/^[0-9a-f]{64}$/);
       // A SEPARATE, fresh runtime boots the just-built pack from the lock. No
       // channel is configured, so the default `normal` channel hides the
-      // beta-gated Beta Badge; Orphan Widget is untiered (A2), so block list
-      // shows the two global blocks.
-      expect(await blockListNames(cwd, true)).toEqual(["Button", "Card"]);
+      // beta-gated Beta Badge. Assert the two global blocks are present while
+      // staying TOLERANT of the untiered Orphan Widget: whether it appears under
+      // --all-tiers is the A2 behavior, asserted in exactly one place below (the
+      // A2 it.fails hand-off). Filtering Orphan out keeps this green both pre-A2
+      // (absent) and post-A2 (present), and still pins that Beta Badge is hidden.
+      const globalBlocks = (await blockListNames(cwd, true)).filter(
+        (name) => name !== UNTIERED_BLOCK_NAME,
+      );
+      expect(globalBlocks).toEqual(["Button", "Card"]);
     } finally {
       rmSync(pkg, { recursive: true, force: true });
       rmSync(cwd, { recursive: true, force: true });
@@ -241,11 +247,16 @@ describe("default-pack journey — block list, populated and empty (E1)", () => 
       DEFAULT_PACK_TTL,
       DEFAULT_PACK_ALL_VISIBLE_CONFIG,
     );
-    expect(await blockListNames(fixture.cwd, true)).toEqual([
-      "Beta Badge",
-      "Button",
-      "Card",
-    ]);
+    // Same inputs as the A2 it.fails hand-off below (ALL_VISIBLE + allTiers).
+    // Assert the tiered blocks (prerelease reveals the beta-gated Beta Badge)
+    // while staying TOLERANT of the untiered Orphan Widget — its --all-tiers
+    // visibility is the A2 truth, asserted in exactly one place below. Filtering
+    // Orphan out keeps this green pre-A2 (absent) and post-A2 (present), so it
+    // never contradicts that hand-off.
+    const tieredBlocks = (await blockListNames(fixture.cwd, true)).filter(
+      (name) => name !== UNTIERED_BLOCK_NAME,
+    );
+    expect(tieredBlocks).toEqual(["Beta Badge", "Button", "Card"]);
   });
 
   it("the apps tier inherits its parent chain (global) plus its own block", async () => {
@@ -465,8 +476,10 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const index = readPackIndex(fixture.cwd);
     // `entityTotal` (the figure `info`/`doctor` report) SUMS per-type instance
-    // counts, so each block is tallied once under owl:NamedIndividual AND once
-    // under its domain class — 21 for 17 distinct entities. The true total can
+    // counts, so an entity is tallied once per asserted rdf:type — each block
+    // once under owl:NamedIndividual AND once under its domain class, and
+    // ds:tier/ds:release once each under owl:ObjectProperty AND
+    // owl:FunctionalProperty — 23 for 17 distinct entities. The true total can
     // never exceed the distinct count. Currently violated → this `it.fails`
     // passes. Fix A1, then flip to a plain `it`.
     expect(entityTotal(index as NonNullable<typeof index>)).toBeLessThanOrEqual(
@@ -488,15 +501,20 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     );
   });
 
-  it.fails("corrupt (non-empty, invalid) schema.json must surface a classified error, not a raw crash", async () => {
+  // KNOWN GAP / product follow-up (NOT a lane hand-off): a corrupt, NON-EMPTY
+  // `schema.json` currently surfaces UNCLASSIFIED. `packIsComplete` only checks
+  // size > 0, so torn-but-nonempty garbage bypasses the completeness guard and
+  // `compileFromExtraction` throws a raw `SyntaxError` (renders as INTERNAL
+  // "please report") instead of a classified error. It SHOULD degrade to
+  // STORE_UNAVAILABLE like the emptied case does — the fix belongs in
+  // `kernel/runtime/graphpack/read.ts` (guard the `schema.json` read/compile).
+  // No lane in this wave owns that, so rather than a false `it.fails` hand-off
+  // that would never flip, this is a plain test pinning the CURRENT behavior:
+  // when read.ts starts classifying it, this guard trips — swap the assertion
+  // to expect a STORE_UNAVAILABLE PragmaError then.
+  it("corrupt (non-empty, invalid) schema.json currently surfaces an UNCLASSIFIED error (known gap)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const lock = readLock(fixture.cwd);
-    // `packIsComplete` only checks size > 0, so a torn write that leaves
-    // NON-EMPTY garbage bypasses the completeness guard and crashes boot with a
-    // raw `SyntaxError` (unclassified → renders as INTERNAL "please report").
-    // A torn-but-nonempty extraction should degrade to STORE_UNAVAILABLE like
-    // the emptied case does. Currently a raw SyntaxError → this `it.fails`
-    // passes. Hand-off to lanes A/D (graphpack robustness).
     writeFileSync(
       join(packDir(lock?.contentHash ?? ""), SCHEMA_FILE),
       "{ not valid json ]",
@@ -512,7 +530,10 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     } catch (error) {
       caught = error;
     }
-    expect(caught).toBeInstanceOf(PragmaError);
+    // It throws — but as a raw, unclassified error, NOT a PragmaError. Assert the
+    // gap explicitly so a future classification fix in read.ts trips this guard.
+    expect(caught).toBeInstanceOf(Error);
+    expect(caught).not.toBeInstanceOf(PragmaError);
   });
 });
 
