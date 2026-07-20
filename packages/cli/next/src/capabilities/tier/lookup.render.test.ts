@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import chalk from "chalk";
+import { afterEach, describe, expect, it } from "vitest";
 import { type TierLookupData, tierLookupFormatters } from "./lookup.render.js";
 
 const TIER: TierLookupData = {
@@ -6,6 +7,18 @@ const TIER: TierLookupData = {
   name: "apps/lxd-panel",
   blocks: ["LXD Panel", "Status Bar"],
 };
+
+/** Run `body` with stdout's `isTTY` forced to `value`, then restore it. */
+function withStdoutTty(value: boolean | undefined, body: () => void): void {
+  const stream = process.stdout as { isTTY?: boolean };
+  const saved = stream.isTTY;
+  stream.isTTY = value;
+  try {
+    body();
+  } finally {
+    stream.isTTY = saved;
+  }
+}
 
 describe("tierLookupFormatters", () => {
   it("underlines the plain title with an ═ rule (B7)", () => {
@@ -27,5 +40,33 @@ describe("tierLookupFormatters", () => {
     const out = tierLookupFormatters.llm(TIER);
     expect(out.startsWith("## apps/lxd-panel\n")).toBe(true);
     expect(out).not.toMatch(/^# /m);
+  });
+});
+
+describe("tierLookupFormatters — shared style seam (B7)", () => {
+  const prevLevel = chalk.level;
+  afterEach(() => {
+    chalk.level = prevLevel;
+  });
+
+  it("styles the plain title on a color-capable TTY (single-sourced frame)", () => {
+    chalk.level = 1;
+    withStdoutTty(true, () => {
+      // Delegating to `renderLookupPlain` now carries the same TTY tint block and
+      // skill lookups get — previously the tier title stayed unstyled.
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: asserting the ESC byte is the point
+      expect(tierLookupFormatters.plain(TIER)).toMatch(/\x1b\[/);
+    });
+  });
+
+  it("keeps piped plain output byte-stable off a TTY", () => {
+    chalk.level = 3;
+    withStdoutTty(undefined, () => {
+      const out = tierLookupFormatters.plain(TIER);
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: asserting NO ESC byte survives
+      expect(out).not.toMatch(/\x1b\[/);
+      expect(out.split("\n").at(0)).toBe("apps/lxd-panel (cs:apps/lxd-panel)");
+      expect(out.split("\n").at(3)).toBe("  blocks: LXD Panel, Status Bar");
+    });
   });
 });
