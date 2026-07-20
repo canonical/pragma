@@ -28,6 +28,14 @@ export const UIBLOCK_TERM = "ds:UIBlock";
 export const PROPERTY_TERM = "ds:hasSubcomponent";
 
 /**
+ * Contention insurance (the components lens's F3 precedent,
+ * `catalogPageHarness.tsx`): these tests mount the full provider stack +
+ * static router + React Flow, which can overrun the 5s default under
+ * heavy parallel machine load. Per-test only — the config default stands.
+ */
+export const DEFINITIONS_TEST_TIMEOUT_MS = 20_000;
+
+/**
  * The definitions page at `term` (undefined = the `/definitions`
  * explorer) over an environment seeded with `records` (`undefined` = cold
  * store). The page owns its Suspense/ErrorBoundary; the router exists for

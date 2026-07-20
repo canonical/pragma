@@ -17,6 +17,7 @@ import definitionsExplorerRecords from "../__fixtures__/definitionsExplorerRecor
 import definitionsExplorerRecordsComponent from "../__fixtures__/definitionsExplorerRecordsComponent.js";
 import definitionsExplorerRecordsProperty from "../__fixtures__/definitionsExplorerRecordsProperty.js";
 import {
+  DEFINITIONS_TEST_TIMEOUT_MS,
   definitionsPageAt,
   PROPERTY_TERM,
   UIBLOCK_TERM,
@@ -46,7 +47,7 @@ const inspector = (): HTMLElement =>
 
 describe("TermInspector", () => {
   it("renders the class view for ds:UIBlock, no fetch", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(
@@ -83,7 +84,7 @@ describe("TermInspector", () => {
   });
 
   it("renders the property view for ds:hasSubcomponent", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(
@@ -129,7 +130,7 @@ describe("TermInspector", () => {
   });
 
   it("links component instances to their live entity route, D31 (others stay text)", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(
@@ -154,7 +155,7 @@ describe("TermInspector", () => {
   });
 
   it("renders the unknown-term alert (a 200 posture, R4) without fetching", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(definitionsPageAt(UNKNOWN_TERM, unknownTermRecords, fetchFn));

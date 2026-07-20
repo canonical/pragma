@@ -13,6 +13,7 @@ import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import definitionsExplorerRecords from "../__fixtures__/definitionsExplorerRecords.js";
 import {
+  DEFINITIONS_TEST_TIMEOUT_MS,
   definitionsPageAt,
   UIBLOCK_TERM,
 } from "../__fixtures__/definitionsPageHarness.js";
@@ -34,7 +35,7 @@ const renderRail = (): HTMLElement => {
 
 describe("TermRail", () => {
   it("groups terms per ontology with prefixed addresses; abstractness is a note, not a name", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const rail = renderRail();
 
@@ -76,7 +77,7 @@ describe("TermRail", () => {
   });
 
   it("filters ephemerally: typing narrows the lists, the URL stays put", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const rail = renderRail();
     const urlBefore = window.location.pathname;

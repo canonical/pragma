@@ -14,6 +14,7 @@ import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import definitionsExplorerRecords from "../__fixtures__/definitionsExplorerRecords.js";
 import {
+  DEFINITIONS_TEST_TIMEOUT_MS,
   definitionsPageAt,
   UIBLOCK_TERM,
 } from "../__fixtures__/definitionsPageHarness.js";
@@ -25,7 +26,7 @@ const createFetchSpy = () =>
 
 describe("DefinitionsExplorer against a warm store", () => {
   it("renders the triptych — rail groups, well nodes, inspector — with no fetch, selection marked", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(
@@ -67,7 +68,7 @@ describe("DefinitionsExplorer against a warm store", () => {
   });
 
   it("has teeth: the same render against an empty store fetches once", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(definitionsPageAt(UIBLOCK_TERM, undefined, fetchFn));

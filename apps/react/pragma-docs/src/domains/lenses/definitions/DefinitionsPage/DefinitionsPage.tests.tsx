@@ -10,7 +10,10 @@ import { render, screen } from "@testing-library/react";
 import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import definitionsExplorerRecords from "../__fixtures__/definitionsExplorerRecords.js";
-import { definitionsPageAt } from "../__fixtures__/definitionsPageHarness.js";
+import {
+  DEFINITIONS_TEST_TIMEOUT_MS,
+  definitionsPageAt,
+} from "../__fixtures__/definitionsPageHarness.js";
 
 const createFetchSpy = () =>
   vi.fn(() => new Promise<never>(() => {})) as ReturnType<typeof vi.fn> &
@@ -18,7 +21,7 @@ const createFetchSpy = () =>
 
 describe("DefinitionsPage at /definitions (no term)", () => {
   it("renders the full explorer with the empty inspector, no fetch", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     // The captured term fixture is a superset of the term-less operation's
     // data (`ontologies` is the same root field), so the store fulfils
@@ -39,7 +42,7 @@ describe("DefinitionsPage at /definitions (no term)", () => {
   });
 
   it("has teeth: a cold store suspends the interior and fetches once", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     render(definitionsPageAt(undefined, undefined, fetchFn));

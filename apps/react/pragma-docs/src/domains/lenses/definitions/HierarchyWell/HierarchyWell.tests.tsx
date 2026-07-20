@@ -16,6 +16,7 @@ import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import definitionsExplorerRecords from "../__fixtures__/definitionsExplorerRecords.js";
 import {
+  DEFINITIONS_TEST_TIMEOUT_MS,
   definitionsPageAt,
   UIBLOCK_TERM,
 } from "../__fixtures__/definitionsPageHarness.js";
@@ -26,7 +27,7 @@ const createFetchSpy = () =>
 
 describe("HierarchyWell", () => {
   it("draws every class as a term-link node; selection and abstractness are visible", {
-    timeout: 20_000,
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {
     const fetchFn = createFetchSpy();
     const { container } = render(
