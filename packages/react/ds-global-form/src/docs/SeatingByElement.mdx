@@ -19,17 +19,22 @@ first; this guide assumes the seating formula and the density matrix.
 
 ## The one rule that governs all three
 
-Every element is seated by the same two-part expression:
+Every element is seated by the same two-part expression, in its general form:
 
 ```css
---natural-baseline: calc((1em + 1cap) / 2);   /* baseline offset in a lh:1 box */
---space-before: max(0px, calc(target − --natural-baseline − border-top));
-padding-block-start: var(--space-before);
+--natural-baseline: calc((line-height + 1cap) / 2); /* baseline offset in the line box */
+--seat-before: max(0px, calc(target − --natural-baseline − border-top));
+padding-block-start: var(--seat-before);
 ```
 
-The three element types differ only in **what plays the part of `target`,
-`border-top`, and the box** — and in one case, whether this expression governs at
-all. Everything below is a variation on this.
+For a `line-height: 1` element (the field label / description / error) the first
+term reduces to `(1em + 1cap) / 2`. For a boxed control the line-height is the
+**intrinsic seat's** interior line, `--control-seat-line` — the density cell
+minus one baseline of headroom per side — and a complement pad closes the box to
+exactly the cell with no `block-size` anywhere (see
+[The Baseline Grid](?path=/docs/documentation-guides-the-baseline-grid--docs)).
+The element types differ only in **what plays the part of `target`,
+`border-top`, and the box**. Everything below is a variation on this.
 
 ---
 
@@ -73,128 +78,139 @@ reach for the global prose tags.
 
 ## Buttons
 
-**Route: the density box, seated against the box.**
+**Route: the intrinsic seat, on the button element itself.**
 
-A button is a fixed grid-multiple box: its `block-size` is the density
-line-height, `box-sizing: border-box`, top-referenced (`align-items: flex-start`),
-and its label is the text run seated by the formula. `target` is the density
-target line, `round(up, height × 2/3, --baseline-height)`.
+A button sets **no height**. Its label carries the interior line box
+(`line-height: var(--control-seat-line)`), the seat pad lands the baseline on
+the density target — `round(nearest, height × 2/3, --baseline-height)` — and a
+complement pad closes the box to exactly the density cell:
+`border + seat-before + line + seat-after + border = the cell`. An earlier
+revision instead fixed `block-size` to the cell (border-box, `line-height: 1`
+crush); the intrinsic seat replaced it so the height is a *result*, not an
+input, and taller content can never be cropped by a hard-coded height.
 
 <Canvas of={Examples.BorderlessAndBordered} />
 
-### The border term, and the bug that taught us how it works
+### The border, and the two bugs that taught us how it works
 
-The subtle part of a button is the `border-top` term. A button's border and its
-label live on the **same element**, so a top border pushes the label down and must
-be subtracted from `--space-before`. The instinct was to subtract the button's
-*actual* rendered border:
+A button's border and its label live on the **same element**, so the border
+occupies space above the label and enters the seat as the subtracted
+`border-top` term. Both historical bugs here came from letting the border
+*vary* per importance:
+
+- **Bug one — subtracting the rendered border.** The seat first subtracted
+  `calc(var(--modifier-outline, 0) * var(--button-border-width))` — 0 for a
+  borderless primary, 1px for a bordered secondary. The primary seated a pixel
+  higher; the two importances no longer shared a line. The fix at the time:
+  subtract a **nominal** border for both.
+- **Bug two — rendering a width-toggled border.** The nominal subtraction was
+  still built on sand, because the border *itself* was width-toggled
+  (`border-width: calc(outline × width)`). Under the intrinsic seat — where the
+  border is real layout, not absorbed into a fixed height — the borderless
+  primary became **2px shorter** than the secondary and its label sat a pixel
+  high again.
+
+The structural resolution: the border is a **constant** of the control. Every
+importance carries the same nominal width; the outline flag toggles the border's
+**colour**, never its width:
 
 ```css
-/* The tempting version — and the bug. */
---border-top-width: calc(var(--modifier-outline, 0) * var(--button-border-width));
+border-width: var(--button-border-width);            /* constant, both importances */
+border-color: color-mix(in srgb,
+  var(--modifier-color-border) calc(var(--modifier-outline, 0) * 100%),
+  transparent);
 ```
 
-This looks correct — a borderless importance (`--modifier-outline: 0`) subtracts 0,
-a bordered one subtracts its 1px. But it made the **borderless primary button sit
-one pixel higher** than the bordered secondary beside it. The two no longer shared
-a baseline.
-
-The reason: the density `target` is measured from the top of the *box*, and the
-box is `border-box`, so the border is already absorbed into the fixed height. The
-label's seat should be computed **against the box, not against whether a border
-happens to render**. The version that works subtracts a **nominal** border for
-both importances and lets the grid maths place them identically:
-
-```css
-/* The version that ships. */
---border-top-width: var(--button-border-width, 0px);   /* nominal, both importances */
-```
-
-So a borderless primary and a bordered secondary contribute the same amount to the
-seat: the secondary as 1px of real border, the primary as 1px more padding. They
-share the line. The `modifier-outline` version was reverted; the nominal term is
-load-bearing and should be left alone.
-
-### A related trap: the box padding shorthand
-
-The box rule sets the control height; the placement rule sets
-`padding-block-start`. When the box rule used the `padding-block: 0` **shorthand**,
-a specificity quirk let it out-specify the placement rule's `padding-block-start`
-and wipe the seat, pinning the label to the box top. The box rule now clears only
-`padding-block-end`; the placement rule owns the start. If a control's label ever
-jumps to the top of its box, this shorthand-vs-longhand interaction is the first
-thing to check.
+A borderless primary and a bordered secondary are now byte-identical boxes —
+only the paint differs — and the seat subtracts one constant. This is
+load-bearing: reintroducing any per-importance geometry (width toggles,
+importance-conditional seat terms) forks the box model again.
 
 ---
 
 ## Inputs
 
-**Route: the chrome box is the density box; the text leaf is seated inside it.**
+**Route: the intrinsic seat, split between chrome and leaf.**
 
-An input is not one element but two: the **chrome** (the bordered box —
-`.ds.input.text` wrapper for a text input, or the `<textarea>`/`<select>` element
-itself) and the **text leaf** (the inner `<input>`, or the textarea's own text).
-The chrome is the density box (fixed height, border-box, border absorbed); the
-leaf is the text run seated inside it. So unlike the button, the input's
-`border-top` term is a **true 0** — the border lives on the chrome, not on the leaf
-that carries the text.
+A composite input is not one element but two: the **chrome** (the bordered
+wrapper — `.ds.input:is(.text, .number, .password, .phone)`) and the **text
+leaf** (the inner `<input>`). The seat splits by role: the **leaf** carries the
+interior line box and the seat pad (`line-height: --seat-line-floored`,
+`padding-block-start: --seat-before`); the **chrome** owns the box edges — the
+border and the closing `--seat-after` pad — and sets no height. The chrome's
+border width is subtracted in `--seat-before` (declared on the chrome, inherited
+by the leaf) because the border sits above the leaf in the same stack. Both
+pads read the *same* variable, so the complement always closes the box to the
+cell.
+
+A single-element chrome — the `<select>`, the `<textarea>` — is simpler still:
+border and text live on one element, so it seats exactly like the button.
 
 <Canvas of={Examples.ButtonAndInput} />
 
-### The single-line input and the drift knob
+### The drift knob, and what it turned out to be
 
-With the border accounted for by the chrome, a text input's inner `<input>` should
-seat exactly like a button label. It nearly does — but a native `<input>` renders
-its text roughly **2px lower** than a `<span>` at byte-identical CSS. This is a
-user-agent metrics quirk of editable controls, not a border and not something the
-cap approximation predicts.
+For years the model carried `--control-text-drift-AVOID-USAGE` (~2px): a native
+`<input>` rendered its text visibly lower than a `<span>` at byte-identical CSS.
+The options considered at the time — folding it into a fake border term
+(rejected: lies), a JS metrics engine (rejected: forks the zero-JS model), an
+honest quarantined knob (chosen) — are kept here as a record, because the
+eventual resolution reframes them:
 
-The considered options, and what was chosen:
+> **The drift was never a metrics quirk. The user agent enforces a
+> `line-height` floor of `normal` (≈1.2em) on single-line `<input>`s, and the
+> crush-era `line-height: 1` was being silently clamped to it.** The extra
+> half-leading pushed the glyphs down; the knob was hand-calibrated against a
+> clamp nobody had identified.
 
-- **Rejected — fold it into the border term.** The first attempt expressed the 2px
-  as a fake `border-top-width` on the input. It worked but lied: the input has no
-  such border, and the number would not generalise to the textarea.
-- **Rejected — a metrics engine / text-box-trim.** A precise fix would measure the
-  control's actual text box. This was explicitly out of scope: the whole model is a
-  zero-JS cap approximation, and swapping the seating method for form controls
-  alone would fork it.
-- **Chosen — one honest, self-shaming knob.** The lift is applied through
-  `--control-text-drift-AVOID-USAGE` (currently 2px), set only on the input and
-  textarea paths. The name is the documentation: it is empirical, may vary by
-  browser and font, is never for app code, and is tracked for a structural fix. It
-  is a calibrated constant, deliberately quarantined, not a design lever.
+Under the intrinsic seat the input's line box is real (≥ the floor in
+comfortable cells), and the input positions text **exactly like a `<span>`** —
+measured: input baseline = label baseline to 0.01px, no drift term. Where the
+interior line would dip below the floor (dense cells: 16px < 16.8px), the seat
+computes with the floored value the UA will actually use:
 
-### The textarea: many rows, so the invariant bites
+```css
+--seat-line-floored: max(var(--control-seat-line), 1.2em);
+```
 
-A single-line input only has to seat its first baseline. A `<textarea>` has many
-rows, so the whole-multiple invariant applies: **every** row must land on a grid
-line, not just the first. That forces two departures from the single-line path:
+The knob is deleted from every single-line path. The lesson worth carrying:
+_when a calibrated constant refuses to generalise, suspect a hidden UA rule
+being fought, not a metrics mystery._
 
-- It is **excluded from the single-line box crush** — it keeps its intrinsic
-  `min-height: 5lh` rather than being flattened to one density line.
-- It is seated with a **grid-multiple line-height** (the density line-height)
-  rather than `line-height: 1`, so each successive row advances by exactly one grid
-  interval. Its first row is placed on the density target on top of the chrome's
-  own block padding; the rest follow the grid for free.
+### The textarea: the invariant comes free
 
-The textarea is where the generalised form of the seating formula first appeared —
-`(--seat-line-height + 1cap) / 2` instead of `(1em + 1cap) / 2` — because its
-line-height is not 1. That generalisation is the seed of a possible future unifying
-of all three routes under one formula, but it is deliberately not taken further
-yet: the single-line controls stay on the exact `1em` form so their pixel-tuned
-seating is not disturbed.
+A `<textarea>` has many rows, so every row must land on a grid line — the
+whole-multiple invariant. Under the old model this forced a **parallel seat**
+(its own `--td-*` variables, the density line-height, a private drift copy) —
+and that seat silently died when the target table moved to `round(nearest)`:
+its full-cell line box put the natural baseline *below* every new target, the
+`max(0px, …)` clamped, and the textarea stopped being seated at all.
+
+The intrinsic seat absorbs it with **no special case**: `--control-seat-line`
+(cell − 2 bU) is a whole baseline multiple in every density cell, so the same
+line box that seats the first row keeps every subsequent row advancing exactly
+one grid interval. The complement pad is row-count-independent — the
+N-independent part of the box (`2·border + seat-before + seat-after`) equals
+`cell − line`, itself a whole multiple — so the box bottom lands on-grid at any
+size. The only textarea-specific lines left are its `min-block-size` (five
+whole rows plus the closing geometry) and the deliberate **absence** of the
+line-height floor: a textarea honours its specified line-height, and flooring
+dense's 16px line to 16.8px would knock every row off the grid.
 
 ---
 
 ## Summary
 
-| Element | Box | `target` | `border-top` | Notable |
+| Element | Box | `target` | border in the seat | Notable |
 | --- | --- | --- | --- | --- |
 | Prose / `.editorial` | — (engine-owned) | nearest grid line | — | Not density-seated; snapped line-height keeps every wrapped line on-grid |
-| Button | the button element | `round(up, h × 2/3)` | nominal `--button-border-width` (both importances) | Seat is against the box, not the rendered border |
-| Input (single-line) | chrome wrapper | `round(up, h × 2/3)` | 0 (border on the chrome) | `--control-text-drift-AVOID-USAGE` lifts the ~2px UA quirk |
-| Textarea | the element (chrome + leaf) | first row on target | 0 | Grid-multiple line-height so every row seats; generalised formula |
+| Field label / description / error | bare text | `round(nearest, h × 2/3)` | 0 | The remaining `line-height: 1` crush seat |
+| Button | the button element | `round(nearest, h × 2/3)` | constant `--button-border-width`, colour-toggled | Intrinsic: no height; box closes to the cell |
+| Input (single-line, composite) | chrome wrapper + inner leaf | `round(nearest, h × 2/3)` | chrome border, folded into the shared `--seat-before` | Line floored at `1.2em` (the UA `<input>` floor); no drift knob |
+| Select | the element | `round(nearest, h × 2/3)` | own border | Single-element intrinsic seat; gradient-drawn caret takes the theme colour |
+| Textarea | the element | first row on target | own border | Same seat, N rows: `--control-seat-line` is a whole multiple, so the invariant comes free |
 
-The through-line: **seat against the box, keep the line-height a whole baseline
-multiple wherever more than one line matters, and give each element type only the
-compensation its own metrics genuinely need — no more.**
+The through-line: **one seat — the interior line box plus its complement — with
+each element contributing only its real constants: its border width, and the
+line-height floor the UA genuinely imposes. No fixed heights, no calibrated
+mysteries.**

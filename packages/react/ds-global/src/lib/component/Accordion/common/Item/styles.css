@@ -254,3 +254,73 @@
     var(--dimension-stroke-thickness-medium)
   );
 }
+
+/* ── Density seat (intrinsic) — the header is a control-height row ───────────
+ * Inside a density scope the header takes the SHARED control seat from
+ * @canonical/styles (modifiers.density.css), exactly like the Button and the
+ * form inputs: the heading's own line box (`--control-seat-line`, the cell
+ * minus one baseline of headroom per side) is the header interior;
+ * `--seat-before` lands its baseline on the density target; `--seat-after`
+ * closes the row to EXACTLY the density cell (32px apps-comfortable, 24px
+ * apps-dense, …) with no block-size anywhere. So an accordion header, a
+ * button, and an input in the same cell are the same height and their text
+ * shares one baseline index.
+ *
+ * The header carries no border of its own — the item's DIVIDER plays that
+ * role, and only on the collapsed face: collapsed, the divider renders
+ * directly under the header, so the closing pad absorbs its thickness
+ * (header + divider = the cell); expanded, the divider sits after the content
+ * and the content's own compensation above owns it — the header keeps the full
+ * closing pad. This is the per-state split the pre-density compensation rules
+ * above apply to the legacy (non-density) look.
+ *
+ * The chevron needs no new rule: the header's `align-items: center` centres it
+ * on the flex line, whose cross-size IS the heading's line box — the same
+ * "centre on the glyph run" pairing the input affixes use.
+ *
+ * KNOWN LIMIT: an <h6> heading keeps its own engine line-height (see the
+ * heading rule above), so its line box may differ from --control-seat-line;
+ * the h6-in-header case is owned by a later pass. The default (body-tier)
+ * heading is exact. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item {
+  /* The CONTENT panel consumes the density system's semantic spacing rung for
+     its block padding — space-md (16px apps-comfortable, 8px apps-dense,
+     20/12px sites) — instead of the fixed 1 bU, so the panel's breathing room
+     follows the density cell. Every rung is a whole baseline multiple, so the
+     rhythm holds; the [open] divider compensation reads this same token, so it
+     follows automatically. Outside a density scope the :root default stands. */
+  --accordion-item-content-padding-block: var(
+    --density-space-md,
+    var(--dimension-100)
+  );
+}
+
+:is(.comfortable, .dense, .app, .site, .docs) .ds.accordion-item > .header {
+  /* No border above the heading inside the header, so no border term. Rounded
+     to ¼px for exact layout-unit representability (see the shared seat). */
+  --seat-before: round(nearest, max(0px, var(--control-seat-basis)), 0.25px);
+  --seat-after: max(
+    0px,
+    calc(
+      var(--density-line-height-effective) -
+      var(--control-seat-line) -
+      var(--seat-before)
+    )
+  );
+  padding-block: var(--seat-before) var(--seat-after);
+}
+:is(.comfortable, .dense, .app, .site, .docs)
+  .ds.accordion-item:not([open])
+  > .header {
+  /* Collapsed: absorb the item divider below, keeping header + divider = cell. */
+  padding-block-end: max(
+    0px,
+    calc(var(--seat-after) - var(--dimension-stroke-thickness-medium))
+  );
+}
+:is(.comfortable, .dense, .app, .site, .docs)
+  .ds.accordion-item
+  > .header
+  > .heading {
+  line-height: var(--control-seat-line);
+}
