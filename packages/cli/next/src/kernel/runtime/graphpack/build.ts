@@ -121,6 +121,16 @@ export async function buildPack(
       const index = await buildIndex(store, store.prefixes, hash);
       writeFileSync(join(temp, INDEX_FILE), JSON.stringify(index));
 
+      const tripleCount = await countTriples(store);
+      // Distinct abox subjects — the same figure `entityTotal` reports (A10),
+      // so `sources status` reads it from the manifest without parsing the
+      // whole index.json. Keep this in sync with `entityTotal` in entitySource.
+      const entityCount = new Set(
+        index.entities
+          .filter((entity) => entity.box === "abox")
+          .map((entity) => entity.uri ?? entity.name),
+      ).size;
+
       const manifest: Manifest = {
         name: options.name,
         version: options.version,
@@ -128,6 +138,8 @@ export async function buildPack(
         contentHash: hash,
         prefixes: { ...store.prefixes },
         createdAt: new Date().toISOString(),
+        tripleCount,
+        entityCount,
       };
       // Written LAST — the completeness marker for the directory.
       writeFileSync(join(temp, MANIFEST_FILE), JSON.stringify(manifest));
@@ -145,4 +157,20 @@ export async function buildPack(
   } finally {
     if (existsSync(temp)) rmSync(temp, { recursive: true, force: true });
   }
+}
+
+/**
+ * Count a store's triples (a cheap aggregate over the union graph).
+ *
+ * @param store - The booted store.
+ * @returns The number of triples.
+ * @note Impure — runs a COUNT query against the store.
+ */
+async function countTriples(
+  store: Awaited<ReturnType<typeof createStore>>,
+): Promise<number> {
+  const result = (await store.query(
+    "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,
+  )) as import("@canonical/ke").SelectResult;
+  return Number(result.bindings.at(0)?.n ?? 0);
 }

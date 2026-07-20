@@ -73,13 +73,24 @@ export async function readPack(dir: string): Promise<StoreSession> {
     JSON.parse(readFileSync(join(dir, INDEX_FILE), "utf-8")),
   );
 
-  // Guard against a corrupt/unparseable `data.nq` beside an intact manifest:
-  // ke silently falls back to an EMPTY store (and rewrites an empty dump).
-  // If the index says the pack is populated but the store booted with no
-  // triples, the cache is ruined — surface STORE_UNAVAILABLE (and, via the
-  // now-empty dump, `packIsComplete` turns false so recovery rebuilds) rather
-  // than serve an empty graph as if it were the pack.
-  if (index.entities.length > 0 && !(await storeHasTriples(store))) {
+  // Guard against a corrupt or TRUNCATED `data.nq` beside an intact manifest:
+  // ke silently serves whatever loaded (falling back to an EMPTY store on a
+  // parse failure, and rewriting an empty dump). When the manifest records the
+  // build-time triple count (A9), require an EXACT match — a truncated dump
+  // that still holds SOME triples passes the size>0 completeness gate yet would
+  // serve a partial graph silently, so it must surface STORE_UNAVAILABLE here.
+  // Older packs without the count fall back to the "populated index but empty
+  // store" check (via the now-empty dump, `packIsComplete` turns false so
+  // recovery rebuilds) rather than serving an empty graph as the pack.
+  const actualTriples = await countTriples(store);
+  if (manifest.tripleCount !== undefined) {
+    if (actualTriples !== manifest.tripleCount) {
+      store.dispose();
+      throw packUnavailable(
+        `The pack at ${dir} has a corrupt data cache (expected ${manifest.tripleCount} triples, loaded ${actualTriples}).`,
+      );
+    }
+  } else if (index.entities.length > 0 && actualTriples === 0) {
     store.dispose();
     throw packUnavailable(`The pack at ${dir} has a corrupt data cache.`);
   }
@@ -93,10 +104,10 @@ export async function readPack(dir: string): Promise<StoreSession> {
   };
 }
 
-/** Whether the booted store holds at least one triple (a cheap ASK probe). */
-async function storeHasTriples(store: StoreSession["store"]): Promise<boolean> {
-  const result = (await store.query("ASK { ?s ?p ?o }" as never)) as {
-    result: boolean;
-  };
-  return result.result === true;
+/** Count the booted store's triples (a cheap aggregate over the union graph). */
+async function countTriples(store: StoreSession["store"]): Promise<number> {
+  const result = (await store.query(
+    "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,
+  )) as import("@canonical/ke").SelectResult;
+  return Number(result.bindings.at(0)?.n ?? 0);
 }

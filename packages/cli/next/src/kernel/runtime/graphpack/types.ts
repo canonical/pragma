@@ -105,6 +105,20 @@ export const manifestSchema = z.object({
   contentHash: z.string(),
   prefixes: z.record(z.string(), z.string()),
   createdAt: z.string(),
+  /**
+   * The store's triple count at build time. Cross-checked against the booted
+   * store so a truncated-but-non-empty `data.nq` (a partial graph that passes
+   * the mere size>0 completeness gate) surfaces as STORE_UNAVAILABLE rather
+   * than being served silently (A9). Optional — packs built before this field
+   * skip the check.
+   */
+  tripleCount: z.number().optional(),
+  /**
+   * The distinct abox entity count (matches {@link entityTotal}). Lets
+   * `sources status` report the figure without parsing the whole `index.json`
+   * (A10). Optional — packs built before this field fall back to the index read.
+   */
+  entityCount: z.number().optional(),
 });
 
 /** Pack provenance and the prefixes the store was built with. */
