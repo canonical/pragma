@@ -387,3 +387,96 @@ describe("Outlet component field (AV-340 phase 2)", () => {
     });
   });
 });
+
+describe("Outlet per-route fallback and errorComponent (AV-340 phase 2)", () => {
+  it("renders the route's errorComponent when content throws, keeps siblings clean, and resets on navigation", async () => {
+    let shouldThrow = true;
+
+    function ExplodingPage(): ReactElement {
+      if (shouldThrow) {
+        throw new Error("boom");
+      }
+
+      return <span>recovered</span>;
+    }
+
+    function RouteError({ error }: { readonly error: unknown }): ReactElement {
+      return <span>route-error-{(error as Error).message}</span>;
+    }
+
+    const errorRoutes = {
+      boom: route({
+        url: "/",
+        component: ExplodingPage,
+        errorComponent: RouteError,
+      }),
+      calm: route({ url: "/calm", component: () => <span>calm</span> }),
+    };
+    const router = createRouter(errorRoutes, {
+      adapter: createMemoryAdapter("/"),
+    });
+
+    render(
+      <RouterProvider router={router}>
+        <Outlet />
+      </RouterProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("route-error-boom")).toBeTruthy();
+    });
+
+    // A sibling route is unaffected by the boundary's error state.
+    await act(async () => {
+      await router.navigate("calm");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("calm")).toBeTruthy();
+      expect(screen.queryByText("route-error-boom")).toBeNull();
+    });
+
+    // The boundary is keyed by route, so returning re-attempts the render
+    // instead of replaying the stale error state.
+    shouldThrow = false;
+
+    await act(async () => {
+      await router.navigate("boom");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("recovered")).toBeTruthy();
+    });
+  });
+
+  it("prefers the route-level fallback over the Outlet default while suspended", async () => {
+    // A promise that never settles during the test keeps the route suspended.
+    const pending = new Promise<never>(() => {});
+
+    function SuspendingPage(): ReactElement {
+      throw pending;
+    }
+
+    const suspendingRoutes = {
+      slow: route({
+        url: "/",
+        component: SuspendingPage,
+        fallback: <span>route-pending</span>,
+      }),
+    };
+    const router = createRouter(suspendingRoutes, {
+      adapter: createMemoryAdapter("/"),
+    });
+
+    render(
+      <RouterProvider router={router}>
+        <Outlet fallback={<span>outlet-pending</span>} />
+      </RouterProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("route-pending")).toBeTruthy();
+    });
+    expect(screen.queryByText("outlet-pending")).toBeNull();
+  });
+});
