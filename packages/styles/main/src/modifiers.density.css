@@ -191,4 +191,44 @@
     calc(var(--density-line-height-effective) * 2 / 3),
     var(--baseline-height)
   );
+
+  /* ── Control seat (intrinsic) ──────────────────────────────────────────────
+   * ONE seat for every control (button, input chrome, accordion header, …):
+   * the text's own line box — the density cell minus one baseline of headroom
+   * per side (`--control-seat-line`) — IS the control interior. The height is
+   * INTRINSIC: no block-size; border + pads + line-height add up to the cell,
+   * and both outer edges land on grid lines.
+   *
+   * The shared layer exports the two BORDER-AGNOSTIC pieces. A var() inside a
+   * custom property is substituted where the property is DECLARED — here, the
+   * density scope — so a component's border can never be a formula input at
+   * this level; each component folds its own border in at the application site
+   * (single-line <input>/<select> also floor the line at the UA's `normal`
+   * minimum — see the form package's density.css):
+   *
+   *     --seat-before: max(0px, calc(
+   *       var(--control-seat-basis) - <border-width>));
+   *     --seat-after: max(0px, calc(
+   *       var(--density-line-height-effective) - var(--control-seat-line) -
+   *       var(--seat-before) - 2 * <border-width>));
+   *     line-height: var(--control-seat-line);
+   *     padding-block: var(--seat-before) var(--seat-after);
+   *
+   * `1cap` below stays an unresolved token inside the custom property and only
+   * resolves where the seat is APPLIED — each component's own font — so
+   * components with different fonts still seat on the SAME grid index. The
+   * border must be the control's CONSTANT nominal width (transparent where no
+   * border shows), so bordered and borderless variants share one geometry. */
+  --control-seat-line: calc(
+    var(--density-line-height-effective) -
+    2 *
+    var(--baseline-height)
+  );
+  /* Unclamped distance from just inside the box's top border down to the
+     target baseline, for a --control-seat-line line box. */
+  --control-seat-basis: calc(
+    var(--density-target-baseline-px) -
+    (var(--control-seat-line) + 1cap) /
+    2
+  );
 }

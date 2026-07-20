@@ -1,10 +1,38 @@
-/* Chevron indicator sourced from @canonical/ds-assets icons/chevron-down.svg */
+/* Chevron indicator, painted with CSS gradients so it takes the theme colour.
+ * A `background-image` SVG cannot be recoloured by CSS (no inheritance into
+ * the image document), which left the caret black on dark themes — the same
+ * reason the checkbox/accordion glyphs are masks. A <select> is a replaced
+ * element with no ::before/::after to mask, so the chevron is drawn instead:
+ * two diagonally-striped gradient squares butted together form a down-chevron
+ * STROKE (transparent → colour → transparent along each diagonal), coloured by
+ * --color-icon like every other control glyph. */
 .ds.input.select {
   appearance: none;
-  background-image: url("/icons/chevron-down.svg#chevron-down");
+  --select-caret-color: var(--color-icon, currentColor);
+  --select-caret-half: 0.4em; /* each square; the chevron is two halves wide */
+  /* left half: rising stroke ╱ */
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent 42%,
+      var(--select-caret-color) 42%,
+      var(--select-caret-color) 58%,
+      transparent 58%
+    ),
+    /* right half: falling stroke ╲ */
+    linear-gradient(
+      135deg,
+      transparent 42%,
+      var(--select-caret-color) 42%,
+      var(--select-caret-color) 58%,
+      transparent 58%
+    );
   background-repeat: no-repeat;
-  background-position: right var(--form-input-padding-inline) center;
-  background-size: 1em;
+  background-position:
+    right calc(var(--form-input-padding-inline) + var(--select-caret-half))
+    center,
+    right var(--form-input-padding-inline) center;
+  background-size: var(--select-caret-half) var(--select-caret-half);
   /* This element IS the text-bearing leaf, so it carries the inline padding
    * (`.ds.input.chrome` provides only the block padding). The end side leaves
    * room for the chevron. */

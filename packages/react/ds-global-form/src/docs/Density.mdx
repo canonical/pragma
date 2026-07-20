@@ -171,24 +171,28 @@ disturbing the other. Giving the vertical gap its own block token
 
 ## Control height
 
-A density control is a fixed grid-multiple box: `block-size` is the density
-line-height, with `box-sizing: border-box` so a bordered and a borderless control
-of the same density are the same height. The control is top-referenced, and its
-label is seated to the density _target_ baseline —
-`round(up, height × 2/3, --baseline-height)` — so text at any font size lands on
-the grid.
+A density control's height is **intrinsic**: no `block-size` anywhere. The
+control's text carries an interior line box (`--control-seat-line`, the cell
+minus one baseline of headroom per side), a seat pad lands its baseline on the
+density _target_ — `round(nearest, height × 2/3, --baseline-height)` — and a
+complement pad closes the box so border + pads + line-height add up to
+**exactly** the density cell (32px apps-comfortable, 24px apps-dense, …). Text
+at any font size lands on the grid, and the height is a result, not an input.
+See [The Baseline Grid](?path=/docs/documentation-guides-the-baseline-grid--docs)
+for the full formula.
 
 <Canvas of={Examples.ButtonAndInput} />
 
-A borderless importance (e.g. a primary button) and a bordered one (a secondary)
-seat **identically**, because the seat is computed against the box, not the
-border. This was a subtle earlier bug: the placement formula subtracted the
-border only for bordered controls, so the borderless primary — with nothing to
-subtract — sat a pixel high against its bordered neighbour. The fix was to
-subtract a _nominal_ border width (`--button-border-width`, 1px) for **both**
-importances and let the grid maths absorb it; switching the borderless case to
-its real 0-width outline lifted it a pixel again (regression found and reverted).
-The nominal term stays.
+A borderless importance (e.g. a primary button) and a bordered one (a
+secondary) are the same height and seat **identically**, because the border is
+a **constant of the control**: every importance carries the same nominal border
+width, and the borderless variant paints it `transparent` rather than removing
+it (the outline flag toggles the border's colour, never its width). The
+history of getting here is instructive — first the seat subtracted the border
+only when rendered (the borderless primary sat a pixel high), then a nominal
+subtraction papered over a width-toggled border (under intrinsic height the
+primary came out 2px _shorter_). Both bugs had one root: per-importance
+geometry. The constant border removes the fork entirely.
 
 ## Composition: density and running prose
 
@@ -215,11 +219,16 @@ Practically:
   up with controls (as the spike testbed does for its measuring lead), seat that
   one element explicitly; do not change how prose ships.
 
-## Known rough edge
+## A former rough edge, resolved
 
-Native form controls (`input`, `textarea`) render their text a couple of pixels
-lower than a `span` at identical CSS — a browser metrics quirk of editable
-controls, not captured by the cap approximation. The model lifts them with a
-single, deliberately-named knob, `--control-text-drift-AVOID-USAGE` (currently
-2px). The name is a warning: it is an empirical constant, may vary by browser and
-font, and is tracked for a structural fix. Never reach for it in application code.
+Earlier revisions lifted native form controls by an empirical ~2px knob
+(`--control-text-drift-AVOID-USAGE`) because an `<input>` rendered its text
+lower than a `<span>` at identical CSS. The intrinsic seat exposed the real
+mechanism: the user agent enforces a `line-height` floor of `normal` (≈1.2em)
+on single-line `<input>`s, and the old `line-height: 1` crush was being
+silently clamped — the "drift" was the clamp's extra half-leading. With a real
+line box the input renders exactly like a `<span>`; where the interior line
+would dip below the floor (dense cells) the seat computes with the floored
+value (`max(--control-seat-line, 1.2em)`). The knob is deleted. See
+[Seating by Element Type](?path=/docs/documentation-guides-seating-by-element-type--docs)
+for the full account.
