@@ -2,6 +2,7 @@
  * Formatters for the `prompt` content noun — plain, llm, json.
  */
 
+import { defaultStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type {
   PromptArgument,
@@ -46,11 +47,22 @@ export const promptListFormatters: Formatters<PromptListData> = {
 
 export const promptLookupFormatters: Formatters<PromptLookupData> = {
   plain(data) {
-    // Match the shared `renderLookupPlain` frame (title, ═ rule, blank) (B7).
+    // Full delegation to `renderLookupPlain` is infeasible: the description line
+    // carries no field label and the template body is appended raw, whereas the
+    // shared renderer only emits `label: value` fields + indented sections. So
+    // route the TITLE + rule + field label through the SAME style seam it uses
+    // (bold title, dim rule, cyan label) — closing the TTY drift where a prompt
+    // title stayed unstyled — and keep the bespoke body inline. Off a TTY the
+    // styler is inert, so piped output stays byte-stable (B7).
+    const style = defaultStyle();
     const rule = "═".repeat(Math.max(data.name.length, 24));
-    const lines = [data.name, rule, ""];
+    const lines = [style.bold(data.name), style.dim(rule), ""];
     if (data.description) lines.push(`  ${data.description}`);
-    lines.push(`  args: ${argTokens(data.arguments)}`, "", data.body);
+    lines.push(
+      `  ${style.cyan("args")}: ${argTokens(data.arguments)}`,
+      "",
+      data.body,
+    );
     return lines.join("\n");
   },
   llm(data) {
