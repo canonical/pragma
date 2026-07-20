@@ -126,7 +126,7 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     id: "info-entitycount-storeless-not-triplecount",
     area: "info",
     description:
-      "`info`'s entity total comes from the storeless pack index (`readPackIndex` → sum of `instanceCountByType`), NEVER a store boot — so the storeless invariant (`store.booted === false`) holds. The old `collectStoreSummary`'s SPARQL triple-count is DROPPED (`sources status` owns the per-source breakdown; info shows one total). `capabilities/info/collectInfo.ts`.",
+      "`info`'s entity total comes from the storeless pack index (`readPackIndex` → `entityTotal` = count of DISTINCT abox subjects), NEVER a store boot — so the storeless invariant (`store.booted === false`) holds. It is deliberately NOT the sum of `instanceCountByType`: that raw multiset double-counts real OWL exports (individual typed as its class AND `owl:NamedIndividual`, plus `owl:Class`/property meta-buckets), so the total ran ~2× (A1). The old `collectStoreSummary`'s SPARQL triple-count is DROPPED (`sources status` owns the per-source breakdown; info shows one total). `capabilities/info/collectInfo.ts`.",
   },
   {
     id: "setup-skills-undo-recompute",
