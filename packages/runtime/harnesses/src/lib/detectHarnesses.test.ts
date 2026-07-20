@@ -118,17 +118,46 @@ describe("detectHarnesses", () => {
     }
   });
 
-  // Cline is re-enabled (7a): it shares .vscode/mcp.json with VS Code, and both
-  // are detected off the `.vscode` directory (dedup happens at write time).
-  it("detects Cline and VS Code together from the .vscode directory", () => {
+  // Cline is re-enabled (7a) but detected ONLY by its extension: a bare
+  // `.vscode` directory belongs to VS Code, so it must detect VS Code alone and
+  // never co-detect Cline (which would write an inert `mcpServers` block).
+  it("detects VS Code but NOT Cline from a bare .vscode directory", () => {
     const result = dryRunWith(
       detectHarnesses("/project", PLATFORM),
       mocks((path) => path.includes(".vscode")),
     );
 
     const ids = result.value.map((d) => d.harness.id);
-    expect(ids).toContain("cline");
     expect(ids).toContain("vscode");
+    expect(ids).not.toContain("cline");
+  });
+
+  it("detects Cline when its saoudrizwan.claude-dev extension is installed", () => {
+    const result = dryRunWith(
+      detectHarnesses("/project", PLATFORM),
+      new Map<string, (effect: Effect) => unknown>([
+        [
+          "Exists",
+          (effect) =>
+            (effect as Effect & { _tag: "Exists"; path: string }).path ===
+            "/home/tester/.vscode/extensions",
+        ],
+        [
+          "Glob",
+          (effect) =>
+            (effect as Effect & { _tag: "Glob"; pattern: string }).pattern ===
+            "saoudrizwan.claude-dev-*"
+              ? ["saoudrizwan.claude-dev-3.20.0"]
+              : [],
+        ],
+      ]),
+    );
+
+    const cline = result.value.find((d) => d.harness.id === "cline");
+    expect(cline).toBeDefined();
+    expect(cline?.confidence).toBe("medium");
+    // A bare extension must not drag in VS Code (no `.vscode` dir here).
+    expect(result.value.map((d) => d.harness.id)).not.toContain("vscode");
   });
 
   it("reports configExists as false when config file is missing", () => {

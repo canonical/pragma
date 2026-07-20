@@ -1,4 +1,4 @@
-import { dryRunWith, type Effect } from "@canonical/task";
+import { dryRunWith, type Effect, TaskExecutionError } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import type { PlatformEnv } from "./platformPaths.js";
 import {
@@ -155,25 +155,49 @@ describe("checkSignal — process", () => {
     ).toBe(false);
   });
 
-  it("appends .exe and splits on ; under win32", () => {
+  it("probes every PATHEXT suffix (finds a .cmd npm shim) and splits PATH on ; under win32", () => {
     const seen: string[] = [];
     const result = check(
       { type: "process", name: "codex" },
       ctx({
         platform: platform({
           platform: "win32",
-          env: { PATH: "C:/bin;C:/tools" },
+          env: { PATH: "C:/bin;C:/tools", PATHEXT: ".EXE;.CMD;.BAT" },
         }),
       }),
       {
         Exists: existsAt((path) => {
           seen.push(path);
-          return path.endsWith("codex.exe");
+          // npm installs the harness as a .cmd shim, NOT a .exe.
+          return path === "C:/bin/codex.CMD";
         }),
       },
     );
     expect(result).toBe(true);
-    expect(seen.some((p) => p.includes("codex.exe"))).toBe(true);
+    // Every PATH dir × every PATHEXT suffix is a candidate.
+    expect(seen).toContain("C:/bin/codex.EXE");
+    expect(seen).toContain("C:/bin/codex.CMD");
+    expect(seen).toContain("C:/tools/codex.BAT");
+  });
+
+  it("falls back to the default PATHEXT when it is unset under win32", () => {
+    const seen: string[] = [];
+    const result = check(
+      { type: "process", name: "codex" },
+      ctx({
+        platform: platform({ platform: "win32", env: { PATH: "C:/bin" } }),
+      }),
+      {
+        Exists: existsAt((path) => {
+          seen.push(path);
+          return path === "C:/bin/codex.EXE";
+        }),
+      },
+    );
+    expect(result).toBe(true);
+    // The default set still covers the npm-shim suffixes.
+    expect(seen).toContain("C:/bin/codex.CMD");
+    expect(seen).toContain("C:/bin/codex.BAT");
   });
 
   it("runs verify and matches stdout against the pattern", () => {
@@ -203,6 +227,29 @@ describe("checkSignal — process", () => {
       {
         Exists: existsAt(() => true),
         Exec: () => ({ stdout: "some other tool", stderr: "", exitCode: 0 }),
+      },
+    );
+    expect(result).toBe(false);
+  });
+
+  it("recovers to false when the verify exec fails to spawn (no crash)", () => {
+    const result = check(
+      {
+        type: "process",
+        name: "od",
+        verify: { args: ["--version"], match: /open-?design/i },
+      },
+      linux,
+      {
+        Exists: existsAt(() => true),
+        Exec: () => {
+          // A spawn failure (ENOENT/EACCES) surfaces as a task failure — it must
+          // be recovered to `false`, never propagate out of detection.
+          throw new TaskExecutionError({
+            code: "ENOENT",
+            message: "spawn od ENOENT",
+          });
+        },
       },
     );
     expect(result).toBe(false);

@@ -16,6 +16,7 @@ import {
   glob,
   map,
   pure,
+  recover,
   type Task,
   traverse,
 } from "@canonical/task";
@@ -48,9 +49,22 @@ const resolveFsPath = (path: string, ctx: DetectContext): string =>
     : join(ctx.projectRoot, path);
 
 /**
- * Check a `process` signal: whether `name` resolves on the platform `PATH`
- * (with a `.exe` suffix on win32) and, when a `verify` is given, whether running
- * it produces stdout matching `verify.match`.
+ * The executable suffixes probed on win32 when `PATHEXT` is unset — the usual
+ * Windows default. Crucially includes `.CMD`/`.BAT`: npm installs CLI harnesses
+ * (`claude`, `codex`, `od`…) as `.cmd` shims, never `.exe`, so an `.exe`-only
+ * probe would miss every npm-installed harness on Windows.
+ */
+const DEFAULT_PATHEXT = ".COM;.EXE;.BAT;.CMD";
+
+/**
+ * Check a `process` signal: whether `name` resolves on the platform `PATH` (on
+ * win32, under any `PATHEXT` suffix — not just `.exe`) and, when a `verify` is
+ * given, whether running it produces stdout matching `verify.match`.
+ *
+ * The `verify` SPAWNS the binary, so its exec is wrapped in {@link recover}: a
+ * spawn failure (ENOENT/EACCES, or the process itself erroring) resolves to an
+ * unverified `false` rather than rejecting — one harness's probe must never be
+ * able to reject all of `detectHarnesses` and crash `setup`/`doctor`.
  */
 const checkProcess = (
   signal: Extract<DetectionSignal, { type: "process" }>,
@@ -58,11 +72,19 @@ const checkProcess = (
 ): Task<boolean> => {
   const isWindows = ctx.platform.platform === "win32";
   const separator = isWindows ? ";" : ":";
-  const binary = isWindows ? `${signal.name}.exe` : signal.name;
+  // On win32 an executable matches under any PATHEXT suffix; elsewhere the bare
+  // name is the sole candidate (the empty suffix).
+  const suffixes = isWindows
+    ? (ctx.platform.env.PATHEXT ?? DEFAULT_PATHEXT)
+        .split(";")
+        .filter((suffix) => suffix.length > 0)
+    : [""];
   const candidates = (ctx.platform.env.PATH ?? "")
     .split(separator)
     .filter((dir) => dir.length > 0)
-    .map((dir) => join(dir, binary));
+    .flatMap((dir) =>
+      suffixes.map((suffix) => join(dir, `${signal.name}${suffix}`)),
+    );
 
   return flatMap(
     traverse(candidates, (candidate) => exists(candidate)),
@@ -70,8 +92,11 @@ const checkProcess = (
       if (!results.some(Boolean)) return pure(false);
       const verify = signal.verify;
       if (!verify) return pure(true);
-      return map(exec(signal.name, [...verify.args]), (result) =>
-        verify.match.test(result.stdout),
+      return recover(
+        map(exec(signal.name, [...verify.args]), (result) =>
+          verify.match.test(result.stdout),
+        ),
+        () => pure(false),
       );
     },
   );

@@ -60,10 +60,11 @@ const harnesses: readonly HarnessDefinition[] = [
     name: "Cline",
     version: "*",
     scope: "project",
-    detect: [
-      { type: "directory", path: ".vscode" },
-      { type: "extension", id: "saoudrizwan.claude-dev" },
-    ],
+    // Cline is a VS Code EXTENSION, not a directory owner — a bare `.vscode`
+    // directory belongs to VS Code itself, so keying off it would false-detect
+    // Cline in every VS Code project (and write an inert `mcpServers` block
+    // there). Detect Cline ONLY by its installed extension.
+    detect: [{ type: "extension", id: "saoudrizwan.claude-dev" }],
     configPath: (root) => `${root}/.vscode/mcp.json`,
     // VERIFY(7a): if Cline reads 'servers' (like VS Code) rather than
     // 'mcpServers', collapse this to a single shared write with VS Code. Today
