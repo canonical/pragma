@@ -44,6 +44,48 @@ describe("resource listing (storeless, over the pack index)", () => {
     expect(componentIdx).toBeLessThan(buttonIdx);
   });
 
+  it("emits ONE resource per URI for an OWL-punned subject (A8)", () => {
+    // A punned subject (a class IRI also asserted as an individual) is indexed
+    // as TWO facets — tbox + abox — sharing one prefixed URI. The listing must
+    // dedup them so the MCP resource surface carries no duplicate URI. The abox
+    // facet is listed first here to prove the dedup relies on the schema-first
+    // SORT, not input order.
+    const punned: PackIndex = {
+      version: 2,
+      contentHash: "test",
+      prefixes: {},
+      entities: [
+        {
+          name: "ex:Slider",
+          type: "ex:Category",
+          uri: "https://ex.test/#Slider",
+          prefixed: "ex:Slider",
+          types: ["owl:Class", "ex:Category"],
+          label: "Slider",
+          box: "abox",
+          description: null,
+        },
+        {
+          name: "ex:Slider",
+          type: "owl:Class",
+          uri: "https://ex.test/#Slider",
+          prefixed: "ex:Slider",
+          types: ["owl:Class", "ex:Category"],
+          label: "Slider",
+          box: "tbox",
+          description: null,
+        },
+      ],
+      instanceCountByType: {},
+    };
+    const slider = buildResourceList(punned).filter(
+      (r) => r.uri === "pragma:ex:Slider",
+    );
+    expect(slider).toHaveLength(1);
+    // The retained facet is the schema (tbox) one — surfaced above individuals.
+    expect(slider.at(0)?._meta?.["pragma/box"]).toBe("tbox");
+  });
+
   it("enriches each entry with the _meta taxonomy (pragma/box + priority)", () => {
     const resources = buildResourceList(readPackIndex(process.cwd()));
     const component = resources.find((r) => r.uri === "pragma:ex:Component");
