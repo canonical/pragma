@@ -397,6 +397,51 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
   });
 });
 
+/**
+ * The 404 route, rendered at last (AV-334 gap #2). `notFoundRoute` is wired
+ * into every router construction across six test files and was never
+ * exercised by any of them.
+ *
+ * It is deliberately NOT a member of MEASURED_URLS. The frame
+ * certification above measures pages mounted inside `publicLayout` — its
+ * `splitAtCanvas` requires exactly one `<main data-region="canvas">`, which
+ * is the Shell's. `notFoundRoute` is declared OUTSIDE the `group(...)`
+ * wrappers in routes.tsx, so it renders bare: zero `<main>`, no rail, no
+ * strip. Adding the URL to the measured set would fail that structural
+ * assertion, and the only way to make it pass would be to loosen the
+ * certification for every other URL. So the honest test is this one — it
+ * pins what the 404 route ACTUALLY is today, including its unshelled-ness,
+ * which is the fact a future reader most needs to know.
+ */
+describe("the not-found route renders (AV-334 gap #2)", () => {
+  const body = extractBody(renderPage("/no-such-page"));
+
+  it("renders the not-found copy for an unrouted URL", () => {
+    expect(body).toContain("Page not found");
+    expect(body).toContain("The page you are looking for does not exist.");
+  });
+
+  it("renders OUTSIDE the shell — no canvas plate, no chrome", () => {
+    // The structural claim that keeps it out of MEASURED_URLS. If the 404
+    // is ever moved inside `publicLayout` (a reasonable future change),
+    // this fails loudly and points at the decision above rather than
+    // letting the frame suite break mysteriously.
+    expect(body.split("<main").length - 1).toBe(0);
+    expect(body).not.toContain('data-region="primary-nav"');
+    expect(body).not.toContain('data-region="canvas"');
+  });
+
+  it("renders content distinct from every measured lens canvas", () => {
+    // The distinctness the brief asks for, stated against the real
+    // structure: the 404 body matches no lens canvas.
+    const canvases = [...getPages().values()].map(({ canvas }) => canvas);
+    for (const canvas of canvases) {
+      expect(canvas).not.toBe(body);
+      expect(canvas).not.toContain("Page not found");
+    }
+  });
+});
+
 /** Recursively collect the app's own stylesheets. */
 const collectCss = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

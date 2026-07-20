@@ -98,6 +98,30 @@ describe("StandardReadingPage against a warm store", () => {
   );
 
   it(
+    "renders the route's OWN error copy when the query really fails (AV-334 gap #3)",
+    async () => {
+      // A rejecting fetch, not a synthetic thrower: the failure originates
+      // in the network layer and travels the real path — Relay surfaces it
+      // through the suspended query, and the route's own ErrorBoundary
+      // (not a test double) catches it. The copy asserted below is the
+      // string StandardReadingPage passes as `fallback`.
+      const fetchFn = vi.fn(() =>
+        Promise.reject(new Error("graph backend down")),
+      ) as unknown as FetchFunction;
+      render(standardReadingPageAt(LINK_COMPONENT_URI, undefined, fetchFn));
+
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toContain("The graph query failed.");
+      // The breadcrumb sits OUTSIDE the boundary, so it survives the
+      // failure — the page degrades, it does not blank.
+      expect(
+        screen.getByRole("navigation", { name: "Breadcrumb" }),
+      ).toBeInTheDocument();
+    },
+    STANDARDS_TEST_TIMEOUT_MS,
+  );
+
+  it(
     "has teeth: the same render against an empty store hits the network",
     () => {
       const fetchFn = createFetchSpy();

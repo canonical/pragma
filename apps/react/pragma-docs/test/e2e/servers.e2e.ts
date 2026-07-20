@@ -350,6 +350,27 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(standardReadingHtml).toContain("__INITIAL_DATA__");
             expect(standardReadingHtml).toContain('"records"');
 
+            //     Three more silent-rot closures (the AV-334 round), all
+            //     on HTML already fetched above:
+            //     (a) the name-over-uri FALLBACK. 127 of 131 live
+            //     standards carry no display name, so the index renders
+            //     the prefixed URI AS the link text. Were `name` to start
+            //     resolving upstream (or the fallback to be dropped), the
+            //     href assertions above would all still pass while the
+            //     visible text changed silently. This pins the text form.
+            expect(standardsIndexHtml).toContain(">cs:code.array.safe_access<");
+            //     (b) the reading page's category line — the article's
+            //     one piece of graph metadata outside the prose. React
+            //     splits the text node, hence the comment marker.
+            expect(standardReadingHtml).toContain("category: <!-- -->react");
+            //     (c) the pagination affordance. The live graph carries
+            //     131 standards against the schema's hard 100-item cap, so
+            //     `hasNextPage` is true and the button MUST render. If the
+            //     graph ever drops below the cap the button vanishes and
+            //     R1's load-bearing claim quietly stops being true — this
+            //     makes that a failure, not a shrug.
+            expect(standardsIndexHtml).toContain("Load more");
+
             // Zero /graphql HTTP hits during everything above — the
             // catalog, both entity pages, all four definitions pages,
             // and both standards pages executed in-process too.

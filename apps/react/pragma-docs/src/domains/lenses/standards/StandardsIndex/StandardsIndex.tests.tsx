@@ -6,6 +6,14 @@
  * the schema still allows none). Storage keys mirror the capture exactly
  * (`codeStandards(first:100)` + the `@connection` handle) so the one page
  * query stays fulfilled.
+ *
+ * The categorised fixture is deliberately `webcomponents` — a REAL live
+ * slug (page 2 of the connection) chosen because it sorts AFTER
+ * "uncategorised" alphabetically. That is what gives the ordering
+ * assertion teeth: with an earlier slug (the original `turtle`) the
+ * expectation held on plain alphabetical order alone, so deleting
+ * `compareCategories`'s uncategorised-last branch left the test GREEN.
+ * Now only the special case can produce the asserted order.
  */
 
 import { render, screen } from "@testing-library/react";
@@ -22,7 +30,8 @@ const createFetchSpy = () =>
     FetchFunction;
 
 /** One categorised node (with a display name — the name-over-uri rule)
- * and one zero-category node, connection keys as captured. */
+ * under the late-sorting `webcomponents` slug, and one zero-category
+ * node, connection keys as captured. */
 const uncategorisedRecords = {
   "client:root": {
     __id: "client:root",
@@ -48,7 +57,7 @@ const uncategorisedRecords = {
   "client:root:codeStandards(first:100):edges:0": {
     __id: "client:root:codeStandards(first:100):edges:0",
     __typename: "CodeStandardEdge",
-    node: { __ref: "cs:turtle.naming.unified_prefix" },
+    node: { __ref: "cs:webcomponents.component.naming" },
     cursor: "cursor-0",
   },
   "client:root:codeStandards(first:100):edges:1": {
@@ -80,7 +89,7 @@ const uncategorisedRecords = {
   "client:root:__StandardsIndex_codeStandards_connection:edges:0": {
     __id: "client:root:__StandardsIndex_codeStandards_connection:edges:0",
     __typename: "CodeStandardEdge",
-    node: { __ref: "cs:turtle.naming.unified_prefix" },
+    node: { __ref: "cs:webcomponents.component.naming" },
     cursor: "cursor-0",
   },
   "client:root:__StandardsIndex_codeStandards_connection:edges:1": {
@@ -97,36 +106,36 @@ const uncategorisedRecords = {
     hasPreviousPage: false,
     startCursor: null,
   },
-  "cs:turtle.naming.unified_prefix": {
-    __id: "cs:turtle.naming.unified_prefix",
+  "cs:webcomponents.component.naming": {
+    __id: "cs:webcomponents.component.naming",
     __typename: "CodeStandard",
-    id: "cs:turtle.naming.unified_prefix",
-    uri: "cs:turtle.naming.unified_prefix",
-    name: "Unified Prefix",
+    id: "cs:webcomponents.component.naming",
+    uri: "cs:webcomponents.component.naming",
+    name: "Component Naming",
     "categories(first:1)": {
-      __ref: "client:cs:turtle.naming.unified_prefix:categories(first:1)",
+      __ref: "client:cs:webcomponents.component.naming:categories(first:1)",
     },
   },
-  "client:cs:turtle.naming.unified_prefix:categories(first:1)": {
-    __id: "client:cs:turtle.naming.unified_prefix:categories(first:1)",
+  "client:cs:webcomponents.component.naming:categories(first:1)": {
+    __id: "client:cs:webcomponents.component.naming:categories(first:1)",
     __typename: "CategoryConnection",
     edges: {
       __refs: [
-        "client:cs:turtle.naming.unified_prefix:categories(first:1):edges:0",
+        "client:cs:webcomponents.component.naming:categories(first:1):edges:0",
       ],
     },
   },
-  "client:cs:turtle.naming.unified_prefix:categories(first:1):edges:0": {
-    __id: "client:cs:turtle.naming.unified_prefix:categories(first:1):edges:0",
+  "client:cs:webcomponents.component.naming:categories(first:1):edges:0": {
+    __id: "client:cs:webcomponents.component.naming:categories(first:1):edges:0",
     __typename: "CategoryEdge",
-    node: { __ref: "cs:turtle" },
+    node: { __ref: "cs:webcomponents" },
     cursor: "cursor-cat-0",
   },
-  "cs:turtle": {
-    __id: "cs:turtle",
+  "cs:webcomponents": {
+    __id: "cs:webcomponents",
     __typename: "Category",
-    id: "cs:turtle",
-    slug: "turtle",
+    id: "cs:webcomponents",
+    slug: "webcomponents",
   },
   "cs:limbo.orphan_rule": {
     __id: "cs:limbo.orphan_rule",
@@ -196,15 +205,18 @@ describe("StandardsIndex category grouping", () => {
       const fetchFn = createFetchSpy();
       render(standardsIndexPage(uncategorisedRecords, fetchFn));
 
+      // The ordering claim, and the file's teeth: "webcomponents" sorts
+      // AFTER "uncategorised" alphabetically, so this order can only come
+      // from the uncategorised-last special case, never from localeCompare.
       expect(
         screen
           .getAllByRole("heading", { level: 3 })
           .map((heading) => heading.textContent),
-      ).toEqual(["turtle", "uncategorised"]);
+      ).toEqual(["webcomponents", "uncategorised"]);
       // The named standard renders its display name (the name-over-uri
       // rule); the orphan falls back to its URI.
       expect(
-        screen.getByRole("link", { name: "Unified Prefix" }),
+        screen.getByRole("link", { name: "Component Naming" }),
       ).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: "cs:limbo.orphan_rule" }),

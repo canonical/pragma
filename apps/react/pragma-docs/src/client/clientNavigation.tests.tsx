@@ -205,6 +205,21 @@ describe("client-side navigation over a hydrated app", () => {
     expect(window.location.pathname).toBe(CATALOG_URL);
     await act(async () => {
       window.history.back();
+      // jsdom QUEUES the traversal rather than applying it synchronously,
+      // so the settle beat used by the click legs above is a race here: it
+      // held in isolation and failed under full-suite load. Poll for the
+      // entry to land instead of guessing a duration, then dispatch
+      // popstate for a jsdom that moves the entry without firing it (this
+      // one does fire; the dispatch is harmless when it has, as the router
+      // re-resolves the same URL). The deadline is a failure bound, not a
+      // sleep — the loop exits as soon as the traversal commits.
+      const deadline = Date.now() + 2_000;
+      while (
+        window.location.pathname === CATALOG_URL &&
+        Date.now() < deadline
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
       window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
