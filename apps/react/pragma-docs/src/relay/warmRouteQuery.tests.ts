@@ -9,10 +9,11 @@
  * means one actual network dispatch.
  */
 
-import type { FetchFunction } from "relay-runtime";
+import type { FetchFunction, RequestParameters } from "relay-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { componentsCatalogRouteEntry } from "#domains/components/catalogQuery.js";
 import { componentEntityRouteEntry } from "#domains/components/entityQuery.js";
+import { definitionsRouteEntry } from "#domains/lenses/definitions/definitionsQuery.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import {
   componentProbeQueryNode,
@@ -93,5 +94,40 @@ describe("warmRouteQuery", () => {
     warmRouteQuery(entry, {}, {});
 
     expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** The spy's first dispatch: Relay's `(request, variables, …)` call. */
+const firstDispatch = (
+  fetchFn: ReturnType<typeof createFetchSpy>,
+): readonly [RequestParameters, unknown] => {
+  const call = fetchFn.mock.calls.at(0);
+  if (call === undefined) throw new Error("fetch spy was never called");
+  return call as unknown as readonly [RequestParameters, unknown];
+};
+
+describe("warmRouteQuery with the definitions entry (the hover-prefetch cold path)", () => {
+  it("cold-fetches DefinitionsExplorerQuery exactly once with the term variables", () => {
+    const fetchFn = createFetchSpy();
+    setPrefetchEnvironment(createEnvironment({ fetchFn }));
+
+    warmRouteQuery(definitionsRouteEntry, { term: "ds:UIBlock" }, {});
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    const [request, variables] = firstDispatch(fetchFn);
+    expect(request.name).toBe("DefinitionsExplorerQuery");
+    expect(variables).toEqual({ uri: "ds:UIBlock", hasTerm: true });
+  });
+
+  it("cold-fetches the term-less `/definitions` shape: { uri: '', hasTerm: false }", () => {
+    const fetchFn = createFetchSpy();
+    setPrefetchEnvironment(createEnvironment({ fetchFn }));
+
+    warmRouteQuery(definitionsRouteEntry, {}, {});
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    const [request, variables] = firstDispatch(fetchFn);
+    expect(request.name).toBe("DefinitionsExplorerQuery");
+    expect(variables).toEqual({ uri: "", hasTerm: false });
   });
 });

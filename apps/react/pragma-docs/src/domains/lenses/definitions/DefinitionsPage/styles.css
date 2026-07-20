@@ -1,0 +1,19 @@
+/*
+ * DefinitionsPage — the lens heading over the explorer triptych. The page
+ * fills the canvas region's height (heading row + released 1fr row) so
+ * the triptych's PANELS own their scroll rather than the canvas — the
+ * panel-scroll release chain: canvas row → page 1fr row → explorer →
+ * panel, min-block-size: 0 at every link (INTRINSIC-GRID.md). Zero
+ * conditional at-rules (the census).
+ */
+
+.ds.definitions-page {
+  display: grid;
+  grid-template-rows: min-content minmax(0, 1fr);
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.ds.definitions-page > h1 {
+  margin-block: 0 var(--space-300, 1.5rem);
+}

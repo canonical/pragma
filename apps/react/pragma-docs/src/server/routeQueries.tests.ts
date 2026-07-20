@@ -19,6 +19,9 @@ import { resolveChipHref } from "#lib/Chip/index.js";
 import { appRoutes } from "../routes.js";
 import { matchRouteQuery } from "./routeQueries.js";
 
+/** The definitions exemplar term (percent-encoded in URLs). */
+const UIBLOCK_TERM = "ds:UIBlock";
+
 describe("matchRouteQuery", () => {
   it("resolves /playground to the probe's exact variables", () => {
     const resolved = matchRouteQuery("/playground");
@@ -46,6 +49,19 @@ describe("matchRouteQuery", () => {
     });
   });
 
+  // Definitions block (P-5): both addresses run the ONE explorer
+  // operation — the term URL with its percent-decoded uri, the term-less
+  // explorer with the degenerate empty uri behind hasTerm: false.
+  it("resolves the definitions term URL with its percent-decoded uri", () => {
+    const resolved = matchRouteQuery("/definitions/ds%3AUIBlock");
+    expect(resolved?.variables).toEqual({ uri: UIBLOCK_TERM, hasTerm: true });
+  });
+
+  it("resolves /definitions to the term-less explorer variables", () => {
+    const resolved = matchRouteQuery("/definitions");
+    expect(resolved?.variables).toEqual({ uri: "", hasTerm: false });
+  });
+
   it("returns undefined for unmatched URLs", () => {
     expect(matchRouteQuery("/no-such-route")).toBeUndefined();
   });
@@ -64,5 +80,14 @@ describe("the entity route's address space", () => {
     expect(
       appRoutes.componentEntity.render({ uri: "ds:global.component.button" }),
     ).toBe(resolveChipHref("ds:global.component.button", "component"));
+  });
+
+  // Definitions block (P-5): the same D31 pin for term mentions — a term
+  // chip and the definitionsTerm route must speak byte-identical
+  // addresses.
+  it("round-trips definitionsTerm render() against the term chip href", () => {
+    expect(appRoutes.definitionsTerm.render({ term: UIBLOCK_TERM })).toBe(
+      resolveChipHref(UIBLOCK_TERM, "term"),
+    );
   });
 });

@@ -62,6 +62,7 @@ import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it } from "vitest";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
+import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import EntryServer from "../../server/entry.js";
 
 /** The v1 lens URLs, owner-ruled order. */
@@ -78,14 +79,28 @@ const LENS_URLS = [
  * `aria-current` here (ruling R3). */
 const BUTTON_ENTITY_URL = "/components/ds%3Aglobal.component.button";
 
+/** The P-5 definitions exemplar: the term view — a second non-lens URL,
+ * and the one whose canvas carries the React Flow well's server-rendered
+ * node DOM. Same R3 posture: no rail entry is exact-current here. */
+const DEFINITIONS_TERM_URL = "/definitions/ds%3AUIBlock";
+
 /** Every URL the certification measures. */
-const MEASURED_URLS = [...LENS_URLS, BUTTON_ENTITY_URL] as const;
+const MEASURED_URLS = [
+  ...LENS_URLS,
+  BUTTON_ENTITY_URL,
+  DEFINITIONS_TERM_URL,
+] as const;
 
 /** Data-bearing pages render from their captured fixture records — the
  * `initialData` a dev server would embed — so canvases are real content. */
 const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
   "/components": catalogRecords,
   [BUTTON_ENTITY_URL]: componentEntityRecordsButton,
+  // Definitions rows: the explorer (no term) reads only `ontologies`,
+  // which the captured term fixture carries — one fixture, both
+  // definitions addresses.
+  "/definitions": definitionsExplorerRecords,
+  [DEFINITIONS_TERM_URL]: definitionsExplorerRecords,
 };
 
 /** Per-URL expectation for the first accounted-for delta: the hrefs
@@ -103,19 +118,24 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   "/standards": ["/standards"],
   "/guides": ["/guides"],
   [BUTTON_ENTITY_URL]: [],
+  // Exact-match linking (R3): the rail's Definitions entry is NOT current
+  // at a term URL. The term links that ARE current live in the canvas
+  // (rail item + well node), outside this frame measurement.
+  [DEFINITIONS_TERM_URL]: [],
 };
 
 /** Per-URL expectation for the second accounted-for delta: the mode
  * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
  * stubs claim nothing; BOTH Components views (catalog + entity) claim
- * the lens name. */
+ * the lens name, and so do the Definitions views (explorer + term). */
 const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   "/": "",
   "/components": "Components",
-  "/definitions": "",
+  "/definitions": "Definitions",
   "/standards": "",
   "/guides": "",
   [BUTTON_ENTITY_URL]: "Components",
+  [DEFINITIONS_TERM_URL]: "Definitions",
 };
 
 const renderPage = (url: string): string =>
@@ -225,6 +245,17 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     );
     expect(mustGet("/definitions").canvas).toContain(
       'id="lens-definitions-title"',
+    );
+    // The definitions canvases render REAL explorer content from the
+    // fixture records: the term canvas carries the inspector's class
+    // record AND the React Flow well's server-rendered node DOM; the
+    // term-less canvas carries the honest empty inspector.
+    expect(mustGet("/definitions").canvas).toContain("Select a term");
+    expect(mustGet(DEFINITIONS_TERM_URL).canvas).toContain(
+      '<h2 id="term-inspector-title">UI Block</h2>',
+    );
+    expect(mustGet(DEFINITIONS_TERM_URL).canvas).toContain(
+      "react-flow__node-term",
     );
     expect(mustGet("/standards").canvas).toContain('id="lens-standards-title"');
     expect(mustGet("/guides").canvas).toContain('id="lens-guides-title"');

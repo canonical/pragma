@@ -1,0 +1,67 @@
+/*
+ * HierarchyWell — the explorer's centre panel: the class graph sunk into
+ * the shell's underground well (`.underground` supplies the depression's
+ * surface; this file only sizes the well and raises the nodes). The
+ * panel's width comes from the explorer's grid template; React Flow fills
+ * the well and positions everything ABSOLUTELY inside its own wrapper —
+ * never `position: fixed`, which the canvas's containment would re-anchor
+ * (INTRINSIC-GRID.md entry 5). Zero conditional at-rules (the census).
+ */
+
+.ds.hierarchy-well {
+  min-block-size: 0;
+  overflow: hidden;
+}
+
+/* The flow fills the well; panning happens inside it, the well itself
+ * never scrolls. */
+.ds.hierarchy-well .react-flow {
+  background: transparent;
+}
+
+/* Nodes float as raised panels on the well floor (AX.3: content ON the
+ * floor renders raised again). Each node is one term link. */
+.ds.hierarchy-well .hierarchy-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 100%;
+  block-size: 100%;
+  padding-inline: var(--space-100, 0.5rem);
+  background: var(--color-background, #fff);
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: 0.5rem;
+  color: var(--color-text, #000);
+  text-decoration: none;
+  font-size: 0.875rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ds.hierarchy-well .hierarchy-node-abstract {
+  border-style: dashed;
+  font-style: italic;
+}
+
+/* Selection is the address: the router stamps aria-current on the current
+ * term's node link. */
+.ds.hierarchy-well .hierarchy-node[aria-current="page"] {
+  border-color: var(--color-text, #000);
+  border-width: 2px;
+  font-weight: 600;
+}
+
+/* React Flow's default node chrome is replaced by the custom term node;
+ * keep the wrapper itself invisible. */
+.ds.hierarchy-well .react-flow__node-term {
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* The provided handles are edge anchors, not interaction points. */
+.ds.hierarchy-well .react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
