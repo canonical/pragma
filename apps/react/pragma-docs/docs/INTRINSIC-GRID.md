@@ -138,6 +138,31 @@ aside` stops fitting, which is the honest intrinsic answer.
 the precedent for every future two-column mode: reach for wrap + basis
 before asking the census for a second conditional.
 
+## 7 — The catalog's column count is nobody's decision (P-5)
+
+**What.** The components catalog wants a responsive card grid: four
+columns on a wide canvas, one on a phone. The breakpoint-table reflex
+would write three `@media` rules; the census forbids all of them, and
+the frame's whole posture (AX.1) says the canvas REGION, not the
+viewport, is the only honest width.
+
+**Fix.** Two grids, both intrinsic. The composed layout is
+`grid-template-columns: var(--subnav-w) minmax(0, 1fr)` — the west
+column is the frame's token (consumed, never re-defined; the census
+counts definitions), the east column releases its min-content claim so a
+wide card row can never prop the frame open (the entry-1 lesson,
+re-applied one level down). Inside, the cards run
+`repeat(auto-fill, minmax(15rem, 1fr))`: the column count falls out of
+whatever width the canvas actually has — rail collapsed or not, aside or
+no aside — with no rule anywhere deciding it. `15rem` is the one
+authored number: the narrowest a card can be before its clamped summary
+teaser stops being readable.
+
+**Why logged.** The exhibit case for "the template never changes, only
+the space does": the same stylesheet serves every canvas width the shell
+can produce, and the only conditional at-rule in the app is still the
+rail's sanctioned collapse.
+
 ---
 
 ## Round notes (P-4.1 review)

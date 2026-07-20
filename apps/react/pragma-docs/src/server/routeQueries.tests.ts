@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
 import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
 import {
   RELATION_PAGE_SIZE as PROBE_RELATION_PAGE_SIZE,
@@ -34,6 +35,14 @@ describe("matchRouteQuery", () => {
     expect(resolved?.variables).toEqual({
       uri: "ds:global.component.button",
       count: RELATION_PAGE_SIZE,
+    });
+  });
+
+  it("resolves the catalog URL to one full page, no cursor", () => {
+    const resolved = matchRouteQuery("/components");
+    expect(resolved?.variables).toEqual({
+      count: CATALOG_PAGE_SIZE,
+      cursor: null,
     });
   });
 

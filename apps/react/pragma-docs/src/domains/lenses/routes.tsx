@@ -3,7 +3,8 @@
  * (P-4.1). Each states what lands on its canvas and which P-item builds
  * it; the shell frame around them is the finished product. Home keeps its
  * existing page (`#domains/marketing`); `/guides/:slug` (the reading
- * detail) already exists there too and stays.
+ * detail) already exists there too and stays. Components graduated to its
+ * real views (`#domains/components`, P-5) and left this file.
  *
  * None of these declare `SHELL_STRIP_META_KEY` strip slots: a stub has no
  * controls or status to claim, so every strip socket renders its sensible
@@ -14,16 +15,6 @@ import { route } from "@canonical/router-core";
 import LensPlaceholder from "./LensPlaceholder.js";
 
 const routes = {
-  components: route({
-    url: "/components",
-    content: () => (
-      <LensPlaceholder
-        builtBy="P-5 (catalog and entity views)"
-        lands="The component catalog — browse, filter, then one component in depth: usage, structure, tokens, its graph neighborhood."
-        title="Components"
-      />
-    ),
-  }),
   definitions: route({
     url: "/definitions",
     content: () => (

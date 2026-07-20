@@ -60,6 +60,7 @@ import { fileURLToPath } from "node:url";
 import { renderToString } from "react-dom/server";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it } from "vitest";
+import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import EntryServer from "../../server/entry.js";
 
@@ -83,6 +84,7 @@ const MEASURED_URLS = [...LENS_URLS, BUTTON_ENTITY_URL] as const;
 /** Data-bearing pages render from their captured fixture records — the
  * `initialData` a dev server would embed — so canvases are real content. */
 const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
+  "/components": catalogRecords,
   [BUTTON_ENTITY_URL]: componentEntityRecordsButton,
 };
 
@@ -105,10 +107,11 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
 
 /** Per-URL expectation for the second accounted-for delta: the mode
  * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
- * stubs claim nothing; the Components views claim the lens name. */
+ * stubs claim nothing; BOTH Components views (catalog + entity) claim
+ * the lens name. */
 const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   "/": "",
-  "/components": "",
+  "/components": "Components",
   "/definitions": "",
   "/standards": "",
   "/guides": "",
@@ -214,6 +217,11 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     expect(mustGet("/").canvas).toContain('id="home-title"');
     expect(mustGet("/components").canvas).toContain(
       'id="lens-components-title"',
+    );
+    // The catalog canvas renders REAL cards from its fixture records.
+    expect(mustGet("/components").canvas).toContain("Accordion");
+    expect(mustGet("/components").canvas).toContain(
+      'data-region="secondary-nav"',
     );
     expect(mustGet("/definitions").canvas).toContain(
       'id="lens-definitions-title"',

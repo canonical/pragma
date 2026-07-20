@@ -109,13 +109,13 @@ const [playground] = group(publicLayout, [
 ] as const);
 
 // The v1 lens set (owner-ruled order): Home · Components · Definitions ·
-// Standards · Guides. Home is marketingRoutes.home above; Components'
-// entity view (`/components/:uri`, P-5) is live, the rest are stubs until
-// P-5 builds their views.
+// Standards · Guides. Home is marketingRoutes.home above; the Components
+// lens is live (catalog + entity, P-5) from `#domains/components`; the
+// rest are stubs until P-5 builds their views.
 const [components, definitions, standards, guides, componentEntity] = group(
   publicLayout,
   [
-    lensRoutes.components,
+    componentsRoutes.components,
     lensRoutes.definitions,
     lensRoutes.standards,
     lensRoutes.guides,

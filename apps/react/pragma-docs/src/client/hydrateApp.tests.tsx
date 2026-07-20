@@ -19,6 +19,7 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "#relay/environment.js";
@@ -61,6 +62,13 @@ const SEEDED_PAGES = [
     records: componentEntityRecordsButton,
     serverMarker: '<h1 id="component-entity-title">Button</h1>',
     liveSelector: "#component-entity-title",
+  },
+  {
+    name: "components catalog",
+    url: "/components",
+    records: catalogRecords,
+    serverMarker: 'href="/components/ds%3Aglobal.component.accordion"',
+    liveSelector: 'a[href="/components/ds%3Aglobal.component.button"]',
   },
 ] as const;
 
