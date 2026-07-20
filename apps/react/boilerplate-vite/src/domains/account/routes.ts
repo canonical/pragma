@@ -32,12 +32,12 @@ const routes = {
   account: route({
     url: "/account",
     search: accountSearchSchema,
-    content: AccountPage,
+    component: AccountPage,
   }),
   login: route({
     url: "/login",
     search: loginSearchSchema,
-    content: LoginPage,
+    component: LoginPage,
   }),
 } as const;
 

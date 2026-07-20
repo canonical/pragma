@@ -153,7 +153,7 @@ src/domains/billing/
 The generator appends the import and a comment with the route entry. Add the route to the `routes` object manually:
 
 ```ts
-invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
+invoices: route({ url: "/billing/invoices", component: InvoicesPage }),
 ```
 
 Create the domain first with `summon domain <name>`.
@@ -243,7 +243,7 @@ Routes are flat objects using `route()` from `@canonical/router-core`:
 const routes = {
   invoices: route({
     url: "/billing/invoices",
-    content: InvoicesPage,
+    component: InvoicesPage,
   }),
 } as const;
 
