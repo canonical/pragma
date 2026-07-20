@@ -11,11 +11,10 @@
  *
  * It also pins, in-process, the real-data shapes the clean fixture masked — the
  * `entityTotal` double-count (A1), the untiered block that `block list` drops
- * (A2), and the multilingual label (A7). Those are HAND-OFFS to lanes A–D: the
- * defects are pinned here with `it.fails` (green now, flips to a red "unexpected
- * pass" the instant the fix lands — the signal to delete the `.fails` and keep
- * the assertion as a live regression guard). This is the durable fix the issue
- * asks for: "we'd have caught this in use" becomes "CI catches it".
+ * (A2), and the multilingual label (A7). These were HAND-OFFS to lane A, pinned
+ * with `it.fails`; lane A's fixes have landed, so they are now LIVE regression
+ * guards. This is the durable fix the issue asks for: "we'd have caught this in
+ * use" becomes "CI catches it".
  */
 
 import { execFileSync } from "node:child_process";
@@ -170,8 +169,8 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
       // beta-gated Beta Badge. Assert the two global blocks are present while
       // staying TOLERANT of the untiered Orphan Widget: whether it appears under
       // --all-tiers is the A2 behavior, asserted in exactly one place below (the
-      // A2 it.fails hand-off). Filtering Orphan out keeps this green both pre-A2
-      // (absent) and post-A2 (present), and still pins that Beta Badge is hidden.
+      // A2 regression guard). Filtering Orphan out keeps this test focused on the
+      // two global blocks, and still pins that Beta Badge is hidden.
       const globalBlocks = (await blockListNames(cwd, true)).filter(
         (name) => name !== UNTIERED_BLOCK_NAME,
       );
@@ -247,7 +246,7 @@ describe("default-pack journey — block list, populated and empty (E1)", () => 
       DEFAULT_PACK_TTL,
       DEFAULT_PACK_ALL_VISIBLE_CONFIG,
     );
-    // Same inputs as the A2 it.fails hand-off below (ALL_VISIBLE + allTiers).
+    // Same inputs as the A2 regression guard below (ALL_VISIBLE + allTiers).
     // Assert the tiered blocks (prerelease reveals the beta-gated Beta Badge)
     // while staying TOLERANT of the untiered Orphan Widget — its --all-tiers
     // visibility is the A2 truth, asserted in exactly one place below. Filtering
@@ -468,34 +467,32 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     expect(["Button", "Bouton"]).toContain(label);
   });
 
-  // ----- HAND-OFFS (A1, A2): pinned as it.fails — green now, flips red the
-  // instant the lane-A fix lands. When that happens, delete the `.fails` and
-  // keep the assertion as a live regression guard. -----
+  // ----- HAND-OFFS (A1, A2): lane A's fixes have landed in this branch, so the
+  // former `it.fails` pins are now LIVE regression guards. -----
 
-  it.fails("A1: info's entity total must not exceed the distinct entity count (owl:NamedIndividual double-count)", async () => {
+  it("A1: info's entity total must not exceed the distinct entity count (owl:NamedIndividual double-count)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const index = readPackIndex(fixture.cwd);
-    // `entityTotal` (the figure `info`/`doctor` report) SUMS per-type instance
-    // counts, so an entity is tallied once per asserted rdf:type — each block
-    // once under owl:NamedIndividual AND once under its domain class, and
-    // ds:tier/ds:release once each under owl:ObjectProperty AND
-    // owl:FunctionalProperty — 23 for 17 distinct entities. The true total can
-    // never exceed the distinct count. Currently violated → this `it.fails`
-    // passes. Fix A1, then flip to a plain `it`.
+    // `entityTotal` (the figure `info`/`doctor` report) once SUMMED per-type
+    // instance counts, double-counting each entity per asserted rdf:type (each
+    // block under owl:NamedIndividual AND its domain class; ds:tier/ds:release
+    // under owl:ObjectProperty AND owl:FunctionalProperty — 23 for 17 distinct
+    // entities). Lane A fixed the count, so the true total no longer exceeds the
+    // distinct count — guard it stays that way.
     expect(entityTotal(index as NonNullable<typeof index>)).toBeLessThanOrEqual(
       (index as NonNullable<typeof index>).entities.length,
     );
   });
 
-  it.fails("A2: an untiered block must still appear in `block list --all-tiers`", async () => {
+  it("A2: an untiered block must still appear in `block list --all-tiers`", async () => {
     const fixture = await boot(
       DEFAULT_PACK_TTL,
       DEFAULT_PACK_ALL_VISIBLE_CONFIG,
     );
-    // `block list`'s SELECT inner-joins `?c ds:tier ?t`, so a ds:Component with
-    // no ds:tier is dropped even under --all-tiers — though `graph query` finds
-    // it (proven above). Currently absent → this `it.fails` passes. When A2
-    // makes the tier join OPTIONAL, this passes for real → flip to a plain `it`.
+    // `block list`'s SELECT once inner-joined `?c ds:tier ?t`, dropping a
+    // ds:Component with no ds:tier even under --all-tiers (though `graph query`
+    // found it, proven above). Lane A made the tier join OPTIONAL, so an
+    // untiered block now appears under --all-tiers — guard it stays visible.
     expect(await blockListNames(fixture.cwd, true)).toContain(
       UNTIERED_BLOCK_NAME,
     );
