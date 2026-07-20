@@ -84,14 +84,25 @@ function buildQuery(
 ): string {
   const tierFilter = allTiers ? "" : buildTierFilter(tier);
   const channelFilter = buildChannelFilter(channel);
+  // Under --all-tiers, `ds:name`/`ds:tier` become OPTIONAL so a real block that
+  // ships without either is no longer hidden — the flag promises "all blocks",
+  // yet the pre-fix query gated on those as REQUIRED patterns, dropping the
+  // FILTER but not the pattern (A2). In the scoped/default view they stay
+  // required: a block joins the list through its tier, so an untiered block is
+  // intentionally out of a tier-scoped view (and --all-tiers is the escape).
+  const nameTierPatterns = allTiers
+    ? [
+        "  OPTIONAL { ?component ds:name ?name }",
+        "  OPTIONAL { ?component ds:tier ?tier }",
+      ]
+    : ["  ?component ds:name ?name ; ds:tier ?tier ."];
   return [
     "SELECT ?component ?type ?name ?tier",
     '       (GROUP_CONCAT(DISTINCT ?modName; separator=", ") AS ?modifiers)',
     "WHERE {",
     "  VALUES ?type { ds:Component ds:Pattern ds:Layout ds:Subcomponent }",
-    "  ?component a ?type ;",
-    "             ds:name ?name ;",
-    "             ds:tier ?tier .",
+    "  ?component a ?type .",
+    ...nameTierPatterns,
     tierFilter ? `  ${tierFilter}` : "",
     `  ${channelFilter}`,
     "  OPTIONAL { ?component ds:hasModifierFamily ?mod . ?mod ds:name ?modName }",
@@ -138,7 +149,9 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
     const rows = await runSelect(rt, query, "block");
     return rows.map((row) => ({
       uri: row.component ?? "",
-      name: row.name ?? "",
+      // An unnamed block still needs a token to show — fall back to its IRI's
+      // local name rather than rendering a blank row (A2).
+      name: row.name ?? localName(row.component ?? ""),
       type: normalizeType(row.type),
       tier: localName(row.tier ?? ""),
       modifiers: row.modifiers ?? "",

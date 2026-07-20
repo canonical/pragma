@@ -102,10 +102,12 @@ describe("block list — tier-chain inheritance (B9, in-process CLI dispatch)", 
       config: { tier: "global", channel: "normal" },
     });
     fixtures.push(fixture);
-    // Scoped (no flag) excludes LXD Panel; --all-tiers restores it.
+    // Scoped (no flag) excludes LXD Panel; --all-tiers restores it AND reveals
+    // the untiered Button Icon subcomponent the scoped view omits (A2).
     expect(await blockListNames(fixture, false)).toEqual(["Button", "Modal"]);
     expect(await blockListNames(fixture, true)).toEqual([
       "Button",
+      "Button Icon",
       "LXD Panel",
       "Modal",
     ]);
