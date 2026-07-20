@@ -163,6 +163,58 @@ the space does": the same stylesheet serves every canvas width the shell
 can produce, and the only conditional at-rule in the app is still the
 rail's sanctioned collapse.
 
+## 8 — The definitions triptych rides the frame's tokens; its collapse is a debt on record (P-5)
+
+**What.** The Definitions explorer is the first THREE-panel composed
+layout: rail | well | inspector. Its grid is
+`minmax(var(--subnav-w), 16rem) minmax(0, 1fr) minmax(var(--aside-w),
+24rem)` — the frame's tokens as the outer columns' minima (consumed,
+never re-defined; the census counts definitions), preferred maxima
+authored here (16rem / 24rem), and the centre releasing its min-content
+claim (the entry-1 lesson, again one level down: the graph canvas must
+never prop the frame open). Tension, recorded for the owner's retune:
+the 13rem/16rem rail and 16rem/24rem aside pairs are this pass's
+judgement calls, and they sit beside the ds:grid exhibits' 14rem/20rem
+figures — no ruling reconciles them yet.
+
+**The collapse debt.** Below ~29rem-plus-gaps of canvas the triptych
+cannot fit; the census (one sanctioned conditional, the Rail's) bans a
+mode-level `@container` stack, and a wrap-based collapse (entry 6's
+move) is unusable here because the WELL must keep its block-size while
+wrapping would interleave the panels. The honest consequence shipped:
+the triptych overflows into the canvas region's own scroll on a
+too-narrow canvas. If a real narrow-canvas need materialises, the fix is
+a ruling (a second sanctioned conditional or a stacked variant), not a
+quiet at-rule.
+
+**Panel scroll.** The release chain now has a fourth link: canvas row →
+page (`grid-template-rows: min-content minmax(0, 1fr)`, `block-size:
+100%`) → explorer (`min-block-size: 0`) → rail/inspector (`overflow:
+auto; min-block-size: 0`). The well deliberately does NOT scroll as a
+box — React Flow pans inside it; `overflow: hidden` keeps the depression
+from ever growing a scrollbar of its own.
+
+## 9 — React Flow in the underground well: absolute is fine, fixed would lie (P-5)
+
+**What.** The hierarchy well mounts `@xyflow/react` v12 inside the
+canvas — the first third-party layout tenant, and the first tenant of
+entry 5's recorded law: the canvas's `container-type` makes it the
+containing block for `position: fixed` descendants. React Flow positions
+everything ABSOLUTELY inside its own wrapper (verified: zero
+`position: fixed` in its shipped stylesheets, attribution included), so
+the containment law holds without exceptions. Its stylesheet lives in
+node_modules — outside the at-rule census's `src/**/*.css` glob, which
+is the census's own stated scope (package CSS is exempt; the app's
+override css here adds zero conditional at-rules).
+
+**SSR.** No grid fight, but a determinism one, logged for the record:
+v12 renders the full node DOM server-side ONLY when nodes carry
+explicit `width`/`height` (plus `handles` for server-computed edge
+paths), so the layout is a pure function (`buildClassTree`) and the
+initial camera is a constant `defaultViewport` — never `fitView`, which
+measures. A measured anything in this path would be a hydration
+mismatch, which the hydration suite gates.
+
 ---
 
 ## Round notes (P-4.1 review)

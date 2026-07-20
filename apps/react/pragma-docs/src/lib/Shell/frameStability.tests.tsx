@@ -62,6 +62,7 @@ import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it } from "vitest";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
+import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import EntryServer from "../../server/entry.js";
 
 /** The v1 lens URLs, owner-ruled order. */
@@ -86,6 +87,10 @@ const MEASURED_URLS = [...LENS_URLS, BUTTON_ENTITY_URL] as const;
 const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
   "/components": catalogRecords,
   [BUTTON_ENTITY_URL]: componentEntityRecordsButton,
+  // Definitions rows: the explorer (no term) reads only `ontologies`,
+  // which the captured term fixture carries — one fixture, both
+  // definitions addresses.
+  "/definitions": definitionsExplorerRecords,
 };
 
 /** Per-URL expectation for the first accounted-for delta: the hrefs
@@ -108,11 +113,11 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
 /** Per-URL expectation for the second accounted-for delta: the mode
  * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
  * stubs claim nothing; BOTH Components views (catalog + entity) claim
- * the lens name. */
+ * the lens name, and so do the Definitions views (explorer + term). */
 const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   "/": "",
   "/components": "Components",
-  "/definitions": "",
+  "/definitions": "Definitions",
   "/standards": "",
   "/guides": "",
   [BUTTON_ENTITY_URL]: "Components",

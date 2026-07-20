@@ -47,6 +47,7 @@
     "@canonical/storybook-addon-relay": "^0.31.0",
     "@canonical/storybook-config": "^0.31.0",
     "@canonical/styles": "^0.31.0",
+    "@xyflow/react": "^12.11.2",
     "express": "^5.2.1",
     "graphql": "^16.11.0",
     "react": "^19.2.4",
