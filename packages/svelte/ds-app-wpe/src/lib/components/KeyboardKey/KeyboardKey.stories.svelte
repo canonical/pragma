@@ -42,31 +42,37 @@
 
 <Story name="Default" args={{ keyValue: "enter" }}>
   {#snippet template(args)}
-    <p class="p"><KeyboardKey {...args} /></p>
+    <div class="surface story-surface">
+      <p class="p"><KeyboardKey {...args} /></p>
+    </div>
   {/snippet}
 </Story>
 
 <Story name="ModifierKeys" argTypes={{ keyValue: { table: { disable: true } } }}>
   {#snippet template()}
-    <p class="p">
-      <span style="display: inline-flex; gap: var(--dimension-100);">
-        {#each modifierKeys as key (key)}
-          <KeyboardKey keyValue={key} />
-        {/each}
-      </span>
-    </p>
+    <div class="surface story-surface">
+      <p class="p">
+        <span style="display: inline-flex; gap: var(--dimension-100);">
+          {#each modifierKeys as key (key)}
+            <KeyboardKey keyValue={key} />
+          {/each}
+        </span>
+      </p>
+    </div>
   {/snippet}
 </Story>
 
 <Story name="ActionKeys" argTypes={{ keyValue: { table: { disable: true } } }}>
   {#snippet template()}
-    <p class="p">
-      <span style="display: inline-flex; gap: var(--dimension-100);">
-        {#each actionKeys as key (key)}
-          <KeyboardKey keyValue={key} />
-        {/each}
-      </span>
-    </p>
+    <div class="surface story-surface">
+      <p class="p">
+        <span style="display: inline-flex; gap: var(--dimension-100);">
+          {#each actionKeys as key (key)}
+            <KeyboardKey keyValue={key} />
+          {/each}
+        </span>
+      </p>
+    </div>
   {/snippet}
 </Story>
 
@@ -75,24 +81,40 @@
   argTypes={{ keyValue: { table: { disable: true } } }}
 >
   {#snippet template()}
-    <p class="p">
-      <span style="display: inline-flex; gap: var(--dimension-100);">
-        {#each navigationKeys as key (key)}
-          <KeyboardKey keyValue={key} />
-        {/each}
-      </span>
-    </p>
+    <div class="surface story-surface">
+      <p class="p">
+        <span style="display: inline-flex; gap: var(--dimension-100);">
+          {#each navigationKeys as key (key)}
+            <KeyboardKey keyValue={key} />
+          {/each}
+        </span>
+      </p>
+    </div>
   {/snippet}
 </Story>
 
 <Story name="FunctionKeys" argTypes={{ keyValue: { table: { disable: true } } }}>
   {#snippet template()}
-    <p class="p">
-      <span style="display: inline-flex; gap: var(--dimension-100);">
-        {#each functionKeys as key (key)}
-          <KeyboardKey keyValue={key} />
-        {/each}
-      </span>
-    </p>
+    <div class="surface story-surface">
+      <p class="p">
+        <span style="display: inline-flex; gap: var(--dimension-100);">
+          {#each functionKeys as key (key)}
+            <KeyboardKey keyValue={key} />
+          {/each}
+        </span>
+      </p>
+    </div>
   {/snippet}
 </Story>
+
+<style>
+  /* KeyboardKey carries `.surface`, so it renders on the NEXT layer of whatever
+     surface it sits in. Render the stories on a painted `.surface` so the key
+     steps up to the surface+1 ("like inputs") fill and reads correctly, as it
+     would in an app. The inner `.p` keeps the inline <kbd> keys on the baseline. */
+  .story-surface {
+    background: var(--surface-color-background);
+    color: var(--surface-color-text);
+    padding: var(--dimension-200);
+  }
+</style>

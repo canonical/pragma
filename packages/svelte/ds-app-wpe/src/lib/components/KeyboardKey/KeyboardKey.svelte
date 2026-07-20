@@ -5,7 +5,11 @@
   import type { KeyboardKeyProps } from "./types.js";
   import "./styles.css";
 
-  const componentCssClassName = "ds keyboard-key";
+  // The key establishes its own `.surface`, so it consumes a full surface step
+  // rather than hard-wiring a layer: nested inside an ambient surface it picks up
+  // the next layer's ghost fill (surface+1, "like inputs"), and it composes
+  // correctly at any depth instead of being pinned to layer2.
+  const componentCssClassName = "ds keyboard-key surface";
 
   let { class: className, keyValue, ...rest }: KeyboardKeyProps = $props();
 </script>

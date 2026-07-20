@@ -1,10 +1,18 @@
 :root {
-  --keyboard-key-color-background: var(--color-background);
-  --keyboard-key-color-text: var(--color-text-muted);
-  --keyboard-key-color-border: var(--color-text-muted);
+  /* Static (surface-independent) chrome tokens only. The COLOUR reads that
+     depend on the surface stack are NOT declared here — a custom property set at
+     `:root` resolves its `var(--surface-color-*)` immediately at `:root`, where
+     there is no `.surface` ancestor, so it would freeze to layer1 and the
+     surface stepping would never happen. Those reads live on `.ds.keyboard-key`
+     below, where the key's own `.surface` scope is in effect. */
+  --keyboard-key-color-border: var(--color-border-muted);
 
+  /* Figma corner radius is 2px, but that token is not yet validated / does not
+     exist — the spec note says "maybe 0 for now", so this stays on radius-small
+     (currently 0). Revisit once a 2px radius token lands. */
   --keyboard-key-border-radius: var(--dimension-radius-small);
   --keyboard-key-border-width: var(--dimension-stroke-thickness-medium);
+  /* 4px inline padding (Figma: 4px left/right). */
   --keyboard-key-padding-inline: var(--dimension-050);
 }
 
@@ -17,8 +25,18 @@
 .ds.keyboard-key {
   display: inline-block;
 
-  color: var(--keyboard-key-color-text);
-  background-color: var(--keyboard-key-color-background);
+  /* Figma (26.10 Keyboard Key, node 6004-72): a key-cap sits on a surface+1 fill
+     "like an input", with a muted border and the surface's text colour.
+
+     The key establishes its own `.surface` (see KeyboardKey.svelte), so it IS the
+     next surface layer and paints ITSELF with that layer's background — exactly
+     like the Tile. These reads MUST be here on the class (not `:root`) so
+     `--surface-color-*` resolves against the key's own surface depth: nested in
+     the ambient surface the background steps to the next layer (the "surface+1,
+     like inputs" the spec asks for), and on a `.contrasted` surface it inverts
+     for free. The fallbacks keep it sane when placed outside any surface. */
+  background-color: var(--surface-color-background, var(--color-background));
+  color: var(--surface-color-text, var(--color-text));
 
   border-style: solid;
   border-width: var(--keyboard-key-border-width);

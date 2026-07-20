@@ -25,24 +25,39 @@
 
 <Story name="Default">
   {#snippet template()}
-    <KeyboardKeys>
-      <KeyboardKey keyValue="up" />
-      <KeyboardKey keyValue="right" />
-      <KeyboardKey keyValue="down" />
-      <KeyboardKey keyValue="left" />
-    </KeyboardKeys>
+    <div class="surface story-surface">
+      <KeyboardKeys>
+        <KeyboardKey keyValue="up" />
+        <KeyboardKey keyValue="right" />
+        <KeyboardKey keyValue="down" />
+        <KeyboardKey keyValue="left" />
+      </KeyboardKeys>
+    </div>
   {/snippet}
 </Story>
 
 <Story name="ComposedCommand">
   {#snippet template()}
-    <p class="p">
-      Press
-      <KeyboardKeys>
-        <KeyboardKey keyValue="ctrl" />
-        <KeyboardKey keyValue="c" />
-      </KeyboardKeys>
-      to copy.
-    </p>
+    <div class="surface story-surface">
+      <p class="p">
+        Press
+        <KeyboardKeys>
+          <KeyboardKey keyValue="ctrl" />
+          <KeyboardKey keyValue="c" />
+        </KeyboardKeys>
+        to copy.
+      </p>
+    </div>
   {/snippet}
 </Story>
+
+<style>
+  /* The keys consume a surface, so render the group on a painted `.surface`:
+     the keys step to the surface+1 ("like inputs") fill and read correctly, as
+     they would in an app. See KeyboardKey.stories for the same rationale. */
+  .story-surface {
+    background: var(--surface-color-background);
+    color: var(--surface-color-text);
+    padding: var(--dimension-200);
+  }
+</style>
