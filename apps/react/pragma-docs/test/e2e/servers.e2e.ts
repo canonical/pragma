@@ -216,8 +216,73 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(definitionsHtml).toContain("__INITIAL_DATA__");
             expect(definitionsHtml).toContain('"records"');
 
+            // 5d. Silent-rot closures (the AV-330 review round). The
+            //     well's node/edge DOM could rot to zero or partial while
+            //     every literal above still matched. Never pin graph
+            //     counts (the components lens's 111→108 lesson) — instead:
+            //     the well draws exactly one node per class the rail
+            //     lists, so the node count must equal the rail's
+            //     class-link count, both derived from THIS response
+            //     (drift-proof, catches a partial well). Floors catch the
+            //     both-surfaces-rot-to-zero case the equality alone would
+            //     wave through (0 === 0), and edges stay strictly below
+            //     nodes — each edge is one non-root class's superclass
+            //     link, and every non-empty ontology has a root.
+            const wellNodeCount = (
+              definitionsTermHtml.match(/react-flow__node-term/g) ?? []
+            ).length;
+            const wellEdgeCount = (
+              definitionsTermHtml.match(/react-flow__edge-path/g) ?? []
+            ).length;
+            const railClassLinkCount = (
+              definitionsTermHtml.match(
+                /<h3>Classes<\/h3>[\s\S]*?<h3>Properties<\/h3>/g,
+              ) ?? []
+            )
+              .map(
+                (section) =>
+                  (section.match(/href="\/definitions\//g) ?? []).length,
+              )
+              .reduce((sum, count) => sum + count, 0);
+            expect(wellNodeCount).toBe(railClassLinkCount);
+            expect(wellNodeCount).toBeGreaterThan(20);
+            expect(wellEdgeCount).toBeGreaterThan(10);
+            expect(wellEdgeCount).toBeLessThan(wellNodeCount);
+
+            //     The class inspector's relations and property rows SSR
+            //     from the live graph: `hasVariant` is a ds:UIBlock
+            //     ClassProperty the unit fixture freezes, so an upstream
+            //     rename rots loudly here, not silently.
+            expect(definitionsTermHtml).toContain("Superclasses");
+            expect(definitionsTermHtml).toContain("hasVariant");
+
+            //     The property view (the term lookup's other arm)
+            //     resolves live:
+            const definitionsProperty = await fetch(
+              `${server.base}/definitions/ds%3AhasSubcomponent`,
+            );
+            expect(definitionsProperty.status).toBe(200);
+            const definitionsPropertyHtml = await definitionsProperty.text();
+            expect(definitionsPropertyHtml).toContain("ds:hasSubcomponent");
+            expect(definitionsPropertyHtml).toContain("Functional");
+            expect(definitionsPropertyHtml).toContain("Inverse");
+
+            //     Instance links land on the components lens (the D31
+            //     landing rule), proved against the live graph:
+            const definitionsClass = await fetch(
+              `${server.base}/definitions/ds%3AComponent`,
+            );
+            expect(definitionsClass.status).toBe(200);
+            const definitionsClassHtml = await definitionsClass.text();
+            expect(definitionsClassHtml).toMatch(
+              /href="\/components\/ds%3A[^"]+"/,
+            );
+
+            //     …and the third ontology rides the explorer's rail:
+            expect(definitionsHtml).toMatch(/href="\/definitions\/anatomy%3A/);
+
             // Zero /graphql HTTP hits during everything above — the
-            // catalog, both entity pages, and both definitions pages
+            // catalog, both entity pages, and all four definitions pages
             // executed in-process too.
             expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
 
