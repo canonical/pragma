@@ -28,7 +28,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
-const cliNextDir = join(repoRoot, "packages/cli/next");
+const cliNextDir = join(repoRoot, "packages/cli/pragma");
 const pragmaBin = join(cliNextDir, "src/bin.ts");
 const compiledBin = join(cliNextDir, "dist/pragma");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));

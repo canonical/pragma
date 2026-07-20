@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 // biome-ignore lint/suspicious/noControlCharactersInRegex: matching the literal ESC byte is the point
 const ANSI_PATTERN = /\x1b\[[0-9;]*m/g;
 
-/** The package repo root (`packages/cli/next`), for tokenizing absolute paths. */
+/** The package repo root (`packages/cli/pragma`), for tokenizing absolute paths. */
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url)).replace(
   /\/$/,
   "",

@@ -10,7 +10,7 @@ import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-/** The package root (`packages/cli/next/`), resolved from this test's URL. */
+/** The package root (`packages/cli/pragma/`), resolved from this test's URL. */
 const packageRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 /** Recursively collect every `.md` file under a directory. */

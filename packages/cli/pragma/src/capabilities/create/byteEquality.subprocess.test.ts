@@ -20,7 +20,7 @@ import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
-const pragmaBin = join(repoRoot, "packages/cli/next/src/bin.ts");
+const pragmaBin = join(repoRoot, "packages/cli/pragma/src/bin.ts");
 const summonCore = join(repoRoot, "packages/summon/core/dist/esm/index.js");
 const pickGen = join(here, "pickGenerator.ts");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-xbin-"));
