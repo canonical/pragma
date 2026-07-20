@@ -8,18 +8,20 @@
  * `--class <name>` narrows to one class and the properties whose domain is that
  * class.
  *
- * Disclosure (B5): rather than reinvent its own scheme, `show` honours the
- * canonical `--detail`/config `detail` the rest of the CLI reads — a two-level
- * fold where `summary` is classes-only and `standard`/`detailed` add the
- * properties section. The frozen `--properties` flag stays as an explicit
- * override (it forces the section at any level), so the covenant is untouched.
+ * Disclosure (B5): rather than reinvent its own scheme, `show` declares the
+ * canonical disclosure ladder and honours the `--detail`/config `detail` the
+ * rest of the CLI reads AND the injected `detail` tool param the MCP projector
+ * derives from that declaration — a two-behaviour fold where `summary` is
+ * classes-only and `standard`/`detailed` add the properties section. The frozen
+ * `--properties` flag stays as an explicit override (it forces the section at
+ * any level), so the covenant is untouched.
  */
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { DisclosureSpec, VerbSpec } from "../../kernel/spec/types.js";
 import {
   listNamespaces,
   localName,
@@ -81,6 +83,20 @@ const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
   },
 };
 
+/**
+ * The canonical disclosure `ontology show` folds onto (B5). Declared on the
+ * {@link showVerb} spec — so the MCP projector injects the `detail` enum tool
+ * param and its per-call `withDetail` seeding light up (symmetric with
+ * `block`/`standard`, which an inline resolve left dark over MCP) — AND read by
+ * `run` to resolve the effective level, so the advertised param and the fetched
+ * level share ONE source. The levels are the full canonical ladder; the fold is
+ * two-behaviour (`summary` = classes only, `standard`/`detailed` add properties).
+ */
+const SHOW_DISCLOSURE: DisclosureSpec = {
+  levels: ["summary", "standard", "detailed"],
+  default: "summary",
+};
+
 const showVerb: VerbSpec<Record<string, unknown>, OntologyShowData> = {
   path: ["ontology", "show"],
   summary: "Show a namespace's classes (hierarchy + counts) and properties.",
@@ -115,6 +131,7 @@ const showVerb: VerbSpec<Record<string, unknown>, OntologyShowData> = {
     { cmd: "pragma ontology show ds --properties" },
     { cmd: "pragma ontology show ds --class Component" },
   ],
+  disclosure: SHOW_DISCLOSURE,
   capability: {
     needsStore: true,
     mutates: false,
@@ -130,15 +147,13 @@ const showVerb: VerbSpec<Record<string, unknown>, OntologyShowData> = {
       session.prefixes,
     );
     const focus = typeof params.class === "string" ? params.class : undefined;
-    // Fold ontology's bespoke disclosure onto the canonical `--detail` (B5): a
-    // two-level gate (summary = classes only; standard/detailed add properties),
-    // resolved through the SAME precedence packs use (flag > explicit config >
-    // default). The frozen `--properties` flag and a `--class` focus still force
-    // the section, so honouring `--detail` is additive and covenant-safe.
-    const level = await resolvePackDetail(rt, {
-      levels: ["summary", "detailed"],
-      default: "summary",
-    });
+    // Fold ontology's bespoke disclosure onto the canonical `--detail` (B5),
+    // resolving through the SAME {@link SHOW_DISCLOSURE} the verb declares (so
+    // the MCP `detail` param and its withDetail seeding resolve identically, not
+    // just the CLI `--detail` flag) and the SAME precedence packs use (flag >
+    // explicit config > default). The frozen `--properties` flag and a `--class`
+    // focus still force the section, so honouring the level is covenant-safe.
+    const level = await resolvePackDetail(rt, SHOW_DISCLOSURE);
     const wantProperties =
       params.properties === true || focus !== undefined || level !== "summary";
 
