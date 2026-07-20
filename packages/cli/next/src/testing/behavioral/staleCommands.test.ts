@@ -1,8 +1,8 @@
 /**
  * Stale-command gate: the published README and every doc under `docs/` must be
  * free of the retired v1 vocabulary. This is an ENFORCED test, not a lint — a
- * doc that reintroduces a removed command (or the invalid `--format llm`) fails
- * the build. The live `--llm` flag is deliberately NOT banned.
+ * doc that reintroduces a removed command (or the retired `--llm` flag) fails
+ * the build. The live `--format llm` form is deliberately NOT banned.
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -30,7 +30,7 @@ interface BannedPattern {
   readonly reason: string;
 }
 
-/** The retired v1 vocabulary. `--llm` (a live v2 flag) is intentionally absent. */
+/** The retired v1 vocabulary. The live `--format llm` form is intentionally absent. */
 const BANNED: readonly BannedPattern[] = [
   {
     pattern: /\bupdate-refs\b/,
@@ -47,8 +47,9 @@ const BANNED: readonly BannedPattern[] = [
     reason: "retired plural `tokens_*` tools (now `token_*`)",
   },
   {
-    pattern: /--format[=\s]+llm\b/,
-    reason: "invalid format — there is no `llm` format; use the `--llm` flag",
+    pattern: /--llm\b/,
+    reason:
+      "retired `--llm` flag (now the `--format llm` form, auto-detected when piped)",
   },
 ];
 

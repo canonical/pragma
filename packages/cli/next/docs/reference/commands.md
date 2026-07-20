@@ -2,7 +2,7 @@
 
 Every `pragma` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.
 
-Global flags apply to every command: `--llm` (condensed Markdown, auto-on when piped), `--format <json|plain>`, `--verbose`, and `--detail <summary|standard|detailed>`.
+Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, and `--detail <summary|standard|detailed>`.
 
 ## block
 
@@ -30,7 +30,7 @@ pragma block list [options]
 ```bash
 pragma block list
 pragma block list --all-tiers
-pragma block list --llm
+pragma block list --format llm
 ```
 
 ### pragma block lookup
@@ -118,64 +118,10 @@ pragma colophon
 
 ```bash
 pragma colophon  # the toolchain + active domain story
-pragma colophon --llm  # condensed Markdown for agents
+pragma colophon --format llm  # condensed Markdown for agents
 ```
 
 ## config
-
-### pragma config channel
-
-Set the release channel controlling component visibility.
-
-Writes the `channel` field to the global config. Reset by setting the default, `normal`.
-
-```
-pragma config channel <name>
-```
-
-**Arguments**
-
-| Argument | Required | Description |
-| --- | --- | --- |
-| `<name>` | yes | The channel name to write. (one of: normal, experimental, prerelease) |
-
-- Store: storeless.
-- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
-- MCP: exposed as the `config_channel` tool.
-
-**Examples**
-
-```bash
-pragma config channel experimental
-pragma config channel normal  # back to the default
-```
-
-### pragma config detail
-
-Set the default progressive-disclosure level.
-
-Writes the `detail` field to the global config. Reset by setting the default, `standard`.
-
-```
-pragma config detail <level>
-```
-
-**Arguments**
-
-| Argument | Required | Description |
-| --- | --- | --- |
-| `<level>` | yes | The detail level to write. (one of: summary, standard, detailed) |
-
-- Store: storeless.
-- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
-- MCP: exposed as the `config_detail` tool.
-
-**Examples**
-
-```bash
-pragma config detail detailed
-pragma config detail standard  # back to the default
-```
 
 ### pragma config set
 
@@ -226,33 +172,6 @@ pragma config show
 pragma config show --format json
 ```
 
-### pragma config tier
-
-Set the active design-system tier.
-
-Writes the `tier` field to the global config. Pass `none`, `default`, or `-` to clear it. Written to the global layer only — project configs are authored by hand.
-
-```
-pragma config tier <path>
-```
-
-**Arguments**
-
-| Argument | Required | Description |
-| --- | --- | --- |
-| `<path>` | yes | The tier path to write. |
-
-- Store: storeless.
-- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
-- MCP: exposed as the `config_tier` tool.
-
-**Examples**
-
-```bash
-pragma config tier apps/lxd  # scope reads to a tier
-pragma config tier none  # clear the tier
-```
-
 ## create
 
 ### pragma create application
@@ -273,10 +192,10 @@ pragma create application [appPath] [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--ssr` | — | Include SSR. (default: true) |
-| `--router` | — | Include router. (default: true) |
-| `--forms` | — | Include form components. (default: true) |
-| `--relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
+| `--with-ssr` | — | Include SSR. (default: true) |
+| `--with-router` | — | Include router. (default: true) |
+| `--with-forms` | — | Include form components. (default: true) |
+| `--with-relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
 | `--run-install` | — | Install dependencies now. (default: false) |
 
 - Store: storeless.
@@ -287,7 +206,7 @@ pragma create application [appPath] [options]
 
 ```bash
 pragma create application my-app
-pragma create application my-app --relay
+pragma create application my-app --with-relay
 ```
 
 ### pragma create component
@@ -473,7 +392,7 @@ pragma modifier list
 
 ```bash
 pragma modifier list
-pragma modifier list --llm
+pragma modifier list --format llm
 ```
 
 ### pragma modifier lookup
@@ -539,9 +458,44 @@ pragma ontology list
 pragma ontology list
 ```
 
+### pragma ontology lookup
+
+Look up a namespace's classes (hierarchy + counts) and properties.
+
+```
+pragma ontology lookup <prefix> [options]
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<prefix>` | yes | The namespace prefix (ds) or full URI. |
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--properties` | — | Include the properties section (also implied by --detail standard or higher). |
+| `--full-uris` | — | Show full IRIs instead of prefixed. |
+| `--class` | `<string>` | Focus on one class and its properties. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `ontology_lookup` tool.
+
+**Examples**
+
+```bash
+pragma ontology lookup ds
+pragma ontology lookup ds --properties
+pragma ontology lookup ds --class Component
+```
+
 ### pragma ontology show
 
-Show a namespace's classes (hierarchy + counts) and properties.
+(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.
+
+Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
 
 ```
 pragma ontology show <prefix> [options]
@@ -557,7 +511,7 @@ pragma ontology show <prefix> [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--properties` | — | Include the properties section. |
+| `--properties` | — | Include the properties section (also implied by --detail standard or higher). |
 | `--full-uris` | — | Show full IRIs instead of prefixed. |
 | `--class` | `<string>` | Focus on one class and its properties. |
 
@@ -567,9 +521,8 @@ pragma ontology show <prefix> [options]
 **Examples**
 
 ```bash
-pragma ontology show ds
-pragma ontology show ds --properties
-pragma ontology show ds --class Component
+pragma ontology lookup ds  # prefer `lookup`
+pragma ontology show ds  # deprecated alias
 ```
 
 ## prompt
@@ -649,8 +602,16 @@ pragma setup lsp
 Register the pragma MCP server in detected AI harnesses.
 
 ```
-pragma setup mcp
+pragma setup mcp [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `--global` | — | Shorthand for --scope global (configure the user/home band). |
+| `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -660,11 +621,19 @@ pragma setup mcp
 
 Configure MCP, completions, skills, and the LSP for this project.
 
-Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply.
+Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.
 
 ```
-pragma setup
+pragma setup [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `--global` | — | Shorthand for --scope global (configure the user/home band). |
+| `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -675,6 +644,7 @@ pragma setup
 ```bash
 pragma setup
 pragma setup --dry-run  # preview every step's effects
+pragma setup --global  # configure only the user/home band
 pragma setup mcp  # just the MCP server registration
 ```
 
@@ -683,8 +653,16 @@ pragma setup mcp  # just the MCP server registration
 Symlink discovered skills into each AI harness.
 
 ```
-pragma setup skills
+pragma setup skills [options]
 ```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--scope` | `<project\|global\|both>` | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `--global` | — | Shorthand for --scope global (configure the user/home band). |
+| `--local` | — | Shorthand for --scope project (configure the per-project band). |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -802,7 +780,7 @@ pragma standard categories
 
 ```bash
 pragma standard categories
-pragma standard categories --llm
+pragma standard categories --format llm
 ```
 
 ### pragma standard list
@@ -829,7 +807,7 @@ pragma standard list [options]
 
 ```bash
 pragma standard list
-pragma standard list --llm
+pragma standard list --format llm
 ```
 
 ### pragma standard lookup
@@ -902,7 +880,7 @@ pragma tier list
 
 ```bash
 pragma tier list
-pragma tier list --llm
+pragma tier list --format llm
 ```
 
 ### pragma tier lookup
@@ -970,7 +948,7 @@ pragma token list
 
 ```bash
 pragma token list
-pragma token list --llm
+pragma token list --format llm
 ```
 
 ### pragma token lookup
