@@ -171,6 +171,29 @@ describe("graphpack read — truncated data cache (A9)", () => {
     }
     expect(caught).toMatchObject({ code: "STORE_UNAVAILABLE" });
   });
+
+  it("tolerates a benign superset (actual > recorded), not corruption", async () => {
+    // A future ke counting change could load MORE triples than the manifest
+    // recorded. That is not truncation, so boot must NOT reject it — otherwise
+    // one counting change trips a fleet-wide false STORE_UNAVAILABLE. Simulate by
+    // lowering the manifest's tripleCount below the dump's actual count.
+    const uniqueTtl = `${TTL}\nex:Superset a ex:Component ; rdfs:label "Superset" .\n`;
+    const { dir } = await build([{ path: "superset.ttl", content: uniqueTtl }]);
+    const manifestPath = join(dir, MANIFEST_FILE);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+      tripleCount: number;
+    };
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ ...manifest, tripleCount: manifest.tripleCount - 1 }),
+    );
+
+    // The booted store holds one MORE triple than the (lowered) manifest — a
+    // superset. On the pre-fix exact-equality guard this threw; now it boots.
+    const session = await readPack(dir);
+    expect(session.index.entities.length).toBeGreaterThan(0);
+    session.store.dispose();
+  });
 });
 
 describe("graphpack read — incomplete pack recovery (CLI + MCP)", () => {
