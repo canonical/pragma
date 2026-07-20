@@ -41,4 +41,14 @@ describe("auto-LLM on a piped (non-TTY) stdout (A10, e2e)", () => {
     const explicit = runCli(["info", "--format", "llm"]);
     expect(explicit.stdout).toBe(auto.stdout);
   });
+
+  it("rejects the removed --llm flag as an unknown option (exit 2)", () => {
+    // The covenant's whole premise: the dedicated `--llm` flag is GONE, folded
+    // into `--format llm` (and the piped auto-default). A real command must now
+    // FAIL on it as a usage error — not silently accept or ignore it.
+    const result = runCli(["block", "list", "--llm"]);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain("unknown option");
+    expect(result.stderr).toContain("--llm");
+  });
 });
