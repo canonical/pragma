@@ -104,6 +104,14 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     expect(data.conventions.model).toContain("tier");
     expect(data.conventions.querying).toContain("RDF");
   });
+
+  it("surfaces the plan-first/confirm convention so the confirm gate isn't trial-and-error (D2)", () => {
+    // A mutating tool without `confirm` returns a plan and writes nothing; agents
+    // must learn this from orientation, not by tripping the gate.
+    const { mutations } = data.conventions;
+    expect(mutations).toMatch(/plan/i);
+    expect(mutations).toContain("confirm");
+  });
 });
 
 describe("capabilities verb — storeless (PROTECTED)", () => {
