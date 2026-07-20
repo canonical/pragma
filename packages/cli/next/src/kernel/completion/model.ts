@@ -61,7 +61,6 @@ export function assertSafeToken(token: string, where: string): void {
 
 /** The global flags completion offers, mirroring the surface's globalFlags. */
 const GLOBAL_FLAGS: readonly FlagEntry[] = [
-  { flag: "--llm", takesValue: false, repeatable: false, source: none() },
   {
     flag: "--format",
     takesValue: true,

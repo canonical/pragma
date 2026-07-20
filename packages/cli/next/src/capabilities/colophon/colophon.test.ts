@@ -4,7 +4,7 @@
  * Pins the covenant-exact emitted slice (`{ v:"colophon", mcp:"colophon" }`),
  * proves the collector is storeless and combines pragma's built-in section with
  * the active pack's (the bundled `block` design-system colophon), exercises the
- * three formatter modes + `--format`/`--llm` precedence, holds CLI-json ≡ MCP
+ * three formatter modes + `--format` precedence, holds CLI-json ≡ MCP
  * parity, and checks the pack-grammar accepts a `colophon` field (rejecting a
  * non-string).
  */
@@ -47,7 +47,7 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 const FLAGS_JSON: GlobalFlags = { ...FLAGS, format: "json" };
-const FLAGS_LLM: GlobalFlags = { ...FLAGS, llm: true };
+const FLAGS_LLM: GlobalFlags = { ...FLAGS, format: "llm", llm: true };
 const NO_MUT = { dryRun: false, undo: false, yes: false };
 
 /** A deterministic two-section fixture for pure formatter assertions. */
@@ -170,7 +170,7 @@ describe("colophon — formatter modes", () => {
     expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pragma");
   });
 
-  it("--llm selects the condensed Markdown form", async () => {
+  it("--format llm selects the condensed Markdown form", async () => {
     const outcome = await executeVerb(
       colophonVerb,
       {},

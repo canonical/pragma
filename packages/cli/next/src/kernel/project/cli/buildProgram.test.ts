@@ -353,7 +353,8 @@ describe("formatRootHelp — grouping", () => {
 
   it("shows the global flags block", () => {
     expect(help).toContain("Global flags");
-    expect(help).toContain("--llm");
+    expect(help).not.toContain("--llm");
+    expect(help).toContain("--format <plain|llm|json>");
     expect(help).toContain("--detail <level>");
   });
 
@@ -374,12 +375,11 @@ describe("formatRootHelp — grouping", () => {
         mcp     Start the MCP server over stdio
 
       Global flags
-        --llm                  Condensed Markdown output for agents
-        --format <json|plain>  Select output format
-        --detail <level>       Progressive-disclosure level (summary, standard, detailed)
-        --verbose              Diagnostic output on stderr
-        --help                 Show help (works on any command)
-        --version              Show the CLI version
+        --format <plain|llm|json>  Select output format (llm = condensed Markdown for agents)
+        --detail <level>           Progressive-disclosure level (summary, standard, detailed)
+        --verbose                  Diagnostic output on stderr
+        --help                     Show help (works on any command)
+        --version                  Show the CLI version
 
       Run \`pragma <command> --help\` for details, or \`pragma capabilities\` to get oriented."
     `);

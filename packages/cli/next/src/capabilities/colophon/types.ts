@@ -17,7 +17,7 @@ export interface ColophonSection {
    * heading from {@link title}, so a section is never double-titled).
    */
   readonly markdown: string;
-  /** Optional condensed body for `--llm` (pragma supplies one). */
+  /** Optional condensed body for `--format llm` (pragma supplies one). */
   readonly summary?: string;
   /** Provenance: `"built-in"`, or `"pack:<name>"`. */
   readonly source?: string;

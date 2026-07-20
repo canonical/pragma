@@ -1,13 +1,14 @@
 /**
  * Global-flag pre-parsing, ahead of Commander.
  *
- * `--llm`, `--format`, `--verbose`, and `--detail` may appear anywhere on the
- * line, so they are scanned and stripped before Commander sees argv — otherwise
+ * `--format`, `--verbose`, and `--detail` may appear anywhere on the line, so
+ * they are scanned and stripped before Commander sees argv — otherwise
  * `enablePositionalOptions()` scoping would reject a flag placed after a verb.
  * Ported from the v1 `parseGlobalFlags`, with two v2 changes: a new `--detail`
  * flag and the `--format text` value renamed to `plain` (the kernel's
- * {@link OutputFormat}). Both the space (`--format json`) and equals
- * (`--format=json`) forms are recognized.
+ * {@link OutputFormat}). The dedicated `--llm` flag was folded into
+ * `--format llm`, leaving auto-detection as the sole implicit trigger. Both the
+ * space (`--format json`) and equals (`--format=json`) forms are recognized.
  */
 
 import { DETAIL_LEVELS, type DetailLevel } from "../../../constants.js";
@@ -86,10 +87,11 @@ function readDetail(argv: readonly string[]): DetailLevel | undefined {
 /**
  * Extract the global flags from raw argv (the user's arguments, argv[2:]).
  *
- * Auto-LLM: with no `--llm`/`--format` and a non-interactive stdout (piped or
+ * Auto-LLM: with no explicit `--format` and a non-interactive stdout (piped or
  * redirected — the shape an agent captures), `llm` defaults to true so agents
- * get condensed Markdown without a flag. `--llm`, `--format`, and
- * `PRAGMA_NO_AUTO_LLM` all override it.
+ * get condensed Markdown without a flag. Any explicit `--format` overrides it —
+ * `--format plain` forces human output down a pipe, `--format llm` forces the
+ * condensed form even on a TTY — as does `PRAGMA_NO_AUTO_LLM`.
  *
  * @param argv - The user's arguments (no `node`/script prefix).
  * @param env - Output environment probe (defaults to the real process).
@@ -100,15 +102,14 @@ export function parseGlobalFlags(
   argv: readonly string[],
   env: OutputEnvironment = readOutputEnvironment(),
 ): GlobalFlags {
-  const explicitLlm = argv.includes("--llm");
   const rawFormat = readFlagValue(argv, "--format");
-  const format = rawFormat === "json" ? "json" : "plain";
+  const format =
+    rawFormat === "json" ? "json" : rawFormat === "llm" ? "llm" : "plain";
   const formatRequested = rawFormat !== undefined;
-  const autoLlm =
-    !explicitLlm && !formatRequested && !env.isTty && !env.noAutoLlm;
+  const autoLlm = !formatRequested && !env.isTty && !env.noAutoLlm;
   const detail = readDetail(argv);
   return {
-    llm: explicitLlm || autoLlm,
+    llm: format === "llm" || autoLlm,
     autoLlm,
     format,
     verbose: argv.includes("--verbose"),
@@ -130,10 +131,9 @@ export function stripGlobalFlags(argv: readonly string[]): string[] {
   const result: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--llm" || arg === "--verbose") continue;
+    if (arg === "--verbose") continue;
     if (
       arg?.startsWith("--format=") ||
-      arg?.startsWith("--llm=") ||
       arg?.startsWith("--verbose=") ||
       arg?.startsWith("--detail=")
     ) {

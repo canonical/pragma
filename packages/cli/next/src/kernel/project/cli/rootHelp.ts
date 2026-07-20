@@ -195,8 +195,10 @@ export function formatRootHelp(
   // never these strings.
   lines.push(helpHeading("Global flags"));
   const flags: [string, string][] = [
-    ["--llm", "Condensed Markdown output for agents"],
-    ["--format <json|plain>", "Select output format"],
+    [
+      "--format <plain|llm|json>",
+      "Select output format (llm = condensed Markdown for agents)",
+    ],
     [
       "--detail <level>",
       "Progressive-disclosure level (summary, standard, detailed)",

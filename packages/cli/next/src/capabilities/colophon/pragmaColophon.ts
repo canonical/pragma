@@ -4,7 +4,7 @@
  * colophon` as the first section, before any active pack's domain colophon.
  *
  * `PRAGMA_COLOPHON` is the full narrative for humans; `PRAGMA_COLOPHON_SUMMARY`
- * is the condensed form `--llm` emits (Markdown IS the agent-optimal shape).
+ * is the condensed form `--format llm` emits (Markdown IS the agent-optimal shape).
  * Both are BODIES with no leading H1 — the renderer supplies the "pragma"
  * heading, so the section is never double-titled.
  */
@@ -32,7 +32,7 @@ source of truth a test asserts the live grammar still emits, tool for tool.
 ## LLM-optimized output
 
 Each verb renders three ways — \`plain\` for a terminal, \`json\` for the machine
-envelope, and \`llm\` for condensed Markdown. \`--llm\` (or a non-interactive
+envelope, and \`llm\` for condensed Markdown. \`--format llm\` (or a non-interactive
 stdout) selects the agent form: the same data, shaped for a model to read. This
 colophon is itself a showcase of that render model.
 
@@ -56,11 +56,11 @@ queries) compiled into verbs, backed by a content-addressed graphpack that
 \`sources update\` builds once. Swap the pack and the same pragma serves a
 different domain — including the domain colophon printed below this one.`;
 
-/** The condensed colophon for `--llm` (Markdown body, no leading H1). */
+/** The condensed colophon for `--format llm` (Markdown body, no leading H1). */
 export const PRAGMA_COLOPHON_SUMMARY = `pragma is a domain-based toolchain: one CLI + MCP server projected from a single \`VerbSpec\` grammar.
 
 - **Effect monad** (\`@canonical/task\`): reads are async; a mutation returns an interpreted \`Task\`, so \`--dry-run\` and \`--undo\` are free. The dispatcher branches on \`capability.mutates\`.
 - **One grammar, many projections**: CLI, MCP tools, completion, and docs all project one \`VerbSpec\`; the emitted surface is frozen in a covenant so the projections never drift.
-- **LLM-optimized output**: every verb renders \`plain\` / \`json\` / \`llm\`; \`--llm\` emits condensed Markdown for agents.
+- **LLM-optimized output**: every verb renders \`plain\` / \`json\` / \`llm\`; \`--format llm\` (or a piped stdout) emits condensed Markdown for agents.
 - **Modular + storeless**: capability modules; the triple store boots only for \`needsStore\` verbs.
 - **Domain as data**: a pack is a declarative \`PackDefinition\` compiled to verbs over a content-addressed graph built by \`sources update\`.`;

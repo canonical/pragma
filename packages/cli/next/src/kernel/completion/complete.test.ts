@@ -27,8 +27,8 @@ describe("runComplete — the __complete pipeline", () => {
       "tier",
     ]);
     await expect(runComplete(["mc"], capabilities)).resolves.toEqual(["mcp"]);
-    await expect(runComplete(["--l"], capabilities)).resolves.toEqual([
-      "--llm",
+    await expect(runComplete(["--d"], capabilities)).resolves.toEqual([
+      "--detail",
     ]);
   });
 

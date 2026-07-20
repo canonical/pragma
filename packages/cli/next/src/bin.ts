@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   if (
     !explicitHelp &&
     rawFormat !== undefined &&
-    !["plain", "json", "text"].includes(rawFormat)
+    !["plain", "llm", "json", "text"].includes(rawFormat)
   ) {
     const [
       { PragmaError },
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
       import("./kernel/project/cli/exitCodes.js"),
     ]);
     const error = PragmaError.invalidInput("format", rawFormat, {
-      validOptions: ["plain", "json"],
+      validOptions: ["plain", "llm", "json"],
     });
     const rendered =
       globalFlags.format === "json"

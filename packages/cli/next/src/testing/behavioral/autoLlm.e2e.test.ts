@@ -36,9 +36,9 @@ describe("auto-LLM on a piped (non-TTY) stdout (A10, e2e)", () => {
     expect(result.stdout).toContain("pragma v");
   });
 
-  it("an explicit --llm matches the auto-selected output", () => {
+  it("an explicit --format llm matches the auto-selected output", () => {
     const auto = runCli(["info"]);
-    const explicit = runCli(["info", "--llm"]);
+    const explicit = runCli(["info", "--format", "llm"]);
     expect(explicit.stdout).toBe(auto.stdout);
   });
 });

@@ -17,7 +17,7 @@ import type { ConfigLayers } from "../config/types.js";
  * separately so inferred mode can shape output without switching behaviour.
  */
 export interface GlobalFlags {
-  /** Condensed Markdown output for LLM/agent consumption. */
+  /** Condensed Markdown output, from `--format llm` or auto-detection. */
   readonly llm: boolean;
   /** True when `llm` was inferred from a non-interactive stdout, not requested. */
   readonly autoLlm?: boolean;

@@ -20,7 +20,10 @@ const colophonVerb: VerbSpec<Record<string, unknown>, ColophonData> = {
   output: { formatters: colophonFormatters },
   examples: [
     { cmd: "pragma colophon", note: "the toolchain + active domain story" },
-    { cmd: "pragma colophon --llm", note: "condensed Markdown for agents" },
+    {
+      cmd: "pragma colophon --format llm",
+      note: "condensed Markdown for agents",
+    },
   ],
   capability: {
     needsStore: false,
