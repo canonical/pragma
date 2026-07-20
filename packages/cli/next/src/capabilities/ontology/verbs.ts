@@ -3,12 +3,20 @@
  *
  * `list` groups loaded namespaces by prefix with class/property counts; `show`
  * renders a namespace's class hierarchy (with per-class instance counts read
- * from the pack index) and, with `--properties` or a `--class` focus, its
- * properties. `--full-uris` shows absolute IRIs; `--class <name>` narrows to one
- * class and the properties whose domain is that class.
+ * from the pack index) and, with `--properties`, a `--class` focus, or a
+ * `--detail` of `standard`+, its properties. `--full-uris` shows absolute IRIs;
+ * `--class <name>` narrows to one class and the properties whose domain is that
+ * class.
+ *
+ * Disclosure (B5): rather than reinvent its own scheme, `show` honours the
+ * canonical `--detail`/config `detail` the rest of the CLI reads — a two-level
+ * fold where `summary` is classes-only and `standard`/`detailed` add the
+ * properties section. The frozen `--properties` flag stays as an explicit
+ * override (it forces the section at any level), so the covenant is untouched.
  */
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -88,7 +96,7 @@ const showVerb: VerbSpec<Record<string, unknown>, OntologyShowData> = {
     {
       kind: "boolean",
       name: "properties",
-      doc: "Include the properties section.",
+      doc: "Include the properties section (also implied by --detail standard or higher).",
     },
     {
       kind: "boolean",
@@ -122,7 +130,17 @@ const showVerb: VerbSpec<Record<string, unknown>, OntologyShowData> = {
       session.prefixes,
     );
     const focus = typeof params.class === "string" ? params.class : undefined;
-    const wantProperties = params.properties === true || focus !== undefined;
+    // Fold ontology's bespoke disclosure onto the canonical `--detail` (B5): a
+    // two-level gate (summary = classes only; standard/detailed add properties),
+    // resolved through the SAME precedence packs use (flag > explicit config >
+    // default). The frozen `--properties` flag and a `--class` focus still force
+    // the section, so honouring `--detail` is additive and covenant-safe.
+    const level = await resolvePackDetail(rt, {
+      levels: ["summary", "detailed"],
+      default: "summary",
+    });
+    const wantProperties =
+      params.properties === true || focus !== undefined || level !== "summary";
 
     let classes = await queryClasses(
       rt,

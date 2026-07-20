@@ -58,6 +58,32 @@ describe("ontology show", () => {
     expect(data.properties).toEqual([]);
   });
 
+  it("--detail detailed folds onto disclosure and includes properties (B5)", async () => {
+    // Ontology honours the canonical `--detail` instead of only its bespoke
+    // `--properties`: standard/detailed add the properties section.
+    const detailed = {
+      ...rt,
+      globalFlags: { ...rt.globalFlags, detail: "detailed" as const },
+    };
+    const data = (await showVerb.run(
+      { prefix: "ds" },
+      detailed,
+    )) as OntologyShowData;
+    expect(data.properties.length).toBeGreaterThan(0);
+  });
+
+  it("--detail summary keeps classes only (no properties)", async () => {
+    const summary = {
+      ...rt,
+      globalFlags: { ...rt.globalFlags, detail: "summary" as const },
+    };
+    const data = (await showVerb.run(
+      { prefix: "ds" },
+      summary,
+    )) as OntologyShowData;
+    expect(data.properties).toEqual([]);
+  });
+
   it("--class focuses on one class and its properties", async () => {
     const data = (await showVerb.run(
       { prefix: "ds", class: "BlockProperty" },
