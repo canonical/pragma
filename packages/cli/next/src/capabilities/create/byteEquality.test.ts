@@ -192,7 +192,7 @@ const cases: Case[] = [
       withSsr: true,
       withRouter: true,
       withForms: true,
-      relay: false,
+      withRelay: false,
       runInstall: false,
     },
     answers: {

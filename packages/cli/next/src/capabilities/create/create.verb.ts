@@ -130,12 +130,12 @@ const PACKAGE_MIRROR: PromptDefinition[] = [
 ];
 
 // The include-flag prompts carry the CLI grammar's `--with-X` names
-// (`withSsr`/`withRouter`/`withForms`, AV-228 B8) rather than the summon
-// generator's bare prompt names (`ssr`/`router`/`forms`). {@link
+// (`withSsr`/`withRouter`/`withForms`/`withRelay`, AV-228 B8) rather than the
+// summon generator's bare prompt names (`ssr`/`router`/`forms`/`relay`). {@link
 // INCLUDE_FLAG_ALIASES} maps them back at the CLI↔generator boundary so the
 // generator prompt names — and their embedded templates + byte-equality
-// goldens — stay stable. `--relay`/`--run-install` are opt-in (default false)
-// and keep their existing spellings.
+// goldens — stay stable. `--run-install` (default false) is an action flag, not
+// an include, so it keeps its spelling.
 const APPLICATION_MIRROR: PromptDefinition[] = [
   {
     name: "appPath",
@@ -158,7 +158,7 @@ const APPLICATION_MIRROR: PromptDefinition[] = [
     default: true,
   },
   {
-    name: "relay",
+    name: "withRelay",
     type: "confirm",
     message: "Include a Relay (GraphQL) data layer?",
     default: false,
@@ -173,13 +173,13 @@ const APPLICATION_MIRROR: PromptDefinition[] = [
 
 /**
  * CLI include-flag names → summon generator prompt names, per create kind
- * (AV-228 B8). The `create application` include-flags are exposed on the unified
- * `--with-X` convention, so their params arrive keyed `withSsr`/`withRouter`/
- * `withForms`; the summon generator reads the bare `ssr`/`router`/`forms`. We
- * normalize at the ONE CLI↔generator seam ({@link toGeneratorAnswers}), keeping
- * the generator prompt names (and their templates/goldens) untouched. Component
- * and package already use `--with-X` names that match their prompts, so their
- * maps are empty.
+ * (AV-228 B8). All four `create application` include-flags are exposed on the
+ * unified `--with-X` convention, so their params arrive keyed `withSsr`/
+ * `withRouter`/`withForms`/`withRelay`; the summon generator reads the bare
+ * `ssr`/`router`/`forms`/`relay`. We normalize at the ONE CLI↔generator seam
+ * ({@link toGeneratorAnswers}), keeping the generator prompt names (and their
+ * templates/goldens) untouched. Component and package already use `--with-X`
+ * names that match their prompts, so their maps are empty.
  */
 export const INCLUDE_FLAG_ALIASES: Record<
   CreateKind,
@@ -191,6 +191,7 @@ export const INCLUDE_FLAG_ALIASES: Record<
     withSsr: "ssr",
     withRouter: "router",
     withForms: "forms",
+    withRelay: "relay",
   },
 };
 
@@ -487,6 +488,6 @@ export const createApplicationVerb = createVerb(
   applicationParams,
   [
     { cmd: "pragma create application my-app" },
-    { cmd: "pragma create application my-app --relay" },
+    { cmd: "pragma create application my-app --with-relay" },
   ],
 );
