@@ -64,10 +64,14 @@ export default function Outlet({ fallback = null }: OutletProps): ReactElement {
     match && "name" in match && typeof match.name === "string"
       ? match.name
       : undefined;
-  const content = match?.route.content as AnyRouteContent | undefined;
+  const content = (match?.route.component ?? match?.route.content) as
+    | AnyRouteContent
+    | undefined;
 
-  // Mirrors core `render()`: no match or no content renders null, and
-  // wrappers apply only when content exists.
+  // Mirrors core `render()`: no match or no UI slot renders null, and
+  // wrappers apply only when a slot exists. `component` is preferred over
+  // the deprecated `content`; Outlet renders both through the same
+  // createElement path with identical `{ params, search }` props.
   let rendered: ReactNode = null;
 
   if (match && content) {

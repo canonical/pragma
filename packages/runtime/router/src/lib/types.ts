@@ -200,6 +200,26 @@ export type AnyRouteContent = BivariantCallback<
   preload?: () => Promise<RouteModule>;
 };
 
+/**
+ * The component form of a route's UI slot: a component that receives
+ * `{ params, search }` props.
+ *
+ * Structurally identical to `RouteContent` — the difference is contractual.
+ * Framework adapters (e.g. `router-react`'s `Outlet`) render `component` as a
+ * real component with its own fiber (hooks are legal); core never invokes it
+ * during matching. The shape is expressed as a plain callback so core stays
+ * framework-agnostic; any function component satisfies it.
+ */
+export type RouteComponent<
+  TPath extends string = string,
+  TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
+  TRendered = unknown,
+  TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
+> = RouteContent<TPath, TSearchSchema, TRendered, TParamsSchema>;
+
+/** The untyped form of `RouteComponent`, mirroring `AnyRouteContent`. */
+export type AnyRouteComponent = AnyRouteContent;
+
 export interface DataRouteInput<
   TPath extends string = string,
   TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
@@ -208,7 +228,21 @@ export interface DataRouteInput<
   TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > {
   readonly url: TPath;
-  readonly content: RouteContent<
+  /**
+   * The route's UI as a component receiving `{ params, search }` props.
+   * Exactly one of `component` or `content` must be declared.
+   */
+  readonly component?: RouteComponent<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TParamsSchema
+  >;
+  /**
+   * @deprecated Render-function form; prefer `component` — see AV-340.
+   * Exactly one of `component` or `content` must be declared.
+   */
+  readonly content?: RouteContent<
     TPath,
     TSearchSchema,
     TRendered,
@@ -262,7 +296,21 @@ export interface DataRouteDefinition<
   TParamsSchema extends SchemaLike<unknown> | undefined = undefined,
 > extends RouteCodec<TPath, InferParams<TPath, TParamsSchema>> {
   readonly url: TPath;
-  readonly content: RouteContent<
+  /**
+   * The route's UI as a component receiving `{ params, search }` props.
+   * Exactly one of `component` or `content` is present.
+   */
+  readonly component?: RouteComponent<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TParamsSchema
+  >;
+  /**
+   * @deprecated Render-function form; prefer `component` — see AV-340.
+   * Exactly one of `component` or `content` is present.
+   */
+  readonly content?: RouteContent<
     TPath,
     TSearchSchema,
     TRendered,
@@ -314,6 +362,7 @@ export type RouteDefinition<
 
 export interface AnyRoute {
   readonly url: string;
+  readonly component?: AnyRouteComponent;
   readonly content?: AnyRouteContent;
   readonly prefetch?: BivariantCallback<
     [params: unknown, search: unknown, context: NavigationContext],
