@@ -47,6 +47,8 @@ export interface CapabilitiesData {
     readonly system: string;
     readonly model: string;
     readonly querying: string;
+    /** The plan-first/confirm gate every mutating tool follows (D2). */
+    readonly mutations: string;
   };
   readonly discovery_sequence: readonly DiscoveryStage[];
   readonly tools: readonly CatalogTool[];

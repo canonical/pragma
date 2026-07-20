@@ -36,6 +36,8 @@ export const CONVENTIONS = {
     "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_tier and config_channel.",
   querying:
     "All queries run against an RDF triple store. Prefixed IRIs (e.g. ds:global.component.button) identify entities. Use ontology_list to discover namespaces.",
+  mutations:
+    "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
 } as const;
 
 /** The output modes v2 renders (dropped "text" → "plain"; condensed retired). */

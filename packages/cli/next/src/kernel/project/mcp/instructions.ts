@@ -38,7 +38,7 @@ export function buildInstructions(
 
   return [
     "pragma is a CLI and MCP server over a design-system knowledge graph.",
-    `${CONVENTIONS.system} ${CONVENTIONS.model} ${CONVENTIONS.querying}`,
+    `${CONVENTIONS.system} ${CONVENTIONS.model} ${CONVENTIONS.querying} ${CONVENTIONS.mutations}`,
     "",
     "Discovery sequence:",
     steps,
