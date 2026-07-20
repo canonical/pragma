@@ -192,6 +192,26 @@ describe("sources lock round-trip (PROTECTED)", () => {
     expect(readLock(cwd)?.packs).toHaveLength(1);
   });
 
+  it("does not recurse into a symlinked directory cycle (L6 safety)", async () => {
+    // The L6 fix follows symlinked FILES but must NOT recurse into a symlinked
+    // DIRECTORY: a link to an ancestor dir is a cycle that, if walked, recurses
+    // without bound → a stack-overflow RangeError (an INTERNAL "please report").
+    // The real `.ttl` is still ingested and the build completes.
+    const pkg = tmp("pragma-symlink-cycle-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    writeFileSync(join(pkg, "definitions", "widget.ttl"), TTL);
+    // `definitions/loop` → `definitions` (its own parent): a symlink cycle.
+    symlinkSync(join(pkg, "definitions"), join(pkg, "definitions", "loop"));
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    const result = await runTask(await buildUpdateTask(runtime, false));
+    expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(readLock(cwd)?.packs).toHaveLength(1);
+  });
+
   it("undo restores the prior lock (no prior → removed)", async () => {
     const pkg = filePackage();
     const cwd = tmp("pragma-proj-");

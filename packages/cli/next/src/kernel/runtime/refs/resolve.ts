@@ -86,16 +86,19 @@ function walkTtl(
     const full = join(dir, entry.name);
     // Resolve symlinks: pnpm / workspace trees link their sources, but
     // `Dirent.isFile`/`isDirectory` are BOTH false for a symlink — so a
-    // symlinked `.ttl` (or a symlinked source directory) was silently skipped
-    // (L6). Stat the target to recover its real kind; a dangling link is
+    // symlinked `.ttl` was silently skipped (L6). Follow the link to recover a
+    // symlinked FILE, but NEVER recurse into a symlinked DIRECTORY: a symlink
+    // cycle (a link to an ancestor dir) would recurse without bound — a
+    // stack-overflow RangeError surfacing as an INTERNAL "please report" — and a
+    // linked directory could pull `.ttl` from OUTSIDE the package root. Linking
+    // individual source files (all L6 needs) stays supported; a dangling link is
     // skipped, not fatal.
     let isDir = entry.isDirectory();
     let isFile = entry.isFile();
     if (entry.isSymbolicLink()) {
       try {
-        const target = statSync(full);
-        isDir = target.isDirectory();
-        isFile = target.isFile();
+        isFile = statSync(full).isFile();
+        isDir = false;
       } catch {
         continue;
       }
