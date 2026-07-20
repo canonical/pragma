@@ -7,11 +7,14 @@
  *
  * Single consumer today (`pragma colophon`); a promotion candidate to
  * `kernel/render/` if another verb ever wants the same helper. Determinism note:
- * styling routes entirely through `chalk`, so a test forcing `chalk.level = 0`
- * gets a stable, color-free snapshot of the structural transforms.
+ * styling routes through the shared {@link RenderStyle} seam (color only on a
+ * color-capable TTY), so piped / redirected / CI output — where `supports-color`
+ * can report a level with no TTY — stays byte-for-byte the color-free structural
+ * transform, and a test can force either mode by passing an explicit style.
  */
 
 import chalk from "chalk";
+import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 
 /** Full ANSI escape sequences (`ESC [ … final-letter`) — colour/cursor codes. */
 // biome-ignore lint/suspicious/noControlCharactersInRegex: deliberate control-char scrub
@@ -33,25 +36,35 @@ function stripControl(line: string): string {
   return line.replace(ANSI_ESCAPE, "").replace(C0_CONTROLS, "");
 }
 
-/** Style inline `**bold**` and `` `code` `` spans within one line. */
-function styleInline(text: string): string {
+/**
+ * Style inline `**bold**` and `` `code` `` spans within one line. The `**` / `` ` ``
+ * markers are ALWAYS consumed; off a TTY the styler is inert, so the markers drop
+ * with no color (byte-identical to the pre-seam `chalk.level = 0` behavior).
+ */
+function styleInline(text: string, style: RenderStyle): string {
   return text
-    .replace(/\*\*([^*]+)\*\*/g, (_match, inner: string) => chalk.bold(inner))
-    .replace(/`([^`]+)`/g, (_match, inner: string) => chalk.cyan(inner));
+    .replace(/\*\*([^*]+)\*\*/g, (_match, inner: string) => style.bold(inner))
+    .replace(/`([^`]+)`/g, (_match, inner: string) => style.cyan(inner));
 }
 
 /**
  * Render a Markdown string to styled terminal text.
  *
  * @param markdown - The authored Markdown body.
- * @returns The chalk-styled terminal string (no trailing newline).
+ * @param style - The TTY styler; defaults to the process style. On a color-capable
+ *   terminal headings/bullets/inline spans are tinted; off a TTY the styler is
+ *   inert, so the output is byte-identical to the color-free structural form.
+ * @returns The styled terminal string (no trailing newline).
  */
-export function renderMarkdownToTerminal(markdown: string): string {
+export function renderMarkdownToTerminal(
+  markdown: string,
+  style: RenderStyle = defaultStyle(),
+): string {
   const lines: string[] = [];
   let inFence = false;
 
   for (const rawLine of markdown.split("\n")) {
-    // Scrub pack-authored terminal control codes BEFORE our own chalk styling
+    // Scrub pack-authored terminal control codes BEFORE our own styling
     // (colophon bodies are domain-as-data — never a channel for raw ANSI).
     const raw = stripControl(rawLine);
     // A fence toggles code mode; the ``` markers themselves are dropped.
@@ -60,25 +73,31 @@ export function renderMarkdownToTerminal(markdown: string): string {
       continue;
     }
     if (inFence) {
-      lines.push(chalk.dim(`  ${raw}`));
+      lines.push(style.dim(`  ${raw}`));
       continue;
     }
 
     const heading = /^(#{1,6})\s+(.+)$/.exec(raw);
     if (heading) {
       const level = heading[1]?.length ?? 1;
-      const text = styleInline(heading[2] ?? "");
-      lines.push(level === 1 ? chalk.bold.underline(text) : chalk.bold(text));
+      const text = styleInline(heading[2] ?? "", style);
+      // H1 earns bold+underline on a TTY; underline is outside the RenderStyle
+      // seam, so reach for chalk only when the styler is enabled.
+      lines.push(
+        level === 1 && style.enabled
+          ? chalk.bold.underline(text)
+          : style.bold(text),
+      );
       continue;
     }
 
     const bullet = /^\s*[-*]\s+(.+)$/.exec(raw);
     if (bullet) {
-      lines.push(`  ${chalk.cyan("•")} ${styleInline(bullet[1] ?? "")}`);
+      lines.push(`  ${style.cyan("•")} ${styleInline(bullet[1] ?? "", style)}`);
       continue;
     }
 
-    lines.push(styleInline(raw));
+    lines.push(styleInline(raw, style));
   }
 
   return lines.join("\n");
