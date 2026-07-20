@@ -261,20 +261,91 @@ describe("server matrix (2×3) serves correctly", () => {
             const wellEdgeCount = (
               definitionsTermHtml.match(/react-flow__edge-path/g) ?? []
             ).length;
-            const railClassLinkCount = (
-              definitionsTermHtml.match(
-                /<h3>Classes<\/h3>[\s\S]*?<h3>Properties<\/h3>/g,
-              ) ?? []
-            )
-              .map(
-                (section) =>
-                  (section.match(/href="\/definitions\//g) ?? []).length,
+            const railClassLinkCount =
+              // The headings now carry a match count ("Classes 17 of 17"),
+              // so the opening tag is matched loosely up to its close.
+              (
+                definitionsTermHtml.match(
+                  /<h3>Classes[\s\S]*?<h3>Properties/g,
+                ) ?? []
               )
-              .reduce((sum, count) => sum + count, 0);
+                .map(
+                  (section) =>
+                    (section.match(/href="\/definitions\//g) ?? []).length,
+                )
+                .reduce((sum, count) => sum + count, 0);
             expect(wellNodeCount).toBe(railClassLinkCount);
             expect(wellNodeCount).toBeGreaterThan(20);
             expect(wellEdgeCount).toBeGreaterThan(10);
             expect(wellEdgeCount).toBeLessThan(wellNodeCount);
+
+            // 5d-bis (AV-274). The exhibit's heuristics, asserted against
+            // the LIVE graph rather than a fixture.
+            //
+            //   THE SELECTION'S EGO-FADE IS SERVER-RENDERED. The term is
+            //   in the URL, so the fade is a pure function of data both
+            //   sides hold and belongs in the first paint. Some nodes fade
+            //   and some do NOT — a fade that swallowed everything would
+            //   convey nothing, so the spared one-hop neighbourhood is
+            //   what proves the rule is a neighbourhood and not a wash.
+            const fadedNodeCount = (
+              definitionsTermHtml.match(
+                /react-flow__node-term[^"]*is-faded/g,
+              ) ?? []
+            ).length;
+            expect(fadedNodeCount).toBeGreaterThan(0);
+            expect(fadedNodeCount).toBeLessThan(wellNodeCount);
+            expect(definitionsTermHtml).toContain("is-selected");
+
+            //   …and the term-LESS address fades nothing, because nothing
+            //   is selected. Same graph, no privileged centre.
+            expect(definitionsHtml).not.toContain("is-faded");
+            expect(definitionsHtml).not.toContain("is-selected");
+
+            //   THE RAIL DIMS, IT NEVER HIDES. Server-side the filter is
+            //   the no-op, so no rail item may carry the dim marker while
+            //   every class the well draws is still listed (asserted by
+            //   the equality above). The marker itself must exist in the
+            //   stylesheet's vocabulary — proven by the chips below.
+            expect(definitionsTermHtml).not.toContain('data-dimmed="true"');
+
+            //   THE STRIP IS CLAIMED AND USEFUL (R5): both sockets carry
+            //   real content in the server HTML, the chips offer one per
+            //   live ontology, and the status figure counts real classes.
+            expect(definitionsTermHtml).toContain(
+              'data-slot="explorer-controls"',
+            );
+            expect(definitionsTermHtml).toContain(
+              'data-slot="explorer-status"',
+            );
+            const chipCount = (
+              definitionsTermHtml.match(/class="explorer-chip"/g) ?? []
+            ).length;
+            // Two abstraction chips plus one per ontology (three live).
+            expect(chipCount).toBeGreaterThanOrEqual(4);
+            // The figure's counts agree with the graph the well drew, so
+            // the figure can never flatter the graph. Both sides derive
+            // from THIS response — no pinned graph counts (the components
+            // lens's 111→108 lesson): the abstract tally is read off the
+            // well's own ABSTRACT tags.
+            const statusCaption = /<figcaption>([\s\S]*?)<\/figcaption>/
+              .exec(definitionsTermHtml)?.[1]
+              ?.replaceAll("<!-- -->", "");
+            const abstractNodeCount = (
+              definitionsTermHtml.match(/hierarchy-node-tag/g) ?? []
+            ).length;
+            expect(abstractNodeCount).toBeGreaterThan(0);
+            // Unfiltered server render: visible === total, and the
+            // abstract clause matches the tags the graph actually drew.
+            expect(statusCaption).toBe(
+              `${wellNodeCount} of ${wellNodeCount} classes · ${abstractNodeCount} abstract`,
+            );
+
+            //   THE FURNITURE floats over the canvas (the legend and the
+            //   hint), and abstract classes are marked in real text.
+            expect(definitionsTermHtml).toContain("hierarchy-legend");
+            expect(definitionsTermHtml).toContain("hierarchy-hint");
+            expect(definitionsTermHtml).toContain("hierarchy-node-tag");
 
             //     The class inspector's relations and property rows SSR
             //     from the live graph: `hasVariant` is a ds:UIBlock
