@@ -163,11 +163,11 @@ export const assemblyEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "prompt-set-tier-maps-to-config-tier",
+    id: "prompt-set-tier-maps-to-config-set",
     kind: "prompt",
-    input: '"Set the active tier" should map to `config_tier`.',
+    input: '"Set the active tier" should map to `config_set` (B3).',
     async expect({ mcp }) {
-      assertIntentTool(await mcp.listTools(), "config_tier", /tier/i);
+      assertIntentTool(await mcp.listTools(), "config_set", /tier/i);
     },
   },
   {

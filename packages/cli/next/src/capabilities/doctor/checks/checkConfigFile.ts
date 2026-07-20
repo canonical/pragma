@@ -36,6 +36,6 @@ export async function checkConfigFile(rt: PragmaRuntime): Promise<CheckResult> {
     name: "pragma config",
     status: "fail",
     detail: "not found",
-    remedy: "pragma config tier <path>",
+    remedy: "pragma config set tier <path>",
   };
 }
