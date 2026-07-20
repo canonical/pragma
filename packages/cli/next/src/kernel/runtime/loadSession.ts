@@ -9,13 +9,11 @@
  * than silently reaching out.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
-import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
 import { materializeEmbeddedPack } from "./graphpack/embedded.js";
 import { readPack } from "./graphpack/read.js";
 import { resolveSources } from "./resolveSources.js";
+import { storeUnavailable } from "./storeReadiness.js";
 import type { StoreSession } from "./types.js";
 
 /** What {@link loadStoreSession} needs from the runtime. */
@@ -39,15 +37,9 @@ export async function loadStoreSession(
   const decision = resolveSources(layers, ctx.cwd);
 
   if (decision.kind === "unavailable") {
-    throw PragmaError.storeUnavailable(`${decision.reason}.`, {
-      recovery: cliRecovery(
-        `${RECOVERY_CLI_PREFIX}sources update`,
-        "Build the local store from the configured packages.",
-        // An agent recovers by calling the tool (then retrying — PR9's C1 cold-
-        // store retry makes a post-update retry succeed).
-        { tool: "sources_update" },
-      ),
-    });
+    // The SAME cold-store diagnostic the native MCP surfaces raise (shared via
+    // storeReadiness), so a cold store reads identically on every surface.
+    throw storeUnavailable(decision.reason);
   }
 
   const dir =

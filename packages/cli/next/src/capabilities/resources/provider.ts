@@ -17,7 +17,9 @@
  */
 
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
+import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { mcpErrorFrom } from "../../kernel/project/mcp/mcpError.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
 import type { McpResourceProvider } from "../../kernel/spec/types.js";
@@ -180,6 +182,9 @@ export const resourceProvider: McpResourceProvider = {
     const { ResourceTemplate } = await import(
       "@modelcontextprotocol/sdk/server/mcp.js"
     );
+    const { McpError, ErrorCode } = await import(
+      "@modelcontextprotocol/sdk/types.js"
+    );
     const template = new ResourceTemplate(URI_TEMPLATE, {
       list: async () => ({
         resources: buildResourceList(readPackIndex(runtime.cwd)),
@@ -215,15 +220,12 @@ export const resourceProvider: McpResourceProvider = {
             ],
           };
         } catch (error) {
-          const message =
-            error instanceof PragmaError
-              ? JSON.stringify({ code: error.code, message: error.message })
-              : String(error);
-          return {
-            contents: [
-              { uri: url.href, mimeType: "text/plain", text: message },
-            ],
-          };
+          // Surface the failure as a JSON-RPC error (the resource-read analogue
+          // of a tool result's `isError`), preserving the machine code AND the
+          // recovery in `data` — never swallow it into `text/plain` content an
+          // agent reads as a successful entity (which dropped the recovery and
+          // masked a cold store as though the entity itself were malformed).
+          throw mcpErrorFrom(asPragmaError(error), { McpError, ErrorCode });
         }
       },
     );
