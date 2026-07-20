@@ -1,5 +1,5 @@
 {
-  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40). Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41. Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
   "nouns": {
     "block": {
       "verbs": [
@@ -85,6 +85,13 @@
     "ontology": {
       "verbs": [
         { "v": "list", "needsStore": true, "mcp": "ontology_list" },
+        {
+          "v": "lookup",
+          "args": ["<prefix>"],
+          "flags": ["--properties", "--full-uris", "--class"],
+          "needsStore": true,
+          "mcp": "ontology_lookup"
+        },
         {
           "v": "show",
           "args": ["<prefix>"],
@@ -277,6 +284,7 @@
       "modifier_lookup",
       "modifier_sample",
       "ontology_list",
+      "ontology_lookup",
       "ontology_show",
       "prompt_list",
       "prompt_lookup",
