@@ -1,0 +1,1561 @@
+"""
+Directs the executor to defer this fragment when the `if` argument is true or undefined.
+"""
+directive @defer(
+  """Deferred when true or undefined."""
+  if: Boolean! = true
+
+  """Unique name"""
+  label: String
+) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""
+Directs the executor to stream plural fields when the `if` argument is true or undefined.
+"""
+directive @stream(
+  """Number of items to return immediately"""
+  initialCount: Int! = 0
+
+  """Stream when true or undefined."""
+  if: Boolean! = true
+
+  """Unique name"""
+  label: String
+) on FIELD
+
+"""
+A single dated record of a change to a UIBlock, with a timestamp, the change description, an owner, an optional GitHub link, and a change type.
+"""
+type ChangeLogEntry {
+  """The category of change (e.g. change, addition, deprecation)"""
+  changeType: String
+
+  """Optional link to a GitHub issue, PR or discussion for this change"""
+  githubLink: String
+
+  """The person responsible for the change"""
+  owner: String
+
+  """Human-readable description of what changed"""
+  change: String
+
+  """The date and time at which the change was recorded"""
+  timestamp: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""
+A facet that groups related Tags (e.g. 'documentation stage', 'review status', 'channel', 'implementation status').
+"""
+type TagCategory implements Node & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+interface Node {
+  id: ID!
+  uri: String!
+}
+
+"""
+A controlled-vocabulary label applied to a UIBlock. Tags are grouped into facets by their category (e.g. 'documentation stage', 'review status', 'channel', 'implementation status'). The category-typed views over this vocabulary are tracked as future work; for now a Tag carries its name, category, and apply/remove guidance.
+"""
+type Tag implements Node & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """
+  The category (facet) a Tag belongs to, e.g. documentation stage, review status, channel, implementation status
+  """
+  categories(first: Int, after: String, last: Int, before: String): TagCategoryConnection!
+
+  """
+  Guidance on the conditions under which this tag should be removed from a UI Block
+  """
+  whenToRemove: String
+
+  """
+  Guidance on the conditions under which this tag should be applied to a UI Block
+  """
+  whenToApply: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+type TagCategoryConnection {
+  edges: [TagCategoryEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagCategoryEdge {
+  node: TagCategory!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+"""
+A code library or package that provides platform-specific implementations of UIBlocks
+"""
+type ImplementationLibrary implements Node & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """The design system tier that this library implements"""
+  libraryTiers(first: Int, after: String, last: Int, before: String): TierConnection!
+
+  """Documentation link if different from main artifact"""
+  documentation: String
+
+  """URL to the library's main artifact or repository"""
+  link: String
+
+  """
+  The platform or technology this library targets (e.g. React, Web Components, Flutter)
+  """
+  platform: String
+
+  """The package or library name as published (e.g. npm package name)"""
+  libraryName: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+type TierConnection {
+  edges: [TierEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TierEdge {
+  node: Tier!
+  cursor: String!
+}
+
+"""Platform-specific implementation of a UI Block"""
+type ImplementationObject implements Node & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """The implementation library that contains this implementation"""
+  library: ImplementationLibrary
+
+  """The UIBlock that this implementation realises in code"""
+  implementsBlock: UIBlock
+
+  """
+  Whether this implementation is in draft state and not yet ready for production use
+  """
+  draft: Boolean
+
+  """
+  URL to a specific tagged version of this implementation in source control
+  """
+  versionedLink: String
+
+  """
+  URL to the latest/HEAD version of this implementation in source control
+  """
+  headLink: String
+
+  """
+  Version of this specific implementation, independent of the UIBlock version
+  """
+  implementationVersion: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""
+A scope level in the design system hierarchy that determines where UIBlocks are intended to be used (e.g. global, apps, site)
+"""
+type Tier implements Node & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""A configurable property of a UI Block"""
+type Property {
+  """
+  Constraints on valid values for this property. For choice types, lists allowed values (e.g. '[primary, secondary, tertiary]'). For numbers, specifies ranges. For objects, describes required structure.
+  """
+  constraints: String
+
+  """
+  The default value for this property when not explicitly set by the consumer
+  """
+  defaultValue: String
+
+  """Whether this property is optional when configuring the UI Block"""
+  optional: Boolean
+
+  """
+  The data type of this configurable property (e.g. text, choice, boolean, node)
+  """
+  propertyType: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""A grouping of related modifiers that can be applied to UI Blocks"""
+type ModifierFamily implements Node & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Modifiers belonging to this modifier family"""
+  modifiers(first: Int, after: String, last: Int, before: String): ModifierConnection!
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+type ModifierConnection {
+  edges: [ModifierEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ModifierEdge {
+  node: Modifier!
+  cursor: String!
+}
+
+"""
+A named variant value within a ModifierFamily that alters the appearance or behaviour of a UIBlock (e.g. 'primary', 'secondary' within the 'importance' family)
+"""
+type Modifier implements Node & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """The modifier family to which this modifier belongs"""
+  modifierFamily: ModifierFamily
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""
+A collection UIBlock: a container that arranges multiple instances of a single sibling UIBlock (typically a Component) as a repeating series. The plural counterpart of a singular Component (e.g. Cards groups Card units, Tiles groups Tile units), responsible for their shared layout rather than for any content of its own.
+"""
+type Group implements Node & UIBlock & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """
+  The variants of this UI Block (inverse of ds:variantOf). E.g. Tooltip has variant Tooltip+Dense.
+  """
+  variants(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The base UI Block this block is a variant of, by the '+' naming convention (e.g. Tooltip+Dense is a variant of Tooltip). Distinct from ds:inheritsFrom: a variant is a modifier-style derivative rather than a prefixed specialisation.
+  """
+  variantOfs(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Blocks that inherit from / specialise this block (inverse of ds:inheritsFrom). E.g. Tooltip is specialised by DataTooltip.
+  """
+  specializedBies(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Block this block inherits from / specialises (e.g. a Data tooltip inherits from Tooltip). Distinct from subcomponent containment: inheritance is an is-a-specialisation relationship.
+  """
+  inheritsFroms(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """Links a UI Block to its dated change log entries."""
+  changeLogs: [ChangeLogEntry!]!
+
+  """
+  Links a UI Block to the documentation-stage Tag(s) applied to it (e.g. needs:documentation). One facet of the wider Tag vocabulary; the other tag facets are tracked as future work.
+  """
+  documentationStages(first: Int, after: String, last: Int, before: String): TagConnection!
+
+  """Links a UI Block to its configurable properties"""
+  properties: [Property!]!
+
+  """Links a UI Block to applicable modifier families"""
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+
+  """The tier to which the UI block belongs to"""
+  tier: Tier
+
+  """
+  Detailed specification for correctly using and implementing the UI block.
+  """
+  guidelines: String
+
+  """
+  Free-text (Markdown) usage documentation for the UI block. Subsumes the former whenToUse/whenNotToUse: a usage entry describes the contexts where the component is most appropriate ('When to use'), the contexts where it is NOT appropriate and what to use instead ('When not to use'), and a general description, typically as Markdown sub-sections.
+  """
+  usage: String
+
+  """
+  YAML specification of component structure using the Anatomy DSL. Describes nodes (named/anonymous), edges with cardinality, slots, and CTI-inspired styles.
+  """
+  anatomyDsl: String
+
+  """
+  DEPRECATED. Legacy anatomy field (free-form text). Superseded by ds:anatomyDsl.
+  """
+  anatomyClassic: String
+
+  """Link to the Figma design file for this UI block"""
+  figmaLink: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+type UIBlockConnection {
+  edges: [UIBlockEdge!]!
+  pageInfo: PageInfo!
+}
+
+type UIBlockEdge {
+  node: UIBlock!
+  cursor: String!
+}
+
+type TagConnection {
+  edges: [TagEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagEdge {
+  node: Tag!
+  cursor: String!
+}
+
+type ModifierFamilyConnection {
+  edges: [ModifierFamilyEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ModifierFamilyEdge {
+  node: ModifierFamily!
+  cursor: String!
+}
+
+"""
+A named part of a Component that has design-system identity but is typically not used independently outside its parent
+"""
+type Subcomponent implements Node & UIBlock & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """The component to which this subcomponent structurally belongs"""
+  parentComponents(first: Int, after: String, last: Int, before: String): ComponentConnection!
+
+  """
+  Whether this subcomponent can be used independently outside its parent component
+  """
+  standalone: Boolean
+
+  """
+  The variants of this UI Block (inverse of ds:variantOf). E.g. Tooltip has variant Tooltip+Dense.
+  """
+  variants(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The base UI Block this block is a variant of, by the '+' naming convention (e.g. Tooltip+Dense is a variant of Tooltip). Distinct from ds:inheritsFrom: a variant is a modifier-style derivative rather than a prefixed specialisation.
+  """
+  variantOfs(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Blocks that inherit from / specialise this block (inverse of ds:inheritsFrom). E.g. Tooltip is specialised by DataTooltip.
+  """
+  specializedBies(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Block this block inherits from / specialises (e.g. a Data tooltip inherits from Tooltip). Distinct from subcomponent containment: inheritance is an is-a-specialisation relationship.
+  """
+  inheritsFroms(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """Links a UI Block to its dated change log entries."""
+  changeLogs: [ChangeLogEntry!]!
+
+  """
+  Links a UI Block to the documentation-stage Tag(s) applied to it (e.g. needs:documentation). One facet of the wider Tag vocabulary; the other tag facets are tracked as future work.
+  """
+  documentationStages(first: Int, after: String, last: Int, before: String): TagConnection!
+
+  """Links a UI Block to its configurable properties"""
+  properties: [Property!]!
+
+  """Links a UI Block to applicable modifier families"""
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+
+  """The tier to which the UI block belongs to"""
+  tier: Tier
+
+  """
+  Detailed specification for correctly using and implementing the UI block.
+  """
+  guidelines: String
+
+  """
+  Free-text (Markdown) usage documentation for the UI block. Subsumes the former whenToUse/whenNotToUse: a usage entry describes the contexts where the component is most appropriate ('When to use'), the contexts where it is NOT appropriate and what to use instead ('When not to use'), and a general description, typically as Markdown sub-sections.
+  """
+  usage: String
+
+  """
+  YAML specification of component structure using the Anatomy DSL. Describes nodes (named/anonymous), edges with cardinality, slots, and CTI-inspired styles.
+  """
+  anatomyDsl: String
+
+  """
+  DEPRECATED. Legacy anatomy field (free-form text). Superseded by ds:anatomyDsl.
+  """
+  anatomyClassic: String
+
+  """Link to the Figma design file for this UI block"""
+  figmaLink: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+type ComponentConnection {
+  edges: [ComponentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ComponentEdge {
+  node: Component!
+  cursor: String!
+}
+
+"""
+Layouts are an opinionated division of space to navigate a domain of information.
+"""
+type Layout implements Node & UIBlock & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Device form factors this layout targets"""
+  targetDevices: String
+
+  """Named CSS grid areas defined by this layout"""
+  gridAreas: String
+
+  """The information domain this layout is designed to navigate"""
+  domain: String
+
+  """CSS grid template definition for this layout"""
+  grid: String
+
+  """
+  The variants of this UI Block (inverse of ds:variantOf). E.g. Tooltip has variant Tooltip+Dense.
+  """
+  variants(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The base UI Block this block is a variant of, by the '+' naming convention (e.g. Tooltip+Dense is a variant of Tooltip). Distinct from ds:inheritsFrom: a variant is a modifier-style derivative rather than a prefixed specialisation.
+  """
+  variantOfs(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Blocks that inherit from / specialise this block (inverse of ds:inheritsFrom). E.g. Tooltip is specialised by DataTooltip.
+  """
+  specializedBies(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Block this block inherits from / specialises (e.g. a Data tooltip inherits from Tooltip). Distinct from subcomponent containment: inheritance is an is-a-specialisation relationship.
+  """
+  inheritsFroms(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """Links a UI Block to its dated change log entries."""
+  changeLogs: [ChangeLogEntry!]!
+
+  """
+  Links a UI Block to the documentation-stage Tag(s) applied to it (e.g. needs:documentation). One facet of the wider Tag vocabulary; the other tag facets are tracked as future work.
+  """
+  documentationStages(first: Int, after: String, last: Int, before: String): TagConnection!
+
+  """Links a UI Block to its configurable properties"""
+  properties: [Property!]!
+
+  """Links a UI Block to applicable modifier families"""
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+
+  """The tier to which the UI block belongs to"""
+  tier: Tier
+
+  """
+  Detailed specification for correctly using and implementing the UI block.
+  """
+  guidelines: String
+
+  """
+  Free-text (Markdown) usage documentation for the UI block. Subsumes the former whenToUse/whenNotToUse: a usage entry describes the contexts where the component is most appropriate ('When to use'), the contexts where it is NOT appropriate and what to use instead ('When not to use'), and a general description, typically as Markdown sub-sections.
+  """
+  usage: String
+
+  """
+  YAML specification of component structure using the Anatomy DSL. Describes nodes (named/anonymous), edges with cardinality, slots, and CTI-inspired styles.
+  """
+  anatomyDsl: String
+
+  """
+  DEPRECATED. Legacy anatomy field (free-form text). Superseded by ds:anatomyDsl.
+  """
+  anatomyClassic: String
+
+  """Link to the Figma design file for this UI block"""
+  figmaLink: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""A reusable solution to a recurring user problem in a specific context"""
+type Pattern implements Node & UIBlock & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """
+  The variants of this UI Block (inverse of ds:variantOf). E.g. Tooltip has variant Tooltip+Dense.
+  """
+  variants(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The base UI Block this block is a variant of, by the '+' naming convention (e.g. Tooltip+Dense is a variant of Tooltip). Distinct from ds:inheritsFrom: a variant is a modifier-style derivative rather than a prefixed specialisation.
+  """
+  variantOfs(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Blocks that inherit from / specialise this block (inverse of ds:inheritsFrom). E.g. Tooltip is specialised by DataTooltip.
+  """
+  specializedBies(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Block this block inherits from / specialises (e.g. a Data tooltip inherits from Tooltip). Distinct from subcomponent containment: inheritance is an is-a-specialisation relationship.
+  """
+  inheritsFroms(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """Links a UI Block to its dated change log entries."""
+  changeLogs: [ChangeLogEntry!]!
+
+  """
+  Links a UI Block to the documentation-stage Tag(s) applied to it (e.g. needs:documentation). One facet of the wider Tag vocabulary; the other tag facets are tracked as future work.
+  """
+  documentationStages(first: Int, after: String, last: Int, before: String): TagConnection!
+
+  """Links a UI Block to its configurable properties"""
+  properties: [Property!]!
+
+  """Links a UI Block to applicable modifier families"""
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+
+  """The tier to which the UI block belongs to"""
+  tier: Tier
+
+  """
+  Detailed specification for correctly using and implementing the UI block.
+  """
+  guidelines: String
+
+  """
+  Free-text (Markdown) usage documentation for the UI block. Subsumes the former whenToUse/whenNotToUse: a usage entry describes the contexts where the component is most appropriate ('When to use'), the contexts where it is NOT appropriate and what to use instead ('When not to use'), and a general description, typically as Markdown sub-sections.
+  """
+  usage: String
+
+  """
+  YAML specification of component structure using the Anatomy DSL. Describes nodes (named/anonymous), edges with cardinality, slots, and CTI-inspired styles.
+  """
+  anatomyDsl: String
+
+  """
+  DEPRECATED. Legacy anatomy field (free-form text). Superseded by ds:anatomyDsl.
+  """
+  anatomyClassic: String
+
+  """Link to the Figma design file for this UI block"""
+  figmaLink: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""
+An implementable piece of user interface defined by its appearance and behaviour
+"""
+type Component implements Node & UIBlock & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Subcomponents that are structural parts of this component"""
+  subcomponents(first: Int, after: String, last: Int, before: String): SubcomponentConnection!
+
+  """
+  The variants of this UI Block (inverse of ds:variantOf). E.g. Tooltip has variant Tooltip+Dense.
+  """
+  variants(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The base UI Block this block is a variant of, by the '+' naming convention (e.g. Tooltip+Dense is a variant of Tooltip). Distinct from ds:inheritsFrom: a variant is a modifier-style derivative rather than a prefixed specialisation.
+  """
+  variantOfs(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Blocks that inherit from / specialise this block (inverse of ds:inheritsFrom). E.g. Tooltip is specialised by DataTooltip.
+  """
+  specializedBies(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Block this block inherits from / specialises (e.g. a Data tooltip inherits from Tooltip). Distinct from subcomponent containment: inheritance is an is-a-specialisation relationship.
+  """
+  inheritsFroms(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """Links a UI Block to its dated change log entries."""
+  changeLogs: [ChangeLogEntry!]!
+
+  """
+  Links a UI Block to the documentation-stage Tag(s) applied to it (e.g. needs:documentation). One facet of the wider Tag vocabulary; the other tag facets are tracked as future work.
+  """
+  documentationStages(first: Int, after: String, last: Int, before: String): TagConnection!
+
+  """Links a UI Block to its configurable properties"""
+  properties: [Property!]!
+
+  """Links a UI Block to applicable modifier families"""
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+
+  """The tier to which the UI block belongs to"""
+  tier: Tier
+
+  """
+  Detailed specification for correctly using and implementing the UI block.
+  """
+  guidelines: String
+
+  """
+  Free-text (Markdown) usage documentation for the UI block. Subsumes the former whenToUse/whenNotToUse: a usage entry describes the contexts where the component is most appropriate ('When to use'), the contexts where it is NOT appropriate and what to use instead ('When not to use'), and a general description, typically as Markdown sub-sections.
+  """
+  usage: String
+
+  """
+  YAML specification of component structure using the Anatomy DSL. Describes nodes (named/anonymous), edges with cardinality, slots, and CTI-inspired styles.
+  """
+  anatomyDsl: String
+
+  """
+  DEPRECATED. Legacy anatomy field (free-form text). Superseded by ds:anatomyDsl.
+  """
+  anatomyClassic: String
+
+  """Link to the Figma design file for this UI block"""
+  figmaLink: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+type SubcomponentConnection {
+  edges: [SubcomponentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SubcomponentEdge {
+  node: Subcomponent!
+  cursor: String!
+}
+
+"""
+A single do or don't example with a description, optional language tag, and optional code block
+"""
+type Example implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """The code content of the example"""
+  code: String
+
+  """
+  The programming language of the example code block (e.g., 'typescript', 'rust', 'css', 'bash', 'svg', 'turtle')
+  """
+  language: String
+
+  """A general description of the code standard or example"""
+  description: String
+}
+
+"""
+A category for grouping related code standards (e.g., testing, components, react, typescript)
+"""
+type Category implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """A general description of the code standard or example"""
+  description: String
+
+  """
+  A short identifier for the category or standard, used for domain annotation.
+  """
+  slug: String
+}
+
+"""A coding standard or best practice guideline for software development"""
+type CodeStandard implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """A negative example showing what should not be done"""
+  donts(first: Int, after: String, last: Int, before: String): ExampleConnection!
+
+  """A positive example showing what should be done"""
+  dos(first: Int, after: String, last: Int, before: String): ExampleConnection!
+
+  """
+  Associates a code standard with another standard that it extends or adds further context to
+  """
+  extends(first: Int, after: String, last: Int, before: String): CodeStandardConnection!
+
+  """Associates a code standard with its category"""
+  categories(first: Int, after: String, last: Int, before: String): CategoryConnection!
+
+  """A general description of the code standard or example"""
+  description: String
+
+  """
+  An optional human-readable display title for a code standard. This is not an identifier and must not duplicate the canonical role of the subject IRI.
+  """
+  name: String
+}
+
+type ExampleConnection {
+  edges: [ExampleEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ExampleEdge {
+  node: Example!
+  cursor: String!
+}
+
+type CodeStandardConnection {
+  edges: [CodeStandardEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CodeStandardEdge {
+  node: CodeStandard!
+  cursor: String!
+}
+
+type CategoryConnection {
+  edges: [CategoryEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CategoryEdge {
+  node: Category!
+  cursor: String!
+}
+
+"""One alternative within a Switch."""
+type SwitchCase implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Node this case resolves to."""
+  caseNode: AnatomyNode
+}
+
+"""Polymorphic position admitting several alternatives."""
+type Switch implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """An alternative within this switch."""
+  cases(first: Int, after: String, last: Int, before: String): SwitchCaseConnection!
+
+  """What determines which case applies."""
+  discriminator: String
+}
+
+type SwitchCaseConnection {
+  edges: [SwitchCaseEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SwitchCaseEdge {
+  node: SwitchCase!
+  cursor: String!
+}
+
+"""A single style declaration binding a property key to a value."""
+type Style implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Value for a style property."""
+  styleValue: String
+
+  """Platform-agnostic style property identifier."""
+  styleKey: String
+}
+
+"""Metadata qualifying a parent-child relationship."""
+type Relation implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Named slot in the parent that this child maps to."""
+  slotName: String
+
+  """Instance count constraint on the child."""
+  cardinality: String
+}
+
+"""Reified parent-child relationship in the anatomy tree."""
+type Edge implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Polymorphic switch this edge connects to."""
+  edgeSwitch: Switch
+
+  """Child node this edge connects to."""
+  edgeTarget: AnatomyNode
+
+  """Relation qualifying this edge."""
+  relation: Relation
+}
+
+"""Structural element without design system identity."""
+type AnonymousNode implements Node & AnatomyNode {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Human-readable purpose of an anonymous node."""
+  role: String
+
+  """Attaches a style declaration to a node."""
+  styles(first: Int, after: String, last: Int, before: String): StyleConnection!
+
+  """Connects a node to a child relationship."""
+  edges(first: Int, after: String, last: Int, before: String): EdgeConnection!
+}
+
+type StyleConnection {
+  edges: [StyleEdge!]!
+  pageInfo: PageInfo!
+}
+
+type StyleEdge {
+  node: Style!
+  cursor: String!
+}
+
+type EdgeConnection {
+  edges: [EdgeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type EdgeEdge {
+  node: Edge!
+  cursor: String!
+}
+
+"""Design system entity instantiable by consumers."""
+type NamedNode implements Node & AnatomyNode {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Unique identifier for a named node within the design system."""
+  anatomyUri: String
+
+  """Attaches a style declaration to a node."""
+  styles(first: Int, after: String, last: Int, before: String): StyleConnection!
+
+  """Connects a node to a child relationship."""
+  edges(first: Int, after: String, last: Int, before: String): EdgeConnection!
+}
+
+"""Root of an anatomy file."""
+type Specification implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Top-level node of an anatomy specification."""
+  rootNode: NamedNode
+}
+
+"""
+A category of visual or abstract entity that fulfills a particular role in composing user interfaces
+"""
+interface UIBlock implements Node & UIElement & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """
+  The variants of this UI Block (inverse of ds:variantOf). E.g. Tooltip has variant Tooltip+Dense.
+  """
+  variants(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The base UI Block this block is a variant of, by the '+' naming convention (e.g. Tooltip+Dense is a variant of Tooltip). Distinct from ds:inheritsFrom: a variant is a modifier-style derivative rather than a prefixed specialisation.
+  """
+  variantOfs(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Blocks that inherit from / specialise this block (inverse of ds:inheritsFrom). E.g. Tooltip is specialised by DataTooltip.
+  """
+  specializedBies(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """
+  The UI Block this block inherits from / specialises (e.g. a Data tooltip inherits from Tooltip). Distinct from subcomponent containment: inheritance is an is-a-specialisation relationship.
+  """
+  inheritsFroms(first: Int, after: String, last: Int, before: String): UIBlockConnection!
+
+  """Links a UI Block to its dated change log entries."""
+  changeLogs: [ChangeLogEntry!]!
+
+  """
+  Links a UI Block to the documentation-stage Tag(s) applied to it (e.g. needs:documentation). One facet of the wider Tag vocabulary; the other tag facets are tracked as future work.
+  """
+  documentationStages(first: Int, after: String, last: Int, before: String): TagConnection!
+
+  """Links a UI Block to its configurable properties"""
+  properties: [Property!]!
+
+  """Links a UI Block to applicable modifier families"""
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+
+  """The tier to which the UI block belongs to"""
+  tier: Tier
+
+  """
+  Detailed specification for correctly using and implementing the UI block.
+  """
+  guidelines: String
+
+  """
+  Free-text (Markdown) usage documentation for the UI block. Subsumes the former whenToUse/whenNotToUse: a usage entry describes the contexts where the component is most appropriate ('When to use'), the contexts where it is NOT appropriate and what to use instead ('When not to use'), and a general description, typically as Markdown sub-sections.
+  """
+  usage: String
+
+  """
+  YAML specification of component structure using the Anatomy DSL. Describes nodes (named/anonymous), edges with cardinality, slots, and CTI-inspired styles.
+  """
+  anatomyDsl: String
+
+  """
+  DEPRECATED. Legacy anatomy field (free-form text). Superseded by ds:anatomyDsl.
+  """
+  anatomyClassic: String
+
+  """Link to the Figma design file for this UI block"""
+  figmaLink: String
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""Base class for all visual and interactive design system elements"""
+interface UIElement implements Node & Entity {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""
+Abstract root class for all design system entities. Provides common properties (name, summary) inherited by all classes.
+"""
+interface Entity implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Log of decisions with [date][author][content]"""
+  decisionLog: String
+
+  """Semantic version of the entity following semver specification"""
+  version: String
+
+  """
+  A comprehensive paragraph of text that states the singular purpose of the entity.
+  """
+  summary: String
+
+  """
+  A human-readable text for the entity. The primary identifier, used for referencing and display purposes.
+  """
+  name: String
+}
+
+"""Position in the anatomy tree."""
+interface AnatomyNode implements Node {
+  """Relay global ID — the entity's prefixed URI."""
+  id: ID!
+  uri: String!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
+  """Attaches a style declaration to a node."""
+  styles(first: Int, after: String, last: Int, before: String): StyleConnection!
+
+  """Connects a node to a child relationship."""
+  edges(first: Int, after: String, last: Int, before: String): EdgeConnection!
+}
+
+"""Self-describing TBox access attached to ABox types."""
+type EntityMeta {
+  type: OntologyClass!
+  field(name: String!): ClassProperty
+  fields: [ClassProperty!]!
+}
+
+type OntologyClass {
+  uri: String!
+  label: String
+  definition: String
+  superclass: OntologyClass
+  superclasses: [OntologyClass!]!
+  subclasses: [OntologyClass!]!
+  properties: [ClassProperty!]!
+
+  """
+  Named instances of this class (blank-node instances are embeddable and not standalone-resolvable).
+  """
+  instances(first: Int, after: String, last: Int, before: String): NodeConnection!
+
+  """Count of NAMED instances (matches `instances`)."""
+  instanceCount: Int!
+  isAbstract: Boolean!
+  namespace: String!
+}
+
+"""
+Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair.
+"""
+type ClassProperty {
+  property: OntologyProperty!
+  required: Boolean!
+  singular: Boolean!
+  inherited: Boolean!
+}
+
+type OntologyProperty {
+  uri: String!
+  label: String
+  definition: String
+  domain: OntologyClass
+  range: String!
+  kind: PropertyKind!
+  functional: Boolean!
+  inverse: OntologyProperty
+  acceptanceCriteria: String
+  completionGuidance: String
+  namespace: String!
+}
+
+enum PropertyKind {
+  DATATYPE
+  OBJECT
+  ANNOTATION
+}
+
+type NodeConnection {
+  edges: [NodeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type NodeEdge {
+  node: Node!
+  cursor: String!
+}
+
+type Query {
+  ontologies: [Ontology!]!
+  ontology(prefix: String!): Ontology
+  ontologyClass(uri: String!): OntologyClass
+  ontologyProperty(uri: String!): OntologyProperty
+
+  """Relay node resolution by prefixed-URI global ID."""
+  node(id: ID!): Node
+  tagCategory(uri: String!): TagCategory
+  tagCategories(first: Int, after: String, last: Int, before: String): TagCategoryConnection!
+  tag(uri: String!): Tag
+  tags(first: Int, after: String, last: Int, before: String): TagConnection!
+  implementationLibrary(uri: String!): ImplementationLibrary
+  implementationLibraries(first: Int, after: String, last: Int, before: String): ImplementationLibraryConnection!
+  implementationObject(uri: String!): ImplementationObject
+  implementationObjects(first: Int, after: String, last: Int, before: String): ImplementationObjectConnection!
+  tier(uri: String!): Tier
+  tiers(first: Int, after: String, last: Int, before: String): TierConnection!
+  modifierFamily(uri: String!): ModifierFamily
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+  modifier(uri: String!): Modifier
+  modifiers(first: Int, after: String, last: Int, before: String): ModifierConnection!
+  group(uri: String!): Group
+  groups(first: Int, after: String, last: Int, before: String): GroupConnection!
+  subcomponent(uri: String!): Subcomponent
+  subcomponents(first: Int, after: String, last: Int, before: String): SubcomponentConnection!
+  layout(uri: String!): Layout
+  layouts(first: Int, after: String, last: Int, before: String): LayoutConnection!
+  pattern(uri: String!): Pattern
+  patterns(first: Int, after: String, last: Int, before: String): PatternConnection!
+  component(uri: String!): Component
+  components(first: Int, after: String, last: Int, before: String): ComponentConnection!
+  example(uri: String!): Example
+  examples(first: Int, after: String, last: Int, before: String): ExampleConnection!
+  category(uri: String!): Category
+  categories(first: Int, after: String, last: Int, before: String): CategoryConnection!
+  codeStandard(uri: String!): CodeStandard
+  codeStandards(first: Int, after: String, last: Int, before: String): CodeStandardConnection!
+  switchCase(uri: String!): SwitchCase
+  switchCases(first: Int, after: String, last: Int, before: String): SwitchCaseConnection!
+  switch(uri: String!): Switch
+  switches(first: Int, after: String, last: Int, before: String): SwitchConnection!
+  style(uri: String!): Style
+  styles(first: Int, after: String, last: Int, before: String): StyleConnection!
+  relation(uri: String!): Relation
+  relations(first: Int, after: String, last: Int, before: String): RelationConnection!
+  edge(uri: String!): Edge
+  edges(first: Int, after: String, last: Int, before: String): EdgeConnection!
+  anonymousNode(uri: String!): AnonymousNode
+  anonymousNodes(first: Int, after: String, last: Int, before: String): AnonymousNodeConnection!
+  namedNode(uri: String!): NamedNode
+  namedNodes(first: Int, after: String, last: Int, before: String): NamedNodeConnection!
+  specification(uri: String!): Specification
+  specifications(first: Int, after: String, last: Int, before: String): SpecificationConnection!
+}
+
+type Ontology {
+  prefix: String!
+  namespace: String!
+  label: String
+  classes: [OntologyClass!]!
+  properties: [OntologyProperty!]!
+}
+
+type ImplementationLibraryConnection {
+  edges: [ImplementationLibraryEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ImplementationLibraryEdge {
+  node: ImplementationLibrary!
+  cursor: String!
+}
+
+type ImplementationObjectConnection {
+  edges: [ImplementationObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ImplementationObjectEdge {
+  node: ImplementationObject!
+  cursor: String!
+}
+
+type GroupConnection {
+  edges: [GroupEdge!]!
+  pageInfo: PageInfo!
+}
+
+type GroupEdge {
+  node: Group!
+  cursor: String!
+}
+
+type LayoutConnection {
+  edges: [LayoutEdge!]!
+  pageInfo: PageInfo!
+}
+
+type LayoutEdge {
+  node: Layout!
+  cursor: String!
+}
+
+type PatternConnection {
+  edges: [PatternEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PatternEdge {
+  node: Pattern!
+  cursor: String!
+}
+
+type SwitchConnection {
+  edges: [SwitchEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SwitchEdge {
+  node: Switch!
+  cursor: String!
+}
+
+type RelationConnection {
+  edges: [RelationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type RelationEdge {
+  node: Relation!
+  cursor: String!
+}
+
+type AnonymousNodeConnection {
+  edges: [AnonymousNodeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type AnonymousNodeEdge {
+  node: AnonymousNode!
+  cursor: String!
+}
+
+type NamedNodeConnection {
+  edges: [NamedNodeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type NamedNodeEdge {
+  node: NamedNode!
+  cursor: String!
+}
+
+type SpecificationConnection {
+  edges: [SpecificationEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SpecificationEdge {
+  node: Specification!
+  cursor: String!
+}

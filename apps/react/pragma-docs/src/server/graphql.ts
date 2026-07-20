@@ -2,13 +2,26 @@
  * The dev GraphQL backend: pragma's knowledge graph compiled to an executable
  * schema, served as a fetch-native handler.
  *
- * The graph sources are the same set the pragma CLI compiles — for each cached
- * source package (design-system, code-standards, anatomy-dsl), every `.ttl`
- * under `definitions/` and `data/`, skipping dot-prefixed entries (editor and
- * channel artifacts such as `.modifier.dark.ttl` are not graph sources, and a
- * dot-prefixed Turtle local name is not even valid RDF). Prefixes are
- * harvested from the Turtle prologues because ke's `createStore` does not fold
- * parsed-Turtle prefixes into `store.prefixes`.
+ * The graph compiles from TWO roots into ONE store:
+ *
+ * 1. the pragma CLI's refs cache — for each cached source package
+ *    (design-system, code-standards, anatomy-dsl), every `.ttl` under
+ *    `definitions/` and `data/`;
+ * 2. the semantics working tree — the `surface` ontology and the
+ *    `design-system-docs` graph that instantiates it: the docsite's own
+ *    demand model (jobs, coordinates, pairings, surfaces, layouts), which
+ *    the journeys lens reads.
+ *
+ * Both roots skip dot-prefixed entries (editor and channel artifacts such as
+ * `.modifier.dark.ttl` are not graph sources, and a dot-prefixed Turtle local
+ * name is not even valid RDF). Prefixes are harvested from the Turtle
+ * prologues because ke's `createStore` does not fold parsed-Turtle prefixes
+ * into `store.prefixes`.
+ *
+ * The merge is PURELY ADDITIVE — no pre-merge type loses a field and only
+ * `Query` widens — which `graphqlSources.tests.ts` pins against a captured
+ * copy of the pre-merge SDL. The second root is skipped entirely when the
+ * semantics tree is absent, so the four shipped lenses still boot without it.
  *
  * The store and schema boot lazily on first request and are shared by every
  * consumer (the Vite middleware, the Bun/Express server bricks), so `vite.config`
@@ -31,8 +44,38 @@ import { createGraphQLHandler } from "@canonical/ke-graphql/http";
 /** The cached source packages whose TTL constitutes the docsite graph. */
 const REF_PACKAGES = ["design-system", "code-standards", "anatomy-dsl"];
 
+/**
+ * The SECOND source root: the semantic packages that carry the docsite's
+ * own demand model — the surface ontology (jobs, coordinates, pairings,
+ * surfaces, layouts) and the docs graph that instantiates it. These live
+ * in the semantics working tree rather than the pragma CLI's refs cache,
+ * so they are collected from their own root and merged into the same
+ * store: one schema, two roots.
+ *
+ * Compiling them alongside the refs packages is purely additive — no
+ * existing type loses a field and no prefix collides (`sem://surface#Job`
+ * yields `Job`, `sem://design-system-docs#` its own block).
+ */
+const SEM_PACKAGES = ["surface", "design-system-docs"];
+
 /** The package subdirectories scanned for `.ttl` sources. */
 const TTL_DIRS = ["definitions", "data"];
+
+/**
+ * Sources excluded from the semantic root.
+ *
+ * `shim-concept.ttl` declares `ds:embodiesConcept` with `rdfs:domain
+ * ds:Entity`. Because `ds:Entity` is the root of the design-system class
+ * tree, that one domain assertion smears the property (and its inverse)
+ * onto ALL FOURTEEN `ds:` types once both roots compile together — every
+ * existing docsite type would silently gain two fields, and `Concept`
+ * would gain a malformed single-character field. The shim is a modelling
+ * bridge for a graph the docsite does not read; excluding it keeps the
+ * second root additive-only, which `graphqlSources.tests.ts` pins by
+ * asserting `Component` still carries exactly its established field count
+ * (restore the shim and that suite fails — verified, not assumed).
+ */
+const EXCLUDED_SOURCES = ["design-system-docs/data/shim-concept.ttl"];
 
 /** The ref (branch) of each source package the dev backend reads. */
 const REF_NAME = "main";
@@ -72,6 +115,10 @@ const escapeChannelDottedRefs = (content: string): string =>
 const resolveRefsRoot = (): string =>
   process.env.PRAGMA_REFS_DIR ??
   join(homedir(), ".cache", "pragma", "refs", "@canonical");
+
+/** The semantics root: `$PRAGMA_SEM_DIR` or the sibling working tree. */
+const resolveSemRoot = (): string =>
+  process.env.PRAGMA_SEM_DIR ?? join(homedir(), "code", "cn", "semantics");
 
 /** Recursively collect `*.ttl` files under a directory, skipping dotfiles. */
 const walkTtl = (
@@ -119,8 +166,20 @@ const collectTtlSources = (): TtlSource[] => {
       `no .ttl sources found under ${refsRoot} — run \`pragma sources update\`.`,
     );
   }
-  sources.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
-  return sources;
+  const semRoot = resolveSemRoot();
+  if (existsSync(semRoot)) {
+    for (const pkg of SEM_PACKAGES) {
+      const root = join(semRoot, pkg);
+      for (const sub of TTL_DIRS) {
+        walkTtl(join(root, sub), root, pkg, sources);
+      }
+    }
+  }
+  const collected = sources.filter(
+    (source) => !EXCLUDED_SOURCES.includes(source.path),
+  );
+  collected.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return collected;
 };
 
 /** Merge every prefix declared in the sources' Turtle prologues. */
