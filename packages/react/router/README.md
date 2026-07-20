@@ -38,9 +38,11 @@ Route authoring story, in short:
 - define every route with `route()`
 - give it a `url` pattern such as `/docs/:slug`
 - give it a `component` receiving `{ params, search }` props (the deprecated `content` render-function form still works)
-- optionally add `prefetch` and `wrappers`
+- optionally add `prefetch`, `wrappers`, a per-route `fallback`, and an `errorComponent`
 - create one router from the full flat route map
 - let the router match incoming URLs — React renders the result
+
+Migrating from `content`: rename the field to `component` — bare component references and element-creating arrows are both valid, and hooks are legal inside. Both fields work during the transition (exactly one per route); `content` is deprecated (AV-340).
 
 ### 2. Provide the router and render the current match
 
@@ -137,7 +139,7 @@ function UserProfile({ id }: { id: string }) {
 
 ## Error handling
 
-The router does not ship an error boundary component. When `prefetch()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
+A route may declare an `errorComponent` to catch its own render errors (see [`Outlet`](#outlet)). Beyond that, the router does not ship a public error boundary component. When `prefetch()` throws, the error propagates into the React render tree and is caught by the nearest React error boundary.
 
 Use `StatusResponse` from `@canonical/router-core` to signal HTTP-like errors:
 
@@ -293,7 +295,7 @@ Important parts:
 - the `url` string is the matcher used for incoming URLs
 - `:slug` segments become typed route params
 - `prefetch` runs at navigation time as a fire-and-forget hook
-- `content` renders the matched route, receiving `params` and `search`
+- `component` renders the matched route, receiving `params` and `search` (the deprecated `content` field still works)
 
 Routes stay flat even when the UI is nested. Shared layout lives in wrappers from the core package, not in a nested route tree.
 
@@ -393,21 +395,59 @@ hydrateRoot(
 
 ### `Outlet`
 
-`Outlet` subscribes to router state, constructs elements from the matched route's `content` and `wrappers` (each gets its own React fiber, so hooks are legal in both), and wraps the matched subtree in `Suspense`.
+`Outlet` subscribes to router state, constructs elements from the matched route's `component` (or the deprecated `content`) and `wrappers` (each gets its own React fiber, so hooks are legal in both), and wraps the matched subtree in `Suspense`.
 
 ```tsx
 <Outlet fallback={<p>Loading route…</p>} />
 ```
+
+Routes may override the pending UI and catch their own render errors:
+
+```tsx
+const routes = {
+  reports: route({
+    url: "/reports",
+    component: ReportsPage,
+    // Overrides the Outlet-level fallback within the route-keyed Suspense.
+    fallback: <ReportsSkeleton />,
+    // Rendered with { error } behind an internal error boundary that is
+    // keyed by route — navigating away discards the error state, and
+    // navigating back re-attempts the render.
+    errorComponent: ({ error }) => <ReportsError error={error} />,
+  }),
+} as const;
+```
+
+Without an `errorComponent`, render errors propagate past `Outlet` to your own error boundary.
 
 ### Hooks
 
 - `useBlocker(isActive)` blocks navigation when `isActive` is `true`. Returns `{ state, proceed, cancel }`.
 - `useNavigationState()` subscribes to the router loading state.
 - `useRoute()` returns a tracked location proxy and rerenders only when an accessed location key changes.
+- `useRouteParams(route)` returns the current match's params, typed by the given route.
 - `useRouter()` returns the router instance from context. Use `useRouter().setSearchParams()` for search param mutation.
 - `useRouterState()` is the power-user hook for subscribing to selected slices of `router.getState()`.
+- `useRouteSearch(route)` returns the current match's schema-validated search data, typed by the given route.
 - `useSearchParam()` subscribes to one query-string key.
 - `useSearchParams()` subscribes either to the full query string or to a fixed set of keys.
+
+`useRouteParams` and `useRouteSearch` take the route object as a type witness — by passing it, the caller asserts the component renders under that route (route identity is not verified at runtime):
+
+```tsx
+const docsRoute = route({
+  url: "/docs/:slug",
+  search: z.object({ page: z.coerce.number().int().min(1).catch(1) }),
+  component: DocPage,
+});
+
+function DocPage() {
+  const { slug } = useRouteParams(docsRoute); // string — inferred from the url pattern
+  const { page } = useRouteSearch(docsRoute); // number — inferred from the search schema
+
+  return <h1>{slug} — page {page}</h1>;
+}
+```
 
 Typical selection strategy:
 
@@ -416,6 +456,7 @@ Typical selection strategy:
 - reach for `useSearchParam()` for one query-string key
 - reach for `useSearchParams()` for a fixed key set or the full query string
 - reach for `useRoute()` for pathname, hash, or full URL reads
+- reach for `useRouteParams()`/`useRouteSearch()` inside a route's component for typed params and search
 - reach for `useRouter()` for search param mutation or direct router access
 - reach for `useRouterState()` when you need `match`, `navigation`, or other advanced state in one selector
 
@@ -441,8 +482,10 @@ The reference integration lives in [apps/react/boilerplate-vite](../../../apps/r
 - `useBlocker()` — block navigation when the component has unsaved state.
 - `useNavigationState()` — subscribe to the navigation lifecycle state.
 - `useRoute()` — subscribe to a tracked location object.
+- `useRouteParams(route)` — read the current match's params, typed by the given route.
 - `useRouter()` — read the router instance from context.
 - `useRouterState()` — subscribe to the full router state or a selected slice.
+- `useRouteSearch(route)` — read the current match's validated search data, typed by the given route.
 - `useSearchParam()` — subscribe to one search-param key.
 - `useSearchParams()` — subscribe to all search params or a selected key set.
 

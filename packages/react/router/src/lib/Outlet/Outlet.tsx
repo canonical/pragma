@@ -19,13 +19,13 @@ import type { OutletProps } from "./types.js";
  * cause a rerender. The rendered content is keyed by route name so React
  * cleanly unmounts/remounts when the matched route changes.
  *
- * `Outlet` constructs elements from the matched route's `content` and
- * `wrappers` rather than invoking them as plain functions, so each receives
- * its own React fiber. Both bare component references
- * (`content: PageComponent`) and element-creating arrows
- * (`content: (props) => <Page {...props} />`) are valid `content` — an arrow
- * is itself a function component — and hooks are legal in both content and
- * wrapper components.
+ * `Outlet` constructs elements from the matched route's `component` (or the
+ * deprecated `content`) and `wrappers` rather than invoking them as plain
+ * functions, so each receives its own React fiber. Both bare component
+ * references (`component: PageComponent`) and element-creating arrows
+ * (`component: (props) => <Page {...props} />`) are valid — an arrow is
+ * itself a function component — and hooks are legal in both the route
+ * component and wrapper components.
  *
  * Routes may declare a `fallback` (pending UI overriding the `Outlet`-level
  * `fallback` prop within the route-keyed `Suspense`) and an `errorComponent`
