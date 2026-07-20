@@ -18,16 +18,26 @@ import { createRouter, route } from "@canonical/router-core";
 const routes = {
   home: route({
     url: "/",
-    content: () => "Home",
+    component: () => "Home",
   }),
   account: route({
     url: "/account/:team",
-    content: ({ params }) => `Account: ${params.team}`,
+    component: ({ params }) => `Account: ${params.team}`,
   }),
 } as const;
 ```
 
-A data route declares its UI through exactly one of two fields: `component` (preferred — a component receiving `{ params, search }` props, rendered with its own fiber by framework adapters such as `@canonical/router-react`) or the deprecated `content` render-function form shown above. `route()` throws when both or neither are declared.
+A data route declares its UI through exactly one of two fields. `component` (shown above) is preferred: a component receiving `{ params, search }` props, rendered with its own fiber by framework adapters such as `@canonical/router-react`, so hooks are legal inside it. The deprecated `content` render-function form accepts the same shape and keeps working:
+
+```tsx
+// Deprecated — prefer `component` (AV-340). Kept here as the migration reference.
+const legacyRoute = route({
+  url: "/legacy",
+  content: () => "Legacy",
+});
+```
+
+`route()` throws when both or neither of `component`/`content` are declared.
 
 ### 2. Create a router
 
@@ -54,8 +64,8 @@ The core package intentionally stops at route matching, state, dehydration, and 
 - **Routes are flat.** Every route is declared with `route()`.
 - **Wrappers are annotations.** Reuse layout with `wrapper()` and `group()`.
 - **Middleware is route-to-route transformation.** Use it to add auth, i18n, metrics, or shared wrapper policy. Middleware runs once, before the router is created.
-- **`prefetch()` is fire-and-forget.** It warms caches, preloads assets, or runs side effects at navigation time. It does not provide data to `content()` — components own their data via their cache library.
-- **URL params are validated by schemas.** Give a route a `params` or `search` [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, or hand-rolled) and the validated, typed output flows to `content()`, `prefetch()`, and the typed navigation helpers.
+- **`prefetch()` is fire-and-forget.** It warms caches, preloads assets, or runs side effects at navigation time. It does not provide data to the route component — components own their data via their cache library.
+- **URL params are validated by schemas.** Give a route a `params` or `search` [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, or hand-rolled) and the validated, typed output flows to the route `component`, `prefetch()`, and the typed navigation helpers.
 - **SSR is built in.** `dehydrate()` preserves navigation state across the server/client boundary.
 
 ## Progressive disclosure
@@ -67,7 +77,7 @@ import { route } from "@canonical/router-core";
 
 const settingsRoute = route({
   url: "/settings",
-  content: () => "Settings",
+  component: () => "Settings",
 });
 ```
 
@@ -85,7 +95,7 @@ const userRoute = route({
       signal,
     });
   },
-  content: ({ params }) => `User: ${params.id}`,
+  component: ({ params }) => `User: ${params.id}`,
 });
 ```
 
@@ -103,7 +113,7 @@ const productRoute = route({
   url: "/products/:id",
   params: z.object({ id: z.coerce.number().int().positive() }),
   // "/products/abc" → 404; "/products/42" → params.id === 42 (a number)
-  content: ({ params }) => `Product #${params.id}`,
+  component: ({ params }) => `Product #${params.id}`,
 });
 
 router.buildPath("product", { params: { id: 42 } }); // "/products/42" — fully typed
@@ -118,7 +128,7 @@ const listRoute = route({
     page: z.coerce.number().int().min(1).catch(1),
     sort: z.enum(["price", "name"]).catch("name"),
   }),
-  content: ({ search }) => `page ${search.page}, sorted by ${search.sort}`,
+  component: ({ search }) => `page ${search.page}, sorted by ${search.sort}`,
 });
 ```
 
@@ -137,8 +147,8 @@ const appShell = wrapper({
 });
 
 const [dashboardRoute, reportsRoute] = group(appShell, [
-  route({ url: "/dashboard", content: () => "Dashboard" }),
-  route({ url: "/reports", content: () => "Reports" }),
+  route({ url: "/dashboard", component: () => "Dashboard" }),
+  route({ url: "/reports", component: () => "Reports" }),
 ] as const);
 ```
 
@@ -156,7 +166,7 @@ const protectedRoute = route({
       throw new StatusResponse(401);
     }
   },
-  content: () => "Admin panel",
+  component: () => "Admin panel",
 });
 ```
 
@@ -181,7 +191,7 @@ const loginRequired = route({
   prefetch: async () => {
     redirect("/login", 302);
   },
-  content: () => "private",
+  component: () => "private",
 });
 ```
 

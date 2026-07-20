@@ -250,7 +250,7 @@ const routes = {
 export default routes;
 ```
 
-- `content` receives the component directly (not a wrapper function)
+- `component` receives the component directly (not a wrapper function)
 - Pages use `useHead()` from `@canonical/react-head` for title and meta
 - No `fetch()` / `prefetch()` unless needed for cache warming
 - No `.error` — use React error boundaries

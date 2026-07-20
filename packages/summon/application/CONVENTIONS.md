@@ -201,7 +201,7 @@ const [invoices, payments] = group(sidebarWrapper, [
 |----|------|------|
 | A6.1 | Cross-cutting concerns use middleware, not per-route logic | middleware function defined |
 | A6.2 | Middleware transforms routes via `RouteMiddleware` type | type annotation present |
-| A6.3 | Middleware wraps `prefetch`, not `content` | prefetch wrapping used |
+| A6.3 | Middleware wraps `prefetch`, not `component` | prefetch wrapping used |
 | A6.4 | Auth redirects use `redirect()` from router-core | `redirect()` call present |
 
 ---
