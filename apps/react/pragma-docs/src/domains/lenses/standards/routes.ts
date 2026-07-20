@@ -1,4 +1,5 @@
 import { route } from "@canonical/router-core";
+import { createElement } from "react";
 import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
 import type { StripSlotsEntry } from "#lib/Shell/types.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
@@ -27,11 +28,16 @@ import { standardsIndexRouteEntry } from "./standardsIndexQuery.js";
  * lens name, stationary across the lens's URLs. Controls/status stay
  * UNCLAIMED — honestly empty: the cs: surface carries no filter controls
  * (v1) and no governance/status fields to put there.
+ *
+ * `content` creates an element, never IS the page component — a bare
+ * reference runs the page's hooks inside Outlet's render and breaks client
+ * navigation (full rationale: src/domains/components/routes.ts).
  */
 const routes = {
   standards: route({
     url: "/standards",
-    content: StandardsPage,
+    // Propless: the index page reads no route params/search.
+    content: () => createElement(StandardsPage),
     prefetch: (params, search) => {
       warmRouteQuery(standardsIndexRouteEntry, params, search);
     },
@@ -44,7 +50,7 @@ const routes = {
   }),
   standardEntity: route({
     url: "/standards/:uri",
-    content: StandardReadingPage,
+    content: (props) => createElement(StandardReadingPage, props),
     prefetch: (params, search) => {
       warmRouteQuery(standardEntityRouteEntry, params, search);
     },
