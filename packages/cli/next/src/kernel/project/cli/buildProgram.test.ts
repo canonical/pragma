@@ -61,6 +61,50 @@ describe("buildProgram — flags", () => {
   });
 });
 
+describe("buildProgram — default-true boolean negation (B9)", () => {
+  const negatableVerb: VerbSpec = {
+    path: ["thing", "do"],
+    summary: "thing do summary",
+    params: [
+      { kind: "boolean", name: "ssr", doc: "Include SSR.", default: true },
+      {
+        kind: "boolean",
+        name: "runInstall",
+        doc: "Install now.",
+        default: false,
+      },
+      { kind: "boolean", name: "withHistory", doc: "Seed history." },
+    ],
+    output: {
+      formatters: {
+        plain: (d) => String(d),
+        llm: (d) => String(d),
+        json: (d) => JSON.stringify(d),
+      },
+    },
+    capability: { needsStore: false, mutates: false, mcp: { expose: true } },
+    run: async () => null,
+  };
+  const program = projectCli([{ name: "thing", verbs: [negatableVerb] }]);
+  const doCmd = program.commands
+    .find((c) => c.name() === "thing")
+    ?.commands.find((c) => c.name() === "do");
+
+  it("pairs a `--no-` negation onto a default-true boolean so it is disableable", () => {
+    const longs = doCmd?.options.map((o) => o.long) ?? [];
+    expect(longs).toContain("--ssr");
+    expect(longs).toContain("--no-ssr");
+  });
+
+  it("leaves default-false / defaultless booleans un-negated (no Commander default-flip)", () => {
+    const longs = doCmd?.options.map((o) => o.long) ?? [];
+    expect(longs).toContain("--run-install");
+    expect(longs).not.toContain("--no-run-install");
+    expect(longs).toContain("--with-history");
+    expect(longs).not.toContain("--no-with-history");
+  });
+});
+
 describe("buildProgram — early exits", () => {
   it("throws commander.version for --version, writing the version", async () => {
     const program = projectCli([fixtureModule]);

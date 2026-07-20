@@ -70,6 +70,17 @@ function registerParams(command: Command, verb: VerbSpec): void {
     } else {
       command.option(spec, param.doc);
     }
+    // B9: a default-`true` boolean is otherwise undisableable — the grammar has
+    // no negation form, so `create`'s sibling booleans (--ssr/--with-styles/…)
+    // could never be turned off. Register a paired `--no-<flag>` so they can:
+    // Commander keeps the `true` default and lets `--no-<flag>` set it false
+    // (verified: an unset default-false boolean is left alone). This is a CLI
+    // PARSE convenience, never a ParamSpec — `emitSurface`/MCP/the covenant are
+    // untouched — so the frozen flag list stands and negation stays additive.
+    if (param.kind === "boolean" && param.default === true) {
+      const flag = kebabCase(param.name);
+      command.option(`--no-${flag}`, `Disable --${flag} (on by default).`);
+    }
   }
 
   if (verb.capability.mutates) {
