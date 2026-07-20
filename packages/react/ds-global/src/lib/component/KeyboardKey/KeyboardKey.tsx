@@ -3,7 +3,11 @@ import { ARIA_LABELS, KEY_LABELS } from "./constants.js";
 import type { KeyboardKeyProps } from "./types.js";
 import "./styles.css";
 
-const componentCssClassName = "ds keyboard-key";
+// The key establishes its own `.surface`, so it consumes a full surface step
+// rather than hard-wiring a layer: nested inside an ambient surface it picks up
+// the next layer's ghost fill (surface+1, "like inputs"), and it composes
+// correctly at any depth instead of being pinned to layer2.
+const componentCssClassName = "ds keyboard-key surface";
 
 /**
  * The KeyboardKey component renders a single keyboard key as a styled

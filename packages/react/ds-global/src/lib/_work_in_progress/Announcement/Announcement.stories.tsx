@@ -4,7 +4,7 @@ import * as decorators from "storybook/decorators.js";
 import Component from "./Announcement.js";
 
 const meta = {
-  title: "components/Announcement",
+  title: "_work_in_progress/component/Announcement",
   component: Component,
   argTypes: {
     criticality: {
