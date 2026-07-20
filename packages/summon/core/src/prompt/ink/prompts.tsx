@@ -236,7 +236,8 @@ const SelectQuestion = ({
         </Box>
         <Box marginLeft={2}>
           <Text color="red">
-            ✘ No options are available to choose from. Press Ctrl-C to exit.
+            ✘ No options are available to choose from. Press Escape or Ctrl-C to
+            exit.
           </Text>
         </Box>
       </Box>
@@ -295,6 +296,7 @@ const MultiselectQuestion = ({
   onCancel: () => void;
 }) => {
   const choices = question.choices;
+  const classification = classifySelectChoices(choices);
   const [selected, setSelected] = useState<Set<string>>(
     new Set(question.default),
   );
@@ -305,6 +307,10 @@ const MultiselectQuestion = ({
       onCancel();
       return;
     }
+    // Zero choices is a dead-end (nothing to toggle; Enter could only ever fail
+    // a min-selection validator). The render below surfaces a clear error, so
+    // here we swallow every key but Escape — a stray Enter must not submit `[]`.
+    if (classification.kind === "empty") return;
     if (key.upArrow) {
       setHighlighted((p) => (p > 0 ? p - 1 : choices.length - 1));
     } else if (key.downArrow) {
@@ -318,6 +324,10 @@ const MultiselectQuestion = ({
           else next.add(choice.value);
           return next;
         });
+        // A fresh toggle changes the selection, so any stale min-selection
+        // error (C-lo3) no longer applies — clear it rather than let the ✘
+        // linger over a now-valid choice.
+        setError(null);
       }
     } else if (key.return) {
       // Run the prompt's own validator INLINE (C6) — this is also how a
@@ -332,6 +342,28 @@ const MultiselectQuestion = ({
       onSubmit(values);
     }
   });
+
+  // Zero choices would render an empty toggle list only Escape/Ctrl-C could
+  // leave — and, with the min-selection validator (C-lo3), an Enter that can
+  // only ever fail. Surface a clear error instead of that silent dead-end,
+  // mirroring the select guard (C4).
+  if (classification.kind === "empty") {
+    return (
+      <Box flexDirection="column">
+        <Box>
+          <Text color="magenta">› </Text>
+          <Text bold>{question.message}</Text>
+        </Box>
+        <Box marginLeft={2}>
+          <Text color="red">
+            ✘ No options are available to choose from. Press Escape or Ctrl-C to
+            exit.
+          </Text>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box flexDirection="column">
       <Box>
