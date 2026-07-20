@@ -19,12 +19,10 @@ describe("runComplete — the __complete pipeline", () => {
       "config",
     ]);
     // The live `config` sub-verbs, prefix-filtered and sorted by the resolver.
+    // AV-228 B3 retired the per-field tier/channel/detail verbs, leaving set + show.
     await expect(runComplete(["config", ""], capabilities)).resolves.toEqual([
-      "channel",
-      "detail",
       "set",
       "show",
-      "tier",
     ]);
     await expect(runComplete(["mc"], capabilities)).resolves.toEqual(["mcp"]);
     await expect(runComplete(["--l"], capabilities)).resolves.toEqual([

@@ -1,11 +1,11 @@
 /**
  * `config set <key> <value>` — the one-command config setter (ADDITIVE).
  *
- * The user-facing primary form for writing config: `pragma config set tier
- * apps/lxd` instead of the per-field `pragma config tier apps/lxd`. It is purely
- * additive — the frozen `config tier`/`channel`/`detail` verbs stay — and shares
- * their exact write path (`runField` via `runSet`), so it inherits reset
- * sentinels, enum re-validation, and the global-layer-only write for free.
+ * The single form for writing config: `pragma config set tier apps/lxd`. Since
+ * AV-228 B3 retired the per-field `config tier`/`channel`/`detail` verbs, this
+ * is now the ONLY config setter. It drives the shared write path (`runField` via
+ * `runSet`), so it inherits reset sentinels, enum re-validation, and the
+ * global-layer-only write from the {@link CONFIG_FIELDS} table.
  *
  * Covenant shape: `<key>` is an ENUM over the field names (better completion +
  * validation; the token still emits as `<key>`), `<value>` a free string, so

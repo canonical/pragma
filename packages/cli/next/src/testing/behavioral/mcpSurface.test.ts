@@ -92,7 +92,7 @@ function representativeValue(
     );
     return entity?.prefixed ?? entity?.name ?? "";
   }
-  // An enum positional (e.g. `config channel <name>`, `config set <key>`) must
+  // An enum positional (e.g. `config set <key>`) must
   // get a real member — a placeholder would fail the tool's zod schema at the
   // SDK layer, before the handler, yielding a protocol error rather than a
   // well-formed envelope.

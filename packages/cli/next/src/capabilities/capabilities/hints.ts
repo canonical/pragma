@@ -7,7 +7,7 @@
  * exists, or a hint's category disagrees with the tool's real `mutates` flag.
  *
  * `use_when` strings for the surviving tools are ported verbatim from the old
- * shell's `domains/llm/data/toolCatalog.ts`; the net-new v2 tools (config_detail,
+ * shell's `domains/llm/data/toolCatalog.ts`; the net-new v2 tools (config_set,
  * graph_query, setup, upgrade, doctor, capabilities, prompt_*, token_add-config,
  * sources_*, tier_lookup, create_*) are authored here.
  */
@@ -171,24 +171,10 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
 
   // — Write ——————————————————————————————————————————————————————————————————
-  config_tier: {
-    category: "write",
-    use_when: "Setting or resetting the active tier filter",
-  },
-  config_channel: {
-    category: "write",
-    use_when:
-      "Setting the release channel (normal, experimental, or prerelease)",
-  },
-  config_detail: {
-    category: "write",
-    use_when:
-      "Setting the default progressive-disclosure level (summary, standard, detailed)",
-  },
   config_set: {
     category: "write",
     use_when:
-      "Setting any config field by name in one call — tier, channel, or detail",
+      "Setting any config field by name — tier, channel, or detail (e.g. `config set tier apps/lxd`)",
   },
   create_component: {
     category: "write",
