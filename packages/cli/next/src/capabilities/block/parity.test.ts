@@ -173,8 +173,15 @@ describe("block list — hand-written tier/channel filtering", () => {
     ]);
   });
 
-  it("--all-tiers returns the same global blocks (no tier configured)", async () => {
+  it("--all-tiers also reveals the untiered subcomponent (A2)", async () => {
+    // Button Icon is a ds:Subcomponent with NO ds:tier: the scoped/default view
+    // omits it (a block joins the list through its tier), but --all-tiers must
+    // surface every block, including untiered ones.
     const rows = (await listVerb.run({ allTiers: true }, rt)) as BlockRow[];
-    expect(rows.map((r) => r.name).sort()).toEqual(["Button", "Modal"]);
+    expect(rows.map((r) => r.name).sort()).toEqual([
+      "Button",
+      "Button Icon",
+      "Modal",
+    ]);
   });
 });
