@@ -392,7 +392,7 @@ hydrateRoot(
 
 ### `Outlet`
 
-`Outlet` subscribes to router state, calls `router.render()`, and wraps the matched subtree in `Suspense`.
+`Outlet` subscribes to router state, constructs elements from the matched route's `content` and `wrappers` (each gets its own React fiber, so hooks are legal in both), and wraps the matched subtree in `Suspense`.
 
 ```tsx
 <Outlet fallback={<p>Loading route…</p>} />
