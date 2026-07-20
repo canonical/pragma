@@ -9,6 +9,14 @@
  * which rendered anatomy and modifiers without a flag. A derived name that maps
  * onto no schema field is omitted (OPTIONAL parity), so a graph lacking
  * whenToUse/whenNotToUse degrades gracefully.
+ *
+ * Disclosure declares the FULL canonical ladder `[summary, standard, detailed]`
+ * (B4), the same set `standard` declares, so a config `detail=standard` names a
+ * level `block` advertises rather than one it silently accepts-then-degrades.
+ * Block carries no `standard`-tier content of its own — gating is by canonical
+ * index, so `standard` resolves to the base view — but the declared set now
+ * matches its sibling reads. The per-noun DEFAULT stays domain-tuned (`block`
+ * rich-by-default, `standard` terse-by-default); only the level SET is aligned.
  */
 
 import type { PackDefinition } from "../../kernel/packs/types.js";
@@ -145,7 +153,10 @@ export const blockPack: PackDefinition = {
         ],
       },
     ],
-    disclosure: { levels: ["summary", "detailed"], default: "detailed" },
+    disclosure: {
+      levels: ["summary", "standard", "detailed"],
+      default: "detailed",
+    },
     sample: {
       fixedCount: true,
       toolDescription:

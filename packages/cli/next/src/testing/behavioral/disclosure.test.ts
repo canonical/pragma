@@ -64,6 +64,18 @@ describe("declares its levels within the canonical index (B6)", () => {
   });
 });
 
+describe("disclosure lookups declare the aligned canonical level set (B4)", () => {
+  // B4: block used to declare only `[summary, detailed]` while standard declared
+  // the full `[summary, standard, detailed]`, so a config `detail=standard` named
+  // a level block never advertised. Every disclosure lookup now declares the same
+  // canonical ladder; per-noun DEFAULTS may still differ (domain-tuned).
+  it.each(
+    disclosureLookupVerbs,
+  )("$noun: levels === the canonical ladder", (v) => {
+    expect(v.spec.disclosure?.levels).toEqual([...DETAIL_LEVELS]);
+  });
+});
+
 describe("detail:summary vs detail:detailed — key-set growth (B6)", () => {
   it.each(
     disclosureLookupVerbs,
