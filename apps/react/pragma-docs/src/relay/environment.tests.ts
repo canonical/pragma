@@ -12,8 +12,14 @@
  * original wiring passed only `urlMiddleware` — so every client-side query
  * POSTed an empty body and the server answered 400 "Missing query" while
  * SSR (in-process fetchFn, no HTTP) worked. Found by manual testing, not by
- * any suite. These tests fail hard if the body-writing middleware is ever
- * dropped again.
+ * any suite.
+ *
+ * Test 1 is the guard: it inspects the outgoing `RequestInit` directly, so
+ * dropping the body-writing middleware fails it hard. Test 2 is NOT a
+ * second guard — it asserts the caller receives the parsed payload, and a
+ * body-less POST against a stubbed fetch still resolves to the stub's
+ * canned response, so it stays green with the middleware removed. It pins
+ * response plumbing, not the request envelope.
  */
 
 import { fetchQuery } from "relay-runtime";

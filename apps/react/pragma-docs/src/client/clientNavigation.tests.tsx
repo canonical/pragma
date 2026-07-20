@@ -1,18 +1,27 @@
 /**
  * Client-side NAVIGATION over a hydrated app — the test class every suite
  * missed. Hydration tests mount one URL; the e2e never clicks. This file
- * drives the real user journey that exposed the Outlet hook-attribution
- * bug: hydrate the catalog, click through to an entity page, come back.
+ * drives the real user journey end to end: hydrate the catalog, click
+ * through to an entity page, come back, then go back again through
+ * history.
  *
- * The bug it pins: the router's `render()` invokes a route's `content(...)`
- * as a plain function during `Outlet`'s render. A route wired
- * `content: PageComponent` (type-identical to the element-creating arrow,
- * so it compiles) therefore runs the page's hooks in OUTLET's hook list —
- * SSR and single-URL hydration stay green, and the first client navigation
- * between pages with different hook counts throws "Rendered fewer hooks
- * than expected". Routes now declare `component:` and the router renders
- * them as real fibers (AV-340 / PR #880); this test remains the app-level
- * pin over that path.
+ * What this file actually pins — an INTEGRATION contract, not a single
+ * bug. Across every transition (link click forward, rail link back,
+ * `history.back()`) it asserts: the destination DOM is correct, React
+ * reported ZERO recoverable errors, and the network was NEVER touched.
+ * That covers the seeded store surviving navigation, the prefetch guards
+ * holding, and the rail's links resolving through the real router codecs.
+ *
+ * What it does NOT pin, despite its origin. This file was written for the
+ * Outlet hook-attribution bug (a route wired `content: PageComponent` ran
+ * the page's hooks in OUTLET's hook list, throwing "Rendered fewer hooks
+ * than expected" on the first navigation between pages of differing hook
+ * counts). Since AV-340 / PR #880 the router renders routes as real
+ * fibers, and BOTH wiring styles are now safe — rewiring a route back to
+ * the old crashing form leaves this file GREEN. The hook-ownership
+ * regression is therefore pinned where it can still fail, upstream:
+ * `packages/react/router/src/lib/Outlet/Outlet.test.tsx`, "Outlet hook
+ * ownership (AV-340)". Do not read this file as that guard.
  */
 
 import { HeadProvider } from "@canonical/react-head";
@@ -132,7 +141,7 @@ describe("client-side navigation over a hydrated app", () => {
     vi.unstubAllGlobals();
   });
 
-  it("navigates catalog → entity → catalog without hook errors or fetches", async () => {
+  it("navigates catalog → entity → catalog → back without hook errors or fetches", async () => {
     const serverHtml = renderSeededServerHtml(
       createFetchSpy(),
       CATALOG_URL,
@@ -184,6 +193,28 @@ describe("client-side navigation over a hydrated app", () => {
     });
     expect(container.querySelector("#lens-components-title")).toBeTruthy();
     expect(container.querySelector(ENTITY_LINK_SELECTOR)).toBeTruthy();
+
+    // History: the browser's Back button, a structurally DIFFERENT path
+    // through the router (its popstate handler, not its click handler) —
+    // untested anywhere before. This jsdom fires popstate off `back()` on
+    // its own; the explicit dispatch is belt-and-braces against a jsdom
+    // that does not, and is harmless when it does (the router re-resolves
+    // the same URL). The pathname assertions on either side are what give
+    // the leg teeth: deleting the navigation fails on the first one, so it
+    // cannot pass vacuously by sitting still.
+    expect(window.location.pathname).toBe(CATALOG_URL);
+    await act(async () => {
+      window.history.back();
+      window.dispatchEvent(new PopStateEvent("popstate", { state: {} }));
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    expect(window.location.pathname).toBe(
+      "/components/ds%3Aglobal.component.button",
+    );
+    // …and the destination re-rendered its own page, not a stale canvas.
+    expect(container.querySelector(ENTITY_TITLE_SELECTOR)?.textContent).toBe(
+      "Button",
+    );
 
     // The whole round trip served from the seeded store: zero network, and
     // React reported no recoverable error at any transition.

@@ -13,6 +13,14 @@ import "./styles.css";
  * invoked. The literal connection args are deliberate bounds, verified
  * live: every standard carries exactly one category and at most one
  * `extends` target (7/131 carry any) — 8 is headroom, not a page.
+ *
+ * DELIBERATELY NOT SELECTED: `dos` and `donts`. Both are real schema
+ * fields (`ExampleConnection!`) on `CodeStandard`, but the live graph
+ * carried ZERO example rows for either across all 131 standards at
+ * capture — so querying them would cost a round trip to render nothing,
+ * and the article has no examples section to render them into. This is
+ * the selection site: when examples land upstream, add them here (and a
+ * section below) rather than assuming the omission was an oversight.
  */
 const standardArticleFragmentSource = (): unknown => graphql`
   fragment StandardArticle_standard on CodeStandard {
@@ -111,6 +119,11 @@ const StandardArticle = ({
           className="standard-article-extends"
         >
           <h2 id="standard-article-extends-title">Extends</h2>
+          {/* A standard may extend ITSELF here — `cs:react.component.
+              structure.folder` does, live. That is real upstream data, so
+              it renders as-is (a link back to this same page) rather than
+              being filtered: the lens reports the graph, it does not
+              quietly correct it. */}
           <ul>
             {extendsNodes.map((node) => (
               <li key={node.id}>
