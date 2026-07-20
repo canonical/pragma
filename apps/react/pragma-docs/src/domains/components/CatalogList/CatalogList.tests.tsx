@@ -11,18 +11,14 @@ import { render, screen } from "@testing-library/react";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it, vi } from "vitest";
-import { catalogPage } from "../__fixtures__/catalogPageHarness.js";
+import {
+  catalogPage,
+  HARNESS_TEST_TIMEOUT_MS,
+} from "../__fixtures__/catalogPageHarness.js";
 
 const createFetchSpy = () =>
   vi.fn(() => new Promise<never>(() => {})) as ReturnType<typeof vi.fn> &
     FetchFunction;
-
-/**
- * Contention insurance (fix-pass F3): these tests mount the full provider
- * stack + static router, which can overrun the 5s default under heavy
- * parallel machine load. Per-test only — the config default stands.
- */
-const HARNESS_TEST_TIMEOUT_MS = 15_000;
 
 /** One Global node and one null-tier node, connection keys as captured. */
 const untieredRecords = {

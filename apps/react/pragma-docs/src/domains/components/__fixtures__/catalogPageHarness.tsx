@@ -21,6 +21,13 @@ import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { ComponentsCatalogPage } from "../ComponentsCatalogPage/index.js";
 
 /**
+ * Contention insurance (fix-pass F3): these tests mount the full provider
+ * stack + static router, which can overrun the 5s default under heavy
+ * parallel machine load. Per-test only — the config default stands.
+ */
+export const HARNESS_TEST_TIMEOUT_MS = 15_000;
+
+/**
  * The catalog page over an environment seeded with `records` (`undefined`
  * = cold store). The page owns its Suspense/ErrorBoundary; the router
  * exists for `Link` context only (no Outlet — the Shell stays out of

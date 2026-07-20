@@ -9,20 +9,16 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { FetchFunction, GraphQLResponse } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
 import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
-import { catalogPage } from "../__fixtures__/catalogPageHarness.js";
+import {
+  catalogPage,
+  HARNESS_TEST_TIMEOUT_MS,
+} from "../__fixtures__/catalogPageHarness.js";
 import catalogRecords from "../__fixtures__/catalogRecords.js";
 
 /** A fetch spy that never settles: any call means "the network was hit". */
 const createFetchSpy = () =>
   vi.fn(() => new Promise<never>(() => {})) as ReturnType<typeof vi.fn> &
     FetchFunction;
-
-/**
- * Contention insurance (fix-pass F3): these tests mount the full provider
- * stack + static router, which can overrun the 5s default under heavy
- * parallel machine load. Per-test only — the config default stands.
- */
-const HARNESS_TEST_TIMEOUT_MS = 15_000;
 
 /**
  * Page 1's captured `endCursor`, read straight off the fixture's connection
