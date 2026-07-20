@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+
+### Features
+
+* **router-core:** history-delegate option for the memory adapter ([#862](https://github.com/canonical/pragma/issues/862)) ([d6d74b8](https://github.com/canonical/pragma/commit/d6d74b86e783b6a85549948f28960674f0650053))
+
+
+
+
+
 # [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
 
 **Note:** Version bump only for package @canonical/router-core

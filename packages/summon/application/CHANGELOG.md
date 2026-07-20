@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+
+### Bug Fixes
+
+* **relay:** SSR-breaking type-only imports patched + summon relay-21 refresh with workspace-aware patch emission ([#866](https://github.com/canonical/pragma/issues/866)) ([47bc18d](https://github.com/canonical/pragma/commit/47bc18d2d4c786727a72d1bb44829acf5631b418))
+
+
+
+
+
 # [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
 
 **Note:** Version bump only for package @canonical/summon-application

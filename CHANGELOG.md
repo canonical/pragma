@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
+
+
+### Bug Fixes
+
+* **components:** design-review batch — h5 small-caps, SwitchField, Tabs, ContextualMenu, Field.Description, density retune ([#871](https://github.com/canonical/pragma/issues/871)) ([d9a568e](https://github.com/canonical/pragma/commit/d9a568ecd8ec0b2a5481c8f6827aece698eec751))
+* **form:** centre checkbox/switch on the label's first line (AV-325) ([#870](https://github.com/canonical/pragma/issues/870)) ([15cf3be](https://github.com/canonical/pragma/commit/15cf3bed7a16618cad535660e95e19ee4032f622))
+* **react/ds-global-form:** design-review gate — validation scope, disabled border, 8px label gap ([#860](https://github.com/canonical/pragma/issues/860)) ([e14ec8e](https://github.com/canonical/pragma/commit/e14ec8ea91e967d28d6a766208d34fdced27fa75))
+* **relay:** SSR-breaking type-only imports patched + summon relay-21 refresh with workspace-aware patch emission ([#866](https://github.com/canonical/pragma/issues/866)) ([47bc18d](https://github.com/canonical/pragma/commit/47bc18d2d4c786727a72d1bb44829acf5631b418))
+
+
+### Features
+
+* **components:** intrinsic control seat — one seat, no fixed heights (AV-323, AV-327) ([#873](https://github.com/canonical/pragma/issues/873)) ([4d5cbe8](https://github.com/canonical/pragma/commit/4d5cbe8631855864f48805a1ca07c76dd0cfb7bf)), closes [#871](https://github.com/canonical/pragma/issues/871) [#15](https://github.com/canonical/pragma/issues/15)
+* **router-core:** history-delegate option for the memory adapter ([#862](https://github.com/canonical/pragma/issues/862)) ([d6d74b8](https://github.com/canonical/pragma/commit/d6d74b86e783b6a85549948f28960674f0650053))
+
+
+
+
+
 # [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
 
 
