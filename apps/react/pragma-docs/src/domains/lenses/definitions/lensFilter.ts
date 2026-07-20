@@ -71,6 +71,30 @@ export const allNamespacesFilter = (
   namespaces: [...prefixes],
 });
 
+/**
+ * Resolve the EFFECTIVE filter against the ontologies that actually exist.
+ *
+ * An untouched filter carries no namespaces, because the shared state
+ * (`lensFilterContext`) sits above the query and cannot know the graph's
+ * prefixes. Every consumer reads that the same way — "no chip has been
+ * pressed, so show everything" — and this is the one place that reading
+ * lives, so the rail, the well and the mode strip's toolbar can never
+ * disagree about what an untouched filter means.
+ *
+ * Pure, and a no-op on the default value, which is what keeps the server
+ * render and the client's first paint byte-identical.
+ *
+ * IDENTITY MATTERS HERE. The well is memoised on `filter.namespaces`'s
+ * reference (a keystroke in the search box must not re-render 29 nodes),
+ * so this returns the caller's OWN `prefixes` array rather than a copy —
+ * a fresh array per render would silently defeat that memo.
+ */
+export const resolveFilter = (
+  filter: LensFilter,
+  prefixes: readonly string[],
+): LensFilter =>
+  filter.namespaces.length === 0 ? { ...filter, namespaces: prefixes } : filter;
+
 /** Normalise raw input from the search box into the comparable form. */
 export const normalizeFilterText = (raw: string): string =>
   raw.trim().toLowerCase();

@@ -5,7 +5,8 @@ import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsE
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
 import { HierarchyWell } from "../HierarchyWell/index.js";
-import { allNamespacesFilter, normalizeFilterText } from "../lensFilter.js";
+import { normalizeFilterText, resolveFilter } from "../lensFilter.js";
+import { useLensFilter } from "../lensFilterContext.js";
 import { TermInspector } from "../TermInspector/index.js";
 import { TermRail } from "../TermRail/index.js";
 import type { DefinitionsExplorerProps } from "./types.js";
@@ -29,6 +30,15 @@ const definitionsExplorerQuerySource = (): unknown => graphql`
     ontologies {
       prefix
       namespace
+      # The class facets the mode strip's chips filter on and its status
+      # figure counts. They ride the ROOT (not only the fragments) because
+      # the strip renders in the frame, outside this page's subtree, and
+      # Relay masks fragment data — the strip reads this same operation
+      # from the same warm store, so it must be able to see them.
+      classes {
+        uri
+        isAbstract
+      }
       ...TermRail_ontologies
       ...HierarchyWell_ontologies
     }
@@ -52,20 +62,22 @@ const componentCssClassName = "ds definitions-explorer";
  * seam use (`definitionsQuery.ts`), so the SSR-warmed store always
  * fulfils this exact operation.
  *
- * This component owns the lens's EPHEMERAL filter state, lifted out of the
- * rail so all three consumers read ONE value — the rail (which dims on
- * it), the well (which hides on it) and, once the strip claims its
- * sockets, the chips. Plain lifted state and props, not context: the data
- * flow stays visible, and a provider whose only subscriber is one toolbar
- * would be ceremony.
+ * The lens's EPHEMERAL filter lives in `lensFilterContext` rather than in
+ * this component's own state, for one specific reason recorded there in
+ * full: the mode strip's chips are mounted BY THE FRAME (Shell reads the
+ * route's static `meta`), so they are siblings of the canvas and no prop
+ * path reaches them. Context is the smallest mechanism that crosses that
+ * boundary. Everything else still flows as props from here.
  *
- * THE SSR DETERMINISM RULE. The filter's initial value is a NO-OP by
- * construction: `allNamespacesFilter` lights every prefix the query just
- * returned, both abstractions are allowed, and the text is empty — so the
- * first client render produces markup byte-identical to the server's.
- * Nothing here may ever be seeded from `localStorage`, `window` or the
- * query string. Selection, by contrast, IS server-rendered: it comes from
- * the URL (`term`), which is identical on both sides.
+ * THE SSR DETERMINISM RULE. The context's initial filter is the no-op
+ * default, and `resolveFilter` turns it into "every ontology lit" using
+ * the query's own data — a pure function of inputs identical on both
+ * sides, with no effect and no browser read anywhere in the path. So the
+ * rail and the well receive a fully-seeded no-op filter on the very first
+ * render, server and client alike, and the markup matches byte for byte.
+ * Nothing may ever be seeded from `localStorage`, `window` or the query
+ * string. Selection, by contrast, IS server-rendered: it comes from the
+ * URL (`term`), identical on both sides.
  */
 const DefinitionsExplorer = ({
   className,
@@ -80,14 +92,30 @@ const DefinitionsExplorer = ({
     namespace,
   }));
 
-  // The seed: every ontology the query returned, lit. Derived from data
-  // identical on both sides, so it is a pure function of the render's
-  // inputs — never an effect, never a browser read.
+  // The ontologies the query returned — identical on both sides, so
+  // everything derived from them is too. Memoised for IDENTITY as much as
+  // for cost: the well is memoised on its filter's array identities, so a
+  // fresh prefixes array per render would defeat that and re-render the
+  // whole graph on every keystroke.
   const prefixes = useMemo(
     () => data.ontologies.map((ontology) => ontology.prefix),
     [data.ontologies],
   );
-  const [filter, setFilter] = useState(() => allNamespacesFilter(prefixes));
+
+  const { filter: contextFilter, setFilter } = useLensFilter();
+
+  // THE EFFECTIVE FILTER. An untouched context carries no namespaces —
+  // the honest reading is "no chip has been pressed, so show everything",
+  // and every consumer resolves it the same way: seed from the ontologies
+  // the query returned. That keeps the first render (server AND client) at
+  // the no-op filter, and the chips take over the moment one is pressed.
+  // The strip resolves the identical fallback over the identical data
+  // (`stripSlots.tsx`), so the toolbar and the canvas never disagree.
+  const filter = useMemo(
+    () => resolveFilter(contextFilter, prefixes),
+    [contextFilter, prefixes],
+  );
+
   // The search box's RAW text is its own state: `filter.text` is
   // normalised (trimmed, lower-cased) for matching, and feeding that back
   // into a controlled input would eat the user's spaces and capitals as
@@ -109,10 +137,7 @@ const DefinitionsExplorer = ({
               onChange={(event) => {
                 const raw = event.target.value;
                 setSearchText(raw);
-                setFilter((current) => ({
-                  ...current,
-                  text: normalizeFilterText(raw),
-                }));
+                setFilter({ ...filter, text: normalizeFilterText(raw) });
               }}
               placeholder="Search terms…"
               type="search"

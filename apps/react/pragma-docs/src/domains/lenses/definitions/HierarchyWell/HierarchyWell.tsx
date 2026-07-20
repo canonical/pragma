@@ -1,7 +1,7 @@
 import { Link } from "@canonical/router-react";
 import { type NodeProps, ReactFlow } from "@xyflow/react";
 import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { graphql, useFragment } from "react-relay";
 import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
@@ -138,9 +138,22 @@ const HierarchyWell = ({
   // last. Client-only, and `undefined` on first paint by construction.
   const [focused, setFocused] = useState<string | undefined>(undefined);
 
+  // The graph answers ONLY to the chip axes. Text is rail-only by
+  // contract, so it is destructured out of the memo's dependencies
+  // entirely: typing in the search box must not re-decorate 29 nodes and
+  // 18 edges on every keystroke, and — more importantly — must not be able
+  // to change the graph even by accident. `abstractions` and `namespaces`
+  // are stable arrays from the filter, so the memo only recomputes when a
+  // chip actually moves.
+  const { abstractions, namespaces } = filter;
   const { nodes, edges } = useMemo(
-    () => decorateForView(graph, { selected: term, focused, filter }),
-    [graph, term, focused, filter],
+    () =>
+      decorateForView(graph, {
+        selected: term,
+        focused,
+        filter: { text: "", abstractions, namespaces },
+      }),
+    [graph, term, focused, abstractions, namespaces],
   );
 
   // React Flow offers node-level POINTER callbacks but none for focus, so
@@ -200,4 +213,26 @@ const HierarchyWell = ({
   );
 };
 
-export default HierarchyWell;
+/**
+ * Memoised at the boundary: the explorer re-renders on every keystroke in
+ * the search box (the shared filter's `text` changes), but the WELL does
+ * not answer to text. Without this, typing would re-render React Flow's
+ * whole 29-node tree per character — measurably slow, and pure waste,
+ * since the resulting graph is identical. The props are the fragment ref,
+ * the term and the filter object; only the last changes on a keystroke,
+ * and the comparator below ignores exactly the field the graph ignores.
+ */
+export default memo(HierarchyWell, (previous, next) => {
+  if (
+    previous.ontologies !== next.ontologies ||
+    previous.term !== next.term ||
+    previous.className !== next.className
+  ) {
+    return false;
+  }
+  // Re-render only when a CHIP axis moved — never for text.
+  return (
+    previous.filter.abstractions === next.filter.abstractions &&
+    previous.filter.namespaces === next.filter.namespaces
+  );
+});

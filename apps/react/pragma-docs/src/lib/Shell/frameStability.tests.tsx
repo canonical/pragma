@@ -25,15 +25,33 @@
  *      measurement (the extraction has eyes on the rail and the strip);
  *   3. the aria-current placements are exactly the modelled expectation
  *      per URL (Home carries two: brand + Home lens, both `href="/"`),
- *      and the strip's `data-slot="context"` text equals the per-URL
- *      model RAW — normalisation can never hide a wrong claim, because
- *      the raw text is asserted first;
- *   4. after normalising ONLY those two deltas (strip the attribute,
- *      blank exactly the context slot's text), all frames are
+ *      and the strip's three claimable slots — `context`, `controls`,
+ *      `status` — match the per-URL model RAW; normalisation can never
+ *      hide a wrong claim, because the raw content is asserted first;
+ *   4. after normalising ONLY those deltas (strip the attribute, blank
+ *      exactly the three claimed slots' contents), all frames are
  *      byte-identical (`toBe` on the strings);
- *   5. the normaliser forgives nothing else — a synthetic one-byte frame
- *      perturbation survives normalisation and fails the comparison, and
- *      so does text planted in any OTHER strip slot.
+ *   5. the normaliser forgives nothing else — synthetic perturbations to
+ *      the strip's own region, to any slot's IDENTITY attributes, and to
+ *      the frame at large all survive normalisation and fail the
+ *      comparison.
+ *
+ * THE R5 LOOSENING (owner-approved, recorded here rather than smuggled).
+ * Until AV-274 this suite asserted `controls` and `status` were EMPTY on
+ * every URL, and its teeth test used planted status text as proof that the
+ * normaliser's scope was one slot. The Definitions lens now claims both
+ * sockets — a filter toolbar and a status figure — because a strip that is
+ * never used is furniture pretending to be an instrument. So the model
+ * widened: per-URL claims for all three slots, asserted RAW, with the
+ * normaliser blanking exactly those three. The teeth test grew to
+ * compensate, and now proves the widened normaliser still catches a
+ * renamed socket, a tampered strip region, and frame changes elsewhere —
+ * the properties the old status-planting control used to establish.
+ *
+ * The claims are asserted STRUCTURALLY, not as pinned strings: the status
+ * figure carries a live count off the graph, and pinning it would turn
+ * every ontology edit into a frame-stability failure — a false alarm about
+ * something this suite does not measure.
  *
  * Since P-5 the measured set also carries a non-lens URL — the Button
  * entity page — rendered from its captured fixture records (initialData,
@@ -164,6 +182,33 @@ const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   [STANDARD_READING_URL]: "Standards",
 };
 
+/**
+ * Per-URL expectation for the third and fourth accounted-for deltas: the
+ * strip's `controls` and `status` claims (R5 — "a toolbar and the top bar
+ * should be useful"). Only the Definitions views claim them; every other
+ * URL must still render both sockets EMPTY, and this model is what says so.
+ *
+ * The claims are asserted STRUCTURALLY, never as pinned strings. The
+ * status figure reports a live count off the graph, so pinning its text
+ * would make the frame certification fail whenever the ontology gains a
+ * class — a false alarm about frame stability, which is not what this
+ * suite measures. Structure ("does this slot carry the toolbar / the
+ * figure, or nothing at all?") is the honest claim, and it is the claim
+ * whose violation would actually mean the frame moved.
+ */
+const EXPECTED_STRIP_CLAIMS: Readonly<
+  Record<string, { readonly controls: boolean; readonly status: boolean }>
+> = {
+  "/": { controls: false, status: false },
+  "/components": { controls: false, status: false },
+  "/definitions": { controls: true, status: true },
+  "/standards": { controls: false, status: false },
+  "/guides": { controls: false, status: false },
+  [BUTTON_ENTITY_URL]: { controls: false, status: false },
+  [DEFINITIONS_TERM_URL]: { controls: true, status: true },
+  [STANDARD_READING_URL]: { controls: false, status: false },
+};
+
 const renderPage = (url: string): string =>
   renderToString(
     <EntryServer
@@ -209,6 +254,17 @@ const splitAtCanvas = (body: string): { frame: string; canvas: string } => {
 const STRIP_CONTEXT_PATTERN =
   /(<div class="strip-context" data-slot="context">)([^<]*)(<\/div>)/;
 
+/**
+ * The controls and status slots. Unlike `context`, these hold ELEMENTS
+ * (a chip toolbar, a status figure), so the content group is non-greedy
+ * across markup rather than text-only. Each pattern still pins the slot's
+ * full identity, so it can never latch onto a sibling.
+ */
+const STRIP_CONTROLS_PATTERN =
+  /(<div class="strip-controls" data-slot="controls">)([\s\S]*?)(<\/div><div class="strip-status")/;
+const STRIP_STATUS_PATTERN =
+  /(<div class="strip-status" data-slot="status">)([\s\S]*?)(<\/div><\/header>)/;
+
 /** The context slot's RAW text — asserted against the model BEFORE any
  * normalisation, so blanking below can never hide a wrong claim. */
 const extractStripContext = (frame: string): string => {
@@ -217,12 +273,28 @@ const extractStripContext = (frame: string): string => {
   return (match as RegExpExecArray)[2];
 };
 
-/** Forgive exactly the accounted-for deltas, nothing else: strip the
- * router's aria-current attribute, blank ONLY the context slot's text. */
+/** The controls/status slots' RAW inner markup, asserted before
+ * normalisation for the same reason the context text is. */
+const extractStripSlot = (frame: string, pattern: RegExp): string => {
+  const match = pattern.exec(frame);
+  expect(match, "frame carries exactly one such strip slot").not.toBeNull();
+  return (match as RegExpExecArray)[2];
+};
+
+/**
+ * Forgive exactly the accounted-for deltas, nothing else: strip the
+ * router's aria-current attribute, then blank ONLY the three claimed strip
+ * slots' contents. Widened for the controls/status claims — an
+ * owner-approved loosening, paid for by the RAW per-URL assertions above
+ * it and by the teeth test below, which proves the widened normaliser
+ * still catches everything outside those three slots.
+ */
 const normalizeFrame = (frame: string): string =>
   frame
     .replaceAll(' aria-current="page"', "")
-    .replace(STRIP_CONTEXT_PATTERN, "$1$3");
+    .replace(STRIP_CONTEXT_PATTERN, "$1$3")
+    .replace(STRIP_CONTROLS_PATTERN, "$1$3")
+    .replace(STRIP_STATUS_PATTERN, "$1$3");
 
 /** The hrefs of anchors carrying aria-current, in document order. */
 const ariaCurrentHrefs = (frame: string): string[] =>
@@ -375,6 +447,37 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     }
   });
 
+  it("carries the strip controls/status claims exactly as modelled, per URL — RAW", () => {
+    // Same discipline as the context assertion above: the RAW slot
+    // contents are checked BEFORE the normaliser blanks them, so a route
+    // that wrongly claims (or wrongly drops) a socket fails here first.
+    for (const [url, { frame }] of getPages()) {
+      const expected = EXPECTED_STRIP_CLAIMS[url];
+      if (expected === undefined) throw new Error(`no strip model for ${url}`);
+
+      const controls = extractStripSlot(frame, STRIP_CONTROLS_PATTERN);
+      const status = extractStripSlot(frame, STRIP_STATUS_PATTERN);
+
+      if (expected.controls) {
+        // Structural, not a pinned string: the toolbar is present and is
+        // the real chip toolbar, identified by its own slot marker.
+        expect(controls, `controls on ${url}`).toContain(
+          'data-slot="explorer-controls"',
+        );
+      } else {
+        expect(controls, `controls on ${url} must be empty`).toBe("");
+      }
+
+      if (expected.status) {
+        expect(status, `status on ${url}`).toContain(
+          'data-slot="explorer-status"',
+        );
+      } else {
+        expect(status, `status on ${url} must be empty`).toBe("");
+      }
+    }
+  });
+
   it("frames are byte-identical once the accounted-for deltas are normalised", () => {
     const base = normalizeFrame(mustGet("/").frame);
     for (const url of MEASURED_URLS.slice(1)) {
@@ -392,23 +495,86 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     expect(normalizeFrame(perturbed)).not.toBe(normalizeFrame(frame));
   });
 
-  it("the context normaliser forgives ONLY the context slot's text", () => {
+  it("the strip normaliser forgives the three claimed slots — and NOTHING else", () => {
     const frame = mustGet(BUTTON_ENTITY_URL).frame;
-    // Forgiven: the modelled slot's text. Blanking makes two different
-    // claims compare equal — which is exactly why the RAW model assertion
-    // above exists.
-    const contextChanged = frame.replace(STRIP_CONTEXT_PATTERN, "$1Impostor$3");
-    expect(contextChanged).not.toBe(frame);
-    expect(normalizeFrame(contextChanged)).toBe(normalizeFrame(frame));
-    // NOT forgiven: text planted in a sibling slot (status) survives
-    // normalisation and breaks byte-identity — the normaliser's scope is
-    // one slot, not "the strip".
-    const statusPlanted = frame.replace(
-      /(<div class="strip-status" data-slot="status">)(<\/div>)/,
-      "$1planted$2",
-    );
-    expect(statusPlanted).not.toBe(frame);
-    expect(normalizeFrame(statusPlanted)).not.toBe(normalizeFrame(frame));
+
+    // FORGIVEN, by design: content in each of the three claimed slots.
+    // Blanking makes two different claims compare equal — which is
+    // precisely why the RAW per-URL model assertions above exist, and why
+    // this loosening is safe rather than merely convenient.
+    for (const [label, changed] of [
+      ["context", frame.replace(STRIP_CONTEXT_PATTERN, "$1Impostor$3")],
+      [
+        "controls",
+        frame.replace(
+          /(<div class="strip-controls" data-slot="controls">)(<\/div>)/,
+          "$1planted$2",
+        ),
+      ],
+      [
+        "status",
+        frame.replace(
+          /(<div class="strip-status" data-slot="status">)(<\/div>)/,
+          "$1planted$2",
+        ),
+      ],
+    ] as const) {
+      expect(changed, `${label} perturbation must alter the frame`).not.toBe(
+        frame,
+      );
+      expect(
+        normalizeFrame(changed),
+        `${label} content is forgiven by the normaliser`,
+      ).toBe(normalizeFrame(frame));
+    }
+
+    // NOT FORGIVEN — the widened normaliser's scope is those three slots,
+    // never "the strip" and never the frame at large. Each of these
+    // perturbations must survive normalisation and break byte-identity.
+    // This is the control that keeps the R5 loosening honest: without it,
+    // a normaliser that blanked the whole strip would pass every test
+    // above.
+    for (const [label, tampered] of [
+      // The strip's own element, just outside the slots.
+      [
+        "strip region",
+        frame.replace('data-region="mode-strip"', 'data-region="mode-strip-x"'),
+      ],
+      // A slot's own identity attributes — blanking contents must not
+      // extend to forgiving a renamed or missing socket.
+      [
+        "controls slot identity",
+        frame.replace('data-slot="controls"', 'data-slot="controls-x"'),
+      ],
+      [
+        "status slot identity",
+        frame.replace('data-slot="status"', 'data-slot="status-x"'),
+      ],
+      [
+        "context slot identity",
+        frame.replace('data-slot="context"', 'data-slot="context-x"'),
+      ],
+      // And the rest of the frame, unchanged from the original teeth test.
+      [
+        "primary nav",
+        frame.replace(
+          'data-region="primary-nav"',
+          'data-region="primary-nav-tampered"',
+        ),
+      ],
+      [
+        "footer",
+        frame.replace('data-region="footer"', 'data-region="footer-x"'),
+      ],
+    ] as const) {
+      expect(tampered, `${label} perturbation must alter the frame`).not.toBe(
+        frame,
+      );
+      expect(
+        normalizeFrame(tampered),
+        `${label} must NOT be forgiven by the normaliser`,
+      ).not.toBe(normalizeFrame(frame));
+    }
   });
 });
 

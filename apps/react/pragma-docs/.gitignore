@@ -23,3 +23,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Editor scratch (nvim undo history) — never source.
+.nvim/

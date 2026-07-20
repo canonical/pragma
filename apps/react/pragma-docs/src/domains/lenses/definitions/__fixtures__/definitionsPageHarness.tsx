@@ -21,6 +21,7 @@ import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay/environment.js";
 import { appRoutes, middleware, notFoundRoute } from "../../../../routes.js";
 import { DefinitionsPage } from "../DefinitionsPage/index.js";
+import { LensFilterProvider } from "../lensFilterContext.js";
 
 /** The primary exemplar the captured fixture serves. */
 export const UIBLOCK_TERM = "ds:UIBlock";
@@ -41,6 +42,12 @@ export const DEFINITIONS_TEST_TIMEOUT_MS = 20_000;
  * store). The page owns its Suspense/ErrorBoundary; the router exists for
  * `Link` context and selection only (no Outlet — the Shell stays out of
  * component tests).
+ *
+ * `LensFilterProvider` is part of the stack because it is part of the
+ * stack in production: `routes.tsx` wraps the Shell in it, so the lens's
+ * ephemeral filter is writable on every real render. Without it here the
+ * context's inert fallback would silently swallow every filter change and
+ * the rail's dimming tests would pass or fail for the wrong reason.
  */
 export const definitionsPageAt = (
   term: string | undefined,
@@ -63,7 +70,9 @@ export const definitionsPageAt = (
           },
         )}
       >
-        <DefinitionsPage params={term === undefined ? {} : { term }} />
+        <LensFilterProvider>
+          <DefinitionsPage params={term === undefined ? {} : { term }} />
+        </LensFilterProvider>
       </RouterProvider>
     </RelayEnvironmentProvider>
   </HeadProvider>

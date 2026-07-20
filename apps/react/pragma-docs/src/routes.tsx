@@ -13,6 +13,7 @@ import {
 import type { ReactElement, ReactNode } from "react";
 import accountRoutes from "#domains/account/routes.js";
 import componentsRoutes from "#domains/components/routes.js";
+import { LensFilterProvider } from "#domains/lenses/definitions/lensFilterContext.js";
 import definitionsRoutes from "#domains/lenses/definitions/routes.js";
 import lensRoutes from "#domains/lenses/routes.js";
 import standardsRoutes from "#domains/lenses/standards/routes.js";
@@ -78,11 +79,27 @@ export function withAuth(loginPath: string): RouteMiddleware {
  * Every public route mounts inside the DocsShell — the one shell instance
  * of `layout.shell` (P-4.1). The wrapper is deliberately just the Shell:
  * the frame owns rail/strip/canvas/footer, routes own only their canvas.
+ *
+ * The one addition (AV-274): the Definitions lens's filter provider sits
+ * ABOVE the Shell. It has to. The Shell renders the mode strip, and a
+ * route claims the strip's sockets with static `meta` — so the strip's
+ * Controls are mounted BY THE FRAME, as siblings of the canvas rather than
+ * descendants of the page. No prop path exists from the explorer up to
+ * them, so the shared filter has to cross that boundary through context,
+ * and the provider must therefore enclose both the strip and the canvas.
+ *
+ * Non-Definitions routes pay effectively nothing: the provider is one
+ * `useState` holding a no-op filter that nothing reads, since the other
+ * lenses claim no sockets. The alternative — widening `StripSlotsEntry` so
+ * every claim can carry live state — would make every future lens pay for
+ * this one's requirement, which is the larger cost.
  */
 const publicLayout = wrapper<ReactElement>({
   id: "public-layout",
   component: ({ children }: { children: ReactNode }) => (
-    <Shell>{children}</Shell>
+    <LensFilterProvider>
+      <Shell>{children}</Shell>
+    </LensFilterProvider>
   ),
 });
 

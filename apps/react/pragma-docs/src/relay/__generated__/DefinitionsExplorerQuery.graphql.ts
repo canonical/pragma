@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<54bbccb423b725a39715643daa688f30>>
+ * @generated SignedSource<<54e9d5c9ae8a4a2df9e835b4b1eeee8f>>
  * @lightSyntaxTransform
  */
 
@@ -15,6 +15,10 @@ export type DefinitionsExplorerQuery$variables = {
 };
 export type DefinitionsExplorerQuery$data = {
   readonly ontologies: ReadonlyArray<{
+    readonly classes: ReadonlyArray<{
+      readonly isAbstract: boolean;
+      readonly uri: string;
+    }>;
     readonly namespace: string;
     readonly prefix: string;
     readonly " $fragmentSpreads": FragmentRefs<"HierarchyWell_ontologies" | "TermRail_ontologies">;
@@ -56,32 +60,32 @@ v3 = {
   "name": "namespace",
   "storageKey": null
 },
-v4 = [
-  {
-    "kind": "Variable",
-    "name": "uri",
-    "variableName": "uri"
-  }
-],
-v5 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "label",
-  "storageKey": null
-},
-v6 = {
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "uri",
   "storageKey": null
 },
-v7 = {
+v5 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "isAbstract",
+  "storageKey": null
+},
+v6 = [
+  {
+    "kind": "Variable",
+    "name": "uri",
+    "variableName": "uri"
+  }
+],
+v7 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "label",
   "storageKey": null
 },
 v8 = {
@@ -106,8 +110,8 @@ v10 = {
   "storageKey": null
 },
 v11 = [
-  (v6/*:: as any*/),
-  (v5/*:: as any*/)
+  (v4/*:: as any*/),
+  (v7/*:: as any*/)
 ],
 v12 = {
   "alias": null,
@@ -137,6 +141,19 @@ return {
           (v2/*:: as any*/),
           (v3/*:: as any*/),
           {
+            "alias": null,
+            "args": null,
+            "concreteType": "OntologyClass",
+            "kind": "LinkedField",
+            "name": "classes",
+            "plural": true,
+            "selections": [
+              (v4/*:: as any*/),
+              (v5/*:: as any*/)
+            ],
+            "storageKey": null
+          },
+          {
             "args": null,
             "kind": "FragmentSpread",
             "name": "TermRail_ontologies"
@@ -156,7 +173,7 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "concreteType": "OntologyClass",
             "kind": "LinkedField",
             "name": "ontologyClass",
@@ -172,7 +189,7 @@ return {
           },
           {
             "alias": null,
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "concreteType": "OntologyProperty",
             "kind": "LinkedField",
             "name": "ontologyProperty",
@@ -211,7 +228,6 @@ return {
         "selections": [
           (v2/*:: as any*/),
           (v3/*:: as any*/),
-          (v5/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -220,7 +236,7 @@ return {
             "name": "classes",
             "plural": true,
             "selections": [
-              (v6/*:: as any*/),
+              (v4/*:: as any*/),
               (v5/*:: as any*/),
               (v7/*:: as any*/),
               (v8/*:: as any*/),
@@ -232,13 +248,14 @@ return {
                 "name": "superclass",
                 "plural": false,
                 "selections": [
-                  (v6/*:: as any*/)
+                  (v4/*:: as any*/)
                 ],
                 "storageKey": null
               }
             ],
             "storageKey": null
           },
+          (v7/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -247,8 +264,8 @@ return {
             "name": "properties",
             "plural": true,
             "selections": [
-              (v6/*:: as any*/),
-              (v5/*:: as any*/),
+              (v4/*:: as any*/),
+              (v7/*:: as any*/),
               (v9/*:: as any*/)
             ],
             "storageKey": null
@@ -263,16 +280,16 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "concreteType": "OntologyClass",
             "kind": "LinkedField",
             "name": "ontologyClass",
             "plural": false,
             "selections": [
-              (v6/*:: as any*/),
-              (v5/*:: as any*/),
-              (v10/*:: as any*/),
+              (v4/*:: as any*/),
               (v7/*:: as any*/),
+              (v10/*:: as any*/),
+              (v5/*:: as any*/),
               (v3/*:: as any*/),
               (v8/*:: as any*/),
               {
@@ -342,8 +359,8 @@ return {
                     "name": "property",
                     "plural": false,
                     "selections": [
-                      (v6/*:: as any*/),
-                      (v5/*:: as any*/),
+                      (v4/*:: as any*/),
+                      (v7/*:: as any*/),
                       (v10/*:: as any*/),
                       (v12/*:: as any*/),
                       (v9/*:: as any*/)
@@ -397,7 +414,7 @@ return {
                             "name": "id",
                             "storageKey": null
                           },
-                          (v6/*:: as any*/),
+                          (v4/*:: as any*/),
                           {
                             "kind": "InlineFragment",
                             "selections": [
@@ -444,14 +461,14 @@ return {
           },
           {
             "alias": null,
-            "args": (v4/*:: as any*/),
+            "args": (v6/*:: as any*/),
             "concreteType": "OntologyProperty",
             "kind": "LinkedField",
             "name": "ontologyProperty",
             "plural": false,
             "selections": [
-              (v6/*:: as any*/),
-              (v5/*:: as any*/),
+              (v4/*:: as any*/),
+              (v7/*:: as any*/),
               (v10/*:: as any*/),
               (v9/*:: as any*/),
               {
@@ -505,16 +522,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "ad31fcf9629f53d0cfe56b4a7e34339c",
+    "cacheID": "15dd25d2dece9931b5e8ab81691e4c1d",
     "id": null,
     "metadata": {},
     "name": "DefinitionsExplorerQuery",
     "operationKind": "query",
-    "text": "query DefinitionsExplorerQuery(\n  $uri: String!\n  $hasTerm: Boolean!\n) {\n  ontologies {\n    prefix\n    namespace\n    ...TermRail_ontologies\n    ...HierarchyWell_ontologies\n  }\n  ontologyClass(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_class\n  }\n  ontologyProperty(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_property\n  }\n}\n\nfragment HierarchyWell_ontologies on Ontology {\n  prefix\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    superclass {\n      uri\n    }\n  }\n}\n\nfragment TermInspector_class on OntologyClass {\n  uri\n  label\n  definition\n  isAbstract\n  namespace\n  instanceCount\n  superclass {\n    uri\n    label\n  }\n  superclasses {\n    uri\n    label\n  }\n  subclasses {\n    uri\n    label\n  }\n  properties {\n    required\n    singular\n    inherited\n    property {\n      uri\n      label\n      definition\n      range\n      kind\n    }\n  }\n  instances(first: 12) {\n    edges {\n      node {\n        __typename\n        id\n        uri\n        ... on Entity {\n          __isEntity: __typename\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment TermInspector_property on OntologyProperty {\n  uri\n  label\n  definition\n  kind\n  functional\n  range\n  namespace\n  domain {\n    uri\n    label\n  }\n  inverse {\n    uri\n    label\n  }\n  acceptanceCriteria\n  completionGuidance\n}\n\nfragment TermRail_ontologies on Ontology {\n  prefix\n  label\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    instanceCount\n  }\n  properties {\n    uri\n    label\n    kind\n  }\n}\n"
+    "text": "query DefinitionsExplorerQuery(\n  $uri: String!\n  $hasTerm: Boolean!\n) {\n  ontologies {\n    prefix\n    namespace\n    classes {\n      uri\n      isAbstract\n    }\n    ...TermRail_ontologies\n    ...HierarchyWell_ontologies\n  }\n  ontologyClass(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_class\n  }\n  ontologyProperty(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_property\n  }\n}\n\nfragment HierarchyWell_ontologies on Ontology {\n  prefix\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    superclass {\n      uri\n    }\n  }\n}\n\nfragment TermInspector_class on OntologyClass {\n  uri\n  label\n  definition\n  isAbstract\n  namespace\n  instanceCount\n  superclass {\n    uri\n    label\n  }\n  superclasses {\n    uri\n    label\n  }\n  subclasses {\n    uri\n    label\n  }\n  properties {\n    required\n    singular\n    inherited\n    property {\n      uri\n      label\n      definition\n      range\n      kind\n    }\n  }\n  instances(first: 12) {\n    edges {\n      node {\n        __typename\n        id\n        uri\n        ... on Entity {\n          __isEntity: __typename\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment TermInspector_property on OntologyProperty {\n  uri\n  label\n  definition\n  kind\n  functional\n  range\n  namespace\n  domain {\n    uri\n    label\n  }\n  inverse {\n    uri\n    label\n  }\n  acceptanceCriteria\n  completionGuidance\n}\n\nfragment TermRail_ontologies on Ontology {\n  prefix\n  label\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    instanceCount\n  }\n  properties {\n    uri\n    label\n    kind\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "254afa58bf563569f3e77a50a190579d";
+(node as any).hash = "837f3a8e48716b8863c7d3bcb3cdf273";
 
 export default node;

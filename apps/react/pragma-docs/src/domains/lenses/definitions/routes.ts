@@ -5,6 +5,7 @@ import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
 import { DefinitionsPage } from "./DefinitionsPage/index.js";
 import { definitionsRouteEntry } from "./definitionsQuery.js";
+import { definitionsStripSlots } from "./stripSlots.js";
 
 /**
  * The Definitions lens routes (P-5): the explorer (`/definitions`, the
@@ -18,9 +19,17 @@ import { definitionsRouteEntry } from "./definitionsQuery.js";
  * - `prefetch` — hover (router-react's `Link`) and the initial hydration
  *   load warm the client store through `warmRouteQuery`.
  *
- * Both routes claim the mode strip's context socket ("Definitions").
- * Controls/status stay UNCLAIMED — honestly empty: the ontology surface
- * carries no governance/status fields to put there.
+ * Both routes claim ALL THREE mode-strip sockets (R5 — a toolbar and the
+ * top bar should be useful): the context name, the filter chips, and the
+ * status figure. The chips filter on the two axes an `OntologyClass`
+ * genuinely carries — abstraction and owning ontology. They are NOT a
+ * maturity lens: verified live, the ontology surface has no lifecycle,
+ * status or channel field, and the `Tag` vocabulary that does carry a
+ * channel facet applies to UIBlocks rather than ontology classes.
+ *
+ * Claiming the sockets deliberately loosened `frameStability.tests.tsx`,
+ * which previously asserted both were empty on every URL; that change
+ * landed in its own commit with its own justification.
  */
 const routes = {
   definitions: route({
@@ -33,6 +42,7 @@ const routes = {
       [ROUTE_QUERY_META_KEY]: definitionsRouteEntry,
       [SHELL_STRIP_META_KEY]: {
         context: "Definitions",
+        ...definitionsStripSlots,
       } satisfies StripSlotsEntry,
     },
   }),
@@ -46,6 +56,7 @@ const routes = {
       [ROUTE_QUERY_META_KEY]: definitionsRouteEntry,
       [SHELL_STRIP_META_KEY]: {
         context: "Definitions",
+        ...definitionsStripSlots,
       } satisfies StripSlotsEntry,
     },
   }),
