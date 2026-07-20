@@ -1,0 +1,23 @@
+/* ==========================================================================
+   Taxonomic subclass edge — the ontological "is a"
+   ========================================================================== */
+.ds.subclass-edge {
+  fill: none;
+  stroke: var(--relation-accent-subclass, var(--color-text, #111));
+  stroke-width: 1.5;
+}
+
+.ds.subclass-edge-label {
+  position: absolute;
+  padding-inline: 0.375rem;
+  border-radius: 999px;
+  background-color: var(--color-background-default, #fff);
+  border: var(--spacing-border-width, 1px) solid
+    var(--color-border-low-contrast, #e5e5e5);
+  color: var(--color-text-muted, #555);
+  font-size: var(--font-size-caption, 0.75rem);
+  font-style: italic;
+  line-height: 1.4;
+  pointer-events: all;
+  white-space: nowrap;
+}

@@ -1,0 +1,88 @@
+/* ==========================================================================
+   Graph palette — canonical mirror
+   The legend is the key to the whole palette, so it declares every accent token
+   (entities and relations) here. EntityNode and the edge components declare
+   their own subsets for standalone rendering; keep all three in sync — the
+   `resolve*Appearance` helpers choose which token applies.
+   ========================================================================== */
+:root {
+  --entity-accent-component: var(--color-feedback-information, #0066cc);
+  --entity-accent-token: var(--color-feedback-positive, #0e8420);
+  --entity-accent-standard: var(--color-feedback-caution, #f99b11);
+  --entity-accent-concept: var(--color-accent, #7764d8);
+  --entity-accent-unknown: var(--color-border-high-contrast, #666);
+
+  --relation-accent-subclass: var(--color-text, #111);
+  --relation-accent-uses: var(--color-feedback-information, #0066cc);
+  --relation-accent-governs: var(--color-feedback-caution, #f99b11);
+  --relation-accent-refines: var(--color-accent, #7764d8);
+  --relation-accent-unknown: var(--color-border-high-contrast, #888);
+}
+
+/* ==========================================================================
+   Legend
+   ========================================================================== */
+.ds.graph-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: var(--spacing-horizontal-small, 0.5rem)
+    var(--spacing-horizontal-medium, 0.75rem);
+  border: var(--spacing-border-width, 1px) solid
+    var(--color-border-low-contrast, #e5e5e5);
+  border-radius: var(--spacing-border-radius, 0.25rem);
+  background-color: var(--color-background-default, #fff);
+  color: var(--color-text, #111);
+  font-size: var(--font-size-caption, 0.75rem);
+  line-height: var(--line-height-default, 1.5);
+}
+
+.ds.graph-legend .graph-legend-heading {
+  margin: 0;
+  font-weight: var(--font-weight-bold, 550);
+}
+
+.ds.graph-legend .graph-legend-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ds.graph-legend .graph-legend-group-title {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted, #666);
+}
+
+.ds.graph-legend .graph-legend-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ds.graph-legend .graph-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ds.graph-legend .graph-legend-swatch {
+  flex-shrink: 0;
+  background-color: var(--color-border-high-contrast, #666);
+}
+
+.ds.graph-legend .graph-legend-swatch-entity {
+  inline-size: 0.75rem;
+  block-size: 0.75rem;
+  border-radius: 2px;
+}
+
+.ds.graph-legend .graph-legend-swatch-relation {
+  inline-size: 1.25rem;
+  block-size: 3px;
+  border-radius: 2px;
+}

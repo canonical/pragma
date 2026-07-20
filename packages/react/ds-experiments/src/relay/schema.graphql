@@ -1,0 +1,101 @@
+"""
+An ontology-graph slice of the Pragma knowledge graph: the entities (nodes)
+that make up a neighbourhood and the typed relations (edges) between them.
+This is the projection contract the graph components render.
+"""
+interface Node {
+  id: ID!
+}
+
+"""
+The ontology category an entity belongs to.
+"""
+enum EntityKind {
+  COMPONENT
+  TOKEN
+  STANDARD
+  CONCEPT
+}
+
+"""
+The design-system tier an entity is sourced from.
+"""
+enum EntityTier {
+  GLOBAL
+  DOCS
+  APPLICATION
+  SCDN
+}
+
+"""
+The kind of a typed relation between two entities.
+"""
+enum RelationKind {
+  SUBCLASS_OF
+  USES
+  GOVERNS
+  REFINES
+}
+
+"""
+A single entity — a node in the knowledge graph.
+"""
+type GraphEntity implements Node {
+  id: ID!
+  """
+  Human-readable label, e.g. "Button".
+  """
+  label: String!
+  """
+  The ontology category this entity belongs to.
+  """
+  kind: EntityKind!
+  """
+  The design-system tier this entity is sourced from, when known.
+  """
+  tier: EntityTier
+  """
+  A one-line description of the entity.
+  """
+  summary: String
+}
+
+"""
+A directed, typed relation — an edge in the knowledge graph.
+"""
+type GraphRelation implements Node {
+  id: ID!
+  """
+  Global id of the entity the relation starts from.
+  """
+  source: ID!
+  """
+  Global id of the entity the relation points to.
+  """
+  target: ID!
+  """
+  The kind of relation.
+  """
+  kind: RelationKind!
+  """
+  An optional label rendered on the edge.
+  """
+  label: String
+}
+
+"""
+A slice of the knowledge graph: its entities and their relations.
+"""
+type SchemaGraph {
+  entities: [GraphEntity!]!
+  relations: [GraphRelation!]!
+}
+
+type Query {
+  node(id: ID!): Node
+  """
+  The ontology neighbourhood rooted at an optional focus entity; with no
+  focus, the whole sample graph is returned.
+  """
+  ontology(focus: ID): SchemaGraph!
+}
