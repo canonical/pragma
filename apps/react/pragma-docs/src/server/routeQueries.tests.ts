@@ -13,6 +13,12 @@ import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
 import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
 import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
 import {
+  LOBBY_COMPONENT_CLASS,
+  LOBBY_EXEMPLAR_COUNT,
+  LOBBY_PATTERN_CLASS,
+  LOBBY_STANDARD_CLASS,
+} from "#domains/marketing/lobbyQuery.js";
+import {
   RELATION_PAGE_SIZE as PROBE_RELATION_PAGE_SIZE,
   PROBE_URI,
 } from "#domains/playground/probeQuery.js";
@@ -87,9 +93,23 @@ describe("matchRouteQuery", () => {
     expect(matchRouteQuery("/no-such-route")).toBeUndefined();
   });
 
+  // Home block (AV-350): the lobby's degenerate constant builder — no
+  // params, no search schema, so the variables are the same three class
+  // URIs and the exemplar page size on every request.
+  it("resolves / to the lobby's constant variables", () => {
+    const resolved = matchRouteQuery("/");
+    expect(resolved?.variables).toEqual({
+      componentClass: LOBBY_COMPONENT_CLASS,
+      patternClass: LOBBY_PATTERN_CLASS,
+      standardClass: LOBBY_STANDARD_CLASS,
+      exemplars: LOBBY_EXEMPLAR_COUNT,
+    });
+  });
+
   it("returns undefined for matched routes that declare no query", () => {
-    // The marketing home mounts no ssrQuery entry.
-    expect(matchRouteQuery("/")).toBeUndefined();
+    // The guide reading detail is authored prose — no ssrQuery entry.
+    // (Home used to sit here; since AV-350 it carries the lobby query.)
+    expect(matchRouteQuery("/guides/getting-started")).toBeUndefined();
   });
 });
 

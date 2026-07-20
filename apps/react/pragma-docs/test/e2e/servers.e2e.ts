@@ -58,6 +58,23 @@ const MATRIX: Cell[] = [
 const JS_CONTENT_TYPE = /javascript/;
 
 /**
+ * The schema's hard per-page connection maximum (ke-graphql
+ * MAX_PAGE_SIZE). Restated here rather than imported: this suite asserts
+ * against the HTTP surface only and pulls in no app modules, so the
+ * server under test stays a black box. It is a SCHEMA constant, not a
+ * graph count — it does not drift with the data.
+ */
+const CONNECTION_PAGE_CAP = 100;
+
+/**
+ * How many exemplars the lobby's strip asks the graph for (mirrors
+ * `LOBBY_EXEMPLAR_COUNT` in `#domains/marketing/lobbyQuery.js`). Same
+ * black-box rationale; a change there without a change here fails loudly
+ * in the home block below, which is the intent.
+ */
+const LOBBY_EXEMPLAR_COUNT = 6;
+
+/**
  * The per-request line the dev servers' `/graphql` bricks log — keep in sync
  * with `server.bun.ts` / `server.express.ts`. Its absence after a page load
  * is the "zero HTTP hits" proof; its appearance after a direct POST proves
@@ -371,9 +388,80 @@ describe("server matrix (2×3) serves correctly", () => {
             //     makes that a failure, not a shrug.
             expect(standardsIndexHtml).toContain("Load more");
 
+            // 5f. Home block (AV-350): the lobby SSRs from the live
+            //     graph — the front door is the last route to come over
+            //     it. Two projections, both asserted DRIFT-PROOF: never
+            //     a pinned graph number (the 111→108 lesson), only
+            //     structure, floors, and cross-checks against THIS same
+            //     response.
+            const home = await fetch(`${server.base}/`);
+            expect(home.status).toBe(200);
+            const homeHtml = await home.text();
+            //     All three layout.lobby slots reached the HTML.
+            expect(homeHtml).toContain('data-slot="hero"');
+            expect(homeHtml).toContain('data-slot="examples"');
+            expect(homeHtml).toContain('data-slot="doors"');
+            expect(homeHtml).toContain("__INITIAL_DATA__");
+            expect(homeHtml).toContain('"records"');
+
+            //     Projection 1 — the exemplar strip. The strip asks the
+            //     graph for exactly LOBBY_EXEMPLAR_COUNT instances, so
+            //     the rendered link count must equal it: fewer means the
+            //     projection partially rendered, more means it stopped
+            //     honouring its own page size. Derived from this
+            //     response, not from a captured fixture.
+            const exemplarLinkCount = (
+              homeHtml.match(/href="\/components\/ds%3A/g) ?? []
+            ).length;
+            expect(exemplarLinkCount).toBe(LOBBY_EXEMPLAR_COUNT);
+
+            //     Projection 2 — the doors' honest counts. THE
+            //     load-bearing assertion of the whole block: the
+            //     standards figure is read off `instanceCount`, and the
+            //     codeStandards connection caps at 100 per page, so a
+            //     figure ABOVE the cap could not have come from counting
+            //     edges. Were a future edit to swap the source to a
+            //     connection count, the number would silently collapse
+            //     to at most 100 and this snaps. The floor is the cap
+            //     itself — never the live total.
+            const standardsFigure = homeHtml.match(
+              /The graph holds <!-- -->(\d+)<!-- --> of them/,
+            );
+            expect(standardsFigure).not.toBeNull();
+            expect(Number(standardsFigure?.[1])).toBeGreaterThan(
+              CONNECTION_PAGE_CAP,
+            );
+
+            //     The components/patterns figures render as a pair and
+            //     are internally ordered: the graph holds more
+            //     components than patterns (components are the larger
+            //     class by construction — patterns compose them), and
+            //     both are non-trivial. Structural bounds, no pins.
+            const componentsFigure = homeHtml.match(
+              /The graph holds <!-- -->(\d+)<!-- --> components and <!-- -->(\d+)<!-- -->/,
+            );
+            expect(componentsFigure).not.toBeNull();
+            const liveComponentCount = Number(componentsFigure?.[1]);
+            const livePatternCount = Number(componentsFigure?.[2]);
+            expect(liveComponentCount).toBeGreaterThan(50);
+            expect(livePatternCount).toBeGreaterThan(10);
+            expect(livePatternCount).toBeLessThan(liveComponentCount);
+
+            //     The Definitions door is named WITHOUT a count (no
+            //     cheap honest count exists for a lens whose quantity is
+            //     "terms across ontologies"). If someone later invents
+            //     one, this is the tripwire — the door's own list item
+            //     must stay digit-free.
+            const definitionsDoor = homeHtml.match(
+              /<a href="\/definitions">Definitions<\/a><p>([\s\S]*?)<\/p>/,
+            );
+            expect(definitionsDoor).not.toBeNull();
+            expect(definitionsDoor?.[1]).not.toMatch(/\d/);
+
             // Zero /graphql HTTP hits during everything above — the
             // catalog, both entity pages, all four definitions pages,
-            // and both standards pages executed in-process too.
+            // both standards pages, and the lobby executed in-process
+            // too.
             expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
 
             // Teeth: a direct POST does reach the endpoint and the counter

@@ -27,6 +27,7 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
+import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "#relay/environment.js";
 import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
@@ -103,6 +104,19 @@ const SEEDED_PAGES = [
       '<h1 id="standard-reading-title">cs:react.component.link_component</h1>',
     liveSelector: "#standard-reading-title",
     liveText: "cs:react.component.link_component",
+  },
+  // Home block (AV-350): the lobby — the front door's two projections
+  // SSR from the captured store and must survive hydration
+  // mismatch-silent and network-silent like every other seeded page. The
+  // live assertion reads an exemplar link (the strip projection); the
+  // door counts ride the same store and the same render.
+  {
+    name: "home lobby",
+    url: "/",
+    records: lobbyRecords,
+    serverMarker: 'href="/components/ds%3Aglobal.component.accordion"',
+    liveSelector: 'a[href="/components/ds%3Aglobal.component.accordion"]',
+    liveText: "Accordion",
   },
 ] as const;
 

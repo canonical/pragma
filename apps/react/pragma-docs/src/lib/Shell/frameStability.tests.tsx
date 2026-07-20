@@ -65,6 +65,7 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import standardsIndexRecords from "#domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
+import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
 import EntryServer from "../../server/entry.js";
 
 /** The v1 lens URLs, owner-ruled order. */
@@ -102,6 +103,10 @@ const MEASURED_URLS = [
 /** Data-bearing pages render from their captured fixture records — the
  * `initialData` a dev server would embed — so canvases are real content. */
 const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
+  // The Home lobby (AV-350): the front door now reads the graph too, so
+  // its canvas renders from a captured fixture like every other
+  // data-bearing page.
+  "/": lobbyRecords,
   "/components": catalogRecords,
   [BUTTON_ENTITY_URL]: componentEntityRecordsButton,
   // Definitions rows: the explorer (no term) reads only `ontologies`,
@@ -141,11 +146,15 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
 
 /** Per-URL expectation for the second accounted-for delta: the mode
  * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
- * stubs claim nothing; BOTH Components views (catalog + entity) claim
- * the lens name, and so do the Definitions views (explorer + term) and
- * the Standards views (index + reading). */
+ * stubs claim nothing — since AV-350 that is `/guides` alone; BOTH
+ * Components views (catalog + entity) claim the lens name, and so do the
+ * Definitions views (explorer + term), the Standards views (index +
+ * reading), and the Home lobby. */
 const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
-  "/": "",
+  // The lobby claims its lens name too (AV-350) — "Home", exactly as the
+  // Rail's LENS_ENTRIES labels it. Only `/guides` (still a stub) claims
+  // nothing now.
+  "/": "Home",
   "/components": "Components",
   "/definitions": "Definitions",
   "/standards": "Standards",
@@ -251,7 +260,13 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     const canvases = [...getPages().values()].map(({ canvas }) => canvas);
     expect(new Set(canvases).size).toBe(MEASURED_URLS.length);
     // And each canvas holds ITS page, not a fallback:
-    expect(mustGet("/").canvas).toContain('id="home-title"');
+    expect(mustGet("/").canvas).toContain('id="lobby-title"');
+    // The lobby canvas renders REAL projections from its fixture records:
+    // an exemplar link off ds:Component and the doors band.
+    expect(mustGet("/").canvas).toContain(
+      'href="/components/ds%3Aglobal.component.accordion"',
+    );
+    expect(mustGet("/").canvas).toContain('data-slot="doors"');
     expect(mustGet("/components").canvas).toContain(
       'id="lens-components-title"',
     );
