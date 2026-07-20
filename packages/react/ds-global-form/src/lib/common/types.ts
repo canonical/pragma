@@ -64,6 +64,13 @@ export type WrapperProps<ComponentProps> = BaseWrapperProps<ComponentProps> & {
    * `controlLabel` the inline control label. */
   controlLabel?: string;
 
+  /* Toggle fields only: which side of the control the inline label sits on.
+   * "after" (default) — label follows the control, the checkbox convention.
+   * "before" — label leads, to the LEFT of the control; the switch convention,
+   * where a label before the switch names its PURPOSE (a label after would
+   * instead read as the switch's state). */
+  labelPosition?: "before" | "after";
+
   /* Is the field optional */
   isOptional?: boolean;
 

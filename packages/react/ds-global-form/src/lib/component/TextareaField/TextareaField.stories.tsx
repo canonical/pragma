@@ -23,6 +23,13 @@ export const Rows: Story = {
 };
 
 export const Disabled: Story = {
+  decorators: [
+    decorators.form({
+      defaultValues: {
+        content: "This field is disabled and cannot be edited.",
+      },
+    }),
+  ],
   args: { name: "content", label: "Content", disabled: true },
 };
 

@@ -17,22 +17,25 @@
  * (Button/styles.css), reading the same shared --density-* primitives — an app
  * that ships ds-global without the form package still gets a seated button.
  *
- * Text baseline sits round(up, height × 2/3) down the box, so every control shares
- * one baseline. Zero-JS (cap-unit approximation); holds to the cap tolerance.
+ * Text baseline sits on the density target — round(nearest, height × 2/3) — so
+ * every control shares one baseline index. Controls use the INTRINSIC seat from
+ * @canonical/styles (--control-seat-line/-basis): no fixed heights; border +
+ * seat pads + line-height add up to the density cell. Zero-JS (cap-unit
+ * approximation); holds to the cap tolerance.
  */
 
-/* ── Controls consume the density box ───────────────────────────────────────
- * A control is a FIXED grid-multiple height with border-box so its border is
- * absorbed into that height (not added past it) — so a bordered and a borderless
- * control of the same density are the same height. Top-referenced so the
- * space-before below (not flex centre/stretch) governs the text.
+/* ── TRANSITIONAL: the fixed-height box (direct date/time chromes only) ──────
+ * The ORIGINAL density box: a FIXED grid-multiple height with border-box so the
+ * border is absorbed into the height. The composite text family, the select and
+ * the textarea have all moved OFF this rule onto the intrinsic seat (their
+ * equal-specificity rules further down override it); it still governs the
+ * remaining direct chromes — date, time, datetime — whose multi-part UA
+ * internals need their own measured pass before they join.
  *
  * Controls no longer carry `.p` — the density system supplies the body font tier
- * (font-size / weight / family) here, and the baseline placement below. */
-/* NB `.ds.input.textarea` is EXCLUDED: a textarea is a multi-line control whose
- * height is intrinsic (its `min-height: 5lh`), not a single density line — the
- * single-line crush below would flatten it. It gets its own placement further
- * down (grid-multiple line-height so every row sits on the grid). */
+ * (font-size / weight / family) here. */
+/* NB `.ds.input.textarea` is EXCLUDED: the textarea seats intrinsically (its own
+ * rule below) and must keep its multi-row min-height. */
 :is(.comfortable, .dense, .app, .site, .docs) .ds.input:not(.textarea) {
   box-sizing: border-box;
   /* Same effective line-height the target-baseline uses (single source of the
@@ -107,7 +110,6 @@
   font-family: var(--typography-text-primary-font-family);
 }
 
-:is(.comfortable, .dense, .app, .site, .docs) .ds.input > input,
 :is(.comfortable, .dense, .app, .site, .docs)
   :is(.ds.field-label, .ds.field-description, .ds.field-error) {
   line-height: 1;
@@ -127,58 +129,189 @@
   padding-block-end: 0;
 }
 
-/* ── Textarea: a multi-line control on the grid ──────────────────────────────
- * Unlike the single-line input, a textarea has MANY text rows, so it needs a
- * line-height that is itself a whole baseline multiple — then EVERY row sits on
- * a grid line, not just the first. It's excluded from the single-line box crush
- * (keeps its intrinsic `5lh` height) and from the `line-height: 1` placement
- * above; here it gets its own placement:
- *   · line-height = the density line-height (a whole baseline multiple), so rows
- *     advance one grid interval each.
- *   · the FIRST row is seated on the density target the same way as everything
- *     else: nudge onto the nearest grid line, then space-before to the target,
- *     less the border (0 — border is on the chrome box) and the drift knob.
- * The chrome supplies the box's own block padding; we ADD the seating on top. */
-:is(.comfortable, .dense, .app, .site, .docs) .ds.input.textarea {
-  --td-line-height: var(
-    --density-line-height,
-    var(--density-lh-comfy, calc(var(--baseline-height) * 8))
+/* ── Intrinsic control seat: the composite text-input family ─────────────────
+ * The single-line <input> no longer uses the line-height:1 crush + space-before
+ * padding above (that rule is now labels-only). Instead it consumes the SHARED
+ * control seat from @canonical/styles (modifiers.density.css): the input's own
+ * line box (cell − 2 baselines) is the control interior, `--control-seat-before`
+ * seats its baseline on the density target, and the CHROME closes the box with
+ * `--control-seat-after` — so the chrome's height is INTRINSIC (no fixed
+ * block-size) yet lands exactly on the density cell, both edges on the grid.
+ *
+ * Placed AFTER the fixed-height box rule above so this (equal-specificity)
+ * rule wins for the text family. Direct chromes (select/date/time) and the
+ * textarea keep the previous model until their own cutover pass. */
+:is(.comfortable, .dense, .app, .site, .docs)
+  .ds.input:is(.text, .number, .password, .phone) {
+  /* The COMPOSITE chrome family — every wrapper with an inner <input> leaf
+     (text, number, password, phone). One selector, one seat: the wrapper is
+     the box, the leaf carries the line. */
+
+  /* NO drift term here — deliberately. The old ~2px "native input renders low"
+     compensation was an artifact of the line-height:1 crush structure: give the
+     <input> a real line box (--control-seat-line below) and it renders its text
+     exactly like a <span> (measured; see the drift note at the end of this
+     file). Subtracting the stale 2px lifted the text 2px too high. */
+
+  /* The UA enforces a line-height FLOOR of `normal` (1.2em for Ubuntu) on a
+     single-line <input> — a specified line-height below it is silently clamped
+     (measured: dense's 16px line rendered 16.8px tall, pushing the chrome to
+     24.8). So the seat computes with the FLOORED line the UA will actually
+     use; the box then closes to the cell exactly in every density cell. */
+  --seat-line-floored: max(var(--control-seat-line), 1.2em);
+
+  /* The chrome's border folds in HERE (a var() inside a custom property
+     substitutes at its declaring element, so the shared layer cannot read it).
+     Derived from the target directly — not --control-seat-basis — because the
+     basis assumes the unfloored line. Both the leaf's top pad and the chrome's
+     closing pad read this SAME `--seat-before`, keeping the complement
+     consistent. Rounded to ¼px so the pad is exactly representable in 1/64px
+     layout units (the fractional 1cap term otherwise leaves ~1/60px residues
+     on the box height). */
+  --seat-before: round(
+    nearest,
+    max(
+      0px,
+      calc(
+        var(--density-target-baseline-px, 0px) -
+        (var(--seat-line-floored) + 1cap) /
+        2 -
+        var(--form-input-border-width, 0px)
+      )
+    ),
+    0.25px
   );
-  line-height: var(--td-line-height);
+  --seat-after: max(
+    0px,
+    calc(
+      var(--density-line-height-effective) -
+      var(--seat-line-floored) -
+      var(--seat-before) -
+      2 *
+      var(--form-input-border-width, 0px)
+    )
+  );
+
+  block-size: auto;
+  min-block-size: 0;
+  padding-block-end: var(--seat-after);
+  /* Stretch (not the box rule's flex-start): a prefix/suffix — the password's
+     reveal-toggle, the number's unit affix — spans the leaf's column and its
+     own `align-items: center` centres its icon on the TEXT, which is the
+     optical pairing (centring on the box would float it into the asymmetric
+     closing pad). The old fixed-height model needed flex-start to top-pin the
+     crushed leaf; the intrinsic leaf seats itself, so stretch is safe again. */
+  align-items: stretch;
+}
+:is(.comfortable, .dense, .app, .site, .docs)
+  .ds.input:is(.text, .number, .password, .phone)
+  > input {
+  line-height: var(--seat-line-floored);
+  padding-block-start: var(--seat-before);
+  padding-block-end: 0;
+}
+
+/* ── Textarea: many rows of the SAME intrinsic seat ──────────────────────────
+ * The textarea is a single element (it carries the chrome itself), so it seats
+ * like the button: the interior line box is `--control-seat-line` — which is a
+ * WHOLE baseline multiple in every cell (cell − 2 bU) — so EVERY row advances
+ * one grid interval, not just the first. The complement pad closes the box so
+ * border + seat-before + N·line + seat-after + border ends on a grid line for
+ * ANY row count N: the N-independent part equals (cell − line) ≡ 0 (mod 1 bU).
+ * One seat, no multi-line special case.
+ *
+ * Two deliberate differences from the single-line input:
+ *   · NO line-height floor — the UA's `normal` clamp is specific to single-line
+ *     <input>; a textarea honours its specified line-height, and a floored
+ *     16.8px line would knock every dense row off the grid.
+ *   · NO drift term — like the single-line input, the old ~2px knob was an
+ *     artifact of the crush-era structure (see the drift note below).
+ *
+ * The previous revision seated the first row via --td-space-before ON TOP of
+ * the chrome's 8px block padding, targeting the OLD round(up) table; under the
+ * round(nearest) targets that formula clamps to zero in every cell (the full
+ * cell line-height puts the natural baseline below the target), which left the
+ * textarea unseated entirely. The interior line box makes the target reachable
+ * again. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input.textarea {
+  line-height: var(--control-seat-line);
   font-size: var(--typography-text-primary-font-size);
   font-family: var(--typography-text-primary-font-family);
 
-  /* Same form-control drift as the single-line input (see the knob's KLAXON note
-     below). Set locally so this stays self-contained — the button path is never
-     touched. */
-  --control-text-drift-AVOID-USAGE: 2px;
-  /* First row's baseline within its own line-box, then lift to the target. */
-  --natural-baseline: calc((var(--td-line-height) + 1cap) / 2);
-  /* Unlike the single-line input (a borderless inner <input> inside a bordered
-     wrapper), the textarea IS the chrome: it carries `.ds.input.chrome`, whose
-     top border-width occupies layout space above the text even when the top
-     border colour is transparent. So subtract that top border — exactly as the
-     button subtracts its own — or the first row seats ~1px low versus the
-     button/input target. */
-  --td-border-top: var(
-    --form-input-border-width-top,
-    var(--form-input-border-width, 0px)
+  --seat-before: round(
+    nearest,
+    max(
+      0px,
+      calc(var(--control-seat-basis) - var(--form-input-border-width, 0px))
+    ),
+    0.25px
   );
-  --td-space-before: max(
+  --seat-after: max(
     0px,
     calc(
-      var(--density-target-baseline-px, 0px) -
-      var(--natural-baseline) -
-      var(--td-border-top) -
-      var(--control-text-drift-AVOID-USAGE, 0px)
+      var(--density-line-height-effective) -
+      var(--control-seat-line) -
+      var(--seat-before) -
+      2 *
+      var(--form-input-border-width, 0px)
     )
   );
-  /* Seat the first row ON TOP OF the chrome's block padding (don't replace it —
-     that padding is the box inset; this is the grid seating). */
-  padding-block-start: calc(
-    var(--form-input-padding-block, 0px) +
-    var(--td-space-before)
+
+  block-size: auto;
+  padding-block: var(--seat-before) var(--seat-after);
+  /* Five whole rows + the closing geometry (border-box), so the default box
+     ends on-grid with the last row fully visible: 4·line + cell. */
+  min-block-size: calc(
+    4 *
+    var(--control-seat-line) +
+    var(--density-line-height-effective)
   );
+}
+
+/* ── Select: a single-element direct chrome on the intrinsic seat ────────────
+ * The <select> IS the chrome (border and text on one element), so it seats
+ * like the button: interior line box + seat pads, height emerging as exactly
+ * the density cell. Replaces the old fixed-height + 8px-block-padding path,
+ * which never seated the option text at all and CLIPPED it in apps/dense
+ * (24px fixed box − 8px pad left too little room for the line).
+ * The line is floored like the single-line input's: a <select> shows one line,
+ * so if the UA imposes a `normal` floor the formula already matches it, and if
+ * it does not the specified floor is simply what renders — correct either way
+ * (unlike the textarea, where flooring would break the multi-row rhythm).
+ * Remaining direct chromes (date/time/datetime) stay on the previous model
+ * until their own pass — their multi-part UA internals need their own
+ * measurement. */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.input.select {
+  --seat-line-floored: max(var(--control-seat-line), 1.2em);
+  line-height: var(--seat-line-floored);
+
+  --seat-before: round(
+    nearest,
+    max(
+      0px,
+      calc(
+        var(--density-target-baseline-px, 0px) -
+        (var(--seat-line-floored) + 1cap) /
+        2 -
+        var(--form-input-border-width, 0px)
+      )
+    ),
+    0.25px
+  );
+  --seat-after: max(
+    0px,
+    calc(
+      var(--density-line-height-effective) -
+      var(--seat-line-floored) -
+      var(--seat-before) -
+      2 *
+      var(--form-input-border-width, 0px)
+    )
+  );
+
+  block-size: auto;
+  min-block-size: 0;
+  padding-block: var(--seat-before) var(--seat-after);
 }
 
 /* ── Bottom rhythm: density-seated flow text only (NOT prose) ─────────────────
@@ -211,24 +344,14 @@
   );
 }
 
-/* ── --control-text-drift-AVOID-USAGE — the one honest patch ──────────────────
- * A native form control (<input>, <textarea>) renders its text a couple of px
- * LOWER than a <span>/<button> label at byte-identical CSS — a UA metrics quirk
- * of editable controls, NOT a border and NOT captured by the cap-unit maths. The
- * cap approximation is exact for real text runs but optimistic for a form
- * control's internal text box, so the leaf needs a small lift to share the grid
- * line with the button/label.
- *
- * The name is a deliberate KLAXON: this is empirical (calibrated by eye, may vary
- * by browser/font), never a knob to reach for in app code. 🔴 TODO(#15): find the
- * structural cause (line-box rounding? UA control metrics?) and delete it.
- *
- * It feeds the SAME `--border-top-width` term the shared placement formula reads
- * (a larger subtraction ⇒ less space-before ⇒ text lifts UP). Doing it this way —
- * rather than adding a separate term to the shared formula — keeps the BUTTON's
- * placement byte-identical to its known-good state: the button never sets this
- * knob, so its `--border-top-width` stays the pure border calc above. */
-:where(.comfortable, .dense, .app, .site, .docs) .ds.input > input {
-  --control-text-drift-AVOID-USAGE: 2px;
-  --border-top-width: var(--control-text-drift-AVOID-USAGE);
-}
+/* ── The native-control text drift — RESOLVED for single-line inputs ──────────
+ * The old ~2px "native <input> renders its text lower than a <span> at
+ * byte-identical CSS" compensation (--control-text-drift-AVOID-USAGE) turned
+ * out to be an artifact of the line-height:1 crush structure, NOT an inherent
+ * UA quirk: with a real line box (line-height: --control-seat-line, the
+ * intrinsic seat above) the <input> positions its text exactly like a <span>
+ * (measured: input baseline == label baseline to 0.01px with no drift term).
+ * That answers TODO(#15)'s "find the structural cause and delete it": the
+ * intrinsic seat carries NO drift anywhere — the textarea's local copy went
+ * with its old parallel seat when it joined the intrinsic model. The knob no
+ * longer exists in this file. */

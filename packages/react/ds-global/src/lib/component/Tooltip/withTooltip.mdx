@@ -5,7 +5,7 @@ import * as Stories from "./withTooltip.stories";
 
 # withTooltip
 
-`withTooltip` is a higher-order component: give it a component type and a message, and it returns a new component that carries a hover tooltip wherever it is rendered. It is the HOC form of the tooltip primitive — sugar over [`TooltipArea`](?path=/docs/components-tooltip-tooltiparea--docs), which internally drives `useDisclosure` in `hover` mode.
+`withTooltip` is a higher-order component: give it a component type and a message, and it returns a new component that carries a hover tooltip wherever it is rendered. It is the tooltip primitive of this library — it owns the engine (positioning, the client-only portal, the arrow) and drives `useDisclosure` in `hover` mode internally.
 
 ```tsx
 import { withTooltip, Button } from "@canonical/react-ds-global";
@@ -22,7 +22,7 @@ The tooltip opens when the pointer enters the wrapped element or when it receive
 
 ## When to reach for it
 
-There are three ways to attach a tooltip in this library, and they differ by _what you have to hand_:
+There are two ways to work with tooltips in this library, and they differ by _what you have to hand_:
 
 <table>
   <thead>
@@ -34,14 +34,9 @@ There are three ways to attach a tooltip in this library, and they differ by _wh
   </thead>
   <tbody>
     <tr>
-      <td>A component <strong>type</strong> to tooltip everywhere</td>
+      <td>A component <strong>type</strong> to tooltip</td>
       <td><code>withTooltip</code></td>
       <td>HOC — <code>withTooltip(Component, message, popupProps?)</code></td>
-    </tr>
-    <tr>
-      <td>A one-off <strong>JSX node</strong> to tooltip here and now</td>
-      <td><a href="?path=/docs/components-tooltip-tooltiparea--docs">TooltipArea</a></td>
-      <td>Wrapper element — <code>&lt;TooltipArea Message=&#123;…&#125;&gt;…&lt;/TooltipArea&gt;</code></td>
     </tr>
     <tr>
       <td>Just the floating message bubble</td>
@@ -51,9 +46,7 @@ There are three ways to attach a tooltip in this library, and they differ by _wh
   </tbody>
 </table>
 
-Reach for `withTooltip` when the tooltip belongs to the component itself — the same message, every time it is rendered — and you would rather define it once at module scope than repeat a wrapper at each call site. Because it returns an ordinary component, the tooltipped version composes anywhere the original did.
-
-Internally the HOC renders `<TooltipArea Message={Message} {...popupProps}><Component … /></TooltipArea>`, so `withTooltip` is nothing more than `TooltipArea` with a component type curried in. When you instead have a **one-off JSX node** to annotate — a specific `<span>`, an inline element that only needs a tooltip in this one place — reach for [`TooltipArea`](?path=/docs/components-tooltip-tooltiparea--docs) and wrap the fragment directly. The two are interchangeable in behaviour; the choice is purely ergonomic. The [`Tooltip`](?path=/docs/components-tooltip--docs) component itself is the presentational message bubble and is rarely used on its own.
+Reach for `withTooltip` when the tooltip belongs to the component itself — the same message, every time it is rendered — and you would rather define it once at module scope than repeat a wrapper at each call site. Because it returns an ordinary component, the tooltipped version composes anywhere the original did. To annotate a one-off JSX node — a specific `<span>`, an inline element — wrap a tiny component (even an inline arrow returning the node) with `withTooltip`. The [`Tooltip`](?path=/docs/components-tooltip--docs) component itself is the presentational message bubble and is rarely used on its own.
 
 ## Basic example
 
@@ -77,7 +70,7 @@ The `Message` can be any `ReactNode` — a plain string, a `<span>`, or richer m
 function withTooltip<TProps extends object>(
   Component: ComponentType<TProps>,
   Message: ReactNode,
-  popupProps?: WithTooltipOptions, // = Omit<TooltipAreaProps, "children" | "Message">
+  popupProps?: WithTooltipOptions, // = Omit<TooltipEngineProps, "children" | "Message">
 ): FC<TProps>;
 ```
 
@@ -107,7 +100,7 @@ function withTooltip<TProps extends object>(
       <td><code>popupProps</code></td>
       <td><code>WithTooltipOptions</code></td>
       <td><code>&#123;&#125;</code></td>
-      <td>Every option <code>TooltipArea</code> accepts except <code>children</code> and <code>Message</code> — positioning, sizing, timing, lifecycle, plus <code>open</code>, <code>icon</code>, and the logical <code>preferredDirections</code>. See <a href="#popupprops-options">popupProps options</a>. Hover is forced (there is no <code>mode</code>) — see <a href="#it-is-hover-only--you-cannot-make-it-open-on-click">It is hover-only</a>.</td>
+      <td>Every tooltip option except <code>children</code> and <code>Message</code> — positioning, sizing, timing, lifecycle, plus <code>open</code>, <code>icon</code>, and the logical <code>preferredDirections</code>. See <a href="#popupprops-options">popupProps options</a>. Hover is forced (there is no <code>mode</code>) — see <a href="#it-is-hover-only--you-cannot-make-it-open-on-click">It is hover-only</a>.</td>
     </tr>
   </tbody>
 </table>
@@ -160,7 +153,7 @@ const DeliberateTooltip = withTooltip(Button, "Delete permanently", {
 
 ## popupProps options
 
-`popupProps` is `WithTooltipOptions` — every prop `TooltipArea` accepts except `children` and `Message`. That surface transitively includes `UseWindowFitmentProps` (positioning) and `UseDelayedToggleProps` (open/close timing), plus `open`, `icon`, and `messageElementStyle`. Defaults are those applied by `TooltipArea` and the underlying `useDisclosure` hook. The members you will reach for most:
+`popupProps` is `WithTooltipOptions` — every tooltip option except `children` and `Message`. That surface transitively includes `UseWindowFitmentProps` (positioning) and `UseDelayedToggleProps` (open/close timing), plus `open`, `icon`, and `messageElementStyle`. Defaults are those applied by the tooltip engine and the underlying `useDisclosure` hook. The members you will reach for most:
 
 <table>
   <thead>
@@ -176,7 +169,7 @@ const DeliberateTooltip = withTooltip(Button, "Delete permanently", {
       <td><code>distance</code></td>
       <td><code>string</code></td>
       <td><code>"6px"</code></td>
-      <td>Gap in pixels between the trigger and the tooltip bubble. <code>TooltipArea</code> defaults this to <code>"6px"</code> (the bare hook default is <code>"0px"</code>). Pixel values only.</td>
+      <td>Gap in pixels between the trigger and the tooltip bubble. The tooltip engine defaults this to <code>"6px"</code> (the bare hook default is <code>"0px"</code>). Pixel values only.</td>
     </tr>
     <tr>
       <td><code>preferredDirections</code></td>
@@ -235,7 +228,7 @@ const DeliberateTooltip = withTooltip(Button, "Delete permanently", {
   </tbody>
 </table>
 
-> **Click-only members are inert here.** `WithTooltipOptions` inherits `closeOnOutsideClick` and `returnFocus` from `UseDisclosureProps` (via `TooltipAreaProps`), but both are ignored in hover mode — the only mode `withTooltip` runs. Passing them has no effect.
+> **Click-only members are inert here.** `WithTooltipOptions` inherits `closeOnOutsideClick` and `returnFocus` from `UseDisclosureProps`, but both are ignored in hover mode — the only mode `withTooltip` runs. Passing them has no effect.
 
 ## Pitfalls and behaviour
 
@@ -243,7 +236,7 @@ This primitive has a few sharp edges worth understanding before you rely on it.
 
 ### It is hover-only — you cannot make it open on click
 
-`withTooltip` wraps `TooltipArea`, which hard-codes `useDisclosure({ mode: "hover" })`. That is precisely why `popupProps` is typed `Omit<TooltipAreaProps, "children" | "Message">` — and `TooltipAreaProps` itself already drops `mode` (`extends Omit<UseDisclosureProps, "mode">`), so `mode` never reaches the surface and cannot be passed at all. The overlay opens on pointer-enter and focus, and closes on pointer-leave and blur, each after its delay. There is **no way** to make `withTooltip` toggle on click. If you need a click-triggered overlay — a menu, a popover, a dropdown — that is not a tooltip; use the click-mode primitives built on the same `useDisclosure` hook instead.
+`withTooltip` hard-codes `useDisclosure({ mode: "hover" })`. That is precisely why `popupProps` is typed `Omit<TooltipEngineProps, "children" | "Message">` — and `TooltipEngineProps` itself already drops `mode` (`extends Omit<UseDisclosureProps, "mode">`), so `mode` never reaches the surface and cannot be passed at all. The overlay opens on pointer-enter and focus, and closes on pointer-leave and blur, each after its delay. There is **no way** to make `withTooltip` toggle on click. If you need a click-triggered overlay — a menu, a popover, a dropdown — that is not a tooltip; use the click-mode primitives built on the same `useDisclosure` hook instead.
 
 ### Define the wrapped component outside render
 
@@ -266,33 +259,32 @@ function Bar() {
 }
 ```
 
-Because `Message` and `popupProps` are captured when you call `withTooltip`, they are fixed for that wrapped component. A message that must change at runtime is a sign you want [`TooltipArea`](?path=/docs/components-tooltip-tooltiparea--docs) — where `Message` is a live prop — rather than the HOC.
+Because `Message` and `popupProps` are captured when you call `withTooltip`, they are fixed for that wrapped component. A message that must change at runtime means recreating the wrapped component (memoised on the changing value) — see the **Changeable** story for the pattern.
 
 ### The ref does not reach the wrapped component
 
-Internally the HOC renders `<Component {...props} />` — a **plain function component**, not wrapped in `forwardRef`. So a `ref` you put on the returned component is **not forwarded** to the wrapped `Component`; React consumes it at the HOC boundary and it goes nowhere. (This is by design — the tooltip's positioning anchors on `TooltipArea`'s own wrapper, not the wrapped component, so nothing here needs the ref.)
+Internally the HOC renders `<Component {...props} />` — a **plain function component**, not wrapped in `forwardRef`. So a `ref` you put on the returned component is **not forwarded** to the wrapped `Component`; React consumes it at the HOC boundary and it goes nowhere. (This is by design — the tooltip's positioning anchors on the engine's own wrapper, not the wrapped component, so nothing here needs the ref.)
 
-Crucially, **this does not break the tooltip.** Positioning does not anchor to the wrapped component at all. `TooltipArea` renders its own wrapper `<span class="target">` around your component, carrying `aria-describedby` and the measuring ref, and the bubble is placed relative to _that_ span's bounding box. So a component that never sees a ref still gets a correctly-positioned tooltip.
+Crucially, **this does not break the tooltip.** Positioning does not anchor to the wrapped component at all. The engine renders its own wrapper `<span class="target">` around your component, carrying `aria-describedby` and the measuring ref, and the bubble is placed relative to _that_ span's bounding box. So a component that never sees a ref still gets a correctly-positioned tooltip.
 
-The gap only bites if _your_ component needs a ref for its own reasons — imperative focus, measurement, integration with another library. `withTooltip` cannot supply that; you would need `TooltipArea` (or your own `forwardRef` wrapper) with a component that forwards its ref.
+The gap only bites if _your_ component needs a ref for its own reasons — imperative focus, measurement, integration with another library. `withTooltip` cannot supply that; you would need your own `forwardRef` wrapper with a component that forwards its ref.
 
 ### SSR renders nothing but the trigger
 
-`TooltipArea` renders the tooltip message through `createPortal` into `document.body` (or a `parentElement` you supply). The portal is gated on a `useIsMounted` flag, which is `false` during server rendering **and** the first client render, then `true` after mount — so the server HTML and the first client render agree (neither emits the message) and hydration never mismatches. The server therefore renders only the trigger and its `aria-describedby` target wrapper; the message portals in after hydration. In effect the tooltip is dormant until hydration — the trigger renders on the server, the floating bubble is a client-only concern. This keeps the component build-safe in server environments and hydration-clean on the client.
+`withTooltip` renders the tooltip message through `createPortal` into `document.body` (or a `parentElement` you supply). The portal is gated on a `useIsMounted` flag, which is `false` during server rendering **and** the first client render, then `true` after mount — so the server HTML and the first client render agree (neither emits the message) and hydration never mismatches. The server therefore renders only the trigger and its `aria-describedby` target wrapper; the message portals in after hydration. In effect the tooltip is dormant until hydration — the trigger renders on the server, the floating bubble is a client-only concern. This keeps the component build-safe in server environments and hydration-clean on the client.
 
 ### How positioning actually anchors
 
-The anchor for positioning is `TooltipArea`'s own inner `<span class="target">`, which carries the measuring ref — **not** the component you wrapped. The bubble is placed relative to that span's bounding box, trying your `preferredDirections` in order and, when `autoFit` is enabled, nudging the bubble to stay within the viewport `gutter`. Because the span wraps your component tightly, this is usually exactly what you want; but be aware the anchor box is the wrapper span, so if your component's inline layout differs from what you expect, the tooltip anchors to the span rather than to your component's own border box.
+The anchor for positioning is the engine's own inner `<span class="target">`, which carries the measuring ref — **not** the component you wrapped. The bubble is placed relative to that span's bounding box, trying your `preferredDirections` in order and, when `autoFit` is enabled, nudging the bubble to stay within the viewport `gutter`. Because the span wraps your component tightly, this is usually exactly what you want; but be aware the anchor box is the wrapper span, so if your component's inline layout differs from what you expect, the tooltip anchors to the span rather than to your component's own border box.
 
 ## Accessibility
 
-`TooltipArea` gives the tooltip message a stable id and sets `aria-describedby` on the target wrapper pointing at it, so assistive technology announces the tooltip as a _description_ of the trigger. This is correct for tooltips: the content supplements the trigger rather than labelling it.
+`withTooltip` gives the tooltip message a stable id and sets `aria-describedby` on the target wrapper pointing at it, so assistive technology announces the tooltip as a _description_ of the trigger. This is correct for tooltips: the content supplements the trigger rather than labelling it.
 
 Two consequences follow. First, the trigger must be reachable and focusable for keyboard and screen-reader users to ever surface the tooltip — hover alone excludes them. Wrap something focusable (a `<button>`, a link), not inert text. Second, a tooltip is a _description_, not an accessible _name_: do not rely on `withTooltip` to name an icon-only control. Give that control its own `aria-label` and use the tooltip for supplementary detail.
 
 ## Further reading
 
-- [TooltipArea](?path=/docs/components-tooltip-tooltiparea--docs) — the node/render form. Wrap a one-off JSX fragment, or drive a `Message` that changes at runtime. `withTooltip` is built on it, and it also exposes styling and target hooks (`className`, `targetElementClassName`, `parentElement`, `icon`, …) that the HOC does not surface.
 - [Tooltip](?path=/docs/components-tooltip--docs) — the presentational message bubble on its own, with no anchor or positioning logic.
-- `useDisclosure` — the hover/click disclosure hook underpinning every tooltip primitive. `popupProps` is `Omit<TooltipAreaProps, "children" | "Message">`, and `TooltipAreaProps` in turn extends `Omit<UseDisclosureProps, "mode">`, so the disclosure surface flows through with `mode` removed.
+- `useDisclosure` — the hover/click disclosure hook underpinning every tooltip primitive. `popupProps` is `Omit<TooltipEngineProps, "children" | "Message">`, and `TooltipEngineProps` in turn extends `Omit<UseDisclosureProps, "mode">`, so the disclosure surface flows through with `mode` removed.
 - [Global Tier — React](?path=/docs/documentation-introduction--docs) — package overview, installation, and the ontology behind these components.

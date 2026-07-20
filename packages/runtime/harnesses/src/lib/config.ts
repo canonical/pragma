@@ -2,6 +2,13 @@
  * MCP config read/write/remove as Task values.
  * All effects go through @canonical/task primitives — no raw fs calls.
  * Supports both JSON and TOML config formats.
+ *
+ * The bodies act on a resolved {@link ConfigTarget} (the `*To`/`*From` helpers),
+ * so a caller picks the band once (`resolveConfigTarget`) and the read/write
+ * logic never re-consults the harness definition. The `readMcpConfig` /
+ * `writeMcpConfig` / `removeMcpConfig` wrappers keep the harness-oriented
+ * signature (band + platform default to the harness's own default band and the
+ * live host), so existing callers are unchanged.
  */
 
 import { dirname } from "node:path";
@@ -14,17 +21,24 @@ import {
   mkdir,
   pure,
   readFile,
+  sequence_,
   type Task,
   writeFile,
 } from "@canonical/task";
 import parseJsonc from "./parseJsonc.js";
+import { type PlatformEnv, readPlatformEnv } from "./platformPaths.js";
 import {
   mergeTomlSection,
   parseTomlSection,
   removeTomlSection,
   serializeTomlSection,
 } from "./toml/index.js";
-import type { HarnessDefinition, McpServerConfig } from "./types.js";
+import type {
+  ConfigTarget,
+  HarnessDefinition,
+  McpServerConfig,
+  ScopeBand,
+} from "./types.js";
 
 /**
  * Serialize a record to formatted JSON with a trailing newline.
@@ -54,21 +68,81 @@ const unparseableConfig = (configPath: string): Task<void> =>
   );
 
 /**
- * Read existing MCP server entries from a harness config file.
+ * The band a harness writes to by default: the home config for a global-only
+ * harness, the project file for a `project`/`both` harness (a `both` harness
+ * writes its project file unless a global band is explicitly requested).
  *
- * @note This function is impure — it reads from the filesystem via Task effects.
+ * @param harness - The harness definition.
+ * @returns Its default {@link ScopeBand}.
  */
-export const readMcpConfig = (
+export const defaultBandOf = (harness: HarnessDefinition): ScopeBand =>
+  harness.scope === "global" ? "global" : "project";
+
+/** Resolve a global-band harness's home config path, asserting it declares one. */
+const homeConfigPathOf = (
+  harness: HarnessDefinition,
+  platform: PlatformEnv,
+): string => {
+  const build = harness.homeConfigPath;
+  if (build === undefined) {
+    throw new Error(
+      `harness "${harness.id}" requested a global-band config target but declares no homeConfigPath`,
+    );
+  }
+  return build(platform);
+};
+
+/**
+ * Resolve a harness + band into the concrete {@link ConfigTarget} a read/write
+ * acts on: the project config path for the project band, the home config path
+ * (which every global/both harness declares) for the global band.
+ *
+ * @param harness - The harness definition.
+ * @param projectRoot - The project root for the project band.
+ * @param band - Which band to resolve.
+ * @param platform - The captured host, for the home path.
+ * @returns The resolved config target.
+ */
+export const resolveConfigTarget = (
   harness: HarnessDefinition,
   projectRoot: string,
-): Task<Record<string, McpServerConfig>> => {
-  const configPath = harness.configPath(projectRoot);
+  band: ScopeBand,
+  platform: PlatformEnv,
+): ConfigTarget => ({
+  path:
+    band === "global"
+      ? homeConfigPathOf(harness, platform)
+      : harness.configPath(projectRoot),
+  configFormat: harness.configFormat,
+  mcpKey: harness.mcpKey,
+  scope: harness.scope,
+  normalizeEnv: harness.normalizeEnv,
+});
 
-  if (harness.configFormat === "toml") {
+/**
+ * Coerce a server config's `env` to a JSON object/map — dropping a non-object
+ * `env` to `{}` — for harnesses (OpenDesign, 7g) that reject a non-map `env`.
+ */
+const normalizeOdEnv = (config: McpServerConfig): McpServerConfig => ({
+  ...config,
+  env: asServerRecord(config.env) as Record<string, string>,
+});
+
+/**
+ * Read existing MCP server entries from a resolved config target.
+ *
+ * @param target - The resolved config location.
+ * @returns The server map (empty when the file is absent/unparseable).
+ * @note Impure — reads from the filesystem via Task effects.
+ */
+export const readMcpConfigFrom = (
+  target: ConfigTarget,
+): Task<Record<string, McpServerConfig>> => {
+  if (target.configFormat === "toml") {
     return ifElseM(
-      exists(configPath),
-      map(readFile(configPath), (content) => {
-        const sections = parseTomlSection(content, harness.mcpKey);
+      exists(target.path),
+      map(readFile(target.path), (content) => {
+        const sections = parseTomlSection(content, target.mcpKey);
         return sections as unknown as Record<string, McpServerConfig>;
       }),
       pure({} as Record<string, McpServerConfig>),
@@ -76,10 +150,10 @@ export const readMcpConfig = (
   }
 
   return ifElseM(
-    exists(configPath),
-    map(readFile(configPath), (content) => {
+    exists(target.path),
+    map(readFile(target.path), (content) => {
       const parsed = parseJsonc(content) ?? {};
-      return asServerRecord(parsed[harness.mcpKey]) as Record<
+      return asServerRecord(parsed[target.mcpKey]) as Record<
         string,
         McpServerConfig
       >;
@@ -88,115 +162,250 @@ export const readMcpConfig = (
   );
 };
 
+/** The TOML field record for a server config (command + optional args/cwd). */
+const tomlFields = (config: McpServerConfig): Record<string, unknown> => {
+  const fields: Record<string, unknown> = { command: config.command };
+  if (config.args) fields.args = config.args;
+  if (config.cwd) fields.cwd = config.cwd;
+  return fields;
+};
+
 /**
- * Write or merge an MCP server entry into a harness config file.
- * If the file exists, the new entry is merged into existing servers, preserving
- * every other server. If the file does not exist, it is created with the entry.
- * A file that is not valid JSON/JSONC fails closed rather than being overwritten.
+ * Write or merge one server entry under EVERY `mcpKey` of a shared config file,
+ * in a SINGLE read-modify-write. Preserves every other server and every other
+ * top-level key (so two harnesses sharing a file under different keys each
+ * preserve the other), and — being one write per file — never re-reads a file
+ * it just created, so a dry-run of a multi-key group is well-defined. A file
+ * that is not valid JSON/JSONC fails closed rather than being overwritten.
  *
- * @note This function is impure — it reads and writes the filesystem
- * via Task effects.
- * @note A JSON merge is written back as formatted JSON, so a JSONC config's
- * comments and custom formatting are not preserved across the write — only its
- * server entries are.
+ * @param path - The config file path.
+ * @param configFormat - Its serialization format.
+ * @param mcpKeys - The server-map keys to write the entry under (≥1).
+ * @param serverName - The server entry name.
+ * @param config - The server config.
+ * @param undoTask - The task that reverses this write.
+ * @returns A Task performing the merge/create (with an undo).
+ * @note Impure — reads and writes the filesystem via Task effects.
  */
-export const writeMcpConfig = (
-  harness: HarnessDefinition,
-  projectRoot: string,
+const writeServerUnderKeys = (
+  path: string,
+  configFormat: ConfigTarget["configFormat"],
+  mcpKeys: readonly string[],
   serverName: string,
-  config: McpServerConfig,
+  rawConfig: McpServerConfig,
+  normalizeEnv: boolean,
+  undoTask: Task<void>,
 ): Task<void> => {
-  const configPath = harness.configPath(projectRoot);
-  const undoTask = removeMcpConfig(harness, projectRoot, serverName);
-
-  if (harness.configFormat === "toml") {
-    const fields: Record<string, unknown> = { command: config.command };
-    if (config.args) fields.args = config.args;
-    if (config.cwd) fields.cwd = config.cwd;
-
+  const config = normalizeEnv ? normalizeOdEnv(rawConfig) : rawConfig;
+  if (configFormat === "toml") {
+    const fields = tomlFields(config);
     return ifElseM(
-      exists(configPath),
-      flatMap(readFile(configPath), (content) => {
-        const merged = mergeTomlSection(
-          content,
-          harness.mcpKey,
-          serverName,
-          fields,
-        );
-        return writeFile(configPath, merged, { undo: undoTask });
+      exists(path),
+      flatMap(readFile(path), (content) => {
+        let merged = content;
+        for (const key of mcpKeys) {
+          merged = mergeTomlSection(merged, key, serverName, fields);
+        }
+        return writeFile(path, merged, { undo: undoTask });
       }),
-      flatMap(mkdir(dirname(configPath), true), () =>
-        writeFile(
-          configPath,
-          serializeTomlSection(harness.mcpKey, { [serverName]: fields }),
-          { undo: undoTask },
-        ),
-      ),
+      flatMap(mkdir(dirname(path), true), () => {
+        const body = mcpKeys
+          .map((key) => serializeTomlSection(key, { [serverName]: fields }))
+          .join("");
+        return writeFile(path, body, { undo: undoTask });
+      }),
     );
   }
 
   return ifElseM(
-    exists(configPath),
-    flatMap(readFile(configPath), (content) => {
+    exists(path),
+    flatMap(readFile(path), (content) => {
       const parsed = parseJsonc(content);
       if (parsed === undefined) {
-        return unparseableConfig(configPath);
+        return unparseableConfig(path);
       }
-      const servers = asServerRecord(parsed[harness.mcpKey]);
-      servers[serverName] = config;
-      parsed[harness.mcpKey] = servers;
-      return writeFile(configPath, formatJson(parsed), { undo: undoTask });
+      for (const key of mcpKeys) {
+        const servers = asServerRecord(parsed[key]);
+        servers[serverName] = config;
+        parsed[key] = servers;
+      }
+      return writeFile(path, formatJson(parsed), { undo: undoTask });
     }),
-    flatMap(mkdir(dirname(configPath), true), () =>
-      writeFile(
-        configPath,
-        formatJson({ [harness.mcpKey]: { [serverName]: config } }),
-        { undo: undoTask },
-      ),
-    ),
+    flatMap(mkdir(dirname(path), true), () => {
+      const initial: Record<string, unknown> = {};
+      for (const key of mcpKeys) initial[key] = { [serverName]: config };
+      return writeFile(path, formatJson(initial), { undo: undoTask });
+    }),
   );
 };
 
 /**
- * Remove an MCP server entry from a harness config file.
- * If the file does not exist, this is a no-op. A file that is not valid
+ * Write or merge an MCP server entry into a resolved config target. Preserves
+ * every other server (and every other top-level key). A file that is not valid
  * JSON/JSONC fails closed rather than being overwritten.
  *
- * @note This function is impure — it reads and writes the filesystem
- * via Task effects.
- * @note As with {@link writeMcpConfig}, a JSON rewrite does not preserve a
- * JSONC config's comments or formatting — only its server entries.
+ * @param target - The resolved config location.
+ * @param serverName - The server entry name to write.
+ * @param config - The server config to write.
+ * @returns A Task performing the merge/create (with an undo).
+ * @note Impure — reads and writes the filesystem via Task effects.
+ * @note A JSON merge is written back as formatted JSON, so a JSONC config's
+ * comments and custom formatting are not preserved across the write — only its
+ * server entries are.
  */
-export const removeMcpConfig = (
-  harness: HarnessDefinition,
-  projectRoot: string,
+export const writeMcpConfigTo = (
+  target: ConfigTarget,
+  serverName: string,
+  config: McpServerConfig,
+): Task<void> =>
+  writeServerUnderKeys(
+    target.path,
+    target.configFormat,
+    [target.mcpKey],
+    serverName,
+    config,
+    target.normalizeEnv === true,
+    removeMcpConfigFrom(target, serverName),
+  );
+
+/**
+ * Write one server entry across a group of targets that share ONE file under
+ * (possibly) different `mcpKey`s — VS Code (`servers`) + Cline (`mcpServers`) in
+ * `.vscode/mcp.json` — in a single read-modify-write, so each key preserves the
+ * other and a dry-run of the group is well-defined.
+ *
+ * @param targets - The group's per-key targets (non-empty, sharing a file).
+ * @param serverName - The server entry name to write.
+ * @param config - The server config to write.
+ * @returns A Task writing the entry under every target's `mcpKey`.
+ * @note Impure — reads and writes the filesystem via Task effects.
+ */
+export const writeMcpConfigTargets = (
+  targets: readonly ConfigTarget[],
+  serverName: string,
+  config: McpServerConfig,
+): Task<void> => {
+  const first = targets.at(0);
+  if (first === undefined) {
+    throw new Error("writeMcpConfigTargets: at least one target is required");
+  }
+  const undoTask = sequence_(
+    targets.map((t) => removeMcpConfigFrom(t, serverName)),
+  );
+  return writeServerUnderKeys(
+    first.path,
+    first.configFormat,
+    targets.map((t) => t.mcpKey),
+    serverName,
+    config,
+    first.normalizeEnv === true,
+    undoTask,
+  );
+};
+
+/**
+ * Remove an MCP server entry from a resolved config target. A no-op when the
+ * file is absent; fails closed on an unparseable JSON/JSONC config.
+ *
+ * @param target - The resolved config location.
+ * @param serverName - The server entry name to remove.
+ * @returns A Task performing the removal.
+ * @note Impure — reads and writes the filesystem via Task effects.
+ */
+export const removeMcpConfigFrom = (
+  target: ConfigTarget,
   serverName: string,
 ): Task<void> => {
-  const configPath = harness.configPath(projectRoot);
-
-  if (harness.configFormat === "toml") {
+  if (target.configFormat === "toml") {
     return ifElseM(
-      exists(configPath),
-      flatMap(readFile(configPath), (content) => {
-        const removed = removeTomlSection(content, harness.mcpKey, serverName);
-        return writeFile(configPath, removed);
+      exists(target.path),
+      flatMap(readFile(target.path), (content) => {
+        const removed = removeTomlSection(content, target.mcpKey, serverName);
+        return writeFile(target.path, removed);
       }),
       pure(undefined),
     );
   }
 
   return ifElseM(
-    exists(configPath),
-    flatMap(readFile(configPath), (content) => {
+    exists(target.path),
+    flatMap(readFile(target.path), (content) => {
       const parsed = parseJsonc(content);
       if (parsed === undefined) {
-        return unparseableConfig(configPath);
+        return unparseableConfig(target.path);
       }
-      const servers = asServerRecord(parsed[harness.mcpKey]);
+      const servers = asServerRecord(parsed[target.mcpKey]);
       delete servers[serverName];
-      parsed[harness.mcpKey] = servers;
-      return writeFile(configPath, formatJson(parsed));
+      parsed[target.mcpKey] = servers;
+      return writeFile(target.path, formatJson(parsed));
     }),
     pure(undefined),
   );
 };
+
+/**
+ * Read existing MCP server entries from a harness config file.
+ *
+ * @param harness - The harness whose config to read.
+ * @param projectRoot - The project root.
+ * @param band - The band to read (defaults to the harness's default band).
+ * @param platform - The captured host (defaults to the live reader).
+ * @returns The server map.
+ * @note Impure — reads from the filesystem via Task effects.
+ */
+export const readMcpConfig = (
+  harness: HarnessDefinition,
+  projectRoot: string,
+  band: ScopeBand = defaultBandOf(harness),
+  platform: PlatformEnv = readPlatformEnv(),
+): Task<Record<string, McpServerConfig>> =>
+  readMcpConfigFrom(resolveConfigTarget(harness, projectRoot, band, platform));
+
+/**
+ * Write or merge an MCP server entry into a harness config file.
+ *
+ * @param harness - The harness whose config to write.
+ * @param projectRoot - The project root.
+ * @param serverName - The server entry name.
+ * @param config - The server config.
+ * @param band - The band to write (defaults to the harness's default band).
+ * @param platform - The captured host (defaults to the live reader).
+ * @returns A Task performing the merge/create.
+ * @note Impure — reads and writes the filesystem via Task effects.
+ */
+export const writeMcpConfig = (
+  harness: HarnessDefinition,
+  projectRoot: string,
+  serverName: string,
+  config: McpServerConfig,
+  band: ScopeBand = defaultBandOf(harness),
+  platform: PlatformEnv = readPlatformEnv(),
+): Task<void> =>
+  writeMcpConfigTo(
+    resolveConfigTarget(harness, projectRoot, band, platform),
+    serverName,
+    config,
+  );
+
+/**
+ * Remove an MCP server entry from a harness config file.
+ *
+ * @param harness - The harness whose config to modify.
+ * @param projectRoot - The project root.
+ * @param serverName - The server entry name to remove.
+ * @param band - The band to modify (defaults to the harness's default band).
+ * @param platform - The captured host (defaults to the live reader).
+ * @returns A Task performing the removal.
+ * @note Impure — reads and writes the filesystem via Task effects.
+ */
+export const removeMcpConfig = (
+  harness: HarnessDefinition,
+  projectRoot: string,
+  serverName: string,
+  band: ScopeBand = defaultBandOf(harness),
+  platform: PlatformEnv = readPlatformEnv(),
+): Task<void> =>
+  removeMcpConfigFrom(
+    resolveConfigTarget(harness, projectRoot, band, platform),
+    serverName,
+  );

@@ -175,6 +175,16 @@ h5 {
   font-family: var(--typography-heading-5-font-family);
   font-weight: var(--font-weight);
   letter-spacing: var(--typography-heading-5-letter-spacing);
+  /* Heading 5 is styled as small-caps with old-style figures (design review):
+     the design tokens carry these under `--typography-heading-5-font-variant(-numeric)`
+     — small-caps in :root/.app/.site, normal in docs — so the tier difference
+     flows automatically. `normal` fallbacks keep h5 unchanged if a theme ships
+     without the tokens. */
+  font-variant: var(--typography-heading-5-font-variant, normal);
+  font-variant-numeric: var(
+    --typography-heading-5-font-variant-numeric,
+    normal
+  );
   padding-inline: var(--heading-padding-inline, 0);
 }
 

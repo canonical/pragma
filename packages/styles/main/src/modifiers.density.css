@@ -31,10 +31,16 @@
  *                    comfy   dense       comfy   dense
  *   line-height      32 (8)  24 (6)      36 (9)  28 (7)
  *   padding-inline   16 (4)   8 (2)      16 (4)  12 (3)
- *   space-lg         24 (6)  16 (4)      28 (7)  20 (5)
- *   space-md         16 (4)   8 (2)      20 (5)  12 (3)
- *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)
+ *   space-lg         40 (10) 32 (8)      44 (11) 36 (9)   ← between fields
+ *   space-md          8 (2)   4 (1)       8 (2)   8 (2)   ← label → control
+ *   space-sm          8 (2)   4 (1)       8 (2)   8 (2)   ← desc/error → input
+ *   space-xs          4 (1)   4 (1)       4 (1)   4 (1)   ← label → description
  *   (parenthesised = baseline units; 1 bU = --baseline-height = 4px)
+ *
+ * NB the space-lg / space-md values were retuned from Diana's 15/07 review
+ * (label→input 8px, between-fields 40px), and space-xs (label→description 4px)
+ * added, replacing the earlier graded 16/24 rungs. The values stay whole
+ * baseline multiples, so vertical rhythm holds.
  */
 
 /* ── Context family: the comfortable/dense PAIR per surface ──────────────────
@@ -49,12 +55,14 @@
   --density-lh-dense: calc(var(--baseline-height) * 6); /* 24px */
   --density-pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
   --density-pad-inline-dense: calc(var(--baseline-height) * 2); /*  8px */
-  --density-space-lg-comfy: calc(var(--baseline-height) * 6); /* 24px */
-  --density-space-lg-dense: calc(var(--baseline-height) * 4); /* 16px */
-  --density-space-md-comfy: calc(var(--baseline-height) * 4); /* 16px */
-  --density-space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-lg-comfy: calc(var(--baseline-height) * 10); /* 40px */
+  --density-space-lg-dense: calc(var(--baseline-height) * 8); /* 32px */
+  --density-space-md-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-md-dense: calc(var(--baseline-height) * 1); /*  4px */
   --density-space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
   --density-space-sm-dense: calc(var(--baseline-height) * 1); /*  4px */
+  --density-space-xs-comfy: calc(var(--baseline-height) * 1); /*  4px */
+  --density-space-xs-dense: calc(var(--baseline-height) * 1); /*  4px */
 
   /* Back-compat aliases (pre-namespace names). Remove once no consumer reads them. */
   --lh-comfy: var(--density-lh-comfy);
@@ -74,12 +82,14 @@
   --density-lh-dense: calc(var(--baseline-height) * 7); /* 28px */
   --density-pad-inline-comfy: calc(var(--baseline-height) * 4); /* 16px */
   --density-pad-inline-dense: calc(var(--baseline-height) * 3); /* 12px */
-  --density-space-lg-comfy: calc(var(--baseline-height) * 7); /* 28px */
-  --density-space-lg-dense: calc(var(--baseline-height) * 5); /* 20px */
-  --density-space-md-comfy: calc(var(--baseline-height) * 5); /* 20px */
-  --density-space-md-dense: calc(var(--baseline-height) * 3); /* 12px */
+  --density-space-lg-comfy: calc(var(--baseline-height) * 11); /* 44px */
+  --density-space-lg-dense: calc(var(--baseline-height) * 9); /* 36px */
+  --density-space-md-comfy: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-md-dense: calc(var(--baseline-height) * 2); /*  8px */
   --density-space-sm-comfy: calc(var(--baseline-height) * 2); /*  8px */
   --density-space-sm-dense: calc(var(--baseline-height) * 2); /*  8px */
+  --density-space-xs-comfy: calc(var(--baseline-height) * 1); /*  4px */
+  --density-space-xs-dense: calc(var(--baseline-height) * 1); /*  4px */
 
   /* Back-compat aliases (pre-namespace names). Remove once no consumer reads them. */
   --lh-comfy: var(--density-lh-comfy);
@@ -109,15 +119,19 @@
   );
   --density-space-lg: var(
     --density-space-lg-comfy,
-    calc(var(--baseline-height) * 6)
+    calc(var(--baseline-height) * 10)
   );
   --density-space-md: var(
     --density-space-md-comfy,
-    calc(var(--baseline-height) * 4)
+    calc(var(--baseline-height) * 2)
   );
   --density-space-sm: var(
     --density-space-sm-comfy,
     calc(var(--baseline-height) * 2)
+  );
+  --density-space-xs: var(
+    --density-space-xs-comfy,
+    calc(var(--baseline-height) * 1)
   );
 }
 .dense {
@@ -131,22 +145,36 @@
   );
   --density-space-lg: var(
     --density-space-lg-dense,
-    calc(var(--baseline-height) * 4)
+    calc(var(--baseline-height) * 8)
   );
   --density-space-md: var(
     --density-space-md-dense,
-    calc(var(--baseline-height) * 2)
+    calc(var(--baseline-height) * 1)
   );
   --density-space-sm: var(
     --density-space-sm-dense,
     calc(var(--baseline-height) * 1)
   );
+  --density-space-xs: var(
+    --density-space-xs-dense,
+    calc(var(--baseline-height) * 1)
+  );
 }
 
-/* ── Target baseline = round(up, height × 2/3) ──────────────────────────────
- * Snapped UP so fractional cases lift (apps-comfy 5.33→6) while exact multiples
- * stay (apps-dense 4.0, sites-comfy 6.0). Matches: apps 32→6th/24→4th,
- * sites 36→6th/28→5th. */
+/* ── Target baseline = round(nearest, height × 2/3) ─────────────────────────
+ * The control text seats where line-height × 2/3 lands on the grid — the optical
+ * centre of the box — snapped to the NEAREST grid line, not the next one up.
+ * Nearest (not up) because up over-lifts the one cell where lh × 2/3 is
+ * fractional: apps-comfortable is 32 × 2/3 = 21.33px, which round(up) forced a
+ * whole step onto the 24px line (6th), a baseline too low. round(nearest) seats
+ * it on the 20px line (5th) — Diana's F-O2 "move text 1 baseline up in
+ * apps/comfortable" (AV-323). The exact-multiple cells are unaffected:
+ *   apps-comfy   21.33 → 20 (5th)   ← the fix; was 24
+ *   apps-dense   16.00 → 16 (4th)   unchanged (exact)
+ *   sites-comfy  24.00 → 24 (6th)   unchanged (exact)
+ *   sites-dense  18.67 → 20 (5th)   unchanged (nearest == up here)
+ * So it's a self-correcting rule, not a per-cell offset: any future fractional
+ * cell snaps to its nearest line too. */
 :where(.comfortable, .dense, .app, .site, .docs) {
   /* Effective line-height with the SAME fallback chain a control box uses
      (--density-line-height → context --density-lh-comfy → apps-comfy literal).
@@ -159,8 +187,48 @@
     var(--density-lh-comfy, calc(var(--baseline-height) * 8))
   );
   --density-target-baseline-px: round(
-    up,
+    nearest,
     calc(var(--density-line-height-effective) * 2 / 3),
     var(--baseline-height)
+  );
+
+  /* ── Control seat (intrinsic) ──────────────────────────────────────────────
+   * ONE seat for every control (button, input chrome, accordion header, …):
+   * the text's own line box — the density cell minus one baseline of headroom
+   * per side (`--control-seat-line`) — IS the control interior. The height is
+   * INTRINSIC: no block-size; border + pads + line-height add up to the cell,
+   * and both outer edges land on grid lines.
+   *
+   * The shared layer exports the two BORDER-AGNOSTIC pieces. A var() inside a
+   * custom property is substituted where the property is DECLARED — here, the
+   * density scope — so a component's border can never be a formula input at
+   * this level; each component folds its own border in at the application site
+   * (single-line <input>/<select> also floor the line at the UA's `normal`
+   * minimum — see the form package's density.css):
+   *
+   *     --seat-before: max(0px, calc(
+   *       var(--control-seat-basis) - <border-width>));
+   *     --seat-after: max(0px, calc(
+   *       var(--density-line-height-effective) - var(--control-seat-line) -
+   *       var(--seat-before) - 2 * <border-width>));
+   *     line-height: var(--control-seat-line);
+   *     padding-block: var(--seat-before) var(--seat-after);
+   *
+   * `1cap` below stays an unresolved token inside the custom property and only
+   * resolves where the seat is APPLIED — each component's own font — so
+   * components with different fonts still seat on the SAME grid index. The
+   * border must be the control's CONSTANT nominal width (transparent where no
+   * border shows), so bordered and borderless variants share one geometry. */
+  --control-seat-line: calc(
+    var(--density-line-height-effective) -
+    2 *
+    var(--baseline-height)
+  );
+  /* Unclamped distance from just inside the box's top border down to the
+     target baseline, for a --control-seat-line line box. */
+  --control-seat-basis: calc(
+    var(--density-target-baseline-px) -
+    (var(--control-seat-line) + 1cap) /
+    2
   );
 }

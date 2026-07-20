@@ -12,8 +12,14 @@ type SwitchInputFieldProps = InputProps<SwitchInputProps>;
  * middleware/conditional-display support. Requires at least one of
  * `label`/`controlLabel`.
  *
+ * The label defaults to the LEFT of the switch (`labelPosition: "before"`): a
+ * label before a switch names its purpose, which is the switch convention (a
+ * label after would read as the switch's state). Callers can override with
+ * `labelPosition="after"`.
+ *
  * `import { SwitchField } from "@canonical/react-ds-global-form";`
  */
 export default withToggleWrapper<SwitchInputFieldProps>(
   bindField<SwitchInputFieldProps>(SwitchInput, "native"),
+  { labelPosition: "before" },
 );

@@ -3,17 +3,19 @@ import harnesses from "./harnesses.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
-    expect(harnesses).toHaveLength(8);
+    expect(harnesses).toHaveLength(10);
     const ids = harnesses.map((h) => h.id);
     expect(ids).toEqual([
       "claude-code",
       "cursor",
       "windsurf",
+      "cline",
       "roo-code",
       "opencode",
       "gemini-cli",
       "codex",
       "vscode",
+      "opendesign",
     ]);
   });
 
@@ -28,6 +30,47 @@ describe("harnesses registry", () => {
       expect(h.mcpKey).toBeTruthy();
       expect(typeof h.skillsPath).toBe("function");
     }
+  });
+
+  it("declares a valid scope, and global/both harnesses have a home config", () => {
+    for (const h of harnesses) {
+      expect(h.scope).toMatch(/^(project|global|both)$/);
+      if (h.scope === "global" || h.scope === "both") {
+        expect(typeof h.homeConfigPath).toBe("function");
+      }
+    }
+  });
+
+  it("windsurf is global, claude-code is both", () => {
+    const windsurf = harnesses.find((h) => h.id === "windsurf");
+    const claude = harnesses.find((h) => h.id === "claude-code");
+    expect(windsurf?.scope).toBe("global");
+    expect(claude?.scope).toBe("both");
+  });
+
+  it("cline shares .vscode/mcp.json with VS Code under a different mcpKey", () => {
+    const cline = harnesses.find((h) => h.id === "cline");
+    const vscode = harnesses.find((h) => h.id === "vscode");
+    expect(cline?.configPath("/project")).toBe("/project/.vscode/mcp.json");
+    expect(vscode?.configPath("/project")).toBe("/project/.vscode/mcp.json");
+    expect(cline?.mcpKey).toBe("mcpServers");
+    expect(vscode?.mcpKey).toBe("servers");
+  });
+
+  it("opendesign is dual-scope with project + home config and skills paths (7g)", () => {
+    const od = harnesses.find((h) => h.id === "opendesign");
+    expect(od?.scope).toBe("both");
+    expect(od?.normalizeEnv).toBe(true);
+    expect(od?.configPath("/project")).toBe("/project/.od/mcp-config.json");
+    expect(
+      od?.homeConfigPath?.({
+        platform: "linux",
+        env: {},
+        home: "/home/tester",
+        isWsl: false,
+      }),
+    ).toBe("/home/tester/.od/mcp-config.json");
+    expect(od?.skillsPath("/project")).toBe("/project/.od/skills");
   });
 
   it("configPath returns project-relative path", () => {

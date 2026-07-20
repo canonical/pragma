@@ -35,36 +35,51 @@ import {
   PACKAGE_NAME,
   sharedPrompts,
 } from "../shared/index.js";
-import loadTemplate from "../shared/loadTemplate.js";
+import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { SvelteComponentAnswers } from "./types.js";
 
 // =============================================================================
-// Template Paths & Content (loaded eagerly via top-level await)
+// Template Paths & Content (loaded LAZILY on first generate())
 // =============================================================================
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
-const svelteTemplates = {
-  component: await loadTemplate(
-    path.join(templatesDir, "svelte", "component.svelte.ejs"),
-  ),
-  types: await loadTemplate(path.join(templatesDir, "svelte", "types.ts.ejs")),
-  index: await loadTemplate(path.join(templatesDir, "svelte", "index.ts.ejs")),
-  test: await loadTemplate(path.join(templatesDir, "svelte", "test.ts.ejs")),
-  ssrTest: await loadTemplate(
-    path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),
-  ),
-  storiesSvelte: await loadTemplate(
-    path.join(templatesDir, "svelte", "stories.svelte.ejs"),
-  ),
-  storiesTs: await loadTemplate(
-    path.join(templatesDir, "svelte", "stories.ts.ejs"),
-  ),
-  styles: await loadTemplate(
-    path.join(templatesDir, "shared", "styles.css.ejs"),
-  ),
-};
+/** Read every Svelte template from disk (or the embedded manifest). */
+function loadSvelteTemplates() {
+  return {
+    component: loadTemplateSync(
+      path.join(templatesDir, "svelte", "component.svelte.ejs"),
+    ),
+    types: loadTemplateSync(path.join(templatesDir, "svelte", "types.ts.ejs")),
+    index: loadTemplateSync(path.join(templatesDir, "svelte", "index.ts.ejs")),
+    test: loadTemplateSync(path.join(templatesDir, "svelte", "test.ts.ejs")),
+    ssrTest: loadTemplateSync(
+      path.join(templatesDir, "svelte", "ssr.test.ts.ejs"),
+    ),
+    storiesSvelte: loadTemplateSync(
+      path.join(templatesDir, "svelte", "stories.svelte.ejs"),
+    ),
+    storiesTs: loadTemplateSync(
+      path.join(templatesDir, "svelte", "stories.ts.ejs"),
+    ),
+    styles: loadTemplateSync(
+      path.join(templatesDir, "shared", "styles.css.ejs"),
+    ),
+  };
+}
+
+/**
+ * Memoized template bundle. Loaded on the FIRST `generate()` call, never at
+ * module-eval — so importing this generator never reads a template, and a READ
+ * command (which never calls `generate()`) never touches the `.ejs` a compiled
+ * binary lacks. See the react generator for the full rationale.
+ */
+let svelteTemplatesCache: ReturnType<typeof loadSvelteTemplates> | undefined;
+function svelteTemplates(): ReturnType<typeof loadSvelteTemplates> {
+  svelteTemplatesCache ??= loadSvelteTemplates();
+  return svelteTemplatesCache;
+}
 
 // =============================================================================
 // Generator Definition
@@ -124,6 +139,7 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
     const ctx = createTemplateContext(answers, "svelte");
+    const t = svelteTemplates();
 
     return sequence_([
       info(`Generating Svelte component: ${componentName}`),
@@ -133,32 +149,32 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
 
       debug("Creating main component file"),
       template({
-        source: svelteTemplates.component.source,
-        content: svelteTemplates.component.content,
+        source: t.component.source,
+        content: t.component.content,
         dest: path.join(componentDir, `${componentName}.svelte`),
         vars: ctx,
       }),
 
       debug("Creating types file"),
       template({
-        source: svelteTemplates.types.source,
-        content: svelteTemplates.types.content,
+        source: t.types.source,
+        content: t.types.content,
         dest: path.join(componentDir, "types.ts"),
         vars: ctx,
       }),
 
       debug("Creating index barrel file"),
       template({
-        source: svelteTemplates.index.source,
-        content: svelteTemplates.index.content,
+        source: t.index.source,
+        content: t.index.content,
         dest: path.join(componentDir, "index.ts"),
         vars: ctx,
       }),
 
       debug("Creating test file"),
       template({
-        source: svelteTemplates.test.source,
-        content: svelteTemplates.test.content,
+        source: t.test.source,
+        content: t.test.content,
         dest: path.join(componentDir, `${componentName}.svelte.test.ts`),
         vars: ctx,
       }),
@@ -167,8 +183,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withSsrTests,
         template({
-          source: svelteTemplates.ssrTest.source,
-          content: svelteTemplates.ssrTest.content,
+          source: t.ssrTest.source,
+          content: t.ssrTest.content,
           dest: path.join(componentDir, `${componentName}.ssr.test.ts`),
           vars: ctx,
         }),
@@ -181,8 +197,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withStories && !answers.useTsStories,
         template({
-          source: svelteTemplates.storiesSvelte.source,
-          content: svelteTemplates.storiesSvelte.content,
+          source: t.storiesSvelte.source,
+          content: t.storiesSvelte.content,
           dest: path.join(componentDir, `${componentName}.stories.svelte`),
           vars: ctx,
         }),
@@ -195,8 +211,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withStories && answers.useTsStories,
         template({
-          source: svelteTemplates.storiesTs.source,
-          content: svelteTemplates.storiesTs.content,
+          source: t.storiesTs.source,
+          content: t.storiesTs.content,
           dest: path.join(componentDir, `${componentName}.stories.ts`),
           vars: ctx,
         }),
@@ -206,8 +222,8 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
       when(
         answers.withStyles,
         template({
-          source: svelteTemplates.styles.source,
-          content: svelteTemplates.styles.content,
+          source: t.styles.source,
+          content: t.styles.content,
           dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),

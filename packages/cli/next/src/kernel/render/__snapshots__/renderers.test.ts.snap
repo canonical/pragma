@@ -1,0 +1,127 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`error render matrix (× plain/llm/json) > renders each error across the three formats 1`] = `
+{
+  "empty": {
+    "json": "{"ok":false,"error":{"code":"EMPTY_RESULTS","message":"No tokens found.","validOptions":["stable","beta"],"filters":{"channel":"stable","tier":"core"}}}",
+    "llm": "## Error: EMPTY_RESULTS
+No tokens found.
+Filters: channel=stable, tier=core
+Valid options: stable, beta",
+    "plain": "Error: No tokens found.
+
+Active filters:
+  channel: stable
+  tier: core
+
+Valid options: stable, beta",
+  },
+  "notFound": {
+    "json": "{"ok":false,"error":{"code":"ENTITY_NOT_FOUND","message":"block \\"Buton\\" not found.","suggestions":["Button"],"recovery":{"message":"List available blocks.","cli":"pragma block list"}}}",
+    "llm": "## Error: ENTITY_NOT_FOUND
+block "Buton" not found.
+Suggestions: Button
+Recovery: List available blocks. \`pragma block list\`",
+    "plain": "Error: block "Buton" not found.
+
+Did you mean?
+  - Button
+
+List available blocks. Run \`pragma block list\`",
+  },
+}
+`;
+
+exports[`render matrix (list/lookup/empty × plain/llm/json × detail) > renders every scenario/format/detail combination 1`] = `
+{
+  "detailed": {
+    "empty": {
+      "json": "[]",
+      "llm": "## Widgets (0)
+",
+      "plain": "",
+    },
+    "list": {
+      "json": "[{"uri":"https://ds.canonical.com/Button","name":"Button","kind":"component","note":"Primary action"},{"uri":"https://ds.canonical.com/Card","name":"Card","kind":"pattern","note":""}]",
+      "llm": "## Widgets (2)
+
+- \`ds:Button\` — **Button** component | Primary action
+- \`ds:Card\` — **Card** pattern",
+      "plain": "ds:Button  Button  component  Primary action
+ds:Card    Card    pattern",
+    },
+    "lookup": {
+      "json": "{"uri":"https://ds.canonical.com/Button","name":"Button","kind":"component","note":"Primary action"}",
+      "llm": "## Button
+
+- Kind: component
+- URI: ds:Button
+
+### Note
+Primary action",
+      "plain": "Button
+════════════════════════
+
+  Kind: component
+  URI: ds:Button
+
+Note:
+  Primary action",
+    },
+  },
+  "standard": {
+    "empty": {
+      "json": "[]",
+      "llm": "## Widgets (0)
+",
+      "plain": "",
+    },
+    "list": {
+      "json": "[{"name":"Button","kind":"component"},{"name":"Card","kind":"pattern"}]",
+      "llm": "## Widgets (2)
+
+- **Button** component
+- **Card** pattern",
+      "plain": "Button  component
+Card    pattern",
+    },
+    "lookup": {
+      "json": "{"uri":"https://ds.canonical.com/Button","name":"Button","kind":"component","note":"Primary action"}",
+      "llm": "## Button
+
+- Kind: component",
+      "plain": "Button
+════════════════════════
+
+  Kind: component",
+    },
+  },
+  "summary": {
+    "empty": {
+      "json": "[]",
+      "llm": "## Widgets (0)
+",
+      "plain": "",
+    },
+    "list": {
+      "json": "[{"name":"Button"},{"name":"Card"}]",
+      "llm": "## Widgets (2)
+
+- **Button**
+- **Card**",
+      "plain": "Button
+Card",
+    },
+    "lookup": {
+      "json": "{"uri":"https://ds.canonical.com/Button","name":"Button","kind":"component","note":"Primary action"}",
+      "llm": "## Button
+
+- Kind: component",
+      "plain": "Button
+════════════════════════
+
+  Kind: component",
+    },
+  },
+}
+`;

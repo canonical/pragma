@@ -27,33 +27,49 @@ import {
   PACKAGE_NAME,
   sharedPrompts,
 } from "../shared/index.js";
-import loadTemplate from "../shared/loadTemplate.js";
+import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { ReactComponentAnswers } from "./types.js";
 
 // =============================================================================
-// Template Paths & Content (loaded eagerly via top-level await)
+// Template Paths & Content (loaded LAZILY on first generate())
 // =============================================================================
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(__dirname, "..", "templates");
 
-const reactTemplates = {
-  component: await loadTemplate(
-    path.join(templatesDir, "react", "component.tsx.ejs"),
-  ),
-  types: await loadTemplate(path.join(templatesDir, "react", "types.ts.ejs")),
-  index: await loadTemplate(path.join(templatesDir, "react", "index.ts.ejs")),
-  test: await loadTemplate(path.join(templatesDir, "react", "test.tsx.ejs")),
-  ssrTest: await loadTemplate(
-    path.join(templatesDir, "react", "ssr.test.tsx.ejs"),
-  ),
-  stories: await loadTemplate(
-    path.join(templatesDir, "react", "stories.tsx.ejs"),
-  ),
-  styles: await loadTemplate(
-    path.join(templatesDir, "shared", "styles.css.ejs"),
-  ),
-};
+/** Read every React template from disk (or the embedded manifest). */
+function loadReactTemplates() {
+  return {
+    component: loadTemplateSync(
+      path.join(templatesDir, "react", "component.tsx.ejs"),
+    ),
+    types: loadTemplateSync(path.join(templatesDir, "react", "types.ts.ejs")),
+    index: loadTemplateSync(path.join(templatesDir, "react", "index.ts.ejs")),
+    test: loadTemplateSync(path.join(templatesDir, "react", "test.tsx.ejs")),
+    ssrTest: loadTemplateSync(
+      path.join(templatesDir, "react", "ssr.test.tsx.ejs"),
+    ),
+    stories: loadTemplateSync(
+      path.join(templatesDir, "react", "stories.tsx.ejs"),
+    ),
+    styles: loadTemplateSync(
+      path.join(templatesDir, "shared", "styles.css.ejs"),
+    ),
+  };
+}
+
+/**
+ * Memoized template bundle. Loaded on the FIRST `generate()` call, never at
+ * module-eval — so importing this generator (which the CLI does behind a lazy
+ * boundary, and which a compiled-binary READ may still eval) never reads a
+ * template. A READ never calls `generate()`, so it never touches the disk/`.ejs`
+ * that a standalone binary lacks — closing the bun-code-splitting-fragility hole.
+ */
+let reactTemplatesCache: ReturnType<typeof loadReactTemplates> | undefined;
+function reactTemplates(): ReturnType<typeof loadReactTemplates> {
+  reactTemplatesCache ??= loadReactTemplates();
+  return reactTemplatesCache;
+}
 
 // =============================================================================
 // Generator Definition
@@ -93,6 +109,7 @@ For example, 'src/components/Button' creates a 'Button' component.`,
     const componentDir = answers.componentPath;
     const parentDir = getParentDir(answers.componentPath);
     const ctx = createTemplateContext(answers, "react");
+    const t = reactTemplates();
 
     return sequence_([
       info(`Generating React component: ${componentName}`),
@@ -102,32 +119,32 @@ For example, 'src/components/Button' creates a 'Button' component.`,
 
       debug("Creating main component file"),
       template({
-        source: reactTemplates.component.source,
-        content: reactTemplates.component.content,
+        source: t.component.source,
+        content: t.component.content,
         dest: path.join(componentDir, `${componentName}.tsx`),
         vars: ctx,
       }),
 
       debug("Creating types file"),
       template({
-        source: reactTemplates.types.source,
-        content: reactTemplates.types.content,
+        source: t.types.source,
+        content: t.types.content,
         dest: path.join(componentDir, "types.ts"),
         vars: ctx,
       }),
 
       debug("Creating index barrel file"),
       template({
-        source: reactTemplates.index.source,
-        content: reactTemplates.index.content,
+        source: t.index.source,
+        content: t.index.content,
         dest: path.join(componentDir, "index.ts"),
         vars: ctx,
       }),
 
       debug("Creating test file"),
       template({
-        source: reactTemplates.test.source,
-        content: reactTemplates.test.content,
+        source: t.test.source,
+        content: t.test.content,
         dest: path.join(componentDir, `${componentName}.tests.tsx`),
         vars: ctx,
       }),
@@ -136,8 +153,8 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       when(
         answers.withSsrTests,
         template({
-          source: reactTemplates.ssrTest.source,
-          content: reactTemplates.ssrTest.content,
+          source: t.ssrTest.source,
+          content: t.ssrTest.content,
           dest: path.join(componentDir, `${componentName}.ssr.tests.tsx`),
           vars: ctx,
         }),
@@ -147,8 +164,8 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       when(
         answers.withStories,
         template({
-          source: reactTemplates.stories.source,
-          content: reactTemplates.stories.content,
+          source: t.stories.source,
+          content: t.stories.content,
           dest: path.join(componentDir, `${componentName}.stories.tsx`),
           vars: ctx,
         }),
@@ -158,8 +175,8 @@ For example, 'src/components/Button' creates a 'Button' component.`,
       when(
         answers.withStyles,
         template({
-          source: reactTemplates.styles.source,
-          content: reactTemplates.styles.content,
+          source: t.styles.source,
+          content: t.styles.content,
           dest: path.join(componentDir, "styles.css"),
           vars: ctx,
         }),

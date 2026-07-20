@@ -1,8 +1,19 @@
 /**
- * Load a template file eagerly, with compiled binary support.
+ * Load a template file eagerly, with compiled-binary support.
  *
- * In interpreted mode, reads from the filesystem. In a compiled binary,
- * falls back to `Bun.embeddedFiles` blobs (async, requires top-level await).
+ * In a source run (or tests) the template is read from disk. In the standalone
+ * `bun build --compile` binary the `.ejs` files are not on disk, so the loader
+ * falls back to an EMBEDDED MANIFEST injected by the host via
+ * {@link setEmbeddedTemplates} — a map keyed by DIRECTORY-QUALIFIED path
+ * (`component/<framework>/<file>`), compiled into the binary as inline strings.
+ *
+ * The directory-qualified key is what fixes the historic basename collision:
+ * several component templates share a basename across frameworks
+ * (`types.ts.ejs`, `index.ts.ejs`, `styles.css.ejs`, `stories.ts.ejs` exist in
+ * `react/`, `svelte/` and `lit/`). The previous fallback matched embedded blobs
+ * by BARE BASENAME, so a compiled binary could silently emit the WRONG
+ * framework's template (whichever blob was encountered first). Matching on the
+ * framework-qualified suffix instead guarantees the right framework's file.
  */
 
 import { readFileSync } from "node:fs";
@@ -15,7 +26,95 @@ export interface LoadedTemplate {
 }
 
 /**
- * Load a template from disk or embedded files.
+ * The injected embedded-template manifest: directory-qualified path
+ * (`component/react/types.ts.ejs`) → template content. Empty in a source run
+ * (templates load from disk); populated by the compiled-binary host BEFORE the
+ * component generators evaluate their top-level `await loadTemplate`.
+ */
+let embeddedTemplates: Readonly<Record<string, string>> = {};
+
+/**
+ * Inject the embedded-template manifest — the compiled-binary fallback. Called
+ * once by the host (the `pragma` `create` runtime) before the component
+ * generators are imported, so their eager `loadTemplate` calls can resolve from
+ * it when the disk read fails. Passing an empty map (the default) restores pure
+ * disk loading.
+ *
+ * @param manifest - Directory-qualified path → template content.
+ */
+export function setEmbeddedTemplates(
+  manifest: Readonly<Record<string, string>>,
+): void {
+  embeddedTemplates = manifest;
+}
+
+/**
+ * The directory-qualified manifest key for a template source path: the portion
+ * after the last `/templates/` segment (e.g. `react/types.ts.ejs`), prefixed
+ * with the generator id (`component/`). Returns `undefined` when the path has no
+ * `templates/` segment (never expected for a real template).
+ *
+ * The `component/` prefix is correct because this loader is used ONLY by the
+ * component generators; the shared manifest additionally carries `package/…` and
+ * `application/…` entries (embedded for a future compiled-binary rollout of
+ * those nouns), which this loader never queries.
+ */
+function qualifiedKey(source: string): string | undefined {
+  const marker = "/templates/";
+  const at = source.lastIndexOf(marker);
+  if (at === -1) return undefined;
+  return `component/${source.slice(at + marker.length)}`;
+}
+
+/**
+ * Load a template from disk, or — when the disk read fails (a compiled binary) —
+ * from the injected embedded manifest. SYNCHRONOUS.
+ *
+ * Disk is consulted FIRST: a source run reads the real file, and the compiled
+ * binary's absolute `/$bunfs/…` source paths never exist on a user's disk, so it
+ * always falls through to the manifest. A source run and a compiled run are
+ * therefore byte-identical (the manifest is generated from the same files).
+ *
+ * This is synchronous (both branches — `readFileSync` and the in-memory manifest
+ * lookup — are), so a generator can load its templates LAZILY inside its
+ * synchronous `generate(answers): Task` call rather than via a module-eval
+ * top-level `await`. That is the whole point of the sync form: a READ command
+ * (which never calls `generate()`) then never touches a template, regardless of
+ * whether bun's `--compile` code-splitting kept the generator module lazy — the
+ * exact fragility that crashed `pragma block list` on some bun versions.
+ *
+ * @param source - Absolute path to the template file.
+ * @returns Loaded template with path and content.
+ * @throws If the template is neither on disk nor in the embedded manifest — fail
+ *   loud rather than return `""`, which callers do not guard against and would
+ *   silently write as empty files (notably in a compiled binary).
+ */
+export function loadTemplateSync(source: string): LoadedTemplate {
+  // Filesystem first (source runs / tests).
+  try {
+    return { source, content: readFileSync(source, "utf-8") };
+  } catch {
+    // Not on disk — fall through to the embedded manifest (compiled binary).
+  }
+
+  // Directory-qualified embedded lookup: `react/types.ts.ejs` and
+  // `svelte/types.ts.ejs` map to distinct keys, so the collision is impossible.
+  const key = qualifiedKey(source);
+  if (key !== undefined) {
+    const content = embeddedTemplates[key];
+    if (content !== undefined) return { source, content };
+  }
+
+  throw new Error(
+    `Template not found: ${source} (not on disk, and no embedded template for ${
+      key === undefined ? "this path" : `'${key}'`
+    }).`,
+  );
+}
+
+/**
+ * Async wrapper over {@link loadTemplateSync}, kept for callers that await a
+ * template load. The body is fully synchronous.
  *
  * @param source - Absolute path to the template file.
  * @returns Loaded template with path and content.
@@ -23,48 +122,5 @@ export interface LoadedTemplate {
 export default async function loadTemplate(
   source: string,
 ): Promise<LoadedTemplate> {
-  // Try filesystem first (works in interpreted mode)
-  try {
-    return { source, content: readFileSync(source, "utf-8") };
-  } catch {
-    // Fall through to embedded lookup
-  }
-
-  // Try Bun.embeddedFiles (works in compiled binary)
-  if (typeof globalThis.Bun !== "undefined") {
-    const blobs = (globalThis.Bun as { embeddedFiles?: readonly Blob[] })
-      .embeddedFiles as ReadonlyArray<Blob & { name: string }> | undefined;
-
-    if (blobs) {
-      // KNOWN LIMITATION (basename collision): we match embedded blobs by
-      // basename only, because Bun flattens embedded-asset names to the
-      // filename (the source directory is not preserved). Several templates
-      // share a basename across frameworks — types.ts.ejs, index.ts.ejs,
-      // styles.css.ejs and stories.ts.ejs each exist in lit/, react/ and/or
-      // svelte/. In a compiled binary this can resolve to the WRONG
-      // framework's template (whichever blob is encountered first), producing
-      // a silently incorrect generated file. The proper fix is build-side:
-      // embed templates under directory-qualified unique names and match on
-      // those. Deferred — needs verification against a real compiled binary
-      // (see pragma-adrs/session/J.CLI_MCP_FINISH.md). Interpreted mode (the
-      // common path) reads from disk above and is unaffected.
-      const basename = source.slice(source.lastIndexOf("/") + 1);
-      for (const blob of blobs) {
-        const dehashed = blob.name.replace(/-[a-z0-9]+\./, ".");
-        if (dehashed === basename) {
-          const content = await blob.text();
-          return { source, content };
-        }
-      }
-    }
-  }
-
-  // Neither the filesystem nor embedded files yielded the template. Fail loud
-  // rather than returning empty content: callers await this for required
-  // templates and do not guard against blanks, so a silent "" would generate
-  // empty files (notably in a compiled binary, where the disk read always
-  // fails and a missing embed is the only failure mode).
-  throw new Error(
-    `Template not found: ${source} (not on disk, and no matching embedded file).`,
-  );
+  return loadTemplateSync(source);
 }

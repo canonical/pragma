@@ -1,0 +1,360 @@
+{
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "nouns": {
+    "block": {
+      "verbs": [
+        {
+          "v": "list",
+          "flags": ["--all-tiers"],
+          "needsStore": true,
+          "mcp": "block_list"
+        },
+        {
+          "v": "lookup",
+          "args": ["<name...>"],
+          "needsStore": true,
+          "mcp": "block_lookup"
+        },
+        { "v": "sample", "needsStore": true, "mcp": "block_sample" }
+      ]
+    },
+    "standard": {
+      "verbs": [
+        {
+          "v": "list",
+          "flags": ["--category", "--search"],
+          "needsStore": true,
+          "mcp": "standard_list"
+        },
+        {
+          "v": "lookup",
+          "args": ["<name...>"],
+          "needsStore": true,
+          "mcp": "standard_lookup"
+        },
+        { "v": "categories", "needsStore": true, "mcp": "standard_categories" },
+        {
+          "v": "sample",
+          "args": ["[count]"],
+          "needsStore": true,
+          "mcp": "standard_sample"
+        }
+      ]
+    },
+    "modifier": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "modifier_list" },
+        {
+          "v": "lookup",
+          "args": ["<name...>"],
+          "needsStore": true,
+          "mcp": "modifier_lookup"
+        },
+        { "v": "sample", "needsStore": true, "mcp": "modifier_sample" }
+      ]
+    },
+    "token": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "token_list" },
+        {
+          "v": "lookup",
+          "args": ["<name...>"],
+          "needsStore": true,
+          "mcp": "token_lookup"
+        },
+        { "v": "sample", "needsStore": true, "mcp": "token_sample" },
+        {
+          "v": "add-config",
+          "mutates": true,
+          "needsStore": true,
+          "mcp": "token_add-config"
+        }
+      ]
+    },
+    "tier": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "tier_list" },
+        {
+          "v": "lookup",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "tier_lookup"
+        }
+      ]
+    },
+    "ontology": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "ontology_list" },
+        {
+          "v": "lookup",
+          "args": ["<prefix>"],
+          "flags": ["--properties", "--full-uris", "--class"],
+          "needsStore": true,
+          "mcp": "ontology_lookup"
+        },
+        {
+          "v": "show",
+          "args": ["<prefix>"],
+          "flags": ["--properties", "--full-uris", "--class"],
+          "needsStore": true,
+          "mcp": "ontology_show"
+        }
+      ]
+    },
+    "skill": {
+      "verbs": [
+        { "v": "list", "mcp": "skill_list" },
+        { "v": "lookup", "args": ["<name>"], "mcp": "skill_lookup" }
+      ]
+    },
+    "graph": {
+      "verbs": [
+        {
+          "v": "query",
+          "args": ["<sparql>"],
+          "needsStore": true,
+          "mcp": "graph_query"
+        },
+        {
+          "v": "inspect",
+          "args": ["<uri>"],
+          "needsStore": true,
+          "mcp": "graph_inspect"
+        }
+      ]
+    },
+    "config": {
+      "verbs": [
+        { "v": "show", "mcp": "config_show" },
+        {
+          "v": "set",
+          "args": ["<key>", "<value>"],
+          "mutates": true,
+          "mcp": "config_set"
+        }
+      ]
+    },
+    "sources": {
+      "verbs": [
+        { "v": "status", "mcp": "sources_status" },
+        {
+          "v": "update",
+          "flags": ["--frozen", "--skip-invalid"],
+          "mutates": true,
+          "mcp": "sources_update"
+        }
+      ]
+    },
+    "create": {
+      "verbs": [
+        {
+          "v": "component",
+          "args": ["[componentPath]"],
+          "flags": [
+            "--framework",
+            "--with-styles",
+            "--with-stories",
+            "--with-ssr-tests"
+          ],
+          "mutates": true,
+          "mcp": "create_component"
+        },
+        {
+          "v": "package",
+          "flags": [
+            "--name",
+            "--type",
+            "--description",
+            "--with-react",
+            "--with-storybook",
+            "--with-cli",
+            "--with-pr-template",
+            "--run-install"
+          ],
+          "mutates": true,
+          "mcp": "create_package"
+        },
+        {
+          "v": "application",
+          "args": ["[appPath]"],
+          "flags": [
+            "--with-ssr",
+            "--with-router",
+            "--with-forms",
+            "--with-relay",
+            "--run-install"
+          ],
+          "mutates": true,
+          "mcp": "create_application"
+        }
+      ]
+    },
+    "setup": {
+      "verbs": [
+        {
+          "v": "setup",
+          "flags": ["--scope", "--global", "--local"],
+          "mutates": true,
+          "mcp": "setup"
+        },
+        {
+          "v": "mcp",
+          "flags": ["--scope", "--global", "--local"],
+          "mutates": true,
+          "mcp": false
+        },
+        { "v": "completions", "mutates": true, "mcp": false },
+        {
+          "v": "skills",
+          "flags": ["--scope", "--global", "--local"],
+          "mutates": true,
+          "mcp": false
+        },
+        { "v": "lsp", "mutates": true, "mcp": false }
+      ]
+    },
+    "doctor": {
+      "verbs": [{ "v": "doctor", "mcp": "doctor" }]
+    },
+    "capabilities": {
+      "verbs": [{ "v": "capabilities", "mcp": "capabilities" }]
+    },
+    "colophon": {
+      "verbs": [{ "v": "colophon", "mcp": "colophon" }]
+    },
+    "prompt": {
+      "verbs": [
+        { "v": "list", "needsStore": true, "mcp": "prompt_list" },
+        {
+          "v": "lookup",
+          "args": ["<name>"],
+          "needsStore": true,
+          "mcp": "prompt_lookup"
+        }
+      ]
+    },
+    "info": {
+      "verbs": [{ "v": "info", "mcp": "info" }]
+    },
+    "upgrade": {
+      "verbs": [{ "v": "upgrade", "mutates": true, "mcp": "upgrade" }]
+    },
+    "mcp": {
+      "verbs": [
+        {
+          "v": "serve",
+          "mcp": false,
+          "note": "server entry, not an agent tool"
+        }
+      ]
+    }
+  },
+  "mcpSurface": {
+    "tools": [
+      "block_list",
+      "block_lookup",
+      "block_sample",
+      "capabilities",
+      "colophon",
+      "config_set",
+      "config_show",
+      "create_application",
+      "create_component",
+      "create_package",
+      "doctor",
+      "graph_inspect",
+      "graph_query",
+      "info",
+      "modifier_list",
+      "modifier_lookup",
+      "modifier_sample",
+      "ontology_list",
+      "ontology_lookup",
+      "ontology_show",
+      "prompt_list",
+      "prompt_lookup",
+      "setup",
+      "skill_list",
+      "skill_lookup",
+      "sources_status",
+      "sources_update",
+      "standard_categories",
+      "standard_list",
+      "standard_lookup",
+      "standard_sample",
+      "tier_list",
+      "tier_lookup",
+      "token_add-config",
+      "token_list",
+      "token_lookup",
+      "token_sample",
+      "upgrade"
+    ],
+    "resources": ["pragma:{+uri}"],
+    "prompts": true,
+    "instructions": true
+  },
+  "bins": {
+    "pragma": "pragma v2 CLI and MCP server host (stdio)"
+  },
+  "globalFlags": [
+    {
+      "flag": "--format <plain|llm|json>",
+      "doc": "Select output format (llm = condensed Markdown for agents)"
+    },
+    { "flag": "--verbose", "doc": "Diagnostic output on stderr" },
+    {
+      "flag": "--detail <level>",
+      "doc": "Progressive-disclosure level (summary, standard, detailed)"
+    }
+  ],
+  "detailLevels": ["summary", "standard", "detailed"],
+  "envelope": {
+    "success": { "ok": true, "data": "<payload>", "meta": "<object>" },
+    "error": {
+      "ok": false,
+      "error": {
+        "code": "<ErrorCode>",
+        "message": "<string>",
+        "suggestions": "string[]?",
+        "recovery": "Recovery?",
+        "validOptions": "string[]?",
+        "filters": "object?"
+      }
+    }
+  },
+  "exitCodes": {
+    "0": "success",
+    "1": "runtime (entity-not-found, empty, config, internal)",
+    "2": "usage (invalid/ambiguous input, unknown verb)",
+    "3": "store unavailable"
+  },
+  "mutationContract": {
+    "cli": { "dryRun": "--dry-run", "undo": "--undo", "confirm": "--yes" },
+    "mcp": {
+      "planFirst": true,
+      "confirmParam": "confirm",
+      "planMeta": { "planOnly": true, "confirmRequired": true }
+    }
+  },
+  "completion": {
+    "static": "shell script tier emitted by `setup completions`",
+    "dynamic": "hidden `__complete` resolver, storeless",
+    "paramSource": "ParamSpec.complete"
+  },
+  "configFiles": {
+    "project": "pragma.config.ts (evaluated, content-hash cached)",
+    "global": "$XDG_CONFIG_HOME/pragma/config.json",
+    "lock": "$XDG_STATE_HOME/pragma/config-cache/<sha256>.json",
+    "defaults": "built-in defaults.ts"
+  },
+  "budgets": {
+    "$comment": "help/complete are the designed <50ms aspiration; the ENFORCED ceilings (budgets.test.ts) are 130ms help / 100ms complete — ~2× the measured median on the build hardware, recorded in BUDGETS.md. Designed-aspiration vs enforced-measured.",
+    "help": "<50ms",
+    "complete": "<50ms",
+    "projectConfigLoad": "<10ms",
+    "warmStoreVerb": "<300ms",
+    "mcpP95Warm": "<100ms",
+    "condensedSDL": "<=8000 tokens"
+  }
+}

@@ -67,30 +67,41 @@ control-height = --baseline-height × 8 = 32px   (8 bU)
 ```
 
 The density model seats a control's single baseline on its **target line**, which
-is two-thirds of the box height, rounded _up_ to the next baseline:
+is two-thirds of the box height, rounded to the _nearest_ baseline:
 
 ```
-target = round(up, control-height × 2/3, --baseline-height)
-       = round(up, 32 × 2/3, 4)
-       = round(up, 21.33px, 4)
-       = 24px                                    (6 bU)
+target = round(nearest, control-height × 2/3, --baseline-height)
+       = round(nearest, 32 × 2/3, 4)
+       = round(nearest, 21.33px, 4)
+       = 20px                                    (5 bU)
 ```
 
-Rounding up is deliberate — a fractional case such as this one (21.33) lifts to
-the next whole line (24), while an already-exact case stays put (apps-dense's
-`24 × 2/3 = 16` is exact, so it stays on the 4th baseline).
+Rounding to the nearest line (not up) is deliberate. Two-thirds of the height is
+the optical centre a control's text wants; snapping to the _nearest_ grid line
+stays as close to it as the grid allows. An earlier revision rounded _up_, which
+over-lifted the one cell where `height × 2/3` is fractional — apps-comfortable's
+21.33 was forced a whole step down the page to 24, a baseline too low (the
+design-review "move text one baseline up" finding). The exact-multiple cells are
+unaffected either way:
+
+```
+apps-comfortable   32 × 2/3 = 21.33  →  20   (the fix; was 24)
+apps-dense         24 × 2/3 = 16.00  →  16   (exact)
+sites-comfortable  36 × 2/3 = 24.00  →  24   (exact)
+sites-dense        28 × 2/3 = 18.67  →  20   (nearest = up here)
+```
 
 Now seat a 14px label into that box. With a cap height of roughly 10px for the
 body face:
 
 ```
 natural-baseline = (1em + 1cap) / 2 = (14 + 10) / 2 = 12px
-space-before     = max(0px, 24 − 12 − border-top)
+space-before     = max(0px, 20 − 12 − border-top)
 ```
 
-For a borderless label (`border-top = 0`) that is `24 − 12 = 12px` of top
-padding, and the baseline lands exactly on the 6th grid line. Change the font
-size and both terms move together, so the arithmetic still lands on `24px` — the
+For a borderless label (`border-top = 0`) that is `20 − 12 = 8px` of top
+padding, and the baseline lands exactly on the 5th grid line. Change the font
+size and both terms move together, so the arithmetic still lands on `20px` — the
 target never has to be re-tuned per size.
 
 The stories below force the baseline overlay on, so this seating can be read
@@ -126,11 +137,13 @@ The system seats text through two distinct mechanisms, applied to two disjoint
 sets of elements. Knowing which owns a given element is the key to the whole
 model.
 
-- **Controls** — a button label, an input's text, a field label / description /
-  error. These are seated by the **density model**: crushed to `line-height: 1`,
-  then padded so their single baseline lands on the density _target_ line
-  (`round(up, height × 2/3, baseline)`, as worked above). This is what makes a
-  32px button's label and a 32px input's value share one line.
+- **Controls** — seated by the **density model** on the density _target_ line
+  (`round(nearest, height × 2/3, baseline)`, as worked above). This is what
+  makes a 32px button's label and a 32px input's value share one line. Boxed
+  controls (the button, the single-line input) use the **intrinsic seat**
+  described below — their text carries a real line box that _is_ the control
+  interior. The field label / description / error, which are bare text rather
+  than boxes, use the simpler `line-height: 1` crush + `--space-before` pad.
 
 - **Running prose** — bare `p`, `h1`–`h6`, and anything in an `.editorial`
   context. These are seated by the **typography engine**: each keeps its tier's
@@ -144,19 +157,75 @@ specificity war between them — a point returned to below. A paragraph placed n
 to a control will sit on _a_ grid line, but not necessarily the control's target
 line — controls and prose answer to different seating rules by design.
 
-## The seat is computed against the box, not the border
+## The intrinsic control seat
 
-The target baseline is measured from the top of the **control box**, and the box
-is `border-box` sized: a control's border is absorbed into its fixed height, not
-added past it. So a bordered and a borderless control of the same density are the
-same height, and their text seats on the same line.
+A boxed control (the button, the single-line input chrome) does **not** set a
+height. Its height _emerges_: the text's own line box is the control interior,
+and border + padding + line-height add up to exactly the density cell.
 
-The border only enters the placement as the `border-top` term subtracted in
-`--space-before` — it accounts for the border occupying part of the space above
-the text, nothing more. A borderless primary button (`border-top = 0`) and a
-bordered secondary (a 1px top border) therefore share one baseline: the secondary
-simply contributes 1px of border where the primary contributes 1px more padding.
-The example below places the two side by side against the overlay.
+The shared styles layer (`@canonical/styles`, `modifiers.density.css`) exports
+two pieces:
+
+```css
+/* The control's interior line box: the cell minus one baseline of headroom
+   per side. 32px cell → 24px line; 24px cell → 16px line. */
+--control-seat-line: calc(
+  var(--density-line-height-effective) - 2 * var(--baseline-height)
+);
+/* The unclamped distance from just inside the box's top border down to the
+   target baseline, for a --control-seat-line line box. */
+--control-seat-basis: calc(
+  var(--density-target-baseline-px) - (var(--control-seat-line) + 1cap) / 2
+);
+```
+
+Each control folds its **own** border into that basis and closes the box with a
+complement pad — the fold must happen at the component, because a `var()` inside
+a custom property is substituted where the property is _declared_ (the density
+scope), so the shared layer can never read a component's border width:
+
+```css
+--seat-before: round(
+  nearest,
+  max(0px, calc(var(--control-seat-basis) - <border-width>)),
+  0.25px
+);
+--seat-after: max(0px, calc(
+  var(--density-line-height-effective) - var(--control-seat-line) -
+  var(--seat-before) - 2 * <border-width>
+));
+line-height: var(--control-seat-line);
+padding-block: var(--seat-before) var(--seat-after);
+```
+
+The invariant: `border + seat-before + line + seat-after + border = the cell`,
+with no `block-size` anywhere. Both outer edges land on grid lines, and the text
+baseline lands on the target — at any font size, because `1cap`/`1em` resolve at
+the element that applies the seat. (`--seat-before` is rounded to ¼px so the pad
+is exactly representable in the browser's 1/64px layout units; the fractional
+cap term otherwise leaves ~1/60px residues on the box height.)
+
+## The border is always present
+
+For the geometry above to be _one_ formula, the border must be a **constant** of
+the control, not a variant knob: every importance carries the same nominal
+border width, and a "borderless" variant paints it `transparent` rather than
+removing it. The button implements exactly this — its outline flag toggles the
+border's **colour**, never its width:
+
+```css
+border-width: var(--button-border-width);          /* constant, both importances */
+border-color: color-mix(in srgb,
+  var(--modifier-color-border) calc(var(--modifier-outline, 0) * 100%),
+  transparent);
+```
+
+A width-toggled border (an earlier revision multiplied the width by the flag)
+makes the borderless variant 2px shorter and seats its label a pixel high — the
+box geometry forks per importance, which is precisely what the constant border
+exists to prevent. A borderless primary and a bordered secondary are now
+byte-identical boxes; only the paint differs. The example below places the two
+side by side against the overlay.
 
 <Canvas of={Examples.BorderlessAndBordered} />
 
@@ -168,29 +237,49 @@ running prose two ways: it removes the leading that makes multi-line text
 readable, and — because a crushed line-height is not a whole baseline multiple —
 it lets every _wrapped_ line drift off the grid.
 
-The fix (call it "Stage A") was to **partition** the two mechanisms: density
-seats controls only, and the typography engine owns prose. Because the two now
-write to disjoint element sets, `.editorial` composes with density without a
-specificity war, and — since the engine snaps prose line-height to a whole
-baseline multiple — wrapped-prose drift is gone as well. The current model keeps
-`line-height: 1` only where it is safe (single-line controls) and hands prose to
-the engine.
+The first fix (call it "Stage A") was to **partition** the two mechanisms:
+density seats controls only, and the typography engine owns prose. Because the
+two now write to disjoint element sets, `.editorial` composes with density
+without a specificity war, and — since the engine snaps prose line-height to a
+whole baseline multiple — wrapped-prose drift is gone as well.
 
-## An honest rough edge: control text drift
+The second ("Stage B", the intrinsic seat above) retired the crush from the
+**boxed** controls too: the button and the single-line input now carry a real
+line box (`--control-seat-line`) instead of `line-height: 1` + a fixed box
+height. The crush survives only on the field label / description / error — bare
+single-line text where it is harmless — and even there it is an implementation
+detail of their seat, not a box model.
 
-The cap-unit maths is exact for a real text run such as a `<span>` or a button
-label, but native form controls are less obliging: an `<input>` or `<textarea>`
-renders its text roughly **2px lower** than a `<span>` at byte-identical CSS — a
-user-agent metrics quirk of editable controls, not a border and not something the
-cap approximation captures.
+## The "control text drift", solved
 
-To keep the input's value on the same grid line as the button's label, a small
-lift is applied through a knob deliberately named
-`--control-text-drift-AVOID-USAGE`. The name is a klaxon: the value is empirical
-(calibrated by eye, may vary by browser and font), it is set only on the input
-and textarea paths — never in app code, and never on the button — and it is
-tracked for a structural fix rather than treated as a permanent design lever. It
-is documented here honestly because the alignment depends on it.
+Earlier revisions carried an empirical knob, `--control-text-drift-AVOID-USAGE`
+(~2px), to explain why a native `<input>` rendered its text lower than a
+`<span>` at byte-identical CSS. The intrinsic seat exposed the real mechanism —
+it was never a metrics quirk of editable controls:
+
+> **The user agent enforces a `line-height` floor of `normal` (≈1.2em) on a
+> single-line `<input>`.** A specified line-height below the floor is silently
+> clamped.
+
+Under the old `line-height: 1` crush, the input's 14px line was silently
+rendered as a 16.8px line — the extra 2.8px of half-leading pushed the glyphs
+down, and the "drift" knob was hand-calibrated to cancel a clamp nobody had
+identified. Give the input a **real** line box (the intrinsic seat's
+`--control-seat-line`, ≥ the floor in the comfortable cells) and it positions
+text exactly like a `<span>`: measured, the input's baseline lands on the
+label's to within 0.01px with **no** drift term.
+
+The floor still exists, so the input's seat computes with the line the UA will
+actually use:
+
+```css
+--seat-line-floored: max(var(--control-seat-line), 1.2em);
+```
+
+In dense cells (16px line < 16.8px floor) the clamped line is what enters both
+the seat and the closing pad, so the box still lands on the cell. The knob
+survives only on the textarea path, pending the same treatment — expect it to be
+the same artifact.
 
 ## The debug overlay
 

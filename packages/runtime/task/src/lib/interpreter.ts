@@ -55,59 +55,67 @@ export const executeEffect = async (
   context: Map<string, unknown>,
   promptHandler?: (question: Effect & { _tag: "Prompt" }) => Promise<unknown>,
   onLog?: (level: "debug" | "info" | "warn" | "error", message: string) => void,
+  cwd?: string,
 ): Promise<unknown> => {
+  // Resolve a fs-effect path against the per-run base: relative paths land under
+  // `cwd`, absolute paths are unchanged (path.resolve semantics), and with no
+  // `cwd` the path is returned verbatim — so behaviour is identical to before
+  // for callers that do not set it.
+  const at = (p: string): string => (cwd ? path.resolve(cwd, p) : p);
+
   switch (effect._tag) {
     case "ReadFile": {
-      return fs.readFile(effect.path, "utf-8");
+      return fs.readFile(at(effect.path), "utf-8");
     }
 
     case "WriteFile": {
-      const dir = path.dirname(effect.path);
-      await fs.mkdir(dir, { recursive: true });
-      await fs.writeFile(effect.path, effect.content, "utf-8");
+      const target = at(effect.path);
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.writeFile(target, effect.content, "utf-8");
       return undefined;
     }
 
     case "AppendFile": {
-      const dir = path.dirname(effect.path);
-      await fs.mkdir(dir, { recursive: true });
+      const target = at(effect.path);
+      await fs.mkdir(path.dirname(target), { recursive: true });
       if (effect.createIfMissing) {
         // Create file if it doesn't exist, then append
         try {
-          await fs.access(effect.path);
+          await fs.access(target);
         } catch {
           // File doesn't exist, create it
-          await fs.writeFile(effect.path, "", "utf-8");
+          await fs.writeFile(target, "", "utf-8");
         }
       }
-      await fs.appendFile(effect.path, effect.content, "utf-8");
+      await fs.appendFile(target, effect.content, "utf-8");
       return undefined;
     }
 
     case "TransformFile": {
-      const original = await fs.readFile(effect.path, "utf-8");
+      const target = at(effect.path);
+      const original = await fs.readFile(target, "utf-8");
       const next = effect.transform(original);
       if (next !== original) {
-        await fs.writeFile(effect.path, next, "utf-8");
+        await fs.writeFile(target, next, "utf-8");
       }
       return undefined;
     }
 
     case "CopyFile": {
-      const destDir = path.dirname(effect.dest);
-      await fs.mkdir(destDir, { recursive: true });
-      await fs.copyFile(effect.source, effect.dest);
+      const dest = at(effect.dest);
+      await fs.mkdir(path.dirname(dest), { recursive: true });
+      await fs.copyFile(at(effect.source), dest);
       return undefined;
     }
 
     case "CopyDirectory": {
-      await fs.cp(effect.source, effect.dest, { recursive: true });
+      await fs.cp(at(effect.source), at(effect.dest), { recursive: true });
       return undefined;
     }
 
     case "DeleteFile": {
       try {
-        await fs.unlink(effect.path);
+        await fs.unlink(at(effect.path));
       } catch (error) {
         if (
           !(
@@ -126,7 +134,7 @@ export const executeEffect = async (
     case "DeleteDirectory": {
       if (effect.onlyIfEmpty) {
         try {
-          await fs.rmdir(effect.path);
+          await fs.rmdir(at(effect.path));
         } catch (error) {
           // Missing (ENOENT), non-empty (ENOTEMPTY, or EEXIST/EBUSY on some
           // platforms) directories are left alone: this variant only cleans
@@ -147,25 +155,27 @@ export const executeEffect = async (
         }
         return undefined;
       }
-      await fs.rm(effect.path, { recursive: true, force: true });
+      await fs.rm(at(effect.path), { recursive: true, force: true });
       return undefined;
     }
 
     case "MakeDir": {
-      await fs.mkdir(effect.path, { recursive: effect.recursive });
+      await fs.mkdir(at(effect.path), { recursive: effect.recursive });
       return undefined;
     }
 
     case "Symlink": {
-      const dir = path.dirname(effect.path);
-      await fs.mkdir(dir, { recursive: true });
-      await fs.symlink(effect.target, effect.path);
+      // The link location resolves under `cwd`; the target is left verbatim (a
+      // relative symlink target is relative to the link's own directory).
+      const linkPath = at(effect.path);
+      await fs.mkdir(path.dirname(linkPath), { recursive: true });
+      await fs.symlink(effect.target, linkPath);
       return undefined;
     }
 
     case "Exists": {
       try {
-        await fs.access(effect.path);
+        await fs.access(at(effect.path));
         return true;
       } catch {
         return false;
@@ -173,24 +183,29 @@ export const executeEffect = async (
     }
 
     case "Glob": {
+      const globCwd = at(effect.cwd);
       /* v8 ignore next 7 -- Bun.Glob branch; only reachable under Bun runtime */
       if (typeof Bun !== "undefined" && Bun.Glob) {
         const globber = new Bun.Glob(effect.pattern);
         const matches: string[] = [];
-        for await (const file of globber.scan({ cwd: effect.cwd })) {
+        for await (const file of globber.scan({ cwd: globCwd })) {
           matches.push(file);
         }
         return matches;
       }
       // Fallback: simple recursive readdir (limited glob support)
-      return simpleGlob(effect.pattern, effect.cwd);
+      return simpleGlob(effect.pattern, globCwd);
     }
 
     case "Exec": {
+      // A relative exec cwd resolves under the per-run base too, so e.g. an
+      // install step runs in the created project dir, not the server's cwd.
+      // `Exec.cwd` is optional — leave it undefined (spawn's own default) when unset.
+      const execCwd = effect.cwd === undefined ? undefined : at(effect.cwd);
       /* v8 ignore next 12 -- Bun.spawn branch; only reachable under Bun runtime */
       if (typeof Bun !== "undefined") {
         const proc = Bun.spawn([effect.command, ...effect.args], {
-          cwd: effect.cwd,
+          cwd: execCwd,
           stdout: "pipe",
           stderr: "pipe",
         });
@@ -206,7 +221,7 @@ export const executeEffect = async (
       const { spawn } = await import("node:child_process");
       return new Promise<ExecResult>((resolve, reject) => {
         const child = spawn(effect.command, effect.args, {
-          cwd: effect.cwd,
+          cwd: execCwd,
           shell: false,
         });
 
@@ -312,6 +327,15 @@ const matchesPattern = (filepath: string, pattern: string): boolean => {
 export interface RunTaskOptions {
   /** Context for storing values between effects */
   context?: Map<string, unknown>;
+  /**
+   * Base directory RELATIVE fs-effect paths resolve against (via
+   * `path.resolve(cwd, effect.path)`). Absolute effect paths are unchanged, and
+   * when `cwd` is omitted every path is used verbatim — so this is a no-op for
+   * existing callers and node's default `process.cwd()` resolution still applies.
+   * Set it to pin a per-call write root (e.g. pragma's create/setup verbs thread
+   * the SEC-2 jail root here, so the dir the jail validated is the dir written).
+   */
+  cwd?: string;
   /** Handler for interactive prompts */
   promptHandler?: (question: Effect & { _tag: "Prompt" }) => Promise<unknown>;
   /** Called before each effect is executed */
@@ -350,6 +374,7 @@ export const runTask = async <A>(
 ): Promise<A> => {
   const {
     context = new Map(),
+    cwd,
     promptHandler,
     onEffectStart,
     onEffectComplete,
@@ -422,7 +447,13 @@ export const runTask = async <A>(
 
     onEffectStart?.(effect);
     const startTime = performance.now();
-    const result = await executeEffect(effect, context, promptHandler, onLog);
+    const result = await executeEffect(
+      effect,
+      context,
+      promptHandler,
+      onLog,
+      cwd,
+    );
     onEffectComplete?.(effect, performance.now() - startTime);
     return result;
   };
