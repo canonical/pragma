@@ -5,7 +5,9 @@
  * existing page (`#domains/marketing`); `/guides/:slug` (the reading
  * detail) already exists there too and stays. Components graduated to its
  * real views (`#domains/components`, P-5) and left this file; Definitions
- * graduated to the explorer triptych (`./definitions`, P-5) and left too.
+ * graduated to the explorer triptych (`./definitions`, P-5) and left too;
+ * Standards graduated to the reading views (`./standards`, P-5) and left
+ * as well.
  *
  * None of these declare `SHELL_STRIP_META_KEY` strip slots: a stub has no
  * controls or status to claim, so every strip socket renders its sensible
@@ -16,16 +18,6 @@ import { route } from "@canonical/router-core";
 import LensPlaceholder from "./LensPlaceholder.js";
 
 const routes = {
-  standards: route({
-    url: "/standards",
-    content: () => (
-      <LensPlaceholder
-        builtBy="P-5 (reading views)"
-        lands="The rules and contracts — code, accessibility, content — chip-linked to what they govern."
-        title="Standards"
-      />
-    ),
-  }),
   guides: route({
     url: "/guides",
     content: () => (

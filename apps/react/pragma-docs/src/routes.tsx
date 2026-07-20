@@ -15,6 +15,7 @@ import accountRoutes from "#domains/account/routes.js";
 import componentsRoutes from "#domains/components/routes.js";
 import definitionsRoutes from "#domains/lenses/definitions/routes.js";
 import lensRoutes from "#domains/lenses/routes.js";
+import standardsRoutes from "#domains/lenses/standards/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
 import playgroundRoutes from "#domains/playground/routes.js";
 import Shell from "#lib/Shell/index.js";
@@ -113,8 +114,10 @@ const [playground] = group(publicLayout, [
 // Standards · Guides. Home is marketingRoutes.home above; the Components
 // lens is live (catalog + entity, P-5) from `#domains/components`; the
 // Definitions lens is live (the explorer triptych + term view, P-5) from
-// `#domains/lenses/definitions`; the rest are stubs until P-5 builds
-// their views.
+// `#domains/lenses/definitions`; the Standards lens is live (the
+// category-grouped index + reading pages, P-5) from
+// `#domains/lenses/standards`; Guides stays a stub until P-5 builds its
+// views.
 const [
   components,
   definitions,
@@ -122,13 +125,15 @@ const [
   guides,
   componentEntity,
   definitionsTerm,
+  standardEntity,
 ] = group(publicLayout, [
   componentsRoutes.components,
   definitionsRoutes.definitions,
-  lensRoutes.standards,
+  standardsRoutes.standards,
   lensRoutes.guides,
   componentsRoutes.componentEntity,
   definitionsRoutes.definitionsTerm,
+  standardsRoutes.standardEntity,
 ] as const);
 
 const appRoutes = {
@@ -143,6 +148,7 @@ const appRoutes = {
   guides,
   componentEntity,
   definitionsTerm,
+  standardEntity,
 } as const;
 
 export type AppRoutes = typeof appRoutes;

@@ -26,9 +26,11 @@ export const DEFAULT_LIFECYCLE: Lifecycle = "none";
  * docsite's canonical landing pages (the D31 landing rule: a chip click lands
  * on the noun's home). The full D31 landing map replaces this table when the
  * routes exist; until then every kind resolves to `<prefix>/<encoded uri>`.
- * `component` and `term` are live: their routes exist (`/components/:uri`,
- * `/definitions/:term` — the Definitions lens is the glossary's home), and
- * `routeQueries.tests.ts` pins each against its route's `render()`.
+ * `component`, `term`, and `standard` are live: their routes exist
+ * (`/components/:uri`, `/definitions/:term` — the Definitions lens is the
+ * glossary's home — and `/standards/:uri`, the Standards lens's reading
+ * pages), and `routeQueries.tests.ts` pins each against its route's
+ * `render()`.
  */
 export const ROUTE_PREFIX_BY_KIND: { readonly [K in Kind]: string } = {
   component: "/components",

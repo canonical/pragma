@@ -63,6 +63,7 @@ import { describe, expect, it } from "vitest";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import standardsIndexRecords from "#domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
 import EntryServer from "../../server/entry.js";
 
 /** The v1 lens URLs, owner-ruled order. */
@@ -101,6 +102,8 @@ const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
   // definitions addresses.
   "/definitions": definitionsExplorerRecords,
   [DEFINITIONS_TERM_URL]: definitionsExplorerRecords,
+  // Standards row (P-5): the grouped index from its trimmed capture.
+  "/standards": standardsIndexRecords,
 };
 
 /** Per-URL expectation for the first accounted-for delta: the hrefs
@@ -127,12 +130,13 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
 /** Per-URL expectation for the second accounted-for delta: the mode
  * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
  * stubs claim nothing; BOTH Components views (catalog + entity) claim
- * the lens name, and so do the Definitions views (explorer + term). */
+ * the lens name, and so do the Definitions views (explorer + term) and
+ * the Standards views (index + reading). */
 const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   "/": "",
   "/components": "Components",
   "/definitions": "Definitions",
-  "/standards": "",
+  "/standards": "Standards",
   "/guides": "",
   [BUTTON_ENTITY_URL]: "Components",
   [DEFINITIONS_TERM_URL]: "Definitions",
