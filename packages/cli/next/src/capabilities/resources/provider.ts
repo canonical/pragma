@@ -88,7 +88,18 @@ export function buildResourceList(
     const boxRank = (e: typeof a) => (e.box === "tbox" ? 0 : 1);
     return boxRank(a) - boxRank(b) || a.name.localeCompare(b.name);
   });
-  return ordered.map((entity) => {
+  // Dedup by resource URI: an OWL-punned subject (a class/property IRI ALSO
+  // asserted as a domain individual) is indexed as TWO entities — a tbox and an
+  // abox facet — that compact to the SAME `pragma:<uri>`. Mapping both would
+  // list one URI twice (A8). The sort above puts the tbox facet first, so
+  // keeping the first occurrence per URI surfaces the schema facet (its higher
+  // priority + instance count) and drops the punned duplicate.
+  const seen = new Set<string>();
+  const resources: ListedResource[] = [];
+  for (const entity of ordered) {
+    const uri = `pragma:${entity.prefixed ?? entity.name}`;
+    if (seen.has(uri)) continue;
+    seen.add(uri);
     const isTbox = entity.box === "tbox";
     // Port of the old shell's `_meta` taxonomy: `pragma/box` + a priority that
     // ranks schema (classes/properties) above individuals, so an agent browsing
@@ -104,8 +115,8 @@ export function buildResourceList(
     if (typeof instanceCount === "number") {
       meta["pragma/instanceCount"] = instanceCount;
     }
-    return {
-      uri: `pragma:${entity.prefixed ?? entity.name}`,
+    resources.push({
+      uri,
       name: entity.label || entity.name,
       ...(entity.description ? { description: entity.description } : {}),
       mimeType: "application/json" as const,
@@ -114,8 +125,9 @@ export function buildResourceList(
         priority: isTbox ? CLASS_PRIORITY : INDIVIDUAL_PRIORITY,
       },
       _meta: meta,
-    };
-  });
+    });
+  }
+  return resources;
 }
 
 /**
