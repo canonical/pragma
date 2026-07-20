@@ -76,18 +76,22 @@ export async function readPack(dir: string): Promise<StoreSession> {
   // Guard against a corrupt or TRUNCATED `data.nq` beside an intact manifest:
   // ke silently serves whatever loaded (falling back to an EMPTY store on a
   // parse failure, and rewriting an empty dump). When the manifest records the
-  // build-time triple count (A9), require an EXACT match — a truncated dump
-  // that still holds SOME triples passes the size>0 completeness gate yet would
-  // serve a partial graph silently, so it must surface STORE_UNAVAILABLE here.
-  // Older packs without the count fall back to the "populated index but empty
-  // store" check (via the now-empty dump, `packIsComplete` turns false so
-  // recovery rebuilds) rather than serving an empty graph as the pack.
+  // build-time triple count (A9), require the booted store to hold AT LEAST it:
+  // a SHORTFALL means the dump was truncated (fewer triples than were built) —
+  // it passes the mere size>0 completeness gate yet would serve a partial graph
+  // silently, so it must surface STORE_UNAVAILABLE here. A benign SUPERSET (more
+  // triples than recorded — e.g. a future ke counting change) is TOLERATED
+  // rather than treated as corruption, so such a change can't trip a fleet-wide
+  // false STORE_UNAVAILABLE. Older packs without the count fall back to the
+  // "populated index but empty store" check (via the now-empty dump,
+  // `packIsComplete` turns false so recovery rebuilds) rather than serving an
+  // empty graph as the pack.
   const actualTriples = await countTriples(store);
   if (manifest.tripleCount !== undefined) {
-    if (actualTriples !== manifest.tripleCount) {
+    if (actualTriples < manifest.tripleCount) {
       store.dispose();
       throw packUnavailable(
-        `The pack at ${dir} has a corrupt data cache (expected ${manifest.tripleCount} triples, loaded ${actualTriples}).`,
+        `The pack at ${dir} has a corrupt data cache (expected at least ${manifest.tripleCount} triples, loaded ${actualTriples}).`,
       );
     }
   } else if (index.entities.length > 0 && actualTriples === 0) {
