@@ -173,3 +173,159 @@ export const fixtureEffectsModule: CapabilityModule = {
     },
   ],
 };
+
+/**
+ * A synthetic module that exercises every RENDER path of `emitReference` (D8 —
+ * never listed in `src/capabilities/index.ts`). Distinct from `fixtureModule`,
+ * which only exercises `emitSurface`: this one carries the doc-only shapes the
+ * reference generator reads and the machine surface ignores — a rich `doc`,
+ * examples with and without notes, a {@link DisclosureSpec}, every param kind
+ * as a flag (including a repeatable `string[]` flag), an OPTIONAL variadic
+ * positional, a destructive mutation AND a non-destructive one (the two
+ * `formatToolAnnotations` mutation branches), a visible MCP-withheld verb, a
+ * self-verb, a hidden verb the emitter must drop, and — so `renderNonToolSurface`
+ * renders both its optional bullets — an `mcpResources` template surface and an
+ * `mcpPrompts` native-prompt surface. The `register` hooks are no-ops: the
+ * reference emitter reads only `mcpResources.surface.templates` and the presence
+ * of `mcpPrompts`, never invoking either.
+ */
+export const fixtureReferenceModule: CapabilityModule = {
+  name: "fixture-reference",
+  verbs: [
+    {
+      path: ["gizmo", "scan"],
+      summary: "Scan the gizmos.",
+      doc: "Scan every gizmo under the active scope, optionally narrowing to named targets. Reads nothing off disk.",
+      params: [
+        {
+          kind: "string[]",
+          name: "targets",
+          doc: "Gizmo names to scan (all when omitted).",
+          positional: true,
+        },
+        {
+          kind: "enum",
+          name: "mode",
+          doc: "Scan mode.",
+          values: ["fast", "slow"],
+          default: "fast",
+        },
+        { kind: "number", name: "limit", doc: "Maximum gizmos to scan." },
+        { kind: "string", name: "label", doc: "Label to stamp on the report." },
+        { kind: "string[]", name: "include", doc: "Extra globs to include." },
+        { kind: "boolean", name: "deep", doc: "Recurse into sub-gizmos." },
+      ],
+      output: { formatters: passthroughFormatters },
+      examples: [
+        { cmd: "pragma gizmo scan", note: "scan everything" },
+        { cmd: "pragma gizmo scan alpha --mode slow" },
+      ],
+      disclosure: { levels: ["summary", "detailed"], default: "summary" },
+      capability: {
+        needsStore: false,
+        mutates: false,
+        mcp: {
+          expose: true,
+          annotations: { readOnlyHint: true, openWorldHint: false },
+        },
+      },
+      run: async () => ({ scanned: true }),
+    },
+    {
+      path: ["gizmo", "wipe"],
+      summary: "Wipe a gizmo.",
+      params: [
+        {
+          kind: "string",
+          name: "path",
+          doc: "The gizmo path to wipe.",
+          positional: true,
+          required: true,
+        },
+      ],
+      output: { formatters: passthroughFormatters },
+      capability: {
+        needsStore: true,
+        mutates: true,
+        destructive: true,
+        mcp: {
+          expose: true,
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            openWorldHint: false,
+          },
+        },
+      },
+      run: () => succeed({ wiped: true }),
+    },
+    {
+      path: ["gizmo", "tidy"],
+      summary: "Tidy the gizmo cache.",
+      params: [],
+      output: { formatters: passthroughFormatters },
+      capability: {
+        needsStore: false,
+        mutates: true,
+        destructive: false,
+        mcp: {
+          expose: true,
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: false,
+            openWorldHint: false,
+          },
+        },
+      },
+      run: () => succeed({ tidied: true }),
+    },
+    {
+      path: ["gizmo", "local"],
+      summary: "A visible gizmo verb withheld from MCP.",
+      params: [],
+      output: { formatters: passthroughFormatters },
+      capability: {
+        needsStore: false,
+        mutates: false,
+        mcp: { expose: false, reason: "CLI-only local helper" },
+      },
+      run: async () => ({ local: true }),
+    },
+    {
+      path: ["ping"],
+      summary: "Ping the gizmo host.",
+      params: [],
+      output: { formatters: passthroughFormatters },
+      capability: {
+        needsStore: false,
+        mutates: false,
+        mcp: {
+          expose: true,
+          annotations: { readOnlyHint: true, openWorldHint: false },
+        },
+      },
+      run: async () => ({ pong: true }),
+    },
+    {
+      path: ["gizmo", "hidden"],
+      summary: "Hidden gizmo probe.",
+      hidden: true,
+      params: [],
+      output: { formatters: passthroughFormatters },
+      capability: {
+        needsStore: false,
+        mutates: false,
+        mcp: { expose: false, reason: "internal probe" },
+      },
+      run: async () => ({ ok: true }),
+    },
+  ],
+  // A non-tool MCP surface, so `renderNonToolSurface` emits its Resources bullet.
+  // `register` is a no-op — the emitter reads only `surface.templates`.
+  mcpResources: {
+    surface: { templates: ["gizmo:{+uri}"] },
+    register: () => {},
+  },
+  // A native prompt surface, so `renderNonToolSurface` emits its Prompts bullet.
+  mcpPrompts: { register: () => {} },
+};

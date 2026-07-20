@@ -21,9 +21,18 @@
  * the three frameworks are byte-identical to a source run.
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { capabilities } from "../src/capabilities/index.js";
+import { emitReference } from "../src/kernel/spec/emitReference.js";
 
 // The three `create` generators' template roots (source of truth; identical to
 // each package's dist copy). Keys are `<id>/<path-relative-to-root>`, matching
@@ -113,33 +122,80 @@ ${body}
   return Object.keys(entries).length;
 }
 
-const embedded = generateTemplateManifest();
-console.log(
-  `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,
-);
+/** The committed reference tree the generator writes back. */
+const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
 
-const result = await Bun.build({
-  entrypoints: ["src/bin.ts"],
-  minify: true,
-  // Code-splitting is load-bearing for cold-start: it emits the lazily
-  // `import()`ed summon-core + generators (+ Ink/React) as SEPARATE chunks the
-  // binary parses on demand, not at startup. Without it, bundling summon adds
-  // ~135 ms to every invocation (blowing the __complete/--help budgets); with
-  // it, the fast paths stay at/under their budgets while `create` loads summon
-  // only when it runs.
-  splitting: true,
-  compile: {
-    target: "bun-linux-x64",
-    outfile: "dist/pragma",
-  },
-});
-
-if (!result.success) {
-  console.error("Build failed:");
-  for (const log of result.logs) {
-    console.error(log);
+/**
+ * Write the generated Markdown reference (`emitReference(capabilities)`) into
+ * `docs/reference/`, one file per page. Deterministic, so — like
+ * {@link generateTemplateManifest} — a page is written ONLY when its bytes
+ * differ, keeping a rebuild a working-tree no-op. Any committed `.md` the
+ * emitter no longer produces (a removed noun's page) is pruned, so the tree
+ * self-heals instead of leaning on the drift-guard to catch the orphan.
+ *
+ * @returns The number of pages actually written (changed).
+ * @note Impure — reads, writes, and prunes the `docs/reference` tree.
+ */
+function writeReferenceDocs(): number {
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  const emitted = emitReference(capabilities);
+  let written = 0;
+  for (const [relPath, content] of emitted) {
+    const out = join(REFERENCE_DIR, relPath);
+    if (!existsSync(out) || readFileSync(out, "utf-8") !== content) {
+      writeFileSync(out, content);
+      written += 1;
+    }
   }
-  process.exit(1);
+  // Prune orphans deterministically: unlink any top-level `.md` the emitter did
+  // not just produce (sorted for a stable order), so a removed page disappears
+  // on the next build rather than lingering until the drift-guard flags it.
+  for (const name of readdirSync(REFERENCE_DIR).sort()) {
+    if (name.endsWith(".md") && !emitted.has(name)) {
+      unlinkSync(join(REFERENCE_DIR, name));
+    }
+  }
+  return written;
 }
 
-console.log("Built dist/pragma");
+export { writeReferenceDocs };
+
+// Only the actual build (not an `import` of `writeReferenceDocs` from the fast
+// `genReference` script) runs codegen and compiles the binary.
+if (import.meta.main) {
+  const embedded = generateTemplateManifest();
+  console.log(
+    `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,
+  );
+
+  const changedDocs = writeReferenceDocs();
+  console.log(
+    `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
+  );
+
+  const result = await Bun.build({
+    entrypoints: ["src/bin.ts"],
+    minify: true,
+    // Code-splitting is load-bearing for cold-start: it emits the lazily
+    // `import()`ed summon-core + generators (+ Ink/React) as SEPARATE chunks the
+    // binary parses on demand, not at startup. Without it, bundling summon adds
+    // ~135 ms to every invocation (blowing the __complete/--help budgets); with
+    // it, the fast paths stay at/under their budgets while `create` loads summon
+    // only when it runs.
+    splitting: true,
+    compile: {
+      target: "bun-linux-x64",
+      outfile: "dist/pragma",
+    },
+  });
+
+  if (!result.success) {
+    console.error("Build failed:");
+    for (const log of result.logs) {
+      console.error(log);
+    }
+    process.exit(1);
+  }
+
+  console.log("Built dist/pragma");
+}
