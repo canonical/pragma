@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import type { createRequire } from "node:module";
@@ -20,12 +21,16 @@ import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
 import { readLock } from "../../kernel/runtime/lock.js";
 import { lockPath, packDir } from "../../kernel/runtime/paths.js";
-import { resolvePackageJson } from "../../kernel/runtime/refs/resolve.js";
+import {
+  detectPrefixClashes,
+  resolvePackageJson,
+} from "../../kernel/runtime/refs/resolve.js";
 import { createLazyStore } from "../../kernel/runtime/store.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { discoverSkills } from "../skill/discover.js";
+import { collectStatus } from "./collectStatus.js";
 import { sourcesModule } from "./index.js";
 import { buildUpdateTask } from "./runUpdate.js";
 
@@ -153,6 +158,40 @@ describe("sources lock round-trip (PROTECTED)", () => {
     expect(readFileSync(lockPath(cwd), "utf-8")).toBe(firstBytes);
   });
 
+  it("a non-frozen re-run over an unchanged source rewrites a byte-identical lock (L1)", async () => {
+    // On base, every non-frozen update stamped a fresh `resolvedAt`, so a no-op
+    // re-run dirtied the tree. When the revision is unchanged the timestamp is
+    // preserved, so the lock is byte-identical.
+    const pkg = filePackage();
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    await runTask(await buildUpdateTask(runtime, false));
+    const firstBytes = readFileSync(lockPath(cwd), "utf-8");
+    await runTask(await buildUpdateTask(runtime, false));
+    expect(readFileSync(lockPath(cwd), "utf-8")).toBe(firstBytes);
+  });
+
+  it("follows a symlinked .ttl into the build (L6)", async () => {
+    // pnpm / workspace trees symlink their sources; Dirent.isFile is false for a
+    // symlink, so on base the only `.ttl` was skipped → 0 sources → the empty
+    // build. Following the link ingests it and the build+lock succeed.
+    const pkg = tmp("pragma-symlink-pkg-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    const realTtl = join(pkg, "real.ttl");
+    writeFileSync(realTtl, TTL);
+    symlinkSync(realTtl, join(pkg, "definitions", "linked.ttl"));
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    const result = await runTask(await buildUpdateTask(runtime, false));
+    expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(readLock(cwd)?.packs).toHaveLength(1);
+  });
+
   it("undo restores the prior lock (no prior → removed)", async () => {
     const pkg = filePackage();
     const cwd = tmp("pragma-proj-");
@@ -197,6 +236,114 @@ describe("sources update — package-declared prefixes (M1)", () => {
     expect(
       index.entities.find((entity) => entity.name === "ex:one")?.type,
     ).toBe("ex:Widget");
+  });
+});
+
+describe("sources update — refuses an empty store (A4)", () => {
+  /** A local package that ships NO `.ttl` (an empty definitions directory). */
+  function emptyPackage(): string {
+    const pkg = tmp("pragma-empty-pkg-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    return pkg;
+  }
+
+  it("a package with no .ttl is refused, and no lock is written", async () => {
+    // On base this builds a 0-triple pack whose empty data.nq fails the
+    // completeness gate — so the "successful" update boots to a PERMANENT
+    // STORE_UNAVAILABLE loop. The fix refuses before writing the lock.
+    const pkg = emptyPackage();
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    // No lock → the embedded fallback / prior state survives, no boot loop.
+    expect(readLock(cwd)).toBeUndefined();
+  });
+
+  it("no configured packages is refused rather than locking an empty pack", async () => {
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, []);
+    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    expect(readLock(cwd)).toBeUndefined();
+  });
+
+  it("a comment-only .ttl (0 triples) is refused too", async () => {
+    const pkg = tmp("pragma-noTriples-pkg-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    // Parses fine, but yields no triples — the post-build 0-triple guard.
+    writeFileSync(
+      join(pkg, "definitions", "empty.ttl"),
+      "# only a comment, no triples\n",
+    );
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+    expect(readLock(cwd)).toBeUndefined();
+  });
+});
+
+describe("sources update — conflicting @prefix detection (A5)", () => {
+  it("flags a label bound to two different IRIs across packages", () => {
+    const clashes = detectPrefixClashes([
+      { content: "@prefix ex: <https://a.test/#> .\nex:One a ex:T ." },
+      { content: "@prefix ex: <https://b.test/#> .\nex:Two a ex:T ." },
+    ]);
+    expect(clashes).toHaveLength(1);
+    expect(clashes.at(0)?.label).toBe("ex");
+    expect(clashes.at(0)?.iris).toEqual([
+      "https://a.test/#",
+      "https://b.test/#",
+    ]);
+  });
+
+  it("does NOT flag harmless same-label/same-IRI redeclarations", () => {
+    const clashes = detectPrefixClashes([
+      { content: "@prefix ex: <https://a.test/#> .\nex:One a ex:T ." },
+      { content: "@prefix ex: <https://a.test/#> .\nex:Two a ex:T ." },
+    ]);
+    expect(clashes).toEqual([]);
+  });
+
+  it("warns loudly on a cross-package prefix clash during update", async () => {
+    const owl = "@prefix owl: <http://www.w3.org/2002/07/owl#> .\n";
+    const pkgA = tmp("pragma-clash-a-");
+    mkdirSync(join(pkgA, "definitions"), { recursive: true });
+    writeFileSync(
+      join(pkgA, "definitions", "a.ttl"),
+      `@prefix ex: <https://a.test/#> .\n${owl}ex:Thing a owl:Class .\nex:one a ex:Thing .\n`,
+    );
+    const pkgB = tmp("pragma-clash-b-");
+    mkdirSync(join(pkgB, "definitions"), { recursive: true });
+    writeFileSync(
+      join(pkgB, "definitions", "b.ttl"),
+      `@prefix ex: <https://b.test/#> .\n${owl}ex:Widget a owl:Class .\nex:two a ex:Widget .\n`,
+    );
+    const cwd = tmp("pragma-proj-");
+    const reports: string[] = [];
+    const runtime: PragmaRuntime = {
+      ...runtimeFor(cwd, [
+        { name: "pkg-a", source: `file://${pkgA}` },
+        { name: "pkg-b", source: `file://${pkgB}` },
+      ]),
+      report: (message: string) => reports.push(message),
+    };
+
+    await runTask(await buildUpdateTask(runtime, false));
+    expect(
+      reports.some(
+        (r) => r.includes('Prefix "ex:"') && r.includes("conflicting"),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -612,6 +759,25 @@ describe("sources update — installs package skills (U10)", () => {
     await runUndo(await buildUpdateTask(runtime, false));
 
     expect(existsSync(join(dataHome, "pragma", "skills", "bar"))).toBe(false);
+  });
+});
+
+describe("sources status — entityCount from the manifest (A10)", () => {
+  it("reports the count without re-parsing index.json", async () => {
+    const pkg = filePackage(); // ex:Widget class + ex:one individual
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    const result = await runTask(await buildUpdateTask(runtime, false));
+
+    // Delete index.json: any path that PARSED it to count would now fail —
+    // proving the figure is read from the manifest's persisted entityCount.
+    rmSync(join(packDir(result.contentHash), "index.json"), { force: true });
+
+    const status = await collectStatus(bootRuntime(flagsJson, cwd));
+    // One abox individual (ex:one); the ex:Widget class is tbox, not counted.
+    expect(status.entityCount).toBe(1);
   });
 });
 

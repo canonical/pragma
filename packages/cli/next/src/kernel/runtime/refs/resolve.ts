@@ -9,7 +9,7 @@
  * machine-independent. Reached only from the `sources update` Task body.
  */
 
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
 import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
@@ -84,9 +84,25 @@ function walkTtl(
     // build (a `.`-prefixed Turtle local name isn't even valid).
     if (entry.name.startsWith(".")) continue;
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) {
+    // Resolve symlinks: pnpm / workspace trees link their sources, but
+    // `Dirent.isFile`/`isDirectory` are BOTH false for a symlink — so a
+    // symlinked `.ttl` (or a symlinked source directory) was silently skipped
+    // (L6). Stat the target to recover its real kind; a dangling link is
+    // skipped, not fatal.
+    let isDir = entry.isDirectory();
+    let isFile = entry.isFile();
+    if (entry.isSymbolicLink()) {
+      try {
+        const target = statSync(full);
+        isDir = target.isDirectory();
+        isFile = target.isFile();
+      } catch {
+        continue;
+      }
+    }
+    if (isDir) {
       walkTtl(full, base, label, out);
-    } else if (entry.isFile() && entry.name.endsWith(".ttl")) {
+    } else if (isFile && entry.name.endsWith(".ttl")) {
       out.push({
         path: `${label}/${relative(base, full)}`,
         content: readFileSync(full, "utf-8"),
@@ -141,6 +157,47 @@ export function harvestPrefixes(
     }
   }
   return prefixes;
+}
+
+/** One `@prefix` clash: a label declared with two or more distinct IRIs. */
+export interface PrefixClash {
+  readonly label: string;
+  /** The distinct IRIs bound to the label, in first-seen order. */
+  readonly iris: readonly string[];
+}
+
+/**
+ * Detect `@prefix` label clashes across a set of sources.
+ *
+ * {@link harvestPrefixes} resolves clashes last-wins (Turtle's own rule),
+ * silently compacting the losing package's URIs to the wrong prefix (or to full
+ * IRIs). This surfaces the clashes so `sources update` can warn (A5): a label
+ * bound to two or more distinct IRIs. Harmless same-label/same-IRI
+ * redeclarations (the common case) are NOT clashes. Result is sorted by label
+ * so the warnings are deterministic.
+ *
+ * @param sources - The packages' labelled RDF sources.
+ * @returns One entry per clashing label, each with its distinct IRIs.
+ */
+export function detectPrefixClashes(
+  sources: readonly { readonly content: string }[],
+): PrefixClash[] {
+  const byLabel = new Map<string, string[]>();
+  for (const { content } of sources) {
+    for (const match of content.matchAll(PREFIX_DECL)) {
+      const [, label, iri] = match;
+      if (label === undefined || iri === undefined) continue;
+      const iris = byLabel.get(label) ?? [];
+      if (!iris.includes(iri)) iris.push(iri);
+      byLabel.set(label, iris);
+    }
+  }
+  const clashes: PrefixClash[] = [];
+  for (const [label, iris] of byLabel) {
+    if (iris.length > 1) clashes.push({ label, iris });
+  }
+  clashes.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+  return clashes;
 }
 
 /**

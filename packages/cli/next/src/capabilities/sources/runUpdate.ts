@@ -46,6 +46,7 @@ import {
   redactUrl,
 } from "../../kernel/runtime/refs/parseRef.js";
 import {
+  detectPrefixClashes,
   harvestPrefixes,
   type ResolvedPackage,
   resolvePackage,
@@ -172,11 +173,41 @@ export async function buildUpdateTask(
   // token contract); config still wins any clash. The merged map is persisted
   // in the manifest, so boot reads the same names.
   const inputs = resolved.flatMap((pkg) => pkg.sources);
+
+  // Refuse to lock an empty store (A4). A package that ships no `.ttl` (or no
+  // configured packages at all) would build a 0-triple pack whose empty
+  // `data.nq` fails the completeness gate — so the "successful" update boots to
+  // a PERMANENT `STORE_UNAVAILABLE` loop. Fail loudly here, leaving the embedded
+  // fallback (or the prior lock) intact, instead of writing that broken lock.
+  if (inputs.length === 0) {
+    throw PragmaError.configError(
+      entries.length === 0
+        ? "No packages are configured, so there are no sources to build a store from. The embedded sample pack answers reads until you add a package."
+        : `The ${entries.length} configured package(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to write a lock for an empty store.`,
+      {
+        recovery: cliRecovery(
+          `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+          "Add a package that ships `.ttl` under definitions/ or data/, then re-run.",
+        ),
+      },
+    );
+  }
+
   const prefixes = {
     ...CORE_PREFIXES,
     ...harvestPrefixes(inputs),
     ...(layers.config.prefixes ?? {}),
   };
+
+  // Warn on conflicting `@prefix` declarations across packages (A5): last-wins
+  // is silent otherwise, compacting the losing package's URIs to the wrong
+  // prefix. Display-only, so a warning (not a hard failure) is the right call.
+  for (const clash of detectPrefixClashes(inputs)) {
+    report?.(
+      `Prefix "${clash.label}:" is declared with conflicting IRIs across packages (${clash.iris.join(" vs ")}); last wins, so some entities may compact to the wrong prefix.`,
+    );
+  }
+
   report?.(`Building store from ${inputs.length} source(s)`);
   if (verbose) for (const input of inputs) report?.(`  parse ${input.path}`);
 
@@ -239,17 +270,43 @@ export async function buildUpdateTask(
     `${built.reused ? "Reused" : "Built"} store ${built.contentHash.slice(0, 12)}`,
   );
 
+  // Refuse to lock a 0-triple build (A4): non-empty sources can still parse to
+  // no triples (e.g. comment-only TTL, or a file of only `@prefix` lines). A
+  // locked empty pack boots to the same `STORE_UNAVAILABLE` loop, so treat it
+  // as a data error rather than a silent "success". (A manifest predating the
+  // triple count is left alone — `undefined` never trips this.)
+  if (built.manifest.tripleCount === 0) {
+    throw PragmaError.configError(
+      `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to write a lock for an empty store.`,
+      {
+        recovery: cliRecovery(
+          `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+          "Check that the package sources actually contain RDF triples, then re-run.",
+        ),
+      },
+    );
+  }
+
   const now = new Date().toISOString();
   const lock: PragmaLock = {
     version: 1,
     contentHash: built.contentHash,
     packs: resolved.map((pkg) => {
       const prev = existing?.packs.find((entry) => entry.name === pkg.name);
+      // Preserve the prior `resolvedAt` when nothing actually changed — under
+      // --frozen (re-pinned to the same revision) AND on a plain re-run that
+      // resolves the IDENTICAL revision from the same source. Otherwise every
+      // `sources update` stamped a fresh timestamp and rewrote the lock, dirtying
+      // the git tree on a no-op run (L1). A moved revision still restamps.
+      const reproducible =
+        prev !== undefined &&
+        (frozen ||
+          (prev.resolved === pkg.resolved && prev.source === pkg.source));
       return {
         name: pkg.name,
         source: pkg.source,
         resolved: pkg.resolved,
-        resolvedAt: frozen && prev ? prev.resolvedAt : now,
+        resolvedAt: reproducible && prev ? prev.resolvedAt : now,
       };
     }),
   };
