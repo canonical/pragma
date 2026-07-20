@@ -46,7 +46,8 @@ const MATRIX: readonly {
   {
     label: "validOptions",
     error: PragmaError.invalidInput("format", "yaml", {
-      validOptions: ["plain", "json"],
+      // The live `--format` set (mirrors bin.ts): plain, llm, json.
+      validOptions: ["plain", "llm", "json"],
     }),
   },
   {
