@@ -777,6 +777,15 @@ export interface Router<
   readonly blockerState: "idle" | "blocked";
   proceedNavigation(): void;
   cancelNavigation(): void;
+  /**
+   * Invoke the matched route's `content` and `wrappers` as plain function
+   * calls and return the composed result.
+   *
+   * React consumers must NOT call this during a component render: any hooks
+   * the content or wrapper functions call would attach to the calling
+   * component's fiber, corrupting hook order across navigations.
+   * `router-react`'s `Outlet` constructs elements from the match instead.
+   */
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
   setSearchParams(
     params:
