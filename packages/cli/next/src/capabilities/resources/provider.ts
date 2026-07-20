@@ -17,7 +17,9 @@
  */
 
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
+import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { mcpErrorFrom } from "../../kernel/project/mcp/mcpError.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
 import type { McpResourceProvider } from "../../kernel/spec/types.js";
@@ -88,7 +90,18 @@ export function buildResourceList(
     const boxRank = (e: typeof a) => (e.box === "tbox" ? 0 : 1);
     return boxRank(a) - boxRank(b) || a.name.localeCompare(b.name);
   });
-  return ordered.map((entity) => {
+  // Dedup by resource URI: an OWL-punned subject (a class/property IRI ALSO
+  // asserted as a domain individual) is indexed as TWO entities — a tbox and an
+  // abox facet — that compact to the SAME `pragma:<uri>`. Mapping both would
+  // list one URI twice (A8). The sort above puts the tbox facet first, so
+  // keeping the first occurrence per URI surfaces the schema facet (its higher
+  // priority + instance count) and drops the punned duplicate.
+  const seen = new Set<string>();
+  const resources: ListedResource[] = [];
+  for (const entity of ordered) {
+    const uri = `pragma:${entity.prefixed ?? entity.name}`;
+    if (seen.has(uri)) continue;
+    seen.add(uri);
     const isTbox = entity.box === "tbox";
     // Port of the old shell's `_meta` taxonomy: `pragma/box` + a priority that
     // ranks schema (classes/properties) above individuals, so an agent browsing
@@ -104,8 +117,8 @@ export function buildResourceList(
     if (typeof instanceCount === "number") {
       meta["pragma/instanceCount"] = instanceCount;
     }
-    return {
-      uri: `pragma:${entity.prefixed ?? entity.name}`,
+    resources.push({
+      uri,
       name: entity.label || entity.name,
       ...(entity.description ? { description: entity.description } : {}),
       mimeType: "application/json" as const,
@@ -114,8 +127,9 @@ export function buildResourceList(
         priority: isTbox ? CLASS_PRIORITY : INDIVIDUAL_PRIORITY,
       },
       _meta: meta,
-    };
-  });
+    });
+  }
+  return resources;
 }
 
 /**
@@ -180,6 +194,9 @@ export const resourceProvider: McpResourceProvider = {
     const { ResourceTemplate } = await import(
       "@modelcontextprotocol/sdk/server/mcp.js"
     );
+    const { McpError, ErrorCode } = await import(
+      "@modelcontextprotocol/sdk/types.js"
+    );
     const template = new ResourceTemplate(URI_TEMPLATE, {
       list: async () => ({
         resources: buildResourceList(readPackIndex(runtime.cwd)),
@@ -215,15 +232,12 @@ export const resourceProvider: McpResourceProvider = {
             ],
           };
         } catch (error) {
-          const message =
-            error instanceof PragmaError
-              ? JSON.stringify({ code: error.code, message: error.message })
-              : String(error);
-          return {
-            contents: [
-              { uri: url.href, mimeType: "text/plain", text: message },
-            ],
-          };
+          // Surface the failure as a JSON-RPC error (the resource-read analogue
+          // of a tool result's `isError`), preserving the machine code AND the
+          // recovery in `data` — never swallow it into `text/plain` content an
+          // agent reads as a successful entity (which dropped the recovery and
+          // masked a cold store as though the entity itself were malformed).
+          throw mcpErrorFrom(asPragmaError(error), { McpError, ErrorCode });
         }
       },
     );

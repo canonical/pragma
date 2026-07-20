@@ -26,8 +26,10 @@ import type {
 } from "./types.js";
 
 /**
- * The three orientation conventions, verbatim from the old shell. They describe
- * the KG / tier-channel / SPARQL model and are still accurate for v2.
+ * The four orientation conventions. The first three (system/model/querying) are
+ * verbatim from the old shell — they describe the KG / tier-channel / SPARQL
+ * model and are still accurate for v2; `mutations` is new in v2, surfacing the
+ * plan-first/confirm gate.
  */
 export const CONVENTIONS = {
   system:
@@ -36,6 +38,8 @@ export const CONVENTIONS = {
     "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
   querying:
     "All queries run against an RDF triple store. Prefixed IRIs (e.g. ds:global.component.button) identify entities. Use ontology_list to discover namespaces.",
+  mutations:
+    "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
 } as const;
 
 /** The output modes v2 renders (dropped "text" → "plain"; condensed retired). */

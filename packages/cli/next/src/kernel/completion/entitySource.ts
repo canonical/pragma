@@ -98,18 +98,26 @@ export function readPackIndex(cwd: string): PackIndex | undefined {
 }
 
 /**
- * Sum a pack index's per-type instance counts — the "total entities" figure
+ * Count a pack index's DISTINCT abox subjects — the "total entities" figure
  * `info` and `doctor` report. Works over any {@link PackIndex}, whether read
  * storelessly via {@link readPackIndex} or taken from a booted store session.
  *
+ * NOT a sum of `instanceCountByType`: on a real OWL/Protégé export that raw
+ * multiset double-counts — every individual is typed as both its domain class
+ * AND `owl:NamedIndividual`, and the `owl:Class`/property meta-buckets pile on
+ * top — so the total ran ~2× the real entity count (A1). Counting distinct
+ * abox subjects (the individuals, each once) is the figure users expect; the
+ * tbox schema classes/properties are not "entities" in this count.
+ *
  * @param index - A pack index.
- * @returns The total number of indexed entity instances across every type.
+ * @returns The number of distinct abox subjects indexed.
  */
 export function entityTotal(index: PackIndex): number {
-  return Object.values(index.instanceCountByType).reduce(
-    (sum, n) => sum + n,
-    0,
-  );
+  const subjects = new Set<string>();
+  for (const entity of index.entities) {
+    if (entity.box === "abox") subjects.add(entity.uri ?? entity.name);
+  }
+  return subjects.size;
 }
 
 /** Load the active pack's index: the locked pack, else the embedded fallback. */

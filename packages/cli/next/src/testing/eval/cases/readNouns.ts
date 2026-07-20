@@ -90,16 +90,19 @@ export const readNounEvalCases: readonly EvalCase[] = [
     id: "content-canonical-graph-has-4-components",
     kind: "content",
     input:
-      "the canonical fixture graph carries exactly 4 ds:Component individuals, including Button and Beta Widget.",
+      "the canonical fixture graph carries 4 ds:Component individuals (Button, Modal, LXD Panel, Beta Widget); block list --all-tiers also surfaces the untiered Button Icon subcomponent (A2).",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
         const result = await mcp.callTool("block_list", { allTiers: true });
         const names = (result.data as { name: string }[])
           .map((r) => r.name)
           .sort();
+        // --all-tiers now reveals the untiered Button Icon subcomponent
+        // alongside the 4 tiered components (A2).
         assert.deepEqual(names, [
           "Beta Widget",
           "Button",
+          "Button Icon",
           "LXD Panel",
           "Modal",
         ]);

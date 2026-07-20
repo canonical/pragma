@@ -47,6 +47,14 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     );
   });
 
+  it("states the plan-first/confirm convention in the orientation (D2)", () => {
+    // The confirm gate must be surfaced at handshake, not discovered by an agent
+    // tripping it. Same single source as the `capabilities` tool's conventions.
+    const text = buildInstructions(capabilities);
+    expect(text.toLowerCase()).toContain("plan-first");
+    expect(text).toContain("confirm: true");
+  });
+
   it("orients a cold agent to check/build the store before any store read", () => {
     // Store-blind guard: the handshake must point a cold agent at the store
     // pre-check (sources_status → sources_update) BEFORE the sample/query steps,

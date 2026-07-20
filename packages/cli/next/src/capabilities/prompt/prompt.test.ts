@@ -1,6 +1,10 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listPromptSummaries } from "../../kernel/project/mcp/prompts/source.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
+import { writeLock } from "../../kernel/runtime/lock.js";
 import type { GlobalFlags } from "../../kernel/spec/types.js";
 import { CANONICAL_TTL } from "../../testing/fixtures/graph/canonical.js";
 import {
@@ -115,5 +119,62 @@ describe("prompt — storeless native listing (PROTECTED)", () => {
     const summaries = listPromptSummaries(runtime);
     expect(summaries.map((s) => s.name).sort()).toEqual(EXPECTED);
     expect(runtime.store.booted).toBe(false);
+  });
+});
+
+/**
+ * D1/D4 — cold-store convergence. The `prompt_list` tool is store-backed
+ * (`needsStore`), so a cold store throws STORE_UNAVAILABLE through its pre-check;
+ * native `prompts/list`/`prompts/get` must present the SAME diagnostic rather
+ * than silently listing a stale index (D1) or reporting a bogus "not found"
+ * (D4). A lock pointing at an evicted pack is the cold "configured but unbuilt"
+ * store (the pack is absent from the XDG-isolated cache).
+ */
+describe("prompt — cold-store convergence, tool + native agree (D1/D4)", () => {
+  let cold: McpHarness;
+
+  beforeAll(async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-prompt-cold-"));
+    writeLock(cwd, { version: 1, contentHash: "b".repeat(64), packs: [] });
+    cold = await projectMcp(capabilities, cwd);
+  });
+  afterAll(async () => {
+    await cold.cleanup();
+  });
+
+  it("prompt_list (tool) and prompts/list (native) BOTH surface STORE_UNAVAILABLE", async () => {
+    const tool = await cold.callTool("prompt_list");
+    expect(tool.ok).toBe(false);
+    expect((tool.error as { code: string }).code).toBe("STORE_UNAVAILABLE");
+    // The native list no longer diverges into a silent [] / stale index listing.
+    await expect(cold.listPrompts()).rejects.toThrow(/store unavailable/i);
+  });
+
+  it("both surfaces carry the same `sources_update` recovery cold", async () => {
+    const tool = await cold.callTool("prompt_list");
+    const toolRecovery = (
+      tool.error as { recovery?: { mcp?: { tool?: string } } }
+    ).recovery;
+    expect(toolRecovery?.mcp?.tool).toBe("sources_update");
+
+    // Native carries the recovery in the JSON-RPC error `data` — never dropped.
+    const nativeErr = await cold.listPrompts().then(
+      () => undefined,
+      (error: unknown) => error,
+    );
+    const data = (
+      nativeErr as { data?: { recovery?: { mcp?: { tool?: string } } } }
+    ).data;
+    expect(data?.recovery?.mcp?.tool).toBe("sources_update");
+  });
+
+  it("native prompts/get reports STORE_UNAVAILABLE cold, not a bogus 'not found' (D4)", async () => {
+    const error = await cold.getPrompt("build-a-block").then(
+      () => undefined,
+      (caught: unknown) => caught as Error,
+    );
+    expect(error?.message).toMatch(/store unavailable/i);
+    // The genuine-miss message must NOT mask the cold store.
+    expect(error?.message).not.toMatch(/not found/i);
   });
 });

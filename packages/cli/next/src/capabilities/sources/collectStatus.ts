@@ -28,15 +28,27 @@ const entryName = (entry: PackageEntry): string =>
 const entrySource = (entry: PackageEntry): string =>
   typeof entry === "string" ? entry : (entry.source ?? entry.name);
 
-/** The indexed entity count from a cached pack's index.json (storeless). */
+/**
+ * The distinct-abox entity count from a cached pack's index.json (storeless).
+ *
+ * Only reached for LEGACY packs whose manifest predates the persisted
+ * `entityCount` (A10) — a current pack's count is read straight from the
+ * manifest, no index parse. Counts distinct abox subjects so the figure matches
+ * both the manifest count and `info`'s `entityTotal` (A1).
+ */
 function indexEntityCount(dir: string): number | null {
   const path = join(dir, INDEX_FILE);
   if (!existsSync(path)) return null;
   try {
     const parsed = JSON.parse(readFileSync(path, "utf-8")) as {
-      entities?: unknown[];
+      entities?: { box?: string; uri?: string; name?: string }[];
     };
-    return Array.isArray(parsed.entities) ? parsed.entities.length : null;
+    if (!Array.isArray(parsed.entities)) return null;
+    const subjects = new Set<string>();
+    for (const entity of parsed.entities) {
+      if (entity.box === "abox") subjects.add(entity.uri ?? entity.name ?? "");
+    }
+    return subjects.size;
   } catch {
     return null;
   }
@@ -81,7 +93,10 @@ export async function collectStatus(
     contentHash: lock?.contentHash ?? null,
     cached,
     builtAt: manifest?.createdAt ?? null,
-    entityCount: dir && cached ? indexEntityCount(dir) : null,
+    // Prefer the manifest's persisted count (no index parse); a legacy pack
+    // without it falls back to counting the index's abox subjects (A10).
+    entityCount:
+      dir && cached ? (manifest?.entityCount ?? indexEntityCount(dir)) : null,
     sources,
   };
 }

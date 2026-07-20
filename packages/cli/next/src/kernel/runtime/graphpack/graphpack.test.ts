@@ -1,4 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { executeLocal } from "@canonical/ke-graphql";
@@ -125,6 +131,68 @@ describe("graphpack hash stability (PROTECTED)", () => {
     );
     expect(manifest.contentHash).toBe(result.contentHash);
     expect(result.dir.endsWith(result.contentHash)).toBe(true);
+  });
+});
+
+describe("graphpack manifest — persisted counts (A9/A10)", () => {
+  it("records tripleCount and a distinct-abox entityCount", async () => {
+    const { dir } = await build([{ path: "a.ttl", content: TTL }]);
+    const manifest = JSON.parse(
+      readFileSync(join(dir, MANIFEST_FILE), "utf-8"),
+    ) as { tripleCount?: number; entityCount?: number };
+    expect(typeof manifest.tripleCount).toBe("number");
+    expect(manifest.tripleCount ?? 0).toBeGreaterThan(0);
+    // TTL declares two individuals (ex:Button, ex:Card) → two abox subjects.
+    expect(manifest.entityCount).toBe(2);
+  });
+});
+
+describe("graphpack read — truncated data cache (A9)", () => {
+  it("a truncated-but-non-empty data.nq surfaces STORE_UNAVAILABLE", async () => {
+    // A UNIQUE graph so corrupting its cache never poisons the shared TTL pack.
+    const uniqueTtl = `${TTL}\nex:Truncated a ex:Component ; rdfs:label "Truncated" .\n`;
+    const { dir } = await build([{ path: "trunc.ttl", content: uniqueTtl }]);
+    const dataPath = join(dir, DATA_FILE);
+    const lines = readFileSync(dataPath, "utf-8")
+      .split("\n")
+      .filter((line) => line.trim() !== "");
+    expect(lines.length).toBeGreaterThan(1);
+    // Drop the last statement: the dump is now a PARTIAL graph — still
+    // non-empty (so it passes the size>0 completeness gate) but fewer triples
+    // than the manifest recorded, which the boot cross-check must catch.
+    writeFileSync(dataPath, `${lines.slice(0, -1).join("\n")}\n`);
+
+    let caught: unknown;
+    try {
+      const session = await readPack(dir);
+      session.store.dispose();
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: "STORE_UNAVAILABLE" });
+  });
+
+  it("tolerates a benign superset (actual > recorded), not corruption", async () => {
+    // A future ke counting change could load MORE triples than the manifest
+    // recorded. That is not truncation, so boot must NOT reject it — otherwise
+    // one counting change trips a fleet-wide false STORE_UNAVAILABLE. Simulate by
+    // lowering the manifest's tripleCount below the dump's actual count.
+    const uniqueTtl = `${TTL}\nex:Superset a ex:Component ; rdfs:label "Superset" .\n`;
+    const { dir } = await build([{ path: "superset.ttl", content: uniqueTtl }]);
+    const manifestPath = join(dir, MANIFEST_FILE);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+      tripleCount: number;
+    };
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ ...manifest, tripleCount: manifest.tripleCount - 1 }),
+    );
+
+    // The booted store holds one MORE triple than the (lowered) manifest — a
+    // superset. On the pre-fix exact-equality guard this threw; now it boots.
+    const session = await readPack(dir);
+    expect(session.index.entities.length).toBeGreaterThan(0);
+    session.store.dispose();
   });
 });
 
