@@ -298,8 +298,10 @@
     "pragma": "pragma v2 CLI and MCP server host (stdio)"
   },
   "globalFlags": [
-    { "flag": "--llm", "doc": "Condensed Markdown output for agents" },
-    { "flag": "--format <json|plain>", "doc": "Select output format" },
+    {
+      "flag": "--format <plain|llm|json>",
+      "doc": "Select output format (llm = condensed Markdown for agents)"
+    },
     { "flag": "--verbose", "doc": "Diagnostic output on stderr" },
     {
       "flag": "--detail <level>",

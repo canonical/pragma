@@ -15,6 +15,7 @@ import type {
   SectionDef,
 } from "./contracts.js";
 import { DEFAULT_PREFIX_MAP } from "./prefixes.js";
+import { defaultStyle, type RenderStyle, styleFor } from "./style.js";
 
 type RenderMode = "plain" | "llm";
 
@@ -104,27 +105,40 @@ export function renderListLlm<T>(
   return lines.join("\n");
 }
 
+/**
+ * Render an entity lookup as plain text.
+ *
+ * @param entity - The looked-up entity.
+ * @param options - The lookup layout (title, fields, sections).
+ * @param style - TTY styling; defaults to the process style. On a color-capable
+ *   terminal the title is bold, its `═` rule dim, and field labels cyan; off a
+ *   TTY the styler is inert, so the output is byte-identical to the plain form.
+ * @returns The formatted lookup block.
+ */
 export function renderLookupPlain<T>(
   entity: T,
   options: RenderLookupOptions<T>,
+  style: RenderStyle = defaultStyle(),
 ): string {
-  return renderLookup(entity, options, "plain");
+  return renderLookup(entity, options, "plain", style);
 }
 
 export function renderLookupLlm<T>(
   entity: T,
   options: RenderLookupOptions<T>,
 ): string {
-  return renderLookup(entity, options, "llm");
+  // The condensed form is a byte-frozen agent contract — never styled.
+  return renderLookup(entity, options, "llm", styleFor(false));
 }
 
 function renderLookup<T>(
   entity: T,
   options: RenderLookupOptions<T>,
   mode: RenderMode,
+  style: RenderStyle,
 ): string {
   const title = options.title(entity);
-  const fields = renderLookupFields(entity, options, mode);
+  const fields = renderLookupFields(entity, options, mode, style);
   const sections = renderLookupSections(entity, options, mode);
 
   if (mode === "llm") {
@@ -132,13 +146,17 @@ function renderLookup<T>(
   }
 
   const headingRule = "═".repeat(Math.max(title.length, 24));
-  return [title, headingRule, "", ...fields, ...sections].join("\n").trimEnd();
+  const head = style.enabled
+    ? [style.bold(title), style.dim(headingRule)]
+    : [title, headingRule];
+  return [...head, "", ...fields, ...sections].join("\n").trimEnd();
 }
 
 function renderLookupFields<T>(
   entity: T,
   options: RenderLookupOptions<T>,
   mode: RenderMode,
+  style: RenderStyle,
 ): string[] {
   const prefixes = options.prefixes ?? DEFAULT_PREFIX_MAP;
   return options.fields.flatMap((field) => {
@@ -148,9 +166,9 @@ function renderLookupFields<T>(
     }
 
     const formatted = formatInlineValue(value, prefixes);
-    return mode === "llm"
-      ? [`- ${field.label}: ${formatted}`]
-      : [`  ${field.label}: ${formatted}`];
+    if (mode === "llm") return [`- ${field.label}: ${formatted}`];
+    const label = style.enabled ? style.cyan(field.label) : field.label;
+    return [`  ${label}: ${formatted}`];
   });
 }
 

@@ -2,7 +2,7 @@
  * Render a {@link PragmaError} for each output surface.
  *
  * Plain text targets a human terminal (stderr), condensed Markdown targets an
- * agent reading `--llm`, and JSON emits the `{ ok: false, error }` envelope —
+ * agent reading `--format llm`, and JSON emits the `{ ok: false, error }` envelope —
  * the same failure shape the MCP projector returns, so agents see one contract
  * whichever transport they use.
  */

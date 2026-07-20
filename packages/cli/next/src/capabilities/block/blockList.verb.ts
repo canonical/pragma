@@ -118,7 +118,7 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
   examples: [
     { cmd: "pragma block list" },
     { cmd: "pragma block list --all-tiers" },
-    { cmd: "pragma block list --llm" },
+    { cmd: "pragma block list --format llm" },
   ],
   capability: {
     needsStore: true,

@@ -29,7 +29,8 @@ export const promptListFormatters: Formatters<PromptListData> = {
   },
   llm(data) {
     if (data.prompts.length === 0) return "_No prompts in the store._";
-    const lines = ["# Prompts"];
+    // H2 for a content read — consistent with the shared list renderer (B2).
+    const lines = ["## Prompts"];
     for (const prompt of data.prompts) {
       lines.push(
         `- \`${prompt.name}\` — ${prompt.description ?? ""}`.trimEnd(),
@@ -45,23 +46,27 @@ export const promptListFormatters: Formatters<PromptListData> = {
 
 export const promptLookupFormatters: Formatters<PromptLookupData> = {
   plain(data) {
-    const lines = [data.name];
+    // Match the shared `renderLookupPlain` frame (title, ═ rule, blank) (B7).
+    const rule = "═".repeat(Math.max(data.name.length, 24));
+    const lines = [data.name, rule, ""];
     if (data.description) lines.push(`  ${data.description}`);
     lines.push(`  args: ${argTokens(data.arguments)}`, "", data.body);
     return lines.join("\n");
   },
   llm(data) {
-    const lines = [`# ${data.name}`];
+    // H2 entity title with H3 sub-sections — the hierarchy the shared
+    // `renderLookupLlm` uses (`## title` / `### section`) (B2).
+    const lines = [`## ${data.name}`];
     if (data.description) lines.push(data.description);
     if (data.arguments.length > 0) {
-      lines.push("", "## Arguments");
+      lines.push("", "### Arguments");
       for (const arg of data.arguments) {
         lines.push(
           `- \`${arg.name}\`${arg.required ? " (required)" : ""}${arg.description ? ` — ${arg.description}` : ""}`,
         );
       }
     }
-    lines.push("", "## Template", data.body);
+    lines.push("", "### Template", data.body);
     return lines.join("\n");
   },
   json(data) {

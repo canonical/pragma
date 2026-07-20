@@ -264,13 +264,13 @@ describe("buildCompletionModel — flags and sources", () => {
     const flags = Object.fromEntries(model.globalFlags.map((f) => [f.flag, f]));
     expect(flags["--format"]?.source).toEqual({
       kind: "values",
-      values: ["plain", "json"],
+      values: ["plain", "llm", "json"],
     });
     expect(flags["--detail"]?.source).toEqual({
       kind: "values",
       values: ["summary", "standard", "detailed"],
     });
-    expect(flags["--llm"]?.takesValue).toBe(false);
+    expect(flags["--llm"]).toBeUndefined();
     expect(flags["--version"]?.rootOnly).toBe(true);
     expect(flags["--help"]?.rootOnly).toBeUndefined();
   });

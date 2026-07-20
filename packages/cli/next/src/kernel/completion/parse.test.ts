@@ -73,7 +73,7 @@ describe("parseWords — nouns and verbs (PROTECTED)", () => {
       context: { kind: "noun" },
       partial: "blo",
     });
-    expect(parse(["--llm", "block", ""]).context).toEqual({
+    expect(parse(["--verbose", "block", ""]).context).toEqual({
       kind: "verb",
       noun: "block",
     });
@@ -83,7 +83,6 @@ describe("parseWords — nouns and verbs (PROTECTED)", () => {
 describe("parseWords — flag names (PROTECTED)", () => {
   it("offers only globals (with --version) at the root", () => {
     expect(flagsOf(parse(["--"]).context)).toEqual([
-      "--llm",
       "--format",
       "--verbose",
       "--detail",
@@ -105,7 +104,6 @@ describe("parseWords — flag names (PROTECTED)", () => {
       "--out",
       "--with-meta",
       "--note",
-      "--llm",
       "--format",
       "--verbose",
       "--detail",
@@ -192,7 +190,7 @@ describe("parseWords — flag values (PROTECTED)", () => {
       context: {
         kind: "flag-value",
         flag: "--format",
-        source: { kind: "values", values: ["plain", "json"] },
+        source: { kind: "values", values: ["plain", "llm", "json"] },
       },
     });
     expect(parse(["block", "get", "--detail", "s"])).toMatchObject({

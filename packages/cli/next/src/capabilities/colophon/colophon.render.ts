@@ -18,7 +18,7 @@ function plainSection(section: ColophonSection): string {
   return renderMarkdownToTerminal(`# ${section.title}\n\n${section.markdown}`);
 }
 
-/** Render one section as condensed Markdown for `--llm` (summary preferred). */
+/** Render one section as condensed Markdown for `--format llm` (summary preferred). */
 function llmSection(section: ColophonSection): string {
   return `## ${section.title}\n\n${section.summary ?? section.markdown}`;
 }

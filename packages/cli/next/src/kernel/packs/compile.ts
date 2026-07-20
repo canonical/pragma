@@ -145,7 +145,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
             },
           ]
         : []),
-      { cmd: `pragma ${meta.noun} ${meta.verb} --llm` },
+      { cmd: `pragma ${meta.noun} ${meta.verb} --format llm` },
     ],
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>

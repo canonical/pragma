@@ -7,6 +7,7 @@
  */
 
 import type { ConfigOrigin } from "../../kernel/config/types.js";
+import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type { ConfigShowData } from "./types.js";
 
@@ -24,18 +25,63 @@ function packageNames(data: ConfigShowData): string {
   return names.length > 0 ? names.join(", ") : "(none)";
 }
 
+/** One resolved row: its label, value, and `[layer]` marker (blank for a default). */
+type ConfigRow = readonly [label: string, value: string, marker: string];
+
+/** The resolved rows, in display order, shared by the plain + beautified forms. */
+function configRows(data: ConfigShowData): readonly ConfigRow[] {
+  const { config, origins } = data;
+  return [
+    [
+      "tier",
+      config.tier ?? "(none — all tiers visible)",
+      originMarker(origins.tier),
+    ],
+    ["channel", config.channel, originMarker(origins.channel)],
+    ["detail", config.detail ?? "standard", originMarker(origins.detail)],
+    ["packages", packageNames(data), originMarker(origins.packages)],
+    [
+      "global config",
+      `${data.globalConfigPath}${data.globalExists ? "" : " (not found)"}`,
+      "",
+    ],
+    ["project config", data.projectConfigPath ?? "(not found)", ""],
+  ];
+}
+
+/**
+ * Render `config show` as plain text.
+ *
+ * @param data - The resolved config-show payload.
+ * @param style - TTY styling; defaults to the process style. On a color-capable
+ *   terminal the `key:` column is aligned + dim, values cyan, and `[layer]`
+ *   markers dim; off a TTY the styler is inert, so the output is byte-identical
+ *   to the pre-beautify `key: value[marker]` form.
+ * @returns The formatted config block.
+ */
+export function renderConfigShowPlain(
+  data: ConfigShowData,
+  style: RenderStyle = defaultStyle(),
+): string {
+  const rows = configRows(data);
+  if (!style.enabled) {
+    return rows
+      .map(([label, value, marker]) => `${label}: ${value}${marker}`)
+      .join("\n");
+  }
+  const keyWidth = Math.max(...rows.map(([label]) => `${label}:`.length));
+  return rows
+    .map(([label, value, marker]) => {
+      const key = style.dim(`${label}:`.padEnd(keyWidth));
+      const tail = marker ? style.dim(marker) : "";
+      return `${key} ${style.cyan(value)}${tail}`;
+    })
+    .join("\n");
+}
+
 export const configShowFormatters: Formatters<ConfigShowData> = {
   plain(data) {
-    const { config, origins } = data;
-    const lines = [
-      `tier: ${config.tier ?? "(none — all tiers visible)"}${originMarker(origins.tier)}`,
-      `channel: ${config.channel}${originMarker(origins.channel)}`,
-      `detail: ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
-      `packages: ${packageNames(data)}${originMarker(origins.packages)}`,
-      `global config: ${data.globalConfigPath}${data.globalExists ? "" : " (not found)"}`,
-      `project config: ${data.projectConfigPath ?? "(not found)"}`,
-    ];
-    return lines.join("\n");
+    return renderConfigShowPlain(data);
   },
 
   llm(data) {

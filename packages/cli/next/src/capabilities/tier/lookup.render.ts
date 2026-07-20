@@ -13,16 +13,20 @@ export interface TierLookupData {
 
 export const tierLookupFormatters: Formatters<TierLookupData> = {
   plain(data) {
-    const lines = [`${data.name} (${data.uri})`];
-    lines.push(
+    // Match the shared `renderLookupPlain` frame (title, ═ rule, blank, fields)
+    // so a bespoke lookup reads identically to the generic ones (B7).
+    const title = `${data.name} (${data.uri})`;
+    const rule = "═".repeat(Math.max(title.length, 24));
+    const blocks =
       data.blocks.length > 0
         ? `  blocks: ${data.blocks.join(", ")}`
-        : "  blocks: (none scoped directly to this tier)",
-    );
-    return lines.join("\n");
+        : "  blocks: (none scoped directly to this tier)";
+    return [title, rule, "", blocks].join("\n");
   },
   llm(data) {
-    const lines = [`# ${data.name}`, `- IRI: \`${data.uri}\``];
+    // H2 for an entity read — consistent with block/skill/ontology/graph
+    // inspect (the shared `renderLookupLlm` emits `## title`) (B2).
+    const lines = [`## ${data.name}`, `- IRI: \`${data.uri}\``];
     if (data.blocks.length > 0) {
       lines.push(`- Blocks: ${data.blocks.map((b) => `\`${b}\``).join(", ")}`);
     }

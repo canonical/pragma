@@ -58,21 +58,21 @@ _pragma() {
     block/list/--tags) return ;;
   esac
   case "$prev" in
-    --format) COMPREPLY=($(compgen -W "plain json" -- "$cur")); return ;;
+    --format) COMPREPLY=($(compgen -W "plain llm json" -- "$cur")); return ;;
     --detail) COMPREPLY=($(compgen -W "summary standard detailed" -- "$cur")); return ;;
   esac
 
   # flag names
   if [[ "$cur" == -* ]]; then
     case "$noun/$verb" in
-      block/get) COMPREPLY=($(compgen -W "--view --out --with-meta --note --llm --format --verbose --detail --help" -- "$cur")); return ;;
-      block/list) COMPREPLY=($(compgen -W "--tags --llm --format --verbose --detail --help" -- "$cur")); return ;;
-      block/remove) COMPREPLY=($(compgen -W "--dry-run --undo --yes --llm --format --verbose --detail --help" -- "$cur")); return ;;
+      block/get) COMPREPLY=($(compgen -W "--view --out --with-meta --note --format --verbose --detail --help" -- "$cur")); return ;;
+      block/list) COMPREPLY=($(compgen -W "--tags --format --verbose --detail --help" -- "$cur")); return ;;
+      block/remove) COMPREPLY=($(compgen -W "--dry-run --undo --yes --format --verbose --detail --help" -- "$cur")); return ;;
     esac
     if [ -z "$noun" ]; then
-      COMPREPLY=($(compgen -W "--llm --format --verbose --detail --help --version" -- "$cur"))
+      COMPREPLY=($(compgen -W "--format --verbose --detail --help --version" -- "$cur"))
     else
-      COMPREPLY=($(compgen -W "--llm --format --verbose --detail --help" -- "$cur"))
+      COMPREPLY=($(compgen -W "--format --verbose --detail --help" -- "$cur"))
     fi
     return
   fi
@@ -172,8 +172,7 @@ complete -c pragma -f
 complete -c pragma -n "__pragma_at ''" -a "block mcp standard status"
 
 # global flags
-complete -c pragma -l llm
-complete -c pragma -l format -x -a "plain json"
+complete -c pragma -l format -x -a "plain llm json"
 complete -c pragma -l verbose
 complete -c pragma -l detail -x -a "summary standard detailed"
 complete -c pragma -l help
@@ -268,21 +267,21 @@ _pragma() {
     block/list/--tags) return 0 ;;
   esac
   case "$prev" in
-    --format) compadd -- plain json; return 0 ;;
+    --format) compadd -- plain llm json; return 0 ;;
     --detail) compadd -- summary standard detailed; return 0 ;;
   esac
 
   # flag names
   if [[ "$cur" == -* ]]; then
     case "$noun/$verb" in
-      block/get) compadd -- --view --out --with-meta --note --llm --format --verbose --detail --help; return 0 ;;
-      block/list) compadd -- --tags --llm --format --verbose --detail --help; return 0 ;;
-      block/remove) compadd -- --dry-run --undo --yes --llm --format --verbose --detail --help; return 0 ;;
+      block/get) compadd -- --view --out --with-meta --note --format --verbose --detail --help; return 0 ;;
+      block/list) compadd -- --tags --format --verbose --detail --help; return 0 ;;
+      block/remove) compadd -- --dry-run --undo --yes --format --verbose --detail --help; return 0 ;;
     esac
     if [[ -z "$noun" ]]; then
-      compadd -- --llm --format --verbose --detail --help --version
+      compadd -- --format --verbose --detail --help --version
     else
-      compadd -- --llm --format --verbose --detail --help
+      compadd -- --format --verbose --detail --help
     fi
     return 0
   fi
