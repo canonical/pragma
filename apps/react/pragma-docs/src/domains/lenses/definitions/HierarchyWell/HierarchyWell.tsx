@@ -8,6 +8,7 @@ import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontolo
 import { buildClassTree } from "./buildClassTree.js";
 import { decorateForView } from "./decorateGraph.js";
 import type { HierarchyWellProps, TermFlowNode } from "./types.js";
+import WellLegend from "./WellLegend.js";
 import "@xyflow/react/dist/style.css";
 import "./styles.css";
 
@@ -188,6 +189,13 @@ const HierarchyWell = ({
           setFocused(undefined);
         }}
       />
+      {/* Canvas-local furniture: the two things that genuinely hover over
+          the graph in the exhibit. Both are static, so they cost the
+          hydration argument nothing. */}
+      <p className="hierarchy-furniture hierarchy-hint">
+        Drag to pan · scroll to zoom · select a class to inspect it
+      </p>
+      <WellLegend />
     </div>
   );
 };

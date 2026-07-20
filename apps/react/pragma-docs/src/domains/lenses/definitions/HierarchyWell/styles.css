@@ -207,6 +207,54 @@
     0 6px 24px rgb(0 0 0 / 0.07);
   font-size: 0.6875rem;
   color: var(--color-text-muted, #666);
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ds.hierarchy-well .hierarchy-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ds.hierarchy-well .hierarchy-legend dt,
+.ds.hierarchy-well .hierarchy-legend dd {
+  margin: 0;
+}
+
+/* The swatches restate the node encoding exactly — same border style, so
+ * the legend cannot drift from what the graph draws. */
+.ds.hierarchy-well .hierarchy-legend-swatch {
+  display: block;
+  inline-size: 1.5rem;
+  block-size: 0.75rem;
+  border-radius: 0.1875rem;
+  border: 1px solid var(--color-border-muted, #ddd);
+  background: var(--color-background, #fff);
+}
+
+.ds.hierarchy-well .hierarchy-legend-swatch-abstract {
+  border-style: dashed;
+}
+
+/* The subclass edge: a line with an arrowhead, drawn in CSS so the legend
+ * carries no image dependency. */
+.ds.hierarchy-well .hierarchy-legend-edge {
+  display: block;
+  inline-size: 1.5rem;
+  block-size: 0;
+  border-block-start: 1px solid var(--color-border-muted, #ddd);
+  position: relative;
+}
+
+.ds.hierarchy-well .hierarchy-legend-edge::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: -1px;
+  inset-block-start: -3px;
+  border-block: 3px solid transparent;
+  border-inline-start: 5px solid var(--color-border-muted, #ddd);
 }
 
 /* Fade and lift are the well's only motion; drop them when asked. The
