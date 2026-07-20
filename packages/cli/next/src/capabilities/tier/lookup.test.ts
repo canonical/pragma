@@ -39,6 +39,21 @@ describe("tier_lookup — bespoke single-name lookup (PROTECTED)", () => {
     const error = result.error as { code: string };
     expect(error.code).toBe("ENTITY_NOT_FOUND");
   });
+
+  it("suggests a near-miss tier name from the full list (did-you-mean parity)", async () => {
+    // B6: tier lookup was the only entity lookup that omitted suggestions,
+    // though — like the others — it can read the full tier list on a miss.
+    let caught: unknown;
+    try {
+      await runTierLookup(fixture.runtime, "apps/lxdd");
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ code: "ENTITY_NOT_FOUND" });
+    expect((caught as { suggestions: string[] }).suggestions).toContain(
+      "apps/lxd",
+    );
+  });
 });
 
 describe("tier_lookup — cold/unseeded store (ROOT A)", () => {
