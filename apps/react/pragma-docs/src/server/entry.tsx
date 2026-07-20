@@ -37,10 +37,36 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // between requests — seeded from the prepare step's serialised records
   // (the same bytes the client hydrates from, so data-driven hydration
   // mismatch is excluded by construction). With a warm store the page's
-  // queries render without fetching; nothing fetches through this
-  // environment otherwise (Stage 2 injects a live executor for @defer).
+  // queries render without fetching.
+  //
+  // `fetchFn` is the COLD-STORE guard. A server render that reaches the
+  // network is always a bug here — there is no origin to resolve
+  // `/graphql` against, so the default HTTP path throws ERR_INVALID_URL
+  // from inside a promise React never awaits, which takes the whole
+  // server process down rather than surfacing in the page. That is
+  // exactly what the backend-less preview bricks do on every
+  // data-bearing route (`renderer.tsx`: no prepare step until the
+  // Oxigraph spike closes).
+  //
+  // The miss is reported as a REJECTED PROMISE, not a synchronous throw.
+  // A throw here escapes during the render pass itself, which the
+  // express brick turns into a hard 500 (the bun brick, which has
+  // already flushed the shell, degrades more gracefully — the two must
+  // not disagree). A rejection is what Relay's network contract expects
+  // for a failed operation, so the miss lands in the suspended
+  // boundary's error path: shell, frame, and authored prose still
+  // render, and the canvas shows its honest "the graph query failed"
+  // state on both bricks.
   const relayEnvironment = createEnvironment({
     records: initialData.relay?.records,
+    fetchFn: (params) =>
+      Promise.reject(
+        new Error(
+          `no server-side GraphQL network: operation ${params.name} was not ` +
+            "served from the prepared store (the prepare step either did " +
+            "not run for this route, or ran with different variables)",
+        ),
+      ),
   });
 
   // Paint the cookie-resolved theme on <html> for a flash-free first render —
