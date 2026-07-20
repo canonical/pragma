@@ -67,6 +67,16 @@ Bun.serve({
         return handle(req);
       }
 
+      // Malformed percent-encoding guard (P-5 review finding, pre-existing
+      // class): Vite decodes the path while serving assets, so a request
+      // like /components/%ZZ would 500 with a Vite stack trace. Answer an
+      // honest 404 before `handleAsset` gets to throw.
+      try {
+        decodeURIComponent(url.pathname);
+      } catch {
+        return new Response("Not Found", { status: 404 });
+      }
+
       const asset = await handleAsset(req);
       if (asset) return asset;
 

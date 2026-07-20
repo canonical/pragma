@@ -83,6 +83,20 @@ async function start() {
       });
   });
 
+  // Malformed percent-encoding guard (P-5 review finding, pre-existing
+  // class): Vite's middleware decodes the path before the app's handlers,
+  // so a request like /components/%ZZ would 500 with a Vite stack trace.
+  // Answer an honest 404 before `vite.middlewares` gets to throw.
+  app.use((req, res, next) => {
+    try {
+      decodeURIComponent(req.path);
+    } catch {
+      res.status(404).type("text/plain").end("Not Found");
+      return;
+    }
+    next();
+  });
+
   app.use(vite.middlewares);
 
   app.use(async (req, res, next) => {
