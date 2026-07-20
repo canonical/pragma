@@ -142,7 +142,7 @@ const valuesList = (uris: readonly string[]): string =>
   uris.map((uri) => `<${uri}>`).join(" ");
 
 /** Language rank for label selection: untagged (0) < `@en` (1) < any other (2). */
-function languageRank(language: string): number {
+function rankLanguage(language: string): number {
   if (language === "") return 0;
   const lower = language.toLowerCase();
   return lower === "en" || lower.startsWith("en-") ? 1 : 2;
@@ -180,7 +180,7 @@ function preferredBySubject(
     if (rank === -1) continue;
     const language =
       valueTerm.termType === "Literal" ? (valueTerm.language ?? "") : "";
-    const langRank = languageRank(language);
+    const langRank = rankLanguage(language);
     const current = best.get(term.s.value);
     const better =
       current === undefined ||
