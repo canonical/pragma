@@ -291,9 +291,68 @@ describe("server matrix (2×3) serves correctly", () => {
             //     …and the third ontology rides the explorer's rail:
             expect(definitionsHtml).toMatch(/href="\/definitions\/anatomy%3A/);
 
+            // 5e. Standards block (P-5): the reading lens SSRs from the
+            //     live graph. The index carries the category-grouped
+            //     lists and D31-addressed reading links in the raw HTML
+            //     plus the serialised store.
+            const standardsIndex = await fetch(`${server.base}/standards`);
+            expect(standardsIndex.status).toBe(200);
+            const standardsIndexHtml = await standardsIndex.text();
+            expect(standardsIndexHtml).toContain(
+              'id="standards-category-code"',
+            );
+            //     The D31 href check: a live standard's index link IS the
+            //     chip address (percent-encoded prefixed URI).
+            expect(standardsIndexHtml).toContain(
+              'href="/standards/cs%3Acode.array.safe_access"',
+            );
+            expect(standardsIndexHtml).toContain("__INITIAL_DATA__");
+            expect(standardsIndexHtml).toContain('"records"');
+
+            //     Silent-rot closure, drift-proof by design (never pin
+            //     graph counts — the 111→108 lesson): the jump-link rail
+            //     lists exactly one anchor per category section, both
+            //     derived from THIS response, so a partial render of
+            //     either surface breaks the equality. Floors catch the
+            //     both-rot-to-zero case (0 === 0), and sections stay
+            //     strictly below standard links — a category exists only
+            //     because standards fill it.
+            const categoryJumpLinkCount = (
+              standardsIndexHtml.match(/href="#standards-category-/g) ?? []
+            ).length;
+            const categorySectionCount = (
+              standardsIndexHtml.match(
+                /<section[^>]*id="standards-category-/g,
+              ) ?? []
+            ).length;
+            const standardLinkCount = (
+              standardsIndexHtml.match(/href="\/standards\/cs%3A/g) ?? []
+            ).length;
+            expect(categoryJumpLinkCount).toBe(categorySectionCount);
+            expect(categorySectionCount).toBeGreaterThan(5);
+            expect(standardLinkCount).toBeGreaterThan(50);
+            expect(categorySectionCount).toBeLessThan(standardLinkCount);
+
+            //     A real reading page: the prose tripwire for the field
+            //     the unit fixture freezes (the description text SSRs
+            //     verbatim — an upstream rename rots loudly here), the
+            //     layout.reading anchor, and the extends cross-link.
+            const standardReading = await fetch(
+              `${server.base}/standards/cs%3Areact.component.link_component`,
+            );
+            expect(standardReading.status).toBe(200);
+            const standardReadingHtml = await standardReading.text();
+            expect(standardReadingHtml).toContain("LinkComponentProps");
+            expect(standardReadingHtml).toContain('data-slot="reading-canvas"');
+            expect(standardReadingHtml).toContain(
+              'href="/standards/cs%3Areact.component.props"',
+            );
+            expect(standardReadingHtml).toContain("__INITIAL_DATA__");
+            expect(standardReadingHtml).toContain('"records"');
+
             // Zero /graphql HTTP hits during everything above — the
-            // catalog, both entity pages, and all four definitions pages
-            // executed in-process too.
+            // catalog, both entity pages, all four definitions pages,
+            // and both standards pages executed in-process too.
             expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
 
             // Teeth: a direct POST does reach the endpoint and the counter

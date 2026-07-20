@@ -11,6 +11,7 @@
 import { describe, expect, it } from "vitest";
 import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
 import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
+import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
 import {
   RELATION_PAGE_SIZE as PROBE_RELATION_PAGE_SIZE,
   PROBE_URI,
@@ -21,6 +22,10 @@ import { matchRouteQuery } from "./routeQueries.js";
 
 /** The definitions exemplar term (percent-encoded in URLs). */
 const UIBLOCK_TERM = "ds:UIBlock";
+
+/** The standards exemplar (percent-encoded in URLs). Its local name
+ * encodes no kind segment, so the D31 pin below stays warning-silent. */
+const STANDARD_URI = "cs:code.array.safe_access";
 
 describe("matchRouteQuery", () => {
   it("resolves /playground to the probe's exact variables", () => {
@@ -62,6 +67,22 @@ describe("matchRouteQuery", () => {
     expect(resolved?.variables).toEqual({ uri: "", hasTerm: false });
   });
 
+  // Standards block (P-5): the index runs one full page of the
+  // codeStandards connection; the reading URL runs the lookup with its
+  // percent-decoded uri.
+  it("resolves /standards to one full page, no cursor", () => {
+    const resolved = matchRouteQuery("/standards");
+    expect(resolved?.variables).toEqual({
+      count: STANDARDS_PAGE_SIZE,
+      cursor: null,
+    });
+  });
+
+  it("resolves the standard reading URL with its percent-decoded uri", () => {
+    const resolved = matchRouteQuery("/standards/cs%3Acode.array.safe_access");
+    expect(resolved?.variables).toEqual({ uri: STANDARD_URI });
+  });
+
   it("returns undefined for unmatched URLs", () => {
     expect(matchRouteQuery("/no-such-route")).toBeUndefined();
   });
@@ -88,6 +109,15 @@ describe("the entity route's address space", () => {
   it("round-trips definitionsTerm render() against the term chip href", () => {
     expect(appRoutes.definitionsTerm.render({ term: UIBLOCK_TERM })).toBe(
       resolveChipHref(UIBLOCK_TERM, "term"),
+    );
+  });
+
+  // Standards block (P-5): the third chip kind landing live — a standard
+  // chip and the standardEntity route must speak byte-identical
+  // addresses.
+  it("round-trips standardEntity render() against the standard chip href", () => {
+    expect(appRoutes.standardEntity.render({ uri: STANDARD_URI })).toBe(
+      resolveChipHref(STANDARD_URI, "standard"),
     );
   });
 });

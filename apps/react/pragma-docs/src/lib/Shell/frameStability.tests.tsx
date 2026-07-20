@@ -63,6 +63,7 @@ import { describe, expect, it } from "vitest";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import standardsIndexRecords from "#domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
 import EntryServer from "../../server/entry.js";
 
@@ -85,11 +86,17 @@ const BUTTON_ENTITY_URL = "/components/ds%3Aglobal.component.button";
  * node DOM. Same R3 posture: no rail entry is exact-current here. */
 const DEFINITIONS_TERM_URL = "/definitions/ds%3AUIBlock";
 
+/** The P-5 standards exemplar: the reading page — a third non-lens URL,
+ * whose canvas is layout.reading's measured prose column. Same R3
+ * posture: no rail entry is exact-current here. */
+const STANDARD_READING_URL = "/standards/cs%3Areact.component.link_component";
+
 /** Every URL the certification measures. */
 const MEASURED_URLS = [
   ...LENS_URLS,
   BUTTON_ENTITY_URL,
   DEFINITIONS_TERM_URL,
+  STANDARD_READING_URL,
 ] as const;
 
 /** Data-bearing pages render from their captured fixture records — the
@@ -102,8 +109,10 @@ const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
   // definitions addresses.
   "/definitions": definitionsExplorerRecords,
   [DEFINITIONS_TERM_URL]: definitionsExplorerRecords,
-  // Standards row (P-5): the grouped index from its trimmed capture.
+  // Standards rows (P-5): the grouped index from its trimmed capture,
+  // the reading page from its verbatim capture.
   "/standards": standardsIndexRecords,
+  [STANDARD_READING_URL]: standardEntityRecords,
 };
 
 /** Per-URL expectation for the first accounted-for delta: the hrefs
@@ -125,6 +134,9 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   // at a term URL. The term links that ARE current live in the canvas
   // (rail item + well node), outside this frame measurement.
   [DEFINITIONS_TERM_URL]: [],
+  // Same R3 posture: the rail's Standards entry is NOT current at a
+  // reading URL.
+  [STANDARD_READING_URL]: [],
 };
 
 /** Per-URL expectation for the second accounted-for delta: the mode
@@ -140,6 +152,7 @@ const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   "/guides": "",
   [BUTTON_ENTITY_URL]: "Components",
   [DEFINITIONS_TERM_URL]: "Definitions",
+  [STANDARD_READING_URL]: "Standards",
 };
 
 const renderPage = (url: string): string =>
@@ -262,6 +275,20 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
       "react-flow__node-term",
     );
     expect(mustGet("/standards").canvas).toContain('id="lens-standards-title"');
+    // The standards canvases render REAL content from their fixture
+    // records: the index carries a grouped standard link, the reading
+    // canvas carries the article's identity h1 (URI-as-title — no live
+    // display name) inside layout.reading's prose column.
+    expect(mustGet("/standards").canvas).toContain("cs:code.array.safe_access");
+    expect(mustGet(STANDARD_READING_URL).canvas).toContain(
+      'data-view="standard-reading"',
+    );
+    expect(mustGet(STANDARD_READING_URL).canvas).toContain(
+      '<h1 id="standard-reading-title">cs:react.component.link_component</h1>',
+    );
+    expect(mustGet(STANDARD_READING_URL).canvas).toContain(
+      'data-slot="reading-canvas"',
+    );
     expect(mustGet("/guides").canvas).toContain('id="lens-guides-title"');
     // The entity page renders its REAL data from the fixture records, not
     // a loading state — the whole view SSRs from a warm store.

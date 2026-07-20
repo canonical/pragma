@@ -26,6 +26,7 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 // side-effect import, no test behaviour of its own).
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
+import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "#relay/environment.js";
 import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
@@ -89,6 +90,19 @@ const SEEDED_PAGES = [
     serverMarker: '<h2 id="term-inspector-title">UI Block</h2>',
     liveSelector: "#term-inspector-title",
     liveText: "UI Block",
+  },
+  // Standards block (P-5): the reading page — the server HTML carries
+  // the article's identity h1 (URI-as-title: this live standard has no
+  // display name) and hydrating over it must stay mismatch-silent and
+  // network-silent like every other seeded page.
+  {
+    name: "standard reading",
+    url: "/standards/cs%3Areact.component.link_component",
+    records: standardEntityRecords,
+    serverMarker:
+      '<h1 id="standard-reading-title">cs:react.component.link_component</h1>',
+    liveSelector: "#standard-reading-title",
+    liveText: "cs:react.component.link_component",
   },
 ] as const;
 
