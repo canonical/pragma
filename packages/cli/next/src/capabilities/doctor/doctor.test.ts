@@ -8,7 +8,7 @@
  * the MCP read-only envelope.
  */
 
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -28,6 +28,7 @@ import {
 } from "../../testing/fixtures/graph/canonical.js";
 import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
+import { checkMcpConfigured } from "./checks/checkMcpConfigured.js";
 import { doctorModule } from "./index.js";
 import { runChecks } from "./runChecks.js";
 import type { DoctorData } from "./types.js";
@@ -50,17 +51,24 @@ const tmp = (prefix: string): string => {
 
 let prevHome: string | undefined;
 let prevXdg: string | undefined;
+let prevPath: string | undefined;
 beforeEach(() => {
   prevHome = process.env.HOME;
   prevXdg = process.env.XDG_CONFIG_HOME;
+  prevPath = process.env.PATH;
   // Empty HOME/XDG so `~`-based harness signals, rc files, and the global config
   // are all absent — the harness/config/completion checks become deterministic.
   process.env.HOME = tmp("pragma-doctor-home-");
   process.env.XDG_CONFIG_HOME = tmp("pragma-doctor-xdg-");
+  // Point PATH at an empty dir so no harness `process` signal fires off the
+  // ambient PATH (e.g. a `claude`/`codex` binary on the CI/dev host) — keeping
+  // "no harnesses detected" deterministic regardless of what is installed.
+  process.env.PATH = tmp("pragma-doctor-path-");
 });
 afterEach(() => {
   process.env.HOME = prevHome;
   process.env.XDG_CONFIG_HOME = prevXdg;
+  process.env.PATH = prevPath;
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
   roots.length = 0;
 });
@@ -175,5 +183,27 @@ describe("doctor — dispatch & MCP", () => {
     await mcp.cleanup();
     expect(envelope.ok).toBe(true);
     expect((envelope.data as DoctorData).checks).toHaveLength(9);
+  });
+});
+
+describe("doctor — MCP checks band by detected harness scope, not check name", () => {
+  it("bands a configured GLOBAL-scope harness (Windsurf) as global", async () => {
+    // Windsurf is a global-only harness whose MCP config lives in the home band.
+    // The old static map tagged every "MCP configured" result PROJECT; the fix
+    // derives the band from the harness's real scope, so this reports `global`.
+    const cwd = tmp("pragma-doctor-proj-");
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true }); // ⇒ Windsurf detected
+    const home = process.env.HOME ?? "";
+    const wsDir = join(home, ".codeium", "windsurf");
+    mkdirSync(wsDir, { recursive: true });
+    writeFileSync(
+      join(wsDir, "mcp_config.json"),
+      JSON.stringify({ mcpServers: { pragma: { command: "pragma" } } }),
+    );
+
+    const check = await checkMcpConfigured(cwd);
+    expect(check.status).toBe("pass");
+    expect(check.detail).toContain("Windsurf");
+    expect(check.band).toBe("global"); // NOT the old static "project"
   });
 });

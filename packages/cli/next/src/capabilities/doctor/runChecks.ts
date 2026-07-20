@@ -18,7 +18,31 @@ import { checkPackageRefs } from "./checks/checkPackageRefs.js";
 import { checkPragmaVersion } from "./checks/checkPragmaVersion.js";
 import { checkShellCompletions } from "./checks/checkShellCompletions.js";
 import { checkSkillsSymlinked } from "./checks/checkSkillsSymlinked.js";
-import type { CheckResult, DoctorData } from "./types.js";
+import type { CheckResult, DoctorData, ScopeBand } from "./types.js";
+
+/**
+ * The band a check statically concerns, by name — for checks whose band is
+ * fixed by construction: skills always symlink into the per-repo project dir
+ * (`skillsPath` is project-rooted), and completions install into the user/home
+ * shell dir. The MCP checks are NOT here: they detect harnesses across BOTH
+ * bands, so each derives its own band from what it found (see `deriveBand`) and
+ * sets it on its own result — {@link attachBand} preserves that.
+ */
+const CHECK_BANDS: Record<string, ScopeBand> = {
+  "Skills symlinked": "project",
+  "Shell completions": "global",
+};
+
+/**
+ * Attach a band tag to a check result. A check that already set its own band
+ * (the harness-derived MCP checks) keeps it; otherwise the static
+ * {@link CHECK_BANDS} map fills one in by name, if defined.
+ */
+function attachBand(result: CheckResult): CheckResult {
+  if (result.band !== undefined) return result;
+  const band = CHECK_BANDS[result.name];
+  return band ? { ...result, band } : result;
+}
 
 /**
  * Each check paired with the display name used if it rejects. The fallback name
@@ -53,16 +77,16 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
   const checks: CheckResult[] = await Promise.all(
     buildChecks(rt).map(async ([name, promise]): Promise<CheckResult> => {
       try {
-        return await promise;
+        return attachBand(await promise);
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
-        return {
+        return attachBand({
           name,
           status: "fail",
           detail: `Check threw an unexpected error: ${reason}`,
           remedy:
             "Re-run `pragma doctor`; if it persists, report this as a bug.",
-        };
+        });
       }
     }),
   );

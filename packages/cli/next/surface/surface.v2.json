@@ -196,10 +196,25 @@
     },
     "setup": {
       "verbs": [
-        { "v": "setup", "mutates": true, "mcp": "setup" },
-        { "v": "mcp", "mutates": true, "mcp": false },
+        {
+          "v": "setup",
+          "flags": ["--scope", "--global", "--local"],
+          "mutates": true,
+          "mcp": "setup"
+        },
+        {
+          "v": "mcp",
+          "flags": ["--scope", "--global", "--local"],
+          "mutates": true,
+          "mcp": false
+        },
         { "v": "completions", "mutates": true, "mcp": false },
-        { "v": "skills", "mutates": true, "mcp": false },
+        {
+          "v": "skills",
+          "flags": ["--scope", "--global", "--local"],
+          "mutates": true,
+          "mcp": false
+        },
         { "v": "lsp", "mutates": true, "mcp": false }
       ]
     },

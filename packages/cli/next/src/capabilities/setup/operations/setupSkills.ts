@@ -148,6 +148,10 @@ export async function detectSkills(
  * interprets the task twice (preview + perform). `created` links carry an undo;
  * a `replaced` link is delete-then-relink (idempotent); `skipped` is a no-op.
  *
+ * FOLLOW-UP(AV-284): global-band skills — skills only link into per-project
+ * harness dirs today; a `--scope global` machine-band skills location is
+ * deferred. The manifest line is `[project]`-prefixed to make that explicit.
+ *
  * @param d - The detection gathered up front.
  * @returns A Task that mkdirs each target and creates/replaces each symlink.
  */
@@ -168,7 +172,9 @@ export function composeSkills(d: SkillsDetection): Task<void> {
     }
   }
   tasks.push(
-    info(`Linked ${d.skillCount} skill(s) into ${d.targets.length} dir(s).`),
+    info(
+      `[project] Linked ${d.skillCount} skill(s) into ${d.targets.length} dir(s).`,
+    ),
   );
   return sequence_(tasks);
 }
