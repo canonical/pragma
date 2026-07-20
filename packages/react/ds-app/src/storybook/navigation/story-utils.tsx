@@ -47,7 +47,9 @@ export const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
 export const navDecorators: Decorator[] = [withBaseLayer];
 
 /** Minimal catch-all route so the hash router has somewhere to resolve to. */
-const navRoutes = { story: route({ url: "/", content: () => null }) } as const;
+const navRoutes = {
+  story: route({ url: "/", component: () => null }),
+} as const;
 
 /**
  * Provides the router-derived props to a nav story from the live location.

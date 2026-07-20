@@ -59,7 +59,7 @@ import MainPage from "./MainPage.js";
 const routes = {
   ${toCamelCase(domainName)}: route({
     url: "${routeUrl}",
-    content: MainPage,
+    component: MainPage,
   }),
 } as const;
 
