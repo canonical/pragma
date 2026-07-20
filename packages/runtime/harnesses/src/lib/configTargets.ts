@@ -38,7 +38,7 @@ export interface TargetGroup {
 }
 
 /** The bands a `--scope` selection runs, in project→global order. */
-export const bandsForScope = (scope: ScopeSelection): ScopeBand[] =>
+export const resolveBandsForScope = (scope: ScopeSelection): ScopeBand[] =>
   scope === "both"
     ? ["project", "global"]
     : scope === "global"
@@ -57,7 +57,7 @@ export const bandsForScope = (scope: ScopeSelection): ScopeBand[] =>
  * @param band - The band being resolved.
  * @returns Whether the harness writes in this band.
  */
-export const harnessInBand = (
+export const isHarnessInBand = (
   harnessScope: HarnessScope,
   scope: ScopeSelection,
   band: ScopeBand,
@@ -70,12 +70,12 @@ export const harnessInBand = (
 };
 
 /** The detected harnesses that participate in `band` under the `scope` selection. */
-export const harnessesForBand = (
+export const listHarnessesForBand = (
   detected: readonly DetectedHarness[],
   scope: ScopeSelection,
   band: ScopeBand,
 ): DetectedHarness[] =>
-  detected.filter((d) => harnessInBand(d.harness.scope, scope, band));
+  detected.filter((d) => isHarnessInBand(d.harness.scope, scope, band));
 
 /**
  * Group a band's detected harnesses into per-file {@link TargetGroup}s: one
@@ -127,7 +127,7 @@ export const groupConfigTargets = (
 
 /**
  * All target groups for a `--scope` selection, across every band it runs.
- * Convenience over {@link bandsForScope} + {@link harnessesForBand} +
+ * Convenience over {@link resolveBandsForScope} + {@link listHarnessesForBand} +
  * {@link groupConfigTargets} for the common "give me every file to configure"
  * caller.
  *
@@ -143,9 +143,9 @@ export const groupTargetsForScope = (
   scope: ScopeSelection,
   platform: PlatformEnv,
 ): TargetGroup[] =>
-  bandsForScope(scope).flatMap((band) =>
+  resolveBandsForScope(scope).flatMap((band) =>
     groupConfigTargets(
-      harnessesForBand(detected, scope, band),
+      listHarnessesForBand(detected, scope, band),
       projectRoot,
       band,
       platform,

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildPlatformEnv,
   detectWsl,
   type PlatformEnv,
   type PlatformId,
   userConfigBase,
   userDataBase,
   userHome,
-  windowsHostUserBase,
 } from "./platformPaths.js";
 
 /** Build a {@link PlatformEnv} fixture, overriding only the fields under test. */
@@ -61,10 +61,10 @@ describe("userConfigBase", () => {
     expect(userConfigBase(platform())).toBe("/home/tester/.config");
   });
 
-  it("uses ~/Library/Application Support on darwin", () => {
+  it("uses ~/Library/Preferences on darwin (distinct from the data base)", () => {
     expect(
       userConfigBase(platform({ platform: "darwin", home: "/Users/ada" })),
-    ).toBe("/Users/ada/Library/Application Support");
+    ).toBe("/Users/ada/Library/Preferences");
   });
 
   it("uses %APPDATA% on win32 when set", () => {
@@ -122,18 +122,52 @@ describe("userDataBase", () => {
   });
 });
 
-describe("windowsHostUserBase", () => {
-  it("returns null when not under WSL", () => {
-    expect(windowsHostUserBase(platform({ isWsl: false }))).toBeNull();
+describe("buildPlatformEnv", () => {
+  it("maps darwin through unchanged and never probes WSL off-linux", () => {
+    let probed = false;
+    const result = buildPlatformEnv("darwin", { A: "1" }, "/Users/ada", () => {
+      probed = true;
+      return "";
+    });
+    expect(result).toEqual({
+      platform: "darwin",
+      env: { A: "1" },
+      home: "/Users/ada",
+      isWsl: false,
+    });
+    // platform !== "linux" short-circuits the `&&`, so /proc is never read.
+    expect(probed).toBe(false);
   });
 
-  it("resolves /mnt/c/Users/<user> under WSL with $USER set", () => {
+  it("maps win32 through unchanged", () => {
     expect(
-      windowsHostUserBase(platform({ isWsl: true, env: { USER: "ada" } })),
-    ).toBe("/mnt/c/Users/ada");
+      buildPlatformEnv("win32", {}, "C:/Users/Ada", () => "").platform,
+    ).toBe("win32");
   });
 
-  it("returns null under WSL when $USER is unset", () => {
-    expect(windowsHostUserBase(platform({ isWsl: true }))).toBeNull();
+  it("treats an unknown platform (e.g. freebsd) as linux", () => {
+    expect(
+      buildPlatformEnv("freebsd", {}, "/home/tester", () => "").platform,
+    ).toBe("linux");
+  });
+
+  it("flags WSL on a linux host whose /proc/version carries the signature", () => {
+    const result = buildPlatformEnv(
+      "linux",
+      {},
+      "/home/tester",
+      () => "Linux version 5.15.0-microsoft-standard-WSL2",
+    );
+    expect(result.isWsl).toBe(true);
+  });
+
+  it("leaves isWsl false on a native linux host", () => {
+    const result = buildPlatformEnv(
+      "linux",
+      {},
+      "/home/tester",
+      () => "Linux version 6.1.0-generic",
+    );
+    expect(result.isWsl).toBe(false);
   });
 });

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  bandsForScope,
   groupConfigTargets,
   groupTargetsForScope,
-  harnessesForBand,
-  harnessInBand,
+  isHarnessInBand,
+  listHarnessesForBand,
+  resolveBandsForScope,
 } from "./configTargets.js";
 import findHarnessById from "./findHarnessById.js";
 import type { PlatformEnv } from "./platformPaths.js";
@@ -54,21 +54,21 @@ const vscode = detected(requireHarness("vscode"));
 const cline = detected(requireHarness("cline"));
 const windsurf = detected(requireHarness("windsurf"));
 
-describe("bandsForScope", () => {
+describe("resolveBandsForScope", () => {
   it("runs both bands (project first) for scope=both", () => {
-    expect(bandsForScope("both")).toEqual(["project", "global"]);
+    expect(resolveBandsForScope("both")).toEqual(["project", "global"]);
   });
 
   it("runs only the global band for scope=global", () => {
-    expect(bandsForScope("global")).toEqual(["global"]);
+    expect(resolveBandsForScope("global")).toEqual(["global"]);
   });
 
   it("runs only the project band for scope=project", () => {
-    expect(bandsForScope("project")).toEqual(["project"]);
+    expect(resolveBandsForScope("project")).toEqual(["project"]);
   });
 });
 
-describe("harnessInBand", () => {
+describe("isHarnessInBand", () => {
   const cases: [HarnessScope, HarnessScope, "project" | "global", boolean][] = [
     // project band takes project + both, never global
     ["project", "both", "project", true],
@@ -87,18 +87,18 @@ describe("harnessInBand", () => {
   it.each(
     cases,
   )("harness %s under scope=%s in %s band → %s", (harnessScope, scope, band, expected) => {
-    expect(harnessInBand(harnessScope, scope, band)).toBe(expected);
+    expect(isHarnessInBand(harnessScope, scope, band)).toBe(expected);
   });
 });
 
-describe("harnessesForBand", () => {
+describe("listHarnessesForBand", () => {
   it("keeps project + both harnesses in the project band", () => {
-    const list = harnessesForBand([vscode, windsurf], "both", "project");
+    const list = listHarnessesForBand([vscode, windsurf], "both", "project");
     expect(list.map((d) => d.harness.id)).toEqual(["vscode"]);
   });
 
   it("keeps only global harnesses in the global band under scope=both", () => {
-    const list = harnessesForBand([vscode, windsurf], "both", "global");
+    const list = listHarnessesForBand([vscode, windsurf], "both", "global");
     expect(list.map((d) => d.harness.id)).toEqual(["windsurf"]);
   });
 });

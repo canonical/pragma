@@ -10,11 +10,11 @@ export {
   writeMcpConfigTo,
 } from "./config.js";
 export {
-  bandsForScope,
   groupConfigTargets,
   groupTargetsForScope,
-  harnessesForBand,
-  harnessInBand,
+  isHarnessInBand,
+  listHarnessesForBand,
+  resolveBandsForScope,
   type ScopeSelection,
   type TargetGroup,
 } from "./configTargets.js";
@@ -28,7 +28,6 @@ export {
   userConfigBase,
   userDataBase,
   userHome,
-  windowsHostUserBase,
 } from "./platformPaths.js";
 export type { DetectContext } from "./signals.js";
 export type {

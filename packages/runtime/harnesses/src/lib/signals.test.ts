@@ -5,7 +5,7 @@ import {
   checkSignal,
   type DetectContext,
   scoreConfidence,
-  signalTier,
+  toSignalTier,
 } from "./signals.js";
 import type { DetectionSignal } from "./types.js";
 
@@ -118,6 +118,50 @@ describe("checkSignal — extension", () => {
         Glob: () => [],
       }),
     ).toBe(false);
+  });
+
+  it("matches an extension installed in a fork dir (Cursor) with vscode absent", () => {
+    const seen: { pattern: string; cwd: string }[] = [];
+    const result = check(signal, ctx(), {
+      Exists: existsAt((path) => path === "/home/tester/.cursor/extensions"),
+      Glob: (effect) => {
+        const glob = effect as Effect & { _tag: "Glob" };
+        seen.push({ pattern: glob.pattern, cwd: glob.cwd });
+        return ["rooveterinaryinc.roo-cline-9.9.9"];
+      },
+    });
+    expect(result).toBe(true);
+    // Only the one existing fork dir is globbed, under the shared <id>-* pattern.
+    expect(seen).toEqual([
+      {
+        pattern: "rooveterinaryinc.roo-cline-*",
+        cwd: "/home/tester/.cursor/extensions",
+      },
+    ]);
+  });
+
+  it("probes every VS Code-family fork extensions dir (guarded by exists)", () => {
+    let globbed = false;
+    const probed: string[] = [];
+    const result = check(signal, ctx(), {
+      Exists: existsAt((path) => {
+        probed.push(path);
+        return false;
+      }),
+      Glob: () => {
+        globbed = true;
+        return [];
+      },
+    });
+    expect(result).toBe(false);
+    // A missing dir is never globbed (globbing an absent dir throws).
+    expect(globbed).toBe(false);
+    expect(probed).toEqual([
+      "/home/tester/.vscode/extensions",
+      "/home/tester/.cursor/extensions",
+      "/home/tester/.vscode-oss/extensions",
+      "/home/tester/.windsurf/extensions",
+    ]);
   });
 });
 
@@ -292,19 +336,19 @@ describe("checkSignal — env", () => {
   });
 });
 
-describe("signalTier", () => {
+describe("toSignalTier", () => {
   it("scores directory and file as high", () => {
-    expect(signalTier({ type: "directory", path: ".x" })).toBe("high");
-    expect(signalTier({ type: "file", path: ".x" })).toBe("high");
+    expect(toSignalTier({ type: "directory", path: ".x" })).toBe("high");
+    expect(toSignalTier({ type: "file", path: ".x" })).toBe("high");
   });
 
   it("scores extension and process as medium", () => {
-    expect(signalTier({ type: "extension", id: "a.b" })).toBe("medium");
-    expect(signalTier({ type: "process", name: "a" })).toBe("medium");
+    expect(toSignalTier({ type: "extension", id: "a.b" })).toBe("medium");
+    expect(toSignalTier({ type: "process", name: "a" })).toBe("medium");
   });
 
   it("scores env as low", () => {
-    expect(signalTier({ type: "env", key: "A" })).toBe("low");
+    expect(toSignalTier({ type: "env", key: "A" })).toBe("low");
   });
 });
 

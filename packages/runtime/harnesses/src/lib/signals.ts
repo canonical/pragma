@@ -103,23 +103,47 @@ const checkProcess = (
 };
 
 /**
+ * The VS Code-family extension roots probed for an `extension` signal, relative
+ * to home. VS Code and its forks each keep their own extensions directory in the
+ * identical `<id>-<version>` layout, so an extension installed under ANY of them
+ * counts: stock VS Code (`~/.vscode`), Cursor (`~/.cursor`), VSCodium
+ * (`~/.vscode-oss`), and Windsurf (`~/.windsurf`).
+ */
+const VSCODE_FAMILY_EXTENSION_ROOTS = [
+  ".vscode",
+  ".cursor",
+  ".vscode-oss",
+  ".windsurf",
+] as const;
+
+/**
  * Check an `extension` signal: whether any installed VS Code-family extension
- * directory matches `<id>-<version>`. Extensions live under `~/.vscode/extensions`
- * (the same layout on every platform), so that home-based dir is globbed — but
- * only after confirming it exists, since globbing a missing directory throws.
+ * directory matches `<id>-<version>`. VS Code and its forks (Cursor, VSCodium,
+ * Windsurf) keep extensions under the same `<root>/extensions` layout, so every
+ * known family root ({@link VSCODE_FAMILY_EXTENSION_ROOTS}) is probed and ANY
+ * match counts. Each directory is confirmed to exist before it is globbed, since
+ * globbing a missing directory throws.
  */
 const checkExtension = (
   signal: Extract<DetectionSignal, { type: "extension" }>,
   ctx: DetectContext,
 ): Task<boolean> => {
-  const extensionsDir = join(userHome(ctx.platform), ".vscode", "extensions");
-  return flatMap(exists(extensionsDir), (dirExists) =>
-    dirExists
-      ? map(
-          glob(`${signal.id}-*`, extensionsDir),
-          (matches) => matches.length > 0,
-        )
-      : pure(false),
+  const home = userHome(ctx.platform);
+  const extensionDirs = VSCODE_FAMILY_EXTENSION_ROOTS.map((root) =>
+    join(home, root, "extensions"),
+  );
+  return map(
+    traverse(extensionDirs, (extensionsDir) =>
+      flatMap(exists(extensionsDir), (dirExists) =>
+        dirExists
+          ? map(
+              glob(`${signal.id}-*`, extensionsDir),
+              (matches) => matches.length > 0,
+            )
+          : pure(false),
+      ),
+    ),
+    (results) => results.some(Boolean),
   );
 };
 
@@ -168,7 +192,7 @@ export const checkSignal = (
  * @param signal - The matched signal.
  * @returns Its confidence tier.
  */
-export const signalTier = (signal: DetectionSignal): Confidence => {
+export const toSignalTier = (signal: DetectionSignal): Confidence => {
   switch (signal.type) {
     case "directory":
     case "file":
@@ -195,7 +219,7 @@ export const scoreConfidence = (
 ): Confidence | null => {
   const matched = signals
     .filter((_signal, index) => results.at(index) === true)
-    .map(signalTier);
+    .map(toSignalTier);
   if (matched.length === 0) return null;
   return matched.reduce((best, tier) =>
     CONFIDENCE_RANK[tier] < CONFIDENCE_RANK[best] ? tier : best,
