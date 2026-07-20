@@ -26,6 +26,7 @@ import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import {
   createRelayRuntimeNetwork,
   httpExecutor,
+  persistedQueryMiddleware,
   type RelayRuntimeFetch,
   urlMiddleware,
 } from "relay-runtime-network";
@@ -74,12 +75,27 @@ const readConfiguredGraphqlUrl = (): string | undefined => {
     : undefined;
 };
 
-/** Builds the HTTP network that posts operations to `graphqlUrl`. */
+/**
+ * Builds the HTTP network that posts operations to `graphqlUrl`.
+ *
+ * `persistedQueryMiddleware` is the pipeline's request shaper — the fetch
+ * envelope starts with `body: null`, and without a body-writing middleware
+ * every POST goes out empty and the server answers 400 "Missing query".
+ * Our compiled artifacts carry no persisted ids, so the full-text fallback
+ * always fires (`{operationName, variables, query}` + JSON content type);
+ * if persisted queries ever land, this wiring upgrades to ids automatically.
+ */
 const createHttpNetwork = (graphqlUrl: string) =>
   createRelayRuntimeNetwork({
     fetch: {
       executor: httpExecutor(),
-      middlewares: [urlMiddleware({ url: graphqlUrl })],
+      middlewares: [
+        urlMiddleware({ url: graphqlUrl }),
+        persistedQueryMiddleware({
+          fallbackToFullText: true,
+          mode: "manifest",
+        }),
+      ],
     },
   });
 

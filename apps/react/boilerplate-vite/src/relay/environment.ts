@@ -24,6 +24,7 @@ import {
   createRelayRuntimeNetwork,
   httpExecutor,
   localGraphExecutor,
+  persistedQueryMiddleware,
   type RelayFetchContext,
   type RelayRuntimeFetch,
   urlMiddleware,
@@ -75,12 +76,26 @@ const createLocalNetwork = () =>
     },
   });
 
-/** Builds the HTTP network that posts operations to `graphqlUrl`. */
+/**
+ * Builds the HTTP network that posts operations to `graphqlUrl`.
+ *
+ * `persistedQueryMiddleware` is the pipeline's request shaper — the fetch
+ * envelope starts with `body: null`, and without a body-writing middleware
+ * every POST goes out empty and the server answers 400 "Missing query".
+ * Full-text fallback always fires today (no persisted ids); the wiring
+ * upgrades to ids automatically if they ever land.
+ */
 const createHttpNetwork = (graphqlUrl: string) =>
   createRelayRuntimeNetwork({
     fetch: {
       executor: httpExecutor(),
-      middlewares: [urlMiddleware({ url: graphqlUrl })],
+      middlewares: [
+        urlMiddleware({ url: graphqlUrl }),
+        persistedQueryMiddleware({
+          fallbackToFullText: true,
+          mode: "manifest",
+        }),
+      ],
     },
   });
 
