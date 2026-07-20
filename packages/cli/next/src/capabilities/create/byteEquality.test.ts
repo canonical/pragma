@@ -184,11 +184,14 @@ const cases: Case[] = [
     name: "application",
     kind: "application",
     framework: "",
+    // The pragma path receives the CLI `--with-X` params (AV-228 B8); the summon
+    // path receives the generator's bare prompt names. runCreate's boundary remap
+    // (`withSsr` -> `ssr`, ...) makes both produce the byte-identical tree.
     params: {
       appPath: "my-app",
-      ssr: true,
-      router: true,
-      forms: true,
+      withSsr: true,
+      withRouter: true,
+      withForms: true,
       relay: false,
       runInstall: false,
     },
