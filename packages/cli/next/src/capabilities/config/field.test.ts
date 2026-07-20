@@ -86,6 +86,24 @@ describe("config setters — covenant-exact emission (PROTECTED)", () => {
   });
 });
 
+describe("config setters — soft deprecation toward `config set` (B3)", () => {
+  it("each frozen field-verb steers writers to the unified `config set` form", () => {
+    for (const field of ["tier", "channel", "detail"] as const) {
+      expect(verbOf(field).doc).toContain(`config set ${field} <value>`);
+    }
+  });
+
+  it("`config set` itself carries no such hint (it IS the preferred form)", () => {
+    const setVerb = configModule.verbs.find((v) => v.path[1] === "set");
+    expect(setVerb?.doc).not.toContain("Prefer the unified");
+  });
+
+  it("the hint is doc-only — the emitted covenant slice is unchanged", () => {
+    // `doc` is not part of the emitted surface, so the frozen shape still holds.
+    expect(emitVerb(tierVerb)).toMatchObject({ v: "tier", mcp: "config_tier" });
+  });
+});
+
 describe("config setters — write & reset", () => {
   it("set writes the field to the GLOBAL config and never boots the store", async () => {
     const rt: PragmaRuntime = bootRuntime(FLAGS, tmp("pragma-proj-"));
