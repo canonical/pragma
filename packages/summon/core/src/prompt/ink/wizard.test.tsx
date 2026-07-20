@@ -12,7 +12,7 @@
 
 import { promptEffect, writeFile, writeFileEffect } from "@canonical/task";
 import { render } from "ink-testing-library";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { CONFIRM_ANSWER_KEY } from "../../execute/execute.js";
 import type GeneratorDefinition from "../../types/GeneratorDefinition.js";
 import type { PromptEffect } from "../types.js";
@@ -90,6 +90,18 @@ const gate = (): PromptEffect =>
     message: "Proceed?",
     default: true,
   }) as PromptEffect;
+const select = (
+  name: string,
+  message: string,
+  choices: Array<{ label: string; value: string }>,
+): PromptEffect =>
+  promptEffect({ type: "select", name, message, choices }) as PromptEffect;
+const multiselect = (
+  name: string,
+  message: string,
+  choices: Array<{ label: string; value: string }>,
+): PromptEffect =>
+  promptEffect({ type: "multiselect", name, message, choices }) as PromptEffect;
 
 describe("create wizard (PROTECTED)", () => {
   it("runs prompt sequence → preview/confirm → completion", async () => {
@@ -179,6 +191,53 @@ describe("cancelled frame is truthful about files written (H2)", () => {
       await waitFor(() => (lastFrame() ?? "").includes("Cancelled."));
       expect(lastFrame()).toContain("No files were written.");
     } finally {
+      unmount();
+    }
+  }, 20000);
+});
+
+describe("degenerate-choice prompt wiring (C4)", () => {
+  // Neither case drives stdin: the select auto-resolves on mount via its own
+  // effect, and the empty multiselect is a static error frame. Both therefore
+  // stay clear of the one-live-INTERACTIVE-render caveat above (like the
+  // cancelled-frame renders), so they can each stand up their own render.
+  it("auto-resolves a forced single-choice select exactly once, with no keystroke and no loop", async () => {
+    const c = new SessionController(gen);
+    const submitSpy = vi.spyOn(c, "submitAnswer");
+    const { lastFrame, unmount } = render(<Wizard controller={c} />);
+    const frame = (): string => lastFrame() ?? "";
+    try {
+      await waitFor(() => frame().includes("component/react"));
+      void c.request(
+        select("framework", "Framework:", [{ label: "React", value: "react" }]),
+      );
+      await waitFor(() => c.getSnapshot().answers.framework === "react");
+      // Let any stray effect re-fire settle — it must be a no-op, not a loop.
+      await new Promise((r) => setTimeout(r, 60));
+      expect(c.getSnapshot().answers.framework).toBe("react");
+      expect(submitSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      submitSpy.mockRestore();
+      unmount();
+    }
+  }, 20000);
+
+  it("renders a clear error for a zero-choice multiselect instead of a silent dead-end", async () => {
+    const c = new SessionController(gen);
+    const submitSpy = vi.spyOn(c, "submitAnswer");
+    const { lastFrame, unmount } = render(<Wizard controller={c} />);
+    const frame = (): string => lastFrame() ?? "";
+    try {
+      await waitFor(() => frame().includes("component/react"));
+      void c.request(multiselect("features", "Features:", []));
+      await waitFor(() => frame().includes("No options are available"));
+      expect(frame()).toContain("Press Escape or Ctrl-C to");
+      // The dead-end must not auto-submit an empty answer; only Escape/Ctrl-C
+      // may leave it.
+      expect(c.getSnapshot().answers.features).toBeUndefined();
+      expect(submitSpy).not.toHaveBeenCalled();
+    } finally {
+      submitSpy.mockRestore();
       unmount();
     }
   }, 20000);
