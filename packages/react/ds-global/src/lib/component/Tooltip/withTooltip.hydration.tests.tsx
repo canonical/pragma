@@ -2,26 +2,24 @@ import { act } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import TooltipArea from "./TooltipArea.js";
+import { withTooltip } from "./index.js";
 
 /**
- * Unlike TooltipArea.tests.tsx, this file deliberately does NOT mock
+ * Unlike withTooltip.tests.tsx, this file deliberately does NOT mock
  * `createPortal` — it exercises the real server/client contract: server HTML
  * must hydrate without a recoverable-error (React 19 reports hydration
  * mismatches through `onRecoverableError`, not `console.error`), and the
  * message must portal into the document body only after mount.
  */
-describe("TooltipArea (hydration)", () => {
+describe("withTooltip (hydration)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
   it("hydrates server HTML with no recoverable error and portals the message after mount", () => {
-    const ui = (
-      <TooltipArea Message="Helpful message">
-        <button type="button">Trigger</button>
-      </TooltipArea>
-    );
+    const Trigger = () => <button type="button">Trigger</button>;
+    const Tooltipped = withTooltip(Trigger, "Helpful message");
+    const ui = <Tooltipped />;
 
     const container = document.createElement("div");
     container.innerHTML = renderToString(ui);
