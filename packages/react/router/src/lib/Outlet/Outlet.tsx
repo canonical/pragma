@@ -8,6 +8,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import useRouter from "../hooks/useRouter.js";
+import RouteErrorBoundary from "./RouteErrorBoundary.js";
 import type { OutletProps } from "./types.js";
 
 /**
@@ -26,9 +27,14 @@ import type { OutletProps } from "./types.js";
  * is itself a function component — and hooks are legal in both content and
  * wrapper components.
  *
- * Component-level render errors (e.g. a route's error component itself throws)
- * propagate past `Outlet`. Wrap it in a React `ErrorBoundary` to catch those.
- * The router handles data errors (fetch failures, status codes); React handles
+ * Routes may declare a `fallback` (pending UI overriding the `Outlet`-level
+ * `fallback` prop within the route-keyed `Suspense`) and an `errorComponent`
+ * (rendered with `{ error }` behind an internal route-keyed error boundary
+ * that resets when the matched route changes).
+ *
+ * Without a route `errorComponent`, component-level render errors propagate
+ * past `Outlet`. Wrap it in a React `ErrorBoundary` to catch those. The
+ * router handles data errors (fetch failures, status codes); React handles
  * render errors.
  */
 export default function Outlet({ fallback = null }: OutletProps): ReactElement {
@@ -96,8 +102,27 @@ export default function Outlet({ fallback = null }: OutletProps): ReactElement {
     );
   }
 
+  const errorComponent = match?.route.errorComponent as
+    | ComponentType<{ readonly error: unknown }>
+    | undefined;
+
+  if (errorComponent) {
+    rendered = (
+      <RouteErrorBoundary errorComponent={errorComponent}>
+        {rendered}
+      </RouteErrorBoundary>
+    );
+  }
+
+  // The route-level fallback (a ReactNode, like Outlet's own prop) overrides
+  // the Outlet-level default within the route-keyed Suspense.
+  const routeFallback =
+    match && match.route.fallback !== undefined
+      ? (match.route.fallback as ReactNode)
+      : fallback;
+
   return (
-    <Suspense key={routeKey} fallback={fallback}>
+    <Suspense key={routeKey} fallback={routeFallback}>
       {rendered}
     </Suspense>
   );

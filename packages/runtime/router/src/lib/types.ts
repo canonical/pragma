@@ -220,6 +220,24 @@ export type RouteComponent<
 /** The untyped form of `RouteComponent`, mirroring `AnyRouteContent`. */
 export type AnyRouteComponent = AnyRouteContent;
 
+/** Props received by a route's `errorComponent`. */
+export interface RouteErrorComponentProps {
+  readonly error: unknown;
+}
+
+/**
+ * A component rendered in place of a route's UI when rendering it throws.
+ *
+ * Framework adapters (e.g. `router-react`'s `Outlet`) compose it behind an
+ * error boundary that resets when the matched route changes. Expressed as a
+ * plain callback so core stays framework-agnostic; any function component
+ * satisfies it.
+ */
+export type RouteErrorComponent = BivariantCallback<
+  [props: RouteErrorComponentProps],
+  unknown
+>;
+
 export interface DataRouteInput<
   TPath extends string = string,
   TSearchSchema extends SchemaLike<unknown> | undefined = undefined,
@@ -260,6 +278,19 @@ export interface DataRouteInput<
   readonly search?: TSearchSchema;
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
+  /**
+   * Adapter-interpreted pending UI shown while the route's suspended output
+   * resolves, overriding the outlet-level default. In `router-react` this is
+   * a `ReactNode` (matching `Outlet`'s `fallback` prop); core treats it as
+   * an opaque slot.
+   */
+  readonly fallback?: unknown;
+  /**
+   * Component rendered in place of the route's UI when rendering it throws.
+   * Receives `{ error }`. Composed behind a route-keyed error boundary by
+   * framework adapters; core never invokes it.
+   */
+  readonly errorComponent?: RouteErrorComponent;
 }
 
 export type StaticRedirectStatus = 301 | 308;
@@ -328,6 +359,18 @@ export interface DataRouteDefinition<
   readonly search?: TSearchSchema;
   readonly wrappers: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
+  /**
+   * Adapter-interpreted pending UI shown while the route's suspended output
+   * resolves, overriding the outlet-level default. In `router-react` this is
+   * a `ReactNode`; core treats it as an opaque slot.
+   */
+  readonly fallback?: unknown;
+  /**
+   * Component rendered in place of the route's UI when rendering it throws.
+   * Receives `{ error }`. Composed behind a route-keyed error boundary by
+   * framework adapters; core never invokes it.
+   */
+  readonly errorComponent?: RouteErrorComponent;
 }
 
 export interface RedirectRouteDefinition<
@@ -374,6 +417,8 @@ export interface AnyRoute {
   readonly status?: number;
   readonly wrappers: readonly AnyWrapper[];
   readonly meta?: Readonly<Record<string, unknown>>;
+  readonly fallback?: unknown;
+  readonly errorComponent?: RouteErrorComponent;
   parse(url: string | URL): Readonly<Record<string, unknown>> | null;
   render(params: Readonly<Record<string, unknown>>): string;
 }
