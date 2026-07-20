@@ -11,7 +11,7 @@ import StandardsIndex from "./StandardsIndex.js";
 /** Name-compatible bare route so the list's links resolve without
  * mounting the app's real pages. */
 const bareRoutes = {
-  standardEntity: route({ url: "/standards/:uri", content: () => null }),
+  standardEntity: route({ url: "/standards/:uri", component: () => null }),
 } as const;
 
 /**

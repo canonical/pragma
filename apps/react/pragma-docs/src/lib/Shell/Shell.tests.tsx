@@ -17,13 +17,13 @@ import type { StripSlotsEntry } from "./types.js";
  * with the home route's `meta` injectable for the strip-claim tests. */
 const bareRoutes = (homeMeta?: Readonly<Record<string, unknown>>): RouteMap =>
   ({
-    home: route({ url: "/", content: () => null, meta: homeMeta }),
-    components: route({ url: "/components", content: () => null }),
-    definitions: route({ url: "/definitions", content: () => null }),
-    standards: route({ url: "/standards", content: () => null }),
-    guides: route({ url: "/guides", content: () => null }),
-    playground: route({ url: "/playground", content: () => null }),
-    account: route({ url: "/account", content: () => null }),
+    home: route({ url: "/", component: () => null, meta: homeMeta }),
+    components: route({ url: "/components", component: () => null }),
+    definitions: route({ url: "/definitions", component: () => null }),
+    standards: route({ url: "/standards", component: () => null }),
+    guides: route({ url: "/guides", component: () => null }),
+    playground: route({ url: "/playground", component: () => null }),
+    account: route({ url: "/account", component: () => null }),
   }) as const;
 
 const renderShell = (

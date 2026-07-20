@@ -20,10 +20,10 @@ vi.mock("../routes.js", async () => {
   const { ROUTE_QUERY_META_KEY } = await import("#relay/routeQuery.js");
   return {
     appRoutes: {
-      home: route({ url: "/", content: () => null }),
+      home: route({ url: "/", component: () => null }),
       playground: route({
         url: "/playground",
-        content: () => null,
+        component: () => null,
         meta: {
           [ROUTE_QUERY_META_KEY]: {
             query: { params: { text: "query ProbeQuery { __typename }" } },
@@ -33,7 +33,7 @@ vi.mock("../routes.js", async () => {
       }),
     },
     middleware: [],
-    notFoundRoute: route({ url: "/not-found", content: () => null }),
+    notFoundRoute: route({ url: "/not-found", component: () => null }),
   };
 });
 

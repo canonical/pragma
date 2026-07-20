@@ -53,15 +53,15 @@ const stripEntry: StripSlotsEntry = {
 const claimRoutes: RouteMap = {
   home: route({
     url: "/",
-    content: () => null,
+    component: () => null,
     meta: { [SHELL_STRIP_META_KEY]: stripEntry },
   }),
-  components: route({ url: "/components", content: () => null }),
-  definitions: route({ url: "/definitions", content: () => null }),
-  standards: route({ url: "/standards", content: () => null }),
-  guides: route({ url: "/guides", content: () => null }),
-  playground: route({ url: "/playground", content: () => null }),
-  account: route({ url: "/account", content: () => null }),
+  components: route({ url: "/components", component: () => null }),
+  definitions: route({ url: "/definitions", component: () => null }),
+  standards: route({ url: "/standards", component: () => null }),
+  guides: route({ url: "/guides", component: () => null }),
+  playground: route({ url: "/playground", component: () => null }),
+  account: route({ url: "/account", component: () => null }),
 } as const;
 
 /**

@@ -1,5 +1,4 @@
 import { route } from "@canonical/router-core";
-import { createElement } from "react";
 import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
 import type { StripSlotsEntry } from "#lib/Shell/types.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
@@ -24,20 +23,14 @@ import { componentEntityRouteEntry } from "./entityQuery.js";
  * lens name, stationary across the lens's URLs; controls/status stay
  * unclaimed in v1.
  *
- * `content` must CREATE an element (`createElement`/JSX), never BE the page
- * component: the router's `render()` invokes `content(...)` as a plain
- * function during `Outlet`'s render, so a bare component reference runs the
- * page's hooks in Outlet's own hook list — SSR and single-URL hydration
- * stay coincidentally green, and the first client-side navigation between
- * pages with different hook counts throws "Rendered fewer hooks than
- * expected". The component-reference form type-checks identically, which is
- * exactly why this rule needs stating.
+ * Routes declare `component:` — bare page components; the Outlet renders
+ * them as real fibers with their own hook lists (AV-340 / PR #880).
+ * `content:` is deprecated.
  */
 const routes = {
   components: route({
     url: "/components",
-    // Propless: the catalog page reads no route params/search.
-    content: () => createElement(ComponentsCatalogPage),
+    component: ComponentsCatalogPage,
     prefetch: (params, search) => {
       warmRouteQuery(componentsCatalogRouteEntry, params, search);
     },
@@ -50,7 +43,7 @@ const routes = {
   }),
   componentEntity: route({
     url: "/components/:uri",
-    content: (props) => createElement(ComponentEntityPage, props),
+    component: ComponentEntityPage,
     prefetch: (params, search) => {
       warmRouteQuery(componentEntityRouteEntry, params, search);
     },

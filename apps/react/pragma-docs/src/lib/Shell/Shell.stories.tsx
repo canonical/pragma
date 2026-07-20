@@ -8,13 +8,13 @@ import Shell from "./Shell.js";
 /** Name-compatible bare routes so the rail's links resolve without
  * mounting the app's real pages (whose wrapper would nest a Shell). */
 const bareRoutes = {
-  home: route({ url: "/", content: () => null }),
-  components: route({ url: "/components", content: () => null }),
-  definitions: route({ url: "/definitions", content: () => null }),
-  standards: route({ url: "/standards", content: () => null }),
-  guides: route({ url: "/guides", content: () => null }),
-  playground: route({ url: "/playground", content: () => null }),
-  account: route({ url: "/account", content: () => null }),
+  home: route({ url: "/", component: () => null }),
+  components: route({ url: "/components", component: () => null }),
+  definitions: route({ url: "/definitions", component: () => null }),
+  standards: route({ url: "/standards", component: () => null }),
+  guides: route({ url: "/guides", component: () => null }),
+  playground: route({ url: "/playground", component: () => null }),
+  account: route({ url: "/account", component: () => null }),
 } as const;
 
 const meta: Meta<typeof Shell> = {

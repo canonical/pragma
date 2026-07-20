@@ -6,7 +6,7 @@ import ComponentsCatalogPage from "./ComponentsCatalogPage.js";
 /** Name-compatible bare route so card links resolve without mounting the
  * app's real pages. */
 const bareRoutes = {
-  componentEntity: route({ url: "/components/:uri", content: () => null }),
+  componentEntity: route({ url: "/components/:uri", component: () => null }),
 } as const;
 
 /**

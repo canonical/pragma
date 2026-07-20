@@ -9,7 +9,7 @@ import { definitionsExplorerVariables } from "../definitionsQuery.js";
 import HierarchyWell from "./HierarchyWell.js";
 
 const bareRoutes = {
-  definitionsTerm: route({ url: "/definitions/:term", content: () => null }),
+  definitionsTerm: route({ url: "/definitions/:term", component: () => null }),
 } as const;
 
 /**

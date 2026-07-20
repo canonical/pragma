@@ -20,7 +20,7 @@ import LensPlaceholder from "./LensPlaceholder.js";
 const routes = {
   guides: route({
     url: "/guides",
-    content: () => (
+    component: () => (
       <LensPlaceholder
         builtBy="P-5 (reading views)"
         lands="Long-form reading: foundations, setup, the analog map — prose that references entities through chips."

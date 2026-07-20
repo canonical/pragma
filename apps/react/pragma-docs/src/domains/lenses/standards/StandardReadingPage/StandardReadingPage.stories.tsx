@@ -6,8 +6,8 @@ import StandardReadingPage from "./StandardReadingPage.js";
 /** Name-compatible bare routes so the breadcrumb and the article's
  * extends links resolve without mounting the app's real pages. */
 const bareRoutes = {
-  standards: route({ url: "/standards", content: () => null }),
-  standardEntity: route({ url: "/standards/:uri", content: () => null }),
+  standards: route({ url: "/standards", component: () => null }),
+  standardEntity: route({ url: "/standards/:uri", component: () => null }),
 } as const;
 
 /**

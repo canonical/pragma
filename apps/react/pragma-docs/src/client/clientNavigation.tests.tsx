@@ -10,8 +10,9 @@
  * so it compiles) therefore runs the page's hooks in OUTLET's hook list —
  * SSR and single-URL hydration stay green, and the first client navigation
  * between pages with different hook counts throws "Rendered fewer hooks
- * than expected". All routes now wire element-creating arrows
- * (`createElement(Page, props)`); this test fails if any regresses.
+ * than expected". Routes now declare `component:` and the router renders
+ * them as real fibers (AV-340 / PR #880); this test remains the app-level
+ * pin over that path.
  */
 
 import { HeadProvider } from "@canonical/react-head";

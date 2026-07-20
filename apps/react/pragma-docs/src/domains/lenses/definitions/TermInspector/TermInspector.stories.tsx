@@ -9,8 +9,8 @@ import { definitionsExplorerVariables } from "../definitionsQuery.js";
 import TermInspector from "./TermInspector.js";
 
 const bareRoutes = {
-  definitionsTerm: route({ url: "/definitions/:term", content: () => null }),
-  componentEntity: route({ url: "/components/:uri", content: () => null }),
+  definitionsTerm: route({ url: "/definitions/:term", component: () => null }),
+  componentEntity: route({ url: "/components/:uri", component: () => null }),
 } as const;
 
 /**

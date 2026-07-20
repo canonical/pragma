@@ -12,7 +12,7 @@ import CatalogItem from "./CatalogItem.js";
 /** Name-compatible bare route so the card's link resolves without
  * mounting the app's real pages. */
 const bareRoutes = {
-  componentEntity: route({ url: "/components/:uri", content: () => null }),
+  componentEntity: route({ url: "/components/:uri", component: () => null }),
 } as const;
 
 /**

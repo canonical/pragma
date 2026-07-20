@@ -1,5 +1,4 @@
 import { route } from "@canonical/router-core";
-import { createElement } from "react";
 import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
 import type { StripSlotsEntry } from "#lib/Shell/types.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
@@ -22,15 +21,11 @@ import { definitionsRouteEntry } from "./definitionsQuery.js";
  * Both routes claim the mode strip's context socket ("Definitions").
  * Controls/status stay UNCLAIMED — honestly empty: the ontology surface
  * carries no governance/status fields to put there.
- *
- * `content` creates an element, never IS the page component — a bare
- * reference runs the page's hooks inside Outlet's render and breaks client
- * navigation (full rationale: src/domains/components/routes.ts).
  */
 const routes = {
   definitions: route({
     url: "/definitions",
-    content: (props) => createElement(DefinitionsPage, props),
+    component: DefinitionsPage,
     prefetch: (params, search) => {
       warmRouteQuery(definitionsRouteEntry, params, search);
     },
@@ -43,7 +38,7 @@ const routes = {
   }),
   definitionsTerm: route({
     url: "/definitions/:term",
-    content: (props) => createElement(DefinitionsPage, props),
+    component: DefinitionsPage,
     prefetch: (params, search) => {
       warmRouteQuery(definitionsRouteEntry, params, search);
     },

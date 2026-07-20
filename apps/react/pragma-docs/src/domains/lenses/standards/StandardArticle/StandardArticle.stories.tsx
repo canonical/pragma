@@ -10,7 +10,7 @@ import StandardArticle from "./StandardArticle.js";
 /** Name-compatible bare route so the extends links resolve without
  * mounting the app's real pages. */
 const bareRoutes = {
-  standardEntity: route({ url: "/standards/:uri", content: () => null }),
+  standardEntity: route({ url: "/standards/:uri", component: () => null }),
 } as const;
 
 /**

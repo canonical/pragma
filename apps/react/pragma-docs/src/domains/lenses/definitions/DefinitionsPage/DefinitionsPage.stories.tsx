@@ -6,8 +6,8 @@ import DefinitionsPage from "./DefinitionsPage.js";
 /** Name-compatible bare routes so term/instance links resolve without
  * mounting the app's real pages. */
 const bareRoutes = {
-  definitionsTerm: route({ url: "/definitions/:term", content: () => null }),
-  componentEntity: route({ url: "/components/:uri", content: () => null }),
+  definitionsTerm: route({ url: "/definitions/:term", component: () => null }),
+  componentEntity: route({ url: "/components/:uri", component: () => null }),
 } as const;
 
 /**

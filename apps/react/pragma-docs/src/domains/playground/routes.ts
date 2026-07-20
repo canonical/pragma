@@ -1,5 +1,4 @@
 import { route } from "@canonical/router-core";
-import { createElement } from "react";
 import {
   ROUTE_QUERY_META_KEY,
   type RouteQueryEntry,
@@ -13,9 +12,7 @@ import {
 const routes = {
   playground: route({
     url: "/playground",
-    // Element-creating arrow, never the bare component — see the rationale
-    // in src/domains/components/routes.ts (Outlet hook attribution).
-    content: (props) => createElement(PlaygroundPage, props),
+    component: PlaygroundPage,
     // The server bricks execute this entry in-process before rendering and
     // serialise the resulting store into `__INITIAL_DATA__.relay.records`
     // (see src/server/prepareRelayData.ts). The route has no params and no
