@@ -6,8 +6,9 @@
  */
 
 import { describeEffect, type Effect } from "@canonical/task";
-import { Box, Text, useInput } from "ink";
+import { Box, Static, Text, useInput } from "ink";
 import { useEffect, useState } from "react";
+import { truncateMiddle } from "./progressWindow.js";
 import { AnswersTable, ProgressHeader, QuestionView } from "./prompts.js";
 import { Spinner } from "./Spinner.js";
 import type { SessionController, WizardState } from "./session.js";
@@ -80,7 +81,15 @@ const EffectsSummary = ({ effects }: { effects: readonly Effect[] }) => {
   );
 };
 
-/** Live progress: the file effects completed so far. */
+/**
+ * Live progress: the file effects completed so far.
+ *
+ * The completed lines render under Ink's `<Static>` (C7): each is printed ONCE,
+ * to the scrollback above the live region, instead of the whole history being
+ * re-rendered on every new effect — the flicker/scroll a big scaffold otherwise
+ * caused. Each line is middle-truncated so a long path stays on ONE row. Only
+ * the trailing spinner remains in the live (re-rendered) frame.
+ */
 const Progress = ({ state }: { state: WizardState }) => {
   const shown = state.progress.filter(
     (t) =>
@@ -95,12 +104,15 @@ const Progress = ({ state }: { state: WizardState }) => {
   );
   return (
     <Box flexDirection="column">
-      {shown.map((t, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
-        <Text key={`${t.effect._tag}-${i}`}>
-          <Text color="green">✓</Text> {describeEffect(t.effect)}
-        </Text>
-      ))}
+      <Static items={shown}>
+        {(t, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: append-only progress; a path may repeat
+          <Text key={`${t.effect._tag}-${i}`}>
+            <Text color="green">✓</Text>{" "}
+            {truncateMiddle(describeEffect(t.effect))}
+          </Text>
+        )}
+      </Static>
       {state.phase === "executing" && (
         <Box>
           <Spinner color="blue" label="Generating…" />
@@ -160,6 +172,11 @@ export const Wizard = ({ controller }: WizardProps) => {
           <AnswersTable prompts={generator.prompts} answers={state.answers} />
           <QuestionView
             question={state.activeQuestion.question}
+            validate={
+              generator.prompts.find(
+                (p) => p.name === state.activeQuestion?.question.name,
+              )?.validate
+            }
             onSubmit={(value) => controller.submitAnswer(value)}
             onCancel={() => controller.cancel()}
           />
