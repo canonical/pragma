@@ -146,8 +146,8 @@ describe("detectHarnesses", () => {
           "Glob",
           (effect) =>
             (effect as Effect & { _tag: "Glob"; pattern: string }).pattern ===
-            "saoudrizwan.claude-dev-*"
-              ? ["saoudrizwan.claude-dev-3.20.0"]
+            "saoudrizwan.claude-dev-*/package.json"
+              ? ["saoudrizwan.claude-dev-3.20.0/package.json"]
               : [],
         ],
       ]),

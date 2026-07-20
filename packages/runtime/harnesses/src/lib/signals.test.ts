@@ -88,12 +88,14 @@ describe("checkSignal — extension", () => {
       Glob: (effect) => {
         const glob = effect as Effect & { _tag: "Glob" };
         seen.push({ pattern: glob.pattern, cwd: glob.cwd });
-        return ["rooveterinaryinc.roo-cline-1.2.3"];
+        return ["rooveterinaryinc.roo-cline-1.2.3/package.json"];
       },
     });
     expect(result).toBe(true);
+    // The pattern targets the manifest inside the versioned dir (the glob effect
+    // lists files only, so the directory entry itself would never match).
     expect(seen[0]).toEqual({
-      pattern: "rooveterinaryinc.roo-cline-*",
+      pattern: "rooveterinaryinc.roo-cline-*/package.json",
       cwd: "/home/tester/.vscode/extensions",
     });
   });
@@ -127,14 +129,14 @@ describe("checkSignal — extension", () => {
       Glob: (effect) => {
         const glob = effect as Effect & { _tag: "Glob" };
         seen.push({ pattern: glob.pattern, cwd: glob.cwd });
-        return ["rooveterinaryinc.roo-cline-9.9.9"];
+        return ["rooveterinaryinc.roo-cline-9.9.9/package.json"];
       },
     });
     expect(result).toBe(true);
-    // Only the one existing fork dir is globbed, under the shared <id>-* pattern.
+    // Only the one existing fork dir is globbed, under the shared manifest pattern.
     expect(seen).toEqual([
       {
-        pattern: "rooveterinaryinc.roo-cline-*",
+        pattern: "rooveterinaryinc.roo-cline-*/package.json",
         cwd: "/home/tester/.cursor/extensions",
       },
     ]);

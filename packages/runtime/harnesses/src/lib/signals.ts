@@ -118,11 +118,17 @@ const VSCODE_FAMILY_EXTENSION_ROOTS = [
 
 /**
  * Check an `extension` signal: whether any installed VS Code-family extension
- * directory matches `<id>-<version>`. VS Code and its forks (Cursor, VSCodium,
- * Windsurf) keep extensions under the same `<root>/extensions` layout, so every
- * known family root ({@link VSCODE_FAMILY_EXTENSION_ROOTS}) is probed and ANY
- * match counts. Each directory is confirmed to exist before it is globbed, since
- * globbing a missing directory throws.
+ * directory `<id>-<version>/` is present. VS Code and its forks (Cursor,
+ * VSCodium, Windsurf) keep extensions under the same `<root>/extensions` layout,
+ * so every known family root ({@link VSCODE_FAMILY_EXTENSION_ROOTS}) is probed
+ * and ANY match counts. Each directory is confirmed to exist before it is
+ * globbed, since globbing a missing directory throws.
+ *
+ * The pattern targets the `package.json` MANIFEST inside each versioned
+ * extension directory, not the directory itself: the `glob` effect lists files
+ * only, so a bare `<id>-<version>` directory entry would never match — but every
+ * VS Code extension carries a `package.json` at its root, so globbing for that
+ * manifest under each versioned directory reliably resolves an installed one.
  */
 const checkExtension = (
   signal: Extract<DetectionSignal, { type: "extension" }>,
@@ -137,7 +143,7 @@ const checkExtension = (
       flatMap(exists(extensionsDir), (dirExists) =>
         dirExists
           ? map(
-              glob(`${signal.id}-*`, extensionsDir),
+              glob(`${signal.id}-*/package.json`, extensionsDir),
               (matches) => matches.length > 0,
             )
           : pure(false),
