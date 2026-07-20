@@ -59,6 +59,10 @@ const EntityContent = ({
     },
   );
   const component = data.component;
+  // Titles are client-only: the head hook writes `document.title` in an
+  // effect. This app's SSR path emits no `<title>` (EntryServer mounts
+  // HeadProvider without a collector), so nothing here rides an
+  // SSR-escaping path (P-5 Relay/SSR review).
   useHead(
     {
       title: `${component ? (component.name ?? component.uri) : "Component not found"} — Pragma docs`,

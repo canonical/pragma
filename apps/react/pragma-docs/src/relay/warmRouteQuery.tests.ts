@@ -11,6 +11,8 @@
 
 import type { FetchFunction } from "relay-runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { componentsCatalogRouteEntry } from "#domains/components/catalogQuery.js";
+import { componentEntityRouteEntry } from "#domains/components/entityQuery.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import {
   componentProbeQueryNode,
@@ -41,14 +43,36 @@ describe("warmRouteQuery", () => {
     expect(() => warmRouteQuery(entry, {}, {})).not.toThrow();
   });
 
-  it("fetches exactly once against a cold store", () => {
-    const fetchFn = createFetchSpy();
-    setPrefetchEnvironment(createEnvironment({ fetchFn }));
+  // The cold-store case runs over every real lens entry, not just the
+  // playground probe: the catalog (no params) and the entity page (params
+  // driven through `entry.variables` the way the route's prefetch would).
+  const coldStoreCases: ReadonlyArray<{
+    label: string;
+    coldEntry: RouteQueryEntry;
+    params: Readonly<Record<string, unknown>>;
+  }> = [
+    { label: "playground probe", coldEntry: entry, params: {} },
+    {
+      label: "components catalog",
+      coldEntry: componentsCatalogRouteEntry,
+      params: {},
+    },
+    {
+      label: "component entity",
+      coldEntry: componentEntityRouteEntry,
+      params: { uri: "ds:global.component.button" },
+    },
+  ];
+  for (const { label, coldEntry, params } of coldStoreCases) {
+    it(`fetches exactly once against a cold store (${label})`, () => {
+      const fetchFn = createFetchSpy();
+      setPrefetchEnvironment(createEnvironment({ fetchFn }));
 
-    warmRouteQuery(entry, {}, {});
+      warmRouteQuery(coldEntry, params, {});
 
-    expect(fetchFn).toHaveBeenCalledTimes(1);
-  });
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+    });
+  }
 
   it("does not fetch when the store already fulfils the operation (the check guard)", () => {
     const fetchFn = createFetchSpy();

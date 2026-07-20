@@ -100,6 +100,12 @@ const CatalogList = ({
         </ul>
       </nav>
       <div className="catalog-groups" data-region="canvas">
+        {/* Unreachable while the live graph carries components, cheap to
+            have: a zero-edge connection renders an honest empty state
+            rather than a blank canvas. */}
+        {tierNames.length === 0 ? (
+          <p className="catalog-empty">No components in the graph.</p>
+        ) : null}
         {tierNames.map((tierName) => (
           <section
             aria-labelledby={`${tierAnchorId(tierName)}-title`}

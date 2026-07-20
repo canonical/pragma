@@ -164,6 +164,9 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(catalog.status).toBe(200);
             const catalogHtml = await catalog.text();
             expect(catalogHtml).toContain("Accordion");
+            // A Sites-tier card — the tier grouping spans the live graph,
+            // not just Global (the unit fixtures freeze this field).
+            expect(catalogHtml).toContain("Quote");
             expect(catalogHtml).toContain(
               'href="/components/ds%3Aglobal.component.accordion"',
             );
@@ -181,6 +184,11 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(buttonHtml).toContain("variantSpecial");
             expect(buttonHtml).toContain("Anticipation");
             expect(buttonHtml).toContain("Importance");
+            // Live-graph tripwires for fields the unit fixtures freeze:
+            // the summary text, a property row, and the tier name.
+            expect(buttonHtml).toContain("Buttons trigger actions");
+            expect(buttonHtml).toContain("size");
+            expect(buttonHtml).toContain("Global");
 
             //     The Card entity page: populated subcomponents.
             const cardEntity = await fetch(
@@ -189,6 +197,8 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(cardEntity.status).toBe(200);
             const cardHtml = await cardEntity.text();
             expect(cardHtml).toContain("Card.Content");
+            // A second subcomponent — the list, not just one row.
+            expect(cardHtml).toContain("Card.Header");
 
             // Zero /graphql HTTP hits during everything above — the
             // catalog and both entity pages executed in-process too.
