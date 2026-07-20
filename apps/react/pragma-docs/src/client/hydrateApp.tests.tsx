@@ -21,6 +21,11 @@ import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
+// Definitions block: the captured explorer records, plus the jsdom shims
+// React Flow needs when the well MOUNTS (ResizeObserver/DOMMatrix —
+// side-effect import, no test behaviour of its own).
+import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "#relay/environment.js";
 import { setPrefetchEnvironment } from "#relay/prefetchEnvironment.js";
@@ -55,6 +60,7 @@ const SEEDED_PAGES = [
     records: componentProbeRecords,
     serverMarker: "<h2>Button</h2>",
     liveSelector: "h2",
+    liveText: "Button",
   },
   {
     name: "component entity",
@@ -62,6 +68,7 @@ const SEEDED_PAGES = [
     records: componentEntityRecordsButton,
     serverMarker: '<h1 id="component-entity-title">Button</h1>',
     liveSelector: "#component-entity-title",
+    liveText: "Button",
   },
   {
     name: "components catalog",
@@ -69,6 +76,19 @@ const SEEDED_PAGES = [
     records: catalogRecords,
     serverMarker: 'href="/components/ds%3Aglobal.component.accordion"',
     liveSelector: 'a[href="/components/ds%3Aglobal.component.button"]',
+    liveText: "Button",
+  },
+  // Definitions block (P-5): THE React Flow SSR gate — the term page's
+  // server HTML carries the well's full node DOM, and hydrating over it
+  // must stay mismatch-silent and network-silent like every other
+  // seeded page.
+  {
+    name: "definitions term",
+    url: "/definitions/ds%3AUIBlock",
+    records: definitionsExplorerRecords,
+    serverMarker: '<h2 id="term-inspector-title">UI Block</h2>',
+    liveSelector: "#term-inspector-title",
+    liveText: "UI Block",
   },
 ] as const;
 
@@ -181,6 +201,7 @@ describe("hydrateApp over the seeded SSR output", () => {
     records,
     serverMarker,
     liveSelector,
+    liveText,
   }) => {
     const serverFetchFn = createFetchSpy();
     const serverHtml = renderSeededServerHtml(serverFetchFn, url, records);
@@ -199,7 +220,7 @@ describe("hydrateApp over the seeded SSR output", () => {
     // React 19's hydration-mismatch channel stayed silent…
     expect(onRecoverableError).not.toHaveBeenCalled();
     // …the page's content is live in the hydrated tree…
-    expect(container.querySelector(liveSelector)?.textContent).toBe("Button");
+    expect(container.querySelector(liveSelector)?.textContent).toBe(liveText);
     // …and the network was NEVER consulted: hydration read the records
     // the seam seeded from `__INITIAL_DATA__`, and the route prefetch the
     // initial load fires found the store already warm (`warmRouteQuery`'s

@@ -190,8 +190,35 @@ describe("server matrix (2×3) serves correctly", () => {
             const cardHtml = await cardEntity.text();
             expect(cardHtml).toContain("Card.Content");
 
+            // 5c. Definitions block (P-5): the ontology explorer SSRs
+            //     from the live graph. The term page carries the
+            //     inspector's class record, the React Flow well's
+            //     server-rendered node DOM, and the serialised store —
+            //     all in the raw HTML, before any client JS.
+            const definitionsTerm = await fetch(
+              `${server.base}/definitions/ds%3AUIBlock`,
+            );
+            expect(definitionsTerm.status).toBe(200);
+            const definitionsTermHtml = await definitionsTerm.text();
+            expect(definitionsTermHtml).toContain("UI Block");
+            expect(definitionsTermHtml).toContain("ds:UIBlock");
+            expect(definitionsTermHtml).toContain("react-flow__node-term");
+            expect(definitionsTermHtml).toContain("__INITIAL_DATA__");
+            expect(definitionsTermHtml).toContain('"records"');
+
+            //     The term-less explorer: the full triptych with the
+            //     honest empty inspector (no default term, no redirect).
+            const definitions = await fetch(`${server.base}/definitions`);
+            expect(definitions.status).toBe(200);
+            const definitionsHtml = await definitions.text();
+            expect(definitionsHtml).toContain('data-slot="explorer-rail"');
+            expect(definitionsHtml).toContain("Select a term");
+            expect(definitionsHtml).toContain("__INITIAL_DATA__");
+            expect(definitionsHtml).toContain('"records"');
+
             // Zero /graphql HTTP hits during everything above — the
-            // catalog and both entity pages executed in-process too.
+            // catalog, both entity pages, and both definitions pages
+            // executed in-process too.
             expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
 
             // Teeth: a direct POST does reach the endpoint and the counter
