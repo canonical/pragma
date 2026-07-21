@@ -197,7 +197,12 @@
 .ds.hierarchy-well .hierarchy-legend {
   inset-block-end: var(--space-150, 0.75rem);
   inset-inline-start: var(--space-150, 0.75rem);
-  max-inline-size: calc(100% - var(--space-300, 1.5rem));
+  /* A small corner accessory, never a panel: capped at a fixed 15rem so it
+   * stays incidental over the now full-bleed, full-height well rather than
+   * scaling with the well's width (the old `calc(100% - …)` let it grow to
+   * most of a narrow well — the "legend takes 90%" the owner named). The
+   * min() keeps it from ever exceeding the well on a genuinely tiny canvas. */
+  max-inline-size: min(15rem, calc(100% - var(--space-300, 1.5rem)));
   padding: var(--space-100, 0.5rem) var(--space-150, 0.75rem);
   border: 1px solid var(--color-border-muted, #ddd);
   border-radius: 0.5rem;

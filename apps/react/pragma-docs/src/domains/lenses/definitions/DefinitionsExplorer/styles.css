@@ -76,6 +76,23 @@
   min-block-size: 0;
 }
 
+/* THE HEIGHT CHAIN, resolved. The well is a grid child of an explorer that
+ * is itself `block-size: 100%` inside the canvas region's `minmax(0, 1fr)`
+ * row (which the shell derives from 100dvh) — so the chain to a DEFINITE
+ * height already exists above. What was missing is the well passing that
+ * height ON: React Flow's `.react-flow` is `height: 100%` with absolutely
+ * positioned internals (it contributes ZERO intrinsic height), so it paints
+ * nothing unless its parent resolves to a real height. `block-size: 100%`
+ * makes the well take the full grid-row height and gives React Flow a
+ * definite `100%` to resolve against; `min-block-size: 0` lets it shrink
+ * with the canvas instead of propping a floor. The old `24rem` floor is
+ * gone — it was the only thing giving the well any height before, and it
+ * capped the well at a short box the canvas scrolled around (the "too small"
+ * and "care about the height" the owner named). A small last-resort floor
+ * (`min-block-size: 12rem`) guards only against total collapse on a
+ * pathologically short viewport; it never competes with the fill because
+ * 100% of the canvas row is always well above it. */
 .ds.definitions-explorer > .hierarchy-well {
-  min-block-size: 24rem;
+  block-size: 100%;
+  min-block-size: 12rem;
 }
