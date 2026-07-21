@@ -9,3 +9,4 @@ export * from "./ModeStrip/index.js";
 export * from "./Rail/index.js";
 export * from "./Shell/index.js";
 export { default as ThemeSelector } from "./ThemeSelector/index.js";
+export * from "./LensBreadcrumbs/index.js";
