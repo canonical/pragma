@@ -62,24 +62,59 @@ describe("TermInspector", () => {
     expect(
       within(panel).getByText(/category of visual or abstract entity/),
     ).toBeInTheDocument();
-    // Superclass chain, direct parent marked.
-    const superclasses = within(panel).getByRole("heading", {
-      name: "Superclasses",
+    // Lineage breadcrumb (B8): self ⊂ direct parent ⊂ … ⊂ root, in order,
+    // with the ⊂ glyph between links. The self leaf is the class itself and
+    // is NOT a link; the ancestors are.
+    const lineage = within(panel).getByRole("heading", {
+      name: "Lineage",
     }).nextElementSibling as HTMLElement;
-    expect(superclasses.textContent).toContain("UI Element");
-    expect(superclasses.textContent).toContain("(direct)");
-    expect(superclasses.textContent).toContain("Entity");
+    expect(lineage.textContent).toContain("UI Block");
+    expect(lineage.textContent).toContain("⊂");
+    expect(lineage.textContent).toContain("UI Element");
+    expect(lineage.textContent).toContain("Entity");
+    // The chain is ordered nearest-first: UI Element (direct) precedes Entity
+    // (root), matching the fetched `superclasses` order.
+    expect(lineage.textContent?.indexOf("UI Element")).toBeLessThan(
+      lineage.textContent?.indexOf("Entity") ?? -1,
+    );
+    // The ancestors are real term links; the leaf is plain text (no link
+    // named "UI Block" inside the lineage).
+    expect(
+      within(lineage).getByRole("link", { name: "UI Element" }),
+    ).toBeInTheDocument();
+    expect(
+      within(lineage).queryByRole("link", { name: "UI Block" }),
+    ).toBeNull();
     // Subclasses as term links.
     expect(
       within(panel)
         .getByRole("link", { name: "Component" })
         .getAttribute("href"),
     ).toBe("/definitions/ds%3AComponent");
-    // The per-class property table with inherited rows and prefixed ranges.
-    const table = within(panel).getByRole("table");
-    expect(within(table).getByText("hasVariant")).toBeInTheDocument();
-    expect(within(table).getAllByText("ds:UIBlock").length).toBeGreaterThan(0);
-    expect(within(table).getAllByText(/inherited/).length).toBeGreaterThan(0);
+    // Properties split by provenance (B7): a "Properties" grouping for the
+    // class's own, an "Inherited" grouping for what it inherits — two
+    // separate tables, not one table with an "inherited" note.
+    expect(
+      within(panel).getByRole("heading", { name: "Properties" }),
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByRole("heading", { name: "Inherited" }),
+    ).toBeInTheDocument();
+    const tables = within(panel).getAllByRole("table");
+    expect(tables.length).toBe(2);
+    // The declared table carries the class's own property and prefixed range.
+    expect(within(panel).getByText("hasVariant")).toBeInTheDocument();
+    expect(
+      within(panel).getAllByText("ds:UIBlock").length,
+    ).toBeGreaterThan(0);
+    // B9: each property's definition is surfaced beneath its row (it was
+    // fetched all along and previously dropped). The changelog property's
+    // definition is a fixture string — assert it renders.
+    expect(
+      within(panel).getByText(
+        "Links a UI Block to its dated change log entries.",
+      ),
+    ).toBeInTheDocument();
     expect(fetchFn).not.toHaveBeenCalled();
   });
 

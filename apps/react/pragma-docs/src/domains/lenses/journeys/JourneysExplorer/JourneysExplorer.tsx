@@ -382,19 +382,11 @@ const JourneysExplorer = ({
           journey's detail. */}
       <div className="journeys-explorer-main">
         {graph ? (
-          <div className="journeys-explorer-graph">
-            {/* The empty-selection case, handled honestly: the well always
-                draws the default coordinate's spine (never blank), and this
-                line names what to do to make it about ONE journey — pick a
-                job. It disappears once a job is selected. */}
-            {job === undefined ? (
-              <p className="journeys-explorer-graph-prompt">
-                Showing the default coordinate&rsquo;s journeys. Select a job —
-                from the rail or the diagram — to centre the graph on it.
-              </p>
-            ) : null}
-            <JourneyWell coordinates={drawn} job={job} />
-          </div>
+          // The graph IS the centre surface — no wrapper band, no prompt
+          // above it. The well fills the whole cell and carries its own
+          // floating hint (empty-selection guidance included), so the graph
+          // is the background rather than a panel sunk below a caption.
+          <JourneyWell coordinates={drawn} job={job} />
         ) : (
           <JourneyTable
             expanded={expanded}

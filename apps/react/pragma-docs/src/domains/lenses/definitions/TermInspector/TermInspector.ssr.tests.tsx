@@ -27,7 +27,10 @@ describe("TermInspector SSR", () => {
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('aria-label="Term inspector"');
     expect(html).toContain("ds:UIBlock");
-    expect(html).toContain("Superclasses");
+    // The lineage breadcrumb (B8) replaced the "Superclasses" bullet list —
+    // the ⊂ chain renders server-side from the warm store.
+    expect(html).toContain("Lineage");
+    expect(html).toContain("⊂");
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

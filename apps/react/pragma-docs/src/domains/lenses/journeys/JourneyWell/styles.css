@@ -14,18 +14,23 @@
  * layout-capable count stays at one.
  */
 
-/* Full bleed: keep the depression (the `.underground` background and inset
- * shadow — the recess you look INTO), drop the card-ness so the well runs
- * edge to edge between the table above and the panel hairlines. The hook
- * itself is untouched; this is an override at the tenant. `position:
- * relative` makes this the containing block for the floating furniture. */
-.ds.journey-well {
+/* Full bleed, NO CARD. The graph IS the background (owner ruling): drop the
+ * `.underground` hook's border, radius AND shadow entirely so the well runs
+ * edge to edge with nothing framing it — one surface, not a card sunk in the
+ * canvas. Only the depression's background tint remains (the recess you look
+ * INTO, AX.3). The reset is scoped under `.ds.shell` so it OUT-SPECIFIES the
+ * `.ds.shell .underground` hook (Shell/styles.css) — without that ancestor
+ * the hook's border/radius/shadow win and the box reappears (the owner saw
+ * exactly that). The hook itself is untouched; other tenants still get the
+ * card. `position: relative` makes this the containing block for the
+ * floating furniture. */
+.ds.shell .ds.journey-well {
   position: relative;
   min-block-size: 0;
   overflow: hidden;
+  border: none;
   border-radius: 0;
-  border-block: none;
-  border-inline: none;
+  box-shadow: none;
 }
 
 .ds.journey-well .react-flow {

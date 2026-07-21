@@ -68,6 +68,35 @@
   vertical-align: top;
 }
 
+/* The lineage breadcrumb (B8): the ancestry chain reads left to right,
+ * wrapping on a narrow panel. The leaf (the class itself) is the emphasised
+ * anchor; the ⊂ glyphs are muted connectors that never wrap away from the
+ * link that follows them. */
+.ds.term-inspector .term-inspector-lineage {
+  margin-block: 0;
+  line-height: 1.6;
+}
+
+.ds.term-inspector .term-inspector-lineage-self {
+  font-weight: 600;
+}
+
+.ds.term-inspector .term-inspector-lineage-glyph {
+  color: var(--color-text-muted, #666);
+  white-space: nowrap;
+}
+
+/* The per-property definition line (B9): a full-width row beneath its
+ * property, quieter than the property's own row, with no bottom hairline of
+ * its own so it reads as a continuation of the row above rather than a
+ * separate entry. */
+.ds.term-inspector .term-inspector-property-definition td {
+  padding-block-start: 0;
+  border-block-end: 1px solid var(--color-border-muted, #ddd);
+  color: var(--color-text-muted, #666);
+  font-size: 0.8125rem;
+}
+
 .ds.term-inspector dl {
   margin-block: 0;
   display: grid;

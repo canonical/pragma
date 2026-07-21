@@ -181,10 +181,16 @@ const JourneyWell = ({
         nodesDraggable={false}
         nodeTypes={nodeTypes}
       />
-      {/* Canvas-local furniture: static, so it costs the hydration
-          argument nothing. */}
+      {/* Canvas-local furniture: the ONE floating hint over the graph. Its
+          text is a pure function of `job` (the URL — identical on server and
+          client), so it costs the hydration argument nothing. With no job
+          selected it also names the empty-selection action the explorer used
+          to state in a separate band above the well; that band is gone, so
+          the graph now fills the whole surface. */}
       <p className="journey-furniture journey-hint">
-        Drag to pan · scroll to zoom · select a job to inspect it
+        {job === undefined
+          ? "Showing the default coordinate — select a job, from the rail or the diagram, to centre the graph on it"
+          : "Drag to pan · scroll to zoom · select a job to inspect it"}
       </p>
       <JourneyLegend />
     </div>

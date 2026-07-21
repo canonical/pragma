@@ -61,39 +61,26 @@
   padding: var(--space-200, 1rem);
 }
 
-/* The graph view fills its row; the well inside owns the height and the
- * empty-selection prompt sits above it. */
-.ds.journeys-explorer .journeys-explorer-graph {
-  display: grid;
-  grid-template-rows: min-content minmax(0, 1fr);
-  min-block-size: 0;
-}
-
-/* THE HEIGHT CHAIN, resolved (the definitions well's move, mirrored). The
- * well sits in the `minmax(0, 1fr)` row of `.journeys-explorer-graph`,
- * which is the `minmax(0, 1fr)` row of `.journeys-explorer-main`, which is
- * the `block-size: 100%` explorer inside the canvas region's `minmax(0, 1fr)`
- * (100dvh-derived) row — so a definite height exists all the way down. The
- * well just has to pass it on: React Flow's `.react-flow` is inline
- * `height: 100%` with absolutely positioned internals and contributes ZERO
- * intrinsic height, so it paints nothing unless its parent resolves to a
- * real height. `block-size: 100%` makes the well fill its 1fr row and hand
+/* THE GRAPH IS THE BACKGROUND (owner ruling). In graph mode the well is the
+ * DIRECT child of `.journeys-explorer-main` — no wrapper, no caption band,
+ * no border. It fills the whole centre cell and is what GROWS with the
+ * canvas; its own floating hint and legend (JourneyWell) carry the guidance
+ * that used to sit in a band above it.
+ *
+ * THE HEIGHT CHAIN, resolved (the definitions well's move, mirrored). The
+ * well sits in the `minmax(0, 1fr)` row of `.journeys-explorer-main`, which
+ * is the `block-size: 100%` explorer inside the canvas region's
+ * `minmax(0, 1fr)` (100dvh-derived) row — so a definite height exists all
+ * the way down. The well just passes it on: React Flow's `.react-flow` is
+ * inline `height: 100%` with absolutely positioned internals and contributes
+ * ZERO intrinsic height, so it paints nothing unless its parent resolves to
+ * a real height. `block-size: 100%` makes the well fill the row and hand
  * React Flow a definite `100%`; `min-block-size: 0` lets it shrink with the
- * canvas. The old `16rem` floor — previously the ONLY thing giving the well
- * height, capping it at a short box the canvas scrolled around — is gone; a
- * small last-resort `min-block-size: 12rem` guards only against total
- * collapse and never competes with the fill. */
-.ds.journeys-explorer .journeys-explorer-graph > .journey-well {
+ * canvas. A small last-resort `min-block-size: 12rem` guards only against
+ * total collapse and never competes with the fill. */
+.ds.journeys-explorer .journeys-explorer-main > .journey-well {
   block-size: 100%;
   min-block-size: 12rem;
-}
-
-.ds.journeys-explorer .journeys-explorer-graph-prompt {
-  margin-block: 0;
-  padding: var(--space-100, 0.5rem) var(--space-200, 1rem);
-  font-size: 0.8125rem;
-  color: var(--color-text-muted, #666);
-  border-block-end: 1px solid var(--color-border-muted, #ddd);
 }
 
 /* The Table ⇄ Graph switch is no longer here (RULING 1): it moved to the

@@ -124,6 +124,123 @@ const rangeDisplay = (
 ): string => toPrefixedUri(range, namespaces);
 
 /**
+ * The subset-of glyph the lineage breadcrumb reads with — U+2282, "a is a
+ * subclass of b". Kept as a named constant so the ancestry chain and any
+ * future legend cannot drift apart on the symbol.
+ */
+const SUBCLASS_OF = "⊂";
+
+/**
+ * The class's ancestry as an ordered breadcrumb chain — the reference
+ * ontology explorer's `.lineage` (B8). `superclasses` arrives nearest-first
+ * (direct parent, …, root — the same order the flat list marked "(direct)"
+ * on the head), so the chain reads self ⊂ parent ⊂ … ⊂ root left to right.
+ * Every ancestor is a real term link; the leaf (the class itself) is plain
+ * text, since it is the page the reader is already on. Pure over data the
+ * fragment already fetches — no query change.
+ */
+const Lineage = ({
+  self,
+  ancestors,
+  namespaces,
+}: {
+  readonly self: string;
+  readonly ancestors: readonly {
+    readonly uri: string;
+    readonly label: string | null | undefined;
+  }[];
+  readonly namespaces: readonly OntologyNamespace[];
+}): React.ReactElement => (
+  <p className="term-inspector-lineage">
+    <span className="term-inspector-lineage-self">{self}</span>
+    {ancestors.map((ancestor) => (
+      <span key={ancestor.uri}>
+        <span aria-hidden="true" className="term-inspector-lineage-glyph">
+          {" "}
+          {SUBCLASS_OF}{" "}
+        </span>
+        <TermLink
+          label={ancestor.label}
+          namespaces={namespaces}
+          uri={ancestor.uri}
+        />
+      </span>
+    ))}
+  </p>
+);
+
+/** One property row plus its definition line — shared by the Declared and
+ * Inherited groupings (B7/B9). The definition (already fetched, previously
+ * dropped) rides a second row spanning the table so it reads beneath its
+ * property rather than crowding the Notes column. */
+const PropertyRow = ({
+  classProperty,
+  namespaces,
+}: {
+  readonly classProperty: TermInspector_class$data["properties"][number];
+  readonly namespaces: readonly OntologyNamespace[];
+}): React.ReactElement => {
+  const notes = [
+    classProperty.required ? "required" : "",
+    classProperty.singular ? "singular" : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <>
+      <tr>
+        <th scope="row">
+          <TermLink
+            label={classProperty.property.label}
+            namespaces={namespaces}
+            uri={classProperty.property.uri}
+          />
+        </th>
+        <td>
+          <code>{rangeDisplay(classProperty.property.range, namespaces)}</code>
+        </td>
+        <td>{classProperty.property.kind.toLowerCase()}</td>
+        <td>{notes}</td>
+      </tr>
+      {classProperty.property.definition ? (
+        <tr className="term-inspector-property-definition">
+          <td colSpan={4}>{classProperty.property.definition}</td>
+        </tr>
+      ) : null}
+    </>
+  );
+};
+
+/** The four-column property table head — shared by both groupings. */
+const PropertyTable = ({
+  properties,
+  namespaces,
+}: {
+  readonly properties: readonly TermInspector_class$data["properties"][number][];
+  readonly namespaces: readonly OntologyNamespace[];
+}): React.ReactElement => (
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Property</th>
+        <th scope="col">Range</th>
+        <th scope="col">Kind</th>
+        <th scope="col">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {properties.map((classProperty) => (
+        <PropertyRow
+          classProperty={classProperty}
+          key={classProperty.property.uri}
+          namespaces={namespaces}
+        />
+      ))}
+    </tbody>
+  </table>
+);
+
+/**
  * Instance links land only where a live route exists (the D31 landing
  * rule: a mention links to the noun's home, and only components have one
  * — `/components/:uri`). Every other instance renders as plain text until
@@ -174,22 +291,15 @@ const ClassView = ({
       </p>
     </header>
     <p>{data.definition ?? "No definition recorded."}</p>
-    <h3>Superclasses</h3>
+    <h3>Lineage</h3>
     {data.superclasses.length === 0 ? (
-      <p>None — a root of its ontology.</p>
+      <p>A root of its ontology.</p>
     ) : (
-      <ul>
-        {data.superclasses.map((superclass) => (
-          <li key={superclass.uri}>
-            <TermLink
-              label={superclass.label}
-              namespaces={namespaces}
-              uri={superclass.uri}
-            />
-            {superclass.uri === data.superclass?.uri ? " (direct)" : ""}
-          </li>
-        ))}
-      </ul>
+      <Lineage
+        ancestors={data.superclasses}
+        namespaces={namespaces}
+        self={data.label ?? term}
+      />
     )}
     <h3>Subclasses</h3>
     {data.subclasses.length === 0 ? (
@@ -207,49 +317,37 @@ const ClassView = ({
         ))}
       </ul>
     )}
-    <h3>Properties</h3>
-    {data.properties.length === 0 ? (
-      <p>None.</p>
-    ) : (
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Property</th>
-            <th scope="col">Range</th>
-            <th scope="col">Kind</th>
-            <th scope="col">Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.properties.map((classProperty) => (
-            <tr key={classProperty.property.uri}>
-              <th scope="row">
-                <TermLink
-                  label={classProperty.property.label}
-                  namespaces={namespaces}
-                  uri={classProperty.property.uri}
-                />
-              </th>
-              <td>
-                <code>
-                  {rangeDisplay(classProperty.property.range, namespaces)}
-                </code>
-              </td>
-              <td>{classProperty.property.kind.toLowerCase()}</td>
-              <td>
-                {[
-                  classProperty.required ? "required" : "",
-                  classProperty.singular ? "singular" : "",
-                  classProperty.inherited ? "inherited" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
+    {/* Properties split by provenance (B7): the class's OWN properties
+        under "Properties", those it inherits from an ancestor under
+        "Inherited". The `inherited` boolean is already fetched; the source
+        ancestor is NOT on the fragment, so the grouping names that the
+        property is inherited without claiming which class it came from
+        (that would need a query change). Each row now also carries the
+        property's own definition (B9), previously fetched but dropped. */}
+    {(() => {
+      const declared = data.properties.filter(
+        (classProperty) => !classProperty.inherited,
+      );
+      const inherited = data.properties.filter(
+        (classProperty) => classProperty.inherited,
+      );
+      return (
+        <>
+          <h3>Properties</h3>
+          {declared.length === 0 ? (
+            <p>None declared on this class.</p>
+          ) : (
+            <PropertyTable namespaces={namespaces} properties={declared} />
+          )}
+          {inherited.length === 0 ? null : (
+            <>
+              <h3>Inherited</h3>
+              <PropertyTable namespaces={namespaces} properties={inherited} />
+            </>
+          )}
+        </>
+      );
+    })()}
     <h3>Instances</h3>
     {data.instances.edges.length === 0 ? (
       <p>

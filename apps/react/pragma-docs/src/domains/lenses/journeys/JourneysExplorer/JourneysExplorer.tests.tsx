@@ -120,14 +120,15 @@ describe("JourneysExplorer view switch — the strip drives the canvas", () => {
     expect(explorerRoot()).toHaveAttribute("data-view", "graph");
     expect(graphOption()).toHaveAttribute("aria-pressed", "true");
 
-    // The empty-selection prompt guides the reader honestly rather than a
-    // blank canvas: no job is selected, so the graph shows the default
-    // coordinate and says how to centre it on one. Asserted by the graph
-    // prompt's own class (the inspector's empty state also says "Select a
-    // job", so a bare text match would not prove the graph prompt exists).
+    // The empty-selection guidance now rides the well's OWN floating hint
+    // (the separate band above the graph is gone — the graph is the
+    // background, owner ruling), so it is asserted on `.journey-hint`. Its
+    // "centre the graph" phrasing is unique to the well, so this proves the
+    // graph's hint specifically, not the inspector's empty state (which also
+    // says "Select a job").
     expect(
-      document.querySelector(".journeys-explorer-graph-prompt")?.textContent,
-    ).toMatch(/Select a job/);
+      document.querySelector(".journey-hint")?.textContent,
+    ).toMatch(/centre the graph/);
 
     // Flip back to Table — the reverse holds: table returns, well and
     // inspector leave, the grid drops back to two tracks.
