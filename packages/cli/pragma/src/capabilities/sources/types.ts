@@ -41,6 +41,16 @@ export interface UpdatedSource {
   readonly sourceCount: number;
 }
 
+/** The skill-linking breakdown of a `sources update` (U10 skills install). */
+export interface SourcesSkillsSummary {
+  /** Symlinks newly created (a package skill not previously linked). */
+  readonly created: number;
+  /** Stale symlinks re-pointed to the current package skill. */
+  readonly replaced: number;
+  /** Links already correct (or a real dir we won't clobber) — left untouched. */
+  readonly skipped: number;
+}
+
 /** The `sources update` result payload. */
 export interface SourcesUpdateData {
   readonly contentHash: string;
@@ -48,4 +58,10 @@ export interface SourcesUpdateData {
   readonly reused: boolean;
   readonly lockPath: string;
   readonly packs: readonly UpdatedSource[];
+  /**
+   * The skill-install breakdown (created/replaced/skipped). Surfaced so the
+   * recap reports skill linking instead of silently doing it — `installSkills`
+   * always computed these counts, but they were never in the result.
+   */
+  readonly skills: SourcesSkillsSummary;
 }
