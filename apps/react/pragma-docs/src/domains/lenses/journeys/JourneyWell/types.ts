@@ -1,5 +1,5 @@
 import type { Edge, Node } from "@xyflow/react";
-import type { HTMLAttributes, ReactNode } from "react";
+import type { JourneyCoordinate } from "./buildJourneyGraph.js";
 
 /**
  * The kind of hop a node stands for — the journey's columns, left to
@@ -55,7 +55,16 @@ export interface JourneyNodeData extends Record<string, unknown> {
 export type JourneyFlowNode = Node<JourneyNodeData, "hop">;
 export type JourneyFlowEdge = Edge;
 
-export interface JourneyWellProps extends HTMLAttributes<HTMLDivElement> {
-  /** Content to render inside the component */
-  children?: ReactNode;
+export interface JourneyWellProps {
+  /** Additional CSS class names. */
+  className?: string;
+  /**
+   * The coordinates to draw — already filtered by the explorer. The well
+   * lays out exactly what it is given: filtering is the caller's job, and
+   * a filtered view is the lens's DEFAULT (see `journeyFilter.ts` for why
+   * virtualisation is not an option here).
+   */
+  readonly coordinates: readonly JourneyCoordinate[];
+  /** The selected job (prefixed URI), or undefined on `/journeys`. */
+  readonly job: string | undefined;
 }
