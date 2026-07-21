@@ -26,6 +26,7 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 // side-effect import, no test behaviour of its own).
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
+import journeysExplorerRecordsJob from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
@@ -104,6 +105,21 @@ const SEEDED_PAGES = [
       '<h1 id="standard-reading-title">cs:react.component.link_component</h1>',
     liveSelector: "#standard-reading-title",
     liveText: "cs:react.component.link_component",
+  },
+  // Journeys block (AV-351): THE SECOND React Flow SSR gate — the job
+  // page's server HTML carries the journey well's full node DOM (38
+  // nodes, 40 edges against the live model), and hydrating over it must
+  // stay mismatch-silent and network-silent like every other seeded page.
+  // The well holds NO client-only state at all, so this is the strongest
+  // form of the claim: the first client render reproduces the server's
+  // markup by construction.
+  {
+    name: "journeys job",
+    url: "/journeys/sem%3A%2F%2Fdesign-system-docs%23job.l3",
+    records: journeysExplorerRecordsJob,
+    serverMarker: '<h2 id="journey-inspector-title">job.l3</h2>',
+    liveSelector: "#journey-inspector-title",
+    liveText: "job.l3",
   },
   // Home block (AV-350): the lobby — the front door's two projections
   // SSR from the captured store and must survive hydration

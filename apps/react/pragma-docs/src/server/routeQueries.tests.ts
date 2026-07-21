@@ -11,6 +11,10 @@
 import { describe, expect, it } from "vitest";
 import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
 import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
+import {
+  JOB_PAGE_SIZE,
+  PAIRING_PAGE_SIZE,
+} from "#domains/lenses/journeys/journeysQuery.js";
 import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
 import {
   LOBBY_COMPONENT_CLASS,
@@ -87,6 +91,31 @@ describe("matchRouteQuery", () => {
   it("resolves the standard reading URL with its percent-decoded uri", () => {
     const resolved = matchRouteQuery("/standards/cs%3Acode.array.safe_access");
     expect(resolved?.variables).toEqual({ uri: STANDARD_URI });
+  });
+
+  // Journeys block (AV-351): both addresses run the ONE explorer
+  // operation. Both page sizes are explicit because the schema's own
+  // defaults truncate this model — `jobs` defaults to 50 of 52, and
+  // `pairings` caps at 100 of 133 (hence the two-window union).
+  it("resolves /journeys to the job-less explorer variables", () => {
+    expect(matchRouteQuery("/journeys")?.variables).toEqual({
+      jobs: JOB_PAGE_SIZE,
+      pairings: PAIRING_PAGE_SIZE,
+      uri: "",
+      hasJob: false,
+    });
+  });
+
+  it("resolves the journeys job URL with its percent-decoded uri", () => {
+    expect(
+      matchRouteQuery("/journeys/sem%3A%2F%2Fdesign-system-docs%23job.l3")
+        ?.variables,
+    ).toEqual({
+      jobs: JOB_PAGE_SIZE,
+      pairings: PAIRING_PAGE_SIZE,
+      uri: "sem://design-system-docs#job.l3",
+      hasJob: true,
+    });
   });
 
   it("returns undefined for unmatched URLs", () => {

@@ -81,6 +81,8 @@ import { describe, expect, it } from "vitest";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
+import journeysExplorerRecords from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecords.js";
+import journeysExplorerRecordsJob from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import standardsIndexRecords from "#domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
 import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
@@ -92,6 +94,7 @@ const LENS_URLS = [
   "/components",
   "/definitions",
   "/standards",
+  "/journeys",
   "/guides",
 ] as const;
 
@@ -110,12 +113,18 @@ const DEFINITIONS_TERM_URL = "/definitions/ds%3AUIBlock";
  * posture: no rail entry is exact-current here. */
 const STANDARD_READING_URL = "/standards/cs%3Areact.component.link_component";
 
+/** The AV-351 journeys exemplar: the job view — a fourth non-lens URL,
+ * and the second whose canvas carries a React Flow well's server-rendered
+ * node DOM. Same R3 posture: no rail entry is exact-current here. */
+const JOURNEYS_JOB_URL = "/journeys/sem%3A%2F%2Fdesign-system-docs%23job.l3";
+
 /** Every URL the certification measures. */
 const MEASURED_URLS = [
   ...LENS_URLS,
   BUTTON_ENTITY_URL,
   DEFINITIONS_TERM_URL,
   STANDARD_READING_URL,
+  JOURNEYS_JOB_URL,
 ] as const;
 
 /** Data-bearing pages render from their captured fixture records — the
@@ -136,6 +145,12 @@ const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
   // the reading page from its verbatim capture.
   "/standards": standardsIndexRecords,
   [STANDARD_READING_URL]: standardEntityRecords,
+  // Journeys rows (AV-351): the same operation at both addresses, but
+  // the selected address's store carries one extra root field
+  // (`job(uri: …)`) that the @include(if: $hasJob) arm adds — so each
+  // address replays its OWN verbatim capture.
+  "/journeys": journeysExplorerRecords,
+  [JOURNEYS_JOB_URL]: journeysExplorerRecordsJob,
 };
 
 /** Per-URL expectation for the first accounted-for delta: the hrefs
@@ -151,6 +166,7 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   "/components": ["/components"],
   "/definitions": ["/definitions"],
   "/standards": ["/standards"],
+  "/journeys": ["/journeys"],
   "/guides": ["/guides"],
   [BUTTON_ENTITY_URL]: [],
   // Exact-match linking (R3): the rail's Definitions entry is NOT current
@@ -160,6 +176,8 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   // Same R3 posture: the rail's Standards entry is NOT current at a
   // reading URL.
   [STANDARD_READING_URL]: [],
+  // …and the rail's Journeys entry is NOT current at a job URL.
+  [JOURNEYS_JOB_URL]: [],
 };
 
 /** Per-URL expectation for the second accounted-for delta: the mode
@@ -176,10 +194,12 @@ const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   "/components": "Components",
   "/definitions": "Definitions",
   "/standards": "Standards",
+  "/journeys": "Journeys",
   "/guides": "",
   [BUTTON_ENTITY_URL]: "Components",
   [DEFINITIONS_TERM_URL]: "Definitions",
   [STANDARD_READING_URL]: "Standards",
+  [JOURNEYS_JOB_URL]: "Journeys",
 };
 
 /**
@@ -203,10 +223,18 @@ const EXPECTED_STRIP_CLAIMS: Readonly<
   "/components": { controls: false, status: false },
   "/definitions": { controls: true, status: true },
   "/standards": { controls: false, status: false },
+  // Journeys claims CONTEXT only. Its controls genuinely belong in the
+  // rail: the coordinate chooser and the persona filter each need
+  // explanatory text (the persona axis is APPROXIMATE and says so), and a
+  // strip toolbar is the wrong place for a caveat that must be read.
+  // Claiming a socket in order to fill it would be furniture pretending
+  // to be an instrument — the opposite of R5's point.
+  "/journeys": { controls: false, status: false },
   "/guides": { controls: false, status: false },
   [BUTTON_ENTITY_URL]: { controls: false, status: false },
   [DEFINITIONS_TERM_URL]: { controls: true, status: true },
   [STANDARD_READING_URL]: { controls: false, status: false },
+  [JOURNEYS_JOB_URL]: { controls: false, status: false },
 };
 
 const renderPage = (url: string): string =>
@@ -376,6 +404,17 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     expect(mustGet(STANDARD_READING_URL).canvas).toContain(
       'data-slot="reading-canvas"',
     );
+    // The journeys canvases render REAL content from the fixture records:
+    // the index carries the diagram and the honest empty inspector; the
+    // job canvas carries the selected job's story and the well's
+    // server-rendered node DOM.
+    expect(mustGet("/journeys").canvas).toContain('id="lens-journeys-title"');
+    expect(mustGet("/journeys").canvas).toContain("Select a job");
+    expect(mustGet("/journeys").canvas).toContain("react-flow__node-hop");
+    expect(mustGet(JOURNEYS_JOB_URL).canvas).toContain(
+      'id="journey-inspector-title"',
+    );
+    expect(mustGet(JOURNEYS_JOB_URL).canvas).toContain("react-flow__node-hop");
     expect(mustGet("/guides").canvas).toContain('id="lens-guides-title"');
     // The entity page renders its REAL data from the fixture records, not
     // a loading state — the whole view SSRs from a warm store.
