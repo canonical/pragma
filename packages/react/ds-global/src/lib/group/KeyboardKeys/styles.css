@@ -1,5 +1,6 @@
 :root {
-  --keyboard-keys-gap: var(--dimension-050);
+  /* Figma (node 6004-72): 2px between adjacent keys in a chord. */
+  --keyboard-keys-gap: var(--dimension-025);
   --keyboard-keys-margin-inline: var(--dimension-050);
 }
 
