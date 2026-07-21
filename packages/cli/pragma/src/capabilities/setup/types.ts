@@ -27,14 +27,41 @@ export type ScopeBand = "project" | "global";
 export type ScopeSelection = "project" | "global" | "both";
 
 /**
+ * The prior state of an MCP target file, read up front by `detectMcp`:
+ * `absent` (no pragma entry yet), `configured` (a matching pragma entry already
+ * present in every write — a re-run skips it), or `drifted` (a pragma entry
+ * exists but differs, so a write updates it). Mirrors the skills step's
+ * created/skipped/replaced idempotency at the file grain.
+ */
+export type McpTargetState = "absent" | "configured" | "drifted";
+
+/**
  * One configured MCP target in a result: the file that was written, which band
- * it belongs to, and the harness name(s) that share it.
+ * it belongs to, the harness name(s) that share it, and its prior
+ * {@link McpTargetState} (so the recap can report new vs updated vs unchanged).
  */
 export interface ConfiguredTarget {
   readonly name: string;
   readonly band: ScopeBand;
   readonly path: string;
+  readonly state: McpTargetState;
 }
+
+/**
+ * The prior on-disk state of the shell-completion script, read up front by
+ * `detectCompletions`: `absent` (no script), `installed` (a byte-identical
+ * script is already present — a re-run skips it), or `stale` (a different
+ * script is present, so a write updates it).
+ */
+export type CompletionsState = "absent" | "installed" | "stale";
+
+/**
+ * The detected state of the Terrazzo LSP VS Code extension, probed up front by
+ * `detectLsp`: `installed` (already present — a re-run skips it), `absent` (not
+ * present, so the installer runs), or `unknown` (the `code` CLI is not on PATH,
+ * so we cannot enumerate and the installer runs regardless).
+ */
+export type LspState = "installed" | "absent" | "unknown";
 
 /** One symlink create/skip/replace action performed during skill setup. */
 export interface SymlinkAction {
@@ -60,8 +87,9 @@ export type SetupResult =
       readonly shell: ShellId | null;
       readonly path: string | null;
       readonly installed: boolean;
+      readonly state: CompletionsState;
     }
-  | { readonly kind: "lsp" }
+  | { readonly kind: "lsp"; readonly state: LspState }
   | {
       readonly kind: "mcp";
       readonly configured: readonly string[];

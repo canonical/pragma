@@ -24,6 +24,11 @@ function summarizeSkills(result: SetupSkillsResult): string {
  * before the project (per-repo) band — so the recap shows which files at which
  * level got the pragma server. The Global/Project labels match the doctor
  * report and the CLI's `--global`/`--local` grammar (see {@link BAND_LABELS}).
+ *
+ * A trailing state tally is appended ONLY when something was already present
+ * (an `updated` or `unchanged` target) — a clean first run (every target newly
+ * `added`) keeps the plain `Configured MCP — …` line, so the idempotency detail
+ * surfaces exactly when it is informative (a re-run made clear it was a no-op).
  */
 function summarizeMcpTargets(targets: readonly ConfiguredTarget[]): string {
   if (targets.length === 0) return "No harnesses configured.";
@@ -37,18 +42,36 @@ function summarizeMcpTargets(targets: readonly ConfiguredTarget[]): string {
   ]
     .filter((p) => p.length > 0)
     .join(" · ");
-  return `Configured MCP — ${parts}.`;
+  const updated = targets.filter((t) => t.state === "drifted").length;
+  const unchanged = targets.filter((t) => t.state === "configured").length;
+  if (updated === 0 && unchanged === 0) {
+    // Clean first run — every target newly added; keep the original recap line.
+    return `Configured MCP — ${parts}.`;
+  }
+  const added = targets.filter((t) => t.state === "absent").length;
+  return `Configured MCP — ${parts} (${added} added, ${updated} updated, ${unchanged} unchanged).`;
 }
 
 /** Render a setup result to a single human line (shared by plain/llm). */
 function renderSetupLine(data: SetupResult): string {
   switch (data.kind) {
-    case "completions":
-      return data.installed
-        ? `Installed ${data.shell} completions at ${data.path}.`
-        : "No shell detected — completions were not installed.";
+    case "completions": {
+      if (!data.installed) {
+        return "No shell detected — completions were not installed.";
+      }
+      switch (data.state) {
+        case "installed":
+          return `${data.shell} completions already up to date at ${data.path}.`;
+        case "stale":
+          return `Updated ${data.shell} completions at ${data.path}.`;
+        default:
+          return `Installed ${data.shell} completions at ${data.path}.`;
+      }
+    }
     case "lsp":
-      return "Terrazzo LSP extension is installed (up to date).";
+      return data.state === "installed"
+        ? "Terrazzo LSP extension already installed (up to date)."
+        : "Terrazzo LSP extension is installed (up to date).";
     case "mcp":
       return summarizeMcpTargets(data.targets);
     case "skills":

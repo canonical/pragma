@@ -466,6 +466,152 @@ describe("setup lsp — missing-binary guard (bunx absent)", () => {
   });
 });
 
+describe("setup — idempotent detection of already-present config", () => {
+  // Isolate PATH so an ambient harness can't inject via a `process` signal.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    process.env.PATH = tmp("pragma-idem-path-");
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
+  it("mcp: a second run detects the already-configured file (byte-identical rewrite)", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const configPath = join(cwd, ".cursor", "mcp.json");
+
+    // First run writes the pragma entry.
+    await executeVerb(verbOf("mcp"), {}, YES, bootRuntime(FLAGS, cwd));
+    const firstBody = readFileSync(configPath, "utf-8");
+
+    // Detection now classifies the group `configured`.
+    const { toResult } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "mcp",
+      "both",
+    );
+    const result = toResult({});
+    expect(result.kind).toBe("mcp");
+    if (result.kind === "mcp") {
+      expect(result.targets.at(0)?.state).toBe("configured");
+    }
+
+    // The wizard default-DESELECTS a configured target (so a plain re-run offers
+    // it unchecked) — proven on the generated multiselect's default.
+    const { generator } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "mcp",
+      "both",
+    );
+    const multiselect = generator.prompts.find((p) => p.name === "mcpTargets");
+    expect(multiselect?.default).toEqual([]); // the only file is configured
+    expect(
+      (multiselect?.choices ?? []).some((c) =>
+        typeof c === "object" && "label" in c
+          ? c.label.includes("already configured")
+          : false,
+      ),
+    ).toBe(true);
+
+    // A real second run is idempotent: the file stays byte-identical (the
+    // read-modify-write re-merges the SAME pragma entry).
+    await executeVerb(verbOf("mcp"), {}, YES, bootRuntime(FLAGS, cwd));
+    expect(readFileSync(configPath, "utf-8")).toBe(firstBody);
+  });
+
+  it("mcp: a drifted pragma entry (wrong cwd) reads as `drifted` and is updated", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const configPath = join(cwd, ".cursor", "mcp.json");
+    // Seed a stale pragma entry pointing at a different cwd.
+    writeFileSync(
+      configPath,
+      `${JSON.stringify(
+        {
+          mcpServers: {
+            pragma: { command: "pragma", args: ["mcp"], cwd: "/old" },
+          },
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    const { toResult, generator } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "mcp",
+      "both",
+    );
+    const result = toResult({});
+    if (result.kind === "mcp") {
+      expect(result.targets.at(0)?.state).toBe("drifted");
+    }
+    // A drifted target stays SELECTED by default (it needs the update).
+    const multiselect = generator.prompts.find((p) => p.name === "mcpTargets");
+    expect(multiselect?.default).toEqual([configPath]);
+
+    await executeVerb(verbOf("mcp"), {}, YES, bootRuntime(FLAGS, cwd));
+    const config = JSON.parse(readFileSync(configPath, "utf-8"));
+    expect(config.mcpServers.pragma.cwd).toBe(cwd); // updated to the real cwd
+  });
+
+  it("completions: a second run detects the up-to-date script (state=installed)", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const path = completionScriptPath("zsh");
+    // First install.
+    await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
+    const firstBody = readFileSync(path, "utf-8");
+
+    // Detection now classifies the installed script `installed`.
+    const { toResult } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "completions",
+      "both",
+    );
+    const result = toResult({});
+    if (result.kind === "completions") {
+      expect(result.state).toBe("installed");
+    }
+
+    // A real second run is idempotent — the byte-identical script survives.
+    await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
+    expect(readFileSync(path, "utf-8")).toBe(firstBody);
+  });
+
+  it("completions: a stale script (different body) reads as `stale`", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    const path = completionScriptPath("zsh");
+    mkdirSync(join(path, ".."), { recursive: true });
+    writeFileSync(path, "# stale hand-edited completion\n");
+    const { toResult } = await buildSetupPlan(
+      bootRuntime(FLAGS, cwd),
+      "completions",
+      "both",
+    );
+    const result = toResult({});
+    if (result.kind === "completions") {
+      expect(result.state).toBe("stale");
+    }
+  });
+
+  it("lsp: reports `unknown` when the `code` CLI is absent from PATH", async () => {
+    // PATH is the isolated empty dir (beforeEach), so `code` is unresolvable:
+    // detection cannot enumerate and reports `unknown` (installer still runs).
+    const { toResult } = await buildSetupPlan(
+      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      "lsp",
+      "both",
+    );
+    const result = toResult({});
+    expect(result.kind).toBe("lsp");
+    if (result.kind === "lsp") {
+      expect(result.state).toBe("unknown");
+    }
+  });
+});
+
 describe("setup (run-all wizard)", () => {
   it("--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing", async () => {
     const cwd = tmp("pragma-setup-proj-");
