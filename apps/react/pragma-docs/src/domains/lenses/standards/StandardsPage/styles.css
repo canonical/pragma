@@ -5,6 +5,17 @@
  * census in frameStability.tests.tsx).
  */
 
+/* Present for assistive tech and the frame suite's labelledby key
+ * (`lens-standards-title`), absent from the layout — the mode strip's
+ * breadcrumb trail carries the visible title now, so the canvas copy was
+ * the empty band at the top. The shared visually-hidden idiom. */
 .ds.standards-page > h1 {
-  margin-block: 0 var(--space-300, 1.5rem);
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

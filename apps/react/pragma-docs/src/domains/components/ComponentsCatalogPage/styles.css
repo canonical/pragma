@@ -3,6 +3,17 @@
  * layout (CatalogList owns the subnav/grid split and its tokens).
  */
 
-.ds.components-catalog h1 {
-  margin-block: 0 var(--space-300, 1.5rem);
+/* Present for assistive tech and the frame suite's labelledby key
+ * (`lens-components-title`), absent from the layout — the mode strip's
+ * breadcrumb trail carries the visible title now, so the canvas copy was
+ * the empty band at the top. The shared visually-hidden idiom. */
+.ds.components-catalog > h1 {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

@@ -14,6 +14,18 @@
   min-block-size: 0;
 }
 
+/* Present for assistive tech and the frame suite's labelledby key
+ * (`lens-definitions-title`), absent from the layout — the mode strip's
+ * breadcrumb trail now carries the visible title, so the canvas copy was
+ * the empty band at the top. The table's visually-hidden idiom (also used
+ * by the journeys page). */
 .ds.definitions-page > h1 {
-  margin-block: 0 var(--space-300, 1.5rem);
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

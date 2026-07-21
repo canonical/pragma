@@ -12,9 +12,21 @@
   border-radius: 0.5rem;
 }
 
+/* Present for assistive tech and as the article's `aria-labelledby` target
+ * (`term-inspector-title`), absent from the layout — the mode strip's
+ * breadcrumb trail carries the selected term as the terminal crumb now, so
+ * the inspector's h2 was a duplicate title. The shared visually-hidden
+ * idiom; the term/namespace line below stays visible, and the aside keeps
+ * its own `aria-label`. */
 .ds.term-inspector h2 {
-  margin-block: 0 var(--space-050, 0.25rem);
-  font-size: 1.125rem;
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .ds.term-inspector header p {

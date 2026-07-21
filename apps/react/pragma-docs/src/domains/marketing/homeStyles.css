@@ -27,8 +27,19 @@
   max-inline-size: 68ch;
 }
 
+/* Present for assistive tech and the frame suite's labelledby key
+ * (`lobby-title`), absent from the layout — the mode strip's breadcrumb
+ * trail carries the visible "Home" title now, so this canvas copy was
+ * redundant. The shared visually-hidden idiom. */
 .ds.lobby .lobby-hero h1 {
-  margin: 0;
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .ds.lobby .lobby-hero p {
