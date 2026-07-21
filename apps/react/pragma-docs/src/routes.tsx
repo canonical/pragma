@@ -15,6 +15,7 @@ import accountRoutes from "#domains/account/routes.js";
 import componentsRoutes from "#domains/components/routes.js";
 import { LensFilterProvider } from "#domains/lenses/definitions/lensFilterContext.js";
 import definitionsRoutes from "#domains/lenses/definitions/routes.js";
+import journeysRoutes from "#domains/lenses/journeys/routes.js";
 import lensRoutes from "#domains/lenses/routes.js";
 import standardsRoutes from "#domains/lenses/standards/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
@@ -139,18 +140,22 @@ const [
   components,
   definitions,
   standards,
+  journeys,
   guides,
   componentEntity,
   definitionsTerm,
   standardEntity,
+  journeysJob,
 ] = group(publicLayout, [
   componentsRoutes.components,
   definitionsRoutes.definitions,
   standardsRoutes.standards,
+  journeysRoutes.journeys,
   lensRoutes.guides,
   componentsRoutes.componentEntity,
   definitionsRoutes.definitionsTerm,
   standardsRoutes.standardEntity,
+  journeysRoutes.journeysJob,
 ] as const);
 
 const appRoutes = {
@@ -162,10 +167,12 @@ const appRoutes = {
   components,
   definitions,
   standards,
+  journeys,
   guides,
   componentEntity,
   definitionsTerm,
   standardEntity,
+  journeysJob,
 } as const;
 
 export type AppRoutes = typeof appRoutes;

@@ -62,6 +62,15 @@ export const GuidesIcon = ({ size = 16 }: IconProps): ReactElement => (
   </svg>
 );
 
+/** Journeys: a path stepping left to right, the lens's own spine. */
+export const JourneysIcon = ({ size = 16 }: IconProps): ReactElement => (
+  <svg aria-hidden="true" {...sharedProps(size)}>
+    <circle cx="3.5" cy="4" r="1.6" />
+    <circle cx="12.5" cy="12" r="1.6" />
+    <path d="M3.5 5.6v3.9a2 2 0 0 0 2 2h5.4" />
+  </svg>
+);
+
 export const PlaygroundIcon = ({ size = 15 }: IconProps): ReactElement => (
   <svg aria-hidden="true" {...sharedProps(size)}>
     <path d="M5 5 2 8l3 3M11 5l3 3-3 3" />
@@ -83,5 +92,6 @@ export const LENS_ICONS: Readonly<
   definitions: DefinitionsIcon,
   guides: GuidesIcon,
   home: HomeIcon,
+  journeys: JourneysIcon,
   standards: StandardsIcon,
 };

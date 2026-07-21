@@ -34,6 +34,7 @@ describe("Rail", () => {
       "Components",
       "Definitions",
       "Standards",
+      "Journeys",
       "Guides",
     ]);
   });

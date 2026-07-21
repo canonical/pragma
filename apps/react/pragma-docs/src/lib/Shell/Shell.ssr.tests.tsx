@@ -59,6 +59,7 @@ const claimRoutes: RouteMap = {
   components: route({ url: "/components", component: () => null }),
   definitions: route({ url: "/definitions", component: () => null }),
   standards: route({ url: "/standards", component: () => null }),
+  journeys: route({ url: "/journeys", component: () => null }),
   guides: route({ url: "/guides", component: () => null }),
   playground: route({ url: "/playground", component: () => null }),
   account: route({ url: "/account", component: () => null }),
