@@ -9,6 +9,10 @@
 
 .ds.mode-strip {
   z-index: var(--z-chrome);
+  /* A band spanning the viewport's full width — a strip, not a column
+   * tenant. It is a grid item of the viewport subgrid, so without this it
+   * would occupy a single inherited column. */
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--space-150, 0.75rem);
@@ -26,11 +30,15 @@
   white-space: nowrap;
 }
 
-/* The controls socket grows to claim the middle of the band. */
+/* The controls socket grows to claim the middle of the band and packs its
+ * filters east — context anchored west, controls hard right, the band reading
+ * as space-between across the strip. Empty, it collapses to nothing (no
+ * children to push), so the frame stays stationary. */
 .ds.mode-strip .strip-controls {
   flex: 1;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-100, 0.5rem);
   flex-wrap: wrap;
 }

@@ -1,16 +1,28 @@
 /*
- * Rail — the primary rail (AX.2). Consumes --rail-w from the shell's
- * layout tokens; never hard-codes the width. Chrome stratum on the
- * semantic z-axis. Carries the ONE sanctioned small-viewport reflow
- * (AX.1): below 56.25rem (the exhibit's 900px) the rail narrows to its
- * icons' min-content — labels, hints, and wordmark hide; the entries and
- * their accessible names stay. No other rule in the app may branch on the
+ * Rail — the primary rail (AX.2). Under the strict intrinsic-grid model
+ * (owner ruling) the rail is a grid ITEM of the shell: its width is a
+ * COLUMN SPAN of the shell's intrinsic columns (`--rail-span`), never a
+ * fixed --rail-w token — the token is gone. Because the rail spans the
+ * shell's own columns, its inner edge lands on an intrinsic line that every
+ * lens's own rail also lands on: the whole app reads against one ruler.
+ * Chrome stratum on the semantic z-axis. Carries the ONE sanctioned
+ * small-viewport reflow (AX.1): below 56.25rem the rail narrows to a single
+ * column and shows only its icons — labels, hints, and wordmark hide; the
+ * entries and their accessible names stay. No other rule branches on the
  * viewport.
+ *
+ * The internals stay flex (a vertical stack of entries) — only the OUTER
+ * box is a grid item claiming a column span. The rail is a leaf of the grid
+ * chain, not a subgrid pass-through, because nothing inside it aligns to the
+ * shell columns; it is a stack, not a column layout.
  */
 
 .ds.rail {
   z-index: var(--z-chrome);
-  inline-size: var(--rail-w);
+  /* Width by span, not by token: the rail claims the westmost columns. Two
+   * of the ~12 columns at a 1440 canvas ≈ the old 12.5rem, and it holds its
+   * proportion as the count grows (span is read against the LIVE count). */
+  grid-column: var(--rail-span, span 2);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -18,6 +30,7 @@
   border-inline-end: 1px solid var(--color-border-muted, #ddd);
   background: var(--color-background, #fff);
   overflow-y: auto;
+  min-inline-size: 0;
   min-block-size: 0;
 }
 
@@ -152,10 +165,11 @@
  * changes). */
 @media (max-width: 56.25rem) {
   .ds.rail {
-    /* The icon rail: exhibit's 3.6rem, widened for 16px glyphs + padding.
-     * A Rail-local metric, not one of the four frame tokens — those pin
-     * the UNcollapsed frame across lens switches. */
-    inline-size: 4rem;
+    /* The icon rail: a SINGLE intrinsic column (the narrowest the rail can
+     * be and still hold a 16px glyph — at --grid-col-min 100px a lone
+     * column is ~100px, ample). Span, not inline-size: the collapse stays
+     * inside the one grid model rather than reaching for a fixed width. */
+    grid-column: span 1;
   }
 
   .ds.rail .rail-label,
