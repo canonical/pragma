@@ -172,10 +172,14 @@ describe("the second source root", () => {
   });
 
   it("does not smear the concept shim across the ds: types", () => {
-    // The two fields `shim-concept.ttl` would add to every ds: type.
+    // With the shim excluded, `ds:embodiesConcept` (rdfs:domain ds:Entity)
+    // does not reach `Component`. Removing the exclusion smears the field
+    // — verified live: `Component` goes 22 → 23, gaining `embodiesConcepts`
+    // (the compiled field name is the PLURAL). The `Component: 22` count in
+    // ESTABLISHED_FIELD_COUNTS above is the real guard and catches the
+    // smear whatever the field spells; this pins the specific culprit.
     const component = TYPES.get("Component");
-    expect(component?.has("embodiesConcept")).toBe(false);
-    expect(component?.has("embodiedBies")).toBe(false);
+    expect(component?.has("embodiesConcepts")).toBe(false);
   });
 
   it("adds the demand model's types", () => {

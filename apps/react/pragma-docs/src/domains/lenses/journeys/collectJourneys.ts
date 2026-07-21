@@ -165,6 +165,10 @@ export const collectJourneys = (
   const pairingsByJob = new Map<string, JourneyPairing[]>();
   for (const pairing of merged.values()) {
     const jobUri = pairing.forJob?.uri;
+    // A pairing whose job is not in the jobs window is dropped: jobs drive
+    // the tree (R1 coordinate-rooting), so a pairing with no rendered job
+    // has nowhere to hang. Honest by construction and no such orphans exist
+    // in the live model (all 51 paired jobs are within a single 100-page).
     if (jobUri === undefined) continue;
     const surface = pairing.pairsSurface;
     const layoutNode = surface?.composes?.edges[0]?.node;
