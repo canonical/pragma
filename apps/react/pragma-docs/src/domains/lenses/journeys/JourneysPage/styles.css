@@ -1,11 +1,20 @@
 /*
- * JourneysPage — the lens heading over the explorer. Mirrors the
- * definitions page: the page fills the canvas region (heading row + a
- * released 1fr row) so the explorer's panels own their scroll rather than
- * the canvas. min-block-size: 0 at every link is the release chain
- * (INTRINSIC-GRID.md). Zero layout-capable conditional at-rules — the
- * census (frameStability.tests) sanctions exactly one, app-wide, and it is
- * the frame's collapse.
+ * JourneysPage — the explorer under a heading the STRIP already carries.
+ * The page fills the canvas region (heading row + a released 1fr row) so
+ * the explorer's panels own their scroll rather than the canvas.
+ * min-block-size: 0 at every link is the release chain (INTRINSIC-GRID.md).
+ * Zero layout-capable conditional at-rules — the census (frameStability.
+ * tests) sanctions exactly one, app-wide, and it is the frame's collapse.
+ *
+ * THE TOP-SPACE FIX (FIX 3). The canvas already opens with the mode strip,
+ * whose context slot reads "Journeys" — so a SECOND, visible `<h1>Journeys`
+ * below it was pure redundancy that cost a whole heading line plus its
+ * 1.5rem bottom margin, stacked on the canvas's own 1.5rem top padding: the
+ * empty band the owner asked about. The h1 STAYS in the DOM — it is the
+ * `aria-labelledby` target and the frame suite's `lens-journeys-title` key —
+ * but it is visually hidden (the table's own visually-hidden idiom), so the
+ * triptych starts at the canvas edge and the heading is heard, not seen.
+ * Lens-local; the certified frame is untouched.
  */
 
 .ds.journeys-page {
@@ -15,6 +24,16 @@
   min-block-size: 0;
 }
 
+/* Present for assistive tech and the frame's labelledby key, absent from the
+ * layout — the strip already titles the mode, so the visible copy was the
+ * empty band at the top. */
 .ds.journeys-page > h1 {
-  margin-block: 0 var(--space-300, 1.5rem);
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
