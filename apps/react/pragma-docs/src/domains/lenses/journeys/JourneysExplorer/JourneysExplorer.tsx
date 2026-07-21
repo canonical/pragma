@@ -23,7 +23,11 @@ import {
   DEFAULT_TABLE_STATE,
   type JourneyTableState,
 } from "../journeyTableModel.js";
-import type { JourneysExplorerProps } from "./types.js";
+import {
+  DEFAULT_JOURNEY_VIEW,
+  type JourneysExplorerProps,
+  type JourneyView,
+} from "./types.js";
 import "./styles.css";
 
 /**
@@ -137,6 +141,55 @@ const journeysExplorerQuerySource = (): unknown => graphql`
 void journeysExplorerQuerySource;
 
 const componentCssClassName = "ds journeys-explorer";
+
+/** The two readings the switch offers, in render order. */
+const VIEW_OPTIONS: readonly {
+  readonly key: JourneyView;
+  readonly label: string;
+}[] = [
+  { key: "table", label: "Table" },
+  { key: "graph", label: "Graph" },
+];
+
+/**
+ * The Table ⇄ Graph switch (FIX 2). An in-canvas segmented control, not a
+ * strip tenant: the journeys lens deliberately claims only the strip's
+ * `context` socket (its filters need explanatory prose the strip is the
+ * wrong place for — see routes.ts and the frame census), and the view
+ * choice is a CANVAS-LOCAL concern nothing in the strip reads. Wiring it
+ * through the strip would mean a shared context above the frame and flipping
+ * the certified `controls:false` ruling for state that never leaves the
+ * canvas — heavier than the fix warrants.
+ *
+ * A labelled `fieldset` of `aria-pressed` toggles — the exact idiom the
+ * table's own group control and the rail's persona chips use, so the choice
+ * is announced as a named group and each option stays visible without colour
+ * alone (weight + fill). Pure — it renders `view` and calls `onViewChange`,
+ * holding no state of its own.
+ */
+const JourneyViewSwitch = ({
+  view,
+  onViewChange,
+}: {
+  readonly view: JourneyView;
+  readonly onViewChange: (next: JourneyView) => void;
+}): React.ReactElement => (
+  <fieldset aria-label="Journey view" className="journeys-view-switch">
+    {VIEW_OPTIONS.map((option) => (
+      <button
+        aria-pressed={view === option.key}
+        className="journeys-view-switch-option"
+        key={option.key}
+        onClick={() => {
+          onViewChange(option.key);
+        }}
+        type="button"
+      >
+        {option.label}
+      </button>
+    ))}
+  </fieldset>
+);
 
 /**
  * The Journeys lens's route root: the demand model as a triptych — the
@@ -277,6 +330,16 @@ const JourneysExplorer = ({
     [coordinates, jobDetail],
   );
 
+  // THE VIEW SWITCH (FIX 2, P-D7). The table and the graph are two readings
+  // of the same model and the lens shows ONE at a time — the owner's ruling.
+  // The choice is EPHEMERAL client state and never enters the URL (only the
+  // selected job is addressable). Its initial value is the constant DEFAULT_
+  // JOURNEY_VIEW — "table", the primary surface — a no-op default read from
+  // nothing, so the server's first paint (Table) and the client's first
+  // render agree byte for byte; switching to the graph is a client
+  // transition. Never seeded from `localStorage`, `window` or the query.
+  const [view, setView] = useState<JourneyView>(DEFAULT_JOURNEY_VIEW);
+
   // THE TABLE'S EPHEMERAL ARRANGEMENT (P-D7). Sort, group and expansion
   // are client state and never enter the URL — only the selected job is
   // addressable. The initial value is a pure CONSTANT, which is the
@@ -337,20 +400,39 @@ const JourneysExplorer = ({
         personas={personas}
         rolesByCoordinate={rolesByCoordinate}
       />
-      {/* THE PRIMARY SURFACE. The table carries all 52 jobs with their
-          descriptions, sortable and groupable; the well below it is the
-          SELECTED journey's shape. That is the honest relationship — a
-          diagram is good at one journey and bad at 52 at once. */}
+      {/* THE PRIMARY SURFACE, one reading at a time (FIX 2). The switch
+          chooses TABLE — all 52 jobs, sortable and groupable — or GRAPH —
+          the selected journey's left-to-right spine. They are never shown
+          together: a diagram is good at one journey and bad at 52 at once,
+          and a table and a diagram of the same rows side by side is noise.
+          The table leads because it is the index; the graph is one journey's
+          detail. */}
       <div className="journeys-explorer-main">
-        <JourneyTable
-          expanded={expanded}
-          job={job}
-          onStateChange={setTableState}
-          onToggleExpanded={toggleExpanded}
-          rows={rows}
-          state={tableState}
-        />
-        <JourneyWell coordinates={drawn} job={job} />
+        <JourneyViewSwitch onViewChange={setView} view={view} />
+        {view === "table" ? (
+          <JourneyTable
+            expanded={expanded}
+            job={job}
+            onStateChange={setTableState}
+            onToggleExpanded={toggleExpanded}
+            rows={rows}
+            state={tableState}
+          />
+        ) : (
+          <div className="journeys-explorer-graph">
+            {/* The empty-selection case, handled honestly: the well always
+                draws the default coordinate's spine (never blank), and this
+                line names what to do to make it about ONE journey — pick a
+                job. It disappears once a job is selected. */}
+            {job === undefined ? (
+              <p className="journeys-explorer-graph-prompt">
+                Showing the default coordinate&rsquo;s journeys. Select a job —
+                from the rail or the diagram — to centre the graph on it.
+              </p>
+            ) : null}
+            <JourneyWell coordinates={drawn} job={job} />
+          </div>
+        )}
       </div>
       <JourneyInspector job={inspected} />
     </div>

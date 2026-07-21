@@ -38,14 +38,14 @@
   min-block-size: 0;
 }
 
-/* The centre column: the TABLE is the primary surface, the WELL is the
- * selected journey's shape beneath it. The table takes the larger share
- * and owns its own scroll; the well takes the rest, with a floor it never
- * shrinks below (a diagram cannot read at zero height). Both release their
- * min-content claim so the frame stays in charge of the width. */
+/* The centre column: the view SWITCH on top, then ONE reading beneath it —
+ * the table or the graph, never both (FIX 2). The switch row takes its
+ * content; the view row releases to fill the rest and owns its own scroll.
+ * Both release their min-content claim so the frame stays in charge of the
+ * width. */
 .ds.journeys-explorer .journeys-explorer-main {
   display: grid;
-  grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-rows: min-content minmax(0, 1fr);
   gap: 0;
   min-block-size: 0;
   min-inline-size: 0;
@@ -57,7 +57,52 @@
   padding: var(--space-200, 1rem);
 }
 
-.ds.journeys-explorer .journeys-explorer-main > .journey-well {
+/* The graph view fills its row; the well inside owns the height and the
+ * empty-selection prompt sits above it. */
+.ds.journeys-explorer .journeys-explorer-graph {
+  display: grid;
+  grid-template-rows: min-content minmax(0, 1fr);
+  min-block-size: 0;
+}
+
+.ds.journeys-explorer .journeys-explorer-graph > .journey-well {
   min-block-size: 16rem;
-  border-block-start: 1px solid var(--color-border-muted, #ddd);
+}
+
+.ds.journeys-explorer .journeys-explorer-graph-prompt {
+  margin-block: 0;
+  padding: var(--space-100, 0.5rem) var(--space-200, 1rem);
+  font-size: 0.8125rem;
+  color: var(--color-text-muted, #666);
+  border-block-end: 1px solid var(--color-border-muted, #ddd);
+}
+
+/* The Table ⇄ Graph segmented control — a row of exclusive toggles, the
+ * checked one filled and weighted (never colour alone). Sits at the top of
+ * the centre column, above whichever view is shown. */
+.ds.journeys-explorer .journeys-view-switch {
+  display: flex;
+  gap: var(--space-050, 0.25rem);
+  margin: 0;
+  padding: var(--space-100, 0.5rem) var(--space-200, 1rem);
+  border: 0;
+  border-block-end: 1px solid var(--color-border-muted, #ddd);
+}
+
+.ds.journeys-explorer .journeys-view-switch-option {
+  padding-block: var(--space-050, 0.25rem);
+  padding-inline: var(--space-150, 0.75rem);
+  border: 1px solid var(--color-border-muted, #ddd);
+  border-radius: var(--border-radius, 0.25rem);
+  background: var(--color-background, #fff);
+  color: var(--color-text, #111);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.ds.journeys-explorer .journeys-view-switch-option[aria-pressed="true"] {
+  border-color: var(--color-brand-primary, #06c);
+  background: var(--color-background-layer2, #f4f4f4);
+  font-weight: 600;
 }

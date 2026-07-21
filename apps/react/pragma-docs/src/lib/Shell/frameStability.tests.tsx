@@ -405,22 +405,38 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
       'data-slot="reading-canvas"',
     );
     // The journeys canvases render REAL content from the fixture records:
-    // the index carries the PRIMARY-SURFACE table (AV-351) over the diagram
-    // and the honest empty inspector; the job canvas carries the selected
-    // job's story and the well's server-rendered node DOM.
+    // the index carries the PRIMARY-SURFACE table (AV-351) and the honest
+    // empty inspector; the job canvas carries the selected job's inspector.
+    // The table and the graph are ONE reading at a time now (FIX 2), with
+    // the TABLE as the default — so the default SSR output is the table, and
+    // the well's node DOM is a client transition, NOT in the served markup.
     expect(mustGet("/journeys").canvas).toContain('id="lens-journeys-title"');
-    // The table is the lens's primary surface now, and it SSRs: its slot,
-    // its row-header cells and its group-by control are all in the served
-    // markup — the sortable data table exists before any client JS.
+    // The table is the lens's primary surface and the DEFAULT view, and it
+    // SSRs: its slot, its row-header cells and its group-by control are all
+    // in the served markup — the sortable data table exists before any
+    // client JS.
     expect(mustGet("/journeys").canvas).toContain('data-slot="journeys-table"');
     expect(mustGet("/journeys").canvas).toContain('scope="row"');
     expect(mustGet("/journeys").canvas).toContain("Group by");
     expect(mustGet("/journeys").canvas).toContain("Select a job");
-    expect(mustGet("/journeys").canvas).toContain("react-flow__node-hop");
+    // The view switch is server-rendered, defaulting to Table (its checked
+    // option), so a reader can flip to the graph after hydration.
+    expect(mustGet("/journeys").canvas).toContain('aria-label="Journey view"');
+    // HONEST: the well (react-flow node DOM) is NOT in the default output —
+    // the graph is the non-default view, reached by the client switch. This
+    // used to assert the node DOM was present because the well SSR'd
+    // alongside the table; with one-view-at-a-time and table-default, the
+    // default canvas is the table alone.
+    expect(mustGet("/journeys").canvas).not.toContain("react-flow__node-hop");
+    // The job canvas defaults to the table too (the view is ephemeral, not
+    // URL-derived), so it carries the inspector's selected-job heading — not
+    // the well's node DOM.
     expect(mustGet(JOURNEYS_JOB_URL).canvas).toContain(
       'id="journey-inspector-title"',
     );
-    expect(mustGet(JOURNEYS_JOB_URL).canvas).toContain("react-flow__node-hop");
+    expect(mustGet(JOURNEYS_JOB_URL).canvas).not.toContain(
+      "react-flow__node-hop",
+    );
     expect(mustGet("/guides").canvas).toContain('id="lens-guides-title"');
     // The entity page renders its REAL data from the fixture records, not
     // a loading state — the whole view SSRs from a warm store.
