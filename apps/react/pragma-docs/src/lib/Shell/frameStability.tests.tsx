@@ -53,6 +53,24 @@
  * every ontology edit into a frame-stability failure — a false alarm about
  * something this suite does not measure.
  *
+ * THE P-6 CONTEXT WIDENING (owner-ruled, recorded here rather than
+ * smuggled). Until P-6 the `context` slot carried a bare lens-name STRING,
+ * and its pattern was text-only. The owner ruling moved every page title out
+ * of the canvas and INTO the strip as the DS `Breadcrumbs` pattern, so the
+ * context slot now holds navigation MARKUP — the trail to the current page.
+ * The model widened the same disciplined way the controls/status claims did:
+ * the context slot's pattern is now markup-aware (bounded by the next slot),
+ * the per-URL model asserts the FULL trail RAW (an index page's single
+ * current crumb, or an entity page's linked lens crumb + current crumb whose
+ * text is the ROUTE PARAM), the normaliser blanks exactly that slot, and the
+ * teeth test's context perturbation still proves the blanking is scoped to
+ * the slot's contents, never its identity. Because the trail is URL-derived
+ * (a constant lens crumb + the route param, no graph read), pinning it does
+ * NOT couple this suite to the ontology — a wrong claim still fails RAW
+ * first. The breadcrumb's terminal crumb also carries one
+ * `aria-current="page"` on a `<span>`; the raw aria-current census models it
+ * per URL (added to the rail's anchor count), so the total stays exact.
+ *
  * Since P-5 the measured set also carries a non-lens URL — the Button
  * entity page — rendered from its captured fixture records (initialData,
  * exactly what the dev servers embed), so its canvas is real content and
