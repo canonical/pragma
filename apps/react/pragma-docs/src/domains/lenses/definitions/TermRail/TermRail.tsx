@@ -95,6 +95,15 @@ const MAX_INDENT_DEPTH = 6;
  * opacity shows, and each heading reports its own match count, so a filter
  * that dims everything still says so in words rather than by silence.
  *
+ * BIDIRECTIONAL HOVER (past the exhibit, whose hover only fades the graph):
+ * pointing at — or keyboard-focusing — a rail item raises it as the shared
+ * ego centre (`onHoverTerm`), so the WELL fades to that term's 1-hop
+ * neighbourhood exactly as a graph-node hover does; and when the shared
+ * centre (`hoverCentre`) names an item, that item takes `is-hovered`,
+ * distinct from the `.active`/`aria-current` selection underneath. The
+ * centre is CLIENT-ONLY and neutral (undefined) at mount, so it costs the
+ * SSR-determinism argument nothing (see `DefinitionsExplorer`).
+ *
  * Both filter axes reach this rail: the text query (rail-only by
  * contract — it never re-shapes the graph) and the chips (which govern
  * both). All of it is EPHEMERAL view state owned by `DefinitionsExplorer`
@@ -110,11 +119,35 @@ const TermRail = ({
   filter,
   ontologies,
   depthByUri,
+  hoverCentre,
+  onHoverTerm,
 }: TermRailProps): React.ReactElement => {
   const data = useFragment<TermRail_ontologies$key>(
     termRailFragmentNode,
     ontologies,
   );
+
+  // One binding for both input modalities and both item kinds: raise the
+  // term on pointer-enter/keyboard-focus, clear it on leave/blur. The well
+  // reads the same shared centre, so this is what makes a rail hover reach
+  // the graph. `is-hovered` marks the row the shared centre currently names
+  // — which is THIS row when the pointer is here, but also when the pointer
+  // is over this term's NODE in the graph.
+  const hoverBindings = (prefixed: string) => ({
+    className: prefixed === hoverCentre ? "is-hovered" : undefined,
+    onBlur: () => {
+      onHoverTerm(undefined);
+    },
+    onFocus: () => {
+      onHoverTerm(prefixed);
+    },
+    onMouseEnter: () => {
+      onHoverTerm(prefixed);
+    },
+    onMouseLeave: () => {
+      onHoverTerm(undefined);
+    },
+  });
 
   return (
     <nav
@@ -172,6 +205,7 @@ const TermRail = ({
                   data-depth={Math.min(depth, MAX_INDENT_DEPTH)}
                   data-dimmed={dimmed || undefined}
                   key={term.uri}
+                  {...hoverBindings(prefixed)}
                 >
                   {/* The abstraction marker: the SAME distinction the graph
                       draws (dashed vs solid), restated here so the rail is
@@ -206,6 +240,7 @@ const TermRail = ({
                   aria-disabled={dimmed || undefined}
                   data-dimmed={dimmed || undefined}
                   key={term.uri}
+                  {...hoverBindings(prefixed)}
                 >
                   <Link params={{ term: prefixed }} to="definitionsTerm">
                     {termLabel(term.label, prefixed)}

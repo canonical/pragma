@@ -1,6 +1,6 @@
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ReactElement, Suspense } from "react";
+import { type ReactElement, Suspense, useState } from "react";
 import { useFragment, useLazyLoadQuery } from "react-relay";
 import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
@@ -37,6 +37,8 @@ const RailFromQuery = (): ReactElement => {
       depthByUri.set(uri, depth);
     }
   }
+  // The shared ego centre stands in for the explorer's lifted state.
+  const [hoverCentre, setHoverCentre] = useState<string | undefined>(undefined);
   // The unfiltered seed, exactly as the explorer builds it.
   return (
     <TermRail
@@ -44,6 +46,8 @@ const RailFromQuery = (): ReactElement => {
       filter={allNamespacesFilter(
         data.ontologies.map((ontology) => ontology.prefix),
       )}
+      hoverCentre={hoverCentre}
+      onHoverTerm={setHoverCentre}
       ontologies={data.ontologies}
     />
   );

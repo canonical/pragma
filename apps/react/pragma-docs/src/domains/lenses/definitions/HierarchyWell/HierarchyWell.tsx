@@ -1,7 +1,7 @@
 import { Link } from "@canonical/router-react";
 import { type NodeProps, ReactFlow } from "@xyflow/react";
 import type React from "react";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useMemo } from "react";
 import { graphql, useFragment } from "react-relay";
 import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
@@ -106,9 +106,16 @@ const DEFAULT_VIEWPORT = { x: 24, y: 24, zoom: 0.5 };
  * an equivalent; our nodes are real links, so focus is available and the
  * fade follows keyboard traversal exactly as it follows the pointer.
  *
- * Hover/focus state is CLIENT-ONLY and starts empty, so the first client
- * render reproduces the server's selection-only markup byte for byte —
- * see `decorateGraph.ts` for the argument and the test that pins it.
+ * The ego centre is no longer well-LOCAL. It is the SHARED `hoverCentre`
+ * that `DefinitionsExplorer` owns, so a graph hover and a rail hover write
+ * the one value and both surfaces read it — true bidirectional sync. This
+ * component's job shrank to: report which node the pointer/keyboard touched
+ * (`onHoverTerm`), and fade to whatever centre it is handed.
+ *
+ * Hover/focus state is CLIENT-ONLY and starts empty (the explorer seeds it
+ * `undefined`), so the first client render reproduces the server's
+ * selection-only markup byte for byte — see `decorateGraph.ts` for the
+ * argument and the test that pins it.
  *
  * Accessibility posture: the well carries an accessible name, and every
  * node is a real link — but the COMPLETE keyboard path through the
@@ -127,6 +134,8 @@ const HierarchyWell = ({
   filter,
   ontologies,
   term,
+  hoverCentre,
+  onHoverTerm,
 }: HierarchyWellProps): React.ReactElement => {
   const data = useFragment<HierarchyWell_ontologies$key>(
     hierarchyWellFragmentNode,
@@ -134,9 +143,10 @@ const HierarchyWell = ({
   );
   const graph = useMemo(() => buildClassTree(data), [data]);
 
-  // The transient ego centre: hover or keyboard focus, whichever spoke
-  // last. Client-only, and `undefined` on first paint by construction.
-  const [focused, setFocused] = useState<string | undefined>(undefined);
+  // The transient ego centre is the SHARED one, handed down as a prop:
+  // hover or keyboard focus on the graph OR the rail, whichever spoke last.
+  // Client-only, and `undefined` on first paint by construction.
+  const focused = hoverCentre;
 
   // The graph answers ONLY to the chip axes. Text is rail-only by
   // contract, so it is destructured out of the memo's dependencies
@@ -190,16 +200,16 @@ const HierarchyWell = ({
         nodesDraggable={false}
         nodeTypes={nodeTypes}
         onBlur={() => {
-          setFocused(undefined);
+          onHoverTerm(undefined);
         }}
         onFocus={(event) => {
-          setFocused(readTermFromEvent(event.target));
+          onHoverTerm(readTermFromEvent(event.target));
         }}
         onNodeMouseEnter={(_event, node) => {
-          setFocused(node.id);
+          onHoverTerm(node.id);
         }}
         onNodeMouseLeave={() => {
-          setFocused(undefined);
+          onHoverTerm(undefined);
         }}
       />
       {/* Canvas-local furniture: the two things that genuinely hover over
@@ -218,15 +228,24 @@ const HierarchyWell = ({
  * the search box (the shared filter's `text` changes), but the WELL does
  * not answer to text. Without this, typing would re-render React Flow's
  * whole 29-node tree per character — measurably slow, and pure waste,
- * since the resulting graph is identical. The props are the fragment ref,
- * the term and the filter object; only the last changes on a keystroke,
- * and the comparator below ignores exactly the field the graph ignores.
+ * since the resulting graph is identical.
+ *
+ * since the resulting graph is identical.
+ *
+ * The graph answers to: the fragment ref, the selected term, the CHIP
+ * axes, and now the shared `hoverCentre` (which re-centres the ego-fade —
+ * a rail hover MUST reach the graph). It ignores the filter's TEXT
+ * (rail-only) and `onHoverTerm` (a stable callback the explorer memoises;
+ * comparing it would defeat the memo on every render). So the comparator
+ * re-renders on exactly the inputs the decoration reads — and pinning
+ * `hoverCentre` here is what lets a rail hover fade the graph at all.
  */
 export default memo(HierarchyWell, (previous, next) => {
   if (
     previous.ontologies !== next.ontologies ||
     previous.term !== next.term ||
-    previous.className !== next.className
+    previous.className !== next.className ||
+    previous.hoverCentre !== next.hoverCentre
   ) {
     return false;
   }

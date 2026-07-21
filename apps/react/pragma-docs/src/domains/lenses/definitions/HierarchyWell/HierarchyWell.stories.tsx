@@ -1,6 +1,6 @@
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type ReactElement, Suspense } from "react";
+import { type ReactElement, Suspense, useState } from "react";
 import { useLazyLoadQuery } from "react-relay";
 import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
@@ -31,9 +31,18 @@ const WellFromQuery = ({
   const filter = allNamespacesFilter(
     data.ontologies.map((ontology) => ontology.prefix),
   );
+  // The shared ego centre lives above the well in production; the story
+  // stands in for that owner so hover fades the graph here too.
+  const [hoverCentre, setHoverCentre] = useState<string | undefined>(undefined);
   return (
     <div style={{ blockSize: "24rem" }}>
-      <HierarchyWell filter={filter} ontologies={data.ontologies} term={term} />
+      <HierarchyWell
+        filter={filter}
+        hoverCentre={hoverCentre}
+        onHoverTerm={setHoverCentre}
+        ontologies={data.ontologies}
+        term={term}
+      />
     </div>
   );
 };

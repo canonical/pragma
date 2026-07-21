@@ -1,5 +1,5 @@
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { graphql, useFragment, useLazyLoadQuery } from "react-relay";
 import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
@@ -82,6 +82,17 @@ const componentCssClassName = "ds definitions-explorer";
  * string. Selection, by contrast, IS server-rendered: it comes from the
  * URL (`term`), identical on both sides.
  *
+ * THE SHARED HOVER CENTRE (P-D7 transient, and the bidirectional-hover
+ * mechanism). The transient ego centre used to be well-LOCAL state; it is
+ * lifted HERE, beside the filter, so the rail and the well write the one
+ * value and both read it. Hovering (or focusing) a graph node OR a rail
+ * item raises the centre; the well fades to its 1-hop neighbourhood and
+ * the rail marks the matching item, in either direction. It is CLIENT-ONLY
+ * and seeded `undefined` — the neutral value that produces the same markup
+ * as the server's selection-only render, so it never breaks hydration
+ * (the same rule the filter obeys). It is NEVER seeded from the URL,
+ * `localStorage` or `window`.
+ *
  * DEPTH FOR THE RAIL. The rail shows each class's superclass depth, but its
  * own fragment cannot carry `superclass` without re-emitting the shared
  * operation's query text (the relay-byte-identity contract — verified).
@@ -133,6 +144,16 @@ const DefinitionsExplorer = ({
   // they type.
   const [searchText, setSearchText] = useState("");
 
+  // THE SHARED EGO CENTRE. Client-only, `undefined` at mount (the neutral
+  // value that keeps first paint equal to the server). Both surfaces read
+  // and write it: this is what makes the hover bidirectional.
+  const [hoverCentre, setHoverCentre] = useState<string | undefined>(undefined);
+  // Stable so the well's memo boundary can compare on `hoverCentre` alone
+  // (a fresh callback each render would defeat the memo — see HierarchyWell).
+  const onHoverTerm = useCallback((next: string | undefined) => {
+    setHoverCentre(next);
+  }, []);
+
   // The rail's depth map — the well's own superclass-depth measure, read
   // from the well's fragment (this operation already fetches it; the rail's
   // fragment does not, and cannot without a query change). Keyed by FULL
@@ -178,10 +199,18 @@ const DefinitionsExplorer = ({
         <TermRail
           depthByUri={depthByUri}
           filter={filter}
+          hoverCentre={hoverCentre}
+          onHoverTerm={onHoverTerm}
           ontologies={data.ontologies}
         />
       </div>
-      <HierarchyWell filter={filter} ontologies={data.ontologies} term={term} />
+      <HierarchyWell
+        filter={filter}
+        hoverCentre={hoverCentre}
+        onHoverTerm={onHoverTerm}
+        ontologies={data.ontologies}
+        term={term}
+      />
       <TermInspector
         classRef={data.ontologyClass}
         namespaces={namespaces}

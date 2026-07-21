@@ -21,4 +21,20 @@ export interface TermRailProps {
    * than as a fragment field. A URI absent from the map reads as depth 0.
    */
   readonly depthByUri: ReadonlyMap<string, number>;
+  /**
+   * The transient hover/focus centre — the shared ego centre this lens
+   * lifts into `DefinitionsExplorer` (P-D7). CLIENT-ONLY: `undefined` on
+   * the server and on the first client paint, so the rail's initial markup
+   * matches the server's byte for byte. When it names a rail term, that
+   * item takes `is-hovered` (distinct from `.active`/`aria-current`
+   * selection). The prefixed term address, matching the item's own id.
+   */
+  readonly hoverCentre: string | undefined;
+  /**
+   * Raise (or clear) a term as the shared ego centre — the rail's half of
+   * the bidirectional hover. Called on pointer-enter/leave and keyboard
+   * focus/blur of an item; the well reads the same centre and fades to its
+   * 1-hop neighbourhood, exactly as a graph-node hover does.
+   */
+  readonly onHoverTerm: (term: string | undefined) => void;
 }

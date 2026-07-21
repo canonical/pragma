@@ -32,4 +32,20 @@ export interface HierarchyWellProps {
   readonly ontologies: HierarchyWell_ontologies$key;
   /** The selected term (prefixed URI), or undefined on `/definitions`. */
   readonly term: string | undefined;
+  /**
+   * The SHARED transient ego centre — hover or keyboard focus on EITHER
+   * surface, lifted into `DefinitionsExplorer` so the rail and the well
+   * agree on one focus (P-D7). The well fades to this centre's 1-hop
+   * neighbourhood. CLIENT-ONLY: `undefined` on the server and the first
+   * client paint, so the well's boot markup is the selection-only fade,
+   * byte-identical to the server's (see `decorateGraph.ts`).
+   */
+  readonly hoverCentre: string | undefined;
+  /**
+   * Raise (or clear) the shared ego centre from a graph interaction —
+   * pointer-enter/leave on a node, and keyboard focus/blur within the flow.
+   * The rail reads the same centre and marks the matching item, so a graph
+   * hover lights up the index and a rail hover fades the graph.
+   */
+  readonly onHoverTerm: (term: string | undefined) => void;
 }

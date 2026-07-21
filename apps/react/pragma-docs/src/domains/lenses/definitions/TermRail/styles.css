@@ -129,6 +129,19 @@
   opacity: 0.38;
 }
 
+/* THE HOVER HIGHLIGHT — the rail half of the bidirectional sync, DISTINCT
+ * from selection. When the shared ego centre names this item (because the
+ * pointer is over it, OR over its node in the graph, OR it is
+ * keyboard-focused), the row lifts with a soft fill. Transient, client-only
+ * view state; the selection's own weight (below) persists underneath it. */
+.ds.term-rail li.is-hovered {
+  background: color-mix(
+    in oklab,
+    var(--color-text, #000) 6%,
+    var(--color-background, #fff)
+  );
+}
+
 .ds.term-rail li a {
   overflow-wrap: anywhere;
 }
