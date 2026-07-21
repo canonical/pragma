@@ -26,6 +26,7 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 // side-effect import, no test behaviour of its own).
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
+import journeysExplorerRecords from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecords.js";
 import journeysExplorerRecordsJob from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
@@ -120,6 +121,21 @@ const SEEDED_PAGES = [
     serverMarker: '<h2 id="journey-inspector-title">job.l3</h2>',
     liveSelector: "#journey-inspector-title",
     liveText: "job.l3",
+  },
+  // Journeys INDEX block (AV-351): the table is the lens's primary surface,
+  // and its whole ephemeral arrangement — the default sort, the default
+  // grouping, the empty expansion set — is applied by pure comparators from
+  // a constant, so the server's first paint and the client's first render
+  // are identical by construction. Hydrating over the server-rendered table
+  // must stay mismatch-silent: this is the React 19 mismatch a console.error
+  // spy would miss, caught here by onRecoverableError never firing.
+  {
+    name: "journeys index table",
+    url: "/journeys",
+    records: journeysExplorerRecords,
+    serverMarker: 'data-slot="journeys-table"',
+    liveSelector: ".journey-table-group-control legend",
+    liveText: "Group by",
   },
   // Home block (AV-350): the lobby — the front door's two projections
   // SSR from the captured store and must survive hydration

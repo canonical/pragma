@@ -546,6 +546,40 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(journeysHtml).toContain("__INITIAL_DATA__");
             expect(journeysHtml).toContain('"records"');
 
+            //     THE PRIMARY SURFACE, in the server HTML (AV-351). The
+            //     table is the lens's index now, and it SSRs whole: its
+            //     slot, its accessible structure (a row-header cell per
+            //     job, sortable column headers via aria-sort) and its
+            //     group-by control are all in the served markup, before any
+            //     client JS. A sortable data table that only becomes one
+            //     after hydration would fail a reader without JS; this
+            //     proves the table is real at first paint.
+            expect(journeysHtml).toContain('data-slot="journeys-table"');
+            expect(journeysHtml).toContain('scope="row"');
+            expect(journeysHtml).toMatch(/aria-sort="(ascending|descending)"/);
+            expect(journeysHtml).toContain("Group by");
+            //     THE DEFAULT SORT is in the server HTML, not applied later:
+            //     the table's caption states its live row count, so the
+            //     first paint carries the deterministic default arrangement
+            //     the pure constant names.
+            expect(journeysHtml).toContain("Every job in the demand model");
+
+            //     DRIFT-PROOF COUNT RELATION (the ds:Component 108→111
+            //     lesson): never pin the model size. The table's row-header
+            //     cells and the rail's job links both index EVERY job in the
+            //     model, from the SAME response — so they must be equal.
+            //     This survives the model growing; it breaks only if the
+            //     table and the rail fall out of step, which is the real
+            //     failure worth catching.
+            const tableRowHeaderCount = (
+              journeysHtml.match(/class="journey-table-job"/g) ?? []
+            ).length;
+            const railJobLinkCountIndex = (
+              journeysHtml.match(/class="journey-rail-job"/g) ?? []
+            ).length;
+            expect(tableRowHeaderCount).toBeGreaterThan(0);
+            expect(tableRowHeaderCount).toBe(railJobLinkCountIndex);
+
             //     THE PERSONA AXIS CONFESSES, in the server HTML. The
             //     graph records no persona-to-job edge, so the filter is
             //     approximate and the interface says so as real text. If

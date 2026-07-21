@@ -405,10 +405,16 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
       'data-slot="reading-canvas"',
     );
     // The journeys canvases render REAL content from the fixture records:
-    // the index carries the diagram and the honest empty inspector; the
-    // job canvas carries the selected job's story and the well's
-    // server-rendered node DOM.
+    // the index carries the PRIMARY-SURFACE table (AV-351) over the diagram
+    // and the honest empty inspector; the job canvas carries the selected
+    // job's story and the well's server-rendered node DOM.
     expect(mustGet("/journeys").canvas).toContain('id="lens-journeys-title"');
+    // The table is the lens's primary surface now, and it SSRs: its slot,
+    // its row-header cells and its group-by control are all in the served
+    // markup — the sortable data table exists before any client JS.
+    expect(mustGet("/journeys").canvas).toContain('data-slot="journeys-table"');
+    expect(mustGet("/journeys").canvas).toContain('scope="row"');
+    expect(mustGet("/journeys").canvas).toContain("Group by");
     expect(mustGet("/journeys").canvas).toContain("Select a job");
     expect(mustGet("/journeys").canvas).toContain("react-flow__node-hop");
     expect(mustGet(JOURNEYS_JOB_URL).canvas).toContain(
