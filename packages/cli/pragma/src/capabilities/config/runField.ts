@@ -37,6 +37,8 @@ export function runField(
         field: result.field,
         path: result.path,
         reset: true,
+        previous: result.previous,
+        changed: result.changed,
       }),
     );
   }
@@ -54,6 +56,8 @@ export function runField(
       value,
       path: result.path,
       reset: false,
+      previous: result.previous,
+      changed: result.changed,
     }),
   );
 }
