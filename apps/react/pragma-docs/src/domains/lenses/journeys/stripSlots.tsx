@@ -1,4 +1,5 @@
 import type React from "react";
+import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
 import { JourneyViewSwitch } from "./JourneyViewSwitch/index.js";
 import { useJourneyView } from "./journeyViewContext.js";
 
@@ -25,6 +26,19 @@ const ControlsContent = (): React.ReactElement => {
   return <JourneyViewSwitch onViewChange={setView} view={view} />;
 };
 
+/**
+ * The context tenant: the breadcrumb trail. `Journeys` on the diagram,
+ * `Journeys / <job>` on a job view — the job crumb is the `:job` route
+ * param (the graph URI), URL-derived, so it reads no query and never
+ * suspends the frame.
+ */
+const Context = makeLensContext({
+  lensLabel: "Journeys",
+  lensRouteName: "journeys",
+  paramKey: "job",
+});
+
 export const journeysStripSlots = {
+  Context,
   Controls: ControlsContent,
 } as const;

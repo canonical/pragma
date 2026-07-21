@@ -1,4 +1,5 @@
 import { route } from "@canonical/router-core";
+import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
 import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
 import type { StripSlotsEntry } from "#lib/Shell/types.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
@@ -6,6 +7,17 @@ import { warmRouteQuery } from "#relay/warmRouteQuery.js";
 import GuidePage from "./GuidePage.js";
 import HomePage from "./HomePage.js";
 import { lobbyRouteEntry } from "./lobbyQuery.js";
+
+/**
+ * The lobby's mode-strip context tenant: a single `Home` crumb (the lens
+ * name as the Rail's `LENS_ENTRIES` labels it). The lobby has one address,
+ * so there is no terminal crumb and no route param to read — the lens crumb
+ * IS the current page.
+ */
+const HomeContext = makeLensContext({
+  lensLabel: "Home",
+  lensRouteName: "home",
+});
 
 /**
  * The marketing routes: the Home lobby (`/`, AV-350 — the front door, and
@@ -36,7 +48,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: lobbyRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Home",
+        Context: HomeContext,
       } satisfies StripSlotsEntry,
     },
   }),

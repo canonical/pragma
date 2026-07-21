@@ -4,8 +4,12 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 export interface ModeStripProps
   extends Omit<HTMLAttributes<HTMLElement>, "children"> {
-  /** The mode's context/title, west slot. Empty until a layout claims it. */
-  context?: string;
+  /** The mode's context region, west slot: the breadcrumb trail to the
+   * current page (the DS Breadcrumbs pattern). A ReactNode rather than a
+   * bare string since P-6 moved the page title into the strip — the socket
+   * now holds navigation markup, not a label. Empty until a layout claims
+   * it. */
+  context?: ReactNode;
   /** The composed layout's controls region content (`ControlsRegion`). */
   controls?: ReactNode;
   /** The composed layout's status region content (`StatusRegion`). */

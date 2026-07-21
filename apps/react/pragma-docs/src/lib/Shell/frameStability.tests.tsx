@@ -180,26 +180,88 @@ const EXPECTED_ARIA_CURRENT: Readonly<Record<string, readonly string[]>> = {
   [JOURNEYS_JOB_URL]: [],
 };
 
-/** Per-URL expectation for the second accounted-for delta: the mode
- * strip's claimed `data-slot="context"` text (the P-5 handshake). Lens
- * stubs claim nothing — since AV-350 that is `/guides` alone; BOTH
- * Components views (catalog + entity) claim the lens name, and so do the
- * Definitions views (explorer + term), the Standards views (index +
- * reading), and the Home lobby. */
+/**
+ * Per-URL expectation for the second accounted-for delta: the mode strip's
+ * claimed `data-slot="context"` MARKUP (the P-6 handshake). Until P-6 this
+ * was a bare lens-name string; the owner ruling moved every page title out
+ * of the canvas and INTO the strip as the DS `Breadcrumbs` pattern, so the
+ * context socket now holds the trail markup, and the model must assert it
+ * HONESTLY — RAW, before the normaliser blanks it.
+ *
+ * The trail is URL-DERIVED, which is exactly why this can be pinned without
+ * pinning a graph count: an INDEX page is one current crumb (the lens name);
+ * an ENTITY page is the lens crumb (a router link back to the index) plus
+ * the current crumb, whose text is the ROUTE PARAM (a prefixed URI/slug),
+ * not a fetched display name — so the assertion stays stable across ontology
+ * edits, and a wrong claim (or a stub suddenly claiming one) fails here
+ * first. `/guides` still claims nothing, so its context slot is empty.
+ */
+
+/** Build the exact breadcrumb markup a `LensBreadcrumbs` renders in the
+ * strip. An `entity` present ⇒ the ENTITY shape (linked lens crumb + current
+ * terminal crumb); absent ⇒ the INDEX shape (the lens crumb IS current). */
+const trail = (
+  lensLabel: string,
+  entity?: { readonly lensHref: string; readonly current: string },
+): string => {
+  const nav = (inner: string): string =>
+    `<nav class="ds breadcrumbs ds lens-breadcrumbs" aria-label="Breadcrumb"><ol class="list p">${inner}</ol></nav>`;
+  const sep = '<span class="separator" aria-hidden="true">/</span>';
+  const currentCrumb = (label: string): string =>
+    `<li class="ds breadcrumbs-item current">${sep}<span class="link" aria-current="page">${label}</span></li>`;
+  if (entity === undefined) return nav(currentCrumb(lensLabel));
+  const linkCrumb = `<li class="ds breadcrumbs-item">${sep}<a class="link" href="${entity.lensHref}">${lensLabel}</a></li>`;
+  return nav(linkCrumb + currentCrumb(entity.current));
+};
+
 const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   // The lobby claims its lens name too (AV-350) — "Home", exactly as the
-  // Rail's LENS_ENTRIES labels it. Only `/guides` (still a stub) claims
-  // nothing now.
-  "/": "Home",
-  "/components": "Components",
-  "/definitions": "Definitions",
-  "/standards": "Standards",
-  "/journeys": "Journeys",
+  // Rail's LENS_ENTRIES labels it; on its single address it is one current
+  // crumb. Only `/guides` (still a stub) claims nothing.
+  "/": trail("Home"),
+  "/components": trail("Components"),
+  "/definitions": trail("Definitions"),
+  "/standards": trail("Standards"),
+  "/journeys": trail("Journeys"),
   "/guides": "",
-  [BUTTON_ENTITY_URL]: "Components",
-  [DEFINITIONS_TERM_URL]: "Definitions",
-  [STANDARD_READING_URL]: "Standards",
-  [JOURNEYS_JOB_URL]: "Journeys",
+  // Entity pages: the lens crumb links back to the index, the terminal
+  // crumb is the ROUTE PARAM (percent-decoded), never a live display name.
+  [BUTTON_ENTITY_URL]: trail("Components", {
+    lensHref: "/components",
+    current: "ds:global.component.button",
+  }),
+  [DEFINITIONS_TERM_URL]: trail("Definitions", {
+    lensHref: "/definitions",
+    current: "ds:UIBlock",
+  }),
+  [STANDARD_READING_URL]: trail("Standards", {
+    lensHref: "/standards",
+    current: "cs:react.component.link_component",
+  }),
+  [JOURNEYS_JOB_URL]: trail("Journeys", {
+    lensHref: "/journeys",
+    current: "sem://design-system-docs#job.l3",
+  }),
+};
+
+/** Per-URL count of `aria-current="page"` carried INSIDE the strip context
+ * slot: the breadcrumb trail's terminal (current) crumb carries exactly one,
+ * on every URL that claims a Context — i.e. every measured URL but `/guides`
+ * (the lone stub with an empty context). The raw aria-current census below
+ * adds this to the rail's anchor count, because the current crumb is a
+ * `<span>`, invisible to the anchor-scoped href model but real to a total
+ * count over the whole frame. */
+const STRIP_CONTEXT_ARIA_CURRENT: Readonly<Record<string, number>> = {
+  "/": 1,
+  "/components": 1,
+  "/definitions": 1,
+  "/standards": 1,
+  "/journeys": 1,
+  "/guides": 0,
+  [BUTTON_ENTITY_URL]: 1,
+  [DEFINITIONS_TERM_URL]: 1,
+  [STANDARD_READING_URL]: 1,
+  [JOURNEYS_JOB_URL]: 1,
 };
 
 /**
@@ -290,14 +352,18 @@ const splitAtCanvas = (body: string): { frame: string; canvas: string } => {
   };
 };
 
-/** The strip's context slot, as the ModeStrip renders it. The pattern pins
- * the slot's full identity (class + data-slot) so it can never latch onto
- * another element; content is text-only by the claim contract (a string). */
+/**
+ * The strip's context slot, as the ModeStrip renders it. Since P-6 this
+ * holds ELEMENTS — the DS `Breadcrumbs` trail — not a bare string, so the
+ * content group is non-greedy across markup (like controls/status below),
+ * bounded by the next slot's open tag. The pattern still pins the slot's
+ * full identity (class + data-slot), so it can never latch onto a sibling.
+ */
 const STRIP_CONTEXT_PATTERN =
-  /(<div class="strip-context" data-slot="context">)([^<]*)(<\/div>)/;
+  /(<div class="strip-context" data-slot="context">)([\s\S]*?)(<\/div><div class="strip-controls")/;
 
 /**
- * The controls and status slots. Unlike `context`, these hold ELEMENTS
+ * The controls and status slots. Like `context`, these hold ELEMENTS
  * (a chip toolbar, a status figure), so the content group is non-greedy
  * across markup rather than text-only. Each pattern still pins the slot's
  * full identity, so it can never latch onto a sibling.
@@ -517,11 +583,19 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     // anchor-scoped href check above cannot see a stray `aria-current` on a
     // non-anchor, but the normaliser would still forgive it. This count
     // closes that gap — any extra carrier on any element breaks it.
+    //
+    // The total is the rail's exact-match anchors PLUS the strip
+    // breadcrumb's terminal (current) crumb — a `<span aria-current="page">`
+    // the anchor model above cannot see, present on every URL that claims a
+    // Context (all but `/guides`). Both carriers are modelled, so an
+    // unaccounted-for third would break this.
     for (const [url, { frame }] of getPages()) {
       expect(
         (frame.match(/aria-current="page"/g) ?? []).length,
         `raw aria-current count on ${url}`,
-      ).toBe(EXPECTED_ARIA_CURRENT[url].length);
+      ).toBe(
+        EXPECTED_ARIA_CURRENT[url].length + STRIP_CONTEXT_ARIA_CURRENT[url],
+      );
     }
   });
 

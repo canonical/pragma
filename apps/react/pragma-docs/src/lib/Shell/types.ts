@@ -21,8 +21,17 @@ export interface ShellProps extends HTMLAttributes<HTMLDivElement> {
  * entry stays plain data on the route table and mounts fresh per render.
  */
 export interface StripSlotsEntry {
-  /** The mode's context/title, rendered in the strip's west slot. */
-  readonly context?: string;
+  /**
+   * The mode's context region (`slot.*-context`), the strip's west slot: a
+   * component rendering the breadcrumb trail to the current page. P-6 moved
+   * the page title out of the canvas and into this socket as the DS
+   * Breadcrumbs pattern, so the context is a COMPONENT now (mirroring
+   * `Controls`/`Status`), not a static string — the trail's terminal crumb
+   * is the route param, which only a component reading the route can build.
+   * It reads no query and derives everything from the URL, so it never
+   * suspends the frame and renders identically on the server and client.
+   */
+  readonly Context?: ComponentType;
   /** The composed layout's controls region (`slot.*-controls`). */
   readonly Controls?: ComponentType;
   /** The composed layout's status region (`slot.*-status`). */

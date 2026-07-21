@@ -42,7 +42,7 @@ describe("Shell SSR", () => {
 /** The strip claim under hydration — the same fixture voice as
  * `Shell.tests.tsx`'s handshake test. */
 const stripEntry: StripSlotsEntry = {
-  context: "Definitions",
+  Context: () => <span>Definitions</span>,
   Controls: () => <button type="button">Governance lens</button>,
   Status: () => <span>19 of 31 validated</span>,
 };

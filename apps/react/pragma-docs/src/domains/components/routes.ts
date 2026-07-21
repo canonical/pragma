@@ -1,4 +1,5 @@
 import { route } from "@canonical/router-core";
+import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
 import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
 import type { StripSlotsEntry } from "#lib/Shell/types.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
@@ -7,6 +8,18 @@ import { ComponentEntityPage } from "./ComponentEntityPage/index.js";
 import { ComponentsCatalogPage } from "./ComponentsCatalogPage/index.js";
 import { componentsCatalogRouteEntry } from "./catalogQuery.js";
 import { componentEntityRouteEntry } from "./entityQuery.js";
+
+/**
+ * The lens's mode-strip context tenant: the breadcrumb trail. `Components`
+ * on the catalog, `Components / <uri>` on an entity page — the entity crumb
+ * is the `:uri` route param (the prefixed URI), URL-derived, so the strip
+ * reads no query and stays SSR-deterministic.
+ */
+const ComponentsContext = makeLensContext({
+  lensLabel: "Components",
+  lensRouteName: "components",
+  paramKey: "uri",
+});
 
 /**
  * The Components lens routes (P-5). Each data-bearing route builds its
@@ -37,7 +50,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: componentsCatalogRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Components",
+        Context: ComponentsContext,
       } satisfies StripSlotsEntry,
     },
   }),
@@ -50,7 +63,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: componentEntityRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Components",
+        Context: ComponentsContext,
       } satisfies StripSlotsEntry,
     },
   }),

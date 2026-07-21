@@ -19,10 +19,10 @@ export const readStripSlots = (
   if (typeof entry !== "object" || entry === null) {
     throw new Error(`route meta ${SHELL_STRIP_META_KEY} is not an object`);
   }
-  const { context, Controls, Status } = entry as Record<string, unknown>;
-  if (context !== undefined && typeof context !== "string") {
+  const { Context, Controls, Status } = entry as Record<string, unknown>;
+  if (Context !== undefined && typeof Context !== "function") {
     throw new Error(
-      `route meta ${SHELL_STRIP_META_KEY}.context is not a string`,
+      `route meta ${SHELL_STRIP_META_KEY}.Context is not a component`,
     );
   }
   if (Controls !== undefined && typeof Controls !== "function") {

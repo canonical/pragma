@@ -10,8 +10,9 @@ describe("readStripSlots", () => {
   });
 
   it("returns a well-formed entry as-is", () => {
+    const Context = () => null;
     const Controls = () => null;
-    const entry = { context: "Components", Controls };
+    const entry = { Context, Controls };
     expect(readStripSlots({ [SHELL_STRIP_META_KEY]: entry })).toBe(entry);
   });
 
@@ -24,8 +25,8 @@ describe("readStripSlots", () => {
       readStripSlots({ [SHELL_STRIP_META_KEY]: "Components" }),
     ).toThrow(/not an object/);
     expect(() =>
-      readStripSlots({ [SHELL_STRIP_META_KEY]: { context: 42 } }),
-    ).toThrow(/context is not a string/);
+      readStripSlots({ [SHELL_STRIP_META_KEY]: { Context: "Components" } }),
+    ).toThrow(/Context is not a component/);
     expect(() =>
       readStripSlots({ [SHELL_STRIP_META_KEY]: { Controls: "<Filters/>" } }),
     ).toThrow(/Controls is not a component/);

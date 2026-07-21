@@ -41,7 +41,6 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: definitionsRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Definitions",
         ...definitionsStripSlots,
       } satisfies StripSlotsEntry,
     },
@@ -55,7 +54,6 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: definitionsRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Definitions",
         ...definitionsStripSlots,
       } satisfies StripSlotsEntry,
     },

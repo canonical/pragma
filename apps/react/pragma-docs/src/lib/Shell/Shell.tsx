@@ -37,6 +37,7 @@ const Shell = ({
   const strip = readStripSlots(
     match?.kind === "route" ? match.route.meta : undefined,
   );
+  const StripContext = strip?.Context;
   const StripControls = strip?.Controls;
   const StripStatus = strip?.Status;
 
@@ -51,7 +52,7 @@ const Shell = ({
       <Rail />
       <div className="shell-viewport">
         <ModeStrip
-          context={strip?.context}
+          context={StripContext === undefined ? undefined : <StripContext />}
           controls={StripControls === undefined ? undefined : <StripControls />}
           status={StripStatus === undefined ? undefined : <StripStatus />}
         />

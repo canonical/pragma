@@ -1,4 +1,5 @@
 import { route } from "@canonical/router-core";
+import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
 import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
 import type { StripSlotsEntry } from "#lib/Shell/types.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
@@ -7,6 +8,18 @@ import { StandardReadingPage } from "./StandardReadingPage/index.js";
 import { StandardsPage } from "./StandardsPage/index.js";
 import { standardEntityRouteEntry } from "./standardEntityQuery.js";
 import { standardsIndexRouteEntry } from "./standardsIndexQuery.js";
+
+/**
+ * The lens's mode-strip context tenant: the breadcrumb trail. `Standards`
+ * on the index, `Standards / <uri>` on a reading page — the reading crumb
+ * is the `:uri` route param (the prefixed URI, which the cs: surface speaks
+ * natively), URL-derived, so the strip reads no query.
+ */
+const StandardsContext = makeLensContext({
+  lensLabel: "Standards",
+  lensRouteName: "standards",
+  paramKey: "uri",
+});
 
 /**
  * The Standards lens routes (P-5): the category-grouped index
@@ -38,7 +51,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: standardsIndexRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Standards",
+        Context: StandardsContext,
       } satisfies StripSlotsEntry,
     },
   }),
@@ -51,7 +64,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: standardEntityRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Standards",
+        Context: StandardsContext,
       } satisfies StripSlotsEntry,
     },
   }),

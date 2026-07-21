@@ -3,6 +3,7 @@ import type React from "react";
 import { Suspense } from "react";
 import { useLazyLoadQuery } from "react-relay";
 import ErrorBoundary from "#lib/ErrorBoundary/index.js";
+import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
 import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import {
@@ -134,7 +135,20 @@ const StatusContent = (): React.ReactElement => {
   );
 };
 
+/**
+ * The context tenant: the breadcrumb trail. `Definitions` on the explorer,
+ * `Definitions / <term>` on a term view — the term crumb is the `:term`
+ * route param (the prefixed URI), URL-derived, so this reads no query and
+ * needs no Suspense guard (unlike the chip toolbar and the figure above).
+ */
+const Context = makeLensContext({
+  lensLabel: "Definitions",
+  lensRouteName: "definitions",
+  paramKey: "term",
+});
+
 export const definitionsStripSlots = {
+  Context,
   Controls: guarded(ControlsContent),
   Status: guarded(StatusContent),
 } as const;

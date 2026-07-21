@@ -74,7 +74,7 @@ describe("Shell", () => {
 
   it("mounts a route's strip claim into the sockets (the P-5 handshake)", () => {
     const entry: StripSlotsEntry = {
-      context: "Definitions",
+      Context: () => <span>Definitions</span>,
       Controls: () => <button type="button">Governance lens</button>,
       Status: () => <span>19 of 31 validated</span>,
     };

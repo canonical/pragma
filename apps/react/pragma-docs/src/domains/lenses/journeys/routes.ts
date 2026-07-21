@@ -51,7 +51,6 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Journeys",
         ...journeysStripSlots,
       } satisfies StripSlotsEntry,
     },
@@ -65,7 +64,6 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
       [SHELL_STRIP_META_KEY]: {
-        context: "Journeys",
         ...journeysStripSlots,
       } satisfies StripSlotsEntry,
     },
