@@ -1,5 +1,5 @@
 import type React from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import type { JourneysExplorerQuery } from "#relay/__generated__/JourneysExplorerQuery.graphql.js";
 import journeysExplorerQueryNode from "#relay/__generated__/JourneysExplorerQuery.graphql.js";
@@ -10,12 +10,18 @@ import {
 } from "../collectJourneys.js";
 import { JourneyInspector } from "../JourneyInspector/index.js";
 import { JourneyRail } from "../JourneyRail/index.js";
+import { JourneyTable } from "../JourneyTable/index.js";
 import { JourneyWell } from "../JourneyWell/index.js";
 import {
   defaultJourneyFilter,
   type JourneyFilter,
   personaMatchesCoordinate,
 } from "../journeyFilter.js";
+import {
+  buildJourneyRows,
+  DEFAULT_TABLE_STATE,
+  type JourneyTableState,
+} from "../journeyTableModel.js";
 import { journeysExplorerVariables } from "../journeysQuery.js";
 import type { JourneysExplorerProps } from "./types.js";
 import "./styles.css";
@@ -231,6 +237,71 @@ const JourneysExplorer = ({
     [coordinates, filter, rolesByCoordinate],
   );
 
+  // The per-job detail the TABLE's columns need beyond the coordinate
+  // tree: the story, the acceptance criteria and both axes, keyed by job
+  // URI. Pure projection of the same query data.
+  const jobDetail = useMemo(() => {
+    const table: Record<
+      string,
+      {
+        story?: string | undefined;
+        acceptances?: readonly string[] | undefined;
+        roles?: readonly string[] | undefined;
+        fluencies?: readonly string[] | undefined;
+      }
+    > = {};
+    for (const edge of data.jobs.edges) {
+      const node = edge.node;
+      table[node.uri] = {
+        story: node.story ?? undefined,
+        acceptances: (node.acceptances ?? []).filter(
+          (value): value is string => typeof value === "string",
+        ),
+        roles: (node.coordinates?.roles?.edges ?? []).map(
+          (roleEdge) => roleEdge.node.uri,
+        ),
+        fluencies: (node.coordinates?.fluencies?.edges ?? []).map(
+          (fluencyEdge) => fluencyEdge.node.uri,
+        ),
+      };
+    }
+    return table;
+  }, [data.jobs]);
+
+  // The table's rows: EVERY job the model carries, flattened. The table is
+  // the lens's primary surface, so it is handed the unfiltered set — the
+  // coordinate filter narrows the WELL (a diagram of 52 journeys at once
+  // is unreadable), never the index.
+  const rows = useMemo(
+    () => buildJourneyRows(coordinates, jobDetail),
+    [coordinates, jobDetail],
+  );
+
+  // THE TABLE'S EPHEMERAL ARRANGEMENT (P-D7). Sort, group and expansion
+  // are client state and never enter the URL — only the selected job is
+  // addressable. The initial value is a pure CONSTANT, which is the
+  // strongest form of the SSR determinism argument: there is nothing for
+  // the server and the client to disagree about, so the default sort and
+  // grouping are applied by the same pure comparators on both sides and
+  // the first paint matches byte for byte. Never seeded from
+  // `localStorage`, `window` or the query string.
+  const [tableState, setTableState] =
+    useState<JourneyTableState>(DEFAULT_TABLE_STATE);
+
+  // Expansion starts EMPTY on both sides, for the same reason.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
+
+  const toggleExpanded = useCallback((uri: string) => {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(uri)) next.delete(uri);
+      else next.add(uri);
+      return next;
+    });
+  }, []);
+
   // The selected job, resolved against the model already in hand — no
   // second query: the whole demand model is one operation.
   const inspected = useMemo(() => {
@@ -266,7 +337,21 @@ const JourneysExplorer = ({
         personas={personas}
         rolesByCoordinate={rolesByCoordinate}
       />
-      <JourneyWell coordinates={drawn} job={job} />
+      {/* THE PRIMARY SURFACE. The table carries all 52 jobs with their
+          descriptions, sortable and groupable; the well below it is the
+          SELECTED journey's shape. That is the honest relationship — a
+          diagram is good at one journey and bad at 52 at once. */}
+      <div className="journeys-explorer-main">
+        <JourneyTable
+          expanded={expanded}
+          job={job}
+          onStateChange={setTableState}
+          onToggleExpanded={toggleExpanded}
+          rows={rows}
+          state={tableState}
+        />
+        <JourneyWell coordinates={drawn} job={job} />
+      </div>
       <JourneyInspector job={inspected} />
     </div>
   );
