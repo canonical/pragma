@@ -1,9 +1,12 @@
 import type React from "react";
 import { useMemo, useState } from "react";
-import { graphql, useLazyLoadQuery } from "react-relay";
+import { graphql, useFragment, useLazyLoadQuery } from "react-relay";
 import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
+import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
+import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
+import { classDepthsByUri } from "../HierarchyWell/buildClassTree.js";
 import { HierarchyWell } from "../HierarchyWell/index.js";
 import { normalizeFilterText, resolveFilter } from "../lensFilter.js";
 import { useLensFilter } from "../lensFilterContext.js";
@@ -78,6 +81,14 @@ const componentCssClassName = "ds definitions-explorer";
  * Nothing may ever be seeded from `localStorage`, `window` or the query
  * string. Selection, by contrast, IS server-rendered: it comes from the
  * URL (`term`), identical on both sides.
+ *
+ * DEPTH FOR THE RAIL. The rail shows each class's superclass depth, but its
+ * own fragment cannot carry `superclass` without re-emitting the shared
+ * operation's query text (the relay-byte-identity contract — verified).
+ * So the explorer reads the WELL's fragment (already in this operation,
+ * masked from the rail) and derives the depth map with the very function
+ * the well lays out by (`classDepthsByUri`), then hands it down. One
+ * algorithm, two readers, zero query change.
  */
 const DefinitionsExplorer = ({
   className,
@@ -122,6 +133,25 @@ const DefinitionsExplorer = ({
   // they type.
   const [searchText, setSearchText] = useState("");
 
+  // The rail's depth map — the well's own superclass-depth measure, read
+  // from the well's fragment (this operation already fetches it; the rail's
+  // fragment does not, and cannot without a query change). Keyed by FULL
+  // IRI, globally unique, so one flat map serves every ontology. Memoised on
+  // the fragment ref, identical server and client.
+  const wellData = useFragment<HierarchyWell_ontologies$key>(
+    hierarchyWellFragmentNode,
+    data.ontologies,
+  );
+  const depthByUri = useMemo(() => {
+    const merged = new Map<string, number>();
+    for (const ontology of wellData) {
+      for (const [uri, depth] of classDepthsByUri(ontology.classes)) {
+        merged.set(uri, depth);
+      }
+    }
+    return merged;
+  }, [wellData]);
+
   return (
     <div
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
@@ -145,7 +175,11 @@ const DefinitionsExplorer = ({
             />
           </label>
         </p>
-        <TermRail filter={filter} ontologies={data.ontologies} />
+        <TermRail
+          depthByUri={depthByUri}
+          filter={filter}
+          ontologies={data.ontologies}
+        />
       </div>
       <HierarchyWell filter={filter} ontologies={data.ontologies} term={term} />
       <TermInspector

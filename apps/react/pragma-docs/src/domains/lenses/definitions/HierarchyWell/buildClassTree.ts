@@ -50,7 +50,7 @@ export const ONTOLOGY_GAP = 96;
  * superclass, or one not in this ontology's list). Cycles — schema-illegal
  * but defended — terminate at the walk's length bound.
  */
-const superclassDepth = (
+export const superclassDepth = (
   uri: string,
   superclassByUri: ReadonlyMap<string, string | undefined>,
 ): number => {
@@ -62,6 +62,36 @@ const superclassDepth = (
     current = superclassByUri.get(current);
   }
   return depth;
+};
+
+/** One class's addressing-and-hierarchy identity, the minimum the depth
+ * walk needs (a subset of the well's fragment shape, so fragment data
+ * plugs straight in). */
+export interface DepthClass {
+  readonly uri: string;
+  readonly superclass?: { readonly uri: string } | null | undefined;
+}
+
+/**
+ * The superclass depth of every class in ONE ontology, keyed by full URI —
+ * the same computation `buildClassTree` lays the well out with, exposed so
+ * the rail can indent its index by the identical measure the graph stacks
+ * its layers by. One source of truth for "how deep is this class", shared
+ * by the two surfaces (M-STRUCT). Pure and order-free: keyed by URI, so a
+ * caller reads a class's depth without caring where it sat in the list.
+ */
+export const classDepthsByUri = (
+  classes: readonly DepthClass[],
+): ReadonlyMap<string, number> => {
+  const superclassByUri = new Map<string, string | undefined>(
+    classes.map((klass) => [klass.uri, klass.superclass?.uri]),
+  );
+  return new Map(
+    classes.map((klass) => [
+      klass.uri,
+      superclassDepth(klass.uri, superclassByUri),
+    ]),
+  );
 };
 
 /**
@@ -78,14 +108,12 @@ export const buildClassTree = (
 
   for (const ontology of ontologies) {
     const namespaces = [ontology];
-    const superclassByUri = new Map<string, string | undefined>(
-      ontology.classes.map((klass) => [klass.uri, klass.superclass?.uri]),
-    );
+    const depthByUri = classDepthsByUri(ontology.classes);
 
     // Layer per depth, preserving the graph's own class order within each.
     const layers = new Map<number, ClassTreeOntology["classes"][number][]>();
     for (const klass of ontology.classes) {
-      const depth = superclassDepth(klass.uri, superclassByUri);
+      const depth = depthByUri.get(klass.uri) ?? 0;
       const layer = layers.get(depth) ?? [];
       layer.push(klass);
       layers.set(depth, layer);
@@ -135,7 +163,10 @@ export const buildClassTree = (
           },
         });
         const superclassUri = klass.superclass?.uri;
-        if (superclassUri !== undefined && superclassByUri.has(superclassUri)) {
+        // `depthByUri` is keyed by every class URI in THIS ontology, so
+        // its key set answers "is the named superclass one we drew?" —
+        // the same guard the old local map gave, no second structure.
+        if (superclassUri !== undefined && depthByUri.has(superclassUri)) {
           const parentPrefixed = toPrefixedUri(superclassUri, namespaces);
           edges.push({
             id: `${prefixed}=>${parentPrefixed}`,

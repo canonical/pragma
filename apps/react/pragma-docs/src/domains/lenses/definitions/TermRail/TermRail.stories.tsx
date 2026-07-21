@@ -1,11 +1,14 @@
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactElement, Suspense } from "react";
-import { useLazyLoadQuery } from "react-relay";
+import { useFragment, useLazyLoadQuery } from "react-relay";
 import type { DefinitionsExplorerQuery } from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
 import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplorerQuery.graphql.js";
+import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
+import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
+import { classDepthsByUri } from "../HierarchyWell/buildClassTree.js";
 import { allNamespacesFilter } from "../lensFilter.js";
 import TermRail from "./TermRail.js";
 
@@ -22,9 +25,22 @@ const RailFromQuery = (): ReactElement => {
     definitionsExplorerQueryNode,
     definitionsExplorerVariables(undefined),
   );
+  // The depth map, derived the explorer's way: from the well's fragment,
+  // with the well's own depth function.
+  const wellData = useFragment<HierarchyWell_ontologies$key>(
+    hierarchyWellFragmentNode,
+    data.ontologies,
+  );
+  const depthByUri = new Map<string, number>();
+  for (const ontology of wellData) {
+    for (const [uri, depth] of classDepthsByUri(ontology.classes)) {
+      depthByUri.set(uri, depth);
+    }
+  }
   // The unfiltered seed, exactly as the explorer builds it.
   return (
     <TermRail
+      depthByUri={depthByUri}
       filter={allNamespacesFilter(
         data.ontologies.map((ontology) => ontology.prefix),
       )}

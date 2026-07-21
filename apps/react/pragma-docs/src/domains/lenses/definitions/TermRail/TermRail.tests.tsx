@@ -78,6 +78,61 @@ describe("TermRail", () => {
     expect(uiBlockItem?.textContent).toContain("abstract");
   });
 
+  it("marks each class's abstraction axis — the real one — never a faked status", {
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
+  }, () => {
+    const rail = renderRail();
+
+    // UI Block is abstract; its item carries the abstraction axis as a
+    // data hook AND a rendered marker glyph. This is the same distinction
+    // the graph draws (dashed border), restated honestly in the index.
+    const abstractItem = within(rail)
+      .getByRole("link", { name: "UI Block" })
+      .closest("li");
+    expect(abstractItem).toHaveAttribute("data-abstraction", "abstract");
+    expect(abstractItem?.querySelector(".term-rail-mark")).not.toBeNull();
+
+    // A concrete class carries the other value — the axis is total over
+    // isAbstract, never a third invented "status".
+    const concreteItem = within(rail)
+      .getByRole("link", { name: "Component" })
+      .closest("li");
+    expect(concreteItem).toHaveAttribute("data-abstraction", "concrete");
+  });
+
+  it("shows superclass depth — a class under its parent carries a deeper indent than a root", {
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
+  }, () => {
+    const rail = renderRail();
+
+    // Component descends from UI Block (← Entity): it must sit DEEPER than
+    // a root. The depth is the well's own superclass measure, handed to the
+    // rail as data (the fragment cannot carry `superclass`).
+    const componentItem = within(rail)
+      .getByRole("link", { name: "Component" })
+      .closest("li");
+    const componentDepth = Number(
+      componentItem?.getAttribute("data-depth") ?? "0",
+    );
+    expect(componentDepth).toBeGreaterThan(0);
+
+    // …and the depth glyph (the exhibit's monospace dot-run) is rendered,
+    // one dot per TRUE hop (the indent clamps, the glyph does not), and
+    // aria-hidden so it never enters the accessible name.
+    const glyph = componentItem?.querySelector(".term-rail-depth");
+    expect(glyph?.textContent?.length ?? 0).toBeGreaterThanOrEqual(
+      componentDepth,
+    );
+    expect(glyph?.textContent?.length ?? 0).toBeGreaterThan(0);
+    expect(glyph).toHaveAttribute("aria-hidden", "true");
+
+    // A root class has no depth and shows an empty glyph cell.
+    const rootItem = within(rail)
+      .getByRole("link", { name: "Entity" })
+      .closest("li");
+    expect(rootItem).toHaveAttribute("data-depth", "0");
+  });
+
   it("DIMS under a filter and never HIDES — the index stays complete", {
     timeout: DEFINITIONS_TEST_TIMEOUT_MS,
   }, () => {

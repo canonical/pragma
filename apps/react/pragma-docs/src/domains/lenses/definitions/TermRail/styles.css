@@ -49,8 +49,73 @@
   align-items: baseline;
   gap: var(--space-050, 0.25rem);
   padding-block: 0.125rem;
+  padding-inline: var(--space-050, 0.25rem);
+  border-radius: 0.4375rem;
   min-inline-size: 0;
-  transition: opacity 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+}
+
+/* THE INDENT: the class tree's shape, made spatial. Each superclass hop
+ * pushes the row's start in by a fixed step, so a subclass sits under and
+ * to the right of its parent's column — the exhibit's dot-run says the same
+ * thing in the glyph, this says it in position. Capped in the component
+ * (data-depth is clamped) so a deep chain never walks a label off the rail.
+ * Depths beyond the named steps fall through to the last one. */
+.ds.term-rail li[data-depth="1"] {
+  padding-inline-start: calc(var(--space-050, 0.25rem) + 0.75rem);
+}
+.ds.term-rail li[data-depth="2"] {
+  padding-inline-start: calc(var(--space-050, 0.25rem) + 1.5rem);
+}
+.ds.term-rail li[data-depth="3"] {
+  padding-inline-start: calc(var(--space-050, 0.25rem) + 2.25rem);
+}
+.ds.term-rail li[data-depth="4"] {
+  padding-inline-start: calc(var(--space-050, 0.25rem) + 3rem);
+}
+.ds.term-rail li[data-depth="5"] {
+  padding-inline-start: calc(var(--space-050, 0.25rem) + 3.75rem);
+}
+.ds.term-rail li[data-depth="6"] {
+  padding-inline-start: calc(var(--space-050, 0.25rem) + 4.5rem);
+}
+
+/* THE ABSTRACTION MARKER — the one real per-class axis, restated exactly as
+ * the graph draws it. A CONCRETE class gets a solid dot; an ABSTRACT class
+ * gets a hollow, dashed ring, the flat-list echo of the node's dashed
+ * border. This is provenance-and-abstractness, never a faked status: the
+ * ontology has no lifecycle field, so the rail marks only what is real. */
+.ds.term-rail .term-rail-mark {
+  flex-shrink: 0;
+  align-self: center;
+  inline-size: 0.5rem;
+  block-size: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--color-border, #999);
+  background: var(--color-border, #999);
+}
+
+.ds.term-rail li[data-abstraction="abstract"] .term-rail-mark {
+  border-style: dashed;
+  border-color: var(--color-text-muted, #666);
+  background: transparent;
+}
+
+/* THE DEPTH GLYPH: the exhibit's monospace dot-run, one dot per hop. A
+ * faint, tabular column so labels still line up; decorative (aria-hidden in
+ * the markup), the indent and the marker carry the real information. */
+.ds.term-rail .term-rail-depth {
+  flex-shrink: 0;
+  font-family: var(--font-family-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--color-border, #bbb);
+}
+
+.ds.term-rail .term-rail-depth:empty {
+  display: none;
 }
 
 /* THE ASYMMETRY, in one declaration: a filtered-out rail item DIMS and
