@@ -1,0 +1,63 @@
+/*
+ * JourneysExplorer — the triptych: demand index west, the primary table
+ * over the journey well centre, the job inspector east. The west column
+ * takes the frame's --subnav-w as its minimum, the east --aside-w — both
+ * CONSUMED, never re-defined (frameStability.tests counts definitions); the
+ * centre releases its min-content claim so neither the table nor the well
+ * can prop the frame open (INTRINSIC-GRID.md, one level down). Panels own
+ * their scroll (min-block-size: 0 down the chain). Zero layout-capable
+ * conditional at-rules.
+ */
+
+.ds.journeys-explorer {
+  display: grid;
+  grid-template-columns:
+    minmax(var(--subnav-w), 18rem)
+    minmax(0, 1fr)
+    minmax(var(--aside-w), 24rem);
+  /* ZERO gap — the tracks stay adjacent and the hairlines move onto the
+   * flanking panels, so the centre reads as one continuous surface the
+   * rail and inspector sit beside rather than a card in a sea of padding.
+   * The same full-bleed move the definitions explorer makes. */
+  gap: 0;
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.ds.journeys-explorer > .journey-rail {
+  border-inline-end: 1px solid var(--color-border-muted, #ddd);
+  padding-inline-end: var(--space-200, 1rem);
+  overflow: auto;
+  min-block-size: 0;
+}
+
+.ds.journeys-explorer > .journey-inspector {
+  border-inline-start: 1px solid var(--color-border-muted, #ddd);
+  padding-inline-start: var(--space-200, 1rem);
+  overflow: auto;
+  min-block-size: 0;
+}
+
+/* The centre column: the TABLE is the primary surface, the WELL is the
+ * selected journey's shape beneath it. The table takes the larger share
+ * and owns its own scroll; the well takes the rest, with a floor it never
+ * shrinks below (a diagram cannot read at zero height). Both release their
+ * min-content claim so the frame stays in charge of the width. */
+.ds.journeys-explorer .journeys-explorer-main {
+  display: grid;
+  grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 0;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.ds.journeys-explorer .journeys-explorer-main > .journey-table {
+  overflow: hidden;
+  min-block-size: 0;
+  padding: var(--space-200, 1rem);
+}
+
+.ds.journeys-explorer .journeys-explorer-main > .journey-well {
+  min-block-size: 16rem;
+  border-block-start: 1px solid var(--color-border-muted, #ddd);
+}
