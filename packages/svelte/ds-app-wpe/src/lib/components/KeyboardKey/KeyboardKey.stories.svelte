@@ -35,10 +35,10 @@
   const actionKeys = Object.keys(ACTION_KEYS) as Key[];
   const navigationKeys = Object.keys(NAVIGATION_KEYS) as Key[];
   const functionKeys = Object.keys(FUNCTION_KEYS) as Key[];
-</script>
 
-<!-- Render inside a baseline-aligned paragraph so the inline <kbd> keys sit on
-     the text baseline, as they would in real usage. -->
+  // Render inside a baseline-aligned paragraph so the inline <kbd> keys sit on
+  // the text baseline, as they would in real usage.
+</script>
 
 <Story name="Default" args={{ keyValue: "enter" }}>
   {#snippet template(args)}
