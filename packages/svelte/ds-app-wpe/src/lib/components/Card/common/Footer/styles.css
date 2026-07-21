@@ -1,0 +1,24 @@
+/**
+ * Card.Footer styles
+ * @implements ds:global.subcomponent.card-footer
+ */
+:root {
+  --card-footer-gap: var(--dimension-100);
+  --card-footer-padding-block: var(--dimension-200);
+  --card-footer-padding-inline: var(--dimension-200);
+}
+
+.ds.card-footer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--card-footer-gap);
+
+  padding-block: var(--card-footer-padding-block);
+  padding-inline: var(--card-footer-padding-inline);
+
+  & > * {
+    flex: 0 0 auto;
+  }
+}
