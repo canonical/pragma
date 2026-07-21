@@ -158,7 +158,11 @@
 .ds.journey-well .journey-legend {
   inset-block-end: var(--space-150, 0.75rem);
   inset-inline-start: var(--space-150, 0.75rem);
-  max-inline-size: calc(100% - var(--space-300, 1.5rem));
+  /* A small corner accessory over the full-bleed well, capped at a fixed
+   * width so it reads as a quiet reference rather than a panel; min() still
+   * keeps it inside a genuinely tiny canvas. It carries a five-row column
+   * key, so it is allowed to be a touch wider than the definitions legend. */
+  max-inline-size: min(18rem, calc(100% - var(--space-300, 1.5rem)));
   margin: 0;
   padding-block: var(--space-100, 0.5rem);
   padding-inline: var(--space-150, 0.75rem);
