@@ -17,12 +17,12 @@ import {
   type JourneyFilter,
   personaMatchesCoordinate,
 } from "../journeyFilter.js";
+import { journeysExplorerVariables } from "../journeysQuery.js";
 import {
   buildJourneyRows,
   DEFAULT_TABLE_STATE,
   type JourneyTableState,
 } from "../journeyTableModel.js";
-import { journeysExplorerVariables } from "../journeysQuery.js";
 import type { JourneysExplorerProps } from "./types.js";
 import "./styles.css";
 

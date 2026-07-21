@@ -32,13 +32,15 @@ const COLUMNS: readonly {
 ];
 
 /** The grouping axes the control strip offers. */
-const GROUPS: readonly { readonly key: JourneyGroupKey; readonly label: string }[] =
-  [
-    { key: "coordinate", label: "Coordinate" },
-    { key: "role", label: "Role" },
-    { key: "served", label: "State" },
-    { key: "none", label: "Flat" },
-  ];
+const GROUPS: readonly {
+  readonly key: JourneyGroupKey;
+  readonly label: string;
+}[] = [
+  { key: "coordinate", label: "Coordinate" },
+  { key: "role", label: "Role" },
+  { key: "served", label: "State" },
+  { key: "none", label: "Flat" },
+];
 
 /**
  * The Journeys lens's PRIMARY SURFACE: the demand model as a groupable,
@@ -164,7 +166,10 @@ const JourneyTable = ({
                     {/* The direction indicator is decorative: the state it
                         shows is already carried by `aria-sort` on the
                         header, so announcing it twice would be noise. */}
-                    <span aria-hidden="true" className="journey-table-sort-mark">
+                    <span
+                      aria-hidden="true"
+                      className="journey-table-sort-mark"
+                    >
                       {state.sort === column.key
                         ? state.direction === "ascending"
                           ? "▲"
@@ -246,11 +251,17 @@ const JourneyTable = ({
                     </td>
                     {/* The wildcard reads "any" — the ontology's own
                         reading of an unconstrained axis, not a gap. */}
-                    <td data-wildcard={row.roles.length === 0 ? "true" : undefined}>
+                    <td
+                      data-wildcard={
+                        row.roles.length === 0 ? "true" : undefined
+                      }
+                    >
                       {axisText(row.roles)}
                     </td>
                     <td
-                      data-wildcard={row.fluencies.length === 0 ? "true" : undefined}
+                      data-wildcard={
+                        row.fluencies.length === 0 ? "true" : undefined
+                      }
                     >
                       {axisText(row.fluencies)}
                     </td>

@@ -118,7 +118,8 @@ export const axisText = (terms: readonly string[]): string =>
  * lens asserting something the model does not say.
  */
 const isPrimary = (pairing: JourneyPairing): boolean =>
-  pairing.role != null && localName(pairing.role).toLowerCase().includes("primary");
+  pairing.role != null &&
+  localName(pairing.role).toLowerCase().includes("primary");
 
 /**
  * Flatten the coordinate tree into rows — one row per job.
@@ -151,7 +152,9 @@ export const buildJourneyRows = (
       // iteration order. Jobs with several surfaces say so via the count.
       const surfaces = [...job.pairings]
         .map((pairing) => pairing.surface)
-        .filter((surface): surface is NonNullable<typeof surface> => surface != null)
+        .filter(
+          (surface): surface is NonNullable<typeof surface> => surface != null,
+        )
         .sort((left, right) => left.uri.localeCompare(right.uri));
       const first = surfaces.at(0);
       const primaryCount = job.pairings.filter(isPrimary).length;
@@ -168,7 +171,9 @@ export const buildJourneyRows = (
         primaryCount,
         secondaryCount: job.pairings.length - primaryCount,
         surfaceLabel:
-          first === undefined ? undefined : (first.label ?? localName(first.uri)),
+          first === undefined
+            ? undefined
+            : (first.label ?? localName(first.uri)),
         surfaceHref: first?.href ?? undefined,
         served: job.pairings.length > 0,
       });
@@ -239,7 +244,10 @@ export interface JourneyGroup {
 }
 
 /** The group a row belongs to, per axis. */
-const groupOf = (row: JourneyRow, key: JourneyGroupKey): { key: string; label: string } => {
+const groupOf = (
+  row: JourneyRow,
+  key: JourneyGroupKey,
+): { key: string; label: string } => {
   switch (key) {
     case "coordinate":
       return { key: row.coordinateUri, label: row.coordinateLabel };

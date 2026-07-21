@@ -80,7 +80,9 @@ describe("JourneyTable", () => {
       "Surface",
       "State",
     ]) {
-      const header = screen.getByRole("columnheader", { name: new RegExp(label) });
+      const header = screen.getByRole("columnheader", {
+        name: new RegExp(label),
+      });
       expect(header).toHaveAttribute("scope", "col");
     }
     // The expander column is named for screen readers, hidden visually.

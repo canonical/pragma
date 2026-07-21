@@ -42,7 +42,11 @@ const COORDINATES: readonly JourneyCoordinate[] = [
             uri: "sem://docs#pair.1",
             label: "pair.1",
             role: "sem://docs#role.primary",
-            surface: { uri: "sem://docs#view.components", label: "view.components", href: "/components" },
+            surface: {
+              uri: "sem://docs#view.components",
+              label: "view.components",
+              href: "/components",
+            },
           },
           {
             uri: "sem://docs#pair.2",
@@ -67,7 +71,11 @@ const COORDINATES: readonly JourneyCoordinate[] = [
             uri: "sem://docs#pair.3",
             label: "pair.3",
             role: "sem://docs#role.primary",
-            surface: { uri: "sem://docs#view.home", label: "view.home", href: "/" },
+            surface: {
+              uri: "sem://docs#view.home",
+              label: "view.home",
+              href: "/",
+            },
           },
         ],
       },
@@ -147,9 +155,9 @@ describe("the comparators are pure and total", () => {
     expect(JSON.stringify(forward)).toBe(JSON.stringify(reversed));
     // …and on a column where several rows genuinely tie on the primary
     // key (state), the URI tiebreak still yields one fixed order.
-    expect(
-      JSON.stringify(sortRows(rows, "served", "ascending")),
-    ).toBe(JSON.stringify(sortRows([...rows].reverse(), "served", "ascending")));
+    expect(JSON.stringify(sortRows(rows, "served", "ascending"))).toBe(
+      JSON.stringify(sortRows([...rows].reverse(), "served", "ascending")),
+    );
   });
 
   it("never returns 0 for two distinct rows (the order is total)", () => {
@@ -180,7 +188,9 @@ describe("the comparators are pure and total", () => {
       "job.alpha",
     ]);
     // Unserved sorts to one end, which is the reading a state sort wants.
-    expect(labels(sortRows(rows, "served", "ascending")).at(0)).toBe("job.alpha");
+    expect(labels(sortRows(rows, "served", "ascending")).at(0)).toBe(
+      "job.alpha",
+    );
   });
 
   it("does not mutate its input", () => {

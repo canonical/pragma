@@ -152,7 +152,9 @@ describe("JourneyTable group interaction", () => {
     // Group by STATE instead — the structure changes to Served / Unserved.
     // Scoped to the group control: "State" is also a sortable column header.
     const groupControl = screen.getByRole("group", { name: "Group by" });
-    fireEvent.click(within(groupControl).getByRole("button", { name: "State" }));
+    fireEvent.click(
+      within(groupControl).getByRole("button", { name: "State" }),
+    );
     const byState = renderedGroupLabels();
     expect(byState).not.toEqual(byCoordinate);
     expect(byState.some((label) => label.startsWith("Served"))).toBe(true);
@@ -187,9 +189,7 @@ describe("the model is pure — the SSR determinism contract", () => {
     const clientFirstPaint = groupRows(ROWS, DEFAULT_TABLE_STATE);
     expect(JSON.stringify(clientFirstPaint)).toBe(JSON.stringify(server));
     // Concretely: job.b2's group leads, job.orphan's row trails.
-    const order = server.flatMap((group) =>
-      group.rows.map((row) => row.label),
-    );
+    const order = server.flatMap((group) => group.rows.map((row) => row.label));
     expect(order).toEqual(["job.b2", "job.l3", "job.orphan"]);
   });
 
