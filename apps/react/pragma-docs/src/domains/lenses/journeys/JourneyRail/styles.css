@@ -134,10 +134,26 @@
 }
 
 .ds.journey-rail .journey-rail-job {
+  display: block;
   overflow-wrap: anywhere;
 }
 
-.ds.journey-rail .journey-rail-job[aria-current="page"] {
+/* The legible line — the story's first clause — leads at the reading size. */
+.ds.journey-rail .journey-rail-job-gist {
+  display: block;
+}
+
+/* The identifier, DEMOTED: the `job.a1` slug still present but quiet —
+ * monospace, smaller and muted, so it reads as filing metadata beside the
+ * human sentence rather than competing with it. */
+.ds.journey-rail .journey-rail-job-uri {
+  display: block;
+  font-family: var(--font-family-monospace, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #666);
+}
+
+.ds.journey-rail .journey-rail-job[aria-current="page"] .journey-rail-job-gist {
   font-weight: 600;
 }
 

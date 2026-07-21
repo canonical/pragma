@@ -23,6 +23,7 @@ import {
   axisTerm,
   collectJourneys,
   describeCoordinate,
+  jobGist,
   localName,
   type RawJob,
   type RawPairing,
@@ -148,6 +149,61 @@ describe("localName", () => {
   it("reads the local part of both URI forms", () => {
     expect(localName(`${DOCS}job.l3`)).toBe("job.l3");
     expect(localName("surface:Primary")).toBe("Primary");
+  });
+});
+
+describe("jobGist — the rail's legible label (FIX 1)", () => {
+  it("leads with the story's first clause, not the filing slug", () => {
+    expect(
+      jobGist({
+        uri: `${DOCS}job.a1`,
+        label: "job.a1",
+        story: "When I open a component cold, I want its anatomy first",
+      }),
+    ).toBe("When I open a component cold");
+  });
+
+  it("returns a short whole story unbroken", () => {
+    expect(
+      jobGist({ uri: `${DOCS}job.s3`, story: "I want the tokens listed" }),
+    ).toBe("I want the tokens listed");
+  });
+
+  it("hard-caps a long clause with an ellipsis rather than the raw slug", () => {
+    const story =
+      "When I am integrating a brand new component into an existing product surface without any documentation at all";
+    const gist = jobGist({ uri: `${DOCS}job.b10`, story });
+    expect(gist.endsWith("…")).toBe(true);
+    expect(gist.length).toBeLessThanOrEqual(74);
+    // The point of the fix: never the illegible slug when a story exists.
+    expect(gist).not.toBe("job.b10");
+  });
+
+  it("falls back to the slug for a storyless job — the honest last resort", () => {
+    expect(jobGist({ uri: `${DOCS}job.orphan`, label: "job.orphan" })).toBe(
+      "job.orphan",
+    );
+    expect(jobGist({ uri: `${DOCS}job.orphan`, story: "   " })).toBe(
+      "job.orphan",
+    );
+  });
+
+  it("prefers a real label over both story and slug when one is carried", () => {
+    expect(
+      jobGist({
+        uri: `${DOCS}job.a1`,
+        label: "Browse the catalogue",
+        story: "When I browse, …",
+      }),
+    ).toBe("Browse the catalogue");
+  });
+});
+
+describe("collectJourneys threads the story to each job", () => {
+  it("carries a job's story through the join for the rail to read", () => {
+    const result = collectJourneys(JOBS, [[PAIRING_A]]);
+    const l3 = result[0]?.jobs.find((job) => job.uri === `${DOCS}job.l3`);
+    expect(l3?.story).toBe("When I browse, I want a catalog…");
   });
 });
 

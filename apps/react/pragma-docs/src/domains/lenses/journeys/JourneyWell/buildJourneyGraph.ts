@@ -111,6 +111,10 @@ export interface JourneyPairing {
 export interface JourneyJob {
   readonly uri: string;
   readonly label?: string | null | undefined;
+  /** The job's story, VERBATIM — the reader's own sentence. Threaded so a
+   * surface (the rail) can show a legible line rather than the URI slug;
+   * undefined when the graph holds none. */
+  readonly story?: string | null | undefined;
   readonly pairings: readonly JourneyPairing[];
 }
 

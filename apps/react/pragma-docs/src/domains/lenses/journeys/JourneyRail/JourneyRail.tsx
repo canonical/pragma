@@ -1,5 +1,6 @@
 import { Link } from "@canonical/router-react";
 import type React from "react";
+import { jobGist, localName } from "../collectJourneys.js";
 import {
   PERSONA_MATCH_NOTE,
   personaMatchesCoordinate,
@@ -140,22 +141,42 @@ const JourneyRail = ({
               {coordinate.label ?? coordinate.uri}
             </button>
             <ul className="journey-rail-jobs">
-              {coordinate.jobs.map((entry) => (
-                <li key={entry.uri}>
-                  <Link
-                    className="journey-rail-job"
-                    params={{ job: entry.uri }}
-                    to="journeysJob"
-                  >
-                    {entry.label ?? entry.uri}
-                  </Link>
-                  {/* The demand nothing serves — worth seeing, so it is
-                      stated rather than left to an absent row. */}
-                  {entry.pairings.length === 0 ? (
-                    <span className="journey-rail-tag">unserved</span>
-                  ) : null}
-                </li>
-              ))}
+              {coordinate.jobs.map((entry) => {
+                // The LEGIBLE label leads — the first clause of the job's own
+                // story, not the `job.a1` filing slug. The slug is DEMOTED to
+                // quiet monospace secondary text (never deleted: it is still
+                // the address a reader may want), and the full story rides as
+                // the link's title/tooltip for the truncated case.
+                const gist = jobGist(entry);
+                const slug = localName(entry.uri);
+                const story = entry.story?.trim();
+                return (
+                  <li key={entry.uri}>
+                    <Link
+                      className="journey-rail-job"
+                      params={{ job: entry.uri }}
+                      title={
+                        story !== undefined && story.length > 0
+                          ? story
+                          : undefined
+                      }
+                      to="journeysJob"
+                    >
+                      <span className="journey-rail-job-gist">{gist}</span>
+                      {/* The identifier, demoted — shown only when it is not
+                          already the gist (an unnamed, storyless job). */}
+                      {gist === slug ? null : (
+                        <span className="journey-rail-job-uri">{slug}</span>
+                      )}
+                    </Link>
+                    {/* The demand nothing serves — worth seeing, so it is
+                        stated rather than left to an absent row. */}
+                    {entry.pairings.length === 0 ? (
+                      <span className="journey-rail-tag">unserved</span>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           </li>
         ))}

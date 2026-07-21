@@ -97,6 +97,59 @@ const AXIS_FILING_PREFIX = /^(?:role|fluency|actor)\./;
 export const axisTerm = (uri: string): string =>
   localName(uri).replace(AXIS_FILING_PREFIX, "");
 
+/** The length past which a story gist is cut and given an ellipsis. Chosen
+ * to fit the rail's ~18rem column across two lines without wrapping the
+ * scroll into the horizontal. */
+const GIST_MAX = 72;
+
+/** The clause boundary a gist is cut at, in preference order: a full stop,
+ * then a semicolon, then a comma — the first natural break under the cap. */
+const GIST_BREAK = /[.;,]/;
+
+/**
+ * A job's LEGIBLE rail label, derived from its own words. The graph names a
+ * job with a Turtle filing local name (`job.a1`, `job.s3`) that is unique
+ * across the file but says nothing about the demand — so the rail showed
+ * `job.a1`, "almost illegible". The readable text is on every job already:
+ * the `story` is a full sentence in the reader's own voice.
+ *
+ * PREFERENCE ORDER: a real `label` if the graph ever carries one that is
+ * not merely the filing slug; else the first CLAUSE of the story (cut at
+ * the first sentence/clause break, or hard-capped with an ellipsis); else
+ * the URI slug as the last resort. This never DELETES the identifier — the
+ * caller keeps the slug reachable as secondary text — it chooses what leads.
+ *
+ * PURE: a job in, a string out, so the label is identical on the server and
+ * the client and costs the SSR determinism argument nothing.
+ */
+export const jobGist = (job: {
+  readonly uri: string;
+  readonly label?: string | null | undefined;
+  readonly story?: string | null | undefined;
+}): string => {
+  const slug = localName(job.uri);
+  // A label the graph carries beyond the filing slug leads outright.
+  if (
+    job.label != null &&
+    job.label.length > 0 &&
+    job.label !== slug &&
+    job.label !== job.uri
+  ) {
+    return job.label;
+  }
+  const story = job.story?.trim();
+  if (story !== undefined && story.length > 0) {
+    const breakAt = story.search(GIST_BREAK);
+    // The first clause, when it falls inside the cap, reads as a whole
+    // thought; otherwise a hard cut with an ellipsis keeps the line honest
+    // about being a fragment.
+    if (breakAt > 0 && breakAt <= GIST_MAX) return story.slice(0, breakAt);
+    if (story.length <= GIST_MAX) return story;
+    return `${story.slice(0, GIST_MAX).trimEnd()}…`;
+  }
+  return slug;
+};
+
 /** Read a connection's node URIs, tolerating an absent connection. */
 const uris = (list: RawTermList | null | undefined): readonly string[] =>
   (list?.edges ?? []).map((edge) => edge.node.uri);
@@ -213,6 +266,9 @@ export const collectJourneys = (
     bucket.jobs.push({
       uri: job.uri,
       label: localName(job.uri),
+      // The story rides through so the rail can show a legible line rather
+      // than the filing slug (jobGist); a pure projection of query data.
+      story: job.story ?? undefined,
       pairings: pairingsByJob.get(job.uri) ?? [],
     });
     byCoordinate.set(coordinate.uri, bucket);

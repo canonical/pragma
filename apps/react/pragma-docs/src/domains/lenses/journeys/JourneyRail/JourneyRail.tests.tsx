@@ -63,12 +63,51 @@ const coordinateRows = (): { label: string; dimmed: boolean }[] =>
 describe("JourneyRail", () => {
   it("lists every job — the complete keyboard path through the lens", () => {
     renderRail();
-    // All three jobs, including the one nothing serves.
-    for (const name of ["job.l3", "job.orphan", "job.b2"]) {
+    // Every job still has a link; the accessible name now leads with its
+    // legible gist and keeps the slug reachable, so each is found by its
+    // slug appearing in the name (job.b2 and job.orphan have no story, so
+    // the slug IS the name; job.l3 has a story, tested below).
+    for (const name of [/job\.l3/, /job\.orphan/, /job\.b2/]) {
       expect(screen.getByRole("link", { name })).toBeInTheDocument();
     }
     // The unserved job is NAMED as such rather than left to an absence.
     expect(screen.getByText("unserved")).toBeInTheDocument();
+  });
+
+  it("shows a job's STORY-DERIVED label, not its filing slug — the fix", () => {
+    // FIX 1: the rail was "almost illegible" showing `job.l3`. The legible
+    // line is the first clause of the job's own story.
+    renderRail();
+    // The story's first clause leads as visible text.
+    expect(
+      screen.getByText("When I browse the component catalogue"),
+    ).toBeInTheDocument();
+    // TEETH: it is NOT the bare slug leading — the slug is demoted, present
+    // but not the human label. The gist and the slug are distinct nodes.
+    const gist = screen.getByText("When I browse the component catalogue");
+    expect(gist).toHaveClass("journey-rail-job-gist");
+    // The slug is still reachable — demoted, not deleted.
+    expect(document.querySelector(".journey-rail-job-uri")?.textContent).toBe(
+      "job.l3",
+    );
+    // The full story rides as the link's tooltip for the truncated case.
+    const link = gist.closest("a");
+    expect(link).toHaveAttribute(
+      "title",
+      "When I browse the component catalogue, I want the whole set at a glance",
+    );
+  });
+
+  it("falls back to the slug for a storyless job — the other tooth", () => {
+    // job.orphan carries no story: the slug IS the legible label, and it is
+    // not duplicated as demoted secondary text.
+    renderRail();
+    const orphanLink = screen.getByRole("link", { name: /job\.orphan/ });
+    expect(
+      orphanLink.querySelector(".journey-rail-job-gist")?.textContent,
+    ).toBe("job.orphan");
+    // No demoted-uri line, because the gist already is the slug.
+    expect(orphanLink.querySelector(".journey-rail-job-uri")).toBeNull();
   });
 
   it("DIMS under a coordinate filter and never HIDES", () => {

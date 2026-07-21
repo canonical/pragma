@@ -48,6 +48,10 @@ export const JOURNEY_MODEL: readonly JourneyCoordinate[] = [
       {
         uri: BROWSE_JOB,
         label: "job.l3",
+        // A full sentence in the reader's voice — the legible rail label is
+        // its first clause, not the `job.l3` filing slug.
+        story:
+          "When I browse the component catalogue, I want the whole set at a glance",
         pairings: [
           {
             uri: `${DOCS}pairing.l3-components`,
