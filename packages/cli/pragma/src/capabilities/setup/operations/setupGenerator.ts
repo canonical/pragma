@@ -30,18 +30,24 @@ import type {
 import { sequence_, type Task, when } from "@canonical/task";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import { guardMissingBinary } from "../../shared/assertExecOk.js";
-import type { ScopeSelection, SetupMode, SetupResult } from "../types.js";
+import type {
+  LspState,
+  ScopeSelection,
+  SetupMode,
+  SetupResult,
+} from "../types.js";
 import {
   type CompletionsDetection,
   composeCompletions,
   detectCompletions,
 } from "./setupCompletions.js";
-import { composeLsp } from "./setupLsp.js";
+import { composeLsp, detectLsp, type LspDetection } from "./setupLsp.js";
 import {
   composeMcp,
   detectMcp,
   type McpDetection,
   mcpConfigured,
+  mcpGroupState,
   mcpTargets,
   selectedGroups,
 } from "./setupMcp.js";
@@ -69,6 +75,7 @@ export interface SetupPlan {
 /** The union of every step's detection, gathered up front for the run-all. */
 interface SetupDetection {
   readonly completions: CompletionsDetection;
+  readonly lsp: LspDetection;
   readonly mcp: McpDetection;
   readonly skills: SkillsDetection;
 }
@@ -101,14 +108,14 @@ const selectChosenGroups = (
  * exec (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`
  * is combinator-built), so it survives `execute`'s double interpretation.
  */
-const composeGuardedLsp = (rt: PragmaRuntime): Task<void> =>
+const composeGuardedLsp = (rt: PragmaRuntime, state: LspState): Task<void> =>
   guardMissingBinary(
     "bunx",
     {
       message:
         "Install Bun (https://bun.sh) to provide `bunx`, then run this again.",
     },
-    composeLsp(rt.cwd),
+    composeLsp(rt.cwd, state),
   );
 
 /** Build a generator's `meta` (no stamping — the version is just header text). */
@@ -133,7 +140,24 @@ const buildCustomizePrompt = (
   when,
 });
 
-/** The per-file MCP multiselect — one row per deduped {@link TargetGroup} file. */
+/** The suffix a group's prior state adds to its multiselect label. */
+const mcpStateSuffix = (d: McpDetection, path: string): string => {
+  switch (mcpGroupState(d, path)) {
+    case "configured":
+      return " — already configured";
+    case "drifted":
+      return " — needs update";
+    default:
+      return "";
+  }
+};
+
+/**
+ * The per-file MCP multiselect — one row per deduped {@link TargetGroup} file.
+ * A row's label carries its prior state, and an already-`configured` file is
+ * DEFAULT-DESELECTED (so a re-run does not re-offer to rewrite what is already
+ * current); `absent`/`drifted` files stay selected by default.
+ */
 const buildMcpTargetsPrompt = (
   d: McpDetection,
   when?: PromptDefinition["when"],
@@ -143,10 +167,12 @@ const buildMcpTargetsPrompt = (
   message: "Configure MCP for which files?",
   when,
   choices: d.groups.map((g) => ({
-    label: `${g.path} — ${g.harnessNames.join(", ")} [${g.scope}]`,
+    label: `${g.path} — ${g.harnessNames.join(", ")} [${g.scope}]${mcpStateSuffix(d, g.path)}`,
     value: g.path,
   })),
-  default: d.groups.map((g) => g.path),
+  default: d.groups
+    .filter((g) => mcpGroupState(d, g.path) !== "configured")
+    .map((g) => g.path),
 });
 
 // =============================================================================
@@ -158,12 +184,13 @@ async function gatherDetection(
   rt: PragmaRuntime,
   scope: ScopeSelection,
 ): Promise<SetupDetection> {
-  const [completions, mcp, skills] = await Promise.all([
+  const [completions, lsp, mcp, skills] = await Promise.all([
     detectCompletions(rt.cwd),
+    detectLsp(rt.cwd),
     detectMcp(rt, scope),
     detectSkills(rt),
   ]);
-  return { completions, mcp, skills };
+  return { completions, lsp, mcp, skills };
 }
 
 /**
@@ -264,7 +291,7 @@ function buildRunAllPlan(
           chosen.includes("completions"),
           composeCompletions(detected.completions),
         ),
-        when(chosen.includes("lsp"), composeGuardedLsp(rt)),
+        when(chosen.includes("lsp"), composeGuardedLsp(rt, detected.lsp.state)),
         when(
           chosen.includes("mcp"),
           composeMcp(detected.mcp, selectChosenGroups(detected.mcp, answers)),
@@ -323,17 +350,20 @@ export async function buildSetupPlan(
           shell: d.shell,
           path: d.path,
           installed: d.shell !== null,
+          state: d.state,
         }),
       };
     }
 
-    case "lsp":
+    case "lsp": {
+      const d = await detectLsp(rt.cwd);
       return {
         generator: buildSingleStep(rt, "pragma setup lsp", [], () =>
-          composeGuardedLsp(rt),
+          composeGuardedLsp(rt, d.state),
         ),
-        toResult: () => ({ kind: "lsp" }),
+        toResult: () => ({ kind: "lsp", state: d.state }),
       };
+    }
 
     case "mcp": {
       const d = await detectMcp(rt, scope);
@@ -353,7 +383,7 @@ export async function buildSetupPlan(
           return {
             kind: "mcp",
             configured: mcpConfigured(sel),
-            targets: mcpTargets(sel),
+            targets: mcpTargets(d, sel),
           };
         },
       };
