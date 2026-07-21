@@ -11,10 +11,15 @@
 
 .ds.journeys-explorer {
   display: grid;
+  /* The template is view-dependent and driven INLINE from a constant
+   * (RULING 2 — see JourneysExplorer/types.ts): the DEFAULT (table) is TWO
+   * tracks, the graph is three (rail · 1fr · inspector). The inline style
+   * is the authority; this base value is the same two-track default as a
+   * documented fallback, so a reader of the stylesheet alone sees the
+   * default shape and no empty inspector column. */
   grid-template-columns:
     minmax(var(--subnav-w), 18rem)
-    minmax(0, 1fr)
-    minmax(var(--aside-w), 24rem);
+    minmax(0, 1fr);
   /* ZERO gap — the tracks stay adjacent and the hairlines move onto the
    * flanking panels, so the centre reads as one continuous surface the
    * rail and inspector sit beside rather than a card in a sea of padding.
@@ -38,14 +43,13 @@
   min-block-size: 0;
 }
 
-/* The centre column: the view SWITCH on top, then ONE reading beneath it —
- * the table or the graph, never both (FIX 2). The switch row takes its
- * content; the view row releases to fill the rest and owns its own scroll.
- * Both release their min-content claim so the frame stays in charge of the
- * width. */
+/* The centre column: ONE reading, the table or the graph, never both
+ * (RULING 1 — the switch itself moved to the mode strip). It fills the whole
+ * centre and owns its own scroll; it releases its min-content claim so the
+ * frame stays in charge of the width. */
 .ds.journeys-explorer .journeys-explorer-main {
   display: grid;
-  grid-template-rows: min-content minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 0;
   min-block-size: 0;
   min-inline-size: 0;
@@ -65,8 +69,23 @@
   min-block-size: 0;
 }
 
+/* THE HEIGHT CHAIN, resolved (the definitions well's move, mirrored). The
+ * well sits in the `minmax(0, 1fr)` row of `.journeys-explorer-graph`,
+ * which is the `minmax(0, 1fr)` row of `.journeys-explorer-main`, which is
+ * the `block-size: 100%` explorer inside the canvas region's `minmax(0, 1fr)`
+ * (100dvh-derived) row — so a definite height exists all the way down. The
+ * well just has to pass it on: React Flow's `.react-flow` is inline
+ * `height: 100%` with absolutely positioned internals and contributes ZERO
+ * intrinsic height, so it paints nothing unless its parent resolves to a
+ * real height. `block-size: 100%` makes the well fill its 1fr row and hand
+ * React Flow a definite `100%`; `min-block-size: 0` lets it shrink with the
+ * canvas. The old `16rem` floor — previously the ONLY thing giving the well
+ * height, capping it at a short box the canvas scrolled around — is gone; a
+ * small last-resort `min-block-size: 12rem` guards only against total
+ * collapse and never competes with the fill. */
 .ds.journeys-explorer .journeys-explorer-graph > .journey-well {
-  min-block-size: 16rem;
+  block-size: 100%;
+  min-block-size: 12rem;
 }
 
 .ds.journeys-explorer .journeys-explorer-graph-prompt {
@@ -77,32 +96,6 @@
   border-block-end: 1px solid var(--color-border-muted, #ddd);
 }
 
-/* The Table ⇄ Graph segmented control — a row of exclusive toggles, the
- * checked one filled and weighted (never colour alone). Sits at the top of
- * the centre column, above whichever view is shown. */
-.ds.journeys-explorer .journeys-view-switch {
-  display: flex;
-  gap: var(--space-050, 0.25rem);
-  margin: 0;
-  padding: var(--space-100, 0.5rem) var(--space-200, 1rem);
-  border: 0;
-  border-block-end: 1px solid var(--color-border-muted, #ddd);
-}
-
-.ds.journeys-explorer .journeys-view-switch-option {
-  padding-block: var(--space-050, 0.25rem);
-  padding-inline: var(--space-150, 0.75rem);
-  border: 1px solid var(--color-border-muted, #ddd);
-  border-radius: var(--border-radius, 0.25rem);
-  background: var(--color-background, #fff);
-  color: var(--color-text, #111);
-  font: inherit;
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-
-.ds.journeys-explorer .journeys-view-switch-option[aria-pressed="true"] {
-  border-color: var(--color-brand-primary, #06c);
-  background: var(--color-background-layer2, #f4f4f4);
-  font-weight: 600;
-}
+/* The Table ⇄ Graph switch is no longer here (RULING 1): it moved to the
+ * mode strip's `controls` socket. Its styles live with it, in
+ * JourneyViewSwitch/styles.css. */

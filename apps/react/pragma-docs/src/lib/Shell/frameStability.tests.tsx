@@ -217,24 +217,38 @@ const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
  * whose violation would actually mean the frame moved.
  */
 const EXPECTED_STRIP_CLAIMS: Readonly<
-  Record<string, { readonly controls: boolean; readonly status: boolean }>
+  Record<
+    string,
+    {
+      /** The controls slot's expected tenant: which `data-slot` marker its
+       * inner markup must carry, or `false` for an empty socket. Different
+       * lenses fill it with different toolbars (definitions → chips,
+       * journeys → the view switch), so the claim is the marker, not a bare
+       * boolean. */
+      readonly controls: string | false;
+      readonly status: boolean;
+    }
+  >
 > = {
   "/": { controls: false, status: false },
   "/components": { controls: false, status: false },
-  "/definitions": { controls: true, status: true },
+  "/definitions": { controls: "explorer-controls", status: true },
   "/standards": { controls: false, status: false },
-  // Journeys claims CONTEXT only. Its controls genuinely belong in the
-  // rail: the coordinate chooser and the persona filter each need
-  // explanatory text (the persona axis is APPROXIMATE and says so), and a
-  // strip toolbar is the wrong place for a caveat that must be read.
-  // Claiming a socket in order to fill it would be furniture pretending
-  // to be an instrument — the opposite of R5's point.
-  "/journeys": { controls: false, status: false },
+  // Journeys claims CONTEXT and CONTROLS (RULING 1). The `controls` socket
+  // holds the Table ⇄ Graph view switch — the one journeys instrument that
+  // is genuinely a strip toolbar: it chooses which reading the canvas shows,
+  // needs no explanatory caveat, and its labels are data-independent. (The
+  // lens's OTHER controls — the coordinate chooser and the persona filter —
+  // stay in the rail, each needing its own explanatory text.) The `status`
+  // socket stays empty — the lens has no single figure worth a live count.
+  "/journeys": { controls: "journeys-view", status: false },
   "/guides": { controls: false, status: false },
   [BUTTON_ENTITY_URL]: { controls: false, status: false },
-  [DEFINITIONS_TERM_URL]: { controls: true, status: true },
+  [DEFINITIONS_TERM_URL]: { controls: "explorer-controls", status: true },
   [STANDARD_READING_URL]: { controls: false, status: false },
-  [JOURNEYS_JOB_URL]: { controls: false, status: false },
+  // The job view claims the switch too — the view is ephemeral, not
+  // URL-derived, so both journeys addresses carry the same strip tenant.
+  [JOURNEYS_JOB_URL]: { controls: "journeys-view", status: false },
 };
 
 const renderPage = (url: string): string =>
@@ -405,11 +419,10 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
       'data-slot="reading-canvas"',
     );
     // The journeys canvases render REAL content from the fixture records:
-    // the index carries the PRIMARY-SURFACE table (AV-351) and the honest
-    // empty inspector; the job canvas carries the selected job's inspector.
-    // The table and the graph are ONE reading at a time now (FIX 2), with
-    // the TABLE as the default — so the default SSR output is the table, and
-    // the well's node DOM is a client transition, NOT in the served markup.
+    // the index carries the PRIMARY-SURFACE table (AV-351). The table and
+    // the graph are ONE reading at a time (RULING 1), with the TABLE as the
+    // default — so the default SSR output is the table, and the well's node
+    // DOM is a client transition, NOT in the served markup.
     expect(mustGet("/journeys").canvas).toContain('id="lens-journeys-title"');
     // The table is the lens's primary surface and the DEFAULT view, and it
     // SSRs: its slot, its row-header cells and its group-by control are all
@@ -418,10 +431,20 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     expect(mustGet("/journeys").canvas).toContain('data-slot="journeys-table"');
     expect(mustGet("/journeys").canvas).toContain('scope="row"');
     expect(mustGet("/journeys").canvas).toContain("Group by");
-    expect(mustGet("/journeys").canvas).toContain("Select a job");
-    // The view switch is server-rendered, defaulting to Table (its checked
-    // option), so a reader can flip to the graph after hydration.
-    expect(mustGet("/journeys").canvas).toContain('aria-label="Journey view"');
+    // The view switch is NO LONGER in the canvas (RULING 1): it is the mode
+    // strip's `controls` tenant now, so it lands in the FRAME, not here. The
+    // strip claim is asserted by EXPECTED_STRIP_CLAIMS below; the canvas must
+    // NOT carry the switch.
+    expect(mustGet("/journeys").canvas).not.toContain(
+      'aria-label="Journey view"',
+    );
+    // RULING 2: the DEFAULT (table) view drops the inspector column, so the
+    // inspector region is absent from the default canvas — no empty column,
+    // and no "Select a job" empty-inspector prompt in table mode.
+    expect(mustGet("/journeys").canvas).not.toContain(".journey-inspector");
+    expect(mustGet("/journeys").canvas).not.toContain(
+      'id="journey-inspector-title"',
+    );
     // HONEST: the well (react-flow node DOM) is NOT in the default output —
     // the graph is the non-default view, reached by the client switch. This
     // used to assert the node DOM was present because the well SSR'd
@@ -429,9 +452,14 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     // default canvas is the table alone.
     expect(mustGet("/journeys").canvas).not.toContain("react-flow__node-hop");
     // The job canvas defaults to the table too (the view is ephemeral, not
-    // URL-derived), so it carries the inspector's selected-job heading — not
-    // the well's node DOM.
+    // URL-derived), so it carries the TABLE — not the inspector (dropped in
+    // table mode, RULING 2) and not the well's node DOM (the non-default
+    // view). The selected job is still in the URL; it only surfaces once the
+    // reader flips to the graph.
     expect(mustGet(JOURNEYS_JOB_URL).canvas).toContain(
+      'data-slot="journeys-table"',
+    );
+    expect(mustGet(JOURNEYS_JOB_URL).canvas).not.toContain(
       'id="journey-inspector-title"',
     );
     expect(mustGet(JOURNEYS_JOB_URL).canvas).not.toContain(
@@ -520,10 +548,11 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
       const status = extractStripSlot(frame, STRIP_STATUS_PATTERN);
 
       if (expected.controls) {
-        // Structural, not a pinned string: the toolbar is present and is
-        // the real chip toolbar, identified by its own slot marker.
+        // Structural, not a pinned string: the toolbar is present and is the
+        // real one this lens claims, identified by its own slot marker
+        // (definitions → `explorer-controls`, journeys → `journeys-view`).
         expect(controls, `controls on ${url}`).toContain(
-          'data-slot="explorer-controls"',
+          `data-slot="${expected.controls}"`,
         );
       } else {
         expect(controls, `controls on ${url} must be empty`).toBe("");

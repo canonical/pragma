@@ -107,20 +107,23 @@ const SEEDED_PAGES = [
     liveSelector: "#standard-reading-title",
     liveText: "cs:react.component.link_component",
   },
-  // Journeys block (AV-351): THE SECOND React Flow SSR gate — the job
-  // page's server HTML carries the journey well's full node DOM (38
-  // nodes, 40 edges against the live model), and hydrating over it must
-  // stay mismatch-silent and network-silent like every other seeded page.
-  // The well holds NO client-only state at all, so this is the strongest
-  // form of the claim: the first client render reproduces the server's
-  // markup by construction.
+  // Journeys job block (AV-351 / RULING 1 + 2): the view is EPHEMERAL, not
+  // URL-derived, so the job page — like the index — defaults to the TABLE.
+  // Its server HTML therefore carries the table's primary surface, NOT the
+  // well's node DOM (the graph is the non-default view, a client transition)
+  // and NOT the inspector (dropped in table mode, RULING 2 — no third
+  // column). The selected job is still in the URL; it only surfaces when the
+  // reader flips the strip switch to the graph. Hydrating over the
+  // server-rendered table must stay mismatch-silent: the table's whole
+  // arrangement comes from a constant, so the first client render reproduces
+  // the server's markup by construction.
   {
     name: "journeys job",
     url: "/journeys/sem%3A%2F%2Fdesign-system-docs%23job.l3",
     records: journeysExplorerRecordsJob,
-    serverMarker: '<h2 id="journey-inspector-title">job.l3</h2>',
-    liveSelector: "#journey-inspector-title",
-    liveText: "job.l3",
+    serverMarker: 'data-slot="journeys-table"',
+    liveSelector: ".journey-table-group-control legend",
+    liveText: "Group by",
   },
   // Journeys INDEX block (AV-351): the table is the lens's primary surface,
   // and its whole ephemeral arrangement — the default sort, the default

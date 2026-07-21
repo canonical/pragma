@@ -5,6 +5,7 @@ import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
 import { JourneysPage } from "./JourneysPage/index.js";
 import { journeysRouteEntry } from "./journeysQuery.js";
+import { journeysStripSlots } from "./stripSlots.js";
 
 /**
  * The Journeys lens routes (AV-351): the diagram (`/journeys`, the lens
@@ -24,12 +25,21 @@ import { journeysRouteEntry } from "./journeysQuery.js";
  * but is a way of looking, not a place — it lives in the lens's ephemeral
  * filter, never in the URL.
  *
- * Both routes claim the strip's `context` socket only. The lens's controls
- * genuinely belong in the rail: the coordinate chooser and the persona
- * filter each need their own explanatory text (the persona axis is
- * APPROXIMATE and says so), and a strip toolbar is the wrong place for a
- * caveat that must be read. Claiming a socket to fill it would be
- * furniture pretending to be an instrument — the opposite of R5's point.
+ * Both routes claim the strip's `context` AND `controls` sockets (RULING
+ * 1). The `controls` socket now holds the Table ⇄ Graph view switch — the
+ * one instrument that is genuinely a strip-level toolbar: it chooses which
+ * reading of the demand model the canvas shows, needs no explanatory caveat,
+ * and its labels are data-independent, so the strip content is a stable
+ * string. (The lens's OTHER controls — the coordinate chooser and the
+ * persona filter — stay in the rail: each needs its own explanatory text
+ * (the persona axis is APPROXIMATE and says so), and a strip toolbar is the
+ * wrong place for a caveat that must be read.) The `status` socket stays
+ * unclaimed — the lens has no single figure worth a live count.
+ *
+ * Claiming the `controls` socket deliberately loosened
+ * `frameStability.tests.tsx`, which previously asserted the journeys
+ * `controls` slot was empty; that change landed in its own commit with its
+ * own justification, the same way the Definitions claim did.
  */
 const routes = {
   journeys: route({
@@ -42,6 +52,7 @@ const routes = {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
       [SHELL_STRIP_META_KEY]: {
         context: "Journeys",
+        ...journeysStripSlots,
       } satisfies StripSlotsEntry,
     },
   }),
@@ -55,6 +66,7 @@ const routes = {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
       [SHELL_STRIP_META_KEY]: {
         context: "Journeys",
+        ...journeysStripSlots,
       } satisfies StripSlotsEntry,
     },
   }),

@@ -23,10 +23,11 @@ import {
   DEFAULT_TABLE_STATE,
   type JourneyTableState,
 } from "../journeyTableModel.js";
+import { useJourneyView } from "../journeyViewContext.js";
 import {
-  DEFAULT_JOURNEY_VIEW,
+  DEFAULT_TABLE_COLUMNS,
+  GRAPH_COLUMNS,
   type JourneysExplorerProps,
-  type JourneyView,
 } from "./types.js";
 import "./styles.css";
 
@@ -141,55 +142,6 @@ const journeysExplorerQuerySource = (): unknown => graphql`
 void journeysExplorerQuerySource;
 
 const componentCssClassName = "ds journeys-explorer";
-
-/** The two readings the switch offers, in render order. */
-const VIEW_OPTIONS: readonly {
-  readonly key: JourneyView;
-  readonly label: string;
-}[] = [
-  { key: "table", label: "Table" },
-  { key: "graph", label: "Graph" },
-];
-
-/**
- * The Table ⇄ Graph switch (FIX 2). An in-canvas segmented control, not a
- * strip tenant: the journeys lens deliberately claims only the strip's
- * `context` socket (its filters need explanatory prose the strip is the
- * wrong place for — see routes.ts and the frame census), and the view
- * choice is a CANVAS-LOCAL concern nothing in the strip reads. Wiring it
- * through the strip would mean a shared context above the frame and flipping
- * the certified `controls:false` ruling for state that never leaves the
- * canvas — heavier than the fix warrants.
- *
- * A labelled `fieldset` of `aria-pressed` toggles — the exact idiom the
- * table's own group control and the rail's persona chips use, so the choice
- * is announced as a named group and each option stays visible without colour
- * alone (weight + fill). Pure — it renders `view` and calls `onViewChange`,
- * holding no state of its own.
- */
-const JourneyViewSwitch = ({
-  view,
-  onViewChange,
-}: {
-  readonly view: JourneyView;
-  readonly onViewChange: (next: JourneyView) => void;
-}): React.ReactElement => (
-  <fieldset aria-label="Journey view" className="journeys-view-switch">
-    {VIEW_OPTIONS.map((option) => (
-      <button
-        aria-pressed={view === option.key}
-        className="journeys-view-switch-option"
-        key={option.key}
-        onClick={() => {
-          onViewChange(option.key);
-        }}
-        type="button"
-      >
-        {option.label}
-      </button>
-    ))}
-  </fieldset>
-);
 
 /**
  * The Journeys lens's route root: the demand model as a triptych — the
@@ -330,15 +282,20 @@ const JourneysExplorer = ({
     [coordinates, jobDetail],
   );
 
-  // THE VIEW SWITCH (FIX 2, P-D7). The table and the graph are two readings
-  // of the same model and the lens shows ONE at a time — the owner's ruling.
-  // The choice is EPHEMERAL client state and never enters the URL (only the
-  // selected job is addressable). Its initial value is the constant DEFAULT_
-  // JOURNEY_VIEW — "table", the primary surface — a no-op default read from
-  // nothing, so the server's first paint (Table) and the client's first
-  // render agree byte for byte; switching to the graph is a client
-  // transition. Never seeded from `localStorage`, `window` or the query.
-  const [view, setView] = useState<JourneyView>(DEFAULT_JOURNEY_VIEW);
+  // THE VIEW SWITCH (RULING 1, P-D7). The table and the graph are two
+  // readings of the same model and the lens shows ONE at a time — the
+  // owner's ruling. The switch itself now lives in the MODE STRIP's
+  // `controls` socket (see stripSlots.tsx / routes.ts), so the ephemeral
+  // choice is READ here from `journeyViewContext` rather than held in this
+  // component's own state — the toolbar is mounted by the frame, a sibling
+  // of the canvas, so context is the only path from it down to here. The
+  // choice never enters the URL (only the selected job is addressable). Its
+  // initial value is the constant DEFAULT_JOURNEY_VIEW — "table", the
+  // primary surface — a no-op default read from nothing, so the server's
+  // first paint (Table, the two-track grid) and the client's first render
+  // agree byte for byte; switching to the graph is a client transition.
+  // Never seeded from `localStorage`, `window` or the query.
+  const { view } = useJourneyView();
 
   // THE TABLE'S EPHEMERAL ARRANGEMENT (P-D7). Sort, group and expansion
   // are client state and never enter the URL — only the selected job is
@@ -388,9 +345,25 @@ const JourneysExplorer = ({
     return undefined;
   }, [coordinates, data.jobs, job]);
 
+  // THE VIEW-DEPENDENT GRID (RULING 2). The RIGHT track is view-dependent:
+  // the graph needs the inspector beside it, the table does not — so the
+  // template is driven by the ephemeral view, and the inspector column (and
+  // the inspector element itself) exists ONLY in graph mode. No empty
+  // inspector column in table mode: the same dead-space class as the top
+  // band the prior fix closed. The template is applied INLINE from a
+  // constant (never the stylesheet), so the switch is a pure function of the
+  // view with zero CSS contention; the default (table → two tracks) yields
+  // the SAME string on the server and the client, so the initial grid is
+  // byte-identical. The rail stays in BOTH modes — it is the demand index
+  // that drives the table's grouping, not graph furniture.
+  const graph = view === "graph";
   return (
     <div
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
+      data-view={view}
+      style={{
+        gridTemplateColumns: graph ? GRAPH_COLUMNS : DEFAULT_TABLE_COLUMNS,
+      }}
     >
       <JourneyRail
         coordinates={coordinates}
@@ -400,25 +373,15 @@ const JourneysExplorer = ({
         personas={personas}
         rolesByCoordinate={rolesByCoordinate}
       />
-      {/* THE PRIMARY SURFACE, one reading at a time (FIX 2). The switch
-          chooses TABLE — all 52 jobs, sortable and groupable — or GRAPH —
-          the selected journey's left-to-right spine. They are never shown
-          together: a diagram is good at one journey and bad at 52 at once,
-          and a table and a diagram of the same rows side by side is noise.
-          The table leads because it is the index; the graph is one journey's
-          detail. */}
+      {/* THE PRIMARY SURFACE, one reading at a time (RULING 1). The strip's
+          switch chooses TABLE — all 52 jobs, sortable and groupable — or
+          GRAPH — the selected journey's left-to-right spine. They are never
+          shown together: a diagram is good at one journey and bad at 52 at
+          once, and a table and a diagram of the same rows side by side is
+          noise. The table leads because it is the index; the graph is one
+          journey's detail. */}
       <div className="journeys-explorer-main">
-        <JourneyViewSwitch onViewChange={setView} view={view} />
-        {view === "table" ? (
-          <JourneyTable
-            expanded={expanded}
-            job={job}
-            onStateChange={setTableState}
-            onToggleExpanded={toggleExpanded}
-            rows={rows}
-            state={tableState}
-          />
-        ) : (
+        {graph ? (
           <div className="journeys-explorer-graph">
             {/* The empty-selection case, handled honestly: the well always
                 draws the default coordinate's spine (never blank), and this
@@ -432,9 +395,21 @@ const JourneysExplorer = ({
             ) : null}
             <JourneyWell coordinates={drawn} job={job} />
           </div>
+        ) : (
+          <JourneyTable
+            expanded={expanded}
+            job={job}
+            onStateChange={setTableState}
+            onToggleExpanded={toggleExpanded}
+            rows={rows}
+            state={tableState}
+          />
         )}
       </div>
-      <JourneyInspector job={inspected} />
+      {/* The inspector rides the RIGHT track — GRAPH mode only (RULING 2).
+          In table mode there is no inspector element and no third track, so
+          no empty column. */}
+      {graph ? <JourneyInspector job={inspected} /> : null}
     </div>
   );
 };
