@@ -173,9 +173,28 @@ if (import.meta.main) {
     `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
   );
 
+  // The compile target follows the HOST: a contributor on macOS/arm gets a
+  // binary they can run, and CI's linux-x64 runners still produce the
+  // release artifact. Unknown platforms fall back to linux-x64 (bun
+  // cross-compiles by downloading the target runtime).
+  const HOST_TARGETS: Record<string, string> = {
+    "linux-x64": "bun-linux-x64",
+    "linux-arm64": "bun-linux-arm64",
+    "darwin-x64": "bun-darwin-x64",
+    "darwin-arm64": "bun-darwin-arm64",
+    "win32-x64": "bun-windows-x64",
+  };
+  const compileTarget =
+    HOST_TARGETS[`${process.platform}-${process.arch}`] ?? "bun-linux-x64";
+
   const result = await Bun.build({
     entrypoints: ["src/bin.ts"],
     minify: true,
+    // EXPLICIT bundler target: without it, bun versions that don't infer the
+    // target from `compile` fall back to the default — "browser" — and the
+    // build dies on the first Node builtin ("browser build cannot require()
+    // Node.js builtin"). 1.3.x infers; other versions must be told.
+    target: "bun",
     // Code-splitting is load-bearing for cold-start: it emits the lazily
     // `import()`ed summon-core + generators (+ Ink/React) as SEPARATE chunks the
     // binary parses on demand, not at startup. Without it, bundling summon adds
@@ -184,7 +203,7 @@ if (import.meta.main) {
     // only when it runs.
     splitting: true,
     compile: {
-      target: "bun-linux-x64",
+      target: compileTarget,
       outfile: "dist/pragma",
     },
   });
