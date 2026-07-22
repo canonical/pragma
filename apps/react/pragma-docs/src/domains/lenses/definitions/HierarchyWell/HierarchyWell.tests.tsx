@@ -5,12 +5,11 @@
  * aria-current, and abstract classes are styled distinctly while their
  * accessible name stays the plain label.
  *
- * ONE mount for the lot: mounting the full triptych (React Flow + the
- * captured store) is the suite's heaviest render, so the assertions
- * share it — and carry an explicit timeout for fully-parallel runs.
+ * ONE mount for the lot: mounting the full triptych over the captured
+ * store is the suite's heaviest render, so the assertions share it — and
+ * carry an explicit timeout for fully-parallel runs.
  */
 
-import "../__fixtures__/stubReactFlowGlobals.js";
 import { render, screen } from "@testing-library/react";
 import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";
@@ -41,13 +40,33 @@ describe("HierarchyWell", () => {
 
     // The well announces itself.
     expect(
-      screen.getByLabelText("Class hierarchy", { selector: ".react-flow" }),
+      screen.getByLabelText("Class hierarchy", {
+        selector: ".hierarchy-canvas",
+      }),
     ).toBeInTheDocument();
 
-    // All 29 live classes (17 ds + 3 cs + 9 anatomy) as anchors with
-    // real term addresses.
+    // Every captured class as an anchor with a real term address —
+    // the population derived from the fixture, never hardcoded.
+    // The population = the ontologies' own class lists, resolved through
+    // their `classes` refs (lookalike OntologyClass records also ride the
+    // store from property domains and the inspector's term lookup).
+    const recordMap = definitionsExplorerRecords as Record<
+      string,
+      {
+        __typename?: string;
+        classes?: { __refs?: readonly string[] };
+        isAbstract?: boolean;
+      }
+    >;
+    const listedClasses = Object.values(recordMap)
+      .filter((record) => record.__typename === "Ontology")
+      .flatMap((record) => record.classes?.__refs ?? [])
+      .map((ref) => recordMap[ref])
+      .filter((record) => record !== undefined);
+    const classCount = listedClasses.length;
     const nodeLinks = well.querySelectorAll("a.hierarchy-node");
-    expect(nodeLinks).toHaveLength(29);
+    expect(classCount).toBeGreaterThan(0);
+    expect(nodeLinks).toHaveLength(classCount);
     const hrefs = [...nodeLinks].map((link) => link.getAttribute("href"));
     expect(hrefs).toContain("/definitions/ds%3AUIBlock");
     expect(hrefs).toContain("/definitions/cs%3ACodeStandard");
@@ -58,10 +77,13 @@ describe("HierarchyWell", () => {
     expect(current).toHaveLength(1);
     expect(current[0]?.textContent).toBe("UI Block");
 
-    // Abstract classes styled distinctly, names unpolluted: the live
-    // graph's four (ds Entity/UIElement/UIBlock + anatomy Node).
+    // Abstract classes styled distinctly, names unpolluted — count
+    // derived from the fixture's own isAbstract facets.
+    const abstractCount = listedClasses.filter(
+      (record) => record.isAbstract === true,
+    ).length;
     const abstractNodes = well.querySelectorAll("a.hierarchy-node-abstract");
-    expect(abstractNodes).toHaveLength(4);
+    expect(abstractNodes).toHaveLength(abstractCount);
     expect([...abstractNodes].map((node) => node.textContent)).toContain(
       "UI Block",
     );

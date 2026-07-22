@@ -80,8 +80,8 @@ describe("the strip's tenants over a warm store", () => {
     const caption = /<figcaption>([\s\S]*?)<\/figcaption>/
       .exec(html)?.[1]
       ?.replaceAll("<!-- -->", "");
-    // 29 live classes across the three ontologies, 4 of them abstract.
-    expect(caption).toBe("29 of 29 classes · 4 abstract");
+    // 60 live classes across the four ontologies, 5 of them abstract.
+    expect(caption).toBe("60 of 60 classes · 5 abstract");
     // Warm store: no network, on the server least of all.
     expect(fetchFn).not.toHaveBeenCalled();
   });
@@ -92,15 +92,15 @@ describe("the strip's tenants over a warm store", () => {
     );
 
     // Unfiltered: everything is shown, so visible === total.
-    expect(screen.getByRole("figure").textContent).toContain("29 of 29");
+    expect(screen.getByRole("figure").textContent).toContain("60 of 60");
 
     // Turn the anatomy ontology off; the count must drop by exactly that
     // ontology's 9 classes.
     fireEvent.click(screen.getByRole("button", { name: "anatomy" }));
-    expect(screen.getByRole("figure").textContent).toContain("20 of 29");
+    expect(screen.getByRole("figure").textContent).toContain("51 of 60");
 
     // The denominator — how many classes EXIST — never moves.
-    expect(screen.getByRole("figure").textContent).toContain("of 29");
+    expect(screen.getByRole("figure").textContent).toContain("of 60");
   });
 
   it("offers exactly the ontologies the graph carries, no invented ones", () => {
@@ -111,7 +111,7 @@ describe("the strip's tenants over a warm store", () => {
       within(screen.getByRole("group", { name: "Filter by ontology" }))
         .getAllByRole("button")
         .map((button) => button.textContent),
-    ).toEqual(["ds", "cs", "anatomy"]);
+    ).toEqual(["surface", "ds", "cs", "anatomy"]);
   });
 });
 

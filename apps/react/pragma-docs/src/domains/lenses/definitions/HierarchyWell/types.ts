@@ -1,4 +1,3 @@
-import type { Edge, Node } from "@xyflow/react";
 import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import type { LensFilter } from "../lensFilter.js";
 
@@ -16,9 +15,52 @@ export interface TermNodeData extends Record<string, unknown> {
   readonly prefix: string;
 }
 
-/** The well's node/edge shapes (React Flow's, narrowed to this graph). */
-export type TermFlowNode = Node<TermNodeData, "term">;
-export type TermFlowEdge = Edge;
+/**
+ * The well's own node shape (React Flow retired — AV-364's well grammar):
+ * a positioned box addressed by its CENTRE, in the canvas's 1:1 px space.
+ * `id` is the prefixed term URI — the same string the term route
+ * addresses, so selection and links need no translation. `className` is
+ * the decorate pass's output (`decorateGraph.ts`), the only mutable-ish
+ * field (rebuilt immutably, identity-preserved when unchanged).
+ */
+export interface TermFlowNode {
+  readonly id: string;
+  readonly data: TermNodeData;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly className?: string;
+}
+
+/**
+ * The well's own edge shape. `source`/`target` are prefixed term URIs —
+ * the fields the decorate pass's ego-neighbourhood walks. Structural
+ * edges (subclass → superclass) run straight and unlabelled; semantic
+ * edges (object properties, domain → range) arc and carry their predicate.
+ */
+export interface TermFlowEdge {
+  readonly id: string;
+  readonly source: string;
+  readonly target: string;
+  readonly family: "structural" | "semantic";
+  /** The predicate's display name; semantic edges only. */
+  readonly predicate?: string;
+  /** Ready-to-render SVG path, endpoints trimmed to the node boxes. */
+  readonly d: string;
+  /** Label anchor; semantic edges only. */
+  readonly labelAt?: { readonly x: number; readonly y: number };
+  readonly className?: string;
+}
+
+/** One ontology's settled cluster extent, for the caption watermark. */
+export interface ClusterExtent {
+  readonly prefix: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
 
 export interface HierarchyWellProps {
   /** Additional CSS class names. */
@@ -43,9 +85,9 @@ export interface HierarchyWellProps {
   readonly hoverCentre: string | undefined;
   /**
    * Raise (or clear) the shared ego centre from a graph interaction —
-   * pointer-enter/leave on a node, and keyboard focus/blur within the flow.
-   * The rail reads the same centre and marks the matching item, so a graph
-   * hover lights up the index and a rail hover fades the graph.
+   * pointer-enter/leave on a node, and keyboard focus/blur within the
+   * well. The rail reads the same centre and marks the matching item, so a
+   * graph hover lights up the index and a rail hover fades the graph.
    */
   readonly onHoverTerm: (term: string | undefined) => void;
 }

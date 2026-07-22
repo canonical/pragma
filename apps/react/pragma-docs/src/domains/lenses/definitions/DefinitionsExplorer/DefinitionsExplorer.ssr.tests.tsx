@@ -30,13 +30,13 @@ describe("DefinitionsExplorer SSR", () => {
     expect(html).toContain('data-slot="explorer-inspector"');
 
     // The graph's nodes are server-rendered term links: all 29 classes
-    // across the three ontologies (17 ds + 3 cs + 9 anatomy).
-    const nodeCount = html.match(/react-flow__node-term/g)?.length ?? 0;
-    expect(nodeCount).toBe(29);
+    // across the four ontologies (31 surface + 17 ds + 3 cs + 9 anatomy).
+    const nodeCount = html.match(/hierarchy-node-shell/g)?.length ?? 0;
+    expect(nodeCount).toBe(60);
     // Server-rendered edges too (the explicit handles make paths
     // computable without measurement).
-    expect(html).toContain("react-flow__edges");
-    expect(html).toContain("react-flow__edge");
+    expect(html).toContain("hierarchy-edges");
+    expect(html).toContain("hierarchy-edge");
 
     // The selected term's node/rail links carry aria-current in the
     // server HTML itself.

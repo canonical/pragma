@@ -85,11 +85,11 @@ const explorerWithChips = (fetchFn: FetchFunction): ReactElement => {
 /** How many of the well's nodes the graph is currently HIDING. Counted
  * from the DOM React Flow painted, never from the model. */
 const hiddenNodeCount = (): number =>
-  document.querySelectorAll(`.react-flow__node.${HIDDEN_CLASS}`).length;
+  document.querySelectorAll(`.hierarchy-node-shell.${HIDDEN_CLASS}`).length;
 
 /** Every node the well painted, hidden or not. */
 const totalNodeCount = (): number =>
-  document.querySelectorAll(".react-flow__node").length;
+  document.querySelectorAll(".hierarchy-node-shell").length;
 
 describe("the well answers a chip toggle", () => {
   it("hides nodes in the GRAPH when an ontology chip goes off", {

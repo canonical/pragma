@@ -41,6 +41,15 @@ const WellLegend = (): React.ReactElement => (
       </dt>
       <dd>points to its superclass</dd>
     </div>
+    <div className="hierarchy-legend-row">
+      <dt>
+        <span
+          aria-hidden="true"
+          className="hierarchy-legend-edge hierarchy-legend-edge-relation"
+        />
+      </dt>
+      <dd>relation — hover a class to see its named arcs</dd>
+    </div>
   </dl>
 );
 

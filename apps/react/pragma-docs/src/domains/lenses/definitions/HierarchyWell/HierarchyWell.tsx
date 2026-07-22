@@ -1,23 +1,24 @@
 import { Link } from "@canonical/router-react";
-import { type NodeProps, ReactFlow } from "@xyflow/react";
 import type React from "react";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { graphql, useFragment } from "react-relay";
 import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
-import { buildClassTree } from "./buildClassTree.js";
+import { buildClassGraph } from "./buildClassGraph.js";
 import { decorateForView } from "./decorateGraph.js";
 import type { HierarchyWellProps, TermFlowNode } from "./types.js";
 import WellLegend from "./WellLegend.js";
-import "@xyflow/react/dist/style.css";
 import "./styles.css";
 
 /**
  * Codegen source of truth for `HierarchyWell_ontologies` (see the
  * components lens's `EntityHeader` for the native-import rationale).
  * `namespace` rides along because the graph returns FULL IRIs and the
- * well's node ids are prefixed term addresses (see `uris.ts`). Never
- * invoked.
+ * well's node ids are prefixed term addresses (see `uris.ts`).
+ * `properties` is the AV-364 addition: object properties whose domain and
+ * range are both drawn classes become the SEMANTIC edge family — the
+ * relations whose absence made the old well read as an organigram.
+ * Never invoked.
  */
 const hierarchyWellFragmentSource = (): unknown => graphql`
   fragment HierarchyWell_ontologies on Ontology @relay(plural: true) {
@@ -31,11 +32,26 @@ const hierarchyWellFragmentSource = (): unknown => graphql`
         uri
       }
     }
+    properties {
+      uri
+      label
+      kind
+      domain {
+        uri
+      }
+      range
+    }
   }
 `;
 void hierarchyWellFragmentSource;
 
 const componentCssClassName = "ds hierarchy-well";
+
+/** The camera's zoom bounds; panning is unbounded (the graph is finite). */
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 2;
+/** The initial camera offset — a constant, never a measured fit (SSR). */
+const CAMERA_MARGIN = 24;
 
 /**
  * A class node: a real term link, so the graph's nodes are anchors — they
@@ -45,89 +61,80 @@ const componentCssClassName = "ds hierarchy-well";
  * node, which the stylesheet raises.
  *
  * Abstract classes are marked the way the exhibit marks them: the label
- * goes italic (the stylesheet's job) and a small ABSTRACT tag rides
- * underneath — real text, so the distinction survives with styling off
- * rather than living in colour alone. The tag sits OUTSIDE the anchor,
- * exactly as the rail's "abstract" note does: a node's accessible name
- * must be the term itself, never the term plus its decoration.
+ * goes italic and a small ABSTRACT tag rides underneath — real text, so
+ * the distinction survives with styling off rather than living in colour
+ * alone. The tag sits OUTSIDE the anchor: a node's accessible name must
+ * be the term itself, never the term plus its decoration.
  *
  * The label is `title`-attributed as well as rendered: node geometry is
- * fixed for SSR determinism (no text measurement is available on the
- * server), so a long class name ellipsises and the tooltip is how the
- * full name stays recoverable.
+ * ESTIMATED from the label (no text measurement exists on the server), so
+ * a long class name ellipsises and the tooltip keeps it recoverable.
  */
-const TermNode = ({ data }: NodeProps<TermFlowNode>): React.ReactElement => (
-  <div className="hierarchy-node-shell">
+const TermNode = ({ node }: { node: TermFlowNode }): React.ReactElement => (
+  <div
+    className={["hierarchy-node-shell", node.className]
+      .filter(Boolean)
+      .join(" ")}
+    data-id={node.id}
+    style={{
+      insetInlineStart: node.x - node.width / 2,
+      insetBlockStart: node.y - node.height / 2,
+      inlineSize: node.width,
+      blockSize: node.height,
+    }}
+  >
     <Link
       className={[
         "hierarchy-node",
-        data.isAbstract ? "hierarchy-node-abstract" : "",
+        node.data.isAbstract ? "hierarchy-node-abstract" : "",
       ]
         .filter(Boolean)
         .join(" ")}
-      params={{ term: data.term }}
-      title={data.label}
+      params={{ term: node.data.term }}
+      title={node.data.label}
       to="definitionsTerm"
     >
-      {data.label}
+      {node.data.label}
     </Link>
-    {data.isAbstract ? (
+    {node.data.isAbstract ? (
       <span className="hierarchy-node-tag">abstract</span>
     ) : null}
   </div>
 );
 
-/** Module-scope node-type map — a stable identity, as React Flow requires. */
-const nodeTypes = { term: TermNode };
-
-/**
- * The initial camera: a deterministic constant (never a measured fit), so
- * the server and the client render the same transform and hydration has
- * nothing to reconcile. The graph is wider than most canvases at zoom 1;
- * 0.5 shows the ds block whole on a typical well, and the flow pans/zooms
- * from there.
- */
-const DEFAULT_VIEWPORT = { x: 24, y: 24, zoom: 0.5 };
-
 /**
  * The explorer's centre panel: the class graph in the shell's underground
- * well (the `.underground` hook — the depression you look INTO, AX.3).
- * Rendered with React Flow v12, whose SSR path renders the full node DOM
- * server-side because every node carries explicit `width`/`height` and
- * `handles` from the deterministic layout (`buildClassTree`).
+ * well (AX.3), rendered by the bespoke well renderer (AV-364 — React
+ * Flow retired here): an SVG edge layer under an HTML node layer, both in
+ * ONE 1:1 px space inside a transformed camera, so nodes stay real links
+ * with crisp DOM text and the edges can carry the full grammar (straight
+ * structural hairlines, labelled semantic arcs, hollow vs filled heads).
+ *
+ * THE CAMERA. Pan by dragging the floor, zoom by wheel (toward the
+ * cursor). The INITIAL camera is a pure function of the graph
+ * (`fitScale`) — a constant on both sides of hydration, exactly as the
+ * old DEFAULT_VIEWPORT was; the listeners only mutate it client-side,
+ * after hydration. The wheel listener is attached non-passively in an
+ * effect because it must preventDefault the page scroll.
  *
  * THE ASYMMETRY: this graph HIDES what the filter excludes (and drops any
  * edge that loses an endpoint), where the rail merely dims. Hiding is by
- * `className` only — positions never change, so a chip toggling back on
- * restores the picture exactly rather than re-running a layout.
+ * `className` only — positions never change (`decorateGraph.ts`), so a
+ * chip toggling back on restores the picture exactly. We dim; we never
+ * move.
  *
- * THE EGO-FADE, one hop and never transitive, is bound to hover AND to
- * FOCUS. The exhibit binds hover alone, which leaves the keyboard without
- * an equivalent; our nodes are real links, so focus is available and the
- * fade follows keyboard traversal exactly as it follows the pointer.
+ * PREDICATE LABELS answer to the ego centre: an arc wears its name only
+ * while incident to the hovered/selected term. Ambient density stays low;
+ * interaction reveals — alive means responsive, not restless.
  *
- * The ego centre is no longer well-LOCAL. It is the SHARED `hoverCentre`
- * that `DefinitionsExplorer` owns, so a graph hover and a rail hover write
- * the one value and both surfaces read it — true bidirectional sync. This
- * component's job shrank to: report which node the pointer/keyboard touched
- * (`onHoverTerm`), and fade to whatever centre it is handed.
+ * Hover/focus rides the SHARED `hoverCentre` exactly as before: one
+ * DOM-resolving code path (`data-id` closest-walk) serves pointer and
+ * keyboard; state is client-only and starts empty, so first client paint
+ * reproduces the server's selection-only markup byte for byte.
  *
- * Hover/focus state is CLIENT-ONLY and starts empty (the explorer seeds it
- * `undefined`), so the first client render reproduces the server's
- * selection-only markup byte for byte — see `decorateGraph.ts` for the
- * argument and the test that pins it.
- *
- * Accessibility posture: the well carries an accessible name, and every
- * node is a real link — but the COMPLETE keyboard path through the
- * explorer is the TermRail, which lists every term this graph draws (and
- * the properties besides); the well is a spatial view over the same
- * nouns, never the only route to any of them.
- *
- * Containment: nothing inside the flow uses `position: fixed` (verified
- * against `@xyflow/react`'s stylesheets) — the canvas's `container-type`
- * makes it the containing block for fixed descendants (INTRINSIC-GRID.md
- * entry 5), so a fixed element here would silently anchor to the wrong
- * box. Controls/minimap are simply not rendered in v1.
+ * Accessibility posture: unchanged — every node is a real link, but the
+ * COMPLETE keyboard path through the explorer is the TermRail; the well
+ * is a spatial view over the same nouns, never the only route to any.
  */
 const HierarchyWell = ({
   className,
@@ -141,20 +148,13 @@ const HierarchyWell = ({
     hierarchyWellFragmentNode,
     ontologies,
   );
-  const graph = useMemo(() => buildClassTree(data), [data]);
+  const graph = useMemo(() => buildClassGraph(data), [data]);
 
-  // The transient ego centre is the SHARED one, handed down as a prop:
-  // hover or keyboard focus on the graph OR the rail, whichever spoke last.
-  // Client-only, and `undefined` on first paint by construction.
   const focused = hoverCentre;
 
-  // The graph answers ONLY to the chip axes. Text is rail-only by
-  // contract, so it is destructured out of the memo's dependencies
-  // entirely: typing in the search box must not re-decorate 29 nodes and
-  // 18 edges on every keystroke, and — more importantly — must not be able
-  // to change the graph even by accident. `abstractions` and `namespaces`
-  // are stable arrays from the filter, so the memo only recomputes when a
-  // chip actually moves.
+  // The graph answers ONLY to the chip axes; text is rail-only by
+  // contract, so it is excluded from the memo's inputs entirely (typing
+  // must never re-decorate the graph, even by accident).
   const { abstractions, namespaces } = filter;
   const { nodes, edges } = useMemo(
     () =>
@@ -166,13 +166,46 @@ const HierarchyWell = ({
     [graph, term, focused, abstractions, namespaces],
   );
 
-  // React Flow offers node-level POINTER callbacks but none for focus, so
-  // focus/blur ride the FLOW's own wrapper (both bubble in React) and
-  // resolve the node id from the DOM. One code path, two input
-  // modalities. They sit on the flow rather than the outer well because
-  // the flow element is the labelled, role-bearing region — the well is a
-  // plain presentational box, and hanging interaction on it would be
-  // exactly the static-element-interaction smell.
+  // The label centre: transient focus wins, else the URL's selection —
+  // server-safe by the same argument as the decorate pass.
+  const labelCentre = focused ?? term;
+
+  const [camera, setCamera] = useState(() => ({
+    x: CAMERA_MARGIN,
+    y: CAMERA_MARGIN,
+    k: graph.fitScale,
+  }));
+  const canvasRef = useRef<HTMLDivElement | null>(null);
+  const drag = useRef<{ startX: number; startY: number } | undefined>(
+    undefined,
+  );
+
+  // Wheel zoom, toward the cursor. Non-passive: the well owns the wheel.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas === null) return;
+    const onWheel = (event: WheelEvent): void => {
+      event.preventDefault();
+      const bounds = canvas.getBoundingClientRect();
+      const pointerX = event.clientX - bounds.left;
+      const pointerY = event.clientY - bounds.top;
+      setCamera((current) => {
+        const next = Math.min(
+          Math.max(current.k * Math.exp(-event.deltaY * 0.0015), MIN_ZOOM),
+          MAX_ZOOM,
+        );
+        const ratio = next / current.k;
+        return {
+          k: next,
+          x: pointerX - (pointerX - current.x) * ratio,
+          y: pointerY - (pointerY - current.y) * ratio,
+        };
+      });
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, []);
+
   const readTermFromEvent = useCallback(
     (target: EventTarget | null): string | undefined => {
       if (!(target instanceof Element)) return undefined;
@@ -188,33 +221,117 @@ const HierarchyWell = ({
         .join(" ")}
       data-slot="explorer-canvas"
     >
-      <ReactFlow
+      <div
         aria-label="Class hierarchy"
-        defaultViewport={DEFAULT_VIEWPORT}
-        edges={[...edges]}
-        elementsSelectable={false}
-        maxZoom={2}
-        minZoom={0.2}
-        nodes={[...nodes]}
-        nodesConnectable={false}
-        nodesDraggable={false}
-        nodeTypes={nodeTypes}
-        onBlur={() => {
-          onHoverTerm(undefined);
+        className="hierarchy-canvas"
+        onBlur={() => onHoverTerm(undefined)}
+        onFocus={(event) => onHoverTerm(readTermFromEvent(event.target))}
+        onMouseLeave={() => onHoverTerm(undefined)}
+        onMouseOver={(event) => onHoverTerm(readTermFromEvent(event.target))}
+        onPointerDown={(event) => {
+          // Pan starts on the floor only — a press on a node is a click.
+          if (!(event.target instanceof Element)) return;
+          if (event.target.closest("a") !== null) return;
+          drag.current = {
+            startX: event.clientX - camera.x,
+            startY: event.clientY - camera.y,
+          };
+          event.currentTarget.setPointerCapture(event.pointerId);
         }}
-        onFocus={(event) => {
-          onHoverTerm(readTermFromEvent(event.target));
+        onPointerMove={(event) => {
+          const active = drag.current;
+          if (active === undefined) return;
+          setCamera((current) => ({
+            ...current,
+            x: event.clientX - active.startX,
+            y: event.clientY - active.startY,
+          }));
         }}
-        onNodeMouseEnter={(_event, node) => {
-          onHoverTerm(node.id);
+        onPointerUp={() => {
+          drag.current = undefined;
         }}
-        onNodeMouseLeave={() => {
-          onHoverTerm(undefined);
-        }}
-      />
-      {/* Canvas-local furniture: the two things that genuinely hover over
-          the graph in the exhibit. Both are static, so they cost the
-          hydration argument nothing. */}
+        ref={canvasRef}
+        role="group"
+      >
+        <div
+          className="hierarchy-camera"
+          style={{
+            transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.k})`,
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            className="hierarchy-edges"
+            height={graph.height}
+            width={graph.width}
+          >
+            <defs>
+              <marker
+                id="hw-head-structural"
+                markerHeight="9"
+                markerWidth="9"
+                orient="auto-start-reverse"
+                refX="9"
+                refY="5"
+                viewBox="0 0 10 10"
+              >
+                <path className="hw-head-structural" d="M 1 1 L 9 5 L 1 9 Z" />
+              </marker>
+              <marker
+                id="hw-head-semantic"
+                markerHeight="7"
+                markerWidth="7"
+                orient="auto-start-reverse"
+                refX="8"
+                refY="5"
+                viewBox="0 0 10 10"
+              >
+                <path className="hw-head-semantic" d="M 0 1 L 9 5 L 0 9 Z" />
+              </marker>
+            </defs>
+            {graph.clusters.map((cluster) => (
+              <text
+                className="hierarchy-cluster-caption"
+                key={cluster.prefix}
+                x={cluster.x}
+                y={cluster.y - 20}
+              >
+                {cluster.prefix}
+              </text>
+            ))}
+            {edges.map((edge) => {
+              const incident =
+                labelCentre !== undefined &&
+                (edge.source === labelCentre || edge.target === labelCentre);
+              return (
+                <g
+                  className={[
+                    "hierarchy-edge",
+                    `hierarchy-edge-${edge.family}`,
+                    incident ? "is-incident" : "",
+                    edge.className,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  key={edge.id}
+                >
+                  <path d={edge.d} markerEnd={`url(#hw-head-${edge.family})`} />
+                  {edge.labelAt === undefined ? null : (
+                    <text x={edge.labelAt.x} y={edge.labelAt.y}>
+                      {edge.predicate}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
+          {nodes.map((node) => (
+            <TermNode key={node.id} node={node} />
+          ))}
+        </div>
+      </div>
+      {/* Canvas-local furniture: static, so it costs the hydration
+          argument nothing. */}
       <p className="hierarchy-furniture hierarchy-hint">
         Drag to pan · scroll to zoom · select a class to inspect it
       </p>
@@ -226,19 +343,11 @@ const HierarchyWell = ({
 /**
  * Memoised at the boundary: the explorer re-renders on every keystroke in
  * the search box (the shared filter's `text` changes), but the WELL does
- * not answer to text. Without this, typing would re-render React Flow's
- * whole 29-node tree per character — measurably slow, and pure waste,
- * since the resulting graph is identical.
- *
- * since the resulting graph is identical.
- *
- * The graph answers to: the fragment ref, the selected term, the CHIP
- * axes, and now the shared `hoverCentre` (which re-centres the ego-fade —
- * a rail hover MUST reach the graph). It ignores the filter's TEXT
- * (rail-only) and `onHoverTerm` (a stable callback the explorer memoises;
- * comparing it would defeat the memo on every render). So the comparator
- * re-renders on exactly the inputs the decoration reads — and pinning
- * `hoverCentre` here is what lets a rail hover fade the graph at all.
+ * not answer to text. The comparator re-renders on exactly the inputs the
+ * decoration reads: the fragment ref, the selected term, the chip axes,
+ * and the shared `hoverCentre` (a rail hover MUST reach the graph).
+ * `onHoverTerm` is a stable callback the explorer memoises; comparing it
+ * would defeat the memo on every render.
  */
 export default memo(HierarchyWell, (previous, next) => {
   if (
@@ -249,7 +358,6 @@ export default memo(HierarchyWell, (previous, next) => {
   ) {
     return false;
   }
-  // Re-render only when a CHIP axis moved — never for text.
   return (
     previous.filter.abstractions === next.filter.abstractions &&
     previous.filter.namespaces === next.filter.namespaces

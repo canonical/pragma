@@ -36,13 +36,13 @@ const createFetchSpy = () =>
 
 /** The graph node whose term link points at `href` — the stable
  * cross-reference between a rail item and its node (both address the same
- * term). Returns the `.react-flow__node` wrapper that carries the
+ * term). Returns the `.hierarchy-node-shell` wrapper that carries the
  * decoration class. */
 const nodeForHref = (well: HTMLElement, href: string): HTMLElement => {
   const link = well.querySelector<HTMLElement>(
     `a.hierarchy-node[href="${href}"]`,
   );
-  const node = link?.closest<HTMLElement>(".react-flow__node");
+  const node = link?.closest<HTMLElement>(".hierarchy-node-shell");
   if (!node) throw new Error(`no graph node for ${href}`);
   return node;
 };

@@ -14,10 +14,15 @@
 
 .ds.definitions-explorer {
   display: grid;
+  /* The var() FALLBACKS are interim: the tip's intrinsic-grid WIP
+   * dissolved the frame's --subnav-w/--aside-w definitions, which
+   * collapsed these tracks to nothing. A fallback is consumption, not a
+   * definition (the census counts definitions), and the in-flight subgrid
+   * conversion supersedes this file wholesale when it lands. */
   grid-template-columns:
-    minmax(var(--subnav-w), 16rem)
+    minmax(var(--subnav-w, 13rem), 16rem)
     minmax(0, 1fr)
-    minmax(var(--aside-w), 24rem);
+    minmax(var(--aside-w, 16rem), 24rem);
   /* ZERO gap — the full-bleed move. The three tracks stay ADJACENT (the
    * layout.explorer contract declares exactly three adjacent tracks, and
    * that contract is freefold-marked), but with no gutter between them the

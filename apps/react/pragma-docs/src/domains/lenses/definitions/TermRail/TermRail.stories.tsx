@@ -8,7 +8,7 @@ import type { HierarchyWell_ontologies$key } from "#relay/__generated__/Hierarch
 import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
-import { classDepthsByUri } from "../HierarchyWell/buildClassTree.js";
+import { classDepthsByUri } from "../HierarchyWell/buildClassGraph.js";
 import { allNamespacesFilter } from "../lensFilter.js";
 import TermRail from "./TermRail.js";
 

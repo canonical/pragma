@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from "vitest";
 import { allNamespacesFilter, type LensFilter } from "../lensFilter.js";
-import { buildClassTree, type ClassTreeOntology } from "./buildClassTree.js";
+import { buildClassGraph, type ClassGraphOntology } from "./buildClassGraph.js";
 import {
   decorateForSelection,
   decorateForView,
@@ -24,7 +24,7 @@ import {
 
 /** A small chain plus a sibling: Entity ← UIBlock ← {Component, Pattern},
  * and a second ontology, so one-hop-vs-transitive is observable. */
-const makeInput = (): ClassTreeOntology[] => [
+const makeInput = (): ClassGraphOntology[] => [
   {
     prefix: "ds",
     namespace: "https://ds.canonical.com/",
@@ -54,6 +54,7 @@ const makeInput = (): ClassTreeOntology[] => [
         superclass: { uri: "https://ds.canonical.com/UIBlock" },
       },
     ],
+    properties: [],
   },
   {
     prefix: "cs",
@@ -66,10 +67,11 @@ const makeInput = (): ClassTreeOntology[] => [
         superclass: null,
       },
     ],
+    properties: [],
   },
 ];
 
-const graph = () => buildClassTree(makeInput());
+const graph = () => buildClassGraph(makeInput());
 const ALL_PREFIXES = ["ds", "cs"];
 const noOpFilter: LensFilter = allNamespacesFilter(ALL_PREFIXES);
 
@@ -266,8 +268,8 @@ describe("filtering HIDES in the graph (the asymmetry's other half)", () => {
       selected: undefined,
       filter: { ...noOpFilter, abstractions: ["concrete"] },
     });
-    expect(after.nodes.map((node) => node.position)).toEqual(
-      before.nodes.map((node) => node.position),
+    expect(after.nodes.map((node) => [node.x, node.y])).toEqual(
+      before.nodes.map((node) => [node.x, node.y]),
     );
     expect(after.nodes.map((node) => node.id)).toEqual(
       before.nodes.map((node) => node.id),

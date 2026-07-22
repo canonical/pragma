@@ -6,7 +6,7 @@ import definitionsExplorerQueryNode from "#relay/__generated__/DefinitionsExplor
 import type { HierarchyWell_ontologies$key } from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import hierarchyWellFragmentNode from "#relay/__generated__/HierarchyWell_ontologies.graphql.js";
 import { definitionsExplorerVariables } from "../definitionsQuery.js";
-import { classDepthsByUri } from "../HierarchyWell/buildClassTree.js";
+import { classDepthsByUri } from "../HierarchyWell/buildClassGraph.js";
 import { HierarchyWell } from "../HierarchyWell/index.js";
 import { normalizeFilterText, resolveFilter } from "../lensFilter.js";
 import { useLensFilter } from "../lensFilterContext.js";

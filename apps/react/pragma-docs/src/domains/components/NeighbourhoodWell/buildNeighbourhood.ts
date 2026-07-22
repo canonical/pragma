@@ -11,12 +11,18 @@
  * south, modifiers west), so a reader who has learned one well can read
  * every well. Within a sector, neighbours spread evenly across the span on
  * an ellipse (wider than tall — the well borrows the reading column's
- * horizontal room); crowded sectors stagger onto an outer ring. A bounded
- * relaxation pass then separates any boxes that still collide — organic
- * packing, deterministic by construction (fixed iteration count, stable
- * pair order, centre immobile).
+ * horizontal room); crowded sectors stagger onto an outer ring. The
+ * shared bounded relaxation pass (`#lib/WellGeometry`) then separates any
+ * boxes that still collide — organic packing, deterministic by
+ * construction (fixed iteration count, stable pair order, centre pinned).
  */
 
+import {
+  edgeEndpoint,
+  quadArc,
+  relaxBoxes,
+  settle,
+} from "#lib/WellGeometry/index.js";
 import {
   CENTRE_EXTRA_WIDTH,
   CENTRE_NODE_HEIGHT,
@@ -42,6 +48,8 @@ import type {
   WellNode,
 } from "./types.js";
 
+export { edgeEndpoint } from "#lib/WellGeometry/index.js";
+
 /** A node mid-layout: mutable position, frozen identity. */
 interface WorkingNode extends Omit<WellNode, "x" | "y"> {
   x: number;
@@ -49,89 +57,14 @@ interface WorkingNode extends Omit<WellNode, "x" | "y"> {
 }
 
 /**
- * Estimates a node's box from its label — never measures (see module doc).
- * The estimate errs generous so ellipsis is the exception, not the rule.
+ * Estimates a node's box from its label — never measures (see module
+ * doc). The estimate errs generous so ellipsis is the exception, not the
+ * rule.
  */
 export const estimateNodeWidth = (label: string, isCentre: boolean): number => {
   const raw = Math.round(label.length * NODE_CHAR_WIDTH) + NODE_PADDING;
   const clamped = Math.min(Math.max(raw, NODE_MIN_WIDTH), NODE_MAX_WIDTH);
   return isCentre ? clamped + CENTRE_EXTRA_WIDTH : clamped;
-};
-
-/**
- * The point where the segment from `towards` to `node`'s centre crosses
- * `node`'s box border (plus a small gap), so edges meet chips at their
- * edge instead of diving underneath them. Falls back to the node centre
- * for degenerate (zero-length) segments.
- */
-export const edgeEndpoint = (
-  node: WellNode,
-  towards: { readonly x: number; readonly y: number },
-  gap: number,
-): { x: number; y: number } => {
-  const dx = towards.x - node.x;
-  const dy = towards.y - node.y;
-  if (dx === 0 && dy === 0) return { x: node.x, y: node.y };
-  const halfWidth = node.width / 2 + gap;
-  const halfHeight = node.height / 2 + gap;
-  // Slab test: the smallest positive t where the ray leaves the box.
-  const tx = dx === 0 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx);
-  const ty = dy === 0 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy);
-  const t = Math.min(tx, ty, 1);
-  return { x: node.x + dx * t, y: node.y + dy * t };
-};
-
-/** Round to a tenth of a px: keeps SSR output stable across engines. */
-const settle = (value: number): number => Math.round(value * 10) / 10;
-
-/**
- * One bounded relaxation pass over every unordered node pair: overlapping
- * boxes (plus breathing gap) push apart along the axis of least overlap,
- * half each; the centre never moves (index 0). Pair order and iteration
- * count are fixed, so the pass is deterministic.
- */
-const relax = (nodes: WorkingNode[]): void => {
-  for (let iteration = 0; iteration < RELAX_ITERATIONS; iteration += 1) {
-    let moved = false;
-    for (let a = 0; a < nodes.length; a += 1) {
-      for (let b = a + 1; b < nodes.length; b += 1) {
-        const nodeA = nodes.at(a);
-        const nodeB = nodes.at(b);
-        if (nodeA === undefined || nodeB === undefined) continue;
-        const overlapX =
-          (nodeA.width + nodeB.width) / 2 +
-          COLLISION_GAP -
-          Math.abs(nodeA.x - nodeB.x);
-        const overlapY =
-          (nodeA.height + nodeB.height) / 2 +
-          COLLISION_GAP -
-          Math.abs(nodeA.y - nodeB.y);
-        if (overlapX <= 0 || overlapY <= 0) continue;
-        moved = true;
-        // Ties push horizontally: labels are wide, rows are shallow.
-        if (overlapX <= overlapY) {
-          const sign = nodeA.x <= nodeB.x ? -1 : 1;
-          const shift = overlapX / 2;
-          if (a === 0) {
-            nodeB.x -= sign * overlapX;
-          } else {
-            nodeA.x += sign * shift;
-            nodeB.x -= sign * shift;
-          }
-        } else {
-          const sign = nodeA.y <= nodeB.y ? -1 : 1;
-          const shift = overlapY / 2;
-          if (a === 0) {
-            nodeB.y -= sign * overlapY;
-          } else {
-            nodeA.y += sign * shift;
-            nodeB.y -= sign * shift;
-          }
-        }
-      }
-    }
-    if (!moved) break;
-  }
 };
 
 /**
@@ -184,7 +117,11 @@ export const buildNeighbourhood = (
     }
   }
 
-  relax(nodes);
+  relaxBoxes(nodes, {
+    gap: COLLISION_GAP,
+    iterations: RELAX_ITERATIONS,
+    pinned: new Set([0]),
+  });
 
   // Normalise to a padded top-left origin and settle the precision.
   let minX = Number.POSITIVE_INFINITY;
@@ -230,25 +167,14 @@ export const buildNeighbourhood = (
       });
       continue;
     }
-    const middleX = (start.x + end.x) / 2;
-    const middleY = (start.y + end.y) / 2;
-    const chordX = end.x - start.x;
-    const chordY = end.y - start.y;
-    const length = Math.hypot(chordX, chordY) || 1;
-    const controlX = middleX - (chordY / length) * EDGE_BOW;
-    const controlY = middleY + (chordX / length) * EDGE_BOW;
+    const arc = quadArc(start, end, EDGE_BOW);
     edges.push({
       id: `${neighbour.spec.key}:${neighbour.uri}`,
       neighbourUri: neighbour.uri,
       family: "semantic",
       predicate: neighbour.spec.predicate,
-      d: `M ${settle(start.x)} ${settle(start.y)} Q ${settle(controlX)} ${settle(controlY)} ${settle(end.x)} ${settle(end.y)}`,
-      // The label sits at the quadratic's apex (t = 0.5), lifted off the
-      // stroke; the renderer haloes it so it stays legible over edges.
-      labelAt: {
-        x: settle((start.x + end.x + 2 * controlX) / 4),
-        y: settle((start.y + end.y + 2 * controlY) / 4 - 6),
-      },
+      d: arc.d,
+      labelAt: arc.labelAt,
     });
   }
 

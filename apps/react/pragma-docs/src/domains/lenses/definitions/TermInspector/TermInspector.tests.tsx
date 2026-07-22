@@ -104,9 +104,7 @@ describe("TermInspector", () => {
     expect(tables.length).toBe(2);
     // The declared table carries the class's own property and prefixed range.
     expect(within(panel).getByText("hasVariant")).toBeInTheDocument();
-    expect(
-      within(panel).getAllByText("ds:UIBlock").length,
-    ).toBeGreaterThan(0);
+    expect(within(panel).getAllByText("ds:UIBlock").length).toBeGreaterThan(0);
     // B9: each property's definition is surfaced beneath its row (it was
     // fetched all along and previously dropped). The changelog property's
     // definition is a fixture string — assert it renders.

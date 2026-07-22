@@ -485,7 +485,7 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
       '<h2 id="term-inspector-title">UI Block</h2>',
     );
     expect(mustGet(DEFINITIONS_TERM_URL).canvas).toContain(
-      "react-flow__node-term",
+      "hierarchy-node-shell",
     );
     expect(mustGet("/standards").canvas).toContain('id="lens-standards-title"');
     // The standards canvases render REAL content from their fixture

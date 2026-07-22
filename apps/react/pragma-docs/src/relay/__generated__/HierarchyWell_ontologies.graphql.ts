@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<858b78041c6005a4b4d90265799971e6>>
+ * @generated SignedSource<<759f0a9d3f81281fd7a80ea78da44c41>>
  * @lightSyntaxTransform
  */
 
@@ -8,6 +8,7 @@
 // @ts-nocheck
 
 import { ReaderFragment } from 'relay-runtime';
+export type PropertyKind = "ANNOTATION" | "DATATYPE" | "OBJECT" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type HierarchyWell_ontologies$data = ReadonlyArray<{
   readonly classes: ReadonlyArray<{
@@ -20,6 +21,15 @@ export type HierarchyWell_ontologies$data = ReadonlyArray<{
   }>;
   readonly namespace: string;
   readonly prefix: string;
+  readonly properties: ReadonlyArray<{
+    readonly domain: {
+      readonly uri: string;
+    } | null | undefined;
+    readonly kind: PropertyKind;
+    readonly label: string | null | undefined;
+    readonly range: string;
+    readonly uri: string;
+  }>;
   readonly " $fragmentType": "HierarchyWell_ontologies";
 }>;
 export type HierarchyWell_ontologies$key = ReadonlyArray<{
@@ -34,7 +44,17 @@ var v0 = {
   "kind": "ScalarField",
   "name": "uri",
   "storageKey": null
-};
+},
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "label",
+  "storageKey": null
+},
+v2 = [
+  (v0/*:: as any*/)
+];
 return {
   "argumentDefinitions": [],
   "kind": "Fragment",
@@ -66,13 +86,7 @@ return {
       "plural": true,
       "selections": [
         (v0/*:: as any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "label",
-          "storageKey": null
-        },
+        (v1/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -87,9 +101,44 @@ return {
           "kind": "LinkedField",
           "name": "superclass",
           "plural": false,
-          "selections": [
-            (v0/*:: as any*/)
-          ],
+          "selections": (v2/*:: as any*/),
+          "storageKey": null
+        }
+      ],
+      "storageKey": null
+    },
+    {
+      "alias": null,
+      "args": null,
+      "concreteType": "OntologyProperty",
+      "kind": "LinkedField",
+      "name": "properties",
+      "plural": true,
+      "selections": [
+        (v0/*:: as any*/),
+        (v1/*:: as any*/),
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "kind",
+          "storageKey": null
+        },
+        {
+          "alias": null,
+          "args": null,
+          "concreteType": "OntologyClass",
+          "kind": "LinkedField",
+          "name": "domain",
+          "plural": false,
+          "selections": (v2/*:: as any*/),
+          "storageKey": null
+        },
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "range",
           "storageKey": null
         }
       ],
@@ -101,6 +150,6 @@ return {
 };
 })();
 
-(node as any).hash = "3cc1bd1c72092f91c6ad2f8882ca85d7";
+(node as any).hash = "858740506ede5332b37108c70229694c";
 
 export default node;
