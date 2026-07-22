@@ -1,6 +1,6 @@
 {
   "name": "@canonical/ke-graphql",
-  "description": "OWL → GraphQL compiler for the ke triple store: typed IR, seven-pass pipeline, Relay conventions, incremental delivery",
+  "description": "OWL \u2192 GraphQL compiler for the ke triple store: typed IR, seven-pass pipeline, Relay conventions, incremental delivery",
   "version": "0.32.0",
   "type": "module",
   "module": "dist/esm/index.js",
@@ -63,7 +63,7 @@
     "vitest": "^4.0.18"
   },
   "peerDependencies": {
-    "@canonical/ke": "^0.30.0"
+    "@canonical/ke": "^0.32.0"
   },
   "dependencies": {
     "dataloader": "^2.2.3",

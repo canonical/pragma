@@ -51,6 +51,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.32.0",
+    "@canonical/summon-core": "^0.32.0",
+    "@canonical/task": "^0.32.0",
     "@canonical/typescript-config": "^0.32.0",
     "@canonical/webarchitect": "^0.32.0",
     "@types/bun": "^1.3.10",
@@ -62,7 +64,7 @@
     "@canonical/utils": "^0.32.0"
   },
   "peerDependencies": {
-    "@canonical/summon-core": "^0.30.0",
-    "@canonical/task": "^0.30.0"
+    "@canonical/summon-core": "^0.32.0",
+    "@canonical/task": "^0.32.0"
   }
 }
