@@ -20,3 +20,12 @@
   flex: 1 1 32rem;
   min-inline-size: 0;
 }
+
+/* The closing neighbourhood well sits UNDER the two-tenant body, full
+ * row: the page ends by looking down into the graph it was projected
+ * from (AX.3, AV-364). Its canvas scrolls internally, so it never forces
+ * the page wider than the column. */
+.ds.component-entity .ds.neighbourhood-well {
+  margin-block-start: var(--space-400, 2rem);
+  min-inline-size: 0;
+}

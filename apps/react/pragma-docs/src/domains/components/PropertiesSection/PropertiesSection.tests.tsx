@@ -35,23 +35,60 @@ const bareRecords = {
     tier: null,
     version: null,
     properties: { __refs: [] },
+    _meta: { __ref: "client:bare:meta" },
     "subcomponents(first:24)": {
       __ref: "client:bare:subcomponents",
     },
     "modifierFamilies(first:24)": {
       __ref: "client:bare:modifierFamilies",
     },
+    "variants(first:24)": { __ref: "client:bare:variants" },
+    "variantOfs(first:24)": { __ref: "client:bare:variantOfs" },
+    "inheritsFroms(first:24)": { __ref: "client:bare:inheritsFroms" },
+    "specializedBies(first:24)": { __ref: "client:bare:specializedBies" },
   },
-  "client:bare:subcomponents": {
-    __id: "client:bare:subcomponents",
-    __typename: "SubcomponentConnection",
-    edges: { __refs: [] },
+  "client:bare:meta": {
+    __id: "client:bare:meta",
+    __typename: "EntityMeta",
+    type: { __ref: "client:bare:meta:type" },
   },
-  "client:bare:modifierFamilies": {
-    __id: "client:bare:modifierFamilies",
-    __typename: "ModifierFamilyConnection",
-    edges: { __refs: [] },
+  "client:bare:meta:type": {
+    __id: "client:bare:meta:type",
+    __typename: "OntologyClass",
+    uri: "https://ds.canonical.com/Component",
+    label: "Component",
+    namespace: "ds",
   },
+  ...Object.fromEntries(
+    (
+      [
+        ["subcomponents", "SubcomponentConnection"],
+        ["modifierFamilies", "ModifierFamilyConnection"],
+        ["variants", "UIBlockConnection"],
+        ["variantOfs", "UIBlockConnection"],
+        ["inheritsFroms", "UIBlockConnection"],
+        ["specializedBies", "UIBlockConnection"],
+      ] as const
+    ).flatMap(([field, typename]) => [
+      [
+        `client:bare:${field}`,
+        {
+          __id: `client:bare:${field}`,
+          __typename: typename,
+          edges: { __refs: [] },
+          pageInfo: { __ref: `client:bare:${field}:pageInfo` },
+        },
+      ],
+      [
+        `client:bare:${field}:pageInfo`,
+        {
+          __id: `client:bare:${field}:pageInfo`,
+          __typename: "PageInfo",
+          hasNextPage: false,
+        },
+      ],
+    ]),
+  ),
 } as unknown as RecordMap;
 
 describe("PropertiesSection", () => {

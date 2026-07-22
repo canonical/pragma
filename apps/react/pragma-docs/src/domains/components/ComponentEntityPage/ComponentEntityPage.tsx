@@ -8,6 +8,7 @@ import componentEntityQueryNode from "#relay/__generated__/ComponentEntityQuery.
 import { EntityAside } from "../EntityAside/index.js";
 import { EntityHeader } from "../EntityHeader/index.js";
 import { RELATION_PAGE_SIZE } from "../entityQuery.js";
+import { NeighbourhoodWell } from "../NeighbourhoodWell/index.js";
 import { PropertiesSection } from "../PropertiesSection/index.js";
 import { RelationsSection } from "../RelationsSection/index.js";
 import type { ComponentEntityPageProps } from "./types.js";
@@ -31,6 +32,7 @@ const componentEntityQuerySource = (): unknown => graphql`
       ...EntityHeader_component
       ...PropertiesSection_component
       ...RelationsSection_component @arguments(count: $count)
+      ...NeighbourhoodWell_component @arguments(count: $count)
       ...EntityAside_component
     }
   }
@@ -80,14 +82,20 @@ const EntityContent = ({
   }
 
   return (
-    <div className="component-entity-body">
-      <article className="component-entity-article">
-        <EntityHeader component={component} />
-        <PropertiesSection component={component} />
-        <RelationsSection component={component} />
-      </article>
-      <EntityAside component={component} />
-    </div>
+    <>
+      <div className="component-entity-body">
+        <article className="component-entity-article">
+          <EntityHeader component={component} />
+          <PropertiesSection component={component} />
+          <RelationsSection component={component} />
+        </article>
+        <EntityAside component={component} />
+      </div>
+      {/* The closing well spans the full row UNDER the two-tenant body:
+          the page ends by looking down into the graph it was projected
+          from (AX.3, AV-364). */}
+      <NeighbourhoodWell component={component} />
+    </>
   );
 };
 

@@ -61,10 +61,16 @@ describe("ComponentEntityPage against a warm store", () => {
     ]) {
       expect(screen.getByRole("rowheader", { name })).toBeInTheDocument();
     }
-    // Relations: no subcomponents ("None."), both modifier families.
+    // Relations: no subcomponents ("None."), both modifier families —
+    // which the closing NeighbourhoodWell now mentions AGAIN as chips, so
+    // the page legitimately names each noun twice (list + graph).
     expect(screen.getByText("None.")).toBeInTheDocument();
-    expect(screen.getByText("Anticipation")).toBeInTheDocument();
-    expect(screen.getByText("Importance")).toBeInTheDocument();
+    expect(screen.getAllByText("Anticipation").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Importance").length).toBeGreaterThan(0);
+    // The well itself: its heading and the subject's centre chip.
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Neighbourhood" }),
+    ).toBeInTheDocument();
     // Aside: quick facts with the version fallback (captured null).
     expect(
       screen.getByRole("complementary", { name: "Quick facts" }),
@@ -92,6 +98,7 @@ describe("ComponentEntityPage against a warm store", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Card" }),
     ).toBeInTheDocument();
+    // Each subcomponent appears in the relations list AND as a well chip.
     for (const name of [
       "Card.Content",
       "Card.Footer",
@@ -99,7 +106,7 @@ describe("ComponentEntityPage against a warm store", () => {
       "Card.Image",
       "Card.Thumbnail",
     ]) {
-      expect(screen.getByText(name)).toBeInTheDocument();
+      expect(screen.getAllByText(name).length).toBeGreaterThan(0);
     }
     expect(fetchFn).not.toHaveBeenCalled();
   });

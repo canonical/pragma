@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7e7e2004dd5cea3d02c13b619066d996>>
+ * @generated SignedSource<<3eac87fe4923927cd1db263f0279956c>>
  * @lightSyntaxTransform
  */
 
@@ -18,7 +18,7 @@ export type ComponentEntityQuery$data = {
     readonly id: string;
     readonly name: string | null | undefined;
     readonly uri: string;
-    readonly " $fragmentSpreads": FragmentRefs<"EntityAside_component" | "EntityHeader_component" | "PropertiesSection_component" | "RelationsSection_component">;
+    readonly " $fragmentSpreads": FragmentRefs<"EntityAside_component" | "EntityHeader_component" | "NeighbourhoodWell_component" | "PropertiesSection_component" | "RelationsSection_component">;
   } | null | undefined;
 };
 export type ComponentEntityQuery = {
@@ -65,24 +65,84 @@ v5 = {
   "name": "uri",
   "storageKey": null
 },
-v6 = {
+v6 = [
+  {
+    "kind": "Variable",
+    "name": "count",
+    "variableName": "count"
+  }
+],
+v7 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "summary",
   "storageKey": null
 },
-v7 = [
+v8 = [
   {
     "kind": "Variable",
     "name": "first",
     "variableName": "count"
   }
 ],
-v8 = [
+v9 = [
   (v3/*:: as any*/),
   (v5/*:: as any*/),
   (v4/*:: as any*/)
+],
+v10 = {
+  "alias": null,
+  "args": null,
+  "concreteType": "PageInfo",
+  "kind": "LinkedField",
+  "name": "pageInfo",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "hasNextPage",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v11 = [
+  {
+    "alias": null,
+    "args": null,
+    "concreteType": "UIBlockEdge",
+    "kind": "LinkedField",
+    "name": "edges",
+    "plural": true,
+    "selections": [
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": null,
+        "kind": "LinkedField",
+        "name": "node",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "__typename",
+            "storageKey": null
+          },
+          (v5/*:: as any*/),
+          (v4/*:: as any*/),
+          (v3/*:: as any*/)
+        ],
+        "storageKey": null
+      }
+    ],
+    "storageKey": null
+  },
+  (v10/*:: as any*/)
 ];
 return {
   "fragment": {
@@ -116,15 +176,14 @@ return {
             "name": "PropertiesSection_component"
           },
           {
-            "args": [
-              {
-                "kind": "Variable",
-                "name": "count",
-                "variableName": "count"
-              }
-            ],
+            "args": (v6/*:: as any*/),
             "kind": "FragmentSpread",
             "name": "RelationsSection_component"
+          },
+          {
+            "args": (v6/*:: as any*/),
+            "kind": "FragmentSpread",
+            "name": "NeighbourhoodWell_component"
           },
           {
             "args": null,
@@ -158,7 +217,7 @@ return {
           (v3/*:: as any*/),
           (v4/*:: as any*/),
           (v5/*:: as any*/),
-          (v6/*:: as any*/),
+          (v7/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -168,7 +227,8 @@ return {
             "plural": false,
             "selections": [
               (v3/*:: as any*/),
-              (v4/*:: as any*/)
+              (v4/*:: as any*/),
+              (v5/*:: as any*/)
             ],
             "storageKey": null
           },
@@ -209,13 +269,13 @@ return {
                 "name": "constraints",
                 "storageKey": null
               },
-              (v6/*:: as any*/)
+              (v7/*:: as any*/)
             ],
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v7/*:: as any*/),
+            "args": (v8/*:: as any*/),
             "concreteType": "SubcomponentConnection",
             "kind": "LinkedField",
             "name": "subcomponents",
@@ -236,18 +296,19 @@ return {
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
-                    "selections": (v8/*:: as any*/),
+                    "selections": (v9/*:: as any*/),
                     "storageKey": null
                   }
                 ],
                 "storageKey": null
-              }
+              },
+              (v10/*:: as any*/)
             ],
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v7/*:: as any*/),
+            "args": (v8/*:: as any*/),
             "concreteType": "ModifierFamilyConnection",
             "kind": "LinkedField",
             "name": "modifierFamilies",
@@ -268,13 +329,91 @@ return {
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
-                    "selections": (v8/*:: as any*/),
+                    "selections": (v9/*:: as any*/),
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              },
+              (v10/*:: as any*/)
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "EntityMeta",
+            "kind": "LinkedField",
+            "name": "_meta",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "OntologyClass",
+                "kind": "LinkedField",
+                "name": "type",
+                "plural": false,
+                "selections": [
+                  (v5/*:: as any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "label",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "namespace",
                     "storageKey": null
                   }
                 ],
                 "storageKey": null
               }
             ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": (v8/*:: as any*/),
+            "concreteType": "UIBlockConnection",
+            "kind": "LinkedField",
+            "name": "variants",
+            "plural": false,
+            "selections": (v11/*:: as any*/),
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": (v8/*:: as any*/),
+            "concreteType": "UIBlockConnection",
+            "kind": "LinkedField",
+            "name": "variantOfs",
+            "plural": false,
+            "selections": (v11/*:: as any*/),
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": (v8/*:: as any*/),
+            "concreteType": "UIBlockConnection",
+            "kind": "LinkedField",
+            "name": "inheritsFroms",
+            "plural": false,
+            "selections": (v11/*:: as any*/),
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": (v8/*:: as any*/),
+            "concreteType": "UIBlockConnection",
+            "kind": "LinkedField",
+            "name": "specializedBies",
+            "plural": false,
+            "selections": (v11/*:: as any*/),
             "storageKey": null
           },
           {
@@ -290,16 +429,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "1c7e8b06c40cdd56c163f45c1b0b4585",
+    "cacheID": "652e1c37574419ec96c944ebc73e2dc9",
     "id": null,
     "metadata": {},
     "name": "ComponentEntityQuery",
     "operationKind": "query",
-    "text": "query ComponentEntityQuery(\n  $uri: String!\n  $count: Int!\n) {\n  component(uri: $uri) {\n    id\n    name\n    uri\n    ...EntityHeader_component\n    ...PropertiesSection_component\n    ...RelationsSection_component_yu5n1\n    ...EntityAside_component\n  }\n}\n\nfragment EntityAside_component on Component {\n  uri\n  version\n  tier {\n    id\n    name\n  }\n}\n\nfragment EntityHeader_component on Component {\n  uri\n  name\n  summary\n  tier {\n    id\n    name\n  }\n}\n\nfragment PropertiesSection_component on Component {\n  properties {\n    name\n    propertyType\n    optional\n    defaultValue\n    constraints\n    summary\n  }\n}\n\nfragment RelationsSection_component_yu5n1 on Component {\n  subcomponents(first: $count) {\n    edges {\n      node {\n        id\n        uri\n        name\n      }\n    }\n  }\n  modifierFamilies(first: $count) {\n    edges {\n      node {\n        id\n        uri\n        name\n      }\n    }\n  }\n}\n"
+    "text": "query ComponentEntityQuery(\n  $uri: String!\n  $count: Int!\n) {\n  component(uri: $uri) {\n    id\n    name\n    uri\n    ...EntityHeader_component\n    ...PropertiesSection_component\n    ...RelationsSection_component_yu5n1\n    ...NeighbourhoodWell_component_yu5n1\n    ...EntityAside_component\n  }\n}\n\nfragment EntityAside_component on Component {\n  uri\n  version\n  tier {\n    id\n    name\n  }\n}\n\nfragment EntityHeader_component on Component {\n  uri\n  name\n  summary\n  tier {\n    id\n    name\n  }\n}\n\nfragment NeighbourhoodWell_component_yu5n1 on Component {\n  uri\n  name\n  _meta {\n    type {\n      uri\n      label\n      namespace\n    }\n  }\n  tier {\n    uri\n    name\n    id\n  }\n  subcomponents(first: $count) {\n    edges {\n      node {\n        uri\n        name\n        id\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  variants(first: $count) {\n    edges {\n      node {\n        __typename\n        uri\n        name\n        id\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  variantOfs(first: $count) {\n    edges {\n      node {\n        __typename\n        uri\n        name\n        id\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  inheritsFroms(first: $count) {\n    edges {\n      node {\n        __typename\n        uri\n        name\n        id\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  specializedBies(first: $count) {\n    edges {\n      node {\n        __typename\n        uri\n        name\n        id\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  modifierFamilies(first: $count) {\n    edges {\n      node {\n        uri\n        name\n        id\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment PropertiesSection_component on Component {\n  properties {\n    name\n    propertyType\n    optional\n    defaultValue\n    constraints\n    summary\n  }\n}\n\nfragment RelationsSection_component_yu5n1 on Component {\n  subcomponents(first: $count) {\n    edges {\n      node {\n        id\n        uri\n        name\n      }\n    }\n  }\n  modifierFamilies(first: $count) {\n    edges {\n      node {\n        id\n        uri\n        name\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "6681b7b565c62f3c83667f4eb1a2b12e";
+(node as any).hash = "d9d1371fef15f4d87aca4d6352284e3e";
 
 export default node;

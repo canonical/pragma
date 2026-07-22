@@ -15,9 +15,12 @@ function isKind(value: string): value is Kind {
  * The kind a URI's local name encodes, when it encodes one: the first
  * interior dot-delimited segment after the tier that names a registered kind
  * (`ds:global.component.button` → `component`). `undefined` for URIs whose
- * local name asserts no kind (`cs:typescript.imports`).
+ * local name asserts no kind (`cs:typescript.imports`). Exported for
+ * callers that must trust the URI over their own default (the
+ * NeighbourhoodWell's mixed connections, where a `subcomponents` edge can
+ * legally deliver a pattern).
  */
-function detectKindInUri(uri: string): Kind | undefined {
+export function detectKindInUri(uri: string): Kind | undefined {
   const localName = uri.split(":").at(-1) ?? uri;
   // Interior segments only: the first is the tier, the last the entity name.
   return localName.split(".").slice(1, -1).find(isKind);
