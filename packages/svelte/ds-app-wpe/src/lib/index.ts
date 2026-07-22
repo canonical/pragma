@@ -8,3 +8,4 @@
 
 export * from "./components/index.js";
 export * from "./group/index.js";
+export * from "./subcomponent/index.js";
