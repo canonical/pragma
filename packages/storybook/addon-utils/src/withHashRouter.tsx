@@ -15,7 +15,7 @@ import type {
 const defaultRoutes = {
   story: route({
     url: "/",
-    content: () => null,
+    component: () => null,
   }),
 } as const;
 

@@ -21,11 +21,11 @@ export const HashLink = ({ href, ...props }: LinkComponentProps): ReactNode => (
 
 /** Catch-all routes so the hash router has somewhere to resolve to. */
 const storyRoutes = {
-  overview: route({ url: "/overview", content: () => null }),
-  specifications: route({ url: "/specifications", content: () => null }),
-  networking: route({ url: "/networking", content: () => null }),
-  storage: route({ url: "/storage", content: () => null }),
-  reviews: route({ url: "/reviews", content: () => null }),
+  overview: route({ url: "/overview", component: () => null }),
+  specifications: route({ url: "/specifications", component: () => null }),
+  networking: route({ url: "/networking", component: () => null }),
+  storage: route({ url: "/storage", component: () => null }),
+  reviews: route({ url: "/reviews", component: () => null }),
 } as const;
 
 /**
