@@ -212,12 +212,21 @@ function buildEntityQuery(
   return buildLookupByIriQuery(lookup, resolved, level);
 }
 
+/**
+ * A CURIE-shaped `prefix:local` head: an NCName-like prefix followed by `:` and
+ * a non-space local part. Deliberately strict so a plain entity NAME that merely
+ * contains a colon (e.g. a concept titled "Foundations: Grid", where the colon
+ * is followed by a space) is NOT mistaken for a prefixed IRI and is looked up by
+ * name. A real prefixed name (`ds:global.component.button`) still matches.
+ */
+const PREFIXED_NAME_PATTERN = /^[A-Za-z][\w.-]*:[^\s:][^\s]*$/;
+
 /** Whether a lookup query addresses an entity by IRI or prefixed name. */
 function looksLikeIri(query: string): boolean {
   return (
     query.startsWith("http://") ||
     query.startsWith("https://") ||
-    query.includes(":")
+    PREFIXED_NAME_PATTERN.test(query)
   );
 }
 
