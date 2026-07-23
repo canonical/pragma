@@ -1,0 +1,12 @@
+:root {
+  --ds-typography-text-secondary:
+    var(--typography-text-secondary-font-weight)
+    var(--typography-text-secondary-font-size) /
+    var(--typography-text-secondary-line-height)
+    var(--typography-text-secondary-font-family);
+  --ds-typography-text-secondary-bold:
+    var(--typography-text-secondary-bold-font-weight)
+    var(--typography-text-secondary-bold-font-size) /
+    var(--typography-text-secondary-bold-line-height)
+    var(--typography-text-secondary-bold-font-family);
+}
