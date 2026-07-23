@@ -2,8 +2,8 @@
 
 <script lang="ts" module>
   import { defineMeta } from "@storybook/addon-svelte-csf";
-  import LayoutFrame from "#storybook/layouts/LayoutFrame.svelte";
-  import MockCard from "#storybook/layouts/MockCard.svelte";
+  import LayoutFrame from "../../../storybook/layouts/LayoutFrame.svelte";
+  import MockCard from "../../../storybook/layouts/MockCard.svelte";
   import ContentLayout from "./ContentLayout.svelte";
 
   /**

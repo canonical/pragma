@@ -20,13 +20,22 @@ Import components by name:
 
 ```svelte
 <script lang="ts">
-	import { Example } from "@canonical/svelte-ds-app";
+	import { ApplicationLayout, ContentLayout, ViewLayout } from "@canonical/svelte-ds-app";
 </script>
 
-<Example class="my-example">Hello</Example>
+<ApplicationLayout>
+	{#snippet navigation()}
+		<!-- Navigation rail -->
+	{/snippet}
+	<ViewLayout>
+		<ContentLayout>
+			<!-- Content items -->
+		</ContentLayout>
+	</ViewLayout>
+</ApplicationLayout>
 ```
 
-Components accept standard HTML attributes for their underlying elements. For example, `Example` accepts the attributes of a native `div` element.
+Components accept standard HTML attributes for their underlying elements. For example, `ApplicationLayout` accepts the attributes of a native `div` element.
 
 ## Styles
 

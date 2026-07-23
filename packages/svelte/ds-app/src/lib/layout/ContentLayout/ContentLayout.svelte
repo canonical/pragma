@@ -9,6 +9,15 @@ presets, per the ontology instance `apps.layout.content_layout`:
 fixed-responsive breakpoint columns by default, or the intrinsic
 (fluid auto-fill) grid via `grid="intrinsic"`. Children are grid items;
 span them via `grid-column`/`grid-row` where a card needs more room.
+
+@example
+```svelte
+<ContentLayout grid="intrinsic">
+  <Card />
+  <Card />
+  <Card />
+</ContentLayout>
+```
 -->
 
 <script lang="ts">

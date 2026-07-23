@@ -14,6 +14,7 @@ rectangle. Story-only — this folder is excluded from the package build.
 
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import LayoutPlaceholder from "./LayoutPlaceholder.svelte";
 
   interface Props {
     /** The slot name to display (e.g. "navigation", "default", "aside"). */
@@ -27,25 +28,4 @@ rectangle. Story-only — this folder is excluded from the package build.
   let { name = "default", style, children }: Props = $props();
 </script>
 
-<div class="surface placeholder" {style}>
-	<span class="label">{`slotName:\n${name}`}</span>
-	{@render children?.()}
-</div>
-
-<style>
-	/* Shared base for the placeholder rectangles: own `.surface` (consuming
-	   the surface background channel from @canonical/styles, so nesting steps
-	   down the layers), an outline, no padding. */
-	.placeholder {
-		background: var(--surface-color-background);
-		outline: 1px dashed currentcolor;
-		outline-offset: -1px;
-		min-block-size: var(--dimension-600, 3rem);
-		block-size: 100%;
-		box-sizing: border-box;
-	}
-
-	.label {
-		white-space: pre;
-	}
-</style>
+<LayoutPlaceholder dashed label={`slotName:\n${name}`} {style} {children} />

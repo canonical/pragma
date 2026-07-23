@@ -7,6 +7,18 @@ ViewLayout — a single view within the application shell.
 Divides its space between the view content (default slot, `1fr`) and an
 optional contextual aside (named slot, `min-content`), per the ontology
 instance `apps.layout.view_layout`.
+
+@example
+```svelte
+<ViewLayout>
+  {#snippet aside()}
+    <RelatedLinks />
+  {/snippet}
+  <ContentLayout>
+    <Card />
+  </ContentLayout>
+</ViewLayout>
+```
 -->
 
 <script lang="ts">

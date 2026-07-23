@@ -7,6 +7,20 @@ ApplicationLayout — the application shell.
 Divides the viewport between a leading navigation rail (named slot,
 `min-content`) and the main content area (default slot, `1fr`), per the
 ontology instance `apps.layout.application_layout`.
+
+@example
+```svelte
+<ApplicationLayout>
+  {#snippet navigation()}
+    <SideNavigation />
+  {/snippet}
+  <ViewLayout>
+    <ContentLayout>
+      <Card />
+    </ContentLayout>
+  </ViewLayout>
+</ApplicationLayout>
+```
 -->
 
 <script lang="ts">

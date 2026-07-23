@@ -2,8 +2,8 @@
 
 <script lang="ts" module>
   import { defineMeta } from "@storybook/addon-svelte-csf";
-  import LayoutFrame from "#storybook/layouts/LayoutFrame.svelte";
-  import LayoutSlot from "#storybook/layouts/LayoutSlot.svelte";
+  import LayoutFrame from "../../../storybook/layouts/LayoutFrame.svelte";
+  import LayoutSlot from "../../../storybook/layouts/LayoutSlot.svelte";
   import ViewLayout from "./ViewLayout.svelte";
 
   /**
