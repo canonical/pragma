@@ -20,12 +20,34 @@ import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
 import { createFormatters } from "./create.render.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
+import { assertNoOverwrite } from "./overwriteGuard.js";
 import { assertInsideWorkspace } from "./pathJail.js";
 import type { CreateKind } from "./types.js";
+
+/**
+ * Whether the overwrite guard is skipped for this invocation: a plan-only
+ * preview (`--dry-run` / MCP plan-first) never writes, and an `--undo` reverses
+ * a prior run rather than creating — in both cases the target files existing is
+ * expected, not a conflict. The projector sets `rt.mutation.preview`/`.undo`.
+ */
+function skipsOverwriteGuard(rt: PragmaRuntime): boolean {
+  return rt.mutation?.preview === true || rt.mutation?.undo === true;
+}
 
 // =============================================================================
 // Static params (mirrors of the generators' prompts — see the module doc)
 // =============================================================================
+
+/**
+ * `--force` — opt in to overwriting existing files. Without it, a `create` run
+ * that would clobber a file already on disk is refused (the data-loss guard);
+ * with it, the generator writes over them. Shared by all three create verbs.
+ */
+const FORCE_PARAM: ParamSpec = {
+  kind: "boolean",
+  name: "force",
+  doc: "Overwrite existing files instead of refusing when the target path already exists.",
+};
 
 /** `--framework` — the three component generators collapsed to one enum. */
 const FRAMEWORK_PARAM: ParamSpec = {
@@ -219,9 +241,16 @@ const componentParams: ParamSpec[] = [
   FRAMEWORK_PARAM,
   COMPONENT_PATH_PARAM,
   ...generatorToParams(SHARED_COMPONENT_MIRROR),
+  FORCE_PARAM,
 ];
-const packageParams: ParamSpec[] = generatorToParams(PACKAGE_MIRROR);
-const applicationParams: ParamSpec[] = generatorToParams(APPLICATION_MIRROR);
+const packageParams: ParamSpec[] = [
+  ...generatorToParams(PACKAGE_MIRROR),
+  FORCE_PARAM,
+];
+const applicationParams: ParamSpec[] = [
+  ...generatorToParams(APPLICATION_MIRROR),
+  FORCE_PARAM,
+];
 
 /** The path param each noun jails (package writes into a name-derived subdir). */
 const PATH_PARAM: Record<CreateKind, string | undefined> = {
@@ -345,7 +374,10 @@ async function runCreate(
   // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
   // (AV-228 B8) once, at this seam; every summon interaction below reads the
   // generator-facing `answers` bag so the generator prompt names stay stable.
-  const answers = toGeneratorAnswers(kind, params);
+  // `force` is a pragma-CLI concern (the overwrite guard), NOT a generator
+  // prompt, so it is stripped before the generator ever sees the answers.
+  const { force: _force, ...generatorParams } = params;
+  const answers = toGeneratorAnswers(kind, generatorParams);
 
   const generator = pickGenerator(kind, answers);
 
@@ -411,16 +443,38 @@ async function runCreate(
     onLog: (_level, message) => process.stderr.write(`${message}\n`),
     signal,
   };
+  // Overwrite guard (data-loss fix): on the NON-INTERACTIVE path (--yes / MCP /
+  // CI) all answers are already resolved, so a task dry-runs cleanly — refuse to
+  // silently clobber files a developer may have hand-edited unless --force was
+  // passed. A dry-run (`--dry-run`) or --force skips the guard: a preview never
+  // writes, and --force is the explicit opt-in. The TTY wizard branch above
+  // shows live progress + a confirm gate to a human, so its overwrites are
+  // visible rather than silent.
+  //
+  // The guard dry-runs a SEPARATE task instance — `execute` returns a task
+  // backed by a single-use generator, so dry-running the same task we then run
+  // for real would exhaust it (yielding an effect-less result). Building a fresh
+  // task for the preview keeps the returned one pristine.
+  if (!skipsOverwriteGuard(rt)) {
+    const previewTask = summon.execute(generator, {
+      prompt,
+      params: answers,
+      signal,
+    });
+    assertNoOverwrite(previewTask, rt.cwd, params.force === true);
+  }
   return summon.execute(generator, { prompt, params: answers, signal });
 }
 
 /**
  * The shared capability: storeless, mutating, interactive, MCP-exposed.
  *
- * `destructive: false` is load-bearing (D4): create only WRITES NEW files, so it
- * is explicitly non-destructive. Without it `annotationsFor` emits no
- * `destructiveHint`, and MCP clients default an unset hint on a non-read-only
- * tool to `true` — advertising create as destructive, the opposite of intent.
+ * `destructive: false` is load-bearing (D4) and now HONEST by construction: the
+ * overwrite guard (`assertNoOverwrite`) refuses to clobber existing files unless
+ * `--force` is passed, so a default `create` only ever writes NEW files. Without
+ * the flag `annotationsFor` emits no `destructiveHint`, and MCP clients default
+ * an unset hint on a non-read-only tool to `true` — advertising create as
+ * destructive, the opposite of intent.
  */
 const CREATE_CAPABILITY = {
   needsStore: false,

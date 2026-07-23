@@ -780,6 +780,24 @@ describe("sources update — installs package skills (U10)", () => {
 
     expect(existsSync(join(dataHome, "pragma", "skills", "bar"))).toBe(false);
   });
+
+  it("reports the skill-install breakdown in the result (created → skipped on re-run)", async () => {
+    const pkg = skillPackage("baz");
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+
+    // First install: the package skill is newly linked.
+    const first = await runTask(await buildUpdateTask(runtime, false));
+    expect(first.skills.created).toBe(1);
+    expect(first.skills.replaced).toBe(0);
+
+    // Re-run: the link is already correct → skipped, not silently re-created.
+    const second = await runTask(await buildUpdateTask(runtime, false));
+    expect(second.skills.created).toBe(0);
+    expect(second.skills.skipped).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe("sources status — entityCount from the manifest (A10)", () => {
