@@ -11,7 +11,7 @@
     tags: ["autodocs"],
     argTypes: {
       spacing: {
-        options: SECTION_SPACING,
+        options: [undefined, ...SECTION_SPACING],
         control: { type: "radio" },
         description: "The spacing variant of the section.",
         table: {

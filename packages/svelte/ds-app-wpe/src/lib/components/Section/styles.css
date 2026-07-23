@@ -34,9 +34,9 @@
   &.bordered {
     /* Top padding subtracts border height */
     --section-padding-top-bordered: var(--section-padding-top-bordered-true);
-    border-top-color: var(--section-border-start-color);
-    border-top-style: var(--section-border-start-style);
-    border-top-width: var(--section-border-start-width);
+    border-block-start-color: var(--section-border-start-color);
+    border-block-start-style: var(--section-border-start-style);
+    border-block-start-width: var(--section-border-start-width);
   }
 
   /*
@@ -62,9 +62,9 @@
     /*    TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L32-L34 */
   }
 
-  padding-bottom: var(--section-padding-bottom);
-  /*   Padding-top is applied by both the `spacing` prop and the `bordered` props */
-  padding-top: calc(
+  padding-block-end: var(--section-padding-bottom);
+  /*   Padding-block-start is applied by both the `spacing` prop and the `bordered` props */
+  padding-block-start: calc(
     var(--section-padding-top-spacing) +
     var(--section-padding-top-bordered)
   );
