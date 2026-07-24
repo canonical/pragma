@@ -16,7 +16,13 @@ import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import { refsCacheDir } from "../paths.js";
-import { checkoutCommit, cloneRef, fetchRef, headCommit } from "./gitOps.js";
+import {
+  checkoutCommit,
+  cloneRef,
+  fetchRef,
+  headCommit,
+  remoteHead,
+} from "./gitOps.js";
 import { type PackageRef, redactUrl } from "./parseRef.js";
 
 /** A resolved package: its pinned revision and labelled RDF sources. */
@@ -358,10 +364,31 @@ export async function resolvePackage(
       let resolved: string;
       try {
         if (useCommit) {
-          checkoutCommit(ref.url, options.pinned as string, dir);
-          resolved = options.pinned as string;
+          // Frozen + pinned: the target is an exact commit. If the cache is
+          // already checked out at it, there is NOTHING to do — skip the
+          // fetch/checkout entirely (zero network). Otherwise fall through to
+          // fetch-and-checkout that commit.
+          const pinned = options.pinned as string;
+          if (existsSync(dir) && headCommit(dir) === pinned) {
+            resolved = pinned;
+          } else {
+            checkoutCommit(ref.url, pinned, dir);
+            resolved = pinned;
+          }
         } else if (existsSync(dir)) {
-          resolved = fetchRef(ref.url, ref.ref, dir);
+          // Cached branch/tag: CHECK FIRST, don't fetch blindly. `ls-remote`
+          // asks the remote where the ref points WITHOUT downloading objects;
+          // if the local checkout is already there, skip the full
+          // fetch+checkout. Only when the remote has moved (or ls-remote is
+          // unavailable — remoteHead returns undefined) do we do the network
+          // fetch. This makes `sources update` idempotent and cheap when the
+          // cache is already current — the "don't clone blindly" fix.
+          const local = headCommit(dir);
+          const remote = remoteHead(ref.url, ref.ref);
+          resolved =
+            remote !== undefined && remote === local
+              ? local
+              : fetchRef(ref.url, ref.ref, dir);
         } else {
           cloneRef(ref.url, ref.ref, dir);
           resolved = headCommit(dir);

@@ -22,9 +22,14 @@ function git(cwd: string, args: readonly string[]): void {
   execFileSync("git", [...args], { cwd, stdio: "pipe" });
 }
 
-/** Run git and return trimmed stdout. */
-function gitOutput(cwd: string, args: readonly string[]): string {
-  return execFileSync("git", [...args], { cwd, stdio: "pipe" })
+/** Run git and return trimmed stdout. A `cwd` of `undefined` runs git in the
+ * process working directory — used by `ls-remote`, which queries a URL and
+ * needs no local repository. */
+function gitOutput(cwd: string | undefined, args: readonly string[]): string {
+  return execFileSync("git", [...args], {
+    ...(cwd ? { cwd } : {}),
+    stdio: "pipe",
+  })
     .toString()
     .trim();
 }
@@ -85,4 +90,29 @@ export function checkoutCommit(
 /** The resolved HEAD commit of a checkout. */
 export function headCommit(dest: string): string {
   return gitOutput(dest, ["rev-parse", "HEAD"]);
+}
+
+/**
+ * The commit a remote ref currently points at, WITHOUT downloading any
+ * objects — `git ls-remote` queries the remote's ref advertisement only, so
+ * it is the cheap "has this branch/tag moved?" probe that lets `sources
+ * update` skip a full fetch+checkout when the cache is already current.
+ *
+ * Returns the 40-char SHA, or `undefined` when the ref is a commit SHA (a
+ * SHA has no ref advertisement to look up — its "remote head" is itself, so
+ * a caller compares the local checkout to the SHA directly instead), or when
+ * the remote advertises no such ref.
+ *
+ * @note Impure — runs `git ls-remote` (one network round-trip, no objects).
+ */
+export function remoteHead(url: string, ref: string): string | undefined {
+  if (isSha(ref)) return undefined;
+  // ls-remote prints `<sha>\t<refname>` lines for every matching ref. Asking
+  // for the exact ref narrows it to the branch/tag heads; the first field of
+  // the first line is the commit it resolves to.
+  const out = gitOutput(undefined, ["ls-remote", url, ref]);
+  const first = out.split("\n")[0]?.trim();
+  if (first === undefined || first.length === 0) return undefined;
+  const sha = first.split(/\s+/)[0];
+  return sha && /^[0-9a-f]{40}$/.test(sha) ? sha : undefined;
 }
