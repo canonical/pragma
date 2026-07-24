@@ -83,7 +83,15 @@
       if (open) {
         if (dialogEl.open && !dialogEl.matches(":modal")) {
           // `open === true` during SSR case
-          // `showModal` throws when called on open non-modal dialog so we need to close it first.
+          // `showModal` throws when called on open non-modal dialog so we need to close it first
+          dialogEl.addEventListener(
+            "close",
+            (e) => {
+              // Suppress the "upgrade" close event.
+              e.stopImmediatePropagation();
+            },
+            { once: true, capture: true },
+          );
           dialogEl.close();
         }
         dialogEl.showModal();

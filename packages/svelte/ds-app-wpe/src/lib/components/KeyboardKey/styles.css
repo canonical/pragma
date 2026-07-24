@@ -28,7 +28,7 @@
   /* Figma (26.10 Keyboard Key, node 6004-72): a key-cap sits on a surface+1 fill
      "like an input", with a muted border and the surface's text colour.
 
-     The key establishes its own `.surface` (see KeyboardKey.tsx), so it IS the
+     The key establishes its own `.surface` (see KeyboardKey.svelte), so it IS the
      next surface layer and paints ITSELF with that layer's background — exactly
      like the Tile. These reads MUST be here on the class (not `:root`) so
      `--surface-color-*` resolves against the key's own surface depth: nested in

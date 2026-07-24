@@ -1,7 +1,7 @@
 /* @canonical/generator-ds 0.10.0-experimental.5 */
 
 import { type ComponentProps, flushSync } from "svelte";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Locator } from "vitest/browser";
 import { userEvent } from "vitest/browser";
 import type { RenderResult } from "vitest-browser-svelte";
@@ -168,6 +168,22 @@ describe("Modal component", () => {
       await expect.element(page.getByText(contentText)).toBeVisible();
       flushSync();
       expect(componentLocator(page).element().matches(":modal")).toBe(true);
+    });
+
+    it("does not call onclose during upgrade to modal, but still calls on later real close", async () => {
+      const onclose = vi.fn();
+      const props = withOpen({ open: true, onclose });
+      const page = render(Component, props);
+
+      await expect.element(componentLocator(page)).toBeVisible();
+      flushSync();
+      expect(componentLocator(page).element().matches(":modal")).toBe(true);
+      expect(onclose).not.toHaveBeenCalled();
+
+      (componentLocator(page).element() as HTMLDialogElement).close();
+      await expect.element(componentLocator(page, true)).not.toBeVisible();
+      await expect.poll(() => props.open).toBe(false);
+      expect(onclose).toHaveBeenCalledTimes(1);
     });
   });
 

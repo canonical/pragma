@@ -1,6 +1,5 @@
 // ds:Component tier barrel: the standalone global components.
 export * from "./Accordion/index.js";
-export * from "./Announcement/index.js";
 export * from "./Badge/index.js";
 export * from "./Breadcrumbs/index.js";
 export * from "./Button/index.js";

@@ -1,4 +1,5 @@
 // Work-in-progress tier barrel: components not yet promoted to a stable tier.
+export * from "./Announcement/index.js";
 export * from "./CategoriesSection/index.js";
 export * from "./ChatSection/index.js";
 export * from "./DescriptionSection/index.js";
