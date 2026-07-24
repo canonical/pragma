@@ -58,7 +58,7 @@
     "relay-runtime-network": "^0.1.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.5.5",
     "@canonical/biome-config": "^0.33.0",
     "@canonical/typescript-config-react": "^0.33.0",
     "@chromatic-com/storybook": "^5.0.1",
