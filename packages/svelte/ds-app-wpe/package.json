@@ -62,7 +62,7 @@
     "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.5.5",
     "@canonical/biome-config": "^0.33.0",
     "@canonical/ds-types": "^0.33.0",
     "@canonical/storybook-config": "^0.33.0",

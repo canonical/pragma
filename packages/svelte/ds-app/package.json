@@ -62,8 +62,8 @@
     "@canonical/svelte-ds-global": "^0.33.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.28.0",
+    "@biomejs/biome": "2.5.5",
+    "@canonical/biome-config": "^0.32.0",
     "@canonical/design-tokens": "0.6.2-contrasted.0",
     "@canonical/storybook-config": "^0.33.0",
     "@canonical/storybook-helpers": "^0.33.0",

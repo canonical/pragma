@@ -50,8 +50,8 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
-    "@canonical/biome-config": "^0.27.1-experimental.0",
+    "@biomejs/biome": "2.5.5",
+    "@canonical/biome-config": "^0.32.0",
     "@canonical/typescript-config-react": "^0.33.0",
     "@canonical/webarchitect": "^0.27.1-experimental.0",
     "@testing-library/jest-dom": "^6.9.1",
