@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Check internal Markdown links
         # lycheeverse/lychee-action v2.9.0
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Check all Markdown links
         # lycheeverse/lychee-action v2.9.0
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8

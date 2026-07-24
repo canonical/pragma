@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
@@ -46,7 +46,7 @@ jobs:
           build-command: ${{ steps.build.outputs.cmd }}
 
       - name: Publish to Chromatic
-        uses: chromaui/action@v16
+        uses: chromaui/action@1bbb5819252d9782cb7d77122d9becae467def18 # v16
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
