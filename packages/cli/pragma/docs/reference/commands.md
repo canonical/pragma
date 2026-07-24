@@ -214,20 +214,20 @@ pragma create application my-app --with-relay
 Scaffold a React, Svelte, or Lit component.
 
 ```
-pragma create component [componentPath] [options]
+pragma create component [framework] [componentPath] [options]
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
+| `[framework]` | no | Component framework (react, svelte, or lit). (one of: react, svelte, lit) |
 | `[componentPath]` | no | Component path (its final segment is the PascalCase component name). |
 
 **Flags**
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--framework` | `<react\|svelte\|lit>` | Component framework (react, svelte, or lit). (one of: react, svelte, lit) |
 | `--with-styles` | — | Include styles. (default: true) |
 | `--with-stories` | — | Include Storybook stories. (default: true) |
 | `--with-ssr-tests` | — | Include SSR tests. (default: true) |
@@ -239,8 +239,8 @@ pragma create component [componentPath] [options]
 **Examples**
 
 ```bash
-pragma create component src/components/Button --framework react  # React component with tests, stories, and styles
-pragma create component src/lib/Card --framework svelte --dry-run  # preview the files without writing
+pragma create component react src/components/Button  # React component with tests, stories, and styles (framework is the first positional, like `summon component react`)
+pragma create component svelte src/lib/Card --dry-run  # preview the files without writing
 ```
 
 ### pragma create package

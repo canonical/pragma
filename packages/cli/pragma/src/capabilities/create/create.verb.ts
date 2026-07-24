@@ -27,23 +27,27 @@ import type { CreateKind } from "./types.js";
 // Static params (mirrors of the generators' prompts — see the module doc)
 // =============================================================================
 
-/** `--framework` — the three component generators collapsed to one enum.
- * NO default: `pragma create component` mirrors `summon component`, where
- * the framework is a required selector (summon's keys are
- * `component/<framework>`), not a defaulted one. Omitting it must not
- * silently scaffold React — `pickGenerator` raises INVALID_INPUT naming the
- * choices, and an interactive run prompts for it. */
+/** The framework — the FIRST positional, mirroring `summon component
+ * <framework>` exactly: `pragma create component react MyButton`. It is a
+ * required selector (summon's generator keys are `component/<framework>`),
+ * NOT a defaulted flag — so `pragma create component react` reads react as
+ * the framework (not as the path), and omitting it prompts / errors naming
+ * the choices rather than silently scaffolding React. Declared before
+ * `componentPath` in the params array, so it takes positional slot 0. */
 const FRAMEWORK_PARAM: ParamSpec = {
   kind: "enum",
   name: "framework",
   doc: "Component framework (react, svelte, or lit).",
   values: ["react", "svelte", "lit"],
+  positional: true,
+  required: false,
 };
 
 /**
- * `componentPath` — positional, and deliberately WITHOUT a ParamSpec default so
- * the selected framework's own prompt default applies (react vs svelte/lit
- * differ); `required: false` keeps it optional despite having no default here.
+ * `componentPath` — the SECOND positional (`... <framework> <componentPath>`),
+ * deliberately WITHOUT a ParamSpec default so the selected framework's own
+ * prompt default applies (react vs svelte/lit differ); `required: false`
+ * keeps it optional despite having no default here.
  */
 const COMPONENT_PATH_PARAM: ParamSpec = {
   kind: "string",
@@ -466,11 +470,11 @@ export const createComponentVerb = createVerb(
   componentParams,
   [
     {
-      cmd: "pragma create component src/components/Button --framework react",
-      note: "React component with tests, stories, and styles",
+      cmd: "pragma create component react src/components/Button",
+      note: "React component with tests, stories, and styles (framework is the first positional, like `summon component react`)",
     },
     {
-      cmd: "pragma create component src/lib/Card --framework svelte --dry-run",
+      cmd: "pragma create component svelte src/lib/Card --dry-run",
       note: "preview the files without writing",
     },
   ],

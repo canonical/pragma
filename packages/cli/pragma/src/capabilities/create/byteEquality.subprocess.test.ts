@@ -48,9 +48,9 @@ describe("cross-binary byte-equality (PROTECTED)", () => {
         pragmaBin,
         "create",
         "component",
-        "src/components/Button",
-        "--framework",
+        // Framework is the first positional (summon parity), not a flag.
         "react",
+        "src/components/Button",
         "--yes",
       ],
       { cwd: pragmaDir, stdio: "pipe" },

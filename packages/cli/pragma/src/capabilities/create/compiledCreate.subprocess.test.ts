@@ -77,9 +77,10 @@ function createComponent(
       ...args,
       "create",
       "component",
-      "src/components/Widget",
-      "--framework",
+      // Framework is the FIRST positional (summon parity: `component
+      // <framework> <path>`), not a `--framework` flag.
       framework,
+      "src/components/Widget",
       "--yes",
     ],
     { cwd: dir, stdio: "pipe" },
