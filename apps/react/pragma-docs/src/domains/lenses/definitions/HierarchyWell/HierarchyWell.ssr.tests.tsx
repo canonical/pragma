@@ -34,6 +34,24 @@ describe("HierarchyWell SSR", () => {
     // (cs is flat).
     const edgePathCount = html.match(/react-flow__edge-path/g)?.length ?? 0;
     expect(edgePathCount).toBe(18);
+
+    // THE HANDLE DOM MUST BE PRESENT — the fix for the edges-vanish-on-
+    // hydration bug. Every node renders a source + target `<Handle>`, so the
+    // CLIENT (which re-measures handle positions from the DOM) can re-anchor
+    // the edges after hydration; without these the edges render server-side
+    // (above) then disappear on the client, the "disconnected boxes" the
+    // owner saw. Two handles per node: 29 nodes → 58. This is the SSR-visible
+    // proxy for the fix; the full survives-hydration proof needs a real
+    // browser (the deferred playwright track) — jsdom has no layout engine to
+    // measure handles, so a client-side unit test cannot see the failure.
+    // Count handle ELEMENTS by their position-modifier class (exactly one per
+    // `<Handle>`; the bare `react-flow__handle` class appears twice per
+    // element — base + modifier — so it would double-count). Two handles per
+    // node (source top, target bottom).
+    const handleCount =
+      html.match(/react-flow__handle-(top|bottom|left|right)/g)?.length ?? 0;
+    expect(handleCount).toBe(nodeCount * 2);
+
     // Node positions are inline transforms — explicit, not measured.
     expect(html).toContain("translate(");
     expect(fetchFn).not.toHaveBeenCalled();

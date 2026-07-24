@@ -1,5 +1,5 @@
 import { Link } from "@canonical/router-react";
-import { type NodeProps, ReactFlow } from "@xyflow/react";
+import { Handle, type NodeProps, Position, ReactFlow } from "@xyflow/react";
 import type React from "react";
 import { memo, useCallback, useMemo } from "react";
 import { graphql, useFragment } from "react-relay";
@@ -58,6 +58,19 @@ const componentCssClassName = "ds hierarchy-well";
  */
 const TermNode = ({ data }: NodeProps<TermFlowNode>): React.ReactElement => (
   <div className="hierarchy-node-shell">
+    {/* The handle DOM the edges anchor to. React Flow v12 renders NO handle
+        elements for a non-connectable node, and on the client it re-measures
+        handle positions FROM the DOM — so without these, every edge loses its
+        anchor after hydration and vanishes (the SSR HTML has the edges, the
+        client drops them: the "disconnected boxes" bug). Rendering the
+        handles explicitly — non-connectable, visually hidden by the well's
+        CSS (.react-flow__handle { opacity:0; pointer-events:none }) — gives
+        the client real handle geometry to re-anchor to. Their positions MIRROR
+        buildClassTree's `handles`: source at the top (a subclass edge leaves
+        the child's top), target at the bottom (it lands on the parent's
+        bottom). Not interaction points — edge anchors only. */}
+    <Handle isConnectable={false} position={Position.Top} type="source" />
+    <Handle isConnectable={false} position={Position.Bottom} type="target" />
     <Link
       className={[
         "hierarchy-node",

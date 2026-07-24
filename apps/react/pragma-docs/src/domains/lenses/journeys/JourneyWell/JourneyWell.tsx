@@ -1,5 +1,5 @@
 import { Link } from "@canonical/router-react";
-import { type NodeProps, ReactFlow } from "@xyflow/react";
+import { Handle, type NodeProps, Position, ReactFlow } from "@xyflow/react";
 import type React from "react";
 import { useMemo } from "react";
 import { buildJourneyGraph } from "./buildJourneyGraph.js";
@@ -59,6 +59,16 @@ const HopNode = ({ data }: NodeProps<JourneyFlowNode>): React.ReactElement => {
 
   return (
     <div className="journey-node-shell" data-kind={data.kind}>
+      {/* The handle DOM the edges anchor to. React Flow v12 renders NO handle
+          elements for a non-connectable node and re-measures handle positions
+          from the DOM on the client — so without these, every edge loses its
+          anchor after hydration and vanishes (the same "Couldn't create edge
+          for target handle" failure the definitions well had). Rendered
+          non-connectable and visually hidden (.react-flow__handle in the well
+          CSS). Positions MIRROR buildJourneyGraph's HANDLES: the spine runs
+          left→right, so source is on the Right, target on the Left. */}
+      <Handle isConnectable={false} position={Position.Right} type="source" />
+      <Handle isConnectable={false} position={Position.Left} type="target" />
       {body}
       {data.surfaceType === undefined ? null : (
         <span className="journey-node-tag">{data.surfaceType}</span>

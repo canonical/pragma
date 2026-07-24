@@ -33,11 +33,23 @@ describe("JourneyWell SSR", () => {
     const html = renderWell(undefined);
     expect(html).toContain('data-slot="journeys-canvas"');
     // All eleven hops, server-rendered.
-    expect((html.match(/react-flow__node-hop/g) ?? []).length).toBe(11);
+    const nodeCount = (html.match(/react-flow__node-hop/g) ?? []).length;
+    expect(nodeCount).toBe(11);
     // Edges too — the explicit handles make paths computable without
     // measurement, which is the whole reason they exist.
     expect(html).toContain("react-flow__edges");
     expect(html).toContain("react-flow__edge");
+    // THE HANDLE DOM MUST BE PRESENT (the edges-vanish-on-hydration fix): the
+    // client re-measures handle positions from the DOM, so each node needs a
+    // source + target `<Handle>` or its edges disappear after hydration. Two
+    // per node → 22. Same fix and same SSR-visible proxy as the definitions
+    // well; the full survives-hydration proof needs a real browser.
+    // Handle ELEMENTS by position-modifier class (one per `<Handle>`; the
+    // bare class appears twice per element). Two per node (source right,
+    // target left).
+    expect(
+      (html.match(/react-flow__handle-(top|bottom|left|right)/g) ?? []).length,
+    ).toBe(nodeCount * 2);
   });
 
   it("server-renders the selection, because it comes from the URL", () => {
