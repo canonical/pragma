@@ -11,6 +11,7 @@ on:
       - packages/svelte/ds-global/**
       - "!**/*.test.*"
       - "!**/*.md"
+      - "!**/*.mdx"
   push:
     branches:
       - main
@@ -23,6 +24,7 @@ on:
       - packages/svelte/ds-global/**
       - "!**/*.test.*"
       - "!**/*.md"
+      - "!**/*.mdx"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml

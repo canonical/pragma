@@ -12,6 +12,7 @@ on:
       - apps/react/storybook-hub/**
       - "!**/*.test.*"
       - "!**/*.md"
+      - "!**/*.mdx"
   push:
     branches:
       - main
@@ -25,6 +26,7 @@ on:
       - apps/react/storybook-hub/**
       - "!**/*.test.*"
       - "!**/*.md"
+      - "!**/*.mdx"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
