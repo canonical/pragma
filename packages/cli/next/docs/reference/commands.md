@@ -227,7 +227,7 @@ pragma create component [componentPath] [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--framework` | `<react\|svelte\|lit>` | Component framework. (one of: react, svelte, lit) (default: react) |
+| `--framework` | `<react\|svelte\|lit>` | Component framework (react, svelte, or lit). (one of: react, svelte, lit) |
 | `--with-styles` | — | Include styles. (default: true) |
 | `--with-stories` | — | Include Storybook stories. (default: true) |
 | `--with-ssr-tests` | — | Include SSR tests. (default: true) |

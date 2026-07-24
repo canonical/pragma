@@ -288,13 +288,16 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     const verb = createComponentVerb.params;
 
     // The verb SYNTHESIZES a `framework` enum (the 3 framework generators
-    // collapse to one verb): react|svelte|lit, default react — no generator
-    // prompt corresponds to it.
-    expect(verb.find((p) => p.name === "framework")).toMatchObject({
+    // collapse to one verb): react|svelte|lit, with NO default — pragma
+    // create component mirrors summon component, where the framework is a
+    // required selector, not a defaulted one. Omitting it errors (naming the
+    // choices) rather than silently scaffolding React.
+    const frameworkParam = verb.find((p) => p.name === "framework");
+    expect(frameworkParam).toMatchObject({
       kind: "enum",
       values: ["react", "svelte", "lit"],
-      default: "react",
     });
+    expect(frameworkParam).not.toHaveProperty("default");
 
     // componentPath deliberately drops its ParamSpec default so the SELECTED
     // framework's own prompt default applies (react vs svelte/lit differ).

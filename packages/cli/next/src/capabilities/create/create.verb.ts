@@ -27,13 +27,17 @@ import type { CreateKind } from "./types.js";
 // Static params (mirrors of the generators' prompts — see the module doc)
 // =============================================================================
 
-/** `--framework` — the three component generators collapsed to one enum. */
+/** `--framework` — the three component generators collapsed to one enum.
+ * NO default: `pragma create component` mirrors `summon component`, where
+ * the framework is a required selector (summon's keys are
+ * `component/<framework>`), not a defaulted one. Omitting it must not
+ * silently scaffold React — `pickGenerator` raises INVALID_INPUT naming the
+ * choices, and an interactive run prompts for it. */
 const FRAMEWORK_PARAM: ParamSpec = {
   kind: "enum",
   name: "framework",
-  doc: "Component framework.",
+  doc: "Component framework (react, svelte, or lit).",
   values: ["react", "svelte", "lit"],
-  default: "react",
 };
 
 /**

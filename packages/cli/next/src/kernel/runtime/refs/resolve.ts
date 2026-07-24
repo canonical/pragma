@@ -47,8 +47,28 @@ export interface ResolveOptions {
 /** The package subdirectories scanned for `.ttl` sources. */
 const TTL_DIRS = ["definitions", "data"];
 
-/** Sanitize a ref for use as a cache path segment. */
+/** Sanitize a single ref (branch/tag/SHA) for use as ONE cache path
+ * segment: every filesystem-illegal char — INCLUDING `/`, so a branch like
+ * `feature/x` stays one segment — collapses to `_`. */
 const sanitize = (value: string): string => value.replace(/[/\\:*?"<>|]/g, "_");
+
+/**
+ * Sanitize a PACKAGE NAME into a cache path. Unlike {@link sanitize}, the
+ * scope separator `/` in `@scope/name` is PRESERVED as a real directory
+ * boundary, so `@canonical/design-system` nests to
+ * `@canonical/design-system` — matching npm's own `node_modules/@scope/name`
+ * layout and, critically, the path the docsite backend (and any other
+ * consumer) reads back. Flattening it to `@canonical_design-system` was the
+ * bug: `sources update` wrote the flattened dir while readers looked for the
+ * nested one, so a freshly-primed cache appeared empty. Each SEGMENT is
+ * still sanitized for the other illegal chars; only `/` survives, and only
+ * between segments (leading/trailing/empty segments are dropped). */
+export const sanitizePackageName = (value: string): string =>
+  value
+    .split("/")
+    .filter((segment) => segment.length > 0)
+    .map((segment) => segment.replace(/[\\:*?"<>|]/g, "_"))
+    .join("/");
 
 /** A concise reason from a thrown subprocess/parse error: prefer captured
  * stderr (git writes the real reason there under `stdio: "pipe"`), else the
@@ -329,7 +349,10 @@ export async function resolvePackage(
       const useCommit = options.frozen && options.pinned;
       const dir = join(
         refsCacheDir(),
-        sanitize(ref.pkg),
+        // The package name NESTS its scope (`@canonical/design-system`), so
+        // the written path matches what the docsite backend reads; only the
+        // ref segment flattens its `/`.
+        sanitizePackageName(ref.pkg),
         sanitize(useCommit ? (options.pinned as string) : ref.ref),
       );
       let resolved: string;

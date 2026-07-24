@@ -43,10 +43,22 @@ export function pickGenerator(
   params: Readonly<Record<string, unknown>>,
 ): GeneratorDefinition {
   if (kind === "component") {
-    const framework = String(params.framework ?? "react");
-    const generator = componentMap[`component/${framework}`];
+    // Mirror summon's API exactly: `pragma create component` === `summon
+    // component`, where the framework is a REQUIRED selector, not a
+    // defaulted one. Summon's generator keys are `component/<framework>`
+    // (react/svelte/lit) with no default — so pragma must not silently
+    // scaffold React when the framework is omitted. An absent framework is
+    // an INVALID_INPUT that names the choices, the same error summon would
+    // raise for a component with no framework to build.
+    const framework = params.framework;
+    if (framework === undefined || framework === null || framework === "") {
+      throw PragmaError.invalidInput("framework", String(framework ?? ""), {
+        validOptions: [...FRAMEWORKS],
+      });
+    }
+    const generator = componentMap[`component/${String(framework)}`];
     if (!generator) {
-      throw PragmaError.invalidInput("framework", framework, {
+      throw PragmaError.invalidInput("framework", String(framework), {
         validOptions: [...FRAMEWORKS],
       });
     }
