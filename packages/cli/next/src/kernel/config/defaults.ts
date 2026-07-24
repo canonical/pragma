@@ -14,15 +14,15 @@ export default {
   packages: [
     {
       name: "@canonical/design-system",
-      source: "git+https://github.com/canonical/design-system.git#main",
+      source: "git+ssh://git@github.com/canonical/design-system.git#main",
     },
     {
       name: "@canonical/anatomy-dsl",
-      source: "git+https://github.com/canonical/anatomy-dsl.git#main",
+      source: "git+ssh://git@github.com/canonical/anatomy-dsl.git#main",
     },
     {
       name: "@canonical/code-standards",
-      source: "git+https://github.com/canonical/web-code-standards.git#main",
+      source: "git+ssh://git@github.com/canonical/web-code-standards.git#main",
     },
   ],
 } satisfies PragmaConfig;
