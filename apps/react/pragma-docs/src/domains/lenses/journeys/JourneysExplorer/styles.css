@@ -9,34 +9,43 @@
  * conditional at-rules.
  */
 
+/* SUBGRID that spends the shell's columns (strict model). The explorer
+ * inherits the intrinsic column lines and its tenants divide them by SPAN;
+ * the view switch (`data-view`) changes those spans, never a template — so
+ * nothing is applied inline and the chain is never broken. */
 .ds.journeys-explorer {
   display: grid;
-  /* The template is view-dependent and driven INLINE from a constant
-   * (RULING 2 — see JourneysExplorer/types.ts): the DEFAULT (table) is TWO
-   * tracks, the graph is three (rail · 1fr · inspector). The inline style
-   * is the authority; this base value is the same two-track default as a
-   * documented fallback, so a reader of the stylesheet alone sees the
-   * default shape and no empty inspector column. */
-  grid-template-columns:
-    minmax(var(--subnav-w), 18rem)
-    minmax(0, 1fr);
-  /* ZERO gap — the tracks stay adjacent and the hairlines move onto the
-   * flanking panels, so the centre reads as one continuous surface the
-   * rail and inspector sit beside rather than a card in a sea of padding.
-   * The same full-bleed move the definitions explorer makes. */
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  /* ZERO gap — tracks adjacent, hairlines on the flanking panels, one
+   * continuous surface. The definitions explorer's full-bleed move. */
   gap: 0;
   block-size: 100%;
   min-block-size: 0;
 }
 
+/* THE VIEW-DEPENDENT SPANS (RULING 2). Rail is always the westmost 2
+ * columns. In GRAPH mode the inspector takes the eastmost 3 and the main
+ * (well) takes the middle; in TABLE mode there is no inspector, so the main
+ * (table) takes everything east of the rail. Robust to the live column
+ * count: the divisions are `2 / -4` etc., always relative to the ends. */
 .ds.journeys-explorer > .journey-rail {
+  grid-column: span 2;
   border-inline-end: 1px solid var(--color-border-muted, #ddd);
   padding-inline-end: var(--space-200, 1rem);
   overflow: auto;
   min-block-size: 0;
 }
 
+.ds.journeys-explorer[data-view="graph"] > .journeys-explorer-main {
+  grid-column: 3 / -4;
+}
+.ds.journeys-explorer[data-view="table"] > .journeys-explorer-main {
+  grid-column: 3 / -1;
+}
+
 .ds.journeys-explorer > .journey-inspector {
+  grid-column: -4 / -1;
   border-inline-start: 1px solid var(--color-border-muted, #ddd);
   padding-inline-start: var(--space-200, 1rem);
   overflow: auto;

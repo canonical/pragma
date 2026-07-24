@@ -177,10 +177,11 @@
  * `container-type` query container: size containment SEVERS subgrid
  * inheritance (proven by probe — a contained box's `grid-template-columns:
  * subgrid` resolves to `none` and the whole chain collapses to full width).
- * The `@container canvas` posture is retired: nothing in the app queried it
- * (the census bans container queries), so components that want
- * region-relative sizing now read the intrinsic COLUMNS instead — the
- * better mechanism. NO PADDING (owner ruling): the canvas is a bare grid
+ * The container-query posture is retired: nothing in the app queried the
+ * canvas container (the census bans container queries anyway), so
+ * components that want region-relative sizing now read the intrinsic
+ * COLUMNS instead — the better mechanism. NO PADDING (owner ruling): the
+ * canvas is a bare grid
  * cell the page fills edge to edge; any breathing room is a region's own,
  * expressed as a column span, not canvas chrome. Scroll is KEPT. */
 .ds.shell .shell-canvas {

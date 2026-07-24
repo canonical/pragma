@@ -35,7 +35,6 @@ import {
   JOURNEYS_TEST_TIMEOUT_MS,
   journeysStrip,
 } from "../__fixtures__/journeysPageHarness.js";
-import { DEFAULT_TABLE_COLUMNS, GRAPH_COLUMNS } from "./types.js";
 
 /** A fetch spy that never settles: any call means "the network was hit". */
 const createFetchSpy = () =>
@@ -61,15 +60,16 @@ const tablePresent = (): boolean =>
 const inspectorPresent = (): boolean =>
   document.querySelector(".journey-inspector") !== null;
 
-/** The explorer root's grid element — the one carrying the inline template. */
+/** The explorer root's grid element. */
 const explorerRoot = (): HTMLElement | null =>
   document.querySelector(".journeys-explorer");
 
-/** The explorer root's live inline grid-template-columns string. jsdom
- * echoes the inline `style` string back verbatim, so the constant we set is
- * exactly what we read. */
-const gridTemplate = (): string =>
-  explorerRoot()?.style.gridTemplateColumns ?? "";
+/** The view the explorer is in, read off `data-view` — the attribute the
+ * stylesheet keys the tenants' column SPANS off (RULING 2, strict
+ * intrinsic-grid form: no inline template any more; the view drives spans in
+ * CSS, not a template string). This is the SSR-safe seam the switch flips. */
+const explorerView = (): string | null =>
+  explorerRoot()?.getAttribute("data-view") ?? null;
 
 describe("JourneysExplorer view switch — the strip drives the canvas", () => {
   it("shows the TABLE by default: two-track grid, no inspector, no graph", {
@@ -82,11 +82,11 @@ describe("JourneysExplorer view switch — the strip drives the canvas", () => {
     // time, table-first.
     expect(tablePresent()).toBe(true);
     expect(wellPresent()).toBe(false);
-    // RULING 2: the default grid is TWO tracks and the inspector element is
-    // absent — no empty inspector column.
-    expect(gridTemplate()).toBe(DEFAULT_TABLE_COLUMNS);
+    // RULING 2: the default view is TABLE (the stylesheet keys the two-track
+    // span off `data-view`) and the inspector element is absent — no empty
+    // inspector column.
+    expect(explorerView()).toBe("table");
     expect(inspectorPresent()).toBe(false);
-    expect(explorerRoot()).toHaveAttribute("data-view", "table");
     // The default is announced on the strip's switch: Table is pressed.
     expect(tableOption()).toHaveAttribute("aria-pressed", "true");
     expect(graphOption()).toHaveAttribute("aria-pressed", "false");
@@ -100,11 +100,11 @@ describe("JourneysExplorer view switch — the strip drives the canvas", () => {
     const fetchFn = createFetchSpy();
     render(journeysStrip(undefined, journeysExplorerRecords, fetchFn));
 
-    // Precondition: table, two tracks, no inspector.
+    // Precondition: table view, no inspector.
     expect(tablePresent()).toBe(true);
     expect(wellPresent()).toBe(false);
     expect(inspectorPresent()).toBe(false);
-    expect(gridTemplate()).toBe(DEFAULT_TABLE_COLUMNS);
+    expect(explorerView()).toBe("table");
 
     // Flip to Graph — clicking the STRIP's toggle, which reaches the canvas
     // ONLY through the shared view context.
@@ -112,12 +112,12 @@ describe("JourneysExplorer view switch — the strip drives the canvas", () => {
 
     // The well's node DOM is now mounted — the actual DOM the reader sees,
     // not a callback. The table's markup is GONE (never both), the inspector
-    // region appears, and the grid is now THREE tracks (RULING 2).
+    // region appears, and the view flips to graph — the stylesheet then gives
+    // the inspector its column span (RULING 2).
     expect(wellPresent()).toBe(true);
     expect(tablePresent()).toBe(false);
     expect(inspectorPresent()).toBe(true);
-    expect(gridTemplate()).toBe(GRAPH_COLUMNS);
-    expect(explorerRoot()).toHaveAttribute("data-view", "graph");
+    expect(explorerView()).toBe("graph");
     expect(graphOption()).toHaveAttribute("aria-pressed", "true");
 
     // The empty-selection guidance now rides the well's OWN floating hint
@@ -131,12 +131,11 @@ describe("JourneysExplorer view switch — the strip drives the canvas", () => {
     ).toMatch(/centre the graph/);
 
     // Flip back to Table — the reverse holds: table returns, well and
-    // inspector leave, the grid drops back to two tracks.
+    // inspector leave, the view drops back to table.
     fireEvent.click(tableOption());
     expect(tablePresent()).toBe(true);
     expect(wellPresent()).toBe(false);
     expect(inspectorPresent()).toBe(false);
-    expect(gridTemplate()).toBe(DEFAULT_TABLE_COLUMNS);
-    expect(explorerRoot()).toHaveAttribute("data-view", "table");
+    expect(explorerView()).toBe("table");
   });
 });

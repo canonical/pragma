@@ -5,6 +5,17 @@
  * census in frameStability.tests.tsx).
  */
 
+/* SUBGRID pass-through (strict model): inherits the shell's intrinsic
+ * columns and re-emits them to the index, so the chain is unbroken and the
+ * standards subnav lands on the shared lines. A reading mode, so no
+ * block-size:100% — the index scrolls with the canvas. */
+.ds.standards-page {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-content: start;
+}
+
 /* Present for assistive tech and the frame suite's labelledby key
  * (`lens-standards-title`), absent from the layout — the mode strip's
  * breadcrumb trail carries the visible title now, so the canvas copy was

@@ -17,8 +17,14 @@
  * Lens-local; the certified frame is untouched.
  */
 
+/* SUBGRID pass-through (strict model): inherits the shell's intrinsic
+ * columns and re-emits them to the explorer, so the chain shell → canvas →
+ * page → explorer is unbroken. Owns only the block axis (hidden heading row
+ * over the explorer's released 1fr row). */
 .ds.journeys-page {
   display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   grid-template-rows: min-content minmax(0, 1fr);
   block-size: 100%;
   min-block-size: 0;

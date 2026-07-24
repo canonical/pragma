@@ -17,24 +17,21 @@ export type JourneyView = "table" | "graph";
 export const DEFAULT_JOURNEY_VIEW: JourneyView = "table";
 
 /**
- * THE VIEW-DEPENDENT GRID TEMPLATE (RULING 2). The explorer grid's RIGHT
- * track is view-dependent: the graph needs the job inspector beside it, the
- * table does not. So the template is switched with the ephemeral view rather
- * than left three-wide with an empty inspector column in table mode (the
- * same dead-space class as the top band the prior fix closed).
+ * THE VIEW-DEPENDENT LAYOUT (RULING 2), now expressed the strict
+ * intrinsic-grid way. The explorer no longer sets its own column TEMPLATE —
+ * under the one-grid model it is a `grid-template-columns: subgrid` that
+ * inherits the shell's intrinsic columns (see styles.css). The view switch
+ * therefore changes the tenants' SPANS, not the grid template:
  *
- * These live here as CONSTANTS and are applied as an inline
- * `grid-template-columns` on the explorer root — NOT in the stylesheet — so
- * the switch is a pure function of the view state with zero CSS contention,
- * and the DEFAULT (table → two tracks) renders the SAME string on the server
- * and the client. The rail's `--subnav-w` minimum and the inspector's
- * `--aside-w` minimum are CONSUMED here, never re-defined (the frame owns
- * those tokens; `frameStability.tests` counts definitions).
+ * - GRAPH: rail (span 2) · well (the middle) · inspector (span 3) — the
+ *   graph needs the job inspector beside it.
+ * - TABLE: rail (span 2) · table (the rest) — no inspector, no empty column.
  *
- * - GRAPH: rail · 1fr (the graph) · inspector — three tracks.
- * - TABLE: rail · 1fr (the table) — two tracks, no empty inspector column.
+ * The switch is driven by `data-view` on the explorer root (already set),
+ * so the stylesheet owns the span rules per view and this module carries no
+ * template string at all. The DEFAULT is `table`, a constant, so the SSR
+ * first paint is fixed and the client's first render matches byte for byte.
+ * No inline `grid-template-columns` remains — nothing for the server and
+ * client to disagree about, and the chain is never broken by a bespoke
+ * template.
  */
-export const GRAPH_COLUMNS =
-  "minmax(var(--subnav-w), 18rem) minmax(0, 1fr) minmax(var(--aside-w), 24rem)";
-export const DEFAULT_TABLE_COLUMNS =
-  "minmax(var(--subnav-w), 18rem) minmax(0, 1fr)";

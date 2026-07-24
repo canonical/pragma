@@ -7,11 +7,24 @@
  * throughout.
  */
 
+/* SUBGRID that spends the shell's columns (strict model): category
+ * jump-links take the westmost 2, the grouped lists take the rest. The
+ * chain reaches here unbroken from the shell. */
 .ds.standards-index {
   display: grid;
-  grid-template-columns: var(--subnav-w) minmax(0, 1fr);
-  gap: var(--space-300, 1.5rem);
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: start;
+}
+
+/* Direct children are the <nav> (category jump-links) and the <div>
+ * .standards-groups — the span goes on those, not the inner <ul>. */
+.ds.standards-index > nav {
+  grid-column: span 2;
+}
+.ds.standards-index > .standards-groups {
+  grid-column: 3 / -1;
+  min-inline-size: 0;
 }
 
 .ds.standards-index .standards-category-links {

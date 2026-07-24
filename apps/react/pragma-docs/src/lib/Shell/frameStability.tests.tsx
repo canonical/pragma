@@ -822,11 +822,11 @@ describe("the shared tokens are defined once (the stylesheet half)", () => {
     expect(cssFiles.length).toBeGreaterThanOrEqual(4);
   });
 
+  // The metric tokens that SURVIVE the strict intrinsic-grid model: the
+  // strip's block-axis height and the four z-axis strata. Each defined
+  // exactly once, at the shell.
   it.each([
-    "--rail-w",
     "--strip-h",
-    "--subnav-w",
-    "--aside-w",
     "--z-underground",
     "--z-plate",
     "--z-chrome",
@@ -834,6 +834,50 @@ describe("the shared tokens are defined once (the stylesheet half)", () => {
   ])("defines %s exactly once across src/**/*.css", (token) => {
     const definitions = allCss.match(new RegExp(`${token}\\s*:`, "g")) ?? [];
     expect(definitions).toHaveLength(1);
+  });
+
+  // The inline-axis WIDTH tokens are DISSOLVED under the strict
+  // intrinsic-grid model (owner ruling 2026-07-22): there are no named
+  // column widths any more — the shell provides unnamed intrinsic columns
+  // and every region claims its width by SPANNING them. These tokens must
+  // not exist anywhere; a reintroduction is a regression toward the old
+  // fixed-track frame.
+  it.each(["--rail-w", "--subnav-w", "--aside-w"])(
+    "does NOT define %s — the width tokens are dissolved (span, not token)",
+    (token) => {
+      const definitions = allCss.match(new RegExp(`${token}\\s*:`, "g")) ?? [];
+      expect(definitions).toHaveLength(0);
+    },
+  );
+
+  // THE INTRINSIC-GRID INVARIANT (the strict model's teeth, owner ruling
+  // 2026-07-22: EVERYTHING is a subgrid, no exceptions). Exactly ONE grid
+  // TEMPLATE exists in the whole app — the shell's intrinsic columns. Every
+  // OTHER `grid-template-columns` declaration, without exception, is
+  // `subgrid`: pages, explorers, region tenants, card grids, list grids,
+  // ALL of them inherit the shell's columns and spend spans. Nothing authors
+  // its own template, not even a leaf card-grid (no `auto-fill minmax(Nrem)`
+  // anywhere but the shell). This is the assertion that catches the "looks
+  // like one column" regression AND any stray leaf template: a grid that
+  // authors a template (or is `display: block` in the chain) trips it.
+  it("authors exactly ONE grid template — the shell; every other grid is a subgrid, no exceptions", () => {
+    // Strip CSS comments first, so a property token quoted in a comment
+    // (describing the model) is not miscounted as real CSS.
+    const cssNoComments = allCss.replaceAll(/\/\*[\s\S]*?\*\//g, "");
+    const authored = [
+      ...cssNoComments.matchAll(/grid-template-columns:\s*([^;]+);/g),
+    ]
+      .map((m) => m[1].trim())
+      .filter((value) => !value.startsWith("subgrid") && value !== "inherit");
+
+    // EXACTLY ONE authored template, full stop — and it is the shell's
+    // intrinsic frame: an auto-fill of FOUR `minmax(var(--grid-col-min…))`
+    // columns. Everything else in the app is `subgrid`.
+    expect(authored).toHaveLength(1);
+    expect(authored[0]).toMatch(/^repeat\(\s*auto-fill/);
+    expect(
+      (authored[0].match(/minmax\(\s*var\(--grid-col-min/g) ?? []).length,
+    ).toBe(4);
   });
 
   /**

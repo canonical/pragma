@@ -1,22 +1,36 @@
 /*
  * ComponentEntityPage — the entity view's two-tenant row: reading column
- * west, quick-facts aside east. Flex with wrap, NOT a container query: the
- * at-rule census (frameStability.tests.tsx) sanctions exactly one
- * layout-capable conditional in the app, so the collapse is expressed
- * intrinsically — the article's 32rem basis plus `flex-wrap` wraps the
- * aside under it when the canvas cannot fit both (INTRINSIC-GRID.md
- * entry 6). The aside's basis is the frame's --aside-w token, consumed
- * here and in EntityAside/styles.css, defined only by the Shell.
+ * west, quick-facts aside east. Under the strict intrinsic-grid model
+ * (owner ruling) this rides the same column chain as every other lens: the
+ * page is a SUBGRID pass-through and the body a SUBGRID whose article and
+ * aside claim column SPANS. The old flex-wrap collapse (INTRINSIC-GRID
+ * entry 6) is superseded — the aside is a fixed span of the intrinsic
+ * columns now, aligned to the frame's ruler rather than wrapping on a
+ * content basis. Entry 6's narrow-canvas wrap is a debt to revisit if a
+ * real narrow-canvas need appears (a span can't wrap); at desktop widths
+ * the fixed span is the cleaner, frame-aligned answer.
  */
 
+.ds.component-entity {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-content: start;
+}
+
 .ds.component-entity .component-entity-body {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-300, 1.5rem);
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: start;
 }
 
 .ds.component-entity .component-entity-article {
-  flex: 1 1 32rem;
+  grid-column: 1 / -4;
+  min-inline-size: 0;
+}
+
+.ds.component-entity .component-entity-aside {
+  grid-column: -4 / -1;
   min-inline-size: 0;
 }
