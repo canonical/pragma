@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@canonical/ds-assets": "^0.32.0",
+    "@canonical/ds-types": "^0.32.0",
     "@canonical/styles": "^0.28.0",
     "@canonical/svelte-ds-global": "^0.32.0"
   },
@@ -64,7 +65,6 @@
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.28.0",
     "@canonical/design-tokens": "0.6.2-contrasted.0",
-    "@canonical/ds-types": "^0.32.0",
     "@canonical/storybook-config": "^0.32.0",
     "@canonical/storybook-helpers": "^0.32.0",
     "@canonical/svelte-ssr-test": "^0.28.0",

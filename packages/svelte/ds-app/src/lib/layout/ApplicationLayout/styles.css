@@ -1,0 +1,29 @@
+/* Ported from @canonical/react-ds-app ApplicationLayout */
+
+.ds.application-layout {
+  /* Application shell: navigation rail (min-content) + content (1fr), per
+	   the ontology instance apps.layout.application_layout. The rail/content
+	   gutter follows the design reference (#421: 1rem) via the container gap
+	   token; --application-layout-gap overrides (0 for a flush shell). */
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  gap: var(--application-layout-gap, var(--container-gap-default, 1rem));
+  block-size: 100%;
+}
+
+/* Without a navigation slot, drop the rail column entirely so neither the
+   empty track nor the gap offsets the content. */
+.ds.application-layout:not(:has(> .navigation)) {
+  grid-template-columns: 1fr;
+}
+
+/* min-size 0 lets each region scroll internally instead of stretching the
+   shell beyond the viewport. The navigation slot owns its inline size. */
+.ds.application-layout > .navigation {
+  min-block-size: 0;
+}
+
+.ds.application-layout > .content {
+  min-block-size: 0;
+  min-inline-size: 0;
+}

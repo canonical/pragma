@@ -1,0 +1,27 @@
+/* Ported from @canonical/react-ds-app ViewLayout */
+
+.ds.view-layout {
+  /* View: content (1fr) + contextual aside (min-content), per the ontology
+	   instance apps.layout.view_layout. */
+  display: grid;
+  grid-template-columns: 1fr min-content;
+  gap: var(--view-layout-gap, var(--container-gap-default, 1rem));
+  block-size: 100%;
+}
+
+/* Without an aside slot, drop the trailing column entirely so neither the
+   empty track nor the gap offsets the content. */
+.ds.view-layout:not(:has(> .aside)) {
+  grid-template-columns: 1fr;
+}
+
+/* min-size 0 lets each region scroll internally instead of stretching the
+   view. The aside slot owns its inline size. */
+.ds.view-layout > .content {
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.ds.view-layout > .aside {
+  min-block-size: 0;
+}
