@@ -1,23 +1,28 @@
 name: "ds-demo-site/chromatic"
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
       - configs/storybook/**
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-global/**
       - apps/react/demo/**
+      - "!packages/react/ds-global/**/*.stories.*"
+      - "!**/*.test.*"
+      - "!**/*.md"
   push:
     branches:
       - main
     paths:
       - configs/storybook/**
-      - packages/tokens/**
       - packages/styles/**
       - packages/utils/**
       - packages/react/ds-global/**
-      - packages/react/ds-app-anbox/**
+      - apps/react/demo/**
+      - "!packages/react/ds-global/**/*.stories.*"
+      - "!**/*.test.*"
+      - "!**/*.md"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -27,7 +32,7 @@ jobs:
       working-directory: apps/react/demo
       externals: '[
         "configs/storybook/**",
-        "packages/styles/**",
-        "packages/utils/**",
-        "packages/react/ds-global/**"
+        "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/react/ds-global/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'
