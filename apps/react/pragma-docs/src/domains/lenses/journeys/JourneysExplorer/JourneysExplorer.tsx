@@ -24,11 +24,7 @@ import {
   type JourneyTableState,
 } from "../journeyTableModel.js";
 import { useJourneyView } from "../journeyViewContext.js";
-import {
-  DEFAULT_TABLE_COLUMNS,
-  GRAPH_COLUMNS,
-  type JourneysExplorerProps,
-} from "./types.js";
+import type { JourneysExplorerProps } from "./types.js";
 import "./styles.css";
 
 /**
@@ -345,25 +341,19 @@ const JourneysExplorer = ({
     return undefined;
   }, [coordinates, data.jobs, job]);
 
-  // THE VIEW-DEPENDENT GRID (RULING 2). The RIGHT track is view-dependent:
-  // the graph needs the inspector beside it, the table does not — so the
-  // template is driven by the ephemeral view, and the inspector column (and
-  // the inspector element itself) exists ONLY in graph mode. No empty
-  // inspector column in table mode: the same dead-space class as the top
-  // band the prior fix closed. The template is applied INLINE from a
-  // constant (never the stylesheet), so the switch is a pure function of the
-  // view with zero CSS contention; the default (table → two tracks) yields
-  // the SAME string on the server and the client, so the initial grid is
-  // byte-identical. The rail stays in BOTH modes — it is the demand index
-  // that drives the table's grouping, not graph furniture.
+  // THE VIEW-DEPENDENT LAYOUT (RULING 2), strict intrinsic-grid form. The
+  // explorer is a SUBGRID inheriting the shell's intrinsic columns; the view
+  // no longer swaps a grid TEMPLATE, it swaps the tenants' column SPANS,
+  // driven entirely by `data-view` in the stylesheet (see styles.css). The
+  // inspector element still exists ONLY in graph mode (no empty column in
+  // table mode). Nothing inline: the default (table) yields identical markup
+  // on server and client, and the chain is never broken by a bespoke
+  // template. The rail stays in BOTH modes — it is the demand index.
   const graph = view === "graph";
   return (
     <div
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
       data-view={view}
-      style={{
-        gridTemplateColumns: graph ? GRAPH_COLUMNS : DEFAULT_TABLE_COLUMNS,
-      }}
     >
       <JourneyRail
         coordinates={coordinates}

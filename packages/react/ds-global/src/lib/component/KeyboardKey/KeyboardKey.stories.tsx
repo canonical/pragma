@@ -13,9 +13,25 @@ const meta = {
   argTypes: {
     keyValue: { control: { type: "select" } },
   },
-  // Render inside a baseline-aligned paragraph so the inline <kbd> keys sit on
-  // the text baseline, as they would in real usage.
-  decorators: [(Story) => <p className="p">{Story()}</p>],
+  // A KeyboardKey consumes a surface (it carries `.surface`), so it renders on
+  // the NEXT layer of whatever surface it sits in. Wrap the stories in a painted
+  // `.surface` — with its own background/text — so the key steps up to the
+  // surface+1 ("like inputs") fill and reads correctly, as it would in an app.
+  // The inner `.p` keeps the inline <kbd> keys seated on the text baseline.
+  decorators: [
+    (Story) => (
+      <div
+        className="surface"
+        style={{
+          background: "var(--surface-color-background)",
+          color: "var(--surface-color-text)",
+          padding: "var(--dimension-200)",
+        }}
+      >
+        <p className="p">{Story()}</p>
+      </div>
+    ),
+  ],
 } satisfies Meta<typeof Component>;
 
 export default meta;

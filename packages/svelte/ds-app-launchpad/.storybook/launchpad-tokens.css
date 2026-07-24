@@ -6,6 +6,7 @@
 
 .docs-story {
   background-color: var(--lp-color-background-default);
+  color-scheme: light dark;
 }
 
 .row {

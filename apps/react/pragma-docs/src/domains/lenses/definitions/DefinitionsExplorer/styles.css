@@ -12,27 +12,44 @@
  * recorded honestly in INTRINSIC-GRID.md. Zero conditional at-rules.
  */
 
+/* The explorer is a SUBGRID that finally SPENDS the shell's columns: it
+ * inherits the intrinsic column lines (grid-template-columns: subgrid) that
+ * flowed all the way down the chain, and its three children each claim a
+ * span of them (rail / well / inspector, set on the children below). So the
+ * triptych's dividers land on intrinsic column lines the rest of the app
+ * shares — the rail's inner edge is the same line as the primary rail's, a
+ * lens switch never shifts a single track. It spans the page's full width
+ * (grid-column: 1 / -1) and releases its block claim so the panels scroll. */
 .ds.definitions-explorer {
   display: grid;
-  /* The var() FALLBACKS are interim: the tip's intrinsic-grid WIP
-   * dissolved the frame's --subnav-w/--aside-w definitions, which
-   * collapsed these tracks to nothing. A fallback is consumption, not a
-   * definition (the census counts definitions), and the in-flight subgrid
-   * conversion supersedes this file wholesale when it lands. */
-  grid-template-columns:
-    minmax(var(--subnav-w, 13rem), 16rem)
-    minmax(0, 1fr)
-    minmax(var(--aside-w, 16rem), 24rem);
-  /* ZERO gap — the full-bleed move. The three tracks stay ADJACENT (the
-   * layout.explorer contract declares exactly three adjacent tracks, and
-   * that contract is freefold-marked), but with no gutter between them the
-   * canvas meets the rail and the inspector edge to edge, so it reads as
-   * one continuous surface the panels sit on rather than as a third card
-   * floating in a sea of padding. The separating hairlines move onto the
-   * rail and inspector below; nothing here overlays anything. */
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  /* ZERO gap — the full-bleed move. The three tenants stay ADJACENT (the
+   * layout.explorer contract declares exactly three adjacent regions), but
+   * with no gutter the canvas meets the rail and the inspector edge to edge,
+   * so it reads as one continuous surface. The separating hairlines live on
+   * the rail and inspector below. */
   gap: 0;
   block-size: 100%;
   min-block-size: 0;
+}
+
+/* THE COLUMN SPENDS. The explorer inherits the canvas's intrinsic columns;
+ * its three tenants divide them by SPAN — rail | well | inspector. The
+ * spans sum to the whole inherited set, and every division lands on an
+ * intrinsic line, so the triptych is ruled by the same grid as the frame.
+ * The well takes the middle by starting after the rail and ending before
+ * the inspector (grid-column: 3 / -4), which is robust to the live column
+ * count: however many columns the canvas has, the well is everything
+ * between a 2-column rail and a 3-column inspector. */
+.ds.definitions-explorer > .definitions-explorer-rail {
+  grid-column: span 2;
+}
+.ds.definitions-explorer > .hierarchy-well {
+  grid-column: 3 / -4;
+}
+.ds.definitions-explorer > .term-inspector {
+  grid-column: -4 / -1;
 }
 
 /* The hairlines that the gap used to imply, now drawn by the flanking

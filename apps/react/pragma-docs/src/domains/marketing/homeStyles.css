@@ -1,21 +1,38 @@
 /*
- * The Home lobby — editorial bands stacked in one column. `layout.lobby`
- * states `layout.type: stack` / `direction: vertical` and calls itself
- * "nearly slotless by design: one canvas, no chrome", so there is no
- * multi-region grid here and NO layout token consumption: the lobby has
- * no secondary nav or aside to place, and the frame's --subnav-w column
- * (which the standards index consumes) would be meaningless on a stack.
+ * The Home lobby — editorial bands stacked vertically, on the SUBGRID chain
+ * (owner ruling: strict, no exceptions). `layout.lobby` is a vertical stack,
+ * but under the one-grid model even a stack is a `grid-template-columns:
+ * subgrid` child that inherits the shell's intrinsic columns — so the lobby
+ * reads against the same ruler as every other lens rather than floating in a
+ * lone measure. It has no secondary nav or aside; instead its bands claim
+ * column SPANS: the reading bands take a measured subset (prose at the full
+ * intrinsic width would be unreadable), the door grid takes the whole set.
  *
- * Zero conditional at-rules (the frame suite's census allows exactly one
- * in the app — the sanctioned AX.1 rail collapse). The exemplar strip
- * reflows without a media query: `auto-fill` + `minmax` does the work.
- * Logical properties throughout; DS tokens with fallbacks.
+ * Zero conditional at-rules (the frame suite's census allows exactly one in
+ * the app — the sanctioned AX.1 rail collapse). The door grid and exemplar
+ * strip reflow on their own — `auto-fill`/`flex-wrap` do the work. Logical
+ * properties throughout; DS tokens with fallbacks.
  */
 
 .ds.lobby {
   display: grid;
-  gap: var(--space-500, 2.5rem);
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  /* Row gap only — the column gutters come from the inherited grid (the
+   * shell runs zero column gap; bands set their own inline rhythm). */
+  row-gap: var(--space-500, 2.5rem);
   align-content: start;
+}
+
+/* THE BAND SPANS. Every direct child of the lobby is a band that claims a
+ * span of the inherited columns. Reading bands (hero, examples, doors
+ * intro) take a MEASURED subset — the westmost ~7 columns — so prose keeps a
+ * readable measure aligned to the ruler rather than running the full canvas
+ * width. The default for any band is that measured span; the door grid opts
+ * into the full width below. */
+.ds.lobby > * {
+  grid-column: 1 / span 7;
+  min-inline-size: 0;
 }
 
 /* ── hero ─────────────────────────────────────────────────────────── */
@@ -80,19 +97,37 @@
 
 /* ── doors ────────────────────────────────────────────────────────── */
 
-.ds.lobby .lobby-doors {
+/* The doors band spans the FULL inherited width (overriding the measured
+ * default) and is itself a subgrid, so its heading and its card list both
+ * ride the intrinsic columns. */
+.ds.lobby > .lobby-doors {
+  grid-column: 1 / -1;
   display: grid;
-  gap: var(--space-200, 1rem);
+  grid-template-columns: subgrid;
+  row-gap: var(--space-200, 1rem);
+}
+.ds.lobby > .lobby-doors > * {
+  grid-column: 1 / -1;
 }
 
+/* The door cards are a SUBGRID of the lobby's columns (strict model): each
+ * door claims a span of the intrinsic columns, so the cards align to the
+ * same ruler as the rest of the app instead of an independent auto-fill.
+ * `grid-auto-flow: dense` fills rows left to right; each li spans 3 columns,
+ * so the row holds as many doors as the live column count allows (4 at 12
+ * cols, ~5 at 16) with no media query. */
 .ds.lobby .lobby-door-list {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  /* Reflows from four columns to one on its own — no media query. */
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: var(--space-300, 1.5rem);
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  row-gap: var(--space-300, 1.5rem);
+}
+
+.ds.lobby .lobby-door-list > li {
+  grid-column: span 3;
 }
 
 .ds.lobby .lobby-door-list > li {

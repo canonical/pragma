@@ -6,11 +6,41 @@
  * canvas width, no query anywhere (INTRINSIC-GRID.md entry 7).
  */
 
+/* SUBGRID that spends the shell's columns (strict model): the tier
+ * jump-links take the westmost 2 columns, the card grid takes the rest.
+ * The card grid inside (.catalog-cards) is a leaf that runs its own
+ * auto-fill over its column span (INTRINSIC-GRID entry 7 — untouched). */
 .ds.catalog-list {
   display: grid;
-  grid-template-columns: var(--subnav-w) minmax(0, 1fr);
-  gap: var(--space-300, 1.5rem);
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
   align-items: start;
+}
+
+/* The direct children of the list are the <nav> (tier jump-links) and the
+ * <div>.catalog-groups — the span goes on THOSE, not the inner <ul>. */
+.ds.catalog-list > nav {
+  grid-column: span 2;
+}
+/* The groups column is itself a SUBGRID (strict model — everything is): it
+ * spans the columns east of the tier links and passes them on to each tier
+ * section, so the cards below inherit the shell's columns all the way down.
+ * The whole chain — groups → section → card list → card — is subgrid. */
+.ds.catalog-list > .catalog-groups {
+  grid-column: 3 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  min-inline-size: 0;
+}
+.ds.catalog-list .catalog-groups > * {
+  grid-column: 1 / -1;
+}
+.ds.catalog-list .catalog-groups > section {
+  display: grid;
+  grid-template-columns: subgrid;
+}
+.ds.catalog-list .catalog-groups > section > * {
+  grid-column: 1 / -1;
 }
 
 .ds.catalog-list .catalog-tier-links {
@@ -38,13 +68,32 @@
   margin-block-start: 0;
 }
 
+/* The card grid is a SUBGRID (strict model — no leaf auto-fill template):
+ * it inherits the section's columns (which are the shell's), and each card
+ * claims a span. At ~10 canvas columns a 3-column card gives ~3 cards a row
+ * (12 cols → 3, 16 cols → 5) — the count falls out of the live column count,
+ * aligned to the ruler, with no template of its own and no media query. */
 .ds.catalog-list .catalog-cards {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--space-200, 1rem);
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  /* The shell runs zero column gap, so a subgrid inherits none — the cards
+   * would touch. A subgrid may set its OWN gap over the inherited tracks:
+   * this gives the cards a gutter without disturbing the column lines. */
+  column-gap: var(--space-200, 1rem);
+  row-gap: var(--space-200, 1rem);
+}
+.ds.catalog-list .catalog-cards > li {
+  grid-column: span 3;
+  /* Obey the span: without this the card's content min-content (title +
+   * teaser) props the track wider than its 3 columns and the tiling breaks
+   * to fewer-per-row. min-inline-size:0 lets the card shrink to its span and
+   * the teaser wrap/ellipsis instead. */
+  min-inline-size: 0;
+  gap: var(--space-100, 0.5rem);
 }
 
 .ds.catalog-list .catalog-more {

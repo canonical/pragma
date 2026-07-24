@@ -3,6 +3,19 @@
  * layout (CatalogList owns the subnav/grid split and its tokens).
  */
 
+/* SUBGRID pass-through (strict model): the catalog page authors no columns
+ * of its own — it inherits the shell's intrinsic columns and re-emits them
+ * to the CatalogList, so the chain is unbroken and the catalog's subnav
+ * lands on the same lines as every other lens's west column. Was
+ * `display: block` — the hard break the owner named (everything below read
+ * as one column). */
+.ds.components-catalog {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  min-block-size: 0;
+}
+
 /* Present for assistive tech and the frame suite's labelledby key
  * (`lens-components-title`), absent from the layout — the mode strip's
  * breadcrumb trail carries the visible title now, so the canvas copy was
