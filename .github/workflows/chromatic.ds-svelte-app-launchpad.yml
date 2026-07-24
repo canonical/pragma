@@ -1,7 +1,7 @@
 name: "svelte-ds-app-launchpad/chromatic"
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
       - configs/storybook/**
       - packages/ds-assets/**
@@ -11,6 +11,9 @@ on:
       # TODO: Uncomment once the launchpad package consumes ds-global
       # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-launchpad/**
+      - "!**/*.test.*"
+      - "!**/*.md"
+      - "!**/*.mdx"
   push:
     branches:
       - main
@@ -23,6 +26,9 @@ on:
       # TODO: Uncomment once the launchpad package consumes ds-global
       # - packages/svelte/ds-global/**
       - packages/svelte/ds-app-launchpad/**
+      - "!**/*.test.*"
+      - "!**/*.md"
+      - "!**/*.mdx"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -34,7 +40,7 @@ jobs:
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
-        "packages/tokens/**",
-        "packages/styles/**",
-        "packages/utils/**"
+        "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'

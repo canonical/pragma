@@ -1,7 +1,7 @@
 name: "storybook-hub/chromatic"
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
     paths:
       - configs/storybook/**
       - packages/ds-assets/**
@@ -10,6 +10,9 @@ on:
       - packages/utils/**
       - packages/react/**
       - apps/react/storybook-hub/**
+      - "!**/*.test.*"
+      - "!**/*.md"
+      - "!**/*.mdx"
   push:
     branches:
       - main
@@ -21,6 +24,9 @@ on:
       - packages/utils/**
       - packages/react/**
       - apps/react/storybook-hub/**
+      - "!**/*.test.*"
+      - "!**/*.md"
+      - "!**/*.mdx"
 jobs:
   test-compile:
     uses: ./.github/workflows/chromatic._template.yml
@@ -31,8 +37,8 @@ jobs:
       externals: '[
         "configs/storybook/**",
         "packages/ds-assets/**",
-        "packages/tokens/**",
-        "packages/styles/**",
-        "packages/utils/**",
-        "packages/react/**",
+        "packages/tokens/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/styles/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/utils/**/!(*.test.*|*.stories.*|*.md|*.mdx)",
+        "packages/react/**/!(*.test.*|*.stories.*|*.md|*.mdx)"
       ]'
