@@ -53,7 +53,7 @@
     "test:client:firefox": "vitest --run --project=client --browser=firefox",
     "test:client:webkit": "vitest --run --project=client --browser=webkit",
     "test:watch:client": "bun run test:watch --project=client --browser.headless=false",
-    "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0"
+    "storybook": "storybook dev -p 6008 --no-open --host 0.0.0.0"
   },
   "dependencies": {
     "@canonical/ds-assets": "^0.33.0",

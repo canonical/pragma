@@ -39,7 +39,7 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "storybook": "storybook dev -p 6007 --no-open --host 0.0.0.0",
+    "storybook": "storybook dev -p 6005 --no-open --host 0.0.0.0",
     "check": "bun run check:biome && bun run check:ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
     "check:biome": "biome check",

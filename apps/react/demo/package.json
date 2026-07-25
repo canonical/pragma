@@ -21,7 +21,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "storybook": "storybook dev -p 6011 --no-open --host 0.0.0.0"
+    "storybook": "storybook dev -p 6009 --no-open --host 0.0.0.0"
   },
   "dependencies": {
     "@canonical/react-ds-global": "^0.33.0",
