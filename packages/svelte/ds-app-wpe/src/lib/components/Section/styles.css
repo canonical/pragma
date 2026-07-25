@@ -1,0 +1,71 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  --section-padding-bottom-spacing-shallow: var(--spacing-vertical-xlarge);
+  --section-padding-bottom-spacing-default: var(--spacing-vertical-xxlarge);
+  --section-padding-bottom-spacing-deep: var(--spacing-vertical-xxxlarge);
+  --section-padding-bottom-spacing-hero: var(
+    --section-padding-bottom-spacing-default
+  );
+  --section-padding-top-spacing-default: 0px;
+  --section-padding-top-bordered-default: 0px;
+  --section-padding-top-bordered-true: calc(
+    var(--section-border-start-width-with-padding) -
+    var(--section-border-start-width)
+  );
+  --section-padding-top-spacing-shallow: 0px;
+  --section-padding-top-spacing-deep: 0px;
+  --section-padding-top-spacing-hero: var(--spacing-vertical-xlarge);
+  --section-border-start-color: var(--color-border-muted);
+  --section-border-start-style: solid;
+  --section-border-start-width: var(--rule-height);
+  --section-border-start-width-with-padding: var(--spacing-vertical-small);
+}
+
+.ds.section {
+  --section-padding-bottom: var(--section-padding-bottom-spacing-default);
+
+  /*
+    Section top padding is the sum of padding applied by two props - `spacing` and `bordered`.
+    We namespace each padding type, then add them together in the final padding-top declaration.
+    */
+  --section-padding-top-spacing: var(--section-padding-top-spacing-default);
+  --section-padding-top-bordered: var(--section-padding-top-bordered-default);
+
+  &.bordered {
+    /* Top padding subtracts border height */
+    --section-padding-top-bordered: var(--section-padding-top-bordered-true);
+    border-block-start-color: var(--section-border-start-color);
+    border-block-start-style: var(--section-border-start-style);
+    border-block-start-width: var(--section-border-start-width);
+  }
+
+  /*
+    Spacing variants
+    Note that top padding is only defined for the hero variant in our core setup.
+    The top padding is still bound here in case users customize their tokens.
+    */
+  &.shallow {
+    --section-padding-bottom: var(--section-padding-bottom-spacing-shallow);
+    --section-padding-top-spacing: var(--section-padding-top-spacing-shallow);
+  }
+
+  &.deep {
+    --section-padding-bottom: var(--section-padding-bottom-spacing-deep);
+    --section-padding-top-spacing: var(--section-padding-top-spacing-deep);
+    /* TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L16-L18 */
+  }
+
+  &.hero {
+    --section-padding-bottom: var(--section-padding-bottom-spacing-hero);
+    --section-padding-top-spacing: var(--section-padding-top-spacing-hero);
+
+    /*    TODO add responsiveness https://github.com/canonical/vanilla-framework/blob/6af35433368f82d76d8deb7effebca47b434ee76/scss/_patterns_section.scss#L32-L34 */
+  }
+
+  padding-block-end: var(--section-padding-bottom);
+  /*   Padding-block-start is applied by both the `spacing` prop and the `bordered` props */
+  padding-block-start: calc(
+    var(--section-padding-top-spacing) +
+    var(--section-padding-top-bordered)
+  );
+}
