@@ -57,7 +57,7 @@ function buildChecks(
     ["Node version", checkNodeVersion()],
     ["pragma version", checkPragmaVersion(rt)],
     ["pragma config", checkConfigFile(rt)],
-    ["package refs", checkPackageRefs(rt)],
+    ["pack refs", checkPackageRefs(rt)],
     ["ke store", checkKeStore(rt)],
     ["Shell completions", checkShellCompletions(rt.cwd)],
     ["MCP configured", checkMcpConfigured(rt.cwd)],

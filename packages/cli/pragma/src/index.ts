@@ -20,7 +20,7 @@ export type {
   ErrorPayload,
   Example,
   Formatters,
-  GeneratorRef,
+  GeneratorSource,
   McpAnnotations,
   OutputFormat,
   PackDeclaration,

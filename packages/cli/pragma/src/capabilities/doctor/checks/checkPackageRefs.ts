@@ -37,7 +37,9 @@ export async function checkPackageRefs(
 
   if (entries.length === 0) {
     return {
-      name: "package refs",
+      // The display says "packs" (config declarations); the file/function keep
+      // "Package" (npm/git resolution vocabulary).
+      name: "pack refs",
       status: "pass",
       detail: `no packs configured — the embedded pack answers reads (${totalEntities.toLocaleString()} entities)`,
     };
@@ -62,7 +64,7 @@ export async function checkPackageRefs(
 
   const ok = lock !== undefined && unresolved === 0;
   return {
-    name: "package refs",
+    name: "pack refs",
     status: ok ? "pass" : "fail",
     detail: ok
       ? `${entries.length} pack(s) resolved · ${totalEntities.toLocaleString()} entities`

@@ -100,7 +100,7 @@ export const packIndexSchema: z.ZodType<PackIndex> = z.object({
 export const manifestSchema = z.object({
   name: z.string(),
   version: z.string(),
-  /** The config `packages` ref this pack was built from (verbatim), or a label. */
+  /** The config `packs` ref this pack was built from (verbatim), or a label. */
   sourceRef: z.string(),
   contentHash: z.string(),
   prefixes: z.record(z.string(), z.string()),

@@ -53,7 +53,7 @@ export interface BuildPackInput {
 export interface BuildPackOptions {
   readonly name: string;
   readonly version: string;
-  /** The config `packages` ref (verbatim) or a label. */
+  /** The config `packs` ref (verbatim) or a label. */
   readonly sourceRef: string;
   /** Prefixes the store (and every query) is built with. */
   readonly prefixes?: Readonly<Record<string, string>>;

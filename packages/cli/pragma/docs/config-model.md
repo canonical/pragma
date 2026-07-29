@@ -10,7 +10,7 @@ From lowest to highest precedence:
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
-A higher layer overrides a lower one field-by-field. `packs` is the exception: it **replaces** rather than merges, so a project fully owns its source list.
+A higher layer overrides a lower one field-by-field. `packs` and `generators` replace rather than merge, so a project fully owns its source lists.
 
 ## Fields
 

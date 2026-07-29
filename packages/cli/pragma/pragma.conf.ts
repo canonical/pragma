@@ -8,6 +8,8 @@
  * project config. Validated by the same `parseRawConfig` as every layer.
  */
 
+import type { RawConfig } from "./src/kernel/config/types.js";
+
 export default {
   name: "pragma",
   help: "Explore the design system",
@@ -43,4 +45,4 @@ export default {
   ],
   channel: "normal",
   detail: "standard",
-};
+} satisfies RawConfig;

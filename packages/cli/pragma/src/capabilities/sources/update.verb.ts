@@ -22,8 +22,8 @@ export const updateVerb: VerbSpec<
   SourcesUpdateData
 > = {
   path: ["sources", "update"],
-  summary: "Resolve configured packages, build the local store, and lock it.",
-  doc: "Resolves each configured package (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.",
+  summary: "Resolve configured packs, build the local store, and lock it.",
+  doc: "Resolves each configured pack (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.",
   params: [
     {
       kind: "boolean",

@@ -1,6 +1,6 @@
 # @canonical/pragma-cli
 
-`pragma` is a command-line tool **and** a Model Context Protocol (MCP) server over Canonical's design-system knowledge graph. A single grammar of capabilities is projected two ways — as CLI commands for humans and as MCP tools for agents — both reading the same local, content-addressed store built from your design-system packages.
+`pragma` is a command-line tool **and** a Model Context Protocol (MCP) server over Canonical's design-system knowledge graph. A single grammar of capabilities is projected two ways — as CLI commands for humans and as MCP tools for agents — both reading the same local, content-addressed store built from your design-system packs.
 
 ## Install
 

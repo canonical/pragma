@@ -734,9 +734,9 @@ pragma sources status --format json  # the full envelope
 
 ### pragma sources update
 
-Resolve configured packages, build the local store, and lock it.
+Resolve configured packs, build the local store, and lock it.
 
-Resolves each configured package (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.
+Resolves each configured pack (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.
 
 ```
 pragma sources update [options]
@@ -914,7 +914,7 @@ pragma tier lookup apps/lxd
 
 Generate a tokens.config.mjs for the terrazzo token pipeline.
 
-Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packages. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
+Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
 
 ```
 pragma token add-config

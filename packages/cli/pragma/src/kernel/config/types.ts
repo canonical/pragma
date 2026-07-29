@@ -23,7 +23,7 @@ export interface PackSource {
 export type PackDeclaration = string | PackSource;
 
 /** A `generators` entry: a scaffold generator's npm/git/file source ref. */
-export interface GeneratorRef {
+export interface GeneratorSource {
   readonly name: string;
   readonly source: string;
 }
@@ -62,7 +62,7 @@ export interface PragmaConfig {
   /** Semantic pack sources; replaces (does not merge) across layers. */
   readonly packs?: readonly PackDeclaration[];
   /** Scaffold generator sources; replaces (does not merge) across layers. */
-  readonly generators?: readonly GeneratorRef[];
+  readonly generators?: readonly GeneratorSource[];
   /** Declarative read stories compiled at boot (experimental; opaque here). */
   readonly stories?: readonly unknown[];
   /** Additional namespace prefixes merged over the built-in map. */
@@ -87,7 +87,7 @@ export interface RawConfig {
   readonly channel?: Channel;
   readonly detail?: string;
   readonly packs?: readonly PackDeclaration[];
-  readonly generators?: readonly GeneratorRef[];
+  readonly generators?: readonly GeneratorSource[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly prompts?: Readonly<Record<string, unknown>>;

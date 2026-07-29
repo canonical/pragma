@@ -152,12 +152,12 @@ describe("legacy `packages` key — loud rename error", () => {
 
     expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
     expect((caught as { message: string }).message).toContain(
-      'the "packages" field was renamed to "packs"',
+      `Invalid config in ${path}: the "packages" field was renamed to "packs". The entry shape is unchanged.`,
     );
-    expect((caught as { message: string }).message).toContain(path);
+    // The recovery carries the path; the message drops the instruction.
     expect(
       (caught as { recovery?: { message: string } }).recovery?.message,
-    ).toContain('rename "packages:" to "packs":');
+    ).toBe(`In ${path}, rename "packages:" to "packs".`);
   });
 
   it("a legacy global JSON declaring `packages` throws the same rename error", () => {
@@ -173,8 +173,24 @@ describe("legacy `packages` key — loud rename error", () => {
 
     expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
     expect((caught as { message: string }).message).toContain(
-      'the "packages" field was renamed to "packs"',
+      'the "packages" field was renamed to "packs". The entry shape is unchanged.',
     );
+  });
+
+  it("a `packages` key NESTED under another field does NOT trip the detection", async () => {
+    freshXdg();
+    // The rename detection is deliberately SHALLOW (top-level keys only): a
+    // `packages` key inside `prompts` is prompt data, not the legacy field.
+    // Pin that against a future "helpful" deep check, which would false-positive
+    // here.
+    const dir = projectWith(
+      'export default { prompts: { packages: { hint: "nested" } } };',
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    await expect(evaluateProjectConfig(path)).resolves.toEqual({
+      prompts: { packages: { hint: "nested" } },
+    });
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type RenderStyle, styleFor } from "../../kernel/render/style.js";
-import { renderConfigShowPlain } from "./show.render.js";
+import { configShowFormatters, renderConfigShowPlain } from "./show.render.js";
 import type { ConfigShowData } from "./types.js";
 
 const DATA: ConfigShowData = {
@@ -56,8 +56,8 @@ describe("renderConfigShowPlain", () => {
       [
         "name: pragma",
         "help: Explore the design system",
-        "issuesUrl: https://github.com/canonical/pragma/issues",
         "colophon: Made by the Canonical Webteam.",
+        "issuesUrl: https://github.com/canonical/pragma/issues",
         "tier: apps/lxd [project]",
         "channel: normal",
         "detail: standard",
@@ -113,5 +113,20 @@ describe("renderConfigShowPlain", () => {
     expect(out).toContain("colophon: (none)");
     expect(out).toContain("generators: (none)");
     expect(out).toContain("project config: (not found)");
+  });
+});
+
+describe("configShowFormatters.llm", () => {
+  it("renders the identity, packs, and generators rows with origin markers", () => {
+    const out = configShowFormatters.llm(DATA);
+
+    expect(out).toContain("- **Name:** pragma");
+    expect(out).toContain("- **Help:** Explore the design system");
+    expect(out).toContain("- **Colophon:** Made by the Canonical Webteam.");
+    expect(out).toContain(
+      "- **Issues:** https://github.com/canonical/pragma/issues",
+    );
+    expect(out).toContain("- **Packs:** @canonical/ds [global]");
+    expect(out).toContain("- **Generators:** @canonical/summon-component");
   });
 });

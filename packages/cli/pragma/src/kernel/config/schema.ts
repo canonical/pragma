@@ -22,7 +22,9 @@ const packDeclarationSchema = z.union([
   z.object({ name: z.string().min(1), source: z.string().optional() }),
 ]);
 
-const generatorRefSchema = z.object({
+// `source` is required until a consumer (PR 6) proves a bare-name default is
+// wanted; loosening is non-breaking, tightening is not.
+const generatorSourceSchema = z.object({
   name: z.string().min(1),
   source: z.string().min(1),
 });
@@ -42,7 +44,7 @@ const rawConfigSchema = z.object({
   channel: z.enum(CHANNELS).optional(),
   detail: z.string().optional(),
   packs: z.array(packDeclarationSchema).optional(),
-  generators: z.array(generatorRefSchema).optional(),
+  generators: z.array(generatorSourceSchema).optional(),
   stories: z.array(z.unknown()).optional(),
   prefixes: z.record(z.string(), z.string()).optional(),
   prompts: z.record(z.string(), z.unknown()).optional(),
@@ -63,9 +65,11 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
   // legacy `packages` field would otherwise vanish silently.
   if (typeof value === "object" && value !== null && "packages" in value) {
     throw PragmaError.configError(
-      `Invalid config in ${source}: the "packages" field was renamed to "packs". Rename the key — the entry shape is unchanged.`,
+      `Invalid config in ${source}: the "packages" field was renamed to "packs". The entry shape is unchanged.`,
       {
-        recovery: { message: 'In your config, rename "packages:" to "packs":' },
+        recovery: {
+          message: `In ${source}, rename "packages:" to "packs".`,
+        },
       },
     );
   }

@@ -42,7 +42,7 @@ import {
 import { LOCK_BASENAME, lockPath } from "../../kernel/runtime/paths.js";
 import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
 import {
-  parsePackageEntry,
+  parsePackDeclaration,
   redactUrl,
 } from "../../kernel/runtime/refs/parseRef.js";
 import {
@@ -88,7 +88,7 @@ async function buildUpdatePlan(
 ): Promise<Task<SourcesUpdateData>> {
   const layers = await runtime.loadConfig();
   const entries = layers.config.packs ?? [];
-  const refs = entries.map(parsePackageEntry);
+  const refs = entries.map(parsePackDeclaration);
   const path = lockPath(runtime.cwd);
 
   const data: SourcesUpdateData = {
@@ -155,7 +155,7 @@ export async function buildUpdateTask(
 
   const resolved: ResolvedPackage[] = [];
   for (const entry of entries) {
-    const ref = parsePackageEntry(entry);
+    const ref = parsePackDeclaration(entry);
     report?.(resolveProgress(ref));
     const pinned = existing?.packs.find((pack) => pack.name === ref.pkg);
     resolved.push(

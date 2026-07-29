@@ -5,10 +5,10 @@
  * root), STATICALLY imported so `bun build --compile` inlines it (no fs read —
  * `evaluateProjectConfig` stats/imports from disk, impossible inside the
  * compiled binary) and validated through the same `parseRawConfig` as every
- * other layer. Reached only via `readConfig` (dynamic-imported, off the
- * `--help`/`__complete` fast path), so the eager validation and the zod import
- * here add nothing to the storeless surfaces — the lazy.test.ts module-graph
- * probe covers that boundary.
+ * other layer. Statically imported by `readConfig` (itself dynamic-imported,
+ * off the `--help`/`__complete` fast path) and by its own test, so the eager
+ * validation and the zod import here add nothing to the storeless surfaces —
+ * the lazy.test.ts module-graph probe covers that boundary.
  */
 
 import rawConfig from "../../../pragma.conf.js";

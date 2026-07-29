@@ -129,7 +129,7 @@ describe("doctor — shape & spread", () => {
     expect(byName(data, "Node version")?.status).toBe("pass");
     // The 3 default-config packs are configured but not locked here → an
     // attributable fail listing them, with the sources-update remedy.
-    const pkgRefs = byName(data, "package refs");
+    const pkgRefs = byName(data, "pack refs");
     expect(pkgRefs?.status).toBe("fail");
     expect(pkgRefs?.remedy).toBe("pragma sources update");
     expect(pkgRefs?.items?.length).toBe(3);

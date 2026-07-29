@@ -3,7 +3,7 @@
  *
  * A store-backed mutation: it counts the design tokens in the active graph (so
  * the plan reports how many tokens the config will cover) and derives the
- * terrazzo token-source globs from the configured design-system packages, then
+ * terrazzo token-source globs from the configured design-system packs, then
  * returns a Task that writes `tokens.config.mjs`. The store read happens in the
  * async setup; the file write is the Task's single `WriteFile` effect, so a
  * plan-only preview (`mutation.preview`) describes the write without performing
@@ -14,7 +14,7 @@ import { resolve } from "node:path";
 import { $, exists, gen, type Task, writeFile } from "@canonical/task";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 
-/** The default token source when no design-system packages are configured. */
+/** The default token source when no design-system packs are configured. */
 const DEFAULT_TOKEN_SOURCE =
   "node_modules/@canonical/ds-global/tokens/**/*.json";
 
@@ -48,8 +48,8 @@ async function resolveSources(rt: PragmaRuntime): Promise<string[]> {
   const { config } = await rt.loadConfig();
   const packs = config.packs ?? [];
   if (packs.length === 0) return [DEFAULT_TOKEN_SOURCE];
-  return packs.map((pkg) => {
-    const name = typeof pkg === "string" ? pkg : pkg.name;
+  return packs.map((entry) => {
+    const name = typeof entry === "string" ? entry : entry.name;
     return `node_modules/${name}/tokens/**/*.json`;
   });
 }
