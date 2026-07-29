@@ -37,7 +37,7 @@ export async function readConfig(
   const project: RawConfig = projectPath
     ? await evaluateProjectConfig(projectPath)
     : {};
-  const defaultValues = defaults as RawConfig;
+  const defaultValues = defaults;
 
   const pick = <K extends keyof RawConfig>(
     field: K,

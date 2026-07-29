@@ -78,6 +78,9 @@ describe("readConfig — layering + provenance", () => {
 
     expect(config.channel).toBe("normal");
     expect(origins.channel).toBe("default");
+    // The identity fields ship from the distribution config (pragma.conf.ts).
+    expect(config.name).toBe("pragma");
+    expect(origins.name).toBe("default");
     expect(project.exists).toBe(false);
   });
 
