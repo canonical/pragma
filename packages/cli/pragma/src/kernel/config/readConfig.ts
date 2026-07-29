@@ -3,7 +3,7 @@
  *
  * Layer order, least to most specific: the built-in {@link defaults}, the
  * global XDG JSON, and the nearest evaluated `pragma.config.ts`. Merging is
- * per field — a more specific layer wins wholesale (so `packages` *replaces*,
+ * per field — a more specific layer wins wholesale (so `packs` *replaces*,
  * preserving the "project pins exactly" semantics) — and each field records
  * the layer that supplied it. Async because the project layer is evaluated
  * (and content-hash cached).
@@ -54,7 +54,7 @@ export async function readConfig(
   const tier = pick("tier");
   const channel = pick("channel");
   const detail = pick("detail");
-  const packages = pick("packages");
+  const packs = pick("packs");
   const stories = pick("stories");
   const prefixes = pick("prefixes");
   const prompts = pick("prompts");
@@ -67,7 +67,7 @@ export async function readConfig(
     channel: (channel.value ?? defaults.channel) as Channel,
     ...(tier.value !== undefined ? { tier: tier.value } : {}),
     ...(detail.value !== undefined ? { detail: detail.value } : {}),
-    ...(packages.value !== undefined ? { packages: packages.value } : {}),
+    ...(packs.value !== undefined ? { packs: packs.value } : {}),
     ...(stories.value !== undefined ? { stories: stories.value } : {}),
     ...(prefixes.value !== undefined ? { prefixes: prefixes.value } : {}),
     ...(prompts.value !== undefined ? { prompts: prompts.value } : {}),
@@ -80,7 +80,7 @@ export async function readConfig(
       tier: tier.origin,
       channel: channel.origin,
       detail: detail.origin,
-      packages: packages.origin,
+      packs: packs.origin,
       stories: stories.origin,
       prefixes: prefixes.origin,
       prompts: prompts.origin,

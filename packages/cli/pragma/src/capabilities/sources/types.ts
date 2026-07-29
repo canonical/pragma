@@ -10,7 +10,7 @@ export type SourceStaleness = "up-to-date" | "config-drift" | "uncached";
 export interface SourceStatusEntry {
   /** Package name. */
   readonly name: string;
-  /** The config `packages` source ref (verbatim). */
+  /** The config `packs` source ref (verbatim). */
   readonly ref: string;
   /** The lock's resolved revision, or null when not locked. */
   readonly resolved: string | null;

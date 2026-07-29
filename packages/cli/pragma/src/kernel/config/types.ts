@@ -13,14 +13,14 @@ export const CHANNELS = ["normal", "experimental", "prerelease"] as const;
 /** A release channel name. */
 export type Channel = (typeof CHANNELS)[number];
 
-/** The object form of a package source declaration. */
-export interface PackageDeclaration {
+/** The object form of a pack source declaration. */
+export interface PackSource {
   readonly name: string;
   readonly source?: string;
 }
 
-/** A `packages` entry: a bare npm name or a `{ name, source }` declaration. */
-export type PackageEntry = string | PackageDeclaration;
+/** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */
+export type PackDeclaration = string | PackSource;
 
 /**
  * Completion policy, read at `setup completions` emit time (never on the
@@ -45,8 +45,8 @@ export interface PragmaConfig {
   readonly channel: Channel;
   /** Default progressive-disclosure level. */
   readonly detail?: string;
-  /** Semantic package sources; replaces (does not merge) across layers. */
-  readonly packages?: readonly PackageEntry[];
+  /** Semantic pack sources; replaces (does not merge) across layers. */
+  readonly packs?: readonly PackDeclaration[];
   /** Declarative read stories compiled at boot (experimental; opaque here). */
   readonly stories?: readonly unknown[];
   /** Additional namespace prefixes merged over the built-in map. */
@@ -66,7 +66,7 @@ export interface RawConfig {
   readonly tier?: string;
   readonly channel?: Channel;
   readonly detail?: string;
-  readonly packages?: readonly PackageEntry[];
+  readonly packs?: readonly PackDeclaration[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly prompts?: Readonly<Record<string, unknown>>;
@@ -81,7 +81,7 @@ export interface ConfigOrigins {
   readonly tier: ConfigOrigin;
   readonly channel: ConfigOrigin;
   readonly detail: ConfigOrigin;
-  readonly packages: ConfigOrigin;
+  readonly packs: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
   readonly prompts: ConfigOrigin;

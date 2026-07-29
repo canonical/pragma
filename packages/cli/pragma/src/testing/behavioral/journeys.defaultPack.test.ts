@@ -42,7 +42,10 @@ import {
   entityTotal,
   readPackIndex,
 } from "../../kernel/completion/entitySource.js";
-import type { ConfigLayers, PackageEntry } from "../../kernel/config/types.js";
+import type {
+  ConfigLayers,
+  PackDeclaration,
+} from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -152,7 +155,7 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
     const cwd = mkdtempSync(join(tmpdir(), "e1-proj-"));
     writeFileSync(
       join(cwd, "pragma.config.ts"),
-      `export default { packages: [{ name: "default", source: "file://${pkg}" }] };\n`,
+      `export default { packs: [{ name: "default", source: "file://${pkg}" }] };\n`,
     );
     try {
       // `sources update` is a real mutation — resolve, build, write the lock.
@@ -535,22 +538,22 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
 });
 
 /**
- * A synthetic runtime whose config is a fixed package list — drives the
+ * A synthetic runtime whose config is a fixed pack list — drives the
  * git-source build Task without a config file (mirrors sources.test.ts).
  *
  * @param cwd - The project directory the lock is written to.
- * @param packages - The configured package entries.
+ * @param packs - The configured pack entries.
  * @returns A runtime wired to a lazy store over `cwd`.
  * @note Impure — constructs a store handle over the working directory.
  */
-function gitRuntimeFor(cwd: string, packages: PackageEntry[]): PragmaRuntime {
+function gitRuntimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
-    config: { channel: "normal", packages },
+    config: { channel: "normal", packs },
     origins: {
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "project",
+      packs: "project",
       stories: "default",
       prefixes: "default",
       prompts: "default",

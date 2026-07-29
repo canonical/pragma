@@ -58,13 +58,13 @@ describe("readConfig — layering + provenance", () => {
     expect(config.tier).toBe("core");
     expect(config.channel).toBe("experimental");
     expect(config.detail).toBe("detailed");
-    expect(config.packages).toHaveLength(3); // from defaults
+    expect(config.packs).toHaveLength(3); // from defaults
 
     expect(origins).toMatchObject({
       tier: "project",
       channel: "global",
       detail: "project", // project wins over global
-      packages: "default",
+      packs: "default",
     });
     expect(project.exists).toBe(true);
     expect(global.exists).toBe(true);
@@ -81,14 +81,14 @@ describe("readConfig — layering + provenance", () => {
     expect(project.exists).toBe(false);
   });
 
-  it("replaces packages wholesale from the project layer", async () => {
+  it("replaces packs wholesale from the project layer", async () => {
     freshXdg();
-    const dir = projectWith('export default { packages: ["@acme/only"] };');
+    const dir = projectWith('export default { packs: ["@acme/only"] };');
 
     const { config, origins } = await readConfig(dir);
 
-    expect(config.packages).toEqual(["@acme/only"]);
-    expect(origins.packages).toBe("project");
+    expect(config.packs).toEqual(["@acme/only"]);
+    expect(origins.packs).toBe("project");
   });
 
   it("merges the completion policy into the effective config", async () => {
@@ -103,6 +103,50 @@ describe("readConfig — layering + provenance", () => {
       minChars: 3,
       families: { skill: false },
     });
+  });
+});
+
+describe("legacy `packages` key — loud rename error", () => {
+  it("a project config declaring `packages` throws CONFIG_ERROR naming the rename", async () => {
+    freshXdg();
+    // Unknown keys are stripped by the schema, so the legacy key must be
+    // DETECTED — a silent ignore would boot the default packs while the user
+    // believes their own list is in force.
+    const dir = projectWith('export default { packages: ["@acme/only"] };');
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain(
+      'the "packages" field was renamed to "packs"',
+    );
+    expect((caught as { message: string }).message).toContain(path);
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).toContain('rename "packages:" to "packs":');
+  });
+
+  it("a legacy global JSON declaring `packages` throws the same rename error", () => {
+    freshXdg();
+    writeGlobal('{"packages": []}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain(
+      'the "packages" field was renamed to "packs"',
+    );
   });
 });
 

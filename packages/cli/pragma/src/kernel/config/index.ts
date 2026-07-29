@@ -26,8 +26,8 @@ export type {
   ConfigLayers,
   ConfigOrigin,
   ConfigOrigins,
-  PackageDeclaration,
-  PackageEntry,
+  PackDeclaration,
+  PackSource,
   PragmaConfig,
   RawConfig,
 } from "./types.js";

@@ -30,7 +30,7 @@ import { buildUpdateTask } from "../../capabilities/sources/runUpdate.js";
 import { VERSION } from "../../constants.js";
 import type {
   ConfigLayers,
-  PackageEntry,
+  PackDeclaration,
   PragmaConfig,
 } from "../../kernel/config/types.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -52,10 +52,10 @@ export interface FixtureGraphOptions {
   readonly ttl: string;
   /**
    * Config fields to bake into the written `pragma.config.ts`, e.g.
-   * `{ tier: "apps/lxd", channel: "prerelease" }`. `packages` is always set by
+   * `{ tier: "apps/lxd", channel: "prerelease" }`. `packs` is always set by
    * this helper (to the fixture package) — do not override it here.
    */
-  readonly config?: Omit<Partial<PragmaConfig>, "packages">;
+  readonly config?: Omit<Partial<PragmaConfig>, "packs">;
 }
 
 /** A booted fixture runtime plus its `cwd` (usable by any surface) and disposal. */
@@ -69,14 +69,14 @@ export interface FixtureGraph {
 }
 
 /** A synthetic runtime with an IN-MEMORY config — used only to drive the build Task. */
-function builderRuntime(cwd: string, packages: PackageEntry[]): PragmaRuntime {
+function builderRuntime(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
-    config: { channel: "normal", packages },
+    config: { channel: "normal", packs },
     origins: {
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "project",
+      packs: "project",
       stories: "default",
       prefixes: "default",
       prompts: "default",
@@ -117,10 +117,10 @@ export async function bootFixtureRuntime(
   mkdirSync(join(pkgDir, "definitions"), { recursive: true });
   writeFileSync(join(pkgDir, "definitions", "fixture.ttl"), options.ttl);
 
-  const packages: PackageEntry[] = [
+  const packs: PackDeclaration[] = [
     { name: "fixture", source: `file://${pkgDir}` },
   ];
-  const fields = [configField("packages", packages)];
+  const fields = [configField("packs", packs)];
   for (const [key, value] of Object.entries(options.config ?? {})) {
     fields.push(configField(key, value));
   }
@@ -129,7 +129,7 @@ export async function bootFixtureRuntime(
     `export default {\n${fields.join("\n")}\n};\n`,
   );
 
-  await runTask(await buildUpdateTask(builderRuntime(cwd, packages), false));
+  await runTask(await buildUpdateTask(builderRuntime(cwd, packs), false));
 
   const runtime = bootRuntime(FIXTURE_FLAGS, cwd);
 

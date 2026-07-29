@@ -11,7 +11,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { PackageEntry } from "../../kernel/config/types.js";
+import type { PackDeclaration } from "../../kernel/config/types.js";
 import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
 import { INDEX_FILE } from "../../kernel/runtime/graphpack/types.js";
 import { readLock } from "../../kernel/runtime/lock.js";
@@ -23,9 +23,9 @@ import type {
   SourcesStatusData,
 } from "./types.js";
 
-const entryName = (entry: PackageEntry): string =>
+const entryName = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : entry.name;
-const entrySource = (entry: PackageEntry): string =>
+const entrySource = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : (entry.source ?? entry.name);
 
 /**
@@ -65,7 +65,7 @@ export async function collectStatus(
   runtime: PragmaRuntime,
 ): Promise<SourcesStatusData> {
   const layers = await runtime.loadConfig();
-  const entries = layers.config.packages ?? [];
+  const entries = layers.config.packs ?? [];
   const lock = readLock(runtime.cwd);
 
   const dir = lock ? packDir(lock.contentHash) : undefined;

@@ -43,7 +43,7 @@ function layers(stories: unknown[]): ConfigLayers {
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "default",
+      packs: "default",
       stories: stories.length > 0 ? "project" : "default",
       prefixes: "default",
       prompts: "default",

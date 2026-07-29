@@ -22,7 +22,7 @@ import { type PackageRef, redactUrl } from "./parseRef.js";
 /** A resolved package: its pinned revision and labelled RDF sources. */
 export interface ResolvedPackage {
   readonly name: string;
-  /** The config `packages` source ref, verbatim. */
+  /** The config `packs` source ref, verbatim. */
   readonly source: string;
   /** The resolved commit / version / absolute path. */
   readonly resolved: string;

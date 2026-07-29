@@ -43,12 +43,12 @@ async function countTokens(rt: PragmaRuntime): Promise<number> {
   }
 }
 
-/** Derive the terrazzo token-source globs from the configured packages. */
+/** Derive the terrazzo token-source globs from the configured packs. */
 async function resolveSources(rt: PragmaRuntime): Promise<string[]> {
   const { config } = await rt.loadConfig();
-  const packages = config.packages ?? [];
-  if (packages.length === 0) return [DEFAULT_TOKEN_SOURCE];
-  return packages.map((pkg) => {
+  const packs = config.packs ?? [];
+  if (packs.length === 0) return [DEFAULT_TOKEN_SOURCE];
+  return packs.map((pkg) => {
     const name = typeof pkg === "string" ? pkg : pkg.name;
     return `node_modules/${name}/tokens/**/*.json`;
   });

@@ -79,7 +79,7 @@ const defaultLayers: ConfigLayers = {
     tier: "default",
     channel: "default",
     detail: "default",
-    packages: "default",
+    packs: "default",
     stories: "default",
     prefixes: "default",
     prompts: "default",
@@ -122,7 +122,7 @@ describe("doctor — shape & spread", () => {
     }
     // Deterministic under the isolated env.
     expect(byName(data, "Node version")?.status).toBe("pass");
-    // The 3 default-config packages are configured but not locked here → an
+    // The 3 default-config packs are configured but not locked here → an
     // attributable fail listing them, with the sources-update remedy.
     const pkgRefs = byName(data, "package refs");
     expect(pkgRefs?.status).toBe("fail");

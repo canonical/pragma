@@ -110,7 +110,7 @@ ex:one a ex:Widget ; rdfs:label "One" .
     );
     writeFileSync(
       join(proj, "pragma.config.ts"),
-      `export default { packages: [{ name: "pkg-a", source: "file://${pkg}" }] };\n`,
+      `export default { packs: [{ name: "pkg-a", source: "file://${pkg}" }] };\n`,
     );
 
     const env = {

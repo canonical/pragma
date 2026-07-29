@@ -93,7 +93,7 @@ export async function buildFixtureRuntime(
       tier: "default",
       channel: "default",
       detail: options.detailOrigin ?? "default",
-      packages: "default",
+      packs: "default",
       stories: "default",
       prefixes: "default",
       prompts: "default",
