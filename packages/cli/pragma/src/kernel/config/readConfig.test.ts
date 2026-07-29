@@ -91,6 +91,31 @@ describe("readConfig — layering + provenance", () => {
     expect(origins.packs).toBe("project");
   });
 
+  it("merges identity fields and generators with per-field provenance", async () => {
+    freshXdg();
+    writeGlobal('{"help":"Global help"}');
+    const dir = projectWith(
+      'export default { name: "acme", help: "Acme DS", colophon: "By Acme.", issuesUrl: "https://acme.test/issues", generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" }] };',
+    );
+
+    const { config, origins } = await readConfig(dir);
+
+    expect(config.name).toBe("acme");
+    expect(config.help).toBe("Acme DS"); // project wins over global
+    expect(config.colophon).toBe("By Acme.");
+    expect(config.issuesUrl).toBe("https://acme.test/issues");
+    expect(config.generators).toEqual([
+      { name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" },
+    ]);
+    expect(origins).toMatchObject({
+      name: "project",
+      help: "project",
+      colophon: "project",
+      issuesUrl: "project",
+      generators: "project",
+    });
+  });
+
   it("merges the completion policy into the effective config", async () => {
     freshXdg();
     const dir = projectWith(

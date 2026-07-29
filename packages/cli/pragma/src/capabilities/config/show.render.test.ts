@@ -5,16 +5,31 @@ import type { ConfigShowData } from "./types.js";
 
 const DATA: ConfigShowData = {
   config: {
+    name: "pragma",
+    help: "Explore the design system",
+    colophon: "Made by the Canonical Webteam.",
+    issuesUrl: "https://github.com/canonical/pragma/issues",
     tier: "apps/lxd",
     channel: "normal",
     detail: "standard",
     packs: ["@canonical/ds"],
+    generators: [
+      {
+        name: "@canonical/summon-component",
+        source: "npm:@canonical/summon-component@^0.33.0",
+      },
+    ],
   },
   origins: {
+    name: "default",
+    help: "default",
+    colophon: "default",
+    issuesUrl: "default",
     tier: "project",
     channel: "default",
     detail: "default",
     packs: "global",
+    generators: "default",
     stories: "default",
     prefixes: "default",
     prompts: "default",
@@ -39,10 +54,15 @@ describe("renderConfigShowPlain", () => {
   it("is byte-identical to the plain form when the styler is disabled", () => {
     expect(renderConfigShowPlain(DATA, styleFor(false))).toBe(
       [
+        "name: pragma",
+        "help: Explore the design system",
+        "issuesUrl: https://github.com/canonical/pragma/issues",
+        "colophon: Made by the Canonical Webteam.",
         "tier: apps/lxd [project]",
         "channel: normal",
         "detail: standard",
         "packs: @canonical/ds [global]",
+        "generators: @canonical/summon-component",
         "global config: /home/u/.config/pragma/config.json",
         "project config: /repo/pragma.config.ts",
       ].join("\n"),
@@ -61,5 +81,37 @@ describe("renderConfigShowPlain", () => {
       `<d>${"channel:".padEnd(keyWidth)}</d> <c>normal</c>`,
     );
     expect(out).not.toContain("<d> [default]</d>");
+  });
+
+  it("renders absent optional fields as (none)", () => {
+    const bare: ConfigShowData = {
+      config: { channel: "normal" },
+      origins: {
+        name: "default",
+        help: "default",
+        colophon: "default",
+        issuesUrl: "default",
+        tier: "default",
+        channel: "default",
+        detail: "default",
+        packs: "default",
+        generators: "default",
+        stories: "default",
+        prefixes: "default",
+        prompts: "default",
+      },
+      globalConfigPath: "/home/u/.config/pragma/config.json",
+      projectExists: false,
+      globalExists: false,
+    };
+
+    const out = renderConfigShowPlain(bare, styleFor(false));
+
+    expect(out).toContain("name: (none)");
+    expect(out).toContain("help: (none)");
+    expect(out).toContain("issuesUrl: (none)");
+    expect(out).toContain("colophon: (none)");
+    expect(out).toContain("generators: (none)");
+    expect(out).toContain("project config: (not found)");
   });
 });

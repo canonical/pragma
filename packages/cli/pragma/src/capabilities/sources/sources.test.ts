@@ -66,10 +66,15 @@ function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
     config: { channel: "normal", packs },
     origins: {
+      name: "default",
+      help: "default",
+      colophon: "default",
+      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
       packs: "project",
+      generators: "default",
       stories: "default",
       prefixes: "default",
       prompts: "default",

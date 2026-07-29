@@ -12,6 +12,7 @@ export type { DetailLevel, OutputFormat } from "./constants.js";
 // — Config authoring ————————————————————————————————————————————————————————
 export type {
   Channel,
+  GeneratorRef,
   PackDeclaration,
   PackSource,
   PragmaConfig,

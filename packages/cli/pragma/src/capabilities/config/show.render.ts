@@ -31,6 +31,14 @@ type ConfigRow = readonly [label: string, value: string, marker: string];
 function configRows(data: ConfigShowData): readonly ConfigRow[] {
   const { config, origins } = data;
   return [
+    ["name", config.name ?? "(none)", originMarker(origins.name)],
+    ["help", config.help ?? "(none)", originMarker(origins.help)],
+    [
+      "issuesUrl",
+      config.issuesUrl ?? "(none)",
+      originMarker(origins.issuesUrl),
+    ],
+    ["colophon", config.colophon ?? "(none)", originMarker(origins.colophon)],
     [
       "tier",
       config.tier ?? "(none — all tiers visible)",
@@ -39,6 +47,11 @@ function configRows(data: ConfigShowData): readonly ConfigRow[] {
     ["channel", config.channel, originMarker(origins.channel)],
     ["detail", config.detail ?? "standard", originMarker(origins.detail)],
     ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
+    [
+      "generators",
+      entryNames(config.generators ?? []),
+      originMarker(origins.generators),
+    ],
     [
       "global config",
       `${data.globalConfigPath}${data.globalExists ? "" : " (not found)"}`,
@@ -88,10 +101,15 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
+      `- **Name:** ${config.name ?? "(none)"}${originMarker(origins.name)}`,
+      `- **Help:** ${config.help ?? "(none)"}${originMarker(origins.help)}`,
+      `- **Issues:** ${config.issuesUrl ?? "(none)"}${originMarker(origins.issuesUrl)}`,
+      `- **Colophon:** ${config.colophon ?? "(none)"}${originMarker(origins.colophon)}`,
       `- **Tier:** ${config.tier ?? "none (all tiers)"}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
       `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,
+      `- **Generators:** ${entryNames(config.generators ?? [])}${originMarker(origins.generators)}`,
       `- **Global config:** \`${data.globalConfigPath}\``,
     ];
     if (data.projectConfigPath) {

@@ -76,10 +76,15 @@ afterEach(() => {
 const defaultLayers: ConfigLayers = {
   config: { channel: "normal" },
   origins: {
+    name: "default",
+    help: "default",
+    colophon: "default",
+    issuesUrl: "default",
     tier: "default",
     channel: "default",
     detail: "default",
     packs: "default",
+    generators: "default",
     stories: "default",
     prefixes: "default",
     prompts: "default",

@@ -22,6 +22,11 @@ const packDeclarationSchema = z.union([
   z.object({ name: z.string().min(1), source: z.string().optional() }),
 ]);
 
+const generatorRefSchema = z.object({
+  name: z.string().min(1),
+  source: z.string().min(1),
+});
+
 const completionSchema = z.object({
   minChars: z.number().int().min(0).optional(),
   caseSensitive: z.boolean().optional(),
@@ -29,10 +34,15 @@ const completionSchema = z.object({
 });
 
 const rawConfigSchema = z.object({
+  name: z.string().min(1).optional(),
+  help: z.string().min(1).optional(),
+  colophon: z.string().optional(),
+  issuesUrl: z.string().url().optional(),
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),
   detail: z.string().optional(),
   packs: z.array(packDeclarationSchema).optional(),
+  generators: z.array(generatorRefSchema).optional(),
   stories: z.array(z.unknown()).optional(),
   prefixes: z.record(z.string(), z.string()).optional(),
   prompts: z.record(z.string(), z.unknown()).optional(),

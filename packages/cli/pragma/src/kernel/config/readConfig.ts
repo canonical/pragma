@@ -51,10 +51,15 @@ export async function readConfig(
     return { value: defaultValues[field], origin: "default" };
   };
 
+  const name = pick("name");
+  const help = pick("help");
+  const colophon = pick("colophon");
+  const issuesUrl = pick("issuesUrl");
   const tier = pick("tier");
   const channel = pick("channel");
   const detail = pick("detail");
   const packs = pick("packs");
+  const generators = pick("generators");
   const stories = pick("stories");
   const prefixes = pick("prefixes");
   const prompts = pick("prompts");
@@ -65,9 +70,14 @@ export async function readConfig(
 
   const config: PragmaConfig = {
     channel: (channel.value ?? defaults.channel) as Channel,
+    ...(name.value !== undefined ? { name: name.value } : {}),
+    ...(help.value !== undefined ? { help: help.value } : {}),
+    ...(colophon.value !== undefined ? { colophon: colophon.value } : {}),
+    ...(issuesUrl.value !== undefined ? { issuesUrl: issuesUrl.value } : {}),
     ...(tier.value !== undefined ? { tier: tier.value } : {}),
     ...(detail.value !== undefined ? { detail: detail.value } : {}),
     ...(packs.value !== undefined ? { packs: packs.value } : {}),
+    ...(generators.value !== undefined ? { generators: generators.value } : {}),
     ...(stories.value !== undefined ? { stories: stories.value } : {}),
     ...(prefixes.value !== undefined ? { prefixes: prefixes.value } : {}),
     ...(prompts.value !== undefined ? { prompts: prompts.value } : {}),
@@ -77,10 +87,15 @@ export async function readConfig(
   return {
     config,
     origins: {
+      name: name.origin,
+      help: help.origin,
+      colophon: colophon.origin,
+      issuesUrl: issuesUrl.origin,
       tier: tier.origin,
       channel: channel.origin,
       detail: detail.origin,
       packs: packs.origin,
+      generators: generators.origin,
       stories: stories.origin,
       prefixes: prefixes.origin,
       prompts: prompts.origin,
