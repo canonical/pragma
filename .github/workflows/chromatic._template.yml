@@ -22,7 +22,8 @@ jobs:
   publish-to-chromatic:
     if: >-
       github.event_name != 'pull_request' ||
-      !contains(github.event.pull_request.labels.*.name, 'no visual change')
+      (!github.event.pull_request.draft &&
+      !contains(github.event.pull_request.labels.*.name, 'no visual change'))
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo

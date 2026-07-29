@@ -12,7 +12,10 @@
     },
     {
       "description": "Group TypeScript toolchain",
-      "matchPackageNames": ["typescript", "@canonical/typescript-config-{/,}**"],
+      "matchPackageNames": [
+        "typescript",
+        "@canonical/typescript-config-{/,}**"
+      ],
       "groupName": "typescript"
     },
     {
@@ -54,6 +57,17 @@
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch", "minor"],
       "automerge": true
+    },
+    {
+      "description": "Toolchain-only updates cannot change rendered UI. Chromatic workflows skip builds on this label",
+      "matchPackageNames": [
+        "@biomejs/biome",
+        "@canonical/biome-config",
+        "vitest",
+        "@vitest/{/,}**",
+        "renovate"
+      ],
+      "addLabels": ["no visual change"]
     }
   ]
 }
