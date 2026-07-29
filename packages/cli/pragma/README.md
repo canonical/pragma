@@ -26,7 +26,7 @@ pragma block lookup Button
 pragma capabilities
 ```
 
-`pragma sources update` resolves the design-system packages named in your `pragma.config.ts`, builds one local store, and writes `pragma.lock.json`. Once built, every read command answers from the store with no network access.
+`pragma sources update` resolves the packs named in your `pragma.config.ts`, builds one local store, and writes `pragma.lock.json`. Once built, every read command answers from the store with no network access.
 
 To register pragma with a detected AI harness as an MCP server:
 
@@ -40,7 +40,7 @@ See [docs/mcp-integration.md](./docs/mcp-integration.md) for the full MCP surfac
 
 pragma is extended along two independent planes:
 
-- **Data plane — the content.** Your design system is a set of semantic packages listed in `pragma.config.ts` (`packages: [...]`). `pragma sources update` compiles them into the local knowledge graph the read commands query. Point pragma at different packages and every `list` / `lookup` / `sample` command answers from that graph.
+- **Data plane — the content.** Your design system is a set of packs listed in `pragma.config.ts` (`packs: [...]`). `pragma sources update` compiles them into the local knowledge graph the read commands query. Point pragma at different packs and every `list` / `lookup` / `sample` command answers from that graph.
 - **Behaviour plane — the capabilities.** Every command and MCP tool is one entry in a single capability grammar, projected to both the CLI and the MCP server. The [reference](./docs/reference/index.md) is generated from that grammar, so it can never drift from the code.
 
 ## Relationship to summon

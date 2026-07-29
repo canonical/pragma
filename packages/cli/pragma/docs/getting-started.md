@@ -14,7 +14,7 @@ pragma doctor
 
 ## Build the store
 
-A read command needs a local store. Build it from the packages named in your `pragma.config.ts`:
+A read command needs a local store. Build it from the packs named in your `pragma.config.ts`:
 
 ```bash
 pragma sources update
