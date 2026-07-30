@@ -35,9 +35,11 @@ const ISSUES_URL = identity.issuesUrl;
 const VERSION: string = pkg.version;
 
 /**
- * Prefix for every `recovery.cli` hint: the distribution's name plus a space, so
- * recovery strings quote the command a user can actually run (D5). Recovery
- * hints are authored through `cliRecovery`, which enforces it.
+ * The distribution's name plus a space: the prefix a `recovery.cli` hint carries
+ * so it quotes a command the installed binary answers to (D5). Kernel hints are
+ * authored through `cliRecovery`; `packs/schema.ts` holds a user-authored pack's
+ * `emptyRecovery.cli` to the same prefix. Use {@link BIN_NAME} for prose — this
+ * constant's trailing space belongs to the recovery invariant, not to sentences.
  */
 const RECOVERY_CLI_PREFIX = `${identity.name} `;
 

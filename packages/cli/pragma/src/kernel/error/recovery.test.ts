@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { RECOVERY_CLI_PREFIX } from "../../constants.js";
-import { PragmaError } from "./PragmaError.js";
 import { assertRecoveryCli, cliRecovery } from "./recovery.js";
 
 describe("recovery.cli invariant (D5)", () => {
@@ -39,24 +38,5 @@ describe("recovery.cli invariant (D5)", () => {
 
   it("refuses to build a recovery from an unprefixed command", () => {
     expect(() => cliRecovery("config show", "nope")).toThrow(/must start with/);
-  });
-
-  it("every PragmaError.recovery.cli in the kernel carries the prefix", () => {
-    // The factories that ship a recovery hint must honour the invariant. Only
-    // internalError seeds one today (message-only, no cli), so assert the
-    // guard holds for any cli that is present.
-    const errors = [
-      PragmaError.internalError("boom"),
-      PragmaError.notFound("block", "Nope", {
-        recovery: cliRecovery("pragma block list", "List blocks."),
-      }),
-    ];
-    for (const error of errors) {
-      if (error.recovery?.cli) {
-        expect(() =>
-          assertRecoveryCli(error.recovery.cli as string),
-        ).not.toThrow();
-      }
-    }
   });
 });

@@ -50,12 +50,14 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     );
   });
 
-  it("quotes the resource template the MCP surface actually advertises", () => {
-    // The `pragma:` scheme is covenant-frozen protocol identity (surface.v2.json),
-    // so the orientation keeps the literal — but pinned to the emitted surface
-    // rather than hand-copied, so the two can never disagree.
-    const [template] = emitSurface(capabilities).mcpSurface.resources;
-    expect(buildInstructions(capabilities)).toContain(template as string);
+  it("quotes the resource templates the MCP surface actually advertises", () => {
+    // The `pragma:` scheme is covenant-frozen protocol identity
+    // (surface.v2.json). The orientation DERIVES it from the emitted surface
+    // instead of hand-copying it, so the two cannot disagree.
+    const { resources } = emitSurface(capabilities).mcpSurface;
+    expect(resources.length).toBeGreaterThan(0);
+    const text = buildInstructions(capabilities);
+    for (const template of resources) expect(text).toContain(template);
   });
 
   it("states the plan-first/confirm convention in the orientation (D2)", () => {

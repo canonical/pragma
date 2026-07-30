@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -58,9 +58,17 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
   });
 
   it("the distribution config is inert data — it imports nothing that runs", () => {
-    const graph = staticImportGraph(resolve(here, "../../pragma.conf.ts"));
+    const conf = resolve(here, "../../pragma.conf.ts");
+    const pkgRoot = resolve(here, "../..");
+    // The graph walker follows `from "…"` textually and cannot tell an
+    // `import type` from a value import, so the type-only `config/types.ts`
+    // shows up here even though nothing of it survives compilation. Assert the
+    // SOURCE has no value import at all — that is the claim in the title, and
+    // it is what keeps `--help`/`__complete`/`--version` free of module-init
+    // work when another lane or a fork edits this file.
+    expect(readFileSync(conf, "utf-8")).not.toMatch(/^import (?!type\b)/m);
     expect(
-      [...graph].map((file) => file.split("/pragma/").at(-1)).sort(),
+      [...staticImportGraph(conf)].map((f) => relative(pkgRoot, f)).sort(),
     ).toEqual(["pragma.conf.ts", "src/kernel/config/types.ts"]);
   });
 
