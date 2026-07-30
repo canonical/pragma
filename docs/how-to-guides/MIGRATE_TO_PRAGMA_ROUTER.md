@@ -27,11 +27,11 @@ React Router v5 uses class-based patterns, `<Switch>`, render props, and the `wi
 | React Router v5 | Pragma |
 |---|---|
 | `<BrowserRouter>` | `createBrowserRouter(routes)` + `<RouterProvider>` |
-| `<Switch>` / `<Route path="/foo">` | `route({ url: "/foo", content: FooPage })` in a flat route map |
-| `<Route component={Foo}>` | `content: FooPage` on the route definition |
-| `<Route render={() => <Foo />}>` | `content: FooPage` (pass component directly) |
+| `<Switch>` / `<Route path="/foo">` | `route({ url: "/foo", component: FooPage })` in a flat route map |
+| `<Route component={Foo}>` | `component: FooPage` on the route definition |
+| `<Route render={() => <Foo />}>` | `component: FooPage` (pass component directly) |
 | `withRouter(Component)` | `useRouter()` hook |
-| `this.props.match.params` | `useRoute().params` or `({ params }) => ...` in content |
+| `this.props.match.params` | `useRoute().params` or `({ params }) => ...` in the route component |
 | `this.props.history.push("/bar")` | `router.navigate("bar")` (by route name, not path) |
 | `this.props.location` | `useRoute()` returns pathname, search, hash |
 | `<Redirect to="/login">` | `redirect("/login", 302)` in `prefetch()`, or a static redirect route |
@@ -54,7 +54,7 @@ React Router v6 is hooks-based and closer to pragma's model. The main difference
 | React Router v6 | Pragma |
 |---|---|
 | `<BrowserRouter>` | `createBrowserRouter(routes)` + `<RouterProvider>` |
-| `<Routes>` / `<Route path="/foo" element={<Foo />}>` | `route({ url: "/foo", content: FooPage })` |
+| `<Routes>` / `<Route path="/foo" element={<Foo />}>` | `route({ url: "/foo", component: FooPage })` |
 | Nested `<Route>` for layout | `wrapper()` + `group()` |
 | `<Outlet />` | `<Outlet />` (same concept, different implementation) |
 | `useNavigate()` | `useRouter().navigate("routeName")` |
@@ -92,8 +92,8 @@ const dashboardLayout = wrapper({
 });
 
 const [dashboard, settings] = group(dashboardLayout, [
-  route({ url: "/dashboard", content: DashboardPage }),
-  route({ url: "/settings", content: SettingsPage }),
+  route({ url: "/dashboard", component: DashboardPage }),
+  route({ url: "/settings", component: SettingsPage }),
 ] as const);
 ```
 

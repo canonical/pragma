@@ -136,7 +136,7 @@ export default function GuidePage({
 | ID | Rule | Gate |
 |----|------|------|
 | A4.1 | Routes use `route()` from `@canonical/router-core` | import present |
-| A4.2 | Routes pass components directly to `content` | `content: PageComponent` (not `content: () => <Page />`) |
+| A4.2 | Routes pass components directly to `component` | `component: PageComponent` (not a render arrow; the deprecated `content` field also accepts components) |
 | A4.3 | Route files are `.ts` not `.tsx` (no JSX in route definitions) | extension is `.ts` |
 | A4.4 | Route objects use `as const` assertion | `as const` present |
 | A4.5 | `prefetch()` is fire-and-forget — it does not return data | no data threading |
@@ -153,11 +153,11 @@ import PaymentsPage from "./PaymentsPage.js";
 const routes = {
   invoices: route({
     url: "/billing/invoices",
-    content: InvoicesPage,
+    component: InvoicesPage,
   }),
   payments: route({
     url: "/billing/payments",
-    content: PaymentsPage,
+    component: PaymentsPage,
   }),
 } as const;
 
@@ -201,7 +201,7 @@ const [invoices, payments] = group(sidebarWrapper, [
 |----|------|------|
 | A6.1 | Cross-cutting concerns use middleware, not per-route logic | middleware function defined |
 | A6.2 | Middleware transforms routes via `RouteMiddleware` type | type annotation present |
-| A6.3 | Middleware wraps `prefetch`, not `content` | prefetch wrapping used |
+| A6.3 | Middleware wraps `prefetch`, not `component` | prefetch wrapping used |
 | A6.4 | Auth redirects use `redirect()` from router-core | `redirect()` call present |
 
 ---
@@ -303,7 +303,7 @@ Use this as a pass/fail gate for new domains and pages:
 [ ] A3.1  Page components use Page suffix
 [ ] A3.4  Page components call useHead()
 [ ] A3.7  One page per file
-[ ] A4.2  Content receives component directly
+[ ] A4.2  Component field receives the page component directly
 [ ] A4.3  Route files are .ts not .tsx
 [ ] A4.5  No data threading through prefetch
 [ ] A4.6  No .error on routes

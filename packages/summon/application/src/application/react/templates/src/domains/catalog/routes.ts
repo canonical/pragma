@@ -4,7 +4,7 @@ import CatalogPage from "./CatalogPage.js";
 const routes = {
   catalog: route({
     url: "/catalog",
-    content: CatalogPage,
+    component: CatalogPage,
   }),
 } as const;
 

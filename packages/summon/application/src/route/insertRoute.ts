@@ -95,7 +95,7 @@ export function insertRoute(source: string, ins: RouteInsertion): string {
   const entry =
     `${indent}${ins.routeKey}: route({\n` +
     `${indent}${indent}url: "${ins.url}",\n` +
-    `${indent}${indent}content: ${ins.pageName},\n` +
+    `${indent}${indent}component: ${ins.pageName},\n` +
     `${indent}}),\n`;
 
   // Insert after the last existing property, or — for an empty object — just

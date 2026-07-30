@@ -5,11 +5,11 @@ import HomePage from "./HomePage.js";
 const routes = {
   home: route({
     url: "/",
-    content: HomePage,
+    component: HomePage,
   }),
   guide: route({
     url: "/guides/:slug",
-    content: GuidePage,
+    component: GuidePage,
   }),
 } as const;
 

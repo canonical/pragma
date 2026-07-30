@@ -670,7 +670,9 @@ export default function createRouter<
 
     const preloadKey =
       currentMatch.kind === "route" ? currentMatch.name : "__notFound";
-    const preloader = currentMatch?.route.content?.preload;
+    const preloader = (
+      currentMatch?.route.component ?? currentMatch?.route.content
+    )?.preload;
 
     if (!preloadKey || !preloader) {
       return null;
@@ -1257,6 +1259,17 @@ export default function createRouter<
     );
   }
 
+  /**
+   * Invoke the matched route's UI slot (`component` or the deprecated
+   * `content`) and `wrappers` as plain function calls and return the
+   * composed result.
+   *
+   * React consumers must NOT call this during a component render: any hooks
+   * the content or wrapper functions call would attach to the calling
+   * component's fiber, corrupting hook order across navigations
+   * (`Rendered fewer hooks than expected`). `router-react`'s `Outlet`
+   * constructs elements from the match itself instead of calling `render()`.
+   */
   const render = (
     result: RouterLoadResult<TRoutes, TNotFound> | null = currentLoadResult,
   ): unknown => {
@@ -1265,8 +1278,9 @@ export default function createRouter<
     }
 
     const currentRoute = result.match.route;
+    const contentFunction = currentRoute.component ?? currentRoute.content;
 
-    if (!currentRoute.content) {
+    if (!contentFunction) {
       return null;
     }
 
@@ -1276,7 +1290,7 @@ export default function createRouter<
           children,
         });
       },
-      currentRoute.content({
+      contentFunction({
         params: result.match.params as RouteParamValues,
         search: result.match.search,
       }),

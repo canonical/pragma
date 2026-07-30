@@ -13,7 +13,7 @@ Use middleware for cross-cutting policy:
 - timing or tracing of navigation-time work
 - shared wrapper or error-boundary policy
 
-Avoid middleware when the concern is relevant to a single route. In that case, keep it in the route's `prefetch` or `content`. Prefer wrappers (`wrapper()` + `group()`) for layout and shared UI; reserve middleware for behaviour that rewrites the route itself.
+Avoid middleware when the concern is relevant to a single route. In that case, keep it in the route's `prefetch` or `component`. Prefer wrappers (`wrapper()` + `group()`) for layout and shared UI; reserve middleware for behaviour that rewrites the route itself.
 
 ## The middleware contract
 
@@ -295,12 +295,12 @@ Notes:
 
 - `wrappers` is always present on a `RouteDefinition` (it defaults to `[]`), so `[boundary, ...currentRoute.wrappers]` is safe without a guard.
 - `wrapper()` takes a single type parameter, `wrapper<TRendered>` (here `ReactElement`). A wrapper's own optional `prefetch` is `(params, context)` — two arguments, no `search` — distinct from a route's three-argument `prefetch`.
-- The error experience itself is a React `<ErrorBoundary>` inside the wrapper component. The router has no error-UI field; render errors propagate past `<Outlet>`, so the boundary belongs in the wrapper's JSX. Use `StatusResponse` from a `prefetch` to signal an HTTP-like status to that boundary.
+- The error experience itself is a React `<ErrorBoundary>` inside the wrapper component. For a single route, prefer the route-level `errorComponent` field (composed behind a route-keyed boundary by `<Outlet>`); the wrapper/middleware approach shown here is for a shared boundary across many routes. Without either, render errors propagate past `<Outlet>`. Use `StatusResponse` from a `prefetch` to signal an HTTP-like status to that boundary.
 
 ### Rationale
 
 - consistent fallback behaviour across many routes
-- keeps route declarations focused on `content` and data
+- keeps route declarations focused on `component` and data
 - composes with layout wrappers (it prepends, so it nests outside them)
 
 ## Composition order

@@ -498,7 +498,7 @@ export default routes;
     expect(out).toContain('import SettingsPage from "./SettingsPage.js";');
     expect(out).toContain("settings: route({");
     expect(out).toContain('url: "/account/settings",');
-    expect(out).toContain("content: SettingsPage,");
+    expect(out).toContain("component: SettingsPage,");
   });
 
   it("throws on single-segment path", () => {

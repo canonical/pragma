@@ -28,7 +28,7 @@ describe("insertRoute", () => {
     expect(out).toContain('import InvoicesPage from "./InvoicesPage.js";');
     expect(out).toContain("invoices: route({");
     expect(out).toContain('url: "/billing/invoices",');
-    expect(out).toContain("content: InvoicesPage,");
+    expect(out).toContain("component: InvoicesPage,");
     // existing entry untouched
     expect(out).toContain("billing: route({");
   });

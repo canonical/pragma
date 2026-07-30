@@ -84,6 +84,24 @@ export default function route<
     };
   }
 
+  const dataDefinition = definition as DataRouteInput<
+    TPath,
+    TSearchSchema,
+    TRendered,
+    TWrappers,
+    TParamsSchema
+  >;
+  const hasComponent = dataDefinition.component !== undefined;
+  const hasContent = dataDefinition.content !== undefined;
+
+  if (hasComponent === hasContent) {
+    throw new Error(
+      `route("${definition.url}"): declare exactly one of \`component\` ` +
+        "(a component receiving { params, search } props) or `content` " +
+        "(the deprecated render-function form).",
+    );
+  }
+
   return {
     ...definition,
     wrappers: (definition.wrappers ?? []) as TWrappers,

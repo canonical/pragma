@@ -11,7 +11,7 @@ Conventions used throughout:
 
 - `TRoutes extends RouteMap` — the application route map (`Record<string, AnyRoute>`).
 - `TNotFound extends AnyRoute | undefined = undefined` — the optional not-found route.
-- `TRendered` — the value a `content`/`wrapper.component` returns. The React layer fixes it to `ReactElement`; core leaves it `unknown`.
+- `TRendered` — the value a `component`/`content`/`wrapper.component` returns. The React layer fixes it to `ReactElement`; core leaves it `unknown`.
 
 ---
 
@@ -173,8 +173,8 @@ interface Router<TRoutes extends RouteMap, TNotFound extends AnyRoute | undefine
 
 - **`navigate(name, options?)`** and **`buildPath(name, options?)`** take a route name and `PathBuildOptions`. `params` is required at the type level iff the route's `url` contains `:params`; `search`, `hash`, and `replace` are optional. `navigate` returns a `NavigationIntent` (`{ name, href, params, search, hash? }`); `buildPath` returns the built path string.
 - **`prefetch(name, options?)`** returns `Promise<void>` — warms the route's `prefetch` hook ahead of navigation.
-- **`render(result?)`** returns `unknown` (framework-agnostic); the React layer consumes it via `<Outlet>`.
-- **`render()` returns `unknown`**, not a React element — typing is supplied by `TRendered` on `content`/`wrapper.component`.
+- **`render(result?)`** invokes the matched route's UI slot (`component` or the deprecated `content`) and `wrappers` as plain function calls and returns the composed result. React consumers must **not** call it during a component render — hooks the slot functions call would attach to the caller's fiber; `<Outlet>` constructs elements from the match itself instead.
+- **`render()` returns `unknown`**, not a React element — typing is supplied by `TRendered` on `component`/`content`/`wrapper.component`.
 
 ```ts
 router.navigate("account", { search: { auth: "1" } });
@@ -209,12 +209,16 @@ function route<
 
 Constructs one flat route and derives its path codec. The returned definition adds `parse(url) → params | null` and `render(params) → string` over the input, and defaults `wrappers` to `[]`. Routes are **flat** — there is no nesting or `children`. Shared layout comes from [`wrapper`](#wrapper) + [`group`](#group); cross-cutting logic from [middleware](#middleware--applymiddleware).
 
+A data route declares its UI through **exactly one** of `component` (preferred) or the deprecated `content` — `route()` throws when both or neither are declared. Redirect routes declare neither.
+
 #### `DataRouteInput`
 
 ```ts
 interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema> {
   readonly url: TPath;
-  readonly content: RouteContent<TPath, TSearchSchema, TRendered, TParamsSchema>;
+  readonly component?: RouteComponent<TPath, TSearchSchema, TRendered, TParamsSchema>;
+  /** @deprecated Render-function form; prefer `component` — see AV-340. */
+  readonly content?: RouteContent<TPath, TSearchSchema, TRendered, TParamsSchema>;
   readonly prefetch?: BivariantCallback<
     [params: InferParams<TPath, TParamsSchema>, search: InferSearch<TSearchSchema>, context: NavigationContext],
     void | Promise<void>
@@ -223,28 +227,33 @@ interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSche
   readonly search?: TSearchSchema;
   readonly wrappers?: TWrappers;
   readonly meta?: Readonly<Record<string, unknown>>;
+  readonly fallback?: unknown;
+  readonly errorComponent?: RouteErrorComponent;
 }
 ```
 
 - **`url`** — path pattern. `:param` segments become typed params; modifiers (`?`, `*`, `+`, `(regex)`) are stripped for naming. `RouteParams<TPath>` infers `{ readonly [name]: string }`, or `Record<string, never>` when the path has none.
-- **`content`** — the component, called with `RouteContentProps`. Carries an optional `preload?: () => Promise<RouteModule>` for code-splitting.
+- **`component`** — the route's UI as a component receiving `RouteContentProps` (`{ params, search }`). Rendered with its own fiber by `router-react`'s `Outlet`, so hooks are legal inside; bare references and element-creating arrows are both valid. Carries an optional `preload?: () => Promise<RouteModule>` for code-splitting. `RouteComponent` is structurally identical to `RouteContent` — the difference is contractual.
+- **`content`** — **deprecated** render-function form of the UI slot (AV-340); accepts the same shape as `component` and keeps working during migration.
 - **`prefetch`** — see [the prefetch hook](#the-prefetch-hook).
-- **`params`** — a [Standard Schema](#params-validation) validator for the path params; its output type replaces `RouteParams<TPath>` everywhere (`content`, `prefetch`, `Link`, `navigate`, `buildPath`). A failed validation makes the URL a **non-match** (404), not an error.
-- **`search`** — a [Standard Schema](#search-validation) validator; its output type flows to `content`'s `search` prop and the route's `SearchOf`. A failed validation throws a 400 `StatusResponse`.
+- **`params`** — a [Standard Schema](#params-validation) validator for the path params; its output type replaces `RouteParams<TPath>` everywhere (`component`, `prefetch`, `Link`, `navigate`, `buildPath`). A failed validation makes the URL a **non-match** (404), not an error.
+- **`search`** — a [Standard Schema](#search-validation) validator; its output type flows to the component's `search` prop and the route's `SearchOf`. A failed validation throws a 400 `StatusResponse`.
 - **`wrappers`** — layout wrappers (usually applied via `group`, not set by hand).
 - **`meta`** — arbitrary readonly metadata.
+- **`fallback`** — adapter-interpreted pending UI (a `ReactNode` in `router-react`) shown while the route's suspended output resolves, overriding the `Outlet`-level default.
+- **`errorComponent`** — a component receiving `{ error }`, composed behind a route-keyed error boundary by `router-react`'s `Outlet`; core never invokes it.
 
 ```ts
 const account = route({
   url: "/account",
   search: accountSearchSchema,
-  content: AccountPage,
+  component: AccountPage,
 });
 ```
 
 #### `RouteContentProps`
 
-Props passed to a route's `content`:
+Props passed to a route's `component` (and the deprecated `content`):
 
 ```ts
 interface RouteContentProps<
@@ -309,7 +318,7 @@ interface RedirectRouteInput<TPath, TTarget, TWrappers, TParamsSchema> {
 }
 ```
 
-A route with no `content`. The `status` is restricted to permanent redirects (`301 | 308`) — distinct from the runtime [`redirect()`](#runtime-redirects--redirect-redirect-routeredirect) helper's wider union. Matched ahead of data routes by the presence of `redirect`.
+A route with no UI slot (neither `component` nor `content`). The `status` is restricted to permanent redirects (`301 | 308`) — distinct from the runtime [`redirect()`](#runtime-redirects--redirect-redirect-routeredirect) helper's wider union. Matched ahead of data routes by the presence of `redirect`.
 
 ```ts
 const legacy = route({ url: "/old", redirect: "/new", status: 308 });
@@ -555,7 +564,7 @@ Any [Standard Schema](https://standardschema.dev)-compatible library schema can 
 
 #### Params validation
 
-`params` validates the path params extracted from the URL. The schema's output type replaces `RouteParams<TPath>` everywhere: `content`'s `params` prop, `prefetch`'s first argument, `ParamsOf<TRoute>`, and the `params` accepted by `Link`, `navigate`, and `buildPath`.
+`params` validates the path params extracted from the URL. The schema's output type replaces `RouteParams<TPath>` everywhere: the route component's `params` prop, `prefetch`'s first argument, `ParamsOf<TRoute>`, and the `params` accepted by `Link`, `navigate`, and `buildPath`.
 
 **Failure semantics: a rejected URL is a non-match, not an error.** Matching falls through to the next candidate route and ultimately the `notFound` route (404) — the same behaviour as a pattern mismatch. Use it to reject syntactically invalid resource identifiers before any code runs:
 
@@ -580,7 +589,7 @@ const productParamsSchema: StandardSchemaV1<
 const product = route({
   url: "/products/:id",
   params: productParamsSchema,   // "/products/abc" → 404; "/products/42" → params.id === 42
-  content: ProductPage,          // ({ params }) — params.id is a number
+  component: ProductPage,        // ({ params }) — params.id is a number
 });
 
 router.buildPath("product", { params: { id: 42 } });   // "/products/42" — typed, serialized with String()
@@ -590,7 +599,7 @@ For *semantic* validation (does the record exist?), keep using `prefetch` + [`St
 
 #### Search validation
 
-`search` validates the query string. Its output type flows to `content`'s `search` prop and to `SearchOf<TRoute>`.
+`search` validates the query string. Its output type flows to the route component's `search` prop and to `SearchOf<TRoute>`.
 
 **Failure semantics: a rejected query string throws `StatusResponse(400, { issues, message })`.** During `load()`/navigation the router catches it and commits an error result (`result.status === 400`, `result.error instanceof StatusResponse`); under SSR that surfaces as a real 400, and on the client it reaches your error boundary. A shared URL with a garbage query is a *bad request*, not a crash — and for that reason, prefer **normalizing** schemas that supply defaults over rejecting ones (`z.coerce.number().catch(1)` rather than `.int()` alone), reserving hard failure for genuinely unrenderable input.
 
@@ -659,7 +668,7 @@ interface MemoryAdapter extends PlatformAdapter {
 | `SchemaLike<TOutput>` | `StandardSchemaV1<unknown, TOutput> \| StandardSchemaLike<TOutput>` — what `params`/`search` accept |
 | `InferOutput<TSchema>` | a schema's output type (`types.output` phantom, or legacy `output`) |
 | `InferParams<TPath, TParamsSchema>` | params schema output when declared, else `RouteParams<TPath>` |
-| `ParamsOf<TRoute>` | the route's params as seen by `content`/`Link`/`navigate` (schema-aware) |
+| `ParamsOf<TRoute>` | the route's params as seen by `component`/`Link`/`navigate` (schema-aware) |
 | `SearchOf<TRoute>` | the route's validated search shape (schema-aware) |
 | `StandardSchemaIssue` | `{ message?; path? }` — one validation issue; `message` optional to tolerate legacy validators |
 
@@ -735,7 +744,7 @@ interface OutletProps {
 function Outlet({ fallback = null }: OutletProps): ReactElement;
 ```
 
-Renders the matched route subtree (route content wrapped by its wrappers). Rerenders only when the location `href` or `match` changes — not on `idle → loading` transitions. Output is wrapped in `<Suspense key={routeName} fallback={fallback}>`. Render errors from route content propagate **past** `Outlet`; wrap it in an error boundary to catch them.
+Renders the matched route subtree by constructing elements from the route's `component` (or the deprecated `content`) and its `wrappers` — each gets its own React fiber, so hooks are legal in both. Rerenders only when the location `href` or `match` changes — not on `idle → loading` transitions. Output is wrapped in `<Suspense key={routeName} fallback={fallback}>`; a route-level `fallback` overrides the prop within that Suspense. A route-level `errorComponent` renders with `{ error }` behind an internal route-keyed error boundary (reset by navigating to a different route); without one, render errors propagate **past** `Outlet` — wrap it in an error boundary to catch them.
 
 ```tsx
 <Outlet fallback={<p>Loading…</p>} />
@@ -768,6 +777,23 @@ The current location as a tracked proxy. Reading a field (e.g. `pathname`) subsc
 
 ```ts
 const { pathname, searchParams } = useRoute();
+```
+
+#### `useRouteParams` / `useRouteSearch`
+
+```ts
+function useRouteParams<TRoute extends AnyRoute>(route: TRoute): ParamsOf<TRoute>;
+function useRouteSearch<TRoute extends AnyRoute>(route: TRoute): SearchOf<TRoute>;
+```
+
+The current match's params / schema-validated search data, typed by inference from the route argument's generics. The route object is a **type witness**: passing it asserts the hook runs under that route's subtree (its `component` or `wrappers`); route identity is not verified at runtime. Unmatched states return a frozen empty object. Rerenders track the match's params/search object identity — unrelated store changes cost nothing.
+
+```ts
+function DocPage() {
+  const { slug } = useRouteParams(docsRoute);   // string — from the url pattern
+  const { page } = useRouteSearch(docsRoute);   // number — from the search schema
+  ...
+}
 ```
 
 #### `useRouterState`

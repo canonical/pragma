@@ -26,11 +26,11 @@ beforeAll(() => {
 // importing the real route map would drag every domain page (and its
 // dependencies) into this chrome-only test.
 const routes = {
-  home: route({ url: "/", content: () => null }),
-  guide: route({ url: "/guides/:slug", content: () => null }),
-  catalog: route({ url: "/catalog", content: () => null }),
-  contact: route({ url: "/contact", content: () => null }),
-  account: route({ url: "/account", content: () => null }),
+  home: route({ url: "/", component: () => null }),
+  guide: route({ url: "/guides/:slug", component: () => null }),
+  catalog: route({ url: "/catalog", component: () => null }),
+  contact: route({ url: "/contact", component: () => null }),
+  account: route({ url: "/account", component: () => null }),
 } as const;
 
 /**

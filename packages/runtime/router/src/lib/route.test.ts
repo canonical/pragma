@@ -119,4 +119,41 @@ describe("route", () => {
     // render serializes the schema's output values back into the pattern.
     expect(userRoute.render({ id: 42 })).toBe("/users/42");
   });
+
+  it("accepts the component field as the route's UI slot", () => {
+    const componentRoute = route({
+      url: "/items/:id",
+      component: ({ params }) => `item:${params.id}`,
+    });
+
+    expect(componentRoute.component).toBeTypeOf("function");
+    expect(componentRoute.content).toBeUndefined();
+    expect(componentRoute.render({ id: "9" })).toBe("/items/9");
+  });
+
+  it("rejects declaring both component and content", () => {
+    expect(() =>
+      route({
+        url: "/both",
+        component: () => "a",
+        content: () => "b",
+      }),
+    ).toThrow(/exactly one of `component`.*or `content`/);
+  });
+
+  it("rejects declaring neither component nor content", () => {
+    expect(() => route({ url: "/neither" })).toThrow(
+      /exactly one of `component`.*or `content`/,
+    );
+  });
+
+  it("does not apply the component/content rule to redirect routes", () => {
+    const redirectRoute = route({
+      url: "/old",
+      redirect: "/new",
+      status: 301,
+    });
+
+    expect(redirectRoute.redirect).toBe("/new");
+  });
 });

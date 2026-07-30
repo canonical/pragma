@@ -6,7 +6,7 @@ import type { ElementType } from "react";
 const defaultRoutes = {
   story: route({
     url: "/",
-    content: () => null,
+    component: () => null,
   }),
 } as const;
 
