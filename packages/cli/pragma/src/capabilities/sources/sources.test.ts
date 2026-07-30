@@ -225,32 +225,6 @@ describe("sources update round-trip (PROTECTED)", () => {
     await runUndo(await buildUpdateTask(runtime));
     expect(readActivePack(cwd)).toBeUndefined();
   });
-
-  it("retires an orphan pragma.lock.json, and --undo writes it back", async () => {
-    // A project upgrading from the lock era: nothing reads the file any more, so
-    // the update removes it — reversibly, so the removal is never a surprise.
-    const pkg = filePackage();
-    const cwd = tmp("pragma-proj-");
-    const legacy = join(cwd, "pragma.lock.json");
-    const legacyBytes = '{"version":1,"contentHash":"old","packs":[]}\n';
-    writeFileSync(legacy, legacyBytes);
-    const runtime = runtimeFor(cwd, [
-      { name: "pkg-a", source: `file://${pkg}` },
-    ]);
-
-    await runTask(await buildUpdateTask(runtime));
-    expect(existsSync(legacy)).toBe(false);
-
-    // `runUndo` mocks the forward effects, so stage the post-forward state by
-    // hand: build the Task while the orphan is present (that is what captures
-    // its bytes), remove it, then undo — which must write those exact bytes back.
-    writeFileSync(legacy, legacyBytes);
-    const task = await buildUpdateTask(runtime);
-    rmSync(legacy);
-    const { runUndo } = await import("@canonical/task/node");
-    await runUndo(task);
-    expect(readFileSync(legacy, "utf-8")).toBe(legacyBytes);
-  });
 });
 
 describe("sources update — package-declared prefixes (M1)", () => {

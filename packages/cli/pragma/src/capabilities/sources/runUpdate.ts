@@ -13,16 +13,13 @@
  *   content-addressed pack — runs eagerly (it is not expressible as a task
  *   effect: the effect set is fs + exec, and the in-process compile is not an
  *   effect at all). The returned Task models the mutations: the active-pack
- *   pointer write (undo restores or removes the prior pointer), the package
- *   skill symlinks, and — once, for a project upgrading from the retired lock —
- *   the removal of an orphan `pragma.lock.json` (undo writes it back).
+ *   pointer write (undo restores or removes the prior pointer) and the package
+ *   skill symlinks.
  *
  * Pinning a revision is the ref's job, not a flag's: put a SHA in the source
  * (`git+https://…#<sha>`) and every update resolves to exactly that commit.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import {
   $,
   deleteFile,
@@ -68,12 +65,6 @@ const CORE_PREFIXES: Readonly<Record<string, string>> = {
 
 const entryName = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : entry.name;
-
-/**
- * The retired project lock. Nothing reads it any more; an update removes it so
- * an upgrading repo is not left with a committed file that means nothing.
- */
-const LEGACY_LOCK_BASENAME = "pragma.lock.json";
 
 /**
  * The prefix map a pack is built with: core < the packs' own `@prefix` < config.
@@ -303,15 +294,6 @@ export async function buildUpdateTask(
   const undo =
     priorHash !== undefined ? writeFile(path, priorHash) : deleteFile(path);
 
-  // Retire an orphan `pragma.lock.json` from a pre-pointer install (M). Nothing
-  // reads it any more, so leaving it behind would only invite the question of
-  // whether it still matters. Removed reversibly, so `--dry-run` shows it and
-  // `--undo` puts it back.
-  const legacyPath = join(runtime.cwd, LEGACY_LOCK_BASENAME);
-  const legacyContent = existsSync(legacyPath)
-    ? readFileSync(legacyPath, "utf-8")
-    : undefined;
-
   // Install package-provided skills (U10): symlink each resolved package's
   // `skills/*` into the installed-skills root, so `skill list` / `setup skills`
   // see them after an update. Kept in this Task (reversible: created links carry
@@ -324,13 +306,6 @@ export async function buildUpdateTask(
 
   report?.(`Pointing ${runtime.cwd} at pack ${built.contentHash.slice(0, 12)}`);
   return gen(function* () {
-    if (legacyContent !== undefined) {
-      yield* $(
-        deleteFile(legacyPath, {
-          undo: writeFile(legacyPath, legacyContent),
-        }),
-      );
-    }
     yield* $(writeFile(path, built.contentHash, { undo }));
     if (skillLinks.length > 0) {
       yield* $(mkdir(installedSkillsDir(), true));
