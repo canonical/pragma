@@ -9,6 +9,7 @@
  * them (disclosure gates the fetch), never HOW it is laid out.
  */
 
+import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type {
   ColumnDef,
   LookupField,
@@ -52,8 +53,7 @@ export interface RenderMeta {
  * list on a BUILT store (a cold store would have failed with STORE_UNAVAILABLE
  * first) means "nothing matched", so point at both possible fixes.
  */
-const DEFAULT_EMPTY_HINT =
-  "If you haven't built the store yet, run `pragma sources update`; otherwise broaden your filter or channel.";
+const DEFAULT_EMPTY_HINT = `If you haven't built the store yet, run \`${RECOVERY_CLI_PREFIX}sources update\`; otherwise broaden your filter or channel.`;
 
 /** Build the list formatters for a list-shaped verb (list or an extra verb). */
 export function listFormatters(

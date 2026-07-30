@@ -4,7 +4,8 @@
  *
  * It carries the same content the retired `llm` tool front-loaded: the
  * conventions + the discovery sequence. To guarantee it never diverges from the
- * `capabilities` tool, it derives BOTH from the SAME source — `CONVENTIONS` and
+ * `capabilities` tool, the WHOLE orientation — the opening line included —
+ * derives from the SAME source: `CONVENTIONS` and
  * `buildDiscoverySequence` in `capabilities/capabilities/catalog.ts`. Live
  * numbers (tier/channel/entity counts) are deliberately DROPPED (they would need
  * a store boot at handshake); agents fetch those via `info`/`config show`/
@@ -37,7 +38,6 @@ export function buildInstructions(
     .join("\n");
 
   return [
-    "pragma is a CLI and MCP server over a design-system knowledge graph.",
     `${CONVENTIONS.system} ${CONVENTIONS.model} ${CONVENTIONS.querying} ${CONVENTIONS.mutations}`,
     "",
     "Discovery sequence:",

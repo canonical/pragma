@@ -14,7 +14,7 @@
  * orientation from the SAME source and the two can never diverge.
  */
 
-import { VERSION } from "../../constants.js";
+import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../constants.js";
 import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 import { TOOL_HINTS } from "./hints.js";
@@ -26,14 +26,16 @@ import type {
 } from "./types.js";
 
 /**
- * The four orientation conventions. The first three (system/model/querying) are
- * verbatim from the old shell — they describe the KG / tier-channel / SPARQL
- * model and are still accurate for v2; `mutations` is new in v2, surfacing the
- * plan-first/confirm gate.
+ * The four orientation conventions, and the single source both the
+ * `capabilities` tool and the MCP handshake read, so the two cannot contradict
+ * each other. `system` projects the distribution's identity rather than naming
+ * a domain — the live tool catalog the same handshake carries already says
+ * which nouns exist. `model`/`querying` are verbatim from the old shell (the
+ * tier-channel / SPARQL model is still accurate for v2); `mutations` is new in
+ * v2, surfacing the plan-first/confirm gate.
  */
 export const CONVENTIONS = {
-  system:
-    "Pragma is a CLI and MCP server for querying a design system knowledge graph — blocks, tokens, modifiers, standards, and ontologies.",
+  system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION}. A CLI and MCP server over a knowledge graph.`,
   model:
     "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
   querying:

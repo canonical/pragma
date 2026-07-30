@@ -378,8 +378,10 @@ describe("formatRootHelp — grouping", () => {
     makeVerb(["block", "list"]),
   ]);
 
-  it("shows the task-oriented section titles for live nouns", () => {
-    expect(help).toContain("Explore the design system");
+  it("titles the pack-noun section with the program description", () => {
+    // `block` comes from a pack, so it leads the page under the distribution's
+    // own blurb; the kernel's own nouns keep their task-oriented sections.
+    expect(help).toMatch(/^pragma test\n {2}block\b/m);
     expect(help).toContain("Set up & maintain");
   });
 
@@ -408,8 +410,8 @@ describe("formatRootHelp — grouping", () => {
 
       Usage: pragma <command> [subcommand] [flags]
 
-      Explore the design system
-        block   Inspect components & patterns and their anatomy
+      pragma test
+        block   block list summary
 
       Set up & maintain
         config  Read and write pragma configuration
