@@ -140,7 +140,9 @@ describe("compiled pragma create gate (PROTECTED)", () => {
         encoding: "utf-8",
       });
       const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
-      expect(result.status).not.toBe(0);
+      // 1, not merely non-zero: UNSUPPORTED is a runtime refusal, which
+      // `kernel/error/constants.ts` maps to the generic runtime exit.
+      expect(result.status).toBe(1);
       expect(output).toContain("not available in the compiled pragma binary");
       // The clean refusal, not the crash it exists to prevent.
       expect(output).not.toMatch(/ENOENT/);

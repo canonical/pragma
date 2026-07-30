@@ -17,7 +17,6 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import defaults from "../../kernel/config/defaults.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
   executeVerb,
@@ -218,9 +217,19 @@ describe("lazy-React discipline (PROTECTED)", () => {
       "@canonical/summon-component",
       "@canonical/summon-package",
       "@canonical/summon-application",
+      // The generators pull summon-core, and summon-core is what costs the
+      // fast paths (+43 MB RSS once it loads). Dropping the `type` from one of
+      // the four `import type … from "@canonical/summon-core"` lines in this
+      // directory is a one-word regression nothing else catches.
+      "@canonical/summon-core",
     ];
     for (const file of graph) {
-      const src = readFileSync(file, "utf-8");
+      // Type-only imports are erased before runtime, so they load nothing —
+      // strip them before asking what the file actually pulls in.
+      const src = readFileSync(file, "utf-8").replace(
+        /\bimport\s+type\b[^;]*;/g,
+        "",
+      );
       for (const pkg of forbidden) {
         const esc = pkg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         expect(
@@ -434,41 +443,47 @@ describe("compiled-binary create gate (M4)", () => {
 
 describe("declared generator bindings (PROTECTED)", () => {
   // CREATE_GENERATORS is the one place the create surface's generator facts are
-  // written down. Half of it is checkable against something outside itself —
-  // that half is checked here.
+  // written down. What is checkable against something outside itself — the live
+  // generator maps and the embedded manifest — is checked here.
 
-  it("every binding names a generator package pragma.conf.ts declares", () => {
-    const declared = (defaults.generators ?? []).map((g) => g.name);
-    // Inclusion, not equality: the distribution may declare a generator that
-    // `create` does not surface. Dropping one it DOES surface turns this red.
-    for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
-      expect(declared, `create ${kind}`).toContain(binding.name);
-    }
-  });
-
-  it("every binding resolves to a real generator in its package", async () => {
+  it("every binding resolves to the generator it names", async () => {
     const { pickGenerator } = await import("./pickGenerator.js");
+    // `meta.name` is the generator's OWN identity, so a swapped `key` or a
+    // framework the map does not carry turns this red — which `toBeDefined()`
+    // on a non-nullable return could not.
     for (const framework of CREATE_GENERATORS.component.frameworks) {
-      expect(pickGenerator("component", { framework }).prompts).toBeDefined();
+      expect(pickGenerator("component", { framework }).meta.name).toBe(
+        `component/${framework}`,
+      );
     }
-    expect(pickGenerator("package", {}).prompts).toBeDefined();
-    expect(pickGenerator("application", {}).prompts).toBeDefined();
+    expect(pickGenerator("package", {}).meta.name).toBe("package");
+    expect(pickGenerator("application", {}).meta.name).toBe(
+      "application/react",
+    );
   });
 
-  it("the --framework enum offers only resolvable values and its default is one of them", async () => {
-    const { pickGenerator } = await import("./pickGenerator.js");
+  it("the --framework enum offers the declared frameworks and defaults to one of them", () => {
     const framework = createVerbs.component.params.find(
       (p) => p.name === "framework",
     );
     // A `values: []` enum with a `default` would leave every `--framework`
     // rejected while `--help` still advertises a default — the hazard this names.
+    // (That every value resolves is the test above.)
     expect(framework?.kind).toBe("enum");
     const values = (framework as { values: readonly string[] }).values;
     expect(values.length).toBeGreaterThan(0);
     expect(values).toContain(framework?.default);
-    for (const value of values) {
-      expect(pickGenerator("component", { framework: value })).toBeDefined();
-    }
+  });
+
+  it("embeds only the templates the component loader can key", async () => {
+    const { TEMPLATES } = await import("./templates.embedded.generated.js");
+    const keys = Object.keys(TEMPLATES);
+    // summon-component's `qualifiedKey()` prefixes EVERY lookup with
+    // `component/`, so any other entry ships dead weight the binary can never
+    // read — and a binding embedded without a manifest-reading generator would
+    // put one here. Non-empty first: `.every()` over an empty list is vacuous.
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys.filter((k) => !k.startsWith("component/"))).toEqual([]);
   });
 
   it("create surfaces exactly the three declared nouns", () => {
