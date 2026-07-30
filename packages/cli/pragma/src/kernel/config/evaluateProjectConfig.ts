@@ -35,6 +35,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { VERSION } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
+import { PROJECT_CONFIG_FILENAME } from "./findProjectConfig.js";
 import { configCacheDir } from "./paths.js";
 import { parseRawConfig } from "./schema.js";
 import type { RawConfig } from "./types.js";
@@ -107,8 +108,7 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
       `Could not load project config ${path}: ${reason}`,
       {
         recovery: {
-          message:
-            "Fix the error in your pragma.config.ts (it must evaluate to a default export), then try again.",
+          message: `Fix the error in your ${PROJECT_CONFIG_FILENAME} (it must evaluate to a default export), then try again.`,
         },
       },
     );

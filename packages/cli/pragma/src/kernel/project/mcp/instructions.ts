@@ -16,8 +16,8 @@
 import {
   buildDiscoverySequence,
   CONVENTIONS,
-  liveTools,
 } from "../../../capabilities/capabilities/catalog.js";
+import { emitSurface } from "../../spec/emitSurface.js";
 import type { CapabilityModule } from "../../spec/types.js";
 
 /** Hard ceiling on the instructions length (asserted by the protected test). */
@@ -32,10 +32,15 @@ export const INSTRUCTIONS_MAX_CHARS = 1500;
 export function buildInstructions(
   modules: readonly CapabilityModule[],
 ): string {
-  const discovery = buildDiscoverySequence(liveTools(modules));
-  const steps = discovery
+  // Tools AND resource templates come from the one emitted surface: the
+  // `<scheme>:{+uri}` template is declared by the module that serves it and
+  // frozen in the covenant, so quoting it here rather than deriving it would be
+  // a second copy of a string the kernel does not own.
+  const { tools, resources } = emitSurface(modules).mcpSurface;
+  const steps = buildDiscoverySequence(tools)
     .map((stage) => `${stage.stage}. ${stage.tool} — ${stage.purpose}`)
     .join("\n");
+  const templates = resources.map((template) => `\`${template}\``).join(", ");
 
   return [
     `${CONVENTIONS.system} ${CONVENTIONS.model} ${CONVENTIONS.querying} ${CONVENTIONS.mutations}`,
@@ -43,6 +48,6 @@ export function buildInstructions(
     "Discovery sequence:",
     steps,
     "",
-    "Call the `capabilities` tool for the full annotated tool catalog; read `pragma:{+uri}` resources (or `graph_inspect`) for entity detail.",
+    `Call the \`capabilities\` tool for the full annotated tool catalog; read ${templates} resources (or \`graph_inspect\`) for entity detail.`,
   ].join("\n");
 }

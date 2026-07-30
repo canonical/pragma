@@ -41,8 +41,7 @@ export function resolveUri(
   if (colonIdx === -1) {
     throw PragmaError.invalidInput("uri", uri, {
       recovery: {
-        message:
-          'Use a prefixed URI (e.g. "ds:global.component.button") or a full URI.',
+        message: 'Use a prefixed URI (e.g. "prefix:name") or a full URI.',
       },
     });
   }

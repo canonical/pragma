@@ -91,11 +91,14 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { capabilities } = await import("./capabilities/index.js");
 
     // The `pragma:` resource scheme is covenant-frozen PROTOCOL identity
-    // (surface.v2.json), not copy — mask it rather than assert it away.
-    const [template] = emitSurface(capabilities).mcpSurface.resources;
-    const text = buildInstructions(capabilities).replace(
-      template as string,
-      "<resources>",
+    // (surface.v2.json), not copy. The orientation DERIVES it from the emitted
+    // surface, so mask exactly what the surface declares — a leak the kernel
+    // authored itself would survive this substitution and fail below.
+    const { resources } = emitSurface(capabilities).mcpSurface;
+    expect(resources.length).toBeGreaterThan(0);
+    const text = resources.reduce(
+      (orientation, template) => orientation.replace(template, "<resource>"),
+      buildInstructions(capabilities),
     );
 
     expect(text).not.toMatch(THIS_DISTRIBUTION);
@@ -109,13 +112,13 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
 
     const lines: string[] = [];
     await ensureFirstRun((line) => lines.push(line));
-    // The XDG namespace is deliberately NOT derived from the name (it must stay
-    // in lockstep with the runtime's own path module) — mask the resolved path.
-    const greeting = lines
-      .map((line) => line.replace(globalConfigPath(), "<CONFIG>"))
-      .join("\n");
+    const greeting = lines.join("\n");
 
+    // Nothing is masked: the resolved config path is IN the greeting, so the
+    // XDG namespace has to follow the fork's name too or this assertion fails.
     expect(greeting).not.toMatch(THIS_DISTRIBUTION);
+    expect(greeting).toContain(globalConfigPath());
+    expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
   });
