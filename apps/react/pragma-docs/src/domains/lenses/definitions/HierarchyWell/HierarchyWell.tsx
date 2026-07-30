@@ -221,6 +221,15 @@ const HierarchyWell = ({
         .join(" ")}
       data-slot="explorer-canvas"
     >
+      {/* The pan/zoom diagram surface. `group` is deliberate: it names the
+          set of term-link nodes WITHOUT advertising a landmark — the well is
+          a spatial view over nouns the TermRail already lists, so it must
+          stay out of the page summary. No native element carries `group`
+          appropriately: <fieldset> (the rule's suggestion) is for form
+          controls and brings default border/margin/padding, <details> is a
+          disclosure widget, <optgroup> is select-only, <address> is contact
+          info. */}
+      {/* biome-ignore lint/a11y/useSemanticElements: no native element carries role="group" for a diagram canvas; see the note above. */}
       <div
         aria-label="Class hierarchy"
         className="hierarchy-canvas"

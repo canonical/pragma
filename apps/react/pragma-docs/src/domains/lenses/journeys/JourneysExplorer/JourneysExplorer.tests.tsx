@@ -126,9 +126,9 @@ describe("JourneysExplorer view switch — the strip drives the canvas", () => {
     // "centre the graph" phrasing is unique to the well, so this proves the
     // graph's hint specifically, not the inspector's empty state (which also
     // says "Select a job").
-    expect(
-      document.querySelector(".journey-hint")?.textContent,
-    ).toMatch(/centre the graph/);
+    expect(document.querySelector(".journey-hint")?.textContent).toMatch(
+      /centre the graph/,
+    );
 
     // Flip back to Table — the reverse holds: table returns, well and
     // inspector leave, the view drops back to table.
