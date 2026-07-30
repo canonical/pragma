@@ -28,9 +28,11 @@ pragma sources update
 
 This resolves each configured package (git, file, or npm) and builds one
 content-addressed pack, which every later boot loads with no network access. To
-pin a package to an exact revision, put the commit SHA in its source ref
-(`git+https://github.com/org/repo.git#<sha>`) — every update then resolves to
-exactly that commit. Which pack is answering, and what it was built from:
+pin a package to an exact revision, put the full 40-character commit SHA in its
+source ref (`git+https://github.com/org/repo.git#<sha>`) — every update then
+resolves to exactly that commit. An abbreviated SHA is not a valid fetch target
+and the update fails naming it. Which pack is answering, and what it was built
+from:
 
 ```bash
 pragma sources status

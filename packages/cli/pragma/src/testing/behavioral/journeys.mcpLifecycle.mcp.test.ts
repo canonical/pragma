@@ -44,7 +44,7 @@ const tempDir = (prefix: string): string => {
 
 /**
  * A COLD project directory: a `pragma.config.ts` pointing at a real file
- * package, but NO lock yet — so the store boots cold until `sources_update`.
+ * package, but nothing built yet — so the store boots cold until `sources_update`.
  */
 function coldProject(ttl: string): string {
   const pkg = tempDir("e2-pkg-");

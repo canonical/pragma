@@ -146,7 +146,7 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
   });
 
   it("drives the literal `sources update` verb over a cold project, then boots a read", async () => {
-    // A cold file-package project with NO lock yet — the real CLI command path.
+    // A cold file-package project with nothing built yet — the real CLI path.
     const pkg = mkdtempSync(join(tmpdir(), "e1-pkg-"));
     mkdirSync(join(pkg, "definitions"), { recursive: true });
     writeFileSync(join(pkg, "definitions", "pack.ttl"), DEFAULT_PACK_TTL);

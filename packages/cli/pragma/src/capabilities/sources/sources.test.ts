@@ -160,7 +160,7 @@ describe("sources update round-trip (PROTECTED)", () => {
   });
 
   it("a re-run over an unchanged source leaves the pointer byte-identical (L1)", async () => {
-    // On base the lock carried a `resolvedAt` timestamp, so a no-op re-run
+    // On base the lock file carried a `resolvedAt` timestamp, so a no-op re-run
     // rewrote it and dirtied the tree. The pointer holds only the content hash,
     // which is a pure function of the sources — so this is now true by
     // construction. The guard stays because it is the property users cared
@@ -269,10 +269,10 @@ describe("sources update — refuses an empty store (A4)", () => {
     return pkg;
   }
 
-  it("a package with no .ttl is refused, and no lock is written", async () => {
+  it("a package with no .ttl is refused, and no pointer is written", async () => {
     // On base this builds a 0-triple pack whose empty data.nq fails the
     // completeness gate — so the "successful" update boots to a PERMANENT
-    // STORE_UNAVAILABLE loop. The fix refuses before writing the lock.
+    // STORE_UNAVAILABLE loop. The fix refuses before writing the pointer.
     const pkg = emptyPackage();
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
@@ -282,11 +282,11 @@ describe("sources update — refuses an empty store (A4)", () => {
     await expect(buildUpdateTask(runtime)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
-    // No lock → the embedded fallback / prior state survives, no boot loop.
+    // No pointer → the embedded fallback / prior state survives, no boot loop.
     expect(readActivePack(cwd)).toBeUndefined();
   });
 
-  it("no configured packs is refused rather than locking an empty pack", async () => {
+  it("no configured packs is refused rather than pointing at an empty pack", async () => {
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, []);
     await expect(buildUpdateTask(runtime)).rejects.toMatchObject({
@@ -502,7 +502,7 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(err.recovery?.message ?? "").not.toContain("report this issue");
     // The recovery points the user at a runnable, useful next step.
     expect(err.recovery?.cli).toBe("pragma sources update --verbose");
-    // Nothing was locked on failure.
+    // Nothing was pointed at on failure.
     expect(readActivePack(cwd)).toBeUndefined();
   });
 

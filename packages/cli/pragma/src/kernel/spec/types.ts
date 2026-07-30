@@ -153,7 +153,8 @@ export interface ErrorSpec {
  * `run` is the effect seam — a read returns `Promise<R>`; a mutation returns a
  * `Task<R>` the dispatcher interprets under the node / dry-run interpreters. A
  * mutation that needs async setup before its effects are known (e.g.
- * `sources update` resolves and builds before locking) actually returns a
+ * `sources update` resolves and builds before pointing the project at the pack)
+ * actually returns a
  * `Promise<Task<R>>`, which the dispatcher and MCP handler both `await` into a
  * `Task<R>` before interpreting. That third shape is presented through the
  * `Task<R>` arm by a cast at the one call site (`update.verb.ts`): adding a

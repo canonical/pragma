@@ -4,8 +4,8 @@
  * Ported from the v1 refs domain. Three resolution strategies, discriminated by
  * `kind`: `npm` (a bare package name, resolved via `require.resolve`), `file`
  * (a `file://` local path override), and `git` (a `git+<proto>://…#ref` shallow
- * clone). The `source` string is kept verbatim so the lock records exactly what
- * the config declared.
+ * clone). The `source` string is kept verbatim so `sources status` reports
+ * exactly what the config declared.
  */
 
 import type { PackDeclaration } from "../../config/types.js";
