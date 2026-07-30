@@ -22,6 +22,7 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
+import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
 import {
   activePackPath,
   packDir,
@@ -155,8 +156,15 @@ describe("sources update round-trip (PROTECTED)", () => {
     ]);
 
     const result = await runTask(await buildUpdateTask(runtime));
-    expect(result.packs.at(0)?.resolved).toMatch(/^[0-9a-f]{40}$/);
+    const sha = result.packs.at(0)?.resolved;
+    expect(sha).toMatch(/^[0-9a-f]{40}$/);
     expect(readActivePack(cwd)).toBe(result.contentHash);
+    // The revision reaches the manifest's provenance label, which is the only
+    // place `sources status` and `doctor` can read it from now that no lock
+    // records it. Same `<name>@<kind>:<resolved>` shape the bundler writes.
+    expect(readManifest(packDir(result.contentHash))?.sourceRef).toBe(
+      `pkg-git@git:${sha}`,
+    );
   });
 
   it("a re-run over an unchanged source leaves the pointer byte-identical (L1)", async () => {

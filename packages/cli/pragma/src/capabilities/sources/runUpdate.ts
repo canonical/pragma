@@ -217,10 +217,16 @@ export async function buildUpdateTask(
   // `<name>@<kind>:<resolved>` — the SAME provenance label the bundler writes
   // for the embed, so the manifest field means one thing whoever built the pack,
   // and `sources status` / `doctor` can still answer "which revision is my store
-  // built from?" now that no lock records it.
+  // built from?" now that no lock records it. A `file:` pack resolves to a local
+  // PATH rather than a revision, so it contributes its name alone: a machine
+  // path is not provenance, and `sources status` already lists the ref.
   const sourceRef =
     resolved
-      .map((pkg) => `${pkg.name}@${pkg.kind}:${pkg.resolved}`)
+      .map((pkg) =>
+        pkg.kind === "file"
+          ? pkg.name
+          : `${pkg.name}@${pkg.kind}:${pkg.resolved}`,
+      )
       .join(", ") || "embedded";
   let built: Awaited<ReturnType<typeof buildPack>>;
   try {
