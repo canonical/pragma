@@ -47,7 +47,6 @@ const rawConfigSchema = z.object({
   generators: z.array(generatorSourceSchema).optional(),
   stories: z.array(z.unknown()).optional(),
   prefixes: z.record(z.string(), z.string()).optional(),
-  prompts: z.record(z.string(), z.unknown()).optional(),
   completion: completionSchema.optional(),
 });
 

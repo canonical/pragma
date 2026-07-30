@@ -67,8 +67,6 @@ export interface PragmaConfig {
   readonly stories?: readonly unknown[];
   /** Additional namespace prefixes merged over the built-in map. */
   readonly prefixes?: Readonly<Record<string, string>>;
-  /** Named prompt overrides (global machine state). */
-  readonly prompts?: Readonly<Record<string, unknown>>;
   /** Completion policy (read at `setup completions` emit time). */
   readonly completion?: CompletionConfig;
 }
@@ -90,7 +88,6 @@ export interface RawConfig {
   readonly generators?: readonly GeneratorSource[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
-  readonly prompts?: Readonly<Record<string, unknown>>;
   readonly completion?: CompletionConfig;
 }
 
@@ -110,7 +107,6 @@ export interface ConfigOrigins {
   readonly generators: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
-  readonly prompts: ConfigOrigin;
 }
 
 /** A resolved config layer's file location and existence. */

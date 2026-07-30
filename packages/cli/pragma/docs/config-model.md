@@ -27,7 +27,6 @@ A higher layer overrides a lower one field-by-field. `packs` and `generators` re
 | `generators` | array | Scaffold generator sources (`{ name, source }` refs). Replaces across layers. |
 | `stories` | array | Declarative read stories compiled at boot (experimental). |
 | `prefixes` | record | Extra namespace prefixes merged over the built-in map. |
-| `prompts` | record | Named prompt overrides (global machine state). |
 | `completion` | object | Completion policy read at `setup completions` emit time. |
 
 ## Renamed: `packages` → `packs`

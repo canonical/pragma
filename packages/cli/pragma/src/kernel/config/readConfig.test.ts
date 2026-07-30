@@ -180,16 +180,16 @@ describe("legacy `packages` key — loud rename error", () => {
   it("a `packages` key NESTED under another field does NOT trip the detection", async () => {
     freshXdg();
     // The rename detection is deliberately SHALLOW (top-level keys only): a
-    // `packages` key inside `prompts` is prompt data, not the legacy field.
-    // Pin that against a future "helpful" deep check, which would false-positive
-    // here.
+    // `packages` key inside `prefixes` is a namespace prefix named `packages`,
+    // not the legacy field. Pin that against a future "helpful" deep check,
+    // which would false-positive here.
     const dir = projectWith(
-      'export default { prompts: { packages: { hint: "nested" } } };',
+      'export default { prefixes: { packages: "https://example.com/packages/" } };',
     );
     const path = join(dir, "pragma.config.ts");
 
     await expect(evaluateProjectConfig(path)).resolves.toEqual({
-      prompts: { packages: { hint: "nested" } },
+      prefixes: { packages: "https://example.com/packages/" },
     });
   });
 });

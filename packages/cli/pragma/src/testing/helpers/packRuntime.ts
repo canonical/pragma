@@ -101,7 +101,6 @@ export async function buildFixtureRuntime(
       generators: "default",
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "", exists: false },
     project: { exists: false },
