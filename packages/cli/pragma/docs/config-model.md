@@ -38,6 +38,31 @@ A higher layer overrides a lower one field-by-field. `packs` and `generators` re
 
 The second reader runs on the storeless `--help`/`__complete` fast path, which reads no config at all, so it can only ever see `pragma.conf.ts`. A project config that adds a prefix therefore changes the graph it builds, not how the CLI renders it. A fork that wants its own namespaces rendered and resolvable declares them in its own `pragma.conf.ts`.
 
+## The distribution vocabulary (not a layer)
+
+`pragma.conf.ts` has a second, named export beside its default config:
+
+```ts
+export const vocabulary = {
+  altName: "ds:name",
+  prompt: {
+    type: "ds:Prompt",
+    body: "ds:promptBody",
+    argument: "ds:promptArgument",
+    argName: "ds:argName",
+    argRequired: "ds:argRequired",
+  },
+};
+```
+
+These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames`, which is what a name completion offers and what `tier lookup` matches), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
+
+It is **not** a config layer field, and cannot be set in a global or project config. Its readers are the storeless `--help`/`__complete` fast path and the pack index builder — neither can reach a config layer at all, so a layered field would be one you could set to no effect. A fork changes these values in its own `pragma.conf.ts` and rebuilds its binary; that, plus `prefixes` and the identity fields, is the whole of what makes the CLI *this* distribution.
+
+Every term must be a prefixed name (`prefix:local`) whose prefix `prefixes` binds. They are interpolated into queries, where a bare absolute IRI is a parse error, so the CLI validates them at startup and refuses to run with a message naming the offending field rather than reporting an unreadable graph as an empty one.
+
+Declaring the prompt shape is a read contract, not a claim that the graph has prompts. This distribution's graph currently carries none, so `pragma prompt list` is honestly empty.
+
 ## Renamed: `packages` → `packs`
 
 The `packages` field was renamed to `packs`. A config layer that still declares `packages:` fails loudly: the schema detects the legacy key before its unknown-key stripping could hide it and throws a `CONFIG_ERROR` naming the rename. Rename the key — the entry shape is unchanged.
