@@ -66,6 +66,46 @@ the assertion silently. The 50 ms target is retained as the aspiration in the
 surface covenant's `budgets` block; a faster runtime or a lighter start closes
 the gap.
 
+## The embedded pack becomes the real graph — what it costs
+
+The binary used to embed a 23-triple sample; it now embeds the distribution's
+own 8 479-triple graph, so `__store-probe` boots a real store. This measures
+what that costs, and — because a shared dev box's absolute numbers are
+worthless in isolation — measures it **net of process start**.
+
+**Method.** Round-robin over three cases, 15 rounds, so all three see the same
+machine load: `pragma --version` (process start, the control), `__store-probe`
+against the **toy** pack, and `__store-probe` against the **real** pack. The toy
+binary is compiled from this same tree with `origin/main`'s two generated embed
+modules swapped in, so the ONLY difference between the two probe binaries is the
+pack. Four repetitions of the whole protocol.
+
+| Case                          | Median  | p95     | Over process start |
+| ----------------------------- | ------- | ------- | ------------------ |
+| `pragma --version` (control) | ~260 ms | ~284 ms | —                  |
+| `__store-probe`, toy pack     | ~324 ms | ~383 ms | **+64 ms**         |
+| `__store-probe`, real pack    | ~505 ms | ~623 ms | **+245 ms**        |
+
+Two things this shows.
+
+1. **Absolute numbers on this box mean nothing.** Process start alone measured
+   ~260 ms here against the reference box's 45.5 ms — a ~6× swing, and it moves
+   between sessions. Always subtract a `--version` control before attributing a
+   cost to store work.
+2. **The real pack costs ~+181 ms of store work** (245 − 64, stable to ±6 ms
+   across the four repetitions). That is the honest price of booting a real
+   graph: a larger n-quads load and a larger extraction to rebuild.
+
+Projected onto the reference box's process start (45.5 ms median / 50.1 ms p95),
+`__store-probe` with the real pack lands around **290 ms median / ~317 ms p95** —
+median at the 300 ms ceiling, p95 over it.
+
+**Pre-existing gap, recorded honestly:** the `warm store-backed verb` budget case
+already fails on this box with the **toy** pack — 352 / 364 / 382 ms median
+across three attempts against the 300 ms ceiling — so its failure here is
+environmental, not a regression this change introduced. The ceiling below is
+derived for the reference box, which is the covenant.
+
 ## PR7 — `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
 
 PR7 completes the MCP surface (38 tools), so the two budgets PR4 seeded now go

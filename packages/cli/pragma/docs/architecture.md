@@ -16,7 +16,7 @@ Keeping the projectors pure and zod-free is what lets `--help` and shell complet
 
 ### Store — the design-system knowledge graph
 
-The read capabilities query a local, content-addressed graph. `pragma sources update` resolves each configured package (git, file, or npm), builds one [oxigraph](https://github.com/oxigraph/oxigraph)-backed pack, and writes `pragma.lock.json`. Later boots load from the lock with no network access.
+The read capabilities query a local, content-addressed graph. `pragma sources update` resolves each configured package (git, file, or npm) and builds one [oxigraph](https://github.com/oxigraph/oxigraph)-backed pack under `$XDG_CACHE_HOME/pragma/packs/<contentHash>/`; a one-line pointer in the same cache records which pack a project reads. The binary also carries the distribution's own pack compiled in, so a fresh install answers reads before anything is built. One predicate decides between them — `resolveSources` — and every surface that reports on the store switches on its answer rather than re-deriving one: a project that declared its own packs and never built them is never served the shipped snapshot.
 
 At runtime a **`LazyStore`** boots the graph on first use and memoizes it. A storeless verb (`config show`, `doctor`, `sources status`, `capabilities`) never reaches the store factory, so the storeless guarantee holds by construction rather than by convention.
 
