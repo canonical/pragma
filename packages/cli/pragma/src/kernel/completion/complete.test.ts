@@ -16,6 +16,7 @@ describe("runComplete — the __complete pipeline", () => {
   it("resolves against the live capabilities (storeless static matches)", async () => {
     await expect(runComplete(["co"], capabilities)).resolves.toEqual([
       "colophon",
+      "concept",
       "config",
     ]);
     // The live `config` sub-verbs, prefix-filtered and sorted by the resolver.
@@ -38,6 +39,7 @@ describe("runComplete — the __complete pipeline", () => {
   it("strips a leading bin name", async () => {
     await expect(runComplete(["pragma", "co"], capabilities)).resolves.toEqual([
       "colophon",
+      "concept",
       "config",
     ]);
   });
@@ -93,7 +95,7 @@ describe("runComplete — never-throw guard (PROTECTED)", () => {
     await runComplete(["co"], capabilities);
     const lines = write.mock.calls.map((call) => String(call[0]));
     expect(lines.join("")).toMatch(
-      /\[complete\] context=noun partial="co" candidates=2 in \d+(\.\d+)?ms/,
+      /\[complete\] context=noun partial="co" candidates=3 in \d+(\.\d+)?ms/,
     );
   });
 });

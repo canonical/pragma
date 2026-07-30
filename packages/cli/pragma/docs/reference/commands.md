@@ -121,6 +121,85 @@ pragma colophon  # the toolchain + active domain story
 pragma colophon --format llm  # condensed Markdown for agents
 ```
 
+## concept
+
+### pragma concept list
+
+List design-system concepts (standalone documentation).
+
+List design-system concepts — standalone documentation not bound to a single component (foundations, disambiguations, decision guides). Use when browsing cross-cutting design guidance. Example: concept_list {}.
+
+```
+pragma concept list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--search` | `<string>` | Search in name, summary, type. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_list` tool.
+
+**Examples**
+
+```bash
+pragma concept list
+pragma concept list --format llm
+```
+
+### pragma concept lookup
+
+Look up concept details by name, IRI, or glob.
+
+Get the full documentation body of one or more concepts by name — the Markdown content, summary, type, and tier. Use when you need the actual guidance a concept documents. Example: concept_lookup { names: ["Foundations: Grid"] }.
+
+```
+pragma concept lookup <name...>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<name...>` | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_lookup` tool.
+
+**Examples**
+
+```bash
+pragma concept lookup <name>
+```
+
+### pragma concept sample
+
+Return randomly selected complete concept entries as exemplars.
+
+Return randomly selected complete concepts (with their Markdown body) as exemplars. Use BEFORE writing queries to see actual data shapes.
+
+```
+pragma concept sample [count]
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `[count]` | no | Number of samples (1–5, default 2). |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_sample` tool.
+
+**Examples**
+
+```bash
+pragma concept sample
+pragma concept sample 3
+```
+
 ## config
 
 ### pragma config set

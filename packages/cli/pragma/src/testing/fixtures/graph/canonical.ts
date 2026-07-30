@@ -73,6 +73,23 @@ ds:token.spacing.medium a ds:Token ;
   ds:tokenType ds:type.spacing ;
   ds:valueLight "16px" ;
   ds:valueDark "16px" .
+
+# ---- Concepts (standalone documentation) ----
+ds:Concept a owl:Class .
+ds:ConceptType a owl:Class .
+ds:content a owl:DatatypeProperty ; rdfs:domain ds:Concept ; rdfs:range xsd:string .
+ds:knownEdgeCases a owl:DatatypeProperty ; rdfs:domain ds:Concept ; rdfs:range xsd:string .
+ds:conceptType a owl:ObjectProperty ; rdfs:domain ds:Concept ; rdfs:range ds:ConceptType .
+
+ds:concepttype.Explanation a ds:ConceptType ; ds:name "Explanation" .
+
+# Name carries a colon — exercises the by-name (not prefixed-IRI) lookup path.
+ds:concept.Foundations-Grid a ds:Concept ;
+  ds:name "Foundations: Grid" ;
+  ds:summary "The shared column system and per-tier grid rules." ;
+  ds:content "## Grid\\n\\nColumn counts are 4, 8, or 16 only." ;
+  ds:conceptType ds:concepttype.Explanation ;
+  ds:tier ds:global .
 `;
 
 /** The `cs:` (code standards) section — reused verbatim from `standard/parity.test.ts`'s

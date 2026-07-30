@@ -60,6 +60,21 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Understanding how pragma and the active domain are built — the toolchain + design-system colophon, for onboarding or a demo",
   },
+  concept_list: {
+    category: "read",
+    use_when:
+      "Browsing standalone design-system documentation (foundations, disambiguations, decision guides) not bound to a single component",
+  },
+  concept_lookup: {
+    category: "read",
+    use_when:
+      "Need the full Markdown documentation body of specific concepts by name — the actual cross-cutting guidance",
+  },
+  concept_sample: {
+    category: "read",
+    use_when:
+      "See actual concept data shapes (with their Markdown body) before querying — returns random instances each call",
+  },
   config_show: {
     category: "read",
     use_when: "Checking active tier and channel before querying",

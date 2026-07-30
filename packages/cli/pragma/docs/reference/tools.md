@@ -59,6 +59,42 @@ Read-only.
 
 _No input parameters._
 
+### concept_list
+
+List design-system concepts — standalone documentation not bound to a single component (foundations, disambiguations, decision guides). Use when browsing cross-cutting design guidance. Example: concept_list {}.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `search` | string | no | Search in name, summary, type. |
+
+### concept_lookup
+
+Get the full documentation body of one or more concepts by name — the Markdown content, summary, type, and tier. Use when you need the actual guidance a concept documents. Example: concept_lookup { names: ["Foundations: Grid"] }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string[] | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+
+### concept_sample
+
+Return randomly selected complete concepts (with their Markdown body) as exemplars. Use BEFORE writing queries to see actual data shapes.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `count` | string | no | Number of samples (1–5, default 2). |
+
 ### config_set
 
 Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.
