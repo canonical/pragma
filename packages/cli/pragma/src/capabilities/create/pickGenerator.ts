@@ -1,13 +1,3 @@
-/**
- * Select the summon generator for a `create` invocation.
- *
- * This module statically imports the summon generator packages' `generators`
- * maps — and importing them pulls summon-core. So this module MUST stay behind
- * `create`'s lazy `import()` (R9): the fast paths (`buildProgram` / `__complete`
- * / `--help` / reads) never load it, and `create --yes` never loads React either
- * (summon-core's Ink UI is dynamic-only).
- */
-
 import { generators as applicationGenerators } from "@canonical/summon-application";
 import { generators as componentGenerators } from "@canonical/summon-component";
 import type { GeneratorDefinition } from "@canonical/summon-core";
@@ -39,6 +29,12 @@ const GENERATOR_MAPS: Record<CreateKind, GeneratorMap> = {
 
 /**
  * Pick the generator for a `create <kind>` run.
+ *
+ * The module this lives in statically imports the summon generator packages'
+ * `generators` maps — and importing them pulls summon-core. So it MUST stay
+ * behind `create`'s lazy `import()` (R9): the fast paths (`buildProgram` /
+ * `__complete` / `--help` / reads) never load it, and `create --yes` never loads
+ * React either (summon-core's Ink UI is dynamic-only).
  *
  * `component` is branched on literally: it is the only noun with a framework
  * axis (which is why the verb synthesises a `--framework` enum), and narrowing

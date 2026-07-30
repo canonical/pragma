@@ -1,6 +1,6 @@
 /**
  * The `create` verbs — `component` / `package` / `application` (path capped at
- * two segments; the three component frameworks collapse to one verb + a
+ * two segments; the declared component frameworks collapse to one verb + a
  * `--framework` enum). Each is a mutating, interactive, storeless verb.
  *
  * LAZY DISPATCH (R9 + lazy-React): the params are STATIC — built by the
@@ -237,18 +237,11 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
 // =============================================================================
 
 /**
- * Build the `create` Task for one invocation: pick the generator, jail its
- * output path, pre-validate flag/arg answers, pick the prompt strategy against
- * the interaction context, wire `runtime.exec`, and return `execute`.
- *
- * @returns A `Promise<Task<GeneratorResult>>` (the union's third arm) the
- *   dispatcher/MCP handler awaits into a Task before interpreting.
- */
-/**
  * The standalone `bun build --compile` binary resolves every bundled module
  * under the virtual `/$bunfs` filesystem — a marker absent from any source or
  * `bun`-run module URL. Only a generator that routes its template reads through
- * the embedded manifest can run there (`CREATE_GENERATORS[kind].embedsTemplates`);
+ * the embedded manifest can run there
+ * (`CREATE_GENERATORS[kind].readsEmbeddedTemplates`);
  * the others call `template({ source })`, which falls through to
  * `readFile(source)` and dies with `ENOENT … /$bunfs/…` after `mkdir` has
  * already run, leaving partially-created files behind.
@@ -298,7 +291,7 @@ export function isModuleNotFound(cause: unknown): boolean {
  * defensive backstop {@link isModuleNotFound} turns into the same clean gate.
  */
 async function loadCreateRuntime(kind: CreateKind) {
-  if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].embedsTemplates) {
+  if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].readsEmbeddedTemplates) {
     throw new PragmaError({
       code: "UNSUPPORTED",
       message: `\`create ${kind}\` is not available in the compiled pragma binary — its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the \`summon\` CLI.`,
@@ -335,6 +328,17 @@ async function loadCreateRuntime(kind: CreateKind) {
   }
 }
 
+/**
+ * Build the `create` Task for one invocation: pick the generator, jail its
+ * output path, pre-validate flag/arg answers, pick the prompt strategy against
+ * the interaction context, wire `runtime.exec`, and return `execute`.
+ *
+ * @param kind - The create noun.
+ * @param params - The coerced params for this invocation.
+ * @param rt - The pragma runtime.
+ * @returns A `Promise<Task<GeneratorResult>>` (the union's third arm) the
+ *   dispatcher/MCP handler awaits into a Task before interpreting.
+ */
 async function runCreate(
   kind: CreateKind,
   params: Record<string, unknown>,
