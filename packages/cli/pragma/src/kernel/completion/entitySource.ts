@@ -4,18 +4,20 @@
  * browser (`info`, `doctor`, MCP prompts, the resource provider) shares.
  *
  * {@link indexCompletionEnv} is the one source-dispatched reader wired at the
- * `__complete` fast path (bin) and the `__complete` verb. It resolves five
+ * `__complete` fast path (bin) and the `__complete` verb. It resolves three
  * storeless sources — all disk-readable, never a store/SPARQL:
- * - `index`    → the active pack's `index.json` entity names of a prefixed type.
+ * - `index`    → the active pack's `index.json`, filtered by a prefixed `type`
+ *                and read from the declared `field` (`name` by default).
  * - `skills`   → SKILL.md names via {@link discoverSkills} (filesystem walk).
- * - `prompts`  → the pack index's `ds:Prompt` entities (`label || name`).
- * - `tiers`    → the pack index's `ds:Tier` entities (their `ds:name`, else
- *                `label ?? name` when the index carries no `ds:name`).
  * - `prefixes` → the pack index's prefixes ∪ the default display prefixes.
+ *
+ * There is no per-family source. An entity family IS a `type` filter plus the
+ * field that family is addressed by, and both are declared at the verb, so this
+ * module names no entity type at all.
  *
  * The index is loaded once (lazy `readFileSync` + plain `JSON.parse` — never a
  * store, facade, config evaluator, or zod schema; any I/O or parse error
- * degrades to `[]`) and shared across the index/prompts/tiers/prefixes sources;
+ * degrades to `[]`) and shared across the index and prefixes sources;
  * the skills walk is memoized to one walk per `__complete` process.
  * {@link createIndexEntityReader} exposes the index read for the storeless
  * behavioural/safety tests; {@link emptyNameSource} is the default (no names).
@@ -49,10 +51,9 @@
  *   completion candidates: every read, and every surface that takes the
  *   decision, refuses. `PackIndex`/`PackIndexEntity` are imported type-only, so
  *   no zod schema is loaded at runtime.
- * - `discoverSkills` (`node:fs/os/path` only) and `DEFAULT_PREFIX_MAP` (a pure
- *   const) are the only new edges — both leaf-clean, so the fast path stays free
- *   of boot/config/store/zod. The `ds:Prompt`/`ds:Tier` filters are INLINED
- *   (importing `prompts/source.ts` would cycle back into this module).
+ * - `discoverSkills` (`node:fs/os/path` only) and `DEFAULT_PREFIX_MAP` (whose
+ *   domain half the distribution declares) are the only new edges — both
+ *   leaf-clean, so the fast path stays free of boot/config/store/zod.
  */
 
 import { readFileSync } from "node:fs";
@@ -66,13 +67,8 @@ import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../runtime/paths.js";
 import type { SourcesDecision } from "../runtime/resolveSources.js";
-import type { CompletionSourceRef } from "../spec/types.js";
+import type { CompletionField, CompletionSourceRef } from "../spec/types.js";
 import type { CompletionEnv } from "./types.js";
-
-/** The prefixed KG type every prompt entity carries (inlined; no cycle). */
-const PROMPT_TYPE = "ds:Prompt";
-/** The prefixed KG type every tier entity carries (inlined; no cycle). */
-const TIER_TYPE = "ds:Tier";
 
 /** The default name source: no index tier, so no candidates. */
 export const emptyNameSource: CompletionEnv["names"] = () => [];
@@ -195,42 +191,46 @@ export function createIndexEntityReader(
   };
 }
 
-/** All names of a prefixed type in the index (empty type = any), sorted. */
-function indexNames(index: PackIndex | undefined, type: string): string[] {
-  if (!index) return [];
-  const names = new Set<string>();
-  for (const entity of index.entities) {
-    if (matchesType(entity, type)) names.add(entity.name);
-  }
-  return [...names].sort();
-}
-
-/** The `ds:Prompt` entities' completable names (`label || name`), sorted. */
-function promptNames(index: PackIndex | undefined): string[] {
-  if (!index) return [];
-  const names = new Set<string>();
-  for (const entity of index.entities) {
-    if (matchesType(entity, PROMPT_TYPE))
-      names.add(entity.label || entity.name);
-  }
-  return [...names].sort();
-}
-
 /**
- * The `ds:Tier` entities' completable names, sorted. `tier lookup` matches
- * `ds:name`, so when the index carries it (projected by `buildIndex` into
- * `altNames`) those are emitted exactly; a pack whose tiers were indexed without
- * `ds:name` falls back to `label ?? name` (empty rather than wrong).
+ * One entity's completable tokens for a declared field.
+ *
+ * `name` is the index MINIMUM, always present. `label` and `altNames` are
+ * optional enrichment, so each degrades to what it would have meant had the
+ * pack not carried it — a missing label is the name, missing alt names are the
+ * label (else the name). Emitting nothing instead would silently offer fewer
+ * candidates than a pack authored without the enrichment deserves.
+ *
+ * @param entity - One index entity.
+ * @param field - The declared field to read.
+ * @returns The tokens that entity contributes.
  */
-function tierNames(index: PackIndex | undefined): string[] {
+function entityNames(
+  entity: PackIndexEntity,
+  field: CompletionField,
+): readonly string[] {
+  switch (field) {
+    case "name":
+      return [entity.name];
+    case "label":
+      return [entity.label || entity.name];
+    case "altNames":
+      return entity.altNames && entity.altNames.length > 0
+        ? entity.altNames
+        : [entity.label || entity.name];
+  }
+}
+
+/** A ref's candidates: entities of its type, read from its field, sorted. */
+function indexNames(
+  index: PackIndex | undefined,
+  ref: CompletionSourceRef,
+): string[] {
   if (!index) return [];
   const names = new Set<string>();
   for (const entity of index.entities) {
-    if (!matchesType(entity, TIER_TYPE)) continue;
-    if (entity.altNames && entity.altNames.length > 0) {
-      for (const alt of entity.altNames) names.add(alt);
-    } else {
-      names.add(entity.label || entity.name);
+    if (!matchesType(entity, ref.type ?? "")) continue;
+    for (const name of entityNames(entity, ref.field ?? "name")) {
+      names.add(name);
     }
   }
   return [...names].sort();
@@ -250,8 +250,8 @@ function prefixNames(index: PackIndex | undefined): string[] {
  * reader every name family shares. Wired at the `__complete` fast path (bin) and
  * the `__complete` verb; storeless throughout (see the module docblock).
  *
- * The pack index is loaded once, lazily, and reused across the index/prompts/
- * tiers/prefixes sources; the skills filesystem walk is memoized to one walk per
+ * The pack index is loaded once, lazily, and reused across the index and
+ * prefixes sources; the skills filesystem walk is memoized to one walk per
  * process (the design's perf caveat). Every source returns the FULL candidate
  * list in canonical casing — the resolver ranks/filters against the partial.
  *
@@ -277,13 +277,9 @@ export function indexCompletionEnv(cwd: string): CompletionEnv {
     names(ref: CompletionSourceRef): readonly string[] {
       switch (ref.from) {
         case "index":
-          return indexNames(getIndex(), ref.type ?? "");
+          return indexNames(getIndex(), ref);
         case "skills":
           return getSkills();
-        case "prompts":
-          return promptNames(getIndex());
-        case "tiers":
-          return tierNames(getIndex());
         case "prefixes":
           return prefixNames(getIndex());
       }

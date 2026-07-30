@@ -309,10 +309,10 @@ describe("storeless guarantee (PROTECTED)", () => {
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
 
-  it("the non-index name sources resolve without constructing the store", async () => {
-    // skills (filesystem), prompts/tiers (index filter), prefixes (index ∪
-    // default map) — every family completes storelessly against the live
-    // capabilities. A fresh cwd → no pointer → the embedded index.
+  it("every declared name source resolves without constructing the store", async () => {
+    // skills (filesystem), prefixes (index ∪ default map) and the index's own
+    // `label`/`altNames` fields — every family completes storelessly against
+    // the live capabilities. A fresh cwd → no pointer → the embedded index.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-storeless-src-"));
     const env = indexCompletionEnv(cwd);
 
@@ -321,8 +321,8 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["ontology", "show", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
-    // skills / prompts / tiers: no data here, but the point is they never boot
-    // the store — an empty list is the correct storeless answer.
+    // skills / prompt labels / tier alt names: the point is that none of them
+    // boots the store — an empty list is the correct storeless answer.
     for (const words of [
       ["skill", "lookup", "do"],
       ["prompt", "lookup", "bu"],

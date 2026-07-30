@@ -9,6 +9,7 @@
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { type TierLookupData, tierLookupFormatters } from "./lookup.render.js";
+import { TIER_TYPE } from "./pack.js";
 
 const tierLookupSpec: VerbSpec<Record<string, unknown>, TierLookupData> = {
   path: ["tier", "lookup"],
@@ -21,7 +22,13 @@ const tierLookupSpec: VerbSpec<Record<string, unknown>, TierLookupData> = {
       doc: "The tier name (e.g. apps/lxd).",
       positional: true,
       required: true,
-      complete: { kind: "names", source: { from: "tiers" } },
+      // A tier is addressed by the DECLARED name property, which `buildIndex`
+      // projects into `altNames` — the same property `runTierLookup` matches,
+      // so a candidate offered here always resolves.
+      complete: {
+        kind: "names",
+        source: { from: "index", type: TIER_TYPE, field: "altNames" },
+      },
     },
   ],
   output: { formatters: tierLookupFormatters },

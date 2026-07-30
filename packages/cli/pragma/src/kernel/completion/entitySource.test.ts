@@ -32,22 +32,28 @@ function projectWithIndex(index: unknown): string {
   return cwd;
 }
 
-/** A crafted index exercising the index / prompts / tiers / prefixes sources. */
+/**
+ * A crafted index exercising the index / prefixes sources. Deliberately in a
+ * NEUTRAL namespace: the reader knows no entity families any more, so a test
+ * proving it reads `label` or `altNames` must not need this distribution's
+ * vocabulary to say so. (Real-vocabulary coverage lives in the PROTECTED
+ * contract describe below, which reads the shipped index.)
+ */
 const CRAFTED_INDEX = {
   version: 2,
   contentHash: CRAFTED_HASH,
-  prefixes: { ex: "https://example.com/", ds: "https://ds.canonical.com/" },
+  prefixes: { ex: "https://example.com/" },
   instanceCountByType: {},
   entities: [
     { name: "ex:Button", type: "ex:Component" },
-    { name: "ds:prompt.build", type: "ds:Prompt", label: "build-a-block" },
+    { name: "ex:prompt.build", type: "ex:Prompt", label: "build-a-block" },
     {
-      name: "ds:tier.lxd",
-      type: "ds:Tier",
+      name: "ex:tier.lxd",
+      type: "ex:Tier",
       label: "LXD",
       altNames: ["apps/lxd"],
     },
-    { name: "ds:tier.core", type: "ds:Tier", label: "core" },
+    { name: "ex:tier.core", type: "ex:Tier", label: "core" },
   ],
 };
 
@@ -63,15 +69,23 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
     ]);
   });
 
-  it("prompts: ds:Prompt entities emit label || name", async () => {
+  it("index + field label: emits the label, falling back to the name", async () => {
     const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
-    expect(await env.names({ from: "prompts" })).toEqual(["build-a-block"]);
+    expect(
+      await env.names({ from: "index", type: "ex:Prompt", field: "label" }),
+    ).toEqual(["build-a-block"]);
+    // No label on this one, so the name stands in.
+    expect(
+      await env.names({ from: "index", type: "ex:Component", field: "label" }),
+    ).toEqual(["ex:Button"]);
   });
 
-  it("tiers: emit ds:name (altNames) when present, else label ?? name", async () => {
+  it("index + field altNames: emits the alt names, falling back to label ?? name", async () => {
     const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
-    // apps/lxd from altNames (the ds:name); core from the label fallback.
-    expect(await env.names({ from: "tiers" })).toEqual(["apps/lxd", "core"]);
+    // apps/lxd from altNames; core from the label fallback.
+    expect(
+      await env.names({ from: "index", type: "ex:Tier", field: "altNames" }),
+    ).toEqual(["apps/lxd", "core"]);
   });
 
   it("prefixes: the index's prefixes ∪ the default display map", async () => {
@@ -100,7 +114,7 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
     expect(await env.names({ from: "skills" })).toEqual(["docx"]);
   });
 
-  it("missing sources degrade to [] (prefixes still lists the default map)", async () => {
+  it("a type nothing matches yields [] (prefixes still list the default map)", async () => {
     const env = indexCompletionEnv(
       projectWithIndex({
         version: 2,
@@ -110,8 +124,13 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
         entities: [{ name: "ex:Button", type: "ex:Component" }],
       }),
     );
-    expect(await env.names({ from: "prompts" })).toEqual([]);
-    expect(await env.names({ from: "tiers" })).toEqual([]);
+    expect(
+      await env.names({ from: "index", type: "ex:Prompt", field: "label" }),
+    ).toEqual([]);
+    expect(
+      await env.names({ from: "index", type: "ex:Tier", field: "altNames" }),
+    ).toEqual([]);
+    // The display map is compiled in, so it answers with no index at all.
     expect(await env.names({ from: "prefixes" })).toContain("ds");
   });
 });

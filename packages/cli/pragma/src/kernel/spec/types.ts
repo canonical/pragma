@@ -42,12 +42,14 @@ export type Capability = {
  * `__complete` never boots the graph, so every source is disk-readable: the
  * precomputed pack index, the filesystem, or the prefix table.
  */
-export type CompletionFrom =
-  | "index"
-  | "skills"
-  | "tiers"
-  | "prompts"
-  | "prefixes";
+export type CompletionFrom = "index" | "skills" | "prefixes";
+
+/**
+ * Which of an index entity's name-bearing fields a param completes against.
+ * The kernel knows no entity families — a family is a `type` filter plus the
+ * field that family is addressed by, both declared at the verb.
+ */
+export type CompletionField = "name" | "label" | "altNames";
 
 /** A reference to one name source (with an optional prefixed type filter). */
 export interface CompletionSourceRef {
@@ -55,6 +57,12 @@ export interface CompletionSourceRef {
   readonly from: CompletionFrom;
   /** Prefixed type filter — meaningful only for `from: "index"` (empty = any). */
   readonly type?: string;
+  /**
+   * Which field the candidates come from — `from: "index"` only, default
+   * `"name"`. `label` and `altNames` are optional index enrichment and fall
+   * back (see `completion/entitySource.ts`).
+   */
+  readonly field?: CompletionField;
 }
 
 /** How a partial word is matched against candidate names. */
