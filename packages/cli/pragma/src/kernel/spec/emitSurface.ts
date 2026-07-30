@@ -129,7 +129,7 @@ export const FIXED_SURFACE = {
   },
   budgets: {
     $comment:
-      "help/complete are the designed <50ms aspiration; the ENFORCED ceilings (budgets.test.ts) are 130ms help / 100ms complete — ~2× the measured median on the build hardware, recorded in BUDGETS.md. Designed-aspiration vs enforced-measured.",
+      "help/complete/warmStoreVerb are designed aspirations; the ENFORCED ceilings (budgets.test.ts) are 130ms help / 100ms complete / 400ms warmStoreVerb, each derived from measurement on the build hardware and recorded in BUDGETS.md. Designed-aspiration vs enforced-measured. warmStoreVerb joined this list when the embedded pack became the distribution's real graph rather than a sample: booting it costs ~+181ms of store work, which puts the reference box's p95 over the designed 300ms.",
     help: "<50ms",
     complete: "<50ms",
     projectConfigLoad: "<10ms",

@@ -53,10 +53,12 @@ unchanged; only the statistic it is asserted against was made reliable.
 
 The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
 cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
-measures ~147 ms median here — already ~2× under the designed 300 ms, so unlike
-`--help`/`__complete` the designed target holds without relaxation. Boot loads
-the n-quads dump (no TTL parse) and rebuilds the schema from the extraction
-artifact (no live 7-pass compile), which is what keeps it in budget.
+measured ~147 ms median here — but that timed a boot of the 23-triple
+**placeholder** pack. Against the real embedded graph it is ~2× that; see "The
+embedded pack becomes the real graph" below, where the ceiling is re-derived.
+Boot still loads the n-quads dump (no TTL parse) and rebuilds the schema from
+the extraction artifact (no live 7-pass compile), which is what keeps the growth
+proportionate rather than catastrophic.
 
 The designed 50 ms target for `--help`/`__complete` proved unrealistic here:
 cold Bun process start alone (`--version`) is ~45 ms, leaving no headroom for
@@ -105,6 +107,20 @@ already fails on this box with the **toy** pack — 352 / 364 / 382 ms median
 across three attempts against the 300 ms ceiling — so its failure here is
 environmental, not a regression this change introduced. The ceiling below is
 derived for the reference box, which is the covenant.
+
+### `BUDGET_WARM_STORE_MS`: 300 → 400
+
+Derived, not chosen: `ceil(317 × 1.25 / 50) × 50 = 400`, where 317 ms is the
+projected reference-box p95 above. It is the same treatment `--help` and
+`__complete` already get — the ceiling follows the measurement, the designed
+target stays put — so `warmStoreVerb: "<300ms"` remains the aspiration in the
+surface covenant and `budgets.$comment` now names it as the third
+designed-vs-enforced divergence.
+
+What was NOT done, deliberately: the assertion still runs against **median and
+p95**, not a trimmed mean. That mechanism exists here for `__complete`, where the
+p95 excess was contention noise over a median with 2× headroom. This excess is
+real work. Hiding real cost behind a robust statistic would make the budget lie.
 
 ## PR7 — `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
 
