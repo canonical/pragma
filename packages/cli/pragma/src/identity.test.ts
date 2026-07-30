@@ -78,8 +78,10 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
 
     expect(help).not.toMatch(THIS_DISTRIBUTION);
     expect(help).toMatch(/^recipes — Explore the recipe graph$/m);
-    // The pack noun leads the page, under the fork's own blurb.
-    expect(help).toMatch(/^Explore the recipe graph\n {2}dish\b/m);
+    // The pack noun leads the page untitled, and the blurb is not repeated as
+    // a heading three lines under the header that already carries it.
+    expect(help).toMatch(/^Usage: recipes .*\n\n {2}dish\b/m);
+    expect(help.match(/Explore the recipe graph/g)).toHaveLength(1);
     expect(help).toContain("Read and write recipes configuration");
   });
 

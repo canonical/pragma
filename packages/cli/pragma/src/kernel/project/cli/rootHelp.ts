@@ -2,11 +2,12 @@
  * The curated root `--help` page.
  *
  * The kernel curates the nouns it ships — and only those. It names no domain:
- * a pack-contributed noun leads the page under the distribution's own help
- * blurb and describes itself through its first live verb, so the front door
- * follows the content instead of duplicating it. Every section is reconciled
- * against the *live* nouns (from the registered verbs), so a noun that is not
- * built yet is dropped and one the kernel has never heard of still surfaces.
+ * the nouns it does NOT curate lead the page untitled (the header one line up
+ * already carries the distribution's blurb) and describe themselves through
+ * their own verbs, so the front door follows the content instead of naming it.
+ * Every section is reconciled against the *live* nouns (from the registered
+ * verbs), so a noun that is not built yet is dropped and one the kernel has
+ * never heard of still surfaces.
  */
 
 import type { VerbSpec } from "../../spec/types.js";
@@ -24,7 +25,12 @@ interface NounSummary {
 }
 
 interface HelpGroup {
-  readonly title: string;
+  /**
+   * Absent for the leading uncurated group: its rows sit directly under the
+   * usage line, since repeating the header's blurb as a heading three lines
+   * below it says the same thing twice.
+   */
+  readonly title?: string;
   readonly nouns: readonly NounSummary[];
 }
 
@@ -35,7 +41,7 @@ interface HelpGroup {
  * @param programName - The CLI binary name (the distribution's `name`).
  * @returns The task-oriented groups, in display order.
  */
-function kernelGroups(programName: string): readonly HelpGroup[] {
+function buildKernelGroups(programName: string): readonly HelpGroup[] {
   return [
     {
       title: "Generate code",
@@ -110,18 +116,22 @@ function nounsFrom(verbs: readonly VerbSpec[]): Set<string> {
   return nouns;
 }
 
-/** The summary for a pack-contributed noun: its first live verb's. */
-function packSummary(noun: string, verbs: readonly VerbSpec[]): string {
+/**
+ * Summarise an uncurated noun from its first live verb — which is the pack's own
+ * `description` whenever the pack ships a `list` (`compilePack` compiles that
+ * verb first). The terminal period a pack sentence carries is dropped so the
+ * column reads as one voice with the kernel's own fragments.
+ */
+function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
   const first = verbs.find((v) => v.path[0] === noun && !v.hidden);
-  return first?.summary ?? `${noun} commands`;
+  return (first?.summary ?? `${noun} commands`).replace(/\.$/, "");
 }
 
 /**
  * Build the curated root help string.
  *
  * @param programName - The CLI binary name (the distribution's `name`).
- * @param description - The program description shown in the header, and the
- *   title of the leading section holding the pack-contributed nouns.
+ * @param description - The program description shown in the header.
  * @param verbs - All registered verbs, used to derive the live noun set.
  * @returns The formatted, colorized help text.
  */
@@ -134,18 +144,18 @@ export function formatRootHelp(
   // `mcp` is served by the bin's special-case, not a projected verb, but is
   // always available — surface it so the front door is complete.
   present.add("mcp");
-  const kernel = kernelGroups(programName);
+  const kernel = buildKernelGroups(programName);
   const curated = new Set(kernel.flatMap((g) => g.nouns.map((n) => n.noun)));
 
   const groups: HelpGroup[] = [
-    // Not in the kernel's table ⇒ it came from a pack. Those nouns lead the
-    // page, under the distribution's own blurb, described by their own verbs.
+    // Everything the kernel's curated table does not claim — in the shipped
+    // binary the bundled domain packs, in a fork whatever it ships. Untitled
+    // and first, so the domain leads the page without the kernel naming it.
     {
-      title: description,
       nouns: [...present]
         .filter((n) => !curated.has(n))
         .sort()
-        .map((noun) => ({ noun, summary: packSummary(noun, verbs) })),
+        .map((noun) => ({ noun, summary: summarizeNoun(noun, verbs) })),
     },
     ...kernel.map((g) => ({
       ...g,
@@ -170,7 +180,7 @@ export function formatRootHelp(
   ];
 
   for (const group of groups) {
-    lines.push(helpHeading(group.title));
+    if (group.title) lines.push(helpHeading(group.title));
     lines.push(
       ...helpColumns(
         group.nouns.map((n) => [n.noun, n.summary] as const),
