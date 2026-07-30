@@ -14,7 +14,7 @@ export type CheckStatus = "pass" | "fail" | "skip";
 
 /**
  * A structured sub-item under a check — e.g. one resolved package under
- * `package refs`, or one unresolvable server under `MCP commands`. Lets the
+ * `pack refs`, or one unresolvable server under `MCP commands`. Lets the
  * formatter render an indented, aligned breakdown instead of cramming
  * everything into a single `detail` string.
  */

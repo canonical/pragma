@@ -1,6 +1,11 @@
 {
   "extends": ["@canonical/biome-config"],
   "files": {
-    "includes": ["**/src/**", "**/*.json", "!**/*.generated.ts"]
+    "includes": [
+      "**/src/**",
+      "**/*.json",
+      "pragma.conf.ts",
+      "!**/*.generated.ts"
+    ]
   }
 }

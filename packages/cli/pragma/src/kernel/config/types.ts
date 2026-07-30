@@ -13,14 +13,20 @@ export const CHANNELS = ["normal", "experimental", "prerelease"] as const;
 /** A release channel name. */
 export type Channel = (typeof CHANNELS)[number];
 
-/** The object form of a package source declaration. */
-export interface PackageDeclaration {
+/** The object form of a pack source declaration. */
+export interface PackSource {
   readonly name: string;
   readonly source?: string;
 }
 
-/** A `packages` entry: a bare npm name or a `{ name, source }` declaration. */
-export type PackageEntry = string | PackageDeclaration;
+/** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */
+export type PackDeclaration = string | PackSource;
+
+/** A `generators` entry: a scaffold generator's npm/git/file source ref. */
+export interface GeneratorSource {
+  readonly name: string;
+  readonly source: string;
+}
 
 /**
  * Completion policy, read at `setup completions` emit time (never on the
@@ -39,14 +45,24 @@ export interface CompletionConfig {
 
 /** The effective, resolved configuration. `channel` always has a value. */
 export interface PragmaConfig {
+  /** The distribution's display name. */
+  readonly name?: string;
+  /** The distribution's one-line help blurb. */
+  readonly help?: string;
+  /** The distribution's colophon (markdown). */
+  readonly colophon?: string;
+  /** Where the distribution's users report issues. */
+  readonly issuesUrl?: string;
   /** Active tier path, or absent when no tier is configured. */
   readonly tier?: string;
   /** Release channel controlling component visibility. */
   readonly channel: Channel;
   /** Default progressive-disclosure level. */
   readonly detail?: string;
-  /** Semantic package sources; replaces (does not merge) across layers. */
-  readonly packages?: readonly PackageEntry[];
+  /** Semantic pack sources; replaces (does not merge) across layers. */
+  readonly packs?: readonly PackDeclaration[];
+  /** Scaffold generator sources; replaces (does not merge) across layers. */
+  readonly generators?: readonly GeneratorSource[];
   /** Declarative read stories compiled at boot (experimental; opaque here). */
   readonly stories?: readonly unknown[];
   /** Additional namespace prefixes merged over the built-in map. */
@@ -63,10 +79,15 @@ export interface PragmaConfig {
  * wins during the merge.
  */
 export interface RawConfig {
+  readonly name?: string;
+  readonly help?: string;
+  readonly colophon?: string;
+  readonly issuesUrl?: string;
   readonly tier?: string;
   readonly channel?: Channel;
   readonly detail?: string;
-  readonly packages?: readonly PackageEntry[];
+  readonly packs?: readonly PackDeclaration[];
+  readonly generators?: readonly GeneratorSource[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly prompts?: Readonly<Record<string, unknown>>;
@@ -78,10 +99,15 @@ export type ConfigOrigin = "default" | "global" | "project";
 
 /** Per-field provenance for the effective merged config. */
 export interface ConfigOrigins {
+  readonly name: ConfigOrigin;
+  readonly help: ConfigOrigin;
+  readonly colophon: ConfigOrigin;
+  readonly issuesUrl: ConfigOrigin;
   readonly tier: ConfigOrigin;
   readonly channel: ConfigOrigin;
   readonly detail: ConfigOrigin;
-  readonly packages: ConfigOrigin;
+  readonly packs: ConfigOrigin;
+  readonly generators: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
   readonly prompts: ConfigOrigin;

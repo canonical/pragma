@@ -33,7 +33,7 @@ export async function checkKeStore(rt: PragmaRuntime): Promise<CheckResult> {
       status: "fail",
       detail: "failed to boot",
       remedy:
-        "Ensure design-system packages are installed and run `pragma sources update`.",
+        "Ensure design-system packs are configured and run `pragma sources update`.",
     };
   }
 }

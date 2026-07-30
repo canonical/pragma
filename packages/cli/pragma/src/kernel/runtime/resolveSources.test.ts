@@ -21,21 +21,24 @@ const tmp = (): string => {
   return dir;
 };
 
-/** Config layers whose only relevant knob is the `packages` origin. */
-function layersWith(packagesOrigin: "default" | "project"): ConfigLayers {
+/** Config layers whose only relevant knob is the `packs` origin. */
+function layersWith(packsOrigin: "default" | "project"): ConfigLayers {
   return {
     config: {
       channel: "normal",
-      packages:
-        packagesOrigin === "project"
-          ? [{ name: "x", source: "file:///x" }]
-          : [],
+      packs:
+        packsOrigin === "project" ? [{ name: "x", source: "file:///x" }] : [],
     },
     origins: {
+      name: "default",
+      help: "default",
+      colophon: "default",
+      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: packagesOrigin,
+      packs: packsOrigin,
+      generators: "default",
       stories: "default",
       prefixes: "default",
       prompts: "default",
@@ -122,16 +125,16 @@ describe("resolveSources decision table", () => {
     });
   });
 
-  it("no lock + default packages → embedded fallback", () => {
+  it("no lock + default packs → embedded fallback", () => {
     expect(resolveSources(layersWith("default"), tmp())).toEqual({
       kind: "embedded",
     });
   });
 
-  it("no lock + packages configured → STORE_UNAVAILABLE", () => {
+  it("no lock + packs configured → STORE_UNAVAILABLE", () => {
     expect(resolveSources(layersWith("project"), tmp())).toEqual({
       kind: "unavailable",
-      reason: "packages are configured but the store has not been built",
+      reason: "packs are configured but the store has not been built",
     });
   });
 });

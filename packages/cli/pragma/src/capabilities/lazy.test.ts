@@ -45,10 +45,14 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     expect(has(graph, "info/info.render.ts")).toBe(true);
     expect(has(graph, "config/show.render.ts")).toBe(true);
 
-    // ...but run bodies and the config reader are only dynamic-imported.
+    // ...but run bodies and the config reader are only dynamic-imported. The
+    // defaults layer (and the distribution config it statically imports and
+    // eagerly validates) must stay behind that same dynamic boundary.
     expect(has(graph, "info/collectInfo.ts")).toBe(false);
     expect(has(graph, "config/collectConfigShow.ts")).toBe(false);
     expect(has(graph, "kernel/config/readConfig.ts")).toBe(false);
+    expect(has(graph, "kernel/config/defaults.ts")).toBe(false);
+    expect(has(graph, "pragma.conf.ts")).toBe(false);
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {

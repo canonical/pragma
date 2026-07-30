@@ -76,10 +76,15 @@ afterEach(() => {
 const defaultLayers: ConfigLayers = {
   config: { channel: "normal" },
   origins: {
+    name: "default",
+    help: "default",
+    colophon: "default",
+    issuesUrl: "default",
     tier: "default",
     channel: "default",
     detail: "default",
-    packages: "default",
+    packs: "default",
+    generators: "default",
     stories: "default",
     prefixes: "default",
     prompts: "default",
@@ -122,9 +127,9 @@ describe("doctor — shape & spread", () => {
     }
     // Deterministic under the isolated env.
     expect(byName(data, "Node version")?.status).toBe("pass");
-    // The 3 default-config packages are configured but not locked here → an
+    // The 3 default-config packs are configured but not locked here → an
     // attributable fail listing them, with the sources-update remedy.
-    const pkgRefs = byName(data, "package refs");
+    const pkgRefs = byName(data, "pack refs");
     expect(pkgRefs?.status).toBe("fail");
     expect(pkgRefs?.remedy).toBe("pragma sources update");
     expect(pkgRefs?.items?.length).toBe(3);

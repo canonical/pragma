@@ -16,10 +16,9 @@ function originMarker(origin: ConfigOrigin): string {
   return origin === "default" ? "" : ` [${origin}]`;
 }
 
-/** Summarize the `packages` list as a comma-separated set of names. */
-function packageNames(data: ConfigShowData): string {
-  const packages = data.config.packages ?? [];
-  const names = packages.map((entry) =>
+/** Summarize a list of named entries as a comma-separated set of names. */
+function entryNames(entries: readonly (string | { name: string })[]): string {
+  const names = entries.map((entry) =>
     typeof entry === "string" ? entry : entry.name,
   );
   return names.length > 0 ? names.join(", ") : "(none)";
@@ -32,6 +31,14 @@ type ConfigRow = readonly [label: string, value: string, marker: string];
 function configRows(data: ConfigShowData): readonly ConfigRow[] {
   const { config, origins } = data;
   return [
+    ["name", config.name ?? "(none)", originMarker(origins.name)],
+    ["help", config.help ?? "(none)", originMarker(origins.help)],
+    ["colophon", config.colophon ?? "(none)", originMarker(origins.colophon)],
+    [
+      "issuesUrl",
+      config.issuesUrl ?? "(none)",
+      originMarker(origins.issuesUrl),
+    ],
     [
       "tier",
       config.tier ?? "(none — all tiers visible)",
@@ -39,7 +46,12 @@ function configRows(data: ConfigShowData): readonly ConfigRow[] {
     ],
     ["channel", config.channel, originMarker(origins.channel)],
     ["detail", config.detail ?? "standard", originMarker(origins.detail)],
-    ["packages", packageNames(data), originMarker(origins.packages)],
+    ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
+    [
+      "generators",
+      entryNames(config.generators ?? []),
+      originMarker(origins.generators),
+    ],
     [
       "global config",
       `${data.globalConfigPath}${data.globalExists ? "" : " (not found)"}`,
@@ -89,10 +101,15 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
+      `- **Name:** ${config.name ?? "(none)"}${originMarker(origins.name)}`,
+      `- **Help:** ${config.help ?? "(none)"}${originMarker(origins.help)}`,
+      `- **Colophon:** ${config.colophon ?? "(none)"}${originMarker(origins.colophon)}`,
+      `- **Issues:** ${config.issuesUrl ?? "(none)"}${originMarker(origins.issuesUrl)}`,
       `- **Tier:** ${config.tier ?? "none (all tiers)"}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
-      `- **Packages:** ${packageNames(data)}${originMarker(origins.packages)}`,
+      `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,
+      `- **Generators:** ${entryNames(config.generators ?? [])}${originMarker(origins.generators)}`,
       `- **Global config:** \`${data.globalConfigPath}\``,
     ];
     if (data.projectConfigPath) {

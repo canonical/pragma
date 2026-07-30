@@ -4,16 +4,16 @@
  *
  * Boot never touches the network. From the lock and the resolved config:
  *
- * | lock present | pack cached | packages origin | → decision            |
- * |--------------|-------------|-----------------|-----------------------|
- * | yes          | yes         | —               | load the locked pack  |
- * | yes          | no          | —               | STORE_UNAVAILABLE     |
- * | no           | —           | default         | embedded fallback     |
- * | no           | —           | configured      | STORE_UNAVAILABLE     |
+ * | lock present | pack cached | packs origin | → decision            |
+ * |--------------|-------------|--------------|-----------------------|
+ * | yes          | yes         | —            | load the locked pack  |
+ * | yes          | no          | —            | STORE_UNAVAILABLE     |
+ * | no           | —           | default      | embedded fallback     |
+ * | no           | —           | configured   | STORE_UNAVAILABLE     |
  *
  * A configured-but-unbuilt store (or a lock whose pack the cache lost)
  * surfaces STORE_UNAVAILABLE with a single recovery: `pragma sources update`.
- * "packages origin default" means the user has not pinned their own packages —
+ * "packs origin default" means the user has not pinned their own packs —
  * a fresh install — so the embedded fallback answers reads offline.
  */
 
@@ -35,7 +35,7 @@ export type SourcesDecision =
 /**
  * Decide how (or whether) to boot the store — without any network or store I/O.
  *
- * @param layers - The resolved config layers (for the `packages` origin).
+ * @param layers - The resolved config layers (for the `packs` origin).
  * @param cwd - The project directory (for the lock).
  * @returns The boot decision.
  * @note Impure — reads the lock and probes the pack cache.
@@ -56,11 +56,11 @@ export function resolveSources(
     };
   }
 
-  if (layers.origins.packages === "default") {
+  if (layers.origins.packs === "default") {
     return { kind: "embedded" };
   }
   return {
     kind: "unavailable",
-    reason: "packages are configured but the store has not been built",
+    reason: "packs are configured but the store has not been built",
   };
 }

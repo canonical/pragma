@@ -76,7 +76,7 @@ const HELP_GROUPS: readonly HelpGroup[] = [
       },
       {
         noun: "sources",
-        summary: "Build and refresh the local store from packages",
+        summary: "Build and refresh the local store from packs",
       },
       { noun: "config", summary: "Read and write pragma configuration" },
       { noun: "info", summary: "Show version, config, and update status" },

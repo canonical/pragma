@@ -51,7 +51,7 @@ const COLOR_DATA: DoctorData = {
   checks: [
     { name: "Node version", status: "pass", detail: "v24" },
     {
-      name: "package refs",
+      name: "pack refs",
       status: "fail",
       detail: "3 configured, 0 locked",
       items: [
@@ -151,7 +151,7 @@ describe("doctor render — piped output is ANSI-free (F1)", () => {
       // The structural, color-free content still renders (glyphs, names, remedy).
       expect(out).toContain("pragma doctor");
       expect(out).toContain("✓  Node version");
-      expect(out).toContain("✗  package refs");
+      expect(out).toContain("✗  pack refs");
       expect(out).toContain("○  Skills symlinked");
       expect(out).toContain("↳ fix: pragma sources update");
       expect(out).toContain("  1 passed · 1 failed · 1 skipped");

@@ -37,7 +37,7 @@ export const modifierPack: PackDefinition = {
     ],
     emptyRecovery: {
       message:
-        "No modifier families in the store. Build it from the configured design-system packages.",
+        "No modifier families in the store. Build it from the configured design-system packs.",
       cli: "pragma sources update",
     },
   },

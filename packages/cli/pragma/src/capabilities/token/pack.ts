@@ -34,7 +34,7 @@ export const tokenPack: PackDefinition = {
     ],
     emptyRecovery: {
       message:
-        "No tokens in the store. Build it from the configured design-system packages.",
+        "No tokens in the store. Build it from the configured design-system packs.",
       cli: "pragma sources update",
     },
   },

@@ -1,28 +1,17 @@
 /**
- * Built-in configuration defaults (D6 — TS, not JSON).
+ * Built-in configuration defaults — the validated distribution config.
  *
- * The lowest config layer. Authored as a typed module so an invalid edit fails
- * at type-check rather than at runtime, and so the default `packages` sources
- * live in one place. Sources verified against the v1 `config/defaults.json`.
+ * The lowest config layer is the distribution's own `pragma.conf.ts` (package
+ * root), STATICALLY imported so `bun build --compile` inlines it (no fs read —
+ * `evaluateProjectConfig` stats/imports from disk, impossible inside the
+ * compiled binary) and validated through the same `parseRawConfig` as every
+ * other layer. Statically imported by `readConfig` (itself dynamic-imported,
+ * off the `--help`/`__complete` fast path) and by its own test, so the eager
+ * validation and the zod import here add nothing to the storeless surfaces —
+ * the lazy.test.ts module-graph probe covers that boundary.
  */
 
-import type { PragmaConfig } from "./types.js";
+import rawConfig from "../../../pragma.conf.js";
+import { parseRawConfig } from "./schema.js";
 
-export default {
-  channel: "normal",
-  detail: "standard",
-  packages: [
-    {
-      name: "@canonical/design-system",
-      source: "git+https://github.com/canonical/design-system.git#main",
-    },
-    {
-      name: "@canonical/anatomy-dsl",
-      source: "git+https://github.com/canonical/anatomy-dsl.git#main",
-    },
-    {
-      name: "@canonical/code-standards",
-      source: "git+https://github.com/canonical/web-code-standards.git#main",
-    },
-  ],
-} satisfies PragmaConfig;
+export default parseRawConfig(rawConfig, "pragma.conf.ts");

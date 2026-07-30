@@ -199,7 +199,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   sources_update: {
     category: "write",
     use_when:
-      "Building or refreshing the knowledge-graph pack from the configured packages",
+      "Building or refreshing the knowledge-graph pack from the configured packs",
   },
   "token_add-config": {
     category: "write",

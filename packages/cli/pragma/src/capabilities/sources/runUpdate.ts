@@ -8,7 +8,7 @@
  *   resolve+build and the lock it would write — no git fetch, no compile, no
  *   cache write. This is what a dry-run / agent "preview" must be: side-effect
  *   free and offline-safe.
- * - Real execution: the heavy work — resolve every configured package (git
+ * - Real execution: the heavy work — resolve every configured pack (git
  *   clone/fetch, file verify, npm resolve), then build the ONE combined
  *   content-addressed pack — runs eagerly (it is not expressible as a task
  *   effect: the effect set is fs + exec, and the in-process compile is not an
@@ -30,7 +30,7 @@ import {
   writeFile,
 } from "@canonical/task";
 import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
-import type { PackageEntry } from "../../kernel/config/types.js";
+import type { PackDeclaration } from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
@@ -42,7 +42,7 @@ import {
 import { LOCK_BASENAME, lockPath } from "../../kernel/runtime/paths.js";
 import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
 import {
-  parsePackageEntry,
+  parsePackDeclaration,
   redactUrl,
 } from "../../kernel/runtime/refs/parseRef.js";
 import {
@@ -67,7 +67,7 @@ const CORE_PREFIXES: Readonly<Record<string, string>> = {
   dcterms: "http://purl.org/dc/terms/",
 };
 
-const entryName = (entry: PackageEntry): string =>
+const entryName = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : entry.name;
 
 /**
@@ -87,8 +87,8 @@ async function buildUpdatePlan(
   runtime: PragmaRuntime,
 ): Promise<Task<SourcesUpdateData>> {
   const layers = await runtime.loadConfig();
-  const entries = layers.config.packages ?? [];
-  const refs = entries.map(parsePackageEntry);
+  const entries = layers.config.packs ?? [];
+  const refs = entries.map(parsePackDeclaration);
   const path = lockPath(runtime.cwd);
 
   const data: SourcesUpdateData = {
@@ -115,8 +115,8 @@ async function buildUpdatePlan(
     yield* $(
       info(
         refs.length > 0
-          ? `Resolve and build ${refs.length} package(s): ${refs.map((ref) => ref.source).join(", ")}`
-          : "No packages configured — the embedded pack answers store reads",
+          ? `Resolve and build ${refs.length} pack(s): ${refs.map((ref) => ref.source).join(", ")}`
+          : "No packs configured — the embedded pack answers store reads",
       ),
     );
     // The one project mutation, previewed (dry-run never executes it).
@@ -149,13 +149,13 @@ export async function buildUpdateTask(
   const verbose = runtime.globalFlags.verbose;
 
   const layers = await runtime.loadConfig();
-  const entries = layers.config.packages ?? [];
+  const entries = layers.config.packs ?? [];
   const existing = readLock(runtime.cwd);
   const priorContent = existing ? serializeLock(existing) : undefined;
 
   const resolved: ResolvedPackage[] = [];
   for (const entry of entries) {
-    const ref = parsePackageEntry(entry);
+    const ref = parsePackDeclaration(entry);
     report?.(resolveProgress(ref));
     const pinned = existing?.packs.find((pack) => pack.name === ref.pkg);
     resolved.push(
@@ -175,19 +175,19 @@ export async function buildUpdateTask(
   const inputs = resolved.flatMap((pkg) => pkg.sources);
 
   // Refuse to lock an empty store (A4). A package that ships no `.ttl` (or no
-  // configured packages at all) would build a 0-triple pack whose empty
+  // configured packs at all) would build a 0-triple pack whose empty
   // `data.nq` fails the completeness gate — so the "successful" update boots to
   // a PERMANENT `STORE_UNAVAILABLE` loop. Fail loudly here, leaving the embedded
   // fallback (or the prior lock) intact, instead of writing that broken lock.
   if (inputs.length === 0) {
     throw PragmaError.configError(
       entries.length === 0
-        ? "No packages are configured, so there are no sources to build a store from. The embedded sample pack answers reads until you add a package."
-        : `The ${entries.length} configured package(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to write a lock for an empty store.`,
+        ? "No packs are configured, so there are no sources to build a store from. The embedded sample pack answers reads until you add a pack."
+        : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to write a lock for an empty store.`,
       {
         recovery: cliRecovery(
           `${RECOVERY_CLI_PREFIX}sources update --verbose`,
-          "Add a package that ships `.ttl` under definitions/ or data/, then re-run.",
+          "Add a pack that ships `.ttl` under definitions/ or data/, then re-run.",
         ),
       },
     );

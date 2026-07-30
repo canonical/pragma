@@ -33,7 +33,7 @@ function packUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(reason, {
     recovery: cliRecovery(
       `${RECOVERY_CLI_PREFIX}sources update`,
-      "Rebuild the local store from the configured packages.",
+      "Rebuild the local store from the configured packs.",
       // An agent recovers by calling the tool, then retrying (PR9 C1 cold-store
       // retry makes the post-update retry succeed).
       { tool: "sources_update" },

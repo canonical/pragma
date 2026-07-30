@@ -18,9 +18,9 @@ import { lockPath } from "./paths.js";
 
 /** One resolved source's provenance in the lock. */
 export const lockPackageSchema = z.object({
-  /** Package name (config `packages` entry name / npm name). */
+  /** Package name (config `packs` entry name / npm name). */
   name: z.string(),
-  /** The config `packages` source ref, verbatim (e.g. `git+https://…#main`). */
+  /** The config `packs` source ref, verbatim (e.g. `git+https://…#main`). */
   source: z.string(),
   /** The resolved commit / version / absolute path this ref pinned to. */
   resolved: z.string(),

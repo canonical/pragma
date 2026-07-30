@@ -14,7 +14,10 @@ import { join } from "node:path";
 import { runTask } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VERSION } from "../../constants.js";
-import type { ConfigLayers, PackageEntry } from "../../kernel/config/types.js";
+import type {
+  ConfigLayers,
+  PackDeclaration,
+} from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -58,15 +61,20 @@ const tmp = (prefix: string): string => {
   return dir;
 };
 
-/** A runtime whose config is the given package list (no config files needed). */
-function runtimeFor(cwd: string, packages: PackageEntry[]): PragmaRuntime {
+/** A runtime whose config is the given pack list (no config files needed). */
+function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
-    config: { channel: "normal", packages },
+    config: { channel: "normal", packs },
     origins: {
+      name: "default",
+      help: "default",
+      colophon: "default",
+      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "project",
+      packs: "project",
+      generators: "default",
       stories: "default",
       prefixes: "default",
       prompts: "default",
@@ -284,7 +292,7 @@ describe("sources update — refuses an empty store (A4)", () => {
     expect(readLock(cwd)).toBeUndefined();
   });
 
-  it("no configured packages is refused rather than locking an empty pack", async () => {
+  it("no configured packs is refused rather than locking an empty pack", async () => {
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, []);
     await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
@@ -385,7 +393,7 @@ describe("sources update — network-free preview (M2)", () => {
 
     // A successful plan — the unreachable clone was never attempted.
     expect(outcome.exitCode).toBe(0);
-    expect(outcome.stdout).toContain("Resolve and build 1 package(s)");
+    expect(outcome.stdout).toContain("Resolve and build 1 pack(s)");
     expect(outcome.stdout).toContain(UNREACHABLE);
     // The one project mutation is previewed, not performed.
     expect(outcome.stdout).toContain("pragma.lock.json");
@@ -398,7 +406,7 @@ describe("sources update — network-free preview (M2)", () => {
     const cwd = tmp("pragma-proj-");
     writeFileSync(
       join(cwd, "pragma.config.ts"),
-      `export default { packages: [{ name: "pkg-remote", source: "${UNREACHABLE}" }] };\n`,
+      `export default { packs: [{ name: "pkg-remote", source: "${UNREACHABLE}" }] };\n`,
     );
 
     const mcp = await projectMcp([sourcesModule], cwd);
@@ -803,7 +811,7 @@ describe("sources status — entityCount from the manifest (A10)", () => {
 
 describe("sources status CLI-json == MCP tool (PROTECTED)", () => {
   it("a cold store's status is byte-equal on both surfaces", async () => {
-    // Both surfaces boot from the SAME cwd + isolated config (default packages,
+    // Both surfaces boot from the SAME cwd + isolated config (default packs,
     // no lock), so the storeless status must be identical.
     const cwd = tmp("pragma-proj-");
     const cli = await executeVerb(

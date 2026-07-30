@@ -10,7 +10,8 @@
   },
   "files": [
     "src",
-    "dist"
+    "dist",
+    "pragma.conf.ts"
   ],
   "author": {
     "email": "webteam@canonical.com",

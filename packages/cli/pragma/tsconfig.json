@@ -6,6 +6,6 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "pragma.conf.ts"],
   "exclude": ["src/**/*.test.ts"]
 }

@@ -53,7 +53,7 @@ function coldProject(ttl: string): string {
   const cwd = tempDir("e2-proj-");
   writeFileSync(
     join(cwd, "pragma.config.ts"),
-    `export default { packages: [{ name: "default", source: "file://${pkg}" }] };\n`,
+    `export default { packs: [{ name: "default", source: "file://${pkg}" }] };\n`,
   );
   return cwd;
 }

@@ -40,10 +40,15 @@ function layers(stories: unknown[]): ConfigLayers {
   return {
     config: { channel: "normal", stories },
     origins: {
+      name: "default",
+      help: "default",
+      colophon: "default",
+      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "default",
+      packs: "default",
+      generators: "default",
       stories: stories.length > 0 ? "project" : "default",
       prefixes: "default",
       prompts: "default",
