@@ -9,7 +9,12 @@
  * It is a SNAPSHOT, not a substitute for `sources update`: the manifest records
  * which upstream revisions it was compiled from, and both `sources status` and
  * `doctor` report that rather than claiming the store is up to date. A project
- * that declares its own packs is never served this graph.
+ * that declares its own packs and has not built them is never served this graph:
+ * every read, `info`, `sources status`, `doctor` and the MCP prompt/resource
+ * surfaces take {@link resolveSources}' answer and refuse. The one exception is
+ * the shell-completion fast path, which cannot read config at all (see
+ * `kernel/completion/entitySource.ts`) and so still offers this graph's names as
+ * completion candidates — candidates, never content.
  *
  * The inlined strings are materialized into the ordinary content-addressed pack
  * cache on first use and then read back through {@link readPack}, so the

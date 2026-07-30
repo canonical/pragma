@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { embeddedManifest } from "../runtime/graphpack/embedded.js";
-import { activePackPath } from "../runtime/paths.js";
+import { activePackPath, packDir } from "../runtime/paths.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import { runComplete } from "./complete.js";
 import {
@@ -210,23 +210,61 @@ describe("__complete entity tier wiring", () => {
   });
 });
 
-describe("readPackIndex agrees with the boot decision", () => {
+describe("readPackIndex answers the boot decision, never around it", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  // The storeless fast path cannot import `resolveSources` (zod is banned on
-  // this graph), so it resolves the active pack itself. That is the hazard: two
-  // readers, one predicate. They share `readActivePack`, and this pins that they
-  // land on the same pack for both rows of the decision table.
-  it("reads the pointed-at pack when a project has one", () => {
-    const index = readPackIndex(projectWithIndex(CRAFTED_INDEX));
+  // `info`, `doctor`, the MCP resource browser and native `prompts/list` all
+  // read through this. It takes the decision rather than re-deriving one, so it
+  // covers all three arms — including the one a re-derivation gets wrong.
+  it("reads the pack the decision names", () => {
+    projectWithIndex(CRAFTED_INDEX); // plants the pack under a stubbed cache
+    const index = readPackIndex({
+      kind: "pack",
+      dir: packDir(CRAFTED_HASH),
+      contentHash: CRAFTED_HASH,
+    });
     expect(index?.contentHash).toBe(CRAFTED_HASH);
     expect(index?.entities.map((entity) => entity.name)).toContain("ex:Button");
   });
 
-  it("reads the embedded pack when a project has none", () => {
-    const index = readPackIndex(freshCwd());
+  it("reads the embedded snapshot on the embedded arm", () => {
+    const index = readPackIndex({ kind: "embedded" });
     expect(index?.contentHash).toBe(embeddedManifest().contentHash);
+  });
+
+  it("reads NOTHING when the store is unavailable", () => {
+    // The row that matters: a project that declared its own packs and never
+    // built them must not be listed the distribution's graph while every read
+    // of it fails STORE_UNAVAILABLE.
+    expect(readPackIndex({ kind: "unavailable", reason: "not built" })).toBe(
+      undefined,
+    );
+  });
+});
+
+describe("the storeless fast path implements the pointer half", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // `__complete` cannot see `origins.packs` (the config evaluator is banned on
+  // this graph), so it cannot distinguish a fresh install from a configured-but-
+  // unbuilt project. It CAN see the pointer, and must not prefer the snapshot
+  // over a pointer whose pack the cache lost — that is the decision table's
+  // second row, where the two readers used to disagree.
+  it("offers no candidates when the pointed-at pack is gone", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-idx-cwd-"));
+    const cache = mkdtempSync(join(tmpdir(), "pragma-idx-cache-"));
+    vi.stubEnv("XDG_CACHE_HOME", cache);
+    const pointer = activePackPath(cwd);
+    mkdirSync(dirname(pointer), { recursive: true });
+    writeFileSync(pointer, CRAFTED_HASH); // …but no pack directory for it.
+
+    expect(createIndexEntityReader(cwd)("ds:Component", "")).toEqual([]);
+    expect(
+      await indexCompletionEnv(cwd).names({ from: "index", type: "" }),
+    ).toEqual([]);
   });
 });

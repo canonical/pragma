@@ -44,7 +44,7 @@ export async function checkPackageRefs(
     };
   }
 
-  const index = readPackIndex(rt.cwd);
+  const index = readPackIndex(decision);
   const entities = (index ? entityTotal(index) : 0).toLocaleString();
   if (decision.kind === "embedded") {
     return {

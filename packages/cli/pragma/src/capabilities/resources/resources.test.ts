@@ -60,7 +60,7 @@ describe("resource listing (storeless, over the pack index)", () => {
   });
 
   it("lists the enriched (v2) embedded index, schema entries first", () => {
-    const index = readPackIndex(process.cwd());
+    const index = readPackIndex({ kind: "embedded" });
     expect(index?.version).toBe(2);
     const resources = buildResourceList(index);
     expect(resources.some((r) => r.uri === BUTTON_URI)).toBe(true);
@@ -113,7 +113,7 @@ describe("resource listing (storeless, over the pack index)", () => {
   });
 
   it("enriches each entry with the _meta taxonomy (pragma/box + priority)", () => {
-    const resources = buildResourceList(readPackIndex(process.cwd()));
+    const resources = buildResourceList(readPackIndex({ kind: "embedded" }));
     const component = resources.find((r) => r.uri === COMPONENT_URI);
     const button = resources.find((r) => r.uri === BUTTON_URI);
     // A schema class: tbox, higher priority, carries its instance count.
@@ -128,7 +128,7 @@ describe("resource listing (storeless, over the pack index)", () => {
   });
 
   it("ranks autocomplete over prefixed URI and label", () => {
-    const index = readPackIndex(process.cwd());
+    const index = readPackIndex({ kind: "embedded" });
     const hits = rankUriCompletions(
       index?.entities ?? [],
       "global.component.button",

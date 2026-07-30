@@ -41,8 +41,10 @@ import {
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
+import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { SCHEMA_FILE } from "../../kernel/runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../../kernel/runtime/paths.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import {
@@ -90,6 +92,15 @@ async function boot(
 afterAll(async () => {
   await Promise.all(fixtures.map((fixture) => fixture.dispose()));
 });
+
+/** The index of the pack a fixture's boot decision names — what `info` reads. */
+async function activeIndex(
+  fixture: FixtureGraph,
+): Promise<PackIndex | undefined> {
+  return readPackIndex(
+    resolveSources(await fixture.runtime.loadConfig(), fixture.cwd),
+  );
+}
 
 /** The `--format json` envelope a read verb renders. */
 interface Envelope {
@@ -361,7 +372,7 @@ describe("default-pack journey — error paths (E1)", () => {
 describe("default-pack journey — real-data shapes the clean fixture masked (E1, hand-off to lanes A)", () => {
   it("every block is co-typed owl:NamedIndividual and indexed as an individual (abox)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const index = readPackIndex(fixture.cwd);
+    const index = await activeIndex(fixture);
     // The vendored pack indexes 17 distinct entities (5 classes + 4 properties +
     // 2 tiers + 2 channels + 4 blocks).
     expect(index?.entities).toHaveLength(17);
@@ -393,7 +404,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     // whichever the store yields first (no `@en` preference). E3 (live oxigraph)
     // is where that ordering is confirmed against the real pack; here we only
     // assert the tag is stripped and the value is one of the two declared forms.
-    const label = readPackIndex(fixture.cwd)?.entities.find(
+    const label = (await activeIndex(fixture))?.entities.find(
       (entity) => entity.name === "ds:button",
     )?.label;
     expect(label).not.toMatch(/@(en|fr)/);
@@ -405,7 +416,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
 
   it("A1: info's entity total must not exceed the distinct entity count (owl:NamedIndividual double-count)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const index = readPackIndex(fixture.cwd);
+    const index = await activeIndex(fixture);
     // `entityTotal` (the figure `info`/`doctor` report) once SUMMED per-type
     // instance counts, double-counting each entity per asserted rdf:type (each
     // block under owl:NamedIndividual AND its domain class; ds:tier/ds:release

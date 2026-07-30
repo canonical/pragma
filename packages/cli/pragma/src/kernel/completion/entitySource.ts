@@ -21,9 +21,11 @@
  * behavioural/safety tests; {@link emptyNameSource} is the default (no names).
  *
  * {@link readPackIndex} and {@link entityTotal} expose the same storeless read
- * to `info`/`doctor` and the resource surfaces. Everything here relies only on
- * the FROZEN `{ name, type }` index minimum (plus optional enrichment like
- * `label`/`altNames`), so the index can grow without breaking completion.
+ * to `info`/`doctor` and the resource surfaces — but those callers are NOT on
+ * the fast path, so `readPackIndex` takes the boot decision rather than
+ * re-deriving one. Everything here relies only on the FROZEN `{ name, type }`
+ * index minimum (plus optional enrichment like `label`/`altNames`), so the
+ * index can grow without breaking completion.
  *
  * Storeless-graph notes:
  * - The embedded fallback is read from `pack.index.generated` — its OWN
@@ -31,13 +33,18 @@
  *   path never pulls the n-quads/schema/manifest strings that live in
  *   `pack.generated`.
  * - The active pack is resolved through `kernel/runtime/paths` — a LEAF module
- *   (node builtins only) that shares the pointer read with `resolveSources`, so
- *   the fast path and the boot decision can never drift onto different packs.
+ *   (node builtins only) that shares the pointer read with `resolveSources`.
  *   `resolveSources` itself is unreachable from here: it pulls the graphpack
- *   manifest schema (zod), which `safety.test.ts` forbids on this graph. Only
- *   the "else embedded" arm is therefore local, matching the decision table's
- *   `packs origin default` row. `PackIndex`/`PackIndexEntity` are imported
- *   type-only, so no zod schema is loaded at runtime.
+ *   manifest schema (zod), which `safety.test.ts` forbids on this graph, and
+ *   `origins.packs` needs the config evaluator. So {@link loadActiveIndex}
+ *   implements only the POINTER half of the decision table — pointer → that
+ *   pack (else nothing), no pointer → the embedded snapshot. It cannot tell a
+ *   fresh install from a project that declared its own packs and never built
+ *   them, so a `__complete` in the latter still offers the snapshot's names.
+ *   That is the price of a config-free fast path, and it is bounded to
+ *   completion candidates: every read, and every surface that takes the
+ *   decision, refuses. `PackIndex`/`PackIndexEntity` are imported type-only, so
+ *   no zod schema is loaded at runtime.
  * - `discoverSkills` (`node:fs/os/path` only) and `DEFAULT_PREFIX_MAP` (a pure
  *   const) are the only new edges — both leaf-clean, so the fast path stays free
  *   of boot/config/store/zod. The `ds:Prompt`/`ds:Tier` filters are INLINED
@@ -54,6 +61,7 @@ import { DEFAULT_PREFIX_MAP } from "../render/prefixes.js";
 import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/pack.index.generated.js";
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../runtime/paths.js";
+import type { SourcesDecision } from "../runtime/resolveSources.js";
 import type { CompletionSourceRef } from "../spec/types.js";
 import type { CompletionEnv } from "./types.js";
 
@@ -69,16 +77,29 @@ export const emptyNameSource: CompletionEnv["names"] = () => [];
 const INDEX_FILE = "index.json";
 
 /**
- * Read the active pack's storeless index (the built pack, else the embedded
- * fallback), for the resource browser's list/autocomplete. Never boots the
- * store, never validates with zod — a plain `JSON.parse` off disk. Returns
- * `undefined` when no index is reachable, so callers degrade to a recovery hint.
+ * Read the storeless index of the pack the BOOT DECISION names — for `info`,
+ * `doctor`, the MCP resource browser, and native `prompts/list`. Never boots the
+ * store, never validates with zod — a plain `JSON.parse` off disk.
  *
- * @param cwd - The project directory (to resolve the active pack).
- * @returns The active pack index, or `undefined` when none is reachable.
+ * It takes the decision rather than re-deriving one so these surfaces cannot
+ * list entities the same project's reads refuse: `unavailable` yields
+ * `undefined`, and callers degrade to a recovery hint (`buildResourceList`
+ * emits the `pragma:sources` entry, `info` omits the total).
+ *
+ * @param decision - The boot decision from `resolveSources`.
+ * @returns The answering pack's index, or `undefined` when none answers.
  */
-export function readPackIndex(cwd: string): PackIndex | undefined {
-  return loadActiveIndex(cwd);
+export function readPackIndex(
+  decision: SourcesDecision,
+): PackIndex | undefined {
+  switch (decision.kind) {
+    case "pack":
+      return readIndexFile(decision.dir);
+    case "embedded":
+      return parseIndex(EMBEDDED_INDEX_JSON);
+    case "unavailable":
+      return undefined;
+  }
 }
 
 /**
@@ -104,23 +125,35 @@ export function entityTotal(index: PackIndex): number {
   return subjects.size;
 }
 
-/** Load the active pack's index: the built pack, else the embedded fallback. */
-function loadActiveIndex(cwd: string): PackIndex | undefined {
-  const contentHash = readActivePack(cwd);
-  if (contentHash !== undefined) {
-    try {
-      return JSON.parse(
-        readFileSync(join(packDir(contentHash), INDEX_FILE), "utf-8"),
-      ) as PackIndex;
-    } catch {
-      // A pointer whose pack the cache lost falls back to the embedded index.
-    }
-  }
+/** Parse an index JSON string; any malformed input degrades to `undefined`. */
+function parseIndex(json: string): PackIndex | undefined {
   try {
-    return JSON.parse(EMBEDDED_INDEX_JSON) as PackIndex;
+    return JSON.parse(json) as PackIndex;
   } catch {
     return undefined;
   }
+}
+
+/** Read a pack directory's `index.json`; any I/O or parse error is `undefined`. */
+function readIndexFile(dir: string): PackIndex | undefined {
+  try {
+    return parseIndex(readFileSync(join(dir, INDEX_FILE), "utf-8"));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The fast path's index — the POINTER half of the decision table (see the module
+ * docblock). A project with a pointer reads that pack and nothing else: a
+ * pointer whose pack the cache lost yields no candidates rather than the
+ * snapshot's, which is what the boot decision does with the same state.
+ */
+function loadActiveIndex(cwd: string): PackIndex | undefined {
+  const contentHash = readActivePack(cwd);
+  return contentHash === undefined
+    ? parseIndex(EMBEDDED_INDEX_JSON)
+    : readIndexFile(packDir(contentHash));
 }
 
 /** Whether an entity matches a prefixed type filter (primary type or any type). */

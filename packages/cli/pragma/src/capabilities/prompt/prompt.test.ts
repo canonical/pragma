@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listPromptSummaries } from "../../kernel/project/mcp/prompts/source.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { GlobalFlags } from "../../kernel/spec/types.js";
 import { CANONICAL_TTL } from "../../testing/fixtures/graph/canonical.js";
 import {
@@ -115,7 +116,9 @@ describe("prompt — native MCP prompts surface (PROTECTED)", () => {
 describe("prompt — storeless native listing (PROTECTED)", () => {
   it("listing the prompts does NOT boot the store", async () => {
     const runtime = bootRuntime(FLAGS, fixture.cwd);
-    const summaries = listPromptSummaries(runtime);
+    const summaries = listPromptSummaries(
+      resolveSources(await runtime.loadConfig(), runtime.cwd),
+    );
     expect(summaries.map((s) => s.name).sort()).toEqual(EXPECTED);
     expect(runtime.store.booted).toBe(false);
   });

@@ -1,7 +1,11 @@
 /**
  * The store-boot decision table — storeless, and the single place the boot
- * strategy is decided. No other module re-derives it: `sources status`,
- * `doctor`, and the native MCP surfaces all switch on what this returns.
+ * strategy is decided. No other module re-derives it: `sources status`, `info`,
+ * `doctor`, and the native MCP prompt/resource surfaces all switch on what this
+ * returns (`readPackIndex` takes the decision rather than resolving a pack of
+ * its own). The one module that cannot is the shell-completion fast path, which
+ * is denied the config evaluator and so implements the pointer half only — it
+ * says so, and it answers with completion candidates, never content.
  *
  * Boot never touches the network. From the project's active-pack pointer (the
  * content hash `sources update` last built here) and the resolved config:

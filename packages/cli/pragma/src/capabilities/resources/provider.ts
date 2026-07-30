@@ -3,9 +3,11 @@
  *
  * Listing and autocomplete are STORELESS: they read the enriched `index.json`
  * (readPackIndex) off disk, so the resource surface costs nothing until an agent
- * reads one. A read is STORE-BACKED through the SHARED {@link readEntity} — the
- * same reader `graph inspect` uses — so a resource read and a `graph inspect` of
- * the same URI return identical content (the mirror contract).
+ * reads one. They read it for the pack the BOOT DECISION names, so the listing
+ * can never advertise entities whose reads then fail STORE_UNAVAILABLE. A read
+ * is STORE-BACKED through the SHARED {@link readEntity} — the same reader
+ * `graph inspect` uses — so a resource read and a `graph inspect` of the same
+ * URI return identical content (the mirror contract).
  *
  * Degradation (Risk4): on a missing or legacy (pre-v2) index the listing returns
  * a single "run `pragma sources update`" hint — never a live re-index of the
@@ -22,6 +24,7 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { mcpErrorFrom } from "../../kernel/project/mcp/mcpError.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { McpResourceProvider } from "../../kernel/spec/types.js";
 
 /** Max autocomplete suggestions returned for a partial URI. */
@@ -197,14 +200,18 @@ export const resourceProvider: McpResourceProvider = {
     const { McpError, ErrorCode } = await import(
       "@modelcontextprotocol/sdk/types.js"
     );
+    // The index of the pack the boot decision names — `undefined` when the
+    // store is unavailable, which `buildResourceList` renders as the recovery
+    // entry rather than a catalogue of unreadable URIs.
+    const activeIndex = async (): Promise<PackIndex | undefined> =>
+      readPackIndex(resolveSources(await runtime.loadConfig(), runtime.cwd));
+
     const template = new ResourceTemplate(URI_TEMPLATE, {
-      list: async () => ({
-        resources: buildResourceList(readPackIndex(runtime.cwd)),
-      }),
+      list: async () => ({ resources: buildResourceList(await activeIndex()) }),
       complete: {
         uri: async (value: string) =>
           rankUriCompletions(
-            readPackIndex(runtime.cwd)?.entities ?? [],
+            (await activeIndex())?.entities ?? [],
             value,
             COMPLETION_LIMIT,
           ),
