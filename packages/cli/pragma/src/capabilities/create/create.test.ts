@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import defaults from "../../kernel/config/defaults.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
   executeVerb,
@@ -25,14 +26,14 @@ import {
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { ParamSpec } from "../../kernel/spec/types.js";
+import { CREATE_GENERATORS } from "./constants.js";
 import {
-  createApplicationVerb,
-  createComponentVerb,
-  createPackageVerb,
+  createVerbs,
   INCLUDE_FLAG_ALIASES,
   isModuleNotFound,
 } from "./create.verb.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
+import { createModule } from "./index.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -53,7 +54,7 @@ async function runIn(
   process.chdir(dir);
   try {
     return await executeVerb(
-      createComponentVerb,
+      createVerbs.component,
       params,
       mutation,
       bootRuntime(FLAGS, dir),
@@ -131,7 +132,7 @@ describe("create — real generation + stamp", () => {
     // framework param to exercise pickGenerator's own guard too.
     const runtime = bootRuntime(FLAGS, dir);
     await expect(
-      createComponentVerb.run({ framework: "vue" }, {
+      createVerbs.component.run({ framework: "vue" }, {
         ...runtime,
         interaction: { isTTY: false, transport: "cli", yes: true },
       } as never),
@@ -285,7 +286,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
       (generators as Record<string, { prompts: unknown[] }>)["component/react"]
         .prompts as never,
     );
-    const verb = createComponentVerb.params;
+    const verb = createVerbs.component.params;
 
     // The verb SYNTHESIZES a `framework` enum (the 3 framework generators
     // collapse to one verb): react|svelte|lit, default react — no generator
@@ -328,7 +329,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
         .prompts as never,
     );
     // The package verb's grammar IS generatorToParams(PACKAGE_MIRROR).
-    expect(behavioural(createPackageVerb.params)).toEqual(
+    expect(behavioural(createVerbs.package.params)).toEqual(
       behavioural(applyRunInstallOverride(real)),
     );
 
@@ -336,7 +337,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     const realRunInstall = real.find((p) => p.name === "runInstall") as
       | Record<string, unknown>
       | undefined;
-    const mirrorRunInstall = createPackageVerb.params.find(
+    const mirrorRunInstall = createVerbs.package.params.find(
       (p) => p.name === "runInstall",
     ) as Record<string, unknown> | undefined;
     expect(realRunInstall?.default).toBe(true);
@@ -375,14 +376,14 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     // generator's `ssr`/`router`/`forms`.
     expect(
       behavioural(
-        toGeneratorNames("application", createApplicationVerb.params),
+        toGeneratorNames("application", createVerbs.application.params),
       ),
     ).toEqual(behavioural(applyRunInstallOverride(real)));
 
     // Guard the B8 rename itself: ALL application include-flags ARE on the
     // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`/
     // `withRelay`), not the bare `ssr`/`router`/`forms`/`relay` booleans.
-    const names = createApplicationVerb.params.map((p) => p.name);
+    const names = createVerbs.application.params.map((p) => p.name);
     expect(names).toContain("withSsr");
     expect(names).toContain("withRouter");
     expect(names).toContain("withForms");
@@ -393,7 +394,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     const realRunInstall = real.find((p) => p.name === "runInstall") as
       | Record<string, unknown>
       | undefined;
-    const mirrorRunInstall = createApplicationVerb.params.find(
+    const mirrorRunInstall = createVerbs.application.params.find(
       (p) => p.name === "runInstall",
     ) as Record<string, unknown> | undefined;
     expect(realRunInstall?.default).toBe(true);
@@ -401,7 +402,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
 
     // appPath is the positional entry point (its default carries across).
     expect(
-      createApplicationVerb.params.find((p) => p.name === "appPath"),
+      createVerbs.application.params.find((p) => p.name === "appPath"),
     ).toMatchObject({ kind: "string", positional: true, default: "my-app" });
   });
 });
@@ -428,5 +429,60 @@ describe("compiled-binary create gate (M4)", () => {
     ).toBe(false);
     expect(isModuleNotFound(null)).toBe(false);
     expect(isModuleNotFound("nope")).toBe(false);
+  });
+});
+
+describe("declared generator bindings (PROTECTED)", () => {
+  // CREATE_GENERATORS is the one place the create surface's generator facts are
+  // written down. Half of it is checkable against something outside itself —
+  // that half is checked here.
+
+  it("every binding names a generator package pragma.conf.ts declares", () => {
+    const declared = (defaults.generators ?? []).map((g) => g.name);
+    // Inclusion, not equality: the distribution may declare a generator that
+    // `create` does not surface. Dropping one it DOES surface turns this red.
+    for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
+      expect(declared, `create ${kind}`).toContain(binding.name);
+    }
+  });
+
+  it("every binding resolves to a real generator in its package", async () => {
+    const { pickGenerator } = await import("./pickGenerator.js");
+    for (const framework of CREATE_GENERATORS.component.frameworks) {
+      expect(pickGenerator("component", { framework }).prompts).toBeDefined();
+    }
+    expect(pickGenerator("package", {}).prompts).toBeDefined();
+    expect(pickGenerator("application", {}).prompts).toBeDefined();
+  });
+
+  it("the --framework enum offers only resolvable values and its default is one of them", async () => {
+    const { pickGenerator } = await import("./pickGenerator.js");
+    const framework = createVerbs.component.params.find(
+      (p) => p.name === "framework",
+    );
+    // A `values: []` enum with a `default` would leave every `--framework`
+    // rejected while `--help` still advertises a default — the hazard this names.
+    expect(framework?.kind).toBe("enum");
+    const values = (framework as { values: readonly string[] }).values;
+    expect(values.length).toBeGreaterThan(0);
+    expect(values).toContain(framework?.default);
+    for (const value of values) {
+      expect(pickGenerator("component", { framework: value })).toBeDefined();
+    }
+  });
+
+  it("create surfaces exactly the three declared nouns", () => {
+    // A LITERAL surface pin, deliberately not derived from CREATE_GENERATORS:
+    // surfacing a noun also needs a hand-written prompt mirror, path param and
+    // examples in create.verb.ts, so the surface is a deliberate SUBSET of what
+    // the declared packages ship (`@canonical/summon-application` also ships
+    // `domain`, `route` and `wrapper`). Pinning OUR three nouns rather than any
+    // third-party package's generator list keeps an upstream release from
+    // turning this red.
+    expect(createModule.verbs.map((v) => v.path[1])).toEqual([
+      "component",
+      "package",
+      "application",
+    ]);
   });
 });

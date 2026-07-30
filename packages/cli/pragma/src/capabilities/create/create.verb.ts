@@ -5,7 +5,7 @@
  *
  * LAZY DISPATCH (R9 + lazy-React): the params are STATIC — built by the
  * generator→grammar adapter over static prompt MIRRORS, never the live
- * generators (importing a generator runs a top-level `await loadTemplate`). The
+ * generators (importing a generator pulls summon-core, and with it React). The
  * `run` body lazily `import()`s `pickGenerator` + summon-core, so `buildProgram`
  * / `--help` / `__complete` / reads never load summon-core or the generators —
  * and `create --yes` never loads React (the Ink UI is dynamic-only, and only the
@@ -18,6 +18,7 @@ import type { Task } from "@canonical/task";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
+import { CREATE_GENERATORS } from "./constants.js";
 import { createFormatters } from "./create.render.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
@@ -27,13 +28,14 @@ import type { CreateKind } from "./types.js";
 // Static params (mirrors of the generators' prompts — see the module doc)
 // =============================================================================
 
-/** `--framework` — the three component generators collapsed to one enum. */
+/** `--framework` — the declared component generators collapsed to one enum. */
 const FRAMEWORK_PARAM: ParamSpec = {
   kind: "enum",
   name: "framework",
   doc: "Component framework.",
-  values: ["react", "svelte", "lit"],
-  default: "react",
+  values: CREATE_GENERATORS.component.frameworks,
+  // The FIRST declared framework, so the default is always inside the enum.
+  default: CREATE_GENERATORS.component.frameworks[0],
 };
 
 /**
@@ -245,9 +247,12 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
 /**
  * The standalone `bun build --compile` binary resolves every bundled module
  * under the virtual `/$bunfs` filesystem — a marker absent from any source or
- * `bun`-run module URL. `create component` is fully embedded and runs from the
- * binary; `create package` / `create application` are NOT (application also
- * copies non-`.ejs` assets), so they are gated to a source run below.
+ * `bun`-run module URL. Only a generator that routes its template reads through
+ * the embedded manifest can run there (`CREATE_GENERATORS[kind].embedsTemplates`);
+ * the others call `template({ source })`, which falls through to
+ * `readFile(source)` and dies with `ENOENT … /$bunfs/…` after `mkdir` has
+ * already run, leaving partially-created files behind.
+ * `compiledCreate.subprocess.test.ts` pins the refusal AND the empty cwd.
  */
 const IS_COMPILED_BINARY = import.meta.url.includes("/$bunfs/");
 
@@ -281,23 +286,22 @@ export function isModuleNotFound(cause: unknown): boolean {
  * `--compile` bundler includes them — they stay behind this lazy boundary, so
  * the fast paths and `create --yes` still load neither summon-core nor React).
  *
- * The manifest is injected BEFORE `pickGenerator` — importing the generator
- * packages runs a top-level `await loadTemplate`, and the component loader
- * consults the manifest when its disk read fails (the compiled binary). It is
- * imported from summon-component's `loadTemplate` submodule so this does not
- * evaluate the generator index first. In a source run the disk read wins and the
- * manifest is inert.
+ * The manifest is injected BEFORE `pickGenerator` — the component loader
+ * consults it when its disk read fails (the compiled binary), and the generators
+ * load their templates on first `generate()`. It is imported from
+ * summon-component's `loadTemplate` submodule so this does not evaluate the
+ * generator index first. In a source run the disk read wins and the manifest is
+ * inert.
  *
- * `create package` / `create application` are not yet embedded for the compiled
- * binary (application also copies non-`.ejs` assets), so they are gated to a
- * source run here. A stale resolution failure is a defensive backstop
- * {@link isModuleNotFound} turns into the same clean gate.
+ * A binding whose generator does not read through that manifest is gated to a
+ * source run here ({@link IS_COMPILED_BINARY}). A stale resolution failure is a
+ * defensive backstop {@link isModuleNotFound} turns into the same clean gate.
  */
 async function loadCreateRuntime(kind: CreateKind) {
-  if (IS_COMPILED_BINARY && kind !== "component") {
+  if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].embedsTemplates) {
     throw new PragmaError({
       code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled pragma binary yet — only \`create component\` is embedded. Run it from a source checkout, or use the \`summon\` CLI.`,
+      message: `\`create ${kind}\` is not available in the compiled pragma binary — its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the \`summon\` CLI.`,
       recovery: {
         message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
       },
@@ -336,10 +340,10 @@ async function runCreate(
   params: Record<string, unknown>,
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
-  // Lazy: importing these runs the generators' top-level template loads and
-  // pulls summon-core — kept off every non-create path. Now STATIC dynamic
-  // imports so `--compile` bundles them; the generators' `.ejs` are embedded and
-  // injected here. `package`/`application` stay a source-run feature in the binary.
+  // Lazy: importing these pulls summon-core (and with it React) — kept off every
+  // non-create path. Now STATIC dynamic imports so `--compile` bundles them; the
+  // embedded `.ejs` manifest is injected here. A binding that does not read
+  // through it stays a source-run feature in the binary.
   const { pickGenerator, summon } = await loadCreateRuntime(kind);
 
   // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
@@ -456,38 +460,47 @@ function createVerb(
   };
 }
 
-export const createComponentVerb = createVerb(
-  "component",
-  "Scaffold a React, Svelte, or Lit component.",
-  componentParams,
-  [
-    {
-      cmd: "pragma create component src/components/Button --framework react",
-      note: "React component with tests, stories, and styles",
-    },
-    {
-      cmd: "pragma create component src/lib/Card --framework svelte --dry-run",
-      note: "preview the files without writing",
-    },
-  ],
-);
-
-export const createPackageVerb = createVerb(
-  "package",
-  "Scaffold a new npm package for the monorepo.",
-  packageParams,
-  [
-    { cmd: "pragma create package --name @canonical/my-lib --type library" },
-    { cmd: "pragma create package --name @canonical/my-tool --run-install" },
-  ],
-);
-
-export const createApplicationVerb = createVerb(
-  "application",
-  "Scaffold a full React application with SSR and routing.",
-  applicationParams,
-  [
-    { cmd: "pragma create application my-app" },
-    { cmd: "pragma create application my-app --with-relay" },
-  ],
-);
+/**
+ * The `create` verbs, one per declared generator binding — so adding a binding
+ * to {@link CREATE_GENERATORS} without surfacing it is a type error rather than
+ * a silent no-op. Key order is authoring order, which `index.ts` preserves into
+ * the command tree, `--help` and the emitted surface.
+ */
+export const createVerbs: Record<
+  CreateKind,
+  VerbSpec<Record<string, unknown>, GeneratorResult>
+> = {
+  component: createVerb(
+    "component",
+    "Scaffold a React, Svelte, or Lit component.",
+    componentParams,
+    [
+      {
+        cmd: "pragma create component src/components/Button --framework react",
+        note: "React component with tests, stories, and styles",
+      },
+      {
+        cmd: "pragma create component src/lib/Card --framework svelte --dry-run",
+        note: "preview the files without writing",
+      },
+    ],
+  ),
+  package: createVerb(
+    "package",
+    "Scaffold a new npm package for the monorepo.",
+    packageParams,
+    [
+      { cmd: "pragma create package --name @canonical/my-lib --type library" },
+      { cmd: "pragma create package --name @canonical/my-tool --run-install" },
+    ],
+  ),
+  application: createVerb(
+    "application",
+    "Scaffold a full React application with SSR and routing.",
+    applicationParams,
+    [
+      { cmd: "pragma create application my-app" },
+      { cmd: "pragma create application my-app --with-relay" },
+    ],
+  ),
+};

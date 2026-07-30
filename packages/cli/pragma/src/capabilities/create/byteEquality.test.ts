@@ -19,11 +19,7 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
-import {
-  createApplicationVerb,
-  createComponentVerb,
-  createPackageVerb,
-} from "./create.verb.js";
+import { createVerbs } from "./create.verb.js";
 import type { CreateKind } from "./types.js";
 
 const FLAGS: GlobalFlags = {
@@ -50,12 +46,6 @@ function snapshot(dir: string): Map<string, string> {
   return out;
 }
 
-const verbFor: Record<CreateKind, VerbSpec> = {
-  component: createComponentVerb as VerbSpec,
-  package: createPackageVerb as VerbSpec,
-  application: createApplicationVerb as VerbSpec,
-};
-
 /** Producer (1): the full pragma kernel path — dispatcher runs the create verb. */
 async function producePragma(
   kind: CreateKind,
@@ -66,7 +56,7 @@ async function producePragma(
   process.chdir(dir);
   try {
     const outcome = await executeVerb(
-      verbFor[kind],
+      createVerbs[kind] as VerbSpec,
       params,
       { dryRun: false, undo: false, yes: true },
       bootRuntime(FLAGS, dir),
