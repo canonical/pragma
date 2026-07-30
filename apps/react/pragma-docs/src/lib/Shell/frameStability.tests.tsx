@@ -842,14 +842,13 @@ describe("the shared tokens are defined once (the stylesheet half)", () => {
   // and every region claims its width by SPANNING them. These tokens must
   // not exist anywhere; a reintroduction is a regression toward the old
   // fixed-track frame.
-  it.each([
-    "--rail-w",
-    "--subnav-w",
-    "--aside-w",
-  ])("does NOT define %s — the width tokens are dissolved (span, not token)", (token) => {
-    const definitions = allCss.match(new RegExp(`${token}\\s*:`, "g")) ?? [];
-    expect(definitions).toHaveLength(0);
-  });
+  it.each(["--rail-w", "--subnav-w", "--aside-w"])(
+    "does NOT define %s — the width tokens are dissolved (span, not token)",
+    (token) => {
+      const definitions = allCss.match(new RegExp(`${token}\\s*:`, "g")) ?? [];
+      expect(definitions).toHaveLength(0);
+    },
+  );
 
   // THE INTRINSIC-GRID INVARIANT (the strict model's teeth, owner ruling
   // 2026-07-22: EVERYTHING is a subgrid, no exceptions). Exactly ONE grid
