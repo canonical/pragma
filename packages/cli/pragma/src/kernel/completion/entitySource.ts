@@ -30,8 +30,12 @@
  * Storeless-graph notes:
  * - The embedded fallback is read from `pack.index.generated` — its OWN
  *   generated module (only the index string) — so the storeless `__complete`
- *   path never pulls the n-quads/schema/manifest strings that live in
- *   `pack.generated`.
+ *   path never EVALUATES the n-quads/schema/manifest strings that live in
+ *   `pack.generated`. It does not avoid parsing them: `bun build --compile`
+ *   emits one script, so the whole embed is parsed at process start on every
+ *   invocation (~+25 ms here, measured on `--version` against a toy-embed
+ *   binary; BUDGETS.md records it). What the split buys is that a completion
+ *   never allocates the 1.87 MB.
  * - The active pack is resolved through `kernel/runtime/paths` — a LEAF module
  *   (node builtins only) that shares the pointer read with `resolveSources`.
  *   `resolveSources` itself is unreachable from here: it pulls the graphpack

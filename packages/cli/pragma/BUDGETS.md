@@ -49,14 +49,15 @@ unchanged; only the statistic it is asserted against was made reliable.
 | `pragma __complete`       | 46.1 ms | 51.3 ms | 100 ms  | 2× median (50 ms target)  |
 | `config show`              | 63.5 ms | 68.9 ms | —       | reference (storeless run) |
 | project config load (warm) | < 1 ms  | < 1 ms  | 10 ms   | cache hit (in-process)    |
-| `__store-probe` (store)    | ~147 ms | ~176 ms | 300 ms  | designed (~2× median)     |
+| `__store-probe` (store)    | ~147 ms | ~176 ms | 500 ms  | re-derived (see below)    |
 
 The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
 cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
 measured ~147 ms median here — but that timed a boot of the 23-triple
-**placeholder** pack. Against the real embedded graph it is ~2× that; see "The
-embedded pack becomes the real graph" below, where the ceiling is re-derived.
-Boot still loads the n-quads dump (no TTL parse) and rebuilds the schema from
+**placeholder** pack. Against the real embedded graph the store component is
+~2.8× that; see "The embedded pack becomes the real graph" below, where the
+ceiling is re-derived. Boot still loads the n-quads dump (no TTL parse) and
+rebuilds the schema from
 the extraction artifact (no live 7-pass compile), which is what keeps the growth
 proportionate rather than catastrophic.
 
@@ -75,52 +76,108 @@ own 8 479-triple graph, so `__store-probe` boots a real store. This measures
 what that costs, and — because a shared dev box's absolute numbers are
 worthless in isolation — measures it **net of process start**.
 
-**Method.** Round-robin over three cases, 15 rounds, so all three see the same
-machine load: `pragma --version` (process start, the control), `__store-probe`
-against the **toy** pack, and `__store-probe` against the **real** pack. The toy
-binary is compiled from this same tree with `origin/main`'s two generated embed
-modules swapped in, so the ONLY difference between the two probe binaries is the
-pack. Four repetitions of the whole protocol.
+**Method.** Two protocols, five repetitions, `uptime` before and after each
+(load 3.5 → 5.4). The **toy** binary is compiled from this same tree with
+`origin/main`'s two generated embed modules swapped in, so the ONLY difference
+between the two binaries is the pack. Every probe is netted against **its own
+binary's** `--version`, measured in the same repetition.
 
-| Case                          | Median  | p95     | Over process start |
-| ----------------------------- | ------- | ------- | ------------------ |
-| `pragma --version` (control) | ~260 ms | ~284 ms | —                  |
-| `__store-probe`, toy pack     | ~324 ms | ~383 ms | **+64 ms**         |
-| `__store-probe`, real pack    | ~505 ms | ~623 ms | **+245 ms**        |
+- *Interleaved* (reps 1–3): round-robin over all four cases, 18 rounds, 3
+  discarded as warmups, rotating the start index each round — so both binaries
+  see the same machine load and the same page-cache pressure.
+- *Per-binary* (reps 4–5): the two cases of one binary round-robined together,
+  the two binaries run back to back.
 
-Two things this shows.
+| Rep | protocol    | load    | toy store work | real store work | multiplier |
+| --- | ----------- | ------- | -------------- | --------------- | ---------- |
+| 1   | interleaved | 3.5–4.1 | +92.8 ms       | +249.8 ms       | 2.69×      |
+| 2   | interleaved | 4.1–4.9 | +93.3 ms       | +341.0 ms       | 3.65×      |
+| 3   | interleaved | 5.4–4.0 | +92.3 ms       | +261.6 ms       | 2.83×      |
+| 4   | per-binary  | 3.7     | +117.3 ms      | +285.4 ms       | 2.43×      |
+| 5   | per-binary  | 3.7     | +90.4 ms       | +295.6 ms       | 3.27×      |
+|     | **median**  |         | **+92.8 ms**   | **+285.4 ms**   | **2.83×**  |
 
-1. **Absolute numbers on this box mean nothing.** Process start alone measured
-   ~260 ms here against the reference box's 45.5 ms — a ~6× swing, and it moves
-   between sessions. Always subtract a `--version` control before attributing a
-   cost to store work.
-2. **The real pack costs ~+181 ms of store work** (245 − 64, stable to ±6 ms
-   across the four repetitions). That is the honest price of booting a real
-   graph: a larger n-quads load and a larger extraction to rebuild.
+Three things this shows.
 
-Projected onto the reference box's process start (45.5 ms median / 50.1 ms p95),
-`__store-probe` with the real pack lands around **290 ms median / ~317 ms p95** —
-median at the 300 ms ceiling, p95 over it.
+1. **Only the netted figures mean anything on this box.** Absolute `--version`
+   ranged 60–287 ms across these runs — not from CPU load but from whether that
+   105 MB binary happened to be hot in the page cache, which alternating two of
+   them (or another agent's memory pressure) decides. The reference box measured
+   45.5 ms. Never attribute a cost to store work without subtracting a control
+   from the same binary in the same run.
+2. **The toy column is the control that makes the rest usable.** Its median,
+   +92.8 ms, is within 9% of the reference box's own toy figure
+   (147 − 45.5 = **101.5 ms**), and it holds across both protocols and a load
+   swing. The store component of this box is therefore comparable to the
+   reference box's once process start is netted out — which is what licenses
+   projecting at all.
+3. **The multiplier is the statistic to carry over, not the increment.** The
+   real-pack workload is ~2.8× longer and so ~2.8× more exposed to contention,
+   which is what spreads the real column (250 → 341) while the toy column stays
+   put. The median of the five within-repetition multipliers — each measured
+   under conditions identical for both binaries — is **2.83×**.
+
+### `BUDGET_WARM_STORE_MS`: 300 → 500
+
+The arithmetic, from named inputs, in full. Reference-box inputs are the two
+rows of the table above this section: `--version` 45.5 ms median / 50.1 ms p95,
+`__store-probe` (toy) 147 ms median / 176 ms p95.
+
+```
+reference toy store work      = 147 − 45.5                     = 101.5 ms
+projected real store work     = 101.5 × 2.83                   = 287.2 ms
+projected real __store-probe  = 45.5 + 287.2                   = 332.7 ms   (median)
+reference p95/median for this command = 176 / 147              = 1.197
+projected p95                 = 332.7 × 1.197                  = 398.2 ms
+ceiling                       = ceil(398.2 × 1.25 / 50) × 50   = 500 ms
+```
+
+Two choices in there are deliberate and worth stating. The projection is
+**multiplicative**, because the additive alternative assumes store work is
+box-invariant and the table's own toy column is what would have to prove that —
+it is close (92.8 vs 101.5) but not equal, and the multiplier is the quantity
+that survived both protocols. (Additively: 101.5 + 192.6 = 294 ms of store work,
+projecting to 340 ms median / 407 ms p95 — the same 500 ms ceiling.) And the p95
+is projected from the reference box's **own** dispersion for this command
+(1.197× its median) rather than from a p95 measured here — subtracting one
+process's p95 from another's is not a statistic, and it would import this box's
+contention into a number that is supposed to describe the reference box.
+
+The result is still tighter than this file's default rule: 500 ms is **1.6×**
+the projected median, where `--help` and `__complete` are both set at ~2×. And
+it is 1.67× the designed 300 ms target, where `--help`'s enforced ceiling is
+2.6× its designed 50 ms. So `warmStoreVerb: "<300ms"` remains the aspiration in
+the surface covenant and `budgets.$comment` now names it as the third
+designed-vs-enforced divergence.
+
+**Also measured — the per-invocation start tax.** The real embed makes the
+binary ~2.0 MB bigger (104.8 → 106.8 MB), and `bun build --compile` emits one
+script, so the whole embed is *parsed* at process start on every invocation even
+though `--version` and `--help` import neither generated module. Measured on
+`--version` under the interleaved protocol, which is the only one where the two
+binaries face the same page-cache pressure: **+24.1 / +24.7 / +28.4 ms**. Scaled
+to the reference box's 45.5 ms start that is roughly +6 ms, which neither the
+130 ms `--help` nor the 100 ms `__complete` ceiling notices — but it is a real
+cost of the embed and it is not what the `entitySource` module split avoids
+(that split keeps the 1.87 MB from being *evaluated*, not from being *parsed*).
 
 **Pre-existing gap, recorded honestly:** the `warm store-backed verb` budget case
 already fails on this box with the **toy** pack — 352 / 364 / 382 ms median
 across three attempts against the 300 ms ceiling — so its failure here is
-environmental, not a regression this change introduced. The ceiling below is
+environmental, not a regression this change introduced. The ceiling above is
 derived for the reference box, which is the covenant.
-
-### `BUDGET_WARM_STORE_MS`: 300 → 400
-
-Derived, not chosen: `ceil(317 × 1.25 / 50) × 50 = 400`, where 317 ms is the
-projected reference-box p95 above. It is the same treatment `--help` and
-`__complete` already get — the ceiling follows the measurement, the designed
-target stays put — so `warmStoreVerb: "<300ms"` remains the aspiration in the
-surface covenant and `budgets.$comment` now names it as the third
-designed-vs-enforced divergence.
 
 What was NOT done, deliberately: the assertion still runs against **median and
 p95**, not a trimmed mean. That mechanism exists here for `__complete`, where the
 p95 excess was contention noise over a median with 2× headroom. This excess is
 real work. Hiding real cost behind a robust statistic would make the budget lie.
+
+**Known coverage gap.** No budget case reads the pack index: `__complete config`
+completes subcommands and `__complete skill lookup do` walks the filesystem. The
+index-backed completion path (`__complete block lookup …`, which the 90×-larger
+index actually touches) is therefore unmeasured, as is MCP `resources/list`,
+whose budget probe (`capabilities`) is deliberately index-free. Both are
+recorded here rather than closed with a new case that would flake on this box.
 
 ## PR7 — `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
 
