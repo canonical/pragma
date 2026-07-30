@@ -89,10 +89,10 @@
    * both axes reads clearer than composing two utility classes here. */
   display: grid;
   grid-template-columns: repeat(
-    auto-fill,
-    minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
+      auto-fill,
       minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
-  );
+        minmax(var(--grid-col-min), 1fr) minmax(var(--grid-col-min), 1fr)
+    );
   /* The block axis: the viewport spans every column and stacks the
    * strip / canvas / footer rows within itself (below). The shell's single
    * row is the 100dvh frame. */

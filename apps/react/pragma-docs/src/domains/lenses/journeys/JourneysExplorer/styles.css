@@ -37,6 +37,20 @@
   min-block-size: 0;
 }
 
+/* The centre column: ONE reading, the table or the graph, never both
+ * (RULING 1 — the switch itself moved to the mode strip). It fills the whole
+ * centre and owns its own scroll; it releases its min-content claim so the
+ * frame stays in charge of the width. Declared BEFORE the [data-view] rules
+ * below: those are more specific but set only `grid-column`, so the cascade is
+ * unchanged — source order now simply matches specificity order. */
+.ds.journeys-explorer .journeys-explorer-main {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
 .ds.journeys-explorer[data-view="graph"] > .journeys-explorer-main {
   grid-column: 3 / -4;
 }
@@ -50,18 +64,6 @@
   padding-inline-start: var(--space-200, 1rem);
   overflow: auto;
   min-block-size: 0;
-}
-
-/* The centre column: ONE reading, the table or the graph, never both
- * (RULING 1 — the switch itself moved to the mode strip). It fills the whole
- * centre and owns its own scroll; it releases its min-content claim so the
- * frame stays in charge of the width. */
-.ds.journeys-explorer .journeys-explorer-main {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  gap: 0;
-  min-block-size: 0;
-  min-inline-size: 0;
 }
 
 .ds.journeys-explorer .journeys-explorer-main > .journey-table {

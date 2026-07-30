@@ -221,7 +221,11 @@ const HierarchyWell = ({
         .join(" ")}
       data-slot="explorer-canvas"
     >
-      <div
+      {/* A named <section>, not a <div role="group">: useSemanticElements maps
+          `group` to <fieldset>, which is for form controls and carries default
+          border/margin that fights the pan transform. A labelled region keeps
+          the accessible name without the styling. */}
+      <section
         aria-label="Class hierarchy"
         className="hierarchy-canvas"
         onBlur={() => onHoverTerm(undefined)}
@@ -251,7 +255,6 @@ const HierarchyWell = ({
           drag.current = undefined;
         }}
         ref={canvasRef}
-        role="group"
       >
         <div
           className="hierarchy-camera"
@@ -329,7 +332,7 @@ const HierarchyWell = ({
             <TermNode key={node.id} node={node} />
           ))}
         </div>
-      </div>
+      </section>
       {/* Canvas-local furniture: static, so it costs the hydration
           argument nothing. */}
       <p className="hierarchy-furniture hierarchy-hint">
