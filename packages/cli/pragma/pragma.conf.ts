@@ -29,6 +29,13 @@ export default {
       source: "git+https://github.com/canonical/web-code-standards.git#main",
     },
   ],
+  // The design system declares `ds:` twice — `…/` in `definitions/` and
+  // `…/data/` in `data/` — and prefix harvesting is last-wins over a filename
+  // sort, so which one binds is an accident of file naming. Pinning it here
+  // puts `ds:` in the config layer, which wins every harvest: without this an
+  // added or renamed upstream file can silently compact every `ds:` entity to
+  // the wrong prefix, and `block list` stops resolving.
+  prefixes: { ds: "https://ds.canonical.com/" },
   generators: [
     {
       name: "@canonical/summon-component",
