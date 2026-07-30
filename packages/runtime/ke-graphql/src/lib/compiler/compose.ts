@@ -90,9 +90,17 @@ export default function compose(
 
   const nodeInterface: GraphQLInterfaceType = new GraphQLInterfaceType({
     name: "Node",
+    // No resolvers: an interface's field resolvers never execute — graphql-js
+    // dispatches on the runtime object type, whose own plan carries them. The
+    // fields exist here so a selection through Query.node(id:) or
+    // OntologyClass.instances (a NodeConnection) is legal.
     fields: () => ({
       id: { type: new GraphQLNonNull(GraphQLID) },
       uri: { type: new GraphQLNonNull(GraphQLString) },
+      kind: { type: new GraphQLNonNull(GraphQLString) },
+      label: { type: GraphQLString },
+      comment: { type: GraphQLString },
+      definition: { type: GraphQLString },
     }),
     resolveType: resolveTypename,
   });

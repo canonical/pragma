@@ -136,6 +136,41 @@ describe("ds-realistic resolution", () => {
     expect(node.name).toBe("Button");
   });
 
+  it("resolves the generic kind/label/comment/definition fields", async () => {
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    const result = await run(
+      compiled,
+      `{ component(uri: "ds:global.component.button") { kind label comment definition } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.component).toEqual({
+      kind: "ds:Component",
+      // no rdfs:label on the instance → the local-name tier (ds:name) fires
+      label: "Button",
+      // no rdfs:comment on the instance → the tier (ds:summary) fires
+      comment: "Primary action trigger.",
+      // ds: declares no description-shaped predicate and the instance asserts
+      // no skos:definition → the whole chain is exhausted
+      definition: null,
+    });
+  });
+
+  it("selects the generic fields straight through node(id:)", async () => {
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    // No inline fragment: Node itself declares kind/label/comment/definition.
+    const result = await run(
+      compiled,
+      `{ node(id: "ds:global.component.button") { kind label comment definition } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.node).toEqual({
+      kind: "ds:Component",
+      label: "Button",
+      comment: "Primary action trigger.",
+      definition: null,
+    });
+  });
+
   it("returns null for unknown prefixes and unknown URIs", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
     const unknownPrefix = await run(compiled, `{ node(id: "zz:nope") { id } }`);
@@ -272,10 +307,103 @@ describe("coercion", () => {
     });
     const active = await run(compiled, `{ item(uri: "ex:i1") { active } }`);
     expect((active.data?.item as { active: boolean }).active).toBe(true);
-    const label = await run(compiled, `{ item(uri: "ex:i3") { label } }`);
-    expect((label.data?.item as { label: string }).label).toBe("Tagged");
+    // ex:label is reserved-renamed to exLabel; the renamed field is the one
+    // still running through coerce, so keep the coercion assertion on it.
+    const label = await run(compiled, `{ item(uri: "ex:i3") { exLabel } }`);
+    expect((label.data?.item as { exLabel: string }).exLabel).toBe("Tagged");
     const summary = await run(compiled, `{ item(uri: "ex:i5") { summary } }`);
     expect((summary.data?.item as { summary: string }).summary).toBe("");
+  });
+
+  it("leaves the generic label null when no label-shaped value is asserted", async () => {
+    const compiled = await setup(EDGE_CASES_TTL);
+    // ex:i1 asserts only ex:active — every candidate predicate is exhausted,
+    // which must produce null rather than an empty string.
+    const result = await run(compiled, `{ item(uri: "ex:i1") { label } }`);
+    expect(result.errors).toBeUndefined();
+    expect((result.data?.item as { label: string | null }).label).toBeNull();
+  });
+});
+
+// A provider whose instances carry BOTH the canonical rdfs/skos predicates and
+// local-name-shaped properties, so the fixed chain's precedence is observable.
+const DESCRIPTIVE_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+ex:Doc a owl:Class ; rdfs:label "Doc" .
+
+ex:name a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+ex:summary a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+ex:description a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+
+# every canonical predicate asserted alongside its local-name counterpart
+ex:d1 a ex:Doc ;
+  rdfs:label "Canonical label" ; ex:name "Tier name" ;
+  rdfs:comment "Canonical comment" ; ex:summary "Tier summary" ;
+  skos:definition "Canonical definition" ; ex:description "Tier description" .
+
+# only the local-name tier is asserted
+ex:d2 a ex:Doc ;
+  ex:name "Tier name" ; ex:summary "Tier summary" ; ex:description "Tier description" .
+
+# neither tier
+ex:d3 a ex:Doc .
+`;
+
+describe("generic descriptive chain", () => {
+  const selection = `{ label comment definition }`;
+
+  it("prefers the canonical rdfs/skos predicate over the local-name tier", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    const result = await run(compiled, `{ doc(uri: "ex:d1") ${selection} }`);
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.doc).toEqual({
+      label: "Canonical label",
+      comment: "Canonical comment",
+      definition: "Canonical definition",
+    });
+  });
+
+  it("falls back to the local-name tier when no canonical value is asserted", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    const result = await run(compiled, `{ doc(uri: "ex:d2") ${selection} }`);
+    expect(result.errors).toBeUndefined();
+    // each field resolves independently through its own chain
+    expect(result.data?.doc).toEqual({
+      label: "Tier name",
+      comment: "Tier summary",
+      definition: "Tier description",
+    });
+  });
+
+  it("yields null — not an empty string — when a chain is exhausted", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    const result = await run(compiled, `{ doc(uri: "ex:d3") ${selection} }`);
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.doc).toEqual({
+      label: null,
+      comment: null,
+      definition: null,
+    });
+  });
+
+  it("leaves the ontology's own description field unreserved and intact", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    // `description` is NOT reserved: ex:description keeps its natural name
+    // while the generic field is called `definition`.
+    const result = await run(
+      compiled,
+      `{ doc(uri: "ex:d1") { description definition } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.doc).toEqual({
+      description: "Tier description",
+      definition: "Canonical definition",
+    });
   });
 
   it("self-referential chains resolve without infinite recursion", async () => {

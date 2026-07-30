@@ -62,6 +62,11 @@ describe("minimal fixture", () => {
     expect(String(fields.id?.type)).toBe("ID!");
     expect(String(fields.uri?.type)).toBe("String!");
     expect(String(fields._meta?.type)).toBe("EntityMeta!");
+    // generic descriptive fields on every non-embeddable node
+    expect(String(fields.kind?.type)).toBe("String!");
+    expect(String(fields.label?.type)).toBe("String");
+    expect(String(fields.comment?.type)).toBe("String");
+    expect(String(fields.definition?.type)).toBe("String");
     expect(thing.getInterfaces().map((i) => i.name)).toContain("Node");
     // root queries
     const query = result.schema.getQueryType()?.getFields();

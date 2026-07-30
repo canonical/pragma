@@ -272,6 +272,53 @@ describe("compose full construction", () => {
     ).toContain("extension field Thing.name conflicts with a generated field");
   });
 
+  it("declares the generic descriptive fields on Node and accepts implementors", () => {
+    // Node carries kind/label/comment/definition structurally so a selection
+    // through Query.node(id:) is legal without an inline fragment; an
+    // implementor repeating them must still validate.
+    const thing: TypePlan = {
+      name: "Thing",
+      interfaces: ["Node"],
+      fields: new Map<string, FieldPlan>([
+        [
+          "id",
+          {
+            name: "id",
+            type: { base: "ID", kind: "scalar", list: false, nonNull: true },
+          },
+        ],
+        ["uri", scalarField("uri", true)],
+        ["kind", scalarField("kind", true)],
+        ["label", scalarField("label")],
+        ["comment", scalarField("comment")],
+        ["definition", scalarField("definition")],
+      ]),
+      embeddable: false,
+    };
+    const plan = emptyPlan({
+      types: new Map([["Thing", thing]]),
+      queryFields: new Map<string, FieldPlan>([
+        [
+          "node",
+          {
+            name: "node",
+            type: { base: "Node", kind: "named", list: false, nonNull: false },
+          },
+        ],
+      ]),
+    });
+
+    const { output, diagnostics } = compose(plan);
+    expect(diagnostics.filter((d) => d.code === "C003")).toHaveLength(0);
+    expect(output.schema).not.toBeNull();
+    const nodeBlock = /interface Node \{[^}]*\}/.exec(output.sdl)?.[0];
+    expect(nodeBlock).toContain("kind: String!");
+    expect(nodeBlock).toContain("label: String");
+    expect(nodeBlock).toContain("comment: String");
+    expect(nodeBlock).toContain("definition: String");
+    expect(output.sdl).toContain("type Thing implements Node");
+  });
+
   it("C001 — object-form extension references an unknown type", () => {
     const thing: TypePlan = {
       name: "Thing",

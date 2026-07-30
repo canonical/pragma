@@ -421,6 +421,42 @@ describe("map — field name collisions", () => {
     expect(output.types.get("Doc")?.fields.has("exUri")).toBe(true);
   });
 
+  it("renames ontology properties colliding with the generic descriptive fields", () => {
+    // kind/label/comment/definition are reserved for the generic node fields,
+    // so an ontology declaring its own must be namespace-prefixed out of the
+    // way. `description` is deliberately NOT reserved and survives unrenamed.
+    const datatypeOn = (local: string) => ({
+      uri: uri(local),
+      kind: "datatype" as const,
+      domains: [uri("Doc")],
+      ranges: [`${XSD}string`],
+    });
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      properties: [
+        datatypeOn("label"),
+        datatypeOn("kind"),
+        datatypeOn("comment"),
+        datatypeOn("definition"),
+        datatypeOn("description"),
+      ],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output, diagnostics } = map(ir);
+    expect(codes(diagnostics)).toContain("M002");
+    const fields = output.types.get("Doc")?.fields;
+    for (const renamed of ["exLabel", "exKind", "exComment", "exDefinition"]) {
+      expect(fields?.has(renamed)).toBe(true);
+    }
+    // the un-prefixed names stay free for wireRelay
+    for (const reserved of ["label", "kind", "comment", "definition"]) {
+      expect(fields?.has(reserved)).toBe(false);
+    }
+    // …but `description` is not reserved: it keeps its ontology name.
+    expect(fields?.has("description")).toBe(true);
+    expect(fields?.has("exDescription")).toBe(false);
+  });
+
   it("reports M001 when a renamed field collides with an existing field", () => {
     // First property takes "dup"; second takes the prefixed form "exDup"; the
     // third's "dup" collides → renamed to "exDup", which already exists → M001.

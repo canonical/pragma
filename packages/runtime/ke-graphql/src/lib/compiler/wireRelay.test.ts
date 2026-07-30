@@ -162,6 +162,8 @@ describe("wireRelay connection wrapping", () => {
 });
 
 describe("wireRelay Node membership", () => {
+  const DESCRIPTIVE = ["kind", "label", "comment", "definition"];
+
   it("skips embeddable-only interfaces but wires concrete ones", () => {
     const embOnly = ifacePlan({ name: "EmbOnly", embeddableOnly: true });
     const concrete = ifacePlan({ name: "Concrete" });
@@ -192,10 +194,113 @@ describe("wireRelay Node membership", () => {
     wireRelay(plan);
     // embeddable-only interface: no structural fields, no Node parent
     expect(plan.interfaces.get("EmbOnly")?.fields.has("id")).toBe(false);
+    for (const name of DESCRIPTIVE) {
+      expect(plan.interfaces.get("EmbOnly")?.fields.has(name)).toBe(false);
+    }
     expect(plan.interfaces.get("EmbOnly")?.parents).not.toContain("Node");
-    // concrete interface: id/uri/_meta injected, Node added
+    // concrete interface: id/uri/kind/label/description/_meta injected
     expect(plan.interfaces.get("Concrete")?.fields.has("id")).toBe(true);
+    for (const name of DESCRIPTIVE) {
+      expect(plan.interfaces.get("Concrete")?.fields.has(name)).toBe(true);
+    }
     expect(plan.interfaces.get("Concrete")?.parents).toContain("Node");
+  });
+
+  it("wires kind/label/comment/definition onto concrete types only", () => {
+    const plan: SchemaPlan = {
+      types: new Map([
+        ["Thing", typePlan({ name: "Thing" })],
+        ["Emb", typePlan({ name: "Emb", embeddable: true })],
+      ]),
+      interfaces: new Map(),
+      unions: new Map(),
+      queryFields: new Map(),
+      mapped: {
+        types: new Map([["Thing", mappedType("Thing")]]),
+        interfaces: new Map(),
+        unions: new Map(),
+        nameMap,
+        namespaces,
+        ir: {
+          classes: new Map(),
+          properties: new Map(),
+          namespaces: new Map(),
+          extraction: {} as MappedIR["ir"]["extraction"],
+        },
+      } as unknown as MappedIR,
+    };
+
+    wireRelay(plan);
+    const thing = plan.types.get("Thing")?.fields;
+    expect([...(thing?.keys() ?? [])]).toEqual([
+      "id",
+      "uri",
+      "kind",
+      "label",
+      "comment",
+      "definition",
+      "_meta",
+    ]);
+    expect(thing?.get("kind")?.type).toEqual({
+      base: "String",
+      kind: "scalar",
+      list: false,
+      nonNull: true,
+    });
+    for (const name of ["label", "comment", "definition"]) {
+      expect(thing?.get(name)?.type.nonNull).toBe(false);
+    }
+    for (const name of DESCRIPTIVE) {
+      expect(plan.types.get("Emb")?.fields.has(name)).toBe(false);
+    }
+  });
+
+  const kindOf = (plan: SchemaPlan, typename: string): unknown => {
+    const resolve = plan.types.get("Thing")?.fields.get("kind")?.resolve;
+    if (!resolve) {
+      throw new Error("expected a kind resolver");
+    }
+    const parent: EntityValue = { uri: "ex:t1", typename, triples: new Map() };
+    return (resolve as Resolve)(parent, {}, {} as CompilerContext, {} as never);
+  };
+
+  const kindPlan = (map: NameMap): SchemaPlan => {
+    const plan: SchemaPlan = {
+      types: new Map([["Thing", typePlan({ name: "Thing" })]]),
+      interfaces: new Map(),
+      unions: new Map(),
+      queryFields: new Map(),
+      mapped: {
+        types: new Map([["Thing", mappedType("Thing")]]),
+        interfaces: new Map(),
+        unions: new Map(),
+        nameMap: map,
+        namespaces,
+        ir: {
+          classes: new Map(),
+          properties: new Map(),
+          namespaces: new Map(),
+          extraction: {} as MappedIR["ir"]["extraction"],
+        },
+      } as unknown as MappedIR,
+    };
+    wireRelay(plan);
+    return plan;
+  };
+
+  it("kind resolves the prefixed OWL class URI when the name map hits", () => {
+    const hitMap: NameMap = {
+      toGraphQL: () => undefined,
+      toOWL: (name) =>
+        name === "Thing" ? "http://example.org/Thing" : undefined,
+      entries: () => [][Symbol.iterator](),
+    };
+    expect(kindOf(kindPlan(hitMap), "Thing")).toBe("ex:Thing");
+  });
+
+  it("kind falls back to the typename when the name map misses", () => {
+    // the shared stub's toOWL always returns undefined
+    expect(kindOf(kindPlan(nameMap), "Thing")).toBe("Thing");
   });
 });
 

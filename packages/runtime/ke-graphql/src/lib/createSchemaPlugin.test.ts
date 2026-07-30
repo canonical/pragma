@@ -200,11 +200,25 @@ describe("createSchemaPlugin", () => {
     const api = store.api<SchemaPluginApi>("ke-graphql");
     const result = await graphql({
       schema: api?.schema as NonNullable<typeof api>["schema"],
-      source: `{ thing(uri: "ex:widget") { label } }`,
+      source: `{ thing(uri: "ex:widget") { xLabel label name } }`,
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
-    expect((result.data?.thing as { label: string }).label).toBe("The Widget");
+    const thing = result.data?.thing as {
+      xLabel: string;
+      label: string;
+      name: string;
+    };
+    // "label" is reserved for the generic node field, so this opt-in lands on
+    // the pre-existing M002 rename path (no IR namespace for rdfs: → "x").
+    // The opt-in keeps its predicate: xLabel reads rdfs:label.
+    expect(thing.xLabel).toBe("The Widget");
+    // The generic chain's FIRST link is also rdfs:label, so it reports the
+    // same literal — the opt-in's value is not lost or altered, only renamed.
+    expect(thing.label).toBe("The Widget");
+    // Provenance check: had the generic chain fallen through to its
+    // local-name tier (ex:name) it would read "Widget" instead.
+    expect(thing.name).toBe("Widget");
   });
 
   it("logs diagnostics to the matching console channel by severity", async () => {

@@ -35,6 +35,41 @@ export const RDF_TYPE = `${RDF}type`;
 /** rdfs:label predicate IRI. */
 export const RDFS_LABEL = `${RDFS}label`;
 
+/** rdfs:comment predicate IRI. */
+export const RDFS_COMMENT = `${RDFS}comment`;
+
+/** skos:prefLabel predicate IRI. */
+export const SKOS_PREF_LABEL = `${SKOS}prefLabel`;
+
+/** skos:definition predicate IRI. */
+export const SKOS_DEFINITION = `${SKOS}definition`;
+
+/**
+ * Local-name fallback tier for the generic `label` field.
+ *
+ * Each descriptive field resolves through a FIXED chain: the canonical
+ * rdfs/skos predicate first, then — only when the instance asserts none of
+ * them — the first of the class's own String properties whose lower-cased OWL
+ * local name appears in this table. Matching on the LOCAL name is deliberate:
+ * `ds:name`, `cs:name`, and any future `foo:name` all resolve identically, so
+ * this package stays provider-neutral and never names a concrete ontology.
+ *
+ * DESIGNATED FUTURE SEAM — the chain is intentionally fixed and not
+ * configurable, because no provider needs to override it today. When one does,
+ * the override belongs in the consuming config as a per-object-type annotation
+ * naming that type's label/comment/definition predicates — not in the ontology,
+ * and not as a flat global predicate map. Adding it later is purely additive:
+ * the contract's field NAMES do not change, only the source predicate for a
+ * given type.
+ */
+export const LABEL_LOCAL_NAMES = ["name", "title"];
+
+/** Local-name fallback tier for `comment`. See LABEL_LOCAL_NAMES. */
+export const COMMENT_LOCAL_NAMES = ["summary"];
+
+/** Local-name fallback tier for `definition`. See LABEL_LOCAL_NAMES. */
+export const DEFINITION_LOCAL_NAMES = ["description"];
+
 /**
  * Namespaces that never produce GraphQL types. Loaded in ke for annotation
  * resolution only.
@@ -86,6 +121,10 @@ export const RESERVED_TYPE_NAMES = new Set([
 export const RESERVED_FIELD_NAMES = new Set([
   "id",
   "uri",
+  "kind",
+  "label",
+  "comment",
+  "definition",
   "_meta",
   "__typename",
 ]);
