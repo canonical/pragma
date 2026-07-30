@@ -6,6 +6,7 @@
  * (what the MCP tool returns through the envelope).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type { CapabilitiesData, ToolCategory } from "./types.js";
 
@@ -53,7 +54,7 @@ export const capabilitiesFormatters: Formatters<CapabilitiesData> = {
   },
 
   llm(data) {
-    const lines: string[] = [`# pragma v${data.version}`, ""];
+    const lines: string[] = [`# ${BIN_NAME} v${data.version}`, ""];
 
     lines.push("## Conventions");
     lines.push(`- ${data.conventions.system}`);

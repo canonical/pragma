@@ -35,11 +35,15 @@ import type {
  * v2, surfacing the plan-first/confirm gate.
  */
 export const CONVENTIONS = {
-  system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION}. A CLI and MCP server over a knowledge graph.`,
+  // `help` is authored as a bare phrase (`--help` renders it as one), so the
+  // self-description trails in parentheses rather than after a period this
+  // string would have to add — a fork writing "Explore the recipe graph."
+  // otherwise reads "recipe graph.. A CLI and MCP server…".
+  system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
   model:
     "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
   querying:
-    "All queries run against an RDF triple store. Prefixed IRIs (e.g. ds:global.component.button) identify entities. Use ontology_list to discover namespaces.",
+    "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
   mutations:
     "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
 } as const;

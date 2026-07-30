@@ -102,7 +102,8 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     );
 
     expect(text).not.toMatch(THIS_DISTRIBUTION);
-    expect(text.startsWith("recipes — Explore the recipe graph.")).toBe(true);
+    // No punctuation is appended to the fork's `help` phrase.
+    expect(text.startsWith("recipes — Explore the recipe graph (")).toBe(true);
   });
 
   it("greets a first-time user with the fork's issues URL and config file", async () => {

@@ -8,6 +8,7 @@
  * see on an empty store.
  */
 
+import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type { PackDefinition } from "../../kernel/packs/types.js";
 
 export const tokenPack: PackDefinition = {
@@ -35,7 +36,7 @@ export const tokenPack: PackDefinition = {
     emptyRecovery: {
       message:
         "No tokens in the store. Build it from the configured design-system packs.",
-      cli: "pragma sources update",
+      cli: `${RECOVERY_CLI_PREFIX}sources update`,
     },
   },
   lookup: {
