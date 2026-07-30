@@ -7,7 +7,7 @@
  * degrades to a `pragma sources update` hint (never a live re-index).
  */
 
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
@@ -16,7 +16,6 @@ import { readPackIndex } from "../../kernel/completion/entitySource.js";
 import { verbKey } from "../../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
-import { writeLock } from "../../kernel/runtime/lock.js";
 import type { InspectResult } from "../../kernel/runtime/readEntity.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TEST_FLAGS } from "../../testing/helpers/projectCli.js";
@@ -181,14 +180,19 @@ describe("resource surface over the server (embedded pack)", () => {
  * D3 — a resource-read failure surfaces as a JSON-RPC error (the read analogue of
  * a tool result's `isError`) carrying the recovery, NOT swallowed into a
  * `text/plain` "success" body that drops the recovery and reads as though the
- * entity itself were malformed. A lock pointing at an evicted pack is the cold
- * store; the read boots the store, so it must refuse with STORE_UNAVAILABLE.
+ * entity itself were malformed. A project that declares its own packs and has
+ * never built them is the cold store — it must NOT be served the distribution's
+ * embedded graph; the read boots the store, so it refuses with
+ * STORE_UNAVAILABLE.
  */
 describe("resource read — cold-store failure surfaces isError + recovery (D3)", () => {
   let harness: Awaited<ReturnType<typeof projectMcp>>;
   beforeAll(async () => {
     const cwd = mkdtempSync(join(tmpdir(), "pragma-resource-cold-"));
-    writeLock(cwd, { version: 1, contentHash: "b".repeat(64), packs: [] });
+    writeFileSync(
+      join(cwd, "pragma.config.ts"),
+      `export default { packs: [{ name: "unbuilt", source: "file:///pragma-never-built" }] };\n`,
+    );
     harness = await projectMcp([graphModule], cwd);
   });
   afterAll(async () => {

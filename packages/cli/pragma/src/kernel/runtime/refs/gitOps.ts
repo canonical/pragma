@@ -9,7 +9,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 /** Whether a ref looks like a commit SHA (7-40 hex chars). */
@@ -62,24 +62,6 @@ export function fetchRef(url: string, ref: string, dest: string): string {
   git(dest, ["fetch", "--depth", "1", url, ref]);
   git(dest, ["checkout", "FETCH_HEAD"]);
   return gitOutput(dest, ["rev-parse", "HEAD"]);
-}
-
-/** Check out an exact commit in an existing clone (fetching it if needed). */
-export function checkoutCommit(
-  url: string,
-  commit: string,
-  dest: string,
-): void {
-  if (!existsSync(dest)) {
-    cloneRef(url, commit, dest);
-    return;
-  }
-  try {
-    git(dest, ["checkout", commit]);
-  } catch {
-    git(dest, ["fetch", "--depth", "1", url, commit]);
-    git(dest, ["checkout", commit]);
-  }
 }
 
 /** The resolved HEAD commit of a checkout. */

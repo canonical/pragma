@@ -322,7 +322,7 @@ Read-only.
 
 ### sources_status
 
-Storeless — reads the lock, config, and pack cache without booting the store, so it works even when the store is cold.
+Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
 
 Read-only.
 
@@ -332,7 +332,7 @@ _No input parameters._
 
 ### sources_update
 
-Resolves each configured pack (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.
+Resolves each configured pack (git/file/npm) and builds one content-addressed pack, which every later boot reads with no network access. Pin a revision by putting a commit SHA in the pack's source ref.
 
 Mutation — plan-first (set `confirm: true` to apply).
 
@@ -340,7 +340,6 @@ Mutation — plan-first (set `confirm: true` to apply).
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `frozen` | boolean | no | Re-resolve to the lock's pinned revisions exactly; never advance. |
 | `skipInvalid` | boolean | no | Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |

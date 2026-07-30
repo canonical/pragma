@@ -40,8 +40,9 @@ describe("exit-code covenant, spawn-observed (A4, e2e)", () => {
   it("3 — store unavailable (configured packs, never built)", () => {
     const cwd = mkdtempSync(join(tmpdir(), "pragma-exit3-"));
     // A pragma.config.ts with custom `packs` flips `origins.packs` to
-    // "project" — with no `pragma.lock.json`, resolveSources refuses to boot
-    // (no network probing) rather than fall back to the embedded pack.
+    // "project" — with nothing built for this project, resolveSources refuses
+    // to boot (no network probing) rather than serve the embedded pack, which
+    // is a DIFFERENT graph from the one this project asked for.
     writeFileSync(
       join(cwd, "pragma.config.ts"),
       'export default { packs: [{ name: "never-built", source: "file:///nonexistent" }] };\n',

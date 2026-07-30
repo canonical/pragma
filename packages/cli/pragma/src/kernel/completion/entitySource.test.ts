@@ -1,24 +1,27 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { activePackPath } from "../runtime/paths.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import { runComplete } from "./complete.js";
 import { createIndexEntityReader, indexCompletionEnv } from "./entitySource.js";
 
-/** A fresh cwd with no lock → the reader falls back to the embedded pack. */
+/** A fresh cwd with no pointer → the reader falls back to the embedded pack. */
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-entity-"));
 
-/** A project whose lock points at a crafted index.json in a temp pack cache. */
+/** The 64-hex content hash the crafted pack is filed under. */
+const CRAFTED_HASH = "1".repeat(64);
+
+/** A project pointed at a crafted index.json in a temp pack cache. */
 function projectWithIndex(index: unknown): string {
   const cwd = mkdtempSync(join(tmpdir(), "pragma-idx-cwd-"));
   const cache = mkdtempSync(join(tmpdir(), "pragma-idx-cache-"));
   vi.stubEnv("XDG_CACHE_HOME", cache);
-  writeFileSync(
-    join(cwd, "pragma.lock.json"),
-    JSON.stringify({ contentHash: "testhash" }),
-  );
-  const packDir = join(cache, "pragma", "packs", "testhash");
+  const pointer = activePackPath(cwd);
+  mkdirSync(dirname(pointer), { recursive: true });
+  writeFileSync(pointer, CRAFTED_HASH);
+  const packDir = join(cache, "pragma", "packs", CRAFTED_HASH);
   mkdirSync(packDir, { recursive: true });
   writeFileSync(join(packDir, "index.json"), JSON.stringify(index));
   return cwd;
@@ -27,7 +30,7 @@ function projectWithIndex(index: unknown): string {
 /** A crafted index exercising the index / prompts / tiers / prefixes sources. */
 const CRAFTED_INDEX = {
   version: 2,
-  contentHash: "testhash",
+  contentHash: CRAFTED_HASH,
   prefixes: { ex: "https://example.com/", ds: "https://ds.canonical.com/" },
   instanceCountByType: {},
   entities: [
@@ -96,7 +99,7 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
     const env = indexCompletionEnv(
       projectWithIndex({
         version: 2,
-        contentHash: "testhash",
+        contentHash: CRAFTED_HASH,
         prefixes: {},
         instanceCountByType: {},
         entities: [{ name: "ex:Button", type: "ex:Component" }],

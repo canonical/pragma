@@ -11,7 +11,6 @@ export const updateFormatters: Formatters<SourcesUpdateData> = {
       data.reused
         ? `Store up to date (pack ${data.contentHash.slice(0, 12)}).`
         : `Built pack ${data.contentHash.slice(0, 12)}.`,
-      `Wrote ${data.lockPath}.`,
     ];
     for (const pack of data.packs) {
       lines.push(

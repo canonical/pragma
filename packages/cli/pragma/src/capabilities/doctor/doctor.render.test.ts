@@ -53,10 +53,10 @@ const COLOR_DATA: DoctorData = {
     {
       name: "pack refs",
       status: "fail",
-      detail: "3 configured, 0 locked",
+      detail: "packs are configured but the store has not been built",
       items: [
-        { label: "core", status: "fail", detail: "unlocked" },
-        { label: "ui", status: "fail", detail: "unlocked" },
+        { label: "core", status: "fail", detail: "not built" },
+        { label: "ui", status: "fail", detail: "not built" },
       ],
       remedy: "pragma sources update",
     },

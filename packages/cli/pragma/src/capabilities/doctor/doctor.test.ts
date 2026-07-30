@@ -127,18 +127,48 @@ describe("doctor — shape & spread", () => {
     }
     // Deterministic under the isolated env.
     expect(byName(data, "Node version")?.status).toBe("pass");
-    // The 3 default-config packs are configured but not locked here → an
-    // attributable fail listing them, with the sources-update remedy.
+    // Nothing built, but the packs are the distribution's own — so the embedded
+    // snapshot answers reads and the check passes, naming what it is reading.
     const pkgRefs = byName(data, "pack refs");
-    expect(pkgRefs?.status).toBe("fail");
-    expect(pkgRefs?.remedy).toBe("pragma sources update");
-    expect(pkgRefs?.items?.length).toBe(3);
+    expect(pkgRefs?.status).toBe("pass");
+    expect(pkgRefs?.detail).toContain("embedded snapshot @ ");
+    expect(pkgRefs?.remedy).toBeUndefined();
     // No harnesses in an empty HOME/cwd — attributable fail + skips.
     expect(byName(data, "MCP configured")?.status).toBe("fail");
     expect(byName(data, "Skills symlinked")?.status).toBe("skip");
     expect(byName(data, "MCP commands")?.status).toBe("skip");
     // No project/global config in the isolated XDG.
     expect(byName(data, "pragma config")?.status).toBe("fail");
+  });
+});
+
+describe("doctor — the pack-refs check", () => {
+  it("a project with its OWN packs and nothing built is an attributable fail", async () => {
+    // The install that must never read healthy: `origins.packs` is "project",
+    // so the embedded snapshot is a DIFFERENT graph and every read throws
+    // STORE_UNAVAILABLE. Doctor has to say so and name the fix, rather than
+    // pass by listing packs it is not actually reading from.
+    const cwd = tmp("pragma-unbuilt-");
+    writeFileSync(
+      join(cwd, "pragma.config.ts"),
+      'export default { packs: [{ name: "unbuilt", source: "file:///pragma-never-built" }] };\n',
+    );
+    const data = await runChecks(bootRuntime(FLAGS, cwd));
+    const pkgRefs = byName(data, "pack refs");
+    expect(pkgRefs?.status).toBe("fail");
+    expect(pkgRefs?.detail).toContain("the store has not been built");
+    expect(pkgRefs?.remedy).toBe("pragma sources update");
+  });
+
+  it("a project pointed at its own built pack passes, naming that pack", async () => {
+    const fixture = await bootFixtureRuntime({ ttl: CANONICAL_TTL });
+    const data = await runChecks(fixture.runtime);
+    const pkgRefs = byName(data, "pack refs");
+    expect(pkgRefs?.status).toBe("pass");
+    // The fixture pack's own provenance label, not the embedded snapshot's.
+    expect(pkgRefs?.detail).toContain("fixture");
+    expect(pkgRefs?.detail).not.toContain("embedded snapshot");
+    await fixture.dispose();
   });
 });
 

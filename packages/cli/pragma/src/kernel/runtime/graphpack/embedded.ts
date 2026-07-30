@@ -29,13 +29,22 @@ import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
+  type Manifest,
   manifestSchema,
   SCHEMA_FILE,
 } from "./types.js";
 
-/** The embedded pack's content hash (its cache-directory name). */
-export function embeddedContentHash(): string {
-  return manifestSchema.parse(JSON.parse(manifestJson)).contentHash;
+/**
+ * The embedded pack's manifest, parsed from the inlined string.
+ *
+ * Carries the provenance `sources status` and `doctor` report — `sourceRef`
+ * (which upstream revisions the snapshot was compiled from), `createdAt`, the
+ * counts — plus the `contentHash` that names its cache directory. Reading it
+ * costs one `JSON.parse` of a ~1 KB string, so neither surface has to
+ * materialize the 1.9 MB pack just to describe it.
+ */
+export function embeddedManifest(): Manifest {
+  return manifestSchema.parse(JSON.parse(manifestJson));
 }
 
 /**
@@ -48,7 +57,7 @@ export function embeddedContentHash(): string {
  * @note Impure — writes the inlined pack files into the cache.
  */
 export function materializeEmbeddedPack(): string {
-  const dir = packDir(embeddedContentHash());
+  const dir = packDir(embeddedManifest().contentHash);
   if (packIsComplete(dir)) return dir;
 
   mkdirSync(packsCacheDir(), { recursive: true });

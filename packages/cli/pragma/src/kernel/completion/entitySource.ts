@@ -30,20 +30,21 @@
  *   generated module (only the index string) — so the storeless `__complete`
  *   path never pulls the n-quads/schema/manifest strings that live in
  *   `pack.generated`.
- * - The pack-cache path is INLINED here rather than imported from
- *   `kernel/runtime/paths` — that module reaches `kernel/config`, which the
- *   storeless-guarantee test (`safety.test.ts`) forbids on the completion
- *   import graph. The two lines of XDG resolution are duplicated on purpose to
- *   keep the fast path free of the config layer; `PackIndex`/`PackIndexEntity`
- *   are imported type-only, so no zod schema is loaded at runtime.
+ * - The active pack is resolved through `kernel/runtime/paths` — a LEAF module
+ *   (node builtins only) that shares the pointer read with `resolveSources`, so
+ *   the fast path and the boot decision can never drift onto different packs.
+ *   `resolveSources` itself is unreachable from here: it pulls the graphpack
+ *   manifest schema (zod), which `safety.test.ts` forbids on this graph. Only
+ *   the "else embedded" arm is therefore local, matching the decision table's
+ *   `packs origin default` row. `PackIndex`/`PackIndexEntity` are imported
+ *   type-only, so no zod schema is loaded at runtime.
  * - `discoverSkills` (`node:fs/os/path` only) and `DEFAULT_PREFIX_MAP` (a pure
  *   const) are the only new edges — both leaf-clean, so the fast path stays free
  *   of boot/config/store/zod. The `ds:Prompt`/`ds:Tier` filters are INLINED
  *   (importing `prompts/source.ts` would cycle back into this module).
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { discoverSkills } from "../../capabilities/skill/discover.js";
 // Inlined embedded index — its OWN generated module (only the index string), so
@@ -52,6 +53,7 @@ import { discoverSkills } from "../../capabilities/skill/discover.js";
 import { DEFAULT_PREFIX_MAP } from "../render/prefixes.js";
 import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/pack.index.generated.js";
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
+import { packDir, readActivePack } from "../runtime/paths.js";
 import type { CompletionSourceRef } from "../spec/types.js";
 import type { CompletionEnv } from "./types.js";
 
@@ -63,29 +65,11 @@ const TIER_TYPE = "ds:Tier";
 /** The default name source: no index tier, so no candidates. */
 export const emptyNameSource: CompletionEnv["names"] = () => [];
 
-/** The committed project lock basename (mirrors `kernel/runtime/paths`). */
-const LOCK_BASENAME = "pragma.lock.json";
 /** The pack index filename (kept local so this path never imports the zod schema). */
 const INDEX_FILE = "index.json";
 
 /**
- * `$XDG_CACHE_HOME/pragma/packs/<hash>` — a pack's cache directory.
- *
- * Inlined from `kernel/config/paths` + `kernel/runtime/paths` so the completion
- * fast path stays off the config layer (see the module docblock).
- */
-function packDir(contentHash: string): string {
-  const base = process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache");
-  return join(base, "pragma", "packs", contentHash);
-}
-
-/** The committed project lock file for a working directory. */
-function lockPath(cwd: string): string {
-  return join(cwd, LOCK_BASENAME);
-}
-
-/**
- * Read the active pack's storeless index (the locked pack, else the embedded
+ * Read the active pack's storeless index (the built pack, else the embedded
  * fallback), for the resource browser's list/autocomplete. Never boots the
  * store, never validates with zod — a plain `JSON.parse` off disk. Returns
  * `undefined` when no index is reachable, so callers degrade to a recovery hint.
@@ -120,23 +104,17 @@ export function entityTotal(index: PackIndex): number {
   return subjects.size;
 }
 
-/** Load the active pack's index: the locked pack, else the embedded fallback. */
+/** Load the active pack's index: the built pack, else the embedded fallback. */
 function loadActiveIndex(cwd: string): PackIndex | undefined {
-  try {
-    const path = lockPath(cwd);
-    if (existsSync(path)) {
-      const lock = JSON.parse(readFileSync(path, "utf-8")) as {
-        contentHash?: unknown;
-      };
-      if (typeof lock.contentHash === "string") {
-        const indexPath = join(packDir(lock.contentHash), INDEX_FILE);
-        if (existsSync(indexPath)) {
-          return JSON.parse(readFileSync(indexPath, "utf-8")) as PackIndex;
-        }
-      }
+  const contentHash = readActivePack(cwd);
+  if (contentHash !== undefined) {
+    try {
+      return JSON.parse(
+        readFileSync(join(packDir(contentHash), INDEX_FILE), "utf-8"),
+      ) as PackIndex;
+    } catch {
+      // A pointer whose pack the cache lost falls back to the embedded index.
     }
-  } catch {
-    // Fall through to the embedded fallback on any read/parse failure.
   }
   try {
     return JSON.parse(EMBEDDED_INDEX_JSON) as PackIndex;
