@@ -5,20 +5,19 @@
  * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
  *
  * COMPILED `create` (PR7, resolved) — `create component` runs from the shipped
- * binary. `create.verb.ts` now reaches summon-core + the generators through
- * STATIC dynamic imports (behind its lazy boundary), so bun's `--compile`
- * bundler includes them. The generators load their `.ejs` templates from disk
+ * binary. `create.verb.ts` reaches summon-core + the generators through STATIC
+ * dynamic imports (behind its lazy boundary), so bun's `--compile` bundler
+ * includes them. The generators load their `.ejs` templates from disk
  * (`import.meta`-relative), which do not exist in a standalone binary, so this
- * script inlines every generator template into `create/templates.embedded`
- * `.generated.ts` — the same inline-strings-survive-`--compile` technique as
- * `graphpack/embedded/pack.generated.ts` — keyed by directory-qualified path
- * (`component/react/types.ts.ejs`). The component loader consults that manifest
- * when its disk read fails, keyed by the qualified path so react/svelte/lit
- * never collide. `create package` / `create application` remain a source-run
- * feature (application also copies non-`.ejs` assets); their templates are
- * embedded here too (ready for a later rollout) but gated in the binary. A
- * compiled-binary smoke test (create/compiledCreate.subprocess.test.ts) proves
- * the three frameworks are byte-identical to a source run.
+ * script inlines the reachable generator templates into `create/templates`
+ * `.embedded.generated.ts` — the same inline-strings-survive-`--compile`
+ * technique as `graphpack/embedded/pack.generated.ts` — keyed by
+ * directory-qualified path (`component/react/types.ts.ejs`). The component
+ * loader consults that manifest when its disk read fails, keyed by the qualified
+ * path so react/svelte/lit never collide. A compiled-binary smoke test
+ * (create/compiledCreate.subprocess.test.ts) proves the three frameworks are
+ * byte-identical to a source run, and pins the refusal for the nouns that stay a
+ * source-run feature.
  */
 
 import {
@@ -31,36 +30,38 @@ import {
 } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 
-// The three `create` generators' template roots (source of truth; identical to
-// each package's dist copy). Keys are `<id>/<path-relative-to-root>`, matching
-// the qualified key the component loader derives from a template's source path.
 const scriptsUrl = new URL(".", import.meta.url);
-const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> = [
-  {
-    id: "component",
-    root: fileURLToPath(
-      new URL("../../../summon/component/src/templates", scriptsUrl),
-    ),
-  },
-  {
-    id: "package",
-    root: fileURLToPath(
-      new URL("../../../summon/package/src/templates", scriptsUrl),
-    ),
-  },
-  {
-    id: "application",
-    root: fileURLToPath(
-      new URL(
-        "../../../summon/application/src/application/react/templates",
-        scriptsUrl,
+
+/**
+ * The generators whose `.ejs` the binary must carry: exactly the bindings
+ * `create.verb.ts` lets run from the compiled binary (`embedsTemplates`). Their
+ * templates live at `<package>/src/templates` — the source of truth, identical
+ * to each package's dist copy — resolved through the CLI's OWN node_modules, so
+ * the path follows the DECLARED package name instead of a hand-written reach
+ * into a sibling directory. A binding that keeps its templates elsewhere fails
+ * loudly here rather than shipping a silently empty manifest. Keys are
+ * `<id>/<path-relative-to-root>`, matching the qualified key the component
+ * loader derives from a template's source path.
+ *
+ * `summon-package` / `summon-application` are excluded deliberately: their
+ * generators call `template({ source })`, so a compiled binary can never read an
+ * embedded template for them, and `qualifiedKey()` in summon-component prefixes
+ * every lookup with `component/` — their entries were unreachable by
+ * construction (26 of the 46 previously embedded).
+ */
+const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> =
+  Object.entries(CREATE_GENERATORS)
+    .filter(([, binding]) => binding.embedsTemplates)
+    .map(([id, binding]) => ({
+      id,
+      root: fileURLToPath(
+        new URL(`../node_modules/${binding.name}/src/templates`, scriptsUrl),
       ),
-    ),
-  },
-];
+    }));
 
 const MANIFEST_OUT = fileURLToPath(
   new URL(
@@ -94,6 +95,16 @@ function generateTemplateManifest(): number {
       const rel = relative(root, file).split(/[\\/]/).join("/");
       entries[`${id}/${rel}`] = readFileSync(file, "utf-8");
     }
+  }
+
+  // Fail loud rather than emit an empty manifest: a missing or renamed templates
+  // root would otherwise ship a binary whose `create component` dies with
+  // "Template not found" at run time. (An `.every()` over an empty list is
+  // vacuously true — never gate on one.)
+  if (Object.keys(entries).length === 0) {
+    throw new Error(
+      `No templates found under ${TEMPLATE_ROOTS.map((r) => r.root).join(", ")} — is the workspace linked?`,
+    );
   }
 
   const body = Object.keys(entries)
