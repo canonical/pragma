@@ -1,0 +1,144 @@
+# =============================================================================
+# The Prism data contract.
+#
+# The MINIMAL GraphQL surface any provider must offer for the docsite to run.
+# It is derived from what the ke-graphql compiler emits UNCONDITIONALLY:
+#
+#   - the Node interface and PageInfo (compiler/compose.ts)
+#   - NodeConnection / NodeEdge (compiler/compose.ts, the connection factory)
+#   - the hand-written TBox (lib/tbox/buildTBoxSchema.ts): Ontology,
+#     OntologyClass, ClassProperty, OntologyProperty, PropertyKind, EntityMeta
+#   - root fields ontologies / ontology / ontologyClass / ontologyProperty
+#     (buildTBoxSchema.ts) and node(id:) (compiler/wireRelay.ts)
+#
+# Deliberately NOT in the contract:
+#
+#   - @defer / @stream. Conditional on `incremental: true`, so a provider that
+#     runs without incremental delivery is still conformant.
+#   - Every ontology-derived type (Component, Job, CodeStandard, ...). Those
+#     depend on which ontology a provider loaded and are not universal.
+#
+# EntityMeta IS in the contract even though nothing in it selects EntityMeta:
+# wireRelay puts `_meta: EntityMeta!` on every non-embeddable type, so no
+# provider can omit the type.
+#
+# A provider satisfies this contract when its schema is a SUPERSET of it --
+# see satisfiesContract(). Extra types, extra fields and extra optional
+# arguments are all fine; anything this file names must be present, at least
+# as permissive, and at least as wide.
+# =============================================================================
+
+"""
+Everything addressable by a global ID. Every non-embeddable type the compiler
+generates implements this, so the structural fields below are universal.
+"""
+interface Node {
+  id: ID!
+  uri: String!
+  kind: String!
+  label: String
+  comment: String
+  definition: String
+}
+
+"Relay cursor pagination metadata."
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+"Relay connection over the Node interface."
+type NodeConnection {
+  edges: [NodeEdge!]!
+  pageInfo: PageInfo!
+}
+
+"One edge of a NodeConnection."
+type NodeEdge {
+  node: Node!
+  cursor: String!
+}
+
+"A loaded ontology namespace."
+type Ontology {
+  prefix: String!
+  namespace: String!
+  label: String
+  classes: [OntologyClass!]!
+  properties: [OntologyProperty!]!
+}
+
+"A class in the TBox."
+type OntologyClass {
+  uri: String!
+  label: String
+  definition: String
+  superclass: OntologyClass
+  superclasses: [OntologyClass!]!
+  subclasses: [OntologyClass!]!
+  properties: [ClassProperty!]!
+  instances(
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): NodeConnection!
+  instanceCount: Int!
+  isAbstract: Boolean!
+  namespace: String!
+}
+
+"""
+Class-scoped view of a property: SHACL cardinality is a fact about a
+(class, property) pair, not about the property alone.
+"""
+type ClassProperty {
+  property: OntologyProperty!
+  required: Boolean!
+  singular: Boolean!
+  inherited: Boolean!
+}
+
+"A property in the TBox."
+type OntologyProperty {
+  uri: String!
+  label: String
+  definition: String
+  domain: OntologyClass
+  range: String!
+  kind: PropertyKind!
+  functional: Boolean!
+  inverse: OntologyProperty
+  acceptanceCriteria: String
+  completionGuidance: String
+  namespace: String!
+}
+
+"How a property relates its subject to its object."
+enum PropertyKind {
+  DATATYPE
+  OBJECT
+  ANNOTATION
+}
+
+"""
+Self-describing TBox access attached to ABox types. Reachable as `_meta` on
+every non-embeddable generated type.
+"""
+type EntityMeta {
+  type: OntologyClass!
+  field(name: String!): ClassProperty
+  fields: [ClassProperty!]!
+}
+
+"The universal root fields. A provider adds its own ontology-derived fields."
+type Query {
+  ontologies: [Ontology!]!
+  ontology(prefix: String!): Ontology
+  ontologyClass(uri: String!): OntologyClass
+  ontologyProperty(uri: String!): OntologyProperty
+  "Relay node resolution by prefixed-URI global ID."
+  node(id: ID!): Node
+}
