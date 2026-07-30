@@ -42,9 +42,6 @@ const root = resolve(here, "..");
  *   separators; changing them re-mints every pack content hash. CROSS-LANE.
  * - `runtime/graphpack/buildIndex.ts` — a hardcoded domain `name` predicate,
  *   also PR 4's. CROSS-LANE.
- * - `runtime/paths.ts`, `completion/entitySource.ts`, `runtime/refs/resolve.ts`
- *   — the lock filename and the `--frozen` re-pin hint. CROSS-LANE: the
- *   concurrent lock-removal PR deletes all three. Drop these once it lands.
  */
 const EXEMPT = [
   ".generated.ts",
@@ -54,9 +51,6 @@ const EXEMPT = [
   "render/prefixes.ts",
   "runtime/graphpack/hash.ts",
   "runtime/graphpack/buildIndex.ts",
-  "runtime/paths.ts",
-  "completion/entitySource.ts",
-  "runtime/refs/resolve.ts",
 ];
 
 /**
