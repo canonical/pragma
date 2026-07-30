@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod";
-import { DETAIL_LEVELS } from "../../constants.js";
+import { DETAIL_LEVELS, RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import type { PackDefinition } from "./types.js";
 
@@ -61,7 +61,10 @@ const emptyRecoverySchema = z
     message: z.string().min(1),
     cli: z
       .string()
-      .startsWith("pragma ", 'emptyRecovery.cli must be a "pragma " command')
+      .startsWith(
+        RECOVERY_CLI_PREFIX,
+        `emptyRecovery.cli must be a "${RECOVERY_CLI_PREFIX}" command`,
+      )
       .optional(),
   })
   .strict();

@@ -4,9 +4,11 @@ import { PragmaError } from "./PragmaError.js";
 import { assertRecoveryCli, cliRecovery } from "./recovery.js";
 
 describe("recovery.cli invariant (D5)", () => {
-  it("keeps the recovery prefix literal as `pragma `", () => {
-    // Recovery hints quote the stable, documented command name via the fixed
-    // `pragma ` prefix, so they never drift from the published command.
+  it("carries the shipped distribution's recovery prefix", () => {
+    // The prefix is DERIVED from the distribution's `name` (pragma.conf.ts), so
+    // recovery hints quote a command the installed binary actually answers to.
+    // This pins the value THIS distribution ships; `src/identity.test.ts` proves
+    // the derivation by varying the config.
     expect(RECOVERY_CLI_PREFIX).toBe("pragma ");
   });
 

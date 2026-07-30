@@ -45,14 +45,23 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     expect(has(graph, "info/info.render.ts")).toBe(true);
     expect(has(graph, "config/show.render.ts")).toBe(true);
 
-    // ...but run bodies and the config reader are only dynamic-imported. The
-    // defaults layer (and the distribution config it statically imports and
-    // eagerly validates) must stay behind that same dynamic boundary.
+    // ...but run bodies and the config LAYER stay behind the dynamic boundary:
+    // no reader, no defaults layer, no zod schema. The distribution config
+    // itself IS on the graph — `constants.ts` projects the program's identity
+    // from it — which is safe only because it is inert data (pinned below).
     expect(has(graph, "info/collectInfo.ts")).toBe(false);
     expect(has(graph, "config/collectConfigShow.ts")).toBe(false);
     expect(has(graph, "kernel/config/readConfig.ts")).toBe(false);
     expect(has(graph, "kernel/config/defaults.ts")).toBe(false);
-    expect(has(graph, "pragma.conf.ts")).toBe(false);
+    expect(has(graph, "kernel/config/schema.ts")).toBe(false);
+    expect(has(graph, "pragma.conf.ts")).toBe(true);
+  });
+
+  it("the distribution config is inert data — it imports nothing that runs", () => {
+    const graph = staticImportGraph(resolve(here, "../../pragma.conf.ts"));
+    expect(
+      [...graph].map((file) => file.split("/pragma/").at(-1)).sort(),
+    ).toEqual(["pragma.conf.ts", "src/kernel/config/types.ts"]);
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {
