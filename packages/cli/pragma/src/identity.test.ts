@@ -15,8 +15,22 @@ vi.mock("../pragma.conf.js", () => ({
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
     generators: [],
+    prefixes: { rcp: "https://example.invalid/recipes/" },
     channel: "normal",
     detail: "standard",
+  },
+  // The fork's domain vocabulary, declared beside its identity. The kernel
+  // reads these terms; naming them here is what makes the assertions below a
+  // claim about a DIFFERENT distribution rather than a renamed one.
+  vocabulary: {
+    altName: "rcp:name",
+    prompt: {
+      type: "rcp:Prompt",
+      body: "rcp:promptBody",
+      argument: "rcp:promptArgument",
+      argName: "rcp:argName",
+      argRequired: "rcp:argRequired",
+    },
   },
 }));
 

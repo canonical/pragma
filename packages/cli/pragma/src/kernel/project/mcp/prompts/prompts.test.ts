@@ -6,10 +6,12 @@ import { CONVENTIONS } from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
+import type { PragmaRuntime } from "../../../runtime/types.js";
 import { emitSurface } from "../../../spec/emitSurface.js";
 import type { CapabilityModule } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
+import { readPrompts } from "./source.js";
 
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-prompts-"));
 
@@ -101,6 +103,38 @@ describe("MCP handshake — capabilities advertised (PROTECTED)", () => {
     harness = await projectMcp([...capabilities, promptHostModule], freshCwd());
     const prompts = await harness.listPrompts();
     expect(prompts).toEqual([]);
+  });
+});
+
+/** A runtime whose SPARQL facade always fails with `message`. */
+function failingRuntime(message: string): PragmaRuntime {
+  return {
+    query: {
+      sparql: () => Promise.reject(new Error(message)),
+    },
+  } as unknown as PragmaRuntime;
+}
+
+describe("readPrompts — a failed read is never an empty graph", () => {
+  it("reports an unbound prefix as a store that needs building", async () => {
+    // A pack whose store does not know the declared prompt namespace cannot
+    // answer, and the actionable form of that is STORE_UNAVAILABLE with the
+    // build command — not a silent zero-prompt listing.
+    await expect(
+      readPrompts(failingRuntime("Prefix not found: ds")),
+    ).rejects.toMatchObject({
+      code: "STORE_UNAVAILABLE",
+      recovery: { mcp: { tool: "sources_update" } },
+    });
+  });
+
+  it("propagates a query failure instead of returning no prompts", async () => {
+    // The exact defect a bare `catch {}` here caused: a malformed declaration
+    // becomes a parse error, the parse error becomes `[]`, and the user is told
+    // the distribution ships no prompts. It must surface as a failure.
+    await expect(
+      readPrompts(failingRuntime("SPARQL syntax error at line 2")),
+    ).rejects.toThrow(/syntax error/);
   });
 });
 

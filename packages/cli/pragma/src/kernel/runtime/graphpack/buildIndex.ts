@@ -1,11 +1,16 @@
 /**
  * Build the storeless entity index (`index.json`) from a populated store.
  *
- * A lean port of the v1 `buildGraphIndex` (#856): three bulk SPARQL queries —
- * types, labels, and instance counts — joined in memory, rather than a query
- * per subject. Only typed named-node subjects are indexed (untyped subjects and
- * blank-node subjects are reachable via `graph query` but never listed). Each
- * entity carries the FROZEN `{ name, type }` minimum plus the enrichment fields
+ * A lean port of the v1 `buildGraphIndex` (#856): a few bulk SPARQL queries —
+ * types (which also yield the instance counts), labels, descriptions and
+ * alternative names — joined in memory, rather than a query per subject. Only
+ * the last names a DOMAIN property, and it is read from the distribution's
+ * declaration rather than spelled out here; see {@link altNamePredicates} for
+ * the pack that binds no such prefix.
+ *
+ * Only typed named-node subjects are indexed (untyped subjects and blank-node
+ * subjects are reachable via `graph query` but never listed). Each entity
+ * carries the FROZEN `{ name, type }` minimum plus the enrichment fields
  * (`uri`, `prefixed`, `types`, `label`, `box`) the completion tier and reads
  * use. The output is pure JSON — no store handle survives — so the completion
  * tier reads it without ever booting oxigraph.
@@ -25,6 +30,7 @@
  */
 
 import { compactUri } from "../../render/compactUri.js";
+import { VOCABULARY } from "../../vocabulary.js";
 import type { PackIndex, PackIndexEntity } from "./types.js";
 
 type Store = import("@canonical/ke").Store;
@@ -74,14 +80,6 @@ const DESCRIPTION_PREDICATES = [
   "http://www.w3.org/2004/02/skos/core#definition",
   "http://schema.org/description",
 ];
-
-/**
- * Alternative-name predicates: `ds:name`, the property `tier lookup` (and other
- * `ds:name`-addressed families) match on. Projected into `altNames` so the
- * storeless name-completion sources can offer those tokens exactly, without a
- * store boot. Distinct from the display `label` — a subject may carry both.
- */
-const ALT_NAME_PREDICATES = ["https://ds.canonical.com/name"];
 
 const isStdVocab = (uri: string): boolean =>
   STD_VOCAB_PREFIXES.some((ns) => uri.startsWith(ns));
@@ -140,6 +138,31 @@ function classify(fullTypes: readonly string[]): Facet[] {
 /** A `VALUES ?p { … }` body from a predicate list. */
 const valuesList = (uris: readonly string[]): string =>
   uris.map((uri) => `<${uri}>`).join(" ");
+
+/**
+ * The alternative-name predicate to project into `altNames` — the property a
+ * family is addressed by, so the storeless completion sources can offer those
+ * tokens exactly and a bespoke lookup can match them, without a store boot.
+ * Distinct from the display `label`: a subject may carry both.
+ *
+ * The distribution DECLARES it as a prefixed name; this expands it against the
+ * pack's own prefix map. A pack that binds no such prefix simply carries no
+ * alternative names — the normal case for a third-party pack outside the
+ * distribution's namespace. Expanding through `packs/iri.ts` instead would
+ * THROW on exactly that pack and take its whole build down, so this degrades to
+ * an empty list and the caller skips the query.
+ *
+ * @param prefixes - The store's merged prefix map.
+ * @returns The full IRI to collect, or `[]` when the prefix is unbound.
+ */
+function altNamePredicates(
+  prefixes: Readonly<Record<string, string>>,
+): string[] {
+  const [prefix, local] = VOCABULARY.altName.split(":");
+  if (prefix === undefined || local === undefined) return [];
+  const namespace = prefixes[prefix];
+  return namespace === undefined ? [] : [`${namespace}${local}`];
+}
 
 /** Language rank for label selection: untagged (0) < `@en` (1) < any other (2). */
 function rankLanguage(language: string): number {
@@ -230,6 +253,7 @@ export async function buildIndex(
   prefixes: Readonly<Record<string, string>>,
   contentHash: string,
 ): Promise<PackIndex> {
+  const altNameUris = altNamePredicates(prefixes);
   const [typesResult, labelResult, descResult, altNameResult] =
     await Promise.all([
       store.query(
@@ -241,9 +265,11 @@ export async function buildIndex(
       store.query(
         `SELECT ?s ?p ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
       ) as Promise<import("@canonical/ke").SelectResult>,
-      store.query(
-        `SELECT ?s ?p ?alt WHERE { ?s ?p ?alt . VALUES ?p { ${valuesList(ALT_NAME_PREDICATES)} } }` as never,
-      ) as Promise<import("@canonical/ke").SelectResult>,
+      altNameUris.length === 0
+        ? undefined
+        : (store.query(
+            `SELECT ?s ?p ?alt WHERE { ?s ?p ?alt . VALUES ?p { ${valuesList(altNameUris)} } }` as never,
+          ) as Promise<import("@canonical/ke").SelectResult>),
     ]);
 
   const typesBySubject = new Map<string, string[]>();
@@ -273,7 +299,10 @@ export async function buildIndex(
     "desc",
     DESCRIPTION_PREDICATES,
   );
-  const altNamesBySubject = allBySubject(altNameResult, "alt");
+  const altNamesBySubject =
+    altNameResult === undefined
+      ? new Map<string, string[]>()
+      : allBySubject(altNameResult, "alt");
 
   const entities: PackIndexEntity[] = [];
   for (const [subject, fullTypes] of typesBySubject) {

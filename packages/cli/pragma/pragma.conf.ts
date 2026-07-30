@@ -64,3 +64,33 @@ export default {
   channel: "normal",
   detail: "standard",
 } satisfies RawConfig;
+
+/**
+ * The domain terms the kernel reads this distribution's graph with.
+ *
+ * A separate export because it is NOT a config layer field: it is compiled in
+ * and read at module load by `src/kernel/vocabulary.ts`, whose readers (the
+ * storeless completion fast path, the pack index builder) cannot reach a config
+ * layer at all. Layering it would let a project config set it and change
+ * nothing. A fork edits these values and rebuilds; `parseVocabulary` type-checks
+ * the shape and rejects a term that is not a prefixed name.
+ *
+ * Every prefix used here must be bound in `prefixes` above. `rdfs:label` and
+ * `rdfs:comment` are deliberately absent — the kernel treats standard
+ * vocabulary as universal.
+ *
+ * The `prompt` terms are a READ CONTRACT, not a claim about instances: this
+ * distribution's graph currently carries no `ds:Prompt` entities at all, so
+ * `prompt list` is honestly empty. Declaring the shape anyway is what makes an
+ * empty result mean "the graph has none" rather than "nothing was declared".
+ */
+export const vocabulary = {
+  altName: "ds:name",
+  prompt: {
+    type: "ds:Prompt",
+    body: "ds:promptBody",
+    argument: "ds:promptArgument",
+    argName: "ds:argName",
+    argRequired: "ds:argRequired",
+  },
+};

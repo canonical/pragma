@@ -7,6 +7,17 @@
  */
 
 import type { PackDefinition } from "../../kernel/packs/types.js";
+import { VOCABULARY } from "../../kernel/vocabulary.js";
+
+/**
+ * The class every tier entity carries — pack CONTENT, authored once here.
+ *
+ * The list query below, the bespoke `tier lookup` and its completion ref all
+ * read it, so the noun cannot disagree with itself about what a tier is. It is
+ * not promoted to the distribution declaration: no kernel module needs it, and
+ * a fork replacing this noun replaces this module wholesale.
+ */
+export const TIER_TYPE = "ds:Tier";
 
 export const tierPack: PackDefinition = {
   noun: "tier",
@@ -14,10 +25,13 @@ export const tierPack: PackDefinition = {
   toolDescription:
     "List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.",
   list: {
+    // The name property is the DECLARED one, so what `tier list` shows, what
+    // the index offers as completions, and what `tier lookup` matches are one
+    // decision made in one place.
     query: [
       "SELECT ?uri ?name WHERE {",
-      "  ?uri a ds:Tier ;",
-      "       ds:name ?name .",
+      `  ?uri a ${TIER_TYPE} ;`,
+      `       ${VOCABULARY.altName} ?name .`,
       "} ORDER BY ?name",
     ].join("\n"),
     columns: [

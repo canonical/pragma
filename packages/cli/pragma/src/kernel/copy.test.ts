@@ -40,8 +40,6 @@ const root = resolve(here, "..");
  *   config and names the file it imports. That is its job, not a leak.
  * - `runtime/graphpack/hash.ts` — `<<<pragma-pack:…>>>` are hash domain
  *   separators; changing them re-mints every pack content hash. CROSS-LANE.
- * - `runtime/graphpack/buildIndex.ts` — a hardcoded domain `name` predicate;
- *   the next commit reads it from the distribution's declaration instead.
  */
 const EXEMPT = [
   ".generated.ts",
@@ -49,7 +47,6 @@ const EXEMPT = [
   "spec/emitReference.ts",
   "config/defaults.ts",
   "runtime/graphpack/hash.ts",
-  "runtime/graphpack/buildIndex.ts",
 ];
 
 /**
