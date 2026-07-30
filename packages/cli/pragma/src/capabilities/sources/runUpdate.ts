@@ -31,7 +31,6 @@ import {
   writeFile,
 } from "@canonical/task";
 import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
-import type { PackDeclaration } from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
@@ -62,9 +61,6 @@ const CORE_PREFIXES: Readonly<Record<string, string>> = {
   sh: "http://www.w3.org/ns/shacl#",
   dcterms: "http://purl.org/dc/terms/",
 };
-
-const entryName = (entry: PackDeclaration): string =>
-  typeof entry === "string" ? entry : entry.name;
 
 /**
  * The prefix map a pack is built with: core < the packs' own `@prefix` < config.
@@ -166,11 +162,15 @@ export async function buildUpdateTask(
   const entries = layers.config.packs ?? [];
   const priorHash = readActivePack(runtime.cwd);
 
-  const resolved: ResolvedPackage[] = [];
+  const resolved: (ResolvedPackage & { readonly kind: PackageRef["kind"] })[] =
+    [];
   for (const entry of entries) {
     const ref = parsePackDeclaration(entry);
     report?.(resolveProgress(ref));
-    resolved.push(await resolvePackage(ref, { cwd: runtime.cwd }));
+    resolved.push({
+      kind: ref.kind,
+      ...(await resolvePackage(ref, { cwd: runtime.cwd })),
+    });
   }
 
   const inputs = resolved.flatMap((pkg) => pkg.sources);
@@ -214,7 +214,14 @@ export async function buildUpdateTask(
   // With `--skip-invalid`, drop the unparseable sources (warning LOUDLY about
   // each — never a silent partial graph) and build from the rest instead of
   // failing the whole update.
-  const sourceRef = entries.map(entryName).join(",") || "embedded";
+  // `<name>@<kind>:<resolved>` — the SAME provenance label the bundler writes
+  // for the embed, so the manifest field means one thing whoever built the pack,
+  // and `sources status` / `doctor` can still answer "which revision is my store
+  // built from?" now that no lock records it.
+  const sourceRef =
+    resolved
+      .map((pkg) => `${pkg.name}@${pkg.kind}:${pkg.resolved}`)
+      .join(", ") || "embedded";
   let built: Awaited<ReturnType<typeof buildPack>>;
   try {
     built = await buildPack(inputs, {
