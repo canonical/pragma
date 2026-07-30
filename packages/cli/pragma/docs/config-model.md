@@ -26,8 +26,17 @@ A higher layer overrides a lower one field-by-field. `packs` and `generators` re
 | `packs` | array | Semantic pack sources compiled by `pragma sources update`. Replaces across layers. |
 | `generators` | array | Scaffold generator sources (`{ name, source }` refs). Replaces across layers. |
 | `stories` | array | Declarative read stories compiled at boot (experimental). |
-| `prefixes` | record | Extra namespace prefixes merged over the built-in map. |
+| `prefixes` | record | Namespace prefixes the pack is built with. They win every harvest, so this is what decides which IRI a prefix binds in the store and the index. See the note below on the distribution layer. |
 | `completion` | object | Completion policy read at `setup completions` emit time. |
+
+## `prefixes`: one field, two readers
+
+`prefixes` is read twice, and only the distribution layer reaches both.
+
+1. **Every layer** — the prefixes a `pragma sources update` builds the pack with. They are applied over the namespaces harvested from the source graphs, so declaring one is how you settle a package that binds the same prefix to two IRIs.
+2. **The distribution layer only** — the domain half of the CLI's compiled-in prefix map, which is what compacts IRIs in output *and* what expands a prefixed name you type (`pragma standard lookup cs:something`) before the query runs.
+
+The second reader runs on the storeless `--help`/`__complete` fast path, which reads no config at all, so it can only ever see `pragma.conf.ts`. A project config that adds a prefix therefore changes the graph it builds, not how the CLI renders it. A fork that wants its own namespaces rendered and resolvable declares them in its own `pragma.conf.ts`.
 
 ## Renamed: `packages` → `packs`
 

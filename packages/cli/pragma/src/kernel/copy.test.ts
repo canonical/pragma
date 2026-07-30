@@ -5,9 +5,10 @@
  *
  * What this guard enforces, exactly: no string literal under `src/kernel/**`
  * (plus `constants.ts` and `bin.ts`) contains the distribution's `name` as a
- * word, or the domain phrase "design system". Module specifiers are not copy
- * and are skipped; every remaining site that legitimately carries the name is
- * listed in {@link EXEMPT} with its reason and the PR that removes it.
+ * word, the domain phrase "design system", or any namespace IRI the
+ * distribution declares in `prefixes`. Module specifiers are not copy and are
+ * skipped; every remaining site that legitimately carries one is listed in
+ * {@link EXEMPT} with its reason and the PR that removes it.
  *
  * What it does NOT reach: `src/capabilities/**`. The bundled domain packs there
  * are CONTENT, which is where specialization belongs — but the generic
@@ -21,6 +22,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import conf from "../../pragma.conf.js";
 import { BIN_NAME } from "../constants.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -36,19 +38,16 @@ const root = resolve(here, "..");
  *   `docs/reference/*.md`, so changing it requires a docs regen.
  * - `config/defaults.ts` — THE distribution seam: it imports the distribution
  *   config and names the file it imports. That is its job, not a leak.
- * - `render/prefixes.ts` — the domain namespaces in `DEFAULT_PREFIX_MAP`, the
- *   behavioural coupling PR 4 replaces with pack-declared prefixes.
  * - `runtime/graphpack/hash.ts` — `<<<pragma-pack:…>>>` are hash domain
  *   separators; changing them re-mints every pack content hash. CROSS-LANE.
- * - `runtime/graphpack/buildIndex.ts` — a hardcoded domain `name` predicate,
- *   also PR 4's. CROSS-LANE.
+ * - `runtime/graphpack/buildIndex.ts` — a hardcoded domain `name` predicate;
+ *   the next commit reads it from the distribution's declaration instead.
  */
 const EXEMPT = [
   ".generated.ts",
   "spec/emitSurface.ts",
   "spec/emitReference.ts",
   "config/defaults.ts",
-  "render/prefixes.ts",
   "runtime/graphpack/hash.ts",
   "runtime/graphpack/buildIndex.ts",
 ];
@@ -159,5 +158,21 @@ describe("kernel copy (PROTECTED)", () => {
 
   it("no kernel string names a domain", () => {
     expect(findOffenders(/design[- ]system/i)).toEqual([]);
+  });
+
+  it("no kernel string hardcodes a namespace the distribution declares", () => {
+    // The behavioural half of the same rule. A kernel module that spells out a
+    // declared namespace IRI has decided what the domain is, so a fork editing
+    // `pragma.conf.ts` changes the store and not the code reading it.
+    //
+    // DERIVED from the declaration, one pattern per namespace rather than one
+    // alternation: a distribution that declares none then yields no offenders,
+    // instead of an empty alternation that matches every literal.
+    const offenders = Object.values(conf.prefixes ?? {}).flatMap((namespace) =>
+      findOffenders(
+        new RegExp(namespace.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&")),
+      ),
+    );
+    expect(offenders).toEqual([]);
   });
 });

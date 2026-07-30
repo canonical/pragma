@@ -47,10 +47,16 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     ]);
   });
 
-  it("pins the ds: namespace so prefix harvesting cannot bind it elsewhere", () => {
-    // The design system declares `ds:` with two IRIs; the config layer wins
-    // every harvest, so this is what keeps `ds:` entity names stable.
-    expect(defaults.prefixes).toEqual({ ds: "https://ds.canonical.com/" });
+  it("declares the domain namespaces the store is built with and the CLI resolves", () => {
+    // Two consumers, one declaration. (1) The config layer wins every prefix
+    // harvest, so this is what keeps `ds:` entity names stable when the design
+    // system declares `ds:` with two IRIs. (2) It is the domain half of
+    // `DEFAULT_PREFIX_MAP`, so it also decides which prefixed names a lookup
+    // can expand — `cs:` is here for that reader.
+    expect(defaults.prefixes).toEqual({
+      ds: "https://ds.canonical.com/",
+      cs: "http://pragma.canonical.com/codestandards#",
+    });
   });
 
   it("ships the normal channel and standard detail level", () => {

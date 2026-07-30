@@ -65,7 +65,13 @@ export interface PragmaConfig {
   readonly generators?: readonly GeneratorSource[];
   /** Declarative read stories compiled at boot (experimental; opaque here). */
   readonly stories?: readonly unknown[];
-  /** Additional namespace prefixes merged over the built-in map. */
+  /**
+   * Namespace prefixes the pack is built with — they win every harvest, so a
+   * layer here decides what the store binds and what the index is keyed under.
+   * The DISTRIBUTION layer's entries additionally seed the compiled-in
+   * `DEFAULT_PREFIX_MAP`; a project layer's do not, because that map is read on
+   * the storeless fast path where no config layer exists.
+   */
   readonly prefixes?: Readonly<Record<string, string>>;
   /** Completion policy (read at `setup completions` emit time). */
   readonly completion?: CompletionConfig;
