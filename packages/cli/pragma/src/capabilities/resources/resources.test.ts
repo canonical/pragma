@@ -23,6 +23,30 @@ import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { graphModule } from "../graph/index.js";
 import { buildResourceList, rankUriCompletions } from "./provider.js";
 
+/**
+ * Two entities of the committed embedded pack, chosen for what they PROVE: an
+ * abox individual and the tbox class it instantiates, so the schema-before-
+ * individual ordering has both sides. Named, not counted — the roster moves
+ * whenever the design system does.
+ */
+const BUTTON_NAME = "ds:global.component.button";
+const BUTTON_URI = `pragma:${BUTTON_NAME}`;
+const COMPONENT_URI = "pragma:ds:Component";
+
+/**
+ * Blank out blank-node labels.
+ *
+ * Oxigraph re-mints blank-node identifiers every time it loads a store, so two
+ * independently booted sessions over the SAME pack name the same blank node
+ * differently. Those labels are store-local handles, not content — and this
+ * test's subject is that both surfaces return the same CONTENT for the same
+ * entity. (That the labels are not stable across processes is a real property
+ * of exposing blank nodes through `graph inspect`; the toy pack this suite used
+ * to run against simply had none.)
+ */
+const withoutBlankNodeLabels = (value: InspectResult): unknown =>
+  JSON.parse(JSON.stringify(value).replace(/_:[0-9a-f]+/g, "_:b"));
+
 describe("resource listing (storeless, over the pack index)", () => {
   it("degrades to a recovery entry on a missing or legacy index", () => {
     expect(buildResourceList(undefined)).toEqual([
@@ -39,12 +63,10 @@ describe("resource listing (storeless, over the pack index)", () => {
     const index = readPackIndex(process.cwd());
     expect(index?.version).toBe(2);
     const resources = buildResourceList(index);
-    expect(resources.some((r) => r.uri === "pragma:ex:Button")).toBe(true);
+    expect(resources.some((r) => r.uri === BUTTON_URI)).toBe(true);
     // A class (tbox) sorts before an individual (abox).
-    const componentIdx = resources.findIndex(
-      (r) => r.uri === "pragma:ex:Component",
-    );
-    const buttonIdx = resources.findIndex((r) => r.uri === "pragma:ex:Button");
+    const componentIdx = resources.findIndex((r) => r.uri === COMPONENT_URI);
+    const buttonIdx = resources.findIndex((r) => r.uri === BUTTON_URI);
     expect(componentIdx).toBeLessThan(buttonIdx);
   });
 
@@ -92,13 +114,13 @@ describe("resource listing (storeless, over the pack index)", () => {
 
   it("enriches each entry with the _meta taxonomy (pragma/box + priority)", () => {
     const resources = buildResourceList(readPackIndex(process.cwd()));
-    const component = resources.find((r) => r.uri === "pragma:ex:Component");
-    const button = resources.find((r) => r.uri === "pragma:ex:Button");
+    const component = resources.find((r) => r.uri === COMPONENT_URI);
+    const button = resources.find((r) => r.uri === BUTTON_URI);
     // A schema class: tbox, higher priority, carries its instance count.
     expect(component?._meta?.["pragma/box"]).toBe("tbox");
     expect(component?.annotations?.audience).toEqual(["assistant"]);
     expect(component?.annotations?.priority).toBe(0.9);
-    expect(component?._meta?.["pragma/instanceCount"]).toBe(3);
+    expect(component?._meta?.["pragma/instanceCount"]).toBeGreaterThan(0);
     // An individual: abox, lower priority, no instance count.
     expect(button?._meta?.["pragma/box"]).toBe("abox");
     expect(button?.annotations?.priority).toBe(0.3);
@@ -107,8 +129,12 @@ describe("resource listing (storeless, over the pack index)", () => {
 
   it("ranks autocomplete over prefixed URI and label", () => {
     const index = readPackIndex(process.cwd());
-    const hits = rankUriCompletions(index?.entities ?? [], "but", 10);
-    expect(hits).toContain("ex:Button");
+    const hits = rankUriCompletions(
+      index?.entities ?? [],
+      "global.component.button",
+      10,
+    );
+    expect(hits).toContain(BUTTON_NAME);
   });
 });
 
@@ -123,7 +149,7 @@ describe("resource surface over the server (embedded pack)", () => {
 
   it("registers the {+uri} template and lists resources (not tools)", async () => {
     const resources = await harness.listResources();
-    expect(resources.some((r) => r.uri === "pragma:ex:Button")).toBe(true);
+    expect(resources.some((r) => r.uri === BUTTON_URI)).toBe(true);
     // Resources are NOT tools — the graph module's tools (inspect + the PR6
     // SPARQL escape hatch) are what appear in the tool surface.
     const tools = await harness.listTools();
@@ -134,12 +160,12 @@ describe("resource surface over the server (embedded pack)", () => {
   });
 
   it("autocompletes a partial URI through the template", async () => {
-    const values = await harness.completeResource("But");
-    expect(values).toContain("ex:Button");
+    const values = await harness.completeResource("global.component.butt");
+    expect(values).toContain(BUTTON_NAME);
   });
 
   it("reads an entity, mirroring `graph inspect` content", async () => {
-    const read = await harness.readResource("pragma:ex:Button");
+    const read = await harness.readResource(BUTTON_URI);
     expect(read.mimeType).toBe("application/json");
     const fromResource = JSON.parse(read.text) as InspectResult;
 
@@ -149,21 +175,25 @@ describe("resource surface over the server (embedded pack)", () => {
       (v) => verbKey(v.path) === "graph inspect",
     ) as VerbSpec;
     const fromCli = (await inspect.run(
-      { uri: "ex:Button" },
+      { uri: BUTTON_NAME },
       rt,
     )) as InspectResult;
     (await rt.store.get()).store.dispose();
 
-    expect(fromResource).toEqual(fromCli);
-    expect(fromResource.uri).toBe("https://pragma.canonical.com/sample#Button");
+    expect(withoutBlankNodeLabels(fromResource)).toEqual(
+      withoutBlankNodeLabels(fromCli),
+    );
+    expect(fromResource.uri).toBe(
+      "https://ds.canonical.com/global.component.button",
+    );
   });
 
   it("rejects a read of an absent entity as InvalidParams carrying ENTITY_NOT_FOUND", async () => {
-    // The warm embedded pack resolves the `ex:` prefix but holds no `Nonexistent`
+    // The warm embedded pack resolves the `ds:` prefix but holds no `Nonexistent`
     // subject, so the read fails ENTITY_NOT_FOUND — the caller's fault, which
     // `mcpErrorFrom` maps to JSON-RPC InvalidParams, NOT the InternalError a cold
     // store (STORE_UNAVAILABLE) earns.
-    const error = await harness.readResource("pragma:ex:Nonexistent").then(
+    const error = await harness.readResource("pragma:ds:Nonexistent").then(
       () => undefined,
       (caught: unknown) => caught,
     );
@@ -200,7 +230,7 @@ describe("resource read — cold-store failure surfaces isError + recovery (D3)"
   });
 
   it("rejects (does not return text/plain content) with the STORE_UNAVAILABLE recovery", async () => {
-    const error = await harness.readResource("pragma:ex:Button").then(
+    const error = await harness.readResource(BUTTON_URI).then(
       () => undefined,
       (caught: unknown) => caught,
     );

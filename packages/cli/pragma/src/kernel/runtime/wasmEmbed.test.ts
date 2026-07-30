@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { embeddedManifest } from "./graphpack/embedded.js";
 
 /**
  * The store-boot path only fully lives in the standalone binary: this is the
@@ -68,8 +69,11 @@ describe("oxigraph WASM + embedded pack embed in the compiled binary (PROTECTED)
       triples: string;
     };
     expect(out.ok).toBe(true);
-    expect(out.entities).toBe(6);
-    expect(Number(out.triples)).toBeGreaterThan(0);
+    // The compiled binary is the only place this is worth asserting: the store
+    // it booted from the inlined `data.nq` must hold exactly what the committed
+    // `manifest.json` claims was built into it.
+    expect(Number(out.triples)).toBe(embeddedManifest().tripleCount);
+    expect(out.entities).toBeGreaterThan(0);
   });
 
   it("dist binary runs storeless sources status", () => {

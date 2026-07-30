@@ -2,10 +2,15 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { embeddedManifest } from "../runtime/graphpack/embedded.js";
 import { activePackPath } from "../runtime/paths.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import { runComplete } from "./complete.js";
-import { createIndexEntityReader, indexCompletionEnv } from "./entitySource.js";
+import {
+  createIndexEntityReader,
+  indexCompletionEnv,
+  readPackIndex,
+} from "./entitySource.js";
 
 /** A fresh cwd with no pointer → the reader falls back to the embedded pack. */
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-entity-"));
@@ -115,16 +120,18 @@ describe("entity source contract (PROTECTED)", () => {
   it("reads the embedded index storelessly, filtering by type + partial", () => {
     const read = createIndexEntityReader(freshCwd());
 
-    // Abox individuals of ex:Component, sorted.
-    expect(read("ex:Component", "")).toEqual([
-      "ex:Button",
-      "ex:Card",
-      "ex:Dialog",
-    ]);
+    // An abox individual of ds:Component. Membership, not the full 100+ list:
+    // the roster moves whenever the design system does, but a design system
+    // without a button is a change a human should look at.
+    expect(read("ds:Component", "")).toContain("ds:global.component.button");
     // Tbox class.
-    expect(read("owl:Class", "")).toEqual(["ex:Component"]);
-    // Partial-prefix filter.
-    expect(read("ex:Component", "ex:B")).toEqual(["ex:Button"]);
+    expect(read("owl:Class", "")).toContain("ds:Component");
+    // Partial-prefix filter: every candidate starts with what was typed.
+    const partial = read("ds:Component", "ds:global.component.but");
+    expect(partial).toContain("ds:global.component.button");
+    for (const name of partial) {
+      expect(name.startsWith("ds:global.component.but")).toBe(true);
+    }
     // Unknown type → no matches (never throws).
     expect(read("ds:Nope", "")).toEqual([]);
   });
@@ -132,16 +139,16 @@ describe("entity source contract (PROTECTED)", () => {
   it("relies only on the frozen { name, type } minimum", () => {
     const read = createIndexEntityReader(freshCwd());
     // Every result is a bare name token (string), usable with no other field.
-    for (const name of read("ex:Component", "")) {
+    for (const name of read("ds:Component", "")) {
       expect(typeof name).toBe("string");
-      expect(name.startsWith("ex:")).toBe(true);
+      expect(name.startsWith("ds:")).toBe(true);
     }
   });
 
   it("is fast (well under the 50ms storeless budget)", () => {
     const read = createIndexEntityReader(freshCwd());
     const start = performance.now();
-    read("ex:Component", "");
+    read("ds:Component", "");
     expect(performance.now() - start).toBeLessThan(50);
   });
 });
@@ -162,7 +169,7 @@ describe("__complete entity tier wiring", () => {
             required: true,
             complete: {
               kind: "names",
-              source: { from: "index", type: "ex:Component" },
+              source: { from: "index", type: "ds:Component" },
             },
           },
         ],
@@ -188,14 +195,38 @@ describe("__complete entity tier wiring", () => {
     // index-backed reader over cwd, adapted to the resolver's EntityNameReader.
     await expect(
       runComplete(
-        ["block", "lookup", "ex:B"],
+        ["block", "lookup", "ds:global.component.but"],
         [lookupModule],
         indexCompletionEnv(freshCwd()),
       ),
-    ).resolves.toEqual(["ex:Button"]);
+    ).resolves.toContain("ds:global.component.button");
     // Without the env, the entity tier yields nothing (grammar-only).
     await expect(
-      runComplete(["block", "lookup", "ex:B"], [lookupModule]),
+      runComplete(
+        ["block", "lookup", "ds:global.component.but"],
+        [lookupModule],
+      ),
     ).resolves.toEqual([]);
+  });
+});
+
+describe("readPackIndex agrees with the boot decision", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // The storeless fast path cannot import `resolveSources` (zod is banned on
+  // this graph), so it resolves the active pack itself. That is the hazard: two
+  // readers, one predicate. They share `readActivePack`, and this pins that they
+  // land on the same pack for both rows of the decision table.
+  it("reads the pointed-at pack when a project has one", () => {
+    const index = readPackIndex(projectWithIndex(CRAFTED_INDEX));
+    expect(index?.contentHash).toBe(CRAFTED_HASH);
+    expect(index?.entities.map((entity) => entity.name)).toContain("ex:Button");
+  });
+
+  it("reads the embedded pack when a project has none", () => {
+    const index = readPackIndex(freshCwd());
+    expect(index?.contentHash).toBe(embeddedManifest().contentHash);
   });
 });

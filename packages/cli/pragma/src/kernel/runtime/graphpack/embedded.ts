@@ -1,9 +1,15 @@
 /**
- * The embedded fallback pack: a small, self-contained pack compiled into the
- * binary as inlined strings (`pack.generated.ts`, produced by
- * `scripts/genEmbedded.ts`). It is the store the CLI boots when no packages are
- * configured beyond the defaults and no lock has been written yet — so a fresh
- * install answers store-backed reads without a network round-trip.
+ * The embedded pack: the distribution's own graph, compiled from the packs
+ * `pragma.conf.ts` declares and inlined into the binary as escaped strings
+ * (`pack.generated.ts`, produced by `scripts/bundle.ts`). It is the store the
+ * CLI boots when the user has not pinned their own packs and has not built
+ * anything yet — so a fresh install answers real store-backed reads with no
+ * network, no cache, and no git credentials.
+ *
+ * It is a SNAPSHOT, not a substitute for `sources update`: the manifest records
+ * which upstream revisions it was compiled from, and both `sources status` and
+ * `doctor` report that rather than claiming the store is up to date. A project
+ * that declares its own packs is never served this graph.
  *
  * The inlined strings are materialized into the ordinary content-addressed pack
  * cache on first use and then read back through {@link readPack}, so the
