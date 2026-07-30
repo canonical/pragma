@@ -11,12 +11,12 @@
  * it names is machine-local: a committed pointer would promise a store the next
  * machine does not have.
  *
- * A LEAF module on purpose: it imports only node builtins, duplicating the two
- * lines of XDG resolution `kernel/config/paths.ts` also holds. The storeless
- * `__complete` fast path (`kernel/completion/entitySource.ts`) has to read the
- * pointer, and `completion/safety.test.ts` forbids the config layer anywhere on
- * that import graph — so the two cheap lines are duplicated here in order that
- * the pointer PREDICATE is not.
+ * A LEAF module on purpose: it imports only node builtins, and owns the cache
+ * root's XDG resolution outright (`kernel/config/paths.ts` keeps config and
+ * state). The storeless `__complete` fast path
+ * (`kernel/completion/entitySource.ts`) has to read the pointer, and
+ * `completion/safety.test.ts` forbids the config layer anywhere on that import
+ * graph — so the cache root is resolved here rather than imported.
  */
 
 import { createHash } from "node:crypto";
@@ -24,7 +24,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
-/** `$XDG_CACHE_HOME/pragma` (mirrors `kernel/config/paths`; see the docblock). */
+/** `$XDG_CACHE_HOME/pragma` (default `~/.cache/pragma`) — the cache root. */
 function cacheDir(): string {
   const base = process.env.XDG_CACHE_HOME ?? join(homedir(), ".cache");
   return join(base, "pragma");
