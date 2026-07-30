@@ -31,26 +31,6 @@ type Validity implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -123,26 +103,6 @@ type Validity implements Node {
 interface Node {
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 }
 
 type LensConnection {
@@ -240,26 +200,6 @@ type Verdict implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -336,26 +276,6 @@ type Exemplar implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -467,26 +387,6 @@ type Law implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -563,26 +463,6 @@ type Bet implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -674,26 +554,6 @@ type Slot implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -784,26 +644,6 @@ type Region implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -880,26 +720,6 @@ type Pairing implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1002,26 +822,6 @@ type PairingRole implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -1098,26 +898,6 @@ type Preservation implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1200,26 +980,6 @@ type Port implements Node & Surface {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1373,26 +1133,6 @@ type Editor implements Node & Surface {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -1494,26 +1234,6 @@ type ComposerSurface implements Node & Surface {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1617,26 +1337,6 @@ type Mechanism implements Node & Surface {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -1738,26 +1438,6 @@ type Peek implements Node & Surface {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1861,26 +1541,6 @@ type Detail implements Node & Surface {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -1983,26 +1643,6 @@ type View implements Node & Surface {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -2104,26 +1744,6 @@ type Lens implements Node & Surface {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2240,26 +1860,6 @@ type Anchoring implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -2336,26 +1936,6 @@ type Direction implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2434,26 +2014,6 @@ type Rendering implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -2531,26 +2091,6 @@ type AuthorityFamily implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -2627,26 +2167,6 @@ type Capability implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2755,26 +2275,6 @@ type Substrate implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -2851,26 +2351,6 @@ type Persona implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2957,26 +2437,6 @@ type Fluency implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -3057,26 +2517,6 @@ type Role implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -3154,26 +2594,6 @@ type Actor implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -3250,26 +2670,6 @@ type Coordinate implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3392,26 +2792,6 @@ type Job implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3546,26 +2926,6 @@ type TagCategory implements Node & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -3593,26 +2953,6 @@ type Tag implements Node & Entity {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3667,26 +3007,6 @@ type ImplementationLibrary implements Node & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -3739,26 +3059,6 @@ type ImplementationObject implements Node & Entity {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3813,26 +3113,6 @@ type Tier implements Node & Entity {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3897,26 +3177,6 @@ type ModifierFamily implements Node & UIElement & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -3958,26 +3218,6 @@ type Modifier implements Node & UIElement & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4008,26 +3248,6 @@ type Group implements Node & UIBlock & UIElement & Entity {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4147,26 +3367,6 @@ type Subcomponent implements Node & UIBlock & UIElement & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4273,26 +3473,6 @@ type Layout implements Node & UIBlock & UIElement & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4391,26 +3571,6 @@ type Pattern implements Node & UIBlock & UIElement & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4498,26 +3658,6 @@ type Component implements Node & UIBlock & UIElement & Entity {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4620,26 +3760,6 @@ type Example implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4663,26 +3783,6 @@ type Category implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4700,26 +3800,6 @@ type CodeStandard implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4783,26 +3863,6 @@ type SwitchCase implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4815,26 +3875,6 @@ type Switch implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4862,26 +3902,6 @@ type Style implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4898,26 +3918,6 @@ type Relation implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -4933,26 +3933,6 @@ type Edge implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4972,26 +3952,6 @@ type AnonymousNode implements Node & AnatomyNode {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -5032,26 +3992,6 @@ type NamedNode implements Node & AnatomyNode {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -5071,26 +4011,6 @@ type Specification implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -5105,26 +4025,6 @@ interface Surface implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -5228,26 +4128,6 @@ interface UIBlock implements Node & UIElement & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -5334,26 +4214,6 @@ interface UIElement implements Node & Entity {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -5382,26 +4242,6 @@ interface Entity implements Node {
   id: ID!
   uri: String!
 
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
-
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
 
@@ -5427,26 +4267,6 @@ interface AnatomyNode implements Node {
   """Relay global ID — the entity's prefixed URI."""
   id: ID!
   uri: String!
-
-  """
-  The node's ontology class, as a prefixed URI — the discriminator a generic view branches on.
-  """
-  kind: String!
-
-  """
-  Generic display name for this node: rdfs:label, else skos:prefLabel, else the class's own name/title predicate. Null when none is asserted — callers render uri then.
-  """
-  label: String
-
-  """
-  Generic incidental prose for this node: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
-  """
-  comment: String
-
-  """
-  Generic defining prose for this node: skos:definition, else the class's own description predicate. Null when none is asserted.
-  """
-  definition: String
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
