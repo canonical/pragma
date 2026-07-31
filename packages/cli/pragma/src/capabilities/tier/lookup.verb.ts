@@ -9,7 +9,7 @@
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { type TierLookupData, tierLookupFormatters } from "./lookup.render.js";
-import { TIER_TYPE } from "./pack.js";
+import { TIER_TYPE } from "./constants.js";
 
 const tierLookupSpec: VerbSpec<Record<string, unknown>, TierLookupData> = {
   path: ["tier", "lookup"],

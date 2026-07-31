@@ -235,6 +235,15 @@ export interface CapabilityModule {
    * it has zero covenant impact.
    */
   readonly colophon?: string;
+  /**
+   * This module was compiled — wholly or in part — from a declared read story,
+   * so a config- or package-declared story for the same noun REPLACES it.
+   * Authored modules (config, ontology, doctor, …) carry no story and can never
+   * be replaced. Set where a story is compiled (`capabilities/distribution.ts`
+   * and the three composite nouns), read once, by
+   * `kernel/packs/collect.assembleEffectiveModules`.
+   */
+  readonly story?: true;
   readonly boot?: (rt: PragmaRuntime) => void;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;

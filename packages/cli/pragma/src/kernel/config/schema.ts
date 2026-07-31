@@ -19,7 +19,15 @@ import { CHANNELS, type RawConfig } from "./types.js";
 
 const packDeclarationSchema = z.union([
   z.string().min(1),
-  z.object({ name: z.string().min(1), source: z.string().optional() }),
+  z.object({
+    name: z.string().min(1),
+    source: z.string().optional(),
+    // Opaque here: the pack grammar is validated by `parsePackDefinition` at
+    // dispatch, not by the config layer. Without this key the object arm would
+    // STRIP declared stories silently (unknown keys are dropped for forward
+    // compatibility), so a pack's stories would vanish with no error.
+    stories: z.array(z.unknown()).optional(),
+  }),
 ]);
 
 // `source` is required until a consumer (PR 6) proves a bare-name default is

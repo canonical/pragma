@@ -17,6 +17,14 @@ export type Channel = (typeof CHANNELS)[number];
 export interface PackSource {
   readonly name: string;
   readonly source?: string;
+  /**
+   * Declarative read stories this pack supplies, in the pack grammar
+   * (`kernel/packs/types.PackDefinition`). OPAQUE here on purpose — the config
+   * layer does not know that grammar; `parsePackDefinition` validates it at
+   * dispatch. Declared beside the pack so a story can move out to the package's
+   * own `stories/*.json` by deleting this field and nothing else.
+   */
+  readonly stories?: readonly unknown[];
 }
 
 /** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */

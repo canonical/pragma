@@ -64,14 +64,24 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     const pkgRoot = resolve(here, "../..");
     // The graph walker follows `from "…"` textually and cannot tell an
     // `import type` from a value import, so the type-only `config/types.ts`
-    // shows up here even though nothing of it survives compilation. Assert the
-    // SOURCE has no value import at all — that is the claim in the title, and
-    // it is what keeps `--help`/`__complete`/`--version` free of module-init
-    // work when another lane or a fork edits this file.
+    // and `packs/types.ts` show up here even though nothing of either survives
+    // compilation. Assert the SOURCE has no value import at all — that is the
+    // claim in the title, and it is what keeps `--help`/`__complete`/
+    // `--version` free of module-init work when another lane or a fork edits
+    // this file.
     expect(readFileSync(conf, "utf-8")).not.toMatch(/^import (?!type\b)/m);
+    // `packs/types.ts` (the grammar that type-checks the declared stories) is
+    // as safe an entry as `config/types.ts`: it imports NOTHING of any kind, so
+    // the graph grows by one leaf and no further edges. The enumeration is
+    // exact, not a subset — a value import, or a type import from a module that
+    // itself imports something, both fail here.
     expect(
       [...staticImportGraph(conf)].map((f) => relative(pkgRoot, f)).sort(),
-    ).toEqual(["pragma.conf.ts", "src/kernel/config/types.ts"]);
+    ).toEqual([
+      "pragma.conf.ts",
+      "src/kernel/config/types.ts",
+      "src/kernel/packs/types.ts",
+    ]);
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {

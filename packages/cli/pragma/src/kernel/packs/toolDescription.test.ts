@@ -13,11 +13,16 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { standardModule } from "../../capabilities/standard/index.js";
+import { storyModules } from "../../capabilities/distribution.js";
 import { tokenModule } from "../../capabilities/token/index.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { formatVerbHelp } from "../project/cli/verbHelp.js";
 import type { VerbSpec } from "../spec/types.js";
+
+const standardModule = storyModules.get("standard");
+if (!standardModule) {
+  throw new Error('pragma.conf.ts declares no story for "standard"');
+}
 
 const verb = (
   module: { verbs: readonly VerbSpec[] },

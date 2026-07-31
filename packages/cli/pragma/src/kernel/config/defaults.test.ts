@@ -14,7 +14,13 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
   });
 
   it("ships the three canonical default packs (git+https sources)", () => {
-    expect(defaults.packs).toEqual([
+    expect(
+      defaults.packs?.map((pack) =>
+        typeof pack === "string"
+          ? pack
+          : { name: pack.name, source: pack.source },
+      ),
+    ).toEqual([
       {
         name: "@canonical/design-system",
         source: "git+https://github.com/canonical/design-system.git#main",
@@ -28,6 +34,16 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
         source: "git+https://github.com/canonical/web-code-standards.git#main",
       },
     ]);
+  });
+
+  it("carries the declared read stories through validation, on their packs", () => {
+    // The zod layer must not strip `stories` (unknown keys ARE stripped for
+    // forward compatibility). Content is owned by `capabilities/distribution.test.ts`;
+    // this pins only that the field survives `parseRawConfig` on the right pack.
+    const storyCounts = defaults.packs?.map((pack) =>
+      typeof pack === "string" ? 0 : (pack.stories?.length ?? 0),
+    );
+    expect(storyCounts).toEqual([4, 0, 1]);
   });
 
   it("ships the three summon generators (npm sources at the monorepo major)", () => {

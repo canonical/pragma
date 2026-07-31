@@ -1,16 +1,20 @@
 /**
  * Assemble the EFFECTIVE capability modules at dispatch.
  *
- * The `--help`/`__complete` fast paths use the STATIC capabilities (bundled +
- * authored) only. When a real command runs and the project config declares
- * `stories`, this merges them in: a config story overrides a bundled-pack noun
- * (replacing that module) or introduces a new noun; a config story that claims a
- * non-pack authored noun (config, ontology, …) is a hard error, and any
- * surviving `(noun, verb)` collision is caught by uniqueness.
+ * The `--help`/`__complete` fast paths use the STATIC capabilities (the
+ * authored modules plus the stories `pragma.conf.ts` declares, compiled at
+ * module load) only. When a real command runs, this merges in the stories the
+ * PROJECT declares: one may override a story-backed noun (replacing that
+ * module) or introduce a new one; one that claims an authored, non-story noun
+ * (config, ontology, …) is a hard error, and any surviving `(noun, verb)`
+ * collision is caught by uniqueness.
  *
- * Precedence is config > package > bundled. Package-shipped stories are a future
- * source (the new kernel does not yet discover package `stories/*.json`); the
- * seam is here so wiring them later is additive.
+ * Precedence is config > package > static, and within config the closer
+ * declaration wins: `packs[].stories` (the story a declared pack supplies) is
+ * overridden by the top-level `stories` (the project's own, most specific,
+ * statement). Package-shipped stories are a future source (the new kernel does
+ * not yet discover package `stories/*.json`); the seam is here so wiring them
+ * later is additive.
  *
  * zod is reached only through {@link parsePackDefinition} (lazy) — this module
  * is imported at dispatch, never on the fast path, so validating config stories
@@ -25,61 +29,90 @@ import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
-/** The bundled-pack nouns a config/package story may override. */
-export const BUNDLED_PACK_NOUNS: readonly string[] = [
-  "standard",
-  "tier",
-  "modifier",
-  "token",
-  "block",
-];
+/**
+ * The PROJECT's config-declared stories, weakest tier first.
+ *
+ * A tier whose origin is `"default"` is the DISTRIBUTION's own declaration,
+ * which `capabilities/distribution.ts` has already compiled into the static
+ * modules — that is what keeps those nouns on the `--help`/`__complete` fast
+ * path. Merging it again would recompile and re-validate it on every dispatch,
+ * and would put the distribution's own declarations behind a validator whose
+ * failure is fatal. `readConfig`'s per-field pick replaces wholesale, so an
+ * origin off `"default"` means the project (or global layer) owns that field.
+ *
+ * @param layers - The resolved config layers.
+ * @returns The `packs[].stories` tier, then the top-level `stories` tier.
+ */
+function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
+  const packStories =
+    layers.origins.packs === "default"
+      ? []
+      : (layers.config.packs ?? []).flatMap((pack) =>
+          typeof pack === "string" ? [] : (pack.stories ?? []),
+        );
+  const topLevel =
+    layers.origins.stories === "default" ? [] : (layers.config.stories ?? []);
+  return [[...packStories], [...topLevel]];
+}
 
 /**
- * Merge dynamic (config-declared) story packs into the static capabilities.
+ * Merge the project's config-declared story packs into the static capabilities.
  *
- * @param staticModules - The static capabilities (bundled + authored).
- * @param layers - The resolved config layers (its `config.stories`, `prefixes`).
+ * @param staticModules - The static capabilities (authored + declared stories).
+ * @param layers - The resolved config layers (its `packs`, `stories`, `prefixes`).
  * @returns The effective modules, uniqueness-checked.
- * @throws PragmaError CONFIG_ERROR on an invalid story, a story claiming a
- *   non-pack authored noun, or a duplicate story noun.
+ * @throws PragmaError CONFIG_ERROR on an invalid story, a story claiming an
+ *   authored non-story noun, or a duplicate noun within one config tier.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
   layers: ConfigLayers,
 ): readonly CapabilityModule[] {
-  const stories = layers.config.stories ?? [];
-  if (stories.length === 0) return staticModules;
+  const tiers = projectStoryTiers(layers);
+  if (tiers.every((tier) => tier.length === 0)) return staticModules;
 
   const prefixes = layers.config.prefixes ?? {};
-  const overridable = new Set(BUNDLED_PACK_NOUNS);
+  // Only a module compiled from a story may be replaced by one; the authored
+  // nouns (config, ontology, doctor, …) are the CLI itself.
+  const overridable = new Set(
+    staticModules.filter((module) => module.story).map((module) => module.name),
+  );
   const staticNouns = new Set(staticModules.map((module) => module.name));
 
-  const seen = new Set<string>();
-  const dynamic: CapabilityModule[] = [];
-  for (const raw of stories) {
-    const definition: PackDefinition = parsePackDefinition(raw, "config");
-    if (seen.has(definition.noun)) {
-      throw PragmaError.configError(
-        `Duplicate story noun "${definition.noun}" in config.`,
-      );
+  // Keyed by noun so the stronger tier REPLACES the weaker one — declaring a
+  // story both on its pack and at the top level is a refinement, not an error.
+  const dynamic = new Map<string, CapabilityModule>();
+  for (const tier of tiers) {
+    const seen = new Set<string>();
+    for (const raw of tier) {
+      const definition: PackDefinition = parsePackDefinition(raw, "config");
+      if (seen.has(definition.noun)) {
+        throw PragmaError.configError(
+          `Duplicate story noun "${definition.noun}" in config.`,
+        );
+      }
+      if (
+        staticNouns.has(definition.noun) &&
+        !overridable.has(definition.noun)
+      ) {
+        throw PragmaError.configError(
+          `Story noun "${definition.noun}" collides with a built-in command.`,
+        );
+      }
+      seen.add(definition.noun);
+      dynamic.set(definition.noun, {
+        name: definition.noun,
+        story: true,
+        verbs: compilePack(definition, "config", prefixes),
+        colophon: definition.colophon,
+      });
     }
-    if (staticNouns.has(definition.noun) && !overridable.has(definition.noun)) {
-      throw PragmaError.configError(
-        `Story noun "${definition.noun}" collides with a built-in command.`,
-      );
-    }
-    seen.add(definition.noun);
-    dynamic.push({
-      name: definition.noun,
-      verbs: compilePack(definition, "config", prefixes),
-      colophon: definition.colophon,
-    });
   }
 
-  // Drop the bundled module for any noun a config story overrides, then append
+  // Drop the static module for any noun a config story overrides, then append
   // the dynamic modules.
-  const kept = staticModules.filter((module) => !seen.has(module.name));
-  const effective = [...kept, ...dynamic];
+  const kept = staticModules.filter((module) => !dynamic.has(module.name));
+  const effective = [...kept, ...dynamic.values()];
   assertUniqueVerbs(effective.flatMap((module) => [...module.verbs]));
   return effective;
 }
