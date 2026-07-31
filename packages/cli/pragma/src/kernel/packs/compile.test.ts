@@ -183,6 +183,106 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
   });
 });
 
+describe("the grammar rejects what the compiler cannot build (PROTECTED)", () => {
+  // A definition that compiles to a duplicate `(noun, verb)` key or a duplicate
+  // CLI option is not merely odd — it throws out of `assembleEffectiveModules`
+  // or out of `buildProgram`, both of which run BEFORE the command tree exists.
+  // For a package-shipped story that means every command dies, `doctor` and
+  // `sources update` included. The collision is a property of the definition,
+  // so it is rejected here, where a package story degrades to a dropped file.
+  const listShape = {
+    query: "SELECT ?uri WHERE { ?uri a ex:Widget }",
+    columns: [{ field: "uri" }],
+  };
+  const parse = (def: unknown) => () =>
+    parsePackDefinition(def, "pkg/stories/widget.json");
+
+  it("rejects an extra verb that repeats list, lookup, sample, or itself", () => {
+    const lookup = { by: "ex:name", type: "ex:Widget", sample: true };
+    expect(
+      parse({
+        noun: "widget",
+        list: listShape,
+        verbs: [{ ...listShape, verb: "list" }],
+      }),
+    ).toThrow(/verb "list" is already compiled/);
+    expect(
+      parse({
+        noun: "widget",
+        lookup,
+        verbs: [{ ...listShape, verb: "lookup" }],
+      }),
+    ).toThrow(/verb "lookup" is already compiled/);
+    expect(
+      parse({
+        noun: "widget",
+        lookup,
+        verbs: [{ ...listShape, verb: "sample" }],
+      }),
+    ).toThrow(/verb "sample" is already compiled/);
+    expect(
+      parse({
+        noun: "widget",
+        list: listShape,
+        verbs: [
+          { ...listShape, verb: "categories" },
+          { ...listShape, verb: "categories" },
+        ],
+      }),
+    ).toThrow(/verb "categories" is already compiled/);
+  });
+
+  it("rejects a filter param declared twice, on list or on an extra verb", () => {
+    const twice = [
+      { param: "kind", variable: "uri" },
+      { param: "kind", variable: "uri" },
+    ];
+    expect(
+      parse({ noun: "widget", list: { ...listShape, filters: twice } }),
+    ).toThrow(/filter param "kind" is declared twice/);
+    expect(
+      parse({
+        noun: "widget",
+        list: listShape,
+        verbs: [{ ...listShape, verb: "categories", filters: twice }],
+      }),
+    ).toThrow(/filter param "kind" is declared twice/);
+  });
+
+  it("still accepts the distinct forms, and they compile to unique keys/params", () => {
+    const definition = parsePackDefinition(
+      {
+        noun: "widget",
+        list: {
+          ...listShape,
+          filters: [
+            { param: "kind", variable: "uri" },
+            { param: "tier", variable: "uri" },
+          ],
+        },
+        verbs: [{ ...listShape, verb: "categories" }],
+        lookup: { by: "ex:name", type: "ex:Widget", sample: true },
+      },
+      "pkg/stories/widget.json",
+    );
+    const verbs = compilePack(definition, "pkg/stories/widget.json", PREFIXES);
+    expect(verbs.map((v) => verbKey(v.path))).toEqual([
+      "widget list",
+      "widget categories",
+      "widget lookup",
+      "widget sample",
+    ]);
+    expect(() => assertUniqueVerbs(verbs)).not.toThrow();
+    expect(verbs.at(0)?.params.map((p) => p.name)).toEqual(["kind", "tier"]);
+  });
+
+  it("names the shape a noun must have, not the regex", () => {
+    expect(parse({ noun: "Bad Noun", list: listShape })).toThrow(
+      /noun: must be lowercase kebab-case/,
+    );
+  });
+});
+
 describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
   let rt: PragmaRuntime;
 
