@@ -36,8 +36,14 @@ function projectWithIndex(index: unknown): string {
  * A crafted index exercising the index / prefixes sources. Deliberately in a
  * NEUTRAL namespace: the reader knows no entity families any more, so a test
  * proving it reads `label` or `altNames` must not need this distribution's
- * vocabulary to say so. (Real-vocabulary coverage lives in the PROTECTED
- * contract describe below, which reads the shipped index.)
+ * vocabulary to say so.
+ *
+ * Real-vocabulary coverage lives in two places, and neither is here: the
+ * PROTECTED contract describe below reads the shipped index for plain entity
+ * NAMES, and `safety.test.ts`'s "every declared name source resolves without
+ * constructing the store" drives the live grammar over the shipped index for
+ * the `altNames` field (`tier lookup ap` → `Apps/Juju`, carried only by the
+ * declared alt-name property) and for `prefixes`.
  */
 const CRAFTED_INDEX = {
   version: 2,
@@ -289,5 +295,33 @@ describe("the storeless fast path implements the pointer half", () => {
     expect(
       await indexCompletionEnv(cwd).names({ from: "index", type: "" }),
     ).toEqual([]);
+  });
+
+  it("still offers the snapshot's names in a configured-but-unbuilt project (the documented price)", () => {
+    // The bounded exception `entitySource.ts` documents, pinned as it IS and
+    // not as it should be. The fast path is deliberately denied the config
+    // layer, so a `pragma.config.ts` declaring packs is invisible to it: with
+    // no pointer it cannot tell this project from a fresh install, and it
+    // answers from the embedded snapshot. Every READ refuses
+    // (`readPackIndex({kind:"unavailable"})` above), and so does `doctor`
+    // (`packs are configured but the store has not been built`) — verified
+    // against the compiled binary, where `block list` raises STORE_UNAVAILABLE
+    // while this same completion still answers.
+    //
+    // If a later change gives the fast path a config-free way to see
+    // `origins.packs`, THIS is the test that must move, deliberately.
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-unbuilt-cwd-"));
+    vi.stubEnv(
+      "XDG_CACHE_HOME",
+      mkdtempSync(join(tmpdir(), "pragma-unbuilt-")),
+    );
+    writeFileSync(
+      join(cwd, "pragma.config.ts"),
+      'export default { packs: [{ name: "unbuilt", source: "file:///pragma-never-built" }] };\n',
+    );
+
+    expect(createIndexEntityReader(cwd)("ds:Component", "")).toContain(
+      "ds:global.component.button",
+    );
   });
 });
