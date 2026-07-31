@@ -6,6 +6,7 @@ import {
   OWL_EXPORT_TTL,
 } from "../../../testing/fixtures/graph/owlExport.js";
 import { entityTotal } from "../../completion/entitySource.js";
+import { VOCABULARY } from "../../vocabulary.js";
 import { buildIndex } from "./buildIndex.js";
 import type { PackIndex } from "./types.js";
 
@@ -130,7 +131,14 @@ describe("buildIndex — the declared alternative-name property", () => {
   });
 
   it("still builds, carrying no altNames, when the pack binds no such prefix", async () => {
-    const { ds: _unbound, ...withoutDomain } = OWL_EXPORT_PREFIXES;
+    // Unbind the prefix the DECLARATION uses, whatever it is — the subject here
+    // is the declared property, so naming a prefix would couple this case to
+    // today's values and quietly stop testing anything if they moved.
+    const declared = VOCABULARY.altName.slice(
+      0,
+      VOCABULARY.altName.indexOf(":"),
+    );
+    const { [declared]: _unbound, ...withoutDomain } = OWL_EXPORT_PREFIXES;
     const index = await buildIndex(store, withoutDomain, "unbound");
     // The graph is unchanged, so every entity is still indexed…
     expect(index.entities.length).toBeGreaterThan(0);

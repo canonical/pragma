@@ -5,7 +5,7 @@
  * types (which also yield the instance counts), labels, descriptions and
  * alternative names — joined in memory, rather than a query per subject. Only
  * the last names a DOMAIN property, and it is read from the distribution's
- * declaration rather than spelled out here; see {@link altNamePredicates} for
+ * declaration rather than spelled out here; see {@link resolveAltNamePredicate} for
  * the pack that binds no such prefix.
  *
  * Only typed named-node subjects are indexed (untyped subjects and blank-node
@@ -140,28 +140,34 @@ const valuesList = (uris: readonly string[]): string =>
   uris.map((uri) => `<${uri}>`).join(" ");
 
 /**
- * The alternative-name predicate to project into `altNames` — the property a
- * family is addressed by, so the storeless completion sources can offer those
- * tokens exactly and a bespoke lookup can match them, without a store boot.
- * Distinct from the display `label`: a subject may carry both.
+ * Expand the declared alternative-name property against a pack's prefix map.
  *
- * The distribution DECLARES it as a prefixed name; this expands it against the
- * pack's own prefix map. A pack that binds no such prefix simply carries no
- * alternative names — the normal case for a third-party pack outside the
- * distribution's namespace. Expanding through `packs/iri.ts` instead would
- * THROW on exactly that pack and take its whole build down, so this degrades to
- * an empty list and the caller skips the query.
+ * That property is what a family is addressed by, so the storeless completion
+ * sources can offer those tokens exactly and a bespoke lookup can match them,
+ * without a store boot. Distinct from the display `label`: a subject may carry
+ * both.
+ *
+ * The distribution DECLARES it as a prefixed name; this resolves it against the
+ * PACK's own prefixes, which are not the distribution's. A pack that binds no
+ * such prefix simply carries no alternative names — the normal case for a
+ * third-party pack outside the distribution's namespace. Expanding through
+ * `packs/iri.ts` instead would THROW on exactly that pack and take its whole
+ * build down, so this degrades and the caller skips the query.
+ *
+ * The split needs no guard: `kernel/vocabulary.ts` has already held the term to
+ * `prefix:local`, so the colon is there and both sides are non-empty.
  *
  * @param prefixes - The store's merged prefix map.
- * @returns The full IRI to collect, or `[]` when the prefix is unbound.
+ * @returns The full IRI to collect, or `undefined` when the prefix is unbound.
  */
-function altNamePredicates(
+function resolveAltNamePredicate(
   prefixes: Readonly<Record<string, string>>,
-): string[] {
-  const [prefix, local] = VOCABULARY.altName.split(":");
-  if (prefix === undefined || local === undefined) return [];
-  const namespace = prefixes[prefix];
-  return namespace === undefined ? [] : [`${namespace}${local}`];
+): string | undefined {
+  const colon = VOCABULARY.altName.indexOf(":");
+  const namespace = prefixes[VOCABULARY.altName.slice(0, colon)];
+  return namespace === undefined
+    ? undefined
+    : `${namespace}${VOCABULARY.altName.slice(colon + 1)}`;
 }
 
 /** Language rank for label selection: untagged (0) < `@en` (1) < any other (2). */
@@ -253,7 +259,7 @@ export async function buildIndex(
   prefixes: Readonly<Record<string, string>>,
   contentHash: string,
 ): Promise<PackIndex> {
-  const altNameUris = altNamePredicates(prefixes);
+  const altNameUri = resolveAltNamePredicate(prefixes);
   const [typesResult, labelResult, descResult, altNameResult] =
     await Promise.all([
       store.query(
@@ -265,10 +271,10 @@ export async function buildIndex(
       store.query(
         `SELECT ?s ?p ?desc WHERE { ?s ?p ?desc . VALUES ?p { ${valuesList(DESCRIPTION_PREDICATES)} } }` as never,
       ) as Promise<import("@canonical/ke").SelectResult>,
-      altNameUris.length === 0
+      altNameUri === undefined
         ? undefined
         : (store.query(
-            `SELECT ?s ?p ?alt WHERE { ?s ?p ?alt . VALUES ?p { ${valuesList(altNameUris)} } }` as never,
+            `SELECT ?s ?p ?alt WHERE { ?s ?p ?alt . VALUES ?p { <${altNameUri}> } }` as never,
           ) as Promise<import("@canonical/ke").SelectResult>),
     ]);
 
