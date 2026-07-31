@@ -20,7 +20,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 | --- | --- | --- |
 | `name` | string (optional) | Distribution-only — see below. The binary's own name, read from the distribution config at module load. |
 | `help` | string (optional) | Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake. |
-| `colophon` | string (optional) | Distribution-only — see below. Accepted by the validator and read by NOTHING today: `colophon` renders a built-in narrative plus each pack's own `colophon`. Declaring it changes nothing. |
+| `colophon` | object (optional) | Distribution-only — see below. The toolchain's own story, rendered first by the `colophon` verb and titled with the distribution's name: `{ markdown, summary? }`, both Markdown bodies with no leading H1 (`summary` is the condensed `--format llm` form). Declared content, not code — a fork edits it to tell its own story. |
 | `issuesUrl` | URL string (optional) | Distribution-only — see below. Where the first-run note asks users to report problems. |
 | `tier` | string (optional) | Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it. |
 | `channel` | `normal` \| `experimental` \| `prerelease` (optional) | Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`. |
@@ -32,7 +32,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## Distribution-only fields
 
-`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
+`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
 
 ## What `config show` reports
 

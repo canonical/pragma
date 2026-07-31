@@ -5,12 +5,24 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
   it("ships the distribution identity", () => {
     expect(defaults.name).toBe("pragma");
     expect(defaults.help).toBe("Explore the design system");
-    expect(defaults.colophon).toBe(
-      "Made by the Canonical Webteam — https://canonical.com.",
-    );
     expect(defaults.issuesUrl).toBe(
       "https://github.com/canonical/pragma/issues",
     );
+  });
+
+  it("declares the toolchain colophon as content (markdown body + summary)", () => {
+    // The narrative is a DECLARATION the `colophon` verb renders, not code:
+    // `collectColophon` reads exactly this object. Pin the shape and the two
+    // stable fragments — the story's own subject and the maker line the old
+    // one-line `colophon` string carried (folded in when the field went live).
+    expect(defaults.colophon?.markdown).toContain("domain-based toolchain");
+    expect(defaults.colophon?.markdown).toContain(
+      "Made by the Canonical Webteam — https://canonical.com.",
+    );
+    expect(defaults.colophon?.summary).toContain("domain-based toolchain");
+    // Bodies, not documents: the renderer supplies the H1 from the name.
+    expect(defaults.colophon?.markdown.startsWith("#")).toBe(false);
+    expect(defaults.colophon?.summary?.startsWith("#")).toBe(false);
   });
 
   it("ships the three canonical default packs (git+https sources)", () => {

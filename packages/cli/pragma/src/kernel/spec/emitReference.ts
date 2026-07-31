@@ -476,9 +476,9 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake.",
   },
   colophon: {
-    type: "string (optional)",
+    type: "object (optional)",
     notes:
-      "Distribution-only — see below. Accepted by the validator and read by NOTHING today: `colophon` renders a built-in narrative plus each pack's own `colophon`. Declaring it changes nothing.",
+      "Distribution-only — see below. The toolchain's own story, rendered first by the `colophon` verb and titled with the distribution's name: `{ markdown, summary? }`, both Markdown bodies with no leading H1 (`summary` is the condensed `--format llm` form). Declared content, not code — a fork edits it to tell its own story.",
   },
   issuesUrl: {
     type: "URL string (optional)",
@@ -559,7 +559,7 @@ function renderConfigPage(): string {
     "The `Type` column is prose; the field set and each field's optionality are checked against the validator.",
     rows.join("\n"),
     "## Distribution-only fields",
-    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
+    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read from the same file at render time: the \`colophon\` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
     "## What `config show` reports",
     `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",

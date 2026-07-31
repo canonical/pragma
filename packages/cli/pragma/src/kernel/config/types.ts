@@ -43,6 +43,19 @@ export interface PackSource {
 export type PackDeclaration = string | PackSource;
 
 /**
+ * The toolchain colophon the distribution declares — CONTENT, not machinery.
+ * The `colophon` verb renders whatever is declared here as its first section,
+ * titled with the distribution's name; a fork tells its own story by editing
+ * its config. Both strings are Markdown BODIES with no leading H1 (the
+ * renderer supplies the heading). `summary` is the condensed `--format llm`
+ * form; omitted, the full `markdown` serves both.
+ */
+export interface ColophonDeclaration {
+  readonly markdown: string;
+  readonly summary?: string;
+}
+
+/**
  * Completion policy, read at `setup completions` emit time (never on the
  * storeless `__complete` fast path). Derive-by-default, tune-by-exception:
  * `minChars` gates the `__complete` exec in the generated scripts, and
@@ -58,11 +71,12 @@ export interface CompletionConfig {
 /**
  * The effective, resolved configuration. `channel` always has a value.
  *
- * IDENTITY IS NOT HERE. `name`, `help`, `colophon` and `issuesUrl` are read
- * from `pragma.conf.ts` by `src/constants.ts` at module load, because the
- * surfaces that need them — `--help`, `__complete`, the MCP handshake,
- * first-run onboarding — all run before or without the config layer. They stay
- * in {@link RawConfig} (the distribution config is `satisfies RawConfig`), but
+ * IDENTITY IS NOT HERE. `name`, `help` and `issuesUrl` are read from
+ * `pragma.conf.ts` by `src/constants.ts` at module load, because the surfaces
+ * that need them — `--help`, `__complete`, the MCP handshake, first-run
+ * onboarding — all run before or without the config layer; `colophon` is read
+ * from the same file at render time by the `colophon` verb. They stay in
+ * {@link RawConfig} (the distribution config is `satisfies RawConfig`), but
  * merging them into the effective config only bought `config show` a
  * `[project]` marker the kernel does not honour.
  */
@@ -103,7 +117,7 @@ export interface PragmaConfig {
 export interface RawConfig {
   readonly name?: string;
   readonly help?: string;
-  readonly colophon?: string;
+  readonly colophon?: ColophonDeclaration;
   readonly issuesUrl?: string;
   readonly tier?: string;
   readonly channel?: Channel;

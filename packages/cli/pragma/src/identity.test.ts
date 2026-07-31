@@ -11,7 +11,10 @@ vi.mock("../pragma.conf.js", () => ({
   default: {
     name: "recipes",
     help: "Explore the recipe graph",
-    colophon: "Made by the kitchen.",
+    colophon: {
+      markdown: "Made by the kitchen, one dish at a time.",
+      summary: "Kitchen-made.",
+    },
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
     prefixes: { rcp: "https://example.invalid/recipes/" },
@@ -164,6 +167,37 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
+  });
+
+  it("narrates the colophon the fork declares, titled with the fork's name", async () => {
+    // The toolchain colophon is DECLARED content (`pragma.conf.ts#colophon`),
+    // not authored code: the collector must render the fork's declaration
+    // under the fork's own name. With no packs declared, the fork's whole
+    // colophon is its own story. `kind: "pragma"` is asserted AS the literal:
+    // it is the frozen JSON discriminant every distribution serves (wire
+    // compatibility, like the resource scheme), deliberately NOT derived.
+    process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-"));
+    const { collectColophon } = await import(
+      "./capabilities/colophon/collectColophon.js"
+    );
+    const { bootRuntime } = await import("./kernel/runtime/boot.js");
+
+    const runtime = bootRuntime(
+      { llm: false, autoLlm: false, format: "plain", verbose: false },
+      mkdtempSync(join(tmpdir(), "identity-colophon-")),
+    );
+    const { sections } = await collectColophon(runtime);
+
+    expect(sections).toHaveLength(1);
+    const own = sections[0];
+    expect(own?.kind).toBe("pragma");
+    expect(own?.title).toBe("recipes");
+    expect(own?.markdown).toBe("Made by the kitchen, one dish at a time.");
+    expect(own?.summary).toBe("Kitchen-made.");
+    expect(own?.source).toBe("built-in");
+    for (const text of [own?.title, own?.markdown, own?.summary]) {
+      expect(text).not.toMatch(THIS_DISTRIBUTION);
+    }
   });
 
   it("owns its own on-disk skills namespace", async () => {

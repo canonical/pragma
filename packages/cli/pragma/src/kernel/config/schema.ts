@@ -61,7 +61,14 @@ function declaredCompletion(value: unknown): Record<string, unknown> | null {
 export const rawConfigSchema = z.object({
   name: z.string().min(1).optional(),
   help: z.string().min(1).optional(),
-  colophon: z.string().optional(),
+  // Declared toolchain content: the `colophon` verb renders whatever the
+  // distribution declares here (markdown body + optional condensed summary).
+  colophon: z
+    .object({
+      markdown: z.string().min(1),
+      summary: z.string().min(1).optional(),
+    })
+    .optional(),
   issuesUrl: z.string().url().optional(),
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),
