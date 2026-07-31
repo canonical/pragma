@@ -94,6 +94,13 @@ export interface QueryFacade {
 export interface MutationRuntime {
   /** True for a plan-only preview; false for a real execution. */
   readonly preview: boolean;
+  /**
+   * True when the invocation is an `--undo` (reverse a prior run), false for a
+   * forward run. A verb that guards against overwriting existing files skips the
+   * guard under undo — undo reverses the earlier write, it does not create, so
+   * the target files existing is expected, not a conflict.
+   */
+  readonly undo: boolean;
 }
 
 /**

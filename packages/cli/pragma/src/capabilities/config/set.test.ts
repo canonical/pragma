@@ -121,6 +121,74 @@ describe("config set — write & reset (shares the per-field path)", () => {
   });
 });
 
+describe("config set — idempotent no-op detection", () => {
+  it("re-setting the same value reports 'no change' and composes no write", async () => {
+    const cwd = tmp("pragma-proj-");
+    // First set writes the value.
+    await executeVerb(
+      setVerb,
+      { key: "tier", value: "apps/lxd" },
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    const firstBody = readFileSync(globalConfigPath(), "utf-8");
+
+    // The set task for the SAME value composes no WriteFile — asserted against
+    // the REAL fs (the dry-run interpreter mocks reads, so it cannot see the
+    // current value and would spuriously plan a write; the detection only holds
+    // when the read is real). `runTask` performs it; the file must be untouched.
+    const { runTask } = await import("@canonical/task/node");
+    const result = await runTask(runSet({ key: "tier", value: "apps/lxd" }));
+    expect(result.changed).toBe(false);
+    expect(result.previous).toBe("apps/lxd");
+
+    // A real re-set (through the verb) reports "no change" and leaves the file
+    // byte-identical.
+    const outcome = await executeVerb(
+      setVerb,
+      { key: "tier", value: "apps/lxd" },
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("already apps/lxd");
+    expect(outcome.stdout).not.toContain("Write");
+    expect(readFileSync(globalConfigPath(), "utf-8")).toBe(firstBody);
+  });
+
+  it("changing to a NEW value reports the old → new transition", async () => {
+    const cwd = tmp("pragma-proj-");
+    await executeVerb(
+      setVerb,
+      { key: "tier", value: "apps/lxd" },
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    const outcome = await executeVerb(
+      setVerb,
+      { key: "tier", value: "global" },
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("apps/lxd → global");
+    expect(readGlobal().tier).toBe("global");
+  });
+
+  it("resetting an already-unset field is a no-op ('already unset')", async () => {
+    const cwd = tmp("pragma-proj-");
+    const outcome = await executeVerb(
+      setVerb,
+      { key: "tier", value: "none" },
+      REAL,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain("already unset");
+    expect(existsSync(globalConfigPath())).toBe(false);
+  });
+});
+
 describe("config set — input rejection (INVALID_INPUT)", () => {
   it("the CLI enum coerce rejects an unknown key with the valid field names", () => {
     let caught: unknown;

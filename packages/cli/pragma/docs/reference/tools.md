@@ -100,6 +100,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `withForms` | boolean | no | Include form components. (default: true) |
 | `withRelay` | boolean | no | Include a Relay (GraphQL) data layer. (default: false) |
 | `runInstall` | boolean | no | Install dependencies now. (default: false) |
+| `force` | boolean | no | Overwrite existing files instead of refusing when the target path already exists. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
@@ -118,6 +119,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `withStyles` | boolean | no | Include styles. (default: true) |
 | `withStories` | boolean | no | Include Storybook stories. (default: true) |
 | `withSsrTests` | boolean | no | Include SSR tests. (default: true) |
+| `force` | boolean | no | Overwrite existing files instead of refusing when the target path already exists. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 
@@ -139,6 +141,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `withCli` | boolean | no | Include a CLI binary entry point. (default: false) |
 | `withPrTemplate` | boolean | no | Include a PR template. (default: false) |
 | `runInstall` | boolean | no | Run the package manager install after creation. (default: false) |
+| `force` | boolean | no | Overwrite existing files instead of refusing when the target path already exists. |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 

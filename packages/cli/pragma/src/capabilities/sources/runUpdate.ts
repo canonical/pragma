@@ -54,7 +54,7 @@ import {
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { installedSkillsDir } from "../skill/discover.js";
 import { planSkillInstall } from "./installSkills.js";
-import type { SourcesUpdateData } from "./types.js";
+import type { SourcesSkillsSummary, SourcesUpdateData } from "./types.js";
 
 /** Generic-core prefixes; config `prefixes` merge over them (config wins). */
 const CORE_PREFIXES: Readonly<Record<string, string>> = {
@@ -96,6 +96,8 @@ async function buildUpdatePlan(
     reused: false,
     lockPath: path,
     packs: refs.map((ref) => ({ name: ref.pkg, resolved: "", sourceCount: 0 })),
+    // Skills are resolved from the packages on execute; a preview reports none.
+    skills: { created: 0, replaced: 0, skipped: 0 },
   };
   // A representative (never-written) lock, so the previewed write shows a
   // plausible shape/size. Placeholders make clear nothing was resolved.
@@ -313,6 +315,15 @@ export async function buildUpdateTask(
   const newContent = serializeLock(lock);
   const path = lockPath(runtime.cwd);
 
+  // Plan skill installs ONCE (all actions, up front): the counts feed the result
+  // recap, the non-`skipped` subset drives the actual symlink effects below.
+  const skillPlan = planSkillInstall(resolved);
+  const skills: SourcesSkillsSummary = {
+    created: skillPlan.filter((l) => l.action === "created").length,
+    replaced: skillPlan.filter((l) => l.action === "replaced").length,
+    skipped: skillPlan.filter((l) => l.action === "skipped").length,
+  };
+
   const data: SourcesUpdateData = {
     contentHash: built.contentHash,
     reused: built.reused,
@@ -322,6 +333,7 @@ export async function buildUpdateTask(
       resolved: pkg.resolved,
       sourceCount: pkg.sources.length,
     })),
+    skills,
   };
 
   const undo =
@@ -333,9 +345,7 @@ export async function buildUpdateTask(
   // `skills/*` into the installed-skills root, so `skill list` / `setup skills`
   // see them after an update. Kept in this Task (reversible: created links carry
   // an unlink undo) so `sources update --undo` also removes them.
-  const skillLinks = planSkillInstall(resolved).filter(
-    (link) => link.action !== "skipped",
-  );
+  const skillLinks = skillPlan.filter((link) => link.action !== "skipped");
   if (skillLinks.length > 0)
     report?.(`Installing ${skillLinks.length} skill(s)`);
 

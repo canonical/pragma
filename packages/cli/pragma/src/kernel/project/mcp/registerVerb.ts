@@ -190,7 +190,9 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       const mutationRuntime: PragmaRuntime = {
         ...runtime,
         cwd: effectiveCwd,
-        mutation: { preview },
+        // MCP has no `--undo` concept — a mutation is either a plan-only
+        // preview (no `confirm`) or a real execution.
+        mutation: { preview, undo: false },
         interaction,
       };
       const task = await Promise.resolve(

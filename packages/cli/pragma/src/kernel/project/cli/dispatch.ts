@@ -239,7 +239,7 @@ export async function executeVerb(
     };
     const mutationRuntime: PragmaRuntime = {
       ...runtime,
-      mutation: { preview: mutation.dryRun },
+      mutation: { preview: mutation.dryRun, undo: mutation.undo },
       interaction,
       // Progress seam (U7): a long mutation's eager resolve/build runs before its
       // Task is returned, so `onLog` can't reach it — stream stage lines straight

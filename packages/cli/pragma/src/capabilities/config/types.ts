@@ -24,4 +24,12 @@ export interface ConfigFieldResult {
   readonly path: string;
   /** True when a reset sentinel removed the field rather than setting a value. */
   readonly reset: boolean;
+  /** The field's prior value, or absent when it was unset. */
+  readonly previous?: string;
+  /**
+   * Whether the value actually changed. False for a no-op (setting a field to
+   * the value it already holds, or resetting an already-absent field) — the
+   * recap then reports "unchanged" and no write happened.
+   */
+  readonly changed: boolean;
 }

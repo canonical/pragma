@@ -197,6 +197,7 @@ pragma create application [appPath] [options]
 | `--with-forms` | — | Include form components. (default: true) |
 | `--with-relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
 | `--run-install` | — | Install dependencies now. (default: false) |
+| `--force` | — | Overwrite existing files instead of refusing when the target path already exists. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -231,6 +232,7 @@ pragma create component [componentPath] [options]
 | `--with-styles` | — | Include styles. (default: true) |
 | `--with-stories` | — | Include Storybook stories. (default: true) |
 | `--with-ssr-tests` | — | Include SSR tests. (default: true) |
+| `--force` | — | Overwrite existing files instead of refusing when the target path already exists. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -263,6 +265,7 @@ pragma create package [options]
 | `--with-cli` | — | Include a CLI binary entry point. (default: false) |
 | `--with-pr-template` | — | Include a PR template. (default: false) |
 | `--run-install` | — | Run the package manager install after creation. (default: false) |
+| `--force` | — | Overwrite existing files instead of refusing when the target path already exists. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
