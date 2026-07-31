@@ -77,7 +77,7 @@ describe("extractStatic variable enumeration", () => {
       const keyed = [...results.keys()].filter((k) =>
         k.startsWith(`${prefix}:`),
       );
-      expect(keyed).toEqual([`${prefix}:ex:s1`]);
+      expect(keyed).toEqual([`${prefix}:http://example.org/s1`]);
     }
   });
 

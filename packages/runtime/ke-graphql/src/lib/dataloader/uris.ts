@@ -1,7 +1,17 @@
 // =============================================================================
-// Prefixed URI ↔ full IRI conversion. The prefixed form is the
-// public identity (global IDs, EntityValue.uri); full IRIs are the loader
-// keys and SPARQL currency.
+// Prefixed URI ↔ full IRI conversion.
+//
+// The ABSOLUTE IRI is now the identity everywhere internally — EntityValue.uri,
+// Node.uri, node(id:), the loader keys, the SPARQL currency, and the connection
+// cursors are all the same string. These two helpers survive for the edges:
+//
+//   toPrefixed — a DISPLAY helper with ZERO internal callers, deliberately.
+//     It is public API (a consumer rendering "lib:dune" instead of a 60-char
+//     IRI); nothing inside this package may call it, because every internal
+//     call site was exactly the place where the prefixed form could drift out
+//     of sync with a cursor.
+//   toFull — expands the singular `<type>(uri:)` lookup's ARGUMENT, which
+//     still accepts the prefixed convenience form. That is its only caller.
 // =============================================================================
 
 import type { NamespaceInfo } from "../shared/index.js";
@@ -10,9 +20,10 @@ import type { NamespaceInfo } from "../shared/index.js";
  * Convert a full IRI to its prefixed form ("ds:button") using the compiled
  * namespace inventory. Picks the LONGEST matching namespace so that nested
  * namespaces (e.g. "http://x/" and "http://x/sub/") yield a stable, canonical
- * prefixed form regardless of namespace discovery order — Relay global IDs and
- * cursors depend on this being deterministic. Returns the input
+ * prefixed form regardless of namespace discovery order. Returns the input
  * unchanged when no registered namespace matches.
+ *
+ * Display only — see this file's header. Never use it to derive an identity.
  */
 export const toPrefixed = (
   fullUri: string,

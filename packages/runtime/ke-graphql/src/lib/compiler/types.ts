@@ -65,6 +65,40 @@ export type CustomMappings = Record<string, CustomMapping>;
 /** Per GraphQL type name: the field names promoted to non-null. */
 export type NonNullOverrides = Record<string, string[]>;
 
+/**
+ * How much of the ontology is projected into object types.
+ *
+ * PROVENANCE ONLY TODAY. The extractor emits no `graphql:*` annotations yet
+ * (that is a separate task), so there is nothing for this option to gate on
+ * and the compiler deliberately does NOT branch on it — a `switch` that
+ * silently changes nothing is worse than no knob at all. The value is typed,
+ * defaulted, and stamped into the SDL provenance header so a consumer can
+ * declare intent now and diff the header later; its EFFECT lands with the
+ * annotations task, at which point `auto`/`explicit` start behaving
+ * differently from `annotated`.
+ *
+ * Mirrors sem's `ProjectionMode` (sem-objects/src/ir.rs) name-for-name so the
+ * two emitters' headers are comparable.
+ */
+export type ProjectionMode =
+  /** Pure heuristics; annotations ignored. */
+  | "auto"
+  /** Heuristic baseline; annotations override per term (the default). */
+  | "annotated"
+  /** Allowlist: only annotated elements are exposed. */
+  | "explicit";
+
+/**
+ * Field-name prefixing policy. Unlike `mode`, this has real behaviour today.
+ *
+ * - `"none"` (default) — field names are the mapped OWL local names.
+ * - `"all"` — EVERY generated field name is namespace-prefixed
+ *   (`ex:uri` → `exUri`). An explicit `mappings[…].graphqlName` is never
+ *   prefixed. This is the blanket remedy for an M001/M005 collision: it
+ *   resolves the whole schema at once instead of one mapping per clash.
+ */
+export type FieldPrefixing = "none" | "all";
+
 /** Consumer-supplied extension fields, keyed by GraphQL type name. */
 export interface SchemaExtensions {
   [typeName: string]: Record<
@@ -98,8 +132,26 @@ export interface SchemaPluginOptions {
   sdlOutput?: string;
   nonNullOverrides?: NonNullOverrides;
   /**
+   * Projection mode. Provenance-only today — see ProjectionMode.
+   * Default: DEFAULT_MODE ("annotated").
+   */
+  mode?: ProjectionMode;
+  /**
+   * Field-name prefixing policy. Default: DEFAULT_PREFIXING ("none").
+   * See FieldPrefixing.
+   */
+  prefixing?: FieldPrefixing;
+  /** Provider identity stamped into the SDL provenance header. */
+  provider?: string;
+  /** Source revision stamped into the SDL provenance header. */
+  revision?: string;
+  /**
    * Opt-in instance-level standard-vocabulary fields.
    * Per GraphQL type name: predicate URI → field name.
+   *
+   * @deprecated Superseded by the `graphql:*From` annotations — declare the
+   * source predicate on the ontology term instead of naming it per schema
+   * type here. Kept working (and now collision-correct) until they land.
    */
   standardVocabFields?: Record<string, Record<string, string>>;
   /** Resolver-time warnings (coercion failures). Default: console.warn, deduplicated. */

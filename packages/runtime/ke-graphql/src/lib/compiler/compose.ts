@@ -41,8 +41,14 @@ import {
   type PassResult,
 } from "../shared/index.js";
 import { buildTBoxSchema } from "../tbox/index.js";
+import {
+  DEFAULT_MODE,
+  DEFAULT_PROVIDER,
+  DEFAULT_REVISION,
+  GRAPHQL_SCHEMA_SPEC,
+} from "./constants.js";
 import type { FieldPlan, SchemaPlan, TypeRef } from "./emit.js";
-import type { SchemaExtensionsInput } from "./types.js";
+import type { ProjectionMode, SchemaExtensionsInput } from "./types.js";
 
 const PHASE = "compose";
 
@@ -64,7 +70,31 @@ export interface ComposeOptions {
    * artifact was produced; the SDL is a build artifact, not a runtime need).
    */
   skipValidation?: boolean;
+  /** Projection mode, stamped into the SDL provenance header. */
+  mode?: ProjectionMode;
+  /** Provider identity, stamped into the SDL provenance header. */
+  provider?: string;
+  /** Source revision, stamped into the SDL provenance header. */
+  revision?: string;
 }
+
+/**
+ * Build the five-line provenance header prepended to the printed SDL. Pure.
+ *
+ * The shape mirrors sem-graphql's printer (crates/sem-graphql/src/printer.rs):
+ * a banner line then one `# key: value` line per provenance fact, so an SDL
+ * emitted by either implementation diffs line-for-line against the other.
+ */
+const buildProvenanceHeader = (options: ComposeOptions): string =>
+  [
+    "# ke-graphql · canonical SDL",
+    `# graphql-schema-spec: ${GRAPHQL_SCHEMA_SPEC}`,
+    `# mode: ${options.mode ?? DEFAULT_MODE}`,
+    `# provider: ${options.provider ?? DEFAULT_PROVIDER}`,
+    `# revision: ${options.revision ?? DEFAULT_REVISION}`,
+    "",
+    "",
+  ].join("\n");
 
 /** Composition output: the schema (null on C003 failure) and its SDL. */
 export interface ComposedSchema {
@@ -94,13 +124,14 @@ export default function compose(
     // dispatches on the runtime object type, whose own plan carries them. The
     // fields exist here so a selection through Query.node(id:) or
     // OntologyClass.instances (a NodeConnection) is legal.
+    //
+    // Exactly two members. Everything descriptive moved behind `_meta`, so the
+    // interface is identity plus self-description and nothing else — the
+    // forward reference to `tbox` is safe because the thunk runs after
+    // construction (the same pattern findNamedType uses below).
     fields: () => ({
-      id: { type: new GraphQLNonNull(GraphQLID) },
-      uri: { type: new GraphQLNonNull(GraphQLString) },
-      kind: { type: new GraphQLNonNull(GraphQLString) },
-      label: { type: GraphQLString },
-      comment: { type: GraphQLString },
-      definition: { type: GraphQLString },
+      uri: { type: new GraphQLNonNull(GraphQLID) },
+      _meta: { type: new GraphQLNonNull(tbox.entityMeta) },
     }),
     resolveType: resolveTypename,
   });
@@ -391,7 +422,7 @@ export default function compose(
       if (validationErrors.length > 0) {
         schema = null;
       } else {
-        sdl = printSchema(schema);
+        sdl = buildProvenanceHeader(options) + printSchema(schema);
       }
     } else if (options.extensions) {
       // Skipping full validation (the artifact-boot fast path) must still honor

@@ -46,6 +46,9 @@ export default function runPasses(
     extensions: options.extensions,
     incremental: options.incremental,
     skipValidation,
+    mode: options.mode,
+    provider: options.provider,
+    revision: options.revision,
   });
   diagnostics.push(...composed.diagnostics);
 

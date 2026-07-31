@@ -75,11 +75,7 @@ export default function createContextFactory(
       return {
         entityLoader: createEntityLoader(query, mapped, processCaches?.entity),
         listLoader: createListLoader(query, mapped, processCaches?.list),
-        inverseLoader: createInverseLoader(
-          query,
-          mapped,
-          processCaches?.inverse,
-        ),
+        inverseLoader: createInverseLoader(query, processCaches?.inverse),
         nameMap: mapped.nameMap,
         namespaces: mapped.namespaces,
         store,

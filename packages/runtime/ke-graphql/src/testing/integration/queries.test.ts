@@ -79,7 +79,6 @@ describe("ds-realistic resolution", () => {
       compiled,
       `{
         component(uri: "ds:global.component.button") {
-          id
           uri
           name
           summary
@@ -92,7 +91,9 @@ describe("ds-realistic resolution", () => {
     );
     expect(result.errors).toBeUndefined();
     const component = result.data?.component as Record<string, unknown>;
-    expect(component.id).toBe("ds:global.component.button");
+    expect(component.uri).toBe(
+      "https://ds.canonical.com/global.component.button",
+    );
     expect(component.name).toBe("Button");
     expect((component.tier as { name: string }).name).toBe("global");
     // embedded blank node with boolean-as-string coercion
@@ -118,13 +119,13 @@ describe("ds-realistic resolution", () => {
     ]);
   });
 
-  it("resolves node() by prefixed-URI global ID with the most specific type", async () => {
+  it("resolves node() by absolute IRI with the most specific type", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
     const result = await run(
       compiled,
       `{
-        node(id: "ds:global.component.button") {
-          id
+        node(id: "https://ds.canonical.com/global.component.button") {
+          uri
           __typename
           ... on Component { name }
         }
@@ -136,15 +137,16 @@ describe("ds-realistic resolution", () => {
     expect(node.name).toBe("Button");
   });
 
-  it("resolves the generic kind/label/comment/definition fields", async () => {
+  it("resolves the generic descriptive fields through _meta", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
     const result = await run(
       compiled,
-      `{ component(uri: "ds:global.component.button") { kind label comment definition } }`,
+      `{ component(uri: "ds:global.component.button") { _meta { title label comment definition } } }`,
     );
     expect(result.errors).toBeUndefined();
-    expect(result.data?.component).toEqual({
-      kind: "ds:Component",
+    expect((result.data?.component as Record<string, unknown>)._meta).toEqual({
+      // title is TOTAL and agrees with label whenever label resolves
+      title: "Button",
       // no rdfs:label on the instance → the local-name tier (ds:name) fires
       label: "Button",
       // no rdfs:comment on the instance → the tier (ds:summary) fires
@@ -157,29 +159,60 @@ describe("ds-realistic resolution", () => {
 
   it("selects the generic fields straight through node(id:)", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
-    // No inline fragment: Node itself declares kind/label/comment/definition.
+    // No inline fragment: Node declares _meta, and EntityMeta declares them all.
     const result = await run(
       compiled,
-      `{ node(id: "ds:global.component.button") { kind label comment definition } }`,
+      `{ node(id: "https://ds.canonical.com/global.component.button") { uri _meta { title label } } }`,
     );
     expect(result.errors).toBeUndefined();
     expect(result.data?.node).toEqual({
-      kind: "ds:Component",
-      label: "Button",
-      comment: "Primary action trigger.",
-      definition: null,
+      uri: "https://ds.canonical.com/global.component.button",
+      _meta: { title: "Button", label: "Button" },
     });
   });
 
-  it("returns null for unknown prefixes and unknown URIs", async () => {
+  it("returns null for non-absolute ids and for unknown IRIs", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
-    const unknownPrefix = await run(compiled, `{ node(id: "zz:nope") { id } }`);
-    expect(unknownPrefix.data?.node).toBeNull();
+    // No scheme at all: rejected by the absolute-IRI gate, not by a lookup.
+    const notAnIri = await run(compiled, `{ node(id: "nope") { uri } }`);
+    expect(notAnIri.errors).toBeUndefined();
+    expect(notAnIri.data?.node).toBeNull();
+    // Syntactically fine, but nothing in the store answers to it.
     const unknownUri = await run(
       compiled,
-      `{ node(id: "ds:does.not.exist") { id } }`,
+      `{ node(id: "https://ds.canonical.com/does.not.exist") { uri } }`,
     );
     expect(unknownUri.data?.node).toBeNull();
+  });
+
+  it("pages a listing by its own cursors — the cursor/uri currency is one string", async () => {
+    // The silent failure this guards: if the paginated list were still in the
+    // prefixed form while EntityValue.uri went absolute, `after:` would miss
+    // and every page would restart at index 0 with no error at all.
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    const page1 = await run(
+      compiled,
+      `{ uIBlocks: components(first: 1) { edges { cursor node { uri } } } }`,
+    );
+    expect(page1.errors).toBeUndefined();
+    const first = (
+      page1.data?.uIBlocks as {
+        edges: Array<{ cursor: string; node: { uri: string } }>;
+      }
+    ).edges[0];
+    // the cursor decodes to the very IRI the node reports
+    expect(atob(first?.cursor ?? "")).toBe(first?.node.uri);
+    const page2 = await run(
+      compiled,
+      `query($c: String) { components(first: 1, after: $c) { edges { node { uri } } } }`,
+      { c: first?.cursor },
+    );
+    expect(page2.errors).toBeUndefined();
+    // one component in the fixture: the cursor HIT, so page 2 is empty rather
+    // than silently restarting with the same node.
+    expect((page2.data?.components as { edges: unknown[] }).edges).toHaveLength(
+      0,
+    );
   });
 
   it("paginates listings with stable cursors", async () => {
@@ -244,7 +277,7 @@ describe("ds-realistic resolution", () => {
           label
           isAbstract
           instanceCount
-          instances(first: 5) { edges { node { id __typename } } }
+          instances(first: 5) { edges { node { uri __typename } } }
           properties { property { label } required singular inherited }
         }
       }`,
@@ -257,9 +290,11 @@ describe("ds-realistic resolution", () => {
     const cls = result.data?.ontologyClass as Record<string, unknown>;
     expect(cls.instanceCount).toBe(1);
     const instances = cls.instances as {
-      edges: Array<{ node: { id: string; __typename: string } }>;
+      edges: Array<{ node: { uri: string; __typename: string } }>;
     };
-    expect(instances.edges[0]?.node.id).toBe("ds:global.component.button");
+    expect(instances.edges[0]?.node.uri).toBe(
+      "https://ds.canonical.com/global.component.button",
+    );
     expect(instances.edges[0]?.node.__typename).toBe("Component");
   });
 });
@@ -307,10 +342,10 @@ describe("coercion", () => {
     });
     const active = await run(compiled, `{ item(uri: "ex:i1") { active } }`);
     expect((active.data?.item as { active: boolean }).active).toBe(true);
-    // ex:label is reserved-renamed to exLabel; the renamed field is the one
-    // still running through coerce, so keep the coercion assertion on it.
-    const label = await run(compiled, `{ item(uri: "ex:i3") { exLabel } }`);
-    expect((label.data?.item as { exLabel: string }).exLabel).toBe("Tagged");
+    // ex:label keeps its own name now (nothing reserves `label` any more) and
+    // is the field still running through coerce, which strips the @en tag.
+    const label = await run(compiled, `{ item(uri: "ex:i3") { label } }`);
+    expect((label.data?.item as { label: string }).label).toBe("Tagged");
     const summary = await run(compiled, `{ item(uri: "ex:i5") { summary } }`);
     expect((summary.data?.item as { summary: string }).summary).toBe("");
   });
@@ -318,10 +353,17 @@ describe("coercion", () => {
   it("leaves the generic label null when no label-shaped value is asserted", async () => {
     const compiled = await setup(EDGE_CASES_TTL);
     // ex:i1 asserts only ex:active — every candidate predicate is exhausted,
-    // which must produce null rather than an empty string.
-    const result = await run(compiled, `{ item(uri: "ex:i1") { label } }`);
+    // which must produce null rather than an empty string. `title` is still
+    // total and falls all the way through to the IRI local name.
+    const result = await run(
+      compiled,
+      `{ item(uri: "ex:i1") { _meta { label title } } }`,
+    );
     expect(result.errors).toBeUndefined();
-    expect((result.data?.item as { label: string | null }).label).toBeNull();
+    expect((result.data?.item as Record<string, unknown>)._meta).toEqual({
+      label: null,
+      title: "i1",
+    });
   });
 });
 
@@ -354,14 +396,34 @@ ex:d2 a ex:Doc ;
 ex:d3 a ex:Doc .
 `;
 
+// Language-tagged and untagged literals side by side, so the exact-tag rule
+// and the untagged fallback are both observable end to end.
+const LANG_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Doc a owl:Class ; rdfs:label "Doc" .
+ex:code a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+
+# only tagged literals: "fr" finds nothing, and there is no untagged fallback
+ex:d1 a ex:Doc ; rdfs:label "The Widget"@en , "Das Widget"@de ; ex:code "d1" .
+
+# only an untagged literal: it answers every lang
+ex:d2 a ex:Doc ; rdfs:label "Plain label" ; ex:code "d2" .
+`;
+
 describe("generic descriptive chain", () => {
-  const selection = `{ label comment definition }`;
+  const selection = `{ _meta { label comment definition } }`;
+  const metaOf = (data: Record<string, unknown> | null | undefined) =>
+    (data?.doc as Record<string, unknown>)._meta;
 
   it("prefers the canonical rdfs/skos predicate over the local-name tier", async () => {
     const compiled = await setup(DESCRIPTIVE_TTL);
     const result = await run(compiled, `{ doc(uri: "ex:d1") ${selection} }`);
     expect(result.errors).toBeUndefined();
-    expect(result.data?.doc).toEqual({
+    expect(metaOf(result.data)).toEqual({
       label: "Canonical label",
       comment: "Canonical comment",
       definition: "Canonical definition",
@@ -373,7 +435,7 @@ describe("generic descriptive chain", () => {
     const result = await run(compiled, `{ doc(uri: "ex:d2") ${selection} }`);
     expect(result.errors).toBeUndefined();
     // each field resolves independently through its own chain
-    expect(result.data?.doc).toEqual({
+    expect(metaOf(result.data)).toEqual({
       label: "Tier name",
       comment: "Tier summary",
       definition: "Tier description",
@@ -384,26 +446,69 @@ describe("generic descriptive chain", () => {
     const compiled = await setup(DESCRIPTIVE_TTL);
     const result = await run(compiled, `{ doc(uri: "ex:d3") ${selection} }`);
     expect(result.errors).toBeUndefined();
-    expect(result.data?.doc).toEqual({
+    expect(metaOf(result.data)).toEqual({
       label: null,
       comment: null,
       definition: null,
     });
   });
 
-  it("leaves the ontology's own description field unreserved and intact", async () => {
+  it("leaves every ontology field name free — nothing is reserved but uri/_meta", async () => {
     const compiled = await setup(DESCRIPTIVE_TTL);
-    // `description` is NOT reserved: ex:description keeps its natural name
-    // while the generic field is called `definition`.
+    // ex:name / ex:summary / ex:description all keep their natural names; the
+    // generic answers live one level down, under _meta.
     const result = await run(
       compiled,
-      `{ doc(uri: "ex:d1") { description definition } }`,
+      `{ doc(uri: "ex:d1") { name summary description _meta { definition } } }`,
     );
     expect(result.errors).toBeUndefined();
     expect(result.data?.doc).toEqual({
+      name: "Tier name",
+      summary: "Tier summary",
       description: "Tier description",
-      definition: "Canonical definition",
+      _meta: { definition: "Canonical definition" },
     });
+  });
+
+  it("selects by language tag, defaulting the argument to en", async () => {
+    const compiled = await setup(LANG_TTL);
+    const result = await run(
+      compiled,
+      `{
+        d1: doc(uri: "ex:d1") { _meta { def: label, en: label(lang: "en"), de: label(lang: "de"), fr: label(lang: "fr"), t: title(lang: "fr") } }
+        d2: doc(uri: "ex:d2") { _meta { any: label, gb: label(lang: "en-GB"), t: title } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const d1 = (result.data?.d1 as Record<string, unknown>)._meta;
+    // no lang given → the argument default "en" is coerced in by graphql-js
+    expect(d1).toEqual({
+      def: "The Widget",
+      en: "The Widget",
+      de: "Das Widget",
+      // no fr literal and nothing untagged → label is null, title is not
+      fr: null,
+      t: "Das Widget",
+    });
+    const d2 = (result.data?.d2 as Record<string, unknown>)._meta;
+    // d2's only literal is untagged: it answers any lang (the sem deviation)…
+    expect(d2).toEqual({
+      any: "Plain label",
+      // …but an exact en-GB literal would have won; there is none, so the
+      // untagged fallback answers here too.
+      gb: "Plain label",
+      t: "Plain label",
+    });
+  });
+
+  it("prints the lang argument with its default in the SDL", async () => {
+    const compiled = await setup(LANG_TTL);
+    // graphql@17 renders `default: { value }` — the deprecated `defaultValue`
+    // would print nothing at all.
+    expect(compiled.result.sdl).toContain('label(lang: String = "en"): String');
+    expect(compiled.result.sdl).toContain(
+      'title(lang: String = "en"): String!',
+    );
   });
 
   it("self-referential chains resolve without infinite recursion", async () => {
@@ -423,6 +528,6 @@ describe("generic descriptive chain", () => {
       edges: Array<{ node: { uri: string } }>;
     };
     // the chain terminates because resolution is per-level, not recursive
-    expect(extendsConn.edges[0]?.node.uri).toBe("ex:i2");
+    expect(extendsConn.edges[0]?.node.uri).toBe("http://example.org/i2");
   });
 });

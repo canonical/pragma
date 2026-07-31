@@ -18,8 +18,11 @@ export {
   unwrapEntities,
 } from "./connection.js";
 export {
-  createDescriptiveResolver,
+  type Lexical,
+  resolveLabel,
+  resolveTitle,
   selectDescriptivePredicates,
+  selectLexicals,
 } from "./descriptive.js";
 export {
   createDatatypeListResolver,

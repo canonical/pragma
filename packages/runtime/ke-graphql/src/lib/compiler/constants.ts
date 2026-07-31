@@ -9,7 +9,7 @@
 // the consumer registered on the store.
 // =============================================================================
 
-import { OWL, RDF, RDFS, SH, SKOS, XSD } from "../shared/index.js";
+import { OWL, RDF, RDFS, SH, XSD } from "../shared/index.js";
 
 /** rdf:Property class IRI. */
 export const RDF_PROPERTY = `${RDF}Property`;
@@ -20,8 +20,6 @@ export const RDF_REST = `${RDF}rest`;
 /** rdf:nil list terminator IRI. */
 export const RDF_NIL = `${RDF}nil`;
 
-/** rdfs:comment predicate IRI. */
-export const RDFS_COMMENT = `${RDFS}comment`;
 /** rdfs:subClassOf predicate IRI. */
 export const RDFS_SUBCLASS_OF = `${RDFS}subClassOf`;
 /** rdfs:domain predicate IRI. */
@@ -50,9 +48,6 @@ export const OWL_ON_DATATYPE = `${OWL}onDatatype`;
 /** owl:withRestrictions predicate IRI (custom datatype facet list). */
 export const OWL_WITH_RESTRICTIONS = `${OWL}withRestrictions`;
 
-/** skos:definition predicate IRI. */
-export const SKOS_DEFINITION = `${SKOS}definition`;
-
 /** sh:NodeShape class IRI. */
 export const SH_NODE_SHAPE = `${SH}NodeShape`;
 /** sh:targetClass predicate IRI. */
@@ -78,3 +73,32 @@ export const XSD_PATTERN = `${XSD}pattern`;
  * serialized shape; deserialization rejects mismatched artifacts.
  */
 export const ARTIFACT_VERSION = 1;
+
+// ---------------------------------------------------------------------------
+// Provenance — the five-line header stamped onto the printed SDL.
+//
+// The values below are the DEFAULTS for the corresponding SchemaPluginOptions
+// fields; compose reads `options.x ?? DEFAULT_X` so an unconfigured build still
+// prints a complete, diffable header.
+// ---------------------------------------------------------------------------
+
+/**
+ * The converged-base contract version this emitter targets.
+ *
+ * PLACEHOLDER — "1" is a literal until the spec document carries a real
+ * version. It is emitted verbatim so that the day the spec is versioned, the
+ * only change is this constant.
+ */
+export const GRAPHQL_SCHEMA_SPEC = "1";
+
+/** Default projection mode (see SchemaPluginOptions.mode). */
+export const DEFAULT_MODE = "annotated";
+
+/** Default field-name prefixing policy (see SchemaPluginOptions.prefixing). */
+export const DEFAULT_PREFIXING = "none";
+
+/** Provider identity stamped in the header when the consumer names none. */
+export const DEFAULT_PROVIDER = "unknown";
+
+/** Source revision stamped in the header when the consumer names none. */
+export const DEFAULT_REVISION = "0";

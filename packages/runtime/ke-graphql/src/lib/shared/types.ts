@@ -55,9 +55,10 @@ export type DiagnosticCode =
   | "V016" // concrete class with subclasses — polymorphic returns flattened
   // Mapping
   | "M001" // name collision after GraphQL name mapping
-  | "M002" // reserved GraphQL name conflict
+  | "M002" // class local name is not a legal GraphQL name — sanitized
   | "M003" // custom mapping references unknown property/class
   | "M004" // type name collision auto-resolved by namespace prefixing
+  | "M005" // property claims a structural field name (uri/_meta)
   // Emission
   | "X002" // union type created for polymorphic range
   | "X003" // union type synthesized from anonymous range
@@ -223,8 +224,9 @@ export interface ClassNode {
   isAbstract: boolean;
   /**
    * Instances are exclusively blank nodes (from Pass 1 instanceStats) or
-   * forced via custom mapping. Embeddable types implement no Node
-   * interface and have no id/uri/_meta or root queries.
+   * forced via custom mapping. Embeddable types implement no Node interface
+   * and have no `uri` or root queries — but they DO carry `_meta`, because
+   * self-description is a fact about the class, not about identity.
    */
   embeddable: boolean;
   /** Properties whose rdfs:domain is this class. */
@@ -413,7 +415,9 @@ export type TripleValue =
 
 /**
  * The uniform parent value flowing through every resolver. Named entities
- * carry their prefixed URI; embedded blank-node values carry uri: null.
+ * carry their ABSOLUTE IRI — the same string SPARQL, the loaders, `Node.uri`,
+ * `node(id:)`, and the connection cursors all key on. Embedded blank-node
+ * values carry uri: null (a blank node has no stable identity to expose).
  */
 export interface EntityValue {
   uri: string | null;

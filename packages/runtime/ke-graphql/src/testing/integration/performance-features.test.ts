@@ -238,7 +238,7 @@ describe("slice-before-hydrate listings", () => {
 
     const page1 = await graphql({
       schema: result.schema,
-      source: `{ tiers(first: 1) { edges { cursor node { id name } } pageInfo { hasNextPage endCursor } } }`,
+      source: `{ tiers(first: 1) { edges { cursor node { uri name } } pageInfo { hasNextPage endCursor } } }`,
       contextValue: result.createContext(store),
     });
     expect(page1.errors).toBeUndefined();

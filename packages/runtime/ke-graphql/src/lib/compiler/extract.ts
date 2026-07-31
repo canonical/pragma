@@ -22,7 +22,9 @@ import {
   type RawShaclConstraint,
   type RawUnion,
   RDF_TYPE,
+  RDFS_COMMENT,
   RDFS_LABEL,
+  SKOS_DEFINITION,
 } from "../shared/index.js";
 import {
   OWL_ANNOTATION_PROPERTY,
@@ -36,7 +38,6 @@ import {
   OWL_WITH_RESTRICTIONS,
   RDF_FIRST,
   RDF_REST,
-  RDFS_COMMENT,
   RDFS_DOMAIN,
   RDFS_RANGE,
   RDFS_SUBCLASS_OF,
@@ -47,7 +48,6 @@ import {
   SH_PATH,
   SH_PROPERTY,
   SH_TARGET_CLASS,
-  SKOS_DEFINITION,
   XSD_PATTERN,
 } from "./constants.js";
 import getNamespace from "./getNamespace.js";

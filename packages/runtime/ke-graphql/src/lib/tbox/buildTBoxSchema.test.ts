@@ -24,14 +24,15 @@ import {
   compile,
   createStoreQueryFn,
 } from "../compiler/index.js";
-import type {
-  ClassNode,
-  CompilerContext,
-  MappedIR,
-  NamespaceInfo,
-  OntologyIR,
-  PropertyNode,
-  RawExtraction,
+import {
+  type ClassNode,
+  type CompilerContext,
+  type MappedIR,
+  type NamespaceInfo,
+  type OntologyIR,
+  type PropertyNode,
+  type RawExtraction,
+  RDFS_LABEL,
 } from "../shared/index.js";
 import buildTBoxSchema from "./buildTBoxSchema.js";
 
@@ -466,6 +467,21 @@ const buildSyntheticSchema = (): GraphQLSchema => {
           triples: new Map(),
         }),
       },
+      // EntityMeta whose typename is an INTERFACE, not a concrete type — the
+      // shape resolveEmbeddedTypename (resolver/templates.ts) produces when a
+      // blank node's rdf:type maps to an abstract class. mapped.types is keyed
+      // by concrete types only, so the precomputed chain map misses and the
+      // canonical-tier fallback has to answer.
+      interfaceMeta: {
+        type: tbox.entityMeta,
+        resolve: () => ({
+          uri: "urn:test#embedded",
+          typename: "AbstractThing",
+          triples: new Map([
+            [RDFS_LABEL, [{ kind: "literal", value: "From rdfs:label" }]],
+          ]),
+        }),
+      },
       // ClassNode with an empty stats map and a ghost own-property
       knownClass: {
         type: tbox.ontologyClass,
@@ -544,6 +560,37 @@ describe("TBox defensive branches (synthetic parents)", () => {
     // default (object property → not singular, not required) applies.
     expect(cp.required).toBe(false);
     expect(cp.singular).toBe(false);
+  });
+
+  it("falls back to the canonical predicate tier for an interface typename", async () => {
+    const schema = buildSyntheticSchema();
+    const result = await graphql({
+      schema,
+      contextValue: orphanContext,
+      source: `{ interfaceMeta { title label comment } }`,
+    });
+    expect(result.errors).toBeUndefined();
+    const meta = result.data?.interfaceMeta as Record<string, unknown>;
+    // The class-specific local-name tier is unknowable for an interface, but
+    // rdfs:label is still exactly right — no throw, no "", no non-null `!`.
+    expect(meta.label).toBe("From rdfs:label");
+    expect(meta.title).toBe("From rdfs:label");
+    // rdfs:comment is unasserted and the fallback chain has nothing else.
+    expect(meta.comment).toBeNull();
+  });
+
+  it("resolves title through the IRI local name when nothing is asserted", async () => {
+    const schema = buildSyntheticSchema();
+    const result = await graphql({
+      schema,
+      contextValue: orphanContext,
+      // orphanMeta has uri: null AND no triples → the typename tail.
+      source: `{ orphanMeta { title label } }`,
+    });
+    expect(result.errors).toBeUndefined();
+    const meta = result.data?.orphanMeta as Record<string, unknown>;
+    expect(meta.label).toBeNull();
+    expect(meta.title).toBe("NotAType");
   });
 
   it("returns an empty field list for an unmapped EntityMeta typename", async () => {

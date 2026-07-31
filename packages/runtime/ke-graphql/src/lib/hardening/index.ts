@@ -1,8 +1,9 @@
 /**
  * The hardening domain: the package's production-safety posture in one named
- * place — the IRI-injection guard for SPARQL interpolation, connection
- * page-size clamping, the query-depth validation rule, the bounded loader
- * cache, and production error masking. Defaults live in ./constants; the HTTP
+ * place — the IRI-injection guard for SPARQL interpolation, the absolute-IRI
+ * admission gate for `node(id:)`, connection page-size clamping, the
+ * query-depth validation rule, the bounded loader cache, and production error
+ * masking. Defaults live in ./constants; the HTTP
  * layer, the connection helpers, and the context factory consume these so
  * the policy is discoverable and tunable, never a magic number lurking in a
  * resolver.
@@ -19,5 +20,6 @@ export {
 } from "./constants.js";
 export { default as createBoundedCache } from "./createBoundedCache.js";
 export { default as createDepthLimitRule } from "./createDepthLimitRule.js";
+export { default as isAbsoluteIri } from "./isAbsoluteIri.js";
 export { default as isSafeIri } from "./isSafeIri.js";
 export { default as maskError } from "./maskError.js";

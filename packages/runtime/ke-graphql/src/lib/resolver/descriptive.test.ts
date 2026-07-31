@@ -1,16 +1,15 @@
 // =============================================================================
-// Descriptive predicate selection + the generic label/comment/definition
-// resolver: the canonical-first chain, the local-name fallback tier, the
-// filtering arms, and the literal walk.
+// Descriptive predicate selection + the language resolution behind
+// _meta.title/label/comment/definition: the canonical-first chain, the
+// local-name fallback tier, the filtering arms, the literal walk, exact-tag
+// matching with the untagged fallback, and title's total tier stack.
 // =============================================================================
 
 import { describe, expect, it } from "vitest";
 import {
   type ClassNode,
   COMMENT_LOCAL_NAMES,
-  type CompilerContext,
   DEFINITION_LOCAL_NAMES,
-  type EntityValue,
   LABEL_LOCAL_NAMES,
   type OntologyIR,
   type PropertyNode,
@@ -22,8 +21,11 @@ import {
   XSD,
 } from "../shared/index.js";
 import {
-  createDescriptiveResolver,
+  type Lexical,
+  resolveLabel,
+  resolveTitle,
   selectDescriptivePredicates,
+  selectLexicals,
 } from "./descriptive.js";
 
 const NS = "http://example.org/";
@@ -228,39 +230,25 @@ describe("selectDescriptivePredicates", () => {
   });
 });
 
-describe("createDescriptiveResolver", () => {
-  const ctx = {} as CompilerContext;
-
-  const entity = (triples: TripleSet): EntityValue => ({
-    uri: "ex:thing",
-    typename: "Thing",
-    triples,
-  });
-
-  const resolveWith = (predicates: string[], triples: TripleSet) =>
-    createDescriptiveResolver(predicates)(
-      entity(triples),
-      {},
-      ctx,
-      {} as never,
-    );
-
-  it("returns the canonical value when it is asserted", () => {
+describe("selectLexicals", () => {
+  it("takes the FIRST predicate that has any literal, whole value set", () => {
     const triples: TripleSet = new Map([
-      [RDFS_LABEL, [{ kind: "literal", value: "Canonical" }]],
-      [uri("name"), [{ kind: "literal", value: "Fallback" }]],
+      [
+        RDFS_LABEL,
+        [
+          { kind: "literal", value: "b" },
+          { kind: "literal", value: "a", language: "de" },
+        ],
+      ],
+      [uri("name"), [{ kind: "literal", value: "never" }]],
     ]);
-    expect(resolveWith([RDFS_LABEL, uri("name")], triples)).toBe("Canonical");
+    expect(selectLexicals(triples, [RDFS_LABEL, uri("name")])).toEqual([
+      { value: "b", lang: "" },
+      { value: "a", lang: "de" },
+    ]);
   });
 
-  it("falls through to the local-name tier when the canonical is absent", () => {
-    const triples: TripleSet = new Map([
-      [uri("name"), [{ kind: "literal", value: "Fallback" }]],
-    ]);
-    expect(resolveWith([RDFS_LABEL, uri("name")], triples)).toBe("Fallback");
-  });
-
-  it("skips URI and blank-node values and continues to the next predicate", () => {
+  it("skips a predicate whose only values are URIs or blank nodes", () => {
     const triples: TripleSet = new Map([
       [
         RDFS_LABEL,
@@ -271,17 +259,107 @@ describe("createDescriptiveResolver", () => {
       ],
       [uri("name"), [{ kind: "literal", value: "Fallback" }]],
     ]);
-    expect(resolveWith([RDFS_LABEL, uri("name")], triples)).toBe("Fallback");
-  });
-
-  it("returns null when every predicate is exhausted", () => {
-    expect(resolveWith([RDFS_LABEL, uri("name")], new Map())).toBeNull();
-  });
-
-  it("preserves an empty-string literal", () => {
-    const triples: TripleSet = new Map([
-      [RDFS_LABEL, [{ kind: "literal", value: "" }]],
+    expect(selectLexicals(triples, [RDFS_LABEL, uri("name")])).toEqual([
+      { value: "Fallback", lang: "" },
     ]);
-    expect(resolveWith([RDFS_LABEL], triples)).toBe("");
+  });
+
+  it("returns an empty list when every predicate is exhausted", () => {
+    expect(selectLexicals(new Map(), [RDFS_LABEL, uri("name")])).toEqual([]);
+  });
+});
+
+describe("resolveLabel", () => {
+  const untagged = (value: string): Lexical => ({ value, lang: "" });
+  const tagged = (value: string, lang: string): Lexical => ({ value, lang });
+
+  it("prefers an exact tag match, case-insensitively", () => {
+    const lexicals = [tagged("Zeug", "de"), tagged("Thing", "EN")];
+    expect(resolveLabel(lexicals, "en")).toBe("Thing");
+    expect(resolveLabel(lexicals, "de")).toBe("Zeug");
+  });
+
+  it("does NOT treat en-GB as a match for en (exact tags only)", () => {
+    expect(resolveLabel([tagged("Colour", "en-GB")], "en")).toBeNull();
+  });
+
+  it("falls back to the untagged literals — the documented sem deviation", () => {
+    // sem's resolve_label would return None here; nulling out an untagged
+    // corpus is precisely the outcome this package refuses.
+    expect(resolveLabel([untagged("Plain"), tagged("Zeug", "de")], "en")).toBe(
+      "Plain",
+    );
+  });
+
+  it("returns null when neither the exact tag nor an untagged literal exists", () => {
+    expect(resolveLabel([tagged("Zeug", "de")], "fr")).toBeNull();
+  });
+
+  it("returns null for no literals at all", () => {
+    expect(resolveLabel([], "en")).toBeNull();
+  });
+
+  it("picks the lexicographically least value, not the first encountered", () => {
+    // CONSTRUCT order is not guaranteed: a two-value predicate must answer the
+    // same string on every request regardless of the order it arrives in.
+    expect(resolveLabel([untagged("zebra"), untagged("aardvark")], "en")).toBe(
+      "aardvark",
+    );
+    expect(resolveLabel([untagged("aardvark"), untagged("zebra")], "en")).toBe(
+      "aardvark",
+    );
+  });
+
+  it("preserves an empty-string literal as a value, not a miss", () => {
+    expect(resolveLabel([untagged("")], "en")).toBe("");
+  });
+});
+
+describe("resolveTitle", () => {
+  const untagged = (value: string): Lexical => ({ value, lang: "" });
+  const tagged = (value: string, lang: string): Lexical => ({ value, lang });
+
+  it("returns the label when one resolves", () => {
+    expect(
+      resolveTitle([tagged("Thing", "en")], "en", uri("t1"), "Thing"),
+    ).toBe("Thing");
+  });
+
+  it("falls back to the least (tag, value) literal of ANY tag", () => {
+    // No en and nothing untagged → the any-tag tier, ordered by tag then value.
+    expect(
+      resolveTitle(
+        [tagged("Zeug", "de"), tagged("Chose", "fr"), tagged("Alt", "de")],
+        "en",
+        uri("t1"),
+        "Thing",
+      ),
+    ).toBe("Alt");
+  });
+
+  it("orders untagged ahead of tagged in the any-tag tier", () => {
+    // "fr" is requested, so the untagged pool is NOT the label tier here; the
+    // any-tag tier still has to put the untagged literal first.
+    expect(
+      resolveTitle(
+        [tagged("Zeug", "de"), untagged("zzz")],
+        "fr",
+        uri("t1"),
+        "Thing",
+      ),
+    ).toBe("zzz");
+  });
+
+  it("falls back to the IRI local name when no literal exists", () => {
+    expect(resolveTitle([], "en", uri("Widget"), "Thing")).toBe("Widget");
+  });
+
+  it("falls back to the whole IRI when the local name is empty", () => {
+    // A namespace IRI ending in "/" has no local name to show.
+    expect(resolveTitle([], "en", NS, "Thing")).toBe(NS);
+  });
+
+  it("falls back to the typename for a value with no IRI (embedded blank node)", () => {
+    expect(resolveTitle([], "en", null, "Review")).toBe("Review");
   });
 });

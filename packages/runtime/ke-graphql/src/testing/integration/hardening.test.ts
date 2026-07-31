@@ -1,7 +1,8 @@
 // =============================================================================
 // Hardening behaviors that need a compiled schema end-to-end: the forced-
 // abstract-with-instances guard (correctness C1 + V015) and the SPARQL
-// injection guard reaching through node(id:) to a null result.
+// injection guard reaching through node(id:) — now keyed on absolute IRIs
+// — to a null result.
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
@@ -63,7 +64,7 @@ describe("forced abstract with direct instances (C1 + V015)", () => {
     const context = result.createContext(store);
     const execution = await executeLocal({
       schema: result.schema,
-      source: `{ node(id: "ex:a1") { __typename } }`,
+      source: `{ node(id: "http://example.org/a1") { __typename } }`,
       contextValue: context,
     });
     expect(isIncrementalResults(execution)).toBe(false);
@@ -79,7 +80,7 @@ describe("forced abstract with direct instances (C1 + V015)", () => {
     const context = result.createContext(store);
     const execution = await executeLocal({
       schema: result.schema,
-      source: `{ node(id: "ex:d1") { __typename } }`,
+      source: `{ node(id: "http://example.org/d1") { __typename } }`,
       contextValue: context,
     });
     if (!isIncrementalResults(execution)) {

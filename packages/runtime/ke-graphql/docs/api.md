@@ -50,10 +50,14 @@ Build the per-request `CompilerContext` factory (fresh DataLoaders, or shared `"
 ### `CompilationError`
 Thrown by `compile` when composition fails (`C00x`). Carries `.diagnostics: Diagnostic[]`.
 
+Only composition errors prevent schema creation; every other diagnostic surfaces in `result.diagnostics` while the schema still builds, and the consumer picks its failure policy. `DiagnosticCode` is stable and append-only: `E001`, `B001–B004`, `V001–V016`, **`M001–M005`**, `X002–X003`, `C001–C003`. The naming band reads: `M001` duplicate field name (the second property is dropped, error), `M002` illegal class local name sanitized, `M003` mapping references nothing, `M004` type-name collision auto-resolved by namespace prefixing, `M005` property claims a structural field name — `uri` or `_meta` — and is dropped (error). `M001`/`M005` name the offending IRIs and both remedies; neither ever renames a field silently. See the README's diagnostics table for the full list.
+
 ### Result & key option shapes
 - **`CompilerResult`** — `{ schema, sdl, diagnostics, nameMap, mapped, createContext, clearLoaderCache }`.
 - **`SchemaPluginApi`** — `{ schema, diagnostics, nameMap, sdl, createContext, clearLoaderCache }` (the `store.api("ke-graphql")` surface).
-- **`SchemaPluginOptions`** — `mappings`, `extensions`, `relay`, `incremental`, `sdlOutput`, `nonNullOverrides`, `standardVocabFields`, `onRuntimeWarning`, `loaderCache` (`"request"`|`"process"`), `processCacheSize`.
+- **`SchemaPluginOptions`** — `mappings`, `extensions`, `relay`, `incremental`, `sdlOutput`, `nonNullOverrides`, `prefixing` (`"none"`|`"all"`), `mode` (`"auto"`|`"annotated"`|`"explicit"` — provenance only today), `provider`, `revision`, `standardVocabFields` (deprecated), `onRuntimeWarning`, `loaderCache` (`"request"`|`"process"`), `processCacheSize`.
+- **`FieldPrefixing`** — `"none"` (default) | `"all"`. `"all"` namespace-prefixes every generated field name (`lib:uri` → `libUri`), which is the schema-wide remedy for an `M001`/`M005` collision. An explicit `mappings[…].graphqlName` is never prefixed.
+- **`ProjectionMode`** — `"auto"` | `"annotated"` (default) | `"explicit"`. Typed, defaulted, and stamped into the SDL provenance header; its **effect** lands with the `graphql:*` annotations task, and the compiler deliberately does not branch on it before then.
 - **`CustomMapping`** — `{ graphqlName?, singular?, abstract?, embeddable?, inverse?: { graphqlName } }`, keyed by IRI or prefixed name in `CustomMappings`.
 
 ---
@@ -141,16 +145,26 @@ Constants: `DEFAULT_PAGE_SIZE` (50), `MAX_PAGE_SIZE` (100), `DEFAULT_MAX_QUERY_D
 
 ## URI conversion
 
+Identity inside the compiler is the absolute IRI everywhere. These two helpers serve the edges only.
+
 ```ts
 toPrefixed(fullUri: string, namespaces: ReadonlyMap<string, NamespaceInfo>): string         // longest-match → "lib:dune"
 toFull(prefixed: string, namespaces: ReadonlyMap<string, NamespaceInfo>): string | undefined // → full IRI, or undefined for unknown prefix
 ```
 
+`toPrefixed` is a **display** helper with zero internal callers, deliberately: every place it used to be called was a place the prefixed form could drift out of sync with a cursor. `toFull` expands the singular `<type>(uri:)` lookup argument, its only caller.
+
+```ts
+isAbsoluteIri(value: string): boolean   // RFC 3986 §3.1 scheme + non-empty remainder
+```
+
+The `node(id:)` admission gate — prefix-map-free, so the same id resolves identically regardless of registered prefixes. Mirrors sem's `parse_absolute_iri`.
+
 ---
 
 ## Types
 
-The exported IR and value types: `RawExtraction`, `OntologyIR`, `MappedIR`, `ClassNode`, `PropertyNode`, `MappedType`, `MappedInterface`, `MappedField`, `RangeSpec`, `CardinalitySpec`, `NameMap`, `NamespaceInfo`, `InstanceStats`, `EntityValue`, `TripleSet`, `TripleValue`, `Diagnostic`, `DiagnosticCode`, `DiagnosticSeverity`, `PassResult`, `QueryFn`, `ResolverTemplate`, `RuntimeWarningHandler`, `CompilerContext`, `ContextFactory`, `CompilerResult`, `SchemaPluginApi`, `SchemaPluginOptions`, `SchemaPluginExtra`, `CustomMapping`, `CustomMappings`, `NonNullOverrides`, `SchemaExtensions`, `SchemaExtensionsInput`, `SerializedExtraction`, `Connection`, `ConnectionArgs`, `UriPage`, `IncrementalResults`, `LocalExecutionResult`, `RelayLegacyPayload`, `StaticQuery`.
+The exported IR and value types: `RawExtraction`, `OntologyIR`, `MappedIR`, `ClassNode`, `PropertyNode`, `MappedType`, `MappedInterface`, `MappedField`, `RangeSpec`, `CardinalitySpec`, `NameMap`, `NamespaceInfo`, `InstanceStats`, `EntityValue`, `TripleSet`, `TripleValue`, `Diagnostic`, `DiagnosticCode`, `DiagnosticSeverity`, `PassResult`, `QueryFn`, `ResolverTemplate`, `RuntimeWarningHandler`, `CompilerContext`, `ContextFactory`, `CompilerResult`, `SchemaPluginApi`, `SchemaPluginOptions`, `SchemaPluginExtra`, `CustomMapping`, `CustomMappings`, `NonNullOverrides`, `FieldPrefixing`, `ProjectionMode`, `SchemaExtensions`, `SchemaExtensionsInput`, `SerializedExtraction`, `Connection`, `ConnectionArgs`, `UriPage`, `IncrementalResults`, `LocalExecutionResult`, `RelayLegacyPayload`, `StaticQuery`.
 
 ---
 

@@ -17,6 +17,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   type GraphQLFieldConfigMap,
+  GraphQLID,
   GraphQLInt,
   type GraphQLInterfaceType,
   GraphQLList,
@@ -24,26 +25,63 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { toFull, toPrefixed } from "../dataloader/index.js";
 import {
   connectionFromPage,
   paginateUriWindow,
+  resolveLabel,
+  resolveTitle,
+  selectDescriptivePredicates,
+  selectLexicals,
   unwrapEntities,
 } from "../resolver/index.js";
 import {
   type ClassNode,
+  COMMENT_LOCAL_NAMES,
   CONNECTION_ARGS,
   type CompilerContext,
+  DEFINITION_LOCAL_NAMES,
   type EntityValue,
+  LABEL_LOCAL_NAMES,
+  LANG_ARGS,
   type MappedIR,
   type NamespaceInfo,
   type PropertyNode,
+  RDFS_COMMENT,
+  RDFS_LABEL,
+  SKOS_DEFINITION,
+  SKOS_PREF_LABEL,
 } from "../shared/index.js";
 
 interface ClassPropertyValue {
   propertyUri: string;
   classUri: string;
 }
+
+/** The canonical (universal) predicate tier of each descriptive field. */
+const LABEL_UNIVERSAL = [RDFS_LABEL, SKOS_PREF_LABEL];
+const COMMENT_UNIVERSAL = [RDFS_COMMENT];
+const DEFINITION_UNIVERSAL = [SKOS_DEFINITION];
+
+/** The three predicate chains a single GraphQL type resolves through. */
+interface DescriptiveChains {
+  label: readonly string[];
+  comment: readonly string[];
+  definition: readonly string[];
+}
+
+/**
+ * The chains used when a parent's typename is not a concrete mapped type.
+ * `EntityValue.typename` can carry an INTERFACE name (resolveEmbeddedTypename
+ * maps a blank node's rdf:type through the global name map, which also holds
+ * abstract classes), and mapped.types is keyed by concrete types only. The
+ * canonical tier is still exactly right there; only the class-specific
+ * local-name tier is unknowable.
+ */
+const FALLBACK_CHAINS: DescriptiveChains = {
+  label: LABEL_UNIVERSAL,
+  comment: COMMENT_UNIVERSAL,
+  definition: DEFINITION_UNIVERSAL,
+};
 
 /**
  * Get an annotation value on a property by the annotation property's local
@@ -86,6 +124,36 @@ export default function buildTBoxSchema(
 ): TBoxSchema {
   const { ir } = mapped;
 
+  // Descriptive chains are computed ONCE per GraphQL type, here at build time.
+  // selectDescriptivePredicates walks a class's whole allProperties list, so
+  // calling it inside a resolver would repeat that walk for every descriptive
+  // field of every node of every page.
+  const chainsByType = new Map<string, DescriptiveChains>();
+  for (const type of mapped.types.values()) {
+    chainsByType.set(type.graphqlName, {
+      label: selectDescriptivePredicates(
+        type.owlUri,
+        ir,
+        LABEL_UNIVERSAL,
+        LABEL_LOCAL_NAMES,
+      ),
+      comment: selectDescriptivePredicates(
+        type.owlUri,
+        ir,
+        COMMENT_UNIVERSAL,
+        COMMENT_LOCAL_NAMES,
+      ),
+      definition: selectDescriptivePredicates(
+        type.owlUri,
+        ir,
+        DEFINITION_UNIVERSAL,
+        DEFINITION_LOCAL_NAMES,
+      ),
+    });
+  }
+  const chainsFor = (typename: string): DescriptiveChains =>
+    chainsByType.get(typename) ?? FALLBACK_CHAINS;
+
   const propertyKind = new GraphQLEnumType({
     name: "PropertyKind",
     values: {
@@ -114,7 +182,7 @@ export default function buildTBoxSchema(
     name: "OntologyProperty",
     fields: () => ({
       uri: {
-        type: new GraphQLNonNull(GraphQLString),
+        type: new GraphQLNonNull(GraphQLID),
         resolve: (p) => p.uri,
       },
       label: { type: GraphQLString, resolve: (p) => p.label },
@@ -215,7 +283,12 @@ export default function buildTBoxSchema(
   >({
     name: "OntologyClass",
     fields: () => ({
-      uri: { type: new GraphQLNonNull(GraphQLString), resolve: (c) => c.uri },
+      // ID!, matching Node.uri: `uri` is the identity currency across the whole
+      // base, and an asymmetry between the two TBox siblings would be a defect.
+      // NOT `implements Node`: Node forces a non-null `_meta`, whose resolvers
+      // all key off EntityValue.typename — an OntologyClass parent is a
+      // ClassNode with no typename, so `_meta.type` would error at runtime.
+      uri: { type: new GraphQLNonNull(GraphQLID), resolve: (c) => c.uri },
       label: { type: GraphQLString, resolve: (c) => c.label },
       definition: { type: GraphQLString, resolve: (c) => c.definition },
       superclass: {
@@ -253,14 +326,11 @@ export default function buildTBoxSchema(
         description:
           "Named instances of this class (blank-node instances are embeddable and not standalone-resolvable).",
         resolve: async (c, args, ctx) => {
-          const fullUris = await ctx.listLoader.load(c.uri);
-          const prefixed = fullUris.map((uri) =>
-            toPrefixed(uri, mapped.namespaces),
-          );
-          const page = paginateUriWindow(prefixed, args);
-          const entities = await ctx.entityLoader.loadMany(
-            page.window.map((uri) => toFull(uri, mapped.namespaces) ?? uri),
-          );
+          // The loader's list is already in absolute-IRI currency — the same
+          // currency the cursors encode and EntityValue.uri carries.
+          const uris = await ctx.listLoader.load(c.uri);
+          const page = paginateUriWindow(uris, args);
+          const entities = await ctx.entityLoader.loadMany(page.window);
           return connectionFromPage(unwrapEntities(entities), page);
         },
       },
@@ -311,8 +381,58 @@ export default function buildTBoxSchema(
 
   const entityMeta = new GraphQLObjectType<EntityValue, CompilerContext>({
     name: "EntityMeta",
-    description: "Self-describing TBox access attached to ABox types.",
+    description:
+      "Self-describing TBox access attached to every generated type, plus the generic descriptive fields a lens renders without knowing the concrete type.",
     fields: () => ({
+      title: {
+        type: new GraphQLNonNull(GraphQLString),
+        args: LANG_ARGS,
+        description:
+          "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI. Never null — render this.",
+        resolve: (parent, args: { lang: string }) =>
+          resolveTitle(
+            selectLexicals(parent.triples, chainsFor(parent.typename).label),
+            args.lang,
+            parent.uri,
+            parent.typename,
+          ),
+      },
+      label: {
+        type: GraphQLString,
+        args: LANG_ARGS,
+        description:
+          "rdfs:label, else skos:prefLabel, else the class's own name/title predicate — exact language tag, else untagged. Null when none is asserted; `title` is the total alternative.",
+        resolve: (parent, args: { lang: string }) =>
+          resolveLabel(
+            selectLexicals(parent.triples, chainsFor(parent.typename).label),
+            args.lang,
+          ),
+      },
+      comment: {
+        type: GraphQLString,
+        args: LANG_ARGS,
+        description:
+          "Incidental prose: rdfs:comment, else the class's own summary predicate. Null when none is asserted.",
+        resolve: (parent, args: { lang: string }) =>
+          resolveLabel(
+            selectLexicals(parent.triples, chainsFor(parent.typename).comment),
+            args.lang,
+          ),
+      },
+      definition: {
+        type: GraphQLString,
+        args: LANG_ARGS,
+        description:
+          "Defining prose: skos:definition, else the class's own description predicate. Null when none is asserted.",
+        resolve: (parent, args: { lang: string }) =>
+          resolveLabel(
+            selectLexicals(
+              parent.triples,
+              chainsFor(parent.typename).definition,
+            ),
+            args.lang,
+          ),
+      },
       type: {
         type: new GraphQLNonNull(ontologyClass),
         resolve: (parent) => {

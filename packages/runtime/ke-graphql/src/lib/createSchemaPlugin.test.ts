@@ -128,7 +128,9 @@ describe("createSchemaPlugin", () => {
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.hello).toBe("world");
-    expect((result.data?.thing as { shout: string }).shout).toBe("ex:widget!");
+    expect((result.data?.thing as { shout: string }).shout).toBe(
+      "http://example.org/widget!",
+    );
   });
 
   it("supports the extensions factory form receiving generated types", async () => {
@@ -200,22 +202,21 @@ describe("createSchemaPlugin", () => {
     const api = store.api<SchemaPluginApi>("ke-graphql");
     const result = await graphql({
       schema: api?.schema as NonNullable<typeof api>["schema"],
-      source: `{ thing(uri: "ex:widget") { xLabel label name } }`,
+      source: `{ thing(uri: "ex:widget") { label name _meta { label } } }`,
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
     const thing = result.data?.thing as {
-      xLabel: string;
       label: string;
       name: string;
+      _meta: { label: string };
     };
-    // "label" is reserved for the generic node field, so this opt-in lands on
-    // the pre-existing M002 rename path (no IR namespace for rdfs: → "x").
-    // The opt-in keeps its predicate: xLabel reads rdfs:label.
-    expect(thing.xLabel).toBe("The Widget");
-    // The generic chain's FIRST link is also rdfs:label, so it reports the
-    // same literal — the opt-in's value is not lost or altered, only renamed.
+    // The opt-in now lands on the name it asked for: nothing reserves `label`
+    // any more, so the documented mapping produces the documented field.
     expect(thing.label).toBe("The Widget");
+    // The generic chain's FIRST link is also rdfs:label, so _meta reports the
+    // same literal — the opt-in's value is neither lost nor renamed.
+    expect(thing._meta.label).toBe("The Widget");
     // Provenance check: had the generic chain fallen through to its
     // local-name tier (ex:name) it would read "Widget" instead.
     expect(thing.name).toBe("Widget");

@@ -3,14 +3,12 @@ import { describe, expect, it } from "vitest";
 import type {
   CompilerContext,
   EntityValue,
-  InterfacePlan,
   MappedIR,
   MappedType,
   NameMap,
   NamespaceInfo,
-  TypePlan,
 } from "../shared/index.js";
-import type { FieldPlan, SchemaPlan } from "./emit.js";
+import type { FieldPlan, InterfacePlan, SchemaPlan, TypePlan } from "./emit.js";
 import wireRelay from "./wireRelay.js";
 
 type Resolve = GraphQLFieldResolver<EntityValue, CompilerContext>;
@@ -162,9 +160,7 @@ describe("wireRelay connection wrapping", () => {
 });
 
 describe("wireRelay Node membership", () => {
-  const DESCRIPTIVE = ["kind", "label", "comment", "definition"];
-
-  it("skips embeddable-only interfaces but wires concrete ones", () => {
+  it("gives embeddable-only interfaces _meta alone and concrete ones uri + _meta", () => {
     const embOnly = ifacePlan({ name: "EmbOnly", embeddableOnly: true });
     const concrete = ifacePlan({ name: "Concrete" });
 
@@ -192,21 +188,19 @@ describe("wireRelay Node membership", () => {
     };
 
     wireRelay(plan);
-    // embeddable-only interface: no structural fields, no Node parent
-    expect(plan.interfaces.get("EmbOnly")?.fields.has("id")).toBe(false);
-    for (const name of DESCRIPTIVE) {
-      expect(plan.interfaces.get("EmbOnly")?.fields.has(name)).toBe(false);
-    }
+    // embeddable-only interface: _meta but no uri, and no Node parent
+    expect([...(plan.interfaces.get("EmbOnly")?.fields.keys() ?? [])]).toEqual([
+      "_meta",
+    ]);
     expect(plan.interfaces.get("EmbOnly")?.parents).not.toContain("Node");
-    // concrete interface: id/uri/kind/label/description/_meta injected
-    expect(plan.interfaces.get("Concrete")?.fields.has("id")).toBe(true);
-    for (const name of DESCRIPTIVE) {
-      expect(plan.interfaces.get("Concrete")?.fields.has(name)).toBe(true);
-    }
+    // concrete interface: uri + _meta, Node parent
+    expect([...(plan.interfaces.get("Concrete")?.fields.keys() ?? [])]).toEqual(
+      ["uri", "_meta"],
+    );
     expect(plan.interfaces.get("Concrete")?.parents).toContain("Node");
   });
 
-  it("wires kind/label/comment/definition onto concrete types only", () => {
+  it("wires uri: ID! + _meta on concrete types and _meta alone on embeddables", () => {
     const plan: SchemaPlan = {
       types: new Map([
         ["Thing", typePlan({ name: "Thing" })],
@@ -231,40 +225,24 @@ describe("wireRelay Node membership", () => {
     };
 
     wireRelay(plan);
-    const thing = plan.types.get("Thing")?.fields;
-    expect([...(thing?.keys() ?? [])]).toEqual([
-      "id",
-      "uri",
-      "kind",
-      "label",
-      "comment",
-      "definition",
-      "_meta",
-    ]);
-    expect(thing?.get("kind")?.type).toEqual({
-      base: "String",
+    const thing = plan.types.get("Thing");
+    expect([...(thing?.fields.keys() ?? [])]).toEqual(["uri", "_meta"]);
+    expect(thing?.fields.get("uri")?.type).toEqual({
+      base: "ID",
       kind: "scalar",
       list: false,
       nonNull: true,
     });
-    for (const name of ["label", "comment", "definition"]) {
-      expect(thing?.get(name)?.type.nonNull).toBe(false);
-    }
-    for (const name of DESCRIPTIVE) {
-      expect(plan.types.get("Emb")?.fields.has(name)).toBe(false);
-    }
+    expect(thing?.interfaces).toContain("Node");
+    // R9: the embeddable is no longer skipped — it gets _meta but never uri,
+    // which is the only thing standing between a zero-property embeddable and
+    // a C003 "must define one or more fields" failure.
+    const emb = plan.types.get("Emb");
+    expect([...(emb?.fields.keys() ?? [])]).toEqual(["_meta"]);
+    expect(emb?.interfaces).not.toContain("Node");
   });
 
-  const kindOf = (plan: SchemaPlan, typename: string): unknown => {
-    const resolve = plan.types.get("Thing")?.fields.get("kind")?.resolve;
-    if (!resolve) {
-      throw new Error("expected a kind resolver");
-    }
-    const parent: EntityValue = { uri: "ex:t1", typename, triples: new Map() };
-    return (resolve as Resolve)(parent, {}, {} as CompilerContext, {} as never);
-  };
-
-  const kindPlan = (map: NameMap): SchemaPlan => {
+  it("uri and _meta resolve straight off the parent EntityValue", () => {
     const plan: SchemaPlan = {
       types: new Map([["Thing", typePlan({ name: "Thing" })]]),
       interfaces: new Map(),
@@ -274,7 +252,7 @@ describe("wireRelay Node membership", () => {
         types: new Map([["Thing", mappedType("Thing")]]),
         interfaces: new Map(),
         unions: new Map(),
-        nameMap: map,
+        nameMap,
         namespaces,
         ir: {
           classes: new Map(),
@@ -285,22 +263,21 @@ describe("wireRelay Node membership", () => {
       } as unknown as MappedIR,
     };
     wireRelay(plan);
-    return plan;
-  };
-
-  it("kind resolves the prefixed OWL class URI when the name map hits", () => {
-    const hitMap: NameMap = {
-      toGraphQL: () => undefined,
-      toOWL: (name) =>
-        name === "Thing" ? "http://example.org/Thing" : undefined,
-      entries: () => [][Symbol.iterator](),
+    const parent: EntityValue = {
+      uri: "http://example.org/t1",
+      typename: "Thing",
+      triples: new Map(),
     };
-    expect(kindOf(kindPlan(hitMap), "Thing")).toBe("ex:Thing");
-  });
-
-  it("kind falls back to the typename when the name map misses", () => {
-    // the shared stub's toOWL always returns undefined
-    expect(kindOf(kindPlan(nameMap), "Thing")).toBe("Thing");
+    const fields = plan.types.get("Thing")?.fields;
+    const uriResolve = fields?.get("uri")?.resolve as Resolve;
+    const metaResolve = fields?.get("_meta")?.resolve as Resolve;
+    // the ABSOLUTE IRI, verbatim — no prefixing anywhere in the identity path
+    expect(uriResolve(parent, {}, {} as CompilerContext, {} as never)).toBe(
+      "http://example.org/t1",
+    );
+    expect(metaResolve(parent, {}, {} as CompilerContext, {} as never)).toBe(
+      parent,
+    );
   });
 });
 
@@ -381,7 +358,7 @@ describe("wireRelay root query fields", () => {
     expect(await singular(undefined, {}, dummyCtx, {} as never)).toBeNull();
   });
 
-  it("singular and listing resolvers fall back to the raw URI on an unknown prefix", async () => {
+  it("node rejects an id that is not a syntactically absolute IRI", async () => {
     const plan = thingPlan();
     const loaded: string[] = [];
     const ctx = {
@@ -390,33 +367,59 @@ describe("wireRelay root query fields", () => {
           loaded.push(key);
           return null;
         },
+      },
+    } as unknown as CompilerContext;
+    const node = resolverOf(plan, "node");
+    // "Thing" has no scheme at all: rejected before the loader is touched.
+    expect(await node(undefined, { id: "Thing" }, ctx, {} as never)).toBeNull();
+    expect(loaded).toEqual([]);
+    // an absolute IRI reaches the loader verbatim — no prefix map consulted
+    await node(undefined, { id: "http://example.org/t1" }, ctx, {} as never);
+    expect(loaded).toEqual(["http://example.org/t1"]);
+  });
+
+  it("the singular lookup still expands a prefixed uri, falling back to the raw value", async () => {
+    const plan = thingPlan();
+    const loaded: string[] = [];
+    const ctx = {
+      entityLoader: {
+        load: async (key: string) => {
+          loaded.push(key);
+          return null;
+        },
+      },
+    } as unknown as CompilerContext;
+    const singular = resolverOf(plan, "thing");
+    // registered prefix → expanded (the argument is the one prefixed-form seam)
+    await singular(undefined, { uri: "ex:thing" }, ctx, {} as never);
+    expect(loaded).toContain("http://example.org/thing");
+    // unknown prefix → toFull undefined → `?? args.uri`
+    await singular(undefined, { uri: "zz:thing" }, ctx, {} as never);
+    expect(loaded).toContain("zz:thing");
+  });
+
+  it("the listing paginates and hydrates the loader's IRIs with no conversion", async () => {
+    const plan = thingPlan();
+    const loaded: string[] = [];
+    const ctx = {
+      entityLoader: {
         loadMany: async (keys: string[]) => {
           loaded.push(...keys);
           return keys.map(() => null);
         },
       },
-      // a URI with no registered namespace: toPrefixed leaves it unchanged and
-      // the subsequent toFull cannot expand it → the `?? uri` fallback fires.
+      // an IRI with no registered namespace: it must still round-trip intact,
+      // because the listing no longer converts at all.
       listLoader: { load: async () => ["urn:unmapped"] },
     } as unknown as CompilerContext;
 
-    // unknown prefix → toFull undefined → singular uses `?? args.uri`
-    await resolverOf(plan, "thing")(
-      undefined,
-      { uri: "zz:thing" },
-      ctx,
-      {} as never,
-    );
-    expect(loaded).toContain("zz:thing");
-
-    // listing → toFull undefined per window URI → `?? uri` fallback
     const conn = (await resolverOf(plan, "things")(
       undefined,
       {},
       ctx,
       {} as never,
     )) as { edges: unknown[] };
-    expect(loaded).toContain("urn:unmapped");
+    expect(loaded).toEqual(["urn:unmapped"]);
     expect(conn.edges).toEqual([]);
   });
 });

@@ -7,7 +7,6 @@
 // =============================================================================
 
 import type { GraphQLFieldResolver } from "graphql";
-import { toFull, toPrefixed } from "../dataloader/index.js";
 import {
   type CompilerContext,
   type EntityValue,
@@ -38,13 +37,12 @@ const paginateAndHydrate = async (
   args: ConnectionArgs,
   ctx: CompilerContext,
 ) => {
-  const prefixed = [...new Set(fullUris)]
-    .map((uri) => toPrefixed(uri, ctx.namespaces))
-    .sort((a, b) => a.localeCompare(b));
-  const page = paginateUriWindow(prefixed, args);
-  const entities = await ctx.entityLoader.loadMany(
-    page.window.map((uri) => toFull(uri, ctx.namespaces) ?? uri),
-  );
+  // Absolute IRIs throughout: the sorted window IS the cursor currency and IS
+  // the loader key. Any conversion here would desynchronize `after:` cursors
+  // from EntityValue.uri without producing an error.
+  const uris = [...new Set(fullUris)].sort((a, b) => a.localeCompare(b));
+  const page = paginateUriWindow(uris, args);
+  const entities = await ctx.entityLoader.loadMany(page.window);
   return connectionFromPage(unwrapEntities(entities), page);
 };
 

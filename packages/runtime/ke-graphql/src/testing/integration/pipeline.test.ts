@@ -58,15 +58,18 @@ describe("minimal fixture", () => {
     // datatype properties default to singular
     expect(String(fields.name?.type)).toBe("String");
     expect(String(fields.count?.type)).toBe("Int");
-    // structural fields
-    expect(String(fields.id?.type)).toBe("ID!");
-    expect(String(fields.uri?.type)).toBe("String!");
+    // structural fields — exactly two, and `id` is gone
+    expect(String(fields.uri?.type)).toBe("ID!");
     expect(String(fields._meta?.type)).toBe("EntityMeta!");
-    // generic descriptive fields on every non-embeddable node
-    expect(String(fields.kind?.type)).toBe("String!");
-    expect(String(fields.label?.type)).toBe("String");
-    expect(String(fields.comment?.type)).toBe("String");
-    expect(String(fields.definition?.type)).toBe("String");
+    expect(fields.id).toBeUndefined();
+    expect(fields.kind).toBeUndefined();
+    // the descriptive fields live behind _meta now, with a lang argument
+    const meta = result.schema.getType("EntityMeta") as GraphQLObjectType;
+    expect(String(meta.getFields().title?.type)).toBe("String!");
+    expect(String(meta.getFields().label?.type)).toBe("String");
+    expect(String(meta.getFields().comment?.type)).toBe("String");
+    expect(String(meta.getFields().definition?.type)).toBe("String");
+    expect(result.sdl).toContain('title(lang: String = "en"): String!');
     expect(thing.getInterfaces().map((i) => i.name)).toContain("Node");
     // root queries
     const query = result.schema.getQueryType()?.getFields();
@@ -151,13 +154,47 @@ describe("blank nodes fixture", () => {
     expect(codes(result)).toContain("V001");
     const example = result.schema.getType("Example") as GraphQLObjectType;
     expect(example.getInterfaces()).toHaveLength(0);
-    expect(example.getFields().id).toBeUndefined();
-    expect(example.getFields()._meta).toBeUndefined();
+    expect(example.getFields().uri).toBeUndefined();
+    // R9: an embeddable still carries _meta — self-description is a fact about
+    // the class, not about identity.
+    expect(String(example.getFields()._meta?.type)).toBe("EntityMeta!");
     const standard = result.schema.getType("Standard") as GraphQLObjectType;
     // plain list, not a connection
     expect(String(standard.getFields().examples?.type)).toBe("[Example!]!");
     // no root query for embeddable types
     expect(result.schema.getQueryType()?.getFields().example).toBeUndefined();
+  });
+});
+
+describe("zero-property embeddable (R9)", () => {
+  // ex:Marker is instantiated ONLY as a bare blank node with no properties of
+  // its own: blank-only instances make it embeddable, and it declares nothing.
+  // Before _meta was extended to embeddables this schema FAILED to build with
+  // C003 ("Type Marker must define one or more fields") — this fixture is the
+  // proof that the change is load-bearing, not decorative.
+  const BARE_EMBEDDABLE_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Doc a owl:Class ; rdfs:label "Doc" .
+ex:Marker a owl:Class ; rdfs:label "Marker" .
+
+ex:title a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+ex:hasMarker a owl:ObjectProperty ; rdfs:domain ex:Doc ; rdfs:range ex:Marker .
+
+ex:d1 a ex:Doc ; ex:title "Titled" ; ex:hasMarker [ a ex:Marker ] .
+`;
+
+  it("builds a class with no properties at all, carrying _meta alone", async () => {
+    const result = await compileFixture(BARE_EMBEDDABLE_TTL);
+    // The schema exists: no C003 at all.
+    expect(codes(result)).not.toContain("C003");
+    const marker = result.schema.getType("Marker") as GraphQLObjectType;
+    expect(Object.keys(marker.getFields())).toEqual(["_meta"]);
+    expect(marker.getInterfaces()).toHaveLength(0);
+    expect(result.sdl).toContain("type Marker {");
   });
 });
 
@@ -249,7 +286,24 @@ describe("ds-realistic fixture", () => {
     );
     // ds:Property is embeddable: detected from blank-only instance stats
     const property = result.schema.getType("Property") as GraphQLObjectType;
-    expect(property.getFields().id).toBeUndefined();
+    expect(property.getFields().uri).toBeUndefined();
+  });
+});
+
+describe("provenance header", () => {
+  it("stamps five comment lines ahead of the printed SDL", async () => {
+    const result = await compileFixture(MINIMAL_TTL, {
+      mode: "explicit",
+      provider: "ex",
+      revision: "deadbeef",
+    });
+    expect(result.sdl.split("\n").slice(0, 5)).toEqual([
+      "# ke-graphql · canonical SDL",
+      "# graphql-schema-spec: 1",
+      "# mode: explicit",
+      "# provider: ex",
+      "# revision: deadbeef",
+    ]);
   });
 });
 
@@ -264,7 +318,7 @@ describe("failure modes", () => {
   it("relay: false produces a schema without Node wiring", async () => {
     const result = await compileFixture(MINIMAL_TTL, { relay: false });
     const thing = result.schema.getType("Thing") as GraphQLObjectType;
-    expect(thing.getFields().id).toBeUndefined();
+    expect(thing.getFields().uri).toBeUndefined();
     expect(result.schema.getQueryType()?.getFields().node).toBeUndefined();
   });
 

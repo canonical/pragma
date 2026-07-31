@@ -22,7 +22,6 @@ import {
   type TripleSet,
   type TripleValue,
 } from "../shared/index.js";
-import { toPrefixed } from "./uris.js";
 
 /** Separator that cannot occur in IRIs or well-formed literals. */
 const SEP = "\u0000";
@@ -180,7 +179,9 @@ export default function createEntityLoader(
         return null; // URI exists but has no known class assertion
       }
       return {
-        uri: toPrefixed(uri, mapped.namespaces),
+        // The absolute IRI verbatim: loader key, EntityValue.uri, Node.uri, and
+        // the connection cursor are all this one string.
+        uri,
         typename,
         triples,
       } satisfies EntityValue;

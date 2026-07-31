@@ -23,7 +23,7 @@ Each pass is a pure function from one IR to the next (Pass 1 is the only one tha
 | 3 Validate | `validate.ts` | `OntologyIR` → `OntologyIR` (+ diagnostics) | the V-series diagnostics (blank-node-only class, domainless property, asymmetric inverse, boolean-as-string, SHACL specifics, abstract-with-instances `V015`, supertype flattening `V016`). Never mutates the IR; never aborts. |
 | 4 Map | `map.ts` | `OntologyIR` → `MappedIR` | GraphQL naming rules, collision auto-resolution (namespace prefixing), synthetic inverse field synthesis, the bidirectional name map. |
 | 5 Emit | `emit.ts` | `MappedIR` → `SchemaPlan` | a field plan + resolver per field (one of the eight resolver templates), because graphql-js type objects are immutable once constructed. |
-| 6 WireRelay | `wireRelay.ts` | `SchemaPlan` → `SchemaPlan` | the `Node` interface (id + uri) on types *and* qualifying interfaces, cursor connections, the `node(id:)` and per-type `<type>(uri:)` / listing root fields. |
+| 6 WireRelay | `wireRelay.ts` | `SchemaPlan` → `SchemaPlan` | the `Node` interface (`uri` + `_meta`) on types *and* qualifying interfaces, `_meta` alone on embeddables, cursor connections, the `node(id:)` and per-type `<type>(uri:)` / listing root fields. |
 | 7 Compose | `compose.ts` | `SchemaPlan` → `GraphQLSchema` | the single construction point: builds every graphql-js type once, attaches the TBox schema and consumer extensions, runs `validateSchema`, prints the SDL. |
 
 `runPasses.ts` threads 2→7; `compile.ts` runs `extract` then `runPasses`. Splitting construction (Pass 5/6 plan, Pass 7 build) is deliberate — graphql-js objects can't be mutated after creation, so the plan accumulates intent and compose realizes it in one shot.
@@ -39,13 +39,31 @@ The intermediate representations are exported public contracts (like Prisma's DM
 
 ## 4. The OWL → GraphQL model
 
-- **Naming.** Field names strip a leading `has`/`is`; list fields are pluralized (the pluralizer knows the irregulars). Illegal GraphQL names are sanitized; collisions are auto-resolved by namespace prefixing (diagnostic `M004`) or, if unresolvable, reported as `M001`.
+- **Naming.** Field names strip a leading `has`/`is`; list fields are pluralized (the pluralizer knows the irregulars). Illegal class local names are sanitized (`M002`); TYPE-name collisions are auto-resolved by namespace prefixing (`M004`) or, if unresolvable, reported as `M001`. FIELD names are never silently renamed: the compiler owns exactly `uri` and `_meta`, and a property claiming one is dropped with an error-severity `M005` naming the IRI and both remedies (a `mappings` rename, or `prefixing: "all"` to namespace-prefix every field at once). A duplicate field name drops the second property with `M001` naming both IRIs. The reason is the merge in Pass 6: `new Map([...structural, ...generated])` keeps a duplicate key's first POSITION but its last VALUE, so a same-named ontology field would replace the structural `uri` and break the `Node` interface at `validateSchema` — with no diagnostic pointing at the cause.
 - **Cardinality.** A property is singular when a custom mapping says so, else if `owl:FunctionalProperty`, else SHACL `maxCount 1`, else the kind default (datatype → singular, object → list). List items are always non-null (`[T!]!`).
-- **Embeddable types.** A class whose instances are exclusively blank nodes has no URI, so no global ID, no cursor, no standalone resolution. It is emitted without `Node`/`id`/`_meta`, as a plain `[T!]!` list, and resolved inline from the parent's own triples — fetched in the parent's CONSTRUCT closure (a per-blank follow-up query is invalid SPARQL: blank-node labels are existential and not stable across result sets).
+- **Embeddable types.** A class whose instances are exclusively blank nodes has no IRI, so no cursor and no standalone resolution. It is emitted without `Node` and without `uri`, as a plain `[T!]!` list, and resolved inline from the parent's own triples — fetched in the parent's CONSTRUCT closure (a per-blank follow-up query is invalid SPARQL: blank-node labels are existential and not stable across result sets). It DOES carry `_meta`: self-description is a fact about the class, not about identity, and without it a class with zero properties of its own would emit a fieldless type and fail `validateSchema` with `C003`.
 - **Interfaces & abstract classes.** A class with subclasses and *no direct instances* is abstract → an `interface`. If all of its concrete implementors are non-embeddable it implements `Node`, so a fragment written against the interface is Relay-refetchable. A class that is concrete *and* has subclasses stays a concrete type and earns `V016` (its supertype-typed fields flatten polymorphism); the interface-plus-companion alternative is a deferred option.
 - **Inverse pairs.** `owl:inverseOf` produces one field per side, never the four-way duplication. At resolution each side takes the **union of forward and reverse assertions**, so data asserted in either direction answers identically from both ends. Synthetic inverses (a reverse field with no declared partner) are minted in Pass 4.
-- **Global IDs.** The Relay `id` is the prefixed URI (`lib:dune`), not an opaque token — usable in GraphiQL, URLs, and the CLI. `toPrefixed` chooses the longest matching namespace so IDs are canonical and order-independent.
-- **Self-description.** Every non-embeddable type carries `_meta: EntityMeta!`, exposing the class definition and per-field `ClassProperty` metadata (required/singular/inherited) read from the frozen IR.
+- **Identity.** One currency: the absolute IRI. `EntityValue.uri`, `Node.uri` (`ID!`), the `node(id:)` argument, the loader keys, the SPARQL terms, the listing windows, and the base64 cursors derived from them are all the same string, so an `after:` cursor cannot quietly fail to match. `node(id:)` admits an id only if it parses as an RFC 3986 absolute IRI (`hardening/isAbsoluteIri.ts`, mirroring sem's `parse_absolute_iri`) — no prefix map is consulted, so the same id resolves identically no matter which prefixes a consumer registered. The prefixed form survives in exactly two places: the singular `<type>(uri:)` lookup ARGUMENT (still `String!`, expanded by `toFull` — promoting it to `ID!` would reject every client query declaring `$uri: String!`), and `toPrefixed`, a display helper with deliberately zero internal callers.
+- **Self-description.** EVERY generated type carries `_meta: EntityMeta!`, exposing the class definition and per-field `ClassProperty` metadata (required/singular/inherited) read from the frozen IR — plus the generic descriptive fields `title`/`label`/`comment`/`definition`, each with a `lang: String = "en"` argument. Keeping them behind `_meta` leaves the entire data surface (every field name but `uri` and `_meta`) to the ontology. `title` is TOTAL by construction — label, else any-tag literal, else the IRI local name, else the IRI — so a generic lens always has something to render. Each field resolves through a predicate chain computed ONCE per type at build time, never per node.
+
+  `label`/`comment`/`definition` match the requested tag EXACTLY (`en` never matches `en-GB`), then fall back to UNTAGGED literals. That fallback is a **deliberate deviation** from sem's exact-tag-only `resolve_label`: every literal in this corpus is untagged, so sem's rule would null the whole thing out. An untagged plain literal asserts "no language stated", which is not the claim "stated in another language". `resolver/descriptive.ts` carries the same note in its header.
+
+### Provenance header
+
+Pass 7 prepends five `#` comment lines to the printed SDL, matching sem-graphql's printer form (`crates/sem-graphql/src/printer.rs`) so an SDL from either implementation diffs line-for-line against the other:
+
+```
+# ke-graphql · canonical SDL
+# graphql-schema-spec: 1
+# mode: annotated
+# provider: unknown
+# revision: 0
+```
+
+`graphql-schema-spec` is a placeholder `"1"` until the contract document is versioned. `provider` and `revision` are pure consumer-supplied provenance. `mode` (`auto` | `annotated` | `explicit`, mirroring sem's `ProjectionMode`) is **provenance-only today**: no `graphql:*` annotations exist in the extractor yet, so the compiler deliberately does not branch on it — a knob that silently changes nothing is worse than no knob. Its effect lands with the annotations work. `prefixing`, by contrast, has real behaviour now and is not part of the header.
+
+The header is skipped on the `skipValidation` artifact-boot path, where `sdl` stays `""` by contract.
 
 ## 5. Runtime model
 

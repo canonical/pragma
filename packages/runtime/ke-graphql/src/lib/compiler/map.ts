@@ -20,11 +20,11 @@ import {
   type OntologyIR,
   type PassResult,
   type PropertyNode,
-  RESERVED_FIELD_NAMES,
   RESERVED_TYPE_NAMES,
   type ResolverTemplate,
 } from "../shared/index.js";
 import BidirectionalNameMap from "./BidirectionalNameMap.js";
+import { DEFAULT_PREFIXING } from "./constants.js";
 import {
   camelize,
   pluralize,
@@ -34,6 +34,25 @@ import {
 import type { CustomMapping, SchemaPluginOptions } from "./types.js";
 
 const PHASE = "map";
+
+/**
+ * The field names wireRelay injects on every non-embeddable type (Pass 6).
+ * An ontology property that maps onto one of them is DROPPED with an M005
+ * error rather than renamed: a same-named ontology field would take the
+ * structural field's slot in the merged map and break the Node interface at
+ * validateSchema — silently, because the merge keeps the first POSITION but
+ * the last VALUE.
+ */
+const STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set(["uri", "_meta"]);
+
+/** Embeddable types get `_meta` but no `uri` — they have no identity to expose. */
+const EMBEDDABLE_STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set([
+  "_meta",
+]);
+
+/** How a consumer resolves an M001/M005 collision — named in both messages. */
+const COLLISION_REMEDIES =
+  'add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } }) or namespace-prefix every field with prefixing: "all"';
 
 interface MapperState {
   ir: OntologyIR;
@@ -105,6 +124,25 @@ const resolveTypeNames = (state: MapperState): void => {
   }
 };
 
+/**
+ * Apply the `prefixing` policy to a generated field name: under
+ * `prefixing: "all"` every field carries its property's namespace prefix
+ * (`ex:uri` → `exUri`), which is the schema-wide remedy for M001/M005. The
+ * `"x"` fallback covers a predicate that is not a known ontology property
+ * (a standard-vocab field's predicate, typically).
+ */
+const applyPrefixing = (
+  state: MapperState,
+  owlUri: string,
+  name: string,
+): string => {
+  if ((state.options.prefixing ?? DEFAULT_PREFIXING) !== "all") {
+    return name;
+  }
+  const namespace = state.ir.properties.get(owlUri)?.namespace ?? "x";
+  return `${namespace}${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+};
+
 /** Compute the GraphQL field name for a property. */
 const computeFieldName = (
   state: MapperState,
@@ -113,13 +151,13 @@ const computeFieldName = (
 ): string => {
   const custom = findMapping(state, property.uri)?.graphqlName;
   if (custom) {
-    return custom;
+    return custom; // an explicit graphqlName is authoritative — never prefixed
   }
   let name = stripVerbPrefix(getLocalName(property.uri));
   if (isList) {
     name = pluralize(name);
   }
-  return sanitizeGraphQLName(name);
+  return applyPrefixing(state, property.uri, sanitizeGraphQLName(name));
 };
 
 /** Compute the GraphQL field type spec for a property's resolved range. */
@@ -239,34 +277,34 @@ const buildFields = (
   typeName: string,
 ): Map<string, MappedField> => {
   const fields = new Map<string, MappedField>();
-  const used = new Set<string>(node.embeddable ? [] : RESERVED_FIELD_NAMES);
+  const structural = node.embeddable
+    ? EMBEDDABLE_STRUCTURAL_FIELD_NAMES
+    : STRUCTURAL_FIELD_NAMES;
 
   const addField = (field: MappedField) => {
-    if (used.has(field.graphqlName)) {
-      // Rule 7: reserved/colliding field — namespace-prefix it.
-      const renamed = `${state.ir.properties.get(field.owlUri)?.namespace ?? "x"}${
-        field.graphqlName.charAt(0).toUpperCase() + field.graphqlName.slice(1)
-      }`;
-      state.diagnostics.push({
-        severity: "warning",
-        code: "M002",
-        message: `field ${typeName}.${field.graphqlName} collides with a reserved name — renamed to ${renamed}`,
-        source: field.owlUri,
-        phase: PHASE,
-      });
-      field = { ...field, graphqlName: renamed };
-    }
-    if (fields.has(field.graphqlName)) {
+    // A silent rename is worse than a loud drop: the consumer's query breaks
+    // either way, but only the drop tells them which IRI caused it.
+    if (structural.has(field.graphqlName)) {
       state.diagnostics.push({
         severity: "error",
-        code: "M001",
-        message: `two properties map to ${typeName}.${field.graphqlName}`,
+        code: "M005",
+        message: `${field.owlUri} maps to ${typeName}.${field.graphqlName}, a structural field the compiler owns — the field is DROPPED. To keep it, ${COLLISION_REMEDIES}`,
         source: field.owlUri,
         phase: PHASE,
       });
       return;
     }
-    used.add(field.graphqlName);
+    const existing = fields.get(field.graphqlName);
+    if (existing) {
+      state.diagnostics.push({
+        severity: "error",
+        code: "M001",
+        message: `${existing.owlUri} and ${field.owlUri} both map to ${typeName}.${field.graphqlName} — the second is DROPPED. To keep both, ${COLLISION_REMEDIES}`,
+        source: field.owlUri,
+        phase: PHASE,
+      });
+      return;
+    }
     fields.set(field.graphqlName, field);
     state.nameMap.set(field.owlUri, field.graphqlName);
   };
@@ -351,13 +389,15 @@ const buildFields = (
     });
   }
 
-  // Opt-in instance-level standard-vocab fields.
+  // Opt-in instance-level standard-vocab fields (deprecated — superseded by
+  // the graphql:*From annotations). They share the prefixing policy and the
+  // collision rules with every other field: no special case.
   const vocabFields = state.options.standardVocabFields?.[typeName];
   if (vocabFields) {
     for (const [predicate, name] of Object.entries(vocabFields)) {
       addField({
         owlUri: predicate,
-        graphqlName: name,
+        graphqlName: applyPrefixing(state, predicate, name),
         type: { kind: "scalar", name: "String" },
         nullable: true,
         list: false,

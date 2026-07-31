@@ -1,13 +1,13 @@
 // =============================================================================
 // Shared vocabulary, scalar, and structural constants. These are the
 // dependency-free building blocks consumed across domains — standard
-// vocabulary IRIs, the XSD → GraphQL scalar table, reserved GraphQL names, and
-// the Relay connection arguments. They live here (the shared leaf) rather than
-// in the compiler so that the loader, resolver, and TBox domains depend on a
-// leaf instead of importing values back from their orchestrator.
+// vocabulary IRIs, the XSD → GraphQL scalar table, the reserved type names, and
+// the Relay connection/language arguments. They live here (the shared leaf)
+// rather than in the compiler so that the loader, resolver, and TBox domains
+// depend on a leaf instead of importing values back from their orchestrator.
 //
-// Queries use absolute IRIs so they work regardless of which prefixes the
-// consumer registered on the store.
+// Queries and identity both use absolute IRIs, so nothing here depends on
+// which prefixes the consumer registered on the store.
 // =============================================================================
 
 import {
@@ -45,7 +45,7 @@ export const SKOS_PREF_LABEL = `${SKOS}prefLabel`;
 export const SKOS_DEFINITION = `${SKOS}definition`;
 
 /**
- * Local-name fallback tier for the generic `label` field.
+ * Local-name fallback tier for `_meta.label` (and, through it, `_meta.title`).
  *
  * Each descriptive field resolves through a FIXED chain: the canonical
  * rdfs/skos predicate first, then — only when the instance asserts none of
@@ -64,10 +64,10 @@ export const SKOS_DEFINITION = `${SKOS}definition`;
  */
 export const LABEL_LOCAL_NAMES = ["name", "title"];
 
-/** Local-name fallback tier for `comment`. See LABEL_LOCAL_NAMES. */
+/** Local-name fallback tier for `_meta.comment`. See LABEL_LOCAL_NAMES. */
 export const COMMENT_LOCAL_NAMES = ["summary"];
 
-/** Local-name fallback tier for `definition`. See LABEL_LOCAL_NAMES. */
+/** Local-name fallback tier for `_meta.definition`. See LABEL_LOCAL_NAMES. */
 export const DEFINITION_LOCAL_NAMES = ["description"];
 
 /**
@@ -117,18 +117,6 @@ export const RESERVED_TYPE_NAMES = new Set([
   "ID",
 ]);
 
-/** Field names the compiler owns on Node types. */
-export const RESERVED_FIELD_NAMES = new Set([
-  "id",
-  "uri",
-  "kind",
-  "label",
-  "comment",
-  "definition",
-  "_meta",
-  "__typename",
-]);
-
 /**
  * The four Relay connection pagination arguments (first/after/last/before),
  * shared by every generated connection field and the TBox instances field.
@@ -138,4 +126,23 @@ export const CONNECTION_ARGS: GraphQLFieldConfigArgumentMap = {
   after: { type: GraphQLString },
   last: { type: GraphQLInt },
   before: { type: GraphQLString },
+};
+
+/**
+ * The language tag every descriptive field falls back to when the caller
+ * supplies none. It is the ARGUMENT default, not a filter: an untagged literal
+ * answers any `lang` (see resolver/descriptive.ts).
+ */
+export const DEFAULT_LANG = "en";
+
+/**
+ * The single `lang` argument carried by every descriptive field on EntityMeta
+ * (`title`, `label`, `comment`, `definition`).
+ *
+ * `default: { value }` — NOT `defaultValue`, which graphql@17.0.0-rc.0
+ * deprecates. printSchema renders this as `lang: String = "en"`, and
+ * graphql-js coerces the default in, so resolvers always receive a string.
+ */
+export const LANG_ARGS: GraphQLFieldConfigArgumentMap = {
+  lang: { type: GraphQLString, default: { value: DEFAULT_LANG } },
 };
