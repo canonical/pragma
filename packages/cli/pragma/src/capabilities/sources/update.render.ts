@@ -13,8 +13,16 @@ export const updateFormatters: Formatters<SourcesUpdateData> = {
         : `Built pack ${data.contentHash.slice(0, 12)}.`,
     ];
     for (const pack of data.packs) {
+      // FILES, not usable stories: `sources update` carries them verbatim and
+      // never validates them (zod would have to run per record, in the build).
+      // `doctor` is where "2 stories ignored" comes from — saying "stories"
+      // here would put a green count next to a broken file.
+      const stories =
+        pack.storyCount > 0
+          ? `, ${pack.storyCount} story file${pack.storyCount === 1 ? "" : "s"}`
+          : "";
       lines.push(
-        `  ${pack.name} @ ${pack.resolved.slice(0, 12)} (${pack.sourceCount} source${pack.sourceCount === 1 ? "" : "s"})`,
+        `  ${pack.name} @ ${pack.resolved.slice(0, 12)} (${pack.sourceCount} source${pack.sourceCount === 1 ? "" : "s"}${stories})`,
       );
     }
     return lines.join("\n");

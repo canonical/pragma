@@ -3,8 +3,15 @@
  *
  * Bespoke (not a pack lookup): the covenant freezes `tier_lookup` with a SINGLE
  * `<name>` positional, whereas a pack lookup emits the variadic `<name...>`.
- * Resolves the tier by its `ds:name` and returns the blocks scoped directly to
- * it (a joined OPTIONAL, so a tier with no direct members still resolves).
+ * Resolves the tier by the distribution's DECLARED name property — the same one
+ * the pack index projects into `altNames` and therefore the same one completion
+ * offers — and returns the blocks scoped directly to it (a joined OPTIONAL, so
+ * a tier with no direct members still resolves).
+ *
+ * Two of the three domain terms below come from that declaration; `ds:tier`,
+ * the scoping predicate, is written here because it is this noun's own pack
+ * CONTENT — no kernel read touches it, and a fork replacing the tier noun
+ * replaces this module.
  */
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";
@@ -13,10 +20,12 @@ import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { VOCABULARY } from "../../kernel/vocabulary.js";
+import { TIER_TYPE } from "./constants.js";
 import type { TierLookupData } from "./lookup.render.js";
 
 /**
- * Read every tier name in the store (its `ds:name`), ordered.
+ * Read every tier name in the store, ordered.
  *
  * The bespoke lookup already holds the machinery to reach the store, so a
  * name-not-found can rank "did you mean?" candidates the same way every other
@@ -29,7 +38,7 @@ import type { TierLookupData } from "./lookup.render.js";
 async function selectTierNames(rt: PragmaRuntime): Promise<string[]> {
   const rows = await runSelect(
     rt,
-    "SELECT ?name WHERE { ?tier a ds:Tier ; ds:name ?name } ORDER BY ?name",
+    `SELECT ?name WHERE { ?tier a ${TIER_TYPE} ; ${VOCABULARY.altName} ?name } ORDER BY ?name`,
     "tier",
   );
   return rows
@@ -41,7 +50,7 @@ async function selectTierNames(rt: PragmaRuntime): Promise<string[]> {
  * Look up one tier by name.
  *
  * @param rt - The runtime (its store is booted by the projector for needsStore).
- * @param name - The tier name (its `ds:name`, e.g. `apps/lxd`).
+ * @param name - The tier's declared name (e.g. `apps/lxd`).
  * @returns The tier's IRI, name, and directly-scoped block names.
  * @throws PragmaError ENTITY_NOT_FOUND when no tier has that name;
  *   STORE_UNAVAILABLE (exit 3) when the store is unseeded for this project.
@@ -50,11 +59,12 @@ export async function runTierLookup(
   rt: PragmaRuntime,
   name: string,
 ): Promise<TierLookupData> {
+  const altName = VOCABULARY.altName;
   const query = [
     "SELECT ?uri ?blockName WHERE {",
-    "  ?uri a ds:Tier ; ds:name ?tierName .",
+    `  ?uri a ${TIER_TYPE} ; ${altName} ?tierName .`,
     `  FILTER(STR(?tierName) = ${JSON.stringify(name)})`,
-    "  OPTIONAL { ?block ds:tier ?uri ; ds:name ?blockName }",
+    `  OPTIONAL { ?block ds:tier ?uri ; ${altName} ?blockName }`,
     "}",
     "ORDER BY ?blockName",
   ].join("\n");

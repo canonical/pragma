@@ -16,6 +16,7 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { VOCABULARY } from "../../kernel/vocabulary.js";
 import {
   promptListFormatters,
   promptLookupFormatters,
@@ -63,7 +64,16 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
       doc: "The prompt name (e.g. build-a-block).",
       positional: true,
       required: true,
-      complete: { kind: "names", source: { from: "prompts" } },
+      // A prompt is addressed by its `rdfs:label`, which the index carries as
+      // `label`, and the index reader offers no substitute for a prompt that
+      // carries none. Not a total guarantee: `label` is the first of several
+      // label predicates the index accepts, so an entity labelled ONLY by
+      // `skos:prefLabel` would still complete without resolving. That gap is
+      // the index's label preference order, not this ref.
+      complete: {
+        kind: "names",
+        source: { from: "index", type: VOCABULARY.prompt.type, field: "label" },
+      },
     },
   ],
   output: { formatters: promptLookupFormatters },

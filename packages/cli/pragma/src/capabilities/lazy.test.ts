@@ -48,7 +48,9 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // ...but run bodies and the config LAYER stay behind the dynamic boundary:
     // no reader, no defaults layer, no zod schema. The distribution config
     // itself IS on the graph — `constants.ts` projects the program's identity
-    // from it — which is safe only because it is inert data (pinned below).
+    // from it, `render/prefixes.ts` its domain namespaces and
+    // `kernel/vocabulary.ts` its domain terms — which is safe only because it
+    // is inert data (pinned below).
     expect(has(graph, "info/collectInfo.ts")).toBe(false);
     expect(has(graph, "config/collectConfigShow.ts")).toBe(false);
     expect(has(graph, "kernel/config/readConfig.ts")).toBe(false);
@@ -62,14 +64,44 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     const pkgRoot = resolve(here, "../..");
     // The graph walker follows `from "…"` textually and cannot tell an
     // `import type` from a value import, so the type-only `config/types.ts`
-    // shows up here even though nothing of it survives compilation. Assert the
-    // SOURCE has no value import at all — that is the claim in the title, and
-    // it is what keeps `--help`/`__complete`/`--version` free of module-init
-    // work when another lane or a fork edits this file.
-    expect(readFileSync(conf, "utf-8")).not.toMatch(/^import (?!type\b)/m);
-    expect(
-      [...staticImportGraph(conf)].map((f) => relative(pkgRoot, f)).sort(),
-    ).toEqual(["pragma.conf.ts", "src/kernel/config/types.ts"]);
+    // and `packs/types.ts` show up here even though nothing of either survives
+    // compilation. Assert that NO file on the graph has a value import — not
+    // just the conf. That is the claim in the title, and it is what keeps
+    // `--help`/`__complete`/`--version` free of module-init work when another
+    // lane or a fork edits any of these three (`packs/types.ts` in particular
+    // is the grammar that type-checks the declared stories, and its own
+    // docblock promises it stays zod-free BECAUSE it lands here).
+    const graph = [...staticImportGraph(conf)];
+    for (const file of graph) {
+      expect(readFileSync(file, "utf-8"), file).not.toMatch(
+        /^import (?!type\b)/m,
+      );
+    }
+    // The enumeration is exact, not a subset: a type import from a module that
+    // itself imports something grows this list and fails here.
+    expect(graph.map((f) => relative(pkgRoot, f)).sort()).toEqual([
+      "pragma.conf.ts",
+      "src/kernel/config/types.ts",
+      "src/kernel/packs/types.ts",
+    ]);
+  });
+
+  it("the dispatch path never reaches the embedded n-quads module (PROTECTED)", () => {
+    // `activeStories` reads the pack's carried stories from their OWN generated
+    // module rather than through `graphpack/embedded.ts`, which statically
+    // imports the ~1.9 MB `pack.generated.ts`. Restoring that edge costs a
+    // measured +23 ms on EVERY dispatched command, and the whole test suite
+    // passes with it restored — the split is prose in three docblocks and
+    // nothing else. This is the constraint those docblocks describe.
+    for (const entry of [
+      "../kernel/packs/collect.ts",
+      "../kernel/runtime/graphpack/stories.ts",
+      "../kernel/runtime/resolveSources.ts",
+    ]) {
+      const graph = staticImportGraph(resolve(here, entry));
+      expect(has(graph, "embedded/pack.generated.ts"), entry).toBe(false);
+      expect(has(graph, "graphpack/embedded.ts"), entry).toBe(false);
+    }
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {
@@ -106,5 +138,25 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
         ).toBe(false);
       }
     }
+  });
+
+  it("exactly one module on that graph statically imports zod", () => {
+    // zod is NOT dynamic-import-only here, and this pins the one place it is
+    // not, by measurement rather than by claim. `resolveSources` (which the
+    // resource provider and the prompt provider both reach) calls
+    // `packIsComplete` → `readManifest` → `manifestSchema.parse`, so
+    // `graphpack/types.ts` and its zod dependency are evaluated whenever the
+    // command tree is built — including on `__complete`.
+    //
+    // An EXACT set, not a tolerated-name list: a second importer fails this,
+    // and so does removing the edge, which is what makes the day it is fixed
+    // impossible to miss.
+    const graph = staticImportGraph(resolve(here, "index.ts"));
+    const pkgRoot = resolve(here, "..", "..");
+    const zodImporters = [...graph]
+      .filter((file) => /from\s*["']zod["']/.test(readFileSync(file, "utf-8")))
+      .map((file) => relative(pkgRoot, file))
+      .sort();
+    expect(zodImporters).toEqual(["src/kernel/runtime/graphpack/types.ts"]);
   });
 });

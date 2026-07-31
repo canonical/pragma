@@ -42,19 +42,28 @@ export type Capability = {
  * `__complete` never boots the graph, so every source is disk-readable: the
  * precomputed pack index, the filesystem, or the prefix table.
  */
-export type CompletionFrom =
-  | "index"
-  | "skills"
-  | "tiers"
-  | "prompts"
-  | "prefixes";
+export type CompletionFrom = "index" | "skills" | "prefixes";
 
-/** A reference to one name source (with an optional prefixed type filter). */
+/**
+ * Which of an index entity's name-bearing fields a param completes against.
+ * The kernel knows no entity families — a family is a `type` filter plus the
+ * field that family is addressed by, both declared at the verb.
+ */
+export type CompletionField = "name" | "label" | "altNames";
+
+/** A reference to one name source: where from, and which field of it. */
 export interface CompletionSourceRef {
   /** Which storeless source to read candidate names from. */
   readonly from: CompletionFrom;
   /** Prefixed type filter — meaningful only for `from: "index"` (empty = any). */
   readonly type?: string;
+  /**
+   * Which field the candidates come from — `from: "index"` only, default
+   * `"name"`. Declare the field the verb's lookup MATCHES on: `label` and
+   * `altNames` are optional index enrichment, and an entity carrying neither
+   * contributes no candidate rather than a token the lookup would refuse.
+   */
+  readonly field?: CompletionField;
 }
 
 /** How a partial word is matched against candidate names. */
@@ -226,6 +235,16 @@ export interface CapabilityModule {
    * it has zero covenant impact.
    */
   readonly colophon?: string;
+  /**
+   * This module was compiled — wholly or in part — from a declared read story,
+   * so a story in the user's own CONFIG for the same noun REPLACES it. Authored
+   * modules (config, ontology, doctor, …) carry no story and can never be
+   * replaced; neither can any shipped noun be replaced by a PACKAGE story (see
+   * `kernel/packs/collect.validateStories`). Set where a story is compiled
+   * (`capabilities/distribution.ts` and the three composite nouns), read once,
+   * by `kernel/packs/collect.assembleEffectiveModules`.
+   */
+  readonly story?: true;
   readonly boot?: (rt: PragmaRuntime) => void;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
