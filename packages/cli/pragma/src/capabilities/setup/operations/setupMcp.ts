@@ -228,7 +228,7 @@ export function composeMcp(
           : "→";
     tasks.push(
       info(
-        `[${group.scope}] pragma MCP server ${verb} ${group.path} (${names})`,
+        `[${group.scope}] ${MCP_SERVER_NAME} MCP server ${verb} ${group.path} (${names})`,
       ),
     );
   }

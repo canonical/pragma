@@ -136,7 +136,7 @@ const buildCustomizePrompt = (
 ): PromptDefinition => ({
   name: "customize",
   type: "confirm",
-  message: "Customize which files pragma configures?",
+  message: `Customize which files ${BIN_NAME} configures?`,
   default: false,
   when,
 });
