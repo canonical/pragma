@@ -15,12 +15,21 @@
  * module's load runs on `--help`, `__complete` and `--version`. That also makes
  * the reverse edge impossible — importing `constants.js` from here is a
  * temporal-dead-zone cycle — which is why the `emptyRecovery.cli` hints below
- * spell `pragma …` out rather than composing it from `RECOVERY_CLI_PREFIX`.
+ * compose {@link NAME} locally rather than `RECOVERY_CLI_PREFIX`.
  * `capabilities/lazy.test.ts` pins both halves of that.
  */
 
 import type { RawConfig } from "./src/kernel/config/types.js";
 import type { PackDefinition } from "./src/kernel/packs/types.js";
+
+/**
+ * The binary's name — declared ONCE, because a fork renaming it must stay
+ * self-consistent. `packs/schema.ts` refines every `emptyRecovery.cli` with
+ * `startsWith(\`${identity.name} \`)`, so a rename that reached only the
+ * identity below would make the distribution's own stories fail its own
+ * validator (`distribution.test.ts` proves it does).
+ */
+const NAME = "pragma";
 
 /**
  * The design-system domain colophon — the ontology + graph story, surfaced by
@@ -226,7 +235,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No tokens in the store. Build it from the configured design-system packs.",
-        cli: "pragma sources update",
+        cli: `${NAME} sources update`,
       },
     },
     lookup: {
@@ -285,7 +294,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No modifier families in the store. Build it from the configured design-system packs.",
-        cli: "pragma sources update",
+        cli: `${NAME} sources update`,
       },
     },
     lookup: {
@@ -467,7 +476,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
 ];
 
 export default {
-  name: "pragma",
+  name: NAME,
   help: "Explore the design system",
   colophon: "Made by the Canonical Webteam — https://canonical.com.",
   issuesUrl: "https://github.com/canonical/pragma/issues",

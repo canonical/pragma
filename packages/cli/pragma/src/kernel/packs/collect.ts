@@ -42,7 +42,7 @@ export interface StoryProblem {
 }
 
 /** The outcome of validating the stories a pack carries. */
-export interface ValidatedStories {
+interface ValidatedStories {
   /** The stories that can be used, one per noun. */
   readonly entries: readonly PackEntry[];
   /** The ones that were ignored, each with its reason. */
