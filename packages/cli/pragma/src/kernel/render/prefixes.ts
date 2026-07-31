@@ -36,8 +36,13 @@ const STANDARD_PREFIXES: Readonly<Record<string, string>> = {
 /**
  * Namespaces compacted and expanded across the CLI. Keys are the prefixes shown
  * to the user (`rdfs:label`); values are the absolute namespace IRIs matched.
+ *
+ * The standard half is spread LAST so it wins a collision: `rdfs` means the
+ * same thing in every graph, and the kernel hardcodes those IRIs elsewhere
+ * (`buildIndex`'s label predicates, the prompt SELECT), so letting a
+ * declaration rebind them here would split one prefix across two meanings.
  */
 export const DEFAULT_PREFIX_MAP: Readonly<Record<string, string>> = {
-  ...STANDARD_PREFIXES,
   ...conf.prefixes,
+  ...STANDARD_PREFIXES,
 };
