@@ -120,15 +120,19 @@ runs:
           echo "browser install not requested; skipping"
           exit 0
         fi
-        # Invoke the WORKSPACE's playwright by path — never `bunx playwright`.
-        # When the root bin link is absent (the same first-install bun bug the
-        # re-link step above works around), bunx silently falls back to
-        # fetching the LATEST playwright from the registry and installs that
-        # version's browser builds, which the workspace's pinned
-        # playwright-core then cannot find (#901: installed 1234, wanted 1228).
-        PW_CLI="node_modules/playwright/cli.js"
+        # Invoke the CONSUMER package's playwright by path — never `bunx
+        # playwright`. Bun's isolated layout does not hoist playwright to root
+        # node_modules (verified on #901: the root path does not exist on a
+        # fresh CI install), so bunx silently fell back to fetching the LATEST
+        # playwright from the registry and installed that version's browser
+        # builds, which the workspace's pinned playwright-core then cannot
+        # find (#901: installed 1234, wanted 1228). The svelte browser suites
+        # resolve playwright through their own package deps, so the declared
+        # consumer IS the correct version by construction — and bun's layout
+        # guarantees a declared dep exists in the package's node_modules.
+        PW_CLI="packages/svelte/ds-app-wpe/node_modules/playwright/cli.js"
         if [ ! -f "$PW_CLI" ]; then
-          echo "::error::workspace playwright is not hoisted at ${PW_CLI} — cannot install browsers deterministically"
+          echo "::error::playwright not found at ${PW_CLI} (the declared consumer's resolution) — cannot install browsers deterministically"
           exit 1
         fi
         echo "workspace playwright: $(bun "$PW_CLI" --version)"
