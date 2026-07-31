@@ -86,7 +86,7 @@ _No input parameters._
 
 ### create_application
 
-From the compiled pragma binary, `create application` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the compiled pragma binary does not carry. Run it from a source checkout, or use the `summon` CLI.
+Scaffold a full React application with SSR and routing. From the compiled pragma binary, `create application` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -123,7 +123,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### create_package
 
-From the compiled pragma binary, `create package` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the compiled pragma binary does not carry. Run it from a source checkout, or use the `summon` CLI.
+Scaffold a new npm package for the monorepo. From the compiled pragma binary, `create package` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 

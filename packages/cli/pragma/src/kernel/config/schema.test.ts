@@ -19,14 +19,14 @@ import { emitReference } from "../spec/emitReference.js";
 import { rawConfigSchema } from "./schema.js";
 
 /** The `field` cells of the generated page's Fields table, in page order. */
-function documentedFields(): string[] {
+function readDocumentedFields(): string[] {
   const page = emitReference([]).get("config.md") ?? "";
-  return [...page.matchAll(/^\| `([a-zA-Z]+)` \| /gm)].map((row) => row[1]);
+  return [...page.matchAll(/^\| `([a-zA-Z]+)` \| /gm)].map((row) => row.at(1));
 }
 
 describe("the configuration reference agrees with the validator", () => {
   it("documents exactly the fields the validator accepts", () => {
-    expect(documentedFields().sort()).toEqual(
+    expect(readDocumentedFields().sort()).toEqual(
       Object.keys(rawConfigSchema.shape).sort(),
     );
   });

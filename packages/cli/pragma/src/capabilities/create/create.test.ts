@@ -472,17 +472,24 @@ describe("declared generator bindings (PROTECTED)", () => {
     // drift-guard, in the same run.
     const caveated = createModule.verbs
       .filter((verb) => verb.summary.includes("Source-run only."))
-      .map((verb) => verb.path[1]);
+      .map((verb) => verb.path.at(1));
     expect(caveated).toEqual(["package", "application"]);
     for (const verb of createModule.verbs) {
-      const gated = caveated.includes(verb.path[1]);
+      const kind = verb.path.at(1);
+      const gated = caveated.includes(kind);
       // The `doc` is what `tools.md` and the MCP tool description render, so
       // the explanation has to travel with the marker, and it quotes the
       // command it is about — a copy-paste between bindings is then visible.
-      expect(verb.doc?.includes("UNSUPPORTED") ?? false, verb.path[1]).toBe(
-        gated,
-      );
-      if (gated) expect(verb.doc).toContain(`create ${verb.path[1]}`);
+      expect(verb.doc?.includes("UNSUPPORTED") ?? false, kind).toBe(gated);
+      if (gated) {
+        expect(verb.doc).toContain(`create ${kind}`);
+        // And it still says what the verb MAKES. `doc ?? summary` means a doc
+        // REPLACES the summary on the MCP surface, so a caveat alone left an
+        // agent no statement anywhere of what `create_package` scaffolds.
+        expect(verb.doc).toContain(
+          verb.summary.replace(" Source-run only.", ""),
+        );
+      }
     }
   });
 

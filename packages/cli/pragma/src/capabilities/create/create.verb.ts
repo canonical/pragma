@@ -447,7 +447,8 @@ const CREATE_CAPABILITY = {
  * documentation below and by {@link loadCreateRuntime}'s `UNSUPPORTED` refusal,
  * so what the reference promises and what the binary does cannot disagree.
  */
-const SOURCE_ONLY_REASON = `its generator reads templates from disk, which the compiled ${BIN_NAME} binary does not carry`;
+const SOURCE_ONLY_REASON =
+  "its generator reads templates from disk, which the binary does not carry";
 
 /**
  * The published caveat for a binding the compiled binary cannot run. DERIVED
@@ -455,18 +456,28 @@ const SOURCE_ONLY_REASON = `its generator reads templates from disk, which the c
  * moves the caveat, `docs/reference/*.md`, and `create.test.ts`'s binding
  * assertion together.
  *
- * It is self-contained on purpose: `tools.md` and the MCP tool description both
- * render `doc ?? summary`, so an agent reads this string alone — which is also
- * why it names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
+ * It LEADS WITH THE PURPOSE, because `tools.md` and the MCP tool description
+ * both render `doc ?? summary` — so a caveat alone REPLACED the only sentence
+ * saying what the tool makes, and an agent enumerating tools could not learn
+ * that `create_package` scaffolds a package. The tool works from a source
+ * checkout; describing nothing but its refusal made a live tool
+ * undiscoverable. The repeated sentence in `commands.md`'s section is the
+ * cheaper of the two costs.
+ *
+ * It names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
  * agent has no flags): the plan-only refusal is stated in the terms BOTH
  * surfaces share.
  *
  * @param kind - The create binding.
+ * @param summary - The verb's own one-liner, which the `doc` replaces on MCP.
  * @returns The `doc` for a source-run-only binding, or `undefined`.
  */
-function availabilityDoc(kind: CreateKind): string | undefined {
+function buildAvailabilityDoc(
+  kind: CreateKind,
+  summary: string,
+): string | undefined {
   if (CREATE_GENERATORS[kind].readsEmbeddedTemplates) return undefined;
-  return `From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
+  return `${summary} From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
 }
 
 /**
@@ -483,7 +494,7 @@ function createVerb(
   params: ParamSpec[],
   examples: VerbSpec["examples"],
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
-  const doc = availabilityDoc(kind);
+  const doc = buildAvailabilityDoc(kind, summary);
   return {
     path: ["create", kind],
     summary: doc ? `${summary} Source-run only.` : summary,
