@@ -106,6 +106,13 @@ const files = [
  * swallows every literal until the next `"` — so the scanner reads regexes as
  * regexes and skips them whole.
  *
+ * A TEMPLATE SUBSTITUTION is the fourth, and the one this tree actually writes:
+ * `${…}` is code, and the code inside it may open another template. Reading a
+ * template as one flat span makes the NESTED backtick close the OUTER literal,
+ * and every quote after it in the file pairs off by one — which left the whole
+ * tail of `packs/renderPack.ts` invisible to this guard. So a substitution is
+ * handed back to the code scanner, and the literal chunks around it are the copy.
+ *
  * Specifiers (`./x.js`, `@scope/pkg`) name modules, not users, and must stay
  * literal, so they are not copy.
  *
@@ -114,23 +121,44 @@ const files = [
  */
 function readCopy(source: string): string[] {
   const copy: string[] = [];
-  // A `/` opens a regex only where a VALUE may start; after a value it is
-  // division. One character of context decides it — the last significant one —
-  // which is all TypeScript sources in this tree need (no `)`/`]`-preceded
+  scanCode(source, 0, copy);
+  return copy;
+}
+
+/** A `/` opens a regex only where a VALUE may start; after a value it divides. */
+const REGEX_OPENS_AFTER = "=(,:[!&|?{};+-*%~^<>";
+
+/**
+ * Read code from `from`, pushing every authored literal it quotes onto `copy`.
+ *
+ * @param source - The file's text.
+ * @param from - Index to start reading at.
+ * @param copy - Accumulator the authored literals are pushed onto.
+ * @param untilBrace - Stop at the `}` closing a template substitution.
+ * @returns The index the scan stopped at.
+ */
+function scanCode(
+  source: string,
+  from: number,
+  copy: string[],
+  untilBrace = false,
+): number {
+  // One character of context decides regex-vs-division — the last significant
+  // one — which is all TypeScript sources in this tree need (no `)`/`]`-preceded
   // regex, i.e. no `if (x) /re/.test(y)`, which would read as division).
-  const REGEX_OPENS_AFTER = "=(,:[!&|?{};+-*%~^<>";
   let previous = "";
-  for (let i = 0; i < source.length; i++) {
+  let braces = 0;
+  for (let i = from; i < source.length; i++) {
     const char = source[i];
     if (char === "/" && source[i + 1] === "*") {
       const end = source.indexOf("*/", i + 2);
-      if (end === -1) break;
+      if (end === -1) return source.length;
       i = end + 1;
       continue;
     }
     if (char === "/" && source[i + 1] === "/") {
       const end = source.indexOf("\n", i + 2);
-      if (end === -1) break;
+      if (end === -1) return source.length;
       i = end;
       continue;
     }
@@ -155,7 +183,17 @@ function readCopy(source: string): string[] {
       previous = "/";
       continue;
     }
-    if (char !== '"' && char !== "'" && char !== "`") {
+    if (char === "`") {
+      i = scanTemplate(source, i + 1, copy);
+      previous = char;
+      continue;
+    }
+    if (char !== '"' && char !== "'") {
+      if (untilBrace && char === "{") braces += 1;
+      if (untilBrace && char === "}") {
+        if (braces === 0) return i;
+        braces -= 1;
+      }
       if (!/\s/.test(char)) previous = char;
       continue;
     }
@@ -163,13 +201,47 @@ function readCopy(source: string): string[] {
     while (i < source.length && source[i] !== char) {
       i += source[i] === "\\" ? 2 : 1;
     }
-    const literal = source.slice(start, i);
-    if (literal && !literal.startsWith(".") && !literal.startsWith("@")) {
-      copy.push(literal);
-    }
+    pushCopy(copy, source.slice(start, i));
     previous = char;
   }
-  return copy;
+  return source.length;
+}
+
+/**
+ * Read a template literal's body from `from` — just past the opening backtick —
+ * pushing its literal chunks onto `copy` and handing each `${…}` back to
+ * {@link scanCode}, which is where a nested template is read as a template.
+ *
+ * @param source - The file's text.
+ * @param from - Index of the first character after the opening backtick.
+ * @param copy - Accumulator the authored chunks are pushed onto.
+ * @returns The index of the closing backtick.
+ */
+function scanTemplate(source: string, from: number, copy: string[]): number {
+  let chunk = "";
+  let i = from;
+  while (i < source.length && source[i] !== "`") {
+    if (source[i] === "\\") {
+      chunk += source.slice(i, i + 2);
+      i += 2;
+      continue;
+    }
+    if (source[i] === "$" && source[i + 1] === "{") {
+      i = scanCode(source, i + 2, copy, true) + 1;
+      continue;
+    }
+    chunk += source[i];
+    i += 1;
+  }
+  pushCopy(copy, chunk);
+  return i;
+}
+
+/** Keep a literal unless it is empty or names a module rather than a user. */
+function pushCopy(copy: string[], literal: string): void {
+  if (literal && !literal.startsWith(".") && !literal.startsWith("@")) {
+    copy.push(literal);
+  }
 }
 
 /**
@@ -214,15 +286,32 @@ describe("the copy scanner (PROTECTED)", () => {
   });
 
   it("reads a dividing slash as division, not as an opening regex", () => {
-    // The discriminating half: mistaking division for a regex would skip to the
-    // next `/` and hide everything in between, which is the same blindness in
-    // the other direction.
-    const source = [
-      "const half = total / 2;",
-      `const LEAK = "${leak}";`,
-      "const rate = done / all;",
-    ].join("\n");
+    // The division and the leak share a LINE: a scanner that read every `/` as
+    // a regex opener would skip to the next `/` or the newline, whichever comes
+    // first, and swallow the leak. On separate lines the regex skip stops at the
+    // newline before it reaches the literal, so both scanners agree and the case
+    // asserts nothing.
+    const source = `const rate = done / all; const LEAK = "${leak}";`;
     expect(readCopy(source)).toEqual([leak]);
+  });
+
+  it("reads a template substitution as code, not as the end of the literal", () => {
+    // `packs/renderPack.ts` writes exactly this: a template whose substitution
+    // contains another template, itself containing an ESCAPED backtick. Read
+    // flat, the nested backtick closes the outer literal and every quote after
+    // it in the file pairs off by one — so the leak below, and the whole tail of
+    // any file shaped like this, became invisible.
+    const source = [
+      "const hint = shape.emptyRecovery",
+      "  ? `${shape.emptyRecovery.message}${",
+      "      shape.emptyRecovery.cli",
+      "        ? ` Run \\`${PREFIX}${shape.emptyRecovery.cli}\\`.`",
+      '        : ""',
+      "    }`",
+      "  : DEFAULT_HINT;",
+      `const LEAK = "${leak}";`,
+    ].join("\n");
+    expect(readCopy(source)).toContain(leak);
   });
 });
 
