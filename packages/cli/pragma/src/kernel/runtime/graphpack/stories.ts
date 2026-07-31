@@ -30,11 +30,27 @@ export interface PackStoryRecord {
   readonly content: string;
 }
 
-/** Parse a `stories.json` body; anything malformed degrades to no stories. */
+/** A record shaped as this module promises — the file is a user-writable cache. */
+function isRecord(value: unknown): value is PackStoryRecord {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as PackStoryRecord).source === "string" &&
+    typeof (value as PackStoryRecord).content === "string"
+  );
+}
+
+/**
+ * Parse a `stories.json` body; anything malformed degrades to no stories.
+ *
+ * The elements are checked, not just the container: a record that is not
+ * `{ source, content }` would otherwise reach `validateStories` and be reported
+ * as `Ignored story undefined: …` — a diagnostic that names no file.
+ */
 function parseRecords(json: string): readonly PackStoryRecord[] {
   try {
     const parsed: unknown = JSON.parse(json);
-    return Array.isArray(parsed) ? (parsed as PackStoryRecord[]) : [];
+    return Array.isArray(parsed) ? parsed.filter(isRecord) : [];
   } catch {
     return [];
   }

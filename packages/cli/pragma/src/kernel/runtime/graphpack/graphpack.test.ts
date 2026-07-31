@@ -15,6 +15,7 @@ import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
 import { contentHash } from "./hash.js";
 import { packIsComplete } from "./manifest.js";
 import { readPack } from "./read.js";
+import { activeStories } from "./stories.js";
 import type { PackIndex } from "./types.js";
 import {
   DATA_FILE,
@@ -82,8 +83,8 @@ describe("graphpack round-trip (PROTECTED)", () => {
       expect(existsSync(join(result.dir, file))).toBe(true);
     }
     // Written even when the packages ship none — an OPTIONAL artifact would put
-    // the same condition in three writers, which is how a pack ends up claiming
-    // stories its directory does not hold.
+    // the same condition in all three modules that name the set, which is how a
+    // pack ends up claiming stories its directory does not hold.
     expect(readFileSync(join(result.dir, STORIES_FILE), "utf-8")).toBe("[]");
 
     // A second build over identical inputs is a pure cache hit — no rebuild.
@@ -137,7 +138,7 @@ describe("the committed embedded pack (PROTECTED)", () => {
   it("materializes exactly the files buildPack produces", async () => {
     // The artifact set is named once, in types.ts, but THREE modules must obey
     // it: buildPack writes them, packIsComplete gates on them, and
-    // materializeEmbeddedPack writes them back out. A fifth artifact added to
+    // materializeEmbeddedPack writes them back out. A SIXTH artifact added to
     // only some of those yields a pack whose content hash claims more than its
     // directory holds — which the next build then reuses, silently dropping the
     // difference. Comparing the two directories catches that on the day it lands.
@@ -193,6 +194,30 @@ describe("graphpack carried stories (PROTECTED)", () => {
     expect(packIsComplete(dir)).toBe(true);
     rmSync(join(dir, STORIES_FILE));
     expect(packIsComplete(dir)).toBe(false);
+  });
+
+  it("reads only records shaped { source, content } from a pack directory", async () => {
+    // `stories.json` lives in a user-writable cache. An element that is not a
+    // record used to be cast straight through and reported as
+    // `Ignored story undefined: …` — a diagnostic naming no file, repeated on
+    // every command. Records are checked, so a corrupt entry simply is not one.
+    const { dir } = await build([{ path: "a.ttl", content: TTL }], [STORY]);
+    writeFileSync(
+      join(dir, STORIES_FILE),
+      JSON.stringify([
+        1,
+        null,
+        { source: "x" },
+        { source: 1, content: 2 },
+        {
+          source: STORY.path,
+          content: STORY.content,
+        },
+      ]),
+    );
+    expect(activeStories({ kind: "pack", dir, contentHash: "z" })).toEqual([
+      { source: STORY.path, content: STORY.content },
+    ]);
   });
 });
 

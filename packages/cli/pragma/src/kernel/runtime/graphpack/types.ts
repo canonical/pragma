@@ -46,9 +46,9 @@ export const INDEX_FILE = "index.json";
  * `{ source, content }` record per `stories/*.json` file, in a JSON array.
  *
  * Written ALWAYS, even as `[]`, and gated by `packIsComplete` alongside the
- * other three — an optional artifact would put the same condition in two
- * writers, which is exactly how a pack ends up claiming stories its directory
- * does not hold. Raw text rather than parsed definitions so the pack stays a
+ * other three — an optional artifact would put the same condition in all three
+ * modules below, which is exactly how a pack ends up claiming stories its
+ * directory does not hold. Raw text rather than parsed definitions so the pack stays a
  * faithful carrier of the package's bytes and EVERY interpretation failure
  * (malformed JSON and schema-invalid JSON alike) is caught behind the one guard
  * in `kernel/packs/collect.validateStories`.
