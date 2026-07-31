@@ -24,7 +24,7 @@ import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
@@ -33,20 +33,11 @@ const pragmaBin = join(cliNextDir, "src/bin.ts");
 const compiledBin = join(cliNextDir, "dist/pragma");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 
-// Build the standalone binary ONCE for every describe in this file (create +
-// the READ smoke share it), so the tests always exercise the current bundle +
-// embedded manifest rather than a stale `dist/pragma`.
-beforeAll(() => {
-  const result = spawnSync("bun", ["run", "scripts/build.ts"], {
-    cwd: cliNextDir,
-    stdio: "pipe",
-  });
-  if (result.status !== 0) {
-    throw new Error(
-      `failed to build dist/pragma:\n${result.stderr?.toString() ?? ""}`,
-    );
-  }
-}, 180_000);
+// The binary is provisioned by `testing/perf/globalSetup.ts`, which rebuilds it
+// whenever it is missing or older than `src/**`, `scripts/**`, `pragma.conf.ts`
+// or `package.json` — so these tests exercise the current bundle + embedded
+// manifest without a second `beforeAll` writing `dist/pragma` in place while
+// another worker's test is spawning it.
 
 /** Read a directory tree into a sorted map of relative path → contents. */
 function snapshot(dir: string): Map<string, string> {
