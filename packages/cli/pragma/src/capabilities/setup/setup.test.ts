@@ -22,7 +22,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { join } from "node:path";
 import { execute } from "@canonical/summon-core";
 import { dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
@@ -39,7 +39,7 @@ import { capabilities } from "../index.js";
 import { buildSetupPlan } from "./operations/setupGenerator.js";
 import { composeSkills, detectSkills } from "./operations/setupSkills.js";
 import { setupModule } from "./setup.verb.js";
-import { completionScriptPath, type ShellId } from "./shell.js";
+import { completionScriptPath } from "./shell.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -159,51 +159,6 @@ describe("setup completions", () => {
     expect(existsSync(path)).toBe(true);
     await executeVerb(completionsVerb, {}, UNDO, bootRuntime(FLAGS, cwd));
     expect(existsSync(path)).toBe(false);
-  });
-});
-
-describe("setup completions — the installed file's NAME", () => {
-  /** Run the real `completions` verb for `shell`; return what it wrote. */
-  async function install(
-    shell: ShellId,
-  ): Promise<{ path: string; body: string }> {
-    process.env.SHELL = `/usr/bin/${shell}`;
-    const path = completionScriptPath(shell);
-    const outcome = await executeVerb(
-      completionsVerb,
-      {},
-      YES,
-      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-    );
-    expect(outcome.exitCode).toBe(0);
-    return { path, body: readFileSync(path, "utf-8") };
-  }
-
-  // The basename is load-bearing, not cosmetic — see `shell.ts` for what each
-  // shell measurably does with it. For fish a mismatch installs a file the
-  // shell never loads, while `setup completions` prints success, `doctor`
-  // passes, and TAB does nothing. These relate the written file's NAME to the
-  // command the written BODY says it completes — two independently produced
-  // artifacts, neither reconstructed here. Re-hardcode "pragma" in `shell.ts`
-  // (or change `pragma.conf.ts`'s `name`) and all three fail.
-
-  it("zsh: ~/.zfunc/_<cmd> names the same command as the script's #compdef", async () => {
-    const { path, body } = await install("zsh");
-    expect(body.split("\n").at(0)).toBe(
-      `#compdef ${basename(path).replace(/^_/, "")}`,
-    );
-  });
-
-  it("bash: completions/<cmd> names the same command as the script's `complete -F`", async () => {
-    const { path, body } = await install("bash");
-    expect(body.match(/^complete -F \S+ (\S+)$/m)?.at(1)).toBe(basename(path));
-  });
-
-  it("fish: completions/<cmd>.fish names the same command as the script's `complete -c`", async () => {
-    const { path, body } = await install("fish");
-    expect(body.match(/^complete -c (\S+) -f$/m)?.at(1)).toBe(
-      basename(path).replace(/\.fish$/, ""),
-    );
   });
 });
 

@@ -1,6 +1,6 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import chalk from "chalk";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import type { VerbSpec } from "./kernel/spec/types.js";
@@ -74,6 +74,23 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(c.RECOVERY_CLI_PREFIX).toBe("recipes ");
     expect(c.PROGRAM_DESCRIPTION).toBe("Explore the recipe graph");
     expect(c.ISSUES_URL).toBe("https://example.invalid/recipes/issues");
+  });
+
+  it("installs its completion script under the fork's name, in all three shells", async () => {
+    // The basename is load-bearing, not cosmetic — `shell.ts` records what each
+    // shell measurably does with it (fish and bash-completion autoload BY the
+    // command's name; zsh binds by the `#compdef` tag but autoloads a function
+    // named after the file). A mismatch installs a file the shell never loads
+    // while `setup completions` prints success, `doctor` passes, and TAB does
+    // nothing. It can only be pinned from a fork: with the distribution named
+    // `pragma` a hardcoded literal and `BIN_NAME` agree by construction, so a
+    // test in `setup.test.ts` cannot fail. Here they cannot agree by accident.
+    const { completionScriptPath } = await import(
+      "./capabilities/setup/shell.js"
+    );
+    expect(basename(completionScriptPath("zsh"))).toBe("_recipes");
+    expect(basename(completionScriptPath("bash"))).toBe("recipes");
+    expect(basename(completionScriptPath("fish"))).toBe("recipes.fish");
   });
 
   it("renders a front door that names only the fork", async () => {
