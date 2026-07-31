@@ -71,12 +71,23 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
-      # Composite-action step `if:` cannot read the `inputs` context — the
-      # expression silently evaluates false and the step skips (the likely
-      # reason an earlier version of this action abandoned the input for a
-      # script). The one condition context proven to work in this action's own
-      # history is `steps.*.outputs`, so the input is echoed through a step
-      # output — which also logs the received value on every run.
+      # The browser-install decision lives in SHELL, not in a step `if:`.
+      # Step conditions in this composite have now silently mis-evaluated
+      # twice on #901 (inputs-context, then a steps-output relay), each time
+      # skipping the install with nothing in the log. `${{ inputs.* }}`
+      # interpolation into env/run is the one mechanism this file already
+      # proves works in CI (build-command, node-version), so the step always
+      # runs, always logs the received input, exits 0 when not requested, and
+      # self-verifies the executables after installing — a missing browser
+      # fails HERE, at the cause, not 200 browser tests later.
+      #
+      # Browser binaries are keyed on bun.lock: they only change when the
+      # resolved playwright version changes. On a cache hit, `playwright
+      # install` skips the download and only the (uncacheable) apt system
+      # dependencies are installed. The cache step keeps a step `if:` because
+      # actions/cache cannot shell-gate; if that condition ever mis-evaluates
+      # the way the install conditions did, installs lose the cache but stay
+      # correct — the optimization is allowed to break, the install is not.
     - name: Resolve browser-install intent
       id: pw
       shell: bash
@@ -86,9 +97,6 @@ runs:
         echo "install-playwright input = '${INSTALL_PLAYWRIGHT}'"
         echo "required=${INSTALL_PLAYWRIGHT}" >> "$GITHUB_OUTPUT"
 
-      # Browser binaries are keyed on bun.lock: they only change when the resolved
-      # playwright version changes. On a cache hit, `playwright install` skips the
-      # download and only the (uncacheable) apt system dependencies are installed.
     - name: Cache Playwright browsers
       if: ${{ steps.pw.outputs.required == 'true' }}
       uses: actions/cache@v5
@@ -97,9 +105,23 @@ runs:
         key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
     - name: Install Playwright browsers
-      if: ${{ steps.pw.outputs.required == 'true' }}
       shell: bash
-      run: bunx playwright install --with-deps chromium firefox webkit
+      env:
+        INSTALL_PLAYWRIGHT: ${{ inputs.install-playwright }}
+      run: |
+        echo "install-playwright input = '${INSTALL_PLAYWRIGHT}'"
+        if [ "${INSTALL_PLAYWRIGHT}" != "true" ]; then
+          echo "browser install not requested; skipping"
+          exit 0
+        fi
+        bunx playwright install --with-deps chromium firefox webkit
+        echo "ms-playwright contents after install:"
+        ls ~/.cache/ms-playwright/ || true
+        missing=0
+        for probe in chromium chromium_headless_shell firefox webkit; do
+          ls -d ~/.cache/ms-playwright/${probe}-* >/dev/null 2>&1 || { echo "::error::expected ${probe} under ~/.cache/ms-playwright after install"; missing=1; }
+        done
+        exit "$missing"
 
     - name: Start Nx cache server
       shell: bash
