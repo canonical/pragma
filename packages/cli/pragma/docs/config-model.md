@@ -31,23 +31,25 @@ A higher layer overrides a lower one field-by-field. `packs` and `generators` re
 
 ## Read stories
 
-A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about a read noun is hand-written code.
+A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about the story itself is hand-written code; three shipped nouns keep one hand-written verb each alongside their story, listed in [architecture.md](./architecture.md).
 
 Stories reach the CLI from three places, weakest to strongest:
 
 | Tier | Where it is declared | Validation failure |
 | --- | --- | --- |
-| **distribution** | `packs[].stories` in the binary's own `pragma.conf.ts` | compile-time (`tsc`) |
+| **distribution** | `packs[].stories` in the binary's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
 | **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
 | **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
 
-A stronger tier **replaces** a weaker one for the same noun, and within your config the top-level `stories` wins over `packs[].stories` — declaring a noun in both is a refinement, not a conflict. Declaring the same noun twice inside one tier is an error. A story may only replace a noun that is itself story-backed; it can never shadow a built-in command such as `config` or `doctor`.
+Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported, because replacing a noun replaces its whole module, and `block`, `token` and `tier` carry a hand-written verb (including the `token add-config` mutation) next to their story.
+
+Within your config the top-level `stories` wins over `packs[].stories` for the same noun — declaring it in both is a refinement, not a conflict — and declaring the same noun twice inside your config is an error. Inside one package the last story file wins and `doctor` names the shadowed one.
 
 Package stories are third-party data, so they are never fatal: a malformed or schema-invalid file is dropped, the rest of the package still works, and `pragma doctor` names each ignored file under `pack refs` (which stays `pass` — the pack does answer reads).
 
 Two consequences worth knowing:
 
-- **Package-declared nouns are dispatch-only.** `pragma --help` and shell completion read the static capability set without touching config or the pack, which is what keeps them fast. A noun that arrives from a package therefore runs but is not advertised there. The distribution's own stories are compiled into that static set, so they are.
+- **Package- and config-declared nouns are dispatch-only.** `pragma --help` and shell completion read the static capability set without touching config or the pack, which is what keeps them fast. A noun that arrives from a package or from your config therefore runs, and `pragma capabilities` lists it, but `--help` and completion do not. The distribution's own stories are compiled into that static set, so they are advertised everywhere.
 - **`pragma config show` reports pack declarations, not story bodies.** The bodies are SPARQL and the JSON payload is what MCP returns verbatim, so `packs` entries are shown as `{ name, source }` and the top-level `stories` array is omitted. Provenance is still reported for both fields, and `pragma capabilities` lists the verbs the stories produce.
 
 ## `prefixes`: one field, two readers

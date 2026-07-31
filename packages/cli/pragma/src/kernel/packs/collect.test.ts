@@ -231,13 +231,49 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
     expect(result.problems.at(0)?.source).toBe("a/stories/recipe.json");
   });
 
-  it("refuses an authored noun without throwing", () => {
+  it("refuses ANY noun the CLI already ships, without throwing", () => {
+    // Authored (`config`) and story-backed (`standard`) alike. A package may
+    // only ADD a noun: `assembleEffectiveModules` replaces a noun WHOLESALE, so
+    // a package claiming `token`/`block`/`tier` would delete the hand-written
+    // verb those composites exist for (`token add-config` is a MUTATION,
+    // `tier lookup` is frozen by the covenant) from a user who did nothing but
+    // declare a dependency. Overriding a shipped noun stays a config decision.
     const result = validateStories(
-      [record("pkg/stories/config.json", JSON.stringify(validPack("config")))],
+      [
+        record("pkg/stories/config.json", JSON.stringify(validPack("config"))),
+        record(
+          "pkg/stories/standard.json",
+          JSON.stringify(validPack("standard")),
+        ),
+      ],
       STATIC,
     );
     expect(result.entries).toEqual([]);
-    expect(result.problems.at(0)?.message).toMatch(/built-in command/);
+    expect(result.problems.map((problem) => problem.message)).toEqual([
+      'its noun "config" is a command this CLI already ships and cannot be replaced by a package.',
+      'its noun "standard" is a command this CLI already ships and cannot be replaced by a package.',
+    ]);
+  });
+
+  it("leaves a composite noun's hand-written verbs intact", () => {
+    // The real registry, not a fixture: `token` is a composite whose module
+    // carries the `add-config` mutation next to the declared story's reads.
+    const before = capabilities.find((module) => module.name === "token");
+    const { entries, problems } = validateStories(
+      [record("pkg/stories/token.json", JSON.stringify(validPack("token")))],
+      capabilities,
+    );
+    expect(entries).toEqual([]);
+    expect(problems.at(0)?.source).toBe("pkg/stories/token.json");
+    const after = assembleEffectiveModules(capabilities, layers([]), entries);
+    expect(
+      after
+        .find((module) => module.name === "token")
+        ?.verbs.map((verb) => verb.path.join(" ")),
+    ).toEqual(before?.verbs.map((verb) => verb.path.join(" ")));
+    expect(
+      before?.verbs.some((verb) => verb.path.join(" ") === "token add-config"),
+    ).toBe(true);
   });
 
   it("a config story still REPLACES a package one for the same noun", () => {

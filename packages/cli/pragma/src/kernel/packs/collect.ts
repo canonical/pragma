@@ -14,9 +14,10 @@
  * overridden by the top-level `stories` (the project's own, most specific,
  * statement). PACKAGE stories — the `stories/*.json` the answering pack carries
  * — are third-party data, so they go through {@link validateStories}, which
- * drops a bad one with a reported problem and CANNOT throw. Config stories stay
- * fatal: the user owns those, and a broken `pragma.config.ts` already fails
- * every command.
+ * drops a bad one with a reported problem, CANNOT throw, and lets a package
+ * ADD a noun but never replace one the CLI ships. Config stories stay fatal and
+ * may override: the user owns those, and a broken `pragma.config.ts` already
+ * fails every command.
  *
  * zod is reached only through {@link parsePackDefinition} (lazy) — this module
  * is imported at dispatch, never on the fast path, so validating config stories
@@ -61,20 +62,25 @@ export interface ValidatedStories {
  * Two packages claiming one noun: the last declared wins and the shadowed one
  * is reported, through this same channel.
  *
+ * A package story may only introduce a NOUN THE CLI DOES NOT HAVE. Every static
+ * noun is reserved — not just the authored ones: `block`, `token` and `tier` are
+ * COMPOSITES whose module carries a hand-written verb alongside its story
+ * (`block list`, `token add-config`, `tier lookup`), and the merge replaces a
+ * noun wholesale, so letting a package claim one would silently delete a
+ * mutation and a covenant-frozen verb from a user who only declared a
+ * dependency. Overriding a shipped noun stays a CONFIG decision — that file is
+ * the user's own.
+ *
  * @param records - The raw story records the answering pack carries.
- * @param staticModules - The static capabilities, to detect a story claiming an
- *   authored noun (`config`, `doctor`, …) that no story may replace.
+ * @param staticModules - The static capabilities, to detect a story claiming a
+ *   noun the CLI already ships.
  * @returns The usable entries and the problems, both possibly empty.
  */
 export function validateStories(
   records: readonly PackStoryRecord[],
   staticModules: readonly CapabilityModule[],
 ): ValidatedStories {
-  const reserved = new Set(
-    staticModules
-      .filter((module) => !module.story)
-      .map((module) => module.name),
-  );
+  const reserved = new Set(staticModules.map((module) => module.name));
   const byNoun = new Map<string, PackEntry>();
   const problems: StoryProblem[] = [];
   for (const record of records) {
@@ -86,7 +92,7 @@ export function validateStories(
       if (reserved.has(definition.noun)) {
         problems.push({
           source: record.source,
-          message: `its noun "${definition.noun}" is a built-in command and cannot be replaced by a package.`,
+          message: `its noun "${definition.noun}" is a command this CLI already ships and cannot be replaced by a package.`,
         });
         continue;
       }

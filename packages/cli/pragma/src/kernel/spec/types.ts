@@ -237,11 +237,12 @@ export interface CapabilityModule {
   readonly colophon?: string;
   /**
    * This module was compiled — wholly or in part — from a declared read story,
-   * so a config- or package-declared story for the same noun REPLACES it.
-   * Authored modules (config, ontology, doctor, …) carry no story and can never
-   * be replaced. Set where a story is compiled (`capabilities/distribution.ts`
-   * and the three composite nouns), read once, by
-   * `kernel/packs/collect.assembleEffectiveModules`.
+   * so a story in the user's own CONFIG for the same noun REPLACES it. Authored
+   * modules (config, ontology, doctor, …) carry no story and can never be
+   * replaced; neither can any shipped noun be replaced by a PACKAGE story (see
+   * `kernel/packs/collect.validateStories`). Set where a story is compiled
+   * (`capabilities/distribution.ts` and the three composite nouns), read once,
+   * by `kernel/packs/collect.assembleEffectiveModules`.
    */
   readonly story?: true;
   readonly boot?: (rt: PragmaRuntime) => void;
