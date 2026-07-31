@@ -192,19 +192,20 @@ export function createIndexEntityReader(
 }
 
 /**
- * One entity's completable tokens for a declared field.
+ * One entity's completable tokens for a declared field, with NO fallback.
  *
- * `name` is the index MINIMUM, always present. `label` and `altNames` are
- * optional enrichment, so each degrades to what it would have meant had the
- * pack not carried it — a missing label is the name, missing alt names are the
- * label (else the name). Emitting nothing instead would silently offer fewer
- * candidates than a pack authored without the enrichment deserves.
+ * A verb declares the field because that is the one its lookup matches on, so
+ * an entity the pack did not enrich contributes nothing. Standing a label in
+ * for an absent alt name would offer a token the lookup provably cannot resolve
+ * — a completion that hands the user a value and then refuses it — which is the
+ * complete-but-cannot-resolve split this whole declaration exists to close.
+ * Offering nothing for an under-enriched entity is the honest answer.
  *
  * @param entity - One index entity.
  * @param field - The declared field to read.
- * @returns The tokens that entity contributes.
+ * @returns The tokens that entity contributes; empty when it carries none.
  */
-function entityNames(
+function readEntityNames(
   entity: PackIndexEntity,
   field: CompletionField,
 ): readonly string[] {
@@ -212,11 +213,9 @@ function entityNames(
     case "name":
       return [entity.name];
     case "label":
-      return [entity.label || entity.name];
+      return entity.label ? [entity.label] : [];
     case "altNames":
-      return entity.altNames && entity.altNames.length > 0
-        ? entity.altNames
-        : [entity.label || entity.name];
+      return entity.altNames ?? [];
   }
 }
 
@@ -229,7 +228,7 @@ function indexNames(
   const names = new Set<string>();
   for (const entity of index.entities) {
     if (!matchesType(entity, ref.type ?? "")) continue;
-    for (const name of entityNames(entity, ref.field ?? "name")) {
+    for (const name of readEntityNames(entity, ref.field ?? "name")) {
       names.add(name);
     }
   }

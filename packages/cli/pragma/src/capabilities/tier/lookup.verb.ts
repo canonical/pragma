@@ -23,8 +23,9 @@ const tierLookupSpec: VerbSpec<Record<string, unknown>, TierLookupData> = {
       positional: true,
       required: true,
       // A tier is addressed by the DECLARED name property, which `buildIndex`
-      // projects into `altNames` — the same property `runTierLookup` matches,
-      // so a candidate offered here always resolves.
+      // projects into `altNames` — the same property `runTierLookup` matches.
+      // The index reader offers no substitute when a tier carries none, so
+      // every candidate offered here is one the lookup can resolve.
       complete: {
         kind: "names",
         source: { from: "index", type: TIER_TYPE, field: "altNames" },

@@ -7,6 +7,11 @@
  * the pack index projects into `altNames` and therefore the same one completion
  * offers — and returns the blocks scoped directly to it (a joined OPTIONAL, so
  * a tier with no direct members still resolves).
+ *
+ * Two of the three domain terms below come from that declaration; `ds:tier`,
+ * the scoping predicate, is written here because it is this noun's own pack
+ * CONTENT — no kernel read touches it, and a fork replacing the tier noun
+ * replaces this module.
  */
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";

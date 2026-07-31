@@ -65,8 +65,11 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
       positional: true,
       required: true,
       // A prompt is addressed by its `rdfs:label`, which the index carries as
-      // `label` — the same value `listPromptSummaries` lists, so what completes
-      // is what resolves.
+      // `label`, and the index reader offers no substitute for a prompt that
+      // carries none. Not a total guarantee: `label` is the first of several
+      // label predicates the index accepts, so an entity labelled ONLY by
+      // `skos:prefLabel` would still complete without resolving. That gap is
+      // the index's label preference order, not this ref.
       complete: {
         kind: "names",
         source: { from: "index", type: VOCABULARY.prompt.type, field: "label" },

@@ -69,23 +69,27 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
     ]);
   });
 
-  it("index + field label: emits the label, falling back to the name", async () => {
+  it("index + field label: emits the label, and nothing for an entity without one", async () => {
     const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
     expect(
       await env.names({ from: "index", type: "ex:Prompt", field: "label" }),
     ).toEqual(["build-a-block"]);
-    // No label on this one, so the name stands in.
+    // `ex:Button` carries no label. The lookup that declared this field matches
+    // on the label, so standing the name in would offer a token that lookup
+    // cannot resolve.
     expect(
       await env.names({ from: "index", type: "ex:Component", field: "label" }),
-    ).toEqual(["ex:Button"]);
+    ).toEqual([]);
   });
 
-  it("index + field altNames: emits the alt names, falling back to label ?? name", async () => {
+  it("index + field altNames: emits only the alt names, never a label in their place", async () => {
     const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
-    // apps/lxd from altNames; core from the label fallback.
+    // `ex:tier.lxd` carries `apps/lxd`; `ex:tier.core` carries none, so its
+    // label `core` is NOT offered — a bespoke tier lookup filters on the
+    // declared alt-name property and would refuse it.
     expect(
       await env.names({ from: "index", type: "ex:Tier", field: "altNames" }),
-    ).toEqual(["apps/lxd", "core"]);
+    ).toEqual(["apps/lxd"]);
   });
 
   it("prefixes: the index's prefixes ∪ the default display map", async () => {

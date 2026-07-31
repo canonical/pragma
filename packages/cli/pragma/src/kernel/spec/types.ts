@@ -51,7 +51,7 @@ export type CompletionFrom = "index" | "skills" | "prefixes";
  */
 export type CompletionField = "name" | "label" | "altNames";
 
-/** A reference to one name source (with an optional prefixed type filter). */
+/** A reference to one name source: where from, and which field of it. */
 export interface CompletionSourceRef {
   /** Which storeless source to read candidate names from. */
   readonly from: CompletionFrom;
@@ -59,8 +59,9 @@ export interface CompletionSourceRef {
   readonly type?: string;
   /**
    * Which field the candidates come from — `from: "index"` only, default
-   * `"name"`. `label` and `altNames` are optional index enrichment and fall
-   * back (see `completion/entitySource.ts`).
+   * `"name"`. Declare the field the verb's lookup MATCHES on: `label` and
+   * `altNames` are optional index enrichment, and an entity carrying neither
+   * contributes no candidate rather than a token the lookup would refuse.
    */
   readonly field?: CompletionField;
 }
