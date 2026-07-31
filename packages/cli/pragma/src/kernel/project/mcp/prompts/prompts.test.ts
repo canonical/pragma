@@ -108,7 +108,7 @@ describe("MCP handshake — capabilities advertised (PROTECTED)", () => {
 });
 
 /** A runtime whose SPARQL facade always fails with `message`. */
-function failingRuntime(message: string): PragmaRuntime {
+function createFailingRuntime(message: string): PragmaRuntime {
   return {
     query: {
       sparql: () => Promise.reject(new Error(message)),
@@ -136,7 +136,10 @@ const DEFAULT_ORIGINS = {
  * a cwd whose store is AVAILABLE (so `guardStore` passes and the read is what
  * fails) plus a `loadConfig` the readiness check can resolve.
  */
-function failingProviderRuntime(cwd: string, message: string): PragmaRuntime {
+function createFailingProviderRuntime(
+  cwd: string,
+  message: string,
+): PragmaRuntime {
   return {
     cwd,
     loadConfig: async () => ({
@@ -169,7 +172,7 @@ describe("native prompts/get — a failed read reaches the agent as one", () => 
     };
     await promptProvider.register(
       stubServer as never,
-      failingProviderRuntime(freshCwd(), "Prefix not found: ds"),
+      createFailingProviderRuntime(freshCwd(), "Prefix not found: ds"),
     );
 
     const get = handlers.get(GetPromptRequestSchema);
@@ -186,12 +189,12 @@ describe("native prompts/get — a failed read reaches the agent as one", () => 
 });
 
 describe("readPrompts — a failed read is never an empty graph", () => {
-  it("reports an unbound prefix as a store that needs building", async () => {
+  it("reports an unbound prefix as a store that cannot answer, not as no prompts", async () => {
     // A pack whose store does not know the declared prompt namespace cannot
     // answer, and the actionable form of that is STORE_UNAVAILABLE with the
     // build command — not a silent zero-prompt listing.
     await expect(
-      readPrompts(failingRuntime("Prefix not found: ds")),
+      readPrompts(createFailingRuntime("Prefix not found: ds")),
     ).rejects.toMatchObject({
       code: "STORE_UNAVAILABLE",
       recovery: { mcp: { tool: "sources_update" } },
@@ -203,7 +206,7 @@ describe("readPrompts — a failed read is never an empty graph", () => {
     // becomes a parse error, the parse error becomes `[]`, and the user is told
     // the distribution ships no prompts. It must surface as a failure.
     await expect(
-      readPrompts(failingRuntime("SPARQL syntax error at line 2")),
+      readPrompts(createFailingRuntime("SPARQL syntax error at line 2")),
     ).rejects.toThrow(/syntax error/);
   });
 });
