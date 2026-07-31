@@ -8,6 +8,7 @@
  * path exists for.
  */
 
+import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type { PackDefinition } from "../../kernel/packs/types.js";
 
 export const modifierPack: PackDefinition = {
@@ -38,7 +39,7 @@ export const modifierPack: PackDefinition = {
     emptyRecovery: {
       message:
         "No modifier families in the store. Build it from the configured design-system packs.",
-      cli: "pragma sources update",
+      cli: `${RECOVERY_CLI_PREFIX}sources update`,
     },
   },
   lookup: {

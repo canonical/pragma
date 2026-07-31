@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createStore } from "@canonical/ke";
 import { describe, expect, it, vi } from "vitest";
@@ -207,6 +207,8 @@ function staticImportGraph(
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
+/** The package root, so a failure names `src/…` instead of an absolute path. */
+const pkgRoot = resolve(here, "../../..");
 const has = (graph: Set<string>, fragment: string): boolean =>
   [...graph].some((file) => file.includes(fragment));
 
@@ -224,16 +226,24 @@ describe("storeless guarantee (PROTECTED)", () => {
       // Runtime boot (bootRuntime) — never on the completion path.
       expect(has(graph, "kernel/runtime/boot.ts")).toBe(false);
       // The config LAYER (reader, evaluator, paths, schema) — storeless means
-      // no read. PR2's pure-leaf `config/types.ts` (the ConfigLayers type,
-      // imported type-only via VerbSpec.run's PragmaRuntime and erased at
-      // runtime) is the lone tolerated seam — as spec/types.ts and
-      // runtime/types.ts already sit in this graph as type-only.
-      const configModules = [...graph].filter(
-        (file) =>
-          file.includes("kernel/config/") &&
-          !file.endsWith("kernel/config/types.ts"),
-      );
-      expect(configModules).toEqual([]);
+      // no read. Its tolerated seams are POSITIVE-LISTED, not filtered out by a
+      // path fragment: the distribution config sits at the package root, so a
+      // `kernel/config/`-shaped filter would not see it and this guard would
+      // keep passing after it stopped being true.
+      //  - `kernel/config/types.ts` — the ConfigLayers type, imported type-only
+      //    via VerbSpec.run's PragmaRuntime and erased at runtime, as
+      //    spec/types.ts and runtime/types.ts already are in this graph.
+      //  - `pragma.conf.ts` — the distribution config, statically imported by
+      //    constants.ts to project the program's identity. Safe only while it
+      //    stays inert data; `capabilities/lazy.test.ts` pins that.
+      const configModules = [...graph]
+        .filter((file) => /config|\.conf\./.test(file))
+        .map((file) => relative(pkgRoot, file))
+        .sort();
+      expect(configModules).toEqual([
+        "pragma.conf.ts",
+        "src/kernel/config/types.ts",
+      ]);
       // zod stays off the fast path (validate.ts is the registration seam).
       expect(has(graph, "kernel/spec/validate.ts")).toBe(false);
       // No store/graph modules, present or future.

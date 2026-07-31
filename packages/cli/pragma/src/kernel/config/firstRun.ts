@@ -21,6 +21,8 @@ import {
   writeFile,
 } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
+import { BIN_NAME, ISSUES_URL } from "../../constants.js";
+import { PROJECT_CONFIG_FILENAME } from "./findProjectConfig.js";
 import { globalConfigPath } from "./paths.js";
 
 /** Seed content: an empty object, so nothing is pinned the user did not choose. */
@@ -29,10 +31,10 @@ const SEED_CONFIG = "{}\n";
 /** Build the welcome note; the resolved path is shown so it is copyable. */
 function welcomeLines(path: string): string[] {
   return [
-    "Hello! Thanks for taking the time to try the pre-release pragma CLI.",
-    "Please file issues and feedback at https://github.com/canonical/pragma/issues.",
-    `Pragma stores its configuration in ${path} (just created with defaults).`,
-    "A `pragma.config.ts` in this directory or above it overrides it per project.",
+    `Hello! Thanks for taking the time to try the pre-release ${BIN_NAME} CLI.`,
+    `Please file issues and feedback at ${ISSUES_URL}.`,
+    `${BIN_NAME} stores its configuration in ${path} (just created with defaults).`,
+    `A \`${PROJECT_CONFIG_FILENAME}\` in this directory or above it overrides it per project.`,
     "",
   ];
 }
@@ -86,6 +88,8 @@ export async function ensureFirstRun(
     });
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    write(`Warning: could not create the global pragma config — ${reason}`);
+    write(
+      `Warning: could not create the global ${BIN_NAME} config — ${reason}`,
+    );
   }
 }

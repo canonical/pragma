@@ -378,9 +378,15 @@ describe("formatRootHelp — grouping", () => {
     makeVerb(["block", "list"]),
   ]);
 
-  it("shows the task-oriented section titles for live nouns", () => {
-    expect(help).toContain("Explore the design system");
+  it("leads with the uncurated nouns, untitled, under the usage line", () => {
+    // `block` is not in the kernel's curated table, so it leads the page with
+    // no heading of its own — the header already carries the blurb, and the
+    // kernel has no name for the domain. The kernel's own nouns keep their
+    // task-oriented sections.
+    expect(help).toMatch(/^Usage: pragma .*\n\n {2}block\b/m);
     expect(help).toContain("Set up & maintain");
+    // The blurb appears exactly once: in the header.
+    expect(help.match(/pragma test/g)).toHaveLength(1);
   });
 
   it("lists the live nouns and always-available mcp", () => {
@@ -408,8 +414,7 @@ describe("formatRootHelp — grouping", () => {
 
       Usage: pragma <command> [subcommand] [flags]
 
-      Explore the design system
-        block   Inspect components & patterns and their anatomy
+        block   block list summary
 
       Set up & maintain
         config  Read and write pragma configuration

@@ -17,7 +17,7 @@ const INDENT = "  ";
 /** Two-space gap between a term column and its description. */
 const GAP = "  ";
 
-/** A bold section header (`Flags`, `Verbs`, `Explore the design system`). */
+/** A bold section header (`Flags`, `Verbs`, `Set up & maintain`). */
 export function helpHeading(text: string): string {
   return chalk.bold(text);
 }

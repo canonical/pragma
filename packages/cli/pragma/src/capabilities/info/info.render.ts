@@ -2,6 +2,7 @@
  * Formatters for `pragma info` — plain, llm, json (no ink).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { ConfigOrigin } from "../../kernel/config/types.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type { InfoData } from "./types.js";
@@ -15,7 +16,7 @@ export const infoFormatters: Formatters<InfoData> = {
   plain(data) {
     const { config } = data;
     const lines = [
-      `pragma v${data.version}`,
+      `${BIN_NAME} v${data.version}`,
       `  Installed via: ${data.installSource}`,
       `  tier: ${config.tier ?? "(none)"}${originMarker(config.origins.tier)}`,
       `  channel: ${config.channel}${originMarker(config.origins.channel)}`,
@@ -45,7 +46,7 @@ export const infoFormatters: Formatters<InfoData> = {
   llm(data) {
     const { config } = data;
     const lines = [
-      `# pragma v${data.version}`,
+      `# ${BIN_NAME} v${data.version}`,
       `- Installed via: ${data.installSource}`,
       `- Tier: ${config.tier ?? "(none)"}${originMarker(config.origins.tier)}`,
       `- Channel: ${config.channel}${originMarker(config.origins.channel)}`,

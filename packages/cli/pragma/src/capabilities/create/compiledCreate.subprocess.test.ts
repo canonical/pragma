@@ -109,6 +109,52 @@ describe("compiled pragma create component (PROTECTED)", () => {
 });
 
 /**
+ * PROTECTED — the compiled-binary `create` gate.
+ *
+ * `create component` runs from the binary (the describe above proves it byte for
+ * byte) because summon-component routes every template read through
+ * `loadTemplateSync` and passes `content:` into `template()`. `create package` /
+ * `create application` do NOT: they call `template({ source })`, summon-core
+ * falls through to `readFile(options.source)`, and the run dies with `ENOENT …
+ * /$bunfs/templates/package.json.ejs` AFTER `mkdir` has already run — a
+ * half-made package left on the user's disk. Measured against a real
+ * `dist/pragma` with the gate lifted, for both nouns.
+ *
+ * A `--dry-run` does NOT test this: it exits 0 without reading a template and
+ * merely PRINTS `Read file: /$bunfs/templates/package.json.ejs` as a planned
+ * effect. That false positive is why the gate has to be pinned by a real run.
+ *
+ * The `readdirSync(dir)` assertion is the load-bearing one: it fails with the
+ * real symptom if the gate is ever lifted without fixing the generators.
+ */
+describe("compiled pragma create gate (PROTECTED)", () => {
+  // A LITERAL noun list, deliberately not derived from `create`'s own
+  // declaration: changing the gate's input must turn this red rather than
+  // silently drop the case.
+  for (const kind of ["package", "application"] as const) {
+    it(`refuses \`create ${kind}\` and leaves the cwd untouched`, () => {
+      const dir = freshCwd();
+      const result = spawnSync(compiledBin, ["create", kind, "--yes"], {
+        cwd: dir,
+        stdio: "pipe",
+        encoding: "utf-8",
+      });
+      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      // 1, not merely non-zero: UNSUPPORTED is a runtime refusal, which
+      // `kernel/error/constants.ts` maps to the generic runtime exit.
+      expect(result.status).toBe(1);
+      expect(output).toContain("not available in the compiled pragma binary");
+      // The clean refusal, not the crash it exists to prevent.
+      expect(output).not.toMatch(/ENOENT/);
+      expect(output).not.toMatch(/Internal error/);
+      // And nothing half-made on disk: the generator's `mkdir` effects run
+      // BEFORE its first template read, so a lifted gate leaves a stub tree.
+      expect(readdirSync(dir)).toEqual([]);
+    }, 30_000);
+  }
+});
+
+/**
  * PROTECTED — the compiled-binary READ guard (U1-orig).
  *
  * A READ command (`block list`, `--help`) never calls a generator's
