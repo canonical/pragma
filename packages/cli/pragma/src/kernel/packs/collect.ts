@@ -12,9 +12,11 @@
  * Precedence is config > package > static, and within config the closer
  * declaration wins: `packs[].stories` (the story a declared pack supplies) is
  * overridden by the top-level `stories` (the project's own, most specific,
- * statement). Package-shipped stories are a future source (the new kernel does
- * not yet discover package `stories/*.json`); the seam is here so wiring them
- * later is additive.
+ * statement). PACKAGE stories — the `stories/*.json` the answering pack carries
+ * — are third-party data, so they go through {@link validateStories}, which
+ * drops a bad one with a reported problem and CANNOT throw. Config stories stay
+ * fatal: the user owns those, and a broken `pragma.config.ts` already fails
+ * every command.
  *
  * zod is reached only through {@link parsePackDefinition} (lazy) — this module
  * is imported at dispatch, never on the fast path, so validating config stories
@@ -23,11 +25,88 @@
 
 import type { ConfigLayers } from "../config/types.js";
 import { PragmaError } from "../error/PragmaError.js";
+import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
 import type { CapabilityModule } from "../spec/types.js";
 import { compilePack } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
-import type { PackDefinition } from "./types.js";
+import type { PackDefinition, PackEntry } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
+
+/** One package-declared story that could not be used, and why. */
+export interface StoryProblem {
+  /** The story file, e.g. `@acme/recipes/stories/recipe.json`. */
+  readonly source: string;
+  /** Why it was ignored, in one sentence. */
+  readonly message: string;
+}
+
+/** The outcome of validating the stories a pack carries. */
+export interface ValidatedStories {
+  /** The stories that can be used, one per noun. */
+  readonly entries: readonly PackEntry[];
+  /** The ones that were ignored, each with its reason. */
+  readonly problems: readonly StoryProblem[];
+}
+
+/**
+ * Turn pack-carried story records into usable entries, DROPPING (never throwing
+ * on) the ones that cannot be used.
+ *
+ * TOTAL by construction: `JSON.parse` and `parsePackDefinition` happen inside
+ * ONE try per record, so a malformed file and a schema-invalid one are handled
+ * identically. That is not a nicety — package stories reach dispatch before the
+ * command tree exists, so a throw here would fail EVERY command, including
+ * `sources update` and `doctor`, the only two that can recover from it.
+ *
+ * Two packages claiming one noun: the last declared wins and the shadowed one
+ * is reported, through this same channel.
+ *
+ * @param records - The raw story records the answering pack carries.
+ * @param staticModules - The static capabilities, to detect a story claiming an
+ *   authored noun (`config`, `doctor`, …) that no story may replace.
+ * @returns The usable entries and the problems, both possibly empty.
+ */
+export function validateStories(
+  records: readonly PackStoryRecord[],
+  staticModules: readonly CapabilityModule[],
+): ValidatedStories {
+  const reserved = new Set(
+    staticModules
+      .filter((module) => !module.story)
+      .map((module) => module.name),
+  );
+  const byNoun = new Map<string, PackEntry>();
+  const problems: StoryProblem[] = [];
+  for (const record of records) {
+    try {
+      const definition = parsePackDefinition(
+        JSON.parse(record.content),
+        record.source,
+      );
+      if (reserved.has(definition.noun)) {
+        problems.push({
+          source: record.source,
+          message: `its noun "${definition.noun}" is a built-in command and cannot be replaced by a package.`,
+        });
+        continue;
+      }
+      const shadowed = byNoun.get(definition.noun);
+      if (shadowed) {
+        problems.push({
+          source: shadowed.source,
+          message: `its "${definition.noun}" story is shadowed by ${record.source}.`,
+        });
+      }
+      byNoun.set(definition.noun, { source: record.source, definition });
+    } catch (error) {
+      problems.push({
+        source: record.source,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return { entries: [...byNoun.values()], problems };
+}
 
 /**
  * The PROJECT's config-declared stories, weakest tier first.
@@ -56,20 +135,26 @@ function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
 }
 
 /**
- * Merge the project's config-declared story packs into the static capabilities.
+ * Merge the package- and config-declared story packs into the static capabilities.
  *
  * @param staticModules - The static capabilities (authored + declared stories).
  * @param layers - The resolved config layers (its `packs`, `stories`, `prefixes`).
+ * @param packageStories - The already-validated stories the answering pack
+ *   carries (see {@link validateStories}); weaker than either config tier.
  * @returns The effective modules, uniqueness-checked.
- * @throws PragmaError CONFIG_ERROR on an invalid story, a story claiming an
- *   authored non-story noun, or a duplicate noun within one config tier.
+ * @throws PragmaError CONFIG_ERROR on an invalid CONFIG story, a config story
+ *   claiming an authored non-story noun, or a duplicate noun within one config
+ *   tier. Package stories were already screened and never throw here.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
   layers: ConfigLayers,
+  packageStories: readonly PackEntry[] = [],
 ): readonly CapabilityModule[] {
   const tiers = projectStoryTiers(layers);
-  if (tiers.every((tier) => tier.length === 0)) return staticModules;
+  if (packageStories.length === 0 && tiers.every((tier) => tier.length === 0)) {
+    return staticModules;
+  }
 
   const prefixes = layers.config.prefixes ?? {};
   // Only a module compiled from a story may be replaced by one; the authored
@@ -82,6 +167,14 @@ export function assembleEffectiveModules(
   // Keyed by noun so the stronger tier REPLACES the weaker one — declaring a
   // story both on its pack and at the top level is a refinement, not an error.
   const dynamic = new Map<string, CapabilityModule>();
+  for (const entry of packageStories) {
+    dynamic.set(entry.definition.noun, {
+      name: entry.definition.noun,
+      story: true,
+      verbs: compilePack(entry.definition, entry.source, prefixes),
+      colophon: entry.definition.colophon,
+    });
+  }
   for (const tier of tiers) {
     const seen = new Set<string>();
     for (const raw of tier) {
@@ -119,23 +212,40 @@ export function assembleEffectiveModules(
 
 /**
  * Load the effective modules for a real invocation: read the layered config and
- * merge its story packs into the static capabilities.
+ * the answering pack's carried stories, and merge both into the static
+ * capabilities.
  *
  * Reached only at DISPATCH (real command / MCP serve), never on the
- * `--help`/`__complete` fast path, so the config read and zod validation never
- * cost the storeless paths. The config reader is dynamic-imported to keep even
- * this module's static graph free of it.
+ * `--help`/`__complete` fast path, so the config read, the pack read and zod
+ * validation never cost the storeless paths. The runtime pieces are
+ * dynamic-imported to keep even this module's static graph free of them.
  *
- * @param staticModules - The static capabilities (bundled + authored).
+ * @param staticModules - The static capabilities (authored + declared stories).
  * @param cwd - The directory to resolve project config against.
- * @returns The effective modules (static when no config stories are declared).
- * @note Impure — reads the project/global config.
+ * @returns The effective modules, plus the package stories that were ignored —
+ *   callers surface those on stderr rather than failing the command.
+ * @note Impure — reads the project/global config and the answering pack.
  */
 export async function loadEffectiveModules(
   staticModules: readonly CapabilityModule[],
   cwd: string,
-): Promise<readonly CapabilityModule[]> {
-  const { readConfig } = await import("../config/readConfig.js");
+): Promise<{
+  readonly modules: readonly CapabilityModule[];
+  readonly problems: readonly StoryProblem[];
+}> {
+  const [{ readConfig }, { resolveSources }, { activeStories }] =
+    await Promise.all([
+      import("../config/readConfig.js"),
+      import("../runtime/resolveSources.js"),
+      import("../runtime/graphpack/stories.js"),
+    ]);
   const layers = await readConfig(cwd);
-  return assembleEffectiveModules(staticModules, layers);
+  const { entries, problems } = validateStories(
+    activeStories(resolveSources(layers, cwd)),
+    staticModules,
+  );
+  return {
+    modules: assembleEffectiveModules(staticModules, layers, entries),
+    problems,
+  };
 }

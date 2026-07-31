@@ -15,8 +15,9 @@ import { buildServer } from "./buildServer.js";
 /**
  * Build the MCP server and serve it over stdio until the transport closes.
  *
- * The server is a real invocation (not a fast path), so it merges config-declared
- * story packs into the static capabilities before projecting the tool surface.
+ * The server is a real invocation (not a fast path), so it merges the package-
+ * and config-declared story packs into the static capabilities before projecting
+ * the tool surface.
  *
  * @param modules - The static capability modules to project.
  * @param cwd - The working directory for the server's runtime.
@@ -28,7 +29,14 @@ export async function serveMcp(
 ): Promise<void> {
   const dir = cwd ?? process.cwd();
   const effective = await loadEffectiveModules(modules, dir);
-  const server = await buildServer(effective, dir);
+  // stderr only — the stdio transport owns stdout, so naming an unusable
+  // package story here is safe and reaches the host's server log.
+  for (const problem of effective.problems) {
+    process.stderr.write(
+      `Ignored story ${problem.source}: ${problem.message}\n`,
+    );
+  }
+  const server = await buildServer(effective.modules, dir);
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }

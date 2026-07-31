@@ -16,7 +16,11 @@ import { describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
 import type { ConfigLayers } from "../config/types.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
-import { assembleEffectiveModules, loadEffectiveModules } from "./collect.js";
+import {
+  assembleEffectiveModules,
+  loadEffectiveModules,
+  validateStories,
+} from "./collect.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
 /** A trivial storeless verb for a fake authored module. */
@@ -187,6 +191,72 @@ describe("assembleEffectiveModules (PROTECTED)", () => {
   });
 });
 
+describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
+  const record = (source: string, content: string) => ({ source, content });
+
+  it("drops an unparseable AND a schema-invalid story, keeping the valid one", () => {
+    // Both bad shapes in ONE case, deliberately: guarding the malformed file
+    // and letting the schema-invalid one through is exactly how a third-party
+    // story once bricked every command, `sources update` and `doctor` included.
+    const result = validateStories(
+      [
+        record("pkg/stories/broken.json", "{ not json"),
+        record("pkg/stories/invalid.json", '{"noun":"Bad Noun","list":{}}'),
+        record("pkg/stories/recipe.json", JSON.stringify(validPack("recipe"))),
+      ],
+      STATIC,
+    );
+    expect(result.entries.map((entry) => entry.definition.noun)).toEqual([
+      "recipe",
+    ]);
+    expect(result.problems.map((problem) => problem.source)).toEqual([
+      "pkg/stories/broken.json",
+      "pkg/stories/invalid.json",
+    ]);
+  });
+
+  it("last declaration wins for a noun, and the shadowed file is reported", () => {
+    const result = validateStories(
+      [
+        record("a/stories/recipe.json", JSON.stringify(validPack("recipe"))),
+        record(
+          "b/stories/recipe.json",
+          JSON.stringify({ ...validPack("recipe"), colophon: "from b" }),
+        ),
+      ],
+      STATIC,
+    );
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries.at(0)?.source).toBe("b/stories/recipe.json");
+    expect(result.problems.at(0)?.source).toBe("a/stories/recipe.json");
+  });
+
+  it("refuses an authored noun without throwing", () => {
+    const result = validateStories(
+      [record("pkg/stories/config.json", JSON.stringify(validPack("config")))],
+      STATIC,
+    );
+    expect(result.entries).toEqual([]);
+    expect(result.problems.at(0)?.message).toMatch(/built-in command/);
+  });
+
+  it("a config story still REPLACES a package one for the same noun", () => {
+    const { entries } = validateStories(
+      [record("pkg/stories/recipe.json", JSON.stringify(validPack("recipe")))],
+      STATIC,
+    );
+    const effective = assembleEffectiveModules(
+      STATIC,
+      layers([{ ...validPack("recipe"), colophon: "from the project" }]),
+      entries,
+    );
+    expect(effective.filter((m) => m.name === "recipe")).toHaveLength(1);
+    expect(effective.find((m) => m.name === "recipe")?.colophon).toBe(
+      "from the project",
+    );
+  });
+});
+
 describe("the default layer's stories are compiled exactly once (PROTECTED)", () => {
   it("a fresh cwd's effective modules ARE the static capabilities", async () => {
     // `pragma.conf.ts` declares the distribution's own stories on its packs,
@@ -197,9 +267,10 @@ describe("the default layer's stories are compiled exactly once (PROTECTED)", ()
     // behind a validator whose failure is fatal. Identity (`toBe`), not
     // equality, is the assertion: nothing was rebuilt.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-carve-out-"));
-    await expect(loadEffectiveModules(capabilities, cwd)).resolves.toBe(
-      capabilities,
-    );
+    const { modules, problems } = await loadEffectiveModules(capabilities, cwd);
+    expect(modules).toBe(capabilities);
+    // The embedded snapshot carries no package stories, so nothing to report.
+    expect(problems).toEqual([]);
   });
 });
 
