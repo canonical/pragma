@@ -126,8 +126,12 @@ import { readContractSdl, CONTRACT_SCHEMA_PATH } from "@canonical/prism-contract
 ```
 
 `readContractSdl()` returns the shipped SDL text and `CONTRACT_SCHEMA_PATH` is
-its absolute path. Both are **Node/Bun only** — they read the filesystem. In a
-browser bundle, pass the SDL explicitly via the `contractSdl` option instead.
+its absolute path. They read the filesystem, and `satisfiesContract` imports
+the reader statically and calls it live whenever the `contractSdl` option is
+omitted — so the whole package is **Node/Bun only**. There is no browser entry
+point: the check belongs in provider gates and CI steps, which run
+server-side. (The `contractSdl` option exists to substitute a toy contract in
+tests, not to make the module bundleable.)
 
 The SDL itself lives in the `schema/` directory at the package root and is
 published alongside `dist/`.

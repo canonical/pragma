@@ -2,9 +2,10 @@
 // Locating and reading the shipped contract SDL.
 //
 // NODE / BUN ONLY. This module reads from the filesystem through node:fs and
-// resolves paths from import.meta.url. It must never be pulled into a browser
-// bundle — import satisfiesContract with an explicit `contractSdl` option (or
-// inline the SDL at build time) if you need the check to run client-side.
+// resolves paths from import.meta.url — and satisfiesContract imports it
+// statically and calls it live whenever the `contractSdl` option is omitted,
+// so the whole package is Node/Bun only. There is no browser entry point:
+// the check belongs in provider gates and CI steps, which run server-side.
 // =============================================================================
 
 import { existsSync, readFileSync } from "node:fs";
