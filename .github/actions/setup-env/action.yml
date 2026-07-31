@@ -110,6 +110,10 @@ runs:
         INSTALL_PLAYWRIGHT: ${{ inputs.install-playwright }}
       run: |
         echo "install-playwright input = '${INSTALL_PLAYWRIGHT}'"
+        if [ -z "${INSTALL_PLAYWRIGHT}" ]; then
+          echo "::error::install-playwright arrived EMPTY — the input default is 'false', so empty means input propagation into the composite failed"
+          exit 1
+        fi
         if [ "${INSTALL_PLAYWRIGHT}" != "true" ]; then
           echo "browser install not requested; skipping"
           exit 0
