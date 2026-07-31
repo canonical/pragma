@@ -32,6 +32,7 @@ The v2 CLI reshapes the command surface. Migrate as follows:
 | v1 | v2 | Notes |
 | --- | --- | --- |
 | `packages:` in a config | `packs:` | The config field was renamed. A global or project config that still declares `packages:` throws `CONFIG_ERROR` at startup — every command, `doctor` and `sources update` included — with a message naming the rename. Rename the key; the entry shape is unchanged. |
+| `detail:` as any string | `detail: summary \| standard \| detailed` | The `detail` config field is validated as the closed enum it documents, exactly like `channel`. A layer declaring any other value (a typo, the v1 `digest`) throws `CONFIG_ERROR` at load naming the file and the three levels — it no longer passes validation, gets reported by `config show` as in force, and silently renders at `standard`. |
 | `pragma data …` | `pragma sources …` | The `data` noun is renamed `sources`. Build the store with `pragma sources update`; inspect it with `pragma sources status`. |
 | `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package and builds the store in one step. |
 | `pragma.lock.json` | — | The project lock is removed. Which pack answers a project's reads is recorded by a one-line pointer in the cache (`$XDG_CACHE_HOME/pragma/projects/`), because the pack it names is machine-local and was never committable. Run `pragma sources update` once, then delete the orphan `pragma.lock.json` from your repo — nothing reads it. |

@@ -15,7 +15,7 @@
 
 import { z } from "zod";
 import { PragmaError } from "../error/PragmaError.js";
-import { CHANNELS, type RawConfig } from "./types.js";
+import { CHANNELS, DETAIL_LEVELS, type RawConfig } from "./types.js";
 
 const packDeclarationSchema = z.union([
   z.string().min(1),
@@ -58,7 +58,10 @@ export const rawConfigSchema = z.object({
   issuesUrl: z.string().url().optional(),
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),
-  detail: z.string().optional(),
+  // Closed over the documented ladder, like `channel`: a level the renderer
+  // would silently degrade to `standard` is a config error naming the file and
+  // the three valid values, not a value `config show` reports as honoured.
+  detail: z.enum(DETAIL_LEVELS).optional(),
   packs: z.array(packDeclarationSchema).optional(),
   generators: z.array(generatorSourceSchema).optional(),
   stories: z.array(z.unknown()).optional(),

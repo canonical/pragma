@@ -24,7 +24,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 | `issuesUrl` | URL string (optional) | Distribution-only — see below. Where the first-run note asks users to report problems. |
 | `tier` | string (optional) | Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it. |
 | `channel` | `normal` \| `experimental` \| `prerelease` (optional) | Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`. |
-| `detail` | string (optional) | Default progressive-disclosure level: `summary`, `standard` or `detailed`. The validator takes any string and an unrecognized one falls back to `standard` — `config show` still reports it as declared. Set it with `config set detail <level>`, which rejects anything else. |
+| `detail` | `summary` \| `standard` \| `detailed` (optional) | Default progressive-disclosure level. A closed enum, like `channel`: any other value fails at load with a `CONFIG_ERROR` naming the file and the three levels. Set it with `config set detail <level>`. |
 | `packs` | array (optional) | Semantic pack sources built by `sources update`. Each entry is a bare npm name or `{ name, source, stories? }`; `stories` are read stories the pack supplies, in the pack grammar. |
 | `generators` | array (optional) | Scaffold generator refs (`{ name, source }`). NOTHING reads `source` today: the `create` verbs resolve their generators statically. Declaring it changes only what `config show` prints. |
 | `stories` | array (optional) | Read stories not attached to any pack, in the pack grammar. Compiled at dispatch, and they win over the same noun declared under `packs[].stories`. |

@@ -150,6 +150,50 @@ describe("readConfig — layering + provenance", () => {
   });
 });
 
+describe("`detail` — a closed enum at load", () => {
+  it("a project config declaring an unknown level throws CONFIG_ERROR naming the file and the three levels", async () => {
+    freshXdg();
+    // Before the enum, `detail: "banana"` passed validation, was reported as
+    // `[project]` by `config show`, and silently rendered at `standard`.
+    const dir = projectWith('export default { detail: "banana" };');
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(path);
+    expect(message).toContain("detail");
+    for (const level of ["summary", "standard", "detailed"]) {
+      expect(message).toContain(level);
+    }
+  });
+
+  it("a global JSON declaring an unknown level throws the same loud error", () => {
+    freshXdg();
+    writeGlobal('{"detail": "digest"}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(globalConfigPath());
+    for (const level of ["summary", "standard", "detailed"]) {
+      expect(message).toContain(level);
+    }
+  });
+});
+
 describe("legacy `packages` key — loud rename error", () => {
   it("a project config declaring `packages` throws CONFIG_ERROR naming the rename", async () => {
     freshXdg();

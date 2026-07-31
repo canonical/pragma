@@ -36,7 +36,7 @@ export interface FixtureRuntimeOptions {
   /** Explicit `--detail` level for this invocation. */
   readonly detail?: DetailLevel;
   /** Config `detail` value and its origin (drives {@link resolvePackDetail}). */
-  readonly configDetail?: string;
+  readonly configDetail?: DetailLevel;
   /** Origin of the config `detail` (default `"default"`). */
   readonly detailOrigin?: ConfigOrigin;
 }
