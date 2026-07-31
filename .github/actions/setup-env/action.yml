@@ -73,32 +73,22 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
-      # The browser-install decision lives in SHELL, not in a step `if:`.
-      # Step conditions in this composite have now silently mis-evaluated
-      # twice on #901 (inputs-context, then a steps-output relay), each time
-      # skipping the install with nothing in the log. `${{ inputs.* }}`
-      # interpolation into env/run is the one mechanism this file already
-      # proves works in CI (build-command, node-version), so the step always
-      # runs, always logs the received input, exits 0 when not requested, and
-      # self-verifies the executables after installing — a missing browser
-      # fails HERE, at the cause, not 200 browser tests later.
-      #
-      # Browser binaries are keyed on bun.lock: they only change when the
-      # resolved playwright version changes. On a cache hit, `playwright
-      # install` skips the download and only the (uncacheable) apt system
-      # dependencies are installed. The cache step keeps a step `if:` because
-      # actions/cache cannot shell-gate; if that condition ever mis-evaluates
-      # the way the install conditions did, installs lose the cache but stay
-      # correct — the optimization is allowed to break, the install is not.
+      # The decision itself is made in shell inside the script (composite-step
+      # `if:` conditions mis-evaluated silently twice during #901); this tiny
+      # relay step only exists because actions/cache cannot shell-gate. If its
+      # condition ever mis-evaluates, installs lose the cache but stay correct
+      # — the optimization is allowed to break, the install is not.
     - name: Resolve browser-install intent
       id: pw
       shell: bash
       env:
         INSTALL_PLAYWRIGHT: ${{ inputs.install-playwright }}
-      run: |
-        echo "install-playwright input = '${INSTALL_PLAYWRIGHT}'"
-        echo "required=${INSTALL_PLAYWRIGHT}" >> "$GITHUB_OUTPUT"
+      run: echo "required=${INSTALL_PLAYWRIGHT}" >> "$GITHUB_OUTPUT"
 
+      # Browser binaries are keyed on bun.lock: they only change when the
+      # resolved playwright version changes. On a cache hit, the install step
+      # skips the download and only the (uncacheable) apt system dependencies
+      # are installed.
     - name: Cache Playwright browsers
       if: ${{ steps.pw.outputs.required == 'true' }}
       uses: actions/cache@v5
@@ -110,46 +100,7 @@ runs:
       shell: bash
       env:
         INSTALL_PLAYWRIGHT: ${{ inputs.install-playwright }}
-      run: |
-        echo "install-playwright input = '${INSTALL_PLAYWRIGHT}'"
-        if [ -z "${INSTALL_PLAYWRIGHT}" ]; then
-          echo "::error::install-playwright arrived EMPTY — the input default is 'false', so empty means input propagation into the composite failed"
-          exit 1
-        fi
-        if [ "${INSTALL_PLAYWRIGHT}" != "true" ]; then
-          echo "browser install not requested; skipping"
-          exit 0
-        fi
-        # Invoke the CONSUMER package's playwright by path — never `bunx
-        # playwright`. Bun's isolated layout does not hoist playwright to root
-        # node_modules (verified on #901: the root path does not exist on a
-        # fresh CI install), so bunx silently fell back to fetching the LATEST
-        # playwright from the registry and installed that version's browser
-        # builds, which the workspace's pinned playwright-core then cannot
-        # find (#901: installed 1234, wanted 1228). The svelte browser suites
-        # resolve playwright through their own package deps, so the declared
-        # consumer IS the correct version by construction — and bun's layout
-        # guarantees a declared dep exists in the package's node_modules.
-        PW_CLI="packages/svelte/ds-app-wpe/node_modules/playwright/cli.js"
-        if [ ! -f "$PW_CLI" ]; then
-          echo "::error::playwright not found at ${PW_CLI} (the declared consumer's resolution) — cannot install browsers deterministically"
-          exit 1
-        fi
-        echo "workspace playwright: $(bun "$PW_CLI" --version)"
-        bun "$PW_CLI" install --with-deps chromium firefox webkit
-        echo "ms-playwright contents after install:"
-        ls ~/.cache/ms-playwright/ || true
-        # Verify the EXACT revisions the workspace's playwright-core resolves —
-        # a version-mismatched install can never again pass setup silently.
-        # browsers.json is found THROUGH the playwright package (bun's layout
-        # keeps a package's deps beside it), never via a root hoist assumption.
-        BROWSERS_JSON="$(dirname "$(realpath "$PW_CLI")")/../playwright-core/browsers.json"
-        EXPECTED=$(jq -r '.browsers[] | select(.name=="chromium" or .name=="chromium-headless-shell" or .name=="firefox" or .name=="webkit") | (.name | gsub("-";"_")) + "-" + .revision' "$BROWSERS_JSON")
-        missing=0
-        for dir in $EXPECTED; do
-          [ -d "$HOME/.cache/ms-playwright/$dir" ] || { echo "::error::expected ${dir} in ms-playwright (workspace playwright-core revision)"; missing=1; }
-        done
-        exit "$missing"
+      run: bash ${{ github.action_path }}/install-playwright.sh
 
     - name: Start Nx cache server
       shell: bash
