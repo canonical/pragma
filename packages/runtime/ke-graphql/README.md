@@ -161,9 +161,30 @@ Reading the output back against the input shows most of the compiler's rules at 
 
 About `authoreds` — that's the pluralizer being mechanically right and ergonomically wrong. Which brings us to:
 
-## Custom mappings
+## Annotation-driven binding: the `graphql:` vocabulary
 
-Mappings are the escape hatch for everything the ontology can't express ergonomically. Keys are full IRIs or prefixed names; values override one aspect each:
+The primary transport for projection intent is the ontology itself. Thirteen annotation terms — declared on the class or property they describe and captured by the extractor from any loaded source — bind the same knobs the config once carried, so every consumer of an ontology resolves it identically:
+
+```turtle
+@prefix graphql: <http://pragma.canonical.com/graphql#> .
+
+lib:Book     graphql:name "Publication" ;         # verbatim type name
+             graphql:expose true ;                # allowlist member under mode: "explicit"
+             graphql:titleFrom lib:heading .      # _meta.title reads lib:heading first
+lib:authored graphql:name "works" .               # verbatim field name — never pluralized/prefixed
+lib:hasPublisher graphql:singular true .          # cardinality without owl/SHACL markers
+lib:title    graphql:nonNull true ;               # promote to String!
+             graphql:searchable true .            # search-index membership (consumed by the search feature)
+lib:cites    graphql:inverse lib:citedBy .        # declared pair, same semantics as owl:inverseOf
+lib:Annotation graphql:embeddable true .          # force embedded shape
+<https://lib.example/> graphql:prefix "lib" .     # namespace prefix, ahead of the registered map
+```
+
+The class-side terms are `name`, `abstract`, `embeddable`, `expose`, and the four descriptive sources `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom` (nearest ancestor wins — annotate a root class to cover its tree); the property-side terms are `name`, `singular`, `nonNull`, `inverse`, `searchable`; `prefix` targets the namespace or ontology subject. Validation is loud and never tiebreaks: conflicting values are a fatal `A001`, foreign targets (`rdfs:label`, an absent vocabulary, a typo) a fatal `A002`, malformed values a fatal `A003`; an unrecognized local name or inapplicable target is ignored with `A004`. Under `mode: "auto"` the annotations are deliberately not consulted (`A006`) — the escape hatch that compiles even a broken annotation set.
+
+## Custom mappings (config — deprecated)
+
+Config mappings survive as the workspace-local shadow: keys are full IRIs or prefixed names; values override one aspect each. A config key that contradicts an annotation **wins per key** with an `A005` warning naming both values — the draft-locally workflow. Upstream the value into the ontology and delete the key when it stabilizes. (The synthetic `inverse: { graphqlName }` form stays config-only: a synthesized field has no IRI to annotate.)
 
 ```typescript
 const graphql = createSchemaPlugin({
@@ -198,12 +219,13 @@ FIELD names are never silently renamed. The compiler owns exactly two — `uri` 
 
 Precedence, highest first:
 
-1. custom mapping `{ singular }` override
-2. `owl:FunctionalProperty`
-3. SHACL `sh:maxCount 1` — per *(class, property)* pair, so the same property can be singular on one class and a list on another; `sh:or` branches merge to the most permissive interpretation, repeated shapes for one path merge as the SHACL conjunction
-4. kind default: **datatype and annotation properties are singular; object properties are lists.** (Multi-valued literals are the exception in RDF practice; opt a datatype property back into a list with `{ singular: false }`.)
+1. custom mapping `{ singular }` override (the config shadow)
+2. `graphql:singular` annotation on the property
+3. `owl:FunctionalProperty`
+4. SHACL `sh:maxCount 1` — per *(class, property)* pair, so the same property can be singular on one class and a list on another; `sh:or` branches merge to the most permissive interpretation, repeated shapes for one path merge as the SHACL conjunction
+5. kind default: **datatype and annotation properties are singular; object properties are lists.** (Multi-valued literals are the exception in RDF practice; opt a datatype property back into a list with `graphql:singular false` or `{ singular: false }`.)
 
-Nullability is deliberate and honest: `uri` and `_meta` are non-null, list and connection fields are non-null with empty defaults — and *everything else is nullable*, because OWL ontologies don't promise completeness. SHACL `sh:minCount` is **recorded** (queryable as `ClassProperty.required`) but never auto-promoted to GraphQL non-null: a single missing value would take down whole responses. Consumers who know their data promote specific fields via `nonNullOverrides: { Book: ["title"] }`.
+Nullability is deliberate and honest: `uri` and `_meta` are non-null, list and connection fields are non-null with empty defaults — and *everything else is nullable*, because OWL ontologies don't promise completeness. SHACL `sh:minCount` is **recorded** (queryable as `ClassProperty.required`) but never auto-promoted to GraphQL non-null: a single missing value would take down whole responses. An ontology that knows its data promotes a field with `graphql:nonNull true`; the deprecated `nonNullOverrides: { Book: ["title"] }` config keeps working and OR-merges with it (both only ever promote).
 
 ## The second schema: `_meta` and the ontology browser
 
@@ -242,6 +264,7 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 | Range | Meaning | Examples |
 |---|---|---|
 | `E001` | extraction/SPARQL failure | query failed, unregistered namespace (synthetic prefix assigned), blank nodes nested deeper than the loader's closure |
+| `A001–A008` | `graphql:` annotation resolution + projection modes | conflicting values, never tiebroken (`A001`, error), foreign/unknown target (`A002`, error), malformed value (`A003`, error), unrecognized term or inapplicable target ignored (`A004`), config shadows an annotation — config wins (`A005`), `mode: "auto"` ignoring present annotations (`A006`, info), the `mode: "explicit"` dropped-class aggregate (`A007`, info), field omitted for an unexposed range class (`A008`) |
 | `B001–B004` | build references | `subClassOf` cycle, unknown domain/range/inverse |
 | `V001–V016` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`), abstract mapping with direct instances (`V015`), concrete supertype flattening (`V016`) |
 | `M001–M006` | naming | duplicate type or field name, later claimant dropped (`M001`, error), illegal class local name sanitized (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`), property claims a structural field name and is dropped (`M005`, error), one union name minted with different member sets (`M006`, error) |
@@ -255,16 +278,17 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 
 ```typescript
 createSchemaPlugin({
-  mappings,                          // CustomMappings (above)
+  mappings,                          // DEPRECATED — CustomMappings (above); config wins per key with A005
   extensions,                        // consumer fields — object or factory form (below)
   relay: true,                       // Node/uri/_meta/connections/root queries (default true)
   incremental: false,                // add @defer/@stream directives (below)
   sdlOutput: "./schema.graphql",     // write the SDL on every compile that prints one — feed
                                      // relay-compiler (artifact boots skip printing and leave
                                      // the file untouched)
-  nonNullOverrides: { Book: ["title"] },
+  nonNullOverrides: { Book: ["title"] },  // DEPRECATED — prefer graphql:nonNull (OR-merged)
   prefixing: "none",                 // or "all" — namespace-prefix EVERY field name
-  mode: "annotated",                 // "auto" | "annotated" | "explicit" — provenance only today
+  mode: "annotated",                 // "auto" (ignore annotations) | "annotated" (bind them)
+                                     // | "explicit" (graphql:expose allowlist)
   provider: "library",               // stamped into the SDL provenance header
   revision: "a1b2c3d",               // stamped into the SDL provenance header
   standardVocabFields: {             // DEPRECATED, superseded by the graphql:*From annotations:

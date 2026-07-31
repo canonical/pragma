@@ -55,10 +55,11 @@ Any error-severity diagnostic refuses the compile: a schema minus silently dropp
 ### Result & key option shapes
 - **`CompilerResult`** — `{ schema, sdl, diagnostics, nameMap, mapped, extraction, createContext, clearLoaderCache }`. `extraction` is the Pass 1 output (`RawExtraction`) — the value `serializeExtraction` turns into a boot artifact.
 - **`SchemaPluginApi`** — `{ schema, diagnostics, nameMap, sdl, createContext, clearLoaderCache }` (the `store.api("ke-graphql")` surface).
-- **`SchemaPluginOptions`** — `mappings`, `extensions`, `relay`, `incremental`, `sdlOutput`, `nonNullOverrides`, `prefixing` (`"none"`|`"all"`), `mode` (`"auto"`|`"annotated"`|`"explicit"` — provenance only today), `provider`, `revision`, `standardVocabFields` (deprecated), `onRuntimeWarning`, `loaderCache` (`"request"`|`"process"`), `processCacheSize`.
+- **`SchemaPluginOptions`** — `mappings` (deprecated — prefer the `graphql:` annotations; a key shadowing an annotation wins with `A005`), `extensions`, `relay`, `incremental`, `sdlOutput`, `nonNullOverrides` (deprecated — prefer `graphql:nonNull`, OR-merged), `prefixing` (`"none"`|`"all"`), `mode` (`"auto"`|`"annotated"`|`"explicit"`), `provider`, `revision`, `standardVocabFields` (deprecated), `onRuntimeWarning`, `loaderCache` (`"request"`|`"process"`), `processCacheSize`.
 - **`FieldPrefixing`** — `"none"` (default) | `"all"`. `"all"` namespace-prefixes every generated field name (`lib:uri` → `libUri`). It always clears an `M005` — the structural names the compiler owns carry no prefix — but clears an `M001` only when the two colliding IRIs sit in **different** namespaces (`ex:name` + `ds:name` → `exName` + `dsName`). Same-namespace claimants take the same prefix and collide again (`ex:name` and `ex:hasName` both strip to `name`, both become `exName`), so that case still needs a `mappings` rename. An explicit `mappings[…].graphqlName` is never prefixed.
-- **`ProjectionMode`** — `"auto"` | `"annotated"` (default) | `"explicit"`. Typed, defaulted, and stamped into the SDL provenance header; its **effect** lands with the `graphql:*` annotations task, and the compiler deliberately does not branch on it before then.
-- **`CustomMapping`** — `{ graphqlName?, singular?, abstract?, embeddable?, inverse?: { graphqlName } }`, keyed by IRI or prefixed name in `CustomMappings`.
+- **`ProjectionMode`** — `"auto"` | `"annotated"` (default) | `"explicit"`, stamped into the SDL provenance header. `"auto"` never consults the `graphql:` annotation overlay (broken annotations still compile; `A006` notes ignored assertions). `"annotated"` binds the overlay per term over the heuristics. `"explicit"` projects only classes annotated `graphql:expose true` — everything else is skipped with the aggregated `A007`, a field whose range class is unexposed is omitted with `A008`, and an unexposed class's TBox `instances`/`instanceCount` answer empty/0 while the browser stays complete.
+- **`CustomMapping`** — `{ graphqlName?, singular?, abstract?, embeddable?, inverse?: { graphqlName } }`, keyed by IRI or prefixed name in `CustomMappings`. Deprecated as the primary transport: declare the same knobs as `graphql:` annotations on the ontology terms; a config key keeps working and wins per key (`A005`). The synthetic `inverse: { graphqlName }` form stays config-only.
+- **`GraphqlOverlay`** — the resolved `graphql:` annotation overlay on `OntologyIR.graphql`: `classes` (`name`, `abstract`, `embeddable`, `expose`, `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom`), `properties` (`name`, `singular`, `nonNull`, `inverse`, `searchable` — IR capture only), and the validated `prefixes` map.
 
 ---
 
@@ -69,7 +70,7 @@ Any error-severity diagnostic refuses the compile: a schema minus silently dropp
 serializeExtraction(extraction: RawExtraction, sourcesHash: string): string
 deserializeExtraction(artifact: string | SerializedExtraction): { extraction: RawExtraction; sourcesHash: string }
 ```
-Codec for the boot artifact. `deserializeExtraction` throws if `version !== ARTIFACT_VERSION`.
+Codec for the boot artifact. `deserializeExtraction` throws if `version !== ARTIFACT_VERSION`. The `graphqlAnnotations` field is optional on the wire: a pre-vocabulary artifact deserializes it as `[]` and still boots (the version stays 1 — `sourcesHash` already forces a live recompile the moment the sources gain an annotation the artifact has not seen).
 
 ### `hashSources(contents)`
 ```ts
