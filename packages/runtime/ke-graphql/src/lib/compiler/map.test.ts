@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type ClassNode,
+  GRAPHQL_TERMS,
   type OntologyIR,
   type PropertyNode,
   type RawExtraction,
@@ -46,6 +47,18 @@ const buildIR = (
   partial: Partial<RawExtraction>,
   mappings: Parameters<typeof build>[1] = {},
 ): OntologyIR => build(makeExtraction(partial), mappings).output;
+
+/** A raw datatype property rooted at ex:Thing unless overridden. */
+const datatypeProp = (
+  local: string,
+  overrides: Partial<RawExtraction["properties"][number]> = {},
+): RawExtraction["properties"][number] => ({
+  uri: uri(local),
+  kind: "datatype",
+  domains: [uri("Thing")],
+  ranges: [`${XSD}string`],
+  ...overrides,
+});
 
 const codes = (diagnostics: { code: string }[]) =>
   diagnostics.map((d) => d.code);
@@ -1514,5 +1527,138 @@ describe("map — cardinality and interface coverage", () => {
     const refs = output.types.get("Doc")?.fields.get("refs");
     expect(refs?.type).toEqual({ kind: "scalar", name: "String" });
     expect(refs?.resolverTemplate).toBe("datatype-list");
+  });
+});
+
+describe("map — graphql: annotation binding (name, nonNull)", () => {
+  it("binds graphql:name on a class verbatim and propagates it to the root names", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "Item", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    expect(diagnostics).toEqual([]);
+    const item = output.types.get("Item");
+    expect(item?.owlUri).toBe(uri("Widget"));
+    expect(item?.singularName).toBe("item");
+    expect(item?.pluralName).toBe("items");
+    expect(output.nameMap.toGraphQL(uri("Widget"))).toBe("Item");
+    expect(output.types.has("Widget")).toBe(false);
+  });
+
+  it("keeps the config graphqlName ahead of graphql:name (A005 names the shadow)", () => {
+    const built = build(
+      makeExtraction({
+        classes: [{ uri: uri("Widget"), superclasses: [] }],
+        instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+        graphqlAnnotations: [
+          [uri("Widget"), GRAPHQL_TERMS.name, "Annotated", "literal"],
+        ],
+      }),
+      { "ex:Widget": { graphqlName: "Configured" } },
+    );
+    expect(built.diagnostics.map((d) => d.code)).toContain("A005");
+    const { output } = map(built.output, {
+      mappings: { "ex:Widget": { graphqlName: "Configured" } },
+    });
+    expect(output.types.has("Configured")).toBe(true);
+    expect(output.types.has("Annotated")).toBe(false);
+  });
+
+  it("treats an annotated name as custom on a reserved collision: M001 drop, never an M004 rename", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "Query", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    const found = diagnostics.map((d) => d.code);
+    expect(found).toContain("M001");
+    expect(found).not.toContain("M004");
+    expect(output.types.size).toBe(0);
+  });
+
+  it("binds graphql:name on a property verbatim — never pluralized, never prefixed", () => {
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Parent"), superclasses: [] },
+        { uri: uri("Kid"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Parent"), { total: 1, named: 1 }],
+        [uri("Kid"), { total: 1, named: 1 }],
+      ]),
+      properties: [
+        {
+          uri: uri("hasKid"),
+          kind: "object",
+          domains: [uri("Parent")],
+          ranges: [uri("Kid")],
+        },
+        datatypeProp("note", { domains: [uri("Parent")] }),
+      ],
+      graphqlAnnotations: [
+        // a LIST field annotated with a singular noun stays singular —
+        // pluralize() must not touch an explicit name
+        [uri("hasKid"), GRAPHQL_TERMS.name, "child", "literal"],
+      ],
+    });
+    const { output } = map(ir, { prefixing: "all" });
+    const parent = output.types.get("Parent");
+    // the annotated name is untouched by prefixing: "all"...
+    expect(parent?.fields.has("child")).toBe(true);
+    expect(parent?.fields.has("children")).toBe(false);
+    // ...while the derived sibling field IS prefixed (the policy still works)
+    expect(parent?.fields.has("exNote")).toBe(true);
+  });
+
+  it("sanitizes an illegal annotated name with M002 on both target kinds", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [datatypeProp("note", { domains: [uri("Widget")] })],
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "My-Item", "literal"],
+        [uri("note"), GRAPHQL_TERMS.name, "bad-name", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    const m002 = diagnostics.filter((d) => d.code === "M002");
+    expect(m002).toHaveLength(2);
+    expect(m002.map((d) => d.severity)).toEqual(["warning", "warning"]);
+    expect(
+      m002.some((d) => d.message.includes('graphql:name "bad-name"')),
+    ).toBe(true);
+    expect(output.types.get("My_Item")?.fields.has("bad_name")).toBe(true);
+  });
+
+  it("promotes graphql:nonNull and OR-merges it with the config list", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [
+        datatypeProp("a", { domains: [uri("Widget")] }),
+        datatypeProp("b", { domains: [uri("Widget")] }),
+        datatypeProp("c", { domains: [uri("Widget")] }),
+      ],
+      graphqlAnnotations: [
+        [uri("a"), GRAPHQL_TERMS.nonNull, "true", "literal"],
+        [uri("b"), GRAPHQL_TERMS.nonNull, "true", "literal"],
+      ],
+    });
+    const { output } = map(ir, { nonNullOverrides: { Widget: ["b", "c"] } });
+    const fields = output.types.get("Widget")?.fields;
+    // annotation only
+    expect(fields?.get("a")?.nonNull).toBe(true);
+    expect(fields?.get("a")?.nullable).toBe(false);
+    // both sources agree — still simply non-null
+    expect(fields?.get("b")?.nonNull).toBe(true);
+    // config only — the existing path is untouched
+    expect(fields?.get("c")?.nonNull).toBe(true);
   });
 });

@@ -1,10 +1,11 @@
 // =============================================================================
 // Pass 4 — Map: OntologyIR → MappedIR
 //
-// Pure. OWL names → GraphQL names (custom overrides, has/is stripping, case
-// convention, pluralization, collision resolution), range → field type specs,
-// resolver template assignment, embeddable/interface interaction, synthetic
-// inverse fields, standard-vocab fields, non-null overrides.
+// Pure. OWL names → GraphQL names (config + graphql:name overrides, has/is
+// stripping, case convention, pluralization, collision resolution), range →
+// field type specs, resolver template assignment, embeddable/interface
+// interaction, synthetic inverse fields, standard-vocab fields, non-null
+// promotion (config list OR graphql:nonNull).
 // =============================================================================
 
 import {
@@ -102,7 +103,12 @@ const resolveTypeNames = (state: MapperState): void => {
   const taken = new Set<string>(RESERVED_TYPE_NAMES);
   const owners = new Map<string, string>(); // resolved name → first class URI
   for (const node of state.ir.classes.values()) {
-    const custom = findMapping(state, node.uri)?.graphqlName;
+    // config ?? annotation, both with custom-name semantics: verbatim, never
+    // auto-prefixed on a reserved collision (M001 instead of M004), always
+    // M002-sanitized when illegal.
+    const custom =
+      findMapping(state, node.uri)?.graphqlName ??
+      state.ir.graphql.classes.get(node.uri)?.name;
     let name = custom ?? getLocalName(node.uri);
     const sanitized = sanitizeGraphQLName(name);
     if (sanitized !== name) {
@@ -204,6 +210,24 @@ const computeFieldName = (
   const custom = findMapping(state, property.uri)?.graphqlName;
   if (custom) {
     return custom; // an explicit graphqlName is authoritative — never prefixed
+  }
+  const annotated = state.ir.graphql.properties.get(property.uri)?.name;
+  if (annotated) {
+    // graphql:name is verbatim like a config graphqlName — never pluralized,
+    // never prefixed — but an illegal value is sanitized with the same M002
+    // diagnose-and-fall-back the class path applies, so one ontology
+    // compiles identically on every provider instead of dying at C003.
+    const sanitized = sanitizeGraphQLName(annotated);
+    if (sanitized !== annotated) {
+      state.diagnostics.push({
+        severity: "warning",
+        code: "M002",
+        message: `graphql:name "${annotated}" is not a legal GraphQL field name - sanitized to ${sanitized}`,
+        source: property.uri,
+        phase: PHASE,
+      });
+    }
+    return sanitized;
   }
   let name = stripVerbPrefix(getLocalName(property.uri));
   if (isList) {
@@ -388,8 +412,12 @@ const buildFields = (
     const embedded = isEmbeddedRange(state, property);
     const list = !singular;
     const name = computeFieldName(state, property, list);
+    // Effective non-null = the consumer's per-type list OR graphql:nonNull —
+    // both only ever promote, so the merge is a plain disjunction (no A005
+    // contradiction is expressible here).
     const nonNull =
-      state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false;
+      (state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false) ||
+      (state.ir.graphql.properties.get(property.uri)?.nonNull ?? false);
     // Declared owl:inverseOf pair: the ABox may assert either direction, so
     // each side resolves the union of forward + reverse assertions.
     // List sides switch to the inverse template; singular sides keep their

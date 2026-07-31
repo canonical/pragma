@@ -551,6 +551,26 @@ describe("graphql: annotation fatality", () => {
     expect(codes(result)).toContain("A004");
     expect(result.schema.getType("Thing")).toBeDefined();
   });
+
+  it("binds graphql:name and graphql:nonNull end to end: roots, connection pair, and nullability follow", async () => {
+    const result = await compileFixture(`${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_NS}name> "Item" .
+<http://example.org/name> <${GRAPHQL_NS}nonNull> true .
+`);
+    expect(result.schema.getType("Item")).toBeDefined();
+    expect(result.schema.getType("Thing")).toBeUndefined();
+    // The rename propagates to the singular/plural root fields and the
+    // connection pair minted from the type name.
+    expect(result.sdl).toContain("item(uri: String!): Item");
+    expect(result.sdl).toContain("items(");
+    expect(result.sdl).toContain("ItemConnection");
+    // graphql:nonNull promoted the field with no config at all.
+    const itemBlock = /type Item implements Node \{[^}]*\}/.exec(
+      result.sdl,
+    )?.[0];
+    expect(itemBlock).toContain("name: String!");
+    expect(itemBlock).toContain("count: Int\n");
+  });
 });
 
 describe("failure modes", () => {
