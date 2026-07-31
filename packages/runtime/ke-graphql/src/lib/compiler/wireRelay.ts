@@ -8,7 +8,8 @@
 //   whose concrete implementors are all non-embeddable (Relay @refetchable
 //   fragments on UIBlock need Node)
 // - list object fields → connections with the four pagination args
-// - root query fields: node(id), per-type lookup + listing
+// - root query fields: node(id), per-type lookup + listing — single-occupancy
+//   names (a later claimant is dropped with W001, never silently overwritten)
 //
 // Identity is the ABSOLUTE IRI end to end: EntityValue.uri, Node.uri, the
 // node(id:) argument, the listing's URI window, and the cursors derived from
@@ -30,6 +31,8 @@ import type {
   PassResult,
 } from "../shared/index.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
+
+const PHASE = "wireRelay";
 
 /** Create the uri field plan (uri: ID!) — the entity's absolute IRI. */
 const createUriField = (): FieldPlan => ({
@@ -125,21 +128,51 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
   }
 
   // ── root query fields ──
-  plan.queryFields.set("node", {
-    name: "node",
-    type: { base: "Node", kind: "named", list: false, nonNull: false },
-    args: { id: { type: "ID", required: true } },
-    resolve: async (_parent, args: { id?: string }, ctx: CompilerContext) => {
-      // The argument keeps the Relay name `id`; its VALUE is the absolute IRI
-      // (which is also `Node.uri`). No prefix map is consulted: an id that is
-      // not a syntactically absolute IRI resolves to null, never to a guess.
-      if (!args.id || !isAbsoluteIri(args.id)) {
-        return null;
-      }
-      return ctx.entityLoader.load(args.id);
+  // Root names are single-occupancy. pluralize() is the identity for
+  // s-ending names, so a type whose camelized name already ends in "s"
+  // (Lens, Status) mints singular == plural; a lookup or listing could
+  // equally land on "node". The FIRST claimant keeps the name; a later one
+  // is dropped with W001 — never silently overwritten. Fatal at compile
+  // level: a schema silently missing a root field must never be served.
+  const rootClaimants = new Map<string, string>();
+  const claimRootField = (
+    field: FieldPlan,
+    claimant: string,
+    source?: string,
+  ) => {
+    const holder = rootClaimants.get(field.name);
+    if (holder) {
+      diagnostics.push({
+        severity: "error",
+        code: "W001",
+        message: `root field Query.${field.name} is claimed by both ${holder} and ${claimant} — the later field is DROPPED. To keep both, rename the class (mappings: { "<iri>": { graphqlName: "…" } })`,
+        source,
+        phase: PHASE,
+      });
+      return;
+    }
+    rootClaimants.set(field.name, claimant);
+    plan.queryFields.set(field.name, field);
+  };
+
+  claimRootField(
+    {
+      name: "node",
+      type: { base: "Node", kind: "named", list: false, nonNull: false },
+      args: { id: { type: "ID", required: true } },
+      resolve: async (_parent, args: { id?: string }, ctx: CompilerContext) => {
+        // The argument keeps the Relay name `id`; its VALUE is the absolute IRI
+        // (which is also `Node.uri`). No prefix map is consulted: an id that is
+        // not a syntactically absolute IRI resolves to null, never to a guess.
+        if (!args.id || !isAbsoluteIri(args.id)) {
+          return null;
+        }
+        return ctx.entityLoader.load(args.id);
+      },
+      description: "Relay node resolution by absolute IRI.",
     },
-    description: "Relay node resolution by absolute IRI.",
-  });
+    "the node(id:) field",
+  );
 
   for (const type of plan.types.values()) {
     if (type.embeddable || !type.owlUri) {
@@ -151,41 +184,62 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
     }
     const classUri = type.owlUri;
 
-    plan.queryFields.set(mappedType.singularName, {
-      name: mappedType.singularName,
-      type: { base: type.name, kind: "named", list: false, nonNull: false },
-      // Deliberately String!, not ID!: this argument accepts the PREFIXED
-      // convenience form, and promoting it to ID! would reject every existing
-      // client query declaring `$uri: String!` (String is not a subtype of ID).
-      args: { uri: { type: "String", required: true } },
-      resolve: async (
-        _parent,
-        args: { uri?: string },
-        ctx: CompilerContext,
-      ) => {
-        if (!args.uri) {
-          return null;
-        }
-        const full = toFull(args.uri, mapped.namespaces) ?? args.uri;
-        return ctx.entityLoader.load(full);
+    claimRootField(
+      {
+        name: mappedType.singularName,
+        type: { base: type.name, kind: "named", list: false, nonNull: false },
+        // Deliberately String!, not ID!: this argument accepts the PREFIXED
+        // convenience form, and promoting it to ID! would reject every existing
+        // client query declaring `$uri: String!` (String is not a subtype of ID).
+        args: { uri: { type: "String", required: true } },
+        resolve: async (
+          _parent,
+          args: { uri?: string },
+          ctx: CompilerContext,
+        ) => {
+          if (!args.uri) {
+            return null;
+          }
+          const full = toFull(args.uri, mapped.namespaces) ?? args.uri;
+          // Same admission contract as node(id:): a value that is not a
+          // syntactically absolute IRI resolves to null WITHOUT touching the
+          // loader. Unvalidated, a colon-free argument ("dune") would ride the
+          // batched CONSTRUCT as an invalid IRIREF and fail the whole batch —
+          // poisoning every valid sibling lookup in the same tick.
+          if (!isAbsoluteIri(full)) {
+            return null;
+          }
+          return ctx.entityLoader.load(full);
+        },
       },
-    });
+      `the ${type.name} singular lookup`,
+      classUri,
+    );
 
-    plan.queryFields.set(mappedType.pluralName, {
-      name: mappedType.pluralName,
-      type: { base: type.name, kind: "connection", list: false, nonNull: true },
-      connectionArgs: true,
-      resolve: async (_parent, args, ctx: CompilerContext) => {
-        // Slice BEFORE hydration: cursors and pageInfo need only the
-        // (name-sorted) IRI list; entities are loaded for the page alone.
-        // The list is already in the loader's absolute-IRI currency, which is
-        // exactly what the cursors encode — no round-trip, no drift.
-        const uris = await ctx.listLoader.load(classUri);
-        const page = paginateUriWindow(uris, args);
-        const entities = await ctx.entityLoader.loadMany(page.window);
-        return connectionFromPage(unwrapEntities(entities), page);
+    claimRootField(
+      {
+        name: mappedType.pluralName,
+        type: {
+          base: type.name,
+          kind: "connection",
+          list: false,
+          nonNull: true,
+        },
+        connectionArgs: true,
+        resolve: async (_parent, args, ctx: CompilerContext) => {
+          // Slice BEFORE hydration: cursors and pageInfo need only the
+          // (name-sorted) IRI list; entities are loaded for the page alone.
+          // The list is already in the loader's absolute-IRI currency, which is
+          // exactly what the cursors encode — no round-trip, no drift.
+          const uris = await ctx.listLoader.load(classUri);
+          const page = paginateUriWindow(uris, args);
+          const entities = await ctx.entityLoader.loadMany(page.window);
+          return connectionFromPage(unwrapEntities(entities), page);
+        },
       },
-    });
+      `the ${type.name} listing`,
+      classUri,
+    );
   }
 
   return { output: plan, diagnostics };

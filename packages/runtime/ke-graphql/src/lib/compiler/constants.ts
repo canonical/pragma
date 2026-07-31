@@ -75,7 +75,9 @@ export const XSD_PATTERN = `${XSD}pattern`;
 export const ARTIFACT_VERSION = 1;
 
 // ---------------------------------------------------------------------------
-// Provenance — the five-line header stamped onto the printed SDL.
+// Provenance — the seven-line contract block stamped onto the printed SDL:
+// a banner line, then one `# key: value` line each for graphql-schema-spec,
+// provider, mode, validated-store, revision, and prefixing.
 //
 // The values below are the DEFAULTS for the corresponding SchemaPluginOptions
 // fields; compose reads `options.x ?? DEFAULT_X` so an unconfigured build still

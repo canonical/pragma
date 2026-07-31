@@ -261,6 +261,24 @@ describe("createObjectListResolver", () => {
     await resolve(parent, { first: 10 } as never, ctx, {} as never);
     expect(ctx.entityLoader.loadMany).toHaveBeenCalledWith(["zz:thing"]);
   });
+
+  it("orders the cursor window by codepoint, not by locale", async () => {
+    const resolve = createObjectListResolver(field({}));
+    const ctx = makeCtx();
+    // Locale-aware collation (full ICU) would sort "é" with "e" — BEFORE
+    // "z" — making cursor order differ between hosts. Codepoint order puts
+    // "z" (U+007A) ahead of "é" (U+00E9) on every environment.
+    const parent = entity({
+      triples: triples([[`${NS}p`, [uri(`${NS}é`), uri(`${NS}z`)]]]),
+    });
+    const result = (await resolve(
+      parent,
+      { first: 10 } as never,
+      ctx,
+      {} as never,
+    )) as { edges: { node: EntityValue }[] };
+    expect(result.edges.map((e) => e.node.uri)).toEqual([`${NS}z`, `${NS}é`]);
+  });
 });
 
 describe("createInverseResolver", () => {

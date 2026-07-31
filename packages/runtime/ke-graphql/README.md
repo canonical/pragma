@@ -242,11 +242,12 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 | `E001` | extraction/SPARQL failure | query failed, unregistered namespace (synthetic prefix assigned), blank nodes nested deeper than the loader's closure |
 | `B001–B004` | build references | `subClassOf` cycle, unknown domain/range/inverse |
 | `V001–V016` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`), abstract mapping with direct instances (`V015`), concrete supertype flattening (`V016`) |
-| `M001–M005` | naming | duplicate field name, second dropped (`M001`, error), illegal class local name sanitized (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`), property claims a structural field name and is dropped (`M005`, error) |
+| `M001–M006` | naming | duplicate type or field name, later claimant dropped (`M001`, error), illegal class local name sanitized (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`), property claims a structural field name and is dropped (`M005`, error), one union name minted with different member sets (`M006`, error) |
 | `X002–X003` | union emission | named / synthesized union created |
-| `C001–C003` | composition | extension targets unknown type, extension field conflict, `validateSchema` failure |
+| `W001` | Relay wiring | two root query fields claim one name, later field dropped (error) |
+| `C001–C003` | composition | extension targets unknown type, extension field conflict (incl. a generated root field colliding with a TBox root field), `validateSchema` failure |
 
-Only **composition errors (`C00x`) prevent schema creation** — `compile()` then throws `CompilationError` carrying the complete diagnostic list. Everything else surfaces in `result.diagnostics` while the schema still builds; the consumer chooses its failure policy (the `pragma graphql check` command, for instance, fails CI on any error-severity diagnostic).
+**Any error-severity diagnostic refuses the compile** — `compile()` throws `CompilationError` carrying the complete diagnostic list. A schema minus silently dropped fields must never be served, so a boot dies loudly instead. Warnings and infos surface in `result.diagnostics` while the schema builds; the consumer chooses its policy for those.
 
 ## Plugin options
 

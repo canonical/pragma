@@ -43,7 +43,10 @@ export const toPrefixed = (
 /**
  * Convert a prefixed URI ("ds:button") to its full IRI using the compiled
  * namespace inventory. Inputs that are already full IRIs pass through;
- * returns undefined when the prefix is unknown (node() returns null then).
+ * returns undefined when the prefix is unknown — the singular `<type>(uri:)`
+ * lookup (this helper's only caller) then falls back to the raw argument,
+ * gated by the absolute-IRI admission check. node(id:) never consults this:
+ * it is deliberately prefix-map-free.
  */
 export const toFull = (
   prefixed: string,

@@ -124,7 +124,11 @@ export type SchemaExtensionsInput =
 export interface SchemaPluginOptions {
   mappings?: CustomMappings;
   extensions?: SchemaExtensionsInput;
-  /** Wire the Node interface, global IDs, and connections. Default: true. */
+  /**
+   * Wire the Relay conventions: Node membership, the injected uri + _meta
+   * structural fields, connections, and the root node/lookup/listing query
+   * fields. Default: true.
+   */
   relay?: boolean;
   /** Add @defer/@stream directives to the schema. Default: false. */
   incremental?: boolean;

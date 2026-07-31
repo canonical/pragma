@@ -495,7 +495,8 @@ const buildSyntheticSchema = (): GraphQLSchema => {
 
 describe("TBox defensive branches (synthetic parents)", () => {
   const orphanContext = {
-    // A bare token cannot be prefixed nor expanded → instances' `toFull ?? uri`.
+    // The instances listing performs no URI conversion at all: the bare token
+    // rides the window verbatim, and the entity loader simply finds nothing.
     listLoader: { load: async () => ["orphan"] },
     entityLoader: { loadMany: async () => [null] },
   } as unknown as CompilerContext;

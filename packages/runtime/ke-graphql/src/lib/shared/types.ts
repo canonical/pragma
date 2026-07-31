@@ -19,12 +19,14 @@ import type DataLoader from "dataloader";
 // ---------------------------------------------------------------------------
 // Diagnostics
 //
-// The compiler never aborts on the first error. Every pass returns its output
-// plus diagnostics; codes are stable and append-only (X001 is retired and
-// never reused).
+// The compiler never aborts on the first error: every pass runs to completion
+// and returns its output plus diagnostics. At the end of the pipeline, any
+// error-severity diagnostic refuses the compile (CompilationError carrying
+// the full list); warnings and infos never do. Codes are stable and
+// append-only (X001 is retired and never reused).
 // ---------------------------------------------------------------------------
 
-/** Severity of a compiler diagnostic; only errors can prevent schema creation. */
+/** Severity of a compiler diagnostic; any error refuses the compile at the end of the pipeline. */
 export type DiagnosticSeverity = "error" | "warning" | "info";
 
 /** Stable, append-only diagnostic codes emitted by the compiler passes. */
@@ -59,9 +61,12 @@ export type DiagnosticCode =
   | "M003" // custom mapping references unknown property/class
   | "M004" // type name collision auto-resolved by namespace prefixing
   | "M005" // property claims a structural field name (uri/_meta)
+  | "M006" // one union name minted with two different member sets
   // Emission
   | "X002" // union type created for polymorphic range
   | "X003" // union type synthesized from anonymous range
+  // Relay wiring
+  | "W001" // two root query fields claim one name — the later is dropped
   // Composition
   | "C001" // extension references unknown type
   | "C002" // extension field conflicts with generated field
@@ -444,9 +449,11 @@ export interface CompilerContext {
   inverseLoader: DataLoader<string, string[]>;
   nameMap: NameMap;
   /**
-   * The compiled namespace inventory — resolvers use it for full-IRI ↔
-   * prefixed-URI conversion (e.g. paginating an object connection by its
-   * cursor-stable prefixed form before hydration).
+   * The compiled namespace inventory. The pagination path performs NO
+   * full ↔ prefixed conversion — windows, cursors, and loader keys are the
+   * absolute IRI end to end. The inventory serves exactly two edges: the
+   * singular `<type>(uri:)` lookup's input expansion (toFull) and display
+   * (toPrefixed, for consumers rendering a short form).
    */
   namespaces: ReadonlyMap<string, NamespaceInfo>;
   /**

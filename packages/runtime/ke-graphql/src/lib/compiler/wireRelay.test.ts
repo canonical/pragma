@@ -393,9 +393,112 @@ describe("wireRelay root query fields", () => {
     // registered prefix → expanded (the argument is the one prefixed-form seam)
     await singular(undefined, { uri: "ex:thing" }, ctx, {} as never);
     expect(loaded).toContain("http://example.org/thing");
-    // unknown prefix → toFull undefined → `?? args.uri`
+    // unknown prefix → toFull undefined → `?? args.uri`; "zz:thing" is still a
+    // syntactically absolute IRI (scheme "zz"), so it reaches the loader
     await singular(undefined, { uri: "zz:thing" }, ctx, {} as never);
     expect(loaded).toContain("zz:thing");
+  });
+
+  it("the singular lookup resolves a non-absolute-IRI argument to null without the loader", async () => {
+    const plan = thingPlan();
+    const loaded: string[] = [];
+    const ctx = {
+      entityLoader: {
+        load: async (key: string) => {
+          loaded.push(key);
+          return null;
+        },
+      },
+    } as unknown as CompilerContext;
+    const singular = resolverOf(plan, "thing");
+    // Same admission contract as node(id:): a colon-free value expands to
+    // nothing and must NOT reach the loader — inside a batched CONSTRUCT it
+    // would be an invalid IRIREF that fails every sibling lookup in the tick.
+    expect(
+      await singular(undefined, { uri: "dune" }, ctx, {} as never),
+    ).toBeNull();
+    expect(loaded).toEqual([]);
+  });
+
+  it("drops a listing whose name collides with the singular lookup (W001), never overwriting", () => {
+    // pluralize() is the identity for s-ending names: camelize("Lens") →
+    // "lens" and pluralize("lens") → "lens", so singular == plural.
+    const lens: MappedType = {
+      ...mappedType("Lens"),
+      singularName: "lens",
+      pluralName: "lens",
+    };
+    const plan: SchemaPlan = {
+      types: new Map([["Lens", typePlan({ name: "Lens" })]]),
+      interfaces: new Map(),
+      unions: new Map(),
+      queryFields: new Map(),
+      mapped: {
+        types: new Map([["Lens", lens]]),
+        interfaces: new Map(),
+        unions: new Map(),
+        nameMap,
+        namespaces,
+        ir: {
+          classes: new Map(),
+          properties: new Map(),
+          namespaces: new Map(),
+          extraction: {} as MappedIR["ir"]["extraction"],
+        },
+      } as unknown as MappedIR,
+    };
+    const { diagnostics } = wireRelay(plan);
+    // The FIRST claimant (the singular lookup) keeps the name — the field is
+    // still the nullable named lookup, not a connection.
+    const kept = plan.queryFields.get("lens");
+    expect(kept?.type.kind).toBe("named");
+    expect(kept?.args?.uri).toBeDefined();
+    // The listing is dropped with an error naming both claimants + remedy.
+    const w001 = diagnostics.filter((d) => d.code === "W001");
+    expect(w001).toHaveLength(1);
+    expect(w001[0]?.severity).toBe("error");
+    expect(w001[0]?.message).toContain("Query.lens");
+    expect(w001[0]?.message).toContain("the Lens singular lookup");
+    expect(w001[0]?.message).toContain("the Lens listing");
+    expect(w001[0]?.message).toContain("graphqlName");
+    expect(w001[0]?.source).toBe("http://example.org/Lens");
+  });
+
+  it("never lets a per-type root field stomp node (W001)", () => {
+    // A class whose camelized singular is exactly "node".
+    const nodeType: MappedType = {
+      ...mappedType("NodeLike"),
+      singularName: "node",
+      pluralName: "nodes",
+    };
+    const plan: SchemaPlan = {
+      types: new Map([["NodeLike", typePlan({ name: "NodeLike" })]]),
+      interfaces: new Map(),
+      unions: new Map(),
+      queryFields: new Map(),
+      mapped: {
+        types: new Map([["NodeLike", nodeType]]),
+        interfaces: new Map(),
+        unions: new Map(),
+        nameMap,
+        namespaces,
+        ir: {
+          classes: new Map(),
+          properties: new Map(),
+          namespaces: new Map(),
+          extraction: {} as MappedIR["ir"]["extraction"],
+        },
+      } as unknown as MappedIR,
+    };
+    const { diagnostics } = wireRelay(plan);
+    // node(id:) was claimed first and survives untouched.
+    expect(plan.queryFields.get("node")?.args?.id).toBeDefined();
+    // The listing is unaffected — only the singular collided.
+    expect(plan.queryFields.get("nodes")?.type.kind).toBe("connection");
+    const w001 = diagnostics.filter((d) => d.code === "W001");
+    expect(w001).toHaveLength(1);
+    expect(w001[0]?.message).toContain("the node(id:) field");
+    expect(w001[0]?.message).toContain("the NodeLike singular lookup");
   });
 
   it("the listing paginates and hydrates the loader's IRIs with no conversion", async () => {

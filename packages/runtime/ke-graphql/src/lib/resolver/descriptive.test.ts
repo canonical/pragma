@@ -337,9 +337,10 @@ describe("resolveTitle", () => {
     ).toBe("Alt");
   });
 
-  it("orders untagged ahead of tagged in the any-tag tier", () => {
-    // "fr" is requested, so the untagged pool is NOT the label tier here; the
-    // any-tag tier still has to put the untagged literal first.
+  it("answers the untagged literal for a tag with no exact match", () => {
+    // The untagged fallback is UNCONDITIONAL: no "fr" literal exists, so
+    // label's untagged tier answers "zzz" — title returns it as the resolved
+    // label, and the any-tag tier is never reached in this case.
     expect(
       resolveTitle(
         [tagged("Zeug", "de"), untagged("zzz")],

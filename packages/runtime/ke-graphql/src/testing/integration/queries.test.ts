@@ -185,6 +185,24 @@ describe("ds-realistic resolution", () => {
     expect(unknownUri.data?.node).toBeNull();
   });
 
+  it("a junk singular-lookup argument cannot poison sibling lookups in the same tick", async () => {
+    // Both lookups resolve in one tick, so they share one loader batch. The
+    // colon-free argument expands to nothing and must resolve to null WITHOUT
+    // entering the batch: interpolated as <dune> it would be an invalid
+    // IRIREF that fails the whole CONSTRUCT — including the valid sibling.
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    const result = await run(
+      compiled,
+      `{
+        bad: component(uri: "dune") { name }
+        good: component(uri: "ds:global.component.button") { name }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.bad).toBeNull();
+    expect((result.data?.good as { name: string }).name).toBe("Button");
+  });
+
   it("pages a listing by its own cursors — the cursor/uri currency is one string", async () => {
     // The silent failure this guards: if the paginated list were still in the
     // prefixed form while EntityValue.uri went absolute, `after:` would miss
@@ -498,6 +516,35 @@ describe("generic descriptive chain", () => {
       // untagged fallback answers here too.
       gb: "Plain label",
       t: "Plain label",
+    });
+  });
+
+  it("treats an explicit lang: null as the default chain instead of throwing", async () => {
+    // The argument default fires only when `lang` is OMITTED — an explicit
+    // null bypasses it and reaches the resolver, where it must mean "the
+    // default chain" rather than crash tag matching (on the non-null `title`
+    // a throw would kill the whole request).
+    const compiled = await setup(LANG_TTL);
+    const result = await run(
+      compiled,
+      `{
+        doc(uri: "ex:d1") {
+          _meta {
+            t: title(lang: null)
+            l: label(lang: null)
+            c: comment(lang: null)
+            d: definition(lang: null)
+          }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect((result.data?.doc as Record<string, unknown>)._meta).toEqual({
+      // same answers as an omitted argument: the "en" default chain
+      t: "The Widget",
+      l: "The Widget",
+      c: null,
+      d: null,
     });
   });
 

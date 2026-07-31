@@ -39,6 +39,7 @@ import {
   COMMENT_LOCAL_NAMES,
   CONNECTION_ARGS,
   type CompilerContext,
+  DEFAULT_LANG,
   DEFINITION_LOCAL_NAMES,
   type EntityValue,
   LABEL_LOCAL_NAMES,
@@ -61,6 +62,20 @@ interface ClassPropertyValue {
 const LABEL_UNIVERSAL = [RDFS_LABEL, SKOS_PREF_LABEL];
 const COMMENT_UNIVERSAL = [RDFS_COMMENT];
 const DEFINITION_UNIVERSAL = [SKOS_DEFINITION];
+
+/** The argument shape every descriptive resolver receives. */
+interface LangArgs {
+  lang?: string | null;
+}
+
+/**
+ * Normalize the `lang` argument at the resolver boundary. LANG_ARGS defaults
+ * `lang` to "en" only when the argument is OMITTED — an EXPLICIT `lang: null`
+ * bypasses the default and reaches the resolver as null, where unguarded tag
+ * matching would throw (a request-killing error on the non-null `title`).
+ * Null and undefined both mean "the default chain", exactly as omission does.
+ */
+const resolveLang = (args: LangArgs): string => args.lang ?? DEFAULT_LANG;
 
 /** The three predicate chains a single GraphQL type resolves through. */
 interface DescriptiveChains {
@@ -388,11 +403,11 @@ export default function buildTBoxSchema(
         type: new GraphQLNonNull(GraphQLString),
         args: LANG_ARGS,
         description:
-          "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI. Never null — render this.",
-        resolve: (parent, args: { lang: string }) =>
+          "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI, else the GraphQL type name when the value has no IRI at all (an embedded blank node). Never null — render this.",
+        resolve: (parent, args: LangArgs) =>
           resolveTitle(
             selectLexicals(parent.triples, chainsFor(parent.typename).label),
-            args.lang,
+            resolveLang(args),
             parent.uri,
             parent.typename,
           ),
@@ -402,10 +417,10 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "rdfs:label, else skos:prefLabel, else the class's own name/title predicate — exact language tag, else untagged. Null when none is asserted; `title` is the total alternative.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: LangArgs) =>
           resolveLabel(
             selectLexicals(parent.triples, chainsFor(parent.typename).label),
-            args.lang,
+            resolveLang(args),
           ),
       },
       comment: {
@@ -413,10 +428,10 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "Incidental prose: rdfs:comment, else the class's own summary predicate. Null when none is asserted.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: LangArgs) =>
           resolveLabel(
             selectLexicals(parent.triples, chainsFor(parent.typename).comment),
-            args.lang,
+            resolveLang(args),
           ),
       },
       definition: {
@@ -424,13 +439,13 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "Defining prose: skos:definition, else the class's own description predicate. Null when none is asserted.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: LangArgs) =>
           resolveLabel(
             selectLexicals(
               parent.triples,
               chainsFor(parent.typename).definition,
             ),
-            args.lang,
+            resolveLang(args),
           ),
       },
       type: {

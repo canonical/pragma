@@ -26,11 +26,13 @@ import {
 import createSchemaPlugin from "./createSchemaPlugin.js";
 import type { EntityValue } from "./shared/index.js";
 
-// A TTL whose compile emits diagnostics of every severity without failing
-// composition, plus at least one sourceless diagnostic so both arms of the
-// log line's `(source)` suffix are taken: V006 (info, boolean property),
-// V002 (warning, domainless property), three custom mappings onto one field
-// name (M001 error, non-fatal), and a union range (X003 info, sourceless).
+// A TTL whose compile emits diagnostics of every severity, plus at least one
+// sourceless diagnostic so both arms of the log line's `(source)` suffix are
+// taken: V006 (info, boolean property), V002 (warning, domainless property),
+// three custom mappings onto one field name (M001 error — fatal: any
+// error-severity diagnostic refuses the compile), and a union range (X003
+// info, sourceless). The failure path still logs every diagnostic before the
+// boot dies.
 const DIAGNOSTIC_TTL = `
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -222,7 +224,7 @@ describe("createSchemaPlugin", () => {
     expect(thing.name).toBe("Widget");
   });
 
-  it("logs diagnostics to the matching console channel by severity", async () => {
+  it("logs every diagnostic to its severity channel, then fails the boot on the error", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
@@ -238,12 +240,16 @@ describe("createSchemaPlugin", () => {
         "ex:baz": { graphqlName: "dup" },
       },
     });
-    const { cleanup } = await createTestStore({
-      ttl: DIAGNOSTIC_TTL,
-      prefixes: PREFIXES,
-      plugins: [plugin],
-    });
-    cleanups.push(cleanup);
+    // The M001 error refuses the compile (any error-severity diagnostic is
+    // fatal), so the boot rejects — but only AFTER the full diagnostic list
+    // hit the console: dying loudly includes the non-fatal findings.
+    await expect(
+      createTestStore({
+        ttl: DIAGNOSTIC_TTL,
+        prefixes: PREFIXES,
+        plugins: [plugin],
+      }),
+    ).rejects.toThrow(/M001/);
     expect(error).toHaveBeenCalledWith(expect.stringContaining("M001"));
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("V002"));
     expect(info).toHaveBeenCalledWith(expect.stringContaining("V006"));
@@ -251,6 +257,24 @@ describe("createSchemaPlugin", () => {
     // source: V006 has one, the union diagnostic (X003) does not.
     expect(info).toHaveBeenCalledWith(expect.stringMatching(/V006:.+\(.+\)$/));
     expect(info).toHaveBeenCalledWith(expect.stringMatching(/X003:[^()]*$/));
+  });
+
+  it("passes a non-compilation failure through without logging diagnostics", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    cleanups.push(() => error.mockRestore());
+    // The artifact path does not exist: readFileSync throws a plain
+    // filesystem error, which carries no diagnostic list to log.
+    const plugin = createSchemaPlugin({
+      extraction: join(tmpdir(), "ke-graphql-does-not-exist.json"),
+    });
+    await expect(
+      createTestStore({
+        ttl: MINIMAL_TTL,
+        prefixes: PREFIXES,
+        plugins: [plugin],
+      }),
+    ).rejects.toThrow(/ENOENT/);
+    expect(error).not.toHaveBeenCalled();
   });
 
   it("boots from an extraction artifact given as a file path", async () => {

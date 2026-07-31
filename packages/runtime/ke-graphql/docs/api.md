@@ -15,7 +15,7 @@ Exhaustive types ship in the `.d.ts`; this document is the callable surface grou
 ```ts
 compile(query: QueryFn, prefixes: Readonly<Record<string,string>>, options?: SchemaPluginOptions): Promise<CompilerResult>
 ```
-Run the full pipeline (Pass 1 executes SPARQL through `query`). Throws `CompilationError` only on composition failure; all other problems surface in `result.diagnostics`. Most consumers use `createSchemaPlugin` instead and never call this directly.
+Run the full pipeline (Pass 1 executes SPARQL through `query`). Throws `CompilationError` whenever the compile produces any error-severity diagnostic; warnings and infos surface in `result.diagnostics`. Most consumers use `createSchemaPlugin` instead and never call this directly.
 
 ### `compileFromExtraction(artifact, options?, { assumeValid? }?)`
 ```ts
@@ -48,9 +48,9 @@ createContextFactory(mapped: MappedIR, options: SchemaPluginOptions): ContextFac
 Build the per-request `CompilerContext` factory (fresh DataLoaders, or shared `"process"` caches). `factory(store)` → context; `factory.clearCache()` drops shared caches. Usually obtained as `result.createContext`.
 
 ### `CompilationError`
-Thrown by `compile` when composition fails (`C00x`). Carries `.diagnostics: Diagnostic[]`.
+Thrown by `compile` when the compile produces any error-severity diagnostic (or composition yields no schema). Carries `.diagnostics: Diagnostic[]` — the full list, not only the fatal ones.
 
-Only composition errors prevent schema creation; every other diagnostic surfaces in `result.diagnostics` while the schema still builds, and the consumer picks its failure policy. `DiagnosticCode` is stable and append-only: `E001`, `B001–B004`, `V001–V016`, **`M001–M005`**, `X002–X003`, `C001–C003`. The naming band reads: `M001` duplicate field name (the second property is dropped, error), `M002` illegal class local name sanitized, `M003` mapping references nothing, `M004` type-name collision auto-resolved by namespace prefixing, `M005` property claims a structural field name — `uri` or `_meta` — and is dropped (error). `M001`/`M005` name the offending IRIs and both remedies; neither ever renames a field silently. See the README's diagnostics table for the full list.
+Any error-severity diagnostic refuses the compile: a schema minus silently dropped fields must never be served, so a boot dies loudly instead. Warnings and infos surface in `result.diagnostics` while the schema builds, and the consumer picks its policy for those. `DiagnosticCode` is stable and append-only: `E001`, `B001–B004`, `V001–V016`, **`M001–M006`**, `X002–X003`, `W001`, `C001–C003`. The naming band reads: `M001` duplicate type or field name (the later claimant is dropped, error), `M002` illegal class local name sanitized, `M003` mapping references nothing, `M004` type-name collision auto-resolved by namespace prefixing, `M005` property claims a structural field name — `uri` or `_meta` — and is dropped (error), `M006` one union name minted with two different member sets (the later definition is dropped, error). `W001` is the Relay-wiring band: two root query fields claiming one name (the later field is dropped, error). `M001`/`M005` name the offending IRIs and the remedies; none of them ever renames anything silently. See the README's diagnostics table for the full list.
 
 ### Result & key option shapes
 - **`CompilerResult`** — `{ schema, sdl, diagnostics, nameMap, mapped, createContext, clearLoaderCache }`.

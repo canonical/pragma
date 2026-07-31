@@ -7,6 +7,7 @@ import { createTestStore } from "@canonical/ke/testing";
 import type { GraphQLObjectType } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  CompilationError,
   type CompilerResult,
   compile,
   createStoreQueryFn,
@@ -290,6 +291,101 @@ describe("ds-realistic fixture", () => {
   });
 });
 
+describe("root-field occupancy (W001)", () => {
+  // camelize("Lens") → "lens"; pluralize("lens") is the identity for
+  // s-ending names → singular == plural on the Query root.
+  const LENS_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Lens a owl:Class ; rdfs:label "Lens" .
+ex:focal a owl:DatatypeProperty ; rdfs:domain ex:Lens ; rdfs:range xsd:string .
+ex:l1 a ex:Lens ; ex:focal "50mm" .
+`;
+
+  it("refuses the compile instead of silently overwriting a root field", async () => {
+    const thrown = await compileFixture(LENS_TTL).catch(
+      (error: unknown) => error,
+    );
+    if (!(thrown instanceof CompilationError)) {
+      throw new Error("expected a CompilationError");
+    }
+    const w001 = thrown.diagnostics.filter((d) => d.code === "W001");
+    expect(w001).toHaveLength(1);
+    expect(w001[0]?.message).toContain("Query.lens");
+    expect(w001[0]?.message).toContain("singular lookup");
+    expect(w001[0]?.message).toContain("listing");
+  });
+});
+
+describe("abstract-class structural guard follows the interface surface", () => {
+  it("direction A: a real shadowing is a TRUE M005, not a C003 shadow crash", async () => {
+    // Media has only a blank-node instance (embeddable flag) but is forced
+    // abstract; its concrete subclass Film is NOT embeddable, so the
+    // interface gets uri: ID!. The ontology's own `uri` property is dropped
+    // with M005 naming the real structural field — previously it survived
+    // past the guard and shadowed the injected uri at validateSchema (C003),
+    // pointing nowhere near the cause.
+    const MEDIA_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Media a owl:Class ; rdfs:label "Media" .
+ex:Film a owl:Class ; rdfs:subClassOf ex:Media ; rdfs:label "Film" .
+ex:uri a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+[] a ex:Media .
+ex:f1 a ex:Film .
+`;
+    const thrown = await compileFixture(MEDIA_TTL, {
+      mappings: { "ex:Media": { abstract: true } },
+    }).catch((error: unknown) => error);
+    if (!(thrown instanceof CompilationError)) {
+      throw new Error("expected a CompilationError");
+    }
+    const found = thrown.diagnostics.map((d) => d.code);
+    expect(found).toContain("M005");
+    expect(found).not.toContain("C003");
+    expect(
+      thrown.diagnostics.some((d) => d.message.includes("Media.uri")),
+    ).toBe(true);
+  });
+
+  it("direction B: an embeddable-only interface keeps a property named uri on every container", async () => {
+    // Section is auto-abstract (no instances, one subclass) so its own
+    // embeddable flag is false — but its only concrete implementor Card is
+    // embeddable, so the interface injects `_meta` alone and the ontology's
+    // `uri` property survives on the interface AND on Card. Previously a
+    // false M005 dropped it from the interface while every implementor
+    // kept it.
+    const SECTION_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Doc a owl:Class ; rdfs:label "Doc" .
+ex:Section a owl:Class ; rdfs:label "Section" .
+ex:Card a owl:Class ; rdfs:subClassOf ex:Section ; rdfs:label "Card" .
+ex:uri a owl:DatatypeProperty ; rdfs:domain ex:Section ; rdfs:range xsd:string .
+ex:hasCard a owl:ObjectProperty ; rdfs:domain ex:Doc ; rdfs:range ex:Card .
+ex:d1 a ex:Doc ; ex:hasCard [ a ex:Card ; ex:uri "inner" ] .
+`;
+    const result = await compileFixture(SECTION_TTL);
+    expect(codes(result)).not.toContain("M005");
+    const sectionBlock = /interface Section \{[^}]*\}/.exec(result.sdl)?.[0];
+    expect(sectionBlock).toContain("uri: String");
+    expect(sectionBlock).not.toContain("uri: ID!");
+    const cardBlock = /type Card implements Section \{[^}]*\}/.exec(
+      result.sdl,
+    )?.[0];
+    expect(cardBlock).toContain("uri: String");
+  });
+});
+
 describe("provenance header", () => {
   it("stamps the contract header block ahead of the printed SDL", async () => {
     const result = await compileFixture(MINIMAL_TTL, {
@@ -315,6 +411,35 @@ describe("failure modes", () => {
       mappings: { "ex:doesNotExist": { graphqlName: "nope" } },
     });
     expect(codes(result)).toContain("M003");
+  });
+
+  it("refuses the compile on ANY error-severity diagnostic, carrying the full list", async () => {
+    // Two custom mappings collide on one field name: Pass 4 drops the second
+    // property with an M001 error. The pass-level drop is unchanged, but the
+    // compile-level gate refuses to hand out the schema — a schema minus a
+    // silently dropped field must never be served, so the boot dies loudly.
+    const options = {
+      mappings: {
+        "ex:name": { graphqlName: "dup" },
+        "ex:count": { graphqlName: "dup" },
+      },
+    };
+    await expect(compileFixture(MINIMAL_TTL, options)).rejects.toThrow(
+      CompilationError,
+    );
+    const thrown = await compileFixture(MINIMAL_TTL, options).catch(
+      (error: CompilationError) => error,
+    );
+    if (!(thrown instanceof CompilationError)) {
+      throw new Error("expected a CompilationError");
+    }
+    // The full diagnostic list rides on the error — the fatal M001 and the
+    // non-fatal findings alike, so the consumer can report everything at once.
+    expect(thrown.diagnostics.some((d) => d.code === "M001")).toBe(true);
+    expect(
+      thrown.diagnostics.filter((d) => d.severity === "error"),
+    ).toHaveLength(1);
+    expect(thrown.message).toContain("M001");
   });
 
   it("relay: false produces a schema without Node wiring", async () => {

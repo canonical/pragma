@@ -4,6 +4,7 @@ import {
   camelize,
   pluralize,
   sanitizeGraphQLName,
+  sanitizePrefixComponent,
   stripVerbPrefix,
 } from "./nameMap.js";
 
@@ -56,6 +57,25 @@ describe("sanitizeGraphQLName", () => {
     expect(sanitizeGraphQLName("3d")).toBe("_3d");
     expect(sanitizeGraphQLName("")).toBe("_");
     expect(sanitizeGraphQLName("fine_Name0")).toBe("fine_Name0");
+  });
+});
+
+describe("sanitizePrefixComponent", () => {
+  it("camel-joins segments split on GraphQL-illegal characters", () => {
+    expect(sanitizePrefixComponent("ds-global")).toBe("dsGlobal");
+    expect(sanitizePrefixComponent("ds.v2")).toBe("dsV2");
+    expect(sanitizePrefixComponent("a-b-c")).toBe("aBC");
+  });
+
+  it("passes an already-legal prefix through unchanged", () => {
+    expect(sanitizePrefixComponent("ds")).toBe("ds");
+    expect(sanitizePrefixComponent("anatomy_v2")).toBe("anatomy_v2");
+  });
+
+  it("sanitizes the residue camel-joining cannot fix", () => {
+    expect(sanitizePrefixComponent("3d")).toBe("_3d"); // digit-leading
+    expect(sanitizePrefixComponent("---")).toBe("_"); // no legal characters
+    expect(sanitizePrefixComponent("")).toBe("_"); // empty
   });
 });
 

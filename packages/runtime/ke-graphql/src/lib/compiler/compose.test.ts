@@ -377,6 +377,32 @@ describe("compose full construction", () => {
     ]);
   });
 
+  it("C002 — a generated root field colliding with a TBox root field is dropped", () => {
+    // The plan-vs-tbox merge gets the SAME treatment as a consumer extension:
+    // error + drop, the TBox field survives. (Silently, plan.queryFields used
+    // to overwrite ontologies/ontology/ontologyClass/ontologyProperty.)
+    const plan = emptyPlan({
+      types: new Map([
+        [
+          "Thing",
+          objectPlan("Thing", new Map([["name", scalarField("name")]])),
+        ],
+      ]),
+      queryFields: new Map<string, FieldPlan>([
+        ["ontologies", scalarField("ontologies")],
+      ]),
+    });
+    const { output, diagnostics } = compose(plan);
+    const c002 = diagnostics.filter((d) => d.code === "C002");
+    expect(c002).toHaveLength(1);
+    expect(c002[0]?.severity).toBe("error");
+    expect(c002[0]?.message).toContain("Query.ontologies");
+    expect(c002[0]?.message).toContain("TBox");
+    // The TBox field survives with the TBox type — not the planted String.
+    const field = output.schema?.getQueryType()?.getFields().ontologies;
+    expect(String(field?.type)).toBe("[Ontology!]!");
+  });
+
   it("C001 — object-form extension references an unknown type", () => {
     const thing: TypePlan = {
       name: "Thing",

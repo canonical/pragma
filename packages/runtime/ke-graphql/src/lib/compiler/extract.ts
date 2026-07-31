@@ -283,7 +283,7 @@ export default async function extract(
       diagnostics.push({
         severity: "warning",
         code: "E001",
-        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: it drives the prefixed URIs used as Relay global IDs`,
+        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
         source: ns,
         phase: PHASE,
       });

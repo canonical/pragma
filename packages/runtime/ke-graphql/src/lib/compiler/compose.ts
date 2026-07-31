@@ -380,6 +380,20 @@ export default function compose(
         ...tbox.queryFields,
       };
       for (const [name, fieldPlan] of plan.queryFields) {
+        // The TBox root fields (ontologies/ontology/ontologyClass/
+        // ontologyProperty) are part of the schema contract: a generated
+        // root field landing on one of them gets the SAME C002 error+drop
+        // treatment as a consumer extension would — the TBox field is kept,
+        // never silently overwritten.
+        if (fields[name]) {
+          diagnostics.push({
+            severity: "error",
+            code: "C002",
+            message: `generated root field Query.${name} conflicts with a TBox root field — the generated field is DROPPED. To keep it, rename the class (mappings: { "<iri>": { graphqlName: "…" } })`,
+            phase: PHASE,
+          });
+          continue;
+        }
         fields[name] = buildFieldConfig(fieldPlan) as GraphQLFieldConfig<
           unknown,
           CompilerContext

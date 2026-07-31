@@ -140,8 +140,11 @@ export const DEFAULT_LANG = "en";
  * (`title`, `label`, `comment`, `definition`).
  *
  * `default: { value }` — NOT `defaultValue`, which graphql@17.0.0-rc.0
- * deprecates. printSchema renders this as `lang: String = "en"`, and
- * graphql-js coerces the default in, so resolvers always receive a string.
+ * deprecates. printSchema renders this as `lang: String = "en"`. The default
+ * applies only when the argument is OMITTED: an explicit `lang: null` is a
+ * legal value for this nullable String and reaches the resolver as null, so
+ * the descriptive resolvers normalize null back to DEFAULT_LANG at their
+ * boundary rather than crash tag matching.
  */
 export const LANG_ARGS: GraphQLFieldConfigArgumentMap = {
   lang: { type: GraphQLString, default: { value: DEFAULT_LANG } },
