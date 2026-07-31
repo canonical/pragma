@@ -37,6 +37,14 @@ vi.mock("../pragma.conf.js", () => ({
 /** Anything that would betray THIS distribution leaking through the kernel. */
 const THIS_DISTRIBUTION = /pragma|canonical|design[- ]system/i;
 
+/**
+ * THIS distribution's name alone. The generated reference legitimately carries
+ * bundled-pack CONTENT a fork owns and edits — `@canonical/…` package names in
+ * `create` examples, `ds:`/`cs:` entity values — so the reference probe below
+ * is scoped to the one token that must never survive a rename.
+ */
+const THIS_NAME = /\bpragma\b/i;
+
 // chalk paints ANSI when GITHUB_ACTIONS is set even off a TTY, which would
 // break the plain-text structure assertions below.
 const prevChalkLevel = chalk.level;
@@ -155,6 +163,24 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
+  });
+
+  it("generates a reference that never names this distribution", async () => {
+    // `docs/reference/` is the surface this package PUBLISHES as machine-derived
+    // truth, so it is the surface a fork's rename must reach in full. Every
+    // command a page quotes, every page title and every prose mention is
+    // composed from `BIN_NAME`; nothing here is exempt. The failure names
+    // `page: line`, so it is a worklist and not just a count.
+    const { emitReference } = await import("./kernel/spec/emitReference.js");
+    const { capabilities } = await import("./capabilities/index.js");
+
+    const offenders: string[] = [];
+    for (const [page, content] of emitReference(capabilities)) {
+      for (const line of content.split("\n")) {
+        if (THIS_NAME.test(line)) offenders.push(`${page}: ${line}`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 
   it("reads the graph with the fork's declared terms, not this distribution's", async () => {

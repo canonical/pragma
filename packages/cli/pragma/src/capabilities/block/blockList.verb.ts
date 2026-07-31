@@ -9,6 +9,7 @@
  * input in the query — the tier is config, the channel a closed enum).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
 import type {
   ColumnDef,
@@ -127,9 +128,9 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
   ],
   output: { formatters: listFormatters },
   examples: [
-    { cmd: "pragma block list" },
-    { cmd: "pragma block list --all-tiers" },
-    { cmd: "pragma block list --format llm" },
+    { cmd: `${BIN_NAME} block list` },
+    { cmd: `${BIN_NAME} block list --all-tiers` },
+    { cmd: `${BIN_NAME} block list --format llm` },
   ],
   capability: {
     needsStore: true,

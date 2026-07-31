@@ -12,6 +12,7 @@
  * formatters).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -38,7 +39,7 @@ const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
   doc: "Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.",
   params: [],
   output: { formatters: promptListFormatters },
-  examples: [{ cmd: "pragma prompt list" }],
+  examples: [{ cmd: `${BIN_NAME} prompt list` }],
   capability: READ_CAPABILITY,
   run: (_params: Record<string, unknown>, rt: PragmaRuntime) =>
     import("../../kernel/project/mcp/prompts/source.js").then(async (m) => {
@@ -77,7 +78,7 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
     },
   ],
   output: { formatters: promptLookupFormatters },
-  examples: [{ cmd: "pragma prompt lookup build-a-block" }],
+  examples: [{ cmd: `${BIN_NAME} prompt lookup build-a-block` }],
   capability: READ_CAPABILITY,
   run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
     import("../../kernel/project/mcp/prompts/source.js").then(async (m) => {

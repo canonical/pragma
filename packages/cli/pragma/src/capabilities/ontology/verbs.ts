@@ -22,6 +22,7 @@
  * any level), so the covenant is untouched.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
@@ -77,7 +78,7 @@ const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
   summary: "List loaded ontology namespaces with class and property counts.",
   params: [],
   output: { formatters: ontologyListFormatters },
-  examples: [{ cmd: "pragma ontology list" }],
+  examples: [{ cmd: `${BIN_NAME} ontology list` }],
   capability: {
     needsStore: true,
     mutates: false,
@@ -244,9 +245,9 @@ export const ontologyLookupVerb = asVerb(
     "lookup",
     "Look up a namespace's classes (hierarchy + counts) and properties.",
     [
-      { cmd: "pragma ontology lookup ds" },
-      { cmd: "pragma ontology lookup ds --properties" },
-      { cmd: "pragma ontology lookup ds --class Component" },
+      { cmd: `${BIN_NAME} ontology lookup ds` },
+      { cmd: `${BIN_NAME} ontology lookup ds --properties` },
+      { cmd: `${BIN_NAME} ontology lookup ds --class Component` },
     ],
   ),
 );
@@ -261,8 +262,8 @@ export const ontologyShowVerb = asVerb(
     "show",
     "(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.",
     [
-      { cmd: "pragma ontology lookup ds", note: "prefer `lookup`" },
-      { cmd: "pragma ontology show ds", note: "deprecated alias" },
+      { cmd: `${BIN_NAME} ontology lookup ds`, note: "prefer `lookup`" },
+      { cmd: `${BIN_NAME} ontology show ds`, note: "deprecated alias" },
     ],
     "Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.",
   ),

@@ -35,6 +35,16 @@ const ISSUES_URL = identity.issuesUrl;
 const VERSION: string = pkg.version;
 
 /**
+ * The project config filename the walker looks for and every surface that
+ * quotes it — diagnostics, the onboarding note, the generated reference, the
+ * surface covenant — names. It lives HERE rather than beside the walker so the
+ * quoting surfaces do not have to import `kernel/config/**`: the storeless
+ * `--help`/`__complete` graph is asserted to reach no config module, and
+ * `completion/safety.test.ts` fails the moment one arrives.
+ */
+const PROJECT_CONFIG_FILENAME = `${identity.name}.config.ts`;
+
+/**
  * The distribution's name plus a space: the prefix a `recovery.cli` hint carries
  * so it quotes a command the installed binary answers to (D5). Kernel hints are
  * authored through `cliRecovery`; `packs/schema.ts` holds a user-authored pack's
@@ -67,6 +77,7 @@ export {
   MCP_SERVER_NAME,
   OUTPUT_FORMATS,
   PROGRAM_DESCRIPTION,
+  PROJECT_CONFIG_FILENAME,
   RECOVERY_CLI_PREFIX,
   VERSION,
 };

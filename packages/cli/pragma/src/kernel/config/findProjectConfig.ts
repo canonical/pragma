@@ -11,10 +11,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { BIN_NAME } from "../../constants.js";
-
-/** The project config filename the onboarding note and diagnostics quote. */
-export const PROJECT_CONFIG_FILENAME = `${BIN_NAME}.config.ts`;
+import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 
 /** Candidate project-config filenames, in preference order. */
 const CANDIDATES = [PROJECT_CONFIG_FILENAME, `${BIN_NAME}.config.js`] as const;

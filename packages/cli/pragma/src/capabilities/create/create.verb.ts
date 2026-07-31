@@ -15,6 +15,7 @@
 
 import type { GeneratorResult, PromptDefinition } from "@canonical/summon-core";
 import type { Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
@@ -480,11 +481,11 @@ export const createVerbs: Record<
     componentParams,
     [
       {
-        cmd: "pragma create component src/components/Button --framework react",
+        cmd: `${BIN_NAME} create component src/components/Button --framework react`,
         note: "React component with tests, stories, and styles",
       },
       {
-        cmd: "pragma create component src/lib/Card --framework svelte --dry-run",
+        cmd: `${BIN_NAME} create component src/lib/Card --framework svelte --dry-run`,
         note: "preview the files without writing",
       },
     ],
@@ -494,8 +495,12 @@ export const createVerbs: Record<
     "Scaffold a new npm package for the monorepo.",
     packageParams,
     [
-      { cmd: "pragma create package --name @canonical/my-lib --type library" },
-      { cmd: "pragma create package --name @canonical/my-tool --run-install" },
+      {
+        cmd: `${BIN_NAME} create package --name @canonical/my-lib --type library`,
+      },
+      {
+        cmd: `${BIN_NAME} create package --name @canonical/my-tool --run-install`,
+      },
     ],
   ),
   application: createVerb(
@@ -503,8 +508,8 @@ export const createVerbs: Record<
     "Scaffold a full React application with SSR and routing.",
     applicationParams,
     [
-      { cmd: "pragma create application my-app" },
-      { cmd: "pragma create application my-app --with-relay" },
+      { cmd: `${BIN_NAME} create application my-app` },
+      { cmd: `${BIN_NAME} create application my-app --with-relay` },
     ],
   ),
 };

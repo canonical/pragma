@@ -33,9 +33,8 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { VERSION } from "../../constants.js";
+import { PROJECT_CONFIG_FILENAME, VERSION } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
-import { PROJECT_CONFIG_FILENAME } from "./findProjectConfig.js";
 import { configCacheDir } from "./paths.js";
 import { parseRawConfig } from "./schema.js";
 import type { RawConfig } from "./types.js";

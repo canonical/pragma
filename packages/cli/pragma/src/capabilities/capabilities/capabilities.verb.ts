@@ -21,6 +21,7 @@
  * unchanged.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { capabilitiesFormatters } from "./capabilities.render.js";
@@ -28,14 +29,16 @@ import type { CapabilitiesData } from "./types.js";
 
 const capabilitiesVerb: VerbSpec<Record<string, unknown>, CapabilitiesData> = {
   path: ["capabilities"],
-  summary:
-    "Discover pragma conventions, the annotated tool catalog, and the discovery sequence.",
+  summary: `Discover ${BIN_NAME} conventions, the annotated tool catalog, and the discovery sequence.`,
   doc: "Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.",
   params: [],
   output: { formatters: capabilitiesFormatters },
   examples: [
-    { cmd: "pragma capabilities", note: "the annotated tool catalog" },
-    { cmd: "pragma capabilities --format json", note: "the structured map" },
+    { cmd: `${BIN_NAME} capabilities`, note: "the annotated tool catalog" },
+    {
+      cmd: `${BIN_NAME} capabilities --format json`,
+      note: "the structured map",
+    },
   ],
   capability: {
     needsStore: false,

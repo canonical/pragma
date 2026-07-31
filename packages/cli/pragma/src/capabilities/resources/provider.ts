@@ -18,6 +18,7 @@
  * the `--help`/`__complete` fast path.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
@@ -35,8 +36,8 @@ const CLASS_PRIORITY = 0.9;
 /** MCP annotation priority for an individual (ABox) entry. */
 const INDIVIDUAL_PRIORITY = 0.3;
 
-/** The `pragma:` URI scheme + the single reserved-expansion template variable. */
-const URI_TEMPLATE = "pragma:{+uri}";
+/** The `<bin>:` URI scheme + the single reserved-expansion template variable. */
+const URI_TEMPLATE = `${BIN_NAME}:{+uri}`;
 
 const TEMPLATE_DESCRIPTION =
   "Knowledge-graph entities from the local pack. Read any entry by its prefixed " +

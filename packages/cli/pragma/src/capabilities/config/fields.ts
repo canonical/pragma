@@ -21,14 +21,8 @@ export interface ConfigFieldSpec {
   readonly kind: "string" | "enum";
   /** The allowed values for an enum field. */
   readonly values?: readonly string[];
-  /** One-line field summary. */
-  readonly summary: string;
-  /** Extended help doc. */
-  readonly doc: string;
   /** Reserved values that REMOVE the field instead of setting it. */
   readonly resetSentinel?: readonly string[];
-  /** Field help examples. */
-  readonly examples: readonly { cmd: string; note?: string }[];
 }
 
 /**
@@ -44,38 +38,17 @@ export const CONFIG_FIELDS: readonly ConfigFieldSpec[] = [
     positional: "path",
     kind: "string",
     resetSentinel: ["none", "default", "-"],
-    summary: "Set the active design-system tier.",
-    doc: "Writes the `tier` field to the global config. Pass `none`, `default`, or `-` to clear it. Written to the global layer only — project configs are authored by hand.",
-    examples: [
-      {
-        cmd: "pragma config set tier apps/lxd",
-        note: "scope reads to a tier",
-      },
-      { cmd: "pragma config set tier none", note: "clear the tier" },
-    ],
   },
   {
     field: "channel",
     positional: "name",
     kind: "enum",
     values: CHANNELS,
-    summary: "Set the release channel controlling component visibility.",
-    doc: "Writes the `channel` field to the global config. Reset by setting the default, `normal`.",
-    examples: [
-      { cmd: "pragma config set channel experimental" },
-      { cmd: "pragma config set channel normal", note: "back to the default" },
-    ],
   },
   {
     field: "detail",
     positional: "level",
     kind: "enum",
     values: DETAIL_LEVELS,
-    summary: "Set the default progressive-disclosure level.",
-    doc: "Writes the `detail` field to the global config. Reset by setting the default, `standard`.",
-    examples: [
-      { cmd: "pragma config set detail detailed" },
-      { cmd: "pragma config set detail standard", note: "back to the default" },
-    ],
   },
 ];

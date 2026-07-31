@@ -10,15 +10,21 @@
  * skipped; every remaining site that legitimately carries one is listed in
  * {@link EXEMPT} with its reason and the PR that removes it.
  *
- * What it does NOT reach: `src/capabilities/**` or `pragma.conf.ts`. The
- * distribution's five read stories moved OUT of `src/capabilities/**` and into
- * `pragma.conf.ts`, which is the file a fork edits and so is content by
- * definition. What is left under `src/capabilities/**` is the hand-written
- * `ds:` residue (`block list`, `token add-config`, `tier lookup`) plus generic
- * capability modules that still author `pragma …` command literals; closing
- * BOTH is its own tranche (the `examples[].cmd` strings are byte-compared
- * against `docs/reference/*.md`, so the sweep and the docs regen have to move
- * together).
+ * `src/capabilities/**` and `pragma.conf.ts` are OUT of the rule above.
+ * `pragma.conf.ts` is the file a fork edits, so it is content by definition;
+ * `src/capabilities/**` still carries the hand-written `ds:` residue
+ * (`block list`, `token add-config`, `tier lookup`) plus runtime copy no doc
+ * publishes, and a guard needing a 65-entry exemption list is a guard that
+ * mostly exempts. One narrower rule reaches it instead, at the bottom of this
+ * file: {@link COMMAND_POSITIONS} — *a command a user is told to run is never a
+ * literal*. Zero exemptions, and it reads raw source rather than {@link
+ * readCopy}, so it holds whatever the scanner can or cannot see.
+ *
+ * NOTE for a reader of an older revision: this docblock used to say the
+ * `examples[].cmd` sweep and the `docs/reference/*.md` regen "have to move
+ * together". They must be CONSISTENT, not simultaneous — the whole sweep was
+ * measured to move zero doc bytes, because every literal it replaced was
+ * already spelling this distribution's own name.
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -267,6 +273,45 @@ describe("kernel copy (PROTECTED)", () => {
         ),
       ),
     );
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * The grammar positions that quote a command a user is told to RUN: an example
+ * (`cmd:`) — and, from the commit that made `cliRecovery` own the prefix, a
+ * recovery hint (`cli:`) and a doctor fix (`remedy:`).
+ */
+const COMMAND_POSITIONS = ["cmd"];
+
+/** Every authored `.ts` under `src/capabilities/**`. */
+const capabilitySources = listSources(join(root, "capabilities"));
+
+describe("capability commands (PROTECTED)", () => {
+  it("no command a user is told to run is a bare literal", () => {
+    // The rule that reaches `src/capabilities/**` without exempting most of it.
+    // The wider "name nothing" rule cannot: that tree legitimately carries the
+    // domain in runtime copy and in wire identifiers. But a command string is
+    // never content — it is the installed binary's own name plus a grammar
+    // path, and both are derived. So this is stated as a POSITION rule, not a
+    // file rule, and carries no exemptions.
+    //
+    // Raw source, not `readCopy`: the position is what makes it an offence, and
+    // reading the text directly means this guard holds whatever the scanner can
+    // see. DERIVED and ESCAPED from the shipped `name`, as above.
+    const name = BIN_NAME.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(
+      `(?:${COMMAND_POSITIONS.join("|")}):\\s*["'][^"']*\\b${name}\\b`,
+      "i",
+    );
+    const offenders: string[] = [];
+    for (const file of capabilitySources) {
+      for (const line of readFileSync(file, "utf-8").split("\n")) {
+        if (pattern.test(line)) {
+          offenders.push(`${relative(root, file)}: ${line.trim()}`);
+        }
+      }
+    }
     expect(offenders).toEqual([]);
   });
 });
