@@ -8,6 +8,7 @@
  * envelope, exit codes, budgets, ...). Hidden verbs are excluded.
  */
 
+import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
 import type { CapabilityModule, ParamSpec, VerbSpec } from "./types.js";
 
 /** kebab-case a camelCase param name for its flag form (`allTiers` -> `all-tiers`). */
@@ -74,7 +75,7 @@ export interface EmittedSurface {
  */
 export const FIXED_SURFACE = {
   bins: {
-    pragma: "pragma v2 CLI and MCP server host (stdio)",
+    [BIN_NAME]: `${BIN_NAME} v2 CLI and MCP server host (stdio)`,
   },
   globalFlags: [
     {
@@ -122,9 +123,12 @@ export const FIXED_SURFACE = {
     paramSource: "ParamSpec.complete",
   },
   configFiles: {
-    project: "pragma.config.ts (evaluated, content-hash cached)",
-    global: "$XDG_CONFIG_HOME/pragma/config.json",
-    lock: "$XDG_STATE_HOME/pragma/config-cache/<sha256>.json",
+    project: `${PROJECT_CONFIG_FILENAME} (evaluated, content-hash cached)`,
+    global: `$XDG_CONFIG_HOME/${BIN_NAME}/config.json`,
+    // Named `configCache` because that is what it is: the evaluated project
+    // config's content-addressed cache. It was called `lock` for a project lock
+    // file that no longer exists.
+    configCache: `$XDG_STATE_HOME/${BIN_NAME}/config-cache/<sha256>.json`,
     defaults: "built-in defaults.ts",
   },
   budgets: {

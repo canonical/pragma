@@ -345,7 +345,7 @@
   "configFiles": {
     "project": "pragma.config.ts (evaluated, content-hash cached)",
     "global": "$XDG_CONFIG_HOME/pragma/config.json",
-    "lock": "$XDG_STATE_HOME/pragma/config-cache/<sha256>.json",
+    "configCache": "$XDG_STATE_HOME/pragma/config-cache/<sha256>.json",
     "defaults": "built-in defaults.ts"
   },
   "budgets": {
