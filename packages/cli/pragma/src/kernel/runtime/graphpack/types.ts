@@ -21,8 +21,15 @@
  * buildPack produces" — extend the set here and that test fails until every
  * side follows.
  *
- * This module is reached only behind a dynamic import (pack build / read /
- * store boot), so its zod dependency never lands on the storeless fast path.
+ * Its zod dependency IS on the storeless fast path, contrary to what this
+ * docblock used to claim. `manifest.ts` imports {@link manifestSchema} as a
+ * value for `readManifest`, `packIsComplete` calls it, and `resolveSources`
+ * calls that — so building the command tree evaluates zod, `__complete`
+ * included. Measured at ~3–4 ms of a ~30 ms fast path. `capabilities/lazy.test.ts`
+ * pins this module as the ONLY zod importer on that graph, so the cost cannot
+ * grow silently and removing it cannot pass unnoticed. Splitting the schemas
+ * out so the boot decision reads a manifest without zod is the fix, and it is
+ * the pack runtime's to make, not this type module's.
  */
 
 import { z } from "zod";
@@ -55,9 +62,10 @@ export interface PackIndexEntity {
   /** Human label (rdfs:label / skos:prefLabel / dcterms:title / schema:name). */
   readonly label?: string | null;
   /**
-   * Alternative completable names — the `ds:name` values a family (e.g.
-   * `ds:Tier`, matched by `tier lookup`) is addressed by, when they differ from
-   * `name`/`label`. Enrichment for the storeless name-completion sources.
+   * Alternative completable names — the values of the distribution's declared
+   * alternative-name property (`kernel/vocabulary.ts`), which is what a
+   * bespoke lookup matches on, when they differ from `name`/`label`.
+   * Enrichment for the storeless name-completion sources.
    */
   readonly altNames?: readonly string[];
   /** Schema (`tbox`) vs individual (`abox`). */
