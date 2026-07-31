@@ -8,6 +8,7 @@
  * neither the checks nor `@canonical/harnesses` land on the fast path.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { checkConfigFile } from "./checks/checkConfigFile.js";
 import { checkKeStore } from "./checks/checkKeStore.js";
@@ -55,8 +56,8 @@ function buildChecks(
 ): readonly [string, Promise<CheckResult>][] {
   return [
     ["Node version", checkNodeVersion()],
-    ["pragma version", checkPragmaVersion(rt)],
-    ["pragma config", checkConfigFile(rt)],
+    [`${BIN_NAME} version`, checkPragmaVersion(rt)],
+    [`${BIN_NAME} config`, checkConfigFile(rt)],
     ["pack refs", checkPackageRefs(rt)],
     ["ke store", checkKeStore(rt)],
     ["Shell completions", checkShellCompletions(rt.cwd)],
@@ -84,8 +85,7 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
           name,
           status: "fail",
           detail: `Check threw an unexpected error: ${reason}`,
-          remedy:
-            "Re-run `pragma doctor`; if it persists, report this as a bug.",
+          remedy: `Re-run \`${BIN_NAME} doctor\`; if it persists, report this as a bug.`,
         });
       }
     }),

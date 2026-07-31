@@ -12,7 +12,6 @@
  * (including the GraphQL path) stay off the storeless fast path.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
 import { suggestNames } from "../project/cli/suggestNames.js";
@@ -64,11 +63,9 @@ export async function resolveLookup(
 ): Promise<LookupOutput> {
   if (queries.length === 0) {
     throw PragmaError.invalidInput("names", "(empty)", {
-      recovery: cliRecovery(
-        `${RECOVERY_CLI_PREFIX}${noun} list`,
-        `List available ${noun} entries.`,
-        { tool: `${noun}_list` },
-      ),
+      recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
+        tool: `${noun}_list`,
+      }),
     });
   }
 
@@ -163,11 +160,9 @@ async function lookupOne(
     const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
-      recovery: cliRecovery(
-        `${RECOVERY_CLI_PREFIX}${noun} list`,
-        `List available ${noun} entries.`,
-        { tool: `${noun}_list` },
-      ),
+      recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
+        tool: `${noun}_list`,
+      }),
     });
   }
 

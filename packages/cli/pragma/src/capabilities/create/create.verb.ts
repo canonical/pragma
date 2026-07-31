@@ -15,6 +15,7 @@
 
 import type { GeneratorResult, PromptDefinition } from "@canonical/summon-core";
 import type { Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
@@ -294,7 +295,7 @@ async function loadCreateRuntime(kind: CreateKind) {
   if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].readsEmbeddedTemplates) {
     throw new PragmaError({
       code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled pragma binary — its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the \`summon\` CLI.`,
+      message: `\`create ${kind}\` is not available in the compiled ${BIN_NAME} binary — ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`,
       recovery: {
         message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
       },
@@ -442,9 +443,50 @@ const CREATE_CAPABILITY = {
 };
 
 /**
+ * Why a binding is source-run only — the ONE authoring of it, shared by the
+ * documentation below and by {@link loadCreateRuntime}'s `UNSUPPORTED` refusal,
+ * so what the reference promises and what the binary does cannot disagree.
+ */
+const SOURCE_ONLY_REASON =
+  "its generator reads templates from disk, which the binary does not carry";
+
+/**
+ * The published caveat for a binding the compiled binary cannot run. DERIVED
+ * from `CREATE_GENERATORS[kind].readsEmbeddedTemplates` — flipping that bit
+ * moves the caveat, `docs/reference/*.md`, and `create.test.ts`'s binding
+ * assertion together.
+ *
+ * It LEADS WITH THE PURPOSE, because `tools.md` and the MCP tool description
+ * both render `doc ?? summary` — so a caveat alone REPLACED the only sentence
+ * saying what the tool makes, and an agent enumerating tools could not learn
+ * that `create_package` scaffolds a package. The tool works from a source
+ * checkout; describing nothing but its refusal made a live tool
+ * undiscoverable. The repeated sentence in `commands.md`'s section is the
+ * cheaper of the two costs.
+ *
+ * It names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
+ * agent has no flags): the plan-only refusal is stated in the terms BOTH
+ * surfaces share.
+ *
+ * @param kind - The create binding.
+ * @param summary - The verb's own one-liner, which the `doc` replaces on MCP.
+ * @returns The `doc` for a source-run-only binding, or `undefined`.
+ */
+function buildAvailabilityDoc(
+  kind: CreateKind,
+  summary: string,
+): string | undefined {
+  if (CREATE_GENERATORS[kind].readsEmbeddedTemplates) return undefined;
+  return `${summary} From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
+}
+
+/**
  * Build a create verb. `run` presents `Promise<Task<R>>` through the `Task<R>`
  * arm by an honest cast at this one site (mirroring `sources update`): a literal
  * `Promise<Task<R>>` arm in the union would poison async read-verb inference.
+ *
+ * A binding the compiled binary cannot run says so in its `summary` (which is
+ * what `--help` and the noun listing show) and explains itself in its `doc`.
  */
 function createVerb(
   kind: CreateKind,
@@ -452,9 +494,11 @@ function createVerb(
   params: ParamSpec[],
   examples: VerbSpec["examples"],
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
+  const doc = buildAvailabilityDoc(kind, summary);
   return {
     path: ["create", kind],
-    summary,
+    summary: doc ? `${summary} Source-run only.` : summary,
+    ...(doc ? { doc } : {}),
     params,
     output: { formatters: createFormatters },
     examples,
@@ -480,11 +524,11 @@ export const createVerbs: Record<
     componentParams,
     [
       {
-        cmd: "pragma create component src/components/Button --framework react",
+        cmd: `${BIN_NAME} create component src/components/Button --framework react`,
         note: "React component with tests, stories, and styles",
       },
       {
-        cmd: "pragma create component src/lib/Card --framework svelte --dry-run",
+        cmd: `${BIN_NAME} create component src/lib/Card --framework svelte --dry-run`,
         note: "preview the files without writing",
       },
     ],
@@ -494,8 +538,12 @@ export const createVerbs: Record<
     "Scaffold a new npm package for the monorepo.",
     packageParams,
     [
-      { cmd: "pragma create package --name @canonical/my-lib --type library" },
-      { cmd: "pragma create package --name @canonical/my-tool --run-install" },
+      {
+        cmd: `${BIN_NAME} create package --name @canonical/my-lib --type library`,
+      },
+      {
+        cmd: `${BIN_NAME} create package --name @canonical/my-tool --run-install`,
+      },
     ],
   ),
   application: createVerb(
@@ -503,8 +551,8 @@ export const createVerbs: Record<
     "Scaffold a full React application with SSR and routing.",
     applicationParams,
     [
-      { cmd: "pragma create application my-app" },
-      { cmd: "pragma create application my-app --with-relay" },
+      { cmd: `${BIN_NAME} create application my-app` },
+      { cmd: `${BIN_NAME} create application my-app --with-relay` },
     ],
   ),
 };

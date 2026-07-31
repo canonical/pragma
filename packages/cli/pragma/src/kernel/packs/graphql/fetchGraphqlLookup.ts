@@ -14,7 +14,6 @@
  * composed only from validated pack terms and compiled schema names.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import type { PragmaRuntime } from "../../runtime/types.js";
@@ -59,7 +58,7 @@ export async function fetchGraphqlLookup(
     throw PragmaError.storeUnavailable(`GraphQL lookup failed: ${messages}`, {
       // `graph inspect` needs a <uri>; `ontology list` is runnable as-is.
       recovery: cliRecovery(
-        `${RECOVERY_CLI_PREFIX}ontology list`,
+        "ontology list",
         "Check the loaded ontology and namespaces.",
         { tool: "ontology_list" },
       ),
@@ -75,7 +74,7 @@ export async function fetchGraphqlLookup(
       code: "ENTITY_NOT_FOUND",
       message: `Could not resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
       recovery: cliRecovery(
-        `${RECOVERY_CLI_PREFIX}graph inspect ${entityUri}`,
+        `graph inspect ${entityUri}`,
         "Inspect the entity's triples to check its rdf:type.",
       ),
     });

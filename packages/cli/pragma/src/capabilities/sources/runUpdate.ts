@@ -30,7 +30,7 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
-import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
+import { VERSION } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
@@ -195,7 +195,7 @@ export async function buildUpdateTask(
         : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to build an empty store.`,
       {
         recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+          "sources update --verbose",
           "Add a pack that ships `.ttl` under definitions/ or data/, then re-run.",
         ),
       },
@@ -265,7 +265,7 @@ export async function buildUpdateTask(
         `All ${inputs.length} configured source(s) failed to parse — nothing to build.`,
         {
           recovery: cliRecovery(
-            `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+            "sources update --verbose",
             "Fix the reported sources, then re-run.",
           ),
         },
@@ -298,7 +298,7 @@ export async function buildUpdateTask(
       `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to build an empty store.`,
       {
         recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+          "sources update --verbose",
           "Check that the package sources actually contain RDF triples, then re-run.",
         ),
       },
@@ -389,7 +389,7 @@ export async function classifySourceBuildError(
     : "The configured package sources could not be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
     recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+      "sources update --verbose",
       "Re-run with --verbose to see each file as it parses. If a package ships malformed RDF, report it to that package's maintainer.",
     ),
   });

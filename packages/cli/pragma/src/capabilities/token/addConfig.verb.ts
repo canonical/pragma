@@ -7,6 +7,7 @@
  */
 
 import type { Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { addConfigFormatters } from "./addConfig.render.js";
@@ -19,8 +20,11 @@ const addConfigVerb: VerbSpec<Record<string, unknown>, AddConfigResult> = {
   params: [],
   output: { formatters: addConfigFormatters },
   examples: [
-    { cmd: "pragma token add-config --dry-run", note: "preview the write" },
-    { cmd: "pragma token add-config --yes", note: "write the config" },
+    {
+      cmd: `${BIN_NAME} token add-config --dry-run`,
+      note: "preview the write",
+    },
+    { cmd: `${BIN_NAME} token add-config --yes`, note: "write the config" },
   ],
   capability: {
     needsStore: true,

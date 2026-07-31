@@ -1,6 +1,6 @@
 # Configuration model
 
-pragma resolves its configuration from three layers. Each effective field carries its provenance, so `pragma config show` reports honestly which layer supplied every value.
+How to author a pragma configuration. **Every field, its type and its layering behaviour are in the generated [configuration reference](./reference/config.md)**, which is projected from the config type and pinned by a drift guard; this page is the guide beside it and does not restate the table.
 
 ## The three layers
 
@@ -10,24 +10,7 @@ From lowest to highest precedence:
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
-A higher layer overrides a lower one field-by-field. `packs` and `generators` replace rather than merge, so a project fully owns its source lists.
-
-## Fields
-
-| Field | Type | Notes |
-| --- | --- | --- |
-| `name` | string (optional) | The distribution's display name (identity). |
-| `help` | string (optional) | The distribution's one-line help blurb. |
-| `colophon` | string (optional) | The distribution's colophon (markdown). |
-| `issuesUrl` | URL string (optional) | Where the distribution's users report issues. |
-| `tier` | string (optional) | Active design-system tier; absent means no tier filter. |
-| `channel` | `normal` \| `experimental` \| `prerelease` | Release channel controlling component visibility. Defaults to `normal`. |
-| `detail` | `summary` \| `standard` \| `detailed` (optional) | Default progressive-disclosure level. Defaults to `standard`. |
-| `packs` | array | Semantic pack sources compiled by `pragma sources update`. Each entry is a bare npm name or `{ name, source, stories? }`. Replaces across layers. |
-| `generators` | array | Scaffold generator sources (`{ name, source }` refs). Replaces across layers. |
-| `stories` | array | Declarative read stories, not attached to any pack. See [Read stories](#read-stories). |
-| `prefixes` | record | Namespace prefixes the pack is built with. They win every harvest, so this is what decides which IRI a prefix binds in the store and the index. See the note below on the distribution layer. |
-| `completion` | object | Completion policy read at `setup completions` emit time. |
+A higher layer **replaces** a lower one field by field. No field merges: a project declaring one `prefixes` entry replaces the whole map, including the namespaces the distribution's own packs are built with. `pragma config show` prints five fields with the layer that supplied them; what the other seven do instead is in the reference under [What `config show` reports](./reference/config.md).
 
 ## Read stories
 
@@ -47,16 +30,18 @@ Within your config the top-level `stories` wins over `packs[].stories` for the s
 
 Package stories are third-party data, so they are never fatal: a malformed or schema-invalid file is dropped, the rest of the package still works, and `pragma doctor` names each ignored file under `pack refs` (which stays `pass` — the pack does answer reads).
 
-Two limits a package author should know. An `emptyRecovery.cli` hint must begin with the *consuming* distribution's binary name, so a story carrying one is usable by that distribution only. And a query naming a prefix the answering graph does not bind currently reports `STORE_UNAVAILABLE` with a `sources update` recovery rather than naming the prefix — check your prefixes against `pragma graph query` first.
+One limit a package author should know: a query naming a prefix the answering graph does not bind currently reports `STORE_UNAVAILABLE` with a `sources update` recovery rather than naming the prefix — check your prefixes against `pragma graph query` first.
+
+An `emptyRecovery.cli` hint is the command **without** a binary name (`"sources update"`, not `"pragma sources update"`). The consuming distribution prepends its own, so one story is portable. A hint carrying **this** distribution's own name is rejected with a `CONFIG_ERROR` naming the change — in your config that is fatal, and a package's `stories/*.json` carrying it is dropped and named under `doctor`'s `pack refs`, like any other invalid package story. A hint carrying some *other* distribution's name cannot be detected, and renders doubled.
 
 Two consequences worth knowing:
 
 - **Package- and config-declared nouns are dispatch-only.** `pragma --help` and shell completion read the static capability set without touching config or the pack, which is what keeps them fast. A noun that arrives from a package or from your config therefore runs, and `pragma capabilities` lists it, but `--help` and completion do not. The distribution's own stories are compiled into that static set, so they are advertised everywhere.
-- **`pragma config show` reports pack declarations, not story bodies.** The bodies are SPARQL and the JSON payload is what MCP returns verbatim, so `packs` entries are shown as `{ name, source }` and the top-level `stories` array is omitted. Provenance is still reported for both fields, and `pragma capabilities` lists the verbs the stories produce.
+- **`pragma config show` reports pack declarations, not story bodies.** The bodies are SPARQL and the JSON payload is what MCP returns verbatim, so `packs` entries are shown as `{ name, source }` and the top-level `stories` array is omitted. `packs` is reported with its layer; `stories` carries an origin the payload has no value to attach it to. `pragma capabilities` lists the verbs the stories produce.
 
 ## `prefixes`: one field, two readers
 
-`prefixes` is read twice, and only the distribution layer reaches both.
+`prefixes` is read twice, and only the distribution layer reaches both. Because a higher layer replaces the map rather than merging into it, a project that declares `prefixes` must declare every prefix its packs need, not only the new one.
 
 1. **Every layer** — the prefixes a `pragma sources update` builds the pack with. They are applied over the namespaces harvested from the source graphs, so declaring one is how you settle a package that binds the same prefix to two IRIs.
 2. **The distribution layer only** — the domain half of the CLI's compiled-in prefix map, which is what compacts IRIs in output *and* what expands a prefixed name you type (`pragma standard lookup cs:something`) before the query runs.
@@ -88,10 +73,6 @@ Every term must be a prefixed name (`prefix:local`) whose prefix `prefixes` bind
 
 Declaring the prompt shape is a read contract, not a claim that the graph has prompts. This distribution's graph currently carries none, so `pragma prompt list` is honestly empty.
 
-## Renamed: `packages` → `packs`
-
-The `packages` field was renamed to `packs`. A config layer that still declares `packages:` fails loudly: the schema detects the legacy key before its unknown-key stripping could hide it and throws a `CONFIG_ERROR` naming the rename. Rename the key — the entry shape is unchanged.
-
 ## Reading and writing
 
 Read the resolved config and its provenance:
@@ -113,4 +94,4 @@ pragma config set tier none
 - `channel` and `detail` are closed enums; reset them by setting their default (`normal` / `standard`).
 - `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and the field's own reset rules still apply.
 
-See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, and the [command reference](./reference/commands.md) for each setter's full signature.
+See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.

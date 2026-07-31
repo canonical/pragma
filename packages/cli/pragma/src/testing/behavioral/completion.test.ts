@@ -89,8 +89,8 @@ describe("flags are kebab-cased at emission (the live, testable guarantee)", () 
   });
 });
 
-describe("entity params resolve from a real built pack index (B10)", () => {
-  it("a lookup's entity positional completes from the built pack index", async () => {
+describe("entity params resolve from the project's built pack, not the embedded snapshot (B10)", () => {
+  it("a lookup's entity positional offers the built pack's subjects and none of the snapshot's", async () => {
     const fixture = await bootFixtureRuntime({
       ttl: CANONICAL_TTL,
       config: ALL_VISIBLE_CONFIG,
@@ -103,7 +103,20 @@ describe("entity params resolve from a real built pack index (B10)", () => {
         capabilities,
         indexCompletionEnv(fixture.cwd),
       );
-      expect(all.length).toBeGreaterThan(0);
+      // The four `ds:Component` subjects the canonical fixture declares
+      // (`blockGraph.ts`'s Button/Modal plus `canonical.ts`'s LXD Panel and
+      // Beta Widget) — the fixture's own data, not a recomputation. Stating
+      // the SET is what makes the distribution's own snapshot names provably
+      // absent: a pointer read that regressed to the embedded fallback would
+      // complete another graph's names while every read answered correctly,
+      // and the old `narrowed.length < all.length` heuristic only noticed by
+      // the accident that no snapshot name contains `ds:b`.
+      expect([...all].sort()).toEqual([
+        "ds:betaWidget",
+        "ds:button",
+        "ds:lxdPanel",
+        "ds:modal",
+      ]);
 
       const narrowed = await runComplete(
         ["block", "lookup", "ds:b"],
@@ -111,7 +124,7 @@ describe("entity params resolve from a real built pack index (B10)", () => {
         indexCompletionEnv(fixture.cwd),
       );
       // Every ranked candidate carries the partial (case-insensitive), and the
-      // filter is strictly narrowing — the index tier really ran.
+      // filter is strictly narrowing — the ranker really ran over this index.
       expect(
         narrowed.every((name) => name.toLowerCase().includes("ds:b")),
       ).toBe(true);

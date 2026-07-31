@@ -21,8 +21,11 @@ import {
   writeFile,
 } from "@canonical/task";
 import { runTask } from "@canonical/task/node";
-import { BIN_NAME, ISSUES_URL } from "../../constants.js";
-import { PROJECT_CONFIG_FILENAME } from "./findProjectConfig.js";
+import {
+  BIN_NAME,
+  ISSUES_URL,
+  PROJECT_CONFIG_FILENAME,
+} from "../../constants.js";
 import { globalConfigPath } from "./paths.js";
 
 /** Seed content: an empty object, so nothing is pinned the user did not choose. */

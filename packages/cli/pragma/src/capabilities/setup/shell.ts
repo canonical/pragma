@@ -9,6 +9,7 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { BIN_NAME } from "../../constants.js";
 
 /** The shells `setup completions` can install for. */
 export type ShellId = "zsh" | "bash" | "fish";
@@ -34,6 +35,31 @@ export function detectShell(): ShellId | null {
 /**
  * The standard install path for a shell's completion script.
  *
+ * The BASENAME is {@link BIN_NAME}, never a literal, because `emitScripts`
+ * derives the script's own `#compdef` / `complete -F` / `complete -c` from that
+ * same name, and for two of the three shells the basename decides whether the
+ * file is ever loaded. Measured against real shells with the distribution
+ * renamed to `widget9`:
+ *
+ * - **fish** autoloads `completions/<cmd>.fish` BY NAME. A correct `widget9`
+ *   script in a file called `pragma.fish` is never loaded — TAB silently falls
+ *   back to filenames. Verified: renaming that one file is the entire
+ *   difference between candidates and no candidates.
+ * - **bash-completion** looks up `completions/<cmd>` by the command name the
+ *   same way. Verified against bash-completion 2.11's `__load_completion`:
+ *   with the file named `widget9`, `complete -p widget9` reports
+ *   `complete -F _widget9 widget9`; with the identical file named `pragma`,
+ *   `_widget9` is never defined and bash falls back to `_minimal`.
+ * - **zsh** does NOT work that way: `compinit` binds by the `#compdef` tag
+ *   inside the file, so `~/.zfunc/_pragma` holding `#compdef widget9` does
+ *   complete `widget9` (verified — `_comps[widget9]` resolves to `_pragma`).
+ *   The basename still matters, for a different reason: it names the function
+ *   zsh autoloads, and two distributions both writing `_pragma` would silently
+ *   overwrite each other's completions.
+ *
+ * Either way `setup completions` and `doctor` report success, so nothing else
+ * would tell the user.
+ *
  * @param shell - The target shell.
  * @returns The absolute path the completion script is written to.
  * @note Impure — reads the home directory.
@@ -42,7 +68,7 @@ export function completionScriptPath(shell: ShellId): string {
   const home = homedir();
   switch (shell) {
     case "zsh":
-      return join(home, ".zfunc", "_pragma");
+      return join(home, ".zfunc", `_${BIN_NAME}`);
     case "bash":
       return join(
         home,
@@ -50,10 +76,10 @@ export function completionScriptPath(shell: ShellId): string {
         "share",
         "bash-completion",
         "completions",
-        "pragma",
+        BIN_NAME,
       );
     case "fish":
-      return join(home, ".config", "fish", "completions", "pragma.fish");
+      return join(home, ".config", "fish", "completions", `${BIN_NAME}.fish`);
   }
 }
 

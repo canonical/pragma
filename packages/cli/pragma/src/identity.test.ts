@@ -1,6 +1,6 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import chalk from "chalk";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import type { VerbSpec } from "./kernel/spec/types.js";
@@ -37,6 +37,14 @@ vi.mock("../pragma.conf.js", () => ({
 /** Anything that would betray THIS distribution leaking through the kernel. */
 const THIS_DISTRIBUTION = /pragma|canonical|design[- ]system/i;
 
+/**
+ * THIS distribution's name alone. The generated reference legitimately carries
+ * bundled-pack CONTENT a fork owns and edits — `@canonical/…` package names in
+ * `create` examples, `ds:`/`cs:` entity values — so the reference probe below
+ * is scoped to the one token that must never survive a rename.
+ */
+const THIS_NAME = /\bpragma\b/i;
+
 // chalk paints ANSI when GITHUB_ACTIONS is set even off a TTY, which would
 // break the plain-text structure assertions below.
 const prevChalkLevel = chalk.level;
@@ -46,8 +54,10 @@ afterAll(() => {
 });
 
 const originalConfigHome = process.env.XDG_CONFIG_HOME;
+const originalDataHome = process.env.XDG_DATA_HOME;
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = originalConfigHome;
+  process.env.XDG_DATA_HOME = originalDataHome;
 });
 
 /** A pack-contributed noun the kernel has never heard of. */
@@ -74,6 +84,23 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(c.RECOVERY_CLI_PREFIX).toBe("recipes ");
     expect(c.PROGRAM_DESCRIPTION).toBe("Explore the recipe graph");
     expect(c.ISSUES_URL).toBe("https://example.invalid/recipes/issues");
+  });
+
+  it("installs its completion script under the fork's name, in all three shells", async () => {
+    // The basename is load-bearing, not cosmetic — `shell.ts` records what each
+    // shell measurably does with it (fish and bash-completion autoload BY the
+    // command's name; zsh binds by the `#compdef` tag but autoloads a function
+    // named after the file). A mismatch installs a file the shell never loads
+    // while `setup completions` prints success, `doctor` passes, and TAB does
+    // nothing. It can only be pinned from a fork: with the distribution named
+    // `pragma` a hardcoded literal and `BIN_NAME` agree by construction, so a
+    // test in `setup.test.ts` cannot fail. Here they cannot agree by accident.
+    const { completionScriptPath } = await import(
+      "./capabilities/setup/shell.js"
+    );
+    expect(basename(completionScriptPath("zsh"))).toBe("_recipes");
+    expect(basename(completionScriptPath("bash"))).toBe("recipes");
+    expect(basename(completionScriptPath("fish"))).toBe("recipes.fish");
   });
 
   it("renders a front door that names only the fork", async () => {
@@ -138,6 +165,72 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
+  });
+
+  it("owns its own on-disk skills namespace", async () => {
+    // Config, state and cache were namespaced by the bin name; the SKILLS roots
+    // were not. Two distributions installed side by side therefore shared one
+    // `$XDG_DATA_HOME/pragma/skills` and one `<cwd>/.pragma/skills`, so a fork
+    // read the other's skills and could not install its own without collision.
+    process.env.XDG_DATA_HOME = join(tmpdir(), "identity-data");
+    const { skillRoots, installedSkillsDir } = await import(
+      "./capabilities/skill/discover.js"
+    );
+    expect(installedSkillsDir().endsWith(join("recipes", "skills"))).toBe(true);
+    expect(skillRoots("/work")).toEqual([
+      join("/work", ".recipes", "skills"),
+      installedSkillsDir(),
+    ]);
+    for (const root of skillRoots("/work")) {
+      expect(root).not.toMatch(THIS_DISTRIBUTION);
+    }
+  });
+
+  it("registers an MCP server entry the fork's own binary answers to", async () => {
+    // The entry `setup mcp` writes is what a harness later EXECUTES. It was
+    // hardcoded while the key it is stored under derived from the same
+    // identity, so a fork registered a `recipes` server that ran `pragma` —
+    // and `doctor`'s `MCP configured` check, which re-derived the key by hand,
+    // could never see its own registration.
+    const { pragmaMcpEntry } = await import(
+      "./capabilities/setup/operations/setupMcp.js"
+    );
+    expect(pragmaMcpEntry("/work")).toEqual({
+      command: "recipes",
+      args: ["mcp"],
+      cwd: "/work",
+    });
+  });
+
+  it("generates a reference that never names this distribution", async () => {
+    // `docs/reference/` is the surface this package PUBLISHES as machine-derived
+    // truth, so it is the surface a fork's rename must reach in full. Every
+    // command a page quotes, every page title and every prose mention is
+    // composed from `BIN_NAME`. The failure names `page: line`, so it is a
+    // worklist and not just a count.
+    //
+    // ONE exemption, the same one the MCP orientation case above makes and for
+    // the same reason: the `pragma:` resource scheme is covenant-frozen PROTOCOL
+    // identity (`surface.v2.json`), inherited by a fork along with the
+    // `pragma/box` and `pragma/instanceCount` `_meta` keys it travels with, and
+    // `tools.md` reports it truthfully. Masked from the emitted surface, not by
+    // a literal, so a leak the kernel authored itself still fails here.
+    const { emitReference } = await import("./kernel/spec/emitReference.js");
+    const { emitSurface } = await import("./kernel/spec/emitSurface.js");
+    const { capabilities } = await import("./capabilities/index.js");
+
+    const { resources } = emitSurface(capabilities).mcpSurface;
+    expect(resources.length).toBeGreaterThan(0);
+    const unmask = (line: string): string =>
+      resources.reduce((text, template) => text.replace(template, ""), line);
+
+    const offenders: string[] = [];
+    for (const [page, content] of emitReference(capabilities)) {
+      for (const line of content.split("\n")) {
+        if (THIS_NAME.test(unmask(line))) offenders.push(`${page}: ${line}`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 
   it("reads the graph with the fork's declared terms, not this distribution's", async () => {

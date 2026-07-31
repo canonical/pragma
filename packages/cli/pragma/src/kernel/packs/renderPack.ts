@@ -9,7 +9,7 @@
  * them (disclosure gates the fetch), never HOW it is laid out.
  */
 
-import { BIN_NAME } from "../../constants.js";
+import { BIN_NAME, RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type {
   ColumnDef,
   LookupField,
@@ -69,7 +69,9 @@ export function listFormatters(
   // `emptyRecovery` becomes the hint; otherwise the generic build/broaden hint.
   const emptyHint = shape.emptyRecovery
     ? `${shape.emptyRecovery.message}${
-        shape.emptyRecovery.cli ? ` Run \`${shape.emptyRecovery.cli}\`.` : ""
+        shape.emptyRecovery.cli
+          ? ` Run \`${RECOVERY_CLI_PREFIX}${shape.emptyRecovery.cli}\`.`
+          : ""
       }`
     : DEFAULT_EMPTY_HINT;
   const options: RenderListOptions<PackRow> = {

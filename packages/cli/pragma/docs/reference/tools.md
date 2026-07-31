@@ -86,7 +86,7 @@ _No input parameters._
 
 ### create_application
 
-Scaffold a full React application with SSR and routing.
+Scaffold a full React application with SSR and routing. From the compiled pragma binary, `create application` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -123,7 +123,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### create_package
 
-Scaffold a new npm package for the monorepo.
+Scaffold a new npm package for the monorepo. From the compiled pragma binary, `create package` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -262,7 +262,7 @@ Read-only.
 
 ### prompt_list
 
-Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
+Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
 
 Read-only.
 
@@ -272,7 +272,7 @@ _No input parameters._
 
 ### prompt_lookup
 
-Fetch a single ds:Prompt entity's full template body (with {{arg}} placeholders) and its declared arguments.
+Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.
 
 Read-only.
 
@@ -280,7 +280,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | string | yes | The prompt name (e.g. build-a-block). |
+| `name` | string | yes | The prompt name, as `prompt list` reports it. |
 
 ### setup
 
@@ -475,5 +475,5 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 ## Non-tool surface
 
 - **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).
-- **Prompts**: the design system's workflow templates are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools.
+- **Prompts**: the workflow prompt templates the active graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. A graph declaring none leaves both views empty.
 - **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.

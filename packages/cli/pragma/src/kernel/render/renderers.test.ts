@@ -182,7 +182,7 @@ describe("error render matrix (× plain/llm/json)", () => {
   it("renders each error across the three formats", () => {
     const notFound = PragmaError.notFound("block", "Buton", {
       suggestions: ["Button"],
-      recovery: cliRecovery("pragma block list", "List available blocks."),
+      recovery: cliRecovery("block list", "List available blocks."),
     });
     const empty = PragmaError.emptyResults("token", {
       filters: { channel: "stable", tier: "core" },

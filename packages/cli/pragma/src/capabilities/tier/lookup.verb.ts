@@ -6,6 +6,7 @@
  * `{ v: "lookup", args: ["<name>"], needsStore: true, mcp: "tier_lookup" }`.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TIER_TYPE } from "./constants.js";
@@ -33,7 +34,7 @@ const tierLookupSpec: VerbSpec<Record<string, unknown>, TierLookupData> = {
     },
   ],
   output: { formatters: tierLookupFormatters },
-  examples: [{ cmd: "pragma tier lookup apps/lxd" }],
+  examples: [{ cmd: `${BIN_NAME} tier lookup apps/lxd` }],
   capability: {
     needsStore: true,
     mutates: false,

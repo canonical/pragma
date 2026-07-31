@@ -43,7 +43,15 @@ const completionSchema = z.object({
   families: z.record(z.string(), z.boolean()).optional(),
 });
 
-const rawConfigSchema = z.object({
+/**
+ * The validator every config layer passes through. EXPORTED for
+ * `schema.test.ts`, which compares its field set and each field's optionality
+ * against the generated `docs/reference/config.md` — the two are produced
+ * independently (the page from `keyof RawConfig`, this from hand-written zod)
+ * and `parseRawConfig`'s `as RawConfig` cast means `tsc` cannot catch them
+ * drifting apart.
+ */
+export const rawConfigSchema = z.object({
   name: z.string().min(1).optional(),
   help: z.string().min(1).optional(),
   colophon: z.string().optional(),

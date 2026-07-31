@@ -2,15 +2,14 @@
  * Formatters for `skill list` and `skill lookup`.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type { DiscoveredSkill } from "./discover.js";
 import type { SkillLookup } from "./verbs.js";
 
 /** Empty-state guidance (U5) — where skills come from now that packs ship them. */
-const EMPTY_PLAIN =
-  "No skills found.\nSkills come from design-system packs — add one to your config's packs, run `pragma sources update`, then `pragma setup skills`.";
-const EMPTY_LLM =
-  "## Skills (0)\n\nNo skills found. Skills come from design-system packs — add one to the project config's packs, run `pragma sources update`, then `pragma setup skills`.";
+const EMPTY_PLAIN = `No skills found.\nSkills come from design-system packs — add one to your config's packs, run \`${BIN_NAME} sources update\`, then \`${BIN_NAME} setup skills\`.`;
+const EMPTY_LLM = `## Skills (0)\n\nNo skills found. Skills come from design-system packs — add one to the project config's packs, run \`${BIN_NAME} sources update\`, then \`${BIN_NAME} setup skills\`.`;
 
 export const skillListFormatters: Formatters<DiscoveredSkill[]> = {
   plain: (skills) =>
