@@ -8,7 +8,7 @@ From lowest to highest precedence:
 
 1. **Built-in defaults** — the distribution config compiled into the binary.
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`, written by `pragma config set`.
-3. **Project config** — the nearest `pragma.config.ts`, walking up from the working directory.
+3. **Project config** — the nearest `pragma.config.ts` (or `pragma.config.js`, the compiled-binary fallback), walking up from the working directory.
 
 A higher layer REPLACES a lower one field by field. No field is deep-merged — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.
 
@@ -33,7 +33,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## Distribution-only fields
 
-`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary.
+`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
 
 ## What `config show` reports
 
