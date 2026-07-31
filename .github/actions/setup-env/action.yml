@@ -61,34 +61,15 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
-      # Workflows that test only affected packages (e.g. pr.yml, via `nx affected -t test`)
-      # only need Playwright if an affected package requires it. Workflows that run the
-      # full test suite regardless of what changed (e.g. push.yml, tag.yml, via `bun run
-      # test`) need to check every project, since a playwright-tagged package doesn't
-      # have to be "affected" to be tested.
-    - name: Check for Specific Tag in Affected Packages
-      shell: bash
-      id: check_playwright
-      env:
-        EVENT_NAME: ${{ github.event_name }}
-        BASE_REF: ${{ github.event.pull_request.base.ref }}
-      run: bash ${{ github.action_path }}/check-playwright.sh
-
-      # Browser binaries are keyed on bun.lock: they only change when the resolved
-      # playwright version changes. On a cache hit, `playwright install` skips the
-      # download and only the (uncacheable) apt system dependencies are installed.
-    - name: Cache Playwright browsers
-      if: ${{ steps.check_playwright.outputs.PLAYWRIGHT_REQUIRED == 'true' }}
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-
-    - name: Install Playwright browsers
-      if: ${{ steps.check_playwright.outputs.PLAYWRIGHT_REQUIRED == 'true' }}
-      shell: bash
-      run: bunx playwright install --with-deps chromium firefox webkit
-
+      # Playwright browsers are NOT installed here. This composite is the
+      # FIRST nx-adjacent thing a job runs, and the old in-composite gate's
+      # cold-graph nx query silently resolved an empty project set here while
+      # the test step's own affected calculation, minutes later, still ran
+      # the browser suites (#901 — three days of red with empty logs).
+      # Browser install now lives in the workflows, AFTER this composite:
+      # pr.yml detects need on the warmed graph; push.yml/tag.yml install
+      # unconditionally (the full suite always includes the browser suites).
+      # Both invoke install-playwright.sh, which lives beside this file.
     - name: Start Nx cache server
       shell: bash
       run: |
