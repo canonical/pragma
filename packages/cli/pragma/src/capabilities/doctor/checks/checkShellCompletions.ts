@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import {
@@ -6,11 +6,8 @@ import {
   runComplete,
 } from "../../../kernel/completion/index.js";
 import { capabilities } from "../../index.js";
-import {
-  activationHint,
-  completionScriptPath,
-  detectShell,
-} from "../../setup/shell.js";
+import { detectCompletions } from "../../setup/operations/setupCompletions.js";
+import { activationHint } from "../../setup/shell.js";
 import type { CheckResult } from "../types.js";
 
 const NAME = "Shell completions";
@@ -59,17 +56,21 @@ async function completeProbe(cwd: string): Promise<number> {
  * 1. The resolver answers (`completeProbe` drives `runComplete` end to end) —
  *    the effect every installed script depends on. A failure here is a real
  *    regression, so it fails even when nothing is installed.
- * 2. The script file exists at the shell's real install path (`shell.ts`) —
- *    NOT a `"pragma"` substring in an RC file, which `setup completions` never
- *    writes.
+ * 2. The installed script is present AND is the script `setup completions`
+ *    would write now. This asks `detectCompletions` — the ONE owner of that
+ *    decision — rather than re-deriving the shell and the path here and
+ *    settling for `existsSync`. A file that merely exists proves nothing: a
+ *    user upgrading across a grammar change keeps the old script, loses the
+ *    moved nouns from TAB, and used to be told everything was fine.
  * 3. For zsh, `~/.zfunc` is on `$fpath` — the activation step setup can only
  *    hint. Installed-but-unwired reports a distinct remedy.
  *
- * @param cwd - The project directory (for the resolver's entity seam).
- * @returns A CheckResult: pass (installed + wired + answering), fail (with the
+ * @param cwd - The project directory (the resolver's entity seam, and the
+ *   `completion` config gate 2 compares against).
+ * @returns A CheckResult: pass (up to date + wired + answering), fail (with the
  *   attributable remedy), or skip (shell undetected).
- * @note Impure — reads `$SHELL`, the install path, `.zshrc`, and drives the
- *   storeless resolver.
+ * @note Impure — reads `$SHELL`, the install path, the config layers, `.zshrc`,
+ *   and drives the storeless resolver.
  */
 export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
   // 1. Effect test: the resolver the scripts delegate to must actually answer.
@@ -94,21 +95,28 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
     };
   }
 
-  // 2. The script file exists at the shell's real install path.
-  const shell = detectShell();
-  if (!shell) {
+  // 2. The installed script is the one `setup completions` would write now.
+  const { shell, path, state } = await detectCompletions(cwd);
+  if (shell === null || path === null) {
     return {
       name: NAME,
       status: "skip",
       detail: "resolver OK; shell not detected ($SHELL unset)",
     };
   }
-  const path = completionScriptPath(shell);
-  if (!existsSync(path)) {
+  if (state === "absent") {
     return {
       name: NAME,
       status: "fail",
       detail: `resolver OK; ${shell} script not installed`,
+      remedy: "pragma setup completions",
+    };
+  }
+  if (state === "stale") {
+    return {
+      name: NAME,
+      status: "fail",
+      detail: `resolver OK; ${shell} script at ${path} is out of date`,
       remedy: "pragma setup completions",
     };
   }
