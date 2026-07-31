@@ -523,7 +523,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   completion: {
     type: "object (optional)",
     notes:
-      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. `caseSensitive` is accepted by the validator and read by nothing. It is the one field `config show` carries with NO origin at all.",
+      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. It is the one field `config show` carries with NO origin at all.",
   },
 };
 
@@ -569,6 +569,8 @@ function renderConfigPage(): string {
     `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",
     "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
+    "## Removed: `completion.caseSensitive`",
+    "The `completion.caseSensitive` field was removed: it was accepted by the validator and read by nothing — completion matching is declared per parameter by the capability grammar, never configured. A layer that still sets it fails loudly at load with an error naming the removed field; delete the key. `completion.minChars` and `completion.families` are unchanged.",
     "## Reading and writing",
     `\`${BIN_NAME} config show\` prints the resolved config and each field's layer. \`${BIN_NAME} config set <key> <value>\` writes to the **global** layer only — project configs are authored by hand. Both are documented in the [command reference](./commands.md).`,
   ]);

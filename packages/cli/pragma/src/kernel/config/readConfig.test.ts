@@ -194,7 +194,7 @@ describe("`detail` — a closed enum at load", () => {
   });
 });
 
-describe("legacy `packages` key — loud rename error", () => {
+describe("legacy config shapes — loud rename/removal errors", () => {
   it("a project config declaring `packages` throws CONFIG_ERROR naming the rename", async () => {
     freshXdg();
     // Unknown keys are stripped by the schema, so the legacy key must be
@@ -235,6 +235,64 @@ describe("legacy `packages` key — loud rename error", () => {
     expect((caught as { message: string }).message).toContain(
       'the "packages" field was renamed to "packs". The entry shape is unchanged.',
     );
+  });
+
+  it("a removed `completion.caseSensitive` throws CONFIG_ERROR naming the field", async () => {
+    freshXdg();
+    // The field was validated and read by NOTHING. Removing it silently would
+    // leave a config author believing case-sensitivity is in force; the schema
+    // strips unknown keys, so the removal must be DETECTED before validation.
+    const dir = projectWith(
+      "export default { completion: { minChars: 3, caseSensitive: true } };",
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(path);
+    expect(message).toContain('"completion.caseSensitive"');
+    expect(message).toContain("removed");
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).toBe(`In ${path}, delete "caseSensitive" from "completion".`);
+  });
+
+  it("a global JSON still setting completion.caseSensitive throws the same removal error", () => {
+    freshXdg();
+    writeGlobal('{"completion": {"caseSensitive": false}}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain(
+      '"completion.caseSensitive"',
+    );
+  });
+
+  it("a TOP-LEVEL `caseSensitive` key is an ordinary unknown key, not the removed field", async () => {
+    freshXdg();
+    // The detection reads exactly `completion.caseSensitive` — a stray
+    // top-level key keeps the forward-compatible unknown-key stripping.
+    const dir = projectWith(
+      "export default { caseSensitive: true, tier: 'core' };",
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    await expect(evaluateProjectConfig(path)).resolves.toEqual({
+      tier: "core",
+    });
   });
 
   it("a `packages` key NESTED under another field does NOT trip the detection", async () => {

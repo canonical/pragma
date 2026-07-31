@@ -6,11 +6,12 @@
  * path, which are storeless and config-free. Validates the raw shape a global
  * JSON file or an evaluated `pragma.config.ts` declares; unknown keys are
  * stripped for forward compatibility, and only present keys survive so layer
- * merging keeps honest per-field provenance. One rename is NOT left to the
- * unknown-key stripping: a legacy `packages` key (renamed to `packs`) is
- * detected before validation and rejected with a loud CONFIG_ERROR, so an old
- * config fails telling the user exactly what to rename instead of silently
- * ignoring the field.
+ * merging keeps honest per-field provenance. Legacy shapes are NOT left to the
+ * unknown-key stripping: each is detected before validation and rejected with
+ * a loud CONFIG_ERROR naming the file and the fix, so an old config fails
+ * telling the user exactly what to change instead of silently ignoring the
+ * field. Two today: the `packages` key (renamed to `packs`), and the removed
+ * `completion.caseSensitive` field (validated and read by nothing).
  */
 
 import { z } from "zod";
@@ -39,9 +40,21 @@ const generatorSourceSchema = z.object({
 
 const completionSchema = z.object({
   minChars: z.number().int().min(0).optional(),
-  caseSensitive: z.boolean().optional(),
   families: z.record(z.string(), z.boolean()).optional(),
 });
+
+/**
+ * The `completion` object a raw layer declares, when it declares one — read
+ * WITHOUT validation, for the removed-field detection that must run before
+ * the schema's unknown-key stripping could hide the key.
+ */
+function declaredCompletion(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null) return null;
+  const { completion } = value as { completion?: unknown };
+  return typeof completion === "object" && completion !== null
+    ? (completion as Record<string, unknown>)
+    : null;
+}
 
 /**
  * The validator every config layer passes through. EXPORTED for
@@ -75,8 +88,9 @@ export const rawConfigSchema = z.object({
  * @param value - The parsed JSON or evaluated module default.
  * @param source - The file path, used in error messages.
  * @returns The validated layer values (only the keys actually present).
- * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, or when the
- *   value declares the legacy `packages` key (renamed to `packs`).
+ * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
+ *   value declares the legacy `packages` key (renamed to `packs`), or when it
+ *   still sets the removed `completion.caseSensitive` field.
  */
 export function parseRawConfig(value: unknown, source: string): RawConfig {
   // Rename detection must precede validation: unknown keys are stripped, so a
@@ -87,6 +101,20 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
       {
         recovery: {
           message: `In ${source}, rename "packages:" to "packs".`,
+        },
+      },
+    );
+  }
+  // Removed-field detection, before validation for the same reason. The field
+  // was accepted and read by NOTHING — matching behaviour is declared per
+  // parameter by the grammar, never by config — so a config still setting it
+  // gets a loud error naming the removed field, not silence.
+  if ("caseSensitive" in (declaredCompletion(value) ?? {})) {
+    throw PragmaError.configError(
+      `Invalid config in ${source}: the "completion.caseSensitive" field was removed — it was read by nothing. Completion matching is declared by the grammar, not configured.`,
+      {
+        recovery: {
+          message: `In ${source}, delete "caseSensitive" from "completion".`,
         },
       },
     );

@@ -57,8 +57,6 @@ export interface GeneratorSource {
 export interface CompletionConfig {
   /** Minimum typed chars before the shell execs `__complete` (default 2). */
   readonly minChars?: number;
-  /** Match case-sensitively (default false — loose match, canonical emit). */
-  readonly caseSensitive?: boolean;
   /** Per-family opt-out: a noun mapped to `false` drops its name completion. */
   readonly families?: Readonly<Record<string, boolean>>;
 }
