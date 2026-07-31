@@ -10,7 +10,9 @@
  *
  * Gate 2 compares BYTES, not existence, so the "installed" cases here write the
  * real `emitScripts(capabilities)[shell]` body. A file that merely exists is
- * now the failing case, and it has its own test.
+ * now the failing case, and it has its own test — as does the boundary on the
+ * other side, where a per-project `completion` config must NOT be able to
+ * condemn the one global script.
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -19,6 +21,7 @@ import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { emitScripts } from "../../../kernel/completion/emitScripts.js";
 import { capabilities } from "../../index.js";
+import { detectCompletions } from "../../setup/operations/setupCompletions.js";
 import { completionScriptPath, type ShellId } from "../../setup/shell.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
 
@@ -89,7 +92,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     installScript("bash");
     const result = await checkShellCompletions(tmp());
     expect(result.status).toBe("pass");
-    expect(result.detail).toMatch(/bash installed and resolving/);
+    expect(result.detail).toMatch(/bash up to date and resolving/);
   });
 
   it("passes for fish once the up-to-date script is at its real path", async () => {
@@ -115,11 +118,15 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     expect(result.remedy).toBe("pragma setup completions");
   });
 
-  it("fails when the installed script predates a `completion` config change", async () => {
-    // The staleness that matters most is invisible to the eye: the script is a
-    // valid script, just not the one this project's config now asks for. Gate 2
-    // reads the SAME `completion` config `setup completions` bakes in, so the
-    // two can never disagree about what "up to date" means.
+  it("does NOT condemn the global script for one project's `completion` config", async () => {
+    // The script is ONE file per user; `completion` config is layered per
+    // project. Comparing the global file against only THIS directory's body
+    // made `doctor`'s verdict flip with `cd`: reproduced against the real
+    // check, a project declaring `minChars: 5` passed in its own directory and
+    // failed in every other, and running the offered remedy there moved the
+    // failure back rather than closing it. The first assertion is the
+    // discriminator — this project really does ask for a different body — so
+    // deleting the config write below turns the test red.
     process.env.SHELL = "/usr/bin/bash";
     installScript("bash");
     const cwd = tmp();
@@ -127,9 +134,8 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
       join(cwd, "pragma.config.ts"),
       "export default { completion: { minChars: 5 } };\n",
     );
-    const result = await checkShellCompletions(cwd);
-    expect(result.status).toBe("fail");
-    expect(result.detail).toMatch(/out of date/);
+    expect((await detectCompletions(cwd)).state).toBe("stale");
+    expect((await checkShellCompletions(cwd)).status).toBe("pass");
   });
 });
 
@@ -150,6 +156,6 @@ describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
     wireZfunc();
     const result = await checkShellCompletions(tmp());
     expect(result.status).toBe("pass");
-    expect(result.detail).toMatch(/zsh installed and resolving/);
+    expect(result.detail).toMatch(/zsh up to date and resolving/);
   });
 });
