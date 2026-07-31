@@ -447,6 +447,11 @@ describe("map — field type specs", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir);
@@ -973,6 +978,11 @@ describe("map — synthetic inverse fields", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir, {
@@ -1163,6 +1173,11 @@ describe("map — defensive guards on a malformed IR", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir);
@@ -1218,6 +1233,11 @@ describe("map — defensive guards on a malformed IR", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 2, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir);

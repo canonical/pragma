@@ -501,6 +501,7 @@ const buildSyntheticIR = (): MappedIR => {
     classes,
     properties,
     namespaces,
+    graphql: { classes: new Map(), properties: new Map(), prefixes: new Map() },
     // Only instanceStats is read by the TBox schema; an empty map drives the
     // `?? 0` fallback in instanceCount.
     extraction: { instanceStats: new Map() } as unknown as RawExtraction,

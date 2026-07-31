@@ -12,6 +12,7 @@ import {
   compile,
   createStoreQueryFn,
 } from "../../lib/compiler/index.js";
+import { GRAPHQL } from "../../lib/shared/index.js";
 import {
   BLANK_NODES_TTL,
   DOMAINLESS_TTL,
@@ -493,6 +494,62 @@ ex:note rdfs:label "an unrelated triple" .
     ]);
     expect(result.sdl).toContain("type EntityMeta");
     expect(result.sdl).toContain("type OntologyClass implements Node");
+  });
+});
+
+describe("graphql: annotation fatality", () => {
+  // The A-band error codes ride the existing compile-level gate: any
+  // error-severity diagnostic refuses the compile, so a conflicted or
+  // malformed annotation can never reach a served schema.
+  const GRAPHQL_NS = GRAPHQL;
+
+  it("refuses conflicting annotation values (A001)", async () => {
+    const ttl = `${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_NS}name> "Alpha" , "Beta" .
+`;
+    await expect(compileFixture(ttl)).rejects.toThrow(CompilationError);
+    const thrown = await compileFixture(ttl).catch(
+      (error: CompilationError) => error,
+    );
+    if (!(thrown instanceof CompilationError)) {
+      throw new Error("expected a CompilationError");
+    }
+    expect(thrown.diagnostics.some((d) => d.code === "A001")).toBe(true);
+    expect(thrown.message).toContain("A001");
+  });
+
+  it("refuses a foreign annotation target (A002)", async () => {
+    const ttl = `${MINIMAL_TTL}
+<http://www.w3.org/2000/01/rdf-schema#label> <${GRAPHQL_NS}name> "Label" .
+`;
+    const thrown = await compileFixture(ttl).catch(
+      (error: CompilationError) => error,
+    );
+    if (!(thrown instanceof CompilationError)) {
+      throw new Error("expected a CompilationError");
+    }
+    expect(thrown.diagnostics.some((d) => d.code === "A002")).toBe(true);
+  });
+
+  it("refuses a malformed annotation value (A003)", async () => {
+    const ttl = `${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_NS}abstract> "maybe" .
+`;
+    const thrown = await compileFixture(ttl).catch(
+      (error: CompilationError) => error,
+    );
+    if (!(thrown instanceof CompilationError)) {
+      throw new Error("expected a CompilationError");
+    }
+    expect(thrown.diagnostics.some((d) => d.code === "A003")).toBe(true);
+  });
+
+  it("compiles through A004 (warning): an unknown local name never blocks the schema", async () => {
+    const result = await compileFixture(`${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_NS}naem> "typo" .
+`);
+    expect(codes(result)).toContain("A004");
+    expect(result.schema.getType("Thing")).toBeDefined();
   });
 });
 

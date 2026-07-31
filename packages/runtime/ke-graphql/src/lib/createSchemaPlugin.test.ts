@@ -24,7 +24,7 @@ import {
   serializeExtraction,
 } from "./compiler/index.js";
 import createSchemaPlugin from "./createSchemaPlugin.js";
-import type { EntityValue } from "./shared/index.js";
+import { type EntityValue, GRAPHQL } from "./shared/index.js";
 
 // A TTL whose compile emits diagnostics of every severity, plus at least one
 // sourceless diagnostic so both arms of the log line's `(source)` suffix are
@@ -292,6 +292,25 @@ describe("createSchemaPlugin", () => {
     // source: V006 has one, the union diagnostic (X003) does not.
     expect(info).toHaveBeenCalledWith(expect.stringMatching(/V006:.+\(.+\)$/));
     expect(info).toHaveBeenCalledWith(expect.stringMatching(/X003:[^()]*$/));
+  });
+
+  it("rejects the boot on a conflicting graphql: annotation (A001 is fatal)", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    cleanups.push(() => error.mockRestore());
+    // Two graphql:name values for one class: the resolver refuses a tiebreak
+    // (A001, error severity), the compile-level gate refuses the schema, and
+    // the boot dies loudly — which the graph server turns into a non-zero
+    // exit. Same fatality channel as M001, proven end to end here.
+    await expect(
+      createTestStore({
+        ttl: `${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL}name> "Alpha" , "Beta" .
+`,
+        prefixes: PREFIXES,
+        plugins: [createSchemaPlugin()],
+      }),
+    ).rejects.toThrow(/A001/);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("A001"));
   });
 
   it("passes a non-compilation failure through without logging diagnostics", async () => {

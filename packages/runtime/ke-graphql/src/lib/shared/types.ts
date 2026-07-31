@@ -33,6 +33,12 @@ export type DiagnosticSeverity = "error" | "warning" | "info";
 export type DiagnosticCode =
   // Extraction
   | "E001" // SPARQL query failed
+  // Annotation resolution (head of the build pass)
+  | "A001" // conflicting graphql: annotation values — never tiebroken
+  | "A002" // graphql: annotation targets a foreign or unknown IRI
+  | "A003" // malformed graphql: annotation value
+  | "A004" // unrecognized graphql: term or inapplicable target kind — ignored
+  | "A005" // consumer config shadows a graphql: annotation — config wins
   // Build
   | "B001" // class cycle in subClassOf chain
   | "B002" // property references unknown class in domain
@@ -335,11 +341,63 @@ export interface PropertyNode {
   annotations: ReadonlyMap<string, string>;
 }
 
+/**
+ * Class-targeted `graphql:` overrides, resolved and validated. Absent fields
+ * mean "unannotated — the heuristic decides"; `abstract`/`embeddable` are
+ * tri-state exactly like the config knobs (an explicit `false` forces the
+ * heuristic off).
+ */
+export interface GraphqlClassOverlay {
+  /** graphql:name — verbatim GraphQL type name (never pluralized/prefixed). */
+  name?: string;
+  /** graphql:abstract — interface vs concrete type, overriding detection. */
+  abstract?: boolean;
+  /** graphql:embeddable — embedded (no uri/roots), overriding detection. */
+  embeddable?: boolean;
+  /** graphql:expose — allowlist membership under `mode: "explicit"`. */
+  expose?: boolean;
+  /** graphql:titleFrom — predicate heading the `_meta.title` chain. */
+  titleFrom?: string;
+  /** graphql:labelFrom — predicate heading the `_meta.label` chain. */
+  labelFrom?: string;
+  /** graphql:commentFrom — predicate heading the `_meta.comment` chain. */
+  commentFrom?: string;
+  /** graphql:definitionFrom — predicate heading the `_meta.definition` chain. */
+  definitionFrom?: string;
+}
+
+/** Property-targeted `graphql:` overrides, resolved and validated. */
+export interface GraphqlPropertyOverlay {
+  /** graphql:name — verbatim GraphQL field name (never pluralized/prefixed). */
+  name?: string;
+  /** graphql:singular — cardinality: config > annotation > functional > SHACL > kind. */
+  singular?: boolean;
+  /** graphql:nonNull — OR-merged with the NonNullOverrides config list. */
+  nonNull?: boolean;
+  /** graphql:inverse — declared-pair inverse (same semantics as owl:inverseOf). */
+  inverse?: string;
+}
+
+/**
+ * The resolved `graphql:` annotation overlay: one validated source of truth
+ * for every consumption site (`config ?? overlay ?? heuristic`). Produced at
+ * the head of Pass 2 from RawExtraction.graphqlAnnotations and carried on
+ * the IR so Passes 3–7 and the TBox never re-derive it.
+ */
+export interface GraphqlOverlay {
+  classes: ReadonlyMap<string, GraphqlClassOverlay>;
+  properties: ReadonlyMap<string, GraphqlPropertyOverlay>;
+  /** graphql:prefix — namespace IRI → declared prefix (validated, injective). */
+  prefixes: ReadonlyMap<string, string>;
+}
+
 /** Pass 2 output: the typed class/property graph plus namespace inventory. */
 export interface OntologyIR {
   classes: ReadonlyMap<string, ClassNode>;
   properties: ReadonlyMap<string, PropertyNode>;
   namespaces: ReadonlyMap<string, NamespaceInfo>;
+  /** The resolved `graphql:` annotation overlay (empty when unannotated). */
+  graphql: GraphqlOverlay;
   /** Carried through from Pass 1 for the validate/map passes. */
   extraction: RawExtraction;
 }
