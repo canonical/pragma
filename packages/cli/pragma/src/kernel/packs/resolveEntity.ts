@@ -207,7 +207,7 @@ function buildEntityQuery(
     throw PragmaError.invalidInput("name", query, {
       recovery: {
         message:
-          "Use an absolute IRI (https://…), a prefixed name (ds:thing), or a plain entity name.",
+          "Use an absolute IRI (https://…), a prefixed name (prefix:local), or a plain entity name.",
       },
     });
   }

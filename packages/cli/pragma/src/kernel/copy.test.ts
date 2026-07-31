@@ -172,4 +172,23 @@ describe("kernel copy (PROTECTED)", () => {
     );
     expect(offenders).toEqual([]);
   });
+
+  it("no kernel string writes a term in a namespace the distribution declares", () => {
+    // The form the kernel actually leaked the domain in. Every coupling this
+    // guard exists to keep out — `ds:Prompt`, `ds:Tier`, `ds:name` — was a
+    // PREFIXED NAME, which contains no namespace IRI and so passes the rule
+    // above. DERIVED from the same declaration, by KEY this time.
+    //
+    // A leading non-word character keeps `https://…` and `foo.ds:x` out while
+    // still catching a bare term, one inside a query template, and one in
+    // user-facing copy.
+    const offenders = Object.keys(conf.prefixes ?? {}).flatMap((prefix) =>
+      findOffenders(
+        new RegExp(
+          `(^|[^A-Za-z0-9_])${prefix.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&")}:[A-Za-z_]`,
+        ),
+      ),
+    );
+    expect(offenders).toEqual([]);
+  });
 });
