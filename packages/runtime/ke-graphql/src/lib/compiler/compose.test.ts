@@ -328,7 +328,7 @@ describe("compose full construction", () => {
     expect(output.sdl).toContain("type Thing implements Node");
   });
 
-  it("prepends the five-line provenance header, defaulted", () => {
+  it("prepends the provenance header in contract key order, defaulted", () => {
     const plan = emptyPlan({
       types: new Map([
         [
@@ -338,18 +338,20 @@ describe("compose full construction", () => {
       ]),
     });
     const { output } = compose(plan);
-    expect(output.sdl.split("\n").slice(0, 5)).toEqual([
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
       "# ke-graphql · canonical SDL",
       "# graphql-schema-spec: 1",
-      "# mode: annotated",
       "# provider: unknown",
+      "# mode: annotated",
+      "# validated-store: false",
       "# revision: 0",
+      "# prefixing: none",
     ]);
     // the header is a comment block, so the SDL still parses as SDL
     expect(output.sdl).toContain("type Thing {");
   });
 
-  it("stamps the configured mode, provider, and revision", () => {
+  it("stamps the configured mode, provider, revision, and prefixing", () => {
     const plan = emptyPlan({
       types: new Map([
         [
@@ -362,13 +364,16 @@ describe("compose full construction", () => {
       mode: "explicit",
       provider: "ds",
       revision: "a1b2c3",
+      prefixing: "all",
     });
-    expect(output.sdl.split("\n").slice(0, 5)).toEqual([
+    expect(output.sdl.split("\n").slice(0, 7)).toEqual([
       "# ke-graphql · canonical SDL",
       "# graphql-schema-spec: 1",
-      "# mode: explicit",
       "# provider: ds",
+      "# mode: explicit",
+      "# validated-store: false",
       "# revision: a1b2c3",
+      "# prefixing: all",
     ]);
   });
 

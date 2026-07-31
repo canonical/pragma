@@ -49,6 +49,7 @@ export default function runPasses(
     mode: options.mode,
     provider: options.provider,
     revision: options.revision,
+    prefixing: options.prefixing,
   });
   diagnostics.push(...composed.diagnostics);
 
