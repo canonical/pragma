@@ -82,20 +82,23 @@ export const SKOS_DEFINITION = `${SKOS}definition`;
 /**
  * Local-name fallback tier for `_meta.label` (and, through it, `_meta.title`).
  *
- * Each descriptive field resolves through a FIXED chain: the canonical
- * rdfs/skos predicate first, then — only when the instance asserts none of
- * them — the first of the class's own String properties whose lower-cased OWL
- * local name appears in this table. Matching on the LOCAL name is deliberate:
+ * Each descriptive field resolves through a FIXED chain: the class's
+ * annotated source predicate when the ontology declares one (the
+ * `graphql:titleFrom` / `labelFrom` / `commentFrom` / `definitionFrom`
+ * annotations — nearest ancestor wins), then the canonical rdfs/skos
+ * predicate, then — only when the instance asserts none of them — the first
+ * of the class's own String properties whose lower-cased OWL local name
+ * appears in this table. Matching on the LOCAL name is deliberate:
  * `ds:name`, `cs:name`, and any future `foo:name` all resolve identically, so
  * this package stays provider-neutral and never names a concrete ontology.
  *
- * DESIGNATED FUTURE SEAM — the chain is intentionally fixed and not
- * configurable, because no provider needs to override it today. When one does,
- * the override belongs in the consuming config as a per-object-type annotation
- * naming that type's label/comment/definition predicates — not in the ontology,
- * and not as a flat global predicate map. Adding it later is purely additive:
- * the contract's field NAMES do not change, only the source predicate for a
- * given type.
+ * The per-type override rides the ONTOLOGY, not the consuming config: the
+ * `graphql:*From` annotations declare the source predicate on the term that
+ * owns it, so every consumer of that ontology resolves identically (the
+ * config-side `standardVocabFields` knob is deprecated in their favor). The
+ * override is purely additive — the contract's field NAMES do not change,
+ * only the source predicate for a given type — and this table stays the
+ * unannotated fallback.
  */
 export const LABEL_LOCAL_NAMES = ["name", "title"];
 

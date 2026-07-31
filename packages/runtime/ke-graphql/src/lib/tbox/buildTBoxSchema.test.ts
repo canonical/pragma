@@ -29,6 +29,7 @@ import {
 import {
   type ClassNode,
   type CompilerContext,
+  GRAPHQL,
   type MappedIR,
   type NamespaceInfo,
   type OntologyIR,
@@ -415,6 +416,91 @@ describe("OntologyClass as a Node", () => {
     )._meta;
     expect(meta.title).toBe("Widget");
     expect(meta.definition).toBeNull();
+  });
+});
+
+describe("EntityMeta descriptive binding (graphql:*From)", () => {
+  // One fixture: Doc annotates titleFrom/commentFrom/definitionFrom; its
+  // subclass Sub adds labelFrom. Instances assert the canonical predicates
+  // TOO, so every assertion proves the annotated head BEATS the canonical
+  // tier rather than merely filling a gap.
+  const DESCRIPTIVE_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix graphql: <${GRAPHQL}> .
+
+ex:Doc a owl:Class ; rdfs:label "Doc" ;
+  graphql:titleFrom ex:heading ;
+  graphql:commentFrom ex:note ;
+  graphql:definitionFrom ex:blurb .
+ex:Sub a owl:Class ; rdfs:subClassOf ex:Doc ;
+  graphql:labelFrom ex:shortName .
+
+ex:heading a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+ex:note a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+ex:blurb a owl:DatatypeProperty ; rdfs:domain ex:Doc ; rdfs:range xsd:string .
+ex:shortName a owl:DatatypeProperty ; rdfs:domain ex:Sub ; rdfs:range xsd:string .
+
+ex:d1 a ex:Doc ;
+  rdfs:label "L1" ;
+  rdfs:comment "C1" ;
+  ex:heading "H1" ;
+  ex:note "N1" ;
+  ex:blurb "B1" .
+ex:d2 a ex:Doc ;
+  rdfs:label "L2" .
+ex:s1 a ex:Sub ;
+  rdfs:label "SL" ;
+  ex:heading "SH" ;
+  ex:shortName "SN" .
+`;
+
+  it("puts the annotated predicate ahead of the canonical tier — it beats rdfs:label", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    const result = await run(
+      compiled,
+      `{ doc(uri: "ex:d1") { _meta { title label comment definition } } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const meta = (result.data?.doc as { _meta: Record<string, unknown> })._meta;
+    // titleFrom heads the title chain: H1, not the asserted rdfs:label L1.
+    expect(meta.title).toBe("H1");
+    // Doc declares no labelFrom, so label keeps the canonical resolution —
+    // the title and label chains diverge ONLY where annotated.
+    expect(meta.label).toBe("L1");
+    // commentFrom beats the asserted rdfs:comment; definitionFrom resolves
+    // a field the unannotated chain would never reach (blurb is no
+    // canonical predicate and no local-name-tier match).
+    expect(meta.comment).toBe("N1");
+    expect(meta.definition).toBe("B1");
+  });
+
+  it("keeps title total: an instance lacking the annotated predicate falls through the fixed chain", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    const result = await run(
+      compiled,
+      `{ doc(uri: "ex:d2") { _meta { title comment } } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const meta = (result.data?.doc as { _meta: Record<string, unknown> })._meta;
+    expect(meta.title).toBe("L2");
+    expect(meta.comment).toBeNull();
+  });
+
+  it("inherits *From declarations nearest-first down the class tree", async () => {
+    const compiled = await setup(DESCRIPTIVE_TTL);
+    const result = await run(
+      compiled,
+      `{ sub(uri: "ex:s1") { _meta { title label } } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const meta = (result.data?.sub as { _meta: Record<string, unknown> })._meta;
+    // titleFrom is inherited from Doc (Sub declares none of its own)...
+    expect(meta.title).toBe("SH");
+    // ...while Sub's own labelFrom beats the asserted rdfs:label.
+    expect(meta.label).toBe("SN");
   });
 });
 

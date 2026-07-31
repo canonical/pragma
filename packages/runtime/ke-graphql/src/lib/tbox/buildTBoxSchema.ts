@@ -31,6 +31,7 @@ import {
   paginateUriWindow,
   resolveLabel,
   resolveTitle,
+  selectAnnotatedSource,
   selectDescriptivePredicates,
   selectLexicals,
   toConnection,
@@ -81,8 +82,14 @@ interface LangArgs {
  */
 const resolveLang = (args: LangArgs): string => args.lang ?? DEFAULT_LANG;
 
-/** The three predicate chains a single GraphQL type resolves through. */
+/**
+ * The four predicate chains a single GraphQL type resolves through. `title`
+ * is a chain of its own so graphql:titleFrom can head it independently; for
+ * an unannotated class it IS the label chain, keeping the historical
+ * title-reads-label behavior byte-identical.
+ */
 interface DescriptiveChains {
+  title: readonly string[];
   label: readonly string[];
   comment: readonly string[];
   definition: readonly string[];
@@ -97,6 +104,7 @@ interface DescriptiveChains {
  * local-name tier is unknowable.
  */
 const FALLBACK_CHAINS: DescriptiveChains = {
+  title: LABEL_UNIVERSAL,
   label: LABEL_UNIVERSAL,
   comment: COMMENT_UNIVERSAL,
   definition: DEFINITION_UNIVERSAL,
@@ -154,26 +162,49 @@ export default function buildTBoxSchema(
   // selectDescriptivePredicates walks a class's whole allProperties list, so
   // calling it inside a resolver would repeat that walk for every descriptive
   // field of every node of every page.
+  //
+  // An annotated source predicate (graphql:*From, nearest ancestor wins)
+  // HEADS its chain — it must beat rdfs:label, or the override is useless
+  // exactly when both exist. Absence on an instance still falls through the
+  // fixed tiers, so `title` stays total. The title chain builds on the
+  // EFFECTIVE label chain (labelFrom included): title's first tier is label
+  // resolution, annotated or not.
+  const headed = (
+    head: string | undefined,
+    chain: readonly string[],
+  ): readonly string[] => (head ? [...new Set([head, ...chain])] : chain);
+
   const chainsByType = new Map<string, DescriptiveChains>();
   for (const type of mapped.types.values()) {
-    chainsByType.set(type.graphqlName, {
-      label: selectDescriptivePredicates(
+    const label = headed(
+      selectAnnotatedSource(type.owlUri, ir, "labelFrom"),
+      selectDescriptivePredicates(
         type.owlUri,
         ir,
         LABEL_UNIVERSAL,
         LABEL_LOCAL_NAMES,
       ),
-      comment: selectDescriptivePredicates(
-        type.owlUri,
-        ir,
-        COMMENT_UNIVERSAL,
-        COMMENT_LOCAL_NAMES,
+    );
+    chainsByType.set(type.graphqlName, {
+      title: headed(selectAnnotatedSource(type.owlUri, ir, "titleFrom"), label),
+      label,
+      comment: headed(
+        selectAnnotatedSource(type.owlUri, ir, "commentFrom"),
+        selectDescriptivePredicates(
+          type.owlUri,
+          ir,
+          COMMENT_UNIVERSAL,
+          COMMENT_LOCAL_NAMES,
+        ),
       ),
-      definition: selectDescriptivePredicates(
-        type.owlUri,
-        ir,
-        DEFINITION_UNIVERSAL,
-        DEFINITION_LOCAL_NAMES,
+      definition: headed(
+        selectAnnotatedSource(type.owlUri, ir, "definitionFrom"),
+        selectDescriptivePredicates(
+          type.owlUri,
+          ir,
+          DEFINITION_UNIVERSAL,
+          DEFINITION_LOCAL_NAMES,
+        ),
       ),
     });
   }
@@ -478,7 +509,7 @@ export default function buildTBoxSchema(
           "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI, else the GraphQL type name when the value has no IRI at all (an embedded blank node). Never null — render this.",
         resolve: (parent, args: LangArgs) =>
           resolveTitle(
-            selectLexicals(parent.triples, getChainsFor(parent.typename).label),
+            selectLexicals(parent.triples, getChainsFor(parent.typename).title),
             resolveLang(args),
             parent.uri,
             parent.typename,

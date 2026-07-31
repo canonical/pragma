@@ -24,6 +24,7 @@ import {
   type Lexical,
   resolveLabel,
   resolveTitle,
+  selectAnnotatedSource,
   selectDescriptivePredicates,
   selectLexicals,
 } from "./descriptive.js";
@@ -66,10 +67,16 @@ const propertyNode = (
 const buildIR = (
   classes: ClassNode[],
   properties: PropertyNode[],
+  graphqlClasses: OntologyIR["graphql"]["classes"] = new Map(),
 ): OntologyIR => ({
   classes: new Map(classes.map((node) => [node.uri, node])),
   properties: new Map(properties.map((node) => [node.uri, node])),
   namespaces: new Map(),
+  graphql: {
+    classes: graphqlClasses,
+    properties: new Map(),
+    prefixes: new Map(),
+  },
   extraction: {} as OntologyIR["extraction"],
 });
 
@@ -227,6 +234,70 @@ describe("selectDescriptivePredicates", () => {
     expect(
       selectDescriptivePredicates(uri("Thing"), ir, [uri("name")], ["name"]),
     ).toEqual([uri("name")]);
+  });
+});
+
+describe("selectAnnotatedSource", () => {
+  it("answers undefined for an undefined class and for an unannotated tree", () => {
+    const ir = buildIR([classNode({ uri: uri("Thing") })], []);
+    expect(selectAnnotatedSource(undefined, ir, "titleFrom")).toBeUndefined();
+    expect(
+      selectAnnotatedSource(uri("Thing"), ir, "titleFrom"),
+    ).toBeUndefined();
+  });
+
+  it("prefers the class's own declaration over an ancestor's (nearest wins)", () => {
+    const ir = buildIR(
+      [
+        classNode({ uri: uri("Leaf"), ancestors: [uri("Mid"), uri("Root")] }),
+        classNode({ uri: uri("Mid"), ancestors: [uri("Root")] }),
+        classNode({ uri: uri("Root") }),
+      ],
+      [],
+      new Map([
+        [uri("Leaf"), { titleFrom: uri("leafTitle") }],
+        [uri("Root"), { titleFrom: uri("rootTitle") }],
+      ]),
+    );
+    expect(selectAnnotatedSource(uri("Leaf"), ir, "titleFrom")).toBe(
+      uri("leafTitle"),
+    );
+    // The middle class declares nothing: the walk continues to the root —
+    // annotating a root class covers its whole tree.
+    expect(selectAnnotatedSource(uri("Mid"), ir, "titleFrom")).toBe(
+      uri("rootTitle"),
+    );
+  });
+
+  it("walks each descriptive field independently", () => {
+    const ir = buildIR(
+      [classNode({ uri: uri("Thing"), ancestors: [uri("Base")] })],
+      [],
+      new Map([
+        [uri("Thing"), { labelFrom: uri("shortName") }],
+        [uri("Base"), { commentFrom: uri("note") }],
+      ]),
+    );
+    expect(selectAnnotatedSource(uri("Thing"), ir, "labelFrom")).toBe(
+      uri("shortName"),
+    );
+    expect(selectAnnotatedSource(uri("Thing"), ir, "commentFrom")).toBe(
+      uri("note"),
+    );
+    expect(
+      selectAnnotatedSource(uri("Thing"), ir, "definitionFrom"),
+    ).toBeUndefined();
+  });
+
+  it("reads a class absent from the IR map by its own URI alone", () => {
+    // A typename can reach chain computation without a ClassNode (crafted
+    // MappedIR); the walk degrades to the class URI itself.
+    const ir = buildIR(
+      [],
+      [],
+      new Map([[uri("Ghost"), { titleFrom: uri("t") }]]),
+    );
+    expect(selectAnnotatedSource(uri("Ghost"), ir, "titleFrom")).toBe(uri("t"));
   });
 });
 

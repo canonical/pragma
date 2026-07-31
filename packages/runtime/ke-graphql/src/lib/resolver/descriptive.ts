@@ -8,9 +8,14 @@
 // Each field resolves through a FIXED predicate chain decided once, at compile
 // time:
 //
-//   1. the canonical rdfs/skos predicates, in the order given — the contract's
-//      own currency, which must win whenever the instance asserts one;
-//   2. then a fallback tier of the class's own String properties, matched by
+//   1. the class's annotated source predicate, when the ontology declares one
+//      (graphql:titleFrom / labelFrom / commentFrom / definitionFrom, nearest
+//      ancestor wins) — ahead of the canonical tier on purpose: the override
+//      must beat rdfs:label, or it is useless exactly when both exist;
+//   2. the canonical rdfs/skos predicates, in the order given — the contract's
+//      own currency, which wins whenever the instance asserts one and nothing
+//      is annotated;
+//   3. then a fallback tier of the class's own String properties, matched by
 //      lower-cased OWL LOCAL NAME so that a provider whose instances carry no
 //      rdfs:label still renders human text.
 //
@@ -33,11 +38,44 @@
 // =============================================================================
 
 import {
+  type GraphqlClassOverlay,
   getLocalName,
   type OntologyIR,
   type PropertyNode,
   type TripleSet,
 } from "../shared/index.js";
+
+/** The four descriptive-source annotation terms a class may declare. */
+export type DescriptiveSourceField = keyof Pick<
+  GraphqlClassOverlay,
+  "titleFrom" | "labelFrom" | "commentFrom" | "definitionFrom"
+>;
+
+/**
+ * The class's annotated source predicate for one descriptive field, walking
+ * the ancestors nearest-first: the class's own declaration wins, else the
+ * closest ancestor's — annotating a root class covers its whole tree, and a
+ * subclass re-declaration overrides it (the same nearest-wins rule property
+ * inheritance follows). Undefined when nothing up the chain declares one.
+ * Pure.
+ */
+export const selectAnnotatedSource = (
+  classUri: string | undefined,
+  ir: OntologyIR,
+  field: DescriptiveSourceField,
+): string | undefined => {
+  if (classUri === undefined) {
+    return undefined;
+  }
+  const node = ir.classes.get(classUri);
+  for (const uri of [classUri, ...(node?.ancestors ?? [])]) {
+    const value = ir.graphql.classes.get(uri)?.[field];
+    if (value !== undefined) {
+      return value;
+    }
+  }
+  return undefined;
+};
 
 /**
  * Is this property a plain String datatype? Only String-valued predicates can
