@@ -17,11 +17,18 @@ export interface RunningServer {
   /** Stop the server and its whole process group. */
   stop: () => Promise<void>;
   /**
-   * The tail of the server's combined stdout+stderr, for request-log
-   * assertions (e.g. the `/graphql` hit counter). Grows as the child writes;
-   * poll it rather than reading once after a request.
+   * The tail of the server's combined stdout+stderr, for log-marker
+   * assertions and failure diagnostics. BOUNDED — never count from it; a
+   * chatty boot scrolls early lines out. Grows as the child writes; poll it
+   * rather than reading once after a request.
    */
   logs: () => string;
+  /**
+   * Total `/graphql` hits of one source logged since boot, tallied
+   * incrementally per line — immune to the bounded `logs()` tail truncating
+   * early hit lines. Poll it; counters grow from async pipe chunks.
+   */
+  hits: (source: "ssr" | "client") => number;
 }
 
 /** Reserve a free TCP port by opening an ephemeral listener and reading it back. */
@@ -126,12 +133,40 @@ export async function startServer(
 
   let stderrTail = "";
   let logTail = "";
+  // Graph hit counters, tallied incrementally per COMPLETE line so the bounded
+  // logTail can never under-count: one failing-prepare probe sequence emits
+  // ~92 KB of stack traces, which scrolls early hit lines out of the 16 KB
+  // display tail (observed: 14 of 17 ssr hits lost). Counters survive
+  // truncation; logs() stays a bounded tail for diagnostics only. One line
+  // buffer per stream — interleaving stdout and stderr chunks through a shared
+  // buffer would corrupt lines split across data events.
+  const hitCounts = { ssr: 0, client: 0 };
+  const makeHitTally = (): ((chunkText: string) => void) => {
+    let remainder = "";
+    return (chunkText: string): void => {
+      const lines = (remainder + chunkText).split("\n");
+      remainder = lines.pop() ?? "";
+      for (const line of lines) {
+        const match = line.match(/\[graphql] http hit #\d+ (ssr|client)/);
+        if (match) {
+          hitCounts[match[1] === "ssr" ? "ssr" : "client"] += 1;
+        }
+      }
+    };
+  };
+  const tallyStdout = makeHitTally();
+  const tallyStderr = makeHitTally();
   const appendLog = (chunk: Buffer): void => {
     logTail = (logTail + chunk.toString()).slice(-16_000);
   };
-  child.stdout?.on("data", appendLog);
+  child.stdout?.on("data", (chunk: Buffer) => {
+    tallyStdout(chunk.toString());
+    appendLog(chunk);
+  });
   child.stderr?.on("data", (chunk: Buffer) => {
-    stderrTail = (stderrTail + chunk.toString()).slice(-4000);
+    const text = chunk.toString();
+    stderrTail = (stderrTail + text).slice(-4000);
+    tallyStderr(text);
     appendLog(chunk);
   });
 
@@ -190,5 +225,11 @@ export async function startServer(
   // Surface (and swallow) the now-irrelevant rejection so it isn't unhandled.
   exited.catch(() => {});
 
-  return { base, graphBase, stop, logs: () => logTail };
+  return {
+    base,
+    graphBase,
+    stop,
+    logs: () => logTail,
+    hits: (source: "ssr" | "client") => hitCounts[source],
+  };
 }

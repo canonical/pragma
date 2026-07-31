@@ -102,15 +102,10 @@ const LOBBY_EXEMPLAR_COUNT = 6;
  */
 const GRAPHQL_HIT_MARKER = "[graphql] http hit";
 
-/** One logged hit: `[graphql] http hit #12 ssr`. */
-const GRAPHQL_HIT_LINE = /\[graphql] http hit #\d+ (?:ssr|client)/g;
-
-/** Count the graph server's logged hits of one source. */
-function countHits(logs: string, source: "client" | "ssr"): number {
-  return (logs.match(GRAPHQL_HIT_LINE) ?? []).filter((line) =>
-    line.endsWith(source),
-  ).length;
-}
+// Hit counting lives in the harness (`server.hits(source)`), tallied
+// incrementally per log line — counting by regex over `logs()` here would
+// under-count whenever the bounded tail truncates: a failing-prepare probe
+// sequence emits ~92 KB and scrolls early hit lines out of the 16 KB tail.
 
 /** Poll the server log until `marker` appears (child stdout is async). */
 async function waitForLog(
@@ -129,18 +124,18 @@ async function waitForLog(
   }
 }
 
-/** Poll until the graph log shows `count` hits of `source`, or time out. */
+/** Poll until the graph's hit counter shows `count` of `source`, or time out. */
 async function waitForHits(
-  server: { logs: () => string },
+  server: { hits: (source: "ssr" | "client") => number },
   source: "client" | "ssr",
   count: number,
   timeoutMs = 5_000,
 ): Promise<void> {
   const deadline = Date.now() + timeoutMs;
-  while (countHits(server.logs(), source) < count) {
+  while (server.hits(source) < count) {
     if (Date.now() > deadline) {
       throw new Error(
-        `only ${countHits(server.logs(), source)} ${source} hits seen within ${timeoutMs}ms (wanted ${count})`,
+        `only ${server.hits(source)} ${source} hits seen within ${timeoutMs}ms (wanted ${count})`,
       );
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -745,8 +740,8 @@ describe("server matrix (2×3) serves correctly", () => {
             //     routes, and pinning it would break on every new lens (the
             //     111→108 lesson, applied to request counts).
             await waitForLog(server, GRAPHQL_HIT_MARKER);
-            const ssrHits = countHits(server.logs(), "ssr");
-            const clientHitsBefore = countHits(server.logs(), "client");
+            const ssrHits = server.hits("ssr");
+            const clientHitsBefore = server.hits("client");
             expect(ssrHits).toBeGreaterThan(5);
             expect(clientHitsBefore).toBe(0);
 
@@ -766,12 +761,10 @@ describe("server matrix (2×3) serves correctly", () => {
             };
             expect(graphqlBody.data?.__typename).toBe("Query");
             await waitForHits(server, "client", clientHitsBefore + 1);
-            // `logs()` grows from async pipe chunks, so give trailing chunks
+            // Counters grow from async pipe chunks, so give trailing chunks
             // a beat to flush before asserting nothing ELSE arrived.
             await new Promise((resolve) => setTimeout(resolve, 200));
-            expect(countHits(server.logs(), "client")).toBe(
-              clientHitsBefore + 1,
-            );
+            expect(server.hits("client")).toBe(clientHitsBefore + 1);
 
             // 5i. The other half of the content-type guard: the WEB server
             //     no longer serves `/graphql` at all — it does not proxy it,
@@ -789,9 +782,7 @@ describe("server matrix (2×3) serves correctly", () => {
               /application\/json/,
             );
             await new Promise((resolve) => setTimeout(resolve, 200));
-            expect(countHits(server.logs(), "client")).toBe(
-              clientHitsBefore + 1,
-            );
+            expect(server.hits("client")).toBe(clientHitsBefore + 1);
           }
         } finally {
           await server.stop();
