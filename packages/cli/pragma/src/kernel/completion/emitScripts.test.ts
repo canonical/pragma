@@ -108,7 +108,7 @@ describe("emitScripts — minChars gate + family opt-out", () => {
   });
 });
 
-describe("emitScripts — binName parameterization (PR8 seam)", () => {
+describe("emitScripts — binName parameterization", () => {
   it("defaults to pragma", () => {
     expect(scripts.bash).toContain("complete -F _pragma pragma");
     expect(scripts.zsh.startsWith("#compdef pragma")).toBe(true);

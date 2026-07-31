@@ -46,8 +46,10 @@ export function detectShell(): ShellId | null {
  *   back to filenames. Verified: renaming that one file is the entire
  *   difference between candidates and no candidates.
  * - **bash-completion** looks up `completions/<cmd>` by the command name the
- *   same way. NOT verified here (bash-completion is not installed on this
- *   development box), so this rests on its documented loader.
+ *   same way. Verified against bash-completion 2.11's `__load_completion`:
+ *   with the file named `widget9`, `complete -p widget9` reports
+ *   `complete -F _widget9 widget9`; with the identical file named `pragma`,
+ *   `_widget9` is never defined and bash falls back to `_minimal`.
  * - **zsh** does NOT work that way: `compinit` binds by the `#compdef` tag
  *   inside the file, so `~/.zfunc/_pragma` holding `#compdef widget9` does
  *   complete `widget9` (verified — `_comps[widget9]` resolves to `_pragma`).

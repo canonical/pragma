@@ -105,19 +105,18 @@ describe("entity params resolve from the project's built pack, not the embedded 
       );
       // The four `ds:Component` subjects the canonical fixture declares
       // (`blockGraph.ts`'s Button/Modal plus `canonical.ts`'s LXD Panel and
-      // Beta Widget) — the fixture's own data, not a recomputation.
+      // Beta Widget) — the fixture's own data, not a recomputation. Stating
+      // the SET is what makes the distribution's own snapshot names provably
+      // absent: a pointer read that regressed to the embedded fallback would
+      // complete another graph's names while every read answered correctly,
+      // and the old `narrowed.length < all.length` heuristic only noticed by
+      // the accident that no snapshot name contains `ds:b`.
       expect([...all].sort()).toEqual([
         "ds:betaWidget",
         "ds:button",
         "ds:lxdPanel",
         "ds:modal",
       ]);
-      // The half that was never stated: the distribution's OWN snapshot names
-      // are ABSENT. A pointer read that regressed to the embedded fallback
-      // would complete another graph's names while every read answered
-      // correctly, and the old `narrowed.length < all.length` heuristic only
-      // noticed by the accident that no snapshot name contains `ds:b`.
-      expect(all).not.toContain("ds:global.component.button");
 
       const narrowed = await runComplete(
         ["block", "lookup", "ds:b"],
