@@ -54,8 +54,10 @@ afterAll(() => {
 });
 
 const originalConfigHome = process.env.XDG_CONFIG_HOME;
+const originalDataHome = process.env.XDG_DATA_HOME;
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = originalConfigHome;
+  process.env.XDG_DATA_HOME = originalDataHome;
 });
 
 /** A pack-contributed noun the kernel has never heard of. */
@@ -163,6 +165,25 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
+  });
+
+  it("owns its own on-disk skills namespace", async () => {
+    // Config, state and cache were namespaced by the bin name; the SKILLS roots
+    // were not. Two distributions installed side by side therefore shared one
+    // `$XDG_DATA_HOME/pragma/skills` and one `<cwd>/.pragma/skills`, so a fork
+    // read the other's skills and could not install its own without collision.
+    process.env.XDG_DATA_HOME = join(tmpdir(), "identity-data");
+    const { skillRoots, installedSkillsDir } = await import(
+      "./capabilities/skill/discover.js"
+    );
+    expect(installedSkillsDir().endsWith(join("recipes", "skills"))).toBe(true);
+    expect(skillRoots("/work")).toEqual([
+      join("/work", ".recipes", "skills"),
+      installedSkillsDir(),
+    ]);
+    for (const root of skillRoots("/work")) {
+      expect(root).not.toMatch(THIS_DISTRIBUTION);
+    }
   });
 
   it("registers an MCP server entry the fork's own binary answers to", async () => {
