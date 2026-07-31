@@ -9,6 +9,7 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { BIN_NAME } from "../../constants.js";
 
 /** The shells `setup completions` can install for. */
 export type ShellId = "zsh" | "bash" | "fish";
@@ -34,6 +35,14 @@ export function detectShell(): ShellId | null {
 /**
  * The standard install path for a shell's completion script.
  *
+ * The BASENAME is {@link BIN_NAME}, never a literal: all three shells locate a
+ * completion file by the COMMAND's name (`_<cmd>` on zsh's fpath,
+ * `completions/<cmd>` for bash-completion, `completions/<cmd>.fish` for fish),
+ * and `emitScripts` derives the script's own `#compdef` / `complete -F` /
+ * `complete -c` from the same name. A distribution renamed in `pragma.conf.ts`
+ * would otherwise write a correct script into a file its shell never loads —
+ * silently, with `setup completions` and `doctor` both reporting success.
+ *
  * @param shell - The target shell.
  * @returns The absolute path the completion script is written to.
  * @note Impure — reads the home directory.
@@ -42,7 +51,7 @@ export function completionScriptPath(shell: ShellId): string {
   const home = homedir();
   switch (shell) {
     case "zsh":
-      return join(home, ".zfunc", "_pragma");
+      return join(home, ".zfunc", `_${BIN_NAME}`);
     case "bash":
       return join(
         home,
@@ -50,10 +59,10 @@ export function completionScriptPath(shell: ShellId): string {
         "share",
         "bash-completion",
         "completions",
-        "pragma",
+        BIN_NAME,
       );
     case "fish":
-      return join(home, ".config", "fish", "completions", "pragma.fish");
+      return join(home, ".config", "fish", "completions", `${BIN_NAME}.fish`);
   }
 }
 
