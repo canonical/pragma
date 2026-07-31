@@ -13,8 +13,12 @@ export const updateFormatters: Formatters<SourcesUpdateData> = {
         : `Built pack ${data.contentHash.slice(0, 12)}.`,
     ];
     for (const pack of data.packs) {
+      const stories =
+        pack.storyCount > 0
+          ? `, ${pack.storyCount} stor${pack.storyCount === 1 ? "y" : "ies"}`
+          : "";
       lines.push(
-        `  ${pack.name} @ ${pack.resolved.slice(0, 12)} (${pack.sourceCount} source${pack.sourceCount === 1 ? "" : "s"})`,
+        `  ${pack.name} @ ${pack.resolved.slice(0, 12)} (${pack.sourceCount} source${pack.sourceCount === 1 ? "" : "s"}${stories})`,
       );
     }
     return lines.join("\n");

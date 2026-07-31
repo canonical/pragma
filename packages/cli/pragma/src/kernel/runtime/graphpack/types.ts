@@ -1,20 +1,21 @@
 /**
- * Graphpack artifact contracts — the four files a built pack directory holds
+ * Graphpack artifact contracts — the five files a built pack directory holds
  * and the zod schemas that keep them honest on read.
  *
  * A pack is the content-addressed, boot-ready form of a set of RDF sources:
  * `data.nq` (the store's n-quads dump — boots via ke's cache path, no TTL
  * parse), `schema.json` (the serialized ke-graphql extraction — boots via
  * `compileFromExtraction`, no live 7-pass compile), `index.json` (the storeless
- * entity index the completion tier and reads consume), and `manifest.json`
+ * entity index the completion tier and reads consume), `stories.json` (the read
+ * stories the packages ship, carried verbatim as raw text), and `manifest.json`
  * (provenance + the prefixes the store was built with). A directory missing
  * `manifest.json` is treated as absent (a torn build), so writes are always
  * temp-dir + atomic rename.
  *
- * FOUR AND ONLY FOUR: the constants below are the single place the artifact set
+ * FIVE AND ONLY FIVE: the constants below are the single place the artifact set
  * is named, and three modules must agree with them — `buildPack` writes them,
  * `packIsComplete` gates on them, and `materializeEmbeddedPack` writes them back
- * out. A fifth artifact added to only some of those makes a pack whose content
+ * out. A sixth artifact added to only some of those makes a pack whose content
  * hash claims more than its directory holds, which the next build then reuses,
  * silently dropping the difference. The agreement is pinned by `graphpack.test.ts`'s
  * "the committed embedded pack (PROTECTED) > materializes exactly the files
@@ -40,6 +41,19 @@ export const DATA_FILE = "data.nq";
 export const SCHEMA_FILE = "schema.json";
 /** The storeless entity index (PR-C's dynamic-completion contract). */
 export const INDEX_FILE = "index.json";
+/**
+ * The read stories the packages shipped, as raw text: one
+ * `{ source, content }` record per `stories/*.json` file, in a JSON array.
+ *
+ * Written ALWAYS, even as `[]`, and gated by `packIsComplete` alongside the
+ * other three — an optional artifact would put the same condition in two
+ * writers, which is exactly how a pack ends up claiming stories its directory
+ * does not hold. Raw text rather than parsed definitions so the pack stays a
+ * faithful carrier of the package's bytes and EVERY interpretation failure
+ * (malformed JSON and schema-invalid JSON alike) is caught behind the one guard
+ * in `kernel/packs/collect.validateStories`.
+ */
+export const STORIES_FILE = "stories.json";
 /** Provenance + prefixes; its presence marks a pack directory as complete. */
 export const MANIFEST_FILE = "manifest.json";
 

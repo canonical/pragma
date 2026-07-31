@@ -18,7 +18,10 @@
  *
  * The inlined strings are materialized into the ordinary content-addressed pack
  * cache on first use and then read back through {@link readPack}, so the
- * embedded pack and a built pack share one boot path. Inlining as JS strings
+ * embedded pack and a built pack share one boot path. The story records live in
+ * their OWN generated module (like the index): dispatch reads them on every
+ * command, and pulling them out of `pack.generated.ts` would load its ~1.9 MB
+ * of n-quads with them — a measured +28 ms on every invocation. Inlining as JS strings
  * (rather than file assets) guarantees the content survives `bun build
  * --compile` with no asset-embedding step.
  */
@@ -35,6 +38,7 @@ import { join } from "node:path";
 import { packDir, packsCacheDir } from "../paths.js";
 import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
 import { indexJson } from "./embedded/pack.index.generated.js";
+import { storiesJson } from "./embedded/pack.stories.generated.js";
 import { packIsComplete } from "./manifest.js";
 import {
   DATA_FILE,
@@ -43,6 +47,7 @@ import {
   type Manifest,
   manifestSchema,
   SCHEMA_FILE,
+  STORIES_FILE,
 } from "./types.js";
 
 /**
@@ -77,6 +82,7 @@ export function materializeEmbeddedPack(): string {
     writeFileSync(join(temp, DATA_FILE), dataNq);
     writeFileSync(join(temp, SCHEMA_FILE), schemaJson);
     writeFileSync(join(temp, INDEX_FILE), indexJson);
+    writeFileSync(join(temp, STORIES_FILE), storiesJson);
     // Written last — the completeness marker.
     writeFileSync(join(temp, MANIFEST_FILE), manifestJson);
     if (!packIsComplete(dir)) {

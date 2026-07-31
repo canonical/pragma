@@ -68,6 +68,7 @@ function writeCompletePack(hash: string): string {
   writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
   writeFileSync(join(dir, "schema.json"), "{}");
   writeFileSync(join(dir, "index.json"), "{}");
+  writeFileSync(join(dir, "stories.json"), "[]");
   writeManifest(dir, hash);
   return dir;
 }

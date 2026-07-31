@@ -16,7 +16,13 @@ import { contentHash } from "./hash.js";
 import { packIsComplete } from "./manifest.js";
 import { readPack } from "./read.js";
 import type { PackIndex } from "./types.js";
-import { DATA_FILE, INDEX_FILE, MANIFEST_FILE, SCHEMA_FILE } from "./types.js";
+import {
+  DATA_FILE,
+  INDEX_FILE,
+  MANIFEST_FILE,
+  SCHEMA_FILE,
+  STORIES_FILE,
+} from "./types.js";
 
 const PREFIXES = {
   ex: "https://pragma.canonical.com/sample#",
@@ -36,12 +42,16 @@ ex:Button a ex:Component ; rdfs:label "Button" ; ex:componentName "Button" .
 ex:Card a ex:Component ; rdfs:label "Card" ; ex:componentName "Card" .
 `;
 
-const build = (inputs: { path: string; content: string }[]) =>
+const build = (
+  inputs: { path: string; content: string }[],
+  stories?: { path: string; content: string }[],
+) =>
   buildPack(inputs, {
     name: "test-pack",
     version: "0.0.0",
     sourceRef: "test:inline",
     prefixes: PREFIXES,
+    ...(stories === undefined ? {} : { stories }),
   });
 
 let savedCacheHome: string | undefined;
@@ -59,12 +69,22 @@ afterAll(() => {
 });
 
 describe("graphpack round-trip (PROTECTED)", () => {
-  it("builds the four artifact files and reuses a cached pack", async () => {
+  it("builds the five artifact files and reuses a cached pack", async () => {
     const result = await build([{ path: "a.ttl", content: TTL }]);
     expect(result.reused).toBe(false);
-    for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, MANIFEST_FILE]) {
+    for (const file of [
+      DATA_FILE,
+      SCHEMA_FILE,
+      INDEX_FILE,
+      STORIES_FILE,
+      MANIFEST_FILE,
+    ]) {
       expect(existsSync(join(result.dir, file))).toBe(true);
     }
+    // Written even when the packages ship none — an OPTIONAL artifact would put
+    // the same condition in three writers, which is how a pack ends up claiming
+    // stories its directory does not hold.
+    expect(readFileSync(join(result.dir, STORIES_FILE), "utf-8")).toBe("[]");
 
     // A second build over identical inputs is a pure cache hit — no rebuild.
     const again = await build([{ path: "a.ttl", content: TTL }]);
@@ -140,6 +160,39 @@ describe("the committed embedded pack (PROTECTED)", () => {
     expect(index.contentHash).toBe(manifest.contentHash);
     expect(manifest.tripleCount ?? 0).toBeGreaterThan(0);
     expect(manifest.entityCount ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe("graphpack carried stories (PROTECTED)", () => {
+  const STORY = {
+    path: "pkg/stories/recipe.json",
+    content: '{"noun":"recipe"}',
+  };
+
+  it("hashes stories as sources and round-trips them byte-for-byte", async () => {
+    const inputs = [{ path: "a.ttl", content: TTL }];
+    const without = await build(inputs);
+    const withStory = await build(inputs, [STORY]);
+
+    // A story-only edit is a NEW pack: the same RDF with a story attached must
+    // not reuse the pack built without it.
+    expect(withStory.contentHash).not.toBe(without.contentHash);
+    expect(
+      JSON.parse(readFileSync(join(withStory.dir, STORIES_FILE), "utf-8")),
+    ).toEqual([{ source: STORY.path, content: STORY.content }]);
+
+    // …and rebuilding with the same story is a pure cache hit.
+    expect((await build(inputs, [STORY])).reused).toBe(true);
+  });
+
+  it("a pack directory missing stories.json is incomplete", async () => {
+    // The migration path: a pack built by the previous kernel has four files,
+    // so it is refused (→ `pragma sources update`) rather than reused as if it
+    // carried the stories its hash covers.
+    const { dir } = await build([{ path: "a.ttl", content: TTL }]);
+    expect(packIsComplete(dir)).toBe(true);
+    rmSync(join(dir, STORIES_FILE));
+    expect(packIsComplete(dir)).toBe(false);
   });
 });
 
