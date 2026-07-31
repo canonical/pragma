@@ -22,8 +22,10 @@
 #    at the CAUSE (with the exact missing revision named) instead of 200
 #    browser tests later.
 #
-# Expected env vars (injected by the calling action step):
-#   INSTALL_PLAYWRIGHT — ${{ inputs.install-playwright }}; 'true' installs.
+# Expected env vars (injected by the calling workflow step):
+#   INSTALL_PLAYWRIGHT — 'true' installs; anything else skips; empty errors.
+#   pr.yml passes its warm-graph detection result; push.yml/tag.yml pass
+#   'true' (the full suite always includes the browser suites).
 set -euo pipefail
 
 # The anchor package: a browser test suite that declares playwright directly.

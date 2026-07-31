@@ -12,18 +12,6 @@ inputs:
   build-command:
     default: 'bunx lerna run build:all'
     description: Build command to run. Override with nx affected for PR workflows.
-  install-playwright:
-    default: 'true'
-    description: >-
-      Browser tests need browsers; jobs that provably never test (e.g.
-      chromatic) opt OUT with 'false'. Browser install is explicit intent, and
-      the default is the SAFE side: a previous nx-affected gate silently
-      resolved empty in CI (exit 0, no output, nothing logged) while the test
-      step still ran the browser suites, so browsers were skipped and every
-      browser test died on missing executables (#901). Defaulting 'true' also
-      keeps installs correct when a caller workflow executes at a pinned
-      (e.g. default-branch) version that predates this input and passes
-      nothing. Cost of an unneeded install: ~60-90s, cached on bun.lock.
 runs:
   using: composite
   steps:
@@ -73,35 +61,15 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
-      # The decision itself is made in shell inside the script (composite-step
-      # `if:` conditions mis-evaluated silently twice during #901); this tiny
-      # relay step only exists because actions/cache cannot shell-gate. If its
-      # condition ever mis-evaluates, installs lose the cache but stay correct
-      # — the optimization is allowed to break, the install is not.
-    - name: Resolve browser-install intent
-      id: pw
-      shell: bash
-      env:
-        INSTALL_PLAYWRIGHT: ${{ inputs.install-playwright }}
-      run: echo "required=${INSTALL_PLAYWRIGHT}" >> "$GITHUB_OUTPUT"
-
-      # Browser binaries are keyed on bun.lock: they only change when the
-      # resolved playwright version changes. On a cache hit, the install step
-      # skips the download and only the (uncacheable) apt system dependencies
-      # are installed.
-    - name: Cache Playwright browsers
-      if: ${{ steps.pw.outputs.required == 'true' }}
-      uses: actions/cache@v5
-      with:
-        path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-
-    - name: Install Playwright browsers
-      shell: bash
-      env:
-        INSTALL_PLAYWRIGHT: ${{ inputs.install-playwright }}
-      run: bash ${{ github.action_path }}/install-playwright.sh
-
+      # Playwright browsers are NOT installed here. This composite is the
+      # FIRST nx-adjacent thing a job runs, and the old in-composite gate's
+      # cold-graph nx query silently resolved an empty project set here while
+      # the test step's own affected calculation, minutes later, still ran
+      # the browser suites (#901 — three days of red with empty logs).
+      # Browser install now lives in the workflows, AFTER this composite:
+      # pr.yml detects need on the warmed graph; push.yml/tag.yml install
+      # unconditionally (the full suite always includes the browser suites).
+      # Both invoke install-playwright.sh, which lives beside this file.
     - name: Start Nx cache server
       shell: bash
       run: |

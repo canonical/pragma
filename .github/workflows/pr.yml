@@ -22,11 +22,51 @@ jobs:
         with:
           bun-version: ${{ matrix.bun-version }}
           node-version: ${{ matrix.node-version }}
-          install-playwright: 'true'
           build-command: bunx nx affected -t build:all --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
       - name: Code quality checks
         run: bunx nx affected -t check --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
+
+        # Detection runs HERE — after setup has already run nx (build) — so
+        # the project graph is warm: the same conditions under which the Test
+        # step below selects its projects. The old gate ran the same query
+        # inside setup-env as the job's FIRST nx invocation, where it silently
+        # resolved an empty set while Test still ran the browser suites
+        # (#901). Fail-open on anything suspect: an unneeded install costs
+        # ~60-90s; a skipped needed install costs the whole run.
+      - name: Detect Playwright need
+        id: pw
+        run: |
+          if ! AFFECTED=$(bunx nx show projects --affected --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD); then
+            echo "affected query failed — failing open"; echo "required=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! UNIVERSE=$(bunx nx show projects --projects tag:playwright); then
+            echo "tag query failed — failing open"; echo "required=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "affected: $(echo "$AFFECTED" | tr '\n' ' ')"
+          echo "tag:playwright universe: $(echo "$UNIVERSE" | tr '\n' ' ')"
+          if [ -z "$UNIVERSE" ]; then
+            echo "tag universe resolved EMPTY while tagged projects exist in-tree — graph suspect, failing open"
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          elif NEEDED=$(grep -Fxf <(echo "$UNIVERSE") <(echo "$AFFECTED")); [ -n "$NEEDED" ]; then
+            echo "browser suites affected: $(echo "$NEEDED" | tr '\n' ' ')"
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no browser suite affected — skipping browser install"
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cache Playwright browsers
+        if: ${{ steps.pw.outputs.required == 'true' }}
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+
+      - name: Install Playwright browsers
+        env:
+          INSTALL_PLAYWRIGHT: ${{ steps.pw.outputs.required }}
+        run: bash .github/actions/setup-env/install-playwright.sh
 
       - name: Test
         run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD

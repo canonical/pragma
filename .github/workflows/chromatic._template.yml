@@ -44,7 +44,6 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          install-playwright: 'false'
           build-command: ${{ steps.build.outputs.cmd }}
 
       - name: Publish to Chromatic
