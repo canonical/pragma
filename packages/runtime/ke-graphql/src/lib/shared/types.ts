@@ -376,6 +376,18 @@ export interface GraphqlPropertyOverlay {
   nonNull?: boolean;
   /** graphql:inverse — declared-pair inverse (same semantics as owl:inverseOf). */
   inverse?: string;
+  /**
+   * graphql:searchable — IR capture ONLY in this release: no schema surface
+   * reads it (no search root field, no connection, no OntologyProperty
+   * field), so the emitted SDL is byte-identical with or without the term.
+   * The search feature (PRA-91) consumes this flag when it builds its index.
+   * Its recorded default, decided here so the boundary is explicit: an
+   * ontology with ZERO graphql:searchable annotations indexes the
+   * descriptive-chain sources (title/label/definition) — a silently empty
+   * index is rejected, and no server-side predicate/class config block
+   * replaces this term.
+   */
+  searchable?: boolean;
 }
 
 /**

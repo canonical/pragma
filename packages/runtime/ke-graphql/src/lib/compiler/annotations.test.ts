@@ -427,6 +427,33 @@ describe("annotations — A005 config shadowing (config wins)", () => {
   });
 });
 
+describe("annotations — graphql:searchable (IR capture only)", () => {
+  it("captures both boolean values on properties", () => {
+    const { output, diagnostics } = resolve([
+      [uri("link"), GRAPHQL_TERMS.searchable, "false", "literal"],
+      [uri("name"), GRAPHQL_TERMS.searchable, "true", "literal"],
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(output.properties.get(uri("name"))?.searchable).toBe(true);
+    expect(output.properties.get(uri("link"))?.searchable).toBe(false);
+  });
+
+  it("rides the same A-band rails as every other term", () => {
+    const { output, diagnostics } = resolve([
+      // class target → A004 (property-only term)
+      [uri("Thing"), GRAPHQL_TERMS.searchable, "true", "literal"],
+      // conflict → A001
+      [uri("link"), GRAPHQL_TERMS.searchable, "false", "literal"],
+      [uri("link"), GRAPHQL_TERMS.searchable, "true", "literal"],
+      // unparseable boolean → A003
+      [uri("name"), GRAPHQL_TERMS.searchable, "maybe", "literal"],
+    ]);
+    expect(codes(diagnostics).sort()).toEqual(["A001", "A003", "A004"]);
+    expect(output.properties.size).toBe(0);
+    expect(output.classes.size).toBe(0);
+  });
+});
+
 describe("annotations — empty input", () => {
   it("resolves an unannotated extraction to an empty overlay with no diagnostics", () => {
     const { output, diagnostics } = resolve([]);

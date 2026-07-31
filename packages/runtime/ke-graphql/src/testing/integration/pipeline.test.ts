@@ -552,6 +552,23 @@ describe("graphql: annotation fatality", () => {
     expect(result.schema.getType("Thing")).toBeDefined();
   });
 
+  it("captures graphql:searchable in the IR while the SDL stays byte-identical", async () => {
+    // The falsifiable search boundary: this term is IR capture only — every
+    // schema-visible search surface belongs to the search feature ticket.
+    // The moment ANY emitted byte moves with the annotation present, this
+    // fails and the boundary has been crossed.
+    const plain = await compileFixture(MINIMAL_TTL);
+    const annotated = await compileFixture(`${MINIMAL_TTL}
+<http://example.org/name> <${GRAPHQL_NS}searchable> true .
+`);
+    expect(
+      annotated.mapped.ir.graphql.properties.get("http://example.org/name")
+        ?.searchable,
+    ).toBe(true);
+    expect(annotated.sdl.length).toBeGreaterThan(0);
+    expect(annotated.sdl).toBe(plain.sdl);
+  });
+
   it("binds graphql:name and graphql:nonNull end to end: roots, connection pair, and nullability follow", async () => {
     const result = await compileFixture(`${MINIMAL_TTL}
 <http://example.org/Thing> <${GRAPHQL_NS}name> "Item" .
