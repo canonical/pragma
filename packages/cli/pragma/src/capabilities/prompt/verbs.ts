@@ -37,7 +37,7 @@ const READ_CAPABILITY = {
 const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
   path: ["prompt", "list"],
   summary: "List the workflow prompt templates the design system offers.",
-  doc: "Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.",
+  doc: `Browse the prompt entities the active graph declares (${VOCABULARY.prompt.type} in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.`,
   params: [],
   output: { formatters: promptListFormatters },
   examples: [{ cmd: `${BIN_NAME} prompt list` }],
@@ -58,12 +58,12 @@ const listVerb: VerbSpec<Record<string, unknown>, PromptListData> = {
 const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
   path: ["prompt", "lookup"],
   summary: "Show one workflow prompt template's body and arguments by name.",
-  doc: "Fetch a single ds:Prompt entity's full template body (with {{arg}} placeholders) and its declared arguments.",
+  doc: "Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.",
   params: [
     {
       kind: "string",
       name: "name",
-      doc: "The prompt name (e.g. build-a-block).",
+      doc: "The prompt name, as `prompt list` reports it.",
       positional: true,
       required: true,
       // A prompt is addressed by its `rdfs:label`, which the index carries as
@@ -79,7 +79,10 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
     },
   ],
   output: { formatters: promptLookupFormatters },
-  examples: [{ cmd: `${BIN_NAME} prompt lookup build-a-block` }],
+  // No example command: this distribution's graph declares no prompt, so any
+  // name quoted here exits 1 with ENTITY_NOT_FOUND — and this is the GENERATED
+  // reference, published as machine-derived truth.
+  examples: [],
   capability: READ_CAPABILITY,
   run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
     import("../../kernel/project/mcp/prompts/source.js").then(async (m) => {

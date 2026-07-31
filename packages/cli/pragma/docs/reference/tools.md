@@ -262,7 +262,7 @@ Read-only.
 
 ### prompt_list
 
-Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
+Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
 
 Read-only.
 
@@ -272,7 +272,7 @@ _No input parameters._
 
 ### prompt_lookup
 
-Fetch a single ds:Prompt entity's full template body (with {{arg}} placeholders) and its declared arguments.
+Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.
 
 Read-only.
 
@@ -280,7 +280,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | string | yes | The prompt name (e.g. build-a-block). |
+| `name` | string | yes | The prompt name, as `prompt list` reports it. |
 
 ### setup
 

@@ -535,7 +535,7 @@ pragma ontology show ds  # deprecated alias
 
 List the workflow prompt templates the design system offers.
 
-Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
+Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
 
 ```
 pragma prompt list
@@ -554,7 +554,7 @@ pragma prompt list
 
 Show one workflow prompt template's body and arguments by name.
 
-Fetch a single ds:Prompt entity's full template body (with {{arg}} placeholders) and its declared arguments.
+Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.
 
 ```
 pragma prompt lookup <name>
@@ -564,16 +564,10 @@ pragma prompt lookup <name>
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `<name>` | yes | The prompt name (e.g. build-a-block). |
+| `<name>` | yes | The prompt name, as `prompt list` reports it. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `prompt_lookup` tool.
-
-**Examples**
-
-```bash
-pragma prompt lookup build-a-block
-```
 
 ## setup
 
