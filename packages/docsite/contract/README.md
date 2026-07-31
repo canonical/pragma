@@ -20,19 +20,33 @@ were passed:
 | TBox (hand-written) | `Ontology`, `OntologyClass`, `ClassProperty`, `OntologyProperty`, `PropertyKind`, `EntityMeta` |
 | Root fields | `ontologies`, `ontology`, `ontologyClass`, `ontologyProperty`, `node(id:)` |
 
-`Node` carries six structural fields, and every non-embeddable generated type
-carries all six plus `_meta: EntityMeta!`:
+`Node` is identity plus self-description and nothing else — the absolute IRI
+and the `_meta` hatch every descriptive fact lives behind:
 
 ```graphql
 interface Node {
-  id: ID!
-  uri: String!
-  kind: String!
-  label: String
-  comment: String
-  definition: String
+  uri: ID!
+  _meta: EntityMeta!
 }
 ```
+
+`EntityMeta.title` is **total** (the provider computes a fallback chain ending
+at the IRI); `label`, `comment`, and `definition` are asserted-only and
+nullable. `OntologyClass` implements `Node`, so classes resolve through
+`node(id:)` and ride `NodeConnection`s like any other entity;
+`OntologyProperty` deliberately does not (identity, but no `_meta` — an
+asymmetry of scope, not principle).
+
+The contract names **no ontology terms** — its surface is purely structural —
+so it is independent of the provider's field-name `prefixing` knob: a schema
+compiled with `prefixing: "all"` satisfies it exactly as one compiled with
+`prefixing: "none"` does.
+
+`Query.ontologyClass(uri:)` and `Query.ontologyProperty(uri:)` take
+`String!`, **not** `ID!`: those arguments accept the prefixed convenience form
+(`"ds:Component"`) and live client operations already declare
+`$uri: String!`, which `ID!` would invalidate. `node(id:)` is the strict
+lookup by absolute IRI.
 
 ### What is deliberately excluded
 
@@ -41,10 +55,13 @@ interface Node {
   still conformant, so requiring them would be wrong.
 - **Every ontology-derived type** (`Component`, `Job`, `CodeStandard`, …).
   Those are a function of the loaded ontology, not of the contract.
+- **Provider extension fields** such as
+  `OntologyProperty.acceptanceCriteria` / `.completionGuidance`.
+  Annotation-derived and provider-specific — extensions, not base.
 
-`EntityMeta` **is** in the contract even though nothing else in the contract
-selects it: the compiler attaches `_meta: EntityMeta!` to every non-embeddable
-type, so a provider cannot omit the type.
+`EntityMeta` **is** in the contract: `Node` selects it through `_meta`, and
+the compiler attaches `_meta: EntityMeta!` to every generated type, so a
+provider cannot omit it.
 
 ## The check
 
@@ -104,7 +121,7 @@ The `message` is graphql-js's own prose and it is **not** stable across majors:
 
 | | v16.13.1 | v17.0.0-rc.0 |
 | --- | --- | --- |
-| field | `Node.kind was removed.` | `Field Node.kind was removed.` |
+| field | `Node._meta was removed.` | `Field Node._meta was removed.` |
 | argument | `Query.ontology arg prefix was removed.` | `Argument Query.ontology(prefix:) was removed.` |
 
 Messages are for humans reading a failure; codes are for machines gating one.

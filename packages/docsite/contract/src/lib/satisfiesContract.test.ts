@@ -92,6 +92,35 @@ describe("the real contract", () => {
     });
   });
 
+  it("is satisfied by the post-1.6 provider emission shape", () => {
+    // The fixture embeds what ke-graphql emits for a one-class ontology once
+    // OntologyClass implements Node and carries _meta (the 1.6 change).
+    expect(satisfiesContract(fixture("emittedProvider"))).toEqual({
+      satisfied: true,
+      violations: [],
+    });
+  });
+
+  it("is satisfied by a fully prefixed emission: the contract names no ontology terms", () => {
+    // prefixing: "all" renames every GENERATED field (name -> exName). The
+    // contract's surface is purely structural, so the knob cannot affect it.
+    expect(satisfiesContract(fixture("emittedPrefixedProvider"))).toEqual({
+      satisfied: true,
+      violations: [],
+    });
+  });
+
+  it("flags a relay-less emission by exactly the field relay wiring adds", () => {
+    // relay: false keeps the whole TBox (which still references Node) but
+    // never claims Query.node. One violation — no more, no less — is the
+    // teeth control: the gate distinguishes the two emissions precisely.
+    const result = satisfiesContract(fixture("emittedNoRelayProvider"));
+    expect(result.satisfied).toBe(false);
+    expect(result.violations).toHaveLength(1);
+    expect(result.violations[0]?.code).toBe("FIELD_REMOVED");
+    expect(result.violations[0]?.message).toContain("Query.node");
+  });
+
   it("rejects a provider deficient in three independent ways", () => {
     const result = satisfiesContract(fixture("deficientProvider"));
     expect(result.satisfied).toBe(false);
@@ -103,7 +132,7 @@ describe("the real contract", () => {
       ]),
     );
     const messages = messagesOf(result);
-    expect(messages).toContain("Node.kind");
+    expect(messages).toContain("Node._meta");
     expect(messages).toContain("PageInfo.hasNextPage");
     expect(messages).toContain("Query.ontology");
   });
@@ -136,7 +165,7 @@ describe("assertSatisfiesContract", () => {
     expect(message).toContain("ke-graphql backend");
     expect(message).toContain("3 violation(s)");
     expect(message).toContain("[FIELD_REMOVED]");
-    expect(message).toContain("Node.kind");
+    expect(message).toContain("Node._meta");
     expect(message).toContain("[ARG_REMOVED]");
     expect(message).toContain("[FIELD_CHANGED_KIND]");
   });

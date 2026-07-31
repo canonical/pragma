@@ -1,0 +1,121 @@
+# The same one-class emission compiled with `prefixing: "all"`: every
+# GENERATED field name carries its property's namespace prefix (name ->
+# exName, count -> exCount). The structural fields (uri, _meta) and the whole
+# TBox surface carry no prefix, and the contract names no ontology terms —
+# so this schema satisfies the contract exactly as the unprefixed one does.
+# ke-graphql · canonical SDL
+# graphql-schema-spec: 1
+# provider: fixture
+# mode: annotated
+# validated-store: false
+# revision: 0
+# prefixing: all
+
+type Query {
+  ontologies: [Ontology!]!
+  ontology(prefix: String!): Ontology
+  ontologyClass(uri: String!): OntologyClass
+  ontologyProperty(uri: String!): OntologyProperty
+  node(id: ID!): Node
+  thing(uri: String!): Thing
+  things(first: Int, after: String, last: Int, before: String): ThingConnection!
+}
+
+type Ontology {
+  prefix: String!
+  namespace: String!
+  label: String
+  classes: [OntologyClass!]!
+  properties: [OntologyProperty!]!
+}
+
+type OntologyClass implements Node {
+  uri: ID!
+  _meta: EntityMeta!
+  label: String
+  definition: String
+  superclass: OntologyClass
+  superclasses: [OntologyClass!]!
+  subclasses: [OntologyClass!]!
+  properties: [ClassProperty!]!
+  instances(first: Int, after: String, last: Int, before: String): NodeConnection!
+  instanceCount: Int!
+  isAbstract: Boolean!
+  namespace: String!
+}
+
+interface Node {
+  uri: ID!
+  _meta: EntityMeta!
+}
+
+type EntityMeta {
+  title(lang: String = "en"): String!
+  label(lang: String = "en"): String
+  comment(lang: String = "en"): String
+  definition(lang: String = "en"): String
+  type: OntologyClass!
+  field(name: String!): ClassProperty
+  fields: [ClassProperty!]!
+}
+
+type ClassProperty {
+  property: OntologyProperty!
+  required: Boolean!
+  singular: Boolean!
+  inherited: Boolean!
+}
+
+type OntologyProperty {
+  uri: ID!
+  label: String
+  definition: String
+  domain: OntologyClass
+  range: String!
+  kind: PropertyKind!
+  functional: Boolean!
+  inverse: OntologyProperty
+  acceptanceCriteria: String
+  completionGuidance: String
+  namespace: String!
+}
+
+enum PropertyKind {
+  DATATYPE
+  OBJECT
+  ANNOTATION
+}
+
+type NodeConnection {
+  edges: [NodeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type NodeEdge {
+  node: Node!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Thing implements Node {
+  uri: ID!
+  _meta: EntityMeta!
+  exName: String
+  exCount: Int
+}
+
+type ThingConnection {
+  edges: [ThingEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ThingEdge {
+  node: Thing!
+  cursor: String!
+}

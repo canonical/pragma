@@ -11,15 +11,29 @@
 #   - root fields ontologies / ontology / ontologyClass / ontologyProperty
 #     (buildTBoxSchema.ts) and node(id:) (compiler/wireRelay.ts)
 #
+# Identity is `uri: ID!` — the entity's ABSOLUTE IRI — and every descriptive
+# fact lives behind `_meta: EntityMeta!`. There is no `id`, no `kind`, and no
+# top-level label/comment/definition on Node: the interface is identity plus
+# self-description and nothing else. `_meta.title` is TOTAL (the provider
+# computes a fallback), `_meta.label` is asserted-only and may be null.
+#
+# The contract names NO ontology terms — every type and field here is
+# structural. It is therefore independent of the provider's field-name
+# `prefixing` knob: a schema compiled with `prefixing: "all"` satisfies it
+# exactly as one compiled with `prefixing: "none"` does.
+#
 # Deliberately NOT in the contract:
 #
 #   - @defer / @stream. Conditional on `incremental: true`, so a provider that
 #     runs without incremental delivery is still conformant.
 #   - Every ontology-derived type (Component, Job, CodeStandard, ...). Those
 #     depend on which ontology a provider loaded and are not universal.
+#   - Provider extension fields such as OntologyProperty.acceptanceCriteria /
+#     .completionGuidance. Annotation-derived, provider-specific — extensions,
+#     not base.
 #
-# EntityMeta IS in the contract even though nothing in it selects EntityMeta:
-# wireRelay puts `_meta: EntityMeta!` on every non-embeddable type, so no
+# EntityMeta IS in the contract even though `_meta` appears only on Node here:
+# the compiler puts `_meta: EntityMeta!` on every generated type, so no
 # provider can omit the type.
 #
 # A provider satisfies this contract when its schema is a SUPERSET of it --
@@ -29,16 +43,32 @@
 # =============================================================================
 
 """
-Everything addressable by a global ID. Every non-embeddable type the compiler
-generates implements this, so the structural fields below are universal.
+Everything addressable by an absolute IRI. Every non-embeddable type the
+compiler generates implements this: identity plus self-description, nothing
+else.
 """
 interface Node {
-  id: ID!
-  uri: String!
-  kind: String!
-  label: String
-  comment: String
-  definition: String
+  "The entity's absolute IRI — the primary key."
+  uri: ID!
+  "Self-describing TBox access for this entity."
+  _meta: EntityMeta!
+}
+
+"""
+Self-describing TBox access attached to every Node, plus the generic
+descriptive fields a lens renders without knowing the concrete type. `title`
+is total (the provider computes a fallback chain ending at the IRI); `label`,
+`comment`, and `definition` are asserted-only and null when nothing is
+asserted.
+"""
+type EntityMeta {
+  title(lang: String = "en"): String!
+  label(lang: String = "en"): String
+  comment(lang: String = "en"): String
+  definition(lang: String = "en"): String
+  type: OntologyClass!
+  fields: [ClassProperty!]!
+  field(name: String!): ClassProperty
 }
 
 "Relay cursor pagination metadata."
@@ -70,9 +100,13 @@ type Ontology {
   properties: [OntologyProperty!]!
 }
 
-"A class in the TBox."
-type OntologyClass {
-  uri: String!
+"""
+A class in the TBox — itself a Node, so classes resolve through `node(id:)`
+and appear in NodeConnections like any other entity.
+"""
+type OntologyClass implements Node {
+  uri: ID!
+  _meta: EntityMeta!
   label: String
   definition: String
   superclass: OntologyClass
@@ -101,9 +135,9 @@ type ClassProperty {
   inherited: Boolean!
 }
 
-"A property in the TBox."
+"A property in the TBox. Not a Node — it has identity but no `_meta`."
 type OntologyProperty {
-  uri: String!
+  uri: ID!
   label: String
   definition: String
   domain: OntologyClass
@@ -111,8 +145,6 @@ type OntologyProperty {
   kind: PropertyKind!
   functional: Boolean!
   inverse: OntologyProperty
-  acceptanceCriteria: String
-  completionGuidance: String
   namespace: String!
 }
 
@@ -124,21 +156,19 @@ enum PropertyKind {
 }
 
 """
-Self-describing TBox access attached to ABox types. Reachable as `_meta` on
-every non-embeddable generated type.
-"""
-type EntityMeta {
-  type: OntologyClass!
-  field(name: String!): ClassProperty
-  fields: [ClassProperty!]!
-}
+The universal root fields. A provider adds its own ontology-derived fields.
 
-"The universal root fields. A provider adds its own ontology-derived fields."
+`ontologyClass(uri:)` and `ontologyProperty(uri:)` take `String!`, not `ID!`:
+these arguments accept the PREFIXED convenience form ("ds:Component") as well
+as the absolute IRI, and live client operations already declare
+`$uri: String!` — promoting the argument to `ID!` would invalidate them
+(String is not a subtype of ID). `node(id:)` is the strict lookup: its
+argument keeps Relay's name `id` and its value is the absolute IRI.
+"""
 type Query {
+  node(id: ID!): Node
   ontologies: [Ontology!]!
   ontology(prefix: String!): Ontology
   ontologyClass(uri: String!): OntologyClass
   ontologyProperty(uri: String!): OntologyProperty
-  "Relay node resolution by prefixed-URI global ID."
-  node(id: ID!): Node
 }

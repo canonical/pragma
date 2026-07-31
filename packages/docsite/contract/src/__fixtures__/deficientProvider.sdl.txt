@@ -1,15 +1,23 @@
 # A provider that is deficient against the REAL contract, three ways at once:
-#   1. Node.kind is missing              -> FIELD_REMOVED
-#   2. PageInfo.hasNextPage is nullable  -> FIELD_CHANGED_KIND
-#   3. Query.ontology lost its `prefix`  -> ARG_REMOVED
-# Everything else is a faithful copy of schema/contract.graphql.
+#   1. Node._meta is missing            -> FIELD_REMOVED
+#   2. PageInfo.hasNextPage is nullable -> FIELD_CHANGED_KIND
+#   3. Query.ontology lost its `prefix` -> ARG_REMOVED
+# Everything else is a faithful copy of schema/contract.graphql — including
+# OntologyClass implementing Node, which stays legal here because an
+# implementor may carry fields the (broken) interface no longer declares.
 
 interface Node {
-  id: ID!
-  uri: String!
-  label: String
-  comment: String
-  definition: String
+  uri: ID!
+}
+
+type EntityMeta {
+  title(lang: String = "en"): String!
+  label(lang: String = "en"): String
+  comment(lang: String = "en"): String
+  definition(lang: String = "en"): String
+  type: OntologyClass!
+  fields: [ClassProperty!]!
+  field(name: String!): ClassProperty
 }
 
 type PageInfo {
@@ -37,8 +45,9 @@ type Ontology {
   properties: [OntologyProperty!]!
 }
 
-type OntologyClass {
-  uri: String!
+type OntologyClass implements Node {
+  uri: ID!
+  _meta: EntityMeta!
   label: String
   definition: String
   superclass: OntologyClass
@@ -64,7 +73,7 @@ type ClassProperty {
 }
 
 type OntologyProperty {
-  uri: String!
+  uri: ID!
   label: String
   definition: String
   domain: OntologyClass
@@ -72,8 +81,6 @@ type OntologyProperty {
   kind: PropertyKind!
   functional: Boolean!
   inverse: OntologyProperty
-  acceptanceCriteria: String
-  completionGuidance: String
   namespace: String!
 }
 
@@ -83,16 +90,10 @@ enum PropertyKind {
   ANNOTATION
 }
 
-type EntityMeta {
-  type: OntologyClass!
-  field(name: String!): ClassProperty
-  fields: [ClassProperty!]!
-}
-
 type Query {
+  node(id: ID!): Node
   ontologies: [Ontology!]!
   ontology: Ontology
   ontologyClass(uri: String!): OntologyClass
   ontologyProperty(uri: String!): OntologyProperty
-  node(id: ID!): Node
 }
