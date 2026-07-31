@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
+import { BIN_NAME } from "../../constants.js";
 import { completionFixture } from "../../testing/fixtures/completionFixture.js";
 import { emitScripts } from "./emitScripts.js";
 
@@ -27,20 +28,22 @@ import { emitScripts } from "./emitScripts.js";
  * - the LIVE grammar (`emitScripts(capabilities)`), which is the script users
  *   actually install and which no test had ever executed.
  *
- * Each driver puts a RECORDER named `pragma` first on the child's `PATH`, so
- * every candidate set comes with the exec log that produced it. That turns
- * `emitScripts.ts`'s docblock claim — "the static tier answers STRUCTURE with
- * zero exec; only `{kind:"names"}` value contexts shell out" — into an
- * assertion, and pins the exact argv the scripts hand `<bin> __complete`.
- * Recording first on `PATH` also means a developer with a real `pragma`
+ * Each driver puts a stand-in for the bin first on the child's `PATH`, which
+ * both RECORDS the argv it was handed and ANSWERS with two candidates, so every
+ * candidate set comes with the exec log that produced it and every exec can be
+ * followed to what the user is offered. That turns `emitScripts.ts`'s docblock
+ * claim — "the static tier answers STRUCTURE with zero exec; only
+ * `{kind:"names"}` value contexts shell out" — into an assertion, pins the exact
+ * argv the scripts hand `<bin> __complete`, and pins the last mile back.
+ * Standing first on `PATH` also means a developer with a real `pragma`
  * installed can never have it exec'd by this suite.
  *
  * WHAT IS PROVEN, AND WHERE — this split must not be blurred:
  *
  * - **By execution on every machine that runs the suite:** bash parses both
  *   scripts; the live bash script offers the live grammar's structure with
- *   zero process exec; it hands `__complete` a literal argv; it honours the
- *   `minChars` gate.
+ *   zero process exec; it hands `__complete` a literal argv and offers back
+ *   what it answers; it honours the `minChars` gate.
  * - **By execution only where the shell is installed:** the same guarantees
  *   for zsh and fish. Those describes `skipIf` the shell is absent, which
  *   includes this development box and, today, CI — so on those machines they
@@ -72,16 +75,34 @@ const live = emitScripts(capabilities);
 const CALL = "<<<CALL>>>";
 
 /**
- * A directory holding a recorder stub named `pragma`: a two-line bash script
- * that appends a framed copy of its own argv to `$RECORD` and produces no
- * candidates. Placed FIRST on each child's PATH by the drivers below.
+ * The two candidates the stub answers a delegation with, derived from the
+ * partial it was handed — the shape a real `__complete` reply has (every
+ * candidate extends the typed partial), which is what fish's engine filters on.
+ */
+function answersFor(partial: string): string[] {
+  return [`${partial}-one`, `${partial}-two`];
+}
+
+/**
+ * A directory holding a stub named after the bin: a bash script that appends a
+ * framed copy of its own argv to `$RECORD` and answers with
+ * {@link answersFor}'s two candidates. Placed FIRST on each child's PATH by the
+ * drivers below.
+ *
+ * It ANSWERS as well as records because recording alone stops one step short of
+ * the guarantee: a script can exec `__complete` with a perfect argv and then
+ * drop every line it gets back, leaving TAB silently dead. Measured — with
+ * `COMPREPLY=()` appended to bash's dynamic function and `_matches=()` before
+ * zsh's `compadd`, entity completion offers nothing in either shell and 258
+ * tests across this directory, `setup`, `doctor` and the behavioural suite
+ * still passed. The reply assertions below are what fails now.
  */
 const stubDir = mkdtempSync(join(tmpdir(), "pragma-drive-stub-"));
 writeFileSync(
-  join(stubDir, "pragma"),
-  `#!/usr/bin/env bash\n{ printf '${CALL}\\n'; printf '%s\\n' "$@"; } >> "$RECORD"\n`,
+  join(stubDir, BIN_NAME),
+  `#!/usr/bin/env bash\n{ printf '${CALL}\\n'; printf '%s\\n' "$@"; } >> "$RECORD"\nprintf '%s\\n' "\${@: -1}-one" "\${@: -1}-two"\n`,
 );
-chmodSync(join(stubDir, "pragma"), 0o755);
+chmodSync(join(stubDir, BIN_NAME), 0o755);
 
 /** What one drive observed: the offered candidates and the execs it caused. */
 interface Drive {
@@ -148,7 +169,7 @@ function driveBash(
     `source '${file}'`,
     `COMP_WORDS=(${wordsLiteral})`,
     `COMP_CWORD=${cword}`,
-    "_pragma",
+    `_${BIN_NAME}`,
     `printf '%s\\n' "\${COMPREPLY[@]}"`,
   ].join("\n");
   const result = spawnSync("bash", ["--norc", "--noprofile", "-c", source], {
@@ -362,13 +383,18 @@ describe.skipIf(!hasShell("bash"))(
       expect(calls).toEqual([]);
     });
 
-    it("hands __complete the protocol argv, and nothing else, for a name context", () => {
-      const { calls } = driveBash(
+    it("hands __complete the protocol argv and OFFERS what it answers", () => {
+      // The last mile, and the only assertion that covers it: everything else
+      // here observes what the script SENDS. A script that sends a perfect argv
+      // and then drops the reply (`COMPREPLY=()` after the mapfile) leaves TAB
+      // silently dead and was green across 258 tests.
+      const { reply, calls } = driveBash(
         live.bash,
         ["pragma", "block", "lookup", "ds:global.component.but"],
         3,
       );
       expect(calls).toEqual([PROTOCOL_ARGV]);
+      expect(reply).toEqual(answersFor("ds:global.component.but"));
     });
 
     it("keeps an interleaved global value flag in the argv it delegates", () => {
@@ -427,14 +453,17 @@ describe.skipIf(!hasShell("zsh"))(
     // test below, and the other five are asserted as the exact sets zsh really
     // returns. An `arrayContaining` here would be blind to the regression this
     // file exists to catch — a slot that offers EXTRA, wrong candidates.
-    it.each(STRUCTURE.filter((row) => row.at !== "pragma co"))(
-      "OFFERS exactly the candidates for $at, execing nothing",
-      ({ words, cword, offers }) => {
-        const { reply, calls } = driveZsh(live.zsh, words, cword);
-        expect(reply.sort()).toEqual([...offers].sort());
-        expect(calls).toEqual([]);
-      },
-    );
+    it.each(
+      STRUCTURE.filter((row) => row.at !== "pragma co"),
+    )("OFFERS exactly the candidates for $at, execing nothing", ({
+      words,
+      cword,
+      offers,
+    }) => {
+      const { reply, calls } = driveZsh(live.zsh, words, cword);
+      expect(reply.sort()).toEqual([...offers].sort());
+      expect(calls).toEqual([]);
+    });
 
     it("offers the WHOLE noun table for a partial noun, leaving the filtering to zsh", () => {
       const { reply, calls } = driveZsh(live.zsh, ["pragma", "co"], 1);
@@ -446,13 +475,15 @@ describe.skipIf(!hasShell("zsh"))(
       expect(calls).toEqual([]);
     });
 
-    it("hands __complete the SAME protocol argv bash does", () => {
-      const { calls } = driveZsh(
+    it("hands __complete the SAME protocol argv bash does, and OFFERS the answer", () => {
+      const { reply, calls } = driveZsh(
         live.zsh,
         ["pragma", "block", "lookup", "ds:global.component.but"],
         3,
       );
       expect(calls).toEqual([PROTOCOL_ARGV]);
+      // `_matches=()` before the `compadd` passes every other assertion here.
+      expect(reply).toEqual(answersFor("ds:global.component.but"));
     });
 
     it("gates the exec on minChars: one typed char execs nothing, two execs once", () => {
@@ -503,12 +534,13 @@ describe.skipIf(!hasShell("fish"))(
       expect(calls).toEqual([]);
     });
 
-    it("hands __complete the SAME protocol argv bash does", () => {
-      const { calls } = driveFish(
+    it("hands __complete the SAME protocol argv bash does, and OFFERS the answer", () => {
+      const { reply, calls } = driveFish(
         live.fish,
         "pragma block lookup ds:global.component.but",
       );
       expect(calls).toEqual([PROTOCOL_ARGV]);
+      expect(reply).toEqual(answersFor("ds:global.component.but"));
     });
 
     it("answers `--<TAB>` with the flag names, but DOES exec where bash and zsh do not", () => {
@@ -522,13 +554,19 @@ describe.skipIf(!hasShell("fish"))(
       // spawn on a purely structural TAB. `emitScripts.ts`'s "structure execs
       // nothing" is therefore a bash/zsh claim, not a fish one.
       const { reply, calls } = driveFish(live.fish, "pragma block lookup --");
-      expect(reply.sort()).toEqual([
-        "--detail",
-        "--format",
-        "--help",
-        "--verbose",
-      ]);
       expect(calls).toEqual([["__complete", "--", "block", "lookup", "--"]]);
+      // And the exec's answer is OFFERED alongside the flags, so the cost is
+      // not only the spawn: whatever `__complete` returns for a `--` partial
+      // lands in the user's candidate list. (It returns nothing today.)
+      expect(reply.sort()).toEqual(
+        [
+          "--detail",
+          "--format",
+          "--help",
+          "--verbose",
+          ...answersFor("--"),
+        ].sort(),
+      );
     });
 
     it("gates the exec on minChars: one typed char execs nothing, two execs once", () => {
