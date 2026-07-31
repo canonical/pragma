@@ -26,7 +26,7 @@ export type CompletionSource =
   /** A closed value set (enum params) — inlined by the static tier. */
   | { readonly kind: "values"; readonly values: readonly string[] }
   /**
-   * Names of a storeless source (index/skills/tiers/prompts/prefixes) — the
+   * Names of a storeless source (index/skills/prefixes) — the
    * dynamic tier reads them via the seam and ranks them with `match`/case. The
    * static scripts exec `__complete` for every name source, one code path.
    */
@@ -135,8 +135,8 @@ export interface CompletionRequest {
 
 /**
  * The dynamic-tier seam: reads candidate names for a `{kind:"names"}` source.
- * One source-dispatched reader serves every family — index, skills, tiers,
- * prompts, prefixes — so the resolver ranks them uniformly. The default
+ * One source-dispatched reader serves every family — index, skills, prefixes —
+ * so the resolver ranks them uniformly. The default
  * ({@link import("./entitySource.js").emptyNameSource}) yields nothing, so
  * structural completion never pays a read; {@link
  * import("./entitySource.js").indexCompletionEnv} wires the storeless sources.

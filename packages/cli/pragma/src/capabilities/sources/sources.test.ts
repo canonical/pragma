@@ -81,7 +81,6 @@ function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
       generators: "default",
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "/nonexistent", exists: false },
     project: { exists: false },

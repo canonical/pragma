@@ -51,7 +51,6 @@ function layers(stories: unknown[]): ConfigLayers {
       generators: "default",
       stories: stories.length > 0 ? "project" : "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "", exists: false },
     project: { exists: false },
