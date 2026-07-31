@@ -384,7 +384,7 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
   }
   if (prompts) {
     bullets.push(
-      "- **Prompts**: the design system's workflow templates are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools.",
+      "- **Prompts**: the workflow prompt templates the active graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. A graph declaring none leaves both views empty.",
     );
   }
   bullets.push(

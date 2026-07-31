@@ -475,5 +475,5 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 ## Non-tool surface
 
 - **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).
-- **Prompts**: the design system's workflow templates are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools.
+- **Prompts**: the workflow prompt templates the active graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. A graph declaring none leaves both views empty.
 - **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.

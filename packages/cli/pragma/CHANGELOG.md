@@ -31,6 +31,7 @@ The v2 CLI reshapes the command surface. Migrate as follows:
 
 | v1 | v2 | Notes |
 | --- | --- | --- |
+| `packages:` in a config | `packs:` | The config field was renamed. A global or project config that still declares `packages:` throws `CONFIG_ERROR` at startup — every command, `doctor` and `sources update` included — with a message naming the rename. Rename the key; the entry shape is unchanged. |
 | `pragma data …` | `pragma sources …` | The `data` noun is renamed `sources`. Build the store with `pragma sources update`; inspect it with `pragma sources status`. |
 | `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package and builds the store in one step. |
 | `pragma.lock.json` | — | The project lock is removed. Which pack answers a project's reads is recorded by a one-line pointer in the cache (`$XDG_CACHE_HOME/pragma/projects/`), because the pack it names is machine-local and was never committable. Run `pragma sources update` once, then delete the orphan `pragma.lock.json` from your repo — nothing reads it. |
@@ -42,6 +43,7 @@ The v2 CLI reshapes the command surface. Migrate as follows:
 | `config show`'s story bodies | `pragma capabilities` | `config show --format json` no longer carries declared story bodies (`config.packs[].stories`, `config.stories`) — they are SPARQL, and MCP returns that payload verbatim. Pack names, sources and per-field provenance are unchanged; use `pragma capabilities` to see the verbs a story produces. |
 | a story's `emptyRecovery.cli` | the same command WITHOUT the binary name | A read story (in your config, or in a package's `stories/*.json`) declares `cli: "sources update"`, not `cli: "pragma sources update"` — the CONSUMING distribution's binary name is prepended when the hint is rendered, so one story is portable across distributions. The old prefixed form is now rejected with a `CONFIG_ERROR` naming the change, rather than rendered as `pragma pragma sources update`. |
 | `config show`'s identity rows | `pragma --help` / `pragma colophon` | `name`, `help`, `colophon` and `issuesUrl` are read from the distribution config at module load, not merged through the layers — so `config show` no longer prints them, and `config show --format json` drops them from `data.config` and `data.origins`. A global or project layer declaring one is still accepted by the validator and, as before, has no effect; it is now silent instead of being reported with a `[project]` marker nothing honours. |
+| `surface.v2.json`'s `configFiles.lock` | `configFiles.configCache` | The key named the project-lock file that v2 removed; it always described the evaluated-project-config cache. The value is unchanged. `surface/surface.v2.json` has no consumer outside the CLI package. |
 
 See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and [docs/reference/index.md](./docs/reference/index.md) for the full command and tool surface.
 
