@@ -34,6 +34,7 @@ const makeExtraction = (
   functionalViolations: new Set(),
   undeclaredPredicates: new Set(),
   annotations: new Map(),
+  graphqlAnnotations: [],
   deepBlankNesting: false,
   ...partial,
 });

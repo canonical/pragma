@@ -165,6 +165,27 @@ export interface InstanceStats {
 }
 
 /**
+ * The RDF value kind of a `graphql:` vocabulary assertion's object: a
+ * NamedNode ("iri") or a Literal ("literal"). Captured with the value so
+ * Pass 2 can validate each term's expected kind (A003) without re-querying
+ * the store; blank-node objects are not capturable (no stable identity to
+ * serialize) and are dropped at extraction.
+ */
+export type GraphqlAnnotationValueKind = "iri" | "literal";
+
+/**
+ * One `graphql:` vocabulary assertion as extracted from the store:
+ * [target IRI, term IRI, object value, object kind]. Rows are plain tuples
+ * so the extraction artifact serializes them verbatim.
+ */
+export type GraphqlAnnotationRow = readonly [
+  target: string,
+  term: string,
+  value: string,
+  kind: GraphqlAnnotationValueKind,
+];
+
+/**
  * Pass 1 output: the complete, serializable result of the extraction queries
  * — the TBox structure plus the ABox probes that keep Passes 2–7 pure.
  */
@@ -198,6 +219,15 @@ export interface RawExtraction {
    * loader fetches only a single-hop blank-node closure, so deeper nesting
    * would be truncated. */
   deepBlankNesting: boolean;
+  /**
+   * Every `graphql:` vocabulary assertion in the store, captured verbatim:
+   * deduplicated (RDF set semantics — the same assertion loaded twice is one
+   * fact, not a conflict) and sorted by (target, term, kind, value) so
+   * artifacts and diagnostic messages are deterministic. Capture is
+   * mode-independent — the artifact must serve any projection mode at
+   * rebuild time; resolution and validation happen in Pass 2.
+   */
+  graphqlAnnotations: readonly GraphqlAnnotationRow[];
 }
 
 // ---------------------------------------------------------------------------

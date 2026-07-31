@@ -1,15 +1,15 @@
 // =============================================================================
 // Pass 1 — Extract: ke store → RawExtraction
 //
-// The only pass that touches the store. Sixteen SPARQL queries: ten TBox
+// The only pass that touches the store. Seventeen SPARQL queries: eleven TBox
 // queries plus six ABox probes, which is what keeps Passes 2–7 pure.
 //
 // The Q1…Q12 markers below number the extraction STEPS, not the queries: Q6
 // (namespace discovery) runs in code and issues none, Q7a and Q8 issue two
-// each, and the annotation and depth-guard probes carry no Q number at all.
-// Two of the sixteen are conditional — Q11 runs only when the TBox declares
-// an owl:FunctionalProperty, the annotation probe only when it declares an
-// annotation property.
+// each, and the graphql-vocabulary, annotation, and depth-guard probes carry
+// no Q number at all. Two of the seventeen are conditional — Q11 runs only
+// when the TBox declares an owl:FunctionalProperty, the annotation probe only
+// when it declares an annotation property.
 //
 // Queries use absolute IRIs so they are independent of registered prefixes,
 // and consume ke's term-preserving results (termBindings) so that NamedNodes,
@@ -19,6 +19,10 @@
 import type { SelectResult, Term } from "@canonical/ke";
 import {
   type Diagnostic,
+  GRAPHQL,
+  GRAPHQL_TERMS,
+  type GraphqlAnnotationRow,
+  type GraphqlAnnotationValueKind,
   type InstanceStats,
   type PassResult,
   type QueryFn,
@@ -121,8 +125,8 @@ const getIntValue = (term: Term | undefined): number | undefined => {
  * Extract the TBox structure and ABox probes from a ke store as a
  * RawExtraction (Pass 1) — the only pipeline step that queries the store.
  *
- * @note Impure — executes the extraction SPARQL queries (sixteen; two of them
- * conditional) against the store through the provided query function.
+ * @note Impure — executes the extraction SPARQL queries (seventeen; two of
+ * them conditional) against the store through the provided query function.
  */
 export default async function extract(
   query: QueryFn,
@@ -272,8 +276,50 @@ export default async function extract(
     datatypeMap.set(uri, entry);
   }
 
+  // ── graphql: vocabulary probe (no Q number, like the annotation probe) ──
+  // Captures EVERY assertion whose predicate lives in the graphql: namespace,
+  // unrecognized local names included — Pass 2 diagnoses those (A004) instead
+  // of extraction silently dropping them. Capture is mode-independent: the
+  // artifact must serve any projection mode at rebuild time. NamedNode and
+  // Literal objects are both kept, with their kind; a blank-node object has
+  // no stable identity to serialize and is dropped. Rows are deduplicated
+  // (RDF set semantics: one fact, however many files assert it) and sorted by
+  // (target, term, kind, value) so artifacts and messages are deterministic.
+  const graphqlRows = await select(
+    query,
+    `SELECT ?target ?term ?value WHERE {
+      ?target ?term ?value .
+      FILTER(STRSTARTS(STR(?term), "${GRAPHQL}"))
+    }`,
+    diagnostics,
+    "graphql vocabulary assertions",
+  );
+  const graphqlByKey = new Map<string, GraphqlAnnotationRow>();
+  for (const row of graphqlRows) {
+    const target = getNamedValue(row.target);
+    const term = getNamedValue(row.term);
+    const iri = getNamedValue(row.value);
+    const value = iri ?? getLiteralValue(row.value);
+    if (!target || !term || value === undefined) {
+      continue;
+    }
+    const kind: GraphqlAnnotationValueKind =
+      iri !== undefined ? "iri" : "literal";
+    graphqlByKey.set([target, term, kind, value].join("\u0000"), [
+      target,
+      term,
+      value,
+      kind,
+    ]);
+  }
+  const graphqlAnnotations = [...graphqlByKey.entries()]
+    // Keys are unique post-dedupe, so the two-way comparison is total.
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([, row]) => row);
+
   // ── Q6: namespace discovery (in code, from Q1+Q2, cross-referenced with
-  //        the store's registered prefixes) ──
+  //        the annotation-declared prefixes and the store's registered
+  //        prefixes) ──
   const namespaces = new Map<string, string>();
   const uriToPrefix = new Map<string, string>();
   for (const [prefix, ns] of Object.entries(prefixes)) {
@@ -283,9 +329,37 @@ export default async function extract(
   for (const uri of [...classMap.keys(), ...propertyMap.keys()]) {
     discovered.add(getNamespace(uri));
   }
+  // graphql:prefix declarations, resolved to discovered namespaces: the
+  // subject IRI itself when it IS a namespace, else subject + '#', else
+  // subject + '/' (an ontology subject <…/ontology> declaring for
+  // <…/ontology#>). The annotation outranks the registered map and
+  // suppresses the synthetic-prefix warning. A namespace with two DISTINCT
+  // declared prefixes resolves nothing here — no arbitrary tiebreak; Pass 2
+  // refuses that compile (A001). Unresolvable subjects are Pass 2's A002.
+  const declaredPrefixes = new Map<string, string>();
+  const conflictedPrefixes = new Set<string>();
+  for (const [target, term, value, kind] of graphqlAnnotations) {
+    if (term !== GRAPHQL_TERMS.prefix || kind !== "literal") {
+      continue;
+    }
+    const ns = [target, `${target}#`, `${target}/`].find((candidate) =>
+      discovered.has(candidate),
+    );
+    if (!ns) {
+      continue;
+    }
+    const existing = declaredPrefixes.get(ns);
+    if (existing !== undefined && existing !== value) {
+      conflictedPrefixes.add(ns);
+    }
+    declaredPrefixes.set(ns, value);
+  }
+  for (const ns of conflictedPrefixes) {
+    declaredPrefixes.delete(ns);
+  }
   let anonymous = 0;
   for (const ns of discovered) {
-    let prefix = uriToPrefix.get(ns);
+    let prefix = declaredPrefixes.get(ns) ?? uriToPrefix.get(ns);
     if (!prefix) {
       prefix = `ns${anonymous++ || ""}`;
       diagnostics.push({
@@ -590,6 +664,7 @@ export default async function extract(
       undeclaredPredicates,
       annotations,
       deepBlankNesting,
+      graphqlAnnotations,
     },
     diagnostics,
   };

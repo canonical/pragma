@@ -18,6 +18,7 @@ import {
   serializeExtraction,
 } from "../../lib/compiler/index.js";
 import { createSchemaPlugin } from "../../lib/index.js";
+import { GRAPHQL_TERMS } from "../../lib/shared/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../index.js";
 
 type Cleanup = () => void;
@@ -80,6 +81,36 @@ describe("extraction artifact (DMMF-style boot)", () => {
     expect(extraction.functionals).toEqual(live.extraction.functionals);
     expect(extraction.instanceStats).toEqual(live.extraction.instanceStats);
     expect(extraction.annotations).toEqual(live.extraction.annotations);
+  });
+
+  it("round-trips graphql: vocabulary assertions through the artifact", async () => {
+    const store = await boot(`${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_TERMS.name}> "Item" .
+<http://example.org/Thing> <${GRAPHQL_TERMS.titleFrom}> <http://example.org/name> .
+`);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    // Guard against a vacuous pass: the fixture must actually carry rows.
+    expect(live.extraction.graphqlAnnotations.length).toBeGreaterThan(0);
+    const { extraction } = deserializeExtraction(
+      serializeExtraction(live.extraction, "0"),
+    );
+    expect(extraction.graphqlAnnotations).toEqual(
+      live.extraction.graphqlAnnotations,
+    );
+  });
+
+  it("defaults graphqlAnnotations to [] for a pre-vocabulary artifact", async () => {
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const legacy = JSON.parse(serializeExtraction(live.extraction, "0"));
+    // An artifact serialized before the vocabulary landed has no field at
+    // all — it must still boot (version stays 1; sourcesHash protects the
+    // annotated-sources case by forcing a live recompile on mismatch).
+    delete legacy.graphqlAnnotations;
+    const { extraction } = deserializeExtraction(legacy);
+    expect(extraction.graphqlAnnotations).toEqual([]);
+    const rebuilt = compileFromExtraction(legacy);
+    expect(rebuilt.schema.getType("Thing")).toBeDefined();
   });
 
   it("rejects unknown artifact versions", () => {

@@ -43,6 +43,14 @@ export interface SerializedExtraction {
   undeclaredPredicates: string[];
   annotations: Array<[string, Array<[string, string]>]>;
   deepBlankNesting: boolean;
+  /**
+   * The `graphql:` vocabulary assertions (already plain sorted tuples).
+   * Optional: artifacts serialized before the vocabulary landed lack the
+   * field, and deserialization defaults it to [] — sound because
+   * `sourcesHash` already forces a live recompile the moment the sources
+   * gain an annotation the artifact has not seen.
+   */
+  graphqlAnnotations?: RawExtraction["graphqlAnnotations"];
 }
 
 // ---------------------------------------------------------------------------

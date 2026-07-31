@@ -69,6 +69,7 @@ export const serializeExtraction = (
         [...values],
       ]),
       deepBlankNesting: extraction.deepBlankNesting,
+      graphqlAnnotations: extraction.graphqlAnnotations,
     } satisfies SerializedExtraction,
     null,
     0,
@@ -108,6 +109,9 @@ export const deserializeExtraction = (
         parsed.annotations.map(([target, values]) => [target, new Map(values)]),
       ),
       deepBlankNesting: parsed.deepBlankNesting,
+      // Pre-vocabulary artifacts lack the field; [] keeps them booting
+      // (version stays 1 — see the SerializedExtraction docstring).
+      graphqlAnnotations: parsed.graphqlAnnotations ?? [],
     },
   };
 };

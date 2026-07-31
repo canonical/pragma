@@ -29,6 +29,41 @@ export const SKOS = "http://www.w3.org/2004/02/skos/core#";
 /** SHACL namespace IRI. */
 export const SH = "http://www.w3.org/ns/shacl#";
 
+/**
+ * The `graphql:` annotation vocabulary namespace IRI — the transport for
+ * annotation-driven binding: an ontology author declares projection intent
+ * (names, cardinality, exposure, descriptive sources) on the ontology terms
+ * themselves instead of in per-consumer config.
+ *
+ * PLACEHOLDER IRI (PRA-96 O-1): the value must match the companion's
+ * published vocabulary or cross-provider convergence fails — confirm it
+ * against that vocabulary package before release. Everything is keyed to
+ * this single constant, so the swap is one line.
+ */
+export const GRAPHQL = "http://pragma.canonical.com/graphql#";
+
+/**
+ * The thirteen `graphql:` vocabulary terms this compiler binds (v1).
+ * Key = local name, value = absolute term IRI. The extraction probe matches
+ * exactly these IRIs; an unrecognized local name in the namespace is
+ * captured anyway and diagnosed at resolution (A004).
+ */
+export const GRAPHQL_TERMS = {
+  name: `${GRAPHQL}name`,
+  singular: `${GRAPHQL}singular`,
+  nonNull: `${GRAPHQL}nonNull`,
+  abstract: `${GRAPHQL}abstract`,
+  embeddable: `${GRAPHQL}embeddable`,
+  inverse: `${GRAPHQL}inverse`,
+  titleFrom: `${GRAPHQL}titleFrom`,
+  labelFrom: `${GRAPHQL}labelFrom`,
+  commentFrom: `${GRAPHQL}commentFrom`,
+  definitionFrom: `${GRAPHQL}definitionFrom`,
+  prefix: `${GRAPHQL}prefix`,
+  expose: `${GRAPHQL}expose`,
+  searchable: `${GRAPHQL}searchable`,
+} as const;
+
 /** rdf:type predicate IRI. */
 export const RDF_TYPE = `${RDF}type`;
 
@@ -72,9 +107,12 @@ export const DEFINITION_LOCAL_NAMES = ["description"];
 
 /**
  * Namespaces that never produce GraphQL types. Loaded in ke for annotation
- * resolution only.
+ * resolution only. The graphql: vocabulary is one of them: a consumer who
+ * loads its definition TTL gets an inert result (no TBox namespace, no
+ * Ontology entry, no diagnostics noise) — and the compiler never requires
+ * that TTL to be loaded at all.
  */
-export const STANDARD_NAMESPACES = [RDF, RDFS, OWL, XSD, SKOS, SH];
+export const STANDARD_NAMESPACES = [RDF, RDFS, OWL, XSD, SKOS, SH, GRAPHQL];
 
 /**
  * XSD datatype IRI → GraphQL scalar name. Datatypes missing from this map

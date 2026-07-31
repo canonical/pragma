@@ -66,6 +66,7 @@ const buildIR = (
       functionalViolations: new Set(),
       undeclaredPredicates: new Set(),
       annotations: new Map(),
+      graphqlAnnotations: [],
       deepBlankNesting: false,
     },
   }) as unknown as OntologyIR;
