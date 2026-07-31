@@ -162,6 +162,21 @@ describe("the compiled binary answers the package's noun (subprocess)", () => {
     expect(result.stderr).toContain("fixture/stories/invalid.json");
   });
 
+  it("pragma capabilities lists the package's tools — the surface agents read", () => {
+    // The MCP server registers its tools from the effective modules, so a
+    // catalog built from the STATIC registry would omit exactly the nouns
+    // `tools/list` advertises. `config show` points agents here for the verbs a
+    // story produces; that pointer has to be true.
+    const result = runCli(["capabilities", "--format", "json"], {
+      cwd: graph.cwd,
+    });
+    expect(result.exitCode).toBe(0);
+    const { data } = JSON.parse(result.stdout) as {
+      data: { tools: { name: string }[] };
+    };
+    expect(data.tools.map((tool) => tool.name)).toContain("recipe_list");
+  });
+
   it("pragma --help does NOT list recipe — the documented fast-path limit", () => {
     // `--help` reads the STATIC capability set (no config, no pack read), which
     // is what keeps its budget. A package-declared noun is dispatch-only.
