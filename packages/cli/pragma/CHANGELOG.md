@@ -38,6 +38,8 @@ The v2 CLI reshapes the command surface. Migrate as follows:
 | the `llm` tool | `pragma capabilities` + MCP handshake instructions | The `llm` orientation tool is retired. Agents are oriented by the MCP handshake `instructions` sent on `initialize` and by the `capabilities` tool/verb, both derived from the live grammar. |
 | `pragma tokens …` / `tokens_*` tools | `pragma token …` / `token_*` tools | The token noun and its tools are singular now: `token list`, `token lookup`, `token sample`, `token add-config`. |
 | `--format text` | `--format plain` | The default text format is renamed `plain`. Output modes are `--format plain`, `--format json`, and the `--llm` condensed-Markdown flag (auto-on when piped) — there is no `llm` format value. |
+| a four-file pack | a five-file pack | A built pack now also carries `stories.json` — the read stories its packages ship. A pack built by an earlier build lacks it and is treated as incomplete, so reads report `STORE_UNAVAILABLE` until you run `pragma sources update` once. The rebuild is local and takes seconds. |
+| `config show`'s story bodies | `pragma capabilities` | `config show --format json` no longer carries declared story bodies (`config.packs[].stories`, `config.stories`) — they are SPARQL, and MCP returns that payload verbatim. Pack names, sources and per-field provenance are unchanged; use `pragma capabilities` to see the verbs a story produces. |
 
 See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and [docs/reference/index.md](./docs/reference/index.md) for the full command and tool surface.
 
@@ -45,6 +47,12 @@ See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and
 ### Features
 
 * **cli:** add `pragma colophon` — a self-describing, pack-extensible toolchain colophon (storeless self-verb + MCP tool + a pack-grammar `colophon` markdown field), rendered plain/llm/json
+* **cli:** the distribution declares its five read nouns (`block`, `token`, `modifier`, `standard`, `tier`) as data in `pragma.conf.ts` instead of code in `src/`, compiled at module load through the same compiler a third-party story goes through. `packs[].stories` is a working config field with the distribution as its first consumer.
+* **cli:** a package can ship `stories/*.json`; `sources update` carries them into the pack and they become working commands in any project that declares that package. A malformed or schema-invalid story is ignored — named on stderr and under `doctor`'s `pack refs` — never fatal.
+
+### Bug Fixes
+
+* **cli:** accept `sample.fixedCount` in the pack grammar validator — a documented field used by three bundled stories that `sampleSchema` (`.strict()`) omitted, so any config- or package-declared story using it died with a fatal `CONFIG_ERROR` at startup.
 
 # [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
 

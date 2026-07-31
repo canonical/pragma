@@ -6,7 +6,7 @@ pragma resolves its configuration from three layers. Each effective field carrie
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and generators, `channel: normal`, `detail: standard`).
+1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and the read stories they supply, generators, `channel: normal`, `detail: standard`).
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
@@ -23,11 +23,32 @@ A higher layer overrides a lower one field-by-field. `packs` and `generators` re
 | `tier` | string (optional) | Active design-system tier; absent means no tier filter. |
 | `channel` | `normal` \| `experimental` \| `prerelease` | Release channel controlling component visibility. Defaults to `normal`. |
 | `detail` | `summary` \| `standard` \| `detailed` (optional) | Default progressive-disclosure level. Defaults to `standard`. |
-| `packs` | array | Semantic pack sources compiled by `pragma sources update`. Replaces across layers. |
+| `packs` | array | Semantic pack sources compiled by `pragma sources update`. Each entry is a bare npm name or `{ name, source, stories? }`. Replaces across layers. |
 | `generators` | array | Scaffold generator sources (`{ name, source }` refs). Replaces across layers. |
-| `stories` | array | Declarative read stories compiled at boot (experimental). |
+| `stories` | array | Declarative read stories, not attached to any pack. See [Read stories](#read-stories). |
 | `prefixes` | record | Namespace prefixes the pack is built with. They win every harvest, so this is what decides which IRI a prefix binds in the store and the index. See the note below on the distribution layer. |
 | `completion` | object | Completion policy read at `setup completions` emit time. |
+
+## Read stories
+
+A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about a read noun is hand-written code.
+
+Stories reach the CLI from three places, weakest to strongest:
+
+| Tier | Where it is declared | Validation failure |
+| --- | --- | --- |
+| **distribution** | `packs[].stories` in the binary's own `pragma.conf.ts` | compile-time (`tsc`) |
+| **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
+| **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
+
+A stronger tier **replaces** a weaker one for the same noun, and within your config the top-level `stories` wins over `packs[].stories` — declaring a noun in both is a refinement, not a conflict. Declaring the same noun twice inside one tier is an error. A story may only replace a noun that is itself story-backed; it can never shadow a built-in command such as `config` or `doctor`.
+
+Package stories are third-party data, so they are never fatal: a malformed or schema-invalid file is dropped, the rest of the package still works, and `pragma doctor` names each ignored file under `pack refs` (which stays `pass` — the pack does answer reads).
+
+Two consequences worth knowing:
+
+- **Package-declared nouns are dispatch-only.** `pragma --help` and shell completion read the static capability set without touching config or the pack, which is what keeps them fast. A noun that arrives from a package therefore runs but is not advertised there. The distribution's own stories are compiled into that static set, so they are.
+- **`pragma config show` reports pack declarations, not story bodies.** The bodies are SPARQL and the JSON payload is what MCP returns verbatim, so `packs` entries are shown as `{ name, source }` and the top-level `stories` array is omitted. Provenance is still reported for both fields, and `pragma capabilities` lists the verbs the stories produce.
 
 ## `prefixes`: one field, two readers
 

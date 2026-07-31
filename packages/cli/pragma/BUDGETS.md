@@ -222,3 +222,29 @@ Confirmed by the spike:
   content-hash cache on a hit without re-importing (`readConfig.test.ts`), and
   the compiled binary evaluates an external `pragma.config.ts` natively (D7
   verified — no subprocess fallback needed).
+
+## Stories in packs — no budget movement (A/B, control-netted)
+
+Moving the distribution's five read stories out of `src/capabilities/*/pack.ts`
+and into `pragma.conf.ts` is a MOVE, not an addition: the same five
+`compilePack` calls run at module load and the same object literal is parsed,
+from one file instead of five. The package tier adds one small read
+(`stories.json` off the answering pack) on the DISPATCH path only, from its own
+generated module — never `pack.generated.ts`, whose ~1.9 MB of n-quads on the
+dispatch path measured **+28 ms on every command** when it was tried.
+
+Measured by round-robin over two compiled binaries built the same way (this
+branch vs. its parent commit), 30 rounds, `env -i` with a fresh `HOME`/`XDG_*`
+in an empty cwd, on a box at load ≈ 2.0. Absolute figures are inflated relative
+to the reference box by the load and the harness; the CONTROL-NETTED delta (each
+case minus that binary's own `pragma --version` median) is the comparison:
+
+| Case                              | base median | new median | control-netted Δ |
+| --------------------------------- | ----------- | ---------- | ---------------- |
+| `--version` (control)             | 92.0 ms     | 92.6 ms    | —                |
+| `--help`                          | 123.8 ms    | 125.0 ms   | +0.5 ms          |
+| `__complete -- block lookup Butt` | 122.8 ms    | 121.2 ms   | −2.3 ms          |
+| `config show` (dispatch)          | 149.1 ms    | 149.3 ms   | −0.5 ms          |
+
+Two of the three deltas are negative, which is the signature of noise rather
+than a cost. **No budget constant changes**; `bun run test:perf` is 8/8 green.
