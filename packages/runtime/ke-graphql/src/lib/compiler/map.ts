@@ -28,7 +28,7 @@ import {
 } from "../shared/index.js";
 import areAllImplementorsEmbeddable from "./areAllImplementorsEmbeddable.js";
 import BidirectionalNameMap from "./BidirectionalNameMap.js";
-import { DEFAULT_PREFIXING } from "./constants.js";
+import { DEFAULT_MODE, DEFAULT_PREFIXING } from "./constants.js";
 import {
   camelize,
   pluralize,
@@ -102,7 +102,18 @@ const findMapping = (
 const resolveTypeNames = (state: MapperState): void => {
   const taken = new Set<string>(RESERVED_TYPE_NAMES);
   const owners = new Map<string, string>(); // resolved name → first class URI
+  // mode "explicit": only classes annotated graphql:expose true are
+  // projected. A skipped class is never registered — exactly an
+  // M001-dropped class downstream (no type, no root fields, tolerated by
+  // every consumer of typeNames) — and A007 aggregates the whole dropped
+  // set once, sorted, instead of one diagnostic per class.
+  const explicit = (state.options.mode ?? DEFAULT_MODE) === "explicit";
+  const outsideAllowlist: string[] = [];
   for (const node of state.ir.classes.values()) {
+    if (explicit && state.ir.graphql.classes.get(node.uri)?.expose !== true) {
+      outsideAllowlist.push(node.uri);
+      continue;
+    }
     // config ?? annotation, both with custom-name semantics: verbatim, never
     // auto-prefixed on a reserved collision (M001 instead of M004), always
     // M002-sanitized when illegal.
@@ -169,6 +180,15 @@ const resolveTypeNames = (state: MapperState): void => {
     owners.set(name, node.uri);
     state.typeNames.set(node.uri, name);
     state.nameMap.set(node.uri, name);
+  }
+  if (explicit && outsideAllowlist.length > 0) {
+    const sorted = [...outsideAllowlist].sort();
+    state.diagnostics.push({
+      severity: "info",
+      code: "A007",
+      message: `mode "explicit": ${sorted.length} class(es) outside the graphql:expose allowlist were not projected: ${sorted.join(", ")}`,
+      phase: PHASE,
+    });
   }
 };
 
@@ -418,11 +438,41 @@ const buildFields = (
     const nonNull =
       (state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false) ||
       (state.ir.graphql.properties.get(property.uri)?.nonNull ?? false);
+    const fieldType = computeFieldType(state, property);
+    // mode "explicit": a field whose range class is compiled but NOT exposed
+    // is OMITTED with A008 — not String-fallbacked, which would leak entity
+    // IRIs as raw strings, and not fatal, because absence is this mode's
+    // design and the drop is loud. A union field whose effective member set
+    // emptied out (every member unexposed) is omitted the same way — an
+    // empty union cannot compose. An unknown range (B003) keeps its String
+    // fallback exactly as in every other mode.
+    if ((state.options.mode ?? DEFAULT_MODE) === "explicit") {
+      const unexposedRange =
+        property.range.kind === "class" &&
+        state.ir.classes.has(property.range.uri) &&
+        !state.typeNames.has(property.range.uri)
+          ? property.range.uri
+          : undefined;
+      const emptiedUnion =
+        fieldType.kind === "union" && fieldType.members.length === 0;
+      if (unexposedRange !== undefined || emptiedUnion) {
+        state.diagnostics.push({
+          severity: "warning",
+          code: "A008",
+          message:
+            unexposedRange !== undefined
+              ? `mode "explicit": ${typeName}.${name} is omitted — its range class ${unexposedRange} is not exposed (graphql:expose)`
+              : `mode "explicit": ${typeName}.${name} is omitted — no member of its union range is exposed (graphql:expose)`,
+          source: property.uri,
+          phase: PHASE,
+        });
+        continue;
+      }
+    }
     // Declared owl:inverseOf pair: the ABox may assert either direction, so
     // each side resolves the union of forward + reverse assertions.
     // List sides switch to the inverse template; singular sides keep their
     // template but carry inverseOf for the reverse fallback.
-    const fieldType = computeFieldType(state, property);
     const declaredInverse =
       property.kind === "object" && fieldType.kind === "type" && !embedded
         ? property.inverse

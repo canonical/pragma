@@ -28,6 +28,7 @@ import {
 } from "graphql";
 import {
   connectionFromPage,
+  emptyConnection,
   paginateUriWindow,
   resolveLabel,
   resolveTitle,
@@ -219,6 +220,23 @@ export default function buildTBoxSchema(
   classNodeIdentities.add(OWL_CLASS_NODE);
   const isClassNode = (value: unknown): boolean =>
     classNodeIdentities.has(value);
+
+  // Population guard: a class is projected when its URI resolves to a minted
+  // type or interface. Under mode "explicit" a class outside the expose
+  // allowlist stays browsable in the TBox (the browser is complete on
+  // purpose), but its `instances`/`instanceCount` answer empty/0 —
+  // `instanceCount` is DEFINED as the population `instances` paginates, and
+  // an unprojected class's instances cannot be typed into the emitted
+  // schema. In every other mode a compiled schema has all classes projected
+  // (an unregistered class means a fatal M001), so the guard changes
+  // nothing.
+  const isProjected = (classUri: string): boolean => {
+    const name = mapped.nameMap.toGraphQL(classUri);
+    return (
+      name !== undefined &&
+      (mapped.types.has(name) || mapped.interfaces.has(name))
+    );
+  };
 
   // Every EntityMeta resolver takes an EntityValue parent. A ClassNode is
   // TBox IR, not an ABox value, so `OntologyClass._meta` adapts one into the
@@ -436,6 +454,11 @@ export default function buildTBoxSchema(
           if (c === OWL_CLASS_NODE) {
             return toConnection([...ir.classes.values()], args);
           }
+          // Unprojected class (mode "explicit" outside the allowlist): the
+          // population is empty by definition — see isProjected.
+          if (!isProjected(c.uri)) {
+            return emptyConnection();
+          }
           // The loader's list is already in absolute-IRI currency — the same
           // currency the cursors encode and EntityValue.uri carries.
           const uris = await ctx.listLoader.load(c.uri);
@@ -451,11 +474,15 @@ export default function buildTBoxSchema(
         // connection yields — NOT instanceStats(owl:Class), which counts
         // every `a owl:Class` subject in the store, including declarations
         // the compiler filtered (standard-vocabulary classes). The two must
-        // never drift: `instances` and `instanceCount` are one promise.
+        // never drift: `instances` and `instanceCount` are one promise —
+        // which is also why an unprojected class answers 0 (its `instances`
+        // connection is empty by definition; see isProjected).
         resolve: (c) =>
           c === OWL_CLASS_NODE
             ? ir.classes.size
-            : (ir.extraction.instanceStats.get(c.uri)?.named ?? 0),
+            : isProjected(c.uri)
+              ? (ir.extraction.instanceStats.get(c.uri)?.named ?? 0)
+              : 0,
       },
       isAbstract: {
         type: new GraphQLNonNull(GraphQLBoolean),

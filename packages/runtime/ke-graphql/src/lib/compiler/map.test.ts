@@ -1662,3 +1662,84 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     expect(fields?.get("c")?.nonNull).toBe(true);
   });
 });
+
+describe("map — mode explicit corners", () => {
+  it("keeps the String fallback for an UNKNOWN range under explicit (B003 territory, not A008)", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      properties: [
+        {
+          uri: uri("weird"),
+          kind: "object",
+          domains: [uri("Doc")],
+          ranges: ["http://external.example/Mystery"],
+        },
+      ],
+      graphqlAnnotations: [
+        [uri("Doc"), GRAPHQL_TERMS.expose, "true", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir, { mode: "explicit" });
+    // The range was never a compiled class, so the existing unknown-range
+    // String fallback applies in every mode — A008 is only for classes the
+    // allowlist excluded.
+    expect(codes(diagnostics)).not.toContain("A008");
+    expect(output.types.get("Doc")?.fields.get("weirds")?.type).toEqual({
+      kind: "scalar",
+      name: "String",
+    });
+  });
+
+  it("omits a union field whose member set emptied out, keeps a partial union", () => {
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Doc"), superclasses: [] },
+        { uri: uri("A"), superclasses: [] },
+        { uri: uri("B"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Doc"), { total: 1, named: 1 }],
+        [uri("A"), { total: 1, named: 1 }],
+        [uri("B"), { total: 1, named: 1 }],
+      ]),
+      properties: [
+        {
+          uri: uri("darkChoice"),
+          kind: "object",
+          domains: [uri("Doc")],
+          ranges: [],
+        },
+        {
+          uri: uri("halfChoice"),
+          kind: "object",
+          domains: [uri("Doc")],
+          ranges: [],
+        },
+      ],
+      unions: [
+        // every member outside the allowlist → the union empties → omitted
+        { property: uri("darkChoice"), members: [uri("B")] },
+        // one member exposed → the union narrows and the field survives
+        { property: uri("halfChoice"), members: [uri("A"), uri("B")] },
+      ],
+      graphqlAnnotations: [
+        [uri("A"), GRAPHQL_TERMS.expose, "true", "literal"],
+        [uri("Doc"), GRAPHQL_TERMS.expose, "true", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir, { mode: "explicit" });
+    const a008 = diagnostics.filter((d) => d.code === "A008");
+    expect(a008).toHaveLength(1);
+    expect(a008[0]?.source).toBe(uri("darkChoice"));
+    expect(a008[0]?.message).toContain("no member of its union range");
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("darkChoices")).toBe(false);
+    const half = fields?.get("halfChoices");
+    expect(half?.type).toEqual({
+      kind: "union",
+      name: "HalfChoiceUnion",
+      members: ["A"],
+    });
+  });
+});

@@ -28,9 +28,10 @@ import {
   XSD_SCALARS,
 } from "../shared/index.js";
 import resolveGraphqlAnnotations from "./annotations.js";
+import { DEFAULT_MODE } from "./constants.js";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
-import type { CustomMappings } from "./types.js";
+import type { CustomMappings, ProjectionMode } from "./types.js";
 
 const PHASE = "build";
 
@@ -89,11 +90,36 @@ const mergeConstraints = (
 export default function build(
   extraction: RawExtraction,
   mappings: CustomMappings = {},
+  mode: ProjectionMode = DEFAULT_MODE,
 ): PassResult<OntologyIR> {
   const diagnostics: Diagnostic[] = [];
 
   // ── 0. resolve the graphql: annotation overlay (A-band diagnostics) ──
-  const resolved = resolveGraphqlAnnotations(extraction, mappings);
+  // Under mode "auto" the resolver DOES NOT RUN — that is the mode's
+  // escape-hatch value: an ontology with broken annotations must still
+  // compile here, so even A001/A002/A003 stay unraised. Only the honest
+  // A006 note fires when assertions are present but unconsulted.
+  const resolved =
+    mode === "auto"
+      ? {
+          output: {
+            classes: new Map(),
+            properties: new Map(),
+            prefixes: new Map(),
+          },
+          diagnostics:
+            extraction.graphqlAnnotations.length > 0
+              ? [
+                  {
+                    severity: "info" as const,
+                    code: "A006" as const,
+                    message: `mode "auto": ${extraction.graphqlAnnotations.length} graphql: annotation assertion(s) present but the overlay is not consulted — heuristics only; use mode "annotated" to bind them`,
+                    phase: PHASE,
+                  },
+                ]
+              : [],
+        }
+      : resolveGraphqlAnnotations(extraction, mappings);
   diagnostics.push(...resolved.diagnostics);
   const overlay = resolved.output;
 

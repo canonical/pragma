@@ -32,7 +32,7 @@ export default function runPasses(
 ): CompilerResult {
   const diagnostics: Diagnostic[] = [...seed];
 
-  const built = build(extraction, options.mappings);
+  const built = build(extraction, options.mappings, options.mode);
   diagnostics.push(...built.diagnostics);
 
   const validated = validate(built.output);

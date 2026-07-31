@@ -33,12 +33,15 @@ export type DiagnosticSeverity = "error" | "warning" | "info";
 export type DiagnosticCode =
   // Extraction
   | "E001" // SPARQL query failed
-  // Annotation resolution (head of the build pass)
+  // Annotation resolution (head of the build pass) + projection modes
   | "A001" // conflicting graphql: annotation values — never tiebroken
   | "A002" // graphql: annotation targets a foreign or unknown IRI
   | "A003" // malformed graphql: annotation value
   | "A004" // unrecognized graphql: term or inapplicable target kind — ignored
   | "A005" // consumer config shadows a graphql: annotation — config wins
+  | "A006" // mode "auto": annotations present but the overlay is not consulted
+  | "A007" // mode "explicit": classes outside the expose allowlist not projected
+  | "A008" // mode "explicit": field omitted — its range class is not exposed
   // Build
   | "B001" // class cycle in subClassOf chain
   | "B002" // property references unknown class in domain

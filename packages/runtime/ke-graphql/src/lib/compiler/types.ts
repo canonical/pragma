@@ -76,17 +76,27 @@ export type NonNullOverrides = Record<string, string[]>;
 /**
  * How much of the ontology is projected into object types.
  *
- * PROVENANCE ONLY TODAY. The extractor emits no `graphql:*` annotations yet
- * (that is a separate task), so there is nothing for this option to gate on
- * and the compiler deliberately does NOT branch on it — a `switch` that
- * silently changes nothing is worse than no knob at all. The value is typed,
- * defaulted, and stamped into the SDL provenance header so a consumer can
- * declare intent now and diff the header later; its EFFECT lands with the
- * annotations task, at which point `auto`/`explicit` start behaving
- * differently from `annotated`.
+ * - `"auto"` — pure heuristics: the `graphql:` annotation overlay is not
+ *   consulted at all (A006 notes any assertions being ignored). This is the
+ *   escape hatch: an ontology with BROKEN annotations still compiles here,
+ *   because the resolver that would refuse them never runs. Byte-identical
+ *   to `annotated` for an unannotated ontology.
+ * - `"annotated"` (default) — the heuristic baseline with the resolved
+ *   overlay applied per term. Annotations change HOW the ontology projects,
+ *   never WHETHER: every class still yields a type or interface.
+ * - `"explicit"` — an allowlist: only classes annotated `graphql:expose
+ *   true` are projected (concrete → type, abstract → interface, embeddables
+ *   gated identically); everything else is skipped like a dropped class —
+ *   no type, no root fields. A007 aggregates the dropped set once; a field
+ *   on an exposed class whose range class is unexposed is omitted with A008
+ *   (never String-fallbacked — that would leak entity IRIs as raw strings).
+ *   The TBox stays complete for browsing, but an unexposed class's
+ *   `instances`/`instanceCount` answer empty/0: the population a connection
+ *   paginates is definitionally typeable into the emitted schema.
  *
- * The three mode names are fixed by the schema contract (graphql-schema-spec
- * 1), so `mode:` header lines are comparable across providers.
+ * The value is also stamped into the SDL provenance header. The three mode
+ * names are fixed by the schema contract (graphql-schema-spec 1), so
+ * `mode:` header lines are comparable across providers.
  */
 export type ProjectionMode =
   /** Pure heuristics; annotations ignored. */
@@ -144,7 +154,7 @@ export interface SchemaPluginOptions {
   sdlOutput?: string;
   nonNullOverrides?: NonNullOverrides;
   /**
-   * Projection mode. Provenance-only today — see ProjectionMode.
+   * Projection mode — see ProjectionMode for the three behaviors.
    * Default: DEFAULT_MODE ("annotated").
    */
   mode?: ProjectionMode;

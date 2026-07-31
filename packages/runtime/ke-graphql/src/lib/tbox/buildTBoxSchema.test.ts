@@ -615,7 +615,10 @@ const buildSyntheticIR = (): MappedIR => {
     interfaces: new Map(),
     unions: new Map(),
     nameMap: {
-      toGraphQL: () => undefined,
+      // KNOWN resolves to a name that exists in NEITHER types nor
+      // interfaces — the synthetic-only state that drives isProjected's
+      // final arm (name found, nothing minted under it).
+      toGraphQL: (u: string) => (u === KNOWN ? "Phantom" : undefined),
       toOWL: (name: string) => (name === "Known" ? KNOWN : undefined),
       entries: () => [],
     },
@@ -731,7 +734,10 @@ describe("TBox defensive branches (synthetic parents)", () => {
     );
     const cls = result.data?.knownClass as Record<string, unknown>;
     expect(cls.namespace).toBe("t");
-    // No stats entry for this class → instanceCount falls back to 0.
+    // The synthetic name map resolves this class to a name nothing was
+    // minted under, so the population guard answers 0 (and `instances`
+    // short-circuits to the empty connection without touching a loader);
+    // the real loader-backed path is covered by the fixture-store tests.
     expect(cls.instanceCount).toBe(0);
     // listClassProperties runs the annotation filter against GHOST_PROP (no
     // PropertyNode → the `?? false` default keeps it) — both the union prop
