@@ -145,7 +145,6 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // hardcoded term still passes every other test in this suite: the fixtures
     // on both sides would simply agree. So capture what the readers EMIT.
     const { DEFAULT_PREFIX_MAP } = await import("./kernel/render/prefixes.js");
-    const { tierPack } = await import("./capabilities/tier/pack.js");
     const { runTierLookup } = await import("./capabilities/tier/runLookup.js");
     const { readPrompts } = await import(
       "./kernel/project/mcp/prompts/source.js"
@@ -159,9 +158,12 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       "http://www.w3.org/2000/01/rdf-schema#",
     );
 
-    // The bundled tier noun's list query.
-    expect(tierPack.list?.query).toContain("rcp:name");
-
+    // The tier noun's LIST query is no longer code: it is a story the
+    // distribution declares, so a fork writes its own terms into it directly
+    // and there is nothing here for a hardcoded term to hide in.
+    // `distribution.test.ts` holds this distribution's declaration to the same
+    // class and property the tier code below reads.
+    //
     // The two generated reads, captured off a stub facade.
     const queries: string[] = [];
     const recorder = {

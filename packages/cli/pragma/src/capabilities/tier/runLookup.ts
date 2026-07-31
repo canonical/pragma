@@ -21,8 +21,8 @@ import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { VOCABULARY } from "../../kernel/vocabulary.js";
-import type { TierLookupData } from "./lookup.render.js";
 import { TIER_TYPE } from "./constants.js";
+import type { TierLookupData } from "./lookup.render.js";
 
 /**
  * Read every tier name in the store, ordered.

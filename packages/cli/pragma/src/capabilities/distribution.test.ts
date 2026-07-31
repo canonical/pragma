@@ -13,8 +13,10 @@
 
 import { describe, expect, it } from "vitest";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
+import { VOCABULARY } from "../kernel/vocabulary.js";
 import { declaredStories } from "./distribution.js";
 import { capabilities } from "./index.js";
+import { TIER_TYPE } from "./tier/constants.js";
 
 describe("the distribution's declared stories (PROTECTED)", () => {
   it("declares exactly the five domain nouns", () => {
@@ -48,5 +50,18 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       expect(module?.story).toBe(true);
       expect(module?.verbs.length).toBeGreaterThan(0);
     }
+  });
+
+  it("the tier story names the same class and property the tier code reads", () => {
+    // `tier list` is declared data and `tier lookup` is hand-written code, so
+    // the two can now disagree about what a tier IS and what addresses it —
+    // the coupling where a candidate completes and then fails to resolve.
+    // While the query lived in `capabilities/tier/pack.ts` it interpolated
+    // these two symbols and could not drift; the declaration spells them
+    // literally, because `pragma.conf.ts` is inert data and imports nothing.
+    // This is what replaces that guarantee.
+    const query = declaredStories.get("tier")?.list?.query ?? "";
+    expect(query).toContain(`a ${TIER_TYPE}`);
+    expect(query).toContain(`${VOCABULARY.altName} ?name`);
   });
 });
