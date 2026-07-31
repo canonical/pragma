@@ -120,12 +120,30 @@ runs:
           echo "browser install not requested; skipping"
           exit 0
         fi
-        bunx playwright install --with-deps chromium firefox webkit
+        # Invoke the WORKSPACE's playwright by path — never `bunx playwright`.
+        # When the root bin link is absent (the same first-install bun bug the
+        # re-link step above works around), bunx silently falls back to
+        # fetching the LATEST playwright from the registry and installs that
+        # version's browser builds, which the workspace's pinned
+        # playwright-core then cannot find (#901: installed 1234, wanted 1228).
+        PW_CLI="node_modules/playwright/cli.js"
+        if [ ! -f "$PW_CLI" ]; then
+          echo "::error::workspace playwright is not hoisted at ${PW_CLI} — cannot install browsers deterministically"
+          exit 1
+        fi
+        echo "workspace playwright: $(bun "$PW_CLI" --version)"
+        bun "$PW_CLI" install --with-deps chromium firefox webkit
         echo "ms-playwright contents after install:"
         ls ~/.cache/ms-playwright/ || true
+        # Verify the EXACT revisions the workspace's playwright-core resolves —
+        # a version-mismatched install can never again pass setup silently.
+        # browsers.json is found THROUGH the playwright package (bun's layout
+        # keeps a package's deps beside it), never via a root hoist assumption.
+        BROWSERS_JSON="$(dirname "$(realpath "$PW_CLI")")/../playwright-core/browsers.json"
+        EXPECTED=$(jq -r '.browsers[] | select(.name=="chromium" or .name=="chromium-headless-shell" or .name=="firefox" or .name=="webkit") | (.name | gsub("-";"_")) + "-" + .revision' "$BROWSERS_JSON")
         missing=0
-        for probe in chromium chromium_headless_shell firefox webkit; do
-          ls -d ~/.cache/ms-playwright/${probe}-* >/dev/null 2>&1 || { echo "::error::expected ${probe} under ~/.cache/ms-playwright after install"; missing=1; }
+        for dir in $EXPECTED; do
+          [ -d "$HOME/.cache/ms-playwright/$dir" ] || { echo "::error::expected ${dir} in ms-playwright (workspace playwright-core revision)"; missing=1; }
         done
         exit "$missing"
 
