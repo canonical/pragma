@@ -3,14 +3,21 @@
 /**
  * The cold-store guard on the server entry's Relay environment.
  *
- * A server render that reaches the network is always a bug: there is no
- * origin to resolve the same-origin `/graphql` against. Before AV-350 the
- * default HTTP path threw ERR_INVALID_URL from inside a promise React
- * never awaits — an UNHANDLED REJECTION, which takes the whole server
- * PROCESS down. Observed on both backend-less preview bricks
- * (`renderer.tsx` runs no prepare step until the Oxigraph spike closes),
- * on every data-bearing route. The lobby made it reachable at `/`, the
- * one URL the e2e matrix fetches for all six cells.
+ * A server render that reaches the network is always a bug: the prepare
+ * step has already run, so a miss means the store and the render disagree
+ * about the operation or its variables.
+ *
+ * THE MECHANISM CHANGED AT PRD-3, the assertions did not. Before AV-350
+ * the endpoint was the same-origin `/graphql`, which the default HTTP path
+ * could not resolve server-side: it threw ERR_INVALID_URL from inside a
+ * promise React never awaits — an UNHANDLED REJECTION, which takes the
+ * whole server PROCESS down. The endpoint is an absolute URL now, so
+ * without the guard the same cold render would instead make a REAL fetch
+ * to the graph server and reject only if that fetch fails (which, under
+ * this suite, it does — nothing is listening on the default port). Either
+ * way the rejection is unowned, and either way these tests catch it; the
+ * difference is that the modern failure is slower and quieter, which is a
+ * reason to keep the guard rather than to relax it.
  *
  * The guard reports the miss as a REJECTED PROMISE that Relay owns
  * (its network contract for a failed operation) rather than a synchronous
@@ -51,8 +58,8 @@ afterEach(() => {
  * microtask queue drains with no handler attached.
  */
 const renderColdAndSettle = async (url: string): Promise<string> => {
-  // No `relay.records`: exactly what a backend-less preview brick hands
-  // the renderer.
+  // No `relay.records`: what any brick hands the renderer when the prepare
+  // step produced nothing — an unmapped route, or an unreachable graph.
   const html = renderToString(<EntryServer initialData={{ url }} />);
   await new Promise((resolve) => setTimeout(resolve, 0));
   return html;
@@ -63,9 +70,9 @@ describe("EntryServer against a cold store", () => {
     const html = await renderColdAndSettle("/");
 
     // THE assertion: the guard owns the miss, so nothing escapes to the
-    // process. Without it, relay-runtime's HTTP path rejects with
-    // ERR_INVALID_URL on `/graphql` and this array is non-empty — that
-    // rejection is what kills the preview servers.
+    // process. Without it, relay-runtime's HTTP path fetches the graph
+    // endpoint, the fetch fails (nothing listens), and this array is
+    // non-empty — that rejection is what kills the server process.
     expect(unhandled).toEqual([]);
 
     // The render completed: the shell the e2e matrix asserts on…

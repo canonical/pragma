@@ -39,14 +39,17 @@ export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   // mismatch is excluded by construction). With a warm store the page's
   // queries render without fetching.
   //
-  // `fetchFn` is the COLD-STORE guard. A server render that reaches the
-  // network is always a bug here — there is no origin to resolve
-  // `/graphql` against, so the default HTTP path throws ERR_INVALID_URL
-  // from inside a promise React never awaits, which takes the whole
-  // server process down rather than surfacing in the page. That is
-  // exactly what the backend-less preview bricks do on every
-  // data-bearing route (`renderer.tsx`: no prepare step until the
-  // Oxigraph spike closes).
+  // `fetchFn` is the COLD-STORE guard, and the PRD-3 process split made it
+  // MORE necessary, not less. A server render that reaches the network is
+  // still always a bug: the prepare step already ran (all four SSR bricks
+  // run it now), so a miss means the store and the render disagree about
+  // the operation or its variables — refetching would paper over that.
+  // What changed is the failure mode without the guard. The endpoint used
+  // to be the same-origin `/graphql`, which the default HTTP path could
+  // not even resolve server-side (ERR_INVALID_URL). It is an ABSOLUTE URL
+  // now, so a cold render would quietly make a REAL request to the graph
+  // server, per component, mid-render — a slow, invisible fallback instead
+  // of a loud one.
   //
   // The miss is reported as a REJECTED PROMISE, not a synchronous throw.
   // A throw here escapes during the render pass itself, which the

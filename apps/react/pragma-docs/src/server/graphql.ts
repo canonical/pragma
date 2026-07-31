@@ -23,9 +23,13 @@
  * copy of the pre-merge SDL. The second root is skipped entirely when the
  * semantics tree is absent, so the four shipped lenses still boot without it.
  *
- * The store and schema boot lazily on first request and are shared by every
- * consumer (the Vite middleware, the Bun/Express server bricks), so `vite.config`
- * can import this module without paying the WASM/compile cost at config load.
+ * Since the PRD-3 process split this module has exactly ONE consumer:
+ * `graph.ts`, the standalone graph server. Nothing in the web servers, the
+ * render world, or `vite.config` imports it any more — which is the whole
+ * point, because it is what keeps the Oxigraph WASM store and ke-graphql's
+ * pinned graphql v17 RC out of every other process. The boot is still lazy
+ * (`getGraphqlBackend` memoises), but `graph.ts` triggers it eagerly at
+ * startup so "listening" means "schema compiled".
  */
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
@@ -35,8 +39,6 @@ import { fileURLToPath } from "node:url";
 import { createStore, type Plugin } from "@canonical/ke";
 import {
   createSchemaPlugin,
-  executeLocal,
-  type LocalExecutionResult,
   type SchemaPluginApi,
 } from "@canonical/ke-graphql";
 import { createGraphQLHandler } from "@canonical/ke-graphql/http";
@@ -197,29 +199,18 @@ const harvestPrefixes = (
 };
 
 /**
- * Arguments for {@link GraphqlBackend.execute}: query *text* plus values.
+ * The booted backend: a fetch-native handler plus the compiled schema's API.
  *
- * Deliberately narrower than ke-graphql's `ExecuteLocalArgs` — no `document`
- * member exists here, and none is ever forwarded. Two graphql versions
- * coexist in this process (the app's v16, ke-graphql's pinned v17 RC), which
- * is safe only while the boundary is text-only: a pre-parsed AST built by the
- * app's graphql 16 must never cross into the v17 executor.
+ * There is no in-process `execute` member any more. It existed so the SSR
+ * prepare step could skip the HTTP hop, and it was the reason a pre-parsed
+ * AST from the app's graphql v16 had to be kept away from ke-graphql's v17
+ * executor. The prepare step now POSTs over HTTP like any other client, so
+ * the two graphql versions no longer share a process at all and the whole
+ * text-only-boundary discipline is moot.
  */
-export interface GraphqlExecuteArgs {
-  readonly source: string;
-  readonly variableValues?: Record<string, unknown> | null;
-  readonly operationName?: string | null;
-}
-
 export interface GraphqlBackend {
   readonly handle: (request: Request) => Promise<Response>;
   readonly api: SchemaPluginApi;
-  /**
-   * Execute a query in-process — no HTTP hop, no serialization. Binds
-   * `executeLocal` to the booted store with a fresh context per call
-   * (ke-graphql contexts must not be retained across requests).
-   */
-  readonly execute: (args: GraphqlExecuteArgs) => Promise<LocalExecutionResult>;
 }
 
 /**
@@ -255,20 +246,10 @@ const bootGraphqlBackend = async (): Promise<GraphqlBackend> => {
     cors: true,
     incremental: true,
   });
-  // Members are passed one by one (never spread) so a caller-smuggled
-  // `document` AST can never reach executeLocal — see GraphqlExecuteArgs.
-  const execute = (args: GraphqlExecuteArgs): Promise<LocalExecutionResult> =>
-    executeLocal({
-      schema: api.schema,
-      contextValue: api.createContext(store),
-      source: args.source,
-      variableValues: args.variableValues,
-      operationName: args.operationName,
-    });
   console.info(
     `[graphql] schema compiled from ${sources.length} TTL sources (${api.diagnostics.length} diagnostics) — SDL written to ${relative(process.cwd(), SDL_OUTPUT_PATH)}`,
   );
-  return { handle, api, execute };
+  return { handle, api };
 };
 
 let backendPromise: Promise<GraphqlBackend> | undefined;

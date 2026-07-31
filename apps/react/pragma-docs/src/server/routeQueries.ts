@@ -8,6 +8,19 @@
  * in a different module registry than `EntryServer`'s (native vs
  * `ssrLoadModule`), which is safe for matching and for reading values off
  * `meta`: the entries are plain data plus a compiled query artifact.
+ *
+ * That double registry is no longer about the graph backend. It used to be:
+ * the prepare step held an in-process ke-graphql singleton, and an SSR-graph
+ * import would have booted a second Oxigraph store. Since the PRD-3 process
+ * split there is no backend in this process at all — but the double match
+ * SURVIVES, because the data pass must run to completion BEFORE the render
+ * pass starts, and the render pass is the thing that lives behind
+ * `ssrLoadModule`.
+ *
+ * Follow-up (not this story): now that nothing native is load-bearing here,
+ * `prepareRelayData` could load its routes through `vite.ssrLoadModule`
+ * instead, collapsing the two registries into one and retiring
+ * `nodeCssNoop.ts` with them.
  */
 
 import { createStaticRouter } from "@canonical/router-core";

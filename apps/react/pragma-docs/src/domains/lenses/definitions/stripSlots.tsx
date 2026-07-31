@@ -39,8 +39,8 @@ import { useLensFilter } from "./lensFilterContext.js";
  *
  * THE FRAME MUST NEVER DEPEND ON WARM DATA. `useLazyLoadQuery` SUSPENDS on
  * a cold store, and these components render inside the Shell — outside any
- * page-level boundary. Unguarded, a cold render (the backend-less preview
- * bricks, a failed prepare step) suspends the whole document and takes the
+ * page-level boundary. Unguarded, a cold render (a failed prepare step, a
+ * graph that did not answer) suspends the whole document and takes the
  * frame, the rail and the canvas down with it; `entry.tests.tsx` caught
  * exactly that. So each socket carries its OWN Suspense and error
  * boundary, both falling back to nothing: an empty socket is the honest

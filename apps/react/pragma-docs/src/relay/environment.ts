@@ -3,15 +3,16 @@
  *
  * Builds the app's Relay `Environment` on top of `relay-runtime-network`'s
  * middleware-driven fetch pipeline, posting operations to the graph GraphQL
- * endpoint. The default is the same-origin `/graphql` mounted by the dev
- * servers (see `src/server/graphql.ts`); `VITE_GRAPHQL_URL` (or an explicit
- * `graphqlUrl`) points it elsewhere.
+ * endpoint. Where that endpoint lives is decided in one place —
+ * `graphqlEndpoint.ts` — and an explicit `graphqlUrl` overrides it.
  *
- * Two options serve the P-2 SSR data track (one factory, both runtimes):
+ * Three options serve the SSR data track (one factory, both runtimes):
  * `records` seeds the store from a serialised snapshot — the server render
- * and the client hydration consume the same bytes, so nothing refetches —
- * and `fetchFn` replaces the HTTP network wholesale so the server's prepare
- * step executes operations in-process through `executeLocal`.
+ * and the client hydration consume the same bytes, so nothing refetches;
+ * `headers` stamps the outgoing request (the prepare step marks itself
+ * `x-pragma-ssr: 1` so the graph server can tell server traffic from
+ * browser traffic); and `fetchFn` replaces the network wholesale, which is
+ * how `entry.tsx` installs its cold-store guard.
  */
 
 import {
@@ -25,23 +26,60 @@ import {
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import {
   createRelayRuntimeNetwork,
+  headersMiddleware,
   httpExecutor,
   persistedQueryMiddleware,
+  type RelayFetchMiddleware,
   type RelayRuntimeFetch,
   urlMiddleware,
 } from "relay-runtime-network";
+import { resolveGraphqlUrl } from "./graphqlEndpoint.js";
 
-/** The same-origin endpoint the dev servers mount. */
-const DEFAULT_GRAPHQL_URL = "/graphql";
+/**
+ * Owns the pipeline's incremental-payload stream so a failed operation cannot
+ * take the process down.
+ *
+ * relay-runtime-network@0.1.0 gives every execution an incremental payload
+ * stream whose `closed` promise it REJECTS when the pipeline throws
+ * (`createFetchPipeline.js` → `failIncrementalPayloadStream` →
+ * `rejectClosed`). Nothing in the library ever attaches a handler to that
+ * promise, so a plain fetch failure — a graph server that is down, a refused
+ * connection — surfaces as an UNHANDLED REJECTION, which Node treats as
+ * fatal. The caller's own rejection is delivered separately and is handled
+ * (the prepare step catches it and degrades), so this leak is pure collateral.
+ *
+ * The reason it appears now: until the PRD-3 process split nothing in this
+ * app ever ran a FAILING request through the real HTTP pipeline — the server
+ * executed in-process and the client had a live same-origin endpoint.
+ *
+ * This middleware runs FIRST, so the handler is attached before any later
+ * middleware or the executor can throw. Marking a rejection as handled is all
+ * it does; the error itself still propagates to the caller unchanged.
+ */
+const ownIncrementalStreamFailure: RelayFetchMiddleware =
+  (next) => (context) => {
+    context.incremental.stream.closed.catch(() => {});
+    return next(context);
+  };
 
 /** Options for {@link createEnvironment}. */
 export interface CreateEnvironmentOptions {
   /**
-   * GraphQL endpoint URL. Overrides the `VITE_GRAPHQL_URL` env var; when
-   * neither is set the same-origin `/graphql` endpoint is used. Ignored when
-   * `fetchFn` is provided.
+   * GraphQL endpoint URL. Overrides `VITE_GRAPHQL_URL` and the default (see
+   * `graphqlEndpoint.ts`). Ignored when `fetchFn` is provided.
+   *
+   * Deliberately OPTIONAL rather than required: ~15 story and test harnesses
+   * under `src/domains/**` construct an environment without one, and the
+   * resolver's default is exactly right for all of them.
    */
   readonly graphqlUrl?: string;
+  /**
+   * Extra headers stamped onto every outgoing request. The server's prepare
+   * step passes `x-pragma-ssr: 1`; the graph server reads it to distinguish
+   * server-side traffic from browser traffic. Ignored when `fetchFn` is
+   * provided.
+   */
+  readonly headers?: Record<string, string>;
   /**
    * Serialised record map to seed the store with — the output of
    * `environment.getStore().getSource().toJSON()` on the server, delivered
@@ -53,27 +91,12 @@ export interface CreateEnvironmentOptions {
   readonly records?: RecordMap;
   /**
    * Replaces the HTTP network entirely: every operation executes through
-   * this function. The server bricks pass an adapter over the in-process
-   * ke-graphql backend so the prepare step never leaves the process.
+   * this function. `entry.tsx` passes one that always rejects, so a server
+   * render that misses the prepared store fails loudly in the suspended
+   * boundary instead of reaching the network.
    */
   readonly fetchFn?: FetchFunction;
 }
-
-/**
- * Reads the endpoint URL from Vite's env, treating the empty string as unset.
- * `import.meta.env` is optional-chained because its presence depends on the
- * runtime: under node/tsx (the server bricks import this factory natively,
- * no Vite transform) it is undefined and the `?.` is load-bearing; under Bun
- * native it IS defined (Bun populates it from `process.env`); under Vite the
- * whole `?.` expression is statically replaced, so the chain costs nothing
- * there either.
- */
-const readConfiguredGraphqlUrl = (): string | undefined => {
-  const configured: unknown = import.meta.env?.VITE_GRAPHQL_URL;
-  return typeof configured === "string" && configured.length > 0
-    ? configured
-    : undefined;
-};
 
 /**
  * Builds the HTTP network that posts operations to `graphqlUrl`.
@@ -84,13 +107,23 @@ const readConfiguredGraphqlUrl = (): string | undefined => {
  * Our compiled artifacts carry no persisted ids, so the full-text fallback
  * always fires (`{operationName, variables, query}` + JSON content type);
  * if persisted queries ever land, this wiring upgrades to ids automatically.
+ *
+ * `headersMiddleware` sits AFTER `urlMiddleware` and BEFORE the request
+ * shaper, on the default `"set"` merge strategy — so it overwrites only the
+ * keys it names and leaves `persistedQueryMiddleware`'s content type alone.
+ * ("replace" would clear every header first and break exactly that.)
  */
-const createHttpNetwork = (graphqlUrl: string) =>
+const createHttpNetwork = (
+  graphqlUrl: string,
+  headers: Record<string, string> | undefined,
+) =>
   createRelayRuntimeNetwork({
     fetch: {
       executor: httpExecutor(),
       middlewares: [
+        ownIncrementalStreamFailure,
         urlMiddleware({ url: graphqlUrl }),
+        ...(headers ? [headersMiddleware({ headers })] : []),
         persistedQueryMiddleware({
           fallbackToFullText: true,
           mode: "manifest",
@@ -126,7 +159,8 @@ export const createEnvironment = (
     options.fetchFn ??
     toFetchFunction(
       createHttpNetwork(
-        options.graphqlUrl ?? readConfiguredGraphqlUrl() ?? DEFAULT_GRAPHQL_URL,
+        options.graphqlUrl ?? resolveGraphqlUrl(),
+        options.headers,
       ).fetch,
     );
 

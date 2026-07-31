@@ -63,10 +63,12 @@ Bun.serve({
       }
     }
 
+    // The app renderer is async — it runs the Relay prepare step against the
+    // graph server before constructing the renderer.
     const renderer =
       url.pathname === "/sitemap.xml"
         ? (createSitemapRenderer as CreateSitemapRenderer)()
-        : (createAppRenderer as CreateAppRenderer)(req);
+        : await (createAppRenderer as CreateAppRenderer)(req);
     const stream = await renderer.renderToReadableStream(req.signal);
 
     return new Response(stream, {

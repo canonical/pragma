@@ -7,6 +7,13 @@ import { createServer } from "node:net";
 export interface RunningServer {
   /** Base URL, e.g. `http://localhost:54123`. */
   base: string;
+  /**
+   * Base URL of the GRAPH server the launcher started alongside the web
+   * server, e.g. `http://127.0.0.1:54124`. A separate process on a separate
+   * port since the PRD-3 split — the suite probes it directly to tell "the
+   * graph never came up" apart from "the page rendered wrong".
+   */
+  graphBase: string;
   /** Stop the server and its whole process group. */
   stop: () => Promise<void>;
   /**
@@ -85,12 +92,34 @@ export async function startServer(
   { timeoutMs = 180_000 }: { timeoutMs?: number } = {},
 ): Promise<RunningServer> {
   const port = await getFreePort();
+  // A SECOND reserved port for the graph server every script now launches
+  // (`src/server/withGraph.ts`), so the six cells never collide on it either.
+  const graphPort = await getFreePort();
   const base = `http://localhost:${port}`;
+  const graphBase = `http://127.0.0.1:${graphPort}`;
+  // Deliberately NOT passing VITE_GRAPHQL_URL — and stripping an inherited
+  // one. The launcher treats a set VITE_GRAPHQL_URL as "an endpoint already
+  // exists" and spawns no graph at all, so leaving a developer's shell value
+  // in place would silently test a different graph than GRAPH_PORT names.
+  const childEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    PORT: String(port),
+    GRAPH_PORT: String(graphPort),
+    // Keep the LAUNCHER's graph-readiness budget strictly under this cell's,
+    // so the launcher is always the one that gives up first. Its default is
+    // deliberately generous for real use (120s), which is above every budget
+    // here — leaving it in place would mean a slow schema compile surfaces as
+    // `waitForServer`'s bare "did not respond within Nms" instead of the
+    // launcher saying so, the web server booting anyway, and the probe
+    // assertions failing with their own refs-cache diagnosis.
+    GRAPH_READY_MS: String(Math.floor(timeoutMs / 2)),
+  };
+  delete childEnv.VITE_GRAPHQL_URL;
   // Capture stderr so a boot crash surfaces the real cause instead of an opaque
   // readiness timeout, and stdout too for request-log assertions (`logs()`).
   const child: ChildProcess = spawn("bun", ["run", script], {
     cwd,
-    env: { ...process.env, PORT: String(port) },
+    env: childEnv,
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -161,5 +190,5 @@ export async function startServer(
   // Surface (and swallow) the now-irrelevant rejection so it isn't unhandled.
   exited.catch(() => {});
 
-  return { base, stop, logs: () => logTail };
+  return { base, graphBase, stop, logs: () => logTail };
 }

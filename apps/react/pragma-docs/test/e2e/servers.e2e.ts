@@ -18,11 +18,17 @@ import { startServer } from "./serverHarness.js";
 
 const CWD = process.cwd();
 
-// Readiness budgets: dev* boots straight away; preview* builds the client +
-// renderer before serving, so it needs a larger budget.
-const DEV_READY_MS = 20_000;
+// Readiness budgets. Every cell now boots the GRAPH server first
+// (`src/server/withGraph.ts`), and compiling the schema from the refs cache
+// dominates a dev boot — so `dev*` no longer boots "straight away" and the
+// old 20s budget would fail every cell on a cold cache for the wrong reason.
+// preview* additionally builds the client + renderer before serving.
+const DEV_READY_MS = 90_000;
 const PREVIEW_READY_MS = 90_000;
-const TEST_TIMEOUT_MS = PREVIEW_READY_MS + 30_000;
+// Readiness is only the start of a cell: the probe block then fetches a
+// dozen server-rendered pages, each of which executes a real query. The
+// margin over the readiness budget has to cover that, not just the boot.
+const TEST_TIMEOUT_MS = PREVIEW_READY_MS + 60_000;
 
 interface Cell {
   /** package.json script to run. */
@@ -36,11 +42,12 @@ interface Cell {
    */
   ssr: boolean;
   /**
-   * Whether this cell serves `/playground` with server-executed Relay data
-   * (P-2 Stage 1). Only the two dev SSR cells so far: the preview cells have
-   * no graph backend until the Oxigraph-bundle spike closes. Requires the
-   * pragma refs cache (`pragma sources update`), like the `/graphql`
-   * endpoint those cells already mount.
+   * Whether this cell serves its routes with server-executed Relay data.
+   * ALL FOUR SSR cells do since the PRD-3 process split: the prepare step is
+   * an HTTP client now, so the preview bricks can run it too (the
+   * Oxigraph-bundle spike that used to gate them is closed — nothing WASM
+   * enters `dist/server`). Requires the pragma refs cache (`pragma sources
+   * update`), which is what the graph server compiles its schema from.
    */
   probe?: boolean;
 }
@@ -50,8 +57,18 @@ const MATRIX: Cell[] = [
   { script: "dev:bun", timeoutMs: DEV_READY_MS, ssr: true, probe: true },
   { script: "dev:express", timeoutMs: DEV_READY_MS, ssr: true, probe: true },
   { script: "preview", timeoutMs: PREVIEW_READY_MS, ssr: false },
-  { script: "preview:bun", timeoutMs: PREVIEW_READY_MS, ssr: true },
-  { script: "preview:express", timeoutMs: PREVIEW_READY_MS, ssr: true },
+  {
+    script: "preview:bun",
+    timeoutMs: PREVIEW_READY_MS,
+    ssr: true,
+    probe: true,
+  },
+  {
+    script: "preview:express",
+    timeoutMs: PREVIEW_READY_MS,
+    ssr: true,
+    probe: true,
+  },
 ];
 
 /** A JS/TS module or CSS-as-JS asset must never come back as the HTML page. */
@@ -75,12 +92,25 @@ const CONNECTION_PAGE_CAP = 100;
 const LOBBY_EXEMPLAR_COUNT = 6;
 
 /**
- * The per-request line the dev servers' `/graphql` bricks log — keep in sync
- * with `server.bun.ts` / `server.express.ts`. Its absence after a page load
- * is the "zero HTTP hits" proof; its appearance after a direct POST proves
- * the counter (and the endpoint) still works.
+ * The per-request line the GRAPH server logs — keep in sync with
+ * `src/server/graph.ts`. Each line ends in `ssr` or `client`, and that word
+ * is the whole assertion: before the process split the web server mounted
+ * `/graphql` itself and a server render made ZERO hits (it executed
+ * in-process), so absence was the proof. Now every render goes over the wire
+ * and the proof INVERTS — many `ssr` hits, no `client` ones, on a load where
+ * no browser JS has run.
  */
 const GRAPHQL_HIT_MARKER = "[graphql] http hit";
+
+/** One logged hit: `[graphql] http hit #12 ssr`. */
+const GRAPHQL_HIT_LINE = /\[graphql] http hit #\d+ (?:ssr|client)/g;
+
+/** Count the graph server's logged hits of one source. */
+function countHits(logs: string, source: "client" | "ssr"): number {
+  return (logs.match(GRAPHQL_HIT_LINE) ?? []).filter((line) =>
+    line.endsWith(source),
+  ).length;
+}
 
 /** Poll the server log until `marker` appears (child stdout is async). */
 async function waitForLog(
@@ -93,6 +123,24 @@ async function waitForLog(
     if (Date.now() > deadline) {
       throw new Error(
         `log marker ${JSON.stringify(marker)} not seen within ${timeoutMs}ms`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
+/** Poll until the graph log shows `count` hits of `source`, or time out. */
+async function waitForHits(
+  server: { logs: () => string },
+  source: "client" | "ssr",
+  count: number,
+  timeoutMs = 5_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (countHits(server.logs(), source) < count) {
+    if (Date.now() > deadline) {
+      throw new Error(
+        `only ${countHits(server.logs(), source)} ${source} hits seen within ${timeoutMs}ms (wanted ${count})`,
       );
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
@@ -147,11 +195,49 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(html).toContain('data-region="canvas"');
           }
 
-          // 5. P-2 Stage 1: /playground carries the probe's REAL graph data in
-          //    the raw HTML (no client JS ran), the serialised store rides
-          //    __INITIAL_DATA__.relay, and the whole load made ZERO HTTP
-          //    /graphql requests — the query executed in-process.
+          // 5. /playground carries the probe's REAL graph data in the raw
+          //    HTML (no client JS ran) and the serialised store rides
+          //    __INITIAL_DATA__.relay — all of it fetched by the server from
+          //    the graph process over HTTP.
           if (cell.probe) {
+            // 5-pre. THE PRECONDITION, stated as an assertion rather than a
+            //    skip. Every literal below is a claim about GRAPH DATA, so
+            //    without a graph they all fail for the same uninformative
+            //    reason ("expected … to contain <h2>Button</h2>"). Asserting
+            //    the graph is up first makes the failure self-diagnosing.
+            //    Deliberately NOT a `skipIf`: a machine with no refs cache
+            //    must see red, not a quietly green suite that proved
+            //    nothing.
+            const graphUp = await fetch(`${server.graphBase}/graphql`, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-pragma-ssr": "1",
+              },
+              body: JSON.stringify({ query: "{ __typename }" }),
+            }).catch(() => undefined);
+            expect(
+              graphUp?.status,
+              `graph server must be serving at ${server.graphBase}/graphql — populate ~/.cache/pragma/refs with \`pragma sources update\` (or point PRAGMA_REFS_DIR at a cache), then re-run`,
+            ).toBe(200);
+            expect(graphUp?.headers.get("content-type")).toMatch(
+              /application\/json/,
+            );
+
+            // 5-pre-bis. The graph process serves ONLY /graphql: anything
+            //    else is a JSON 404, never HTML. Half one of the
+            //    content-type guard — a consumer pointed at the wrong
+            //    process must fail on content type, not silently parse a
+            //    page.
+            const graphStray = await fetch(`${server.graphBase}/playground`);
+            expect(graphStray.status).toBe(404);
+            expect(graphStray.headers.get("content-type")).toMatch(
+              /application\/json/,
+            );
+            expect(graphStray.headers.get("content-type")).not.toMatch(
+              /text\/html/,
+            );
+
             const playground = await fetch(`${server.base}/playground`);
             expect(playground.status).toBe(200);
             const playgroundHtml = await playground.text();
@@ -647,15 +733,29 @@ describe("server matrix (2×3) serves correctly", () => {
             //     whole premise.
             expect(railJobLinkCount).toBeGreaterThan(40);
 
-            // Zero /graphql HTTP hits during everything above — the
-            // catalog, both entity pages, all four definitions pages,
-            // both standards pages, the lobby, and both journeys pages
-            // executed in-process too.
-            expect(server.logs()).not.toContain(GRAPHQL_HIT_MARKER);
+            // 5h. WHO MADE THE REQUESTS. Everything above was fetched with
+            //     plain `fetch` — no browser, no client JS — yet a dozen
+            //     data-bearing pages rendered real graph data. So the graph
+            //     must have been hit MANY times by the SERVER and NEVER by a
+            //     client. That inversion is the process split's whole
+            //     claim, and it is what the `ssr` / `client` word on each
+            //     hit line exists to prove.
+            //
+            //     Deliberately no exact N: the page count drifts with the
+            //     routes, and pinning it would break on every new lens (the
+            //     111→108 lesson, applied to request counts).
+            await waitForLog(server, GRAPHQL_HIT_MARKER);
+            const ssrHits = countHits(server.logs(), "ssr");
+            const clientHitsBefore = countHits(server.logs(), "client");
+            expect(ssrHits).toBeGreaterThan(5);
+            expect(clientHitsBefore).toBe(0);
 
-            // Teeth: a direct POST does reach the endpoint and the counter
-            // records it — the zero-assertion above is not vacuous.
-            const graphqlResponse = await fetch(`${server.base}/graphql`, {
+            // Teeth, as a STRICT DELTA: a direct POST with no `x-pragma-ssr`
+            // header is what a browser looks like, and it must move the
+            // client counter by exactly one. Without this the zero above
+            // could be vacuous (a counter that never counts anything reads
+            // as zero forever).
+            const graphqlResponse = await fetch(`${server.graphBase}/graphql`, {
               method: "POST",
               headers: { "content-type": "application/json" },
               body: JSON.stringify({ query: "{ __typename }" }),
@@ -665,16 +765,33 @@ describe("server matrix (2×3) serves correctly", () => {
               data?: { __typename?: string };
             };
             expect(graphqlBody.data?.__typename).toBe("Query");
-            await waitForLog(server, `${GRAPHQL_HIT_MARKER} #1`);
-            // `logs()` grows from async pipe chunks, so a stray `#2` (a page
-            // load counted after the POST) could still sit undelivered when
-            // `#1` lands — give trailing chunks a beat to flush before the
-            // zero-#2 assertion.
-            await new Promise((resolve) => setTimeout(resolve, 50));
-            // …and it is the ONLY hit: had the page load reached /graphql
-            // over HTTP (with its log line lagging past the assertion
-            // above), this POST would have been counted as #2.
-            expect(server.logs()).not.toContain(`${GRAPHQL_HIT_MARKER} #2`);
+            await waitForHits(server, "client", clientHitsBefore + 1);
+            // `logs()` grows from async pipe chunks, so give trailing chunks
+            // a beat to flush before asserting nothing ELSE arrived.
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            expect(countHits(server.logs(), "client")).toBe(
+              clientHitsBefore + 1,
+            );
+
+            // 5i. The other half of the content-type guard: the WEB server
+            //     no longer serves `/graphql` at all — it does not proxy it,
+            //     which would re-establish the coupling the split removed.
+            //     A stray POST there falls through to the app renderer and
+            //     comes back as HTML, and it must NOT be counted as a graph
+            //     hit.
+            const strayPost = await fetch(`${server.base}/graphql`, {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ query: "{ __typename }" }),
+            });
+            expect(strayPost.headers.get("content-type")).toMatch(/text\/html/);
+            expect(strayPost.headers.get("content-type")).not.toMatch(
+              /application\/json/,
+            );
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            expect(countHits(server.logs(), "client")).toBe(
+              clientHitsBefore + 1,
+            );
           }
         } finally {
           await server.stop();

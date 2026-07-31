@@ -25,8 +25,9 @@ const ComponentsContext = makeLensContext({
  * The Components lens routes (P-5). Each data-bearing route builds its
  * `RouteQueryEntry` ONCE (in its query module) and parks it twice:
  *
- * - `meta[ROUTE_QUERY_META_KEY]` — the server prepare step executes the
- *   query in-process and serialises the store (P-2, `prepareRelayData`);
+ * - `meta[ROUTE_QUERY_META_KEY]` — the server prepare step POSTs the query
+ *   to the graph server and serialises the reply into the store (P-2,
+ *   `prepareRelayData`);
  * - `prefetch` — hover (router-react's `Link`) and the initial hydration
  *   load warm the client store through `warmRouteQuery`, which no-ops
  *   without a published environment (SSR) and when the store already
