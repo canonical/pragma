@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from "vitest";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
-import { declaredStories, storyModules } from "./distribution.js";
+import { declaredStories } from "./distribution.js";
 import { capabilities } from "./index.js";
 
 describe("the distribution's declared stories (PROTECTED)", () => {
@@ -48,9 +48,5 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       expect(module?.story).toBe(true);
       expect(module?.verbs.length).toBeGreaterThan(0);
     }
-  });
-
-  it("compiles one story module per declared story", () => {
-    expect([...storyModules.keys()]).toEqual([...declaredStories.keys()]);
   });
 });

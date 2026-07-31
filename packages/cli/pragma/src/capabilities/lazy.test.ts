@@ -65,23 +65,43 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // The graph walker follows `from "…"` textually and cannot tell an
     // `import type` from a value import, so the type-only `config/types.ts`
     // and `packs/types.ts` show up here even though nothing of either survives
-    // compilation. Assert the SOURCE has no value import at all — that is the
-    // claim in the title, and it is what keeps `--help`/`__complete`/
-    // `--version` free of module-init work when another lane or a fork edits
-    // this file.
-    expect(readFileSync(conf, "utf-8")).not.toMatch(/^import (?!type\b)/m);
-    // `packs/types.ts` (the grammar that type-checks the declared stories) is
-    // as safe an entry as `config/types.ts`: it imports NOTHING of any kind, so
-    // the graph grows by one leaf and no further edges. The enumeration is
-    // exact, not a subset — a value import, or a type import from a module that
-    // itself imports something, both fail here.
-    expect(
-      [...staticImportGraph(conf)].map((f) => relative(pkgRoot, f)).sort(),
-    ).toEqual([
+    // compilation. Assert that NO file on the graph has a value import — not
+    // just the conf. That is the claim in the title, and it is what keeps
+    // `--help`/`__complete`/`--version` free of module-init work when another
+    // lane or a fork edits any of these three (`packs/types.ts` in particular
+    // is the grammar that type-checks the declared stories, and its own
+    // docblock promises it stays zod-free BECAUSE it lands here).
+    const graph = [...staticImportGraph(conf)];
+    for (const file of graph) {
+      expect(readFileSync(file, "utf-8"), file).not.toMatch(
+        /^import (?!type\b)/m,
+      );
+    }
+    // The enumeration is exact, not a subset: a type import from a module that
+    // itself imports something grows this list and fails here.
+    expect(graph.map((f) => relative(pkgRoot, f)).sort()).toEqual([
       "pragma.conf.ts",
       "src/kernel/config/types.ts",
       "src/kernel/packs/types.ts",
     ]);
+  });
+
+  it("the dispatch path never reaches the embedded n-quads module (PROTECTED)", () => {
+    // `activeStories` reads the pack's carried stories from their OWN generated
+    // module rather than through `graphpack/embedded.ts`, which statically
+    // imports the ~1.9 MB `pack.generated.ts`. Restoring that edge costs a
+    // measured +23 ms on EVERY dispatched command, and the whole test suite
+    // passes with it restored — the split is prose in three docblocks and
+    // nothing else. This is the constraint those docblocks describe.
+    for (const entry of [
+      "../kernel/packs/collect.ts",
+      "../kernel/runtime/graphpack/stories.ts",
+      "../kernel/runtime/resolveSources.ts",
+    ]) {
+      const graph = staticImportGraph(resolve(here, entry));
+      expect(has(graph, "embedded/pack.generated.ts"), entry).toBe(false);
+      expect(has(graph, "graphpack/embedded.ts"), entry).toBe(false);
+    }
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {
