@@ -38,6 +38,10 @@ const root = resolve(here, "..");
  *   `docs/reference/*.md`, so changing it requires a docs regen.
  * - `config/defaults.ts` — THE distribution seam: it imports the distribution
  *   config and names the file it imports. That is its job, not a leak.
+ * - `kernel/vocabulary.ts` — the same seam for the vocabulary declaration. Its
+ *   diagnostics quote the file it imports, and five modules hardcode that
+ *   specifier, so a fork cannot rename it: deriving the name from `BIN_NAME`
+ *   here would name a path that does not exist.
  * - `runtime/graphpack/hash.ts` — `<<<pragma-pack:…>>>` are hash domain
  *   separators; changing them re-mints every pack content hash. CROSS-LANE.
  */
@@ -46,6 +50,7 @@ const EXEMPT = [
   "spec/emitSurface.ts",
   "spec/emitReference.ts",
   "config/defaults.ts",
+  "kernel/vocabulary.ts",
   "runtime/graphpack/hash.ts",
 ];
 
