@@ -14,6 +14,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -88,11 +89,9 @@ const lookupVerb: VerbSpec<Record<string, unknown>, PromptLookupData> = {
         const available = await m.readPrompts(rt);
         throw PragmaError.notFound("prompt", name, {
           suggestions: available.map((prompt) => prompt.name),
-          recovery: {
-            message: "List available prompts.",
-            cli: "pragma prompt list",
-            mcp: { tool: "prompt_list" },
-          },
+          recovery: cliRecovery("prompt list", "List available prompts.", {
+            tool: "prompt_list",
+          }),
         });
       }
       return entry;

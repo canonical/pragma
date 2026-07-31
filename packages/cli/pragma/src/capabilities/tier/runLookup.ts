@@ -15,6 +15,7 @@
  */
 
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
@@ -82,11 +83,9 @@ export async function runTierLookup(
     const suggestions = suggestNames(name, await selectTierNames(rt));
     throw PragmaError.notFound("tier", name, {
       suggestions,
-      recovery: {
-        message: "List available tiers.",
-        cli: "pragma tier list",
-        mcp: { tool: "tier_list" },
-      },
+      recovery: cliRecovery("tier list", "List available tiers.", {
+        tool: "tier_list",
+      }),
     });
   }
   const blocks = rows

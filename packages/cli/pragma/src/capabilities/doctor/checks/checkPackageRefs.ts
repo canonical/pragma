@@ -15,6 +15,7 @@
  * same `validateStories` the dispatch path uses, so the two can never disagree.
  */
 
+import { BIN_NAME } from "../../../constants.js";
 import {
   entityTotal,
   readPackIndex,
@@ -77,7 +78,7 @@ export async function checkPackageRefs(
       name,
       status: "fail",
       detail: decision.reason,
-      remedy: "pragma sources update",
+      remedy: `${BIN_NAME} sources update`,
     };
   }
 
@@ -92,7 +93,7 @@ export async function checkPackageRefs(
     return {
       name,
       status: "pass",
-      detail: `embedded snapshot @ ${embeddedManifest().sourceRef} — ${entities} entities${suffix} · \`pragma sources update\` to build from the configured packs`,
+      detail: `embedded snapshot @ ${embeddedManifest().sourceRef} — ${entities} entities${suffix} · \`${BIN_NAME} sources update\` to build from the configured packs`,
       ...(items.length > 0 ? { items } : {}),
     };
   }

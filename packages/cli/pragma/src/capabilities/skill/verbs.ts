@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -75,11 +76,9 @@ const lookupVerb: VerbSpec<Record<string, unknown>, SkillLookup> = {
           name,
           skills.map((skill) => skill.name),
         ),
-        recovery: {
-          message: "List discovered skills.",
-          cli: "pragma skill list",
-          mcp: { tool: "skill_list" },
-        },
+        recovery: cliRecovery("skill list", "List discovered skills.", {
+          tool: "skill_list",
+        }),
       });
     }
     return { ...match, instructions: readInstructions(match.sourcePath) };

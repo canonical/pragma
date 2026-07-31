@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { BIN_NAME } from "../../../constants.js";
 import {
   emitScripts,
   indexCompletionEnv,
@@ -14,7 +15,7 @@ import type { CheckResult } from "../types.js";
 const NAME = "Shell completions";
 
 /** The one remedy for an absent or out-of-date script. */
-const INSTALL_REMEDY = "pragma setup completions";
+const INSTALL_REMEDY = `${BIN_NAME} setup completions`;
 
 /**
  * Whether the installed script is the config-free emit — the body
@@ -114,7 +115,7 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
       name: NAME,
       status: "fail",
       detail: `completion resolver failed: ${reason}`,
-      remedy: "Report this as a bug — `pragma __complete` should never throw.",
+      remedy: `Report this as a bug — \`${BIN_NAME} __complete\` should never throw.`,
     };
   }
   if (candidates === 0) {

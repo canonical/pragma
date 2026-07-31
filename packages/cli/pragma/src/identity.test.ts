@@ -165,6 +165,22 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(greeting).toContain("`recipes.config.ts`");
   });
 
+  it("registers an MCP server entry the fork's own binary answers to", async () => {
+    // The entry `setup mcp` writes is what a harness later EXECUTES. It was
+    // hardcoded while the key it is stored under derived from the same
+    // identity, so a fork registered a `recipes` server that ran `pragma` —
+    // and `doctor`'s `MCP configured` check, which re-derived the key by hand,
+    // could never see its own registration.
+    const { pragmaMcpEntry } = await import(
+      "./capabilities/setup/operations/setupMcp.js"
+    );
+    expect(pragmaMcpEntry("/work")).toEqual({
+      command: "recipes",
+      args: ["mcp"],
+      cwd: "/work",
+    });
+  });
+
   it("generates a reference that never names this distribution", async () => {
     // `docs/reference/` is the surface this package PUBLISHES as machine-derived
     // truth, so it is the surface a fork's rename must reach in full. Every

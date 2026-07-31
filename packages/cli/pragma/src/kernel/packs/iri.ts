@@ -7,7 +7,6 @@
  * before it can be interpolated into a generated `<iri>` query token.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
 
@@ -61,11 +60,9 @@ export function resolveUri(
 
   throw PragmaError.invalidInput("prefix", prefix, {
     validOptions: Object.keys(prefixes),
-    recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}ontology list`,
-      "List known ontology prefixes.",
-      { tool: "ontology_list" },
-    ),
+    recovery: cliRecovery(`ontology list`, "List known ontology prefixes.", {
+      tool: "ontology_list",
+    }),
   });
 }
 

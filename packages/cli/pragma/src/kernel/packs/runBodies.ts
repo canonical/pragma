@@ -9,7 +9,6 @@
  * factories carry no heavy static import.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
 import type { PragmaRuntime } from "../runtime/types.js";
@@ -91,7 +90,7 @@ export function makeLookupRun(
           message: first.message,
           suggestions: first.suggestions ? [...first.suggestions] : undefined,
           recovery: cliRecovery(
-            `${RECOVERY_CLI_PREFIX}${noun} list`,
+            `${noun} list`,
             `List available ${noun} entries.`,
             { tool: `${noun}_list` },
           ),
@@ -122,7 +121,7 @@ export function makeSampleRun(
       throw PragmaError.emptyResults(noun, {
         message: `No ${noun} entries to sample.`,
         recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}${noun} list`,
+          `${noun} list`,
           `List available ${noun} entries.`,
           { tool: `${noun}_list` },
         ),

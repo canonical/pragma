@@ -24,6 +24,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -52,22 +53,22 @@ function resolvePrefix(
     if (entry) return { prefix: entry[0], namespace: entry[1] };
     throw PragmaError.invalidInput("namespace", input, {
       validOptions: Object.values(prefixes),
-      recovery: {
-        message: "List loaded ontology namespaces.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery(
+        "ontology list",
+        "List loaded ontology namespaces.",
+        {
+          tool: "ontology_list",
+        },
+      ),
     });
   }
   const namespace = prefixes[input];
   if (namespace === undefined) {
     throw PragmaError.invalidInput("prefix", input, {
       validOptions: Object.keys(prefixes),
-      recovery: {
-        message: "List loaded ontologies.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery("ontology list", "List loaded ontologies.", {
+        tool: "ontology_list",
+      }),
     });
   }
   return { prefix: input, namespace };
@@ -194,11 +195,9 @@ async function runByName(
 
   if (classes.length === 0 && properties.length === 0) {
     throw PragmaError.notFound("ontology", String(params.prefix), {
-      recovery: {
-        message: "List loaded ontologies.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery("ontology list", "List loaded ontologies.", {
+        tool: "ontology_list",
+      }),
     });
   }
 

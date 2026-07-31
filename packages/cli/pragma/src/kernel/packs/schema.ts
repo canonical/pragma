@@ -64,11 +64,17 @@ const searchSchema = z
 const emptyRecoverySchema = z
   .object({
     message: z.string().min(1),
+    // The command WITHOUT a binary name — the renderer prepends the CONSUMING
+    // distribution's. A story is portable only if it does not name a binary, so
+    // the old prefixed form is rejected rather than accepted and doubled. Named
+    // loudly, in the `packages` → `packs` tradition, because a third-party pack
+    // written against the old grammar is data, not a typo.
     cli: z
       .string()
-      .startsWith(
-        RECOVERY_CLI_PREFIX,
-        `emptyRecovery.cli must be a "${RECOVERY_CLI_PREFIX}" command`,
+      .min(1)
+      .refine(
+        (value) => !value.startsWith(RECOVERY_CLI_PREFIX),
+        `emptyRecovery.cli is now the command WITHOUT the binary name — write "sources update", not "${RECOVERY_CLI_PREFIX}sources update"`,
       )
       .optional(),
   })

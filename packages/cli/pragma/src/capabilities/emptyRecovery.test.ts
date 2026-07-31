@@ -3,10 +3,14 @@
  *
  * Listing zero rows is a calm SUCCESS, not an error. The run body returns `[]`
  * (no throw), dispatch renders a non-blank message and exits 0, and JSON stays
- * `[]`. A story's declared `emptyRecovery` becomes that message's HINT — the v2
- * story still points at `pragma sources update` — but as guidance on the
- * success path, never a thrown EMPTY_RESULTS (which maps to exit 1 and would
- * break the uniform `ok:true` list contract).
+ * `[]`. A story's declared `emptyRecovery` becomes that message's HINT — but as
+ * guidance on the success path, never a thrown EMPTY_RESULTS (which maps to
+ * exit 1 and would break the uniform `ok:true` list contract).
+ *
+ * The story declares the command WITHOUT a binary name (`sources update`); the
+ * renderer prepends the CONSUMING distribution's. The hints asserted below are
+ * therefore the JOINED string, which is what a user reads — a story that named
+ * a binary itself would render it twice, and the grammar now refuses one.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

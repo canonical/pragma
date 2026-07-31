@@ -279,10 +279,9 @@ describe("kernel copy (PROTECTED)", () => {
 
 /**
  * The grammar positions that quote a command a user is told to RUN: an example
- * (`cmd:`) — and, from the commit that made `cliRecovery` own the prefix, a
- * recovery hint (`cli:`) and a doctor fix (`remedy:`).
+ * (`cmd:`), a recovery hint (`cli:`) and a doctor fix (`remedy:`).
  */
-const COMMAND_POSITIONS = ["cmd"];
+const COMMAND_POSITIONS = ["cmd", "cli", "remedy"];
 
 /** Every authored `.ts` under `src/capabilities/**`. */
 const capabilitySources = listSources(join(root, "capabilities"));
