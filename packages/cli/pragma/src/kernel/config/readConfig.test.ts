@@ -92,20 +92,6 @@ describe("readConfig — layering + provenance", () => {
     expect(origins.packs).toBe("project");
   });
 
-  it("merges generators with per-field provenance", async () => {
-    freshXdg();
-    const dir = projectWith(
-      'export default { generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" }] };',
-    );
-
-    const { config, origins } = await readConfig(dir);
-
-    expect(config.generators).toEqual([
-      { name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" },
-    ]);
-    expect(origins.generators).toBe("project");
-  });
-
   it("accepts a layer's identity fields and gives them NO effect", async () => {
     // Identity is read from `pragma.conf.ts` by `src/constants.ts` at module
     // load, so a layer declaring it can only ever be silent. The validator
@@ -235,6 +221,50 @@ describe("legacy config shapes — loud rename/removal errors", () => {
     expect((caught as { message: string }).message).toContain(
       'the "packages" field was renamed to "packs". The entry shape is unchanged.',
     );
+  });
+
+  it("a removed `generators` field throws CONFIG_ERROR naming the field", async () => {
+    freshXdg();
+    // Ruled dead (L-OPEN-1): `resolveSources` never read it, `create` resolves
+    // its generators statically, and its only consumers were the merge and
+    // `config show`'s name display. A config still declaring it must fail
+    // naming the file — the schema's unknown-key stripping would otherwise
+    // swallow the deletion in silence.
+    const dir = projectWith(
+      'export default { generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" }] };',
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(path);
+    expect(message).toContain('"generators"');
+    expect(message).toContain("removed");
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).toBe(`In ${path}, delete the "generators" field.`);
+  });
+
+  it("a global JSON still declaring generators throws the same removal error", () => {
+    freshXdg();
+    writeGlobal('{"generators": []}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain('"generators"');
   });
 
   it("a removed `completion.caseSensitive` throws CONFIG_ERROR naming the field", async () => {

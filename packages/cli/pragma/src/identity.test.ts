@@ -14,7 +14,6 @@ vi.mock("../pragma.conf.js", () => ({
     colophon: "Made by the kitchen.",
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
-    generators: [],
     prefixes: { rcp: "https://example.invalid/recipes/" },
     channel: "normal",
     detail: "standard",

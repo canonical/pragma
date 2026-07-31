@@ -6,11 +6,11 @@ How to author a pragma configuration. **Every field, its type and its layering b
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and the read stories they supply, generators, `channel: normal`, `detail: standard`).
+1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
-A higher layer **replaces** a lower one field by field. No field merges: a project declaring one `prefixes` entry replaces the whole map, including the namespaces the distribution's own packs are built with. `pragma config show` prints five fields with the layer that supplied them; what the other seven do instead is in the reference under [What `config show` reports](./reference/config.md).
+A higher layer **replaces** a lower one field by field. No field merges: a project declaring one `prefixes` entry replaces the whole map, including the namespaces the distribution's own packs are built with. `pragma config show` prints four fields with the layer that supplied them; what the other seven do instead is in the reference under [What `config show` reports](./reference/config.md).
 
 ## Read stories
 

@@ -58,7 +58,6 @@ export async function readConfig(
   const channel = pick("channel");
   const detail = pick("detail");
   const packs = pick("packs");
-  const generators = pick("generators");
   const stories = pick("stories");
   const prefixes = pick("prefixes");
   // `completion` is read at `setup completions` emit time (not on any fast
@@ -71,7 +70,6 @@ export async function readConfig(
     ...(tier.value !== undefined ? { tier: tier.value } : {}),
     ...(detail.value !== undefined ? { detail: detail.value } : {}),
     ...(packs.value !== undefined ? { packs: packs.value } : {}),
-    ...(generators.value !== undefined ? { generators: generators.value } : {}),
     ...(stories.value !== undefined ? { stories: stories.value } : {}),
     ...(prefixes.value !== undefined ? { prefixes: prefixes.value } : {}),
     ...(completion.value !== undefined ? { completion: completion.value } : {}),
@@ -84,7 +82,6 @@ export async function readConfig(
       channel: channel.origin,
       detail: detail.origin,
       packs: packs.origin,
-      generators: generators.origin,
       stories: stories.origin,
       prefixes: prefixes.origin,
     },

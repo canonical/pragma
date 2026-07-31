@@ -40,11 +40,6 @@ function configRows(data: ConfigShowData): readonly ConfigRow[] {
     ["detail", config.detail ?? "standard", originMarker(origins.detail)],
     ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
     [
-      "generators",
-      entryNames(config.generators ?? []),
-      originMarker(origins.generators),
-    ],
-    [
       "global config",
       `${data.globalConfigPath}${data.globalExists ? "" : " (not found)"}`,
       "",
@@ -97,7 +92,6 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
       `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,
-      `- **Generators:** ${entryNames(config.generators ?? [])}${originMarker(origins.generators)}`,
       `- **Global config:** \`${data.globalConfigPath}\``,
     ];
     if (data.projectConfigPath) {

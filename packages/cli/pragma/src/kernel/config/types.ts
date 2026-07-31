@@ -42,12 +42,6 @@ export interface PackSource {
 /** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */
 export type PackDeclaration = string | PackSource;
 
-/** A `generators` entry: a scaffold generator's npm/git/file source ref. */
-export interface GeneratorSource {
-  readonly name: string;
-  readonly source: string;
-}
-
 /**
  * Completion policy, read at `setup completions` emit time (never on the
  * storeless `__complete` fast path). Derive-by-default, tune-by-exception:
@@ -81,8 +75,6 @@ export interface PragmaConfig {
   readonly detail?: DetailLevel;
   /** Semantic pack sources; replaces (does not merge) across layers. */
   readonly packs?: readonly PackDeclaration[];
-  /** Scaffold generator sources; replaces (does not merge) across layers. */
-  readonly generators?: readonly GeneratorSource[];
   /** Declarative read stories, compiled at DISPATCH (opaque here). */
   readonly stories?: readonly unknown[];
   /**
@@ -117,7 +109,6 @@ export interface RawConfig {
   readonly channel?: Channel;
   readonly detail?: DetailLevel;
   readonly packs?: readonly PackDeclaration[];
-  readonly generators?: readonly GeneratorSource[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly completion?: CompletionConfig;
@@ -132,7 +123,6 @@ export interface ConfigOrigins {
   readonly channel: ConfigOrigin;
   readonly detail: ConfigOrigin;
   readonly packs: ConfigOrigin;
-  readonly generators: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
 }

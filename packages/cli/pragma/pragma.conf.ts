@@ -1,6 +1,6 @@
 /**
- * The pragma distribution config — identity, default packs, the read stories
- * those packs supply, and generators.
+ * The pragma distribution config — identity, default packs, and the read
+ * stories those packs supply.
  *
  * Consumed three times: statically imported by `src/kernel/config/defaults.ts`
  * as the lowest config layer (compiled into the binary — no fs), by
@@ -506,20 +506,6 @@ export default {
     ds: "https://ds.canonical.com/",
     cs: "http://pragma.canonical.com/codestandards#",
   },
-  generators: [
-    {
-      name: "@canonical/summon-component",
-      source: "npm:@canonical/summon-component@^0.33.0",
-    },
-    {
-      name: "@canonical/summon-package",
-      source: "npm:@canonical/summon-package@^0.33.0",
-    },
-    {
-      name: "@canonical/summon-application",
-      source: "npm:@canonical/summon-application@^0.33.0",
-    },
-  ],
   channel: "normal",
   detail: "standard",
 } satisfies RawConfig;

@@ -46,21 +46,12 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     expect(storyCounts).toEqual([4, 0, 1]);
   });
 
-  it("ships the three summon generators (npm sources at the monorepo major)", () => {
-    expect(defaults.generators).toEqual([
-      {
-        name: "@canonical/summon-component",
-        source: "npm:@canonical/summon-component@^0.33.0",
-      },
-      {
-        name: "@canonical/summon-package",
-        source: "npm:@canonical/summon-package@^0.33.0",
-      },
-      {
-        name: "@canonical/summon-application",
-        source: "npm:@canonical/summon-application@^0.33.0",
-      },
-    ]);
+  it("declares no removed field — the validator would refuse to load one", () => {
+    // `generators` was deleted (L-OPEN-1 ruling): validated, layered, and read
+    // by nothing. The distribution config goes through the same strict
+    // `parseRawConfig` as every layer, so a `generators:` reintroduced here
+    // would fail the eager validation at import — this pins the honest state.
+    expect(defaults).not.toHaveProperty("generators");
   });
 
   it("declares the domain namespaces the store is built with and the CLI resolves", () => {

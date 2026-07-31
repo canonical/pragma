@@ -46,9 +46,8 @@ const scriptsUrl = new URL(".", import.meta.url);
  * identical to that package's dist copy — reached through this package's own
  * `node_modules`, which bun links to the sibling workspace directory. That is a
  * MONOREPO BUILD path, not npm resolution: the published tarballs ship `dist`
- * only (`"files": ["dist"]`), so only a checkout satisfies it. `name` is the
- * single declared fact it consumes; `pragma.conf.ts`'s `source` range is not
- * involved.
+ * only (`"files": ["dist"]`), so only a checkout satisfies it. The binding's
+ * `name` is the single declared fact it consumes.
  *
  * `summon-package` / `summon-application` are excluded deliberately: their
  * generators call `template({ source })`, so a compiled binary can never read an

@@ -26,7 +26,6 @@ The `Type` column is prose; the field set and each field's optionality are check
 | `channel` | `normal` \| `experimental` \| `prerelease` (optional) | Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`. |
 | `detail` | `summary` \| `standard` \| `detailed` (optional) | Default progressive-disclosure level. A closed enum, like `channel`: any other value fails at load with a `CONFIG_ERROR` naming the file and the three levels. Set it with `config set detail <level>`. |
 | `packs` | array (optional) | Semantic pack sources built by `sources update`. Each entry is a bare npm name or `{ name, source, stories? }`; `stories` are read stories the pack supplies, in the pack grammar. |
-| `generators` | array (optional) | Scaffold generator refs (`{ name, source }`). NOTHING reads `source` today: the `create` verbs resolve their generators statically. Declaring it changes only what `config show` prints. |
 | `stories` | array (optional) | Read stories not attached to any pack, in the pack grammar. Compiled at dispatch, and they win over the same noun declared under `packs[].stories`. |
 | `prefixes` | record (optional) | Namespace prefixes the pack is built with — they win every harvest, so this decides which IRI a prefix binds in the store and the index. Every surface uses the compiled-in display/expansion map to compact and expand prefixed names; only the DISTRIBUTION layer seeds it, because it is also read on the storeless fast path, before any config layer exists. |
 | `completion` | object (optional) | Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. It is the one field `config show` carries with NO origin at all. |
@@ -37,11 +36,15 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## What `config show` reports
 
-`pragma config show` prints `tier`, `channel`, `detail`, `packs`, `generators` — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: `prefixes` and `completion` appear only in the `--format json` payload, `prefixes` with an origin and `completion` with none; `stories` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; `--format json` returns the resolved config and the origin map whole.
+`pragma config show` prints `tier`, `channel`, `detail`, `packs` — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: `prefixes` and `completion` appear only in the `--format json` payload, `prefixes` with an origin and `completion` with none; `stories` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; `--format json` returns the resolved config and the origin map whole.
 
 ## Renamed: `packages` → `packs`
 
 The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.
+
+## Removed: `generators`
+
+The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.
 
 ## Removed: `completion.caseSensitive`
 

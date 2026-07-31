@@ -94,7 +94,6 @@ export async function buildFixtureRuntime(
       channel: "default",
       detail: options.detailOrigin ?? "default",
       packs: "default",
-      generators: "default",
       stories: "default",
       prefixes: "default",
     },

@@ -122,7 +122,6 @@ const DEFAULT_ORIGINS = {
   channel: "default",
   detail: "default",
   packs: "default",
-  generators: "default",
   stories: "default",
   prefixes: "default",
 } as const;

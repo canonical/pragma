@@ -505,11 +505,6 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
     notes:
       "Semantic pack sources built by `sources update`. Each entry is a bare npm name or `{ name, source, stories? }`; `stories` are read stories the pack supplies, in the pack grammar.",
   },
-  generators: {
-    type: "array (optional)",
-    notes:
-      "Scaffold generator refs (`{ name, source }`). NOTHING reads `source` today: the `create` verbs resolve their generators statically. Declaring it changes only what `config show` prints.",
-  },
   stories: {
     type: "array (optional)",
     notes:
@@ -539,7 +534,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
  * `capabilities/config/show.render.test.ts` derives the same list from the real
  * formatter and fails if this page and that renderer disagree.
  */
-const REPORTED_FIELDS = ["tier", "channel", "detail", "packs", "generators"];
+const REPORTED_FIELDS = ["tier", "channel", "detail", "packs"];
 
 /** Render the layered-configuration reference: the layers, then the fields. */
 function renderConfigPage(): string {
@@ -569,6 +564,8 @@ function renderConfigPage(): string {
     `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",
     "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
+    "## Removed: `generators`",
+    "The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.",
     "## Removed: `completion.caseSensitive`",
     "The `completion.caseSensitive` field was removed: it was accepted by the validator and read by nothing — completion matching is declared per parameter by the capability grammar, never configured. A layer that still sets it fails loudly at load with an error naming the removed field; delete the key. `completion.minChars` and `completion.families` are unchanged.",
     "## Reading and writing",
