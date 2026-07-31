@@ -13,15 +13,17 @@ inputs:
     default: 'bunx lerna run build:all'
     description: Build command to run. Override with nx affected for PR workflows.
   install-playwright:
-    default: 'false'
+    default: 'true'
     description: >-
-      Set 'true' in any job that runs browser tests. Browser install is
-      explicit workflow intent: a previous nx-affected gate silently resolved
-      empty in CI (exit 0, no output, nothing logged) while the test step's own
-      affected calculation still ran the browser suites, so browsers were
-      skipped and every browser test died on missing executables (#901). The
-      cost of an unconditional install on a test job (~60-90s, cached on
-      bun.lock) is not worth that failure class.
+      Browser tests need browsers; jobs that provably never test (e.g.
+      chromatic) opt OUT with 'false'. Browser install is explicit intent, and
+      the default is the SAFE side: a previous nx-affected gate silently
+      resolved empty in CI (exit 0, no output, nothing logged) while the test
+      step still ran the browser suites, so browsers were skipped and every
+      browser test died on missing executables (#901). Defaulting 'true' also
+      keeps installs correct when a caller workflow executes at a pinned
+      (e.g. default-branch) version that predates this input and passes
+      nothing. Cost of an unneeded install: ~60-90s, cached on bun.lock.
 runs:
   using: composite
   steps:
