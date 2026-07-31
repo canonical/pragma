@@ -223,7 +223,7 @@ Confirmed by the spike:
   the compiled binary evaluates an external `pragma.config.ts` natively (D7
   verified — no subprocess fallback needed).
 
-## Stories in packs — no budget movement (A/B, control-netted)
+## Stories in packs — no budget movement (A/B)
 
 Moving the distribution's five read stories out of `src/capabilities/*/pack.ts`
 and into `pragma.conf.ts` is a MOVE, not an addition: the same five
@@ -234,17 +234,27 @@ generated module — never `pack.generated.ts`, whose ~1.9 MB of n-quads on the
 dispatch path measured **+28 ms on every command** when it was tried.
 
 Measured by round-robin over two compiled binaries built the same way (this
-branch vs. its parent commit), 30 rounds, `env -i` with a fresh `HOME`/`XDG_*`
-in an empty cwd, on a box at load ≈ 2.0. Absolute figures are inflated relative
-to the reference box by the load and the harness; the CONTROL-NETTED delta (each
-case minus that binary's own `pragma --version` median) is the comparison:
+branch vs. its parent commit), 30 rounds each, `env -i` with a fresh
+`HOME`/`XDG_*` in an empty cwd, on a box at load ≈ 2.0. Absolutes are inflated
+relative to the reference box by the load and by the spawn harness, so only the
+deltas mean anything — and at n = 30 on a loaded box, anything inside ±2 ms is
+noise:
 
-| Case                              | base median | new median | control-netted Δ |
-| --------------------------------- | ----------- | ---------- | ---------------- |
-| `--version` (control)             | 92.0 ms     | 92.6 ms    | —                |
-| `--help`                          | 123.8 ms    | 125.0 ms   | +0.5 ms          |
-| `__complete -- block lookup Butt` | 122.8 ms    | 121.2 ms   | −2.3 ms          |
-| `config show` (dispatch)          | 149.1 ms    | 149.3 ms   | −0.5 ms          |
+| Case                              | base median | new median | raw Δ   |
+| --------------------------------- | ----------- | ---------- | ------- |
+| `pragma --version`                | 92.0 ms     | 92.6 ms    | +0.6 ms |
+| `--help`                          | 123.8 ms    | 125.0 ms   | +1.2 ms |
+| `__complete -- block lookup Butt` | 122.8 ms    | 121.2 ms   | −1.6 ms |
+| `config show` (dispatch)          | 149.1 ms    | 149.3 ms   | +0.2 ms |
 
-Two of the three deltas are negative, which is the signature of noise rather
-than a cost. **No budget constant changes**; `bun run test:perf` is 8/8 green.
+Deltas that straddle zero are the signature of noise rather than a cost. **No
+budget constant changes**; `bun run test:perf` is 8/8 green.
+
+`pragma --version` is listed as a case, NOT as a control: `bin.ts` imports
+`constants.ts`, which statically imports `pragma.conf.ts` — the one module this
+change grew (55 → 513 lines). Netting the other rows against it would subtract
+the only cost this change plausibly introduces from every row. Its own +0.6 ms
+is therefore the best available direct measure of that cost, and it is inside
+the noise band. Independent replications on this box (250-round `--version`-only
+interleave; 120-round three-case) put it at +0.07 to +0.5 ms. If a true control
+is ever wanted here, it has to be a process outside the module graph.

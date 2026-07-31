@@ -10,12 +10,15 @@
  * skipped; every remaining site that legitimately carries one is listed in
  * {@link EXEMPT} with its reason and the PR that removes it.
  *
- * What it does NOT reach: `src/capabilities/**`. The bundled domain packs there
- * are CONTENT, which is where specialization belongs — but the generic
- * capability modules beside them still author `pragma …` command literals, and
- * closing that is its own tranche (their `examples[].cmd` strings are
- * byte-compared against `docs/reference/*.md`, so the sweep and the docs regen
- * have to move together).
+ * What it does NOT reach: `src/capabilities/**` or `pragma.conf.ts`. The
+ * distribution's five read stories moved OUT of `src/capabilities/**` and into
+ * `pragma.conf.ts`, which is the file a fork edits and so is content by
+ * definition. What is left under `src/capabilities/**` is the hand-written
+ * `ds:` residue (`block list`, `token add-config`, `tier lookup`) plus generic
+ * capability modules that still author `pragma …` command literals; closing
+ * BOTH is its own tranche (the `examples[].cmd` strings are byte-compared
+ * against `docs/reference/*.md`, so the sweep and the docs regen have to move
+ * together).
  */
 
 import { readdirSync, readFileSync } from "node:fs";

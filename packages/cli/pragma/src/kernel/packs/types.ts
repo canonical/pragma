@@ -331,7 +331,7 @@ export interface PackDefinition {
 
 /** A validated pack definition paired with where it was declared. */
 export interface PackEntry {
-  /** Where the definition was declared (config path, package file, or bundled). */
+  /** The package story file it came from, e.g. `@acme/recipes/stories/recipe.json`. */
   readonly source: string;
   readonly definition: PackDefinition;
 }

@@ -71,7 +71,7 @@ export interface PragmaConfig {
   readonly packs?: readonly PackDeclaration[];
   /** Scaffold generator sources; replaces (does not merge) across layers. */
   readonly generators?: readonly GeneratorSource[];
-  /** Declarative read stories compiled at boot (experimental; opaque here). */
+  /** Declarative read stories, compiled at DISPATCH (opaque here). */
   readonly stories?: readonly unknown[];
   /**
    * Namespace prefixes the pack is built with — they win every harvest, so a

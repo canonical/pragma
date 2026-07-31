@@ -3,8 +3,9 @@
  *
  * Resolves the distribution's own declared packs through the PRODUCT's pipeline
  * (`parsePackDeclaration` → `resolvePackage` → `buildPack`, with `sources
- * update`'s own prefix precedence) into a throwaway cache, then inlines the four
- * artifacts as escaped JS strings. Inlining (rather than shipping file assets)
+ * update`'s own prefix precedence) into a throwaway cache, then inlines the five
+ * artifacts as escaped JS strings, across three generated modules (the carried
+ * `stories.json` gets its own so the dispatch path never loads the n-quads). Inlining (rather than shipping file assets)
  * is what lets the pack survive `bun build --compile` with no asset step, so a
  * cold install answers store-backed reads offline.
  *
