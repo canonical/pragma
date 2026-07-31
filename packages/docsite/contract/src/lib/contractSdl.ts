@@ -22,12 +22,13 @@ const SOURCE_LAYOUT_PREFIX = "../..";
 const BUILD_LAYOUT_PREFIX = "../../..";
 
 /**
- * Resolve the contract schema file for whichever layout this module was
- * loaded from. Falls back to the source layout so a missing file produces an
- * error that names a real, expected path rather than an empty string.
+ * Resolve the contract schema file for whichever layout `here` — the
+ * directory this module was loaded from — belongs to. Falls back to the
+ * source layout so a missing file produces an error that names a real,
+ * expected path rather than an empty string. Exported for tests, which probe
+ * the build and fallback layouts this module cannot occupy at test time.
  */
-const resolveContractSchemaPath = (): string => {
-  const here = dirname(fileURLToPath(import.meta.url));
+export const resolveContractSchemaPath = (here: string): string => {
   const sourceCandidate = resolve(
     here,
     SOURCE_LAYOUT_PREFIX,
@@ -48,7 +49,9 @@ const resolveContractSchemaPath = (): string => {
 };
 
 /** Absolute path to the shipped contract SDL file. */
-export const CONTRACT_SCHEMA_PATH: string = resolveContractSchemaPath();
+export const CONTRACT_SCHEMA_PATH: string = resolveContractSchemaPath(
+  dirname(fileURLToPath(import.meta.url)),
+);
 
 /**
  * Read the shipped contract SDL as a string.

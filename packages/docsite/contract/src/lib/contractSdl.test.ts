@@ -1,4 +1,6 @@
 import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   assertInterfaceType,
   assertObjectType,
@@ -7,7 +9,38 @@ import {
   type GraphQLScalarType,
 } from "graphql";
 import { describe, expect, it } from "vitest";
-import { CONTRACT_SCHEMA_PATH, readContractSdl } from "./contractSdl.js";
+import {
+  CONTRACT_SCHEMA_PATH,
+  readContractSdl,
+  resolveContractSchemaPath,
+} from "./contractSdl.js";
+
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const shippedSchema = join(packageRoot, "schema/contract.graphql");
+
+describe("resolveContractSchemaPath", () => {
+  it("resolves the source layout: src/lib is two levels below the root", () => {
+    expect(resolveContractSchemaPath(join(packageRoot, "src/lib"))).toBe(
+      shippedSchema,
+    );
+  });
+
+  it("resolves the build layout: dist/esm/lib is three levels below the root", () => {
+    // dist/esm/lib need not exist on disk — resolve() is pure path math — and
+    // the source candidate (dist/schema/contract.graphql) genuinely misses,
+    // so this exercises the second probe.
+    expect(resolveContractSchemaPath(join(packageRoot, "dist/esm/lib"))).toBe(
+      shippedSchema,
+    );
+  });
+
+  it("falls back to the source-layout path when neither candidate exists", () => {
+    const nowhere = "/nowhere/definitely/missing";
+    expect(resolveContractSchemaPath(nowhere)).toBe(
+      resolve(nowhere, "../..", "schema/contract.graphql"),
+    );
+  });
+});
 
 describe("readContractSdl", () => {
   it("points at a file that exists", () => {

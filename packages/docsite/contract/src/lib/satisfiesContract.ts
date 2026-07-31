@@ -36,8 +36,14 @@ export const INVALID_SDL = "INVALID_SDL";
 /** Default name used in {@link assertSatisfiesContract} error text. */
 const DEFAULT_PROVIDER_NAME = "provider";
 
-const describeError = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
+const describeError = (error: unknown): string => {
+  /* v8 ignore else -- unreachable: the only call site catches buildSchema, which throws GraphQLError (an Error subclass) exclusively; the String(error) arm stays because `catch` is typed `unknown` and dropping it would mean asserting a type the language does not guarantee */
+  if (error instanceof Error) {
+    return error.message;
+  } else {
+    return String(error);
+  }
+};
 
 /**
  * Check a provider's SDL against the contract.

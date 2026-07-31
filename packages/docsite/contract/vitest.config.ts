@@ -15,14 +15,14 @@ export default defineConfig({
         "**/types.ts",
         "src/__fixtures__/**",
       ],
-      // Thresholds start at 40% — the repo standard for a shipped package is
-      // 100%. This is a deliberate, temporary deviation for a NEW package.
-      // Ratchet these up as the package grows; do not lower them.
+      // The repo standard for a shipped package: 100%. Ratcheted up from the
+      // initial 40% once the layout probes and error paths gained tests; do
+      // not lower these.
       thresholds: {
-        statements: 40,
-        branches: 40,
-        functions: 40,
-        lines: 40,
+        statements: 100,
+        branches: 100,
+        functions: 100,
+        lines: 100,
       },
     },
   },

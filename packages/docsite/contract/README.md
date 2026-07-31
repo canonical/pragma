@@ -161,5 +161,5 @@ published alongside `dist/`.
 | `bun run check` | biome + `tsc --noEmit` + `webarchitect library` |
 | `bun run test` | `vitest run --coverage` |
 
-Coverage thresholds sit at 40% while the package is new. The repo standard for
-a shipped package is 100%; ratchet them up, never down.
+Coverage thresholds sit at 100% — the repo standard for a shipped package.
+Never lower them.
