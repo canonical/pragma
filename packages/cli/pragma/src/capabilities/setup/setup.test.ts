@@ -179,10 +179,10 @@ describe("setup completions — the installed file's NAME", () => {
     return { path, body: readFileSync(path, "utf-8") };
   }
 
-  // All three shells locate a completion file by the COMMAND's name, so the
-  // basename is load-bearing, not cosmetic: a mismatch installs a file the
-  // shell never loads, while `setup completions` prints success and `doctor`
-  // passes and TAB does nothing. These relate the written file's NAME to the
+  // The basename is load-bearing, not cosmetic — see `shell.ts` for what each
+  // shell measurably does with it. For fish a mismatch installs a file the
+  // shell never loads, while `setup completions` prints success, `doctor`
+  // passes, and TAB does nothing. These relate the written file's NAME to the
   // command the written BODY says it completes — two independently produced
   // artifacts, neither reconstructed here. Re-hardcode "pragma" in `shell.ts`
   // (or change `pragma.conf.ts`'s `name`) and all three fail.

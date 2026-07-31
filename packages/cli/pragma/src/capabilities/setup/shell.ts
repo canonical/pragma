@@ -35,13 +35,28 @@ export function detectShell(): ShellId | null {
 /**
  * The standard install path for a shell's completion script.
  *
- * The BASENAME is {@link BIN_NAME}, never a literal: all three shells locate a
- * completion file by the COMMAND's name (`_<cmd>` on zsh's fpath,
- * `completions/<cmd>` for bash-completion, `completions/<cmd>.fish` for fish),
- * and `emitScripts` derives the script's own `#compdef` / `complete -F` /
- * `complete -c` from the same name. A distribution renamed in `pragma.conf.ts`
- * would otherwise write a correct script into a file its shell never loads —
- * silently, with `setup completions` and `doctor` both reporting success.
+ * The BASENAME is {@link BIN_NAME}, never a literal, because `emitScripts`
+ * derives the script's own `#compdef` / `complete -F` / `complete -c` from that
+ * same name, and for two of the three shells the basename decides whether the
+ * file is ever loaded. Measured against real shells with the distribution
+ * renamed to `widget9`:
+ *
+ * - **fish** autoloads `completions/<cmd>.fish` BY NAME. A correct `widget9`
+ *   script in a file called `pragma.fish` is never loaded — TAB silently falls
+ *   back to filenames. Verified: renaming that one file is the entire
+ *   difference between candidates and no candidates.
+ * - **bash-completion** looks up `completions/<cmd>` by the command name the
+ *   same way. NOT verified here (bash-completion is not installed on this
+ *   development box), so this rests on its documented loader.
+ * - **zsh** does NOT work that way: `compinit` binds by the `#compdef` tag
+ *   inside the file, so `~/.zfunc/_pragma` holding `#compdef widget9` does
+ *   complete `widget9` (verified — `_comps[widget9]` resolves to `_pragma`).
+ *   The basename still matters, for a different reason: it names the function
+ *   zsh autoloads, and two distributions both writing `_pragma` would silently
+ *   overwrite each other's completions.
+ *
+ * Either way `setup completions` and `doctor` report success, so nothing else
+ * would tell the user.
  *
  * @param shell - The target shell.
  * @returns The absolute path the completion script is written to.
