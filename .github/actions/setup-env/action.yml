@@ -12,6 +12,16 @@ inputs:
   build-command:
     default: 'bunx lerna run build:all'
     description: Build command to run. Override with nx affected for PR workflows.
+  install-playwright:
+    default: 'false'
+    description: >-
+      Set 'true' in any job that runs browser tests. Browser install is
+      explicit workflow intent: a previous nx-affected gate silently resolved
+      empty in CI (exit 0, no output, nothing logged) while the test step's own
+      affected calculation still ran the browser suites, so browsers were
+      skipped and every browser test died on missing executables (#901). The
+      cost of an unconditional install on a test job (~60-90s, cached on
+      bun.lock) is not worth that failure class.
 runs:
   using: composite
   steps:
@@ -61,31 +71,18 @@ runs:
       shell: bash
       run: bun install --ignore-scripts
 
-      # Workflows that test only affected packages (e.g. pr.yml, via `nx affected -t test`)
-      # only need Playwright if an affected package requires it. Workflows that run the
-      # full test suite regardless of what changed (e.g. push.yml, tag.yml, via `bun run
-      # test`) need to check every project, since a playwright-tagged package doesn't
-      # have to be "affected" to be tested.
-    - name: Check for Specific Tag in Affected Packages
-      shell: bash
-      id: check_playwright
-      env:
-        EVENT_NAME: ${{ github.event_name }}
-        BASE_REF: ${{ github.event.pull_request.base.ref }}
-      run: bash ${{ github.action_path }}/check-playwright.sh
-
       # Browser binaries are keyed on bun.lock: they only change when the resolved
       # playwright version changes. On a cache hit, `playwright install` skips the
       # download and only the (uncacheable) apt system dependencies are installed.
     - name: Cache Playwright browsers
-      if: ${{ steps.check_playwright.outputs.PLAYWRIGHT_REQUIRED == 'true' }}
+      if: ${{ inputs.install-playwright == 'true' }}
       uses: actions/cache@v5
       with:
         path: ~/.cache/ms-playwright
         key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
     - name: Install Playwright browsers
-      if: ${{ steps.check_playwright.outputs.PLAYWRIGHT_REQUIRED == 'true' }}
+      if: ${{ inputs.install-playwright == 'true' }}
       shell: bash
       run: bunx playwright install --with-deps chromium firefox webkit
 
