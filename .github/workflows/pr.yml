@@ -28,6 +28,15 @@ jobs:
       - name: Code quality checks
         run: bunx nx affected -t check --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
+        # Diagnostic breadcrumb (#901): proves at test time which pr.yml
+        # version executed and what browser state setup actually produced —
+        # the setup section sits beyond the API's log-tail window, so this
+        # prints the decisive facts where the tail always reaches.
+      - name: Browser state before tests
+        run: |
+          echo "this pr.yml passes install-playwright='true' to setup-env"
+          ls ~/.cache/ms-playwright/ 2>/dev/null || echo "ms-playwright dir ABSENT"
+
       - name: Test
         run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
