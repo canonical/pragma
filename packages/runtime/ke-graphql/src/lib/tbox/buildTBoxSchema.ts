@@ -166,7 +166,7 @@ export default function buildTBoxSchema(
       ),
     });
   }
-  const chainsFor = (typename: string): DescriptiveChains =>
+  const getChainsFor = (typename: string): DescriptiveChains =>
     chainsByType.get(typename) ?? FALLBACK_CHAINS;
 
   const propertyKind = new GraphQLEnumType({
@@ -406,7 +406,7 @@ export default function buildTBoxSchema(
           "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI, else the GraphQL type name when the value has no IRI at all (an embedded blank node). Never null — render this.",
         resolve: (parent, args: LangArgs) =>
           resolveTitle(
-            selectLexicals(parent.triples, chainsFor(parent.typename).label),
+            selectLexicals(parent.triples, getChainsFor(parent.typename).label),
             resolveLang(args),
             parent.uri,
             parent.typename,
@@ -419,7 +419,7 @@ export default function buildTBoxSchema(
           "rdfs:label, else skos:prefLabel, else the class's own name/title predicate — exact language tag, else untagged. Null when none is asserted; `title` is the total alternative.",
         resolve: (parent, args: LangArgs) =>
           resolveLabel(
-            selectLexicals(parent.triples, chainsFor(parent.typename).label),
+            selectLexicals(parent.triples, getChainsFor(parent.typename).label),
             resolveLang(args),
           ),
       },
@@ -430,7 +430,10 @@ export default function buildTBoxSchema(
           "Incidental prose: rdfs:comment, else the class's own summary predicate. Null when none is asserted.",
         resolve: (parent, args: LangArgs) =>
           resolveLabel(
-            selectLexicals(parent.triples, chainsFor(parent.typename).comment),
+            selectLexicals(
+              parent.triples,
+              getChainsFor(parent.typename).comment,
+            ),
             resolveLang(args),
           ),
       },
@@ -443,7 +446,7 @@ export default function buildTBoxSchema(
           resolveLabel(
             selectLexicals(
               parent.triples,
-              chainsFor(parent.typename).definition,
+              getChainsFor(parent.typename).definition,
             ),
             resolveLang(args),
           ),

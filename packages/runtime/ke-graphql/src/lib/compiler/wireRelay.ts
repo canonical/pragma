@@ -24,11 +24,13 @@ import {
   paginateUriWindow,
   unwrapEntities,
 } from "../resolver/index.js";
-import type {
-  CompilerContext,
-  Diagnostic,
-  EntityValue,
-  PassResult,
+import {
+  type CompilerContext,
+  type Diagnostic,
+  type EntityValue,
+  type PassResult,
+  STRUCTURAL_META,
+  STRUCTURAL_URI,
 } from "../shared/index.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 
@@ -36,7 +38,7 @@ const PHASE = "wireRelay";
 
 /** Create the uri field plan (uri: ID!) — the entity's absolute IRI. */
 const createUriField = (): FieldPlan => ({
-  name: "uri",
+  name: STRUCTURAL_URI,
   type: { base: "ID", kind: "scalar", list: false, nonNull: true },
   resolve: (parent: EntityValue) => parent.uri,
   description: "The entity's absolute IRI — the primary key.",
@@ -44,7 +46,7 @@ const createUriField = (): FieldPlan => ({
 
 /** Create the _meta field plan (self-describing TBox access). */
 const createMetaField = (): FieldPlan => ({
-  name: "_meta",
+  name: STRUCTURAL_META,
   type: { base: "EntityMeta", kind: "named", list: false, nonNull: true },
   resolve: (parent: EntityValue) => parent,
   description: "Self-describing TBox access for this entity.",
@@ -56,7 +58,7 @@ const createMetaField = (): FieldPlan => ({
  * have a class — and a zero-property embeddable would otherwise emit a type
  * with no fields at all (a C003 validateSchema failure).
  */
-const structuralFields = (embeddable: boolean): FieldPlan[] =>
+const planStructuralFields = (embeddable: boolean): FieldPlan[] =>
   embeddable ? [createMetaField()] : [createUriField(), createMetaField()];
 
 /**
@@ -107,7 +109,7 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
   // LAST value, so an ontology field named `uri` would replace the structural
   // one. Pass 4 drops those with M005 — this merge must never see one.
   for (const type of plan.types.values()) {
-    const structural = structuralFields(type.embeddable);
+    const structural = planStructuralFields(type.embeddable);
     type.fields = new Map([
       ...structural.map((f): [string, FieldPlan] => [f.name, f]),
       ...type.fields,
@@ -117,7 +119,7 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
     }
   }
   for (const iface of plan.interfaces.values()) {
-    const structural = structuralFields(iface.embeddableOnly);
+    const structural = planStructuralFields(iface.embeddableOnly);
     iface.fields = new Map([
       ...structural.map((f): [string, FieldPlan] => [f.name, f]),
       ...iface.fields,

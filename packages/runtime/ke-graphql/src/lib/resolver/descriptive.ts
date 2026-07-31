@@ -134,7 +134,7 @@ const tagMatches = (tag: string, want: string): boolean =>
  * order is not guaranteed: a multi-valued predicate must answer the same value
  * on every request.
  */
-const leastBy = <T>(
+const pickLeastBy = <T>(
   items: readonly T[],
   key: (item: T) => string,
 ): T | undefined => {
@@ -151,7 +151,7 @@ const leastBy = <T>(
 };
 
 /** A Lexical's own value, as the ordering key. */
-const valueKey = (lexical: Lexical): string => lexical.value;
+const getValueKey = (lexical: Lexical): string => lexical.value;
 
 /**
  * Sort key ordering untagged literals ahead of tagged ones, then by tag, then
@@ -159,7 +159,7 @@ const valueKey = (lexical: Lexical): string => lexical.value;
  * sorts before every real tag. The NUL separator cannot occur in a language
  * tag, so the two components never bleed into each other.
  */
-const titleKey = (lexical: Lexical): string =>
+const getTitleKey = (lexical: Lexical): string =>
   `${lexical.lang}\u0000${lexical.value}`;
 
 /**
@@ -178,7 +178,7 @@ export const resolveLabel = (
     exact.length > 0
       ? exact
       : lexicals.filter((lexical) => lexical.lang === "");
-  return leastBy(pool, valueKey)?.value ?? null;
+  return pickLeastBy(pool, getValueKey)?.value ?? null;
 };
 
 /**
@@ -198,7 +198,7 @@ export const resolveTitle = (
   if (label !== null) {
     return label;
   }
-  const anyTag = leastBy(lexicals, titleKey);
+  const anyTag = pickLeastBy(lexicals, getTitleKey);
   if (anyTag !== undefined) {
     return anyTag.value;
   }

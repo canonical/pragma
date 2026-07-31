@@ -35,9 +35,9 @@ const store = await createStore({ sources, prefixes, plugins: [graphql] });
 const { schema, createContext } = store.api<SchemaPluginApi>("ke-graphql")!;
 ```
 
-### `storeQueryFn(store)`
+### `createStoreQueryFn(store)`
 ```ts
-storeQueryFn(store: Store): QueryFn
+createStoreQueryFn(store: Store): QueryFn
 ```
 Adapt a ke `Store` to the `QueryFn` the compiler expects.
 
@@ -53,10 +53,10 @@ Thrown by `compile` when the compile produces any error-severity diagnostic (or 
 Any error-severity diagnostic refuses the compile: a schema minus silently dropped fields must never be served, so a boot dies loudly instead. Warnings and infos surface in `result.diagnostics` while the schema builds, and the consumer picks its policy for those. `DiagnosticCode` is stable and append-only: `E001`, `B001–B004`, `V001–V016`, **`M001–M006`**, `X002–X003`, `W001`, `C001–C003`. The naming band reads: `M001` duplicate type or field name (the later claimant is dropped, error), `M002` illegal class local name sanitized, `M003` mapping references nothing, `M004` type-name collision auto-resolved by namespace prefixing, `M005` property claims a structural field name — `uri` or `_meta` — and is dropped (error), `M006` one union name minted with two different member sets (the later definition is dropped, error). `W001` is the Relay-wiring band: two root query fields claiming one name (the later field is dropped, error). `M001`/`M005` name the offending IRIs and the remedies; none of them ever renames anything silently. See the README's diagnostics table for the full list.
 
 ### Result & key option shapes
-- **`CompilerResult`** — `{ schema, sdl, diagnostics, nameMap, mapped, createContext, clearLoaderCache }`.
+- **`CompilerResult`** — `{ schema, sdl, diagnostics, nameMap, mapped, extraction, createContext, clearLoaderCache }`. `extraction` is the Pass 1 output (`RawExtraction`) — the value `serializeExtraction` turns into a boot artifact.
 - **`SchemaPluginApi`** — `{ schema, diagnostics, nameMap, sdl, createContext, clearLoaderCache }` (the `store.api("ke-graphql")` surface).
 - **`SchemaPluginOptions`** — `mappings`, `extensions`, `relay`, `incremental`, `sdlOutput`, `nonNullOverrides`, `prefixing` (`"none"`|`"all"`), `mode` (`"auto"`|`"annotated"`|`"explicit"` — provenance only today), `provider`, `revision`, `standardVocabFields` (deprecated), `onRuntimeWarning`, `loaderCache` (`"request"`|`"process"`), `processCacheSize`.
-- **`FieldPrefixing`** — `"none"` (default) | `"all"`. `"all"` namespace-prefixes every generated field name (`lib:uri` → `libUri`), which is the schema-wide remedy for an `M001`/`M005` collision. An explicit `mappings[…].graphqlName` is never prefixed.
+- **`FieldPrefixing`** — `"none"` (default) | `"all"`. `"all"` namespace-prefixes every generated field name (`lib:uri` → `libUri`). It always clears an `M005` — the structural names the compiler owns carry no prefix — but clears an `M001` only when the two colliding IRIs sit in **different** namespaces (`ex:name` + `ds:name` → `exName` + `dsName`). Same-namespace claimants take the same prefix and collide again (`ex:name` and `ex:hasName` both strip to `name`, both become `exName`), so that case still needs a `mappings` rename. An explicit `mappings[…].graphqlName` is never prefixed.
 - **`ProjectionMode`** — `"auto"` | `"annotated"` (default) | `"explicit"`. Typed, defaulted, and stamped into the SDL provenance header; its **effect** lands with the `graphql:*` annotations task, and the compiler deliberately does not branch on it before then.
 - **`CustomMapping`** — `{ graphqlName?, singular?, abstract?, embeddable?, inverse?: { graphqlName } }`, keyed by IRI or prefixed name in `CustomMappings`.
 

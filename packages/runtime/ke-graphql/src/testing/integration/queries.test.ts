@@ -185,6 +185,33 @@ describe("ds-realistic resolution", () => {
     expect(unknownUri.data?.node).toBeNull();
   });
 
+  it("MIGRATION PIN: the prefixed form is no longer node()'s identity currency", async () => {
+    // "ds:global.component.button" was the global ID under the old prefixed
+    // identity currency; node(id:) now speaks absolute IRIs only. It is NOT
+    // rejected by the admission gate — "ds" is a syntactically legal scheme,
+    // so isAbsoluteIri admits it and the loader looks it up verbatim — it
+    // simply matches no subject in the store. Pinned because the failure that
+    // matters is the opposite one: quietly resolving it again (by consulting
+    // the prefix map) would make node() answer differently depending on which
+    // prefixes a consumer happened to register.
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    const result = await run(
+      compiled,
+      `{ node(id: "ds:global.component.button") { uri } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.node).toBeNull();
+    // The absolute form of the very same entity still resolves — the pin is
+    // about the currency, not about the entity being missing.
+    const absolute = await run(
+      compiled,
+      `{ node(id: "https://ds.canonical.com/global.component.button") { uri } }`,
+    );
+    expect((absolute.data?.node as { uri: string }).uri).toBe(
+      "https://ds.canonical.com/global.component.button",
+    );
+  });
+
   it("a junk singular-lookup argument cannot poison sibling lookups in the same tick", async () => {
     // Both lookups resolve in one tick, so they share one loader batch. The
     // colon-free argument expands to nothing and must resolve to null WITHOUT

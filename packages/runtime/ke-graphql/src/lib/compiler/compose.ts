@@ -39,6 +39,8 @@ import {
   type Diagnostic,
   type EntityValue,
   type PassResult,
+  STRUCTURAL_META,
+  STRUCTURAL_URI,
 } from "../shared/index.js";
 import { buildTBoxSchema } from "../tbox/index.js";
 import {
@@ -149,8 +151,8 @@ export default function compose(
     // forward reference to `tbox` is safe because the thunk runs after
     // construction (the same pattern findNamedType uses below).
     fields: () => ({
-      uri: { type: new GraphQLNonNull(GraphQLID) },
-      _meta: { type: new GraphQLNonNull(tbox.entityMeta) },
+      [STRUCTURAL_URI]: { type: new GraphQLNonNull(GraphQLID) },
+      [STRUCTURAL_META]: { type: new GraphQLNonNull(tbox.entityMeta) },
     }),
     resolveType: resolveTypename,
   });
@@ -472,7 +474,7 @@ export default function compose(
     // validateSchema, and printSchema; all throw Error instances, so the
     // non-Error else fallback below cannot be reached in practice.
     let message: string;
-    /* v8 ignore else */
+    /* v8 ignore else -- unreachable: every throw site inside this try (graphql-js type construction, validateSchema, printSchema) throws an Error instance, so no fixture can drive the String(error) arm; it stays because `catch` is typed `unknown` and dropping it would mean asserting a type the language does not guarantee */
     if (error instanceof Error) {
       message = error.message;
     } else {

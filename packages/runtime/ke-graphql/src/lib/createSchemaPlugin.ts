@@ -103,11 +103,11 @@ export default function createSchemaPlugin(
 /**
  * Compile for a plugin lifecycle hook: boot from the extraction artifact
  * when fresh, fall back to a live compile otherwise, then log diagnostics
- * and write the SDL output when configured.
+ * and write the SDL output when configured and the compile printed one.
  *
  * @note Impure — reads the extraction artifact from disk, executes SPARQL
  * queries on a live compile, logs to the console, and writes the SDL output
- * file when configured.
+ * file when configured (never on an artifact boot, which prints no SDL).
  */
 const compileForContext = async (
   ctx: PluginContext,
@@ -156,7 +156,12 @@ const compileForContext = async (
   }
   logDiagnostics(result.diagnostics);
 
-  if (options.sdlOutput) {
+  // Only a compile that PRINTED an SDL may write one. An artifact boot runs
+  // with assumeValid and skips printSchema, leaving `sdl` as "" by contract —
+  // writing that would TRUNCATE a committed schema.graphql to nothing, which
+  // is strictly worse than leaving yesterday's correct file in place (the SDL
+  // feeds relay-compiler, so an empty one breaks every client build).
+  if (options.sdlOutput && result.sdl !== "") {
     writeFileSync(options.sdlOutput, result.sdl, "utf-8");
   }
 

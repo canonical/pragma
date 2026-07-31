@@ -97,6 +97,40 @@ export const XSD_SCALARS: Record<
   [`${XSD}dateTime`]: "String",
 };
 
+/**
+ * The entity's identity field — its absolute IRI, emitted as `uri: ID!`.
+ *
+ * This name and STRUCTURAL_META are load-bearing in three places that must
+ * agree exactly: Pass 4 protects them from ontology properties (M005), Pass 6
+ * injects them onto every container, and Pass 7 declares them on the `Node`
+ * interface. Three independent string literals could drift apart silently —
+ * the emitted schema would still build, and only `validateSchema` (C003) or a
+ * missing `Node` implementation would eventually complain, pointing nowhere
+ * near the cause. They are one constant each, consumed everywhere.
+ */
+export const STRUCTURAL_URI = "uri";
+
+/** The entity's self-description hatch, emitted as `_meta: EntityMeta!`. */
+export const STRUCTURAL_META = "_meta";
+
+/**
+ * The structural surface of a NON-embeddable container: identity plus
+ * self-description. Pass 4 drops an ontology property claiming either one
+ * (M005) rather than renaming it.
+ */
+export const STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set([
+  STRUCTURAL_URI,
+  STRUCTURAL_META,
+]);
+
+/**
+ * The structural surface of an EMBEDDABLE container: `_meta` but no `uri` —
+ * a blank node has no identity to expose, but it still has a class.
+ */
+export const EMBEDDABLE_STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set([
+  STRUCTURAL_META,
+]);
+
 /** Names the compiler owns; generated type names may not take them. */
 export const RESERVED_TYPE_NAMES = new Set([
   "Node",

@@ -102,6 +102,41 @@ describe("createSchemaPlugin", () => {
     );
   });
 
+  it("leaves an existing sdlOutput file untouched on an artifact boot", async () => {
+    // An artifact boot skips printSchema, so `sdl` is "" by contract. Writing
+    // that would truncate the committed schema.graphql to nothing — the file
+    // relay-compiler reads. Yesterday's correct SDL must survive the boot.
+    const probe = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+    });
+    cleanups.push(probe.cleanup);
+    const artifactJson = serializeExtraction(
+      (await compile(createStoreQueryFn(probe.store), PREFIXES)).extraction,
+      hashSources([MINIMAL_TTL]),
+    );
+    const dir = mkdtempSync(join(tmpdir(), "ke-graphql-"));
+    cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
+    const artifactPath = join(dir, "extraction.json");
+    writeFileSync(artifactPath, artifactJson, "utf-8");
+    const sdlPath = join(dir, "schema.graphql");
+    const committed = "type Thing implements Node { uri: ID! }\n";
+    writeFileSync(sdlPath, committed, "utf-8");
+
+    const { store, cleanup } = await createTestStore({
+      ttl: MINIMAL_TTL,
+      prefixes: PREFIXES,
+      plugins: [
+        createSchemaPlugin({ extraction: artifactPath, sdlOutput: sdlPath }),
+      ],
+    });
+    cleanups.push(cleanup);
+    // The fast path really did run (empty SDL is its marker) …
+    expect(store.api<SchemaPluginApi>("ke-graphql")?.sdl).toBe("");
+    // … and the file on disk is byte-identical to what was there before.
+    expect(readFileSync(sdlPath, "utf-8")).toBe(committed);
+  });
+
   it("registers extensions in object form on types and Query", async () => {
     const plugin = createSchemaPlugin({
       extensions: {

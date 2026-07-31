@@ -92,9 +92,10 @@ export interface PassResult<T> {
 // ---------------------------------------------------------------------------
 // Pass 1 output — RawExtraction
 //
-// Direct output of the twelve SPARQL queries. Includes the ABox probes
+// Direct output of the extraction queries. Includes the ABox probes
 // (instance stats, self-references, functional violations, undeclared
-// predicates) so that Passes 2–7 never touch the store.
+// predicates, annotations, blank-node depth) so that Passes 2–7 never touch
+// the store.
 // ---------------------------------------------------------------------------
 
 /** A class row as extracted from the store (Pass 1, pre-IR). */
@@ -164,9 +165,8 @@ export interface InstanceStats {
 }
 
 /**
- * Pass 1 output: the complete, serializable result of the twelve SPARQL
- * queries — the TBox structure plus the ABox probes that keep Passes 2–7
- * pure.
+ * Pass 1 output: the complete, serializable result of the extraction queries
+ * — the TBox structure plus the ABox probes that keep Passes 2–7 pure.
  */
 export interface RawExtraction {
   classes: RawClass[];

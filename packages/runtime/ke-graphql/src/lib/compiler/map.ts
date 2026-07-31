@@ -10,6 +10,7 @@
 import {
   type ClassNode,
   type Diagnostic,
+  EMBEDDABLE_STRUCTURAL_FIELD_NAMES,
   type FieldTypeSpec,
   getLocalName,
   type MappedField,
@@ -22,6 +23,7 @@ import {
   type PropertyNode,
   RESERVED_TYPE_NAMES,
   type ResolverTemplate,
+  STRUCTURAL_FIELD_NAMES,
 } from "../shared/index.js";
 import areAllImplementorsEmbeddable from "./areAllImplementorsEmbeddable.js";
 import BidirectionalNameMap from "./BidirectionalNameMap.js";
@@ -37,24 +39,38 @@ import type { CustomMapping, SchemaPluginOptions } from "./types.js";
 
 const PHASE = "map";
 
+// The structural field-name sets (shared/constants.ts) are what wireRelay
+// injects on every container in Pass 6. An ontology property that maps onto
+// one of them is DROPPED with an M005 error rather than renamed: a same-named
+// ontology field would take the structural field's slot in the merged map and
+// break the Node interface at validateSchema — silently, because the merge
+// keeps the first POSITION but the last VALUE.
+
+/** The remedy that always works, whatever the collision: rename one side. */
+const RENAME_REMEDY =
+  'add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })';
+
 /**
- * The field names wireRelay injects on every non-embeddable type (Pass 6).
- * An ontology property that maps onto one of them is DROPPED with an M005
- * error rather than renamed: a same-named ontology field would take the
- * structural field's slot in the merged map and break the Node interface at
- * validateSchema — silently, because the merge keeps the first POSITION but
- * the last VALUE.
+ * The M005 remedy set — named in the M005 message.
+ *
+ * `prefixing: "all"` ALWAYS clears an M005: the structural names the compiler
+ * owns (`uri`, `_meta`) carry no namespace prefix, so prefixing every
+ * generated field moves the ontology's claimant off the structural slot for
+ * good (`ex:uri` → `exUri`).
  */
-const STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set(["uri", "_meta"]);
+const STRUCTURAL_COLLISION_REMEDIES = `${RENAME_REMEDY} or namespace-prefix every field with prefixing: "all"`;
 
-/** Embeddable types get `_meta` but no `uri` — they have no identity to expose. */
-const EMBEDDABLE_STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set([
-  "_meta",
-]);
-
-/** How a consumer resolves an M001/M005 collision — named in both messages. */
-const COLLISION_REMEDIES =
-  'add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } }) or namespace-prefix every field with prefixing: "all"';
+/**
+ * The M001 field-collision remedy set — named in the M001 message.
+ *
+ * `prefixing: "all"` is NOT a schema-wide remedy here. It moves each field
+ * into ITS OWN property's namespace prefix, which separates two claimants
+ * only when their IRIs sit in DIFFERENT namespaces (`ex:name` + `ds:name` →
+ * `exName` + `dsName`). Two same-namespace IRIs take the same prefix and
+ * collide again — `ex:name` and `ex:hasName` both strip to `name` and both
+ * become `exName` — so that case needs the rename.
+ */
+const FIELD_COLLISION_REMEDIES = `${RENAME_REMEDY}; prefixing: "all" resolves it only when the two IRIs are in different namespaces (same-namespace claimants take the same prefix and collide again)`;
 
 interface MapperState {
   ir: OntologyIR;
@@ -107,10 +123,19 @@ const resolveTypeNames = (state: MapperState): void => {
       const component = sanitizePrefixComponent(node.namespace);
       const prefixed =
         component.charAt(0).toUpperCase() + component.slice(1) + name;
+      // The name is `taken` for one of two reasons, and they are not the same
+      // finding. A compiler-reserved name (Query, Node, String, …) is the
+      // compiler's own claim; another MAPPED class holding it is a fact about
+      // the consumer's ontology, and naming only the renamed IRI would send
+      // them looking for a reserved word that isn't there. `owners` already
+      // carries the first claimant, so say which one it was.
+      const holder = owners.get(name);
       state.diagnostics.push({
         severity: "info",
         code: "M004",
-        message: `type name ${name} collides with a reserved name — renamed to ${prefixed}`,
+        message: holder
+          ? `${holder} and ${node.uri} both map to type ${name} — renamed to ${prefixed}`
+          : `type name ${name} collides with a reserved name — renamed to ${prefixed}`,
         source: node.uri,
         phase: PHASE,
       });
@@ -144,9 +169,10 @@ const resolveTypeNames = (state: MapperState): void => {
 /**
  * Apply the `prefixing` policy to a generated field name: under
  * `prefixing: "all"` every field carries its property's namespace prefix
- * (`ex:uri` → `exUri`), which is the schema-wide remedy for M001/M005. The
- * `"x"` fallback covers a predicate that is not a known ontology property
- * (a standard-vocab field's predicate, typically).
+ * (`ex:uri` → `exUri`). That always clears an M005 (structural names carry no
+ * prefix) but clears an M001 only across namespaces — see
+ * FIELD_COLLISION_REMEDIES. The `"x"` fallback covers a predicate that is not
+ * a known ontology property (a standard-vocab field's predicate, typically).
  *
  * The composed result is kept legal by sanitizing the prefix component
  * BEFORE concatenation (the field part was already sanitized upstream): a
@@ -327,7 +353,7 @@ const buildFields = (
       state.diagnostics.push({
         severity: "error",
         code: "M005",
-        message: `${field.owlUri} maps to ${typeName}.${field.graphqlName}, a structural field the compiler owns — the field is DROPPED. To keep it, ${COLLISION_REMEDIES}`,
+        message: `${field.owlUri} maps to ${typeName}.${field.graphqlName}, a structural field the compiler owns — the field is DROPPED. To keep it, ${STRUCTURAL_COLLISION_REMEDIES}`,
         source: field.owlUri,
         phase: PHASE,
       });
@@ -338,7 +364,7 @@ const buildFields = (
       state.diagnostics.push({
         severity: "error",
         code: "M001",
-        message: `${existing.owlUri} and ${field.owlUri} both map to ${typeName}.${field.graphqlName} — the second is DROPPED. To keep both, ${COLLISION_REMEDIES}`,
+        message: `${existing.owlUri} and ${field.owlUri} both map to ${typeName}.${field.graphqlName} — the second is DROPPED. To keep both, ${FIELD_COLLISION_REMEDIES}`,
         source: field.owlUri,
         phase: PHASE,
       });

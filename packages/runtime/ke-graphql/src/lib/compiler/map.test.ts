@@ -66,8 +66,46 @@ describe("map — type name resolution", () => {
       instanceStats: new Map([[uri("Query"), { total: 1, named: 1 }]]),
     });
     const { output, diagnostics } = map(ir);
-    expect(codes(diagnostics)).toContain("M004");
+    const m004 = diagnostics.filter((d) => d.code === "M004");
+    expect(m004).toHaveLength(1);
+    // The reserved-name case keeps its own message: there is no prior class
+    // to name, and the claimant really is the compiler.
+    expect(m004[0]?.message).toContain("collides with a reserved name");
+    expect(m004[0]?.message).toContain("ExQuery");
     expect(output.types.has("ExQuery")).toBe(true);
+  });
+
+  it("M004 names BOTH class IRIs when the prior claimant is a mapped class", () => {
+    // Same local name in two namespaces: the first registers `Doc`, the second
+    // is auto-renamed to `DsDoc`. Reporting that as "collides with a reserved
+    // name" sends the reader hunting for a reserved word that is not there —
+    // the actual claimant is their own other class, so name both IRIs.
+    const OTHER = "https://ds.canonical.com/";
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Doc"), superclasses: [] },
+        { uri: `${OTHER}Doc`, superclasses: [] },
+      ],
+      namespaces: new Map([
+        [NS, "ex"],
+        [OTHER, "ds"],
+      ]),
+      instanceStats: new Map([
+        [uri("Doc"), { total: 1, named: 1 }],
+        [`${OTHER}Doc`, { total: 1, named: 1 }],
+      ]),
+    });
+    const { output, diagnostics } = map(ir);
+    const m004 = diagnostics.filter((d) => d.code === "M004");
+    expect(m004).toHaveLength(1);
+    expect(m004[0]?.severity).toBe("info");
+    expect(m004[0]?.message).toContain(uri("Doc"));
+    expect(m004[0]?.message).toContain(`${OTHER}Doc`);
+    expect(m004[0]?.message).toContain("DsDoc");
+    expect(m004[0]?.message).not.toContain("reserved");
+    // Both classes survive — the rename is an auto-resolution, not a drop.
+    expect(output.types.has("Doc")).toBe(true);
+    expect(output.types.has("DsDoc")).toBe(true);
   });
 
   it("sanitizes a dashed Turtle prefix in the M004 rename", () => {
@@ -744,6 +782,86 @@ describe('map — prefixing: "all"', () => {
     expect(fields?.has("exTitle")).toBe(true);
     expect(fields?.has("uri")).toBe(false);
     expect(fields?.has("title")).toBe(false);
+  });
+
+  it("resolves a CROSS-namespace field collision: both fields survive, prefixed", () => {
+    // ex:name and ds:name are two different properties on one class that both
+    // want the field `name`. Their prefixes differ, so prefixing separates
+    // them — this is the case the remedy string promises.
+    const OTHER = "https://ds.canonical.com/";
+    const crossNamespaceIR = () =>
+      buildIR({
+        classes: [{ uri: uri("Doc"), superclasses: [] }],
+        properties: [
+          {
+            uri: uri("name"),
+            kind: "datatype",
+            domains: [uri("Doc")],
+            ranges: [`${XSD}string`],
+          },
+          {
+            uri: `${OTHER}name`,
+            kind: "datatype",
+            domains: [uri("Doc")],
+            ranges: [`${XSD}string`],
+          },
+        ],
+        namespaces: new Map([
+          [NS, "ex"],
+          [OTHER, "ds"],
+        ]),
+        instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      });
+
+    // Baseline: the collision is real under the default policy.
+    expect(codes(map(crossNamespaceIR()).diagnostics)).toContain("M001");
+
+    const { output, diagnostics } = map(crossNamespaceIR(), {
+      prefixing: "all",
+    });
+    expect(codes(diagnostics)).not.toContain("M001");
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("exName")).toBe(true);
+    expect(fields?.has("dsName")).toBe(true);
+    expect(fields?.has("name")).toBe(false);
+  });
+
+  it("does NOT resolve a SAME-namespace field collision: M001 survives", () => {
+    // ex:name and ex:hasName both strip to `name` and both take the `ex`
+    // prefix, so prefixing renames them onto ONE name all over again. The
+    // remedy string must not promise otherwise — only a mappings rename
+    // separates these two.
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      properties: [
+        {
+          uri: uri("name"),
+          kind: "datatype",
+          domains: [uri("Doc")],
+          ranges: [`${XSD}string`],
+        },
+        {
+          uri: uri("hasName"),
+          kind: "datatype",
+          domains: [uri("Doc")],
+          ranges: [`${XSD}string`],
+        },
+      ],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output, diagnostics } = map(ir, { prefixing: "all" });
+    const m001 = diagnostics.filter((d) => d.code === "M001");
+    expect(m001).toHaveLength(1);
+    expect(m001[0]?.severity).toBe("error");
+    expect(m001[0]?.message).toContain("Doc.exName");
+    expect(m001[0]?.message).toContain(uri("name"));
+    expect(m001[0]?.message).toContain(uri("hasName"));
+    // …and the message says so, rather than pointing at prefixing as the fix.
+    expect(m001[0]?.message).toContain("different namespaces");
+    // One field kept, the second dropped — exactly as under prefixing "none".
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.get("exName")?.owlUri).toBe(uri("name"));
+    expect(fields?.size).toBe(1);
   });
 
   it("never prefixes an explicit graphqlName", () => {

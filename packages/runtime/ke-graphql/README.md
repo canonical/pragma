@@ -82,9 +82,11 @@ the compiler emits the following (fields lightly reordered for reading, Relay bo
 ```graphql
 # ke-graphql · canonical SDL
 # graphql-schema-spec: 1
-# mode: annotated
 # provider: unknown
+# mode: annotated
+# validated-store: false
 # revision: 0
+# prefixing: none
 
 interface Node {           # identity + self-description, and nothing else
   uri: ID!
@@ -190,7 +192,7 @@ A mapping that references nothing in the ontology produces an `M003` diagnostic 
 
 TYPE names the compiler owns (`Node`, `Query`, `PageInfo`, the built-in scalars, …) are auto-resolved on collision by prefixing the namespace — a class named `lib:Node` becomes `LibNode` with an `M004` info diagnostic. Illegal GraphQL characters in local names are sanitized (`My-Class → My_Class`) with an `M002` warning.
 
-FIELD names are never silently renamed. The compiler owns exactly two — `uri` and `_meta` — and a property mapping onto either is **dropped** with an error-severity `M005` naming the IRI and both remedies; two properties mapping to one name drop the second with `M001` naming both IRIs. A rename would break the consumer's query just as surely while hiding which IRI caused it. Fix one clash with `mappings`, or the whole schema at once with `prefixing: "all"`, which namespace-prefixes every generated field name (`lib:uri` → `libUri`).
+FIELD names are never silently renamed. The compiler owns exactly two — `uri` and `_meta` — and a property mapping onto either is **dropped** with an error-severity `M005` naming the IRI and both remedies; two properties mapping to one name drop the second with `M001` naming both IRIs. A rename would break the consumer's query just as surely while hiding which IRI caused it. Fix one clash with `mappings`; `prefixing: "all"`, which namespace-prefixes every generated field name (`lib:uri` → `libUri`), fixes every `M005` at once but only those `M001`s whose two IRIs come from different namespaces — same-namespace claimants (`ex:name` and `ex:hasName`, both stripping to `name`) take the same prefix and still collide.
 
 ## Cardinality: how a property becomes singular or a list
 
@@ -231,7 +233,7 @@ The compiler emits two connected schemas. Alongside the data types, a hand-writt
 }
 ```
 
-This is what powers documentation UIs: "which fields *should* this entity have, which are required, what does good look like" — asked of the schema itself, in the same query as the data. The TBox resolvers read the compiler's frozen IR, **never the store**: ontology browsing works before the TTL finishes parsing and even against a disposed store, and it can't disagree with the schema's own shape because both came from the same compilation.
+This is what powers documentation UIs: "which fields *should* this entity have, which are required, what does good look like" — asked of the schema itself, in the same query as the data. The reflective surface reads the compiler's frozen IR, **not the store** — labels, definitions, cardinality, sub/superclasses, `isAbstract`, even `instanceCount` (a Pass 1 statistic) — so ontology browsing answers before the TTL finishes parsing and even against a disposed store, and it can't disagree with the schema's own shape because both came from the same compilation. The one exception is `OntologyClass.instances`: it hands back real entities, so it reaches the store through the same loaders as any data field and needs a live one.
 
 ## Diagnostics
 
@@ -257,7 +259,9 @@ createSchemaPlugin({
   extensions,                        // consumer fields — object or factory form (below)
   relay: true,                       // Node/uri/_meta/connections/root queries (default true)
   incremental: false,                // add @defer/@stream directives (below)
-  sdlOutput: "./schema.graphql",     // write the SDL on every (re)compile — feed relay-compiler
+  sdlOutput: "./schema.graphql",     // write the SDL on every compile that prints one — feed
+                                     // relay-compiler (artifact boots skip printing and leave
+                                     // the file untouched)
   nonNullOverrides: { Book: ["title"] },
   prefixing: "none",                 // or "all" — namespace-prefix EVERY field name
   mode: "annotated",                 // "auto" | "annotated" | "explicit" — provenance only today

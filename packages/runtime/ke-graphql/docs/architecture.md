@@ -18,7 +18,7 @@ Each pass is a pure function from one IR to the next (Pass 1 is the only one tha
 
 | Pass | File | In → Out | Responsibility |
 |---|---|---|---|
-| 1 Extract | `extract.ts` | store → `RawExtraction` | 12 SPARQL queries: TBox structure, SHACL shapes (incl. `sh:or`/`sh:in`), and ABox probes (instance counts, self-reference, functional violations, undeclared predicates, annotations). All store access happens here so passes 2–7 stay pure. |
+| 1 Extract | `extract.ts` | store → `RawExtraction` | 16 SPARQL queries: **10 TBox** (classes, properties, inverses, functionals, custom datatypes, SHACL direct + `sh:in` values + `sh:or` branches, named + anonymous unions) and **6 ABox probes** (instance counts, self-reference, functional violations, undeclared predicates, annotation assertions, blank-node nesting depth). Two are conditional — the functional-violation probe needs a declared `owl:FunctionalProperty`, the annotation probe a declared annotation property. The file's `Q1…Q12` markers number the extraction *steps*, not the queries (`Q6`, namespace discovery, runs in code and issues none; `Q7a` and `Q8` issue two each). All store access happens here so passes 2–7 stay pure. |
 | 2 Build | `build.ts` | `RawExtraction` → `OntologyIR` | subClassOf closure, abstract/embeddable detection from instance stats, per-class cardinality by precedence (custom > `owl:FunctionalProperty` > `owl:cardinality` > SHACL > kind default), range resolution. |
 | 3 Validate | `validate.ts` | `OntologyIR` → `OntologyIR` (+ diagnostics) | the V-series diagnostics (blank-node-only class, domainless property, asymmetric inverse, boolean-as-string, SHACL specifics, abstract-with-instances `V015`, supertype flattening `V016`). Never mutates the IR; never aborts. |
 | 4 Map | `map.ts` | `OntologyIR` → `MappedIR` | GraphQL naming rules, collision auto-resolution (namespace prefixing), synthetic inverse field synthesis, the bidirectional name map. |
@@ -32,7 +32,7 @@ Each pass is a pure function from one IR to the next (Pass 1 is the only one tha
 
 The intermediate representations are exported public contracts (like Prisma's DMMF), not internals — tooling can consume them.
 
-- **`RawExtraction`** — the serializable result of Pass 1 (the twelve queries). It is the artifact boundary (see the performance model below).
+- **`RawExtraction`** — the serializable result of Pass 1 (every extraction query). It is the artifact boundary (see the performance model below).
 - **`OntologyIR`** — the typed ontology: `ClassNode` (ancestors, subclasses, `isAbstract`, `embeddable`) and `PropertyNode` (kind, domains, resolved `RangeSpec`, per-class `CardinalitySpec`).
 - **`MappedIR`** — GraphQL-shaped: `MappedType`/`MappedInterface`/`MappedField`, the `NameMap`, the namespace inventory.
 - **`SchemaPlan`** — field configs + resolvers awaiting construction.
@@ -82,7 +82,7 @@ The root export is **schema + resolvers + local execution only** (`graphql` + `d
 ## 7. Performance model
 
 - **Extraction artifact** (DMMF pattern). `pragma graphql build` serializes Pass 1 to JSON with an FNV-1a `sourcesHash`. `compileFromExtraction` boots the schema from it without touching the store (~9 ms vs ~54 ms live), falling back to a live compile when the hash is stale.
-- **Store-free TBox.** `_meta`/Ontology/Class resolvers read the frozen IR; they answer even after the store is disposed (~0.13 ms).
+- **Store-free TBox.** `_meta`/Ontology/Class resolvers read the frozen IR — `instanceCount` included, since it is a Pass 1 statistic — and answer even after the store is disposed (~0.13 ms). `OntologyClass.instances` is the one reflective field that still needs a live store: it returns entities, so it goes through the ordinary loaders.
 - **Slice-before-hydrate.** Every connection — root *and* nested — paginates the URI window first and hydrates only the page (24 entities, not 250).
 - **Loader caches.** `loaderCache: "request"` (default, per-request isolation) or `"process"` (shared across requests; sound because the store is immutable between reloads). Process caches are bounded LRUs (`processCacheSize`).
 

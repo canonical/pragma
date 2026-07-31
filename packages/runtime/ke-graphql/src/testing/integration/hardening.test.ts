@@ -12,6 +12,7 @@ import {
   executeLocal,
   isIncrementalResults,
 } from "../../lib/execution/index.js";
+import { isAbsoluteIri, isSafeIri } from "../../lib/hardening/index.js";
 
 const PREFIXES = { ex: "http://example.org/" };
 
@@ -88,6 +89,51 @@ describe("forced abstract with direct instances (C1 + V015)", () => {
       expect((execution.data?.node as { __typename: string }).__typename).toBe(
         "Dog",
       );
+    }
+  });
+});
+
+describe("SPARQL injection through node(id:)", () => {
+  // An id crafted to break out of the loader's `<${iri}>` interpolation: the
+  // ">" would close the IRIREF early and the remainder would ride into the
+  // CONSTRUCT as graph patterns.
+  const INJECTED_ID =
+    "http://example.org/d1> ?x ?y ?z . <http://example.org/d1";
+
+  it("is caught by the isSafeIri gate, not the absolute-IRI gate", () => {
+    // Which gate fires matters: node(id:) applies isAbsoluteIri first, and
+    // "http" is a legal scheme, so this id is ADMITTED there and reaches the
+    // entity loader. isSafeIri inside the loader batch is the guard actually
+    // under test — pinned so the test cannot silently degrade into another
+    // exercise of the admission gate.
+    expect(isAbsoluteIri(INJECTED_ID)).toBe(true);
+    expect(isSafeIri(INJECTED_ID)).toBe(false);
+  });
+
+  it("resolves null cleanly and leaves a sibling lookup in the same batch intact", async () => {
+    const { result, store } = await compileHierarchy();
+    const context = result.createContext(store);
+    // Both fields resolve in one tick, so they share ONE DataLoader batch and
+    // ONE CONSTRUCT. The unsafe id must be dropped from the VALUES clause
+    // without failing the query for its valid sibling — a rejected id is
+    // "not found", never an error and never injected SPARQL.
+    const execution = await executeLocal({
+      schema: result.schema,
+      source: `{
+        injected: node(id: ${JSON.stringify(INJECTED_ID)}) { uri }
+        valid: node(id: "http://example.org/d1") { uri __typename }
+      }`,
+      contextValue: context,
+    });
+    expect(isIncrementalResults(execution)).toBe(false);
+    if (!isIncrementalResults(execution)) {
+      // No thrown error surfaced as a GraphQL error, and no partial data.
+      expect(execution.errors).toBeUndefined();
+      expect(execution.data?.injected).toBeNull();
+      expect(execution.data?.valid).toEqual({
+        uri: "http://example.org/d1",
+        __typename: "Dog",
+      });
     }
   });
 });

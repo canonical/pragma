@@ -1,11 +1,19 @@
 // =============================================================================
 // Pass 1 — Extract: ke store → RawExtraction
 //
-// The only pass that touches the store. Twelve SPARQL queries: eight TBox
-// queries plus four ABox probes that keep Passes 2–7 pure. Queries use
-// absolute IRIs so they are independent of registered prefixes, and consume
-// ke's term-preserving results (termBindings) so that NamedNodes, literals,
-// and blank nodes are distinguishable.
+// The only pass that touches the store. Sixteen SPARQL queries: ten TBox
+// queries plus six ABox probes, which is what keeps Passes 2–7 pure.
+//
+// The Q1…Q12 markers below number the extraction STEPS, not the queries: Q6
+// (namespace discovery) runs in code and issues none, Q7a and Q8 issue two
+// each, and the annotation and depth-guard probes carry no Q number at all.
+// Two of the sixteen are conditional — Q11 runs only when the TBox declares
+// an owl:FunctionalProperty, the annotation probe only when it declares an
+// annotation property.
+//
+// Queries use absolute IRIs so they are independent of registered prefixes,
+// and consume ke's term-preserving results (termBindings) so that NamedNodes,
+// literals, and blank nodes are distinguishable.
 // =============================================================================
 
 import type { SelectResult, Term } from "@canonical/ke";
@@ -113,8 +121,8 @@ const getIntValue = (term: Term | undefined): number | undefined => {
  * Extract the TBox structure and ABox probes from a ke store as a
  * RawExtraction (Pass 1) — the only pipeline step that queries the store.
  *
- * @note Impure — executes the twelve extraction SPARQL queries against the
- * store through the provided query function.
+ * @note Impure — executes the extraction SPARQL queries (sixteen; two of them
+ * conditional) against the store through the provided query function.
  */
 export default async function extract(
   query: QueryFn,

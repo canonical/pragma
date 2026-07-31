@@ -405,6 +405,64 @@ describe("provenance header", () => {
   });
 });
 
+describe("determinism", () => {
+  it("emits byte-identical SDL for two independent compiles of one fixture", async () => {
+    // Deterministic output is what makes the SDL snapshottable and reviewable
+    // in a diff — the whole premise of the canonical SDL. Two fresh stores,
+    // same TTL, same prefixes, same options: the printed bytes must not move.
+    // Anything order-sensitive (Map iteration, union member collection, root
+    // field claiming, connection minting) would show up here as a churn diff.
+    const options = {
+      mappings: {
+        "ds:hasModifierFamily": { graphqlName: "modifierFamilies" },
+        "ds:hasSubcomponent": { graphqlName: "subcomponents" },
+        "ds:hasProperty": { graphqlName: "properties" },
+        "ds:hasModifier": { graphqlName: "modifiers" },
+        "ds:implementsBlock": { inverse: { graphqlName: "implementations" } },
+      },
+      nonNullOverrides: { Component: ["name"] },
+    };
+    const first = await compileFixture(DS_REALISTIC_TTL, options);
+    const second = await compileFixture(DS_REALISTIC_TTL, options);
+    // Guard against a vacuous pass: "" === "" would satisfy the comparison.
+    expect(first.sdl.length).toBeGreaterThan(0);
+    expect(second.sdl).toBe(first.sdl);
+  });
+});
+
+describe("zero-class compile", () => {
+  // No owl:Class anywhere — a prefix block and one unrelated triple. This is
+  // the "ontology not loaded yet / wrong file" shape, and it must not be a
+  // crash: the TBox surface is still a valid schema to serve.
+  const NO_CLASSES_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:note rdfs:label "an unrelated triple" .
+`;
+
+  it("succeeds with the Query + TBox surface and no generated types", async () => {
+    const result = await compileFixture(NO_CLASSES_TTL);
+    // No diagnostics at all: nothing is wrong, there is simply nothing to map.
+    expect(result.diagnostics).toEqual([]);
+    expect([...result.mapped.types.keys()]).toEqual([]);
+    expect([...result.mapped.interfaces.keys()]).toEqual([]);
+    // The reflective surface survives, plus node(id:) — but no per-type
+    // lookup or listing root fields, because there are no types.
+    expect(
+      Object.keys(result.schema.getQueryType()?.getFields() ?? {}).sort(),
+    ).toEqual([
+      "node",
+      "ontologies",
+      "ontology",
+      "ontologyClass",
+      "ontologyProperty",
+    ]);
+    expect(result.sdl).toContain("type EntityMeta");
+    expect(result.sdl).toContain("type OntologyClass");
+  });
+});
+
 describe("failure modes", () => {
   it("M003 reports unknown custom mappings", async () => {
     const result = await compileFixture(MINIMAL_TTL, {

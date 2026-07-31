@@ -75,6 +75,7 @@ export {
 } from "./execution/index.js";
 export {
   clampConnectionArgs,
+  createBoundedCache,
   createDepthLimitRule,
   DEFAULT_MAX_QUERY_DEPTH,
   DEFAULT_PAGE_SIZE,
