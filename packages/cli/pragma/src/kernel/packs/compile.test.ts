@@ -92,6 +92,27 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
     expect(parsePackDefinition(raw, "test:widget")).toEqual(WIDGET_PACK);
   });
 
+  it("round-trips a fixed-count sample — the field the no-argument samples declare", () => {
+    // `sample.fixedCount` is a documented grammar field (packs/types.ts) that
+    // three of the distribution's own stories use and the covenant freezes
+    // (`block sample` takes no argument). It was missing from the `.strict()`
+    // sample schema, so ANY config- or package-declared story using it died
+    // with a fatal CONFIG_ERROR before ever reaching the compiler.
+    const lookup = WIDGET_PACK.lookup as NonNullable<PackDefinition["lookup"]>;
+    const fixed: PackDefinition = {
+      ...WIDGET_PACK,
+      lookup: { ...lookup, sample: { fixedCount: true } },
+    };
+    expect(parsePackDefinition(JSON.parse(JSON.stringify(fixed)), "t")).toEqual(
+      fixed,
+    );
+    // …and the compiler honours it: no `[count]` positional on the sample verb.
+    const sample = compilePack(fixed, "t", PREFIXES).find(
+      (v) => verbKey(v.path) === "widget sample",
+    );
+    expect(sample?.params).toEqual([]);
+  });
+
   it("projects list, lookup, and sample verbs with unique keys", () => {
     const verbs = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
     expect(verbs.map((v) => verbKey(v.path))).toEqual([

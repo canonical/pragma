@@ -171,6 +171,7 @@ const sampleSchema = z.union([
   z
     .object({
       count: z.number().int().min(1).max(5).optional(),
+      fixedCount: z.boolean().optional(),
       description: z.string().optional(),
       toolDescription: z.string().optional(),
     })
