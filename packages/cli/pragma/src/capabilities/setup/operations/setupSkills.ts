@@ -19,6 +19,7 @@ import {
   symlink,
   type Task,
 } from "@canonical/task";
+import { BIN_NAME } from "../../../constants.js";
 import { PragmaError } from "../../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../../kernel/error/recovery.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
@@ -198,7 +199,7 @@ export function skillsEmptyError(): PragmaError {
     message: "No skills found to link.",
     recovery: cliRecovery(
       `sources update`,
-      "Add a design-system package that ships skills to your config, then run `pragma sources update` to install them.",
+      `Add a design-system package that ships skills to your config, then run \`${BIN_NAME} sources update\` to install them.`,
     ),
   });
 }

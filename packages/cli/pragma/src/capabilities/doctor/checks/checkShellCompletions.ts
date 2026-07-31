@@ -122,7 +122,7 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
     return {
       name: NAME,
       status: "fail",
-      detail: "completion resolver returned no candidates for `pragma <TAB>`",
+      detail: `completion resolver returned no candidates for \`${BIN_NAME} <TAB>\``,
       remedy: "Report this as a bug — the noun context is always non-empty.",
     };
   }

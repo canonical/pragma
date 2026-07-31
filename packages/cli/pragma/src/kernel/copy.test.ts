@@ -372,11 +372,22 @@ describe("kernel copy (PROTECTED)", () => {
  */
 const COMMAND_POSITIONS = ["cmd", "cli", "remedy"];
 
-/** Every authored `.ts` under `src/capabilities/**`. */
-const capabilitySources = listSources(join(root, "capabilities"));
+/**
+ * Every authored `.ts` under `src/capabilities/**`, minus the one file whose
+ * strings are the distribution's own NARRATIVE rather than instructions:
+ * `colophon/pragmaColophon.ts` is prose about what this toolchain is, and it
+ * quotes `pragma create` as a subject, not as a step. Whether a fork inherits
+ * that narrative, rewrites it, or declares its own is a decision the owner has
+ * not made; interpolating a bin name into it would answer the question by
+ * accident. It is the only file the two rules below exempt, and it is the whole
+ * of what a fork still reads in this distribution's voice.
+ */
+const capabilitySources = listSources(join(root, "capabilities")).filter(
+  (file) => !file.endsWith("colophon/pragmaColophon.ts"),
+);
 
 describe("capability commands (PROTECTED)", () => {
-  it("no command a user is told to run is a bare literal", () => {
+  it("no `cmd:`, `cli:` or `remedy:` value is a bare literal", () => {
     // The rule that reaches `src/capabilities/**` without exempting most of it.
     // The wider "name nothing" rule cannot: that tree legitimately carries the
     // domain in runtime copy and in wire identifiers. But a command string is
@@ -408,6 +419,32 @@ describe("capability commands (PROTECTED)", () => {
     for (const file of capabilitySources) {
       for (const match of readFileSync(file, "utf-8").matchAll(pattern)) {
         offenders.push(`${relative(root, file)}: ${match[0].trim()}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("no command quoted in capability prose is a bare literal", () => {
+    // The other half of the same promise, and the half the position rule cannot
+    // reach: an empty-state hint, a recovery MESSAGE (the second argument to
+    // `cliRecovery`, beside a first argument the position rule already covers),
+    // a `sources status` headline, a wizard step's title. They reach the same
+    // user with the same instruction, and seven of them named this distribution
+    // while the rule above reported zero exemptions.
+    //
+    // A command in prose is a backticked one: `` run `pragma sources update` ``.
+    // `readCopy` reads a template's substitutions as code and its literal chunks
+    // as copy, so an interpolated `\`${BIN_NAME} …\`` leaves no chunk that
+    // begins with the name — which is exactly the difference this asserts.
+    // DERIVED and ESCAPED from the shipped `name`, as above.
+    const name = BIN_NAME.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&");
+    const pattern = new RegExp(`\`${name}\\b`, "i");
+    const offenders: string[] = [];
+    for (const file of capabilitySources) {
+      for (const literal of readCopy(readFileSync(file, "utf-8"))) {
+        if (pattern.test(literal)) {
+          offenders.push(`${relative(root, file)}: ${literal}`);
+        }
       }
     }
     expect(offenders).toEqual([]);

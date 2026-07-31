@@ -42,7 +42,7 @@ const URI_TEMPLATE = `${BIN_NAME}:{+uri}`;
 const TEMPLATE_DESCRIPTION =
   "Knowledge-graph entities from the local pack. Read any entry by its prefixed " +
   "URI (e.g. pragma:ds:button); autocomplete matches URI or label substrings. " +
-  "Content mirrors `pragma graph inspect <uri>`.";
+  `Content mirrors \`${BIN_NAME} graph inspect <uri>\`.`;
 
 /** Agent-navigability annotations mirrored onto a listed resource. */
 export interface ResourceAnnotations {
@@ -84,8 +84,7 @@ export function buildResourceList(
       {
         uri: "pragma:sources",
         name: "Store not indexed",
-        description:
-          "No enriched entity index. Run `pragma sources update` to build it.",
+        description: `No enriched entity index. Run \`${BIN_NAME} sources update\` to build it.`,
         mimeType: "application/json",
       },
     ];

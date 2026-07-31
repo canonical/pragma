@@ -67,8 +67,7 @@ const listOptions: RenderListOptions<BlockRow> = {
   // hint offers the escape hatches (a cold store fails earlier with
   // STORE_UNAVAILABLE, so reaching here means the store is built).
   emptyMessage: "No blocks found under the current tier and channel.",
-  emptyHint:
-    "Use --all-tiers to ignore the tier filter, or run `pragma sources update` if the store is empty.",
+  emptyHint: `Use --all-tiers to ignore the tier filter, or run \`${BIN_NAME} sources update\` if the store is empty.`,
 };
 
 const listFormatters: Formatters<BlockRow[]> = {
