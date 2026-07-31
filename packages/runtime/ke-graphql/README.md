@@ -439,3 +439,5 @@ the package but ships nowhere: it is excluded from the build and the npm
 tarball.
 
 The intermediate representations (`RawExtraction`, `OntologyIR`, `MappedIR`) are exported public contracts, not internals — tooling can consume them the way Prisma generators consume the DMMF. They are pinned by the golden-SDL snapshot in the test suite, so changes to the emitted shape are caught.
+
+The emitted base is additionally gated by `@canonical/prism-contract` (a devDependency): `src/testing/integration/contract.test.ts` runs `assertSatisfiesContract` on the **live emitted SDL** of every fixture — semantic subsumption via `findBreakingChanges`, with the SDL crossing the package boundary as a string — plus two controls: `prefixing: "all"` still conforms (the contract names no ontology terms), and `relay: false` fails by exactly one violation (`FIELD_REMOVED` on `Query.node`).

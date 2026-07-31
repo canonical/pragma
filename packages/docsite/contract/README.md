@@ -136,6 +136,21 @@ on its own — a genuinely conformant provider produces zero violations — and
 suppressing `TYPE_REMOVED` would mask a real type removal, which is exactly the
 kind of breakage this package exists to catch.
 
+## The gate in ke-graphql
+
+ke-graphql — the reference provider — holds itself to this contract in its own
+test suite: `src/testing/integration/contract.test.ts` (ke-graphql depends on
+this package as a devDependency) compiles its whole fixture corpus and runs
+`assertSatisfiesContract` on the **live emitted SDL**, plus two controls:
+
+- `prefixing: "all"` still satisfies the contract — the knob-independence
+  ruling, *measured* rather than assumed;
+- `relay: false` fails by **exactly one** violation, `FIELD_REMOVED` on
+  `Query.node` — proof the gate has teeth.
+
+The SDL crosses that package boundary as a string, so the two-graphql-versions
+hazard never materializes there either.
+
 ## Reading the contract SDL
 
 ```ts
