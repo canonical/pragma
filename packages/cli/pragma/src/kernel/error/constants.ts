@@ -27,8 +27,9 @@ const ERROR_CODES = [
   // A runtime condition that is NOT a bug and NOT a usage mistake, so it must
   // NOT collapse to INTERNAL_ERROR's "please report this issue": a capability
   // genuinely unavailable in this build/environment (`create package` /
-  // `create application` in the compiled binary, whose generator assets are not
-  // embedded — `create component` is embedded and runs), OR an external command
+  // `create application` in the compiled binary, whose generators read their
+  // templates from disk rather than through the embedded manifest —
+  // `create component` reads through it and runs), OR an external command
   // that RAN and failed for a fixable environment reason (a denied global
   // `npm i -g`, a network/registry failure — see `shared/assertExecOk`). Both
   // carry an actionable recovery and map to the generic runtime exit 1.

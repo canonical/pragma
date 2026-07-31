@@ -31,8 +31,8 @@ function isUnseededStoreError(error: unknown): boolean {
 /**
  * Run the facade query, remapping an unseeded-store failure. A generated pack
  * query hitting an unknown prefix means the store was never built for this
- * design system (the first thing a fresh install hits) — surface the actionable
- * STORE_UNAVAILABLE with the canonical `pragma sources update` recovery instead
+ * project (the first thing a fresh install hits) — surface the actionable
+ * STORE_UNAVAILABLE with the canonical `sources update` recovery instead
  * of a raw SPARQL "Prefix not found" wrapped as INTERNAL_ERROR ("please report
  * this issue"). Returns the inferred facade result type, so this module stays
  * clear of a static `@canonical/ke` import (the lazy-dispatch guard).
@@ -48,7 +48,7 @@ async function queryOrRemap(rt: Pick<PragmaRuntime, "query">, query: string) {
         {
           recovery: cliRecovery(
             `${RECOVERY_CLI_PREFIX}sources update`,
-            "Build the local store from the configured design-system packs.",
+            "Build the local store from the configured packs.",
             // An agent recovers by calling the tool, then retrying (PR9 C1 cold-
             // store retry makes the post-update retry succeed).
             { tool: "sources_update" },

@@ -2,9 +2,11 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { CONVENTIONS } from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
+import { emitSurface } from "../../../spec/emitSurface.js";
 import type { CapabilityModule } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
@@ -39,12 +41,23 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     );
   });
 
-  it("derives its conventions from the shared catalog source", () => {
-    // The system convention string is authored once (capabilities/catalog.ts);
-    // instructions must carry it verbatim so the two can never diverge.
-    expect(buildInstructions(capabilities)).toContain(
-      "design-system knowledge graph",
+  it("opens with the shared catalog's conventions, verbatim and once", () => {
+    // The conventions are authored once (capabilities/catalog.ts); instructions
+    // must OPEN with them, so a second hand-written preamble cannot creep back
+    // in and drift from the `capabilities` tool the same handshake carries.
+    expect(buildInstructions(capabilities).startsWith(CONVENTIONS.system)).toBe(
+      true,
     );
+  });
+
+  it("quotes the resource templates the MCP surface actually advertises", () => {
+    // The `pragma:` scheme is covenant-frozen protocol identity
+    // (surface.v2.json). The orientation DERIVES it from the emitted surface
+    // instead of hand-copying it, so the two cannot disagree.
+    const { resources } = emitSurface(capabilities).mcpSurface;
+    expect(resources.length).toBeGreaterThan(0);
+    const text = buildInstructions(capabilities);
+    for (const template of resources) expect(text).toContain(template);
   });
 
   it("states the plan-first/confirm convention in the orientation (D2)", () => {

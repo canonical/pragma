@@ -13,6 +13,7 @@
  * facade).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { asVerb } from "../spec/asVerb.js";
 import type { DisclosureSpec, ParamSpec, VerbSpec } from "../spec/types.js";
@@ -135,17 +136,17 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
       }),
     },
     examples: [
-      { cmd: `pragma ${meta.noun} ${meta.verb}` },
+      { cmd: `${BIN_NAME} ${meta.noun} ${meta.verb}` },
       ...(filterExample
         ? [
             {
-              cmd: `pragma ${meta.noun} ${meta.verb} --${filterExample.param} ${quoteExample(
+              cmd: `${BIN_NAME} ${meta.noun} ${meta.verb} --${filterExample.param} ${quoteExample(
                 filterExample.values?.at(0) ?? "",
               )}`,
             },
           ]
         : []),
-      { cmd: `pragma ${meta.noun} ${meta.verb} --format llm` },
+      { cmd: `${BIN_NAME} ${meta.noun} ${meta.verb} --format llm` },
     ],
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
@@ -197,7 +198,7 @@ function compileLookupVerb(
     ...(lookup.toolDescription ? { doc: lookup.toolDescription } : {}),
     params: [nameParam],
     output: { formatters: lookupFormatters(lookup, prefixes) },
-    examples: [{ cmd: `pragma ${noun} lookup <name>` }],
+    examples: [{ cmd: `${BIN_NAME} ${noun} lookup <name>` }],
     ...(lookup.disclosure
       ? { disclosure: disclosureSpec(lookup.disclosure) }
       : {}),
@@ -241,8 +242,8 @@ function compileSampleVerb(
     params: countParam,
     output: { formatters: sampleFormatters(lookup, noun, prefixes) },
     examples: [
-      { cmd: `pragma ${noun} sample` },
-      ...(config?.fixedCount ? [] : [{ cmd: `pragma ${noun} sample 3` }]),
+      { cmd: `${BIN_NAME} ${noun} sample` },
+      ...(config?.fixedCount ? [] : [{ cmd: `${BIN_NAME} ${noun} sample 3` }]),
     ],
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>

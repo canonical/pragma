@@ -12,6 +12,7 @@
  * sources_*, tier_lookup, create_*) are authored here.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import type { ToolHint } from "./types.js";
 
 /**
@@ -36,7 +37,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   info: {
     category: "diagnostic",
-    use_when: "Checking pragma version, configuration summary, and store state",
+    use_when: `Checking ${BIN_NAME} version, configuration summary, and store state`,
   },
 
   // — Read ——————————————————————————————————————————————————————————————————
@@ -57,8 +58,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   colophon: {
     category: "read",
-    use_when:
-      "Understanding how pragma and the active domain are built — the toolchain + design-system colophon, for onboarding or a demo",
+    use_when: `Understanding how ${BIN_NAME} and the active domain are built — the toolchain + domain colophon, for onboarding or a demo`,
   },
   config_show: {
     category: "read",
@@ -105,8 +105,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   prompt_list: {
     category: "read",
-    use_when:
-      "Browsing the workflow prompt templates the design-system graph offers",
+    use_when: "Browsing the workflow prompt templates the active graph offers",
   },
   prompt_lookup: {
     category: "read",
@@ -178,8 +177,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   create_component: {
     category: "write",
-    use_when:
-      "Scaffolding a new design-system component (React, Svelte, or Lit)",
+    use_when: "Scaffolding a new component (React, Svelte, or Lit)",
   },
   create_package: {
     category: "write",
@@ -193,8 +191,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   setup: {
     category: "write",
-    use_when:
-      "Installing pragma's shell completions, MCP config, skills, and LSP into the environment",
+    use_when: `Installing ${BIN_NAME}'s shell completions, MCP config, skills, and LSP into the environment`,
   },
   sources_update: {
     category: "write",
@@ -207,6 +204,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   upgrade: {
     category: "write",
-    use_when: "Upgrading the pragma CLI itself to the latest release",
+    use_when: `Upgrading the ${BIN_NAME} CLI itself to the latest release`,
   },
 };

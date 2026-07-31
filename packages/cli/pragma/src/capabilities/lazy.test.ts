@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -45,14 +45,31 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     expect(has(graph, "info/info.render.ts")).toBe(true);
     expect(has(graph, "config/show.render.ts")).toBe(true);
 
-    // ...but run bodies and the config reader are only dynamic-imported. The
-    // defaults layer (and the distribution config it statically imports and
-    // eagerly validates) must stay behind that same dynamic boundary.
+    // ...but run bodies and the config LAYER stay behind the dynamic boundary:
+    // no reader, no defaults layer, no zod schema. The distribution config
+    // itself IS on the graph — `constants.ts` projects the program's identity
+    // from it — which is safe only because it is inert data (pinned below).
     expect(has(graph, "info/collectInfo.ts")).toBe(false);
     expect(has(graph, "config/collectConfigShow.ts")).toBe(false);
     expect(has(graph, "kernel/config/readConfig.ts")).toBe(false);
     expect(has(graph, "kernel/config/defaults.ts")).toBe(false);
-    expect(has(graph, "pragma.conf.ts")).toBe(false);
+    expect(has(graph, "kernel/config/schema.ts")).toBe(false);
+    expect(has(graph, "pragma.conf.ts")).toBe(true);
+  });
+
+  it("the distribution config is inert data — it imports nothing that runs", () => {
+    const conf = resolve(here, "../../pragma.conf.ts");
+    const pkgRoot = resolve(here, "../..");
+    // The graph walker follows `from "…"` textually and cannot tell an
+    // `import type` from a value import, so the type-only `config/types.ts`
+    // shows up here even though nothing of it survives compilation. Assert the
+    // SOURCE has no value import at all — that is the claim in the title, and
+    // it is what keeps `--help`/`__complete`/`--version` free of module-init
+    // work when another lane or a fork edits this file.
+    expect(readFileSync(conf, "utf-8")).not.toMatch(/^import (?!type\b)/m);
+    expect(
+      [...staticImportGraph(conf)].map((f) => relative(pkgRoot, f)).sort(),
+    ).toEqual(["pragma.conf.ts", "src/kernel/config/types.ts"]);
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {

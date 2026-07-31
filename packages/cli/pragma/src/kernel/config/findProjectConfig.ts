@@ -1,8 +1,8 @@
 /**
  * Locate the nearest project config by walking up from `cwd`.
  *
- * Looks for `pragma.config.ts` (or, as a compiled-binary fallback,
- * `pragma.config.js`) at or above `cwd`. The walk is bounded: it stops after
+ * Looks for `<bin>.config.ts` (or, as a compiled-binary fallback,
+ * `<bin>.config.js`) at or above `cwd`. The walk is bounded: it stops after
  * the first directory containing `.git` (the repo root), after the home
  * directory, and at the filesystem root — a config outside the repo or home
  * never leaks in. Ported from the v1 `findProjectConfigPath`.
@@ -11,9 +11,13 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { BIN_NAME } from "../../constants.js";
+
+/** The project config filename the onboarding note and diagnostics quote. */
+export const PROJECT_CONFIG_FILENAME = `${BIN_NAME}.config.ts`;
 
 /** Candidate project-config filenames, in preference order. */
-const CANDIDATES = ["pragma.config.ts", "pragma.config.js"] as const;
+const CANDIDATES = [PROJECT_CONFIG_FILENAME, `${BIN_NAME}.config.js`] as const;
 
 /**
  * Find the nearest project config file at or above `cwd`.
