@@ -33,6 +33,7 @@ import {
   resolveTitle,
   selectDescriptivePredicates,
   selectLexicals,
+  toConnection,
   unwrapEntities,
 } from "../resolver/index.js";
 import {
@@ -54,7 +55,7 @@ import {
   SKOS_PREF_LABEL,
   type TripleSet,
 } from "../shared/index.js";
-import { OWL_CLASS_NODE } from "./metaClass.js";
+import { OWL_CLASS_NODE, OWL_CLASS_PREFIXED } from "./metaClass.js";
 
 interface ClassPropertyValue {
   propertyUri: string;
@@ -396,6 +397,14 @@ export default function buildTBoxSchema(
         description:
           "Named instances of this class (blank-node instances are embeddable and not standalone-resolvable).",
         resolve: async (c, args, ctx) => {
+          // META BRANCH: the meta-class's instances are the classes
+          // themselves, straight from the frozen IR — no store round-trip.
+          // Each edge node is a ClassNode, which Node.resolveType's
+          // identity branch sends to OntologyClass. toConnection sorts by
+          // URI, so cursors are stable across requests.
+          if (c === OWL_CLASS_NODE) {
+            return toConnection([...ir.classes.values()], args);
+          }
           // The loader's list is already in absolute-IRI currency — the same
           // currency the cursors encode and EntityValue.uri carries.
           const uris = await ctx.listLoader.load(c.uri);
@@ -407,7 +416,15 @@ export default function buildTBoxSchema(
       instanceCount: {
         type: new GraphQLNonNull(GraphQLInt),
         description: "Count of NAMED instances (matches `instances`).",
-        resolve: (c) => ir.extraction.instanceStats.get(c.uri)?.named ?? 0,
+        // The meta-class counts ir.classes — the exact set its `instances`
+        // connection yields — NOT instanceStats(owl:Class), which counts
+        // every `a owl:Class` subject in the store, including declarations
+        // the compiler filtered (standard-vocabulary classes). The two must
+        // never drift: `instances` and `instanceCount` are one promise.
+        resolve: (c) =>
+          c === OWL_CLASS_NODE
+            ? ir.classes.size
+            : (ir.extraction.instanceStats.get(c.uri)?.named ?? 0),
       },
       isAbstract: {
         type: new GraphQLNonNull(GraphQLBoolean),
@@ -558,8 +575,14 @@ export default function buildTBoxSchema(
     ontologyClass: {
       type: ontologyClass,
       args: { uri: { type: new GraphQLNonNull(GraphQLString) } },
+      // The meta-class round-trips through the same two spellings every IR
+      // class does — the absolute IRI and the `${namespace}:${localName}`
+      // convenience form — checked after the IR map so the IR always wins.
       resolve: (_parent, args: { uri: string }) =>
         ir.classes.get(args.uri) ??
+        (args.uri === OWL_CLASS_NODE.uri || args.uri === OWL_CLASS_PREFIXED
+          ? OWL_CLASS_NODE
+          : null) ??
         [...ir.classes.values()].find(
           (c) => `${c.namespace}:${c.uri.split(/[#/]/).pop()}` === args.uri,
         ) ??

@@ -352,6 +352,53 @@ describe("OntologyClass as a Node", () => {
     expect(cls._meta.field).toBeNull();
   });
 
+  it("round-trips the meta-class through ontologyClass, by IRI and prefixed form", async () => {
+    const compiled = await setup(MINIMAL_TTL);
+    const result = await run(
+      compiled,
+      `{
+        byIri: ontologyClass(uri: "http://www.w3.org/2002/07/owl#Class") {
+          uri
+          label
+          definition
+          namespace
+          isAbstract
+          superclass { uri }
+          superclasses { uri }
+          subclasses { uri }
+          properties { required }
+        }
+        byPrefixed: ontologyClass(uri: "owl:Class") {
+          _meta { title definition type { uri instanceCount } }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data?.byIri).toEqual({
+      uri: "http://www.w3.org/2002/07/owl#Class",
+      label: "Class",
+      definition: "The class of OWL classes.",
+      namespace: "owl",
+      isAbstract: false,
+      superclass: null,
+      superclasses: [],
+      subclasses: [],
+      properties: [],
+    });
+    // The meta-class self-describes through the same adapter as every class:
+    // its own type is itself, and its instanceCount speaks ir.classes.
+    expect(result.data?.byPrefixed).toEqual({
+      _meta: {
+        title: "Class",
+        definition: "The class of OWL classes.",
+        type: {
+          uri: "http://www.w3.org/2002/07/owl#Class",
+          instanceCount: 1,
+        },
+      },
+    });
+  });
+
   it("adapts a definition-less class without minting an empty definition", async () => {
     const compiled = await setup(INHERITANCE_TTL);
     const result = await run(

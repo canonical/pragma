@@ -19,6 +19,13 @@ import { type ClassNode, OWL } from "../shared/index.js";
 export const OWL_CLASS = `${OWL}Class`;
 
 /**
+ * The `${namespace}:${localName}` convenience spelling of the meta-class,
+ * accepted by `ontologyClass(uri:)` exactly as every IR class's prefixed
+ * form is.
+ */
+export const OWL_CLASS_PREFIXED = "owl:Class";
+
+/**
  * The frozen, TBox-local ClassNode for owl:Class. One instance per process:
  * every identity-based check (Node.resolveType's TBox branch, the meta
  * branches of the instances/instanceCount resolvers) compares against this

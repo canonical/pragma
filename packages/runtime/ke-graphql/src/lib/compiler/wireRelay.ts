@@ -32,6 +32,7 @@ import {
   STRUCTURAL_META,
   STRUCTURAL_URI,
 } from "../shared/index.js";
+import { OWL_CLASS, OWL_CLASS_NODE } from "../tbox/index.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 
 const PHASE = "wireRelay";
@@ -169,7 +170,19 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
         if (!args.id || !isAbsoluteIri(args.id)) {
           return null;
         }
-        return ctx.entityLoader.load(args.id);
+        // ABox first, TBox second — strictly additive: every id the entity
+        // loader used to answer still answers identically, and only ids it
+        // resolves to null (a class IRI has no mapped rdf:type) fall through
+        // to the class nodes. owl:Class itself resolves to the meta-node, so
+        // the class of a class is a Node too.
+        const entity = await ctx.entityLoader.load(args.id);
+        if (entity) {
+          return entity;
+        }
+        return (
+          mapped.ir.classes.get(args.id) ??
+          (args.id === OWL_CLASS ? OWL_CLASS_NODE : null)
+        );
       },
       description: "Relay node resolution by absolute IRI.",
     },

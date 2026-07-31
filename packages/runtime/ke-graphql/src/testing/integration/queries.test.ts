@@ -16,6 +16,7 @@ import {
   BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   EDGE_CASES_TTL,
+  INHERITANCE_TTL,
   INVERSE_TTL,
   PREFIXES,
 } from "../index.js";
@@ -212,6 +213,41 @@ describe("ds-realistic resolution", () => {
     );
   });
 
+  it("resolves a class IRI through node() — ABox first, TBox second", async () => {
+    const compiled = await setup(DS_REALISTIC_TTL, options);
+    const result = await run(
+      compiled,
+      `{
+        cls: node(id: "https://ds.canonical.com/Component") {
+          __typename
+          uri
+          _meta { title definition type { uri } }
+          ... on OntologyClass { label instanceCount }
+        }
+        entity: node(id: "https://ds.canonical.com/global.component.button") {
+          __typename
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    // A class IRI has no mapped rdf:type, so the entity loader answers null
+    // and the TBox fallthrough serves the ClassNode — as a full Node, with
+    // _meta through the adapter and the meta-class as its type.
+    expect(result.data?.cls).toEqual({
+      __typename: "OntologyClass",
+      uri: "https://ds.canonical.com/Component",
+      _meta: {
+        title: "Component",
+        definition: "A reusable UI component.",
+        type: { uri: "http://www.w3.org/2002/07/owl#Class" },
+      },
+      label: "Component",
+      instanceCount: 1,
+    });
+    // ...while the ABox path answered first and exactly as before.
+    expect(result.data?.entity).toEqual({ __typename: "Component" });
+  });
+
   it("a junk singular-lookup argument cannot poison sibling lookups in the same tick", async () => {
     // Both lookups resolve in one tick, so they share one loader batch. The
     // colon-free argument expands to nothing and must resolve to null WITHOUT
@@ -341,6 +377,103 @@ describe("ds-realistic resolution", () => {
       "https://ds.canonical.com/global.component.button",
     );
     expect(instances.edges[0]?.node.__typename).toBe("Component");
+  });
+});
+
+describe("the meta-class through node()", () => {
+  it("resolves owl:Class; its instances are the classes and the counts agree", async () => {
+    const compiled = await setup(INHERITANCE_TTL);
+    const result = await run(
+      compiled,
+      `{
+        node(id: "http://www.w3.org/2002/07/owl#Class") {
+          __typename
+          uri
+          ... on OntologyClass {
+            label
+            instanceCount
+            instances(first: 10) {
+              edges { cursor node { __typename uri } }
+              pageInfo { hasNextPage }
+            }
+          }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const meta = result.data?.node as {
+      __typename: string;
+      uri: string;
+      label: string;
+      instanceCount: number;
+      instances: {
+        edges: Array<{
+          cursor: string;
+          node: { __typename: string; uri: string };
+        }>;
+        pageInfo: { hasNextPage: boolean };
+      };
+    };
+    expect(meta.__typename).toBe("OntologyClass");
+    expect(meta.uri).toBe("http://www.w3.org/2002/07/owl#Class");
+    expect(meta.label).toBe("Class");
+    // instances and instanceCount are ONE promise: both speak ir.classes.
+    expect(meta.instanceCount).toBe(4);
+    expect(meta.instances.edges).toHaveLength(4);
+    expect(
+      meta.instances.edges.every((e) => e.node.__typename === "OntologyClass"),
+    ).toBe(true);
+    // URI-sorted, so cursors are stable across requests — and each cursor is
+    // base64 of the very IRI its node reports, like every other connection.
+    expect(meta.instances.edges.map((e) => e.node.uri)).toEqual([
+      "http://example.org/Entity",
+      "http://example.org/Gadget",
+      "http://example.org/Tangible",
+      "http://example.org/Widget",
+    ]);
+    expect(atob(meta.instances.edges[0]?.cursor ?? "")).toBe(
+      "http://example.org/Entity",
+    );
+    expect(meta.instances.pageInfo.hasNextPage).toBe(false);
+  });
+
+  it("counts the compiler's classes, not raw owl:Class declarations", async () => {
+    // rdfs:Resource is declared `a owl:Class` in the store, so the raw
+    // instance stats for owl:Class say 2 — but the compiler filters
+    // standard-vocabulary classes out of the IR, and the meta-class's
+    // instances connection yields exactly ir.classes. instanceCount must
+    // match what instances yields, not what the store counted.
+    const compiled = await setup(`
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Thing a owl:Class ; rdfs:label "Thing" .
+rdfs:Resource a owl:Class .
+ex:name a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string .
+ex:t1 a ex:Thing ; ex:name "t1" .
+`);
+    const result = await run(
+      compiled,
+      `{
+        node(id: "http://www.w3.org/2002/07/owl#Class") {
+          ... on OntologyClass {
+            instanceCount
+            instances(first: 10) { edges { node { uri } } }
+          }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const meta = result.data?.node as {
+      instanceCount: number;
+      instances: { edges: Array<{ node: { uri: string } }> };
+    };
+    expect(meta.instanceCount).toBe(1);
+    expect(meta.instances.edges.map((e) => e.node.uri)).toEqual([
+      "http://example.org/Thing",
+    ]);
   });
 });
 
