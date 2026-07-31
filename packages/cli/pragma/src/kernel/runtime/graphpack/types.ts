@@ -11,6 +11,16 @@
  * `manifest.json` is treated as absent (a torn build), so writes are always
  * temp-dir + atomic rename.
  *
+ * FOUR AND ONLY FOUR: the constants below are the single place the artifact set
+ * is named, and three modules must agree with them — `buildPack` writes them,
+ * `packIsComplete` gates on them, and `materializeEmbeddedPack` writes them back
+ * out. A fifth artifact added to only some of those makes a pack whose content
+ * hash claims more than its directory holds, which the next build then reuses,
+ * silently dropping the difference. The agreement is pinned by `graphpack.test.ts`'s
+ * "the committed embedded pack (PROTECTED) > materializes exactly the files
+ * buildPack produces" — extend the set here and that test fails until every
+ * side follows.
+ *
  * This module is reached only behind a dynamic import (pack build / read /
  * store boot), so its zod dependency never lands on the storeless fast path.
  */

@@ -1,24 +1,32 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { embeddedManifest } from "../runtime/graphpack/embedded.js";
+import { activePackPath, packDir } from "../runtime/paths.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import { runComplete } from "./complete.js";
-import { createIndexEntityReader, indexCompletionEnv } from "./entitySource.js";
+import {
+  createIndexEntityReader,
+  indexCompletionEnv,
+  readPackIndex,
+} from "./entitySource.js";
 
-/** A fresh cwd with no lock → the reader falls back to the embedded pack. */
+/** A fresh cwd with no pointer → the reader falls back to the embedded pack. */
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-entity-"));
 
-/** A project whose lock points at a crafted index.json in a temp pack cache. */
+/** The 64-hex content hash the crafted pack is filed under. */
+const CRAFTED_HASH = "1".repeat(64);
+
+/** A project pointed at a crafted index.json in a temp pack cache. */
 function projectWithIndex(index: unknown): string {
   const cwd = mkdtempSync(join(tmpdir(), "pragma-idx-cwd-"));
   const cache = mkdtempSync(join(tmpdir(), "pragma-idx-cache-"));
   vi.stubEnv("XDG_CACHE_HOME", cache);
-  writeFileSync(
-    join(cwd, "pragma.lock.json"),
-    JSON.stringify({ contentHash: "testhash" }),
-  );
-  const packDir = join(cache, "pragma", "packs", "testhash");
+  const pointer = activePackPath(cwd);
+  mkdirSync(dirname(pointer), { recursive: true });
+  writeFileSync(pointer, CRAFTED_HASH);
+  const packDir = join(cache, "pragma", "packs", CRAFTED_HASH);
   mkdirSync(packDir, { recursive: true });
   writeFileSync(join(packDir, "index.json"), JSON.stringify(index));
   return cwd;
@@ -27,7 +35,7 @@ function projectWithIndex(index: unknown): string {
 /** A crafted index exercising the index / prompts / tiers / prefixes sources. */
 const CRAFTED_INDEX = {
   version: 2,
-  contentHash: "testhash",
+  contentHash: CRAFTED_HASH,
   prefixes: { ex: "https://example.com/", ds: "https://ds.canonical.com/" },
   instanceCountByType: {},
   entities: [
@@ -96,7 +104,7 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
     const env = indexCompletionEnv(
       projectWithIndex({
         version: 2,
-        contentHash: "testhash",
+        contentHash: CRAFTED_HASH,
         prefixes: {},
         instanceCountByType: {},
         entities: [{ name: "ex:Button", type: "ex:Component" }],
@@ -112,16 +120,18 @@ describe("entity source contract (PROTECTED)", () => {
   it("reads the embedded index storelessly, filtering by type + partial", () => {
     const read = createIndexEntityReader(freshCwd());
 
-    // Abox individuals of ex:Component, sorted.
-    expect(read("ex:Component", "")).toEqual([
-      "ex:Button",
-      "ex:Card",
-      "ex:Dialog",
-    ]);
+    // An abox individual of ds:Component. Membership, not the full 100+ list:
+    // the roster moves whenever the design system does, but a design system
+    // without a button is a change a human should look at.
+    expect(read("ds:Component", "")).toContain("ds:global.component.button");
     // Tbox class.
-    expect(read("owl:Class", "")).toEqual(["ex:Component"]);
-    // Partial-prefix filter.
-    expect(read("ex:Component", "ex:B")).toEqual(["ex:Button"]);
+    expect(read("owl:Class", "")).toContain("ds:Component");
+    // Partial-prefix filter: every candidate starts with what was typed.
+    const partial = read("ds:Component", "ds:global.component.but");
+    expect(partial).toContain("ds:global.component.button");
+    for (const name of partial) {
+      expect(name.startsWith("ds:global.component.but")).toBe(true);
+    }
     // Unknown type → no matches (never throws).
     expect(read("ds:Nope", "")).toEqual([]);
   });
@@ -129,16 +139,16 @@ describe("entity source contract (PROTECTED)", () => {
   it("relies only on the frozen { name, type } minimum", () => {
     const read = createIndexEntityReader(freshCwd());
     // Every result is a bare name token (string), usable with no other field.
-    for (const name of read("ex:Component", "")) {
+    for (const name of read("ds:Component", "")) {
       expect(typeof name).toBe("string");
-      expect(name.startsWith("ex:")).toBe(true);
+      expect(name.startsWith("ds:")).toBe(true);
     }
   });
 
   it("is fast (well under the 50ms storeless budget)", () => {
     const read = createIndexEntityReader(freshCwd());
     const start = performance.now();
-    read("ex:Component", "");
+    read("ds:Component", "");
     expect(performance.now() - start).toBeLessThan(50);
   });
 });
@@ -159,7 +169,7 @@ describe("__complete entity tier wiring", () => {
             required: true,
             complete: {
               kind: "names",
-              source: { from: "index", type: "ex:Component" },
+              source: { from: "index", type: "ds:Component" },
             },
           },
         ],
@@ -185,14 +195,76 @@ describe("__complete entity tier wiring", () => {
     // index-backed reader over cwd, adapted to the resolver's EntityNameReader.
     await expect(
       runComplete(
-        ["block", "lookup", "ex:B"],
+        ["block", "lookup", "ds:global.component.but"],
         [lookupModule],
         indexCompletionEnv(freshCwd()),
       ),
-    ).resolves.toEqual(["ex:Button"]);
+    ).resolves.toContain("ds:global.component.button");
     // Without the env, the entity tier yields nothing (grammar-only).
     await expect(
-      runComplete(["block", "lookup", "ex:B"], [lookupModule]),
+      runComplete(
+        ["block", "lookup", "ds:global.component.but"],
+        [lookupModule],
+      ),
     ).resolves.toEqual([]);
+  });
+});
+
+describe("readPackIndex answers the boot decision, never around it", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // `info`, `doctor`, the MCP resource browser and native `prompts/list` all
+  // read through this. It takes the decision rather than re-deriving one, so it
+  // covers all three arms — including the one a re-derivation gets wrong.
+  it("reads the pack the decision names", () => {
+    projectWithIndex(CRAFTED_INDEX); // plants the pack under a stubbed cache
+    const index = readPackIndex({
+      kind: "pack",
+      dir: packDir(CRAFTED_HASH),
+      contentHash: CRAFTED_HASH,
+    });
+    expect(index?.contentHash).toBe(CRAFTED_HASH);
+    expect(index?.entities.map((entity) => entity.name)).toContain("ex:Button");
+  });
+
+  it("reads the embedded snapshot on the embedded arm", () => {
+    const index = readPackIndex({ kind: "embedded" });
+    expect(index?.contentHash).toBe(embeddedManifest().contentHash);
+  });
+
+  it("reads NOTHING when the store is unavailable", () => {
+    // The row that matters: a project that declared its own packs and never
+    // built them must not be listed the distribution's graph while every read
+    // of it fails STORE_UNAVAILABLE.
+    expect(readPackIndex({ kind: "unavailable", reason: "not built" })).toBe(
+      undefined,
+    );
+  });
+});
+
+describe("the storeless fast path implements the pointer half", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  // `__complete` cannot see `origins.packs` (the config evaluator is banned on
+  // this graph), so it cannot distinguish a fresh install from a configured-but-
+  // unbuilt project. It CAN see the pointer, and must not prefer the snapshot
+  // over a pointer whose pack the cache lost — that is the decision table's
+  // second row, where the two readers used to disagree.
+  it("offers no candidates when the pointed-at pack is gone", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "pragma-idx-cwd-"));
+    const cache = mkdtempSync(join(tmpdir(), "pragma-idx-cache-"));
+    vi.stubEnv("XDG_CACHE_HOME", cache);
+    const pointer = activePackPath(cwd);
+    mkdirSync(dirname(pointer), { recursive: true });
+    writeFileSync(pointer, CRAFTED_HASH); // …but no pack directory for it.
+
+    expect(createIndexEntityReader(cwd)("ds:Component", "")).toEqual([]);
+    expect(
+      await indexCompletionEnv(cwd).names({ from: "index", type: "" }),
+    ).toEqual([]);
   });
 });

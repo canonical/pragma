@@ -13,7 +13,6 @@ export { ensureFirstRun, firstRunTask } from "./firstRun.js";
 export type { GlobalConfigRead } from "./globalConfig.js";
 export { readGlobalConfig } from "./globalConfig.js";
 export {
-  cacheDir,
   configCacheDir,
   configDir,
   globalConfigPath,

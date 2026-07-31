@@ -20,6 +20,7 @@
  * handlers behave exactly as before.
  */
 
+import { resolveSources } from "../../../runtime/resolveSources.js";
 import { checkStoreAvailable } from "../../../runtime/storeReadiness.js";
 import type { McpPromptProvider } from "../../../spec/types.js";
 import { mcpErrorFrom } from "../mcpError.js";
@@ -68,7 +69,9 @@ export const promptProvider: McpPromptProvider = {
     server.server.setRequestHandler(ListPromptsRequestSchema, async () => {
       await guardStore();
       return {
-        prompts: listPromptSummaries(runtime).map((prompt) => ({
+        prompts: listPromptSummaries(
+          resolveSources(await runtime.loadConfig(), runtime.cwd),
+        ).map((prompt) => ({
           name: prompt.name,
           ...(prompt.description ? { description: prompt.description } : {}),
         })),

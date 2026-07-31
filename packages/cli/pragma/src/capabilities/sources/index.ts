@@ -1,6 +1,6 @@
 /**
  * The `sources` capability barrel — `status` (storeless read) and `update`
- * (the resolve/build/lock Task).
+ * (the resolve/build/point Task).
  */
 
 import { asVerb } from "../../kernel/spec/asVerb.js";

@@ -12,21 +12,39 @@ pragma doctor
 
 `pragma doctor` runs nine health checks — runtime, config, store, MCP registration, skills — and prints pass / fail / skip with an inline remedy for each. It never needs the store, so it works before you have built one.
 
-## Build the store
+## The store
 
-A read command needs a local store. Build it from the packs named in your `pragma.config.ts`:
+Reads work from the moment you install. The binary carries a compiled snapshot
+of the design system, so `block list` answers on a machine with no cache, no
+network, and no git credentials.
+
+The snapshot is a snapshot: it was compiled when the release was, and it does
+not move. Rebuild the store from the live packs — the ones named in your
+`pragma.config.ts` — whenever you want what is upstream today:
 
 ```bash
 pragma sources update
 ```
 
-This resolves each configured package (git, file, or npm), builds one content-addressed pack, and writes `pragma.lock.json`. Later boots load from the lock with no network access. Check readiness and per-source staleness at any time:
+This resolves each configured package (git, file, or npm) and builds one
+content-addressed pack, which every later boot loads with no network access. To
+pin a package to an exact revision, put the full 40-character commit SHA in its
+source ref (`git+https://github.com/org/repo.git#<sha>`) — every update then
+resolves to exactly that commit. An abbreviated SHA is not a valid fetch target
+and the update fails naming it. Which pack is answering, and what it was built
+from:
 
 ```bash
 pragma sources status
 ```
 
-`sources status` is storeless — it reads the lock, config, and pack cache without booting the store, so it reports honestly even when the store is cold.
+`sources status` is storeless — it reads config and the pack cache without
+booting the store, so it reports honestly even when the store is cold. It
+reports `embedded` for the shipped snapshot, `built` for a pack you built, and
+`unavailable` when a project has declared its own packs and never built them.
+That last case is deliberate: a project pointed at its own graph is never
+quietly served the distribution's instead — the read fails and names
+`pragma sources update`.
 
 ## Read the graph
 

@@ -4,7 +4,7 @@
  * The full completion engine (`kernel/completion`: parse → resolve → rank, the
  * spec-derived model, the entity seam) owns the unit-level guarantees; this
  * pins the behaviour end-to-end against the LIVE capabilities and — for the
- * entity tier — against a REAL built pack index on disk (the locked-pack branch
+ * entity tier — against a REAL built pack index on disk (the built-pack branch
  * of the storeless reader, which the engine's own tests exercise only via the
  * embedded fallback). Parameterized over the live read surface so noun/verb
  * renames never churn it.
@@ -96,7 +96,7 @@ describe("entity params resolve from a real built pack index (B10)", () => {
       config: ALL_VISIBLE_CONFIG,
     });
     try {
-      // The locked-pack branch of the storeless reader: a real index.json on
+      // The built-pack branch of the storeless reader: a real index.json on
       // disk under the fixture cwd, read without booting the store.
       const all = await runComplete(
         ["block", "lookup", ""],

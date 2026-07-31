@@ -1,17 +1,21 @@
 import {
   existsSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { executeLocal } from "@canonical/ke-graphql";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildPack } from "./build.js";
+import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
 import { contentHash } from "./hash.js";
+import { packIsComplete } from "./manifest.js";
 import { readPack } from "./read.js";
+import type { PackIndex } from "./types.js";
 import { DATA_FILE, INDEX_FILE, MANIFEST_FILE, SCHEMA_FILE } from "./types.js";
 
 const PREFIXES = {
@@ -106,6 +110,36 @@ describe("graphpack round-trip (PROTECTED)", () => {
     } finally {
       session.store.dispose();
     }
+  });
+});
+
+describe("the committed embedded pack (PROTECTED)", () => {
+  it("materializes exactly the files buildPack produces", async () => {
+    // The artifact set is named once, in types.ts, but THREE modules must obey
+    // it: buildPack writes them, packIsComplete gates on them, and
+    // materializeEmbeddedPack writes them back out. A fifth artifact added to
+    // only some of those yields a pack whose content hash claims more than its
+    // directory holds — which the next build then reuses, silently dropping the
+    // difference. Comparing the two directories catches that on the day it lands.
+    const built = await build([{ path: "a.ttl", content: TTL }]);
+    expect(readdirSync(materializeEmbeddedPack()).sort()).toEqual(
+      readdirSync(built.dir).sort(),
+    );
+  });
+
+  it("is self-consistent: complete, content-addressed, and non-empty", () => {
+    // No network, so CI runs it: the committed strings really do materialize a
+    // bootable pack whose parts agree with each other.
+    const dir = materializeEmbeddedPack();
+    const manifest = embeddedManifest();
+    expect(packIsComplete(dir)).toBe(true);
+    expect(basename(dir)).toBe(manifest.contentHash);
+    const index = JSON.parse(
+      readFileSync(join(dir, INDEX_FILE), "utf-8"),
+    ) as PackIndex;
+    expect(index.contentHash).toBe(manifest.contentHash);
+    expect(manifest.tripleCount ?? 0).toBeGreaterThan(0);
+    expect(manifest.entityCount ?? 0).toBeGreaterThan(0);
   });
 });
 

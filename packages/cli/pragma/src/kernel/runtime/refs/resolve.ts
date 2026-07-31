@@ -2,21 +2,20 @@
  * Resolve a {@link PackageRef} to its pinned revision and RDF source contents.
  *
  * `file` reads the local path in place; `npm` resolves the installed package
- * from the project's `node_modules`; `git` clones/fetches into the ref cache
- * (or, under `--frozen`, checks out exactly the lock's pinned commit and never
- * advances). Each package contributes its `definitions/**` and `data/**` TTL
- * files, labelled by a stable `pkg/relative-path` so the pack's content hash is
- * machine-independent. Reached only from the `sources update` Task body.
+ * from the project's `node_modules`; `git` clones/fetches into the ref cache.
+ * A ref that is already a commit SHA resolves to exactly that commit, which is
+ * how a project pins a revision. Each package contributes its `definitions/**`
+ * and `data/**` TTL files, labelled by a stable `pkg/relative-path` so the
+ * pack's content hash is machine-independent. Reached only from the
+ * `sources update` Task body.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
-import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
-import { cliRecovery } from "../../error/recovery.js";
 import { refsCacheDir } from "../paths.js";
-import { checkoutCommit, cloneRef, fetchRef, headCommit } from "./gitOps.js";
+import { cloneRef, fetchRef, headCommit } from "./gitOps.js";
 import { type PackageRef, redactUrl } from "./parseRef.js";
 
 /** A resolved package: its pinned revision and labelled RDF sources. */
@@ -36,12 +35,9 @@ export interface ResolvedPackage {
   readonly sources: { readonly path: string; readonly content: string }[];
 }
 
-/** Options for a resolution: whether to honour a pinned commit (`--frozen`). */
+/** Options for a resolution — the project directory an `npm` ref resolves from. */
 export interface ResolveOptions {
   readonly cwd: string;
-  readonly frozen: boolean;
-  /** The lock's pinned revision for this package (used under `--frozen`). */
-  readonly pinned?: string;
 }
 
 /** The package subdirectories scanned for `.ttl` sources. */
@@ -254,31 +250,15 @@ export function resolvePackageJson(
  * Resolve a package reference to its revision and RDF sources.
  *
  * @param ref - The parsed package reference.
- * @param options - The cwd, frozen flag, and any pinned revision.
+ * @param options - The project directory an `npm` ref resolves from.
  * @returns The resolved package.
  * @throws PragmaError on a missing file path or unresolvable npm package.
- * @throws PragmaError under `--frozen` when the package has no lock entry.
  * @note Impure — may clone/fetch git, reads TTL from disk.
  */
 export async function resolvePackage(
   ref: PackageRef,
   options: ResolveOptions,
 ): Promise<ResolvedPackage> {
-  // `--frozen` means "reproduce the locked state exactly". A configured package
-  // with no lock entry has nothing to reproduce, so refuse rather than silently
-  // resolving it fresh (which would advance the very state the lock pins).
-  if (options.frozen && options.pinned === undefined) {
-    throw PragmaError.configError(
-      `Cannot resolve "${ref.pkg}" under --frozen: it has no entry in the lock.`,
-      {
-        recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}sources update`,
-          "Update the lock without --frozen, then commit it.",
-        ),
-      },
-    );
-  }
-
   switch (ref.kind) {
     case "file": {
       if (!existsSync(ref.path)) {
@@ -326,18 +306,10 @@ export async function resolvePackage(
     }
 
     case "git": {
-      const useCommit = options.frozen && options.pinned;
-      const dir = join(
-        refsCacheDir(),
-        sanitize(ref.pkg),
-        sanitize(useCommit ? (options.pinned as string) : ref.ref),
-      );
+      const dir = join(refsCacheDir(), sanitize(ref.pkg), sanitize(ref.ref));
       let resolved: string;
       try {
-        if (useCommit) {
-          checkoutCommit(ref.url, options.pinned as string, dir);
-          resolved = options.pinned as string;
-        } else if (existsSync(dir)) {
+        if (existsSync(dir)) {
           resolved = fetchRef(ref.url, ref.ref, dir);
         } else {
           cloneRef(ref.url, ref.ref, dir);
@@ -345,28 +317,18 @@ export async function resolvePackage(
         }
       } catch (error) {
         // A git clone/fetch/checkout failed — an unreachable remote, a moved or
-        // deleted ref, an auth/credential problem, or (under --frozen) a pinned
-        // commit that is gone. Name the package + ref with git's own reason so
-        // it reads as a fixable data/reproducibility error, not INTERNAL_ERROR.
-        throw useCommit
-          ? PragmaError.configError(
-              `Cannot reproduce "${ref.pkg}" under --frozen: commit ${options.pinned} could not be checked out from ${redactUrl(ref.url)}. ${errorDetail(error)}`,
-              {
-                recovery: {
-                  message:
-                    "The pinned commit may have been force-pushed away or the remote is unreachable. Restore access to it, or re-run `pragma sources update` without --frozen to re-pin.",
-                },
-              },
-            )
-          : PragmaError.configError(
-              `Cannot resolve "${ref.pkg}" from ${redactUrl(ref.url)}#${ref.ref}: ${errorDetail(error)}`,
-              {
-                recovery: {
-                  message:
-                    "Check the git URL and ref, your network, and your git credentials, then re-run the update.",
-                },
-              },
-            );
+        // deleted ref, an auth/credential problem, or a pinned SHA that has been
+        // force-pushed away. Name the package + ref with git's own reason so it
+        // reads as a fixable data error, not INTERNAL_ERROR.
+        throw PragmaError.configError(
+          `Cannot resolve "${ref.pkg}" from ${redactUrl(ref.url)}#${ref.ref}: ${errorDetail(error)}`,
+          {
+            recovery: {
+              message:
+                "Check the git URL and ref, your network, and your git credentials, then re-run the update.",
+            },
+          },
+        );
       }
       return {
         name: ref.pkg,

@@ -5,18 +5,19 @@
  *
  * - Preview (CLI `--dry-run`, or MCP without `confirm`): NETWORK-FREE. It reads
  *   only the config, then hands back a plan-only Task listing the refs it would
- *   resolve+build and the lock it would write — no git fetch, no compile, no
+ *   resolve+build and the pointer it would write — no git fetch, no compile, no
  *   cache write. This is what a dry-run / agent "preview" must be: side-effect
  *   free and offline-safe.
  * - Real execution: the heavy work — resolve every configured pack (git
  *   clone/fetch, file verify, npm resolve), then build the ONE combined
  *   content-addressed pack — runs eagerly (it is not expressible as a task
  *   effect: the effect set is fs + exec, and the in-process compile is not an
- *   effect at all). The returned Task models the one project mutation, the
- *   `pragma.lock.json` write, with an undo that restores (or removes) the prior
- *   lock. Under `--frozen` each package re-resolves to the lock's pinned
- *   revision and keeps its `resolvedAt`, so an unchanged update rewrites a
- *   byte-identical lock.
+ *   effect at all). The returned Task models the mutations: the active-pack
+ *   pointer write (undo restores or removes the prior pointer) and the package
+ *   skill symlinks.
+ *
+ * Pinning a revision is the ref's job, not a flag's: put a SHA in the source
+ * (`git+https://…#<sha>`) and every update resolves to exactly that commit.
  */
 
 import {
@@ -30,16 +31,10 @@ import {
   writeFile,
 } from "@canonical/task";
 import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
-import type { PackDeclaration } from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
-import {
-  type PragmaLock,
-  readLock,
-  serializeLock,
-} from "../../kernel/runtime/lock.js";
-import { LOCK_BASENAME, lockPath } from "../../kernel/runtime/paths.js";
+import { activePackPath, readActivePack } from "../../kernel/runtime/paths.js";
 import type { PackageRef } from "../../kernel/runtime/refs/parseRef.js";
 import {
   parsePackDeclaration,
@@ -67,17 +62,43 @@ const CORE_PREFIXES: Readonly<Record<string, string>> = {
   dcterms: "http://purl.org/dc/terms/",
 };
 
-const entryName = (entry: PackDeclaration): string =>
-  typeof entry === "string" ? entry : entry.name;
+/**
+ * The prefix map a pack is built with: core < the packs' own `@prefix` < config.
+ *
+ * A resolved package's own declarations are harvested from its TTL (ke does not
+ * fold parsed-Turtle prefixes into `store.prefixes`) and merged beneath config
+ * so the index compacts pack URIs to `pfx:Local` — the FROZEN `{name,type}`
+ * token contract — while config still wins any clash. The merged map is
+ * persisted in the manifest, so boot reads the same names.
+ *
+ * Exported because the bundler (`scripts/bundle.ts`) compiles the embedded pack
+ * through this exact precedence. If the two pipelines computed prefixes
+ * separately, the embed could compact entities differently from what the SAME
+ * config produces on a user's machine — a silent divergence in entity names.
+ *
+ * @param inputs - The resolved packages' labelled RDF sources.
+ * @param configPrefixes - The config layer's `prefixes`, if any.
+ * @returns The merged prefix map to build with.
+ */
+export function buildPackPrefixes(
+  inputs: readonly { readonly content: string }[],
+  configPrefixes: Readonly<Record<string, string>> | undefined,
+): Record<string, string> {
+  return {
+    ...CORE_PREFIXES,
+    ...harvestPrefixes(inputs),
+    ...(configPrefixes ?? {}),
+  };
+}
 
 /**
  * Build the NETWORK-FREE preview plan for `sources update`.
  *
  * A plan-only Task: it reads the config to list the refs a real update would
- * resolve and build, then models the single project mutation (the lock write)
- * as effects the dry-run interpreter can describe WITHOUT running them. No git,
- * no compile, no cache write — so `--dry-run` and an MCP plan-first call are
- * offline-safe. Config refs are parsed (a cheap, offline validity check) but
+ * resolve and build, then models the project mutation (the active-pack pointer
+ * write) as effects the dry-run interpreter can describe WITHOUT running them.
+ * No git, no compile, no cache write — so `--dry-run` and an MCP plan-first call
+ * are offline-safe. Config refs are parsed (a cheap, offline validity check) but
  * never resolved.
  *
  * @param runtime - The per-invocation runtime.
@@ -89,27 +110,12 @@ async function buildUpdatePlan(
   const layers = await runtime.loadConfig();
   const entries = layers.config.packs ?? [];
   const refs = entries.map(parsePackDeclaration);
-  const path = lockPath(runtime.cwd);
 
   const data: SourcesUpdateData = {
     contentHash: "",
     reused: false,
-    lockPath: path,
     packs: refs.map((ref) => ({ name: ref.pkg, resolved: "", sourceCount: 0 })),
   };
-  // A representative (never-written) lock, so the previewed write shows a
-  // plausible shape/size. Placeholders make clear nothing was resolved.
-  const previewLock: PragmaLock = {
-    version: 1,
-    contentHash: "(resolved on execute)",
-    packs: refs.map((ref) => ({
-      name: ref.pkg,
-      source: ref.source,
-      resolved: "(resolved on execute)",
-      resolvedAt: "(resolved on execute)",
-    })),
-  };
-  const previewContent = serializeLock(previewLock);
 
   return gen(function* () {
     yield* $(
@@ -119,25 +125,29 @@ async function buildUpdatePlan(
           : "No packs configured — the embedded pack answers store reads",
       ),
     );
-    // The one project mutation, previewed (dry-run never executes it).
-    yield* $(writeFile(path, previewContent));
+    // The project mutation, previewed (dry-run never executes it). The content
+    // is a placeholder: the real hash only exists once the build has run.
+    yield* $(
+      writeFile(activePackPath(runtime.cwd), "(the pack hash, on execute)"),
+    );
     return data;
   });
 }
 
 /**
- * Resolve, build, and produce the lock-writing Task — or, for a preview, the
+ * Resolve, build, and produce the pointer-writing Task — or, for a preview, the
  * network-free plan.
  *
  * @param runtime - The per-invocation runtime.
- * @param frozen - When true, re-resolve to the lock's pinned revisions only.
- * @returns A Task that writes `pragma.lock.json` and returns the update result.
+ * @param skipInvalid - Drop sources that fail to parse (warning about each)
+ *   rather than failing the whole update.
+ * @returns A Task that points the project at the built pack and returns the
+ *   update result.
  * @note Impure — resolves packages (may hit git) and builds the pack eagerly,
  *   UNLESS `runtime.mutation.preview` is set, in which case it stays offline.
  */
 export async function buildUpdateTask(
   runtime: PragmaRuntime,
-  frozen: boolean,
   skipInvalid = false,
 ): Promise<Task<SourcesUpdateData>> {
   if (runtime.mutation?.preview) return buildUpdatePlan(runtime);
@@ -150,40 +160,31 @@ export async function buildUpdateTask(
 
   const layers = await runtime.loadConfig();
   const entries = layers.config.packs ?? [];
-  const existing = readLock(runtime.cwd);
-  const priorContent = existing ? serializeLock(existing) : undefined;
+  const priorHash = readActivePack(runtime.cwd);
 
-  const resolved: ResolvedPackage[] = [];
+  const resolved: (ResolvedPackage & { readonly kind: PackageRef["kind"] })[] =
+    [];
   for (const entry of entries) {
     const ref = parsePackDeclaration(entry);
     report?.(resolveProgress(ref));
-    const pinned = existing?.packs.find((pack) => pack.name === ref.pkg);
-    resolved.push(
-      await resolvePackage(ref, {
-        cwd: runtime.cwd,
-        frozen,
-        pinned: pinned?.resolved,
-      }),
-    );
+    resolved.push({
+      kind: ref.kind,
+      ...(await resolvePackage(ref, { cwd: runtime.cwd })),
+    });
   }
 
-  // Prefix precedence: core < pack < config. A resolved package's own
-  // `@prefix` declarations are harvested from its TTL and merged beneath config
-  // so the index compacts pack URIs to `pfx:Local` (the FROZEN {name,type}
-  // token contract); config still wins any clash. The merged map is persisted
-  // in the manifest, so boot reads the same names.
   const inputs = resolved.flatMap((pkg) => pkg.sources);
 
-  // Refuse to lock an empty store (A4). A package that ships no `.ttl` (or no
+  // Refuse to build an empty store (A4). A package that ships no `.ttl` (or no
   // configured packs at all) would build a 0-triple pack whose empty
   // `data.nq` fails the completeness gate — so the "successful" update boots to
   // a PERMANENT `STORE_UNAVAILABLE` loop. Fail loudly here, leaving the embedded
-  // fallback (or the prior lock) intact, instead of writing that broken lock.
+  // pack (or the prior build) answering reads, instead of pointing at that one.
   if (inputs.length === 0) {
     throw PragmaError.configError(
       entries.length === 0
-        ? "No packs are configured, so there are no sources to build a store from. The embedded sample pack answers reads until you add a pack."
-        : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to write a lock for an empty store.`,
+        ? "No packs are configured, so there are no sources to build a store from. The embedded pack answers reads until you add a pack."
+        : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to build an empty store.`,
       {
         recovery: cliRecovery(
           `${RECOVERY_CLI_PREFIX}sources update --verbose`,
@@ -193,11 +194,7 @@ export async function buildUpdateTask(
     );
   }
 
-  const prefixes = {
-    ...CORE_PREFIXES,
-    ...harvestPrefixes(inputs),
-    ...(layers.config.prefixes ?? {}),
-  };
+  const prefixes = buildPackPrefixes(inputs, layers.config.prefixes);
 
   // Warn on conflicting `@prefix` declarations across packages (A5): last-wins
   // is silent otherwise, compacting the losing package's URIs to the wrong
@@ -217,7 +214,20 @@ export async function buildUpdateTask(
   // With `--skip-invalid`, drop the unparseable sources (warning LOUDLY about
   // each — never a silent partial graph) and build from the rest instead of
   // failing the whole update.
-  const sourceRef = entries.map(entryName).join(",") || "embedded";
+  // `<name>@<kind>:<resolved>` — the SAME provenance label the bundler writes
+  // for the embed, so the manifest field means one thing whoever built the pack,
+  // and `sources status` / `doctor` can still answer "which revision is my store
+  // built from?" now that no lock records it. A `file:` pack resolves to a local
+  // PATH rather than a revision, so it contributes its name alone: a machine
+  // path is not provenance, and `sources status` already lists the ref.
+  const sourceRef =
+    resolved
+      .map((pkg) =>
+        pkg.kind === "file"
+          ? pkg.name
+          : `${pkg.name}@${pkg.kind}:${pkg.resolved}`,
+      )
+      .join(", ") || "embedded";
   let built: Awaited<ReturnType<typeof buildPack>>;
   try {
     built = await buildPack(inputs, {
@@ -256,11 +266,7 @@ export async function buildUpdateTask(
         sourceRef,
         // Re-harvest prefixes from only the sources that survived, so a dropped
         // file's declarations don't skew compaction.
-        prefixes: {
-          ...CORE_PREFIXES,
-          ...harvestPrefixes(usableInputs),
-          ...(layers.config.prefixes ?? {}),
-        },
+        prefixes: buildPackPrefixes(usableInputs, layers.config.prefixes),
       });
     } catch (rebuildError) {
       throw await classifySourceBuildError(rebuildError, usableInputs);
@@ -270,14 +276,14 @@ export async function buildUpdateTask(
     `${built.reused ? "Reused" : "Built"} store ${built.contentHash.slice(0, 12)}`,
   );
 
-  // Refuse to lock a 0-triple build (A4): non-empty sources can still parse to
-  // no triples (e.g. comment-only TTL, or a file of only `@prefix` lines). A
-  // locked empty pack boots to the same `STORE_UNAVAILABLE` loop, so treat it
-  // as a data error rather than a silent "success". (A manifest predating the
-  // triple count is left alone — `undefined` never trips this.)
+  // Refuse a 0-triple build (A4): non-empty sources can still parse to no
+  // triples (e.g. comment-only TTL, or a file of only `@prefix` lines). Pointing
+  // the project at an empty pack boots to the same `STORE_UNAVAILABLE` loop, so
+  // treat it as a data error rather than a silent "success". (A manifest
+  // predating the triple count is left alone — `undefined` never trips this.)
   if (built.manifest.tripleCount === 0) {
     throw PragmaError.configError(
-      `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to write a lock for an empty store.`,
+      `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to build an empty store.`,
       {
         recovery: cliRecovery(
           `${RECOVERY_CLI_PREFIX}sources update --verbose`,
@@ -287,36 +293,10 @@ export async function buildUpdateTask(
     );
   }
 
-  const now = new Date().toISOString();
-  const lock: PragmaLock = {
-    version: 1,
-    contentHash: built.contentHash,
-    packs: resolved.map((pkg) => {
-      const prev = existing?.packs.find((entry) => entry.name === pkg.name);
-      // Preserve the prior `resolvedAt` when nothing actually changed — under
-      // --frozen (re-pinned to the same revision) AND on a plain re-run that
-      // resolves the IDENTICAL revision from the same source. Otherwise every
-      // `sources update` stamped a fresh timestamp and rewrote the lock, dirtying
-      // the git tree on a no-op run (L1). A moved revision still restamps.
-      const reproducible =
-        prev !== undefined &&
-        (frozen ||
-          (prev.resolved === pkg.resolved && prev.source === pkg.source));
-      return {
-        name: pkg.name,
-        source: pkg.source,
-        resolved: pkg.resolved,
-        resolvedAt: reproducible && prev ? prev.resolvedAt : now,
-      };
-    }),
-  };
-  const newContent = serializeLock(lock);
-  const path = lockPath(runtime.cwd);
-
+  const path = activePackPath(runtime.cwd);
   const data: SourcesUpdateData = {
     contentHash: built.contentHash,
     reused: built.reused,
-    lockPath: path,
     packs: resolved.map((pkg) => ({
       name: pkg.name,
       resolved: pkg.resolved,
@@ -325,9 +305,7 @@ export async function buildUpdateTask(
   };
 
   const undo =
-    priorContent !== undefined
-      ? writeFile(path, priorContent)
-      : deleteFile(path);
+    priorHash !== undefined ? writeFile(path, priorHash) : deleteFile(path);
 
   // Install package-provided skills (U10): symlink each resolved package's
   // `skills/*` into the installed-skills root, so `skill list` / `setup skills`
@@ -339,9 +317,9 @@ export async function buildUpdateTask(
   if (skillLinks.length > 0)
     report?.(`Installing ${skillLinks.length} skill(s)`);
 
-  report?.(`Writing ${LOCK_BASENAME}`);
+  report?.(`Pointing ${runtime.cwd} at pack ${built.contentHash.slice(0, 12)}`);
   return gen(function* () {
-    yield* $(writeFile(path, newContent, { undo }));
+    yield* $(writeFile(path, built.contentHash, { undo }));
     if (skillLinks.length > 0) {
       yield* $(mkdir(installedSkillsDir(), true));
       for (const link of skillLinks) {

@@ -47,6 +47,12 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     ]);
   });
 
+  it("pins the ds: namespace so prefix harvesting cannot bind it elsewhere", () => {
+    // The design system declares `ds:` with two IRIs; the config layer wins
+    // every harvest, so this is what keeps `ds:` entity names stable.
+    expect(defaults.prefixes).toEqual({ ds: "https://ds.canonical.com/" });
+  });
+
   it("ships the normal channel and standard detail level", () => {
     expect(defaults.channel).toBe("normal");
     expect(defaults.detail).toBe("standard");

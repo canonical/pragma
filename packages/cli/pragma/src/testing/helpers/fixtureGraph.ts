@@ -1,6 +1,6 @@
 /**
  * Test helper: boot a store-backed {@link PragmaRuntime} at a REAL `cwd` whose
- * `pragma.lock.json` points at a built fixture pack.
+ * active-pack pointer names a built fixture pack.
  *
  * This is distinct from (and complements) `packRuntime.ts#buildFixtureRuntime`:
  * that helper hands back an in-process runtime wired to a custom `LazyStore`,
@@ -8,8 +8,8 @@
  * generalizes the `runtimeFor` + `buildUpdateTask` pattern proven in
  * `capabilities/sources/sources.test.ts`: it writes an actual
  * `pragma.config.ts` + package directory, runs the REAL `sources update` Task
- * (resolve → build → lock), and returns a `cwd`. Because the lock is a real
- * file, EVERY independent runtime construction that resolves config from that
+ * (resolve → build → point), and returns a `cwd`. Because the pointer is a
+ * real file, EVERY independent runtime construction that resolves config from that
  * `cwd` — `bootRuntime(flags, cwd)` (CLI dispatch), `projectMcp(modules, cwd)`
  * (MCP), and `runCli(args, { cwd })` (spawn) — boots the SAME cached pack. That
  * is the property PR4's cross-surface parity tests need and PR3's single-surface
@@ -62,7 +62,7 @@ export interface FixtureGraphOptions {
 export interface FixtureGraph {
   /** A REAL `bootRuntime` at {@link cwd} — the same one CLI dispatch uses. */
   readonly runtime: PragmaRuntime;
-  /** The project directory whose `pragma.lock.json`/`pragma.config.ts` were written. */
+  /** The project directory whose `pragma.config.ts` + active-pack pointer were written. */
   readonly cwd: string;
   /** Remove the temp directories and dispose the store session, if booted. */
   dispose(): Promise<void>;
@@ -107,8 +107,9 @@ function configField(key: string, value: unknown): string {
 }
 
 /**
- * Build a store-backed runtime whose `cwd` carries a real lock file — the ONE
- * shared store-backed fixture path for cross-surface (CLI/MCP/spawn) tests.
+ * Build a store-backed runtime whose `cwd` is pointed at a real built pack —
+ * the ONE shared store-backed fixture path for cross-surface (CLI/MCP/spawn)
+ * tests.
  *
  * @param options - The fixture graph TTL and any config overrides.
  * @returns The runtime, its cwd, and a disposer.
@@ -134,7 +135,7 @@ export async function bootFixtureRuntime(
     `export default {\n${fields.join("\n")}\n};\n`,
   );
 
-  await runTask(await buildUpdateTask(builderRuntime(cwd, packs), false));
+  await runTask(await buildUpdateTask(builderRuntime(cwd, packs)));
 
   const runtime = bootRuntime(FIXTURE_FLAGS, cwd);
 

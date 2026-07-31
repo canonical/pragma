@@ -32,7 +32,9 @@ The v2 CLI reshapes the command surface. Migrate as follows:
 | v1 | v2 | Notes |
 | --- | --- | --- |
 | `pragma data …` | `pragma sources …` | The `data` noun is renamed `sources`. Build the store with `pragma sources update`; inspect it with `pragma sources status`. |
-| `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package, builds the store, and writes `pragma.lock.json` in one step. |
+| `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package and builds the store in one step. |
+| `pragma.lock.json` | — | The project lock is removed. Which pack answers a project's reads is recorded by a one-line pointer in the cache (`$XDG_CACHE_HOME/pragma/projects/`), because the pack it names is machine-local and was never committable. Run `pragma sources update` once, then delete the orphan `pragma.lock.json` from your repo — nothing reads it. |
+| `pragma sources update --frozen` | a SHA in the source ref | `--frozen` reproduced a lock; with no lock there is nothing to reproduce. Pin by putting the full 40-character commit SHA in the ref (`git+https://…#<sha>`), which every update then resolves to exactly. |
 | the `llm` tool | `pragma capabilities` + MCP handshake instructions | The `llm` orientation tool is retired. Agents are oriented by the MCP handshake `instructions` sent on `initialize` and by the `capabilities` tool/verb, both derived from the live grammar. |
 | `pragma tokens …` / `tokens_*` tools | `pragma token …` / `token_*` tools | The token noun and its tools are singular now: `token list`, `token lookup`, `token sample`, `token add-config`. |
 | `--format text` | `--format plain` | The default text format is renamed `plain`. Output modes are `--format plain`, `--format json`, and the `--llm` condensed-Markdown flag (auto-on when piped) — there is no `llm` format value. |

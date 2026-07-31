@@ -22,8 +22,12 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import { createQueryFacade } from "../../kernel/runtime/facade.js";
-import { readLock } from "../../kernel/runtime/lock.js";
-import { lockPath, packDir } from "../../kernel/runtime/paths.js";
+import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
+import {
+  activePackPath,
+  packDir,
+  readActivePack,
+} from "../../kernel/runtime/paths.js";
 import {
   detectPrefixClashes,
   resolvePackageJson,
@@ -109,30 +113,24 @@ function filePackage(): string {
   return pkg;
 }
 
-describe("sources lock round-trip (PROTECTED)", () => {
-  it("file source: builds, locks, and --frozen rewrites a byte-identical lock", async () => {
+describe("sources update round-trip (PROTECTED)", () => {
+  it("file source: builds and points the project at the built pack", async () => {
     const pkg = filePackage();
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    const result = await runTask(await buildUpdateTask(runtime, false));
+    const result = await runTask(await buildUpdateTask(runtime));
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
-
-    const lock = readLock(cwd);
-    expect(lock?.packs).toHaveLength(1);
-    expect(lock?.packs[0]?.name).toBe("pkg-a");
-    expect(lock?.packs[0]?.resolved).toBe(pkg);
-    expect(lock?.contentHash).toBe(result.contentHash);
-
-    const firstBytes = readFileSync(lockPath(cwd), "utf-8");
-    // A --frozen re-run reproduces the locked state byte-for-byte.
-    await runTask(await buildUpdateTask(runtime, true));
-    expect(readFileSync(lockPath(cwd), "utf-8")).toBe(firstBytes);
+    expect(result.packs).toEqual([
+      { name: "pkg-a", resolved: pkg, sourceCount: 1 },
+    ]);
+    // The pointer the next boot reads names exactly the pack just built.
+    expect(readActivePack(cwd)).toBe(result.contentHash);
   });
 
-  it("git source: resolves and locks a commit SHA, --frozen pins it", async () => {
+  it("git source: resolves the ref to a commit SHA", async () => {
     const repo = tmp("pragma-repo-");
     const git = (args: string[]) =>
       execFileSync("git", args, {
@@ -157,34 +155,39 @@ describe("sources lock round-trip (PROTECTED)", () => {
       { name: "pkg-git", source: `git+file://${repo}#main` },
     ]);
 
-    await runTask(await buildUpdateTask(runtime, false));
-    const lock = readLock(cwd);
-    expect(lock?.packs[0]?.resolved).toMatch(/^[0-9a-f]{40}$/);
-
-    const firstBytes = readFileSync(lockPath(cwd), "utf-8");
-    await runTask(await buildUpdateTask(runtime, true));
-    expect(readFileSync(lockPath(cwd), "utf-8")).toBe(firstBytes);
+    const result = await runTask(await buildUpdateTask(runtime));
+    const sha = result.packs.at(0)?.resolved;
+    expect(sha).toMatch(/^[0-9a-f]{40}$/);
+    expect(readActivePack(cwd)).toBe(result.contentHash);
+    // The revision reaches the manifest's provenance label, which is the only
+    // place `sources status` and `doctor` can read it from now that no lock
+    // records it. Same `<name>@<kind>:<resolved>` shape the bundler writes.
+    expect(readManifest(packDir(result.contentHash))?.sourceRef).toBe(
+      `pkg-git@git:${sha}`,
+    );
   });
 
-  it("a non-frozen re-run over an unchanged source rewrites a byte-identical lock (L1)", async () => {
-    // On base, every non-frozen update stamped a fresh `resolvedAt`, so a no-op
-    // re-run dirtied the tree. When the revision is unchanged the timestamp is
-    // preserved, so the lock is byte-identical.
+  it("a re-run over an unchanged source leaves the pointer byte-identical (L1)", async () => {
+    // On base the lock file carried a `resolvedAt` timestamp, so a no-op re-run
+    // rewrote it and dirtied the tree. The pointer holds only the content hash,
+    // which is a pure function of the sources — so this is now true by
+    // construction. The guard stays because it is the property users cared
+    // about: repeating an update changes nothing when nothing changed.
     const pkg = filePackage();
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
-    await runTask(await buildUpdateTask(runtime, false));
-    const firstBytes = readFileSync(lockPath(cwd), "utf-8");
-    await runTask(await buildUpdateTask(runtime, false));
-    expect(readFileSync(lockPath(cwd), "utf-8")).toBe(firstBytes);
+    await runTask(await buildUpdateTask(runtime));
+    const firstBytes = readFileSync(activePackPath(cwd), "utf-8");
+    await runTask(await buildUpdateTask(runtime));
+    expect(readFileSync(activePackPath(cwd), "utf-8")).toBe(firstBytes);
   });
 
   it("follows a symlinked .ttl into the build (L6)", async () => {
     // pnpm / workspace trees symlink their sources; Dirent.isFile is false for a
     // symlink, so on base the only `.ttl` was skipped → 0 sources → the empty
-    // build. Following the link ingests it and the build+lock succeed.
+    // build. Following the link ingests it and the build succeeds.
     const pkg = tmp("pragma-symlink-pkg-");
     mkdirSync(join(pkg, "definitions"), { recursive: true });
     const realTtl = join(pkg, "real.ttl");
@@ -195,9 +198,9 @@ describe("sources lock round-trip (PROTECTED)", () => {
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    const result = await runTask(await buildUpdateTask(runtime, false));
+    const result = await runTask(await buildUpdateTask(runtime));
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(readLock(cwd)?.packs).toHaveLength(1);
+    expect(readActivePack(cwd)).toBe(result.contentHash);
   });
 
   it("does not recurse into a symlinked directory cycle (L6 safety)", async () => {
@@ -215,21 +218,20 @@ describe("sources lock round-trip (PROTECTED)", () => {
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    const result = await runTask(await buildUpdateTask(runtime, false));
+    const result = await runTask(await buildUpdateTask(runtime));
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(readLock(cwd)?.packs).toHaveLength(1);
+    expect(readActivePack(cwd)).toBe(result.contentHash);
   });
 
-  it("undo restores the prior lock (no prior → removed)", async () => {
+  it("undo removes the pointer when the project had none before", async () => {
     const pkg = filePackage();
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
     const { runUndo } = await import("@canonical/task/node");
-    await runUndo(await buildUpdateTask(runtime, false));
-    // Prior lock was absent, so undo removes the file.
-    expect(readLock(cwd)).toBeUndefined();
+    await runUndo(await buildUpdateTask(runtime));
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 });
 
@@ -245,7 +247,7 @@ describe("sources update — package-declared prefixes (M1)", () => {
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    const result = await runTask(await buildUpdateTask(runtime, false));
+    const result = await runTask(await buildUpdateTask(runtime));
     const index = JSON.parse(
       readFileSync(join(packDir(result.contentHash), "index.json"), "utf-8"),
     ) as {
@@ -275,30 +277,30 @@ describe("sources update — refuses an empty store (A4)", () => {
     return pkg;
   }
 
-  it("a package with no .ttl is refused, and no lock is written", async () => {
+  it("a package with no .ttl is refused, and no pointer is written", async () => {
     // On base this builds a 0-triple pack whose empty data.nq fails the
     // completeness gate — so the "successful" update boots to a PERMANENT
-    // STORE_UNAVAILABLE loop. The fix refuses before writing the lock.
+    // STORE_UNAVAILABLE loop. The fix refuses before writing the pointer.
     const pkg = emptyPackage();
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+    await expect(buildUpdateTask(runtime)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
-    // No lock → the embedded fallback / prior state survives, no boot loop.
-    expect(readLock(cwd)).toBeUndefined();
+    // No pointer → the embedded fallback / prior state survives, no boot loop.
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 
-  it("no configured packs is refused rather than locking an empty pack", async () => {
+  it("no configured packs is refused rather than pointing at an empty pack", async () => {
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, []);
-    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+    await expect(buildUpdateTask(runtime)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
-    expect(readLock(cwd)).toBeUndefined();
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 
   it("a comment-only .ttl (0 triples) is refused too", async () => {
@@ -313,10 +315,10 @@ describe("sources update — refuses an empty store (A4)", () => {
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
-    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+    await expect(buildUpdateTask(runtime)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
-    expect(readLock(cwd)).toBeUndefined();
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 });
 
@@ -366,7 +368,7 @@ describe("sources update — conflicting @prefix detection (A5)", () => {
       report: (message: string) => reports.push(message),
     };
 
-    await runTask(await buildUpdateTask(runtime, false));
+    await runTask(await buildUpdateTask(runtime));
     expect(
       reports.some(
         (r) => r.includes('Prefix "ex:"') && r.includes("conflicting"),
@@ -395,9 +397,10 @@ describe("sources update — network-free preview (M2)", () => {
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).toContain("Resolve and build 1 pack(s)");
     expect(outcome.stdout).toContain(UNREACHABLE);
-    // The one project mutation is previewed, not performed.
-    expect(outcome.stdout).toContain("pragma.lock.json");
-    expect(readLock(cwd)).toBeUndefined();
+    // The project mutation is previewed, not performed: the plan names the
+    // exact pointer file a real run would write, and no pointer landed.
+    expect(outcome.stdout).toContain(activePackPath(cwd));
+    expect(readActivePack(cwd)).toBeUndefined();
     // The store was never even asked for.
     expect(runtime.store.booted).toBe(false);
   });
@@ -420,25 +423,8 @@ describe("sources update — network-free preview (M2)", () => {
     });
     const plan = (envelope.data as { plan: string[] }).plan;
     expect(plan.some((line) => line.includes(UNREACHABLE))).toBe(true);
-    // Plan-first withheld the write — no lock landed.
-    expect(readLock(cwd)).toBeUndefined();
-  });
-});
-
-describe("sources update — reproducible-or-fail (m5)", () => {
-  it("--frozen refuses a package that has no lock entry", async () => {
-    const pkg = filePackage();
-    const cwd = tmp("pragma-proj-");
-    const runtime = runtimeFor(cwd, [
-      { name: "pkg-a", source: `file://${pkg}` },
-    ]);
-
-    // No prior lock → nothing to reproduce → refuse rather than silently
-    // advance. The throw is raised during setup, before any Task is returned.
-    await expect(buildUpdateTask(runtime, true)).rejects.toMatchObject({
-      code: "CONFIG_ERROR",
-    });
-    expect(readLock(cwd)).toBeUndefined();
+    // Plan-first withheld the write — no pointer landed.
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 });
 
@@ -506,7 +492,7 @@ describe("sources update — data-failure classification (U6)", () => {
 
     let caught: unknown;
     try {
-      await buildUpdateTask(runtime, false);
+      await buildUpdateTask(runtime);
     } catch (error) {
       caught = error;
     }
@@ -524,8 +510,8 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(err.recovery?.message ?? "").not.toContain("report this issue");
     // The recovery points the user at a runnable, useful next step.
     expect(err.recovery?.cli).toBe("pragma sources update --verbose");
-    // Nothing was locked on failure.
-    expect(readLock(cwd)).toBeUndefined();
+    // Nothing was pointed at on failure.
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 
   it("classifies a git clone failure, naming the package (not INTERNAL)", async () => {
@@ -542,7 +528,7 @@ describe("sources update — data-failure classification (U6)", () => {
 
     let caught: unknown;
     try {
-      await buildUpdateTask(runtime, false);
+      await buildUpdateTask(runtime);
     } catch (error) {
       caught = error;
     }
@@ -551,7 +537,7 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(err.code).toBe("CONFIG_ERROR");
     expect(err.message).toContain("pkg-remote");
     expect(err.message).not.toContain("Internal error");
-    expect(readLock(cwd)).toBeUndefined();
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 
   it("names the SPECIFIC bad file among several good ones", async () => {
@@ -565,12 +551,12 @@ describe("sources update — data-failure classification (U6)", () => {
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [{ name: "mix", source: `file://${pkg}` }]);
 
-    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
+    await expect(buildUpdateTask(runtime)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
     let caught: unknown;
     try {
-      await buildUpdateTask(runtime, false);
+      await buildUpdateTask(runtime);
     } catch (error) {
       caught = error;
     }
@@ -602,9 +588,9 @@ describe("sources update — hidden files and --skip-invalid", () => {
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    const result = await runTask(await buildUpdateTask(runtime, false));
+    const result = await runTask(await buildUpdateTask(runtime));
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(readLock(cwd)?.packs).toHaveLength(1);
+    expect(readActivePack(cwd)).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("without --skip-invalid, one malformed source fails the whole update", async () => {
@@ -613,10 +599,10 @@ describe("sources update — hidden files and --skip-invalid", () => {
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
-    await expect(buildUpdateTask(runtime, false, false)).rejects.toMatchObject({
+    await expect(buildUpdateTask(runtime, false)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
-    expect(readLock(cwd)).toBeUndefined();
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 
   it("with --skip-invalid, drops the bad source, warns loudly, and builds from the rest", async () => {
@@ -628,10 +614,10 @@ describe("sources update — hidden files and --skip-invalid", () => {
       report: (message: string) => reports.push(message),
     };
 
-    const result = await runTask(await buildUpdateTask(runtime, false, true));
+    const result = await runTask(await buildUpdateTask(runtime, true));
     // Built from the good widget.ttl, not aborted.
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(readLock(cwd)?.packs).toHaveLength(1);
+    expect(readActivePack(cwd)).toMatch(/^[0-9a-f]{64}$/);
     // Loud per-source warning names the dropped file …
     expect(
       reports.some(
@@ -651,10 +637,10 @@ describe("sources update — hidden files and --skip-invalid", () => {
       ...runtimeFor(cwd, [{ name: "pkg-a", source: `file://${pkg}` }]),
       report: () => {},
     };
-    await expect(buildUpdateTask(runtime, false, true)).rejects.toMatchObject({
+    await expect(buildUpdateTask(runtime, true)).rejects.toMatchObject({
       code: "CONFIG_ERROR",
     });
-    expect(readLock(cwd)).toBeUndefined();
+    expect(readActivePack(cwd)).toBeUndefined();
   });
 });
 
@@ -748,7 +734,7 @@ describe("sources update — installs package skills (U10)", () => {
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
 
-    await runTask(await buildUpdateTask(runtime, false));
+    await runTask(await buildUpdateTask(runtime));
 
     // Installed as a symlink into $XDG_DATA_HOME/pragma/skills …
     const linked = join(dataHome, "pragma", "skills", "foo");
@@ -770,7 +756,7 @@ describe("sources update — installs package skills (U10)", () => {
     const runtime = runtimeFor(cwd, [
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
-    await runTask(await buildUpdateTask(runtime, false));
+    await runTask(await buildUpdateTask(runtime));
 
     const shared = discoverSkills(cwd).filter((s) => s.name === "shared");
     expect(shared).toHaveLength(1);
@@ -784,35 +770,42 @@ describe("sources update — installs package skills (U10)", () => {
       { name: "pkg-a", source: `file://${pkg}` },
     ]);
     const { runUndo } = await import("@canonical/task/node");
-    await runUndo(await buildUpdateTask(runtime, false));
+    await runUndo(await buildUpdateTask(runtime));
 
     expect(existsSync(join(dataHome, "pragma", "skills", "bar"))).toBe(false);
   });
 });
 
 describe("sources status — entityCount from the manifest (A10)", () => {
-  it("reports the count without re-parsing index.json", async () => {
-    const pkg = filePackage(); // ex:Widget class + ex:one individual
+  it("reports the count from the manifest even when index.json is unreadable", async () => {
+    // A pack of its OWN (unique TTL ⇒ unique content hash), so corrupting its
+    // cached index cannot reach any other test's pack in the shared cache.
+    const pkg = tmp("pragma-a10-pkg-");
+    mkdirSync(join(pkg, "definitions"), { recursive: true });
+    writeFileSync(
+      join(pkg, "definitions", "widget.ttl"),
+      `${TTL}ex:a10only a ex:Widget ; rdfs:label "A10" .\n`,
+    );
     const cwd = tmp("pragma-proj-");
     const runtime = runtimeFor(cwd, [
-      { name: "pkg-a", source: `file://${pkg}` },
+      { name: "pkg-a10", source: `file://${pkg}` },
     ]);
-    const result = await runTask(await buildUpdateTask(runtime, false));
+    const result = await runTask(await buildUpdateTask(runtime));
 
-    // Delete index.json: any path that PARSED it to count would now fail —
-    // proving the figure is read from the manifest's persisted entityCount.
-    rmSync(join(packDir(result.contentHash), "index.json"), { force: true });
+    // Corrupt index.json but keep it non-empty, so the pack still reads as
+    // complete: any path that PARSED it to count would now yield null.
+    writeFileSync(join(packDir(result.contentHash), "index.json"), "not json");
 
     const status = await collectStatus(bootRuntime(flagsJson, cwd));
-    // One abox individual (ex:one); the ex:Widget class is tbox, not counted.
-    expect(status.entityCount).toBe(1);
+    // Two abox individuals (ex:one, ex:a10only); ex:Widget is tbox, not counted.
+    expect(status.entityCount).toBe(2);
   });
 });
 
 describe("sources status CLI-json == MCP tool (PROTECTED)", () => {
-  it("a cold store's status is byte-equal on both surfaces", async () => {
+  it("a fresh install's status is byte-equal on both surfaces", async () => {
     // Both surfaces boot from the SAME cwd + isolated config (default packs,
-    // no lock), so the storeless status must be identical.
+    // nothing built), so the storeless status must be identical.
     const cwd = tmp("pragma-proj-");
     const cli = await executeVerb(
       statusVerb,
@@ -828,9 +821,8 @@ describe("sources status CLI-json == MCP tool (PROTECTED)", () => {
 
     expect(cliEnvelope).toEqual(mcpEnvelope);
     expect(cliEnvelope.ok).toBe(true);
-    expect((cliEnvelope.data as { lockPresent: boolean }).lockPresent).toBe(
-      false,
-    );
-    expect((cliEnvelope.data as { cached: boolean }).cached).toBe(false);
+    // Nothing built here, and the packs are the distribution's own — so the
+    // embedded snapshot is what answers reads, and status says exactly that.
+    expect((cliEnvelope.data as { store: string }).store).toBe("embedded");
   });
 });

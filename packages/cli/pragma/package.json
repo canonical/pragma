@@ -37,6 +37,7 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "bundle": "bun run scripts/bundle.ts",
     "gen:reference": "bun run scripts/genReference.ts",
     "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
@@ -70,6 +71,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
+    "@canonical/anatomy-dsl": "^0.2.2",
     "@canonical/biome-config": "^0.33.0",
     "@canonical/typescript-config": "^0.33.0",
     "@canonical/webarchitect": "^0.33.0",

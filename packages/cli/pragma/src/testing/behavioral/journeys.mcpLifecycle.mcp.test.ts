@@ -30,7 +30,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
-import { readLock } from "../../kernel/runtime/lock.js";
+import { readActivePack } from "../../kernel/runtime/paths.js";
 import { DEFAULT_PACK_TTL } from "../fixtures/graph/defaultPack.js";
 import { type McpHarness, projectMcp } from "../helpers/projectMcp.js";
 
@@ -44,7 +44,7 @@ const tempDir = (prefix: string): string => {
 
 /**
  * A COLD project directory: a `pragma.config.ts` pointing at a real file
- * package, but NO lock yet — so the store boots cold until `sources_update`.
+ * package, but nothing built yet — so the store boots cold until `sources_update`.
  */
 function coldProject(ttl: string): string {
   const pkg = tempDir("e2-pkg-");
@@ -83,7 +83,7 @@ describe("MCP lifecycle — cold store recovers after sources_update (E2, C1)", 
     };
     expect(error.code).toBe("STORE_UNAVAILABLE");
     expect(error.recovery?.mcp?.tool).toBe("sources_update");
-    expect(readLock(cwd)).toBeUndefined();
+    expect(readActivePack(cwd)).toBeUndefined();
 
     // 2) The agent runs the recovery tool for real (confirm) — it builds the pack.
     const update = await mcp.callTool("sources_update", { confirm: true });
@@ -93,7 +93,7 @@ describe("MCP lifecycle — cold store recovers after sources_update (E2, C1)", 
     expect((update.data as { contentHash: string }).contentHash).toMatch(
       /^[0-9a-f]{64}$/,
     );
-    expect(readLock(cwd)?.contentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(readActivePack(cwd)).toMatch(/^[0-9a-f]{64}$/);
 
     // 3) RETRY on the SAME server: the shared store was invalidated by the
     //    mutation, so the memoized cold rejection is gone and the read re-boots

@@ -1,75 +1,62 @@
 /**
- * Doctor check: report how each configured semantic pack resolves.
+ * Doctor check: report which pack answers this project's reads.
  *
- * ADAPTED for v2: the old local>git>bundled loader chain is retired — resolution
- * now flows through `sources update` into `pragma.lock.json` + the cached pack.
- * This check reads the lock (which packs resolved) and the storeless pack
- * index (the entity total), never booting the store. An absent lock with
- * configured packs is the "run `sources update`" case.
+ * It switches on the ONE boot decision ({@link resolveSources}) rather than
+ * re-deriving it from config, so doctor can never call an install healthy that
+ * every read would fail. That is the whole point of the check: a project that
+ * configured its own packs and never built them reports `fail` with the update
+ * remedy — not a pass listing the distribution's packs it is not reading.
+ * Storeless throughout: the pointer, the manifest, and the entity index are
+ * read off disk, never through a store session.
  */
 
 import {
   entityTotal,
   readPackIndex,
 } from "../../../kernel/completion/entitySource.js";
-import type { PackDeclaration } from "../../../kernel/config/types.js";
-import { readLock } from "../../../kernel/runtime/lock.js";
+import { embeddedManifest } from "../../../kernel/runtime/graphpack/embedded.js";
+import { readManifest } from "../../../kernel/runtime/graphpack/manifest.js";
+import { resolveSources } from "../../../kernel/runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import type { CheckItem, CheckResult } from "../types.js";
-
-const entryName = (entry: PackDeclaration): string =>
-  typeof entry === "string" ? entry : entry.name;
+import type { CheckResult } from "../types.js";
 
 /**
- * Report pack resolution status against the lock and the entity total.
+ * Report which pack answers reads, its provenance, and its entity total.
  *
  * @param rt - The per-invocation runtime.
- * @returns A CheckResult with a per-pack breakdown.
- * @note Impure — reads config, the lock, and the pack index from disk.
+ * @returns A CheckResult naming the answering pack, or the failure to build one.
+ * @note Impure — reads config, the active-pack pointer, and the pack index.
  */
 export async function checkPackageRefs(
   rt: PragmaRuntime,
 ): Promise<CheckResult> {
-  const entries = (await rt.loadConfig()).config.packs ?? [];
-  const lock = readLock(rt.cwd);
-  const index = readPackIndex(rt.cwd);
-  const totalEntities = index ? entityTotal(index) : 0;
+  const decision = resolveSources(await rt.loadConfig(), rt.cwd);
+  // The display says "packs" (config declarations); the file/function keep
+  // "Package" (npm/git resolution vocabulary).
+  const name = "pack refs";
 
-  if (entries.length === 0) {
+  if (decision.kind === "unavailable") {
     return {
-      // The display says "packs" (config declarations); the file/function keep
-      // "Package" (npm/git resolution vocabulary).
-      name: "pack refs",
-      status: "pass",
-      detail: `no packs configured — the embedded pack answers reads (${totalEntities.toLocaleString()} entities)`,
+      name,
+      status: "fail",
+      detail: decision.reason,
+      remedy: "pragma sources update",
     };
   }
 
-  const items: CheckItem[] = [];
-  let unresolved = 0;
-  for (const entry of entries) {
-    const name = entryName(entry);
-    const packEntry = lock?.packs.find((pack) => pack.name === name);
-    if (packEntry) {
-      items.push({
-        label: name,
-        status: "pass",
-        detail: `resolved ${packEntry.resolved}`,
-      });
-    } else {
-      items.push({ label: name, status: "fail", detail: "not in the lock" });
-      unresolved += 1;
-    }
+  const index = readPackIndex(decision);
+  const entities = (index ? entityTotal(index) : 0).toLocaleString();
+  if (decision.kind === "embedded") {
+    return {
+      name,
+      status: "pass",
+      detail: `embedded snapshot @ ${embeddedManifest().sourceRef} — ${entities} entities · \`pragma sources update\` to build from the configured packs`,
+    };
   }
-
-  const ok = lock !== undefined && unresolved === 0;
+  const manifest = readManifest(decision.dir);
   return {
-    name: "pack refs",
-    status: ok ? "pass" : "fail",
-    detail: ok
-      ? `${entries.length} pack(s) resolved · ${totalEntities.toLocaleString()} entities`
-      : `${unresolved} of ${entries.length} pack(s) not resolved`,
-    items,
-    ...(ok ? {} : { remedy: "pragma sources update" }),
+    name,
+    status: "pass",
+    detail: `${manifest?.sourceRef ?? decision.contentHash.slice(0, 12)} — ${entities} entities, built ${manifest?.createdAt ?? "?"}`,
   };
 }

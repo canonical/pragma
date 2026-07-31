@@ -1,11 +1,10 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ConfigLayers } from "../config/types.js";
 import { loadStoreSession } from "./loadSession.js";
-import { writeLock } from "./lock.js";
-import { packDir } from "./paths.js";
+import { activePackPath, packDir } from "./paths.js";
 import { resolveSources } from "./resolveSources.js";
 
 /**
@@ -74,6 +73,13 @@ function writeCompletePack(hash: string): string {
   return dir;
 }
 
+/** Plant the active-pack pointer a `sources update` would have written. */
+function writePointer(cwd: string, content: string): void {
+  const path = activePackPath(cwd);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, content);
+}
+
 beforeEach(() => {
   roots = [];
 });
@@ -82,11 +88,11 @@ afterEach(() => {
 });
 
 describe("resolveSources decision table", () => {
-  it("lock present + pack cached → load the locked pack", () => {
+  it("pointer present + pack cached → load the built pack", () => {
     const cwd = tmp();
     const hash = "a".repeat(64);
     const dir = writeCompletePack(hash);
-    writeLock(cwd, { version: 1, contentHash: hash, packs: [] });
+    writePointer(cwd, hash);
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "pack",
@@ -95,18 +101,18 @@ describe("resolveSources decision table", () => {
     });
   });
 
-  it("lock present + pack evicted → STORE_UNAVAILABLE", () => {
+  it("pointer present + pack evicted → STORE_UNAVAILABLE", () => {
     const cwd = tmp();
-    // A lock whose content-addressed pack is absent from the cache.
-    writeLock(cwd, { version: 1, contentHash: "b".repeat(64), packs: [] });
+    // A pointer whose content-addressed pack is absent from the cache.
+    writePointer(cwd, "b".repeat(64));
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "unavailable",
-      reason: "the locked pack is missing from the cache",
+      reason: "the built pack is missing from the cache",
     });
   });
 
-  it("lock present + pack with a torn schema/index → STORE_UNAVAILABLE", () => {
+  it("pointer present + pack with a torn schema/index → STORE_UNAVAILABLE", () => {
     const cwd = tmp();
     const hash = "c".repeat(64);
     // manifest + non-empty dump present, but the extracted schema/index are
@@ -117,21 +123,37 @@ describe("resolveSources decision table", () => {
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
     writeManifest(dir, hash);
-    writeLock(cwd, { version: 1, contentHash: hash, packs: [] });
+    writePointer(cwd, hash);
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "unavailable",
-      reason: "the locked pack is missing from the cache",
+      reason: "the built pack is missing from the cache",
     });
   });
 
-  it("no lock + default packs → embedded fallback", () => {
+  it("a malformed pointer is treated as absent, not as a pack name", () => {
+    // A truncated/garbage pointer must never name a cache directory. With
+    // default packs it falls through to the embedded row, exactly as no
+    // pointer at all would.
+    const cwd = tmp();
+    writePointer(cwd, "not-a-content-hash\n");
+
+    expect(resolveSources(layersWith("default"), cwd)).toEqual({
+      kind: "embedded",
+    });
+    expect(resolveSources(layersWith("project"), cwd)).toEqual({
+      kind: "unavailable",
+      reason: "packs are configured but the store has not been built",
+    });
+  });
+
+  it("no pointer + default packs → embedded fallback", () => {
     expect(resolveSources(layersWith("default"), tmp())).toEqual({
       kind: "embedded",
     });
   });
 
-  it("no lock + packs configured → STORE_UNAVAILABLE", () => {
+  it("no pointer + packs configured → STORE_UNAVAILABLE", () => {
     expect(resolveSources(layersWith("project"), tmp())).toEqual({
       kind: "unavailable",
       reason: "packs are configured but the store has not been built",

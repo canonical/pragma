@@ -61,7 +61,7 @@ const MATRIX: readonly {
   },
   {
     label: "recovery (mcp-only, no cli)",
-    error: PragmaError.storeUnavailable("no lock", {
+    error: PragmaError.storeUnavailable("the store has not been built", {
       recovery: { message: "Please report this issue." },
     }),
   },

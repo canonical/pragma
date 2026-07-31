@@ -18,6 +18,7 @@
  */
 
 import { readPackIndex } from "../../../completion/entitySource.js";
+import type { SourcesDecision } from "../../../runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 
 /** The KG type (prefixed) every prompt entity carries. */
@@ -54,15 +55,17 @@ function isPromptEntity(entity: {
 }
 
 /**
- * List prompt summaries STORELESSLY from the active pack index. Returns `[]`
- * when no index is reachable or the index carries no prompts — never boots the
- * store.
+ * List prompt summaries STORELESSLY from the index of the pack the boot decision
+ * names. Returns `[]` when no index is reachable (including an unavailable
+ * store) or the index carries no prompts — never boots the store.
  *
- * @param rt - The per-invocation runtime (for `cwd`).
+ * @param decision - The boot decision from `resolveSources`.
  * @returns Prompt summaries (name from the entity label, sorted by name).
  */
-export function listPromptSummaries(rt: PragmaRuntime): PromptSummary[] {
-  const index = readPackIndex(rt.cwd);
+export function listPromptSummaries(
+  decision: SourcesDecision,
+): PromptSummary[] {
+  const index = readPackIndex(decision);
   if (!index || !Array.isArray(index.entities)) return [];
   const summaries: PromptSummary[] = [];
   for (const entity of index.entities) {

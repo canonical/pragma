@@ -266,7 +266,7 @@ describe("storeless guarantee (PROTECTED)", () => {
               required: true,
               complete: {
                 kind: "names",
-                source: { from: "index", type: "ex:Component" },
+                source: { from: "index", type: "ds:Component" },
               },
             },
           ],
@@ -286,15 +286,15 @@ describe("storeless guarantee (PROTECTED)", () => {
         } as VerbSpec,
       ],
     };
-    // Fresh cwd → no lock → the reader falls back to the embedded pack index.
+    // Fresh cwd → no pointer → the reader falls back to the embedded index.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-storespy-"));
     const matches = await runComplete(
-      ["block", "lookup", "ex:B"],
+      ["block", "lookup", "ds:global.component.but"],
       [lookupModule],
       indexCompletionEnv(cwd),
     );
     // It DID read the index (a real name came back)…
-    expect(matches).toEqual(["ex:Button"]);
+    expect(matches).toContain("ds:global.component.button");
     // …and it did so without ever constructing the store.
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
@@ -302,7 +302,7 @@ describe("storeless guarantee (PROTECTED)", () => {
   it("the non-index name sources resolve without constructing the store", async () => {
     // skills (filesystem), prompts/tiers (index filter), prefixes (index ∪
     // default map) — every family completes storelessly against the live
-    // capabilities. A fresh cwd → no lock → the embedded fallback index.
+    // capabilities. A fresh cwd → no pointer → the embedded index.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-storeless-src-"));
     const env = indexCompletionEnv(cwd);
 

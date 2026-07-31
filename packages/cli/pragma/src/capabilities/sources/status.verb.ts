@@ -2,10 +2,10 @@
  * The `sources status` verb — a storeless read.
  *
  * `needsStore: false` is load-bearing: status must report even a cold or
- * unbuilt store (staleness `uncached`), so it must NOT boot the store — booting
- * a cold store would throw STORE_UNAVAILABLE before status could say so. Its
- * `run` is a lazy thunk (the collector is dynamic-imported), keeping the config
- * reader off the fast path, exactly like `info`.
+ * unbuilt store (`store: "unavailable"`), so it must NOT boot the store —
+ * booting a cold store would throw STORE_UNAVAILABLE before status could say
+ * so. Its `run` is a lazy thunk (the collector is dynamic-imported), keeping
+ * the config reader off the fast path, exactly like `info`.
  */
 
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -18,8 +18,8 @@ export const statusVerb: VerbSpec<
   SourcesStatusData
 > = {
   path: ["sources", "status"],
-  summary: "Report the local store's readiness and per-source staleness.",
-  doc: "Storeless — reads the lock, config, and pack cache without booting the store, so it works even when the store is cold.",
+  summary: "Report which pack answers reads, and the packs it was built from.",
+  doc: "Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.",
   params: [],
   output: { formatters: statusFormatters },
   examples: [
