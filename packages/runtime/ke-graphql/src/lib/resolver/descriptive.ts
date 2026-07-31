@@ -18,19 +18,18 @@
 // predicate IRI appears here, and ds:name / cs:name / any future foo:name all
 // resolve identically.
 //
-// ── DELIBERATE DEVIATION FROM sem ──────────────────────────────────────────
-// sem's `resolve_label` is EXACT-TAG-ONLY: `resolve_label(&ls, "fr")` is None
-// even when an untagged literal exists (sem-graphql/src/runtime.rs, and its own
-// test asserts it). Applying that rule here would null out the entire corpus —
-// every literal in this package's fixtures and in the ds:/cs: data is untagged,
-// and ke drops empty language tags when it canonicalizes a literal.
+// ── LANGUAGE RESOLUTION POLICY ─────────────────────────────────────────────
+// `label`/`comment`/`definition` resolve: EXACT tag match (case-insensitive),
+// ELSE the untagged literals. A *tagged* literal only ever answers its own
+// exact tag — `en` never matches `en-GB`.
 //
-// So `label`/`comment`/`definition` here resolve: EXACT tag match (case-
-// insensitive), ELSE the untagged literals. A *tagged* literal still only ever
-// answers its own exact tag — `en` never matches `en-GB`, exactly as in sem.
-// The reasoning: an untagged plain literal asserts "no language stated", which
-// is not the same claim as "stated in some other language". `title` keeps all
-// of sem's tiers stacked on top of that.
+// The untagged tier is load-bearing. An exact-tag-only rule would null out
+// the entire corpus: every literal in this package's fixtures and in the
+// ds:/cs: data is untagged, and ke drops empty language tags when it
+// canonicalizes a literal. The reasoning: an untagged plain literal asserts
+// "no language stated", which is not the same claim as "stated in some other
+// language". `title` stacks its remaining fallback tiers (any-tag literal,
+// then the IRI local name) on top of that.
 // =============================================================================
 
 import {
@@ -87,8 +86,8 @@ export const selectDescriptivePredicates = (
  * "" rather than undefined is deliberate. It is the single representation of
  * "no language stated" (ke drops empty tags when it canonicalizes a literal),
  * and it makes the title ordering key a plain concatenation — "" sorts before
- * every real tag, which is exactly sem's `Option::None`-first ordering, with
- * no per-item conditional to get wrong.
+ * every real tag, so untagged-first ordering falls out of string comparison
+ * with no per-item conditional to get wrong.
  */
 export interface Lexical {
   value: string;
@@ -156,16 +155,16 @@ const valueKey = (lexical: Lexical): string => lexical.value;
 
 /**
  * Sort key ordering untagged literals ahead of tagged ones, then by tag, then
- * by value — sem's `(&lang, &value)` tuple ordering, where Rust's
- * `Option::None` sorts before every `Some`. The NUL separator cannot occur in
- * a language tag, so the two components never bleed into each other.
+ * by value — a (lang, value) tuple ordering in which the untagged key ""
+ * sorts before every real tag. The NUL separator cannot occur in a language
+ * tag, so the two components never bleed into each other.
  */
 const titleKey = (lexical: Lexical): string =>
   `${lexical.lang}\u0000${lexical.value}`;
 
 /**
  * `label(lang)` — the exact-tag literals if the entity has any, else the
- * untagged ones (the documented deviation from sem, above). Null when neither
+ * untagged ones (the untagged tier documented above). Null when neither
  * exists: a caller that needs a total field asks for `title` instead. Pure.
  *
  * An empty-string literal is a value, not a miss, and is returned as-is.

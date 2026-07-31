@@ -77,8 +77,8 @@ export type NonNullOverrides = Record<string, string[]>;
  * annotations task, at which point `auto`/`explicit` start behaving
  * differently from `annotated`.
  *
- * Mirrors sem's `ProjectionMode` (sem-objects/src/ir.rs) name-for-name so the
- * two emitters' headers are comparable.
+ * The three mode names are fixed by the schema contract (graphql-schema-spec
+ * 1), so `mode:` header lines are comparable across providers.
  */
 export type ProjectionMode =
   /** Pure heuristics; annotations ignored. */

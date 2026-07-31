@@ -283,8 +283,8 @@ describe("resolveLabel", () => {
     expect(resolveLabel([tagged("Colour", "en-GB")], "en")).toBeNull();
   });
 
-  it("falls back to the untagged literals — the documented sem deviation", () => {
-    // sem's resolve_label would return None here; nulling out an untagged
+  it("falls back to the untagged literals — the documented untagged tier", () => {
+    // An exact-tag-only rule would return null here; nulling out an untagged
     // corpus is precisely the outcome this package refuses.
     expect(resolveLabel([untagged("Plain"), tagged("Zeug", "de")], "en")).toBe(
       "Plain",

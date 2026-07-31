@@ -158,7 +158,7 @@ toFull(prefixed: string, namespaces: ReadonlyMap<string, NamespaceInfo>): string
 isAbsoluteIri(value: string): boolean   // RFC 3986 §3.1 scheme + non-empty remainder
 ```
 
-The `node(id:)` admission gate — prefix-map-free, so the same id resolves identically regardless of registered prefixes. Mirrors sem's `parse_absolute_iri`.
+The `node(id:)` admission gate — prefix-map-free, so the same id resolves identically regardless of registered prefixes.
 
 ---
 

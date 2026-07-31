@@ -491,7 +491,7 @@ describe("generic descriptive chain", () => {
       t: "Das Widget",
     });
     const d2 = (result.data?.d2 as Record<string, unknown>)._meta;
-    // d2's only literal is untagged: it answers any lang (the sem deviation)…
+    // d2's only literal is untagged: it answers any lang (the untagged tier)…
     expect(d2).toEqual({
       any: "Plain label",
       // …but an exact en-GB literal would have won; there is none, so the

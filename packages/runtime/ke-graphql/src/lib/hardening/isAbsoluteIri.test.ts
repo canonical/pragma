@@ -1,19 +1,19 @@
 // =============================================================================
-// The node(id:) admission gate. The first six cases are sem's own
-// `absolute_iri_gate` test vectors (sem-graphql/src/runtime.rs) verbatim — the
-// two runtimes must admit and reject exactly the same strings.
+// The node(id:) admission gate. The admission rule is fixed by the schema
+// contract (graphql-schema-spec 1) — every conforming runtime must admit and
+// reject exactly the same strings, so the vectors here are contract vectors.
 // =============================================================================
 
 import { describe, expect, it } from "vitest";
 import isAbsoluteIri from "./isAbsoluteIri.js";
 
 describe("isAbsoluteIri", () => {
-  it("admits sem's accepted vectors", () => {
-    expect(isAbsoluteIri("sem://@x/a#T")).toBe(true);
+  it("admits absolute IRIs under any scheme", () => {
+    expect(isAbsoluteIri("pkg://@x/a#T")).toBe(true);
     expect(isAbsoluteIri("urn:uuid:1234")).toBe(true);
   });
 
-  it("rejects sem's rejected vectors", () => {
+  it("rejects strings with no RFC 3986 scheme", () => {
     expect(isAbsoluteIri("not an iri")).toBe(false); // no colon at all
     expect(isAbsoluteIri("Film")).toBe(false); // no scheme
     expect(isAbsoluteIri("1http://x")).toBe(false); // digit-initial scheme

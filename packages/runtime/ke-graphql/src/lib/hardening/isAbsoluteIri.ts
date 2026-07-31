@@ -9,8 +9,8 @@
 // consulting the compiled namespaces and guessing) is what makes `node(id:)`
 // answer identically no matter which prefixes a consumer registered.
 //
-// Mirrors sem's parse_absolute_iri (sem-graphql/src/runtime.rs) so both
-// runtimes admit and reject exactly the same strings.
+// The admission rule is fixed by the schema contract (graphql-schema-spec 1),
+// so every conforming runtime admits and rejects exactly the same strings.
 // =============================================================================
 
 const CODE_A_UPPER = 65; // "A"
