@@ -10,7 +10,7 @@ From lowest to highest precedence:
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
-A higher layer **replaces** a lower one field by field. No field merges: a project declaring one `prefixes` entry replaces the whole map, including the namespaces the distribution's own packs are built with. `pragma config show` reports which layer supplied each value — with two documented exceptions, the identity fields and `completion`, both covered in the reference.
+A higher layer **replaces** a lower one field by field. No field merges: a project declaring one `prefixes` entry replaces the whole map, including the namespaces the distribution's own packs are built with. `pragma config show` prints five fields with the layer that supplied them; what the other seven do instead is in the reference under [What `config show` reports](./reference/config.md).
 
 ## Read stories
 
@@ -32,12 +32,12 @@ Package stories are third-party data, so they are never fatal: a malformed or sc
 
 One limit a package author should know: a query naming a prefix the answering graph does not bind currently reports `STORE_UNAVAILABLE` with a `sources update` recovery rather than naming the prefix — check your prefixes against `pragma graph query` first.
 
-An `emptyRecovery.cli` hint is the command **without** a binary name (`"sources update"`, not `"pragma sources update"`). The consuming distribution prepends its own, so one story is portable; a hint that names a binary is rejected with a `CONFIG_ERROR` naming the change.
+An `emptyRecovery.cli` hint is the command **without** a binary name (`"sources update"`, not `"pragma sources update"`). The consuming distribution prepends its own, so one story is portable. A hint carrying **this** distribution's own name is rejected with a `CONFIG_ERROR` naming the change — in your config that is fatal, and a package's `stories/*.json` carrying it is dropped and named under `doctor`'s `pack refs`, like any other invalid package story. A hint carrying some *other* distribution's name cannot be detected, and renders doubled.
 
 Two consequences worth knowing:
 
 - **Package- and config-declared nouns are dispatch-only.** `pragma --help` and shell completion read the static capability set without touching config or the pack, which is what keeps them fast. A noun that arrives from a package or from your config therefore runs, and `pragma capabilities` lists it, but `--help` and completion do not. The distribution's own stories are compiled into that static set, so they are advertised everywhere.
-- **`pragma config show` reports pack declarations, not story bodies.** The bodies are SPARQL and the JSON payload is what MCP returns verbatim, so `packs` entries are shown as `{ name, source }` and the top-level `stories` array is omitted. Provenance is still reported for both fields, and `pragma capabilities` lists the verbs the stories produce.
+- **`pragma config show` reports pack declarations, not story bodies.** The bodies are SPARQL and the JSON payload is what MCP returns verbatim, so `packs` entries are shown as `{ name, source }` and the top-level `stories` array is omitted. `packs` is reported with its layer; `stories` carries an origin the payload has no value to attach it to. `pragma capabilities` lists the verbs the stories produce.
 
 ## `prefixes`: one field, two readers
 

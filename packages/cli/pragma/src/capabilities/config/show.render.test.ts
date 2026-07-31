@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type RenderStyle, styleFor } from "../../kernel/render/style.js";
+import { emitReference } from "../../kernel/spec/emitReference.js";
+import { capabilities } from "../index.js";
 import { configShowFormatters, renderConfigShowPlain } from "./show.render.js";
 import type { ConfigShowData } from "./types.js";
 
@@ -117,5 +119,30 @@ describe("configShowFormatters.llm", () => {
         expect(out.toLowerCase()).not.toContain(`${field}:`);
       }
     }
+  });
+});
+
+describe("the generated configuration reference", () => {
+  it("names exactly the fields this renderer reports with a layer", () => {
+    // The page and the renderer are written independently — the page is kernel
+    // prose, the renderer a capability — and the page's account of the renderer
+    // was wrong in both directions: it claimed every field but `completion`
+    // carried a printed provenance, while `prefixes`, `stories` and the four
+    // distribution-only fields do not, and it claimed `completion` was not
+    // printed, while `--format json` carries it.
+    //
+    // DERIVED from the real formatter: the field rows are the ones before the
+    // two PATH rows, which are not fields at all. Adding a row here without
+    // saying so on the page, or naming a field there this renderer drops, fails.
+    const printed = renderConfigShowPlain(DATA, styleFor(false))
+      .split("\n")
+      .map((line) => line.slice(0, line.indexOf(":")));
+    const fields = printed.slice(0, printed.indexOf("global config"));
+    expect(fields.length).toBeGreaterThan(0);
+
+    const page = emitReference(capabilities).get("config.md") ?? "";
+    expect(page).toContain(
+      `${fields.map((field) => `\`${field}\``).join(", ")} — those and only those —`,
+    );
   });
 });

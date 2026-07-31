@@ -477,7 +477,8 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   },
   colophon: {
     type: "string (optional)",
-    notes: "Distribution-only — see below. Markdown, rendered by `colophon`.",
+    notes:
+      "Distribution-only — see below. Accepted by the validator and read by NOTHING today: `colophon` renders a built-in narrative plus each pack's own `colophon`. Declaring it changes nothing.",
   },
   issuesUrl: {
     type: "URL string (optional)",
@@ -495,9 +496,9 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
   },
   detail: {
-    type: "`summary` | `standard` | `detailed` (optional)",
+    type: "string (optional)",
     notes:
-      "Default progressive-disclosure level. Defaults to `standard`. Set it with `config set detail <level>`.",
+      "Default progressive-disclosure level: `summary`, `standard` or `detailed`. The validator takes any string and an unrecognized one falls back to `standard` — `config show` still reports it as declared. Set it with `config set detail <level>`, which rejects anything else.",
   },
   packs: {
     type: "array (optional)",
@@ -517,14 +518,28 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   prefixes: {
     type: "record (optional)",
     notes:
-      "Namespace prefixes the pack is built with — they win every harvest, so this decides which IRI a prefix binds in the store and the index. Only the distribution layer additionally seeds the compiled-in display/expansion map, which is read where no config layer exists.",
+      "Namespace prefixes the pack is built with — they win every harvest, so this decides which IRI a prefix binds in the store and the index. Every surface uses the compiled-in display/expansion map to compact and expand prefixed names; only the DISTRIBUTION layer seeds it, because it is also read on the storeless fast path, before any config layer exists.",
   },
   completion: {
     type: "object (optional)",
     notes:
-      "Completion policy read when `setup completions` emits a script — `minChars`, `caseSensitive`, and a per-noun `families` opt-out. It is the one merged field with NO provenance: `config show` does not report it.",
+      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. `caseSensitive` is accepted by the validator and read by nothing. It is the one field `config show` carries with NO origin at all.",
   },
 };
+
+/**
+ * The fields `config show` prints with the layer that supplied them, in the
+ * order it prints them. NOT every field: `prefixes` and `completion` reach only
+ * the JSON payload, `stories` reaches only its `origins` key, and the four
+ * distribution-only fields reach neither. The page said the opposite — that
+ * every field but `completion` was reported — which is the claim this whole
+ * reference exists to make true rather than plausible.
+ *
+ * A literal, because the kernel emitter may not import a capability renderer.
+ * `capabilities/config/show.render.test.ts` derives the same list from the real
+ * formatter and fails if this page and that renderer disagree.
+ */
+const REPORTED_FIELDS = ["tier", "channel", "detail", "packs", "generators"];
 
 /** Render the layered-configuration reference: the layers, then the fields. */
 function renderConfigPage(): string {
@@ -544,14 +559,14 @@ function renderConfigPage(): string {
       `2. **Global config** — \`$XDG_CONFIG_HOME/${BIN_NAME}/config.json\`, written by \`${BIN_NAME} config set\`.`,
       `3. **Project config** — the nearest \`${PROJECT_CONFIG_FILENAME}\`, walking up from the working directory.`,
     ].join("\n"),
-    "A higher layer REPLACES a lower one field by field. No field merges — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.",
+    "A higher layer REPLACES a lower one field by field. No field is deep-merged — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.",
     "## Fields",
     "The `Type` column is prose; the field set and each field's optionality are checked against the validator.",
     rows.join("\n"),
     "## Distribution-only fields",
-    `\`name\`, \`help\`, \`colophon\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. The validator ACCEPTS them in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary.`,
-    "## Fields with no provenance",
-    "`completion` is merged through the layers but carries no origin, so `config show` does not print it. Every other field above is reported with the layer that supplied it.",
+    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary.`,
+    "## What `config show` reports",
+    `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",
     "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
     "## Reading and writing",
