@@ -16,13 +16,12 @@ import { parsePackDefinition } from "../kernel/packs/schema.js";
 import { VOCABULARY } from "../kernel/vocabulary.js";
 import { declaredStories } from "./distribution.js";
 import { capabilities } from "./index.js";
-import { TIER_TYPE } from "./tier/constants.js";
 
 describe("the distribution's declared stories (PROTECTED)", () => {
   it("declares exactly the five domain nouns", () => {
-    // The composites (`block`, `token`, `tier`) read their story by name and
-    // fall back to no verbs if it is missing, so a renamed or dropped noun must
-    // fail HERE rather than silently shrink a command.
+    // The composites (`block`, `token`) read their story by name and fall back
+    // to no verbs if it is missing, so a renamed or dropped noun must fail
+    // HERE rather than silently shrink a command.
     expect([...declaredStories.keys()].sort()).toEqual([
       "block",
       "modifier",
@@ -52,16 +51,20 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     }
   });
 
-  it("the tier story names the same class and property the tier code reads", () => {
-    // `tier list` is declared data and `tier lookup` is hand-written code, so
-    // the two can now disagree about what a tier IS and what addresses it —
-    // the coupling where a candidate completes and then fails to resolve.
-    // While the query lived in `capabilities/tier/pack.ts` it interpolated
-    // these two symbols and could not drift; the declaration spells them
-    // literally, because `pragma.conf.ts` is inert data and imports nothing.
-    // This is what replaces that guarantee.
-    const query = declaredStories.get("tier")?.list?.query ?? "";
-    expect(query).toContain(`a ${TIER_TYPE}`);
+  it("the tier story is internally coherent, and coherent with the vocabulary", () => {
+    // Both tier verbs are declared data now (L-OPEN-9), so the noun can no
+    // longer disagree with ITSELF in code — but the list query spells its
+    // class and property literally (`pragma.conf.ts` is inert data and imports
+    // nothing) while the lookup declares them as fields, and the vocabulary
+    // declares the addressing property once more for the index builder. This
+    // holds all three to one class and one property, so a candidate that
+    // completes still resolves and the index projects the names the lookup
+    // matches.
+    const story = declaredStories.get("tier");
+    const query = story?.list?.query ?? "";
+    expect(story?.lookup?.type).toBe("ds:Tier");
+    expect(query).toContain(`a ${story?.lookup?.type}`);
+    expect(story?.lookup?.by).toBe(VOCABULARY.altName);
     expect(query).toContain(`${VOCABULARY.altName} ?name`);
   });
 });

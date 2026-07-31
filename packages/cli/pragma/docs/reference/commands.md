@@ -881,19 +881,19 @@ pragma tier list --format llm
 
 ### pragma tier lookup
 
-Show one tier by name, with the blocks scoped to it.
+Show tiers by name, with the blocks scoped to each.
 
-Look up a single tier by its name (e.g. apps/lxd) and list the blocks scoped directly to it.
+Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.
 
 ```
-pragma tier lookup <name>
+pragma tier lookup <name...>
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `<name>` | yes | The tier name (e.g. apps/lxd). |
+| `<name...>` | yes | Tier names, prefixed names/IRIs, or glob patterns. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `tier_lookup` tool.
@@ -901,7 +901,7 @@ pragma tier lookup <name>
 **Examples**
 
 ```bash
-pragma tier lookup apps/lxd
+pragma tier lookup <name>
 ```
 
 ## token

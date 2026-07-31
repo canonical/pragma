@@ -65,7 +65,7 @@ export const vocabulary = {
 };
 ```
 
-These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames`, which is what a name completion offers and what `tier lookup` matches), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
+These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames` enrichment by the index builder), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
 
 It is **not** a config layer field, and cannot be set in a global or project config. Its readers are the storeless `--help`/`__complete` fast path and the pack index builder — neither can reach a config layer at all, so a layered field would be one you could set to no effect. A fork changes these values in its own `pragma.conf.ts` and rebuilds its binary; that, plus `prefixes` and the identity fields, is the whole of what makes the CLI *this* distribution.
 

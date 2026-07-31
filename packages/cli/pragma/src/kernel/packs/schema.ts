@@ -27,9 +27,16 @@ const NOUN_MESSAGE = 'must be lowercase kebab-case, e.g. "design-token"';
 const FILTER_PARAM_PATTERN = /^[a-z][a-z0-9]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const GRAPHQL_NAME_PATTERN = /^[_A-Za-z][_0-9A-Za-z]*$/;
-/** A prefixed name (`ds:Thing`), a property path of them, or an absolute IRI. */
+/**
+ * A prefixed name (`ds:Thing`), a property path of them, or an absolute IRI.
+ * Each path segment may carry the SPARQL inverse marker (`^ds:tier`) — the
+ * contract (`types.ts`) admits "prefixed name, IRI, or path", and an inverse
+ * step IS a property path, so rejecting it here was a schema bug, not a
+ * grammar decision (L-OPEN-9: the tier story's `blocks` expand reads
+ * `^ds:tier`).
+ */
 const TERM_PATTERN =
-  /^(?:[A-Za-z][A-Za-z0-9+.-]*:\/\/[^<>"\s]+|[A-Za-z][\w-]*:[^/<>"\s]+(?:\/[A-Za-z][\w-]*:[^/<>"\s]+)*)$/;
+  /^(?:[A-Za-z][A-Za-z0-9+.-]*:\/\/[^<>"\s]+|\^?[A-Za-z][\w-]*:[^/<>"\s]+(?:\/\^?[A-Za-z][\w-]*:[^/<>"\s]+)*)$/;
 
 /** Params a filter/verb may not claim (they are the shared read vocabulary). */
 const RESERVED_PARAMS = new Set(["search", "detail", "name", "count"]);

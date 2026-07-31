@@ -404,7 +404,7 @@ _No input parameters._
 
 ### tier_lookup
 
-Look up a single tier by its name (e.g. apps/lxd) and list the blocks scoped directly to it.
+Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.
 
 Read-only.
 
@@ -412,7 +412,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | string | yes | The tier name (e.g. apps/lxd). |
+| `name` | string[] | yes | Tier names, prefixed names/IRIs, or glob patterns. |
 
 ### token_add-config
 

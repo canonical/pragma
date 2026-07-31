@@ -51,8 +51,8 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "lookup",
       "sample",
     ]);
-    // PR7 completes the surface: tier gains a bespoke single-name lookup;
-    // block/modifier/token gain no-argument samples (fixedCount).
+    // PR7 completed the surface; block/modifier/token carry no-argument
+    // samples (fixedCount), tier declares no sample.
     expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
@@ -83,11 +83,11 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       },
       { v: "sample", needsStore: true, mcp: "block_sample" },
     ]);
-    // The bespoke tier lookup emits the SINGLE-name positional the covenant
-    // freezes (a pack lookup would emit the variadic `<name...>`).
+    // The tier lookup is the story's compiled lookup (L-OPEN-9), so it emits
+    // the variadic `<name...>` positional every pack lookup emits.
     expect(emitted.nouns.tier?.verbs).toContainEqual({
       v: "lookup",
-      args: ["<name>"],
+      args: ["<name...>"],
       needsStore: true,
       mcp: "tier_lookup",
     });

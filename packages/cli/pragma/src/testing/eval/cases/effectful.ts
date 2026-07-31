@@ -189,14 +189,21 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     id: "tool-tier-lookup-lists-scoped-blocks",
     kind: "tool",
     input:
-      "tier_lookup {name:apps/lxd} resolves the tier and lists the blocks scoped to it (LXD Panel).",
+      "tier_lookup {name:[apps/lxd]} resolves the tier and expands the blocks scoped to it (LXD Panel).",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("tier_lookup", { name: "apps/lxd" });
+        // The declared pack lookup (L-OPEN-9): variadic names in, the uniform
+        // `{ results, errors }` lookup envelope out, blocks as an expand.
+        const result = await mcp.callTool("tier_lookup", {
+          name: ["apps/lxd"],
+        });
         assert.equal(result.ok, true);
-        const data = result.data as { name: string; blocks: string[] };
-        assert.equal(data.name, "apps/lxd");
-        assert.ok(data.blocks.includes("LXD Panel"));
+        const data = result.data as {
+          results: { name: string; blocks: { name: string }[] }[];
+        };
+        const tier = data.results[0];
+        assert.equal(tier?.name, "apps/lxd");
+        assert.ok(tier?.blocks.some((block) => block.name === "LXD Panel"));
       });
     },
   },

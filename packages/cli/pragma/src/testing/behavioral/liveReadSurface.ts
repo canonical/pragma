@@ -61,9 +61,10 @@ export const liveVerbs: readonly LiveVerb[] = buildLiveVerbs();
 /**
  * Read nouns' `lookup` verbs, MCP-exposed, store-backed — restricted to the
  * PACK-lookup contract (a variadic `<name...>` positional), which the B-tier
- * list→lookup→batch suites drive uniformly. Bespoke single-name lookups
- * (`tier_lookup`, `prompt_lookup`) have their own tests, so they are excluded
- * here structurally (by param shape, not by naming the noun — R2).
+ * list→lookup→batch suites drive uniformly. The one bespoke single-name lookup
+ * left (`prompt_lookup`) has its own tests, so it is excluded here structurally
+ * (by param shape, not by naming the noun — R2). `tier_lookup` joined the pack
+ * contract in L-OPEN-9, so it is swept here like every other declared lookup.
  */
 export const lookupVerbs: readonly LiveVerb[] = liveVerbs.filter(
   (v) =>

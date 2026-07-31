@@ -313,9 +313,12 @@ const designSystemStories: readonly PackDefinition[] = [
 
   // Tiers. The hierarchy is encoded in the slash-separated path string
   // (`apps/lxd`), not in graph edges, so `tier list` is a flat, name-ordered
-  // list; the ordered-inheritance logic lives in the block list's tier chain.
-  // `tier lookup` stays hand-written because the covenant freezes it with a
-  // single `<name>` positional where a pack lookup emits a variadic `<name...>`.
+  // list. `tier lookup` resolves a tier by its declared name and expands the
+  // blocks scoped DIRECTLY to it through the inverse path `^ds:tier` — a
+  // single-hop expand the generated sub-SELECT emits as `<tier> ^ds:tier ?child`
+  // (property paths, inverse included, are in-contract for `PackExpand.relation`).
+  // Retiring the bespoke single-`<name>` lookup for this declared variadic one
+  // is an L-OPEN-9 covenant change, recorded in the covenant's $comment.
   {
     noun: "tier",
     description: "List all tiers in the design system ontology.",
@@ -331,6 +334,22 @@ const designSystemStories: readonly PackDefinition[] = [
       columns: [
         { field: "uri", label: "IRI" },
         { field: "name", label: "Name" },
+      ],
+    },
+    lookup: {
+      source: "sparql",
+      by: "ds:name",
+      type: "ds:Tier",
+      description: "Show tiers by name, with the blocks scoped to each.",
+      toolDescription:
+        'Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.',
+      expand: [
+        {
+          name: "blocks",
+          heading: "Blocks",
+          relation: "^ds:tier",
+          select: [{ name: "name", property: "ds:name" }],
+        },
       ],
     },
   },
