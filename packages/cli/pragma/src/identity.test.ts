@@ -19,9 +19,9 @@ vi.mock("../pragma.conf.js", () => ({
     channel: "normal",
     detail: "standard",
   },
-  // The fork's domain vocabulary, declared beside its identity. The kernel
-  // reads these terms; naming them here is what makes the assertions below a
-  // claim about a DIFFERENT distribution rather than a renamed one.
+  // The fork's domain vocabulary, declared beside its identity. Every read of
+  // a domain term must follow from THIS object, which the last case below
+  // asserts by capturing the SPARQL the readers actually emit.
   vocabulary: {
     altName: "rcp:name",
     prompt: {
@@ -138,5 +138,50 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
+  });
+
+  it("reads the graph with the fork's declared terms, not this distribution's", async () => {
+    // The couplings this tranche removed were all hardcoded terms, and a
+    // hardcoded term still passes every other test in this suite: the fixtures
+    // on both sides would simply agree. So capture what the readers EMIT.
+    const { DEFAULT_PREFIX_MAP } = await import("./kernel/render/prefixes.js");
+    const { tierPack } = await import("./capabilities/tier/pack.js");
+    const { runTierLookup } = await import("./capabilities/tier/runLookup.js");
+    const { readPrompts } = await import(
+      "./kernel/project/mcp/prompts/source.js"
+    );
+
+    // The display/expansion map: the fork's namespaces, none of ours, and the
+    // W3C half the kernel owns unchanged.
+    expect(DEFAULT_PREFIX_MAP.rcp).toBe("https://example.invalid/recipes/");
+    expect(DEFAULT_PREFIX_MAP.ds).toBeUndefined();
+    expect(DEFAULT_PREFIX_MAP.rdfs).toBe(
+      "http://www.w3.org/2000/01/rdf-schema#",
+    );
+
+    // The bundled tier noun's list query.
+    expect(tierPack.list?.query).toContain("rcp:name");
+
+    // The two generated reads, captured off a stub facade.
+    const queries: string[] = [];
+    const recorder = {
+      query: {
+        sparql: (query: string) => {
+          queries.push(query);
+          return Promise.resolve({ type: "select", bindings: [] });
+        },
+      },
+    } as never;
+
+    await expect(runTierLookup(recorder, "Starters")).rejects.toMatchObject({
+      code: "ENTITY_NOT_FOUND",
+    });
+    await expect(readPrompts(recorder)).resolves.toEqual([]);
+
+    const emitted = queries.join("\n");
+    expect(emitted).toContain("rcp:name");
+    expect(emitted).toContain("rcp:Prompt");
+    expect(emitted).toContain("rcp:promptBody");
+    expect(emitted).not.toMatch(THIS_DISTRIBUTION);
   });
 });
