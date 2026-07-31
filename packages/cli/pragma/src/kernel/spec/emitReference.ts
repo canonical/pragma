@@ -15,7 +15,8 @@
  * NOT imported — this is a kernel-layer emitter).
  */
 
-import { BIN_NAME } from "../../constants.js";
+import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
+import type { RawConfig } from "../config/types.js";
 import { ERROR_CODES } from "../error/constants.js";
 import {
   FIXED_SURFACE,
@@ -443,6 +444,121 @@ function renderErrorsPage(): string {
   ]);
 }
 
+/** One documented config field: the type label a user sees, and the prose. */
+interface ConfigFieldDoc {
+  /** The type as a reader needs it, e.g. `string (optional)`. */
+  readonly type: string;
+  /** What the field does, and anything true about it a reader would not guess. */
+  readonly notes: string;
+}
+
+/**
+ * Every field a config layer may declare. Typed as an exhaustive `Record` over
+ * `keyof RawConfig`, so a field added to the type without a row here — or a row
+ * left behind by a field that was removed — is a COMPILE error, exactly as
+ * {@link ERROR_CODE_DESCRIPTIONS} works for the error kernel. Colocated
+ * (single-use) rather than in a module of its own: only `renderConfigPage`
+ * reads it, and a third artifact for two consumers to keep in step is what this
+ * discipline exists to avoid.
+ *
+ * The `type` column is authored prose; the page says so. Its OPTIONALITY is
+ * checked against the zod validator by `kernel/config/schema.test.ts`.
+ */
+const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
+  name: {
+    type: "string (optional)",
+    notes:
+      "Distribution-only — see below. The binary's own name, read from the distribution config at module load.",
+  },
+  help: {
+    type: "string (optional)",
+    notes:
+      "Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake.",
+  },
+  colophon: {
+    type: "string (optional)",
+    notes: "Distribution-only — see below. Markdown, rendered by `colophon`.",
+  },
+  issuesUrl: {
+    type: "URL string (optional)",
+    notes:
+      "Distribution-only — see below. Where the first-run note asks users to report problems.",
+  },
+  tier: {
+    type: "string (optional)",
+    notes:
+      "Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
+  },
+  channel: {
+    type: "`normal` | `experimental` | `prerelease` (optional)",
+    notes:
+      "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
+  },
+  detail: {
+    type: "`summary` | `standard` | `detailed` (optional)",
+    notes:
+      "Default progressive-disclosure level. Defaults to `standard`. Set it with `config set detail <level>`.",
+  },
+  packs: {
+    type: "array (optional)",
+    notes:
+      "Semantic pack sources built by `sources update`. Each entry is a bare npm name or `{ name, source, stories? }`; `stories` are read stories the pack supplies, in the pack grammar.",
+  },
+  generators: {
+    type: "array (optional)",
+    notes:
+      "Scaffold generator refs (`{ name, source }`). NOTHING reads `source` today: the `create` verbs resolve their generators statically. Declaring it changes only what `config show` prints.",
+  },
+  stories: {
+    type: "array (optional)",
+    notes:
+      "Read stories not attached to any pack, in the pack grammar. Compiled at dispatch, and they win over the same noun declared under `packs[].stories`.",
+  },
+  prefixes: {
+    type: "record (optional)",
+    notes:
+      "Namespace prefixes the pack is built with — they win every harvest, so this decides which IRI a prefix binds in the store and the index. Only the distribution layer additionally seeds the compiled-in display/expansion map, which is read where no config layer exists.",
+  },
+  completion: {
+    type: "object (optional)",
+    notes:
+      "Completion policy read when `setup completions` emits a script — `minChars`, `caseSensitive`, and a per-noun `families` opt-out. It is the one merged field with NO provenance: `config show` does not report it.",
+  },
+};
+
+/** Render the layered-configuration reference: the layers, then the fields. */
+function renderConfigPage(): string {
+  const rows = ["| Field | Type | Notes |", "| --- | --- | --- |"];
+  for (const [field, doc] of Object.entries(CONFIG_FIELD_DOCS)) {
+    rows.push(
+      `| \`${field}\` | ${escapeCell(doc.type)} | ${escapeCell(doc.notes)} |`,
+    );
+  }
+  return assemblePage([
+    "# Configuration reference",
+    `Every field a \`${BIN_NAME}\` config layer may declare. Generated from the config type — do not edit by hand. See [config-model.md](../config-model.md) for the authoring guide.`,
+    "## Layers",
+    "From lowest to highest precedence:",
+    [
+      `1. **Built-in defaults** — the distribution config compiled into the binary.`,
+      `2. **Global config** — \`$XDG_CONFIG_HOME/${BIN_NAME}/config.json\`, written by \`${BIN_NAME} config set\`.`,
+      `3. **Project config** — the nearest \`${PROJECT_CONFIG_FILENAME}\`, walking up from the working directory.`,
+    ].join("\n"),
+    "A higher layer REPLACES a lower one field by field. No field merges — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.",
+    "## Fields",
+    "The `Type` column is prose; the field set and each field's optionality are checked against the validator.",
+    rows.join("\n"),
+    "## Distribution-only fields",
+    `\`name\`, \`help\`, \`colophon\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. The validator ACCEPTS them in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary.`,
+    "## Fields with no provenance",
+    "`completion` is merged through the layers but carries no origin, so `config show` does not print it. Every other field above is reported with the layer that supplied it.",
+    "## Renamed: `packages` → `packs`",
+    "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
+    "## Reading and writing",
+    `\`${BIN_NAME} config show\` prints the resolved config and each field's layer. \`${BIN_NAME} config set <key> <value>\` writes to the **global** layer only — project configs are authored by hand. Both are documented in the [command reference](./commands.md).`,
+  ]);
+}
+
 /** Render the reference index: overview, derived counts, and links. */
 function renderIndexPage(
   verbs: readonly VerbSpec[],
@@ -465,6 +581,7 @@ function renderIndexPage(
       `- [CLI command reference](./commands.md) — every \`${BIN_NAME} <noun> <verb>\`, its arguments, flags, and examples.`,
       "- [MCP tool reference](./tools.md) — every exposed tool, its input schema, and the non-tool surface.",
       "- [Errors & exit codes](./errors.md) — the exit-code table, response envelope, and error catalog.",
+      "- [Configuration reference](./config.md) — every config field, the three layers, and how they combine.",
     ].join("\n"),
   ]);
 }
@@ -488,5 +605,6 @@ export function emitReference(
     ["commands.md", renderCommandsPage(verbs)],
     ["tools.md", renderToolsPage(verbs, modules)],
     ["errors.md", renderErrorsPage()],
+    ["config.md", renderConfigPage()],
   ]);
 }
