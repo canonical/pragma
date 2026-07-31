@@ -462,6 +462,30 @@ describe("declared generator bindings (PROTECTED)", () => {
     );
   });
 
+  it("exactly the two source-run-only verbs publish the availability caveat", () => {
+    // A LITERAL list, for the same reason `compiledCreate.subprocess.test.ts`
+    // uses one: the caveat is DERIVED from `readsEmbeddedTemplates`, so an
+    // assertion derived from the same bit would agree with itself no matter
+    // which way the bit was flipped. These two are the nouns that test proves
+    // refuse on a real compiled binary, so this is what the reference is held
+    // to — and flipping the bit turns this red, along with the reference
+    // drift-guard, in the same run.
+    const caveated = createModule.verbs
+      .filter((verb) => verb.summary.includes("Source-run only."))
+      .map((verb) => verb.path[1]);
+    expect(caveated).toEqual(["package", "application"]);
+    for (const verb of createModule.verbs) {
+      const gated = caveated.includes(verb.path[1]);
+      // The `doc` is what `tools.md` and the MCP tool description render, so
+      // the explanation has to travel with the marker, and it quotes the
+      // command it is about — a copy-paste between bindings is then visible.
+      expect(verb.doc?.includes("UNSUPPORTED") ?? false, verb.path[1]).toBe(
+        gated,
+      );
+      if (gated) expect(verb.doc).toContain(`create ${verb.path[1]}`);
+    }
+  });
+
   it("the --framework enum offers the declared frameworks and defaults to one of them", () => {
     const framework = createVerbs.component.params.find(
       (p) => p.name === "framework",

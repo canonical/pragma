@@ -176,7 +176,9 @@ pragma config show --format json
 
 ### pragma create application
 
-Scaffold a full React application with SSR and routing.
+Scaffold a full React application with SSR and routing. Source-run only.
+
+From the compiled pragma binary, `create application` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the compiled pragma binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 ```
 pragma create application [appPath] [options]
@@ -245,7 +247,9 @@ pragma create component src/lib/Card --framework svelte --dry-run  # preview the
 
 ### pragma create package
 
-Scaffold a new npm package for the monorepo.
+Scaffold a new npm package for the monorepo. Source-run only.
+
+From the compiled pragma binary, `create package` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the compiled pragma binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 ```
 pragma create package [options]

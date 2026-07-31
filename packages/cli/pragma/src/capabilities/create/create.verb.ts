@@ -295,7 +295,7 @@ async function loadCreateRuntime(kind: CreateKind) {
   if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].readsEmbeddedTemplates) {
     throw new PragmaError({
       code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled pragma binary — its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the \`summon\` CLI.`,
+      message: `\`create ${kind}\` is not available in the compiled ${BIN_NAME} binary — ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`,
       recovery: {
         message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
       },
@@ -443,9 +443,39 @@ const CREATE_CAPABILITY = {
 };
 
 /**
+ * Why a binding is source-run only — the ONE authoring of it, shared by the
+ * documentation below and by {@link loadCreateRuntime}'s `UNSUPPORTED` refusal,
+ * so what the reference promises and what the binary does cannot disagree.
+ */
+const SOURCE_ONLY_REASON = `its generator reads templates from disk, which the compiled ${BIN_NAME} binary does not carry`;
+
+/**
+ * The published caveat for a binding the compiled binary cannot run. DERIVED
+ * from `CREATE_GENERATORS[kind].readsEmbeddedTemplates` — flipping that bit
+ * moves the caveat, `docs/reference/*.md`, and `create.test.ts`'s binding
+ * assertion together.
+ *
+ * It is self-contained on purpose: `tools.md` and the MCP tool description both
+ * render `doc ?? summary`, so an agent reads this string alone — which is also
+ * why it names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
+ * agent has no flags): the plan-only refusal is stated in the terms BOTH
+ * surfaces share.
+ *
+ * @param kind - The create binding.
+ * @returns The `doc` for a source-run-only binding, or `undefined`.
+ */
+function availabilityDoc(kind: CreateKind): string | undefined {
+  if (CREATE_GENERATORS[kind].readsEmbeddedTemplates) return undefined;
+  return `From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
+}
+
+/**
  * Build a create verb. `run` presents `Promise<Task<R>>` through the `Task<R>`
  * arm by an honest cast at this one site (mirroring `sources update`): a literal
  * `Promise<Task<R>>` arm in the union would poison async read-verb inference.
+ *
+ * A binding the compiled binary cannot run says so in its `summary` (which is
+ * what `--help` and the noun listing show) and explains itself in its `doc`.
  */
 function createVerb(
   kind: CreateKind,
@@ -453,9 +483,11 @@ function createVerb(
   params: ParamSpec[],
   examples: VerbSpec["examples"],
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
+  const doc = availabilityDoc(kind);
   return {
     path: ["create", kind],
-    summary,
+    summary: doc ? `${summary} Source-run only.` : summary,
+    ...(doc ? { doc } : {}),
     params,
     output: { formatters: createFormatters },
     examples,
