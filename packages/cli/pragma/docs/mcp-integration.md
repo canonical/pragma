@@ -53,6 +53,13 @@ Beyond tools, the server exposes three surfaces:
 - **Prompts** — the workflow prompt templates the active pack's graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same entities, addressed by the prompt terms the distribution declares. This distribution's graph carries none today, so both views are empty.
 - **Instructions** — the handshake orientation described above.
 
+## The server's identity
+
+Two different things introduce the server to its machine peers, and they deliberately move differently:
+
+- **`serverInfo` projects from the distribution.** On `initialize` the server names itself with the distribution's declared `name` (the same projection that names the CLI binary) and the package version. A fork's MCP server therefore introduces itself under the fork's own name with no code change. Do not hard-code `pragma` as the expected server name in a client — read `serverInfo`. The rule is recorded in the surface covenant (`surface/surface.v2.json`, `mcpSurface.serverInfo`) and pinned from a fork's config by the identity suite.
+- **The resource scheme and `_meta` keys are frozen.** The `pragma:{+uri}` resource template, the `pragma:<uri>` URIs it mints, and the `pragma/box` / `pragma/instanceCount` `_meta` taxonomy keys are protocol identity, not branding: clients persist resource URIs, and deriving the scheme from the distribution's name was measured to make every one of a fork's advertised resources unreadable (the template renamed while the minted URIs stayed literal). Every distribution serves them unchanged. Revisit only if a real fork needs wire-level distinction — and then move the template and both minting sites together.
+
 ## Plan-first mutations
 
 Every mutating tool is **plan-first**. Called without `confirm: true`, it returns the plan it *would* apply (`{ planOnly: true, confirmRequired: true }`) instead of acting. Called with `confirm: true`, it executes. A mutating tool also accepts an optional `cwd` — an absolute project directory to write into — which defaults to the server's working directory and is validated as the single write root the security jail and the effect interpreter share.

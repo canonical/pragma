@@ -24,7 +24,10 @@ const BIN_NAME = identity.name;
 
 /**
  * MCP server identity — the same name as the CLI bin, so agents already pointed
- * at the server resolve it unchanged.
+ * at the server resolve it unchanged. Also the `serverInfo.name` the server
+ * introduces itself with on the wire (paired with {@link VERSION} by
+ * `buildServer`), so a peer reads the distribution's declared name, never a
+ * hardcoded one.
  */
 const MCP_SERVER_NAME = identity.name;
 

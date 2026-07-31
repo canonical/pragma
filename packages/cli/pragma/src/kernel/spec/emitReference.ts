@@ -379,7 +379,7 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
   const bullets: string[] = [];
   if (resources.length > 0) {
     bullets.push(
-      `- **Resources**: ${resources.map((r) => `\`${r}\``).join(", ")} — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).`,
+      `- **Resources**: ${resources.map((r) => `\`${r}\``).join(", ")} — entity reads addressed by URI (listing and autocomplete are storeless over the pack index). The template — its scheme and the \`_meta\` taxonomy keys its entries carry — is frozen protocol identity, served unchanged by every distribution: clients persist resource URIs, so the scheme never follows a fork's name.`,
     );
   }
   if (prompts) {
@@ -401,7 +401,7 @@ function renderToolsPage(
   const tools = verbs.filter((verb) => verb.capability.mcp.expose);
   const blocks = [
     "# MCP tool reference",
-    `Every tool the ${BIN_NAME} MCP server exposes, plus its non-tool surface. Generated from the live capability grammar — do not edit by hand.`,
+    `Every tool the ${BIN_NAME} MCP server exposes, plus its non-tool surface. Generated from the live capability grammar — do not edit by hand. The server's \`serverInfo\` is a projection, not a constant: it introduces itself on the wire under the distribution's declared name at the package version, so a client should read \`serverInfo\` rather than assume a name.`,
     "Mutating tools are plan-first: called without `confirm: true` they return the plan they WOULD apply; called with `confirm: true` they execute. A mutating tool also accepts an optional absolute `cwd`.",
   ];
   for (const verb of tools) {

@@ -219,6 +219,24 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     }
   });
 
+  it("introduces its MCP server on the wire under the fork's name", async () => {
+    // The wire half of the identity rule the covenant records
+    // (mcpSurface.serverInfo): serverInfo PROJECTS — name from the declared
+    // distribution, version from the package. Asserted through a real
+    // initialize handshake (in-memory transport), not on the constant, so a
+    // hardcoded serverInfo in buildServer would fail here even while
+    // MCP_SERVER_NAME projects correctly.
+    const { projectMcp } = await import("./testing/helpers/projectMcp.js");
+    const { VERSION } = await import("./constants.js");
+
+    const mcp = await projectMcp([]);
+    const wire = mcp.serverInfo();
+    await mcp.cleanup();
+
+    expect(wire).toEqual({ name: "recipes", version: VERSION });
+    expect(wire?.name).not.toMatch(THIS_DISTRIBUTION);
+  });
+
   it("registers an MCP server entry the fork's own binary answers to", async () => {
     // The entry `setup mcp` writes is what a harness later EXECUTES. It was
     // hardcoded while the key it is stored under derived from the same
