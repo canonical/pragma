@@ -24,6 +24,7 @@
  * DID configure its own packs is never quietly served the distribution's graph.
  */
 
+import { existsSync } from "node:fs";
 import type { ConfigLayers } from "../config/types.js";
 import { packIsComplete } from "./graphpack/manifest.js";
 import { packDir, readActivePack } from "./paths.js";
@@ -54,9 +55,15 @@ export function resolveSources(
   if (contentHash !== undefined) {
     const dir = packDir(contentHash);
     if (packIsComplete(dir)) return { kind: "pack", dir, contentHash };
+    // Two different things, and the recovery text is the only thing a user has
+    // to go on: the cache evicted the pack, or the directory is there but does
+    // not hold a whole pack — the state EVERY install upgraded past the
+    // four-file pack lands in, where "missing" is plainly contradicted by `ls`.
     return {
       kind: "unavailable",
-      reason: "the built pack is missing from the cache",
+      reason: existsSync(dir)
+        ? "the built pack is incomplete — an older or torn build"
+        : "the built pack is missing from the cache",
     };
   }
 

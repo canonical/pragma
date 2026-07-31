@@ -62,7 +62,6 @@ export async function readConfig(
   const generators = pick("generators");
   const stories = pick("stories");
   const prefixes = pick("prefixes");
-  const prompts = pick("prompts");
   // `completion` is read at `setup completions` emit time (not on any fast
   // path) and carries no `config show` provenance, so it merges into the
   // effective config but is deliberately absent from ConfigOrigins.
@@ -80,7 +79,6 @@ export async function readConfig(
     ...(generators.value !== undefined ? { generators: generators.value } : {}),
     ...(stories.value !== undefined ? { stories: stories.value } : {}),
     ...(prefixes.value !== undefined ? { prefixes: prefixes.value } : {}),
-    ...(prompts.value !== undefined ? { prompts: prompts.value } : {}),
     ...(completion.value !== undefined ? { completion: completion.value } : {}),
   };
 
@@ -98,7 +96,6 @@ export async function readConfig(
       generators: generators.origin,
       stories: stories.origin,
       prefixes: prefixes.origin,
-      prompts: prompts.origin,
     },
     global: { path: global.path, exists: global.exists },
     project: {

@@ -12,14 +12,16 @@
  * module — never pulls the SDK types onto the `--help`/`__complete` fast path.
  *
  * Both handlers open with a STORELESS cold-store pre-check ({@link
- * checkStoreAvailable}) so the native surface converges with the store-backed
- * `prompt_list` tool: a cold store surfaces the SAME `STORE_UNAVAILABLE` +
- * `sources_update` recovery here as the tool's `needsStore` guard raises, rather
- * than a silent `[]` (list) or a bogus "not found" (get) that masks the cold
- * store. When the store is available (including the embedded fallback) both
- * handlers behave exactly as before.
+ * checkStoreAvailable}), and the store-backed `get` projects any read failure
+ * through {@link mcpErrorFrom}, so the native surface converges with the
+ * store-backed `prompt_list` tool: a cold store — or a store that cannot answer
+ * the prompt query — surfaces the SAME machine code and recovery here as the
+ * tool envelope carries, rather than a silent `[]` (list) or a bogus "not found"
+ * (get) that masks it. When the store is available (including the embedded
+ * fallback) both handlers behave exactly as before.
  */
 
+import { asPragmaError } from "../../../error/fromTaskError.js";
 import { resolveSources } from "../../../runtime/resolveSources.js";
 import { checkStoreAvailable } from "../../../runtime/storeReadiness.js";
 import type { McpPromptProvider } from "../../../spec/types.js";
@@ -81,7 +83,16 @@ export const promptProvider: McpPromptProvider = {
     server.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
       await guardStore();
       const { name, arguments: args } = request.params;
-      const entry = await readPrompt(runtime, name);
+      // The read can fail (a store that cannot answer the prompt query), and a
+      // native surface signals that by THROWING — so project it the way the
+      // resource browser does, carrying the machine code and the recovery into
+      // the JSON-RPC `data` instead of letting a bare Error reach the agent.
+      let entry: Awaited<ReturnType<typeof readPrompt>>;
+      try {
+        entry = await readPrompt(runtime, name);
+      } catch (error) {
+        throw mcpErrorFrom(asPragmaError(error), { McpError, ErrorCode });
+      }
       if (!entry) {
         // Reached only when the store IS available — a genuine miss, not a cold
         // store (which `guardStore` already surfaced as STORE_UNAVAILABLE).

@@ -114,7 +114,12 @@ async function buildUpdatePlan(
   const data: SourcesUpdateData = {
     contentHash: "",
     reused: false,
-    packs: refs.map((ref) => ({ name: ref.pkg, resolved: "", sourceCount: 0 })),
+    packs: refs.map((ref) => ({
+      name: ref.pkg,
+      resolved: "",
+      sourceCount: 0,
+      storyCount: 0,
+    })),
   };
 
   return gen(function* () {
@@ -174,6 +179,9 @@ export async function buildUpdateTask(
   }
 
   const inputs = resolved.flatMap((pkg) => pkg.sources);
+  // The packages' own `stories/*.json`, carried into the pack verbatim (see
+  // graphpack/types.STORIES_FILE). Raw text: nothing interprets them here.
+  const stories = resolved.flatMap((pkg) => pkg.stories);
 
   // Refuse to build an empty store (A4). A package that ships no `.ttl` (or no
   // configured packs at all) would build a 0-triple pack whose empty
@@ -207,6 +215,8 @@ export async function buildUpdateTask(
 
   report?.(`Building store from ${inputs.length} source(s)`);
   if (verbose) for (const input of inputs) report?.(`  parse ${input.path}`);
+  if (stories.length > 0)
+    report?.(`Carrying ${stories.length} package read story file(s)`);
 
   // Build the pack. On a parse/build failure, classify it as a NAMED data error
   // (U6) — not INTERNAL_ERROR's "please report this issue" — identifying the
@@ -235,6 +245,7 @@ export async function buildUpdateTask(
       version: VERSION,
       sourceRef,
       prefixes,
+      stories,
     });
   } catch (error) {
     if (!skipInvalid) throw await classifySourceBuildError(error, inputs);
@@ -267,6 +278,7 @@ export async function buildUpdateTask(
         // Re-harvest prefixes from only the sources that survived, so a dropped
         // file's declarations don't skew compaction.
         prefixes: buildPackPrefixes(usableInputs, layers.config.prefixes),
+        stories,
       });
     } catch (rebuildError) {
       throw await classifySourceBuildError(rebuildError, usableInputs);
@@ -301,6 +313,7 @@ export async function buildUpdateTask(
       name: pkg.name,
       resolved: pkg.resolved,
       sourceCount: pkg.sources.length,
+      storyCount: pkg.stories.length,
     })),
   };
 

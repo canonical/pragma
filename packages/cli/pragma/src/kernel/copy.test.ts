@@ -5,22 +5,27 @@
  *
  * What this guard enforces, exactly: no string literal under `src/kernel/**`
  * (plus `constants.ts` and `bin.ts`) contains the distribution's `name` as a
- * word, or the domain phrase "design system". Module specifiers are not copy
- * and are skipped; every remaining site that legitimately carries the name is
- * listed in {@link EXEMPT} with its reason and the PR that removes it.
+ * word, the domain phrase "design system", or any namespace IRI the
+ * distribution declares in `prefixes`. Module specifiers are not copy and are
+ * skipped; every remaining site that legitimately carries one is listed in
+ * {@link EXEMPT} with its reason and the PR that removes it.
  *
- * What it does NOT reach: `src/capabilities/**`. The bundled domain packs there
- * are CONTENT, which is where specialization belongs — but the generic
- * capability modules beside them still author `pragma …` command literals, and
- * closing that is its own tranche (their `examples[].cmd` strings are
- * byte-compared against `docs/reference/*.md`, so the sweep and the docs regen
- * have to move together).
+ * What it does NOT reach: `src/capabilities/**` or `pragma.conf.ts`. The
+ * distribution's five read stories moved OUT of `src/capabilities/**` and into
+ * `pragma.conf.ts`, which is the file a fork edits and so is content by
+ * definition. What is left under `src/capabilities/**` is the hand-written
+ * `ds:` residue (`block list`, `token add-config`, `tier lookup`) plus generic
+ * capability modules that still author `pragma …` command literals; closing
+ * BOTH is its own tranche (the `examples[].cmd` strings are byte-compared
+ * against `docs/reference/*.md`, so the sweep and the docs regen have to move
+ * together).
  */
 
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import conf from "../../pragma.conf.js";
 import { BIN_NAME } from "../constants.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -36,21 +41,20 @@ const root = resolve(here, "..");
  *   `docs/reference/*.md`, so changing it requires a docs regen.
  * - `config/defaults.ts` — THE distribution seam: it imports the distribution
  *   config and names the file it imports. That is its job, not a leak.
- * - `render/prefixes.ts` — the domain namespaces in `DEFAULT_PREFIX_MAP`, the
- *   behavioural coupling PR 4 replaces with pack-declared prefixes.
+ * - `kernel/vocabulary.ts` — the same seam for the vocabulary declaration. Its
+ *   diagnostics quote the file it imports, and five modules hardcode that
+ *   specifier, so a fork cannot rename it: deriving the name from `BIN_NAME`
+ *   here would name a path that does not exist.
  * - `runtime/graphpack/hash.ts` — `<<<pragma-pack:…>>>` are hash domain
  *   separators; changing them re-mints every pack content hash. CROSS-LANE.
- * - `runtime/graphpack/buildIndex.ts` — a hardcoded domain `name` predicate,
- *   also PR 4's. CROSS-LANE.
  */
 const EXEMPT = [
   ".generated.ts",
   "spec/emitSurface.ts",
   "spec/emitReference.ts",
   "config/defaults.ts",
-  "render/prefixes.ts",
+  "kernel/vocabulary.ts",
   "runtime/graphpack/hash.ts",
-  "runtime/graphpack/buildIndex.ts",
 ];
 
 /**
@@ -159,5 +163,40 @@ describe("kernel copy (PROTECTED)", () => {
 
   it("no kernel string names a domain", () => {
     expect(findOffenders(/design[- ]system/i)).toEqual([]);
+  });
+
+  it("no kernel string hardcodes a namespace the distribution declares", () => {
+    // The behavioural half of the same rule. A kernel module that spells out a
+    // declared namespace IRI has decided what the domain is, so a fork editing
+    // `pragma.conf.ts` changes the store and not the code reading it.
+    //
+    // DERIVED from the declaration, one pattern per namespace rather than one
+    // alternation: a distribution that declares none then yields no offenders,
+    // instead of an empty alternation that matches every literal.
+    const offenders = Object.values(conf.prefixes ?? {}).flatMap((namespace) =>
+      findOffenders(
+        new RegExp(namespace.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&")),
+      ),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("no kernel string writes a term in a namespace the distribution declares", () => {
+    // The form the kernel actually leaked the domain in. Every coupling this
+    // guard exists to keep out — `ds:Prompt`, `ds:Tier`, `ds:name` — was a
+    // PREFIXED NAME, which contains no namespace IRI and so passes the rule
+    // above. DERIVED from the same declaration, by KEY this time.
+    //
+    // A leading non-word character keeps `https://…` and `foo.ds:x` out while
+    // still catching a bare term, one inside a query template, and one in
+    // user-facing copy.
+    const offenders = Object.keys(conf.prefixes ?? {}).flatMap((prefix) =>
+      findOffenders(
+        new RegExp(
+          `(^|[^A-Za-z0-9_])${prefix.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&")}:[A-Za-z_]`,
+        ),
+      ),
+    );
+    expect(offenders).toEqual([]);
   });
 });

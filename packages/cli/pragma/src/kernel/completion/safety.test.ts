@@ -234,8 +234,9 @@ describe("storeless guarantee (PROTECTED)", () => {
       //    via VerbSpec.run's PragmaRuntime and erased at runtime, as
       //    spec/types.ts and runtime/types.ts already are in this graph.
       //  - `pragma.conf.ts` — the distribution config, statically imported by
-      //    constants.ts to project the program's identity. Safe only while it
-      //    stays inert data; `capabilities/lazy.test.ts` pins that.
+      //    `constants.ts` (identity), `render/prefixes.ts` (the domain
+      //    namespaces) and `kernel/vocabulary.ts` (the domain terms). Safe only
+      //    while it stays inert data; `capabilities/lazy.test.ts` pins that.
       const configModules = [...graph]
         .filter((file) => /config|\.conf\./.test(file))
         .map((file) => relative(pkgRoot, file))
@@ -309,10 +310,10 @@ describe("storeless guarantee (PROTECTED)", () => {
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
 
-  it("the non-index name sources resolve without constructing the store", async () => {
-    // skills (filesystem), prompts/tiers (index filter), prefixes (index ∪
-    // default map) — every family completes storelessly against the live
-    // capabilities. A fresh cwd → no pointer → the embedded index.
+  it("every declared name source resolves without constructing the store", async () => {
+    // skills (filesystem), prefixes (index ∪ default map) and the index's own
+    // `label`/`altNames` fields — every family completes storelessly against
+    // the live capabilities. A fresh cwd → no pointer → the embedded index.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-storeless-src-"));
     const env = indexCompletionEnv(cwd);
 
@@ -321,16 +322,22 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["ontology", "show", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
-    // skills / prompts / tiers: no data here, but the point is they never boot
-    // the store — an empty list is the correct storeless answer.
+    // index + `field: "altNames"`: a real alt name of a real tier comes back
+    // from the embedded index. `Apps/Juju` is carried ONLY by the declared
+    // alt-name property — it is neither an entity name nor a label — so this
+    // fails if the field ever stops being read.
+    await expect(
+      runComplete(["tier", "lookup", "ap"], capabilities, env),
+    ).resolves.toContain("Apps/Juju");
+
+    // skills (no skills root here) and prompt labels (this graph carries no
+    // prompt entities) have nothing to offer, and the honest storeless answer
+    // is an empty list rather than a store boot.
     for (const words of [
       ["skill", "lookup", "do"],
       ["prompt", "lookup", "bu"],
-      ["tier", "lookup", "ap"],
     ]) {
-      await expect(
-        runComplete(words, capabilities, env),
-      ).resolves.toBeInstanceOf(Array);
+      await expect(runComplete(words, capabilities, env)).resolves.toEqual([]);
     }
 
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();

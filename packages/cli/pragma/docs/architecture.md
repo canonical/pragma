@@ -16,13 +16,15 @@ Keeping the projectors pure and zod-free is what lets `--help` and shell complet
 
 ### Store — the design-system knowledge graph
 
-The read capabilities query a local, content-addressed graph. `pragma sources update` resolves each configured package (git, file, or npm) and builds one [oxigraph](https://github.com/oxigraph/oxigraph)-backed pack under `$XDG_CACHE_HOME/pragma/packs/<contentHash>/`; a one-line pointer in the same cache records which pack a project reads. The binary also carries the distribution's own pack compiled in, so a fresh install answers reads before anything is built. One predicate decides between them — `resolveSources` — and every surface that reports on the store switches on its answer rather than re-deriving one: a project that declared its own packs and never built them is never served the shipped snapshot.
+The read capabilities query a local, content-addressed graph. `pragma sources update` resolves each configured package (git, file, or npm) and builds one [oxigraph](https://github.com/oxigraph/oxigraph)-backed pack under `$XDG_CACHE_HOME/pragma/packs/<contentHash>/` — the graph dump, the extracted schema, the storeless entity index, the packages' own read stories, and a manifest; a one-line pointer in the same cache records which pack a project reads. The binary also carries the distribution's own pack compiled in, so a fresh install answers reads before anything is built. One predicate decides between them — `resolveSources` — and every surface that reports on the store switches on its answer rather than re-deriving one: a project that declared its own packs and never built them is never served the shipped snapshot.
 
 At runtime a **`LazyStore`** boots the graph on first use and memoizes it. A storeless verb (`config show`, `doctor`, `sources status`, `capabilities`) never reaches the store factory, so the storeless guarantee holds by construction rather than by convention.
 
 ### Capabilities — the catalog
 
-The concrete verbs live under `src/capabilities/` as `CapabilityModule`s, collected into one ordered array. Some modules are hand-written (`block list`, the config setters); most read nouns compile from declarative *packs*. The projectors consume this one array — add a module and it appears in the CLI, the MCP server, and the generated reference at once.
+The concrete verbs live under `src/capabilities/` as `CapabilityModule`s, collected into one array. A directory exists there only where its noun needs hand-written code — the kernel's own nouns (`info`, `config`, `sources`, `doctor`, `graph`, `ontology`, `prompt`, `skill`, `setup`, `upgrade`, `create`, `capabilities`, `colophon`, `meta`), and three DOMAIN verbs the story grammar cannot express: `block list` (a tier-chain and channel filter the grammar has no term for), `token add-config` (a mutation — the story compiler emits reads only), and `tier lookup` (frozen by the covenant with a single positional). Every other design-system read noun is a **declarative story**: the distribution's own five are declared as data in `pragma.conf.ts` and compiled at module load through the same compiler a third-party story goes through.
+
+Stories from a project's config, or from a `stories/*.json` a package ships, merge into that array at dispatch — see [config-model.md](./config-model.md#read-stories) for the tiers and their precedence. The projectors consume the one array, so a new module or a new story appears in the CLI, the MCP server, and the generated reference at once.
 
 ### Frontends — CLI and MCP
 

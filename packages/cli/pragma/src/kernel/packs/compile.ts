@@ -7,8 +7,9 @@
  *
  * Pure, storeless spec-generation: it builds paths, params, formatters, and run
  * closures without touching the store or zod, so it runs on the
- * `--help`/`__complete` fast path (the bundled packs compile at import; the
- * dynamic merge is `collect.assembleEffectiveModules`/`loadEffectiveModules`).
+ * `--help`/`__complete` fast path (the distribution's declared stories compile
+ * at import, in `capabilities/distribution.ts`; the dynamic merge is
+ * `collect.assembleEffectiveModules`/`loadEffectiveModules`).
  * The heavy work is deferred into the run closures (behind the lazy runtime
  * facade).
  */

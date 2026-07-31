@@ -1,15 +1,18 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { afterEach, describe, expect, it } from "vitest";
 import { CONVENTIONS } from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
+import type { PragmaRuntime } from "../../../runtime/types.js";
 import { emitSurface } from "../../../spec/emitSurface.js";
 import type { CapabilityModule } from "../../../spec/types.js";
 import { buildInstructions, INSTRUCTIONS_MAX_CHARS } from "../instructions.js";
 import { fillTemplate, promptProvider } from "./provider.js";
+import { readPrompts } from "./source.js";
 
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-prompts-"));
 
@@ -101,6 +104,110 @@ describe("MCP handshake — capabilities advertised (PROTECTED)", () => {
     harness = await projectMcp([...capabilities, promptHostModule], freshCwd());
     const prompts = await harness.listPrompts();
     expect(prompts).toEqual([]);
+  });
+});
+
+/** A runtime whose SPARQL facade always fails with `message`. */
+function createFailingRuntime(message: string): PragmaRuntime {
+  return {
+    query: {
+      sparql: () => Promise.reject(new Error(message)),
+    },
+  } as unknown as PragmaRuntime;
+}
+
+/** Every field at the default layer — the embedded pack answers, so the store IS available. */
+const DEFAULT_ORIGINS = {
+  name: "default",
+  help: "default",
+  colophon: "default",
+  issuesUrl: "default",
+  tier: "default",
+  channel: "default",
+  detail: "default",
+  packs: "default",
+  generators: "default",
+  stories: "default",
+  prefixes: "default",
+} as const;
+
+/**
+ * The same failing facade, wearing the shape `promptProvider.register` needs:
+ * a cwd whose store is AVAILABLE (so `guardStore` passes and the read is what
+ * fails) plus a `loadConfig` the readiness check can resolve.
+ */
+function createFailingProviderRuntime(
+  cwd: string,
+  message: string,
+): PragmaRuntime {
+  return {
+    cwd,
+    loadConfig: async () => ({
+      config: { channel: "normal" as const },
+      origins: DEFAULT_ORIGINS,
+      global: { path: "/nonexistent", exists: false },
+      project: { exists: false },
+    }),
+    query: { sparql: () => Promise.reject(new Error(message)) },
+  } as unknown as PragmaRuntime;
+}
+
+describe("native prompts/get — a failed read reaches the agent as one", () => {
+  it("carries the machine code and recovery, not a bare Error", async () => {
+    // The native surface signals failure by THROWING, so a read that fails must
+    // be projected the way the resource browser projects its own — with `code`
+    // and `recovery` in the JSON-RPC `data`. Otherwise the store diagnosis is
+    // lost between `prompt_lookup` (which envelopes it) and `prompts/get`.
+    const handlers = new Map<unknown, (request: unknown) => Promise<unknown>>();
+    const stubServer = {
+      server: {
+        registerCapabilities: () => {},
+        setRequestHandler: (
+          schema: unknown,
+          handler: (request: unknown) => Promise<unknown>,
+        ) => {
+          handlers.set(schema, handler);
+        },
+      },
+    };
+    await promptProvider.register(
+      stubServer as never,
+      createFailingProviderRuntime(freshCwd(), "Prefix not found: ds"),
+    );
+
+    const get = handlers.get(GetPromptRequestSchema);
+    expect(get).toBeDefined();
+    await expect(
+      get?.({ params: { name: "build-a-block" } }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "STORE_UNAVAILABLE",
+        recovery: { mcp: { tool: "sources_update" } },
+      },
+    });
+  });
+});
+
+describe("readPrompts — a failed read is never an empty graph", () => {
+  it("reports an unbound prefix as a store that cannot answer, not as no prompts", async () => {
+    // A pack whose store does not know the declared prompt namespace cannot
+    // answer, and the actionable form of that is STORE_UNAVAILABLE with the
+    // build command — not a silent zero-prompt listing.
+    await expect(
+      readPrompts(createFailingRuntime("Prefix not found: ds")),
+    ).rejects.toMatchObject({
+      code: "STORE_UNAVAILABLE",
+      recovery: { mcp: { tool: "sources_update" } },
+    });
+  });
+
+  it("propagates a query failure instead of returning no prompts", async () => {
+    // The exact defect a bare `catch {}` here caused: a malformed declaration
+    // becomes a parse error, the parse error becomes `[]`, and the user is told
+    // the distribution ships no prompts. It must surface as a failure.
+    await expect(
+      readPrompts(createFailingRuntime("SPARQL syntax error at line 2")),
+    ).rejects.toThrow(/syntax error/);
   });
 });
 

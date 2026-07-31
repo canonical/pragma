@@ -5,12 +5,15 @@
  * refinements that encode the source rule (§3): `type` XOR `types`, a
  * graphql-sourced lookup names its fragment target, SPARQL expands stay
  * single-hop, GraphQL fields reject property paths, and every disclosure `level`
- * names a declared canonical level.
+ * names a declared canonical level. Two more refinements make the definition
+ * COMPILABLE, not merely well-shaped: distinct compiled verb names and distinct
+ * filter params (see {@link refineVerbNames} / {@link refineFilterParams}).
  *
  * zod lives here and ONLY here in the pack layer, imported lazily (never on the
- * `--help`/`__complete` fast path). Bundled packs are authored in-repo and typed
- * by TypeScript, so `collect` skips validation for them (per-source skip); this
- * runs for config/package packs and in tests.
+ * `--help`/`__complete` fast path). The distribution's own stories are compiled
+ * statically by `capabilities/distribution.ts` and never revalidated at dispatch
+ * (`collect.projectStoryTiers`'s default-origin carve-out); this runs for config-
+ * and package-declared stories, and in `distribution.test.ts`'s round-trip.
  */
 
 import { z } from "zod";
@@ -19,6 +22,8 @@ import { PragmaError } from "../error/PragmaError.js";
 import type { PackDefinition } from "./types.js";
 
 const NOUN_PATTERN = /^[a-z][a-z0-9-]*$/;
+/** Message for {@link NOUN_PATTERN} — third-party authors never see the regex. */
+const NOUN_MESSAGE = 'must be lowercase kebab-case, e.g. "design-token"';
 const FILTER_PARAM_PATTERN = /^[a-z][a-z0-9]*$/;
 const FIELD_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const GRAPHQL_NAME_PATTERN = /^[_A-Za-z][_0-9A-Za-z]*$/;
@@ -81,7 +86,7 @@ const listSchema = z.object(listShape).strict();
 const verbSchema = z
   .object({
     ...listShape,
-    verb: z.string().regex(NOUN_PATTERN),
+    verb: z.string().regex(NOUN_PATTERN, NOUN_MESSAGE),
     description: z.string().optional(),
     toolDescription: z.string().optional(),
   })
@@ -171,6 +176,7 @@ const sampleSchema = z.union([
   z
     .object({
       count: z.number().int().min(1).max(5).optional(),
+      fixedCount: z.boolean().optional(),
       description: z.string().optional(),
       toolDescription: z.string().optional(),
     })
@@ -205,7 +211,7 @@ const lookupSchema = z
 
 const definitionSchema = z
   .object({
-    noun: z.string().regex(NOUN_PATTERN),
+    noun: z.string().regex(NOUN_PATTERN, NOUN_MESSAGE),
     description: z.string().optional(),
     toolDescription: z.string().optional(),
     list: listSchema.optional(),
@@ -231,8 +237,72 @@ const definitionSchema = z
         path: ["list", "query"],
       });
     }
+    refineVerbNames(def, ctx);
+    if (def.list) refineFilterParams(def.list.filters, ["list"], ctx);
+    for (const [index, verb] of (def.verbs ?? []).entries()) {
+      refineFilterParams(verb.filters, ["verbs", index], ctx);
+    }
     if (def.lookup) refineLookup(def.lookup, ctx);
   });
+
+/**
+ * The compiled `(noun, verb)` keys must be distinct.
+ *
+ * `compilePack` emits `list`, then each `verbs[].verb`, then `lookup` and
+ * `sample`. A repeat there survives the grammar into `assembleEffectiveModules`,
+ * where `assertUniqueVerbs` throws — and package stories reach dispatch before
+ * the command tree exists, so that throw would fail EVERY command, `doctor` and
+ * `sources update` included. The collision is a property of the definition, so
+ * the grammar is where it is caught.
+ */
+function refineVerbNames(
+  def: {
+    list?: unknown;
+    verbs?: readonly { verb: string }[];
+    lookup?: unknown;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const emitted = new Set<string>(def.list ? ["list"] : []);
+  if (def.lookup) {
+    emitted.add("lookup");
+    if ((def.lookup as { sample?: unknown }).sample) emitted.add("sample");
+  }
+  const seen = new Set<string>();
+  for (const [index, verb] of (def.verbs ?? []).entries()) {
+    if (emitted.has(verb.verb) || seen.has(verb.verb)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `verb "${verb.verb}" is already compiled by this pack — every verb must be distinct.`,
+        path: ["verbs", index, "verb"],
+      });
+    }
+    seen.add(verb.verb);
+  }
+}
+
+/**
+ * Filter params project to CLI options, so a repeat inside one list shape makes
+ * Commander refuse to register the second `--<param>` — outside every error
+ * envelope the CLI owns.
+ */
+function refineFilterParams(
+  filters: readonly { param: string }[] | undefined,
+  path: readonly (string | number)[],
+  ctx: z.RefinementCtx,
+): void {
+  const seen = new Set<string>();
+  for (const [index, filter] of (filters ?? []).entries()) {
+    if (seen.has(filter.param)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `filter param "${filter.param}" is declared twice.`,
+        path: [...path, "filters", index, "param"],
+      });
+    }
+    seen.add(filter.param);
+  }
+}
 
 /** Cross-field lookup rules — the source rule (§3, F8). */
 function refineLookup(

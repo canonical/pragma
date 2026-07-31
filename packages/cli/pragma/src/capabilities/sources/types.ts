@@ -31,6 +31,8 @@ export interface UpdatedSource {
   readonly name: string;
   readonly resolved: string;
   readonly sourceCount: number;
+  /** How many `stories/*.json` files this package contributed to the pack. */
+  readonly storyCount: number;
 }
 
 /** The `sources update` result payload. */

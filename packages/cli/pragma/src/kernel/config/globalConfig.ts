@@ -1,8 +1,8 @@
 /**
  * Read the global machine config: `$XDG_CONFIG_HOME/pragma/config.json`.
  *
- * The global layer holds cross-project machine state (channel, detail, tier,
- * prompts). A missing or empty file contributes no values — the layer simply
+ * The global layer holds cross-project machine state (channel, detail, tier).
+ * A missing or empty file contributes no values — the layer simply
  * does not participate in the merge. A *malformed* file (a torn write) must
  * never brick every command (the old loud `CONFIG_ERROR` throw) nor be silently
  * discarded (writeConfigField's old reset-to-`{}`): it is backed up to a

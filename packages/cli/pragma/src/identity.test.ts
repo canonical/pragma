@@ -15,8 +15,22 @@ vi.mock("../pragma.conf.js", () => ({
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
     generators: [],
+    prefixes: { rcp: "https://example.invalid/recipes/" },
     channel: "normal",
     detail: "standard",
+  },
+  // The fork's domain vocabulary, declared beside its identity. Every read of
+  // a domain term must follow from THIS object, which the last case below
+  // asserts by capturing the SPARQL the readers actually emit.
+  vocabulary: {
+    altName: "rcp:name",
+    prompt: {
+      type: "rcp:Prompt",
+      body: "rcp:promptBody",
+      argument: "rcp:promptArgument",
+      argName: "rcp:argName",
+      argRequired: "rcp:argRequired",
+    },
   },
 }));
 
@@ -124,5 +138,52 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(globalConfigPath()).toContain("/recipes/");
     expect(greeting).toContain("https://example.invalid/recipes/issues");
     expect(greeting).toContain("`recipes.config.ts`");
+  });
+
+  it("reads the graph with the fork's declared terms, not this distribution's", async () => {
+    // The couplings this tranche removed were all hardcoded terms, and a
+    // hardcoded term still passes every other test in this suite: the fixtures
+    // on both sides would simply agree. So capture what the readers EMIT.
+    const { DEFAULT_PREFIX_MAP } = await import("./kernel/render/prefixes.js");
+    const { runTierLookup } = await import("./capabilities/tier/runLookup.js");
+    const { readPrompts } = await import(
+      "./kernel/project/mcp/prompts/source.js"
+    );
+
+    // The display/expansion map: the fork's namespaces, none of ours, and the
+    // W3C half the kernel owns unchanged.
+    expect(DEFAULT_PREFIX_MAP.rcp).toBe("https://example.invalid/recipes/");
+    expect(DEFAULT_PREFIX_MAP.ds).toBeUndefined();
+    expect(DEFAULT_PREFIX_MAP.rdfs).toBe(
+      "http://www.w3.org/2000/01/rdf-schema#",
+    );
+
+    // The tier noun's LIST query is no longer code: it is a story the
+    // distribution declares, so a fork writes its own terms into it directly
+    // and there is nothing here for a hardcoded term to hide in.
+    // `distribution.test.ts` holds this distribution's declaration to the same
+    // class and property the tier code below reads.
+    //
+    // The two generated reads, captured off a stub facade.
+    const queries: string[] = [];
+    const recorder = {
+      query: {
+        sparql: (query: string) => {
+          queries.push(query);
+          return Promise.resolve({ type: "select", bindings: [] });
+        },
+      },
+    } as never;
+
+    await expect(runTierLookup(recorder, "Starters")).rejects.toMatchObject({
+      code: "ENTITY_NOT_FOUND",
+    });
+    await expect(readPrompts(recorder)).resolves.toEqual([]);
+
+    const emitted = queries.join("\n");
+    expect(emitted).toContain("rcp:name");
+    expect(emitted).toContain("rcp:Prompt");
+    expect(emitted).toContain("rcp:promptBody");
+    expect(emitted).not.toMatch(THIS_DISTRIBUTION);
   });
 });
