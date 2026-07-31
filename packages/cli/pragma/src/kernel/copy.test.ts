@@ -387,17 +387,27 @@ describe("capability commands (PROTECTED)", () => {
     // Raw source, not `readCopy`: the position is what makes it an offence, and
     // reading the text directly means this guard holds whatever the scanner can
     // see. DERIVED and ESCAPED from the shipped `name`, as above.
+    //
+    // A BACKTICK is a quote here. Every swept site is a template literal, so a
+    // regression that keeps the backtick and drops the interpolation is the ONE
+    // shape this rule has to catch — and it was the one shape the class `["']`
+    // could not see. The opening quote is captured and the span runs to it, so
+    // a name inside backticks in a double-quoted sentence still counts while
+    // the match cannot run past the literal that opened it.
+    //
+    // The scan is over the whole file, not line by line, because the formatter
+    // wraps a long value onto the line after its key: that is how `doctor`'s
+    // ke-store remedy sat in a `remedy:` position, naming this distribution,
+    // under a guard that reported zero exemptions.
     const name = BIN_NAME.replace(/[-.*+?^${}()|[\]\\]/g, "\\$&");
     const pattern = new RegExp(
-      `(?:${COMMAND_POSITIONS.join("|")}):\\s*["'][^"']*\\b${name}\\b`,
-      "i",
+      `(?:${COMMAND_POSITIONS.join("|")}):\\s*(["'\`])(?:(?!\\1)[^])*?\\b${name}\\b`,
+      "gi",
     );
     const offenders: string[] = [];
     for (const file of capabilitySources) {
-      for (const line of readFileSync(file, "utf-8").split("\n")) {
-        if (pattern.test(line)) {
-          offenders.push(`${relative(root, file)}: ${line.trim()}`);
-        }
+      for (const match of readFileSync(file, "utf-8").matchAll(pattern)) {
+        offenders.push(`${relative(root, file)}: ${match[0].trim()}`);
       }
     }
     expect(offenders).toEqual([]);
