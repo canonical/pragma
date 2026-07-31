@@ -185,15 +185,28 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // `docs/reference/` is the surface this package PUBLISHES as machine-derived
     // truth, so it is the surface a fork's rename must reach in full. Every
     // command a page quotes, every page title and every prose mention is
-    // composed from `BIN_NAME`; nothing here is exempt. The failure names
-    // `page: line`, so it is a worklist and not just a count.
+    // composed from `BIN_NAME`. The failure names `page: line`, so it is a
+    // worklist and not just a count.
+    //
+    // ONE exemption, the same one the MCP orientation case above makes and for
+    // the same reason: the `pragma:` resource scheme is covenant-frozen PROTOCOL
+    // identity (`surface.v2.json`), inherited by a fork along with the
+    // `pragma/box` and `pragma/instanceCount` `_meta` keys it travels with, and
+    // `tools.md` reports it truthfully. Masked from the emitted surface, not by
+    // a literal, so a leak the kernel authored itself still fails here.
     const { emitReference } = await import("./kernel/spec/emitReference.js");
+    const { emitSurface } = await import("./kernel/spec/emitSurface.js");
     const { capabilities } = await import("./capabilities/index.js");
+
+    const { resources } = emitSurface(capabilities).mcpSurface;
+    expect(resources.length).toBeGreaterThan(0);
+    const unmask = (line: string): string =>
+      resources.reduce((text, template) => text.replace(template, ""), line);
 
     const offenders: string[] = [];
     for (const [page, content] of emitReference(capabilities)) {
       for (const line of content.split("\n")) {
-        if (THIS_NAME.test(line)) offenders.push(`${page}: ${line}`);
+        if (THIS_NAME.test(unmask(line))) offenders.push(`${page}: ${line}`);
       }
     }
     expect(offenders).toEqual([]);

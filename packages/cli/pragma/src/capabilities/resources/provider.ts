@@ -36,8 +36,20 @@ const CLASS_PRIORITY = 0.9;
 /** MCP annotation priority for an individual (ABox) entry. */
 const INDIVIDUAL_PRIORITY = 0.3;
 
-/** The `<bin>:` URI scheme + the single reserved-expansion template variable. */
-const URI_TEMPLATE = `${BIN_NAME}:{+uri}`;
+/**
+ * The `pragma:` URI scheme + the single reserved-expansion template variable.
+ *
+ * A LITERAL, and it must stay one until the wire identifiers move together.
+ * `surface/surface.v2.json` freezes `pragma:{+uri}` as protocol identity, and
+ * `buildResourceList` mints `pragma:<prefixed>` for every entry it lists —
+ * three writings of one decision. Deriving only this one made a fork advertise
+ * `recipes:{+uri}` over a list of 653 `pragma:` URIs: every resource the server
+ * offered became unreadable, and the readable form was never advertised.
+ * `resources.test.ts` pins the pair through {@link resourceProvider}'s declared
+ * surface; `identity.test.ts` masks this template out of its leak scan for the
+ * same reason.
+ */
+const URI_TEMPLATE = "pragma:{+uri}";
 
 const TEMPLATE_DESCRIPTION =
   "Knowledge-graph entities from the local pack. Read any entry by its prefixed " +
