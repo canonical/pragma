@@ -51,16 +51,18 @@ export interface CompletionConfig {
   readonly families?: Readonly<Record<string, boolean>>;
 }
 
-/** The effective, resolved configuration. `channel` always has a value. */
+/**
+ * The effective, resolved configuration. `channel` always has a value.
+ *
+ * IDENTITY IS NOT HERE. `name`, `help`, `colophon` and `issuesUrl` are read
+ * from `pragma.conf.ts` by `src/constants.ts` at module load, because the
+ * surfaces that need them — `--help`, `__complete`, the MCP handshake,
+ * first-run onboarding — all run before or without the config layer. They stay
+ * in {@link RawConfig} (the distribution config is `satisfies RawConfig`), but
+ * merging them into the effective config only bought `config show` a
+ * `[project]` marker the kernel does not honour.
+ */
 export interface PragmaConfig {
-  /** The distribution's display name. */
-  readonly name?: string;
-  /** The distribution's one-line help blurb. */
-  readonly help?: string;
-  /** The distribution's colophon (markdown). */
-  readonly colophon?: string;
-  /** Where the distribution's users report issues. */
-  readonly issuesUrl?: string;
   /** Active tier path, or absent when no tier is configured. */
   readonly tier?: string;
   /** Release channel controlling component visibility. */
@@ -89,6 +91,12 @@ export interface PragmaConfig {
  * The fields a single config layer (global JSON or project TS) may declare. A
  * key is present only when that layer sets it — presence drives which layer
  * wins during the merge.
+ *
+ * WIDER than {@link PragmaConfig}: the DISTRIBUTION layer (`pragma.conf.ts`)
+ * is `satisfies RawConfig` and declares the four identity fields, which are
+ * read statically and never merged. A global or project layer declaring one is
+ * accepted by the validator and has no effect — `docs/reference/config.md`
+ * says so, and `readConfig.test.ts` pins it.
  */
 export interface RawConfig {
   readonly name?: string;
@@ -110,10 +118,6 @@ export type ConfigOrigin = "default" | "global" | "project";
 
 /** Per-field provenance for the effective merged config. */
 export interface ConfigOrigins {
-  readonly name: ConfigOrigin;
-  readonly help: ConfigOrigin;
-  readonly colophon: ConfigOrigin;
-  readonly issuesUrl: ConfigOrigin;
   readonly tier: ConfigOrigin;
   readonly channel: ConfigOrigin;
   readonly detail: ConfigOrigin;

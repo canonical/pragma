@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runTask } from "@canonical/task/node";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BIN_NAME, PROGRAM_DESCRIPTION } from "../../constants.js";
 import { evaluateProjectConfig } from "./evaluateProjectConfig.js";
 import { findProjectConfig } from "./findProjectConfig.js";
 import { readGlobalConfig } from "./globalConfig.js";
@@ -78,9 +79,6 @@ describe("readConfig — layering + provenance", () => {
 
     expect(config.channel).toBe("normal");
     expect(origins.channel).toBe("default");
-    // The identity fields ship from the distribution config (pragma.conf.ts).
-    expect(config.name).toBe("pragma");
-    expect(origins.name).toBe("default");
     expect(project.exists).toBe(false);
   });
 
@@ -94,29 +92,47 @@ describe("readConfig — layering + provenance", () => {
     expect(origins.packs).toBe("project");
   });
 
-  it("merges identity fields and generators with per-field provenance", async () => {
+  it("merges generators with per-field provenance", async () => {
     freshXdg();
-    writeGlobal('{"help":"Global help"}');
     const dir = projectWith(
-      'export default { name: "acme", help: "Acme DS", colophon: "By Acme.", issuesUrl: "https://acme.test/issues", generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" }] };',
+      'export default { generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" }] };',
     );
 
     const { config, origins } = await readConfig(dir);
 
-    expect(config.name).toBe("acme");
-    expect(config.help).toBe("Acme DS"); // project wins over global
-    expect(config.colophon).toBe("By Acme.");
-    expect(config.issuesUrl).toBe("https://acme.test/issues");
     expect(config.generators).toEqual([
       { name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" },
     ]);
-    expect(origins).toMatchObject({
-      name: "project",
-      help: "project",
-      colophon: "project",
-      issuesUrl: "project",
-      generators: "project",
-    });
+    expect(origins.generators).toBe("project");
+  });
+
+  it("accepts a layer's identity fields and gives them NO effect", async () => {
+    // Identity is read from `pragma.conf.ts` by `src/constants.ts` at module
+    // load, so a layer declaring it can only ever be silent. The validator
+    // still accepts the keys (the distribution config shares the schema), and
+    // the merged config now carries neither the value nor a provenance for it
+    // — which is what `config show` used to report and did not honour.
+    freshXdg();
+    writeGlobal('{"help":"Global help"}');
+    const dir = projectWith(
+      'export default { name: "acme", colophon: "By Acme.", issuesUrl: "https://acme.test/issues", tier: "core" };',
+    );
+
+    const { config, origins } = await readConfig(dir);
+
+    expect(config).not.toHaveProperty("name");
+    expect(config).not.toHaveProperty("help");
+    expect(config).not.toHaveProperty("colophon");
+    expect(config).not.toHaveProperty("issuesUrl");
+    expect(origins).not.toHaveProperty("name");
+    // The positive control, from the SAME project file: a layerable field
+    // declared beside them IS merged and reported, so the assertions above
+    // cannot pass by the project layer having failed to load at all.
+    expect(config.tier).toBe("core");
+    expect(origins.tier).toBe("project");
+    // And the projected identity is unmoved by any of it.
+    expect(BIN_NAME).toBe("pragma");
+    expect(PROGRAM_DESCRIPTION).not.toBe("Global help");
   });
 
   it("merges the completion policy into the effective config", async () => {

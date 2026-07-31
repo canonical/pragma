@@ -118,10 +118,6 @@ function createFailingRuntime(message: string): PragmaRuntime {
 
 /** Every field at the default layer — the embedded pack answers, so the store IS available. */
 const DEFAULT_ORIGINS = {
-  name: "default",
-  help: "default",
-  colophon: "default",
-  issuesUrl: "default",
   tier: "default",
   channel: "default",
   detail: "default",

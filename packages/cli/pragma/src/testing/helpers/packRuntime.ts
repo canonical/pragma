@@ -90,10 +90,6 @@ export async function buildFixtureRuntime(
         : {}),
     },
     origins: {
-      name: "default",
-      help: "default",
-      colophon: "default",
-      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: options.detailOrigin ?? "default",
