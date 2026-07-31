@@ -1,0 +1,335 @@
+# ke-graphql · canonical SDL
+# graphql-schema-spec: 1
+# provider: unknown
+# mode: annotated
+# validated-store: false
+# revision: 0
+# prefixing: none
+
+type ImplementationObject implements Node & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  implementsBlock: UIBlock
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+interface Node {
+  uri: ID!
+  _meta: EntityMeta!
+}
+
+type Property {
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  optional: Boolean
+  propertyType: String
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+type Tier implements Node & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+type ModifierFamily implements Node & UIElement & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  modifiers(first: Int, after: String, last: Int, before: String): ModifierConnection!
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+type ModifierConnection {
+  edges: [ModifierEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ModifierEdge {
+  node: Modifier!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Modifier implements Node & UIElement & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  modifierFamily: ModifierFamily
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+type Subcomponent implements Node & UIBlock & UIElement & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  parentComponent: Component
+  standalone: Boolean
+  properties: [Property!]!
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+  tier: Tier
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+type ModifierFamilyConnection {
+  edges: [ModifierFamilyEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ModifierFamilyEdge {
+  node: ModifierFamily!
+  cursor: String!
+}
+
+"""A reusable UI component."""
+type Component implements Node & UIBlock & UIElement & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  subcomponents(first: Int, after: String, last: Int, before: String): SubcomponentConnection!
+  properties: [Property!]!
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+  tier: Tier
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+type SubcomponentConnection {
+  edges: [SubcomponentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SubcomponentEdge {
+  node: Subcomponent!
+  cursor: String!
+}
+
+interface UIBlock implements Node & UIElement & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  properties: [Property!]!
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+  tier: Tier
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+interface UIElement implements Node & Entity {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+interface Entity implements Node {
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+  summary: String
+
+  """Display name."""
+  name: String
+}
+
+"""
+Self-describing TBox access attached to every generated type, plus the generic descriptive fields a lens renders without knowing the concrete type.
+"""
+type EntityMeta {
+  """
+  TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI, else the GraphQL type name when the value has no IRI at all (an embedded blank node). Never null — render this.
+  """
+  title(lang: String = "en"): String!
+
+  """
+  rdfs:label, else skos:prefLabel, else the class's own name/title predicate — exact language tag, else untagged. Null when none is asserted; `title` is the total alternative.
+  """
+  label(lang: String = "en"): String
+
+  """
+  Incidental prose: rdfs:comment, else the class's own summary predicate. Null when none is asserted.
+  """
+  comment(lang: String = "en"): String
+
+  """
+  Defining prose: skos:definition, else the class's own description predicate. Null when none is asserted.
+  """
+  definition(lang: String = "en"): String
+  type: OntologyClass!
+  field(name: String!): ClassProperty
+  fields: [ClassProperty!]!
+}
+
+type OntologyClass implements Node {
+  uri: ID!
+
+  """Self-describing TBox access for this class."""
+  _meta: EntityMeta!
+  label: String
+  definition: String
+  superclass: OntologyClass
+  superclasses: [OntologyClass!]!
+  subclasses: [OntologyClass!]!
+  properties: [ClassProperty!]!
+
+  """
+  Named instances of this class (blank-node instances are embeddable and not standalone-resolvable).
+  """
+  instances(first: Int, after: String, last: Int, before: String): NodeConnection!
+
+  """Count of NAMED instances (matches `instances`)."""
+  instanceCount: Int!
+  isAbstract: Boolean!
+  namespace: String!
+}
+
+"""
+Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair.
+"""
+type ClassProperty {
+  property: OntologyProperty!
+  required: Boolean!
+  singular: Boolean!
+  inherited: Boolean!
+}
+
+type OntologyProperty {
+  uri: ID!
+  label: String
+  definition: String
+  domain: OntologyClass
+  range: String!
+  kind: PropertyKind!
+  functional: Boolean!
+  inverse: OntologyProperty
+  acceptanceCriteria: String
+  completionGuidance: String
+  namespace: String!
+}
+
+enum PropertyKind {
+  DATATYPE
+  OBJECT
+  ANNOTATION
+}
+
+type NodeConnection {
+  edges: [NodeEdge!]!
+  pageInfo: PageInfo!
+}
+
+type NodeEdge {
+  node: Node!
+  cursor: String!
+}
+
+type Query {
+  ontologies: [Ontology!]!
+  ontology(prefix: String!): Ontology
+  ontologyClass(uri: String!): OntologyClass
+  ontologyProperty(uri: String!): OntologyProperty
+
+  """Relay node resolution by absolute IRI."""
+  node(id: ID!): Node
+  implementationObject(uri: String!): ImplementationObject
+  implementationObjects(first: Int, after: String, last: Int, before: String): ImplementationObjectConnection!
+  tier(uri: String!): Tier
+  tiers(first: Int, after: String, last: Int, before: String): TierConnection!
+  modifierFamily(uri: String!): ModifierFamily
+  modifierFamilies(first: Int, after: String, last: Int, before: String): ModifierFamilyConnection!
+  modifier(uri: String!): Modifier
+  modifiers(first: Int, after: String, last: Int, before: String): ModifierConnection!
+  subcomponent(uri: String!): Subcomponent
+  subcomponents(first: Int, after: String, last: Int, before: String): SubcomponentConnection!
+  component(uri: String!): Component
+  components(first: Int, after: String, last: Int, before: String): ComponentConnection!
+}
+
+type Ontology {
+  prefix: String!
+  namespace: String!
+  label: String
+  classes: [OntologyClass!]!
+  properties: [OntologyProperty!]!
+}
+
+type ImplementationObjectConnection {
+  edges: [ImplementationObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ImplementationObjectEdge {
+  node: ImplementationObject!
+  cursor: String!
+}
+
+type TierConnection {
+  edges: [TierEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TierEdge {
+  node: Tier!
+  cursor: String!
+}
+
+type ComponentConnection {
+  edges: [ComponentEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ComponentEdge {
+  node: Component!
+  cursor: String!
+}
