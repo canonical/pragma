@@ -34,7 +34,7 @@ import { resolveSources } from "./resolveSources.js";
 export function storeUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(`${reason}.`, {
     recovery: cliRecovery(
-      `sources update`,
+      "sources update",
       "Build the local store from the configured packs.",
       { tool: "sources_update" },
     ),

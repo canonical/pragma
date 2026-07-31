@@ -58,7 +58,7 @@ export async function fetchGraphqlLookup(
     throw PragmaError.storeUnavailable(`GraphQL lookup failed: ${messages}`, {
       // `graph inspect` needs a <uri>; `ontology list` is runnable as-is.
       recovery: cliRecovery(
-        `ontology list`,
+        "ontology list",
         "Check the loaded ontology and namespaces.",
         { tool: "ontology_list" },
       ),

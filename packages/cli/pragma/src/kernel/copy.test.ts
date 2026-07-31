@@ -8,17 +8,20 @@
  * word, the domain phrase "design system", or any namespace IRI the
  * distribution declares in `prefixes`. Module specifiers are not copy and are
  * skipped; every remaining site that legitimately carries one is listed in
- * {@link EXEMPT} with its reason and the PR that removes it.
+ * {@link EXEMPT} with its reason.
  *
  * `src/capabilities/**` and `pragma.conf.ts` are OUT of the rule above.
  * `pragma.conf.ts` is the file a fork edits, so it is content by definition;
  * `src/capabilities/**` still carries the hand-written `ds:` residue
  * (`block list`, `token add-config`, `tier lookup`) plus runtime copy no doc
  * publishes, and a guard needing a 65-entry exemption list is a guard that
- * mostly exempts. One narrower rule reaches it instead, at the bottom of this
- * file: {@link COMMAND_POSITIONS} — *a command a user is told to run is never a
- * literal*. Zero exemptions, and it reads raw source rather than {@link
- * readCopy}, so it holds whatever the scanner can or cannot see.
+ * mostly exempts. Two narrower rules reach it instead, at the bottom of this
+ * file — *a command a user is told to run is never a literal*, stated once as
+ * a POSITION ({@link COMMAND_POSITIONS}, read over raw source so it holds
+ * whatever the scanner can see) and once as a SHAPE (a backticked command
+ * inside any authored literal, read through {@link readCopy} so an
+ * interpolated one leaves no matching chunk). One exemption between them,
+ * named where {@link capabilitySources} is built.
  *
  * NOTE for a reader of an older revision: this docblock used to say the
  * `examples[].cmd` sweep and the `docs/reference/*.md` regen "have to move
@@ -41,10 +44,6 @@ const root = resolve(here, "..");
  * Files whose strings are pinned, frozen, or owned by another lane, so changing
  * them is not a copy edit:
  * - `*.generated.ts` — build artifacts (the embedded pack's graph data).
- * - `spec/emitSurface.ts` — `FIXED_SURFACE` is deep-equalled against
- *   `surface/surface.v2.json`; changing it is a covenant change.
- * - `spec/emitReference.ts` — its output is byte-compared against the committed
- *   `docs/reference/*.md`, so changing it requires a docs regen.
  * - `config/defaults.ts` — THE distribution seam: it imports the distribution
  *   config and names the file it imports. That is its job, not a leak.
  * - `kernel/vocabulary.ts` — the same seam for the vocabulary declaration. Its
@@ -56,8 +55,6 @@ const root = resolve(here, "..");
  */
 const EXEMPT = [
   ".generated.ts",
-  "spec/emitSurface.ts",
-  "spec/emitReference.ts",
   "config/defaults.ts",
   "kernel/vocabulary.ts",
   "runtime/graphpack/hash.ts",

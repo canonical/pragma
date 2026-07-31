@@ -60,7 +60,7 @@ export function resolveUri(
 
   throw PragmaError.invalidInput("prefix", prefix, {
     validOptions: Object.keys(prefixes),
-    recovery: cliRecovery(`ontology list`, "List known ontology prefixes.", {
+    recovery: cliRecovery("ontology list", "List known ontology prefixes.", {
       tool: "ontology_list",
     }),
   });
