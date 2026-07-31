@@ -4,10 +4,11 @@
 //
 // Value conventions:
 //   Ontology        → NamespaceInfo
-//   OntologyClass   → ClassNode (IR)
+//   OntologyClass   → ClassNode (IR, or the frozen owl:Class meta-node)
 //   OntologyProperty→ PropertyNode (IR)
 //   ClassProperty   → { propertyUri, classUri } (per-class scope)
-//   EntityMeta      → EntityValue (the ABox parent)
+//   EntityMeta      → EntityValue (the ABox parent, or the ClassNode adapter
+//                     minted for OntologyClass._meta)
 //
 // Structural facts come from the frozen IR (resolver closures); only the
 // instances connection hits the loaders.
@@ -51,7 +52,9 @@ import {
   RDFS_LABEL,
   SKOS_DEFINITION,
   SKOS_PREF_LABEL,
+  type TripleSet,
 } from "../shared/index.js";
+import { OWL_CLASS_NODE } from "./metaClass.js";
 
 interface ClassPropertyValue {
   propertyUri: string;
@@ -124,6 +127,13 @@ export interface TBoxSchema {
   ontologyProperty: GraphQLObjectType;
   entityMeta: GraphQLObjectType;
   queryFields: GraphQLFieldConfigMap<unknown, CompilerContext>;
+  /**
+   * Identity predicate for Node.resolveType: is this runtime value one of
+   * THIS build's TBox ClassNodes (or the meta-class), i.e. an OntologyClass
+   * parent? Identity-based on purpose — resolvers only ever hand out the IR's
+   * own instances, so no ABox EntityValue can satisfy it by shape.
+   */
+  isClassNode(value: unknown): boolean;
 }
 
 /**
@@ -168,6 +178,43 @@ export default function buildTBoxSchema(
   }
   const getChainsFor = (typename: string): DescriptiveChains =>
     chainsByType.get(typename) ?? FALLBACK_CHAINS;
+
+  // ── OntologyClass as a Node ──
+  // The identity set behind Node.resolveType's TBox branch: exactly this
+  // build's class nodes plus the meta-class. Membership is by identity, never
+  // by shape — the resolvers only ever hand out these instances.
+  const classNodeIdentities = new Set<unknown>(ir.classes.values());
+  classNodeIdentities.add(OWL_CLASS_NODE);
+  const isClassNode = (value: unknown): boolean =>
+    classNodeIdentities.has(value);
+
+  // Every EntityMeta resolver takes an EntityValue parent. A ClassNode is
+  // TBox IR, not an ABox value, so `OntologyClass._meta` adapts one into the
+  // other: the node's own label/definition become literal triples under the
+  // canonical predicates, and the existing descriptive-resolution chain
+  // (title fallback, exact-tag-else-untagged language handling) treats them
+  // exactly like asserted data. "OntologyClass" is a reserved type name, so
+  // the typename can never collide with a generated type's chain entry — the
+  // canonical FALLBACK_CHAINS tier answers, which is precisely right here.
+  // Minted values are remembered by identity so `_meta.type` can answer the
+  // meta-class without trusting anything spoofable.
+  const tboxMetaParents = new WeakSet<EntityValue>();
+  const classNodeEntityValue = (node: ClassNode): EntityValue => {
+    const triples: TripleSet = new Map();
+    triples.set(RDFS_LABEL, [{ kind: "literal", value: node.label }]);
+    if (node.definition !== undefined) {
+      triples.set(SKOS_DEFINITION, [
+        { kind: "literal", value: node.definition },
+      ]);
+    }
+    const value: EntityValue = {
+      uri: node.uri,
+      typename: "OntologyClass",
+      triples,
+    };
+    tboxMetaParents.add(value);
+    return value;
+  };
 
   const propertyKind = new GraphQLEnumType({
     name: "PropertyKind",
@@ -297,13 +344,21 @@ export default function buildTBoxSchema(
     CompilerContext
   >({
     name: "OntologyClass",
+    // A real Node: identity (uri: ID!) plus self-description (_meta), like
+    // every generated type. The old blocker — EntityMeta resolvers key off
+    // EntityValue and a ClassNode is not one — is closed by the
+    // classNodeEntityValue adapter above; `_meta.type` answers the
+    // meta-class owl:Class. OntologyProperty deliberately does NOT get the
+    // same treatment (kept as scope, not principle): it keeps uri: ID! and
+    // stays a non-Node.
+    interfaces: () => [nodeInterface],
     fields: () => ({
-      // ID!, matching Node.uri: `uri` is the identity currency across the whole
-      // base, and an asymmetry between the two TBox siblings would be a defect.
-      // NOT `implements Node`: Node forces a non-null `_meta`, whose resolvers
-      // all key off EntityValue.typename — an OntologyClass parent is a
-      // ClassNode with no typename, so `_meta.type` would error at runtime.
       uri: { type: new GraphQLNonNull(GraphQLID), resolve: (c) => c.uri },
+      _meta: {
+        type: new GraphQLNonNull(entityMeta),
+        description: "Self-describing TBox access for this class.",
+        resolve: (c) => classNodeEntityValue(c),
+      },
       label: { type: GraphQLString, resolve: (c) => c.label },
       definition: { type: GraphQLString, resolve: (c) => c.definition },
       superclass: {
@@ -454,6 +509,11 @@ export default function buildTBoxSchema(
       type: {
         type: new GraphQLNonNull(ontologyClass),
         resolve: (parent) => {
+          // TBox branch: an OntologyClass parent's class is the meta-class.
+          // Identity-based — only the adapter mints members of the set.
+          if (tboxMetaParents.has(parent)) {
+            return OWL_CLASS_NODE;
+          }
           const classUri = mapped.nameMap.toOWL(parent.typename);
           return classUri ? ir.classes.get(classUri) : null;
         },
@@ -517,10 +577,6 @@ export default function buildTBoxSchema(
     },
   };
 
-  // The Node interface is referenced through nodeConnection (lazily); the
-  // parameter is accepted to make the dependency explicit at the call site.
-  void nodeInterface;
-
   return {
     ontology,
     ontologyClass,
@@ -528,5 +584,6 @@ export default function buildTBoxSchema(
     ontologyProperty,
     entityMeta,
     queryFields,
+    isClassNode,
   };
 }

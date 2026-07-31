@@ -136,8 +136,16 @@ export default function compose(
   const diagnostics: Diagnostic[] = [];
 
   // ── shared structural types ──
+  // The TBox branch is identity-based: tbox.isClassNode answers true only for
+  // this build's own ClassNode instances (plus the owl:Class meta-node), so a
+  // class arriving through a Node position — node(id:) with a class IRI, an
+  // edge of the meta-class's instances connection — resolves to OntologyClass
+  // while every ABox EntityValue keeps resolving through its typename.
+  // (`tbox` is declared below; the closure only runs at execution time.)
   const resolveTypename = (value: unknown): string | undefined =>
-    (value as EntityValue | undefined)?.typename;
+    tbox.isClassNode(value)
+      ? "OntologyClass"
+      : (value as EntityValue | undefined)?.typename;
 
   const nodeInterface: GraphQLInterfaceType = new GraphQLInterfaceType({
     name: "Node",

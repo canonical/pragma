@@ -5,7 +5,9 @@
 
 import { createTestStore } from "@canonical/ke/testing";
 import {
-  type GraphQLInterfaceType,
+  GraphQLID,
+  GraphQLInterfaceType,
+  GraphQLNonNull,
   GraphQLObjectType,
   GraphQLSchema,
   GraphQLString,
@@ -304,6 +306,71 @@ describe("Ontology and lookups", () => {
   });
 });
 
+describe("OntologyClass as a Node", () => {
+  it("serves _meta through the ClassNode adapter, typed by the meta-class", async () => {
+    const compiled = await setup(MINIMAL_TTL);
+    const result = await run(
+      compiled,
+      `{
+        ontologyClass(uri: "http://example.org/Thing") {
+          uri
+          _meta {
+            title
+            label
+            comment
+            definition
+            type { uri label definition namespace isAbstract }
+            fields { property { uri } }
+            field(name: "name") { required }
+          }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const cls = result.data?.ontologyClass as {
+      uri: string;
+      _meta: Record<string, unknown>;
+    };
+    expect(cls.uri).toBe("http://example.org/Thing");
+    // The adapter turned the ClassNode's own label/definition into canonical
+    // triples, so the ordinary descriptive chain answers.
+    expect(cls._meta.title).toBe("Thing");
+    expect(cls._meta.label).toBe("Thing");
+    expect(cls._meta.comment).toBeNull();
+    expect(cls._meta.definition).toBe("A concrete thing.");
+    // The class of a class is the meta-class, honestly owl:Class.
+    expect(cls._meta.type).toEqual({
+      uri: "http://www.w3.org/2002/07/owl#Class",
+      label: "Class",
+      definition: "The class of OWL classes.",
+      namespace: "owl",
+      isAbstract: false,
+    });
+    // The meta-class has no mapped ClassProperties: an empty list and a
+    // field() miss are the honest answers, not errors.
+    expect(cls._meta.fields).toEqual([]);
+    expect(cls._meta.field).toBeNull();
+  });
+
+  it("adapts a definition-less class without minting an empty definition", async () => {
+    const compiled = await setup(INHERITANCE_TTL);
+    const result = await run(
+      compiled,
+      `{
+        ontologyClass(uri: "http://example.org/Widget") {
+          _meta { title definition }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const meta = (
+      result.data?.ontologyClass as { _meta: Record<string, unknown> }
+    )._meta;
+    expect(meta.title).toBe("Widget");
+    expect(meta.definition).toBeNull();
+  });
+});
+
 describe("EntityMeta edge cases", () => {
   it("returns null for unknown field names", async () => {
     const compiled = await setup(MINIMAL_TTL);
@@ -423,7 +490,15 @@ const buildSyntheticIR = (): MappedIR => {
 
 const buildSyntheticSchema = (): GraphQLSchema => {
   const mapped = buildSyntheticIR();
-  const nodeInterface = {} as GraphQLInterfaceType;
+  // A real (minimal) interface: OntologyClass now declares it through its
+  // interfaces thunk, so schema construction walks it and execution-time
+  // validation checks the implementation. `uri: ID!` is the subset of the
+  // real Node that avoids the entityMeta forward reference — an implementor
+  // may always carry more fields than its interface.
+  const nodeInterface = new GraphQLInterfaceType({
+    name: "Node",
+    fields: { uri: { type: new GraphQLNonNull(GraphQLID) } },
+  });
   const nodeConnection = () =>
     new GraphQLObjectType({
       name: "TestConnection",

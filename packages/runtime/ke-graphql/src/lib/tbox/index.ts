@@ -10,3 +10,4 @@ export {
   default as buildTBoxSchema,
   type TBoxSchema,
 } from "./buildTBoxSchema.js";
+export { OWL_CLASS, OWL_CLASS_NODE } from "./metaClass.js";

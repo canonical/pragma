@@ -4,7 +4,7 @@
 // =============================================================================
 
 import { createTestStore } from "@canonical/ke/testing";
-import type { GraphQLObjectType } from "graphql";
+import type { GraphQLInterfaceType, GraphQLObjectType } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   CompilationError,
@@ -81,6 +81,39 @@ describe("minimal fixture", () => {
     const argNames = query?.things?.args.map((a) => a.name).sort();
     expect(argNames).toEqual(["after", "before", "first", "last"]);
     expect(result.sdl).toContain("type Thing implements Node");
+  });
+
+  it("makes OntologyClass a real Node; OntologyProperty stays a non-Node", async () => {
+    const result = await compileFixture(MINIMAL_TTL);
+    expect(result.sdl).toContain("type OntologyClass implements Node");
+    const ontologyClass = result.schema.getType(
+      "OntologyClass",
+    ) as GraphQLObjectType;
+    expect(ontologyClass.getInterfaces().map((i) => i.name)).toEqual(["Node"]);
+    expect(String(ontologyClass.getFields()._meta?.type)).toBe("EntityMeta!");
+    // Node.resolveType's TBox branch is identity-based: this build's own
+    // ClassNode instance resolves to OntologyClass, while an ABox
+    // EntityValue keeps resolving through its typename.
+    const node = result.schema.getType("Node") as GraphQLInterfaceType;
+    const classNode = result.mapped.ir.classes.get("http://example.org/Thing");
+    expect(node.resolveType?.(classNode, {}, {} as never, node)).toBe(
+      "OntologyClass",
+    );
+    expect(
+      node.resolveType?.(
+        { uri: "http://example.org/widget", typename: "Thing" },
+        {},
+        {} as never,
+        node,
+      ),
+    ).toBe("Thing");
+    // The asymmetry is deliberate scope: the property side keeps uri: ID!
+    // but carries no _meta and implements nothing.
+    const ontologyProperty = result.schema.getType(
+      "OntologyProperty",
+    ) as GraphQLObjectType;
+    expect(ontologyProperty.getInterfaces()).toEqual([]);
+    expect(ontologyProperty.getFields()._meta).toBeUndefined();
   });
 });
 
@@ -459,7 +492,7 @@ ex:note rdfs:label "an unrelated triple" .
       "ontologyProperty",
     ]);
     expect(result.sdl).toContain("type EntityMeta");
-    expect(result.sdl).toContain("type OntologyClass");
+    expect(result.sdl).toContain("type OntologyClass implements Node");
   });
 });
 
