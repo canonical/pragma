@@ -312,6 +312,33 @@ const STRUCTURE = [
   },
 ] as const;
 
+/**
+ * Every noun the live grammar declares — the whole table the zsh script
+ * `compadd`s for a partial noun. A literal, so a noun silently added, dropped
+ * or leaked into the table fails rather than widening the expectation.
+ */
+const NOUNS = [
+  "block",
+  "capabilities",
+  "colophon",
+  "config",
+  "create",
+  "doctor",
+  "graph",
+  "info",
+  "mcp",
+  "modifier",
+  "ontology",
+  "prompt",
+  "setup",
+  "skill",
+  "sources",
+  "standard",
+  "tier",
+  "token",
+  "upgrade",
+] as const;
+
 describe.skipIf(!hasShell("bash"))(
   "generated bash — the live grammar's script",
   () => {
@@ -392,28 +419,31 @@ describe.skipIf(!hasShell("zsh"))(
       expect(parses("zsh", live.zsh)).toBe(0);
     });
 
-    it.each(STRUCTURE)("OFFERS the candidates for $at, execing nothing", ({
-      words,
-      cword,
-      offers,
-    }) => {
-      // zsh's script `compadd`s the model's table and zsh's own completion
-      // system filters it — unlike bash (`compgen -W … -- "$cur"`) and fish,
-      // which filter before the shell sees the list. So a zsh assertion is
-      // about the OFFERED set, never the filtered one, and `pragma co` offers
-      // all 19 nouns rather than two. That is correct; do not "fix" it.
-      const { reply, calls } = driveZsh(live.zsh, words, cword);
-      expect(reply).toEqual(expect.arrayContaining([...offers]));
-      expect(calls).toEqual([]);
-    });
+    // zsh's script `compadd`s the model's table and zsh's own completion system
+    // filters it — unlike bash (`compgen -W … -- "$cur"`) and fish, which filter
+    // before the shell sees the list. So a zsh assertion is about the OFFERED
+    // set, never the filtered one. That makes exactly ONE row a superset (a
+    // partial noun offers all 19 nouns, not the two that match); it gets its own
+    // test below, and the other five are asserted as the exact sets zsh really
+    // returns. An `arrayContaining` here would be blind to the regression this
+    // file exists to catch — a slot that offers EXTRA, wrong candidates.
+    it.each(STRUCTURE.filter((row) => row.at !== "pragma co"))(
+      "OFFERS exactly the candidates for $at, execing nothing",
+      ({ words, cword, offers }) => {
+        const { reply, calls } = driveZsh(live.zsh, words, cword);
+        expect(reply.sort()).toEqual([...offers].sort());
+        expect(calls).toEqual([]);
+      },
+    );
 
     it("offers the WHOLE noun table for a partial noun, leaving the filtering to zsh", () => {
-      const { reply } = driveZsh(live.zsh, ["pragma", "co"], 1);
-      expect(reply).toContain("colophon");
-      expect(reply).toContain("config");
-      // Nouns that do NOT start with `co` are offered too — the observable
-      // difference from bash, which returns exactly two here.
-      expect(reply).toContain("block");
+      const { reply, calls } = driveZsh(live.zsh, ["pragma", "co"], 1);
+      // The whole table is the claim, so assert the whole table: nouns that do
+      // not start with `co` are offered too (the observable difference from
+      // bash, which returns exactly two here), and none that the grammar does
+      // not declare. Three `toContain`s passed against a table cut to three.
+      expect(reply.sort()).toEqual([...NOUNS].sort());
+      expect(calls).toEqual([]);
     });
 
     it("hands __complete the SAME protocol argv bash does", () => {
@@ -479,6 +509,26 @@ describe.skipIf(!hasShell("fish"))(
         "pragma block lookup ds:global.component.but",
       );
       expect(calls).toEqual([PROTOCOL_ARGV]);
+    });
+
+    it("answers `--<TAB>` with the flag names, but DOES exec where bash and zsh do not", () => {
+      // The sixth `STRUCTURE` row, which the table above cannot hold because
+      // fish behaves differently here — measured, not assumed. bash and zsh
+      // route a flag-name context through one exclusive `case` arm and exec
+      // nothing; fish evaluates EVERY `complete` rule matching the position, so
+      // the positional's `-a "(pragma __complete -- …)"` fires alongside the
+      // flag-name rules whenever the token clears `minChars` — and `--` is two
+      // characters. The candidates are right either way; the cost is a process
+      // spawn on a purely structural TAB. `emitScripts.ts`'s "structure execs
+      // nothing" is therefore a bash/zsh claim, not a fish one.
+      const { reply, calls } = driveFish(live.fish, "pragma block lookup --");
+      expect(reply.sort()).toEqual([
+        "--detail",
+        "--format",
+        "--help",
+        "--verbose",
+      ]);
+      expect(calls).toEqual([["__complete", "--", "block", "lookup", "--"]]);
     });
 
     it("gates the exec on minChars: one typed char execs nothing, two execs once", () => {
