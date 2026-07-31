@@ -1,8 +1,14 @@
 import { spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
 import { BIN_NAME } from "../../constants.js";
 import { completionFixture } from "../../testing/fixtures/completionFixture.js";
@@ -43,7 +49,10 @@ import { emitScripts } from "./emitScripts.js";
  * - **By execution on every machine that runs the suite:** bash parses both
  *   scripts; the live bash script offers the live grammar's structure with
  *   zero process exec; it hands `__complete` a literal argv and offers back
- *   what it answers; it honours the `minChars` gate.
+ *   what it answers; it honours the `minChars` gate. The bash describes are
+ *   deliberately NOT gated on a `hasShell` probe — the package pins
+ *   `os: ["linux"]`, so a machine with no usable bash should fail this file
+ *   loudly rather than skip it and report nothing.
  * - **By execution only where the shell is installed:** the same guarantees
  *   for zsh and fish. Those describes `skipIf` the shell is absent, which
  *   includes this development box and, today, CI — so on those machines they
@@ -83,6 +92,20 @@ function answersFor(partial: string): string[] {
   return [`${partial}-one`, `${partial}-two`];
 }
 
+/** Every temp dir this file mints, removed in one `afterAll`. */
+const roots: string[] = [];
+
+/** A tracked temp dir. */
+function tempRoot(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  roots.push(dir);
+  return dir;
+}
+
+afterAll(() => {
+  for (const dir of roots) rmSync(dir, { recursive: true, force: true });
+});
+
 /**
  * A directory holding a stub named after the bin: a bash script that appends a
  * framed copy of its own argv to `$RECORD` and answers with
@@ -97,7 +120,7 @@ function answersFor(partial: string): string[] {
  * tests across this directory, `setup`, `doctor` and the behavioural suite
  * still passed. The reply assertions below are what fails now.
  */
-const stubDir = mkdtempSync(join(tmpdir(), "pragma-drive-stub-"));
+const stubDir = tempRoot("pragma-drive-stub-");
 writeFileSync(
   join(stubDir, BIN_NAME),
   `#!/usr/bin/env bash\n{ printf '${CALL}\\n'; printf '%s\\n' "$@"; } >> "$RECORD"\nprintf '%s\\n' "\${@: -1}-one" "\${@: -1}-two"\n`,
@@ -126,7 +149,7 @@ function scratch(script: string): {
   driver: string;
   record: string;
 } {
-  const dir = mkdtempSync(join(tmpdir(), "pragma-shelldrive-"));
+  const dir = tempRoot("pragma-shelldrive-");
   const file = join(dir, "completion");
   const record = join(dir, "record");
   writeFileSync(file, script);
@@ -253,45 +276,42 @@ const PROTOCOL_ARGV = [
   "ds:global.component.but",
 ];
 
-describe.skipIf(!hasShell("bash"))(
-  "generated bash — --flag=value wordbreak (M1)",
-  () => {
-    it("routes --format=<TAB> to the format values (not nouns/positionals)", () => {
-      // Default COMP_WORDBREAKS split: `--format` `=` `` (empty current word).
-      const { reply } = driveBash(
-        fixture.bash,
-        ["pragma", "--format", "=", ""],
-        3,
-      );
-      expect(reply.sort()).toEqual(["json", "llm", "plain"]);
-    });
+describe("generated bash — --flag=value wordbreak (M1)", () => {
+  it("routes --format=<TAB> to the format values (not nouns/positionals)", () => {
+    // Default COMP_WORDBREAKS split: `--format` `=` `` (empty current word).
+    const { reply } = driveBash(
+      fixture.bash,
+      ["pragma", "--format", "=", ""],
+      3,
+    );
+    expect(reply.sort()).toEqual(["json", "llm", "plain"]);
+  });
 
-    it("filters the value by the partial typed after =", () => {
-      const { reply } = driveBash(
-        fixture.bash,
-        ["pragma", "--format", "=", "j"],
-        3,
-      );
-      expect(reply).toEqual(["json"]);
-    });
+  it("filters the value by the partial typed after =", () => {
+    const { reply } = driveBash(
+      fixture.bash,
+      ["pragma", "--format", "=", "j"],
+      3,
+    );
+    expect(reply).toEqual(["json"]);
+  });
 
-    it("routes a verb-scoped --format=<TAB> the same way", () => {
-      // After a noun/verb the value must still route as a flag value, never as
-      // block's positional (which would offer entity/enum candidates instead).
-      const { reply } = driveBash(
-        fixture.bash,
-        ["pragma", "block", "get", "--format", "=", ""],
-        5,
-      );
-      expect(reply.sort()).toEqual(["json", "llm", "plain"]);
-    });
+  it("routes a verb-scoped --format=<TAB> the same way", () => {
+    // After a noun/verb the value must still route as a flag value, never as
+    // block's positional (which would offer entity/enum candidates instead).
+    const { reply } = driveBash(
+      fixture.bash,
+      ["pragma", "block", "get", "--format", "=", ""],
+      5,
+    );
+    expect(reply.sort()).toEqual(["json", "llm", "plain"]);
+  });
 
-    it("still completes the space form --format <TAB> (unbroken)", () => {
-      const { reply } = driveBash(fixture.bash, ["pragma", "--format", ""], 2);
-      expect(reply.sort()).toEqual(["json", "llm", "plain"]);
-    });
-  },
-);
+  it("still completes the space form --format <TAB> (unbroken)", () => {
+    const { reply } = driveBash(fixture.bash, ["pragma", "--format", ""], 2);
+    expect(reply.sort()).toEqual(["json", "llm", "plain"]);
+  });
+});
 
 /** Live structural contexts, in the bash/zsh `words` + cursor-index form. */
 const STRUCTURE = [
@@ -360,83 +380,78 @@ const NOUNS = [
   "upgrade",
 ] as const;
 
-describe.skipIf(!hasShell("bash"))(
-  "generated bash — the live grammar's script",
-  () => {
-    it("is a script bash accepts, for both the live and the fixture grammar", () => {
-      // The one executable syntax gate that runs everywhere. It is not vacuous:
-      // `SAFE_TOKEN_RE` admits shell reserved words, so a noun named `esac`
-      // would emit `case "$noun" in esac) … esac` and bash -n would reject it.
-      expect(parses("bash", live.bash)).toBe(0);
-      expect(parses("bash", fixture.bash)).toBe(0);
-    });
+describe("generated bash — the live grammar's script", () => {
+  it("is a script bash accepts, for both the live and the fixture grammar", () => {
+    // The one executable syntax gate that runs everywhere. It is not vacuous:
+    // `SAFE_TOKEN_RE` admits shell reserved words, so a noun named `esac`
+    // would emit `case "$noun" in esac) … esac` and bash -n would reject it.
+    expect(parses("bash", live.bash)).toBe(0);
+    expect(parses("bash", fixture.bash)).toBe(0);
+  });
 
-    it.each(STRUCTURE)("answers $at from the inlined table, execing nothing", ({
-      words,
-      cword,
-      offers,
-    }) => {
-      const { reply, calls } = driveBash(live.bash, words, cword);
-      expect(reply.sort()).toEqual([...offers].sort());
-      // The structural tier is the point of a generated script: a TAB here
-      // must never cost a process spawn, nor depend on a pack being built.
-      expect(calls).toEqual([]);
-    });
+  it.each(STRUCTURE)("answers $at from the inlined table, execing nothing", ({
+    words,
+    cword,
+    offers,
+  }) => {
+    const { reply, calls } = driveBash(live.bash, words, cword);
+    expect(reply.sort()).toEqual([...offers].sort());
+    // The structural tier is the point of a generated script: a TAB here
+    // must never cost a process spawn, nor depend on a pack being built.
+    expect(calls).toEqual([]);
+  });
 
-    it("hands __complete the protocol argv and OFFERS what it answers", () => {
-      // The last mile, and the only assertion that covers it: everything else
-      // here observes what the script SENDS. A script that sends a perfect argv
-      // and then drops the reply (`COMPREPLY=()` after the mapfile) leaves TAB
-      // silently dead and was green across 258 tests.
-      const { reply, calls } = driveBash(
-        live.bash,
-        ["pragma", "block", "lookup", "ds:global.component.but"],
-        3,
-      );
-      expect(calls).toEqual([PROTOCOL_ARGV]);
-      expect(reply).toEqual(answersFor("ds:global.component.but"));
-    });
+  it("hands __complete the protocol argv and OFFERS what it answers", () => {
+    // The last mile, and the only assertion that covers it: everything else
+    // here observes what the script SENDS. A script that sends a perfect argv
+    // and then drops the reply (`COMPREPLY=()` after the mapfile) leaves TAB
+    // silently dead and was green across 258 tests.
+    const { reply, calls } = driveBash(
+      live.bash,
+      ["pragma", "block", "lookup", "ds:global.component.but"],
+      3,
+    );
+    expect(calls).toEqual([PROTOCOL_ARGV]);
+    expect(reply).toEqual(answersFor("ds:global.component.but"));
+  });
 
-    it("keeps an interleaved global value flag in the argv it delegates", () => {
-      // `parse.ts` is the one place that decides a flag's value is not a
-      // positional. It only ever sees what the script sends, so the script must
-      // send the flag AND its value, in place.
-      const { calls } = driveBash(
-        live.bash,
-        ["pragma", "block", "lookup", "--format", "json", "ds:g"],
-        5,
-      );
-      expect(calls).toEqual([
-        ["__complete", "--", "block", "lookup", "--format", "json", "ds:g"],
-      ]);
-    });
+  it("keeps an interleaved global value flag in the argv it delegates", () => {
+    // `parse.ts` is the one place that decides a flag's value is not a
+    // positional. It only ever sees what the script sends, so the script must
+    // send the flag AND its value, in place.
+    const { calls } = driveBash(
+      live.bash,
+      ["pragma", "block", "lookup", "--format", "json", "ds:g"],
+      5,
+    );
+    expect(calls).toEqual([
+      ["__complete", "--", "block", "lookup", "--format", "json", "ds:g"],
+    ]);
+  });
 
-    it("delegates a variadic second positional with both words in place", () => {
-      const { calls } = driveBash(
-        live.bash,
-        ["pragma", "standard", "lookup", "cs:a", "cs:code.arr"],
-        4,
-      );
-      expect(calls).toEqual([
-        ["__complete", "--", "standard", "lookup", "cs:a", "cs:code.arr"],
-      ]);
-    });
+  it("delegates a variadic second positional with both words in place", () => {
+    const { calls } = driveBash(
+      live.bash,
+      ["pragma", "standard", "lookup", "cs:a", "cs:code.arr"],
+      4,
+    );
+    expect(calls).toEqual([
+      ["__complete", "--", "standard", "lookup", "cs:a", "cs:code.arr"],
+    ]);
+  });
 
-    it("gates the exec on minChars: one typed char offers nothing and execs nothing", () => {
-      // `minChars` lives ONLY in the generated scripts — `__complete -- block
-      // lookup d` answers with candidates. This is the gate that stops a stray
-      // TAB from spawning a process, and nothing else observes it.
-      const one = driveBash(live.bash, ["pragma", "block", "lookup", "d"], 3);
-      expect(one.reply).toEqual([]);
-      expect(one.calls).toEqual([]);
+  it("gates the exec on minChars: one typed char offers nothing and execs nothing", () => {
+    // `minChars` lives ONLY in the generated scripts — `__complete -- block
+    // lookup d` answers with candidates. This is the gate that stops a stray
+    // TAB from spawning a process, and nothing else observes it.
+    const one = driveBash(live.bash, ["pragma", "block", "lookup", "d"], 3);
+    expect(one.reply).toEqual([]);
+    expect(one.calls).toEqual([]);
 
-      const two = driveBash(live.bash, ["pragma", "block", "lookup", "ds"], 3);
-      expect(two.calls).toEqual([
-        ["__complete", "--", "block", "lookup", "ds"],
-      ]);
-    });
-  },
-);
+    const two = driveBash(live.bash, ["pragma", "block", "lookup", "ds"], 3);
+    expect(two.calls).toEqual([["__complete", "--", "block", "lookup", "ds"]]);
+  });
+});
 
 describe.skipIf(!hasShell("zsh"))(
   "generated zsh — the live grammar's script (skipped where zsh is absent)",
