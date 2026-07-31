@@ -14,22 +14,14 @@
  * imports it to project the program's identity, so anything that runs at this
  * module's load runs on `--help`, `__complete` and `--version`. That also makes
  * the reverse edge impossible — importing `constants.js` from here is a
- * temporal-dead-zone cycle — which is why the `emptyRecovery.cli` hints below
- * compose {@link NAME} locally rather than `RECOVERY_CLI_PREFIX`.
+ * temporal-dead-zone cycle. It is also why no string below names the binary
+ * except `name` itself: an `emptyRecovery.cli` is the command WITHOUT the
+ * binary name, and the renderer prepends the consuming distribution's.
  * `capabilities/lazy.test.ts` pins both halves of that.
  */
 
 import type { RawConfig } from "./src/kernel/config/types.js";
 import type { PackDefinition } from "./src/kernel/packs/types.js";
-
-/**
- * The binary's name — declared ONCE, because a fork renaming it must stay
- * self-consistent. `packs/schema.ts` refines every `emptyRecovery.cli` with
- * `startsWith(\`${identity.name} \`)`, so a rename that reached only the
- * identity below would make the distribution's own stories fail its own
- * validator (`distribution.test.ts` proves it does).
- */
-const NAME = "pragma";
 
 /**
  * The design-system domain colophon — the ontology + graph story, surfaced by
@@ -235,7 +227,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No tokens in the store. Build it from the configured design-system packs.",
-        cli: `${NAME} sources update`,
+        cli: "sources update",
       },
     },
     lookup: {
@@ -294,7 +286,7 @@ const designSystemStories: readonly PackDefinition[] = [
       emptyRecovery: {
         message:
           "No modifier families in the store. Build it from the configured design-system packs.",
-        cli: `${NAME} sources update`,
+        cli: "sources update",
       },
     },
     lookup: {
@@ -476,7 +468,7 @@ const codeStandardsStories: readonly PackDefinition[] = [
 ];
 
 export default {
-  name: NAME,
+  name: "pragma",
   help: "Explore the design system",
   colophon: "Made by the Canonical Webteam — https://canonical.com.",
   issuesUrl: "https://github.com/canonical/pragma/issues",

@@ -24,7 +24,7 @@ const BANDED_DATA: DoctorData = {
     {
       name: "Shell completions",
       status: "pass",
-      detail: "zsh installed and resolving",
+      detail: "zsh up to date and resolving",
       band: "global",
     },
     {

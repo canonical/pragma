@@ -20,7 +20,7 @@ const CATEGORY_ORDER: readonly ToolCategory[] = [
 
 export const capabilitiesFormatters: Formatters<CapabilitiesData> = {
   plain(data) {
-    const lines: string[] = [`pragma v${data.version}`, ""];
+    const lines: string[] = [`${BIN_NAME} v${data.version}`, ""];
 
     lines.push("Conventions");
     lines.push(`  ${data.conventions.system}`);

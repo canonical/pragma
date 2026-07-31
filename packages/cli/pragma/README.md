@@ -51,11 +51,11 @@ pragma is extended along two independent planes:
 pragma create component src/components/Button --framework react
 ```
 
-— produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency: the generators are embedded in the `pragma` binary, so `pragma create component` runs from a clean install.
+— produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency. The binary carries the **component** generator's templates, so `pragma create component` runs from a clean install; `pragma create package` and `pragma create application` read their templates from disk and so refuse from the binary with `UNSUPPORTED` — run those from a source checkout, or use the `summon` CLI.
 
 ## MCP
 
-Run pragma as an MCP server over stdio via `pragma setup mcp` (automatic harness registration) or the manual `pragma mcp` entry point. The server exposes the read and scaffold tools, a `pragma:{+uri}` resource surface for entity reads, the design system's workflow prompts, and handshake instructions describing the discovery sequence. Mutating tools are plan-first — they return the plan they would apply until called with `confirm: true`. See [docs/mcp-integration.md](./docs/mcp-integration.md).
+Run pragma as an MCP server over stdio via `pragma setup mcp` (automatic harness registration) or the manual `pragma mcp` entry point. The server exposes the read and scaffold tools, a `pragma:{+uri}` resource surface for entity reads, whatever workflow prompts the active graph declares (none, for this distribution's current graph), and handshake instructions describing the discovery sequence. Mutating tools are plan-first — they return the plan they would apply until called with `confirm: true`. See [docs/mcp-integration.md](./docs/mcp-integration.md).
 
 ## Documentation
 

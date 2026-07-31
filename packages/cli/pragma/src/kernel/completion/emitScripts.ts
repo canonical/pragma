@@ -5,12 +5,14 @@
  * derivation the `__complete` resolver uses — the tiers cannot disagree) and
  * renders one script per supported shell. The static tier answers STRUCTURE
  * with zero exec: nouns, verbs, flag names, enum values, mutation + global
- * flags, native file completion. Only `{kind:"entity"}` value contexts shell
+ * flags, native file completion. Only `{kind:"names"}` value contexts shell
  * out to `<bin> __complete`.
  *
  * PR6 boundary (`setup completions`): this module exports pure CONTENT only
  * — shell detection, install paths, mkdir/write effects, and hints all
- * belong to setup. `binName` is parameterized so the PR8 bin swap is free;
+ * belong to setup. `binName` is parameterized so a fork's rename reaches the
+ * script body (`completionScriptPath` derives the file NAME from the same
+ * constant, and the two must agree or the shell never loads the file);
  * `minChars` and `disabledFamilies` are read from `completion` config by setup.
  *
  * `minChars` (default {@link DEFAULT_MIN_CHARS}) is baked into the scripts to

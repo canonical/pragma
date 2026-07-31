@@ -15,7 +15,6 @@
  * it never lands on the storeless fast path.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
 import { resolveUri } from "../packs/iri.js";
@@ -60,7 +59,7 @@ export async function readEntity(
   if (result.type !== "select" || result.bindings.length === 0) {
     throw PragmaError.notFound("entity", uri, {
       recovery: cliRecovery(
-        `${RECOVERY_CLI_PREFIX}graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'`,
+        `graph query 'SELECT ?s WHERE { ?s ?p ?o } LIMIT 10'`,
         "Check the URI, or list known entities.",
         { tool: "graph_query" },
       ),

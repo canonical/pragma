@@ -29,10 +29,6 @@ function layersWith(packsOrigin: "default" | "project"): ConfigLayers {
         packsOrigin === "project" ? [{ name: "x", source: "file:///x" }] : [],
     },
     origins: {
-      name: "default",
-      help: "default",
-      colophon: "default",
-      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",

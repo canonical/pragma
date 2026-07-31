@@ -31,14 +31,6 @@ type ConfigRow = readonly [label: string, value: string, marker: string];
 function configRows(data: ConfigShowData): readonly ConfigRow[] {
   const { config, origins } = data;
   return [
-    ["name", config.name ?? "(none)", originMarker(origins.name)],
-    ["help", config.help ?? "(none)", originMarker(origins.help)],
-    ["colophon", config.colophon ?? "(none)", originMarker(origins.colophon)],
-    [
-      "issuesUrl",
-      config.issuesUrl ?? "(none)",
-      originMarker(origins.issuesUrl),
-    ],
     [
       "tier",
       config.tier ?? "(none — all tiers visible)",
@@ -101,10 +93,6 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
-      `- **Name:** ${config.name ?? "(none)"}${originMarker(origins.name)}`,
-      `- **Help:** ${config.help ?? "(none)"}${originMarker(origins.help)}`,
-      `- **Colophon:** ${config.colophon ?? "(none)"}${originMarker(origins.colophon)}`,
-      `- **Issues:** ${config.issuesUrl ?? "(none)"}${originMarker(origins.issuesUrl)}`,
       `- **Tier:** ${config.tier ?? "none (all tiers)"}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,

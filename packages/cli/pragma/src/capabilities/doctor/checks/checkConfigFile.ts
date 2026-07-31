@@ -1,3 +1,4 @@
+import { BIN_NAME } from "../../../constants.js";
 import { readConfig } from "../../../kernel/config/readConfig.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { CheckResult } from "../types.js";
@@ -5,7 +6,7 @@ import type { CheckResult } from "../types.js";
 /**
  * Check which config layer is active for the working directory.
  *
- * Passes when a project `pragma.config.ts` is found up the tree, or — pragma is
+ * Passes when a project config is found up the tree, or — the CLI is
  * global-first — when only the global XDG config exists. Fails only when
  * neither layer is configured.
  *
@@ -18,7 +19,7 @@ export async function checkConfigFile(rt: PragmaRuntime): Promise<CheckResult> {
 
   if (layers.project.exists) {
     return {
-      name: "pragma config",
+      name: `${BIN_NAME} config`,
       status: "pass",
       detail: `project config active (${layers.project.path})`,
     };
@@ -26,16 +27,16 @@ export async function checkConfigFile(rt: PragmaRuntime): Promise<CheckResult> {
 
   if (layers.global.exists) {
     return {
-      name: "pragma config",
+      name: `${BIN_NAME} config`,
       status: "pass",
       detail: `no project config — global config active (${layers.global.path})`,
     };
   }
 
   return {
-    name: "pragma config",
+    name: `${BIN_NAME} config`,
     status: "fail",
     detail: "not found",
-    remedy: "pragma config set tier <path>",
+    remedy: `${BIN_NAME} config set tier <path>`,
   };
 }

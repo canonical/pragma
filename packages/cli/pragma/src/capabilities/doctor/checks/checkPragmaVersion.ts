@@ -1,9 +1,10 @@
+import { BIN_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import { detectInstallSource } from "../../shared/packageManager.js";
 import type { CheckResult } from "../types.js";
 
 /**
- * Report the pragma version and how it was installed. Always passes — purely
+ * Report the CLI version and how it was installed. Always passes — purely
  * informational.
  *
  * @param rt - The per-invocation runtime (for `version`).
@@ -15,7 +16,7 @@ export async function checkPragmaVersion(
 ): Promise<CheckResult> {
   const install = detectInstallSource();
   return {
-    name: "pragma version",
+    name: `${BIN_NAME} version`,
     status: "pass",
     detail: `v${rt.version} (installed via ${install.label})`,
   };

@@ -62,7 +62,7 @@ pragma tier list
 - `block list` shows blocks visible under the active tier chain and channel; add `--all-tiers` to ignore the tier filter.
 - `block lookup Button` returns the full spec of one or more blocks by name, IRI, or glob.
 - `standard list` lists code standards; narrow with `--category react`.
-- `token list`, `ontology list`, and `tier list` browse tokens, ontology namespaces, and the tier hierarchy.
+- `token list`, `ontology list`, and `tier list` browse tokens, ontology namespaces, and the tier hierarchy. This distribution's graph currently carries no token entities, so `token list` is honestly empty until a pack that ships them is configured and built.
 
 Every read noun also offers `lookup` and (where declared) `sample` — call `sample` before writing a query to see real data shapes.
 
@@ -112,12 +112,11 @@ Three storeless commands give an agent (or a new user) its bearings:
 pragma capabilities
 pragma colophon
 pragma prompt list
-pragma prompt lookup build-a-block
 ```
 
 - `capabilities` returns the conventions, a four-stage discovery sequence, and the annotated tool catalog — call it first at session start.
 - `colophon` narrates how pragma and the active design-system domain are made.
-- `prompt list` browses the workflow prompt templates the design system ships; `prompt lookup <name>` prints one template's body and arguments.
+- `prompt list` browses the workflow prompt templates in the active graph, and `prompt lookup <name>` prints one template's body and arguments. This distribution's graph carries no prompt entities today, so `prompt list` reports `_No prompts in the store._`; the surface is populated by configuring a pack whose graph declares them.
 
 ## Next steps
 

@@ -10,7 +10,6 @@
  * (`graph query`) goes through the facade directly and stays INVALID_INPUT.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import type { PragmaRuntime } from "../../runtime/types.js";
@@ -59,7 +58,7 @@ async function queryOrRemap(rt: Pick<PragmaRuntime, "query">, query: string) {
         "The local store was not built from a pack that defines every term this read uses.",
         {
           recovery: cliRecovery(
-            `${RECOVERY_CLI_PREFIX}sources update`,
+            "sources update",
             "Build the local store from the configured packs.",
             // An agent recovers by calling the tool, then retrying (PR9 C1 cold-
             // store retry makes the post-update retry succeed).

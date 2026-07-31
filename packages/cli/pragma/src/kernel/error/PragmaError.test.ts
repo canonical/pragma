@@ -73,7 +73,7 @@ describe("serializeError", () => {
   it("includes suggestions, recovery, validOptions, and filters when present", () => {
     const error = PragmaError.notFound("block", "Buton", {
       suggestions: ["Button"],
-      recovery: cliRecovery("pragma block list", "List blocks."),
+      recovery: cliRecovery("block list", "List blocks."),
     });
     expect(serializeError(error)).toEqual({
       code: "ENTITY_NOT_FOUND",

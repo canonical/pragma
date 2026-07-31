@@ -8,6 +8,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { compilePack } from "./compile.js";
@@ -280,6 +281,21 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
     expect(parse({ noun: "Bad Noun", list: listShape })).toThrow(
       /noun: must be lowercase kebab-case/,
     );
+  });
+
+  it("rejects an emptyRecovery.cli that names a binary, and names the change", () => {
+    // The hint is rendered as `<consuming distribution> <cli>`, so a story
+    // carrying the old prefixed form would render `pragma pragma sources
+    // update`. Third-party packs are third-party DATA: they get an error that
+    // names the grammar change, not a silently doubled string.
+    const withCli = (cli: string) => ({
+      noun: "widget",
+      list: { ...listShape, emptyRecovery: { message: "None.", cli } },
+    });
+    expect(parse(withCli(`${RECOVERY_CLI_PREFIX}sources update`))).toThrow(
+      /WITHOUT the binary name/,
+    );
+    expect(parse(withCli("sources update"))).not.toThrow();
   });
 });
 

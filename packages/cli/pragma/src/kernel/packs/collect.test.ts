@@ -52,10 +52,6 @@ function layers(stories: unknown[]): ConfigLayers {
   return {
     config: { channel: "normal", stories },
     origins: {
-      name: "default",
-      help: "default",
-      colophon: "default",
-      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",

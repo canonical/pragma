@@ -21,7 +21,11 @@ import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TEST_FLAGS } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { graphModule } from "../graph/index.js";
-import { buildResourceList, rankUriCompletions } from "./provider.js";
+import {
+  buildResourceList,
+  rankUriCompletions,
+  resourceProvider,
+} from "./provider.js";
 
 /**
  * Two entities of the committed embedded pack, chosen for what they PROVE: an
@@ -125,6 +129,24 @@ describe("resource listing (storeless, over the pack index)", () => {
     expect(button?._meta?.["pragma/box"]).toBe("abox");
     expect(button?.annotations?.priority).toBe(0.3);
     expect(button?._meta?.["pragma/instanceCount"]).toBeUndefined();
+  });
+
+  it("mints every URI in the scheme the declared template routes", () => {
+    // Two writings of one decision: the template `register` installs (and the
+    // covenant publishes as `mcpSurface.resources`) and the scheme every listed
+    // URI carries. Nothing compared them, and a half-derivation left a fork
+    // advertising `recipes:{+uri}` over a list of `pragma:` URIs — every
+    // resource offered was unreadable and the readable form was unadvertised.
+    // DERIVED from the declared surface, so this cannot be satisfied by two
+    // literals that agree today.
+    const declared = resourceProvider.surface?.templates?.[0];
+    const scheme = `${declared?.split(":")[0]}:`;
+    const listed = [
+      ...buildResourceList(readPackIndex({ kind: "embedded" })),
+      ...buildResourceList(undefined),
+    ];
+    expect(listed.length).toBeGreaterThan(1);
+    expect(listed.filter((r) => !r.uri.startsWith(scheme))).toEqual([]);
   });
 
   it("ranks autocomplete over prefixed URI and label", () => {

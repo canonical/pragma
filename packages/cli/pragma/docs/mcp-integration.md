@@ -29,7 +29,7 @@ The process reads requests on stdin and writes responses on stdout; diagnostics 
 
 On `initialize`, the server sends an `instructions` string **once** — not per tool call — so an agent arrives oriented. It carries:
 
-- what pragma is (a CLI and MCP server over a design-system knowledge graph),
+- what pragma is — `pragma — <the distribution's one-line help> (a CLI and MCP server over a knowledge graph).`, projected from the distribution config rather than written out,
 - the conventions (the knowledge-graph model, the tier/channel scoping, the SPARQL escape hatch),
 - and a short discovery sequence naming the first tools to call.
 
@@ -50,7 +50,7 @@ pragma capabilities
 Beyond tools, the server exposes three surfaces:
 
 - **Resources** — a `pragma:{+uri}` resource template. An agent reads one entity by URI; listing and autocomplete are storeless over the pack index, and a read shares the CLI's entity reader. `graph_inspect` is the tool equivalent when you already hold a URI.
-- **Prompts** — the design system's workflow templates are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same `ds:Prompt` entities.
+- **Prompts** — the workflow prompt templates the active pack's graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same entities, addressed by the prompt terms the distribution declares. This distribution's graph carries none today, so both views are empty.
 - **Instructions** — the handshake orientation described above.
 
 ## Plan-first mutations
