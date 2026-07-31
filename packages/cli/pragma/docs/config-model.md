@@ -47,6 +47,8 @@ Within your config the top-level `stories` wins over `packs[].stories` for the s
 
 Package stories are third-party data, so they are never fatal: a malformed or schema-invalid file is dropped, the rest of the package still works, and `pragma doctor` names each ignored file under `pack refs` (which stays `pass` — the pack does answer reads).
 
+Two limits a package author should know. An `emptyRecovery.cli` hint must begin with the *consuming* distribution's binary name, so a story carrying one is usable by that distribution only. And a query naming a prefix the answering graph does not bind currently reports `STORE_UNAVAILABLE` with a `sources update` recovery rather than naming the prefix — check your prefixes against `pragma graph query` first.
+
 Two consequences worth knowing:
 
 - **Package- and config-declared nouns are dispatch-only.** `pragma --help` and shell completion read the static capability set without touching config or the pack, which is what keeps them fast. A noun that arrives from a package or from your config therefore runs, and `pragma capabilities` lists it, but `--help` and completion do not. The distribution's own stories are compiled into that static set, so they are advertised everywhere.

@@ -28,6 +28,12 @@ import type { PackRow } from "../types.js";
  * the message says which claim it is actually making, and does NOT assert the
  * store is unbuilt. Widening this any further would start hiding query bugs,
  * which is the failure this whole choke point exists to prevent.
+ *
+ * KNOWN GAP, since stories may now arrive from a package or a user's config: a
+ * third-party author's typo lands here too, and `sources update` cannot help
+ * them. Distinguishing that from an unbuilt store needs the query's provenance
+ * at the failure site, which this function is not given. Left for the tranche
+ * that threads it.
  */
 function isUnseededStoreError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
