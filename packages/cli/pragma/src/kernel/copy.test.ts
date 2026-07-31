@@ -95,6 +95,11 @@ const files = [
  * in source order makes both cases fall out: a `//` inside a string belongs to
  * the string, an apostrophe inside a comment belongs to the comment.
  *
+ * A REGEX LITERAL is code, not copy, and it is the third ordering hazard: a `"`
+ * inside a regex (`/[<>"{}|\\^`\s]/`) would otherwise open a phantom string that
+ * swallows every literal until the next `"` — so the scanner reads regexes as
+ * regexes and skips them whole.
+ *
  * Specifiers (`./x.js`, `@scope/pkg`) name modules, not users, and must stay
  * literal, so they are not copy.
  *
@@ -103,6 +108,12 @@ const files = [
  */
 function readCopy(source: string): string[] {
   const copy: string[] = [];
+  // A `/` opens a regex only where a VALUE may start; after a value it is
+  // division. One character of context decides it — the last significant one —
+  // which is all TypeScript sources in this tree need (no `)`/`]`-preceded
+  // regex, i.e. no `if (x) /re/.test(y)`, which would read as division).
+  const REGEX_OPENS_AFTER = "=(,:[!&|?{};+-*%~^<>";
+  let previous = "";
   for (let i = 0; i < source.length; i++) {
     const char = source[i];
     if (char === "/" && source[i + 1] === "*") {
@@ -117,7 +128,31 @@ function readCopy(source: string): string[] {
       i = end;
       continue;
     }
-    if (char !== '"' && char !== "'" && char !== "`") continue;
+    if (
+      char === "/" &&
+      previous !== "" &&
+      REGEX_OPENS_AFTER.includes(previous)
+    ) {
+      // Skip the body, honouring escapes and `[…]` classes (where an unescaped
+      // `/` is an ordinary character). An unterminated regex cannot span a line,
+      // so a newline ends the scan rather than eating the rest of the file.
+      let inClass = false;
+      i += 1;
+      while (i < source.length && source[i] !== "\n") {
+        const body = source[i];
+        if (body === "\\") i += 1;
+        else if (body === "[") inClass = true;
+        else if (body === "]") inClass = false;
+        else if (body === "/" && !inClass) break;
+        i += 1;
+      }
+      previous = "/";
+      continue;
+    }
+    if (char !== '"' && char !== "'" && char !== "`") {
+      if (!/\s/.test(char)) previous = char;
+      continue;
+    }
     const start = ++i;
     while (i < source.length && source[i] !== char) {
       i += source[i] === "\\" ? 2 : 1;
@@ -126,6 +161,7 @@ function readCopy(source: string): string[] {
     if (literal && !literal.startsWith(".") && !literal.startsWith("@")) {
       copy.push(literal);
     }
+    previous = char;
   }
   return copy;
 }
@@ -149,6 +185,40 @@ function findOffenders(pattern: RegExp): string[] {
   }
   return found;
 }
+
+describe("the copy scanner (PROTECTED)", () => {
+  // The guard below is only as good as what the scanner can see, so the scanner
+  // is pinned directly on the shape that used to blind it: `src/kernel/packs/
+  // iri.ts` declares two regexes that each contain a `"`, and a leak between
+  // them was invisible. DERIVED, so the probe leaks whatever this distribution
+  // is called.
+  const leak = `${BIN_NAME} sources update`;
+
+  it("reads a literal sitting between two regexes that contain a quote", () => {
+    const source = [
+      'const UNSAFE = /[<>"{}|\\\\^`\\s]/;',
+      `const LEAK = "${leak}";`,
+      'const EMBEDDABLE = /^[A-Za-z][\\w+.-]*:\\/\\/[^<>"\\s]+$/;',
+    ].join("\n");
+    expect(readCopy(source)).toEqual([leak]);
+  });
+
+  it("reads the same literal with no regex around it", () => {
+    expect(readCopy(`const LEAK = "${leak}";`)).toEqual([leak]);
+  });
+
+  it("reads a dividing slash as division, not as an opening regex", () => {
+    // The discriminating half: mistaking division for a regex would skip to the
+    // next `/` and hide everything in between, which is the same blindness in
+    // the other direction.
+    const source = [
+      "const half = total / 2;",
+      `const LEAK = "${leak}";`,
+      "const rate = done / all;",
+    ].join("\n");
+    expect(readCopy(source)).toEqual([leak]);
+  });
+});
 
 describe("kernel copy (PROTECTED)", () => {
   it("no kernel string names the distribution", () => {
