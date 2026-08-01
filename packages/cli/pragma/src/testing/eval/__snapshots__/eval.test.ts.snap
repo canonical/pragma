@@ -3,6 +3,11 @@
 exports[`eval harness — seed gate > runs the full seed (stable + read-noun) cases clean 1`] = `
 [
   {
+    "id": "content-block-list-is-channel-independent",
+    "kind": "content",
+    "passed": true,
+  },
+  {
     "id": "content-canonical-graph-has-4-components",
     "kind": "content",
     "passed": true,
@@ -54,11 +59,6 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
   },
   {
     "id": "content-native-prompts-list-nonempty",
-    "kind": "content",
-    "passed": true,
-  },
-  {
-    "id": "content-normal-channel-drops-beta-only-block",
     "kind": "content",
     "passed": true,
   },

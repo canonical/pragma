@@ -63,12 +63,12 @@ interface ValidatedStories {
  * is reported, through this same channel.
  *
  * A package story may only introduce a NOUN THE CLI DOES NOT HAVE. Every static
- * noun is reserved — not just the authored ones: `block` and `token` are
- * COMPOSITES whose module carries a hand-written verb alongside its story
- * (`block list`, `token add-config`), and the merge replaces a noun wholesale,
- * so letting a package claim one would silently delete a mutation and a
- * hand-written verb from a user who only declared a dependency. Overriding a
- * shipped noun stays a CONFIG decision — that file is the user's own.
+ * noun is reserved — not just the authored ones: `token` is a COMPOSITE whose
+ * module carries a hand-written verb alongside its story (`token add-config`),
+ * and the merge replaces a noun wholesale, so letting a package claim it would
+ * silently delete a mutation from a user who only declared a dependency.
+ * Overriding a shipped noun stays a CONFIG decision — that file is the user's
+ * own.
  *
  * @param records - The raw story records the answering pack carries.
  * @param staticModules - The static capabilities, to detect a story claiming a

@@ -74,11 +74,19 @@ exactly the domain that was published.`;
  * layer does not know the pack grammar (`parsePackDefinition` does).
  */
 const designSystemStories: readonly PackDefinition[] = [
+  // `block list` is declared content (L-OPEN-9): one unfiltered SELECT over
+  // the four UIBlock classes, listing ALL blocks — experimental and alpha ones
+  // included, for everyone — until filtering returns in declared form. The
+  // hand-written tier-chain/channel filtering (and its `--all-tiers` escape)
+  // is removed with the code, an owner-signed consequence. Display parity
+  // lives IN the query: `VALUES ?class` closes the type set, so the BINDs
+  // that derive `name` (declared name, else the IRI's local name), `type`
+  // (lowercased class local name), and `tier` (tier IRI's local name) operate
+  // over known shapes — the `standard` story's BIND/COALESCE precedent.
+  //
   // `block lookup` is served over the GraphQL fetch path (ONE generated document
-  // over the `UIBlock` interface covering Component/Pattern/Layout/Subcomponent);
-  // `block list` deliberately stays HAND-WRITTEN (tier-chain inheritance +
-  // channel + `--all-tiers`), so this story ships the lookup half only. Base
-  // level mirrors the old summary view (name/tier/summary); the default is
+  // over the `UIBlock` interface covering Component/Pattern/Layout/Subcomponent).
+  // Base level mirrors the old summary view (name/tier/summary); the default is
   // `detailed`, matching the old CLI which rendered anatomy and modifiers
   // without a flag. A derived name that maps onto no schema field is omitted
   // (OPTIONAL parity), so a graph lacking whenToUse/whenNotToUse degrades
@@ -93,8 +101,40 @@ const designSystemStories: readonly PackDefinition[] = [
   // (`block` rich-by-default, `standard` terse-by-default).
   {
     noun: "block",
-    description: "Look up design system blocks.",
+    description: "List all design system blocks.",
+    toolDescription:
+      "List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.",
     colophon: DESIGN_SYSTEM_COLOPHON,
+    list: {
+      query: [
+        "SELECT ?uri ?name ?type ?tier",
+        '       (GROUP_CONCAT(DISTINCT ?modName; separator=", ") AS ?modifiers)',
+        "WHERE {",
+        "  VALUES ?class { ds:Component ds:Pattern ds:Layout ds:Subcomponent }",
+        "  ?uri a ?class .",
+        "  OPTIONAL { ?uri ds:name ?dsName }",
+        "  OPTIONAL { ?uri ds:tier ?tierUri }",
+        "  OPTIONAL { ?uri ds:hasModifierFamily ?family . ?family ds:name ?modName }",
+        '  BIND(COALESCE(?dsName, REPLACE(STR(?uri), "^.*[/#]", "")) AS ?name)',
+        '  BIND(LCASE(REPLACE(STR(?class), "^.*[/#]", "")) AS ?type)',
+        '  BIND(REPLACE(STR(?tierUri), "^.*[/#]", "") AS ?tier)',
+        "}",
+        "GROUP BY ?uri ?name ?type ?tier",
+        "ORDER BY ?name",
+      ].join("\n"),
+      columns: [
+        { field: "name", label: "Name" },
+        { field: "type", label: "Type" },
+        { field: "tier", label: "Tier" },
+        { field: "modifiers", label: "Modifiers" },
+        { field: "uri", label: "IRI" },
+      ],
+      emptyRecovery: {
+        message:
+          "No blocks in the store. Build it from the configured design-system packs.",
+        cli: "sources update",
+      },
+    },
     lookup: {
       source: "graphql",
       toolDescription:

@@ -44,7 +44,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
-  it("emits the read nouns/verbs the packs add (block list hand-written, sample only where declared)", () => {
+  it("emits the read nouns/verbs the packs add (sample only where declared)", () => {
     expect(emitted.nouns.standard?.verbs.map((v) => v.v)).toEqual([
       "list",
       "categories",
@@ -68,10 +68,11 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "sample",
       "add-config",
     ]);
+    // block list is the story's compiled, unfiltered list (L-OPEN-9): no
+    // flags — the `--all-tiers` escape died with the hand-written filtering.
     expect(emitted.nouns.block?.verbs).toEqual([
       {
         v: "list",
-        flags: ["--all-tiers"],
         needsStore: true,
         mcp: "block_list",
       },

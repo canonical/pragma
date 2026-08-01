@@ -51,6 +51,11 @@ const BANNED: readonly BannedPattern[] = [
     reason:
       "retired `--llm` flag (now the `--format llm` form, auto-detected when piped)",
   },
+  {
+    pattern: /--all-tiers\b/,
+    reason:
+      "retired `--all-tiers` flag (L-OPEN-9: `block list` is the declared, unfiltered story — there is no tier filter to escape)",
+  },
 ];
 
 // Every shipped doc must be free of retired vocabulary: the README plus every

@@ -32,9 +32,10 @@ import { listVerbs, lookupVerbs } from "./liveReadSurface.js";
 
 /**
  * List verbs with a STRING or ENUM (narrowable, non-boolean) flag — e.g.
- * `standard_list --category`. Excludes boolean escape hatches like `block
- * list --all-tiers`, which reject a string value at the schema layer rather
- * than narrowing to an empty result.
+ * `standard_list --category`. Boolean flags are excluded: they reject a string
+ * value at the schema layer rather than narrowing to an empty result. (`block
+ * list --all-tiers` used to be the example; it retired with the hand-written
+ * filtering in L-OPEN-9.)
  */
 const filteredListVerbs = listVerbs
   .map((v) => {

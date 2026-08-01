@@ -44,7 +44,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   block_list: {
     category: "read",
     use_when:
-      "Browsing available components, patterns, layouts under current tier/channel",
+      "Browsing all components, patterns, layouts, and subcomponents in the store",
   },
   block_lookup: {
     category: "read",
@@ -62,7 +62,8 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   config_show: {
     category: "read",
-    use_when: "Checking active tier and channel before querying",
+    use_when:
+      "Checking the active configuration (tier, channel, detail) and which layer set each field",
   },
   graph_inspect: {
     category: "read",

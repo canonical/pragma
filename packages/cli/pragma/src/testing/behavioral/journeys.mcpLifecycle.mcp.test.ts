@@ -104,7 +104,10 @@ describe("MCP lifecycle — cold store recovers after sources_update (E2, C1)", 
     const names = (warm.data as { name: string }[])
       .map((row) => row.name)
       .sort();
-    expect(names).toEqual(["Button", "Card"]);
+    // The whole pack — `block_list` is the declared, unfiltered list since
+    // L-OPEN-9, so no channel hides Beta Badge and no tier join hides the
+    // untiered Orphan Widget.
+    expect(names).toEqual(["Beta Badge", "Button", "Card", "Orphan Widget"]);
   });
 });
 

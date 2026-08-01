@@ -2,7 +2,7 @@
  * MCP tool descriptions carry NO CLI-syntax leaks (a PR8 doc→MCP residue).
  *
  * A verb's `doc` doubles as its MCP tool description (`registerVerb`), so a doc
- * authored in CLI terms leaks flags an agent can't use — `--all-tiers`,
+ * authored in CLI terms leaks flags an agent can't use — `--category`,
  * `--dry-run`/`--yes`, or a `pragma …` shell command — into the agent-facing
  * catalog. Tool descriptions are NOT frozen in the covenant, so this is the guard
  * against the leak (and its recurrence). Storeless: listing tools never boots the
@@ -68,7 +68,11 @@ describe("MCP tool descriptions — no CLI-syntax leaks (doc→MCP residue)", ()
     const byName = new Map(
       descriptions.map((tool) => [tool.name, tool.description]),
     );
-    expect(byName.get("block_list")).not.toContain("--all-tiers");
+    // `block_list` was the original leak site (`--all-tiers`); L-OPEN-9 removed
+    // the flag AND made the description declared content (`toolDescription` in
+    // pragma.conf.ts), so the guard widens to "no CLI flag of any name" — the
+    // failure mode a re-authored story description could reintroduce.
+    expect(byName.get("block_list")).not.toMatch(/--[a-z]/);
     expect(byName.get("graph_query")).not.toContain("pragma ontology list");
     expect(byName.get("setup")).not.toMatch(/--dry-run|--yes/);
     expect(byName.get("upgrade")).not.toContain("--dry-run");

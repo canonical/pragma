@@ -48,11 +48,8 @@ pragma doctor
 Blocks are the components, patterns, and primitives registered in the design system ontology.
 
 ```bash
-# List all blocks in the current tier
+# List every block in the store
 pragma block list
-
-# List across all tiers
-pragma block list --all-tiers
 
 # Look up a specific block
 pragma block lookup Button
@@ -108,7 +105,7 @@ pragma token lookup color-text
 # Show current configuration
 pragma config show
 
-# Set the active tier (determines which blocks and components are visible)
+# Set the active tier (recorded and reported; it no longer scopes reads)
 pragma config tier global
 
 # Set the release channel

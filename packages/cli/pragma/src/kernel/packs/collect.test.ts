@@ -229,10 +229,10 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
   it("refuses ANY noun the CLI already ships, without throwing", () => {
     // Authored (`config`) and story-backed (`standard`) alike. A package may
     // only ADD a noun: `assembleEffectiveModules` replaces a noun WHOLESALE, so
-    // a package claiming `token`/`block` would delete the hand-written verb
-    // those composites exist for (`token add-config` is a MUTATION) from a
-    // user who did nothing but declare a dependency. Overriding a shipped noun
-    // stays a config decision.
+    // a package claiming `token` would delete the hand-written verb that
+    // composite exists for (`token add-config` is a MUTATION) from a user who
+    // did nothing but declare a dependency. Overriding a shipped noun stays a
+    // config decision.
     const result = validateStories(
       [
         record("pkg/stories/config.json", JSON.stringify(validPack("config"))),

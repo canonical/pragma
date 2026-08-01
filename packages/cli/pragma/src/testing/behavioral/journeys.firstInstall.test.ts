@@ -17,7 +17,6 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { blockModule } from "../../capabilities/block/index.js";
 import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
@@ -37,6 +36,10 @@ const JSON_FLAGS: GlobalFlags = {
 };
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
 
+const blockModule = storyModules.get("block");
+if (!blockModule) {
+  throw new Error('pragma.conf.ts declares no story for "block"');
+}
 const standardModule = storyModules.get("standard");
 if (!standardModule) {
   throw new Error('pragma.conf.ts declares no story for "standard"');
