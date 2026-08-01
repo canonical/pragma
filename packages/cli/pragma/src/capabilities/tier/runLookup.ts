@@ -17,6 +17,7 @@
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
+import { distributionSource } from "../../kernel/packs/types.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
@@ -40,7 +41,7 @@ async function selectTierNames(rt: PragmaRuntime): Promise<string[]> {
   const rows = await runSelect(
     rt,
     `SELECT ?name WHERE { ?tier a ${TIER_TYPE} ; ${VOCABULARY.altName} ?name } ORDER BY ?name`,
-    "tier",
+    distributionSource("tier"),
   );
   return rows
     .map((row) => row.name as string | undefined)
@@ -74,7 +75,7 @@ export async function runTierLookup(
   // store — a generated `ds:` query hitting an unknown prefix — is remapped to an
   // actionable STORE_UNAVAILABLE with `pragma sources update` recovery, instead of
   // a raw "Prefix not found" collapsing to INTERNAL_ERROR at the boundary.
-  const rows = await runSelect(rt, query, "tier");
+  const rows = await runSelect(rt, query, distributionSource("tier"));
   const uri = rows[0]?.uri;
   if (!uri) {
     // Rank "did you mean?" candidates from the full tier list — the only entity

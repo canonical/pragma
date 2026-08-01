@@ -23,14 +23,14 @@ import { parseSampleCount, pickRandom } from "./sample.js";
 import { applyPackFilters } from "./sparql/applyFilters.js";
 import { applyPackSearch } from "./sparql/applySearch.js";
 import { runSelect } from "./sparql/runSelect.js";
-import type { PackList, PackLookup, PackRow } from "./types.js";
+import type { PackList, PackLookup, PackRow, StorySource } from "./types.js";
 
 /** The highest canonical level — sample fetches everything for shape discovery. */
 const HIGHEST_LEVEL = "detailed";
 
 /** Facts a list-shaped run body needs beyond its `shape`. */
 export interface ListRunMeta {
-  readonly source: string;
+  readonly source: StorySource;
 }
 
 /**
@@ -62,7 +62,7 @@ export function makeListRun(
 export function makeLookupRun(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): (
   params: Record<string, unknown>,
@@ -105,7 +105,7 @@ export function makeLookupRun(
 export function makeSampleRun(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   defaultCount: number,
 ): (

@@ -177,7 +177,11 @@ export function assembleEffectiveModules(
     dynamic.set(entry.definition.noun, {
       name: entry.definition.noun,
       story: true,
-      verbs: compilePack(entry.definition, entry.source, prefixes),
+      verbs: compilePack(
+        entry.definition,
+        { label: entry.source, origin: "package" },
+        prefixes,
+      ),
       colophon: entry.definition.colophon,
     });
   }
@@ -202,7 +206,11 @@ export function assembleEffectiveModules(
       dynamic.set(definition.noun, {
         name: definition.noun,
         story: true,
-        verbs: compilePack(definition, "config", prefixes),
+        verbs: compilePack(
+          definition,
+          { label: "config", origin: "config" },
+          prefixes,
+        ),
         colophon: definition.colophon,
       });
     }

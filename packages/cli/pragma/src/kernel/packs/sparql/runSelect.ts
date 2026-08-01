@@ -13,7 +13,7 @@
 import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import type { PragmaRuntime } from "../../runtime/types.js";
-import type { PackRow } from "../types.js";
+import type { PackRow, StorySource } from "../types.js";
 
 /**
  * True when a trusted, generated query failed because the store does not know a
@@ -23,16 +23,15 @@ import type { PackRow } from "../types.js";
  * pack that binds that term: most often nothing was built at all, and otherwise
  * a store built from a pack whose vocabulary is simply different.
  *
- * Both are answered by the same lever (`sources update`), so both are remapped;
- * the message says which claim it is actually making, and does NOT assert the
- * store is unbuilt. Widening this any further would start hiding query bugs,
- * which is the failure this whole choke point exists to prevent.
+ * For a DISTRIBUTION story both are answered by the same lever
+ * (`sources update`), so both are remapped to it; the message says which claim
+ * it is actually making, and does NOT assert the store is unbuilt. Widening the
+ * detection any further would start hiding query bugs, which is the failure this
+ * whole choke point exists to prevent.
  *
- * KNOWN GAP, since stories may now arrive from a package or a user's config: a
- * third-party author's typo lands here too, and `sources update` cannot help
- * them. Distinguishing that from an unbuilt store needs the query's provenance
- * at the failure site, which this function is not given. Left for the tranche
- * that threads it.
+ * A story from a package or a user's config is a different diagnosis, which is
+ * why {@link runSelect} now takes the query's provenance: see
+ * {@link unboundPrefixError}.
  */
 function isUnseededStoreError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -40,33 +39,60 @@ function isUnseededStoreError(error: unknown): boolean {
 }
 
 /**
- * Run the facade query, remapping a store that cannot answer it. A generated
- * query hitting an unknown prefix is answered by building the store (the first
- * thing a fresh install hits) — surface the actionable STORE_UNAVAILABLE with
- * the canonical `sources update` recovery instead of a raw SPARQL "Prefix not
- * found" wrapped as INTERNAL_ERROR ("please report this issue"). Returns the
- * inferred facade result type, so this module stays clear of a static
- * `@canonical/ke` import (the lazy-dispatch guard).
+ * The error for a generated query naming a prefix the graph does not bind,
+ * diagnosed by WHO declared the story.
+ *
+ * A distribution story ships with the packs that bind its terms, so the honest
+ * reading is "nothing is built yet" (or "what is built came from a pack with a
+ * different vocabulary") — both fixed by `sources update`, so it keeps today's
+ * STORE_UNAVAILABLE and that recovery.
+ *
+ * A config or package story is the author's own: they named a prefix the graph
+ * does not bind, and `sources update` cannot help them — `buildIndex` already
+ * treats the same condition as the ordinary third-party case and degrades
+ * gracefully, while this path escalated it. It is a CONFIG_ERROR naming the
+ * story, which is the module's own precedent for a declaration that cannot be
+ * served (ruling R3).
  */
-async function queryOrRemap(rt: Pick<PragmaRuntime, "query">, query: string) {
+function unboundPrefixError(source: StorySource): PragmaError {
+  if (source.origin !== "distribution") {
+    return PragmaError.configError(
+      `Story query in ${source.label} uses a prefix the graph does not bind. ` +
+        `Declare it under \`prefixes\`, or use a term the configured packs define.`,
+    );
+  }
+  return PragmaError.storeUnavailable(
+    "The local store was not built from a pack that defines every term this read uses.",
+    {
+      recovery: cliRecovery(
+        "sources update",
+        "Build the local store from the configured packs.",
+        // An agent recovers by calling the tool, then retrying (PR9 C1 cold-
+        // store retry makes the post-update retry succeed).
+        { tool: "sources_update" },
+      ),
+    },
+  );
+}
+
+/**
+ * Run the facade query, remapping a store that cannot answer it. A generated
+ * query hitting an unknown prefix surfaces an actionable error — chosen by the
+ * story's provenance, see {@link unboundPrefixError} — instead of a raw SPARQL
+ * "Prefix not found" wrapped as INTERNAL_ERROR ("please report this issue").
+ * Returns the inferred facade result type, so this module stays clear of a
+ * static `@canonical/ke` import (the lazy-dispatch guard).
+ */
+async function queryOrRemap(
+  rt: Pick<PragmaRuntime, "query">,
+  query: string,
+  source: StorySource,
+) {
   try {
     return await rt.query.sparql(query);
   } catch (error) {
     if (error instanceof PragmaError) throw error;
-    if (isUnseededStoreError(error)) {
-      throw PragmaError.storeUnavailable(
-        "The local store was not built from a pack that defines every term this read uses.",
-        {
-          recovery: cliRecovery(
-            "sources update",
-            "Build the local store from the configured packs.",
-            // An agent recovers by calling the tool, then retrying (PR9 C1 cold-
-            // store retry makes the post-update retry succeed).
-            { tool: "sources_update" },
-          ),
-        },
-      );
-    }
+    if (isUnseededStoreError(error)) throw unboundPrefixError(source);
     throw error;
   }
 }
@@ -74,21 +100,23 @@ async function queryOrRemap(rt: Pick<PragmaRuntime, "query">, query: string) {
 /**
  * @param rt - The runtime (its query facade over the lazy store).
  * @param query - SPARQL SELECT text (prefixes auto-applied by the store).
- * @param source - The pack source, for error attribution.
+ * @param source - The story's provenance: its label for attribution, and the
+ *   layer that declared it, which decides how an unbound prefix is diagnosed.
  * @returns One record per row, keyed by SELECT variable name.
- * @throws PragmaError CONFIG_ERROR when the query is not a SELECT;
- *   STORE_UNAVAILABLE (exit 3) when the store is unseeded.
+ * @throws PragmaError CONFIG_ERROR when the query is not a SELECT, or when a
+ *   config/package story names a prefix the graph does not bind;
+ *   STORE_UNAVAILABLE (exit 3) when a distribution story finds one.
  * @note Impure — queries the store through the facade.
  */
 export async function runSelect(
   rt: Pick<PragmaRuntime, "query">,
   query: string,
-  source: string,
+  source: StorySource,
 ): Promise<PackRow[]> {
-  const result = await queryOrRemap(rt, query);
+  const result = await queryOrRemap(rt, query, source);
   if (result.type !== "select") {
     throw PragmaError.configError(
-      `Story query in ${source} must be a SELECT (got ${result.type}).`,
+      `Story query in ${source.label} must be a SELECT (got ${result.type}).`,
     );
   }
   return result.bindings as PackRow[];

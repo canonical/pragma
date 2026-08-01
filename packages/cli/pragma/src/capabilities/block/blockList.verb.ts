@@ -11,6 +11,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
+import { distributionSource } from "../../kernel/packs/types.js";
 import type {
   ColumnDef,
   RenderListOptions,
@@ -146,7 +147,7 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
       layers.config.channel,
       params.allTiers === true,
     );
-    const rows = await runSelect(rt, query, "block");
+    const rows = await runSelect(rt, query, distributionSource("block"));
     return rows.map((row) => ({
       uri: row.component ?? "",
       // An unnamed block still needs a token to show — fall back to its IRI's

@@ -37,6 +37,7 @@ import type {
   PackLookup,
   PackRow,
   PackSearch,
+  StorySource,
 } from "./types.js";
 
 // The run bodies pull the SPARQL/GraphQL fetch layer; they are dynamic-imported
@@ -64,7 +65,7 @@ const READ_CAPABILITY = {
  */
 export function compilePack(
   definition: PackDefinition,
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec[] {
   const { noun } = definition;
@@ -113,7 +114,7 @@ interface ListVerbMeta {
   readonly summary: string;
   /** The authored MCP tool description (from `toolDescription`), if any. */
   readonly doc?: string;
-  readonly source: string;
+  readonly source: StorySource;
   readonly prefixes: Readonly<Record<string, string>>;
 }
 
@@ -162,7 +163,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
 function compileLookupVerb(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec {
   // Derive-by-default: every lookup completes its `<name>` from the pack index
@@ -216,7 +217,7 @@ function compileLookupVerb(
 function compileSampleVerb(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec {
   const defaultCount = sampleDefaultCount(lookup);

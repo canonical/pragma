@@ -28,7 +28,12 @@ import {
   buildNameResolveQuery,
 } from "./sparql/buildLookupQuery.js";
 import { runSelect } from "./sparql/runSelect.js";
-import type { PackChildRow, PackEntity, PackLookup } from "./types.js";
+import type {
+  PackChildRow,
+  PackEntity,
+  PackLookup,
+  StorySource,
+} from "./types.js";
 
 /** A structured per-query lookup failure (never rejects the whole batch). */
 export interface LookupError {
@@ -57,7 +62,7 @@ export async function resolveLookup(
   lookup: PackLookup,
   noun: string,
   queries: readonly string[],
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
 ): Promise<LookupOutput> {
@@ -110,7 +115,7 @@ async function expandQueries(
   rt: LookupRuntime,
   lookup: PackLookup,
   noun: string,
-  source: string,
+  source: StorySource,
   queries: readonly string[],
 ): Promise<{ names: string[]; globErrors: LookupError[] }> {
   if (!queries.some(isGlobPattern))
@@ -143,7 +148,7 @@ async function lookupOne(
   lookup: PackLookup,
   noun: string,
   query: string,
-  source: string,
+  source: StorySource,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
 ): Promise<PackEntity> {
@@ -172,7 +177,9 @@ async function lookupOne(
       lookup,
       base.uri,
       base.name ?? query,
-      source,
+      // The GraphQL lane's only use of the source is CONFIG_ERROR attribution,
+      // which is right for any origin — so it takes the label, not provenance.
+      source.label,
       prefixes,
       level,
     );
@@ -222,7 +229,7 @@ function looksLikeIri(query: string): boolean {
 export async function listEntityNames(
   rt: LookupRuntime,
   lookup: PackLookup,
-  source: string,
+  source: StorySource,
 ): Promise<string[]> {
   const rows = await runSelect(rt, buildLookupNamesQuery(lookup), source);
   return rows.map((row) => row.name ?? "").filter((name) => name !== "");
