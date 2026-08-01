@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://canonical.com/schemas/summon/generator-definition.v1.schema.json",
+  "$comment": "Owner ruling (2026-07-31), verbatim: the shared contract is not the generator definition (which arguably belongs in summon) — it is the general command types seam and the compositional logic. So THIS file is summon's own DOMAIN spec: what a generator is, in summon's terms, versioned so a change to it is visible. It does not describe, and must not be taken to describe, the contract between a CLI kernel and its commands; extracting that seam is a separate program with its own ADR. v1 is the shape summon-core ships today. A backwards-incompatible change gets a v2 file beside this one, not an edit here.",
+  "title": "Summon generator definition (v1)",
+  "description": "The DECLARATIVE projection of a GeneratorDefinition — the parts expressible as data. `generate`, and a prompt's `when`/`validate`, are functions carried by the module and cannot appear in JSON; they are documented here as code-carried so that a reader of this schema is not misled into thinking a JSON document alone is a generator.",
+  "type": "object",
+  "required": ["meta", "prompts"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": { "$ref": "#/$defs/meta" },
+    "prompts": {
+      "description": "The questions whose answers `generate` receives, in ask order.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/prompt" }
+    },
+    "generate": {
+      "$comment": "CODE-CARRIED, not data: a pure function `(answers) => Task<void>`. Present on every real generator; absent from any JSON projection of one.",
+      "description": "Declared here for completeness only — a JSON document cannot carry it.",
+      "type": "null"
+    }
+  },
+  "$defs": {
+    "meta": {
+      "title": "Generator metadata",
+      "description": "What discovery, help and the generated-file stamp read.",
+      "type": "object",
+      "required": ["name", "displayName", "description", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Generator name, used in the CLI path (e.g. `component/react`).",
+          "type": "string",
+          "minLength": 1
+        },
+        "displayName": {
+          "description": "The name written into generated-file stamp comments. Distinct from `name` when the stamp should not be the CLI path (e.g. `@canonical/summon-component:react`). Load-bearing for byte equality: two bins agree on a tree only if they agree on this.",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "One-line description shown in generator listings.",
+          "type": "string"
+        },
+        "version": {
+          "description": "Semantic version of the generator. Also written into the stamp.",
+          "type": "string",
+          "minLength": 1
+        },
+        "author": {
+          "description": "Author name or email.",
+          "type": "string"
+        },
+        "help": {
+          "description": "Extended help text shown for `summon <topic>` and `--help`.",
+          "type": "string"
+        },
+        "examples": {
+          "description": "Usage examples shown in help; each one a common invocation.",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "prompt": {
+      "title": "Prompt definition",
+      "description": "One question. Each prompt also becomes a CLI flag, kebab-cased from `name` (`componentPath` → `--component-path`).",
+      "type": "object",
+      "required": ["name", "message", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "description": "Unique identifier — the answer key and the flag name.",
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "description": "Question text displayed to the user.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Kind of input.",
+          "enum": ["text", "confirm", "select", "multiselect"]
+        },
+        "default": {
+          "$comment": "Unconstrained on purpose: the value's type follows `type` (string for text/select, boolean for confirm, array for multiselect), and pinning that here would duplicate a rule `validateAnswers` already owns."
+        },
+        "choices": {
+          "description": "Options for `select`/`multiselect` prompts.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        },
+        "when": {
+          "$comment": "CODE-CARRIED, not data: `(answers) => boolean`, evaluated against the answers collected so far.",
+          "description": "Declared here for completeness only — a JSON document cannot carry it.",
+          "type": "null"
+        },
+        "validate": {
+          "$comment": "CODE-CARRIED, not data: `(value) => boolean | string`, returning true or an error message.",
+          "description": "Declared here for completeness only — a JSON document cannot carry it.",
+          "type": "null"
+        },
+        "group": {
+          "description": "Group name for organizing options in `--help`. Ungrouped prompts appear under \"Options\".",
+          "type": "string"
+        },
+        "positional": {
+          "description": "Whether this prompt can be given as a positional argument. At most one per generator, and only a `text` prompt.",
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
