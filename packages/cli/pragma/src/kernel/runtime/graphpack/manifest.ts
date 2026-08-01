@@ -3,6 +3,13 @@
  * directory without a valid manifest is a torn build (writes land in a temp
  * directory and the manifest is renamed in last), so an absent or invalid
  * manifest means "treat the pack as not there".
+ *
+ * This module is on the storeless FAST PATH (`resolveSources` → `packIsComplete`
+ * → here, while `__complete` builds the command tree), so it validates the ~1 KB
+ * manifest structurally instead of importing zod to do it — that import was
+ * ~3–4 ms of a ~30 ms budget. {@link validateManifest} is held to the schema's
+ * behaviour by `graphpack.test.ts`, which pins the two to accept the same inputs
+ * in both directions; `schemas.ts` remains the executable specification.
  */
 
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -12,10 +19,60 @@ import {
   INDEX_FILE,
   MANIFEST_FILE,
   type Manifest,
-  manifestSchema,
   SCHEMA_FILE,
   STORIES_FILE,
 } from "./types.js";
+
+/** Whether `value` is a plain object of strings — the `prefixes` map's shape. */
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every((entry) => typeof entry === "string")
+  );
+}
+
+/**
+ * Validate a parsed `manifest.json` payload structurally.
+ *
+ * Mirrors `manifestSchema` exactly, including its STRIP semantics: a valid
+ * manifest is reconstructed field by field, so an unknown key in the file is
+ * dropped rather than carried into the returned object (zod's `z.object`
+ * default, which several callers rely on when they re-serialize a manifest).
+ *
+ * @param value - The `JSON.parse` result to validate.
+ * @returns The manifest, or `undefined` when the payload does not conform.
+ */
+export function validateManifest(value: unknown): Manifest | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  const raw = value as Record<string, unknown>;
+  const { tripleCount, entityCount } = raw;
+  if (
+    typeof raw.name !== "string" ||
+    typeof raw.version !== "string" ||
+    typeof raw.sourceRef !== "string" ||
+    typeof raw.contentHash !== "string" ||
+    typeof raw.createdAt !== "string" ||
+    !isStringRecord(raw.prefixes) ||
+    (tripleCount !== undefined && typeof tripleCount !== "number") ||
+    (entityCount !== undefined && typeof entityCount !== "number")
+  ) {
+    return undefined;
+  }
+  return {
+    name: raw.name,
+    version: raw.version,
+    sourceRef: raw.sourceRef,
+    contentHash: raw.contentHash,
+    prefixes: raw.prefixes,
+    createdAt: raw.createdAt,
+    ...(tripleCount === undefined ? {} : { tripleCount }),
+    ...(entityCount === undefined ? {} : { entityCount }),
+  };
+}
 
 /**
  * Read and validate a pack directory's manifest.
@@ -28,7 +85,7 @@ export function readManifest(dir: string): Manifest | undefined {
   const path = join(dir, MANIFEST_FILE);
   if (!existsSync(path)) return undefined;
   try {
-    return manifestSchema.parse(JSON.parse(readFileSync(path, "utf-8")));
+    return validateManifest(JSON.parse(readFileSync(path, "utf-8")));
   } catch {
     return undefined;
   }

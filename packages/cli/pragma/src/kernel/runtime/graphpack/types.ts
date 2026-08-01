@@ -1,6 +1,6 @@
 /**
- * Graphpack artifact contracts — the five files a built pack directory holds
- * and the zod schemas that keep them honest on read.
+ * Graphpack artifact contracts — the five files a built pack directory holds,
+ * as hand-written types with NO runtime dependency.
  *
  * A pack is the content-addressed, boot-ready form of a set of RDF sources:
  * `data.nq` (the store's n-quads dump — boots via ke's cache path, no TTL
@@ -22,18 +22,15 @@
  * buildPack produces" — extend the set here and that test fails until every
  * side follows.
  *
- * Its zod dependency IS on the storeless fast path, contrary to what this
- * docblock used to claim. `manifest.ts` imports {@link manifestSchema} as a
- * value for `readManifest`, `packIsComplete` calls it, and `resolveSources`
- * calls that — so building the command tree evaluates zod, `__complete`
- * included. Measured at ~3–4 ms of a ~30 ms fast path. `capabilities/lazy.test.ts`
- * pins this module as the ONLY zod importer on that graph, so the cost cannot
- * grow silently and removing it cannot pass unnoticed. Splitting the schemas
- * out so the boot decision reads a manifest without zod is the fix, and it is
- * the pack runtime's to make, not this type module's.
+ * This module is on the STORELESS FAST PATH — `capabilities/index.ts` →
+ * `resolveSources` → `packIsComplete` → `readManifest` reaches it while
+ * `__complete` builds the command tree — so it carries NO runtime import at
+ * all. It used to hold the zod schemas too, which put zod on that graph through
+ * a genuine value import and cost ~3–4 ms of a ~30 ms budget; they now live in
+ * `schemas.ts`, imported only by the two readers that are already off the fast
+ * path. `capabilities/lazy.test.ts` pins the result — no module on that graph
+ * imports zod — so the split cannot silently close.
  */
-
-import { z } from "zod";
 
 /** The n-quads store dump — ke boots it via `createStore({ cache })`. */
 export const DATA_FILE = "data.nq";
@@ -106,37 +103,24 @@ export interface PackIndex {
   readonly instanceCountByType: Readonly<Record<string, number>>;
 }
 
-/** zod schema validating a persisted {@link PackIndexEntity}. */
-export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
-  name: z.string(),
-  type: z.string(),
-  uri: z.string().optional(),
-  prefixed: z.string().optional(),
-  types: z.array(z.string()).optional(),
-  label: z.string().nullable().optional(),
-  altNames: z.array(z.string()).optional(),
-  box: z.enum(["tbox", "abox"]).optional(),
-  description: z.string().nullable().optional(),
-});
-
-/** zod schema validating a persisted {@link PackIndex}. */
-export const packIndexSchema: z.ZodType<PackIndex> = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
-  contentHash: z.string(),
-  prefixes: z.record(z.string(), z.string()),
-  entities: z.array(packIndexEntitySchema),
-  instanceCountByType: z.record(z.string(), z.number()),
-});
-
-/** zod schema validating a persisted `manifest.json`. */
-export const manifestSchema = z.object({
-  name: z.string(),
-  version: z.string(),
+/**
+ * Pack provenance and the prefixes the store was built with — the parsed shape
+ * of `manifest.json`.
+ *
+ * Hand-written rather than inferred from a zod schema, so reading a manifest
+ * needs no validator library (see the module docblock). `schemas.ts`'s
+ * {@link manifestSchema} is annotated against this type, so the two cannot
+ * drift in their FIELDS; `graphpack.test.ts` pins that they do not drift in
+ * what they ACCEPT either.
+ */
+export interface Manifest {
+  readonly name: string;
+  readonly version: string;
   /** The config `packs` ref this pack was built from (verbatim), or a label. */
-  sourceRef: z.string(),
-  contentHash: z.string(),
-  prefixes: z.record(z.string(), z.string()),
-  createdAt: z.string(),
+  readonly sourceRef: string;
+  readonly contentHash: string;
+  readonly prefixes: Readonly<Record<string, string>>;
+  readonly createdAt: string;
   /**
    * The store's triple count at build time. Cross-checked against the booted
    * store so a truncated-but-non-empty `data.nq` (a partial graph that passes
@@ -144,14 +128,11 @@ export const manifestSchema = z.object({
    * than being served silently (A9). Optional — packs built before this field
    * skip the check.
    */
-  tripleCount: z.number().optional(),
+  readonly tripleCount?: number;
   /**
-   * The distinct abox entity count (matches {@link entityTotal}). Lets
+   * The distinct abox entity count (matches `entityTotal`). Lets
    * `sources status` report the figure without parsing the whole `index.json`
    * (A10). Optional — packs built before this field fall back to the index read.
    */
-  entityCount: z.number().optional(),
-});
-
-/** Pack provenance and the prefixes the store was built with. */
-export type Manifest = z.infer<typeof manifestSchema>;
+  readonly entityCount?: number;
+}

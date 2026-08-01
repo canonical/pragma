@@ -13,8 +13,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildPack } from "./build.js";
 import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
 import { contentHash } from "./hash.js";
-import { packIsComplete } from "./manifest.js";
+import { packIsComplete, validateManifest } from "./manifest.js";
 import { readPack } from "./read.js";
+import { manifestSchema } from "./schemas.js";
 import { activeStories } from "./stories.js";
 import type { PackIndex } from "./types.js";
 import {
@@ -257,6 +258,55 @@ describe("graphpack manifest — persisted counts (A9/A10)", () => {
     // TTL declares two individuals (ex:Button, ex:Card) → two abox subjects.
     expect(manifest.entityCount).toBe(2);
   });
+});
+
+describe("the manifest hand validator agrees with the schema (PROTECTED)", () => {
+  // `readManifest` is on the storeless fast path, so it validates structurally
+  // instead of importing zod. `manifestSchema` stays the executable spec: this
+  // pins the two to accept EXACTLY the same payloads, in both directions, so a
+  // rule changed in one and not the other fails here rather than at a read.
+  const VALID = {
+    name: "pack",
+    version: "1.0.0",
+    sourceRef: "git+https://example.invalid#main",
+    contentHash: "abc123",
+    prefixes: { ex: "https://example.invalid#" },
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  const cases: Array<[string, unknown]> = [
+    ["the minimal valid manifest", VALID],
+    ["with both optional counts", { ...VALID, tripleCount: 3, entityCount: 2 }],
+    ["with only tripleCount", { ...VALID, tripleCount: 0 }],
+    ["with only entityCount", { ...VALID, entityCount: 0 }],
+    ["with empty prefixes", { ...VALID, prefixes: {} }],
+    ["with an unknown key", { ...VALID, extra: "ignored" }],
+    ["a missing required field", { ...VALID, name: undefined }],
+    ["a required field of the wrong type", { ...VALID, version: 2 }],
+    ["a non-string sourceRef", { ...VALID, sourceRef: null }],
+    ["a non-string contentHash", { ...VALID, contentHash: 7 }],
+    ["a non-string createdAt", { ...VALID, createdAt: 0 }],
+    ["prefixes as an array", { ...VALID, prefixes: [] }],
+    ["prefixes holding a non-string", { ...VALID, prefixes: { ex: 1 } }],
+    ["prefixes as null", { ...VALID, prefixes: null }],
+    ["a non-number tripleCount", { ...VALID, tripleCount: "3" }],
+    ["a non-number entityCount", { ...VALID, entityCount: "2" }],
+    ["a JSON array", [VALID]],
+    ["a JSON string", "manifest"],
+    ["null", null],
+    ["a number", 4],
+  ];
+
+  for (const [label, payload] of cases) {
+    it(`accepts/rejects ${label} exactly as manifestSchema does`, () => {
+      const bySchema = manifestSchema.safeParse(payload);
+      const byHand = validateManifest(payload);
+      expect(byHand !== undefined, label).toBe(bySchema.success);
+      // Agreement on the VALUE too, which is where strip semantics live: an
+      // unknown key must be dropped by both, not carried by one.
+      if (bySchema.success) expect(byHand).toEqual(bySchema.data);
+    });
+  }
 });
 
 describe("graphpack read — truncated data cache (A9)", () => {
