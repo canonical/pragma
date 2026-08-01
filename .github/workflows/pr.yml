@@ -68,6 +68,11 @@ jobs:
           INSTALL_PLAYWRIGHT: ${{ steps.pw.outputs.required }}
         run: bash .github/actions/setup-env/install-playwright.sh
 
+        # Unconditional: the completion suite's zsh/fish cases skip silently
+        # without them, and a skip is not proof.
+      - name: Install shells the completion suite drives
+        run: bash .github/actions/setup-env/install-shells.sh
+
       - name: Test
         run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 

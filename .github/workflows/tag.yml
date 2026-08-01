@@ -78,6 +78,11 @@ jobs:
           INSTALL_PLAYWRIGHT: 'true'
         run: bash .github/actions/setup-env/install-playwright.sh
 
+        # Unconditional: the completion suite's zsh/fish cases skip silently
+        # without them, and a skip is not proof.
+      - name: Install shells the completion suite drives
+        run: bash .github/actions/setup-env/install-shells.sh
+
       - name: Test
         run: bun run test
 
