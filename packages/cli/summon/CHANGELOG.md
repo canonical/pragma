@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+### BREAKING CHANGES
+
+* **`@canonical/cli-core` is deleted.** It was the v1 shared-CLI framework, and
+  the v1 name dies with the v1 model: the pragma kernel dropped the dependency
+  when it built its own command grammar, and every symbol summon still imported
+  from it had already been moved down into `@canonical/summon-core` and was
+  being served by a re-export shim. The summon bin now imports those symbols
+  from `@canonical/summon-core` directly. `packages/cli/` is left with the two
+  product binaries and zero framework packages.
+
+  For consumers: `@canonical/cli-core` is no longer published. If you imported
+  from it, the surviving symbols — `runGeneratorTask`, `createGeneratorStamp`,
+  `createStampOnEffectStart`, `answerPromptWithDefaults`, the effect formatters
+  (`formatEffectLine`, `formatEffectWithContent`, `formatContentPreview`,
+  `formatLlmHelp`/`formatLlmJson`/`formatLlmMarkdown`, `isVisibleEffect`, …) —
+  are exported by `@canonical/summon-core` under the same names, except
+  `promptForAnswers`, which is `collectAnswers` there. The rest of cli-core (the
+  v1 `CommandDefinition` type, `registerAll`, its help/completion derivation and
+  output adapters, `convertGenerator`, `executeGenerator`) has no successor in
+  this package: those concerns live inside the pragma kernel's command grammar,
+  whose extraction into a shared package is tracked separately.
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon

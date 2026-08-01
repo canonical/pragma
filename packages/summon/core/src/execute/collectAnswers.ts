@@ -10,7 +10,8 @@
  * remaining definition maps onto the task alphabet's `PromptQuestion`.
  *
  * Moved into summon-core (from the v1 cli-core `promptForAnswers`) as the
- * answer-collection phase of {@link execute}.
+ * answer-collection phase of {@link execute}. The cli-core export that kept the
+ * old name alive is gone with that package.
  */
 
 import {

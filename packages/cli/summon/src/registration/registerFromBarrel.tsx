@@ -13,12 +13,10 @@ import {
   formatEffectWithContent,
   formatLlmJson,
   formatLlmMarkdown,
+  type GeneratorDefinition,
   isVisibleEffect,
-} from "@canonical/cli-core";
-import type {
-  GeneratorDefinition,
-  PromptDefinition,
-  StampConfig,
+  type PromptDefinition,
+  type StampConfig,
 } from "@canonical/summon-core";
 import { dryRun } from "@canonical/task";
 import { runUndo } from "@canonical/task/node";

@@ -11,7 +11,9 @@
  *
  * Moved into summon-core (from the v1 cli-core) so it sits below both the
  * summon bin and the pragma kernel — the shared seam the byte-equality
- * guarantee rests on. cli-core re-exports it while it is retired.
+ * guarantee rests on, and the one `testing/conformance/produceReference` runs.
+ * Both bins import it from HERE; the cli-core re-export shim is gone with that
+ * package.
  */
 
 import type { Task } from "@canonical/task";

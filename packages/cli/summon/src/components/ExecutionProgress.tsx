@@ -8,8 +8,8 @@ import {
   answerPromptWithDefaults,
   createStampOnEffectStart,
   runGeneratorTask,
-} from "@canonical/cli-core";
-import type { StampConfig } from "@canonical/summon-core";
+  type StampConfig,
+} from "@canonical/summon-core";
 import {
   describeEffect,
   type Effect,

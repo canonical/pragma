@@ -4,8 +4,8 @@
  * Moved into summon-core (from the v1 cli-core `formatEffects`) so both the
  * summon bin and the pragma kernel share one effect-formatting surface without
  * either importing the other. The pragma `create` render layer reuses these
- * helpers to project a {@link GeneratorResult}; cli-core re-exports them while
- * it is retired.
+ * helpers to project a {@link GeneratorResult}. Both bins now import them from
+ * HERE — the cli-core re-export shim went with that package.
  */
 
 import * as path from "node:path";
