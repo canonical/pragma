@@ -40,6 +40,17 @@ import type {
  * The allowlist every inlined completion token must match: an alphanumeric
  * head, then word/URI-ish characters. No whitespace, quotes, `$`, backticks,
  * semicolons, or globs — nothing a shell could expand or split.
+ *
+ * KNOWN GAP, deliberately not closed: it admits shell RESERVED WORDS — `esac`,
+ * `in`, `do`, `done`, `fi`. A noun so named emits a `case` arm bash and zsh both
+ * refuse to parse, so `_pragma` is never defined and the user gets NO completion
+ * at all rather than a wrong candidate (`fish -n` does not catch it either). The
+ * gap is owned by the syntax gates, not by this regex: `shellDrive.test.ts`
+ * runs `bash -n`/`zsh -n` over the emitted scripts, so the day a live noun is
+ * named `done` the build fails loudly and names the file. A denylist here would
+ * be new production code guarding a case nothing in the tree exhibits — and a
+ * partial one (reserved words differ across families and versions) reads as
+ * more protection than it gives.
  */
 export const SAFE_TOKEN_RE = /^[A-Za-z0-9][A-Za-z0-9@/:._+-]*$/;
 

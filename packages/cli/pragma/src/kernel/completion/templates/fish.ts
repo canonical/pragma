@@ -8,7 +8,9 @@
  * via a command substitution — fish treats substitution results as literal
  * candidates (split on newlines, never evaluated). Each name rule ANDs a
  * `__<bin>_minchars` guard into its condition, so the exec waits for `minChars`
- * typed chars. No `eval`, no backticks.
+ * typed chars, and a name-source POSITIONAL also ANDs `__<bin>_notflag` — fish
+ * evaluates every matching rule rather than one exclusive branch, so without it
+ * a structural `--<TAB>` would spawn the delegate too. No `eval`, no backticks.
  *
  * Static-tier coarseness (the resolver is exact): positional value rules are
  * not index-gated, and a mixed self-verb + sub-verb noun only offers its
@@ -23,6 +25,11 @@ function fnBase(binName: string): string {
   return `__${binName.replace(/[^A-Za-z0-9_]/g, "_")}`;
 }
 
+/** AND a guard into a rule's condition (or start one with it). */
+function and(condition: string | undefined, guard: string): string {
+  return condition ? `${condition}; and ${guard}` : guard;
+}
+
 /** AND a `minChars` guard into a name rule's condition (or start one). */
 function withMinChars(
   fn: string,
@@ -30,8 +37,7 @@ function withMinChars(
   minChars: number,
 ): string | undefined {
   if (minChars <= 0) return condition;
-  const guard = `${fn}_minchars ${minChars}`;
-  return condition ? `${condition}; and ${guard}` : guard;
+  return and(condition, `${fn}_minchars ${minChars}`);
 }
 
 /** The rule fragment completing one flag of a view (or a global flag). */
@@ -93,9 +99,20 @@ function positionalRule(
     if (positional.source.kind === "names") names = true;
     if (positional.source.kind === "files") files = true;
   }
-  // A name source gates its exec on `minChars`; a values/files positional keeps
-  // the bare position condition so it still completes on bare TAB.
-  const cond = names ? withMinChars(fn, condition, minChars) : condition;
+  // A name source gates its exec on `minChars` AND on the current token not
+  // being a flag; a values/files positional keeps the bare position condition
+  // so it still completes on bare TAB.
+  //
+  // The `_notflag` half is what keeps a purely STRUCTURAL `--<TAB>` free of
+  // exec. fish evaluates every `complete` rule matching a position, so without
+  // it this positional rule fires alongside the flag-name rules the moment the
+  // token clears `minChars` — and `--` is two characters. That cost a process
+  // spawn per TAB on a flag name AND put the delegate's answer in the user's
+  // candidate list. bash and zsh route the same context through one exclusive
+  // `case` arm and exec nothing; this is how fish joins them.
+  const cond = names
+    ? withMinChars(fn, and(condition, `${fn}_notflag`), minChars)
+    : condition;
   const parts = [`complete -c ${binName} -n "${cond}"`];
   if (names) {
     parts.push(`-a "(${binName} __complete -- (${fn}_words) 2>/dev/null)"`);
@@ -147,6 +164,11 @@ export function fishScript(
           "end",
         ]
       : []),
+    // True when the token being completed is not a flag, so a name-source
+    // positional rule stays out of a structural `--<TAB>`.
+    `function ${fn}_notflag`,
+    "    not string match -q -- '-*' (commandline -ct)",
+    "end",
     `function ${fn}_at`,
     "    set -l cmd (commandline -opc)",
     "    set -l noun ''",
