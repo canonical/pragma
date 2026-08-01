@@ -8,8 +8,8 @@
  *
  * `use_when` strings for the surviving tools are ported verbatim from the old
  * shell's `domains/llm/data/toolCatalog.ts`; the net-new v2 tools (config_set,
- * graph_query, setup, upgrade, doctor, capabilities, prompt_*, token_add-config,
- * sources_*, tier_lookup, create_*) are authored here.
+ * graph_query, setup, upgrade, doctor, capabilities, prompt_*, sources_*,
+ * tier_lookup, create_*) are authored here.
  */
 
 import { BIN_NAME } from "../../constants.js";
@@ -198,10 +198,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "write",
     use_when:
       "Building or refreshing the knowledge-graph pack from the configured packs",
-  },
-  "token_add-config": {
-    category: "write",
-    use_when: "Generating a tokens.config.mjs for the terrazzo token pipeline",
   },
   upgrade: {
     category: "write",

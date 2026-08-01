@@ -113,7 +113,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "prompt-tokens-config-maps-to-token-add-config",
+    "id": "prompt-tokens-config-maps-to-nothing",
     "kind": "prompt",
     "passed": true,
   },
@@ -183,7 +183,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "tool-token-add-config-is-plan-first",
+    "id": "tool-token-noun-is-read-only",
     "kind": "tool",
     "passed": true,
   },

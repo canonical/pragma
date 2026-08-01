@@ -1,5 +1,5 @@
 {
-  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). L-PR6 (PRA-107 ruling, PROJECT FROM CONFIG) records the WIRE IDENTITY rule as mcpSurface.serverInfo: serverInfo PROJECTS from the distribution — name is the declared distribution name, version the package version — so a fork's server introduces itself under its own name (surface.test.ts pins the covenant text, identity.test.ts pins the wire from a fork's config); the resource template pragma:{+uri}, the pragma:<uri> URIs it mints, and the pragma/box / pragma/instanceCount _meta keys stay FROZEN protocol identity every distribution serves unchanged — clients persist resource URIs, and the measured half-derivation (template renamed, minting sites literal) made all 653 of a fork's resources unreadable; tool count unchanged. L-OPEN-9 removes the non-compliant commands — reads the declared grammar can express become declared content, the rest is removed: `tier_lookup` becomes the tier story's compiled lookup (args `<name>` → `<name...>`, the variadic every pack lookup emits); `block_list` becomes the block story's compiled list (`--all-tiers` retired with the hand-written tier-chain/channel filtering — it lists ALL blocks, experimental included, for everyone, until filtering returns in declared form). Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). L-PR6 (PRA-107 ruling, PROJECT FROM CONFIG) records the WIRE IDENTITY rule as mcpSurface.serverInfo: serverInfo PROJECTS from the distribution — name is the declared distribution name, version the package version — so a fork's server introduces itself under its own name (surface.test.ts pins the covenant text, identity.test.ts pins the wire from a fork's config); the resource template pragma:{+uri}, the pragma:<uri> URIs it mints, and the pragma/box / pragma/instanceCount _meta keys stay FROZEN protocol identity every distribution serves unchanged — clients persist resource URIs, and the measured half-derivation (template renamed, minting sites literal) made all 653 of a fork's resources unreadable; tool count unchanged. L-OPEN-9 removes the non-compliant commands — reads the declared grammar can express become declared content, the rest is removed: `tier_lookup` becomes the tier story's compiled lookup (args `<name>` → `<name...>`, the variadic every pack lookup emits); `block_list` becomes the block story's compiled list (`--all-tiers` retired with the hand-written tier-chain/channel filtering — it lists ALL blocks, experimental included, for everyone, until filtering returns in declared form); `token add-config` is REMOVED rather than made declared — it writes a `tokens.config.mjs` starter file, and the content grammar deliberately has no mutation verb, 38→37. Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
   "nouns": {
     "block": {
       "verbs": [
@@ -61,13 +61,7 @@
           "needsStore": true,
           "mcp": "token_lookup"
         },
-        { "v": "sample", "needsStore": true, "mcp": "token_sample" },
-        {
-          "v": "add-config",
-          "mutates": true,
-          "needsStore": true,
-          "mcp": "token_add-config"
-        }
+        { "v": "sample", "needsStore": true, "mcp": "token_sample" }
       ]
     },
     "tier": {
@@ -283,7 +277,6 @@
       "standard_sample",
       "tier_list",
       "tier_lookup",
-      "token_add-config",
       "token_list",
       "token_lookup",
       "token_sample",

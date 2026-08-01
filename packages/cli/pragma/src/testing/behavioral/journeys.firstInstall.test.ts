@@ -21,7 +21,6 @@ import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
 import { collectStatus } from "../../capabilities/sources/collectStatus.js";
-import { tokenModule } from "../../capabilities/token/index.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -47,6 +46,10 @@ if (!standardModule) {
 const tierModule = storyModules.get("tier");
 if (!tierModule) {
   throw new Error('pragma.conf.ts declares no story for "tier"');
+}
+const tokenModule = storyModules.get("token");
+if (!tokenModule) {
+  throw new Error('pragma.conf.ts declares no story for "token"');
 }
 
 const verbOf = (module: CapabilityModule, path: string): VerbSpec =>

@@ -229,10 +229,9 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
   it("refuses ANY noun the CLI already ships, without throwing", () => {
     // Authored (`config`) and story-backed (`standard`) alike. A package may
     // only ADD a noun: `assembleEffectiveModules` replaces a noun WHOLESALE, so
-    // a package claiming `token` would delete the hand-written verb that
-    // composite exists for (`token add-config` is a MUTATION) from a user who
-    // did nothing but declare a dependency. Overriding a shipped noun stays a
-    // config decision.
+    // a package claiming `standard` would swap this distribution's code-standard
+    // reads for its own in a project that did nothing but declare a dependency.
+    // Overriding a shipped noun stays a config decision.
     const result = validateStories(
       [
         record("pkg/stories/config.json", JSON.stringify(validPack("config"))),
@@ -250,10 +249,19 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
     ]);
   });
 
-  it("leaves a composite noun's hand-written verbs intact", () => {
-    // The real registry, not a fixture: `token` is a composite whose module
-    // carries the `add-config` mutation next to the declared story's reads.
+  it("leaves a declared noun's shipped verbs intact against a package claim", () => {
+    // The real registry, not a fixture. `token` used to be a COMPOSITE and this
+    // case guarded its hand-written `add-config` mutation; L-OPEN-9 removed that
+    // verb, so the same package-claim mechanics are now asserted against the
+    // story's own verbs — which is the case that still matters, since after the
+    // removal EVERY data noun is story-backed and a wholesale replacement is the
+    // only way one could be lost.
     const before = capabilities.find((module) => module.name === "token");
+    expect(before?.verbs.map((verb) => verb.path.join(" "))).toEqual([
+      "token list",
+      "token lookup",
+      "token sample",
+    ]);
     const { entries, problems } = validateStories(
       [record("pkg/stories/token.json", JSON.stringify(validPack("token")))],
       capabilities,
@@ -266,9 +274,6 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
         .find((module) => module.name === "token")
         ?.verbs.map((verb) => verb.path.join(" ")),
     ).toEqual(before?.verbs.map((verb) => verb.path.join(" ")));
-    expect(
-      before?.verbs.some((verb) => verb.path.join(" ") === "token add-config"),
-    ).toBe(true);
   });
 
   it("a config story still REPLACES a package one for the same noun", () => {

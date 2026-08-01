@@ -170,18 +170,23 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "tool-token-add-config-is-plan-first",
+    id: "tool-token-noun-is-read-only",
     kind: "tool",
     input:
-      "token_add-config (needsStore mutation) without `confirm` returns a plan naming tokens.config.mjs and writes nothing.",
+      "the `token` noun exposes only reads — `token_add-config` (the tokens.config.mjs writer) was REMOVED in L-OPEN-9, not ported.",
     async expect() {
       await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("token_add-config");
-        assert.equal(result.ok, true);
-        const meta = result.meta as { planOnly?: boolean };
-        assert.equal(meta.planOnly, true);
-        const data = result.data as { plan: string[] };
-        assert.match(data.plan.join("\n"), /tokens\.config\.mjs/);
+        // This case used to pin `token_add-config`'s plan-first contract. The
+        // verb is gone, so it pins the ruling instead: the read surface is
+        // declared content and carries no mutation. (The plan-first MECHANIC is
+        // still covered by `tool-config-set-is-plan-first` and
+        // `tool-upgrade-is-plan-first`.)
+        const tools = (await mcp.listTools()).map((tool) => tool.name);
+        assert.ok(!tools.includes("token_add-config"));
+        assert.deepEqual(
+          tools.filter((name) => name.startsWith("token")).sort(),
+          ["token_list", "token_lookup", "token_sample"],
+        );
       });
     },
   },
