@@ -40,7 +40,7 @@ the emitted set legitimately grows PR-by-PR.
 | `agentSession.mcp.test.ts` | A multi-step agent MCP session (list → pick → lookup) + the SPARQL escape hatch. |
 | `mcpSurface.test.ts` | Every MCP tool the live catalog exposes is callable and well-formed — the "surface ⊆ covenant, exercised" proof. |
 | `disclosure.test.ts` | The cross-noun disclosure sweep (mechanism itself is PR3's/kernel's protected unit test — this only sweeps the noun SET). |
-| `journeys.cli.test.ts` | The `block list` tier-chain/channel journey (the one hand-written verb). |
+| `journeys.cli.test.ts` | The `block list` journey — since L-OPEN-9 it pins that the declared list is UNFILTERED: four tier/channel configs, one answer. |
 | `completion.test.ts` | The THIN main-line `__complete` candidate contract (§6 — see "Completion" below). |
 
 Plus `testing/eval/` (the eval harness + seed cases) and `testing/PARITY_GAPS.ts`

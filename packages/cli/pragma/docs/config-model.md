@@ -14,7 +14,7 @@ A higher layer **replaces** a lower one field by field. No field merges: a proje
 
 ## Read stories
 
-A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about the story itself is hand-written code; three shipped nouns keep one hand-written verb each alongside their story, listed in [architecture.md](./architecture.md).
+A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about a story is hand-written code, and since L-OPEN-9 no shipped data noun has any either: each of the five is exactly what its story declares, nothing more (see [architecture.md](./architecture.md)).
 
 Stories reach the CLI from three places, weakest to strongest:
 

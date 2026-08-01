@@ -12,16 +12,31 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { compilePack } from "../kernel/packs/compile.js";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
+import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
+import type { VerbSpec } from "../kernel/spec/types.js";
 import { VOCABULARY } from "../kernel/vocabulary.js";
-import { declaredStories } from "./distribution.js";
+import { declaredStories, storyModules } from "./distribution.js";
 import { capabilities } from "./index.js";
+
+/** A verb's DECLARED shape — everything but the closures a compile mints fresh. */
+function declaredShape(verb: VerbSpec): Record<string, unknown> {
+  return {
+    path: verb.path.join(" "),
+    summary: verb.summary,
+    doc: verb.doc,
+    params: verb.params,
+    capability: verb.capability,
+    examples: verb.examples,
+  };
+}
 
 describe("the distribution's declared stories (PROTECTED)", () => {
   it("declares exactly the five domain nouns", () => {
-    // The composites (`block`, `token`) read their story by name and fall back
-    // to no verbs if it is missing, so a renamed or dropped noun must fail
-    // HERE rather than silently shrink a command.
+    // Every domain noun is now nothing BUT its story (L-OPEN-9), so a renamed
+    // or dropped noun deletes a whole command rather than shrinking one — it
+    // must fail HERE.
     expect([...declaredStories.keys()].sort()).toEqual([
       "block",
       "modifier",
@@ -48,6 +63,41 @@ describe("the distribution's declared stories (PROTECTED)", () => {
       // dispatch; without it the noun would be treated as authored CLI.
       expect(module?.story).toBe(true);
       expect(module?.verbs.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ZERO hand-written data commands: a registered noun IS its compiled story", () => {
+    // The machine form of L-OPEN-9's end state — "a fork defines its entire
+    // read surface in pragma.conf.ts". Prose can go stale; this cannot. Every
+    // declared noun's REGISTERED module (what the CLI, the MCP server and the
+    // generated reference all project) must be verb-for-verb what recompiling
+    // its story alone produces. Re-introducing a composite — an authored module
+    // that prepends or appends a hand-written verb beside the story, which is
+    // exactly how `block`, `token` and `tier` used to be built — fails here,
+    // whatever the docblocks say.
+    for (const [noun, story] of declaredStories) {
+      const registered = capabilities.find((entry) => entry.name === noun);
+      const compiled = compilePack(story, "pragma.conf.ts", DEFAULT_PREFIX_MAP);
+      // Two halves, because a spec carries closures a fresh compile cannot
+      // reproduce by identity. (1) SHAPE: recompiling the story alone must
+      // yield the same verbs, declared the same way — an extra verb or an extra
+      // flag beside the story fails here.
+      expect(
+        registered?.verbs.map(declaredShape),
+        `"${noun}" registers verbs its story does not declare`,
+      ).toEqual(compiled.map(declaredShape));
+      // (2) IDENTITY: each registered verb must BE the compiled story's verb
+      // object, not a look-alike. A composite module — the `[...story.verbs,
+      // handWrittenVerb]` shape `block`, `token` and `tier` used to be built
+      // with — constructs new objects, so it cannot pass this even if its
+      // shapes happen to match.
+      const fromStory = storyModules.get(noun)?.verbs ?? [];
+      expect(registered?.verbs.length).toBe(fromStory.length);
+      registered?.verbs.forEach((verb, index) => {
+        expect(verb, `"${noun}" verb ${index} is not the story's`).toBe(
+          fromStory[index],
+        );
+      });
     }
   });
 

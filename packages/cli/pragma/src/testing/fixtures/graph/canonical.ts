@@ -6,9 +6,12 @@
  * `block` content-parity + `ontology`/`graph inspect` tests are protected
  * against) byte-for-byte and EXTENDS it with the entities the other bundled
  * read nouns (`standard`, `modifier`, `token`, `tier`) need, plus two more
- * blocks that exercise tier-chain inheritance and channel visibility (PR3's
- * hand-written `block list`, Risk5). Because `BLOCK_TTL` is reused verbatim,
- * Button/Modal content can never drift between PR3's fixture and this one.
+ * blocks that used to exercise tier-chain inheritance and channel visibility
+ * (PR3's hand-written `block list`, Risk5). Those two now serve the opposite
+ * purpose: L-OPEN-9 removed the filtering, so a tier-scoped and a
+ * channel-gated block are what prove the declared list hides NEITHER. Because
+ * `BLOCK_TTL` is reused verbatim, Button/Modal content can never drift between
+ * PR3's fixture and this one.
  *
  * Composed as one Turtle document, so ONE store answers every read noun:
  * `block`/`ontology`/`graph inspect` were already provable on `BLOCK_TTL`

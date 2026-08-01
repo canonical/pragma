@@ -37,9 +37,10 @@ export const declaredStories: ReadonlyMap<string, PackDefinition> = new Map(
 /**
  * Those stories compiled to capability modules, by noun.
  *
- * `capabilities/index.ts` appends every module no authored one claims; the one
- * composite noun (`token`, which keeps a hand-written verb the pack grammar
- * cannot express) takes its verbs from here by name.
+ * `capabilities/index.ts` appends every module no authored one claims — and
+ * since L-OPEN-9 that is every one of them: no data noun is authored, so a
+ * declared story IS the whole noun. `distribution.test.ts` holds that shut by
+ * asserting each registered module's verbs deep-equal its compiled story's.
  */
 export const storyModules: ReadonlyMap<string, CapabilityModule> = new Map(
   [...declaredStories].map(([noun, story]) => [
