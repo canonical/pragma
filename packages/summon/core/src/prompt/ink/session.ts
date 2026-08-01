@@ -12,12 +12,12 @@
  */
 
 import {
-  dryRun,
   type Effect,
   type LogLevel,
   type TaskError,
   TaskExecutionError,
 } from "@canonical/task";
+import { runPreview } from "@canonical/task/node";
 import {
   CONFIRM_ANSWER_KEY,
   GENERATOR_CANCELLED,
@@ -83,6 +83,9 @@ export class SessionController {
   };
   private executionStart = 0;
 
+  /** The confirm gate's in-flight preview, awaited only by {@link previewSettled}. */
+  private previewInFlight?: Promise<void>;
+
   /**
    * @param generator - The generator being run.
    * @param onUserCancel - Invoked once when the user cancels (Ctrl-C / escape).
@@ -91,10 +94,15 @@ export class SessionController {
    *   `checkInterrupted` fires between effects) instead of only rejecting a
    *   — by then non-existent — pending prompt. `abort()` is idempotent, so the
    *   signal→cancel→abort path cannot loop.
+   * @param cwd - The write root the run will resolve relative effect paths
+   *   against. The preview reads the SAME tree, so the gate's plan is the plan
+   *   the run produces. Omitted falls back to the process cwd, matching a run
+   *   whose interpreter was given no `cwd`.
    */
   constructor(
     generator: GeneratorDefinition,
     private readonly onUserCancel?: () => void,
+    private readonly cwd?: string,
   ) {
     this.current = {
       phase: "idle",
@@ -134,15 +142,11 @@ export class SessionController {
       const isConfirm = effect.question.name === CONFIRM_ANSWER_KEY;
       this.pending = { effect, isConfirm, resolve, reject };
       if (isConfirm) {
-        let previewEffects: Effect[] = [];
-        try {
-          previewEffects = dryRun(
-            this.current.generator.generate(this.current.answers),
-          ).effects;
-        } catch {
-          previewEffects = [];
-        }
-        this.set({ phase: "confirming", previewEffects });
+        // The gate renders AT ONCE with an empty pane, then re-renders when the
+        // honest preview resolves — the pane is ordinary Ink state, so there is
+        // no synchronous constraint to satisfy.
+        this.set({ phase: "confirming", previewEffects: [] });
+        this.previewInFlight = this.loadPreview();
       } else {
         const answered = Object.keys(this.current.answers).length;
         this.set({
@@ -153,6 +157,51 @@ export class SessionController {
         });
       }
     });
+  }
+
+  /**
+   * Fill the confirm gate's preview pane with the HONEST plan.
+   *
+   * `runPreview` reads the real filesystem (through a virtual write overlay, so
+   * a step sees what the step before it planned) and records writes without
+   * performing them — the gate is shown BEFORE the user consents, so it must
+   * not touch the disk, and it must not lie about what will happen. The mock it
+   * replaces answered every read with a placeholder and `Exists` with `true`,
+   * so the pane could promise files a run would never reach.
+   *
+   * Failure shows an EMPTY pane rather than a fictional one: the generator's
+   * own error belongs to the run, which reports it with its real message, and
+   * the decision at the gate stays the user's. A result that arrives after the
+   * gate is gone — the user answered or cancelled while the reads were in
+   * flight — is dropped, so a slow preview can never repaint a pane the wizard
+   * has already left.
+   */
+  private async loadPreview(): Promise<void> {
+    let previewEffects: readonly Effect[] = [];
+    try {
+      const preview = await runPreview(
+        this.current.generator.generate(this.current.answers),
+        { cwd: this.cwd },
+      );
+      previewEffects = preview.effects;
+    } catch {
+      previewEffects = [];
+    }
+    if (this.current.phase !== "confirming") return;
+    this.set({ previewEffects });
+  }
+
+  /**
+   * Resolves once the confirm gate's preview has been applied (or dropped as
+   * stale). The wizard itself never awaits this — the pane repaints when the
+   * preview lands, which is the whole point of making it async — but a caller
+   * that asserts ON the pane has to synchronise with the real filesystem reads
+   * the preview performs, and a wall-clock delay would only be flaky.
+   *
+   * @returns A promise for the in-flight preview, already resolved when none is.
+   */
+  previewSettled(): Promise<void> {
+    return this.previewInFlight ?? Promise.resolve();
   }
 
   /** Feed effect start (kept for seam symmetry; progress rides completion). */

@@ -38,8 +38,14 @@ export function mountPromptSession(
   options: InkPromptOptions = {},
 ): MountedSession {
   // Thread the run's cancel (H2): an in-Ink Ctrl-C/escape calls
-  // controller.cancel(), which invokes this to abort the interpreter.
-  const controller = new SessionController(generator, options.onCancel);
+  // controller.cancel(), which invokes this to abort the interpreter. `cwd` is
+  // the write root the confirm gate's preview reads against, so the pane shows
+  // the plan for the tree the run will actually write into.
+  const controller = new SessionController(
+    generator,
+    options.onCancel,
+    options.cwd,
+  );
   const instance = render(<Wizard controller={controller} />, {
     stdout: process.stderr as unknown as NodeJS.WriteStream,
     stdin: process.stdin,
