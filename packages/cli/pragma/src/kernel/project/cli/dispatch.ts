@@ -11,8 +11,8 @@
  * exit code.
  */
 
-import { describeEffect, dryRun, type Task } from "@canonical/task";
-import { runTask, runUndo } from "@canonical/task/node";
+import { describeEffect, type Task } from "@canonical/task";
+import { runPreview, runTask, runUndo } from "@canonical/task/node";
 import {
   asPragmaError,
   CANCELLED_MESSAGE,
@@ -221,8 +221,11 @@ export async function executeVerb(
     // Also hand it the interaction context so an interactive verb can pick its
     // prompt strategy. The verb's `run` sets `mutationRuntime.exec` (the runner
     // options) as its last act; the projector reads it back on the real-run
-    // branch only — the dry-run/undo branches stay handler-free (they mock
-    // prompts), so `--dry-run`/`--undo` are unchanged by this seam.
+    // branch AND on the dry-run branch, which takes `cwd` (so the preview reads
+    // the tree the run would write into) and `onEffectStart` (so the stamping
+    // transform runs, and planned byte counts match written ones). It never
+    // takes the prompt handler: a preview auto-answers prompts and so can never
+    // block on input. `--undo` stays handler-free and untouched by this seam.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
       // Gate on STDERR (H3): the Ink wizard renders to stderr and reads stdin,
@@ -252,14 +255,33 @@ export async function executeVerb(
         | Promise<Task<unknown>>,
     );
     if (mutation.dryRun) {
-      // A plan is the effects a mutation WOULD apply — a `Prompt` is not one, so
-      // the interactive confirm gate / answer prompts never clutter the preview.
-      return renderPlan(
-        flags,
-        dryRun(task)
-          .effects.filter((effect) => effect._tag !== "Prompt")
-          .map(describeEffect),
-      );
+      // The HONEST preview (PR7): reads hit the real filesystem, writes are
+      // recorded and never executed. A mutation whose real run would die on its
+      // first template read now fails HERE too, so `--dry-run` exits nonzero
+      // exactly when the run would — the plan is a prediction, not a wish.
+      // `exec.cwd` is the same write root the real run resolves paths against,
+      // and `exec.onEffectStart` carries summon's stamping transform, so the
+      // planned byte counts are the bytes the run would actually write.
+      const previewExec = mutationRuntime.exec ?? {};
+      try {
+        const { effects } = await runPreview(task, {
+          cwd: previewExec.cwd,
+          onEffectStart: previewExec.onEffectStart,
+          onLog: logToStderr,
+        });
+        // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
+        // so the interactive confirm gate / answer prompts never clutter it.
+        return renderPlan(
+          flags,
+          effects
+            .filter((effect) => effect._tag !== "Prompt")
+            .map(describeEffect),
+        );
+      } finally {
+        // A verb that mounted an interactive session before returning its Task
+        // must be torn down on this branch too, exactly as on the real run.
+        await previewExec.dispose?.();
+      }
     }
     if (mutation.undo) {
       const { undoCount } = await runUndo(task, { onLog: logToStderr });

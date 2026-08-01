@@ -1,7 +1,10 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   fixtureEffectsModule,
+  fixturePreviewModule,
   touchPath,
 } from "../../../testing/fixtures/fixtureCapability.js";
 import { projectMcp } from "../../../testing/helpers/projectMcp.js";
@@ -68,5 +71,40 @@ describe("MCP mutation plan-first / confirm (PROTECTED)", () => {
 
     expect(done).toEqual({ ok: true, data: { touched: name }, meta: {} });
     expect(existsSync(touchPath(name))).toBe(true);
+  });
+});
+
+describe("MCP plan-first is honest (PRA-104)", () => {
+  it("returns the ERROR a confirmed run would hit, not a confident plan", async () => {
+    // The CLI twin of this guard lives in cli/dispatch.test.ts: the same
+    // mutation, the same missing source, exiting nonzero instead of printing a
+    // plan. Both surfaces run one interpreter, so they cannot drift.
+    const dir = mkdtempSync(join(tmpdir(), "pragma-graft-mcp-"));
+    const missing = join(dir, "gone");
+
+    const mcp = await projectMcp([fixturePreviewModule], dir);
+    const planned = await mcp.callTool("probe_graft", { source: missing });
+    await mcp.cleanup();
+
+    expect(planned.ok).toBe(false);
+    expect(JSON.stringify(planned.error)).toContain(missing);
+    expect(existsSync(`${missing}.grafted`)).toBe(false);
+  });
+
+  it("returns a plan, and writes nothing, when the read would succeed", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-graft-mcp-"));
+    const source = join(dir, "present.txt");
+    writeFileSync(source, "content\n");
+
+    const mcp = await projectMcp([fixturePreviewModule], dir);
+    const planned = await mcp.callTool("probe_graft", { source });
+    await mcp.cleanup();
+
+    expect(planned.ok).toBe(true);
+    expect(planned.meta).toEqual({ planOnly: true, confirmRequired: true });
+    expect((planned.data as { plan: string[] }).plan).toContain(
+      `Write file: ${source}.grafted (8 bytes)`,
+    );
+    expect(readdirSync(dir)).toEqual(["present.txt"]);
   });
 });

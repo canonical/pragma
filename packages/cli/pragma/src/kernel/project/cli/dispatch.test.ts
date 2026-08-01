@@ -1,10 +1,17 @@
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fail, succeed } from "@canonical/task";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { fixturePreviewModule } from "../../../testing/fixtures/fixtureCapability.js";
 import { PragmaError } from "../../error/PragmaError.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
 import { dispatch, executeVerb, extractParams } from "./dispatch.js";
+
+/** The read-then-write mutation the honest-preview guards drive. */
+const graft = fixturePreviewModule.verbs[0] as VerbSpec;
 
 const PLAIN: GlobalFlags = {
   llm: false,
@@ -230,6 +237,66 @@ describe("dispatch — errors", () => {
     expect(out).not.toContain("INTERNAL_ERROR");
     expect(out).not.toMatch(/report this issue/i);
     expect(process.exitCode).toBe(130);
+  });
+});
+
+describe("--dry-run is honest (PRA-104)", () => {
+  const savedExit = process.exitCode;
+  afterEach(() => {
+    process.exitCode = savedExit;
+  });
+
+  /** Capture stderr for one dispatch. */
+  const dispatchCapturing = async (
+    positionals: readonly string[],
+    opts: Record<string, unknown>,
+  ): Promise<string> => {
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    process.exitCode = 0;
+    try {
+      await dispatch(graft, positionals, opts, PLAIN);
+    } finally {
+      spy.mockRestore();
+    }
+    return errs.join("");
+  };
+
+  it("exits NONZERO when the mutation's first read would fail for real", async () => {
+    // The structural false positive: this same call used to print a full plan
+    // and exit 0, while the run without --dry-run died on the missing file.
+    const missing = join(mkdtempSync(join(tmpdir(), "pragma-graft-")), "gone");
+    const out = await dispatchCapturing([missing], { dryRun: true });
+    expect(process.exitCode).toBe(1);
+    expect(out).toContain(missing);
+    expect(existsSync(`${missing}.grafted`)).toBe(false);
+  });
+
+  it("still plans, exits 0, and writes nothing when the read would succeed", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "pragma-graft-"));
+    const source = join(dir, "present.txt");
+    writeFileSync(source, "content\n");
+    const outs: string[] = [];
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        outs.push(String(chunk));
+        return true;
+      });
+    process.exitCode = 0;
+    try {
+      await dispatch(graft, [source], { dryRun: true }, PLAIN);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(process.exitCode).toBe(0);
+    expect(outs.join("")).toContain(`Write file: ${source}.grafted`);
+    expect(readdirSync(dir)).toEqual(["present.txt"]);
   });
 });
 

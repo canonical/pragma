@@ -12,8 +12,8 @@
 
 import { statSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import { describeEffect, dryRun, type Task } from "@canonical/task";
-import { runTask } from "@canonical/task/node";
+import { describeEffect, type Task } from "@canonical/task";
+import { runPreview, runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
@@ -199,10 +199,29 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
           | Promise<Task<unknown>>,
       );
       if (preview) {
-        const plan = dryRun(task)
-          .effects.filter((effect) => effect._tag !== "Prompt")
-          .map(describeEffect);
-        return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });
+        // The HONEST preview (PR7), the same interpreter `--dry-run` uses:
+        // reads are real, writes are recorded and never executed. A tool call
+        // whose confirmed run would fail now returns that error instead of a
+        // confident plan, so plan-first predicts rather than reassures.
+        const previewExec = mutationRuntime.exec ?? {};
+        try {
+          const { effects } = await runPreview(task, {
+            cwd: previewExec.cwd,
+            onEffectStart: previewExec.onEffectStart,
+            onLog: logToStderr,
+          });
+          const plan = effects
+            .filter((effect) => effect._tag !== "Prompt")
+            .map(describeEffect);
+          return toolSuccess(
+            { plan },
+            { planOnly: true, confirmRequired: true },
+          );
+        } finally {
+          // No `store.invalidate()`: a preview cannot have changed disk. Only
+          // the verb's own teardown (e.g. an interactive session) runs here.
+          await previewExec.dispose?.();
+        }
       }
       // Real execution: spread the verb's runner options (prompt handler,
       // stamping) into the interpreter; run teardown afterwards.
