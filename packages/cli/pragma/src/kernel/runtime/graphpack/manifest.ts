@@ -104,7 +104,8 @@ export function readManifest(dir: string): Manifest | undefined {
  * would silently drop every package-declared noun. Requiring all four present +
  * non-empty makes `buildPack` rebuild a torn pack and makes the boot decision
  * surface STORE_UNAVAILABLE (the ordinary "not built" recovery) instead of a
- * "please report this" crash. */
+ * "please report this" crash. `stories.json` is additionally gated on its SHAPE
+ * — see {@link storiesAreReadable} for why it, and only it, is parsed here. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
   for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, STORIES_FILE]) {
@@ -114,5 +115,43 @@ export function packIsComplete(dir: string): boolean {
       return false;
     }
   }
-  return true;
+  return storiesAreReadable(dir);
+}
+
+/**
+ * Whether `stories.json` holds what its reader expects: a JSON ARRAY.
+ *
+ * Size alone was not enough, and stories are the one artifact where that gap is
+ * SILENT. A non-empty but non-array `stories.json` passed the size gate, so
+ * `buildPack` REUSED the directory and every package-declared noun vanished
+ * while `sources update` reported success — with `parseRecords`' fix, without
+ * even an error line to attribute. Parsing it turns that into an incomplete
+ * pack: the boot decision reports the ordinary STORE_UNAVAILABLE and the next
+ * `buildPack` rebuilds, which is the recovery the other three artifacts already
+ * get.
+ *
+ * SHAPE ONLY, deliberately: `Array.isArray`, not a check of the records inside.
+ * A malformed or schema-invalid RECORD is the one guard in
+ * `packs/collect.validateStories`, which names it on stderr and under `doctor`
+ * — a story a third party got wrong must not make the whole pack unreadable.
+ *
+ * `data.nq` and `schema.json` stay SIZE-gated on purpose. A truncated `data.nq`
+ * is caught downstream by `readPack`'s A9 triple-count cross-check, which is
+ * stronger than any parse here; a corrupt `schema.json` still surfaces
+ * unclassified, and that gap is pinned separately rather than absorbed into this
+ * one — this is the fast path, and it parses only the artifact whose failure is
+ * otherwise invisible.
+ *
+ * @param dir - The pack directory.
+ * @returns Whether the stories artifact parses as an array.
+ * @note Impure — reads from disk.
+ */
+function storiesAreReadable(dir: string): boolean {
+  try {
+    return Array.isArray(
+      JSON.parse(readFileSync(join(dir, STORIES_FILE), "utf-8")),
+    );
+  } catch {
+    return false;
+  }
 }

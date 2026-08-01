@@ -197,6 +197,44 @@ describe("graphpack carried stories (PROTECTED)", () => {
     expect(packIsComplete(dir)).toBe(false);
   });
 
+  it("a non-array stories.json is incomplete, and rebuilds instead of silently losing nouns", async () => {
+    // Size alone let a non-empty but non-ARRAY `stories.json` pass, so
+    // `buildPack` reused the directory and every package-declared noun vanished
+    // while `sources update` reported success. The shape gate turns that into an
+    // ordinary torn pack: refused, then rebuilt.
+    const inputs = [{ path: "a.ttl", content: TTL }];
+    const { dir } = await build(inputs, [STORY]);
+    expect(packIsComplete(dir)).toBe(true);
+
+    for (const corrupt of [
+      '{"noun":"recipe"}',
+      '"a string"',
+      "null",
+      "7",
+      "{",
+    ]) {
+      writeFileSync(join(dir, STORIES_FILE), corrupt);
+      expect(packIsComplete(dir), corrupt).toBe(false);
+    }
+
+    // …and the rebuild is a REBUILD, not a reuse of the corrupt directory: the
+    // stories come back, so the nouns come back.
+    const rebuilt = await build(inputs, [STORY]);
+    expect(rebuilt.reused).toBe(false);
+    expect(packIsComplete(rebuilt.dir)).toBe(true);
+    expect(
+      JSON.parse(readFileSync(join(rebuilt.dir, STORIES_FILE), "utf-8")),
+    ).toEqual([{ source: STORY.path, content: STORY.content }]);
+  });
+
+  it("an EMPTY stories array stays complete — it is the ordinary no-stories pack", async () => {
+    // The gate is shape, not emptiness: `[]` is what a pack with no package
+    // stories legitimately carries, and refusing it would refuse most packs.
+    const { dir } = await build([{ path: "a.ttl", content: TTL }]);
+    expect(readFileSync(join(dir, STORIES_FILE), "utf-8")).toBe("[]");
+    expect(packIsComplete(dir)).toBe(true);
+  });
+
   it("reads only records shaped { source, content } from a pack directory", async () => {
     // `stories.json` lives in a user-writable cache. An element that is not a
     // record used to be cast straight through and reported as

@@ -128,6 +128,23 @@ describe("resolveSources decision table", () => {
     });
   });
 
+  it("pointer present + a pack whose stories.json is not an array → STORE_UNAVAILABLE", () => {
+    const cwd = tmp();
+    const hash = "d".repeat(64);
+    const dir = writeCompletePack(hash);
+    // Every file present and non-empty, but `stories.json` holds an object.
+    // Gated on size alone this passed, so `buildPack` REUSED the directory and
+    // every package-declared noun disappeared while `sources update` reported
+    // success. It is a torn build like any other, and says so.
+    writeFileSync(join(dir, "stories.json"), '{"noun":"recipe"}');
+    writePointer(cwd, hash);
+
+    expect(resolveSources(layersWith("default"), cwd)).toEqual({
+      kind: "unavailable",
+      reason: "the built pack is incomplete — an older or torn build",
+    });
+  });
+
   it("a malformed pointer is treated as absent, not as a pack name", () => {
     // A truncated/garbage pointer must never name a cache directory. With
     // default packs it falls through to the embedded row, exactly as no
