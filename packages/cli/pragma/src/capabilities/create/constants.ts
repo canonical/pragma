@@ -38,21 +38,23 @@
  * the generator it names, and the embedded manifest carries only the templates
  * of the binding that reads through it.
  *
- * ONE VALUE import, and it must stay one: `create.verb.ts` reads this on the
- * `--help` / `__complete` fast path, where `pragma.conf.ts` already sits (`src/
- * constants.ts` projects identity from it) and costs nothing extra to
- * dereference. Nothing heavier may arrive — `PragmaError` included; the loud
- * failure for a short declaration is the bare `Error` below.
- *
- * That is now ENFORCED rather than asserted. The docblock used to cite
- * `capabilities/lazy.test.ts` for it, and that test constrained nothing here:
- * `PragmaError` is already on the graph it walks (measured — 129 files from
- * `capabilities/index.ts`, `kernel/error/PragmaError.ts` among them), so the
- * one edit this paragraph forbids failed no assertion. `lazy.test.ts` now
- * enumerates this module's static graph exactly, the same way it already does
- * `pragma.conf.ts`'s, and watches `capabilities/index.ts` — the actual root of
- * the fast path — for the embedded n-quads module its own +23 ms measurement is
- * about.
+ * A DELIBERATE LEAF: `create.verb.ts` reads this while the command tree is
+ * BUILT, so whatever this module's graph contains is walked on every `--help`
+ * and every `__complete`. `capabilities/lazy.test.ts` enumerates that graph
+ * EXACTLY, so an import that pulls anything new fails there, named. That is a
+ * leaf-ness bound, not a latency claim — and the distinction matters, because
+ * this paragraph used to forbid `PragmaError` by name and justify the bare
+ * `Error` below with a fast-path cost the file's own next paragraph disproved:
+ * `create.verb.ts` imports `PragmaError` already, and `kernel/error/
+ * PragmaError.ts` (plus the two type-only modules it reaches) is on the same
+ * 129-file `capabilities/index.ts` graph. The edge costs nothing, so the loud
+ * failure below is a `PragmaError.configError` carrying a code and a recovery,
+ * the way `kernel/vocabulary.ts` — the sibling seam, a module-load validator of
+ * a distribution declaration on that same graph — has always failed. What
+ * neither seam gets yet is the rendered envelope: `bin.ts` dynamic-imports
+ * `capabilities/index.js` outside its only try, so both throws surface as an
+ * uncaught rejection. The gain here is the code, the recovery and one house
+ * style for a bad declaration, not the envelope.
  *
  * The `RawConfig` import below is TYPE-ONLY and erased. The enumeration does NOT
  * keep it that way, and used to be cited as if it did: the walker reads
@@ -60,11 +62,12 @@
  * yield the identical file list — measured, both flipped to value imports with
  * this file and `completion/safety.test.ts` green. The enumeration bounds WHICH
  * modules may appear; a separate case, `the fast path's edges into kernel/config
- * are written "import type"`, reads this file's own import statements and is
- * what keeps the edge erased.
+ * are written "import type"`, walks every module on the four storeless entry
+ * graphs and is what keeps the edge erased.
  */
 import conf from "../../../pragma.conf.js";
 import type { RawConfig } from "../../kernel/config/types.js";
+import { PragmaError } from "../../kernel/error/PragmaError.js";
 
 /**
  * The nouns this surface binds, IN THE ORDER the declaration is zipped onto
@@ -100,14 +103,21 @@ const BOUND_NOUNS = ["component", "package", "application"] as const;
  * @param noun - The bound noun, whose position in {@link BOUND_NOUNS} is the
  *   position it reads from the declaration.
  * @returns The declared package name.
- * @throws Error naming the file, the full shortfall and the edit.
+ * @throws PragmaError CONFIG_ERROR naming the file, the full shortfall and the
+ *   edit — the same seam and the same code `kernel/vocabulary.ts` raises for
+ *   the other distribution declaration validated at module load.
  */
 function declaredGeneratorName(noun: (typeof BOUND_NOUNS)[number]): string {
   const declared = (conf as RawConfig).generators ?? [];
   const name = declared[BOUND_NOUNS.indexOf(noun)]?.name;
   if (name === undefined) {
-    throw new Error(
-      `pragma.conf.ts declares ${declared.length} generator(s); the create surface binds ${BOUND_NOUNS.length}, in this order: ${BOUND_NOUNS.join(", ")}. Declare the missing one(s) under "generators", or rebind the nouns in capabilities/create.`,
+    throw PragmaError.configError(
+      `Invalid config in pragma.conf.ts: it declares ${declared.length} generator(s); the create surface binds ${BOUND_NOUNS.length}, in this order: ${BOUND_NOUNS.join(", ")}.`,
+      {
+        recovery: {
+          message: `In pragma.conf.ts, declare the missing generator(s) under "generators" in that order — or rebind the nouns in capabilities/create, where BOUND_NOUNS is the list.`,
+        },
+      },
     );
   }
   return name;

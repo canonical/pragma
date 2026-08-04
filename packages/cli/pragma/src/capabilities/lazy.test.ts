@@ -133,18 +133,23 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // `capabilities/create/constants.ts` is read by `create.verb.ts` while the
     // command tree is BUILT, so whatever it imports is paid for on every
     // `--help` and every `__complete`. Its docblock has always said so — but it
-    // cited THIS file for the rule while nothing here constrained it, and the
-    // one edit it forbids by name (`PragmaError`) fails no other assertion:
-    // `kernel/error/PragmaError.ts` is already on the graph from
-    // `capabilities/index.ts`. So the rule was prose citing a guard that did
-    // not guard it.
+    // cited THIS file for the rule while nothing here constrained it. So the
+    // rule was prose citing a guard that did not guard it.
     //
     // An EXACT enumeration, the same form as the `pragma.conf.ts` case above
     // and for the same reason: a subset check would tolerate the next arrival.
-    // The two type-only entries are `pragma.conf.ts`'s own type imports plus
-    // the `RawConfig` this module reads its `generators` through — the walker
-    // follows `from "…"` textually and cannot tell a type import from a value
-    // one, which is why the no-value-import assertion below is separate.
+    // It is a LEAF-NESS bound, not a latency claim, and the `kernel/error`
+    // triple is the demonstration: those three are on the `capabilities/index.
+    // ts` graph already, so admitting them here cost nothing measurable and
+    // bought this seam the same `PragmaError.configError` shape
+    // `kernel/vocabulary.ts` raises next door. Growing this list is a decision;
+    // failing here is what makes it one.
+    //
+    // Three of the entries are type-only — `pragma.conf.ts`'s own type imports,
+    // the `RawConfig` this module reads its `generators` through, and the error
+    // types — because the walker follows `from "…"` textually and cannot tell a
+    // type import from a value one, which is why the no-value-import assertion
+    // below is separate.
     const entry = resolve(here, "create/constants.ts");
     const pkgRoot = resolve(here, "../..");
     const graph = [...staticImportGraph(entry)]
@@ -154,6 +159,9 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
       "pragma.conf.ts",
       "src/capabilities/create/constants.ts",
       "src/kernel/config/types.ts",
+      "src/kernel/error/PragmaError.ts",
+      "src/kernel/error/constants.ts",
+      "src/kernel/error/types.ts",
       "src/kernel/packs/types.ts",
     ]);
     // What the loop below pins is that none of the other three pulls anything
