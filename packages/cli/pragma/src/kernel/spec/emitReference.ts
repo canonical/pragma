@@ -20,7 +20,13 @@ import {
   DETAIL_LEVELS,
   PROJECT_CONFIG_FILENAME,
 } from "../../constants.js";
-import type { RawConfig } from "../config/types.js";
+// A VALUE import, unlike every other config edge in this package: the `channel`
+// row composes its Type column from the tuple zod validates against, the way
+// the `detail` row composes from `DETAIL_LEVELS`. It costs nothing — this
+// emitter is reached only from `scripts/build.ts` and the tests (measured: it
+// is on none of the four storeless fast-path graphs `lazy.test.ts` walks), and
+// `config/types.ts` is an import-free leaf.
+import { CHANNELS, type RawConfig } from "../config/types.js";
 import { ERROR_CODES } from "../error/constants.js";
 import {
   FIXED_SURFACE,
@@ -501,7 +507,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
   },
   channel: {
-    type: "`normal` | `experimental` | `prerelease` (optional)",
+    type: `${CHANNELS.map((channel) => `\`${channel}\``).join(" | ")} (optional)`,
     notes:
       "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
   },
