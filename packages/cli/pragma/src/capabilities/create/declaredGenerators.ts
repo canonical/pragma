@@ -14,9 +14,14 @@
  * '/$bunfs/root/…'`). See {@link assertDeclaredGenerators} for the four claims.
  *
  * PURE, and deliberately import-free: `scripts/build.ts` and `create.test.ts`
- * are its only callers, they do the fs reads, and it must not drag `PragmaError`
- * (or anything else) toward `create/constants.ts`, which sits on the
- * `--help`/`__complete` fast path.
+ * are its only callers and they do the fs reads, so nothing here needs a module.
+ * The import-freedom is NOT a fast-path constraint, as this docblock used to
+ * claim: there is no import edge between this module and `create/constants.ts`
+ * in either direction, so nothing it imported could reach the fast path.
+ * `lazy.test.ts` enumerates that module's graph exactly — four files, this one
+ * not among them — and that enumeration is what keeps the two apart. What holds
+ * HERE is only build-time purity: raise a plain `Error` naming the file and the
+ * edit, the way every message below does.
  */
 
 /**
