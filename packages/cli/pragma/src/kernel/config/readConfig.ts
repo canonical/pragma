@@ -51,10 +51,9 @@ export async function readConfig(
     return { value: defaultValues[field], origin: "default" };
   };
 
-  const name = pick("name");
-  const help = pick("help");
-  const colophon = pick("colophon");
-  const issuesUrl = pick("issuesUrl");
+  // `name`/`help`/`colophon`/`issuesUrl` are DELIBERATELY not picked: identity
+  // is read from `pragma.conf.ts` statically (`src/constants.ts`), so merging a
+  // layer's value here would report a provenance nothing honours.
   const tier = pick("tier");
   const channel = pick("channel");
   const detail = pick("detail");
@@ -62,7 +61,6 @@ export async function readConfig(
   const generators = pick("generators");
   const stories = pick("stories");
   const prefixes = pick("prefixes");
-  const prompts = pick("prompts");
   // `completion` is read at `setup completions` emit time (not on any fast
   // path) and carries no `config show` provenance, so it merges into the
   // effective config but is deliberately absent from ConfigOrigins.
@@ -70,27 +68,18 @@ export async function readConfig(
 
   const config: PragmaConfig = {
     channel: (channel.value ?? defaults.channel) as Channel,
-    ...(name.value !== undefined ? { name: name.value } : {}),
-    ...(help.value !== undefined ? { help: help.value } : {}),
-    ...(colophon.value !== undefined ? { colophon: colophon.value } : {}),
-    ...(issuesUrl.value !== undefined ? { issuesUrl: issuesUrl.value } : {}),
     ...(tier.value !== undefined ? { tier: tier.value } : {}),
     ...(detail.value !== undefined ? { detail: detail.value } : {}),
     ...(packs.value !== undefined ? { packs: packs.value } : {}),
     ...(generators.value !== undefined ? { generators: generators.value } : {}),
     ...(stories.value !== undefined ? { stories: stories.value } : {}),
     ...(prefixes.value !== undefined ? { prefixes: prefixes.value } : {}),
-    ...(prompts.value !== undefined ? { prompts: prompts.value } : {}),
     ...(completion.value !== undefined ? { completion: completion.value } : {}),
   };
 
   return {
     config,
     origins: {
-      name: name.origin,
-      help: help.origin,
-      colophon: colophon.origin,
-      issuesUrl: issuesUrl.origin,
       tier: tier.origin,
       channel: channel.origin,
       detail: detail.origin,
@@ -98,7 +87,6 @@ export async function readConfig(
       generators: generators.origin,
       stories: stories.origin,
       prefixes: prefixes.origin,
-      prompts: prompts.origin,
     },
     global: { path: global.path, exists: global.exists },
     project: {

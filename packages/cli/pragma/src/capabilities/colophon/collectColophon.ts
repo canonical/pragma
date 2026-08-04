@@ -1,10 +1,10 @@
 /**
  * Collect the `colophon` payload — the verb's run body (lazily imported).
  *
- * STORELESS: it reads the layered config (memoized) and resolves the EFFECTIVE
- * capability modules exactly as a real command would, so a config story that
- * overrides a bundled pack is reflected here — "active domain" is expressed the
- * way the rest of the CLI expresses it. It never boots the triple store, so the
+ * STORELESS: it resolves the EFFECTIVE capability modules exactly as a real
+ * command would — through `loadEffectiveModules`, so a story declared by a
+ * PACKAGE the active pack carries surfaces its colophon here too, not only a
+ * config-declared one. It never boots the triple store, so the
  * storeless-guarantee spy still sees `store.booted === false`.
  *
  * The registry is reached through a RUNTIME dynamic `import("../index.js")`
@@ -39,18 +39,18 @@ export async function collectColophon(
     },
   ];
 
-  const { assembleEffectiveModules } = await import(
+  const { loadEffectiveModules } = await import(
     "../../kernel/packs/collect.js"
   );
   const { capabilities } = await import("../index.js");
 
   let modules: readonly CapabilityModule[] = capabilities;
   try {
-    const layers = await runtime.loadConfig();
-    modules = assembleEffectiveModules(capabilities, layers);
+    modules = (await loadEffectiveModules(capabilities, runtime.cwd)).modules;
   } catch {
     // A bad config story is surfaced by the real commands; the colophon degrades
-    // to the static (bundled) modules rather than failing the narrative.
+    // to the static modules rather than failing the narrative. (A bad PACKAGE
+    // story never throws — it is dropped and reported by doctor.)
   }
 
   for (const module of modules) {

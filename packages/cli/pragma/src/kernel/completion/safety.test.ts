@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createStore } from "@canonical/ke";
 import { describe, expect, it, vi } from "vitest";
@@ -207,6 +207,8 @@ function staticImportGraph(
 }
 
 const here = dirname(fileURLToPath(import.meta.url));
+/** The package root, so a failure names `src/…` instead of an absolute path. */
+const pkgRoot = resolve(here, "../../..");
 const has = (graph: Set<string>, fragment: string): boolean =>
   [...graph].some((file) => file.includes(fragment));
 
@@ -224,16 +226,25 @@ describe("storeless guarantee (PROTECTED)", () => {
       // Runtime boot (bootRuntime) — never on the completion path.
       expect(has(graph, "kernel/runtime/boot.ts")).toBe(false);
       // The config LAYER (reader, evaluator, paths, schema) — storeless means
-      // no read. PR2's pure-leaf `config/types.ts` (the ConfigLayers type,
-      // imported type-only via VerbSpec.run's PragmaRuntime and erased at
-      // runtime) is the lone tolerated seam — as spec/types.ts and
-      // runtime/types.ts already sit in this graph as type-only.
-      const configModules = [...graph].filter(
-        (file) =>
-          file.includes("kernel/config/") &&
-          !file.endsWith("kernel/config/types.ts"),
-      );
-      expect(configModules).toEqual([]);
+      // no read. Its tolerated seams are POSITIVE-LISTED, not filtered out by a
+      // path fragment: the distribution config sits at the package root, so a
+      // `kernel/config/`-shaped filter would not see it and this guard would
+      // keep passing after it stopped being true.
+      //  - `kernel/config/types.ts` — the ConfigLayers type, imported type-only
+      //    via VerbSpec.run's PragmaRuntime and erased at runtime, as
+      //    spec/types.ts and runtime/types.ts already are in this graph.
+      //  - `pragma.conf.ts` — the distribution config, statically imported by
+      //    `constants.ts` (identity), `render/prefixes.ts` (the domain
+      //    namespaces) and `kernel/vocabulary.ts` (the domain terms). Safe only
+      //    while it stays inert data; `capabilities/lazy.test.ts` pins that.
+      const configModules = [...graph]
+        .filter((file) => /config|\.conf\./.test(file))
+        .map((file) => relative(pkgRoot, file))
+        .sort();
+      expect(configModules).toEqual([
+        "pragma.conf.ts",
+        "src/kernel/config/types.ts",
+      ]);
       // zod stays off the fast path (validate.ts is the registration seam).
       expect(has(graph, "kernel/spec/validate.ts")).toBe(false);
       // No store/graph modules, present or future.
@@ -299,10 +310,10 @@ describe("storeless guarantee (PROTECTED)", () => {
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
   });
 
-  it("the non-index name sources resolve without constructing the store", async () => {
-    // skills (filesystem), prompts/tiers (index filter), prefixes (index ∪
-    // default map) — every family completes storelessly against the live
-    // capabilities. A fresh cwd → no pointer → the embedded index.
+  it("every declared name source resolves without constructing the store", async () => {
+    // skills (filesystem), prefixes (index ∪ default map) and the index's own
+    // `label`/`altNames` fields — every family completes storelessly against
+    // the live capabilities. A fresh cwd → no pointer → the embedded index.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-storeless-src-"));
     const env = indexCompletionEnv(cwd);
 
@@ -311,16 +322,22 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["ontology", "show", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
-    // skills / prompts / tiers: no data here, but the point is they never boot
-    // the store — an empty list is the correct storeless answer.
+    // index + `field: "altNames"`: a real alt name of a real tier comes back
+    // from the embedded index. `Apps/Juju` is carried ONLY by the declared
+    // alt-name property — it is neither an entity name nor a label — so this
+    // fails if the field ever stops being read.
+    await expect(
+      runComplete(["tier", "lookup", "ap"], capabilities, env),
+    ).resolves.toContain("Apps/Juju");
+
+    // skills (no skills root here) and prompt labels (this graph carries no
+    // prompt entities) have nothing to offer, and the honest storeless answer
+    // is an empty list rather than a store boot.
     for (const words of [
       ["skill", "lookup", "do"],
       ["prompt", "lookup", "bu"],
-      ["tier", "lookup", "ap"],
     ]) {
-      await expect(
-        runComplete(words, capabilities, env),
-      ).resolves.toBeInstanceOf(Array);
+      await expect(runComplete(words, capabilities, env)).resolves.toEqual([]);
     }
 
     expect(vi.mocked(createStore)).not.toHaveBeenCalled();
@@ -328,31 +345,59 @@ describe("storeless guarantee (PROTECTED)", () => {
 
   it("the spawned __complete fast path answers without touching any state", () => {
     // The perf globalSetup guarantees dist/pragma exists.
+    // A FRESH INSTALL, reproduced: nothing is inherited from this process's
+    // environment, the cwd holds no config, and $HOME plus all three XDG roots
+    // are empty temps. Anything the binary answers here it answered from
+    // itself. (The suite before this inherited `...process.env`, so it could
+    // not tell a compiled-in answer from an ambient one.)
     const binary = fileURLToPath(
       new URL("../../../dist/pragma", import.meta.url),
     );
+    const home = mkdtempSync(join(tmpdir(), "pragma-storeless-home-"));
     const xdgConfig = mkdtempSync(join(tmpdir(), "pragma-storeless-cfg-"));
     const xdgState = mkdtempSync(join(tmpdir(), "pragma-storeless-state-"));
     const xdgCache = mkdtempSync(join(tmpdir(), "pragma-storeless-cache-"));
+    const emptyCwd = mkdtempSync(join(tmpdir(), "pragma-storeless-cwd-"));
+    const env = {
+      HOME: home,
+      XDG_CONFIG_HOME: xdgConfig,
+      XDG_STATE_HOME: xdgState,
+      XDG_CACHE_HOME: xdgCache,
+    };
 
-    const result = spawnSync(binary, ["__complete", "--", "co"], {
+    const nouns = spawnSync(binary, ["__complete", "--", "co"], {
       encoding: "utf-8",
-      env: {
-        ...process.env,
-        XDG_CONFIG_HOME: xdgConfig,
-        XDG_STATE_HOME: xdgState,
-        XDG_CACHE_HOME: xdgCache,
-      },
+      cwd: emptyCwd,
+      env,
     });
+    expect(nouns.status).toBe(0);
+    expect(nouns.stdout).toBe("colophon\nconfig\n");
+    expect(nouns.stderr).toBe("");
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toBe("colophon\nconfig\n");
-    expect(result.stderr).toBe("");
+    // The headline guarantee of the embedded pack: a user who has installed
+    // the binary and nothing else gets ENTITY candidates on the first TAB.
+    // Every other pin on the embedded index runs in-process, where a bundler
+    // change that made `pack.index.generated.ts` unreachable FROM THE BINARY
+    // would leave the whole suite green.
+    const entities = spawnSync(
+      binary,
+      ["__complete", "--", "block", "lookup", "ds:global.component.but"],
+      { encoding: "utf-8", cwd: emptyCwd, env },
+    );
+    expect(entities.status).toBe(0);
+    expect(entities.stderr).toBe("");
+    expect(entities.stdout.split("\n").at(0)).toBe(
+      "ds:global.component.button",
+    );
+
     // Storeless and config-free: no first-run marker, no config cache, no
-    // store artifacts — the fast path must leave the environment untouched.
+    // store artifacts — the fast path must leave the environment untouched,
+    // after BOTH kinds of context.
+    expect(readdirSync(home)).toEqual([]);
     expect(readdirSync(xdgConfig)).toEqual([]);
     expect(readdirSync(xdgState)).toEqual([]);
     expect(readdirSync(xdgCache)).toEqual([]);
+    expect(readdirSync(emptyCwd)).toEqual([]);
   });
 
   it("the spawned fast path emits zero bytes for zero candidates, exit 0", () => {

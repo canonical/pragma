@@ -14,7 +14,7 @@
  * orientation from the SAME source and the two can never diverge.
  */
 
-import { VERSION } from "../../constants.js";
+import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../constants.js";
 import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 import { TOOL_HINTS } from "./hints.js";
@@ -26,18 +26,24 @@ import type {
 } from "./types.js";
 
 /**
- * The four orientation conventions. The first three (system/model/querying) are
- * verbatim from the old shell — they describe the KG / tier-channel / SPARQL
- * model and are still accurate for v2; `mutations` is new in v2, surfacing the
- * plan-first/confirm gate.
+ * The four orientation conventions, and the single source both the
+ * `capabilities` tool and the MCP handshake read, so the two cannot contradict
+ * each other. `system` projects the distribution's identity rather than naming
+ * a domain — the live tool catalog the same handshake carries already says
+ * which nouns exist. `model`/`querying` are verbatim from the old shell (the
+ * tier-channel / SPARQL model is still accurate for v2); `mutations` is new in
+ * v2, surfacing the plan-first/confirm gate.
  */
 export const CONVENTIONS = {
-  system:
-    "Pragma is a CLI and MCP server for querying a design system knowledge graph — blocks, tokens, modifiers, standards, and ontologies.",
+  // `help` is authored as a bare phrase (`--help` renders it as one), so the
+  // self-description trails in parentheses rather than after a period this
+  // string would have to add — a fork writing "Explore the recipe graph."
+  // otherwise reads "recipe graph.. A CLI and MCP server…".
+  system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
   model:
     "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
   querying:
-    "All queries run against an RDF triple store. Prefixed IRIs (e.g. ds:global.component.button) identify entities. Use ontology_list to discover namespaces.",
+    "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
   mutations:
     "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
 } as const;
@@ -83,7 +89,7 @@ export function buildDiscoverySequence(
       stage: 2,
       tool: "sources_status",
       purpose:
-        "Confirm the store is built before any query. If it reports unavailable, call sources_update (confirm: true) first — otherwise the sample and domain reads below fail with STORE_UNAVAILABLE.",
+        "See which pack is answering. A fresh install answers reads from the snapshot embedded in the binary and needs no build; only an `unavailable` status requires sources_update (confirm: true), which is a project that declared its own packs and has not built them.",
     },
     {
       stage: 3,

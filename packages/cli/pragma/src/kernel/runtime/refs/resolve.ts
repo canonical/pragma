@@ -5,9 +5,9 @@
  * from the project's `node_modules`; `git` clones/fetches into the ref cache.
  * A ref that is already a commit SHA resolves to exactly that commit, which is
  * how a project pins a revision. Each package contributes its `definitions/**`
- * and `data/**` TTL files, labelled by a stable `pkg/relative-path` so the
- * pack's content hash is machine-independent. Reached only from the
- * `sources update` Task body.
+ * and `data/**` TTL files plus any `stories/*.json` it ships, labelled by a
+ * stable `pkg/relative-path` so the pack's content hash is machine-independent.
+ * Reached only from the `sources update` Task body.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
@@ -33,6 +33,13 @@ export interface ResolvedPackage {
   readonly root: string;
   /** The labelled RDF sources (path label + content). */
   readonly sources: { readonly path: string; readonly content: string }[];
+  /**
+   * The package's `stories/*.json` files, as RAW TEXT — never parsed here. The
+   * pack carries the package's bytes verbatim so every interpretation failure
+   * (malformed JSON and schema-invalid JSON alike) is caught behind one guard
+   * at dispatch instead of two half-guards at two layers.
+   */
+  readonly stories: { readonly path: string; readonly content: string }[];
 }
 
 /** Options for a resolution — the project directory an `npm` ref resolves from. */
@@ -42,6 +49,9 @@ export interface ResolveOptions {
 
 /** The package subdirectories scanned for `.ttl` sources. */
 const TTL_DIRS = ["definitions", "data"];
+
+/** The package subdirectory whose immediate `*.json` children are read stories. */
+const STORIES_DIR = "stories";
 
 /** Sanitize a ref for use as a cache path segment. */
 const sanitize = (value: string): string => value.replace(/[/\\:*?"<>|]/g, "_");
@@ -121,6 +131,47 @@ function readTtlSources(
   }
   sources.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return sources;
+}
+
+/**
+ * Read a package's `stories/*.json` as raw text, with stable labels.
+ *
+ * IMMEDIATE children only — the same discipline `skills/` uses, and recursion
+ * buys nothing. Hidden entries are skipped and a symlinked FILE is followed but
+ * a symlinked DIRECTORY is never recursed into, exactly as {@link walkTtl}
+ * argues. Sorted so the pack's content hash does not depend on readdir order.
+ *
+ * @param rootDir - The package root.
+ * @param label - The package name, used as the label prefix.
+ * @returns The labelled story files (`pkg/stories/name.json` + raw content).
+ * @note Impure — reads from disk.
+ */
+function readStorySources(
+  rootDir: string,
+  label: string,
+): { path: string; content: string }[] {
+  const dir = join(rootDir, STORIES_DIR);
+  if (!existsSync(dir)) return [];
+  const stories: { path: string; content: string }[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || !entry.name.endsWith(".json")) continue;
+    const full = join(dir, entry.name);
+    let isFile = entry.isFile();
+    if (entry.isSymbolicLink()) {
+      try {
+        isFile = statSync(full).isFile();
+      } catch {
+        continue;
+      }
+    }
+    if (!isFile) continue;
+    stories.push({
+      path: `${label}/${STORIES_DIR}/${entry.name}`,
+      content: readFileSync(full, "utf-8"),
+    });
+  }
+  stories.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return stories;
 }
 
 /**
@@ -272,6 +323,7 @@ export async function resolvePackage(
         resolved: ref.path,
         root: ref.path,
         sources: readTtlSources(ref.path, ref.pkg),
+        stories: readStorySources(ref.path, ref.pkg),
       };
     }
 
@@ -302,6 +354,7 @@ export async function resolvePackage(
         resolved: version,
         root: dir,
         sources: readTtlSources(dir, ref.pkg),
+        stories: readStorySources(dir, ref.pkg),
       };
     }
 
@@ -336,6 +389,7 @@ export async function resolvePackage(
         resolved,
         root: dir,
         sources: readTtlSources(dir, ref.pkg),
+        stories: readStorySources(dir, ref.pkg),
       };
     }
   }

@@ -15,8 +15,15 @@ import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
 import { contentHash } from "./hash.js";
 import { packIsComplete } from "./manifest.js";
 import { readPack } from "./read.js";
+import { activeStories } from "./stories.js";
 import type { PackIndex } from "./types.js";
-import { DATA_FILE, INDEX_FILE, MANIFEST_FILE, SCHEMA_FILE } from "./types.js";
+import {
+  DATA_FILE,
+  INDEX_FILE,
+  MANIFEST_FILE,
+  SCHEMA_FILE,
+  STORIES_FILE,
+} from "./types.js";
 
 const PREFIXES = {
   ex: "https://pragma.canonical.com/sample#",
@@ -36,12 +43,16 @@ ex:Button a ex:Component ; rdfs:label "Button" ; ex:componentName "Button" .
 ex:Card a ex:Component ; rdfs:label "Card" ; ex:componentName "Card" .
 `;
 
-const build = (inputs: { path: string; content: string }[]) =>
+const build = (
+  inputs: { path: string; content: string }[],
+  stories?: { path: string; content: string }[],
+) =>
   buildPack(inputs, {
     name: "test-pack",
     version: "0.0.0",
     sourceRef: "test:inline",
     prefixes: PREFIXES,
+    ...(stories === undefined ? {} : { stories }),
   });
 
 let savedCacheHome: string | undefined;
@@ -59,12 +70,22 @@ afterAll(() => {
 });
 
 describe("graphpack round-trip (PROTECTED)", () => {
-  it("builds the four artifact files and reuses a cached pack", async () => {
+  it("builds the five artifact files and reuses a cached pack", async () => {
     const result = await build([{ path: "a.ttl", content: TTL }]);
     expect(result.reused).toBe(false);
-    for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, MANIFEST_FILE]) {
+    for (const file of [
+      DATA_FILE,
+      SCHEMA_FILE,
+      INDEX_FILE,
+      STORIES_FILE,
+      MANIFEST_FILE,
+    ]) {
       expect(existsSync(join(result.dir, file))).toBe(true);
     }
+    // Written even when the packages ship none — an OPTIONAL artifact would put
+    // the same condition in all three modules that name the set, which is how a
+    // pack ends up claiming stories its directory does not hold.
+    expect(readFileSync(join(result.dir, STORIES_FILE), "utf-8")).toBe("[]");
 
     // A second build over identical inputs is a pure cache hit — no rebuild.
     const again = await build([{ path: "a.ttl", content: TTL }]);
@@ -117,7 +138,7 @@ describe("the committed embedded pack (PROTECTED)", () => {
   it("materializes exactly the files buildPack produces", async () => {
     // The artifact set is named once, in types.ts, but THREE modules must obey
     // it: buildPack writes them, packIsComplete gates on them, and
-    // materializeEmbeddedPack writes them back out. A fifth artifact added to
+    // materializeEmbeddedPack writes them back out. A SIXTH artifact added to
     // only some of those yields a pack whose content hash claims more than its
     // directory holds — which the next build then reuses, silently dropping the
     // difference. Comparing the two directories catches that on the day it lands.
@@ -140,6 +161,63 @@ describe("the committed embedded pack (PROTECTED)", () => {
     expect(index.contentHash).toBe(manifest.contentHash);
     expect(manifest.tripleCount ?? 0).toBeGreaterThan(0);
     expect(manifest.entityCount ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe("graphpack carried stories (PROTECTED)", () => {
+  const STORY = {
+    path: "pkg/stories/recipe.json",
+    content: '{"noun":"recipe"}',
+  };
+
+  it("hashes stories as sources and round-trips them byte-for-byte", async () => {
+    const inputs = [{ path: "a.ttl", content: TTL }];
+    const without = await build(inputs);
+    const withStory = await build(inputs, [STORY]);
+
+    // A story-only edit is a NEW pack: the same RDF with a story attached must
+    // not reuse the pack built without it.
+    expect(withStory.contentHash).not.toBe(without.contentHash);
+    expect(
+      JSON.parse(readFileSync(join(withStory.dir, STORIES_FILE), "utf-8")),
+    ).toEqual([{ source: STORY.path, content: STORY.content }]);
+
+    // …and rebuilding with the same story is a pure cache hit.
+    expect((await build(inputs, [STORY])).reused).toBe(true);
+  });
+
+  it("a pack directory missing stories.json is incomplete", async () => {
+    // The migration path: a pack built by the previous kernel has four files,
+    // so it is refused (→ `pragma sources update`) rather than reused as if it
+    // carried the stories its hash covers.
+    const { dir } = await build([{ path: "a.ttl", content: TTL }]);
+    expect(packIsComplete(dir)).toBe(true);
+    rmSync(join(dir, STORIES_FILE));
+    expect(packIsComplete(dir)).toBe(false);
+  });
+
+  it("reads only records shaped { source, content } from a pack directory", async () => {
+    // `stories.json` lives in a user-writable cache. An element that is not a
+    // record used to be cast straight through and reported as
+    // `Ignored story undefined: …` — a diagnostic naming no file, repeated on
+    // every command. Records are checked, so a corrupt entry simply is not one.
+    const { dir } = await build([{ path: "a.ttl", content: TTL }], [STORY]);
+    writeFileSync(
+      join(dir, STORIES_FILE),
+      JSON.stringify([
+        1,
+        null,
+        { source: "x" },
+        { source: 1, content: 2 },
+        {
+          source: STORY.path,
+          content: STORY.content,
+        },
+      ]),
+    );
+    expect(activeStories({ kind: "pack", dir, contentHash: "z" })).toEqual([
+      { source: STORY.path, content: STORY.content },
+    ]);
   });
 });
 

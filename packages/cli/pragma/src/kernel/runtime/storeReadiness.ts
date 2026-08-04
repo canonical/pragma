@@ -17,7 +17,6 @@
  * without ever booting the store.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
@@ -35,7 +34,7 @@ import { resolveSources } from "./resolveSources.js";
 export function storeUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(`${reason}.`, {
     recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}sources update`,
+      "sources update",
       "Build the local store from the configured packs.",
       { tool: "sources_update" },
     ),

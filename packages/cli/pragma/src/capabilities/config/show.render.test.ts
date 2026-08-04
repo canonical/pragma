@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { type RenderStyle, styleFor } from "../../kernel/render/style.js";
+import { emitReference } from "../../kernel/spec/emitReference.js";
+import { capabilities } from "../index.js";
 import { configShowFormatters, renderConfigShowPlain } from "./show.render.js";
 import type { ConfigShowData } from "./types.js";
 
 const DATA: ConfigShowData = {
   config: {
-    name: "pragma",
-    help: "Explore the design system",
-    colophon: "Made by the Canonical Webteam.",
-    issuesUrl: "https://github.com/canonical/pragma/issues",
     tier: "apps/lxd",
     channel: "normal",
     detail: "standard",
@@ -21,10 +19,6 @@ const DATA: ConfigShowData = {
     ],
   },
   origins: {
-    name: "default",
-    help: "default",
-    colophon: "default",
-    issuesUrl: "default",
     tier: "project",
     channel: "default",
     detail: "default",
@@ -32,7 +26,6 @@ const DATA: ConfigShowData = {
     generators: "default",
     stories: "default",
     prefixes: "default",
-    prompts: "default",
   },
   globalConfigPath: "/home/u/.config/pragma/config.json",
   projectConfigPath: "/repo/pragma.config.ts",
@@ -54,10 +47,6 @@ describe("renderConfigShowPlain", () => {
   it("is byte-identical to the plain form when the styler is disabled", () => {
     expect(renderConfigShowPlain(DATA, styleFor(false))).toBe(
       [
-        "name: pragma",
-        "help: Explore the design system",
-        "colophon: Made by the Canonical Webteam.",
-        "issuesUrl: https://github.com/canonical/pragma/issues",
         "tier: apps/lxd [project]",
         "channel: normal",
         "detail: standard",
@@ -87,10 +76,6 @@ describe("renderConfigShowPlain", () => {
     const bare: ConfigShowData = {
       config: { channel: "normal" },
       origins: {
-        name: "default",
-        help: "default",
-        colophon: "default",
-        issuesUrl: "default",
         tier: "default",
         channel: "default",
         detail: "default",
@@ -98,7 +83,6 @@ describe("renderConfigShowPlain", () => {
         generators: "default",
         stories: "default",
         prefixes: "default",
-        prompts: "default",
       },
       globalConfigPath: "/home/u/.config/pragma/config.json",
       projectExists: false,
@@ -107,26 +91,58 @@ describe("renderConfigShowPlain", () => {
 
     const out = renderConfigShowPlain(bare, styleFor(false));
 
-    expect(out).toContain("name: (none)");
-    expect(out).toContain("help: (none)");
-    expect(out).toContain("issuesUrl: (none)");
-    expect(out).toContain("colophon: (none)");
+    expect(out).toContain("tier: (none — all tiers visible)");
+    expect(out).toContain("packs: (none)");
     expect(out).toContain("generators: (none)");
     expect(out).toContain("project config: (not found)");
   });
 });
 
 describe("configShowFormatters.llm", () => {
-  it("renders the identity, packs, and generators rows with origin markers", () => {
+  it("renders the layered rows with origin markers", () => {
     const out = configShowFormatters.llm(DATA);
 
-    expect(out).toContain("- **Name:** pragma");
-    expect(out).toContain("- **Help:** Explore the design system");
-    expect(out).toContain("- **Colophon:** Made by the Canonical Webteam.");
-    expect(out).toContain(
-      "- **Issues:** https://github.com/canonical/pragma/issues",
-    );
+    expect(out).toContain("- **Tier:** apps/lxd [project]");
     expect(out).toContain("- **Packs:** @canonical/ds [global]");
     expect(out).toContain("- **Generators:** @canonical/summon-component");
+  });
+
+  it("reports no identity row, in either form", () => {
+    // Identity is read statically from `pragma.conf.ts`; reporting a layer for
+    // it was reporting a provenance the kernel does not honour. Both renderers
+    // are asserted, because they list their rows independently.
+    for (const out of [
+      renderConfigShowPlain(DATA, styleFor(false)),
+      configShowFormatters.llm(DATA),
+    ]) {
+      for (const field of ["name", "help", "colophon", "issues"]) {
+        expect(out.toLowerCase()).not.toContain(`${field}:`);
+      }
+    }
+  });
+});
+
+describe("the generated configuration reference", () => {
+  it("names exactly the fields this renderer reports with a layer", () => {
+    // The page and the renderer are written independently — the page is kernel
+    // prose, the renderer a capability — and the page's account of the renderer
+    // was wrong in both directions: it claimed every field but `completion`
+    // carried a printed provenance, while `prefixes`, `stories` and the four
+    // distribution-only fields do not, and it claimed `completion` was not
+    // printed, while `--format json` carries it.
+    //
+    // DERIVED from the real formatter: the field rows are the ones before the
+    // two PATH rows, which are not fields at all. Adding a row here without
+    // saying so on the page, or naming a field there this renderer drops, fails.
+    const printed = renderConfigShowPlain(DATA, styleFor(false))
+      .split("\n")
+      .map((line) => line.slice(0, line.indexOf(":")));
+    const fields = printed.slice(0, printed.indexOf("global config"));
+    expect(fields.length).toBeGreaterThan(0);
+
+    const page = emitReference(capabilities).get("config.md") ?? "";
+    expect(page).toContain(
+      `${fields.map((field) => `\`${field}\``).join(", ")} — those and only those —`,
+    );
   });
 });

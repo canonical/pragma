@@ -1,6 +1,6 @@
 /**
- * Standard-noun semantic parity (PROTECTED) — the bundled `standard` pack over a
- * code-standards fixture graph.
+ * Standard-noun semantic parity (PROTECTED) — the `standard` story
+ * `pragma.conf.ts` declares, over a code-standards fixture graph.
  *
  * The hand-written standard domain is gone, so parity is asserted directly
  * against the graph: every standard is reachable through list/lookup/categories/
@@ -10,16 +10,21 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { compilePack } from "../../kernel/packs/compile.js";
-import type { LookupOutput } from "../../kernel/packs/resolveEntity.js";
-import { parsePackDefinition } from "../../kernel/packs/schema.js";
-import type { PackRow } from "../../kernel/packs/types.js";
-import { verbKey } from "../../kernel/packs/uniqueness.js";
-import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
-import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
-import { standardPack } from "./pack.js";
+import { compilePack } from "../kernel/packs/compile.js";
+import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
+import { parsePackDefinition } from "../kernel/packs/schema.js";
+import type { PackRow } from "../kernel/packs/types.js";
+import { verbKey } from "../kernel/packs/uniqueness.js";
+import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
+import type { PragmaRuntime } from "../kernel/runtime/types.js";
+import type { VerbSpec } from "../kernel/spec/types.js";
+import { buildFixtureRuntime } from "../testing/helpers/packRuntime.js";
+import { declaredStories } from "./distribution.js";
+
+const standardPack = declaredStories.get("standard");
+if (!standardPack) {
+  throw new Error('pragma.conf.ts declares no story for "standard"');
+}
 
 const CS = "http://pragma.canonical.com/codestandards#";
 const PREFIXES = {
@@ -72,7 +77,7 @@ cs:code.function.purity a cs:CodeStandard ;
 `;
 
 const verbs = () =>
-  compilePack(standardPack, "bundled:standard", DEFAULT_PREFIX_MAP);
+  compilePack(standardPack, "pragma.conf.ts", DEFAULT_PREFIX_MAP);
 const verb = (label: string) =>
   verbs().find((v) => verbKey(v.path) === `standard ${label}`) as VerbSpec;
 
@@ -98,7 +103,7 @@ async function lookupAt(
   return out.results.at(0) as Record<string, unknown>;
 }
 
-describe("standard pack definition (PROTECTED)", () => {
+describe("standard story definition (PROTECTED)", () => {
   it("round-trips as declarative JSON and validates", () => {
     expect(
       parsePackDefinition(JSON.parse(JSON.stringify(standardPack)), "t"),

@@ -6,6 +6,7 @@ import {
   OWL_EXPORT_TTL,
 } from "../../../testing/fixtures/graph/owlExport.js";
 import { entityTotal } from "../../completion/entitySource.js";
+import { VOCABULARY } from "../../vocabulary.js";
 import { buildIndex } from "./buildIndex.js";
 import type { PackIndex } from "./types.js";
 
@@ -99,5 +100,50 @@ describe("buildIndex — real-data counters/classifiers (backlog A)", () => {
     expect(facets.find((facet) => facet.box === "abox")?.type).toBe(
       "ex:Category",
     );
+  });
+});
+
+/**
+ * The alternative-name property is DECLARED by the distribution, so a pack whose
+ * prefix map does not bind its prefix is an ordinary case — a third-party pack
+ * outside that namespace — not an error. Resolving the term strictly would throw
+ * there and take the whole pack build down with it.
+ */
+describe("buildIndex — the declared alternative-name property", () => {
+  let store: Store;
+
+  beforeAll(async () => {
+    store = await createStore({
+      sources: [{ content: OWL_EXPORT_TTL, path: "owl-export.ttl" }],
+      prefixes: OWL_EXPORT_PREFIXES,
+    });
+  });
+
+  afterAll(() => {
+    store.dispose();
+  });
+
+  it("projects it into altNames when the pack binds its prefix", async () => {
+    const index = await buildIndex(store, OWL_EXPORT_PREFIXES, "bound");
+    const named = index.entities.filter((entity) => entity.altNames);
+    expect(named.length).toBeGreaterThan(0);
+    expect(named.at(0)?.altNames?.length).toBeGreaterThan(0);
+  });
+
+  it("still builds, carrying no altNames, when the pack binds no such prefix", async () => {
+    // Unbind the prefix the DECLARATION uses, whatever it is — the subject here
+    // is the declared property, so naming a prefix would couple this case to
+    // today's values and quietly stop testing anything if they moved.
+    const declared = VOCABULARY.altName.slice(
+      0,
+      VOCABULARY.altName.indexOf(":"),
+    );
+    const { [declared]: _unbound, ...withoutDomain } = OWL_EXPORT_PREFIXES;
+    const index = await buildIndex(store, withoutDomain, "unbound");
+    // The graph is unchanged, so every entity is still indexed…
+    expect(index.entities.length).toBeGreaterThan(0);
+    // …they simply carry no alternative names, exactly as a pack that never
+    // authored the property would.
+    expect(index.entities.filter((entity) => entity.altNames)).toEqual([]);
   });
 });

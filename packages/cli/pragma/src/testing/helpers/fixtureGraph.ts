@@ -16,6 +16,10 @@
  * parity tests did not: proof that CLI-json and MCP-json agree over a graph
  * built the same way `sources update` builds one for a real project.
  *
+ * A fixture package may also ship `stories/*.json` (the `stories` option), which
+ * `sources update` carries into the built pack — that is the package tier a
+ * third-party noun arrives through.
+ *
  * Hermetic: the pack cache lives under the isolated `$XDG_CACHE_HOME`
  * `setupXdgIsolation` installs; `dispose()` removes the temp directories (the
  * shared content-addressed pack cache itself is left for reuse/cleanup by the
@@ -56,6 +60,12 @@ export interface FixtureGraphOptions {
    * this helper (to the fixture package) — do not override it here.
    */
   readonly config?: Omit<Partial<PragmaConfig>, "packs">;
+  /**
+   * `stories/*.json` the fixture PACKAGE ships, as raw text keyed by file name
+   * — deliberately raw, so a test can ship malformed or schema-invalid content
+   * and assert that it is dropped rather than fatal.
+   */
+  readonly stories?: Readonly<Record<string, string>>;
 }
 
 /** A booted fixture runtime plus its `cwd` (usable by any surface) and disposal. */
@@ -73,10 +83,6 @@ function builderRuntime(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
     config: { channel: "normal", packs },
     origins: {
-      name: "default",
-      help: "default",
-      colophon: "default",
-      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
@@ -84,7 +90,6 @@ function builderRuntime(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
       generators: "default",
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "/nonexistent", exists: false },
     project: { exists: false },
@@ -122,6 +127,13 @@ export async function bootFixtureRuntime(
   const pkgDir = mkdtempSync(join(tmpdir(), "pragma-fixture-pkg-"));
   mkdirSync(join(pkgDir, "definitions"), { recursive: true });
   writeFileSync(join(pkgDir, "definitions", "fixture.ttl"), options.ttl);
+  const stories = Object.entries(options.stories ?? {});
+  if (stories.length > 0) {
+    mkdirSync(join(pkgDir, "stories"), { recursive: true });
+    for (const [file, content] of stories) {
+      writeFileSync(join(pkgDir, "stories", file), content);
+    }
+  }
 
   const packs: PackDeclaration[] = [
     { name: "fixture", source: `file://${pkgDir}` },

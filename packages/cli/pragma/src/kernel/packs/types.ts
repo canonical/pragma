@@ -170,7 +170,11 @@ export interface PackSearch {
 export interface PackEmptyRecovery {
   /** Human-readable cause + fix (e.g. which packages provide the data). */
   readonly message: string;
-  /** Runnable pragma command fixing the emptiness (rendered on the CLI). */
+  /**
+   * The command that fixes the emptiness, WITHOUT the binary name
+   * (`sources update`). The consuming distribution's renderer prepends its own
+   * name, so a story stays portable across distributions.
+   */
   readonly cli?: string;
 }
 
@@ -331,7 +335,7 @@ export interface PackDefinition {
 
 /** A validated pack definition paired with where it was declared. */
 export interface PackEntry {
-  /** Where the definition was declared (config path, package file, or bundled). */
+  /** The package story file it came from, e.g. `@acme/recipes/stories/recipe.json`. */
   readonly source: string;
   readonly definition: PackDefinition;
 }

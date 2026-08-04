@@ -2,6 +2,7 @@
  * Formatters for `pragma sources status` — plain, llm, json.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type { SourcesStatusData } from "./types.js";
@@ -13,9 +14,8 @@ import type { SourcesStatusData } from "./types.js";
  */
 const STORE_HEADLINE: Record<SourcesStatusData["store"], string> = {
   built: "ready",
-  embedded:
-    "embedded snapshot (run `pragma sources update` to build from the configured packs)",
-  unavailable: "not built (run `pragma sources update`)",
+  embedded: `embedded snapshot (run \`${BIN_NAME} sources update\` to build from the configured packs)`,
+  unavailable: `not built (run \`${BIN_NAME} sources update\`)`,
 };
 
 /**

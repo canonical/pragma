@@ -30,7 +30,7 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
-import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
+import { VERSION } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { buildPack } from "../../kernel/runtime/graphpack/build.js";
@@ -114,7 +114,12 @@ async function buildUpdatePlan(
   const data: SourcesUpdateData = {
     contentHash: "",
     reused: false,
-    packs: refs.map((ref) => ({ name: ref.pkg, resolved: "", sourceCount: 0 })),
+    packs: refs.map((ref) => ({
+      name: ref.pkg,
+      resolved: "",
+      sourceCount: 0,
+      storyCount: 0,
+    })),
   };
 
   return gen(function* () {
@@ -174,6 +179,9 @@ export async function buildUpdateTask(
   }
 
   const inputs = resolved.flatMap((pkg) => pkg.sources);
+  // The packages' own `stories/*.json`, carried into the pack verbatim (see
+  // graphpack/types.STORIES_FILE). Raw text: nothing interprets them here.
+  const stories = resolved.flatMap((pkg) => pkg.stories);
 
   // Refuse to build an empty store (A4). A package that ships no `.ttl` (or no
   // configured packs at all) would build a 0-triple pack whose empty
@@ -187,7 +195,7 @@ export async function buildUpdateTask(
         : `The ${entries.length} configured pack(s) resolved 0 RDF sources (no definitions/**.ttl or data/**.ttl). Refusing to build an empty store.`,
       {
         recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+          "sources update --verbose",
           "Add a pack that ships `.ttl` under definitions/ or data/, then re-run.",
         ),
       },
@@ -207,6 +215,8 @@ export async function buildUpdateTask(
 
   report?.(`Building store from ${inputs.length} source(s)`);
   if (verbose) for (const input of inputs) report?.(`  parse ${input.path}`);
+  if (stories.length > 0)
+    report?.(`Carrying ${stories.length} package read story file(s)`);
 
   // Build the pack. On a parse/build failure, classify it as a NAMED data error
   // (U6) — not INTERNAL_ERROR's "please report this issue" — identifying the
@@ -235,6 +245,7 @@ export async function buildUpdateTask(
       version: VERSION,
       sourceRef,
       prefixes,
+      stories,
     });
   } catch (error) {
     if (!skipInvalid) throw await classifySourceBuildError(error, inputs);
@@ -254,7 +265,7 @@ export async function buildUpdateTask(
         `All ${inputs.length} configured source(s) failed to parse — nothing to build.`,
         {
           recovery: cliRecovery(
-            `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+            "sources update --verbose",
             "Fix the reported sources, then re-run.",
           ),
         },
@@ -267,6 +278,7 @@ export async function buildUpdateTask(
         // Re-harvest prefixes from only the sources that survived, so a dropped
         // file's declarations don't skew compaction.
         prefixes: buildPackPrefixes(usableInputs, layers.config.prefixes),
+        stories,
       });
     } catch (rebuildError) {
       throw await classifySourceBuildError(rebuildError, usableInputs);
@@ -286,7 +298,7 @@ export async function buildUpdateTask(
       `The configured sources parsed to 0 RDF triples, so the store would be empty. Refusing to build an empty store.`,
       {
         recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+          "sources update --verbose",
           "Check that the package sources actually contain RDF triples, then re-run.",
         ),
       },
@@ -301,6 +313,7 @@ export async function buildUpdateTask(
       name: pkg.name,
       resolved: pkg.resolved,
       sourceCount: pkg.sources.length,
+      storyCount: pkg.stories.length,
     })),
   };
 
@@ -376,7 +389,7 @@ export async function classifySourceBuildError(
     : "The configured package sources could not be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
     recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}sources update --verbose`,
+      "sources update --verbose",
       "Re-run with --verbose to see each file as it parses. If a package ships malformed RDF, report it to that package's maintainer.",
     ),
   });

@@ -1,12 +1,13 @@
 /**
- * Curated root `--help` for `pragma`.
+ * The curated root `--help` page.
  *
- * The front door is hand-curated, not auto-generated: nouns are grouped into
- * task-oriented sections with real one-line summaries, and each section is
- * reconciled against the *live* nouns (from the registered verbs) so a noun
- * that is not built yet is dropped and an uncatalogued one still surfaces under
- * "Other" rather than vanishing. Ported from the v1 root help, retargeted at
- * the grammar and the v2 noun set (no `llm`/`graphql`/`trace`/`tokens`).
+ * The kernel curates the nouns it ships — and only those. It names no domain:
+ * the nouns it does NOT curate lead the page untitled (the header one line up
+ * already carries the distribution's blurb) and describe themselves through
+ * their own verbs, so the front door follows the content instead of naming it.
+ * Every section is reconciled against the *live* nouns (from the registered
+ * verbs), so a noun that is not built yet is dropped and one the kernel has
+ * never heard of still surfaces.
  */
 
 import type { VerbSpec } from "../../spec/types.js";
@@ -24,88 +25,86 @@ interface NounSummary {
 }
 
 interface HelpGroup {
-  readonly title: string;
+  /**
+   * Absent for the leading uncurated group: its rows sit directly under the
+   * usage line, since repeating the header's blurb as a heading three lines
+   * below it says the same thing twice.
+   */
+  readonly title?: string;
   readonly nouns: readonly NounSummary[];
 }
 
 /**
- * Task-oriented grouping with curated summaries. Order is intentional: what
- * people reach for most (exploring, generating) comes first; agent tooling
- * comes last.
+ * The kernel's own nouns, grouped by task with curated summaries. Order is
+ * intentional: what people reach for most comes first; agent tooling comes last.
+ *
+ * @param programName - The CLI binary name (the distribution's `name`).
+ * @returns The task-oriented groups, in display order.
  */
-const HELP_GROUPS: readonly HelpGroup[] = [
-  {
-    title: "Explore the design system",
-    nouns: [
-      {
-        noun: "block",
-        summary: "Inspect components & patterns and their anatomy",
-      },
-      { noun: "token", summary: "Look up design tokens and their values" },
-      { noun: "modifier", summary: "Inspect modifiers and modifier families" },
-      { noun: "standard", summary: "Browse code standards and categories" },
-      {
-        noun: "ontology",
-        summary: "Explore the loaded ontologies (classes, properties)",
-      },
-      { noun: "tier", summary: "List the design-system tiers" },
-    ],
-  },
-  {
-    title: "Generate code",
-    nouns: [
-      { noun: "create", summary: "Scaffold components, packages, and apps" },
-    ],
-  },
-  {
-    title: "Query & serve the graph",
-    nouns: [
-      {
-        noun: "graph",
-        summary: "Run SPARQL queries or inspect a URI directly",
-      },
-    ],
-  },
-  {
-    title: "Set up & maintain",
-    nouns: [
-      { noun: "doctor", summary: "Check environment health" },
-      {
-        noun: "setup",
-        summary: "Configure MCP, skills, completions, and the LSP",
-      },
-      {
-        noun: "sources",
-        summary: "Build and refresh the local store from packs",
-      },
-      { noun: "config", summary: "Read and write pragma configuration" },
-      { noun: "info", summary: "Show version, config, and update status" },
-      {
-        noun: "upgrade",
-        summary: "Upgrade the pragma CLI to the latest version",
-      },
-    ],
-  },
-  {
-    title: "For AI agents",
-    nouns: [
-      {
-        noun: "capabilities",
-        summary: "Discover conventions, tools, and the discovery sequence",
-      },
-      {
-        noun: "colophon",
-        summary: "Read how pragma and the active domain are made",
-      },
-      {
-        noun: "skill",
-        summary: "Browse agent skills from design-system packages",
-      },
-      { noun: "prompt", summary: "Browse reusable prompt templates" },
-      { noun: "mcp", summary: "Start the MCP server over stdio" },
-    ],
-  },
-];
+function buildKernelGroups(programName: string): readonly HelpGroup[] {
+  return [
+    {
+      title: "Generate code",
+      nouns: [
+        { noun: "create", summary: "Scaffold components, packages, and apps" },
+      ],
+    },
+    {
+      title: "Query & serve the graph",
+      nouns: [
+        {
+          noun: "graph",
+          summary: "Run SPARQL queries or inspect a URI directly",
+        },
+        {
+          noun: "ontology",
+          summary: "Explore the loaded ontologies (classes, properties)",
+        },
+      ],
+    },
+    {
+      title: "Set up & maintain",
+      nouns: [
+        { noun: "doctor", summary: "Check environment health" },
+        {
+          noun: "setup",
+          summary: "Configure MCP, skills, completions, and the LSP",
+        },
+        {
+          noun: "sources",
+          summary: "Build and refresh the local store from packs",
+        },
+        {
+          noun: "config",
+          summary: `Read and write ${programName} configuration`,
+        },
+        { noun: "info", summary: "Show version, config, and update status" },
+        {
+          noun: "upgrade",
+          summary: `Upgrade the ${programName} CLI to the latest version`,
+        },
+      ],
+    },
+    {
+      title: "For AI agents",
+      nouns: [
+        {
+          noun: "capabilities",
+          summary: "Discover conventions, tools, and the discovery sequence",
+        },
+        {
+          noun: "colophon",
+          summary: `Read how ${programName} and the active domain are made`,
+        },
+        { noun: "skill", summary: "Browse agent skills from the active packs" },
+        { noun: "prompt", summary: "Browse reusable prompt templates" },
+        // The one noun with no verb to speak for it (the bin special-cases it),
+        // so its summary is hand-written rather than derived.
+        { noun: "mcp", summary: "Start the MCP server over stdio" },
+      ],
+    },
+  ];
+}
 
 /** All distinct, non-hidden top-level nouns present in the registered verbs. */
 function nounsFrom(verbs: readonly VerbSpec[]): Set<string> {
@@ -117,16 +116,21 @@ function nounsFrom(verbs: readonly VerbSpec[]): Set<string> {
   return nouns;
 }
 
-/** The summary to show for an uncatalogued but live noun. */
-function fallbackSummary(noun: string, verbs: readonly VerbSpec[]): string {
+/**
+ * Summarise an uncurated noun from its first live verb — which is the pack's own
+ * `description` whenever the pack ships a `list` (`compilePack` compiles that
+ * verb first). The terminal period a pack sentence carries is dropped so the
+ * column reads as one voice with the kernel's own fragments.
+ */
+function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
   const first = verbs.find((v) => v.path[0] === noun && !v.hidden);
-  return first?.summary ?? `${noun} commands`;
+  return (first?.summary ?? `${noun} commands`).replace(/\.$/, "");
 }
 
 /**
  * Build the curated root help string.
  *
- * @param programName - The CLI binary name (`pragma`).
+ * @param programName - The CLI binary name (the distribution's `name`).
  * @param description - The program description shown in the header.
  * @param verbs - All registered verbs, used to derive the live noun set.
  * @returns The formatted, colorized help text.
@@ -140,27 +144,23 @@ export function formatRootHelp(
   // `mcp` is served by the bin's special-case, not a projected verb, but is
   // always available — surface it so the front door is complete.
   present.add("mcp");
-  const catalogued = new Set(
-    HELP_GROUPS.flatMap((g) => g.nouns.map((n) => n.noun)),
-  );
+  const kernel = buildKernelGroups(programName);
+  const curated = new Set(kernel.flatMap((g) => g.nouns.map((n) => n.noun)));
 
-  const uncatalogued = [...present].filter((n) => !catalogued.has(n)).sort();
   const groups: HelpGroup[] = [
-    ...HELP_GROUPS.map((g) => ({
+    // Everything the kernel's curated table does not claim — in the shipped
+    // binary the bundled domain packs, in a fork whatever it ships. Untitled
+    // and first, so the domain leads the page without the kernel naming it.
+    {
+      nouns: [...present]
+        .filter((n) => !curated.has(n))
+        .sort()
+        .map((noun) => ({ noun, summary: summarizeNoun(noun, verbs) })),
+    },
+    ...kernel.map((g) => ({
       ...g,
       nouns: g.nouns.filter((n) => present.has(n.noun)),
     })),
-    ...(uncatalogued.length > 0
-      ? [
-          {
-            title: "Other",
-            nouns: uncatalogued.map((noun) => ({
-              noun,
-              summary: fallbackSummary(noun, verbs),
-            })),
-          },
-        ]
-      : []),
   ].filter((g) => g.nouns.length > 0);
 
   // One column width across ALL groups so the noun column aligns section to
@@ -180,7 +180,7 @@ export function formatRootHelp(
   ];
 
   for (const group of groups) {
-    lines.push(helpHeading(group.title));
+    if (group.title) lines.push(helpHeading(group.title));
     lines.push(
       ...helpColumns(
         group.nouns.map((n) => [n.noun, n.summary] as const),

@@ -24,7 +24,7 @@ import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
@@ -33,20 +33,11 @@ const pragmaBin = join(cliNextDir, "src/bin.ts");
 const compiledBin = join(cliNextDir, "dist/pragma");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 
-// Build the standalone binary ONCE for every describe in this file (create +
-// the READ smoke share it), so the tests always exercise the current bundle +
-// embedded manifest rather than a stale `dist/pragma`.
-beforeAll(() => {
-  const result = spawnSync("bun", ["run", "scripts/build.ts"], {
-    cwd: cliNextDir,
-    stdio: "pipe",
-  });
-  if (result.status !== 0) {
-    throw new Error(
-      `failed to build dist/pragma:\n${result.stderr?.toString() ?? ""}`,
-    );
-  }
-}, 180_000);
+// The binary is provisioned by `testing/perf/globalSetup.ts`, which rebuilds it
+// whenever it is missing or older than `src/**`, `scripts/**`, `pragma.conf.ts`
+// or `package.json` — so these tests exercise the current bundle + embedded
+// manifest without a second `beforeAll` writing `dist/pragma` in place while
+// another worker's test is spawning it.
 
 /** Read a directory tree into a sorted map of relative path → contents. */
 function snapshot(dir: string): Map<string, string> {
@@ -105,6 +96,52 @@ describe("compiled pragma create component (PROTECTED)", () => {
         expect(source.get(path), `content of ${path}`).toBe(content);
       }
     }, 120_000);
+  }
+});
+
+/**
+ * PROTECTED — the compiled-binary `create` gate.
+ *
+ * `create component` runs from the binary (the describe above proves it byte for
+ * byte) because summon-component routes every template read through
+ * `loadTemplateSync` and passes `content:` into `template()`. `create package` /
+ * `create application` do NOT: they call `template({ source })`, summon-core
+ * falls through to `readFile(options.source)`, and the run dies with `ENOENT …
+ * /$bunfs/templates/package.json.ejs` AFTER `mkdir` has already run — a
+ * half-made package left on the user's disk. Measured against a real
+ * `dist/pragma` with the gate lifted, for both nouns.
+ *
+ * A `--dry-run` does NOT test this: it exits 0 without reading a template and
+ * merely PRINTS `Read file: /$bunfs/templates/package.json.ejs` as a planned
+ * effect. That false positive is why the gate has to be pinned by a real run.
+ *
+ * The `readdirSync(dir)` assertion is the load-bearing one: it fails with the
+ * real symptom if the gate is ever lifted without fixing the generators.
+ */
+describe("compiled pragma create gate (PROTECTED)", () => {
+  // A LITERAL noun list, deliberately not derived from `create`'s own
+  // declaration: changing the gate's input must turn this red rather than
+  // silently drop the case.
+  for (const kind of ["package", "application"] as const) {
+    it(`refuses \`create ${kind}\` and leaves the cwd untouched`, () => {
+      const dir = freshCwd();
+      const result = spawnSync(compiledBin, ["create", kind, "--yes"], {
+        cwd: dir,
+        stdio: "pipe",
+        encoding: "utf-8",
+      });
+      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
+      // 1, not merely non-zero: UNSUPPORTED is a runtime refusal, which
+      // `kernel/error/constants.ts` maps to the generic runtime exit.
+      expect(result.status).toBe(1);
+      expect(output).toContain("not available in the compiled pragma binary");
+      // The clean refusal, not the crash it exists to prevent.
+      expect(output).not.toMatch(/ENOENT/);
+      expect(output).not.toMatch(/Internal error/);
+      // And nothing half-made on disk: the generator's `mkdir` effects run
+      // BEFORE its first template read, so a lifted gate leaves a stub tree.
+      expect(readdirSync(dir)).toEqual([]);
+    }, 30_000);
   }
 });
 

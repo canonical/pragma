@@ -70,10 +70,6 @@ function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
     config: { channel: "normal", packs },
     origins: {
-      name: "default",
-      help: "default",
-      colophon: "default",
-      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
@@ -81,7 +77,6 @@ function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
       generators: "default",
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "/nonexistent", exists: false },
     project: { exists: false },
@@ -124,7 +119,7 @@ describe("sources update round-trip (PROTECTED)", () => {
     const result = await runTask(await buildUpdateTask(runtime));
     expect(result.contentHash).toMatch(/^[0-9a-f]{64}$/);
     expect(result.packs).toEqual([
-      { name: "pkg-a", resolved: pkg, sourceCount: 1 },
+      { name: "pkg-a", resolved: pkg, sourceCount: 1, storyCount: 0 },
     ]);
     // The pointer the next boot reads names exactly the pack just built.
     expect(readActivePack(cwd)).toBe(result.contentHash);

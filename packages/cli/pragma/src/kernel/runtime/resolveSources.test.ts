@@ -29,10 +29,6 @@ function layersWith(packsOrigin: "default" | "project"): ConfigLayers {
         packsOrigin === "project" ? [{ name: "x", source: "file:///x" }] : [],
     },
     origins: {
-      name: "default",
-      help: "default",
-      colophon: "default",
-      issuesUrl: "default",
       tier: "default",
       channel: "default",
       detail: "default",
@@ -40,7 +36,6 @@ function layersWith(packsOrigin: "default" | "project"): ConfigLayers {
       generators: "default",
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "/nonexistent", exists: false },
     project: { exists: false },
@@ -69,6 +64,7 @@ function writeCompletePack(hash: string): string {
   writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
   writeFileSync(join(dir, "schema.json"), "{}");
   writeFileSync(join(dir, "index.json"), "{}");
+  writeFileSync(join(dir, "stories.json"), "[]");
   writeManifest(dir, hash);
   return dir;
 }
@@ -118,7 +114,9 @@ describe("resolveSources decision table", () => {
     // manifest + non-empty dump present, but the extracted schema/index are
     // missing (a torn or partially-evicted pack). This used to slip through
     // `packIsComplete` and then crash at read time as an INTERNAL error; it must
-    // now be treated as not-built so the boot surfaces STORE_UNAVAILABLE.
+    // now be treated as not-built so the boot surfaces STORE_UNAVAILABLE — and
+    // say INCOMPLETE, not "missing", because the directory is right there. This
+    // is also the shape every pack built before `stories.json` now takes.
     const dir = packDir(hash);
     mkdirSync(dir, { recursive: true });
     writeFileSync(join(dir, "data.nq"), "<urn:s> <urn:p> <urn:o> .\n");
@@ -127,7 +125,7 @@ describe("resolveSources decision table", () => {
 
     expect(resolveSources(layersWith("default"), cwd)).toEqual({
       kind: "unavailable",
-      reason: "the built pack is missing from the cache",
+      reason: "the built pack is incomplete — an older or torn build",
     });
   });
 

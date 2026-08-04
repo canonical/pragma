@@ -22,7 +22,9 @@
  * any level), so the covenant is untouched.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { cliRecovery } from "../../kernel/error/recovery.js";
 import { resolvePackDetail } from "../../kernel/packs/disclosure.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
@@ -51,22 +53,22 @@ function resolvePrefix(
     if (entry) return { prefix: entry[0], namespace: entry[1] };
     throw PragmaError.invalidInput("namespace", input, {
       validOptions: Object.values(prefixes),
-      recovery: {
-        message: "List loaded ontology namespaces.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery(
+        "ontology list",
+        "List loaded ontology namespaces.",
+        {
+          tool: "ontology_list",
+        },
+      ),
     });
   }
   const namespace = prefixes[input];
   if (namespace === undefined) {
     throw PragmaError.invalidInput("prefix", input, {
       validOptions: Object.keys(prefixes),
-      recovery: {
-        message: "List loaded ontologies.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery("ontology list", "List loaded ontologies.", {
+        tool: "ontology_list",
+      }),
     });
   }
   return { prefix: input, namespace };
@@ -77,7 +79,7 @@ const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
   summary: "List loaded ontology namespaces with class and property counts.",
   params: [],
   output: { formatters: ontologyListFormatters },
-  examples: [{ cmd: "pragma ontology list" }],
+  examples: [{ cmd: `${BIN_NAME} ontology list` }],
   capability: {
     needsStore: true,
     mutates: false,
@@ -193,11 +195,9 @@ async function runByName(
 
   if (classes.length === 0 && properties.length === 0) {
     throw PragmaError.notFound("ontology", String(params.prefix), {
-      recovery: {
-        message: "List loaded ontologies.",
-        cli: "pragma ontology list",
-        mcp: { tool: "ontology_list" },
-      },
+      recovery: cliRecovery("ontology list", "List loaded ontologies.", {
+        tool: "ontology_list",
+      }),
     });
   }
 
@@ -244,9 +244,9 @@ export const ontologyLookupVerb = asVerb(
     "lookup",
     "Look up a namespace's classes (hierarchy + counts) and properties.",
     [
-      { cmd: "pragma ontology lookup ds" },
-      { cmd: "pragma ontology lookup ds --properties" },
-      { cmd: "pragma ontology lookup ds --class Component" },
+      { cmd: `${BIN_NAME} ontology lookup ds` },
+      { cmd: `${BIN_NAME} ontology lookup ds --properties` },
+      { cmd: `${BIN_NAME} ontology lookup ds --class Component` },
     ],
   ),
 );
@@ -261,8 +261,8 @@ export const ontologyShowVerb = asVerb(
     "show",
     "(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.",
     [
-      { cmd: "pragma ontology lookup ds", note: "prefer `lookup`" },
-      { cmd: "pragma ontology show ds", note: "deprecated alias" },
+      { cmd: `${BIN_NAME} ontology lookup ds`, note: "prefer `lookup`" },
+      { cmd: `${BIN_NAME} ontology show ds`, note: "deprecated alias" },
     ],
     "Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.",
   ),

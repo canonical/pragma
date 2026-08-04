@@ -18,10 +18,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { blockModule } from "../../capabilities/block/index.js";
+import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
 import { collectStatus } from "../../capabilities/sources/collectStatus.js";
-import { standardModule } from "../../capabilities/standard/index.js";
 import { tierModule } from "../../capabilities/tier/index.js";
 import { tokenModule } from "../../capabilities/token/index.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
@@ -37,6 +37,11 @@ const JSON_FLAGS: GlobalFlags = {
   verbose: false,
 };
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
+
+const standardModule = storyModules.get("standard");
+if (!standardModule) {
+  throw new Error('pragma.conf.ts declares no story for "standard"');
+}
 
 const verbOf = (module: CapabilityModule, path: string): VerbSpec =>
   module.verbs.find((verb) => verb.path.join(" ") === path) as VerbSpec;
