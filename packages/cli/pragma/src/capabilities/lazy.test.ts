@@ -93,7 +93,18 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // measured +23 ms on EVERY dispatched command, and the whole test suite
     // passes with it restored — the split is prose in three docblocks and
     // nothing else. This is the constraint those docblocks describe.
+    // `index.ts` is the FIRST entry and the reason for the other three: it is
+    // the root of the `--help`/`__complete` path the +23 ms is measured on, and
+    // it was the one this case did not watch. Measured on a scratch copy of
+    // HEAD: a single added import in `capabilities/create/constants.ts` (a
+    // module on this graph) grew it from 129 to 132 files, put
+    // `embedded/pack.generated.ts` on the fast path, and cost +22 ms on
+    // `--help` and +25 ms on `__complete` — with this file and
+    // `completion/safety.test.ts` both green, because the perf budgets leave
+    // ~2x headroom (130 ms ceiling, 61 ms median). With `index.ts` in this list
+    // that same edit fails here, naming the entry.
     for (const entry of [
+      "index.ts",
       "../kernel/packs/collect.ts",
       "../kernel/runtime/graphpack/stories.ts",
       "../kernel/runtime/resolveSources.ts",
@@ -101,6 +112,45 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
       const graph = staticImportGraph(resolve(here, entry));
       expect(has(graph, "embedded/pack.generated.ts"), entry).toBe(false);
       expect(has(graph, "graphpack/embedded.ts"), entry).toBe(false);
+    }
+  });
+
+  it("the create binding table stays a leaf on the fast path (PROTECTED)", () => {
+    // `capabilities/create/constants.ts` is read by `create.verb.ts` while the
+    // command tree is BUILT, so whatever it imports is paid for on every
+    // `--help` and every `__complete`. Its docblock has always said so — but it
+    // cited THIS file for the rule while nothing here constrained it, and the
+    // one edit it forbids by name (`PragmaError`) fails no other assertion:
+    // `kernel/error/PragmaError.ts` is already on the graph from
+    // `capabilities/index.ts`. So the rule was prose citing a guard that did
+    // not guard it.
+    //
+    // An EXACT enumeration, the same form as the `pragma.conf.ts` case above
+    // and for the same reason: a subset check would tolerate the next arrival.
+    // The two type-only entries are `pragma.conf.ts`'s own type imports plus
+    // the `RawConfig` this module reads its `generators` through — the walker
+    // follows `from "…"` textually and cannot tell a type import from a value
+    // one, which is why the no-value-import assertion below is separate.
+    const entry = resolve(here, "create/constants.ts");
+    const pkgRoot = resolve(here, "../..");
+    const graph = [...staticImportGraph(entry)]
+      .map((file) => relative(pkgRoot, file))
+      .sort();
+    expect(graph).toEqual([
+      "pragma.conf.ts",
+      "src/capabilities/create/constants.ts",
+      "src/kernel/config/types.ts",
+      "src/kernel/packs/types.ts",
+    ]);
+    // Nothing on that graph runs at import time except this module itself
+    // (which reads the declaration and may throw). The conf and both type
+    // modules are inert — pinned by the case above, restated here as the
+    // property this module depends on.
+    for (const file of graph.filter((f) => f !== relative(pkgRoot, entry))) {
+      expect(
+        readFileSync(resolve(pkgRoot, file), "utf-8"),
+        file,
+      ).not.toMatch(/^import (?!type\b)/m);
     }
   });
 
