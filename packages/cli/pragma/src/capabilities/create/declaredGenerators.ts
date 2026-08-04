@@ -19,11 +19,22 @@
  * `--help`/`__complete` fast path.
  */
 
-/** A parsed `generators[].source` ref. */
+/**
+ * A parsed `generators[].source` ref.
+ *
+ * Only the `npm` arm carries a payload, because only the `npm` arm has a reader:
+ * {@link assertDeclaredGenerators} holds its `name` to the entry's and its
+ * `range` to the linked dependency, and `continue`s on the other two. The `git`
+ * and `file` arms are bare discriminants on purpose — they used to carry `url`
+ * and `path` fields nothing dereferenced, which is the same dead surface this
+ * slice removed from the config (`completion.caseSensitive`) and from the
+ * declaration itself (an inert `source`). What those two forms are checked for
+ * is that they PARSE at all.
+ */
 export type ParsedGeneratorSource =
   | { readonly kind: "npm"; readonly name: string; readonly range: string }
-  | { readonly kind: "git"; readonly url: string }
-  | { readonly kind: "file"; readonly path: string };
+  | { readonly kind: "git" }
+  | { readonly kind: "file" };
 
 /**
  * Parse a declared generator `source`.
@@ -47,12 +58,8 @@ export function parseGeneratorSource(source: string): ParsedGeneratorSource {
     }
     return { kind: "npm", name: spec.slice(0, at), range: spec.slice(at + 1) };
   }
-  if (source.startsWith("git+")) {
-    return { kind: "git", url: source.slice("git+".length) };
-  }
-  if (source.startsWith("file:")) {
-    return { kind: "file", path: source.slice("file:".length) };
-  }
+  if (source.startsWith("git+")) return { kind: "git" };
+  if (source.startsWith("file:")) return { kind: "file" };
   throw new Error(
     `generator source "${source}" is not npm:<spec>, git+<url> or file:<path>.`,
   );
@@ -130,7 +137,18 @@ export function assertDeclaredGenerators(input: DeclaredGeneratorCheck): void {
   const { declared, bound, statics, dependencies } = input;
 
   for (const entry of declared) {
-    const parsed = parseGeneratorSource(entry.source);
+    // Prefixed with the file, like every other failure this function raises:
+    // `parseGeneratorSource` takes a bare string and cannot name the declaration
+    // it came from, so its two messages used to be the only ones here that did
+    // not begin with the file a builder has to open.
+    let parsed: ParsedGeneratorSource;
+    try {
+      parsed = parseGeneratorSource(entry.source);
+    } catch (cause) {
+      throw new Error(
+        `pragma.conf.ts generator "${entry.name}": ${cause instanceof Error ? cause.message : String(cause)}`,
+      );
+    }
     if (parsed.kind !== "npm") continue;
     if (parsed.name !== entry.name) {
       throw new Error(

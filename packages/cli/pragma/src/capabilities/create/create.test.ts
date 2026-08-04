@@ -574,13 +574,12 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
       name: "@canonical/summon-component",
       range: "^0.33.0",
     });
+    // The non-npm arms are bare discriminants — nothing reads a url or a path,
+    // so nothing pins one. What they promise is that the form is recognised.
     expect(
       parseGeneratorSource("git+https://example.invalid/g.git#main"),
-    ).toEqual({ kind: "git", url: "https://example.invalid/g.git#main" });
-    expect(parseGeneratorSource("file:../local")).toEqual({
-      kind: "file",
-      path: "../local",
-    });
+    ).toEqual({ kind: "git" });
+    expect(parseGeneratorSource("file:../local")).toEqual({ kind: "file" });
     expect(() => parseGeneratorSource("@canonical/x@1")).toThrow(/npm:<spec>/);
     expect(() => parseGeneratorSource("npm:plain")).toThrow(/version range/);
   });
