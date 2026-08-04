@@ -64,7 +64,9 @@ These are **protocol identity, not copy**. A client that has stored a resource U
 
 It is not a price paid out of caution. Deriving the scheme per distribution has been attempted here and it failed in the worst available way: the URI *template* was derived while the two sites that MINT URIs stayed literal, so a fork advertised `recipes:{+uri}` over a list of 653 `pragma:` URIs. Every resource the server offered was unreadable, and the readable form was never advertised.
 
-The freeze is enforced, not merely asserted. `surface/surface.v2.json` records it in its `$comment`, and `capabilities/resources/resources.test.ts` derives ONE scheme token from that covenant and holds all four writings to it — the covenant entry, the provider's declared template, every URI the listing mints (the recovery entry included), and both `_meta` key namespaces. The template and the minting sites can only move together.
+The freeze is enforced, not merely asserted, and it takes **two** guards because one cannot see the whole of it. `surface/surface.v2.json` records the freeze in its `$comment`; `capabilities/resources/resources.test.ts` derives ONE scheme token from that covenant and holds all four writings to it — the covenant entry, the provider's declared template, every URI the listing mints (the recovery entry included), and both `_meta` key namespaces. That catches the mutation that was actually made: one writing changed, three left behind.
+
+It cannot catch the mutation the freeze exists to prevent. This distribution is *called* `pragma`, so under its own identity a derived `${BIN_NAME}:{+uri}` is byte-identical to the frozen literal and every one of those four checks still passes. So `src/identity.test.ts` runs the same four checks under a fork's name, where a derivation emits `recipes:{+uri}` and the covenant still says `pragma:{+uri}`. The two together are the freeze: one holds the writings to each other, the other holds them to the covenant across a rename.
 
 ## Plan-first mutations
 

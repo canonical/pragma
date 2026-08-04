@@ -1,6 +1,7 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import chalk from "chalk";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import type { VerbSpec } from "./kernel/spec/types.js";
@@ -296,6 +297,61 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("inherits the frozen MCP wire identity unchanged under its own name (PROTECTED)", async () => {
+    // The other half of the freeze, and the half that can only be pinned FROM A
+    // FORK. `resources.test.ts` compares the covenant entry, the declared
+    // template, every minted URI and both `_meta` namespaces to one scheme
+    // token — but it runs under THIS distribution's identity, where all four
+    // writings are the string `pragma…` whether they are literals or derived
+    // from `BIN_NAME`. So it fails on the mutation PR7 actually made (one
+    // literal changed) and passes on the mutation the freeze exists to prevent:
+    // replacing `URI_TEMPLATE` with `` `${BIN_NAME}:{+uri}` `` is byte-identical
+    // there. The reference and orientation cases above cannot see it either —
+    // both MASK the emitted template by VALUE, so a derived `recipes:{+uri}` is
+    // masked away and nothing asserts the scheme survived the rename.
+    //
+    // Under this mock the two diverge: a derivation emits `recipes:{+uri}` and
+    // the covenant still says `pragma:{+uri}`. Read from `surface.v2.json`, so
+    // it is the published contract that decides and not a second literal here.
+    const covenant = JSON.parse(
+      readFileSync(
+        fileURLToPath(new URL("../surface/surface.v2.json", import.meta.url)),
+        "utf-8",
+      ),
+    ) as { mcpSurface: { resources: string[] } };
+    const frozen = covenant.mcpSurface.resources[0];
+    expect(frozen).toBeTruthy();
+    const scheme = String(frozen).split(":")[0];
+
+    const { emitSurface } = await import("./kernel/spec/emitSurface.js");
+    const { capabilities } = await import("./capabilities/index.js");
+    const { buildResourceList, resourceProvider } = await import(
+      "./capabilities/resources/provider.js"
+    );
+    const { readPackIndex } = await import(
+      "./kernel/completion/entitySource.js"
+    );
+
+    // 1. what the live grammar publishes as the surface, and 2. what `register`
+    // installs — both still the covenant's token, under a distribution called
+    // something else.
+    expect(emitSurface(capabilities).mcpSurface.resources).toEqual([frozen]);
+    expect(resourceProvider.surface?.templates).toEqual([frozen]);
+
+    // 3. every URI the listing mints, and 4. both `_meta` key namespaces. These
+    // are the sites PR7 left literal while deriving the template; asserting
+    // them here is what keeps the pair moving together in EITHER direction.
+    const listed = [
+      ...buildResourceList(readPackIndex({ kind: "embedded" })),
+      ...buildResourceList(undefined),
+    ];
+    expect(listed.length).toBeGreaterThan(1);
+    expect(listed.filter((r) => !r.uri.startsWith(`${scheme}:`))).toEqual([]);
+    const metaKeys = new Set(listed.flatMap((r) => Object.keys(r._meta ?? {})));
+    expect(metaKeys.has(`${scheme}/box`)).toBe(true);
+    expect([...metaKeys].filter((k) => !k.startsWith(`${scheme}/`))).toEqual([]);
   });
 
   it("reads the graph with the fork's declared terms, not this distribution's", async () => {

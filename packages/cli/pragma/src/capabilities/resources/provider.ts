@@ -48,6 +48,14 @@ const INDIVIDUAL_PRIORITY = 0.3;
  * `resources.test.ts` pins the pair through {@link resourceProvider}'s declared
  * surface; `identity.test.ts` masks this template out of its leak scan for the
  * same reason.
+ *
+ * The pin takes TWO tests, because this distribution is called `pragma` and a
+ * derived `` `${BIN_NAME}:{+uri}` `` is byte-identical to this literal under its
+ * own identity — `resources.test.ts` compares the four writings to each other
+ * and would stay green through exactly the edit this docblock forbids.
+ * `identity.test.ts` runs the same four checks under a FORK's name, against the
+ * covenant read from disk, where a derivation diverges immediately. Verified by
+ * making the edit: `resources.test.ts` passes, the fork case fails.
  */
 const URI_TEMPLATE = "pragma:{+uri}";
 

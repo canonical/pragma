@@ -165,6 +165,15 @@ describe("resource listing (storeless, over the pack index)", () => {
     // surface publishes, and the `_meta` key namespace. PR7's defect changed
     // exactly one of these four and left the other three — that is the shape
     // this has to catch.
+    //
+    // WHAT IT CANNOT CATCH, stated so nobody leans on it for more: every
+    // writing here is the token `pragma` under THIS distribution's identity, so
+    // replacing the literal with a derivation (`` `${BIN_NAME}:{+uri}` ``)
+    // leaves all four byte-identical and this case green. That is the mutation
+    // the freeze exists to prevent, and it can only be seen from a fork:
+    // `identity.test.ts` runs these same four checks under the name `recipes`,
+    // against the covenant read from disk. Verified by making the edit — this
+    // file passes, that case fails.
     const covenant = JSON.parse(
       readFileSync(
         fileURLToPath(
