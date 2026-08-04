@@ -33,7 +33,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## Distribution-only fields
 
-`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
+`name`, `help`, `colophon` and `issuesUrl` are all read from the distribution config when the program loads, because the surfaces that need them run before or without the config layer: `--help`, shell completion, the MCP handshake and the first-run note for the three strings, and the leading section of `pragma colophon` for `colophon`. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show` — with one hard edge: a layer declaring `colophon` as a bare STRING (the pre-v2 byline form) is rejected at load rather than accepted and ignored, because the shape changed. Changing any of the four means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
 
 ## What `config show` reports
 
@@ -42,6 +42,10 @@ The `Type` column is prose; the field set and each field's optionality are check
 ## Renamed: `packages` → `packs`
 
 The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.
+
+## Removed: `completion.caseSensitive`
+
+`completion.caseSensitive` was validated and read by nothing — `setup completions` reads only `minChars` and `families`, and completion matching is always case-insensitive. It is removed, and a layer that still declares it fails loudly for the same reason the rename above does: unknown keys are stripped for forward compatibility, so the removal is detected BEFORE validation and the error names the file and the line. Delete the line. A pack story's `complete.caseSensitive` is a different, live field — it is part of the pack grammar's autocomplete heuristic, not of this config, and it is untouched.
 
 ## Reading and writing
 
