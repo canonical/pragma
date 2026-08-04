@@ -59,12 +59,19 @@ describe("`detail` is validated against the levels the page publishes", () => {
     }
   });
 
-  it("rejects an unpublished level, naming the file and every valid one", () => {
+  it("rejects an unpublished level, naming the file, every valid one and the edit", () => {
     // The failure mode this replaces was SILENT: `z.string()` took anything,
     // `config show` reported the bogus value as `[project]`, and the renderer
     // fell back to `standard`. The message is asserted against the three levels
-    // and the file because those are what a user needs to fix it — and they are
-    // what zod's default enum message plus `parseRawConfig`'s wrapper compose.
+    // and the file because those are what a user needs to fix it.
+    //
+    // The RECOVERY is asserted because zod's enum message alone left this the
+    // one break in the family with no edit attached — and the edit is not the
+    // obvious one. Measured on the built binary with a global `config.json`
+    // holding `detail: "banana"`: `config set detail summary` exits 1 with the
+    // same error and writes nothing, because the layers are read before the
+    // setter runs. So the recovery must say HAND, not `config set`, and this
+    // pins that it does.
     let thrown: unknown;
     try {
       parseRawConfig({ detail: "banana" }, "pragma.config.ts");
@@ -76,6 +83,11 @@ describe("`detail` is validated against the levels the page publishes", () => {
     expect(message).toContain("pragma.config.ts");
     expect(message).toContain("detail");
     for (const level of DETAIL_LEVELS) expect(message).toContain(level);
+    const recovery = (thrown as { recovery?: { message?: string } })?.recovery
+      ?.message;
+    expect(recovery).toContain("pragma.config.ts");
+    expect(recovery).toContain("by hand");
+    for (const level of DETAIL_LEVELS) expect(recovery).toContain(level);
   });
 });
 

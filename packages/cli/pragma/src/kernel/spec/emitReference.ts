@@ -508,7 +508,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   detail: {
     type: `${DETAIL_LEVELS.map((level) => `\`${level}\``).join(" | ")} (optional)`,
     notes:
-      "Default progressive-disclosure level. Validated: a layer declaring anything else fails at load with a `CONFIG_ERROR` naming the file and the three levels, rather than being reported as declared and silently rendered at `standard`. Set it with `config set detail <level>`, which rejects anything else.",
+      "Default progressive-disclosure level. Validated: a layer declaring anything else fails at load with a `CONFIG_ERROR` naming the file, the three levels and the edit, rather than being reported as declared and silently rendered at `standard`. Set it with `config set detail <level>`, which rejects anything else — but repair an already-broken layer BY HAND: the setter reads the config layers before it writes, so it fails with the same error. The error says so too.",
   },
   packs: {
     type: "array (optional)",

@@ -6,16 +6,21 @@
  * path, which are storeless and config-free. Validates the raw shape a global
  * JSON file or an evaluated `pragma.config.ts` declares; unknown keys are
  * stripped for forward compatibility, and only present keys survive so layer
- * merging keeps honest per-field provenance. Two edits to the config surface
- * are NOT left to the unknown-key stripping, because stripping and working are
- * indistinguishable to the person who wrote the file: a legacy `packages` key
- * (renamed to `packs`) and a removed `completion.caseSensitive` are each
- * detected BEFORE validation and rejected with a loud CONFIG_ERROR naming the
- * file. Both checks are shallow and exact by design — see `parseRawConfig`.
+ * merging keeps honest per-field provenance.
+ *
+ * FOUR edits to the config surface are checked BEFORE validation, each raising
+ * a CONFIG_ERROR that names the file AND the edit that fixes it. Two of them —
+ * a legacy `packages` key (renamed to `packs`) and a removed
+ * `completion.caseSensitive` — exist because the unknown-key stripping would
+ * otherwise eat them, and stripping is indistinguishable from working to the
+ * person who wrote the file. The other two — a pre-v2 `colophon` byline string
+ * and an out-of-range `detail` — exist because zod DOES reject them, but with a
+ * shape or range message that names neither the new form nor the edit. Only the
+ * `colophon` one branches its remedy on the layer. See `parseRawConfig`.
  */
 
 import { z } from "zod";
-import { DETAIL_LEVELS } from "../../constants.js";
+import { DEFAULT_DETAIL_LEVEL, DETAIL_LEVELS } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { CHANNELS, type RawConfig } from "./types.js";
 
@@ -91,11 +96,13 @@ export const rawConfigSchema = z.object({
  * @returns The validated layer values (only the keys actually present).
  * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
  *   value declares the legacy `packages` key (renamed to `packs`), when it
- *   declares the removed `completion.caseSensitive`, or when it declares
- *   `colophon` in the pre-v2 byline-string form. The three pre-validation
- *   checks all exist for one reason: a config that USED to be valid must fail
- *   with the edit that fixes it, not with a stripped key or a shape mismatch —
- *   which is why the `colophon` remedy differs by `layer`.
+ *   declares the removed `completion.caseSensitive`, when it declares
+ *   `colophon` in the pre-v2 byline-string form, or when it declares a `detail`
+ *   outside `DETAIL_LEVELS`. The four pre-validation checks all exist for one
+ *   reason: a config that USED to be valid must fail with the edit that fixes
+ *   it, not with a stripped key, a shape mismatch or a range message — which is
+ *   why the `colophon` remedy differs by `layer` and why the `detail` one says
+ *   to edit the file rather than to run the setter.
  */
 export function parseRawConfig(
   value: unknown,
@@ -174,6 +181,30 @@ export function parseRawConfig(
             layer === "distribution"
               ? `In ${source}, write colophon: { markdown: "<the body>" } — and add a short "summary" beside it, which is what --format llm emits.`
               : `In ${source}, delete the "colophon" line: only the distribution's own config declares a colophon, and a value here has no effect whatever shape it is in.`,
+        },
+      },
+    );
+  }
+  // Range detection, the fourth, and the `colophon` argument again: zod already
+  // REJECTS an out-of-range level, and its default enum message is even good —
+  // it names the three values. What it cannot carry is the EDIT, and here that
+  // matters more than anywhere else in this family, because the repair the
+  // reference page names is unreachable from the broken state. Measured on the
+  // built binary with a global `config.json` holding `detail: "banana"`:
+  // `config set detail summary` exits 1 with the bare zod message and writes
+  // nothing, because the layers are read before the setter runs. Every other
+  // break this slice landed tells a user what to change; this one told them to
+  // run the command their config had already disabled.
+  const detail = (value as { detail?: unknown } | null)?.detail;
+  if (
+    typeof detail === "string" &&
+    !(DETAIL_LEVELS as readonly string[]).includes(detail)
+  ) {
+    throw PragmaError.configError(
+      `Invalid config in ${source} at detail: ${JSON.stringify(detail)} is not a detail level. The levels are ${DETAIL_LEVELS.join(", ")}.`,
+      {
+        recovery: {
+          message: `In ${source}, set "detail" to one of ${DETAIL_LEVELS.join(", ")} — or delete the line, which restores the ${DEFAULT_DETAIL_LEVEL} default. Edit the file by hand: "config set detail" reads the config layers before it writes, so it fails with this same error.`,
         },
       },
     );
