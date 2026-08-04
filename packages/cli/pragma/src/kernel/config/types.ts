@@ -67,7 +67,16 @@ export interface PragmaConfig {
   readonly tier?: string;
   /** Release channel controlling component visibility. */
   readonly channel: Channel;
-  /** Default progressive-disclosure level. */
+  /**
+   * Default progressive-disclosure level — one of `constants.DETAIL_LEVELS`.
+   * Typed `string` rather than the level union DELIBERATELY: `pragma.conf.ts`
+   * type-imports this module and `capabilities/lazy.test.ts` asserts that
+   * import graph is exactly three files, none of which has a value import, so
+   * the tuple cannot be reached from here without dragging `constants.ts` (and
+   * its two value imports) onto the storeless fast path. `config/schema.ts`
+   * carries the constraint as a `z.enum` instead, which means an out-of-range
+   * level fails at config LOAD rather than at type-check.
+   */
   readonly detail?: string;
   /** Semantic pack sources; replaces (does not merge) across layers. */
   readonly packs?: readonly PackDeclaration[];
@@ -105,6 +114,7 @@ export interface RawConfig {
   readonly issuesUrl?: string;
   readonly tier?: string;
   readonly channel?: Channel;
+  /** See {@link PragmaConfig.detail} for why this is `string`, not the union. */
   readonly detail?: string;
   readonly packs?: readonly PackDeclaration[];
   readonly generators?: readonly GeneratorSource[];

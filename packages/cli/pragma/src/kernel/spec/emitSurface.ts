@@ -8,7 +8,11 @@
  * envelope, exit codes, budgets, ...). Hidden verbs are excluded.
  */
 
-import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
+import {
+  BIN_NAME,
+  DETAIL_LEVELS,
+  PROJECT_CONFIG_FILENAME,
+} from "../../constants.js";
 import type { CapabilityModule, ParamSpec, VerbSpec } from "./types.js";
 
 /** kebab-case a camelCase param name for its flag form (`allTiers` -> `all-tiers`). */
@@ -88,7 +92,11 @@ export const FIXED_SURFACE = {
       doc: "Progressive-disclosure level (summary, standard, detailed)",
     },
   ],
-  detailLevels: ["summary", "standard", "detailed"],
+  // Projected, not re-typed: this was the last unguarded copy of the level
+  // tuple, and `config/schema.ts` now validates a declared `detail` against the
+  // same one — so the covenant, the validator and the renderer cannot disagree.
+  // Moves zero covenant bytes.
+  detailLevels: DETAIL_LEVELS,
   envelope: {
     success: { ok: true, data: "<payload>", meta: "<object>" },
     error: {

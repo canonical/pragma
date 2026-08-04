@@ -14,6 +14,7 @@
  */
 
 import { z } from "zod";
+import { DETAIL_LEVELS } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { CHANNELS, type RawConfig } from "./types.js";
 
@@ -58,7 +59,12 @@ export const rawConfigSchema = z.object({
   issuesUrl: z.string().url().optional(),
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),
-  detail: z.string().optional(),
+  // The level tuple is reached from `src/constants.ts`, NOT from `./types.ts`:
+  // `pragma.conf.ts` type-imports `types.ts`, and `capabilities/lazy.test.ts`
+  // asserts that graph is EXACTLY three files none of which has a value import.
+  // So `RawConfig.detail` stays `string` at the type level and zod carries the
+  // constraint instead — a declaration is checked at LOAD, not by tsc.
+  detail: z.enum(DETAIL_LEVELS).optional(),
   packs: z.array(packDeclarationSchema).optional(),
   generators: z.array(generatorSourceSchema).optional(),
   stories: z.array(z.unknown()).optional(),

@@ -15,8 +15,9 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { DETAIL_LEVELS } from "../../constants.js";
 import { emitReference } from "../spec/emitReference.js";
-import { rawConfigSchema } from "./schema.js";
+import { parseRawConfig, rawConfigSchema } from "./schema.js";
 
 /** The `field` cells of the generated page's Fields table, in page order. */
 function readDocumentedFields(): string[] {
@@ -46,5 +47,34 @@ describe("the configuration reference agrees with the validator", () => {
         schema.safeParse(undefined).success,
       );
     }
+  });
+});
+
+describe("`detail` is validated against the levels the page publishes", () => {
+  it("accepts each published level", () => {
+    for (const level of DETAIL_LEVELS) {
+      expect(parseRawConfig({ detail: level }, "x.config.ts").detail).toBe(
+        level,
+      );
+    }
+  });
+
+  it("rejects an unpublished level, naming the file and every valid one", () => {
+    // The failure mode this replaces was SILENT: `z.string()` took anything,
+    // `config show` reported the bogus value as `[project]`, and the renderer
+    // fell back to `standard`. The message is asserted against the three levels
+    // and the file because those are what a user needs to fix it — and they are
+    // what zod's default enum message plus `parseRawConfig`'s wrapper compose.
+    let thrown: unknown;
+    try {
+      parseRawConfig({ detail: "banana" }, "pragma.config.ts");
+    } catch (error) {
+      thrown = error;
+    }
+    expect((thrown as { code?: string })?.code).toBe("CONFIG_ERROR");
+    const message = (thrown as { message: string }).message;
+    expect(message).toContain("pragma.config.ts");
+    expect(message).toContain("detail");
+    for (const level of DETAIL_LEVELS) expect(message).toContain(level);
   });
 });

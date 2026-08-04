@@ -496,9 +496,9 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
   },
   detail: {
-    type: "string (optional)",
+    type: "`summary` | `standard` | `detailed` (optional)",
     notes:
-      "Default progressive-disclosure level: `summary`, `standard` or `detailed`. The validator takes any string and an unrecognized one falls back to `standard` — `config show` still reports it as declared. Set it with `config set detail <level>`, which rejects anything else.",
+      "Default progressive-disclosure level. Validated: a layer declaring anything else fails at load with a `CONFIG_ERROR` naming the file and the three levels, rather than being reported as declared and silently rendered at `standard`. Set it with `config set detail <level>`, which rejects anything else.",
   },
   packs: {
     type: "array (optional)",
