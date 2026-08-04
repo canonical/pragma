@@ -137,3 +137,41 @@ describe("the removed `completion.caseSensitive` fails loudly", () => {
     ).toEqual([{ name: "@acme/p", stories: [story] }]);
   });
 });
+
+describe("the pre-v2 `colophon` byline fails with the edit that fixes it", () => {
+  it("names the file and the new shape, not just the type mismatch", () => {
+    // The third break of the same class, and the one that nearly shipped
+    // without the treatment the other two got. zod DOES reject a string here,
+    // so nothing vanished — but it rejected it with "Expected object, received
+    // string" and `recovery: undefined`, which names the field and neither the
+    // new shape nor the fix. Measured, and the reason this check exists beside
+    // the other two rather than being left to the validator.
+    let thrown: unknown;
+    try {
+      parseRawConfig({ colophon: "a byline" }, "x.config.ts");
+    } catch (error) {
+      thrown = error;
+    }
+    expect((thrown as { code?: string })?.code).toBe("CONFIG_ERROR");
+    const message = (thrown as { message: string })?.message;
+    expect(message).toContain("x.config.ts");
+    expect(message).toContain("colophon");
+    const recovery = (thrown as { recovery?: { message?: string } })?.recovery
+      ?.message;
+    expect(recovery).toContain("markdown");
+    expect(recovery).toContain("summary");
+  });
+
+  it("accepts the declaration shape, summary and all", () => {
+    expect(
+      parseRawConfig(
+        { colophon: { markdown: "# body", summary: "short" } },
+        "x.config.ts",
+      ).colophon,
+    ).toEqual({ markdown: "# body", summary: "short" });
+    expect(
+      parseRawConfig({ colophon: { markdown: "body" } }, "x.config.ts")
+        .colophon,
+    ).toEqual({ markdown: "body" });
+  });
+});

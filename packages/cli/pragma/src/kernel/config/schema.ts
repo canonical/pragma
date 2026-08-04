@@ -86,8 +86,11 @@ export const rawConfigSchema = z.object({
  * @param source - The file path, used in error messages.
  * @returns The validated layer values (only the keys actually present).
  * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
- *   value declares the legacy `packages` key (renamed to `packs`), or when it
- *   declares the removed `completion.caseSensitive`.
+ *   value declares the legacy `packages` key (renamed to `packs`), when it
+ *   declares the removed `completion.caseSensitive`, or when it declares
+ *   `colophon` in the pre-v2 byline-string form. The three pre-validation
+ *   checks all exist for one reason: a config that USED to be valid must fail
+ *   with the edit that fixes it, not with a stripped key or a shape mismatch.
  */
 export function parseRawConfig(value: unknown, source: string): RawConfig {
   // Rename detection must precede validation: unknown keys are stripped, so a
@@ -127,6 +130,24 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
       {
         recovery: {
           message: `In ${source}, delete the "caseSensitive" line under "completion".`,
+        },
+      },
+    );
+  }
+  // Shape detection, the third of these and the same argument as the two above:
+  // a config that was VALID before must fail audibly, naming the edit. The
+  // pre-v2 `colophon` was a bare byline string; it is `{ markdown, summary? }`
+  // now. Unlike the two above this one does not vanish — zod rejects it — but it
+  // rejects it with "Expected object, received string" and no recovery, which
+  // names the field and not the new shape. Every other break this slice landed
+  // carries the fix; this is that one carrying it too.
+  const colophon = (value as { colophon?: unknown } | null)?.colophon;
+  if (typeof colophon === "string") {
+    throw PragmaError.configError(
+      `Invalid config in ${source}: "colophon" is a declaration now, not a byline string. It carries the Markdown BODY the colophon command renders.`,
+      {
+        recovery: {
+          message: `In ${source}, write colophon: { markdown: "<the body>" } — and add a short "summary" beside it, which is what --format llm emits.`,
         },
       },
     );
