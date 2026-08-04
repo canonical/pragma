@@ -91,13 +91,21 @@ export interface PragmaConfig {
   readonly channel: Channel;
   /**
    * Default progressive-disclosure level — one of `constants.DETAIL_LEVELS`.
-   * Typed `string` rather than the level union DELIBERATELY: `pragma.conf.ts`
-   * type-imports this module and `capabilities/lazy.test.ts` asserts that
-   * import graph is exactly three files, none of which has a value import, so
-   * the tuple cannot be reached from here without dragging `constants.ts` (and
-   * its two value imports) onto the storeless fast path. `config/schema.ts`
-   * carries the constraint as a `z.enum` instead, which means an out-of-range
-   * level fails at config LOAD rather than at type-check.
+   * Typed `string` rather than the level union DELIBERATELY, and the reason is
+   * a GUARD, not a cost: `pragma.conf.ts` type-imports this module and
+   * `capabilities/lazy.test.ts` pins that graph to exactly three files with no
+   * value import, so an edge from here to `constants.ts` grows the enumeration
+   * and fails there — and closes a `pragma.conf.ts → config/types.ts →
+   * constants.ts → pragma.conf.ts` loop that is erased at runtime but not in
+   * the walker, which reads `from "…"` textually. This docblock used to justify
+   * the weakening by claiming the edge would drag `constants.ts` and its two
+   * value imports onto the storeless fast path; that is false, and measurably
+   * so — `src/constants.ts`, `pragma.conf.ts` and `package.json` are all on
+   * every one of the four graphs `lazy.test.ts` walks, so the fast path already
+   * pays for them. `config/schema.ts` carries the constraint as a `z.enum`
+   * instead, which means an out-of-range level fails at config LOAD rather than
+   * at type-check. `config/schema.ts`'s own comment on `detail` states this
+   * same constraint correctly and always has.
    */
   readonly detail?: string;
   /** Semantic pack sources; replaces (does not merge) across layers. */
