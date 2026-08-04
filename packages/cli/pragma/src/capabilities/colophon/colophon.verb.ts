@@ -16,7 +16,17 @@ import type { ColophonData } from "./types.js";
 const colophonVerb: VerbSpec<Record<string, unknown>, ColophonData> = {
   path: ["colophon"],
   summary: `Narrate how ${BIN_NAME} and the active domain are made.`,
-  doc: `Storeless — a colophon for the toolchain. Prints ${BIN_NAME}'s own story (the effect monad, one-grammar-many-projections, the render/LLM-output model, storeless modularity, and the domain-as-data pack model) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.`,
+  // The doc says what the verb DOES, never what the colophon says. It used to
+  // enumerate this distribution's five chapters ("the effect monad, one-
+  // grammar-many-projections, …"), which was true only while the narrative was
+  // kernel code; it is declared content now, so that sentence became a
+  // description of a fork's colophon that a fork does not have — and of a
+  // section a distribution may decline to declare at all. It is published in
+  // four places (`--help`, the MCP tool description, `commands.md`,
+  // `tools.md`), and neither the copy guard nor the fork probe can see it: it
+  // names no distribution, it composes `${BIN_NAME}`, and it quotes no command.
+  // `colophon.test.ts` holds it to the declaration instead.
+  doc: `Storeless — a colophon for the toolchain. Prints the distribution's own section, when ${BIN_NAME} declares one, followed by the domain colophon of each active pack. Every section is authored CONTENT — a Markdown body the distribution or the pack supplies — so this command narrates what it is given rather than a story it carries. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.`,
   params: [],
   output: { formatters: colophonFormatters },
   examples: [

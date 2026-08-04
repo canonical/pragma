@@ -2,8 +2,9 @@
  * `pragma colophon` — the storeless, pack-extensible toolchain colophon (PR10).
  *
  * Pins the covenant-exact emitted slice (`{ v:"colophon", mcp:"colophon" }`),
- * proves the collector is storeless and combines pragma's built-in section with
- * the active pack's (the bundled `block` design-system colophon), exercises the
+ * proves the collector is storeless and combines the DISTRIBUTION's declared
+ * section with the active pack's (the bundled `block` design-system colophon),
+ * holds the verb's own prose clear of that declaration, exercises the
  * three formatter modes + `--format` precedence, holds CLI-json ≡ MCP
  * parity, and checks the pack-grammar accepts a `colophon` field (rejecting a
  * non-string).
@@ -136,6 +137,34 @@ describe("colophon — combined content (pragma + active domain)", () => {
     expect(block?.kind).toBe("pack");
     expect(block?.source).toBe("pack:block");
     expect(block?.markdown).toContain("knowledge graph");
+  });
+
+  it("the verb's own prose quotes none of the declared colophon's chapters", async () => {
+    // The one surface the fork probe structurally cannot see. `identity.test.ts`
+    // scans the generated reference for THIS distribution's NAME, and the verb's
+    // `doc` composes `${BIN_NAME}` and names no distribution — so a doc that
+    // summarises this distribution's colophon reads as clean under a fork's name
+    // while publishing a description of a story the fork does not have. It is
+    // published four times over (`--help`, the MCP tool description,
+    // `commands.md`, `tools.md`).
+    //
+    // Derived from the DECLARATION, not from a literal chapter list: the
+    // declaration is the authoring point, so a chapter renamed there and
+    // re-quoted here fails. What it catches is a QUOTE — the pre-fix doc opened
+    // its parenthetical with "the effect monad", the declaration's first
+    // heading, and this fails on it. A paraphrase of a chapter would still slip
+    // through; that is why the docblock beside `doc` states the rule too.
+    const { sections } = await collectColophon(bootRuntime(FLAGS, tmpCwd()));
+    const declared = sections.find((s) => s.kind === "distribution");
+    const headings = [...(declared?.markdown ?? "").matchAll(/^##\s+(.+)$/gm)]
+      .map((match) => match[1]?.trim() ?? "")
+      .filter((heading) => heading.length > 0);
+    expect(headings.length).toBeGreaterThan(0);
+    const doc = colophonModule.verbs[0]?.doc?.toLowerCase() ?? "";
+    expect(doc.length).toBeGreaterThan(0);
+    expect(
+      headings.filter((heading) => doc.includes(heading.toLowerCase())),
+    ).toEqual([]);
   });
 });
 

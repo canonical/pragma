@@ -51,7 +51,7 @@ _No input parameters._
 
 ### colophon
 
-Storeless — a colophon for the toolchain. Prints pragma's own story (the effect monad, one-grammar-many-projections, the render/LLM-output model, storeless modularity, and the domain-as-data pack model) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — a colophon for the toolchain. Prints the distribution's own section, when pragma declares one, followed by the domain colophon of each active pack. Every section is authored CONTENT — a Markdown body the distribution or the pack supplies — so this command narrates what it is given rather than a story it carries. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 Read-only.
 
