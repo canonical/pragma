@@ -31,6 +31,17 @@ const PROGRAM_DESCRIPTION = identity.help;
 /** Where the distribution asks users to file issues and feedback. */
 const ISSUES_URL = identity.issuesUrl;
 
+/**
+ * The distribution's own colophon section, or `undefined` when it declares none.
+ *
+ * The same projection seam as {@link PROGRAM_DESCRIPTION}: `colophon` used to be
+ * a narrative hardcoded under `src/capabilities/colophon/`, which a fork
+ * inherited whole. `collectColophon` reads it from here, so `src/identity.test.ts`
+ * proves a fork's colophon is its own the same way it proves the front door is.
+ * Adds no string literal, so the kernel copy guard is unaffected.
+ */
+const DISTRIBUTION_COLOPHON = identity.colophon;
+
 /** Semver version string read from package.json. */
 const VERSION: string = pkg.version;
 
@@ -75,6 +86,7 @@ export {
   BIN_NAME,
   DEFAULT_DETAIL_LEVEL,
   DETAIL_LEVELS,
+  DISTRIBUTION_COLOPHON,
   ISSUES_URL,
   MCP_SERVER_NAME,
   OUTPUT_FORMATS,

@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { parsePackDefinition } from "../../kernel/packs/schema.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
@@ -54,10 +55,12 @@ const NO_MUT = { dryRun: false, undo: false, yes: false };
 const FIXTURE: ColophonData = {
   sections: [
     {
-      kind: "pragma",
-      title: "pragma",
+      // Titled from `BIN_NAME`, not re-typed: the leading section IS the
+      // distribution's own, so under a fork these assertions still hold.
+      kind: "distribution",
+      title: BIN_NAME,
       markdown: "Intro **bold** line.\n\n## Section\n- one\n- two",
-      summary: "condensed pragma story",
+      summary: "condensed distribution story",
       source: "built-in",
     },
     {
@@ -117,11 +120,11 @@ describe("colophon — storeless collector (PROTECTED)", () => {
 });
 
 describe("colophon — combined content (pragma + active domain)", () => {
-  it("leads with pragma's built-in section", async () => {
+  it("leads with the distribution's declared section", async () => {
     const data = await collectColophon(bootRuntime(FLAGS, tmpCwd()));
     const first = data.sections[0];
-    expect(first?.kind).toBe("pragma");
-    expect(first?.title).toBe("pragma");
+    expect(first?.kind).toBe("distribution");
+    expect(first?.title).toBe(BIN_NAME);
     expect(first?.source).toBe("built-in");
     expect(first?.markdown.length).toBeGreaterThan(0);
     expect(first?.summary?.length).toBeGreaterThan(0);
@@ -139,7 +142,7 @@ describe("colophon — combined content (pragma + active domain)", () => {
 describe("colophon — formatter modes", () => {
   it("plain styles headings/bullets and titles every section", () => {
     const out = colophonFormatters.plain(FIXTURE);
-    expect(out).toContain("pragma");
+    expect(out).toContain(BIN_NAME);
     expect(out).toContain("block");
     expect(out).toContain("•"); // the `-` bullet transform
     expect(out).not.toContain("**bold**"); // inline markers are consumed
@@ -147,8 +150,8 @@ describe("colophon — formatter modes", () => {
 
   it("llm prefers the summary, else the markdown body", () => {
     const out = colophonFormatters.llm(FIXTURE);
-    expect(out).toContain("## pragma");
-    expect(out).toContain("condensed pragma story"); // summary used
+    expect(out).toContain(`## ${BIN_NAME}`);
+    expect(out).toContain("condensed distribution story"); // summary used
     expect(out).not.toContain("Intro **bold** line"); // full body NOT used
     expect(out).toContain("## block");
     expect(out).toContain("The domain body, no summary."); // markdown used
@@ -167,7 +170,9 @@ describe("colophon — formatter modes", () => {
     );
     const envelope = JSON.parse(outcome.stdout as string);
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pragma");
+    expect((envelope.data as ColophonData).sections[0]?.kind).toBe(
+      "distribution",
+    );
   });
 
   it("--format llm selects the condensed Markdown form", async () => {
@@ -177,12 +182,12 @@ describe("colophon — formatter modes", () => {
       NO_MUT,
       bootRuntime(FLAGS_LLM, tmpCwd()),
     );
-    expect(outcome.stdout).toContain("## pragma");
+    expect(outcome.stdout).toContain(`## ${BIN_NAME}`);
   });
 });
 
 describe("colophon — MCP parity", () => {
-  it("projects a read-only `colophon` tool that returns the pragma section", async () => {
+  it("projects a read-only `colophon` tool that returns the distribution section", async () => {
     const cwd = tmpCwd();
     const mcp = await projectMcp([colophonModule], cwd);
     const tool = (await mcp.listTools()).find((t) => t.name === "colophon");
@@ -195,7 +200,9 @@ describe("colophon — MCP parity", () => {
       openWorldHint: false,
     });
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as ColophonData).sections[0]?.kind).toBe("pragma");
+    expect((envelope.data as ColophonData).sections[0]?.kind).toBe(
+      "distribution",
+    );
   });
 
   it("CLI --format json ≡ MCP colophon (same envelope)", async () => {

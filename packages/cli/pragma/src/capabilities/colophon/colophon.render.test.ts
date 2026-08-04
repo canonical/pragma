@@ -17,8 +17,8 @@ import type { ColophonData } from "./types.js";
 const FIXTURE: ColophonData = {
   sections: [
     {
-      kind: "pragma",
-      title: "pragma",
+      kind: "distribution",
+      title: "distro",
       markdown: "How it is **made**.\n\n## Effects\n- describe\n- interpret",
       summary: "condensed",
       source: "built-in",
@@ -44,7 +44,7 @@ describe("colophon render golden — color-free (chalk.level = 0)", () => {
   it("plain styles the title/heading/bullets and consumes inline markers", () => {
     chalk.level = 0;
     const expected = [
-      "pragma",
+      "distro",
       "",
       "How it is made.",
       "",
@@ -62,7 +62,7 @@ describe("colophon render golden — color-free (chalk.level = 0)", () => {
   it("llm emits condensed Markdown (summary preferred, no color)", () => {
     chalk.level = 0;
     const expected = [
-      "## pragma",
+      "## distro",
       "",
       "condensed",
       "",

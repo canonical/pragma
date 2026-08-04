@@ -55,7 +55,14 @@ const completionSchema = z.object({
 export const rawConfigSchema = z.object({
   name: z.string().min(1).optional(),
   help: z.string().min(1).optional(),
-  colophon: z.string().optional(),
+  // Distribution CONTENT, not a byline: the section `colophon` renders first.
+  // Optional — a distribution that declares none simply has no first section.
+  colophon: z
+    .object({
+      markdown: z.string().min(1),
+      summary: z.string().min(1).optional(),
+    })
+    .optional(),
   issuesUrl: z.string().url().optional(),
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),

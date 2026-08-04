@@ -5,9 +5,16 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
   it("ships the distribution identity", () => {
     expect(defaults.name).toBe("pragma");
     expect(defaults.help).toBe("Explore the design system");
-    expect(defaults.colophon).toBe(
+    // The colophon is CONTENT this distribution declares, so it is pinned the
+    // way content is: the shape the collector reads, the byline that used to be
+    // the whole field, and the no-leading-H1 rule the renderer depends on (it
+    // supplies the heading itself, so a body starting `# ` double-titles).
+    expect(defaults.colophon?.markdown).toContain(
       "Made by the Canonical Webteam — https://canonical.com.",
     );
+    expect(defaults.colophon?.summary?.length).toBeGreaterThan(0);
+    expect(defaults.colophon?.markdown.startsWith("#")).toBe(false);
+    expect(defaults.colophon?.summary?.startsWith("#")).toBe(false);
     expect(defaults.issuesUrl).toBe(
       "https://github.com/canonical/pragma/issues",
     );

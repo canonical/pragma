@@ -30,6 +30,28 @@ export interface PackSource {
 /** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */
 export type PackDeclaration = string | PackSource;
 
+/**
+ * The distribution's own colophon section — hand-written CONTENT.
+ *
+ * `pragma colophon` used to lead with a narrative hardcoded in
+ * `capabilities/colophon/pragmaColophon.ts`, which a fork inherited: measured at
+ * 4 / 2 / 6 occurrences of this distribution's name (plain / llm / json) on a
+ * fork build, and the last file in the tree a fork read in another
+ * distribution's voice. It is a declaration now, so a fork's colophon is its
+ * own — including, deliberately, the architecture narrative: a distribution that
+ * forks the kernel is free to describe machinery it may have changed.
+ *
+ * `summary` is required by BEHAVIOUR, not taste: `--format llm` emits
+ * `summary ?? markdown`, so a distribution declaring only a body makes
+ * `colophon --format llm` print the whole essay at an agent.
+ */
+export interface ColophonDeclaration {
+  /** The Markdown BODY, with no leading H1 — the renderer supplies the title. */
+  readonly markdown: string;
+  /** The condensed body `--format llm` prefers. Same rule: no leading H1. */
+  readonly summary?: string;
+}
+
 /** A `generators` entry: a scaffold generator's npm/git/file source ref. */
 export interface GeneratorSource {
   readonly name: string;
@@ -108,7 +130,7 @@ export interface PragmaConfig {
 export interface RawConfig {
   readonly name?: string;
   readonly help?: string;
-  readonly colophon?: string;
+  readonly colophon?: ColophonDeclaration;
   readonly issuesUrl?: string;
   readonly tier?: string;
   readonly channel?: Channel;

@@ -11,7 +11,14 @@ vi.mock("../pragma.conf.js", () => ({
   default: {
     name: "recipes",
     help: "Explore the recipe graph",
-    colophon: "Made by the kitchen.",
+    // The fork's own story about itself, in the declared shape. It used to be a
+    // bare string that nothing read; `collectColophon` reads it now, so the
+    // colophon case below can assert this distribution's narrative is gone.
+    colophon: {
+      markdown:
+        "The recipe kitchen is a graph of dishes.\n\n## Why\n\nBecause a menu is a query.",
+      summary: "A graph of dishes; a menu is a query.",
+    },
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
     // Three, in the order the create surface binds its nouns: that surface now
@@ -20,8 +27,14 @@ vi.mock("../pragma.conf.js", () => ({
     // be enough here; it now fails at the module load of
     // `capabilities/create/constants.ts`, which is the point.
     generators: [
-      { name: "@kitchen/summon-dish", source: "npm:@kitchen/summon-dish@^1.0.0" },
-      { name: "@kitchen/summon-menu", source: "npm:@kitchen/summon-menu@^1.0.0" },
+      {
+        name: "@kitchen/summon-dish",
+        source: "npm:@kitchen/summon-dish@^1.0.0",
+      },
+      {
+        name: "@kitchen/summon-menu",
+        source: "npm:@kitchen/summon-menu@^1.0.0",
+      },
       {
         name: "@kitchen/summon-service",
         source: "npm:@kitchen/summon-service@^1.0.0",

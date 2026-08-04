@@ -1,6 +1,12 @@
 /**
  * Collect the `colophon` payload — the verb's run body (lazily imported).
  *
+ * The leading section is the DISTRIBUTION's own, read from `pragma.conf.ts`
+ * through `constants.DISTRIBUTION_COLOPHON`. It used to be a narrative
+ * hardcoded in a sibling module, which is why `kernel/copy.test.ts` carried an
+ * exemption for that one file; the narrative is content now and the exemption
+ * is gone.
+ *
  * STORELESS: it resolves the EFFECTIVE capability modules exactly as a real
  * command would — through `loadEffectiveModules`, so a story declared by a
  * PACKAGE the active pack carries surfaces its colophon here too, not only a
@@ -13,31 +19,40 @@
  * into a static import.
  */
 
+import { BIN_NAME, DISTRIBUTION_COLOPHON } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
-import { PRAGMA_COLOPHON, PRAGMA_COLOPHON_SUMMARY } from "./pragmaColophon.js";
 import type { ColophonData, ColophonSection } from "./types.js";
 
 /**
  * Assemble the colophon data for the current runtime.
  *
  * @param runtime - The per-invocation runtime.
- * @returns The storeless colophon payload: pragma's section, then each active
- *   pack/domain that declares a `colophon`.
+ * @returns The storeless colophon payload: the distribution's own section (when
+ *   it declares one), then each active pack/domain that declares a `colophon`.
  * @note Impure — reads the config layers (never boots the store).
  */
 export async function collectColophon(
   runtime: PragmaRuntime,
 ): Promise<ColophonData> {
-  const sections: ColophonSection[] = [
-    {
-      kind: "pragma",
-      title: "pragma",
-      markdown: PRAGMA_COLOPHON,
-      summary: PRAGMA_COLOPHON_SUMMARY,
-      source: "built-in",
-    },
-  ];
+  // The leading section is DECLARED, not authored here: title from the
+  // distribution's own name, body from its `colophon`. It is OMITTED entirely
+  // when none is declared — the field is optional, and a distribution that
+  // declares no story about itself must still get its packs' sections rather
+  // than an empty heading or a crash.
+  const sections: ColophonSection[] = DISTRIBUTION_COLOPHON
+    ? [
+        {
+          kind: "distribution",
+          title: BIN_NAME,
+          markdown: DISTRIBUTION_COLOPHON.markdown,
+          ...(DISTRIBUTION_COLOPHON.summary
+            ? { summary: DISTRIBUTION_COLOPHON.summary }
+            : {}),
+          source: "built-in",
+        },
+      ]
+    : [];
 
   const { loadEffectiveModules } = await import(
     "../../kernel/packs/collect.js"

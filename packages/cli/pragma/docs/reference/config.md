@@ -20,7 +20,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 | --- | --- | --- |
 | `name` | string (optional) | Distribution-only — see below. The binary's own name, read from the distribution config at module load. |
 | `help` | string (optional) | Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake. |
-| `colophon` | string (optional) | Distribution-only — see below. Accepted by the validator and read by NOTHING today: `colophon` renders a built-in narrative plus each pack's own `colophon`. Declaring it changes nothing. |
+| `colophon` | `{ markdown, summary? }` (optional) | Distribution-only — see below. The distribution's own colophon section: `colophon` renders it first, titled with the binary's name, then each active pack's own `colophon`. Both are Markdown BODIES with no leading heading — the renderer supplies one. `summary` is what `--format llm` emits; without it an agent is handed the full body. Declare none and the command reports only the packs' sections. |
 | `issuesUrl` | URL string (optional) | Distribution-only — see below. Where the first-run note asks users to report problems. |
 | `tier` | string (optional) | Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it. |
 | `channel` | `normal` \| `experimental` \| `prerelease` (optional) | Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`. |

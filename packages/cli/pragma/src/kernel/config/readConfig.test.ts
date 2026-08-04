@@ -115,7 +115,7 @@ describe("readConfig — layering + provenance", () => {
     freshXdg();
     writeGlobal('{"help":"Global help"}');
     const dir = projectWith(
-      'export default { name: "acme", colophon: "By Acme.", issuesUrl: "https://acme.test/issues", tier: "core" };',
+      'export default { name: "acme", colophon: { markdown: "By Acme." }, issuesUrl: "https://acme.test/issues", tier: "core" };',
     );
 
     const { config, origins } = await readConfig(dir);

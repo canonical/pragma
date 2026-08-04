@@ -476,9 +476,9 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake.",
   },
   colophon: {
-    type: "string (optional)",
+    type: "`{ markdown, summary? }` (optional)",
     notes:
-      "Distribution-only — see below. Accepted by the validator and read by NOTHING today: `colophon` renders a built-in narrative plus each pack's own `colophon`. Declaring it changes nothing.",
+      "Distribution-only — see below. The distribution's own colophon section: `colophon` renders it first, titled with the binary's name, then each active pack's own `colophon`. Both are Markdown BODIES with no leading heading — the renderer supplies one. `summary` is what `--format llm` emits; without it an agent is handed the full body. Declare none and the command reports only the packs' sections.",
   },
   issuesUrl: {
     type: "URL string (optional)",
