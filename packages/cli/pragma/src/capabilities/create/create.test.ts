@@ -601,13 +601,26 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
   });
 
   it("binds each noun to the package the distribution declares, in order", () => {
-    // The hand-copy this replaced could name a package the distribution did not
-    // ship and nothing would notice. Asserted against `conf.generators` rather
-    // than against literals, because the declaration is now the single
-    // authoring point — a literal here would just be the hand-copy again.
-    expect(Object.values(live().bound)).toEqual(
-      conf.generators.map((generator) => generator.name),
-    );
+    // A LITERAL noun → package map, the same technique as the `statics` case
+    // above. This used to assert `Object.values(bound)` against
+    // `conf.generators.map(g => g.name)` — but every `name:` in
+    // `CREATE_GENERATORS` IS `conf.generators[i].name`, so both sides reduced to
+    // the same three reads and the assertion compared the declaration with
+    // itself. The comment defending that said a literal "would just be the
+    // hand-copy again"; it is the opposite — the hand-copy was in `src/`, where
+    // nothing checked it, and this is a pin that must be edited deliberately
+    // when the declaration moves.
+    //
+    // Non-vacuous, and MEASURED against the mutation that discriminates the two
+    // forms: swap the first two entries of `pragma.conf.ts#generators` and the
+    // old assertion still holds (both sides move together) while this one fails.
+    // A positional zip over a reordered declaration re-binds two nouns, which is
+    // the failure the old form was written to catch and could not.
+    expect(live().bound).toEqual({
+      component: "@canonical/summon-component",
+      package: "@canonical/summon-package",
+      application: "@canonical/summon-application",
+    });
   });
 
   it("fails when a binding names a package the declaration does not", () => {
