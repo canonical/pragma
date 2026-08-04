@@ -439,6 +439,27 @@ describe("map — structural field collisions (M005)", () => {
     expect(output.types.get("Doc")?.fields.size).toBe(0);
   });
 
+  it("keeps `uri` and `_meta` under relay: false — nothing structural arrives", () => {
+    // Pass 6 is skipped entirely in this mode, so the compiler grafts no
+    // structural fields and therefore owns no names. Dropping here would
+    // delete a property in favour of a field that never exists, and M005's
+    // "a structural field the compiler owns" would be a false statement.
+    const { output, diagnostics } = map(docWith(["uri", "_meta"]), {
+      relay: false,
+    });
+    expect(diagnostics.filter((d) => d.code === "M005")).toHaveLength(0);
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("uri")).toBe(true);
+    expect(fields?.has("_meta")).toBe(true);
+    // …and the default mode still drops them, so this is a relay-mode
+    // difference rather than the guard having been weakened.
+    const relayed = map(docWith(["uri", "_meta"]));
+    expect(relayed.diagnostics.filter((d) => d.code === "M005")).toHaveLength(
+      2,
+    );
+    expect(relayed.output.types.get("Doc")?.fields.size).toBe(0);
+  });
+
   it("leaves the former reserved names free for the ontology to use", () => {
     // label/comment/definition/kind/id moved behind _meta (or were deleted), so
     // an ontology declaring them keeps its OWN names — no rename, no diagnostic.

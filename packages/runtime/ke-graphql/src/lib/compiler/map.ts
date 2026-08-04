@@ -50,6 +50,15 @@ const EMBEDDABLE_STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set([
   "_meta",
 ]);
 
+/**
+ * Under `relay: false` Pass 6 is skipped entirely, so NOTHING structural is
+ * ever grafted on and the compiler owns no field names at all. Dropping a
+ * property for colliding with `uri` would delete it in favour of a field that
+ * never arrives — and M005's message ("a structural field the compiler owns")
+ * would be false in that mode.
+ */
+const NO_STRUCTURAL_FIELD_NAMES: ReadonlySet<string> = new Set();
+
 /** How a consumer resolves an M001/M005 collision — named in both messages. */
 const COLLISION_REMEDIES =
   'add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } }) or namespace-prefix every field with prefixing: "all"';
@@ -277,9 +286,12 @@ const buildFields = (
   typeName: string,
 ): Map<string, MappedField> => {
   const fields = new Map<string, MappedField>();
-  const structural = node.embeddable
-    ? EMBEDDABLE_STRUCTURAL_FIELD_NAMES
-    : STRUCTURAL_FIELD_NAMES;
+  const structural =
+    state.options.relay === false
+      ? NO_STRUCTURAL_FIELD_NAMES
+      : node.embeddable
+        ? EMBEDDABLE_STRUCTURAL_FIELD_NAMES
+        : STRUCTURAL_FIELD_NAMES;
 
   const addField = (field: MappedField) => {
     // A silent rename is worse than a loud drop: the consumer's query breaks
