@@ -4,8 +4,19 @@
  * A verb renders at one of {@link DETAIL_LEVELS}. The effective level is chosen
  * from four sources, most specific first: the `--detail` flag, the resolved
  * config's `detail`, the verb's own `disclosure.default`, and finally the
- * built-in `"standard"`. Unknown values (a stale config, a typo) fall back to
- * the default rather than erroring, so output never fails on disclosure.
+ * built-in `"standard"`.
+ *
+ * The unknown-value fallback below no longer has a reachable production caller,
+ * and the reason it used to — "a stale config, a typo" — is gone: PR6 made a
+ * declared `detail` a `z.enum(DETAIL_LEVELS)` in `config/schema.ts`, so a bad
+ * one now fails at LOAD (measured: `detail: "banana"` throws CONFIG_ERROR)
+ * rather than arriving here. Every other source was already pre-validated —
+ * `globalFlags.readDetail` returns `undefined` for anything outside the tuple,
+ * and both `disclosure.default` and `disclosure.levels` are `z.enum` in
+ * `packs/schema.ts`, which is also what the MCP `detail` param is derived from.
+ * So the guard stays as what it now is: a total function's last resort, which
+ * costs one `includes` and keeps `resolveDetail` callable from a test with a
+ * raw string. It is not a licence for a caller to pass an unchecked level.
  */
 
 import {
