@@ -84,15 +84,24 @@ export const rawConfigSchema = z.object({
  *
  * @param value - The parsed JSON or evaluated module default.
  * @param source - The file path, used in error messages.
+ * @param layer - Which layer this is. Only the `colophon` remedy branches on it,
+ *   and only because that field has no effect outside the distribution layer —
+ *   see the check itself. `"user"` (global or project) is the default because
+ *   `defaults.ts` is the single distribution-layer caller.
  * @returns The validated layer values (only the keys actually present).
  * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
  *   value declares the legacy `packages` key (renamed to `packs`), when it
  *   declares the removed `completion.caseSensitive`, or when it declares
  *   `colophon` in the pre-v2 byline-string form. The three pre-validation
  *   checks all exist for one reason: a config that USED to be valid must fail
- *   with the edit that fixes it, not with a stripped key or a shape mismatch.
+ *   with the edit that fixes it, not with a stripped key or a shape mismatch —
+ *   which is why the `colophon` remedy differs by `layer`.
  */
-export function parseRawConfig(value: unknown, source: string): RawConfig {
+export function parseRawConfig(
+  value: unknown,
+  source: string,
+  layer: "distribution" | "user" = "user",
+): RawConfig {
   // Rename detection must precede validation: unknown keys are stripped, so a
   // legacy `packages` field would otherwise vanish silently.
   if (typeof value === "object" && value !== null && "packages" in value) {
@@ -141,13 +150,27 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
   // rejects it with "Expected object, received string" and no recovery, which
   // names the field and not the new shape. Every other break this slice landed
   // carries the fix; this is that one carrying it too.
+  //
+  // THE REMEDY BRANCHES ON THE LAYER, and it is the only one here that does.
+  // `colophon` is distribution-only: `readConfig.ts` deliberately does not
+  // `pick` it, so a global or project layer's value is accepted and ignored.
+  // Told to "write the declaration shape" there, a user makes the edit, is
+  // believed, and gets NOTHING — measured: following the unbranched recovery in
+  // a global `config.json` left `colophon --format llm` still printing the
+  // distribution's own body. That is the silent state this whole check family
+  // exists to eliminate, reintroduced by the check's own advice. So a user layer
+  // is told to DELETE the line (the shape the `caseSensitive` removal above
+  // uses), and only the distribution layer is told to rewrite it.
   const colophon = (value as { colophon?: unknown } | null)?.colophon;
   if (typeof colophon === "string") {
     throw PragmaError.configError(
       `Invalid config in ${source}: "colophon" is a declaration now, not a byline string. It carries the Markdown BODY the colophon command renders.`,
       {
         recovery: {
-          message: `In ${source}, write colophon: { markdown: "<the body>" } — and add a short "summary" beside it, which is what --format llm emits.`,
+          message:
+            layer === "distribution"
+              ? `In ${source}, write colophon: { markdown: "<the body>" } — and add a short "summary" beside it, which is what --format llm emits.`
+              : `In ${source}, delete the "colophon" line: only the distribution's own config declares a colophon, and a value here has no effect whatever shape it is in.`,
         },
       },
     );

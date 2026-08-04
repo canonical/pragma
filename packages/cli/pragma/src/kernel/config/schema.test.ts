@@ -156,10 +156,32 @@ describe("the pre-v2 `colophon` byline fails with the edit that fixes it", () =>
     const message = (thrown as { message: string })?.message;
     expect(message).toContain("x.config.ts");
     expect(message).toContain("colophon");
+    // A USER layer's remedy is DELETE, not rewrite. `readConfig.ts` does not
+    // `pick("colophon")`, so writing the new shape here is accepted and ignored
+    // — measured on the built binary: after following a rewrite remedy in a
+    // global `config.json`, `colophon --format llm` still printed the
+    // distribution's own body. A remedy whose edit changes nothing is the
+    // silence this check was added to end.
+    const recovery = (thrown as { recovery?: { message?: string } })?.recovery
+      ?.message;
+    expect(recovery).toContain("delete");
+    expect(recovery).not.toContain("markdown");
+  });
+
+  it("tells the DISTRIBUTION layer to write the new shape, not to delete it", () => {
+    // The one layer the field is read from, so the one layer where rewriting is
+    // the fix. `config/defaults.ts` is its only caller.
+    let thrown: unknown;
+    try {
+      parseRawConfig({ colophon: "a byline" }, "conf.ts", "distribution");
+    } catch (error) {
+      thrown = error;
+    }
     const recovery = (thrown as { recovery?: { message?: string } })?.recovery
       ?.message;
     expect(recovery).toContain("markdown");
     expect(recovery).toContain("summary");
+    expect(recovery).not.toContain("delete");
   });
 
   it("accepts the declaration shape, summary and all", () => {
