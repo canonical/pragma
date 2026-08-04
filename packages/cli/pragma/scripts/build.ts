@@ -38,6 +38,7 @@ import {
   readStaticGeneratorImports,
 } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
+import type { RawConfig } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
@@ -95,11 +96,21 @@ const PICK_GENERATOR_SRC = fileURLToPath(
  * assertion over the same three inputs, so the package suite catches it too —
  * the gate order is test-then-build and neither should be the only reader.
  *
+ * `generators` is read through {@link RawConfig}, not off the literal, for the
+ * reason `src/constants.ts` and `create/constants.ts` read their optional fields
+ * that way: `pragma.conf.ts` ends in `satisfies RawConfig`, so `conf.generators`
+ * has the LITERAL's type and is a TS2339 for a fork that omits the field — and
+ * `tsconfig.json` type-checks `scripts/**`, so `bun run check` would fail a fork
+ * inside a file it does not author. Through the contract it is `undefined`, the
+ * empty array flows through, and `create/constants.ts`'s named Error is what
+ * such a fork actually sees (it is imported at this module's top level, so it
+ * evaluates first).
+ *
  * @note Impure — reads `pickGenerator.ts`'s source text.
  */
 function checkDeclaredGenerators(): void {
   assertDeclaredGenerators({
-    declared: conf.generators,
+    declared: (conf as RawConfig).generators ?? [],
     bound: Object.fromEntries(
       Object.entries(CREATE_GENERATORS).map(([noun, binding]) => [
         noun,
