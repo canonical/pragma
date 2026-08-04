@@ -8,9 +8,12 @@
  *
  * DECLARED vs BOUND. `pragma.conf.ts` declares which generator PACKAGES the
  * distribution ships (`generators: [{ name, source }]`); this binds each `create`
- * noun to the generator-map key it runs, and — for the one generator whose
- * templates the binary carries — to the package `scripts/build.ts` harvests them
- * from. Nothing reads `generators[].source`. The binding is hand-written because
+ * noun to the package that supplies it and to the generator-map key it runs.
+ * The two are no longer allowed to drift: `assertDeclaredGenerators` — run by
+ * `scripts/build.ts` before it emits anything, and again by `create.test.ts` —
+ * holds every bound name to a declared one, every declared `source` to the
+ * dependency the build actually links, and `pickGenerator.ts`'s static import
+ * specifiers to both. The binding's PER-NOUN facts stay hand-written because
  * neither half can be discovered:
  *  - surfacing a noun also needs a hand-written prompt mirror, path param and
  *    examples in `create.verb.ts`, so the surface is a deliberate SUBSET —
@@ -47,6 +50,8 @@ export const CREATE_GENERATORS = {
     readsEmbeddedTemplates: true,
   },
   package: {
+    /** The declaring package, as named in `pragma.conf.ts` `generators`. */
+    name: "@canonical/summon-package",
     /** The generator-map key `create package` runs. */
     key: "package",
     /**
@@ -61,6 +66,8 @@ export const CREATE_GENERATORS = {
     readsEmbeddedTemplates: false,
   },
   application: {
+    /** The declaring package, as named in `pragma.conf.ts` `generators`. */
+    name: "@canonical/summon-application",
     /** The generator-map key `create application` runs. */
     key: "application/react",
     /**

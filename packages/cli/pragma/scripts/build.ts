@@ -30,7 +30,13 @@ import {
 } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import pkg from "../package.json" with { type: "json" };
+import conf from "../pragma.conf.js";
 import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
+import {
+  assertDeclaredGenerators,
+  readStaticGeneratorImports,
+} from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 
@@ -47,8 +53,11 @@ const scriptsUrl = new URL(".", import.meta.url);
  * `node_modules`, which bun links to the sibling workspace directory. That is a
  * MONOREPO BUILD path, not npm resolution: the published tarballs ship `dist`
  * only (`"files": ["dist"]`), so only a checkout satisfies it. `name` is the
- * single declared fact it consumes; `pragma.conf.ts`'s `source` range is not
- * involved.
+ * declared fact it consumes, and it is now a fact this build CHECKS rather than
+ * trusts: {@link checkDeclaredGenerators} runs first and holds every bound name
+ * to `pragma.conf.ts`'s declaration and every declared `npm:` range to the
+ * dependency that actually links, so a root that resolves to a package the
+ * distribution does not declare can no longer be harvested silently.
  *
  * `summon-package` / `summon-application` are excluded deliberately: their
  * generators call `template({ source })`, so a compiled binary can never read an
@@ -72,6 +81,37 @@ const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> =
         ]
       : [],
   );
+
+/** `pickGenerator.ts`'s source — read, never imported (importing pulls summon). */
+const PICK_GENERATOR_SRC = fileURLToPath(
+  new URL("../src/capabilities/create/pickGenerator.ts", scriptsUrl),
+);
+
+/**
+ * Hold `pragma.conf.ts`'s `generators` to what this build actually ships.
+ *
+ * Run FIRST, before any codegen, so a drifted declaration fails the build
+ * before it emits a manifest or a reference page. `create.test.ts` runs the same
+ * assertion over the same three inputs, so the package suite catches it too —
+ * the gate order is test-then-build and neither should be the only reader.
+ *
+ * @note Impure — reads `pickGenerator.ts`'s source text.
+ */
+function checkDeclaredGenerators(): void {
+  assertDeclaredGenerators({
+    declared: conf.generators,
+    bound: Object.fromEntries(
+      Object.entries(CREATE_GENERATORS).map(([noun, binding]) => [
+        noun,
+        binding.name,
+      ]),
+    ),
+    statics: readStaticGeneratorImports(
+      readFileSync(PICK_GENERATOR_SRC, "utf-8"),
+    ),
+    dependencies: pkg.dependencies,
+  });
+}
 
 const MANIFEST_OUT = fileURLToPath(
   new URL(
@@ -188,6 +228,8 @@ export { writeReferenceDocs };
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
+  checkDeclaredGenerators();
+
   const embedded = generateTemplateManifest();
   console.log(
     `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,

@@ -17,6 +17,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import pkg from "../../../package.json" with { type: "json" };
+import conf from "../../../pragma.conf.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
   executeVerb,
@@ -31,6 +33,12 @@ import {
   INCLUDE_FLAG_ALIASES,
   isModuleNotFound,
 } from "./create.verb.js";
+import {
+  assertDeclaredGenerators,
+  type DeclaredGeneratorCheck,
+  parseGeneratorSource,
+  readStaticGeneratorImports,
+} from "./declaredGenerators.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
 import { createModule } from "./index.js";
 
@@ -442,8 +450,10 @@ describe("compiled-binary create gate (M4)", () => {
 });
 
 describe("declared generator bindings (PROTECTED)", () => {
-  // CREATE_GENERATORS is the one place the create surface's generator facts are
-  // written down. What is checkable against something outside itself — the live
+  // CREATE_GENERATORS binds each noun's PER-NOUN facts (its generator-map key,
+  // its framework axis, whether it reads the embedded manifest). The package
+  // NAMES come from `pragma.conf.ts`; that correspondence is the subject of the
+  // suite below. What is checkable against something outside either — the live
   // generator maps and the embedded manifest — is checked here.
 
   it("every binding resolves to the generator it names", async () => {
@@ -530,5 +540,128 @@ describe("declared generator bindings (PROTECTED)", () => {
       "package",
       "application",
     ]);
+  });
+});
+
+describe("the generator declaration is load-bearing (PROTECTED)", () => {
+  /**
+   * The three inputs the build compares, read exactly as `scripts/build.ts`
+   * reads them. `pickGenerator.ts` is read as TEXT, never imported: importing it
+   * pulls summon-core, and the point is the literal specifiers in its source.
+   */
+  const live = (): DeclaredGeneratorCheck => ({
+    declared: conf.generators,
+    bound: Object.fromEntries(
+      Object.entries(CREATE_GENERATORS).map(([noun, binding]) => [
+        noun,
+        binding.name,
+      ]),
+    ),
+    statics: readStaticGeneratorImports(
+      readFileSync(
+        fileURLToPath(new URL("./pickGenerator.ts", import.meta.url)),
+        "utf-8",
+      ),
+    ),
+    dependencies: pkg.dependencies,
+  });
+
+  it("parses each declared source form and keeps a scoped name whole", () => {
+    expect(
+      parseGeneratorSource("npm:@canonical/summon-component@^0.33.0"),
+    ).toEqual({
+      kind: "npm",
+      name: "@canonical/summon-component",
+      range: "^0.33.0",
+    });
+    expect(
+      parseGeneratorSource("git+https://example.invalid/g.git#main"),
+    ).toEqual({ kind: "git", url: "https://example.invalid/g.git#main" });
+    expect(parseGeneratorSource("file:../local")).toEqual({
+      kind: "file",
+      path: "../local",
+    });
+    expect(() => parseGeneratorSource("@canonical/x@1")).toThrow(/npm:<spec>/);
+    expect(() => parseGeneratorSource("npm:plain")).toThrow(/version range/);
+  });
+
+  it("reads the static specifiers out of pickGenerator's own source", () => {
+    // The residue the ruling cannot remove: `bun build --compile` bundles only
+    // statically analysable specifiers, so these three literals must exist.
+    // Read by NOUN (the `GENERATOR_MAPS` entry), not by import order — biome
+    // sorts the import block alphabetically, which is not declaration order.
+    expect(live().statics).toEqual({
+      component: "@canonical/summon-component",
+      package: "@canonical/summon-package",
+      application: "@canonical/summon-application",
+    });
+  });
+
+  it("the shipped declaration, bindings and dependencies agree", () => {
+    expect(() => assertDeclaredGenerators(live())).not.toThrow();
+  });
+
+  it("fails when a binding names a package the declaration does not", () => {
+    expect(() =>
+      assertDeclaredGenerators({
+        ...live(),
+        bound: { ...live().bound, package: "@acme/other" },
+      }),
+    ).toThrow(/create package binds @acme\/other/);
+  });
+
+  it("fails when the declaration is reordered under the positional zip", () => {
+    // The binding table zips `generators` POSITIONALLY, so swapping two entries
+    // silently re-binds two nouns. This is what makes that impossible: the
+    // static specifier for each noun is the same string as its bound name, and
+    // a swap breaks two of the three.
+    const base = live();
+    const [a, b, c] = base.declared;
+    expect(() =>
+      assertDeclaredGenerators({
+        ...base,
+        declared: [b, a, c] as typeof base.declared,
+        bound: { component: b.name, package: a.name, application: c.name },
+      }),
+    ).toThrow(/pickGenerator\.ts statically imports/);
+  });
+
+  it("fails when a declared source names a different package than its entry", () => {
+    expect(() =>
+      assertDeclaredGenerators({
+        ...live(),
+        declared: [
+          {
+            name: "@canonical/summon-component",
+            source: "npm:@canonical/summon-package@^0.33.0",
+          },
+          ...live().declared.slice(1),
+        ],
+      }),
+    ).toThrow(/which names @canonical\/summon-package/);
+  });
+
+  it("fails when a declared range disagrees with the dependency that links", () => {
+    // The claim that makes `source` load-bearing rather than decorative: the
+    // DEPENDENCY decides which generator code is compiled into the binary, so a
+    // monorepo version bump that leaves the declaration at the old range now
+    // fails the build instead of publishing a range nothing installed.
+    expect(() =>
+      assertDeclaredGenerators({
+        ...live(),
+        dependencies: {
+          ...pkg.dependencies,
+          "@canonical/summon-component": "^9.0.0",
+        },
+      }),
+    ).toThrow(/package\.json depends on \^9\.0\.0/);
+  });
+
+  it("fails when a declared generator is not a dependency at all", () => {
+    const { "@canonical/summon-application": _dropped, ...rest } =
+      pkg.dependencies;
+    expect(() =>
+      assertDeclaredGenerators({ ...live(), dependencies: rest }),
+    ).toThrow(/not in this package's dependencies/);
   });
 });

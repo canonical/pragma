@@ -126,9 +126,9 @@ describe("the removed `completion.caseSensitive` fails loudly", () => {
         complete: { kind: "names", caseSensitive: true },
       },
     };
-    expect(parseRawConfig({ stories: [story] }, "x.config.ts").stories).toEqual([
-      story,
-    ]);
+    expect(parseRawConfig({ stories: [story] }, "x.config.ts").stories).toEqual(
+      [story],
+    );
     expect(
       parseRawConfig(
         { packs: [{ name: "@acme/p", stories: [story] }] },
