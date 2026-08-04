@@ -25,6 +25,21 @@ export interface ColophonSection {
    * authors about itself, while `pragma:{+uri}` is protocol identity a client
    * has already persisted as an ADDRESS. Renaming the first costs a re-read;
    * renaming the second made 653 advertised resources unreadable.
+   *
+   * KEPT RATHER THAN DELETED, and that was the second decision. No kernel code
+   * reads it — `colophon.render.ts` dereferences only `title`, `markdown` and
+   * `summary`, so `kind` is JSON-only — and {@link source} is written at both
+   * mint sites, which makes it a total function of `source` today. Deleting it
+   * would have fixed the same name leak for the same one-time wire break, and
+   * this slice did delete dead surface elsewhere (`completion.caseSensitive`,
+   * the inert generator-source payloads). It stays because it is not the same
+   * kind of field: `kind` is a CLOSED two-value discriminant a JSON consumer
+   * can switch on exhaustively, while `source` is an OPEN string
+   * (`"pack:<name>"` carries a name that varies per distribution) and is
+   * optional in this interface — so a consumer replacing `kind` with `source`
+   * would have to prefix-match a value that may be absent. Dead to the kernel
+   * is not dead to the payload's readers, which is the whole reason renaming
+   * it was priced as a break at all.
    */
   readonly kind: "distribution" | "pack";
   /** Section heading — the distribution's own name, or the pack's noun/name. */
