@@ -67,7 +67,18 @@ import conf from "../../../pragma.conf.js";
 import type { RawConfig } from "../../kernel/config/types.js";
 
 /**
- * The name declared at `index`, or a loud failure.
+ * The nouns this surface binds, IN THE ORDER the declaration is zipped onto
+ * them. Exists so the shortfall message and the three call sites below derive
+ * from one place: the message used to report the running index as the
+ * requirement ("declares 1 generators; the create surface binds 2"), which
+ * walked a fork through one rebuild per noun and contradicted its own trailing
+ * clause. Positional zipping is what makes the order load-bearing —
+ * `assertDeclaredGenerators` is what holds it.
+ */
+const BOUND_NOUNS = ["component", "package", "application"] as const;
+
+/**
+ * The name declared for `noun`, or a loud failure.
  *
  * A fork that declares fewer generators than this surface binds would otherwise
  * bind `undefined` as a package name and fail later, somewhere else. This throw
@@ -81,21 +92,22 @@ import type { RawConfig } from "../../kernel/config/types.js";
  *
  * `generators` is read through {@link RawConfig} rather than off the literal for
  * the reason `src/constants.ts` reads `colophon` that way: `satisfies RawConfig`
- * yields the literal's type, so `conf.generators[index]` is a TS2339 for a fork
+ * yields the literal's type, so `conf.generators` is a TS2339 for a fork
  * that omits the field, and at runtime a bare TypeError on the fast path —
  * before `?.` can help. Through the contract it is `undefined`, and the named
  * Error below fires as documented.
  *
- * @param index - Position in the declaration.
+ * @param noun - The bound noun, whose position in {@link BOUND_NOUNS} is the
+ *   position it reads from the declaration.
  * @returns The declared package name.
- * @throws Error naming the file, the shortfall and the edit.
+ * @throws Error naming the file, the full shortfall and the edit.
  */
-function declaredGeneratorName(index: number): string {
+function declaredGeneratorName(noun: (typeof BOUND_NOUNS)[number]): string {
   const declared = (conf as RawConfig).generators ?? [];
-  const name = declared[index]?.name;
+  const name = declared[BOUND_NOUNS.indexOf(noun)]?.name;
   if (name === undefined) {
     throw new Error(
-      `pragma.conf.ts declares ${declared.length} generators; the create surface binds ${index + 1}. Declare the missing generator(s) under "generators", in the order create binds its nouns (component, package, application), or rebind the nouns in capabilities/create.`,
+      `pragma.conf.ts declares ${declared.length} generator(s); the create surface binds ${BOUND_NOUNS.length}, in this order: ${BOUND_NOUNS.join(", ")}. Declare the missing one(s) under "generators", or rebind the nouns in capabilities/create.`,
     );
   }
   return name;
@@ -107,7 +119,7 @@ export const CREATE_GENERATORS = {
      * The declaring package, read from the distribution's `generators`:
      * `scripts/build.ts` harvests its `.ejs` for the binary.
      */
-    name: declaredGeneratorName(0),
+    name: declaredGeneratorName("component"),
     /** `--framework <f>` runs `component/<f>`; the FIRST is the enum default. */
     frameworks: ["react", "svelte", "lit"],
     /**
@@ -121,7 +133,7 @@ export const CREATE_GENERATORS = {
   },
   package: {
     /** The declaring package, read from the distribution's `generators`. */
-    name: declaredGeneratorName(1),
+    name: declaredGeneratorName("package"),
     /** The generator-map key `create package` runs. */
     key: "package",
     /**
@@ -137,7 +149,7 @@ export const CREATE_GENERATORS = {
   },
   application: {
     /** The declaring package, read from the distribution's `generators`. */
-    name: declaredGeneratorName(2),
+    name: declaredGeneratorName("application"),
     /** The generator-map key `create application` runs. */
     key: "application/react",
     /**

@@ -540,6 +540,16 @@ describe("declared generator bindings (PROTECTED)", () => {
       "package",
       "application",
     ]);
+    // The same three, in the same order, in the binding table. The table's
+    // `BOUND_NOUNS` is what its shortfall message counts and what decides which
+    // declaration slot each noun reads, so a key added or dropped without moving
+    // that tuple would leave the message reporting the wrong requirement. Also
+    // literal, for the reason above.
+    expect(Object.keys(CREATE_GENERATORS)).toEqual([
+      "component",
+      "package",
+      "application",
+    ]);
   });
 });
 
