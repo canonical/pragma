@@ -7,11 +7,11 @@
  * module is that reader, and the BUILD is where it runs: a declaration that
  * disagrees with what the binary actually links fails `bun run build` instead of
  * shipping a lie. That is the whole of what a `source` string can honestly
- * promise —
- * `bun build --compile` bundles only statically analysable specifiers, so a
- * shipped binary can never resolve a package FROM the declaration at runtime
- * (measured: `Cannot find module '@canonical/summon-component' from
- * '/$bunfs/root/…'`). See {@link assertDeclaredGenerators} for the four claims.
+ * promise — `bun build --compile` bundles only statically analysable
+ * specifiers, so a shipped binary can never resolve a package FROM the
+ * declaration at runtime (measured: `Cannot find module
+ * '@canonical/summon-component' from '/$bunfs/root/…'`). See
+ * {@link assertDeclaredGenerators} for the five claims.
  *
  * PURE, and deliberately import-free: `scripts/build.ts` and `create.test.ts`
  * are its only callers and they do the fs reads, so nothing here needs a module.

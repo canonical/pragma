@@ -2,14 +2,14 @@
  * Package-level constants — the distribution's identity, projected.
  *
  * The bin name, MCP server name, description, issues URL and the distribution's
- * own colophon are NOT authored
- * here: they are read from the distribution config (`pragma.conf.ts`), so a fork
- * changes values, not code. The import is static because the surfaces that need
- * identity — `--help`, `__complete`, first-run onboarding, the MCP handshake —
- * all run before or without the config layer. That is safe precisely because
- * `pragma.conf.ts` is inert data: a plain object literal whose only import is a
- * type. It reaches no zod schema, no fs, no evaluator. `capabilities/lazy.test.ts`
- * pins that boundary, and `src/identity.test.ts` proves the projection.
+ * own colophon are NOT authored here: they are read from the distribution
+ * config (`pragma.conf.ts`), so a fork changes values, not code. The import is
+ * static because the surfaces that need identity — `--help`, `__complete`,
+ * first-run onboarding, the MCP handshake — all run before or without the
+ * config layer. That is safe precisely because `pragma.conf.ts` is inert data:
+ * a plain object literal whose only import is a type. It reaches no zod schema,
+ * no fs, no evaluator. `capabilities/lazy.test.ts` pins that boundary, and
+ * `src/identity.test.ts` proves the projection.
  *
  * Also holds the stable cross-cutting enums (output formats, detail levels).
  */
