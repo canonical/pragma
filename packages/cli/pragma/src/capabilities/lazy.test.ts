@@ -37,6 +37,20 @@ const here = dirname(fileURLToPath(import.meta.url));
 const has = (graph: Set<string>, suffix: string): boolean =>
   [...graph].some((file) => file.endsWith(suffix));
 
+/**
+ * The four roots a storeless `--help` / `__complete` / `--version` run reaches:
+ * the process entry, the command tree, the completion responder, and the
+ * capability set all three build from. Relative to this file. Everything
+ * evaluated on those runs is somewhere on one of these graphs, which is what
+ * lets the config-edge case below be derived rather than enumerated by hand.
+ */
+const FAST_PATH_ENTRIES = [
+  "index.ts",
+  "../bin.ts",
+  "../kernel/project/cli/buildProgram.ts",
+  "../kernel/completion/complete.ts",
+] as const;
+
 describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
   it("importing capabilities/index pulls no verb run body or config reader", () => {
     const graph = staticImportGraph(resolve(here, "index.ts"));
@@ -168,30 +182,66 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // check it; this is that guard.
     //
     // The invariant is the storeless one: `--help`/`__complete` build the
-    // command tree from these two eagerly-evaluated modules, and must reach NO
-    // config module at RUNTIME. `kernel/config/types.ts` is an import-free leaf
-    // today, so a value edge would cost little — but it is the first step of
-    // the walk that ends at `config/schema.ts` and zod, and the point of a
-    // boundary is that it is checked before the cost arrives.
-    const entries = ["create/constants.ts", "../constants.ts"];
-    for (const relEntry of entries) {
-      const source = readFileSync(resolve(here, relEntry), "utf-8");
-      // Non-greedy across newlines so a multi-line import statement is read
-      // whole, and the leading `import` is anchored so `from` inside a comment
-      // or a string cannot start a match.
-      const statements = [
-        ...source.matchAll(/^import\b[\s\S]*?from\s+["']([^"']+)["']/gm),
-      ];
-      const configEdges = statements.filter((match) =>
-        match[1]?.includes("kernel/config/"),
-      );
-      // Non-vacuous: each entry HAS such an edge, so a rename that silently
-      // drops it fails here rather than passing an empty loop.
-      expect(configEdges.length, relEntry).toBeGreaterThan(0);
-      for (const edge of configEdges) {
-        expect(edge[0], `${relEntry} → ${edge[1]}`).toMatch(/^import\s+type\b/);
+    // command tree from eagerly-evaluated modules, and must reach NO config
+    // module at RUNTIME. `kernel/config/types.ts` is an import-free leaf today,
+    // so a value edge costs little — but it is the first step of the walk that
+    // ends at `config/schema.ts` and zod, and the point of a boundary is that
+    // it is checked before the cost arrives.
+    //
+    // DERIVED FROM THE GRAPH, not from a hand-list. This case first named two
+    // files — the two the slice added — and called that "the fast path". It was
+    // not: `capabilities/config/fields.ts` was already on the same graph with
+    // exactly the edge shape named above (`import { CHANNELS } from
+    // "../../kernel/config/types.js"`), so the property the title claimed did
+    // not hold when the guard was written, and the next arrival would have
+    // joined it silently. Walking the graph means a new value edge fails HERE,
+    // named, wherever it arrives.
+    const pkgRoot = resolve(here, "../..");
+    // The ONE tolerated value edge, carried the way `copy.test.ts` carries its
+    // EXEMPT set rather than left out of the walk. `config set <key>` gets its
+    // `<key>` enum and per-field validation from this table, so the `channel`
+    // field's legal values must be a runtime value here; `kernel/config/types.
+    // ts` is an import-free leaf whose whole body is a frozen three-element
+    // tuple and some interfaces, so the edge pulls no module and runs no code
+    // beyond freezing that tuple. It is exempt because it was measured, not
+    // because it is old.
+    const EXEMPT = new Set(["src/capabilities/config/fields.ts"]);
+    const found = new Set<string>();
+    for (const entry of FAST_PATH_ENTRIES) {
+      for (const file of staticImportGraph(resolve(here, entry))) {
+        const rel = relative(pkgRoot, file);
+        const source = readFileSync(file, "utf-8");
+        // Non-greedy across newlines so a multi-line import statement is read
+        // whole, and the leading `import` is anchored so `from` inside a
+        // comment or a string cannot start a match.
+        for (const match of source.matchAll(
+          /^import\b[\s\S]*?from\s+["']([^"']+)["']/gm,
+        )) {
+          if (!match[1]?.includes("kernel/config/")) continue;
+          found.add(rel);
+          if (EXEMPT.has(rel)) continue;
+          expect(match[0], `${rel} → ${match[1]}`).toMatch(/^import\s+type\b/);
+        }
       }
     }
+    // Non-vacuous, and an EXACT enumeration rather than a size floor: the two
+    // modules this slice added must still be reached (a rename that drops an
+    // edge fails here instead of passing an empty loop), and a NEW module
+    // arriving with a config edge fails too — even a type-only one, because the
+    // erasure is what the loop above checks and the file set is what bounds
+    // which modules get to make that promise.
+    expect([...found].sort()).toEqual([
+      "src/capabilities/block/tierChain.ts",
+      "src/capabilities/config/fields.ts",
+      "src/capabilities/config/show.render.ts",
+      "src/capabilities/config/types.ts",
+      "src/capabilities/create/constants.ts",
+      "src/capabilities/info/info.render.ts",
+      "src/capabilities/info/types.ts",
+      "src/capabilities/shared/registry.ts",
+      "src/constants.ts",
+      "pragma.conf.ts",
+    ].sort());
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {
