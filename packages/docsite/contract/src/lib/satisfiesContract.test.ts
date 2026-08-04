@@ -103,7 +103,7 @@ describe("the real contract", () => {
       ]),
     );
     const messages = messagesOf(result);
-    expect(messages).toContain("Node.kind");
+    expect(messages).toContain("Node._meta");
     expect(messages).toContain("PageInfo.hasNextPage");
     expect(messages).toContain("Query.ontology");
   });
@@ -134,9 +134,18 @@ describe("assertSatisfiesContract", () => {
       message = error instanceof Error ? error.message : String(error);
     }
     expect(message).toContain("ke-graphql backend");
-    expect(message).toContain("3 violation(s)");
+    // Derived, not pinned: the invariant is that the thrown message reports
+    // EVERY violation the predicate found. A hardcoded count would break
+    // whenever the contract legitimately grows a field, which says nothing
+    // about whether the message is complete.
+    const { violations } = satisfiesContract(fixture("deficientProvider"));
+    expect(violations.length).toBeGreaterThan(2);
+    expect(message).toContain(`${violations.length} violation(s)`);
+    for (const violation of violations) {
+      expect(message).toContain(violation.message);
+    }
     expect(message).toContain("[FIELD_REMOVED]");
-    expect(message).toContain("Node.kind");
+    expect(message).toContain("Node._meta");
     expect(message).toContain("[ARG_REMOVED]");
     expect(message).toContain("[FIELD_CHANGED_KIND]");
   });

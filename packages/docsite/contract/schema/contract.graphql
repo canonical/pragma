@@ -29,16 +29,13 @@
 # =============================================================================
 
 """
-Everything addressable by a global ID. Every non-embeddable type the compiler
-generates implements this, so the structural fields below are universal.
+Everything addressable by an absolute IRI. Every non-embeddable type the
+compiler generates implements this, so both fields below are universal.
+`uri` is the primary key; everything conventional lives behind `_meta`.
 """
 interface Node {
-  id: ID!
-  uri: String!
-  kind: String!
-  label: String
-  comment: String
-  definition: String
+  uri: ID!
+  _meta: EntityMeta!
 }
 
 "Relay cursor pagination metadata."
@@ -72,7 +69,7 @@ type Ontology {
 
 "A class in the TBox."
 type OntologyClass {
-  uri: String!
+  uri: ID!
   label: String
   definition: String
   superclass: OntologyClass
@@ -103,7 +100,7 @@ type ClassProperty {
 
 "A property in the TBox."
 type OntologyProperty {
-  uri: String!
+  uri: ID!
   label: String
   definition: String
   domain: OntologyClass
@@ -128,6 +125,12 @@ Self-describing TBox access attached to ABox types. Reachable as `_meta` on
 every non-embeddable generated type.
 """
 type EntityMeta {
+  "Guaranteed display text. The provider computes the fallback, so no consumer writes `label ?? uri`."
+  title: String!
+  "Asserted display name. Null when the graph asserts none — unlike `title`, which is total."
+  label: String
+  comment: String
+  definition: String
   type: OntologyClass!
   field(name: String!): ClassProperty
   fields: [ClassProperty!]!
@@ -139,6 +142,6 @@ type Query {
   ontology(prefix: String!): Ontology
   ontologyClass(uri: String!): OntologyClass
   ontologyProperty(uri: String!): OntologyProperty
-  "Relay node resolution by prefixed-URI global ID."
+  "Relay node resolution by absolute-IRI global ID."
   node(id: ID!): Node
 }

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { assertInterfaceType, buildSchema } from "graphql";
+import { assertInterfaceType, assertObjectType, buildSchema } from "graphql";
 import { describe, expect, it } from "vitest";
 import { CONTRACT_SCHEMA_PATH, readContractSdl } from "./contractSdl.js";
 
@@ -35,17 +35,30 @@ describe("readContractSdl", () => {
     }
   });
 
-  it("carries the four structural Node fields added alongside id/uri", () => {
+  it("carries exactly the two structural Node fields", () => {
+    // `uri` is the primary key and everything conventional lives behind
+    // `_meta`, so a null under `_meta` (the convention matched nothing) is
+    // distinguishable from a null above it (the graph asserts nothing).
+    // `id` and `kind` are gone: consumers discriminate on `_meta.type.uri`.
     const schema = buildSchema(readContractSdl());
     const node = assertInterfaceType(schema.getType("Node"));
-    expect(Object.keys(node.getFields())).toEqual([
-      "id",
-      "uri",
-      "kind",
-      "label",
-      "comment",
-      "definition",
-    ]);
+    expect(Object.keys(node.getFields())).toEqual(["uri", "_meta"]);
+    expect(String(node.getFields().uri?.type)).toBe("ID!");
+  });
+
+  it("puts the descriptive surface on EntityMeta, without the lang argument", () => {
+    // Declared argument-free ON PURPOSE: adding an optional argument is a
+    // DANGEROUS change, not a breaking one, and the predicate ignores
+    // dangerous. So a provider whose fields carry `lang` still satisfies this,
+    // while a contract that demanded `lang` would reject one that lacks it.
+    // Argument-free is the wider floor.
+    const schema = buildSchema(readContractSdl());
+    const meta = assertObjectType(schema.getType("EntityMeta"));
+    const fields = meta.getFields();
+    expect(String(fields.title?.type)).toBe("String!");
+    expect(String(fields.label?.type)).toBe("String");
+    expect(fields.title?.args).toHaveLength(0);
+    expect(fields.label?.args).toHaveLength(0);
   });
 
   it("exposes the universal root fields and nothing ontology-specific", () => {
