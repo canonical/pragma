@@ -378,8 +378,14 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
   const { resources, prompts } = collectMcpExtras(modules);
   const bullets: string[] = [];
   if (resources.length > 0) {
+    // The URI scheme is the ONE thing on this page a fork does not rename, so
+    // it is the one thing the page has to explain. It is named ONLY through the
+    // interpolated template: `identity.test.ts` unmasks exactly the emitted
+    // template strings, line by line, so a sentence that spelled the scheme (or
+    // either `_meta` key, which is namespaced under it) would fail that probe.
+    // Hence "the same namespace" rather than the keys themselves.
     bullets.push(
-      `- **Resources**: ${resources.map((r) => `\`${r}\``).join(", ")} — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).`,
+      `- **Resources**: ${resources.map((r) => `\`${r}\``).join(", ")} — entity reads addressed by URI (listing and autocomplete are storeless over the pack index). The scheme is PROTOCOL IDENTITY, frozen in the surface covenant and inherited unchanged by a fork: a client that has stored a resource URI has stored an address, so deriving the scheme per distribution would break every stored one. The two \`_meta\` taxonomy keys a listed resource carries (its box, and a class entry's instance count) are namespaced under the same scheme and are frozen with it.`,
     );
   }
   if (prompts) {

@@ -53,6 +53,19 @@ Beyond tools, the server exposes three surfaces:
 - **Prompts** — the workflow prompt templates the active pack's graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same entities, addressed by the prompt terms the distribution declares. This distribution's graph carries none today, so both views are empty.
 - **Instructions** — the handshake orientation described above.
 
+### The wire identity is deliberately frozen
+
+Almost everything a user or an agent reads from this CLI derives from one file, `pragma.conf.ts` — the binary's name, its help, its colophon, every recovery hint, every generated page. The MCP **wire identity** is the documented exception, and it is deliberate, not an oversight:
+
+- the resource scheme `pragma:` in the `pragma:{+uri}` template,
+- the `pragma/box` and `pragma/instanceCount` `_meta` keys a listed resource carries.
+
+These are **protocol identity, not copy**. A client that has stored a resource URI has stored an *address*, and a client that reads `_meta` reads it by an agreed key. Two distributions built from this kernel are therefore indistinguishable on the wire — which is the price of making a stored URI keep working, and it is the price we chose to pay.
+
+It is not a price paid out of caution. Deriving the scheme per distribution has been attempted here and it failed in the worst available way: the URI *template* was derived while the two sites that MINT URIs stayed literal, so a fork advertised `recipes:{+uri}` over a list of 653 `pragma:` URIs. Every resource the server offered was unreadable, and the readable form was never advertised.
+
+The freeze is enforced, not merely asserted. `surface/surface.v2.json` records it in its `$comment`, and `capabilities/resources/resources.test.ts` derives ONE scheme token from that covenant and holds all four writings to it — the covenant entry, the provider's declared template, every URI the listing mints (the recovery entry included), and both `_meta` key namespaces. The template and the minting sites can only move together.
+
 ## Plan-first mutations
 
 Every mutating tool is **plan-first**. Called without `confirm: true`, it returns the plan it *would* apply (`{ planOnly: true, confirmRequired: true }`) instead of acting. Called with `confirm: true`, it executes. A mutating tool also accepts an optional `cwd` — an absolute project directory to write into — which defaults to the server's working directory and is validated as the single write root the security jail and the effect interpreter share.

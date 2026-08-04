@@ -7,9 +7,10 @@
  * degrades to a `pragma sources update` hint (never a live re-index).
  */
 
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
@@ -17,10 +18,12 @@ import { verbKey } from "../../kernel/packs/uniqueness.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import type { InspectResult } from "../../kernel/runtime/readEntity.js";
+import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TEST_FLAGS } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { graphModule } from "../graph/index.js";
+import { capabilities } from "../index.js";
 import {
   buildResourceList,
   rankUriCompletions,
@@ -147,6 +150,54 @@ describe("resource listing (storeless, over the pack index)", () => {
     ];
     expect(listed.length).toBeGreaterThan(1);
     expect(listed.filter((r) => !r.uri.startsWith(scheme))).toEqual([]);
+  });
+
+  it("the covenant, the template, every minted URI and both _meta keys share ONE scheme (PROTECTED)", () => {
+    // The wire identity is DELIBERATELY FROZEN (documented in the covenant's
+    // `$comment` and in docs/mcp-integration.md): a client that stored a
+    // resource URI stored an ADDRESS, so the scheme is inherited by a fork
+    // rather than derived. This is what makes the freeze self-enforcing instead
+    // of a convention — four independent writings, one token, derived from the
+    // COVENANT so it is the published contract that decides.
+    //
+    // The case above already pairs the declared template with the minted URIs.
+    // This adds the two writings nothing compared: the covenant entry the
+    // surface publishes, and the `_meta` key namespace. PR7's defect changed
+    // exactly one of these four and left the other three — that is the shape
+    // this has to catch.
+    const covenant = JSON.parse(
+      readFileSync(
+        fileURLToPath(
+          new URL("../../../surface/surface.v2.json", import.meta.url),
+        ),
+        "utf-8",
+      ),
+    ) as { mcpSurface: { resources: string[] } };
+    const covenantTemplate = covenant.mcpSurface.resources[0];
+    expect(covenantTemplate).toBeDefined();
+    const scheme = String(covenantTemplate).split(":")[0];
+    expect(scheme).toBeTruthy();
+
+    // 1. what the live grammar emits as the surface.
+    expect(emitSurface(capabilities).mcpSurface.resources).toEqual([
+      covenantTemplate,
+    ]);
+    // 2. what `register` installs, via the provider's declared surface.
+    expect(resourceProvider.surface?.templates).toEqual([covenantTemplate]);
+    // 3. every URI the listing mints, including the recovery entry.
+    const listed = [
+      ...buildResourceList(readPackIndex({ kind: "embedded" })),
+      ...buildResourceList(undefined),
+    ];
+    expect(listed.length).toBeGreaterThan(1);
+    expect(listed.filter((r) => !r.uri.startsWith(`${scheme}:`))).toEqual([]);
+    // 4. both `_meta` key namespaces, over an entry that carries each of them.
+    const metaKeys = new Set(listed.flatMap((r) => Object.keys(r._meta ?? {})));
+    expect(metaKeys.has(`${scheme}/box`)).toBe(true);
+    expect(metaKeys.has(`${scheme}/instanceCount`)).toBe(true);
+    expect([...metaKeys].filter((k) => !k.startsWith(`${scheme}/`))).toEqual(
+      [],
+    );
   });
 
   it("ranks autocomplete over prefixed URI and label", () => {

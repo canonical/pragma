@@ -474,6 +474,6 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ## Non-tool surface
 
-- **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).
+- **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index). The scheme is PROTOCOL IDENTITY, frozen in the surface covenant and inherited unchanged by a fork: a client that has stored a resource URI has stored an address, so deriving the scheme per distribution would break every stored one. The two `_meta` taxonomy keys a listed resource carries (its box, and a class entry's instance count) are namespaced under the same scheme and are frozen with it.
 - **Prompts**: the workflow prompt templates the active graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. A graph declaring none leaves both views empty.
 - **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.
