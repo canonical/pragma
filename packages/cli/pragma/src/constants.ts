@@ -16,6 +16,7 @@
 
 import pkg from "../package.json" with { type: "json" };
 import identity from "../pragma.conf.js";
+import type { RawConfig } from "./kernel/config/types.js";
 
 /** CLI binary name — the distribution's `name`. */
 const BIN_NAME = identity.name;
@@ -40,8 +41,18 @@ const ISSUES_URL = identity.issuesUrl;
  * inherited whole. `collectColophon` reads it from here, so `src/identity.test.ts`
  * proves a fork's colophon is its own the same way it proves the front door is.
  * Adds no string literal, so the kernel copy guard is unaffected.
+ *
+ * Read through the DECLARED contract, not off the literal. `pragma.conf.ts` ends
+ * in `satisfies RawConfig`, which yields the literal's own type — so a property
+ * this distribution happens to declare is compile-REQUIRED of every fork, and a
+ * fork omitting `colophon` would fail `tsc` here (TS2339, measured), inside a
+ * kernel file it is not supposed to edit. The field is optional, the reference
+ * page says so, and `collectColophon` has an omit-the-section branch that no
+ * type-checking distribution could otherwise reach. The cast is type-only and
+ * erased, so the fast-path module graph is unchanged (`kernel/config/types.ts`
+ * is already on it, positive-listed by `completion/safety.test.ts`).
  */
-const DISTRIBUTION_COLOPHON = identity.colophon;
+const DISTRIBUTION_COLOPHON = (identity as RawConfig).colophon;
 
 /** Semver version string read from package.json. */
 const VERSION: string = pkg.version;
