@@ -89,13 +89,23 @@ export const FIXED_SURFACE = {
     { flag: "--verbose", doc: "Diagnostic output on stderr" },
     {
       flag: "--detail <level>",
-      doc: "Progressive-disclosure level (summary, standard, detailed)",
+      doc: `Progressive-disclosure level (${DETAIL_LEVELS.join(", ")})`,
     },
   ],
-  // Projected, not re-typed: this was the last unguarded copy of the level
-  // tuple, and `config/schema.ts` now validates a declared `detail` against the
-  // same one — so the covenant, the validator and the renderer cannot disagree.
-  // Moves zero covenant bytes.
+  // Projected, not re-typed, and `config/schema.ts` now validates a declared
+  // `detail` against the same tuple — so the covenant, the validator and the
+  // renderer cannot disagree. Moves zero covenant bytes.
+  //
+  // This was originally called the last unguarded copy of the tuple. It was the
+  // last copy as DATA; four PROSE writings still spelled the levels by hand,
+  // one of them the `--detail` `doc` four lines up, frozen into this same
+  // covenant entry beside the projection. All four are composed from
+  // `DETAIL_LEVELS` now — the `doc` above, `project/cli/rootHelp.ts`'s
+  // `--help` table, and two in `spec/emitReference.ts` (the commands page's
+  // global-flags line and the `detail` config row's Type column). Every one
+  // emits the identical bytes it did, so nothing in the covenant or the
+  // reference moved; what changed is that editing the tuple now moves them, and
+  // the surface-conformance and byte-drift guards see it.
   detailLevels: DETAIL_LEVELS,
   envelope: {
     success: { ok: true, data: "<payload>", meta: "<object>" },

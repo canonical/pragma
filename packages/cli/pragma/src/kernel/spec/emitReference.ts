@@ -15,7 +15,11 @@
  * NOT imported — this is a kernel-layer emitter).
  */
 
-import { BIN_NAME, PROJECT_CONFIG_FILENAME } from "../../constants.js";
+import {
+  BIN_NAME,
+  DETAIL_LEVELS,
+  PROJECT_CONFIG_FILENAME,
+} from "../../constants.js";
 import type { RawConfig } from "../config/types.js";
 import { ERROR_CODES } from "../error/constants.js";
 import {
@@ -254,7 +258,7 @@ function renderCommandsPage(verbs: readonly VerbSpec[]): string {
   const blocks = [
     "# CLI command reference",
     `Every \`${BIN_NAME}\` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.`,
-    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, and `--detail <summary|standard|detailed>`.",
+    `Global flags apply to every command: \`--format <plain|llm|json>\` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), \`--verbose\`, and \`--detail <${DETAIL_LEVELS.join("|")}>\`.`,
   ];
   let currentNoun = "";
   for (const verb of verbs) {
@@ -502,7 +506,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
   },
   detail: {
-    type: "`summary` | `standard` | `detailed` (optional)",
+    type: `${DETAIL_LEVELS.map((level) => `\`${level}\``).join(" | ")} (optional)`,
     notes:
       "Default progressive-disclosure level. Validated: a layer declaring anything else fails at load with a `CONFIG_ERROR` naming the file and the three levels, rather than being reported as declared and silently rendered at `standard`. Set it with `config set detail <level>`, which rejects anything else.",
   },

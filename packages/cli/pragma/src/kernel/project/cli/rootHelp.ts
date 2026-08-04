@@ -10,6 +10,7 @@
  * never heard of still surfaces.
  */
 
+import { DETAIL_LEVELS } from "../../../constants.js";
 import type { VerbSpec } from "../../spec/types.js";
 import {
   helpColumns,
@@ -201,7 +202,7 @@ export function formatRootHelp(
     ],
     [
       "--detail <level>",
-      "Progressive-disclosure level (summary, standard, detailed)",
+      `Progressive-disclosure level (${DETAIL_LEVELS.join(", ")})`,
     ],
     ["--verbose", "Diagnostic output on stderr"],
     ["--help", "Show help (works on any command)"],
