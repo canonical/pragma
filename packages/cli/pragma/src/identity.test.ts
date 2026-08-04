@@ -351,6 +351,14 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(listed.filter((r) => !r.uri.startsWith(`${scheme}:`))).toEqual([]);
     const metaKeys = new Set(listed.flatMap((r) => Object.keys(r._meta ?? {})));
     expect(metaKeys.has(`${scheme}/box`)).toBe(true);
+    // Both keys, not just the first: the covenant `$comment` and
+    // `docs/mcp-integration.md` both say this case runs the SAME four checks
+    // under a fork's name, and check 4 is both namespaces. With only `box`
+    // named, renaming `<scheme>/instanceCount` was caught by
+    // `resources/resources.test.ts` and not here — a covenant overstating what
+    // its own guard checks, which is the failure the freeze prose was written
+    // to close.
+    expect(metaKeys.has(`${scheme}/instanceCount`)).toBe(true);
     expect([...metaKeys].filter((k) => !k.startsWith(`${scheme}/`))).toEqual(
       [],
     );
