@@ -523,7 +523,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   completion: {
     type: "object (optional)",
     notes:
-      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. `caseSensitive` is accepted by the validator and read by nothing. It is the one field `config show` carries with NO origin at all.",
+      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out — the two fields something reads. It is the one field `config show` carries with NO origin at all.",
   },
 };
 

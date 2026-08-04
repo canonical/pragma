@@ -6,11 +6,12 @@
  * path, which are storeless and config-free. Validates the raw shape a global
  * JSON file or an evaluated `pragma.config.ts` declares; unknown keys are
  * stripped for forward compatibility, and only present keys survive so layer
- * merging keeps honest per-field provenance. One rename is NOT left to the
- * unknown-key stripping: a legacy `packages` key (renamed to `packs`) is
- * detected before validation and rejected with a loud CONFIG_ERROR, so an old
- * config fails telling the user exactly what to rename instead of silently
- * ignoring the field.
+ * merging keeps honest per-field provenance. Two edits to the config surface
+ * are NOT left to the unknown-key stripping, because stripping and working are
+ * indistinguishable to the person who wrote the file: a legacy `packages` key
+ * (renamed to `packs`) and a removed `completion.caseSensitive` are each
+ * detected BEFORE validation and rejected with a loud CONFIG_ERROR naming the
+ * file. Both checks are shallow and exact by design — see `parseRawConfig`.
  */
 
 import { z } from "zod";
@@ -40,7 +41,6 @@ const generatorSourceSchema = z.object({
 
 const completionSchema = z.object({
   minChars: z.number().int().min(0).optional(),
-  caseSensitive: z.boolean().optional(),
   families: z.record(z.string(), z.boolean()).optional(),
 });
 
@@ -78,8 +78,9 @@ export const rawConfigSchema = z.object({
  * @param value - The parsed JSON or evaluated module default.
  * @param source - The file path, used in error messages.
  * @returns The validated layer values (only the keys actually present).
- * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, or when the
- *   value declares the legacy `packages` key (renamed to `packs`).
+ * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
+ *   value declares the legacy `packages` key (renamed to `packs`), or when it
+ *   declares the removed `completion.caseSensitive`.
  */
 export function parseRawConfig(value: unknown, source: string): RawConfig {
   // Rename detection must precede validation: unknown keys are stripped, so a
@@ -90,6 +91,33 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
       {
         recovery: {
           message: `In ${source}, rename "packages:" to "packs".`,
+        },
+      },
+    );
+  }
+  // Removal detection, same reason and the same shape as the rename above:
+  // `completion.caseSensitive` was validated and read by NOTHING (only
+  // `minChars` and `families` reach `setup completions`), so dropping it from
+  // the schema would make a config that sets it succeed silently — which is
+  // indistinguishable from the field still working.
+  //
+  // SHALLOW AND EXACT, not a deep scan. `stories` and `packs[].stories` are
+  // opaque `z.array(z.unknown())` and the pack grammar's own autocomplete
+  // heuristic legitimately carries a `caseSensitive` (`spec/validate.ts`,
+  // read by `completion/model.ts`), so a deep scan would reject a valid
+  // declared story at load — a worse failure than the silence it replaces.
+  // `readConfig.test.ts` pins that, as it already does for `packages`.
+  const completion = (value as { completion?: unknown } | null)?.completion;
+  if (
+    typeof completion === "object" &&
+    completion !== null &&
+    "caseSensitive" in completion
+  ) {
+    throw PragmaError.configError(
+      `Invalid config in ${source}: "completion.caseSensitive" was removed. Nothing ever read it — completion matching is always case-insensitive.`,
+      {
+        recovery: {
+          message: `In ${source}, delete the "caseSensitive" line under "completion".`,
         },
       },
     );

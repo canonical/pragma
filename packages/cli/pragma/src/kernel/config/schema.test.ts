@@ -78,3 +78,62 @@ describe("`detail` is validated against the levels the page publishes", () => {
     for (const level of DETAIL_LEVELS) expect(message).toContain(level);
   });
 });
+
+describe("the removed `completion.caseSensitive` fails loudly", () => {
+  it("names the file and the field a config still setting it must delete", () => {
+    // Unknown keys are STRIPPED for forward compatibility, so removing the
+    // field from the schema alone would let a config that sets it succeed —
+    // and succeeding silently is exactly what the field did while it was
+    // validated and read by nothing. The pre-validation check makes the removal
+    // audible, on the `packages` rename's precedent.
+    let thrown: unknown;
+    try {
+      parseRawConfig({ completion: { caseSensitive: true } }, "x.config.ts");
+    } catch (error) {
+      thrown = error;
+    }
+    expect((thrown as { code?: string })?.code).toBe("CONFIG_ERROR");
+    expect((thrown as { message: string })?.message).toContain("x.config.ts");
+    expect((thrown as { message: string })?.message).toContain(
+      "completion.caseSensitive",
+    );
+    expect(
+      (thrown as { recovery?: { message?: string } })?.recovery?.message,
+    ).toContain("caseSensitive");
+  });
+
+  it("still accepts the two `completion` fields something reads", () => {
+    expect(
+      parseRawConfig(
+        { completion: { minChars: 2, families: { block: false } } },
+        "x.config.ts",
+      ).completion,
+    ).toEqual({ minChars: 2, families: { block: false } });
+  });
+
+  it("does NOT trip on a declared story's autocomplete heuristic", () => {
+    // The detection is shallow and exact for a measured reason: `stories` and
+    // `packs[].stories` are opaque to this schema, and the pack grammar's
+    // AutocompleteHeuristic carries its OWN, live `caseSensitive`
+    // (`spec/validate.ts` → `completion/model.ts`). A deep scan would reject a
+    // perfectly valid declared story at config load — every command, `doctor`
+    // and `sources update` included. The `packages` rename is pinned the same
+    // way in `readConfig.test.ts`; this is that pin, inverted.
+    const story = {
+      noun: "dish",
+      lookup: {
+        by: "ex:name",
+        complete: { kind: "names", caseSensitive: true },
+      },
+    };
+    expect(parseRawConfig({ stories: [story] }, "x.config.ts").stories).toEqual([
+      story,
+    ]);
+    expect(
+      parseRawConfig(
+        { packs: [{ name: "@acme/p", stories: [story] }] },
+        "x.config.ts",
+      ).packs,
+    ).toEqual([{ name: "@acme/p", stories: [story] }]);
+  });
+});
