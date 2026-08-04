@@ -147,10 +147,9 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // modules are inert — pinned by the case above, restated here as the
     // property this module depends on.
     for (const file of graph.filter((f) => f !== relative(pkgRoot, entry))) {
-      expect(
-        readFileSync(resolve(pkgRoot, file), "utf-8"),
-        file,
-      ).not.toMatch(/^import (?!type\b)/m);
+      expect(readFileSync(resolve(pkgRoot, file), "utf-8"), file).not.toMatch(
+        /^import (?!type\b)/m,
+      );
     }
   });
 

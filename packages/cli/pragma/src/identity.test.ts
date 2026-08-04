@@ -351,7 +351,9 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(listed.filter((r) => !r.uri.startsWith(`${scheme}:`))).toEqual([]);
     const metaKeys = new Set(listed.flatMap((r) => Object.keys(r._meta ?? {})));
     expect(metaKeys.has(`${scheme}/box`)).toBe(true);
-    expect([...metaKeys].filter((k) => !k.startsWith(`${scheme}/`))).toEqual([]);
+    expect([...metaKeys].filter((k) => !k.startsWith(`${scheme}/`))).toEqual(
+      [],
+    );
   });
 
   it("reads the graph with the fork's declared terms, not this distribution's", async () => {
