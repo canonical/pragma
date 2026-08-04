@@ -52,8 +52,16 @@
  * enumerates this module's static graph exactly, the same way it already does
  * `pragma.conf.ts`'s, and watches `capabilities/index.ts` — the actual root of
  * the fast path — for the embedded n-quads module its own +23 ms measurement is
- * about. The `RawConfig` import below is TYPE-ONLY and erased; the exact
- * enumeration is what keeps it that way.
+ * about.
+ *
+ * The `RawConfig` import below is TYPE-ONLY and erased. The enumeration does NOT
+ * keep it that way, and used to be cited as if it did: the walker reads
+ * `from "…"` textually, so `import type { RawConfig }` and `import { CHANNELS }`
+ * yield the identical file list — measured, both flipped to value imports with
+ * this file and `completion/safety.test.ts` green. The enumeration bounds WHICH
+ * modules may appear; a separate case, `the fast path's edges into kernel/config
+ * are written "import type"`, reads this file's own import statements and is
+ * what keeps the edge erased.
  */
 import conf from "../../../pragma.conf.js";
 import type { RawConfig } from "../../kernel/config/types.js";

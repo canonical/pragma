@@ -50,7 +50,11 @@ const ISSUES_URL = identity.issuesUrl;
  * page says so, and `collectColophon` has an omit-the-section branch that no
  * type-checking distribution could otherwise reach. The cast is type-only and
  * erased, so the fast-path module graph is unchanged (`kernel/config/types.ts`
- * is already on it, positive-listed by `completion/safety.test.ts`).
+ * is already on it, positive-listed by `completion/safety.test.ts`) — and that
+ * erasure is CHECKED, not merely asserted: the graph probes read `from "…"`
+ * textually and cannot tell a type import from a value one, so
+ * `capabilities/lazy.test.ts` reads this file's import statements directly and
+ * fails if the edge into `kernel/config/**` stops being written `import type`.
  */
 const DISTRIBUTION_COLOPHON = (identity as RawConfig).colophon;
 

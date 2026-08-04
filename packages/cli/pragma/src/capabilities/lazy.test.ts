@@ -142,14 +142,55 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
       "src/kernel/config/types.ts",
       "src/kernel/packs/types.ts",
     ]);
-    // Nothing on that graph runs at import time except this module itself
-    // (which reads the declaration and may throw). The conf and both type
-    // modules are inert — pinned by the case above, restated here as the
-    // property this module depends on.
+    // What the loop below pins is that none of the other three pulls anything
+    // FURTHER onto this graph — the absence of more edges, not the absence of
+    // any evaluation. Say it that way, because two of them do evaluate: the
+    // conf is a literal, `kernel/config/types.ts` freezes a three-element
+    // `CHANNELS` tuple, and `kernel/packs/types.ts` declares one pure helper.
+    // That is the property this module actually depends on, and the `pragma.
+    // conf.ts` case above states it the same way.
     for (const file of graph.filter((f) => f !== relative(pkgRoot, entry))) {
       expect(readFileSync(resolve(pkgRoot, file), "utf-8"), file).not.toMatch(
         /^import (?!type\b)/m,
       );
+    }
+  });
+
+  it("the fast path's edges into kernel/config are written `import type` (PROTECTED)", () => {
+    // The enumerations above bound WHICH modules may appear on a fast-path
+    // graph. They do not — cannot — say whether an edge is erased: the walker
+    // reads `from "…"` textually, so `import type { RawConfig }` and
+    // `import { CHANNELS }` produce the identical file list. Measured on a
+    // scratch checkout: flipping BOTH of this slice's new config edges to real
+    // value imports, with a real use of `CHANNELS` in each module body, left
+    // `lazy.test.ts` and `completion/safety.test.ts` fully green — 23 tests, no
+    // change. Two docblocks asserted the erasure and cited a guard that did not
+    // check it; this is that guard.
+    //
+    // The invariant is the storeless one: `--help`/`__complete` build the
+    // command tree from these two eagerly-evaluated modules, and must reach NO
+    // config module at RUNTIME. `kernel/config/types.ts` is an import-free leaf
+    // today, so a value edge would cost little — but it is the first step of
+    // the walk that ends at `config/schema.ts` and zod, and the point of a
+    // boundary is that it is checked before the cost arrives.
+    const entries = ["create/constants.ts", "../constants.ts"];
+    for (const relEntry of entries) {
+      const source = readFileSync(resolve(here, relEntry), "utf-8");
+      // Non-greedy across newlines so a multi-line import statement is read
+      // whole, and the leading `import` is anchored so `from` inside a comment
+      // or a string cannot start a match.
+      const statements = [
+        ...source.matchAll(/^import\b[\s\S]*?from\s+["']([^"']+)["']/gm),
+      ];
+      const configEdges = statements.filter((match) =>
+        match[1]?.includes("kernel/config/"),
+      );
+      // Non-vacuous: each entry HAS such an edge, so a rename that silently
+      // drops it fails here rather than passing an empty loop.
+      expect(configEdges.length, relEntry).toBeGreaterThan(0);
+      for (const edge of configEdges) {
+        expect(edge[0], `${relEntry} → ${edge[1]}`).toMatch(/^import\s+type\b/);
+      }
     }
   });
 
