@@ -126,7 +126,7 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
     "caseSensitive" in completion
   ) {
     throw PragmaError.configError(
-      `Invalid config in ${source}: "completion.caseSensitive" was removed. Nothing ever read it — completion matching is always case-insensitive.`,
+      `Invalid config in ${source}: "completion.caseSensitive" was removed. Nothing ever read it — case folding is decided per story by the pack grammar's "complete.caseSensitive", which no config layer reaches.`,
       {
         recovery: {
           message: `In ${source}, delete the "caseSensitive" line under "completion".`,

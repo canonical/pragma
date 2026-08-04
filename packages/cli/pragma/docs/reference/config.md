@@ -45,7 +45,7 @@ The `packages` field was renamed to `packs`. A layer that still declares `packag
 
 ## Removed: `completion.caseSensitive`
 
-`completion.caseSensitive` was validated and read by nothing — `setup completions` reads only `minChars` and `families`, and completion matching is always case-insensitive. It is removed, and a layer that still declares it fails loudly for the same reason the rename above does: unknown keys are stripped for forward compatibility, so the removal is detected BEFORE validation and the error names the file and the line. Delete the line. A pack story's `complete.caseSensitive` is a different, live field — it is part of the pack grammar's autocomplete heuristic, not of this config, and it is untouched.
+`completion.caseSensitive` was validated and read by nothing — `setup completions` reads only `minChars` and `families`, and no config layer has ever reached the completion path's case folding. It is removed, and a layer that still declares it fails loudly for the same reason the rename above does: unknown keys are stripped for forward compatibility, so the removal is detected BEFORE validation and the error names the file and the line. Delete the line. Case folding is decided per STORY, by the pack grammar's `complete.caseSensitive` — a different, live field on the autocomplete heuristic, defaulting to insensitive, and untouched by this removal.
 
 ## Reading and writing
 
