@@ -39,6 +39,7 @@ import {
   COMMENT_LOCAL_NAMES,
   CONNECTION_ARGS,
   type CompilerContext,
+  DEFAULT_LANG,
   DEFINITION_LOCAL_NAMES,
   type EntityValue,
   LABEL_LOCAL_NAMES,
@@ -389,10 +390,10 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI. Never null — render this.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: { lang: string | null }) =>
           resolveTitle(
             selectLexicals(parent.triples, chainsFor(parent.typename).label),
-            args.lang,
+            args.lang ?? DEFAULT_LANG,
             parent.uri,
             parent.typename,
           ),
@@ -402,10 +403,10 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "rdfs:label, else skos:prefLabel, else the class's own name/title predicate — exact language tag, else untagged. Null when none is asserted; `title` is the total alternative.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: { lang: string | null }) =>
           resolveLabel(
             selectLexicals(parent.triples, chainsFor(parent.typename).label),
-            args.lang,
+            args.lang ?? DEFAULT_LANG,
           ),
       },
       comment: {
@@ -413,10 +414,10 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "Incidental prose: rdfs:comment, else the class's own summary predicate. Null when none is asserted.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: { lang: string | null }) =>
           resolveLabel(
             selectLexicals(parent.triples, chainsFor(parent.typename).comment),
-            args.lang,
+            args.lang ?? DEFAULT_LANG,
           ),
       },
       definition: {
@@ -424,13 +425,13 @@ export default function buildTBoxSchema(
         args: LANG_ARGS,
         description:
           "Defining prose: skos:definition, else the class's own description predicate. Null when none is asserted.",
-        resolve: (parent, args: { lang: string }) =>
+        resolve: (parent, args: { lang: string | null }) =>
           resolveLabel(
             selectLexicals(
               parent.triples,
               chainsFor(parent.typename).definition,
             ),
-            args.lang,
+            args.lang ?? DEFAULT_LANG,
           ),
       },
       type: {

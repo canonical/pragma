@@ -481,7 +481,8 @@ describe("generic descriptive chain", () => {
     );
     expect(result.errors).toBeUndefined();
     const d1 = (result.data?.d1 as Record<string, unknown>)._meta;
-    // no lang given → the argument default "en" is coerced in by graphql-js
+    // no lang given → graphql-js substitutes the "en" default. It does that
+    // ONLY for an omitted argument; see the explicit-null cases below.
     expect(d1).toEqual({
       def: "The Widget",
       en: "The Widget",
@@ -498,6 +499,54 @@ describe("generic descriptive chain", () => {
       // untagged fallback answers here too.
       gb: "Plain label",
       t: "Plain label",
+    });
+  });
+
+  // An argument default is NOT a totality guarantee. graphql-js substitutes it
+  // only for an OMITTED argument — `lang` is nullable, so an explicit null (or
+  // a nullable variable holding null) arrives as null. This once threw inside
+  // the tag comparison, and because `title` is String! under _meta:
+  // EntityMeta! under node: Node!, non-null propagation nulled the ENTIRE
+  // response rather than the one field. Both paths are pinned because only the
+  // variable one distinguishes "omitted" from "explicitly null".
+  it("treats an explicit inline lang: null as the default", async () => {
+    const compiled = await setup(LANG_TTL);
+    const result = await run(
+      compiled,
+      `{ doc(uri: "ex:d1") { _meta {
+        title(lang: null) label(lang: null)
+        comment(lang: null) definition(lang: null)
+      } } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data).not.toBeNull();
+    expect((result.data?.doc as Record<string, unknown>)._meta).toEqual({
+      title: "The Widget",
+      label: "The Widget",
+      comment: null,
+      definition: null,
+    });
+  });
+
+  it("treats a null lang variable as the default", async () => {
+    const compiled = await setup(LANG_TTL);
+    const result = await run(
+      compiled,
+      `query ($lang: String) {
+        doc(uri: "ex:d1") { _meta {
+          title(lang: $lang) label(lang: $lang)
+          comment(lang: $lang) definition(lang: $lang)
+        } }
+      }`,
+      { lang: null },
+    );
+    expect(result.errors).toBeUndefined();
+    expect(result.data).not.toBeNull();
+    expect((result.data?.doc as Record<string, unknown>)._meta).toEqual({
+      title: "The Widget",
+      label: "The Widget",
+      comment: null,
+      definition: null,
     });
   });
 
