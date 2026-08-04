@@ -120,14 +120,17 @@ export function parseRawConfig(
   // the schema would make a config that sets it succeed silently — which is
   // indistinguishable from the field still working.
   //
-  // SHALLOW AND EXACT, not a deep scan. `stories` and `packs[].stories` are
-  // opaque `z.array(z.unknown())` and the pack grammar's own autocomplete
-  // heuristic legitimately carries a `caseSensitive` (`spec/validate.ts`,
-  // read by `completion/model.ts`), so a deep scan would reject a valid
-  // declared story at load — a worse failure than the silence it replaces.
-  // `schema.test.ts` pins BOTH halves against this function directly ("does NOT
-  // trip on a declared story's autocomplete heuristic"); `readConfig.test.ts`
-  // pins the `packages` precedent through the layered reader.
+  // SHALLOW AND EXACT, not a deep scan, for a reason about THIS layer's reach:
+  // `stories` and `packs[].stories` are `z.array(z.unknown())` — deliberately
+  // opaque, because the pack grammar is `parsePackDefinition`'s to judge at
+  // dispatch, not this schema's. A deep scan would therefore reject on ANY
+  // nested key spelled `caseSensitive`: a package-shipped story, a
+  // forward-compatible field, a sample payload — none of which this layer has
+  // the grammar to read, and every one of which would take down every command,
+  // `doctor` and `sources update` included. `schema.test.ts` pins BOTH halves
+  // against this function directly ("treats a declared story's payload as
+  // opaque"); `readConfig.test.ts` pins the `packages` precedent through the
+  // layered reader.
   const completion = (value as { completion?: unknown } | null)?.completion;
   if (
     typeof completion === "object" &&
@@ -135,7 +138,7 @@ export function parseRawConfig(
     "caseSensitive" in completion
   ) {
     throw PragmaError.configError(
-      `Invalid config in ${source}: "completion.caseSensitive" was removed. Nothing ever read it — case folding is decided per story by the pack grammar's "complete.caseSensitive", which no config layer reaches.`,
+      `Invalid config in ${source}: "completion.caseSensitive" was removed. Nothing ever read it, and nothing it could have set exists: completion matching is case-insensitive everywhere, and no declared story or config layer can change that.`,
       {
         recovery: {
           message: `In ${source}, delete the "caseSensitive" line under "completion".`,

@@ -111,20 +111,27 @@ describe("the removed `completion.caseSensitive` fails loudly", () => {
     ).toEqual({ minChars: 2, families: { block: false } });
   });
 
-  it("does NOT trip on a declared story's autocomplete heuristic", () => {
-    // The detection is shallow and exact for a measured reason: `stories` and
-    // `packs[].stories` are opaque to this schema, and the pack grammar's
-    // AutocompleteHeuristic carries its OWN, live `caseSensitive`
-    // (`spec/validate.ts` → `completion/model.ts`). A deep scan would reject a
-    // perfectly valid declared story at config load — every command, `doctor`
-    // and `sources update` included. The `packages` rename is pinned the same
-    // way in `readConfig.test.ts`; this is that pin, inverted.
+  it("treats a declared story's payload as opaque", () => {
+    // The detection is shallow and exact because of what this layer can read.
+    // `stories` and `packs[].stories` are `z.array(z.unknown())` — the pack
+    // grammar is `parsePackDefinition`'s to judge at dispatch, not this
+    // schema's — so a deep scan would reject on ANY nested key spelled
+    // `caseSensitive`, in a payload the config layer has no grammar for. That
+    // takes down every command, `doctor` and `sources update` included, over a
+    // key this schema was never entitled to interpret. The `packages` rename is
+    // pinned the same way in `readConfig.test.ts`; this is that pin, inverted.
+    //
+    // The fixture is deliberately NOT a legal story: the pack grammar's
+    // `lookup.completion` is `.strict()` over `enabled`/`match`/`minChars` and
+    // has no `caseSensitive` at any depth (measured — `parsePackDefinition`
+    // rejects both `lookup.complete` and `lookup.completion.caseSensitive` with
+    // "Unrecognized key(s)"). A fixture pretending to be valid would have
+    // claimed this case defends a story shape that cannot exist. What it
+    // actually defends is opacity: an unknown payload passes through whatever
+    // it happens to contain.
     const story = {
       noun: "dish",
-      lookup: {
-        by: "ex:name",
-        complete: { kind: "names", caseSensitive: true },
-      },
+      vendorExtension: { renderer: { caseSensitive: true } },
     };
     expect(parseRawConfig({ stories: [story] }, "x.config.ts").stories).toEqual(
       [story],
