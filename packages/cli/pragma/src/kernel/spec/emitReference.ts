@@ -508,7 +508,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   generators: {
     type: "array (optional)",
     notes:
-      "Scaffold generator refs (`{ name, source }`). NOTHING reads `source` today: the `create` verbs resolve their generators statically. Declaring it changes only what `config show` prints.",
+      "Scaffold generator refs (`{ name, source }`). Distribution-only in practice: the DISTRIBUTION layer's declaration is the single authoring point for the package names the `create` verbs bind, in declaration order. `source` is read by the BUILD, not at runtime — a declared `npm:` ref must name its own entry and carry the range the binary actually links, or the build fails; the `create` verbs still resolve their generators through static imports, which a compiled binary cannot derive from a string. A global or project layer declaring `generators` changes only what `config show` prints.",
   },
   stories: {
     type: "array (optional)",
