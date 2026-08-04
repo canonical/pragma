@@ -325,6 +325,32 @@ describe("evaluateProjectConfig — mtime+VERSION cache", () => {
     expect(await evaluateProjectConfig(path)).toEqual({ tier: "core" });
   });
 
+  it("re-validates a cache hit, so a schema edit is not outrun by the cache (PROTECTED)", async () => {
+    freshXdg();
+    // The key is `sha256(path + mtime + VERSION)`. VERSION moves on RELEASE, the
+    // schema moves on a COMMIT — so a binary whose schema has tightened since a
+    // cache entry was written derives the SAME key for it. Measured before the
+    // fix: a cold run rejected this file, and this warm run resolved
+    // `detail: "banana"` and the removed `completion.caseSensitive` straight into
+    // the effective config, exactly the silence PR6 removed.
+    const dir = projectWith('export default { channel: "normal" };');
+    const path = join(dir, "pragma.config.ts");
+    await evaluateProjectConfig(path);
+
+    // Write what a PRE-slice binary of this same VERSION would have cached under
+    // this key: a shape its schema accepted and this one rejects. Only the cache
+    // body is touched — the key, the entry file and its mtime are untouched.
+    const [primed] = readdirSync(configCacheDir());
+    writeFileSync(
+      join(configCacheDir(), primed as string),
+      JSON.stringify({ detail: "banana", completion: { caseSensitive: true } }),
+    );
+
+    await expect(evaluateProjectConfig(path)).rejects.toMatchObject({
+      code: "CONFIG_ERROR",
+    });
+  });
+
   it("a config that throws while evaluating is a named CONFIG_ERROR, not INTERNAL_ERROR", async () => {
     freshXdg();
     // A malformed project config: references an undefined symbol → the module
