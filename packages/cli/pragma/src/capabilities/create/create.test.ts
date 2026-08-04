@@ -601,6 +601,16 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
     expect(() => assertDeclaredGenerators(live())).not.toThrow();
   });
 
+  it("binds each noun to the package the distribution declares, in order", () => {
+    // The hand-copy this replaced could name a package the distribution did not
+    // ship and nothing would notice. Asserted against `conf.generators` rather
+    // than against literals, because the declaration is now the single
+    // authoring point — a literal here would just be the hand-copy again.
+    expect(Object.values(live().bound)).toEqual(
+      conf.generators.map((generator) => generator.name),
+    );
+  });
+
   it("fails when a binding names a package the declaration does not", () => {
     expect(() =>
       assertDeclaredGenerators({

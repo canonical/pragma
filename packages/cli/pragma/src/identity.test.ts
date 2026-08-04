@@ -14,7 +14,19 @@ vi.mock("../pragma.conf.js", () => ({
     colophon: "Made by the kitchen.",
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
-    generators: [],
+    // Three, in the order the create surface binds its nouns: that surface now
+    // reads its generator PACKAGE NAMES from this declaration (positionally),
+    // so a fork's `create` names the fork's packages. `generators: []` used to
+    // be enough here; it now fails at the module load of
+    // `capabilities/create/constants.ts`, which is the point.
+    generators: [
+      { name: "@kitchen/summon-dish", source: "npm:@kitchen/summon-dish@^1.0.0" },
+      { name: "@kitchen/summon-menu", source: "npm:@kitchen/summon-menu@^1.0.0" },
+      {
+        name: "@kitchen/summon-service",
+        source: "npm:@kitchen/summon-service@^1.0.0",
+      },
+    ],
     prefixes: { rcp: "https://example.invalid/recipes/" },
     channel: "normal",
     detail: "standard",
