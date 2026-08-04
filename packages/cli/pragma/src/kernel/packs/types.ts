@@ -328,7 +328,9 @@ export interface PackDefinition {
   /**
    * Markdown narrating how this pack's domain is made — its ontology/graph
    * story. Data, like the queries. Surfaced storelessly (off the effective
-   * modules) by `pragma colophon`, after pragma's own built-in colophon.
+   * modules) by the `colophon` command, after the DISTRIBUTION's own declared
+   * colophon when it declares one — that section is content too now, read from
+   * the distribution config, so a pack's colophon may well be the only one.
    */
   readonly colophon?: string;
 }

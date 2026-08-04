@@ -113,7 +113,9 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
   // heuristic legitimately carries a `caseSensitive` (`spec/validate.ts`,
   // read by `completion/model.ts`), so a deep scan would reject a valid
   // declared story at load — a worse failure than the silence it replaces.
-  // `readConfig.test.ts` pins that, as it already does for `packages`.
+  // `schema.test.ts` pins BOTH halves against this function directly ("does NOT
+  // trip on a declared story's autocomplete heuristic"); `readConfig.test.ts`
+  // pins the `packages` precedent through the layered reader.
   const completion = (value as { completion?: unknown } | null)?.completion;
   if (
     typeof completion === "object" &&

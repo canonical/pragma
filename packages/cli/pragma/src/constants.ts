@@ -1,7 +1,8 @@
 /**
  * Package-level constants — the distribution's identity, projected.
  *
- * The bin name, MCP server name, description and issues URL are NOT authored
+ * The bin name, MCP server name, description, issues URL and the distribution's
+ * own colophon are NOT authored
  * here: they are read from the distribution config (`pragma.conf.ts`), so a fork
  * changes values, not code. The import is static because the surfaces that need
  * identity — `--help`, `__complete`, first-run onboarding, the MCP handshake —

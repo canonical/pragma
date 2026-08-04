@@ -41,9 +41,11 @@ export type PackDeclaration = string | PackSource;
  * own — including, deliberately, the architecture narrative: a distribution that
  * forks the kernel is free to describe machinery it may have changed.
  *
- * `summary` is required by BEHAVIOUR, not taste: `--format llm` emits
- * `summary ?? markdown`, so a distribution declaring only a body makes
- * `colophon --format llm` print the whole essay at an agent.
+ * `summary` is OPTIONAL in the schema and load-bearing in practice: `--format
+ * llm` emits `summary ?? markdown`, so a distribution declaring only a body
+ * makes `colophon --format llm` print the whole essay at an agent. Nothing
+ * rejects a declaration without one — the fallback is deliberate, so that a
+ * distribution with a short body need not write it twice.
  */
 export interface ColophonDeclaration {
   /** The Markdown BODY, with no leading H1 — the renderer supplies the title. */

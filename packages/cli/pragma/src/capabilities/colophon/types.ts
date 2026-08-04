@@ -34,13 +34,21 @@ export interface ColophonSection {
    * heading from {@link title}, so a section is never double-titled).
    */
   readonly markdown: string;
-  /** Optional condensed body for `--format llm` (pragma supplies one). */
+  /**
+   * Optional condensed body for `--format llm` — supplied by whoever authored
+   * the section (the distribution, in its `colophon` declaration), never by the
+   * kernel. Absent here means the llm form falls back to {@link markdown}.
+   */
   readonly summary?: string;
   /** Provenance: `"built-in"`, or `"pack:<name>"`. */
   readonly source?: string;
 }
 
-/** The full `colophon` payload: pragma's section first, then active packs'. */
+/**
+ * The full `colophon` payload: the distribution's own section first WHEN it
+ * declares one — the field is optional and the collector omits the section
+ * rather than emitting an empty heading — then each active pack's.
+ */
 export interface ColophonData {
   readonly sections: readonly ColophonSection[];
 }
