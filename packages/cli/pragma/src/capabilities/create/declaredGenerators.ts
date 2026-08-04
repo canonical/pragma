@@ -27,26 +27,35 @@
 /**
  * A parsed `generators[].source` ref.
  *
- * Only the `npm` arm carries a payload, because only the `npm` arm has a reader:
- * {@link assertDeclaredGenerators} holds its `name` to the entry's and its
- * `range` to the linked dependency, and `continue`s on the other two. The `git`
- * and `file` arms are bare discriminants on purpose — they used to carry `url`
- * and `path` fields nothing dereferenced, which is the same dead surface this
- * slice removed from the config (`completion.caseSensitive`) and from the
- * declaration itself (an inert `source`). What those two forms are checked for
- * is that they PARSE at all.
+ * TWO ARMS FOR THREE FORMS, because two arms is what anything reads. Only `npm`
+ * carries a payload: {@link assertDeclaredGenerators} holds its `name` to the
+ * entry's and its `range` to the linked dependency, and `continue`s otherwise.
+ * `git+<url>` and `file:<path>` used to be separate bare discriminants, and
+ * nothing — not one branch outside a test assertion — ever told them apart, so
+ * the type published a three-way choice over a single live decision. Same
+ * argument that took `url` and `path` off them, one level up: they carried
+ * fields nothing dereferenced, this carried a distinction nothing read. What
+ * both forms are checked for is that they PARSE at all, and `other` says that
+ * and nothing more.
+ *
+ * EXPORTED for `create.test.ts`, which unit-tests the parse directly (the
+ * scoped-name split has no other observation point); no production module
+ * outside this one imports either name.
  */
 export type ParsedGeneratorSource =
   | { readonly kind: "npm"; readonly name: string; readonly range: string }
-  | { readonly kind: "git" }
-  | { readonly kind: "file" };
+  | { readonly kind: "other" };
 
 /**
  * Parse a declared generator `source`.
  *
  * The three forms `packs`/`generators` have always documented: `npm:<spec>`,
  * `git+<url>` and `file:<path>`. The npm arm splits on the LAST `@` so a scoped
- * name (`@canonical/summon-component@^0.33.0`) keeps its leading one.
+ * name (`@canonical/summon-component@^0.33.0`) keeps its leading one; the other
+ * two collapse to `other` — see {@link ParsedGeneratorSource}.
+ *
+ * EXPORTED for `create.test.ts` only, the way `config/schema.ts` exports
+ * `rawConfigSchema`.
  *
  * @param source - The declared source string.
  * @returns The parsed ref.
@@ -63,8 +72,9 @@ export function parseGeneratorSource(source: string): ParsedGeneratorSource {
     }
     return { kind: "npm", name: spec.slice(0, at), range: spec.slice(at + 1) };
   }
-  if (source.startsWith("git+")) return { kind: "git" };
-  if (source.startsWith("file:")) return { kind: "file" };
+  if (source.startsWith("git+") || source.startsWith("file:")) {
+    return { kind: "other" };
+  }
   throw new Error(
     `generator source "${source}" is not npm:<spec>, git+<url> or file:<path>.`,
   );
