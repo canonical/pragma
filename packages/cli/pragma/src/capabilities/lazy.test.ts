@@ -238,18 +238,20 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // arriving with a config edge fails too — even a type-only one, because the
     // erasure is what the loop above checks and the file set is what bounds
     // which modules get to make that promise.
-    expect([...found].sort()).toEqual([
-      "src/capabilities/block/tierChain.ts",
-      "src/capabilities/config/fields.ts",
-      "src/capabilities/config/show.render.ts",
-      "src/capabilities/config/types.ts",
-      "src/capabilities/create/constants.ts",
-      "src/capabilities/info/info.render.ts",
-      "src/capabilities/info/types.ts",
-      "src/capabilities/shared/registry.ts",
-      "src/constants.ts",
-      "pragma.conf.ts",
-    ].sort());
+    expect([...found].sort()).toEqual(
+      [
+        "src/capabilities/block/tierChain.ts",
+        "src/capabilities/config/fields.ts",
+        "src/capabilities/config/show.render.ts",
+        "src/capabilities/config/types.ts",
+        "src/capabilities/create/constants.ts",
+        "src/capabilities/info/info.render.ts",
+        "src/capabilities/info/types.ts",
+        "src/capabilities/shared/registry.ts",
+        "src/constants.ts",
+        "pragma.conf.ts",
+      ].sort(),
+    );
   });
 
   it("the help path (buildProgram) imports no zod schema module", () => {

@@ -37,6 +37,7 @@ import {
   assertDeclaredGenerators,
   type DeclaredGeneratorCheck,
   parseGeneratorSource,
+  readEmbeddedManifestImport,
   readStaticGeneratorImports,
 } from "./declaredGenerators.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
@@ -574,6 +575,15 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
       ),
     ),
     dependencies: pkg.dependencies,
+    embeddedNouns: Object.entries(CREATE_GENERATORS).flatMap(
+      ([noun, binding]) => (binding.readsEmbeddedTemplates ? [noun] : []),
+    ),
+    embeddedFrom: readEmbeddedManifestImport(
+      readFileSync(
+        fileURLToPath(new URL("./create.verb.ts", import.meta.url)),
+        "utf-8",
+      ),
+    ),
   });
 
   it("parses each declared source form and keeps a scoped name whole", () => {
@@ -596,9 +606,11 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
 
   it("reads the static specifiers out of pickGenerator's own source", () => {
     // The residue the ruling cannot remove: `bun build --compile` bundles only
-    // statically analysable specifiers, so these three literals must exist.
-    // Read by NOUN (the `GENERATOR_MAPS` entry), not by import order — biome
-    // sorts the import block alphabetically, which is not declaration order.
+    // statically analysable specifiers, so these three literals must exist —
+    // three of the four, the fourth being `create.verb.ts`'s embedded-manifest
+    // import, pinned in its own case below. Read by NOUN (the `GENERATOR_MAPS`
+    // entry), not by import order — biome sorts the import block
+    // alphabetically, which is not declaration order.
     expect(live().statics).toEqual({
       component: "@canonical/summon-component",
       package: "@canonical/summon-package",
@@ -628,6 +640,36 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
     );
     // And an unrelated string is still not this file: no false alarm.
     expect(readStaticGeneratorImports("const x = 1;\n")).toEqual({});
+  });
+
+  it("reads the embedded-manifest package out of create.verb's own source", () => {
+    // The FOURTH literal specifier, and the one the guard could not see:
+    // `scripts/build.ts` harvests `.ejs` for whichever binding declares
+    // `readsEmbeddedTemplates`, while this import decides whose loader registry
+    // receives them. A LITERAL, like the `statics` case above and for the same
+    // reason — the alternative recomputes the value from the binding it is
+    // supposed to hold.
+    expect(live().embeddedFrom).toBe("@canonical/summon-component");
+    expect(live().embeddedNouns).toEqual(["component"]);
+  });
+
+  it("fails when the embedded manifest is injected into another package", () => {
+    // The measured fork failure this closes: declare a different component
+    // generator, edit `pickGenerator.ts` (the only other file the reference
+    // page used to name) and stop. The build PASSED, `TEMPLATE_ROOTS` harvested
+    // the fork's templates, and `create.verb.ts` still called
+    // `setEmbeddedTemplates` on `@canonical/summon-component` — so `create
+    // component` from the binary died on the template read, misreported by
+    // `isModuleNotFound`'s backstop as "run it from a source checkout".
+    expect(() =>
+      assertDeclaredGenerators({
+        ...live(),
+        embeddedFrom: "@acme/summon-other",
+      }),
+    ).toThrow(/injects the embedded manifest into @acme\/summon-other/);
+    expect(() =>
+      assertDeclaredGenerators({ ...live(), embeddedFrom: undefined }),
+    ).toThrow(/imports no "<package>\/embedded" module/);
   });
 
   it("the shipped declaration, bindings and dependencies agree", () => {

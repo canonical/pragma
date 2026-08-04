@@ -23,16 +23,19 @@
  *  - `readsEmbeddedTemplates` is a property of the generator's source (see each
  *    binding), not of what this build chooses to embed.
  *
- * THE RESIDUE, stated plainly: `pickGenerator.ts` must still write three literal
- * import specifiers, because `bun build --compile` bundles only statically
- * analysable ones — `import(name)` on a declared package leaves the generators
- * out of the binary (measured: `Cannot find module
- * '@canonical/summon-component' from '/$bunfs/root/…'`). Since the zip is
- * POSITIONAL, a reordered declaration would silently re-bind every noun. So
- * `assertDeclaredGenerators` — run by `scripts/build.ts` before it emits
- * anything, and again by `create.test.ts` — holds those three literals, per
- * noun, to the names this table binds, and holds each declared `source` to the
- * dependency the build actually links.
+ * THE RESIDUE, stated plainly: FOUR literal import specifiers survive across TWO
+ * files, because `bun build --compile` bundles only statically analysable ones —
+ * `import(name)` on a declared package leaves the generators out of the binary
+ * (measured: `Cannot find module '@canonical/summon-component' from
+ * '/$bunfs/root/…'`). Three are `pickGenerator.ts`'s generator maps, one per
+ * bound noun; the fourth is `create.verb.ts`'s `import("<package>/embedded")`,
+ * which injects the template manifest `scripts/build.ts` harvests — a different
+ * literal for a different reason, and the one the guard could not see until it
+ * read that file too. Since the zip is POSITIONAL, a reordered declaration would
+ * silently re-bind every noun. So `assertDeclaredGenerators` — run by
+ * `scripts/build.ts` before it emits anything, and again by `create.test.ts` —
+ * holds all four to the names this table binds, and holds each declared `source`
+ * to the dependency the build actually links.
  *
  * `create.test.ts` pins the rest of what is checkable: every binding resolves to
  * the generator it names, and the embedded manifest carries only the templates

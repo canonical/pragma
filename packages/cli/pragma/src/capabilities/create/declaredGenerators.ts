@@ -125,6 +125,43 @@ export function readStaticGeneratorImports(
   return bound;
 }
 
+/**
+ * The embedded-manifest package `create.verb.ts` statically names.
+ *
+ * THE FOURTH LITERAL, and the one that was outside the guard. `pickGenerator.ts`
+ * writes three specifiers; `create.verb.ts`'s `loadCreateRuntime` writes a
+ * fourth — `import("<package>/embedded")` — to inject `setEmbeddedTemplates`
+ * before the generators evaluate. It is literal for the same `--compile` reason
+ * and it is not interchangeable with the other three: `scripts/build.ts`
+ * harvests the `.ejs` for whichever binding declares `readsEmbeddedTemplates`,
+ * while this import decides whose loader registry receives them. A fork that
+ * followed the reference page, edited `pragma.conf.ts` and `pickGenerator.ts`
+ * and stopped got a PASSING build whose binary read templates out of one
+ * package's registry and populated another's — surfacing at runtime as the
+ * `ENOENT … .ejs` path, misreported by `isModuleNotFound`'s backstop as "run it
+ * from a source checkout".
+ *
+ * Read as SOURCE TEXT, like `readStaticGeneratorImports` and for the same
+ * reason: importing `create.verb.ts` pulls the create surface.
+ *
+ * The `/embedded` suffix is the marker, not the import's position: that module
+ * is where summon-component exports `setEmbeddedTemplates`, and a package that
+ * exported it from somewhere else would be a different edit than this one.
+ *
+ * @param source - `create.verb.ts`'s text.
+ * @returns The package the `/embedded` submodule is imported from, or
+ *   `undefined` when no such dynamic import is written.
+ */
+export function readEmbeddedManifestImport(source: string): string | undefined {
+  for (const match of source.matchAll(/\bimport\(\s*"([^"]+)"\s*\)/g)) {
+    const specifier = match[1];
+    if (specifier?.endsWith("/embedded") && !specifier.startsWith(".")) {
+      return specifier.slice(0, -"/embedded".length);
+    }
+  }
+  return undefined;
+}
+
 /** What {@link assertDeclaredGenerators} checks the declaration against. */
 export interface DeclaredGeneratorCheck {
   /** `pragma.conf.ts`'s `generators`, in declaration order. */
@@ -138,6 +175,13 @@ export interface DeclaredGeneratorCheck {
   readonly statics: Readonly<Record<string, string>>;
   /** This package's own `dependencies` — what the build actually links. */
   readonly dependencies: Readonly<Record<string, string>>;
+  /** The nouns whose binding declares `readsEmbeddedTemplates`. */
+  readonly embeddedNouns: readonly string[];
+  /**
+   * The package `create.verb.ts` imports `/embedded` from — see
+   * {@link readEmbeddedManifestImport}. `undefined` when none is written.
+   */
+  readonly embeddedFrom: string | undefined;
 }
 
 /**
@@ -158,7 +202,24 @@ export interface DeclaredGeneratorCheck {
  *     check. The binding table zips `generators` POSITIONALLY, so reordering
  *     the declaration would otherwise re-bind every noun silently.
  *
- * @param input - The declaration, the bindings, the statics, the dependencies.
+ *     THE FIRST HALF OF 4 CANNOT FAIL FROM EITHER LIVE CALLER. `scripts/
+ *     build.ts` and `create.test.ts` both build `bound` by mapping
+ *     `CREATE_GENERATORS`, and every `name:` there IS
+ *     `conf.generators[i].name` read from the same module instance as
+ *     `declared`, so `bound ⊆ declared` holds by construction. It survives to
+ *     keep the function total over a hand-written `bound` — which is the only
+ *     way `create.test.ts` reaches it. The load-bearing checks are 1-3, the
+ *     static-specifier half of 4, and 5.
+ *  5. the `<package>/embedded` submodule `create.verb.ts` dynamic-imports is
+ *     the package bound to the noun that declares `readsEmbeddedTemplates` —
+ *     the FOURTH literal specifier, and the one drift the other checks could
+ *     not see. `scripts/build.ts` harvests templates for the declaring binding
+ *     while that import decides whose loader registry receives them, so a fork
+ *     that edited only `pragma.conf.ts` and `pickGenerator.ts` shipped a
+ *     PASSING build whose `create` died reading a template.
+ *
+ * @param input - The declaration, the bindings, the statics, the dependencies,
+ *   and the embedded-manifest import.
  * @throws Error naming the offending entry and the edit that fixes it.
  */
 export function assertDeclaredGenerators(input: DeclaredGeneratorCheck): void {
@@ -212,6 +273,21 @@ export function assertDeclaredGenerators(input: DeclaredGeneratorCheck): void {
     if (specifier !== name) {
       throw new Error(
         `create ${noun} binds ${name} but pickGenerator.ts statically imports ${specifier}. The static specifiers cannot be derived (--compile bundles only literal ones), so the declaration and they must be edited together.`,
+      );
+    }
+  }
+
+  for (const noun of input.embeddedNouns) {
+    const name = bound[noun];
+    if (name === undefined) continue;
+    if (input.embeddedFrom === undefined) {
+      throw new Error(
+        `create ${noun} reads embedded templates but create.verb.ts imports no "<package>/embedded" module — the compiled binary would harvest ${name}'s templates and register them nowhere. Write import("${name}/embedded") in loadCreateRuntime.`,
+      );
+    }
+    if (input.embeddedFrom !== name) {
+      throw new Error(
+        `create ${noun} binds ${name} but create.verb.ts injects the embedded manifest into ${input.embeddedFrom}. scripts/build.ts harvests ${name}'s templates, so the binary would populate the wrong loader and fail reading one. Edit that import with the declaration.`,
       );
     }
   }

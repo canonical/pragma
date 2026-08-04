@@ -35,6 +35,7 @@ import conf from "../pragma.conf.js";
 import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
 import {
   assertDeclaredGenerators,
+  readEmbeddedManifestImport,
   readStaticGeneratorImports,
 } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
@@ -89,6 +90,16 @@ const PICK_GENERATOR_SRC = fileURLToPath(
 );
 
 /**
+ * `create.verb.ts`'s source — read for the FOURTH literal specifier, the
+ * `<package>/embedded` import that decides whose template registry the manifest
+ * this script writes is injected into. Read, never imported: importing it pulls
+ * the whole create surface.
+ */
+const CREATE_VERB_SRC = fileURLToPath(
+  new URL("../src/capabilities/create/create.verb.ts", scriptsUrl),
+);
+
+/**
  * Hold `pragma.conf.ts`'s `generators` to what this build actually ships.
  *
  * Run FIRST, before any codegen, so a drifted declaration fails the build
@@ -121,6 +132,12 @@ function checkDeclaredGenerators(): void {
       readFileSync(PICK_GENERATOR_SRC, "utf-8"),
     ),
     dependencies: pkg.dependencies,
+    embeddedNouns: Object.entries(CREATE_GENERATORS).flatMap(
+      ([noun, binding]) => (binding.readsEmbeddedTemplates ? [noun] : []),
+    ),
+    embeddedFrom: readEmbeddedManifestImport(
+      readFileSync(CREATE_VERB_SRC, "utf-8"),
+    ),
   });
 }
 
