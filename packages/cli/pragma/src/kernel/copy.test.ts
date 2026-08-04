@@ -48,9 +48,16 @@ const root = resolve(here, "..");
  * - `config/defaults.ts` — THE distribution seam: it imports the distribution
  *   config and names the file it imports. That is its job, not a leak.
  * - `kernel/vocabulary.ts` — the same seam for the vocabulary declaration. Its
- *   diagnostics quote the file it imports, and five modules hardcode that
- *   specifier, so a fork cannot rename it: deriving the name from `BIN_NAME`
- *   here would name a path that does not exist.
+ *   diagnostics quote the file it imports, and that specifier is hardcoded in
+ *   six modules under `src/` (`config/defaults.ts`, `render/prefixes.ts`,
+ *   `kernel/vocabulary.ts`, `capabilities/distribution.ts`,
+ *   `capabilities/create/constants.ts`, `constants.ts`) plus `scripts/build.ts`
+ *   — the last two joined the set in PR6, when the create binding table began
+ *   reading the declared generators and the build began checking them. So a
+ *   fork cannot rename it: deriving the name from `BIN_NAME` here would name a
+ *   path that does not exist. The count is a MEASUREMENT, not a bound; it is
+ *   what makes this a recorded exemption rather than an oversight, so re-take
+ *   it (`git grep` the specifier outside tests) when the set moves.
  * - `runtime/graphpack/hash.ts` — `<<<pragma-pack:…>>>` are hash domain
  *   separators; changing them re-mints every pack content hash. CROSS-LANE.
  */
