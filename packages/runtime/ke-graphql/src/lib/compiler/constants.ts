@@ -75,7 +75,7 @@ export const XSD_PATTERN = `${XSD}pattern`;
 export const ARTIFACT_VERSION = 1;
 
 // ---------------------------------------------------------------------------
-// Provenance — the five-line header stamped onto the printed SDL.
+// Provenance — the six-line header stamped onto the printed SDL.
 //
 // The values below are the DEFAULTS for the corresponding SchemaPluginOptions
 // fields; compose reads `options.x ?? DEFAULT_X` so an unconfigured build still

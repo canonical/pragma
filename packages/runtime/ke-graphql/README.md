@@ -83,6 +83,7 @@ the compiler emits the following (fields lightly reordered for reading, Relay bo
 # ke-graphql · canonical SDL
 # graphql-schema-spec: 1
 # mode: annotated
+# prefixing: none
 # provider: unknown
 # revision: 0
 

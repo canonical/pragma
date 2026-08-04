@@ -43,12 +43,17 @@ import {
 import { buildTBoxSchema } from "../tbox/index.js";
 import {
   DEFAULT_MODE,
+  DEFAULT_PREFIXING,
   DEFAULT_PROVIDER,
   DEFAULT_REVISION,
   GRAPHQL_SCHEMA_SPEC,
 } from "./constants.js";
 import type { FieldPlan, SchemaPlan, TypeRef } from "./emit.js";
-import type { ProjectionMode, SchemaExtensionsInput } from "./types.js";
+import type {
+  FieldPrefixing,
+  ProjectionMode,
+  SchemaExtensionsInput,
+} from "./types.js";
 
 const PHASE = "compose";
 
@@ -72,6 +77,15 @@ export interface ComposeOptions {
   skipValidation?: boolean;
   /** Projection mode, stamped into the SDL provenance header. */
   mode?: ProjectionMode;
+  /**
+   * Field-name prefixing policy, stamped into the SDL provenance header.
+   *
+   * Unlike `mode`, this one CHANGES THE EMITTED SHAPE: under `"all"` every
+   * ontology-derived field name is namespace-prefixed, so two SDLs whose
+   * headers differ only here have disjoint field-name sets. Omitting it made
+   * the header unable to answer the one question it exists to answer.
+   */
+  prefixing?: FieldPrefixing;
   /** Provider identity, stamped into the SDL provenance header. */
   provider?: string;
   /** Source revision, stamped into the SDL provenance header. */
@@ -79,7 +93,7 @@ export interface ComposeOptions {
 }
 
 /**
- * Build the five-line provenance header prepended to the printed SDL. Pure.
+ * Build the six-line provenance header prepended to the printed SDL. Pure.
  *
  * The shape mirrors sem-graphql's printer (crates/sem-graphql/src/printer.rs):
  * a banner line then one `# key: value` line per provenance fact, so an SDL
@@ -90,6 +104,7 @@ const buildProvenanceHeader = (options: ComposeOptions): string =>
     "# ke-graphql · canonical SDL",
     `# graphql-schema-spec: ${GRAPHQL_SCHEMA_SPEC}`,
     `# mode: ${options.mode ?? DEFAULT_MODE}`,
+    `# prefixing: ${options.prefixing ?? DEFAULT_PREFIXING}`,
     `# provider: ${options.provider ?? DEFAULT_PROVIDER}`,
     `# revision: ${options.revision ?? DEFAULT_REVISION}`,
     "",

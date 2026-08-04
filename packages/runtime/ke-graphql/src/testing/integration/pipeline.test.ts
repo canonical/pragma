@@ -291,16 +291,18 @@ describe("ds-realistic fixture", () => {
 });
 
 describe("provenance header", () => {
-  it("stamps five comment lines ahead of the printed SDL", async () => {
+  it("stamps six comment lines ahead of the printed SDL", async () => {
     const result = await compileFixture(MINIMAL_TTL, {
       mode: "explicit",
+      prefixing: "all",
       provider: "ex",
       revision: "deadbeef",
     });
-    expect(result.sdl.split("\n").slice(0, 5)).toEqual([
+    expect(result.sdl.split("\n").slice(0, 6)).toEqual([
       "# ke-graphql · canonical SDL",
       "# graphql-schema-spec: 1",
       "# mode: explicit",
+      "# prefixing: all",
       "# provider: ex",
       "# revision: deadbeef",
     ]);

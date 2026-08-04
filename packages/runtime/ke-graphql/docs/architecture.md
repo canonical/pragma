@@ -51,17 +51,20 @@ The intermediate representations are exported public contracts (like Prisma's DM
 
 ### Provenance header
 
-Pass 7 prepends five `#` comment lines to the printed SDL, matching sem-graphql's printer form (`crates/sem-graphql/src/printer.rs`) so an SDL from either implementation diffs line-for-line against the other:
+Pass 7 prepends six `#` comment lines to the printed SDL, matching sem-graphql's printer form (`crates/sem-graphql/src/printer.rs`) so an SDL from either implementation diffs line-for-line against the other:
 
 ```
 # ke-graphql · canonical SDL
 # graphql-schema-spec: 1
 # mode: annotated
+# prefixing: none
 # provider: unknown
 # revision: 0
 ```
 
-`graphql-schema-spec` is a placeholder `"1"` until the contract document is versioned. `provider` and `revision` are pure consumer-supplied provenance. `mode` (`auto` | `annotated` | `explicit`, mirroring sem's `ProjectionMode`) is **provenance-only today**: no `graphql:*` annotations exist in the extractor yet, so the compiler deliberately does not branch on it — a knob that silently changes nothing is worse than no knob. Its effect lands with the annotations work. `prefixing`, by contrast, has real behaviour now and is not part of the header.
+`graphql-schema-spec` is a placeholder `"1"` until the contract document is versioned. `provider` and `revision` are pure consumer-supplied provenance. `mode` (`auto` | `annotated` | `explicit`, mirroring sem's `ProjectionMode`) is **provenance-only today**: no `graphql:*` annotations exist in the extractor yet, so the compiler deliberately does not branch on it — a knob that silently changes nothing is worse than no knob. Its effect lands with the annotations work.
+
+`prefixing` is the opposite case and belongs in the header for exactly that reason: it **changes the emitted shape**. Under `all`, every ontology-derived field name is namespace-prefixed, so two SDLs whose headers agree on everything else can have disjoint field-name sets. A header whose purpose is conformance discovery cannot omit the one knob that alters what a consumer must select. (It was omitted once, on the reasoning that only *inert* knobs belong in provenance — precisely backwards.)
 
 The header is skipped on the `skipValidation` artifact-boot path, where `sdl` stays `""` by contract.
 

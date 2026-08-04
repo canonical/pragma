@@ -47,6 +47,7 @@ export default function runPasses(
     incremental: options.incremental,
     skipValidation,
     mode: options.mode,
+    prefixing: options.prefixing,
     provider: options.provider,
     revision: options.revision,
   });

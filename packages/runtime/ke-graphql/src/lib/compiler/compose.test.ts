@@ -328,7 +328,7 @@ describe("compose full construction", () => {
     expect(output.sdl).toContain("type Thing implements Node");
   });
 
-  it("prepends the five-line provenance header, defaulted", () => {
+  it("prepends the six-line provenance header, defaulted", () => {
     const plan = emptyPlan({
       types: new Map([
         [
@@ -338,10 +338,11 @@ describe("compose full construction", () => {
       ]),
     });
     const { output } = compose(plan);
-    expect(output.sdl.split("\n").slice(0, 5)).toEqual([
+    expect(output.sdl.split("\n").slice(0, 6)).toEqual([
       "# ke-graphql · canonical SDL",
       "# graphql-schema-spec: 1",
       "# mode: annotated",
+      "# prefixing: none",
       "# provider: unknown",
       "# revision: 0",
     ]);
@@ -349,7 +350,7 @@ describe("compose full construction", () => {
     expect(output.sdl).toContain("type Thing {");
   });
 
-  it("stamps the configured mode, provider, and revision", () => {
+  it("stamps the configured mode, prefixing, provider, and revision", () => {
     const plan = emptyPlan({
       types: new Map([
         [
@@ -360,13 +361,16 @@ describe("compose full construction", () => {
     });
     const { output } = compose(plan, {
       mode: "explicit",
+      prefixing: "all",
       provider: "ds",
       revision: "a1b2c3",
     });
-    expect(output.sdl.split("\n").slice(0, 5)).toEqual([
+    expect(output.sdl.split("\n").slice(0, 6)).toEqual([
       "# ke-graphql · canonical SDL",
       "# graphql-schema-spec: 1",
       "# mode: explicit",
+      // the knob that actually changes the emitted field names
+      "# prefixing: all",
       "# provider: ds",
       "# revision: a1b2c3",
     ]);
