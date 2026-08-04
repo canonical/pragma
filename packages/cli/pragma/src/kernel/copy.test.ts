@@ -20,8 +20,9 @@
  * a POSITION ({@link COMMAND_POSITIONS}, read over raw source so it holds
  * whatever the scanner can see) and once as a SHAPE (a backticked command
  * inside any authored literal, read through {@link readCopy} so an
- * interpolated one leaves no matching chunk). One exemption between them,
- * named where {@link capabilitySources} is built.
+ * interpolated one leaves no matching chunk). ZERO exemptions between them: the
+ * one they used to carry — the built-in colophon narrative — became declared
+ * content and its file no longer exists. See {@link capabilitySources}.
  *
  * NOTE for a reader of an older revision: this docblock used to say the
  * `examples[].cmd` sweep and the `docs/reference/*.md` regen "have to move
@@ -370,18 +371,23 @@ describe("kernel copy (PROTECTED)", () => {
 const COMMAND_POSITIONS = ["cmd", "cli", "remedy"];
 
 /**
- * Every authored `.ts` under `src/capabilities/**`, minus the one file whose
- * strings are the distribution's own NARRATIVE rather than instructions:
- * `colophon/pragmaColophon.ts` is prose about what this toolchain is, and it
- * quotes `pragma create` as a subject, not as a step. Whether a fork inherits
- * that narrative, rewrites it, or declares its own is a decision the owner has
- * not made; interpolating a bin name into it would answer the question by
- * accident. It is the only file the two rules below exempt, and it is the whole
- * of what a fork still reads in this distribution's voice.
+ * Every authored `.ts` under `src/capabilities/**`, with NO exemptions.
+ *
+ * There used to be exactly one: `colophon/pragmaColophon.ts`, prose about what
+ * this toolchain is, which quoted `pragma create` as a subject rather than as a
+ * step. Whether a fork inherited that narrative, rewrote it, or declared its own
+ * was recorded here as a decision the owner had not made — and interpolating a
+ * bin name into it would have answered the question by accident.
+ *
+ * The owner decided: the colophon is hand-written CONTENT, declared in
+ * `pragma.conf.ts` like the stories are. The file is gone, so the exemption is
+ * gone with it, and both rules below now reach every file under
+ * `src/capabilities/**` with nothing carved out. A re-introduced narrative that
+ * quotes a command literally fails here, which is what makes the ruling
+ * self-enforcing rather than a convention. (`identity.test.ts` holds the other
+ * half: a fork's colophon, rendered in all three formats, names only the fork.)
  */
-const capabilitySources = listSources(join(root, "capabilities")).filter(
-  (file) => !file.endsWith("colophon/pragmaColophon.ts"),
-);
+const capabilitySources = listSources(join(root, "capabilities"));
 
 describe("capability commands (PROTECTED)", () => {
   it("no `cmd:`, `cli:` or `remedy:` value is a bare literal", () => {

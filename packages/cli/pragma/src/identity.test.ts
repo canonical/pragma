@@ -227,6 +227,46 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     });
   });
 
+  it("tells the fork's own colophon, in all three formats", async () => {
+    // The measurement this closes: on a fork build the colophon carried 4 / 2 /
+    // 6 occurrences of THIS distribution's name (plain / llm / json), from a
+    // narrative hardcoded under `src/capabilities/colophon/`, the section title,
+    // and a JSON-visible `kind` discriminant. All three are content or
+    // projection now.
+    //
+    // EVERY format explicitly, never the auto-selected one: `--format` picks
+    // `llm` off a TTY, which is exactly how an earlier probe on this programme
+    // reported 3 leaks where the truth was 7 across 5 surfaces. The plain
+    // formatter is the one that had never been exercised.
+    process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-col-"));
+    const { collectColophon } = await import(
+      "./capabilities/colophon/collectColophon.js"
+    );
+    const { colophonFormatters } = await import(
+      "./capabilities/colophon/colophon.render.js"
+    );
+    const { bootRuntime } = await import("./kernel/runtime/boot.js");
+
+    const data = await collectColophon(
+      bootRuntime(
+        { llm: false, autoLlm: false, format: "plain", verbose: false },
+        mkdtempSync(join(tmpdir(), "identity-cwd-")),
+      ),
+    );
+    expect(data.sections[0]?.kind).toBe("distribution");
+    expect(data.sections[0]?.title).toBe("recipes");
+
+    for (const format of ["plain", "llm", "json"] as const) {
+      const rendered = colophonFormatters[format](data);
+      expect(rendered, format).not.toMatch(THIS_DISTRIBUTION);
+      expect(rendered, format).toContain("recipes");
+    }
+    // Non-vacuity for the `llm` arm specifically: it renders `summary ??
+    // markdown`, so the fork's CONDENSED words have to be the ones that reach an
+    // agent — not its full body, and not ours.
+    expect(colophonFormatters.llm(data)).toContain("a menu is a query");
+  });
+
   it("generates a reference that never names this distribution", async () => {
     // `docs/reference/` is the surface this package PUBLISHES as machine-derived
     // truth, so it is the surface a fork's rename must reach in full. Every
