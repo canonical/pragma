@@ -20,6 +20,16 @@ type GeneratorMap = Record<string, GeneratorDefinition | undefined>;
  * erased to the base definition via `unknown` — runtime-safe because `execute`
  * calls `generate(answers)` with the resolved answers, which carry the fields
  * the specific generator reads.
+ *
+ * THIS BLOCK IS READ AS TEXT. `create/declaredGenerators.ts`'s
+ * `readStaticGeneratorImports` — run by `bun run build` before it emits
+ * anything, and by `create.test.ts` — parses the imports above and each entry
+ * below out of this file's source, and holds the specifiers to
+ * `pragma.conf.ts#generators`. It matches each entry literally: two-space
+ * indent, `<noun>: <local> as unknown as GeneratorMap,`. So dropping the cast
+ * when summon's variance is fixed upstream is NOT a free cosmetic edit — it
+ * breaks the reader, which is why that reader fails naming this form. Move a
+ * specifier and you move the declaration with it; the build fails otherwise.
  */
 const GENERATOR_MAPS: Record<CreateKind, GeneratorMap> = {
   component: componentGenerators as unknown as GeneratorMap,

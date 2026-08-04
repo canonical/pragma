@@ -606,6 +606,30 @@ describe("the generator declaration is load-bearing (PROTECTED)", () => {
     });
   });
 
+  it("names the formatting when it recognises the file but reads no entry", () => {
+    // The reader parses SOURCE TEXT, and the entry pattern pins the literal
+    // `as unknown as GeneratorMap` cast — which `pickGenerator.ts`'s own
+    // docblock says exists only until summon's `generate` variance is fixed
+    // upstream. Before this, that one cosmetic deletion made the reader return
+    // `{}` and `assertDeclaredGenerators` report, per noun, "has no static
+    // generator import in pickGenerator.ts": false (the imports are on lines
+    // 1-4) and it sent a builder to add what was already there.
+    //
+    // The fixture is the real file with exactly that phrase removed, so this
+    // fails if the pattern and `pickGenerator.ts` ever stop agreeing.
+    const real = readFileSync(
+      fileURLToPath(new URL("./pickGenerator.ts", import.meta.url)),
+      "utf-8",
+    );
+    const decast = real.replaceAll(" as unknown as GeneratorMap", "");
+    expect(decast).not.toBe(real);
+    expect(() => readStaticGeneratorImports(decast)).toThrow(
+      /could not read GENERATOR_MAPS out of pickGenerator\.ts/,
+    );
+    // And an unrelated string is still not this file: no false alarm.
+    expect(readStaticGeneratorImports("const x = 1;\n")).toEqual({});
+  });
+
   it("the shipped declaration, bindings and dependencies agree", () => {
     expect(() => assertDeclaredGenerators(live())).not.toThrow();
   });

@@ -73,14 +73,27 @@ export function parseGeneratorSource(source: string): ParsedGeneratorSource {
 /**
  * The noun → package-specifier map `pickGenerator.ts` writes STATICALLY.
  *
- * This is the residue the ruling cannot remove: `GENERATOR_MAPS` must name three
+ * This is the residue the ruling cannot remove: `GENERATOR_MAPS` must name its
  * import specifiers literally or the generators are absent from the compiled
  * binary. Read out of the module's own SOURCE TEXT (never by importing it —
  * importing pulls summon-core), so the build can hold the literals to the
  * declaration they are supposed to mirror.
  *
+ * PARSING SOURCE TEXT IS BRITTLE, AND THE DIAGNOSIS SAYS SO. The entry pattern
+ * pins two-space indent, the literal `as unknown as GeneratorMap` cast and the
+ * trailing comma — a cast the cast's own docblock says exists only until
+ * summon's `generate` variance is fixed upstream. Measured: delete that phrase
+ * from the three entries and this function returns `{}`, whereupon
+ * `assertDeclaredGenerators` reported, per noun, that `pickGenerator.ts` has no
+ * static import for it — false, the imports are untouched on lines 1-4, and it
+ * sent a builder to add what was already there. So an import block that IS
+ * recognised while no entry is fails HERE instead, naming the real cause.
+ * `pickGenerator.ts`'s own docblock now records that this reader exists.
+ *
  * @param source - `pickGenerator.ts`'s text.
  * @returns Noun → the package specifier its generator map is imported from.
+ * @throws Error when the `generators as …` imports parse but no `GENERATOR_MAPS`
+ *   entry does — a formatting change, not a missing import.
  */
 export function readStaticGeneratorImports(
   source: string,
@@ -98,6 +111,16 @@ export function readStaticGeneratorImports(
     const [, noun, local] = match;
     const specifier = local === undefined ? undefined : specifierOf.get(local);
     if (noun && specifier) bound[noun] = specifier;
+  }
+  // Recognised-but-unreadable, both halves: the imports parsed, or the map is
+  // there under its own name, and still nothing came out.
+  if (
+    (specifierOf.size > 0 || source.includes("GENERATOR_MAPS")) &&
+    Object.keys(bound).length === 0
+  ) {
+    throw new Error(
+      `could not read GENERATOR_MAPS out of pickGenerator.ts: ${specifierOf.size} generator import(s) parsed and no entry did. This build guard reads that file's SOURCE TEXT, so keep each entry written exactly \`  <noun>: <local> as unknown as GeneratorMap,\` — two-space indent, that cast, trailing comma — and each map imported as \`import { generators as <local> } from "<package>"\`.`,
+    );
   }
   return bound;
 }
