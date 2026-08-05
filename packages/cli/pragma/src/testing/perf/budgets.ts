@@ -45,7 +45,7 @@ export const BUDGET_WARM_STORE_MS = 500;
  * Warm in-process MCP tool-call ceiling (ms) — PR7 graduates this from seeded to
  * ENFORCED. Measured over a warm, storeless tool (`capabilities`): pure envelope
  * + dispatch, no store boot, no network, so it isolates the per-call overhead of
- * the grown 38-tool catalog. Measured p95 is ~0.4 ms here (huge headroom), so
+ * the whole catalog (37 tools since `token add-config` was removed). Measured p95 is ~0.4 ms here (huge headroom), so
  * 100 ms guards against a gross regression without flaking. `info` is
  * deliberately NOT used — its network update-check makes it ~55 ms (see BUDGETS.md).
  */

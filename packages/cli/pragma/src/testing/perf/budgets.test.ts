@@ -116,7 +116,7 @@ describe("perf budgets (PROTECTED)", () => {
     retry: 2,
   }, async () => {
     // In-process (NOT a binary spawn): the warm cost of the MCP call path over
-    // the full 38-tool catalog. `capabilities` is storeless + network-free, so
+    // the full 37-tool catalog. `capabilities` is storeless + network-free, so
     // this isolates envelope + dispatch overhead without store/network noise.
     const mcp = await projectMcp(capabilities);
     try {
