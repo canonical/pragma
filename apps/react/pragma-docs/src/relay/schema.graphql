@@ -4213,9 +4213,13 @@ type OntologyClass implements Node {
 }
 
 """
-Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair.
+Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair — and so is `name`.
 """
 type ClassProperty {
+  """
+  The field name this property answers to ON THIS CLASS — the exact string `EntityMeta.field(name:)` accepts, so `fields { name }` and `field(name:)` round-trip. Class-scoped because per-class cardinality decides pluralization: one property is `part` on one class and `parts` on another. When the property projects no field on this class (SHACL sh:maxCount 0, an unexposed range, an unprojected class) the OWL local name is returned as a label — there is no name `field(name:)` would accept.
+  """
+  name: String!
   property: OntologyProperty!
   required: Boolean!
   singular: Boolean!
