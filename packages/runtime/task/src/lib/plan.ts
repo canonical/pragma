@@ -94,8 +94,9 @@
 import * as path from "node:path";
 import driveAsync, { interruptGuard } from "./driveAsync.js";
 import { mockEffect } from "./dry-run.js";
+import { TaskExecutionError } from "./errors.js";
 import { executeEffect } from "./interpreter.js";
-import type { Effect, Task } from "./types.js";
+import type { Effect, Task, TaskError } from "./types.js";
 
 /**
  * The outcome of interpreting a task as a PLAN: the value the task produced
@@ -346,11 +347,39 @@ export const planTask = async <A>(
       // description, and interleaving children's overlay writes would make the
       // recorded effect order depend on scheduling. `Race` describes the first
       // branch, matching the mocking collector.
+      //
+      // Sequential ORDER, not sequential ABORT. `runTask` drives every child
+      // through `Promise.allSettled`, so a failing child does not stop its
+      // siblings; a `for` loop that rethrew the first child's error would make
+      // the plan reach FEWER effects than the run performs — the PRA-104
+      // direction, and one no residual below names. Measured before this:
+      // `parallel([readFile(missing), writeFile("b.txt")])` planned
+      // `Parallel,ReadFile` against a run performing `Parallel,ReadFile,
+      // WriteFile`, and `parallel([readFile(m1), readFile(m2)])` planned a
+      // `suppressed` list of 0 against the run's 1. So every child is driven,
+      // then the first error is thrown with the rest suppressed — `runTask`'s
+      // own shape, one aggregation rule for both interpreters.
       const children =
         effect._tag === "Race" ? effect.tasks.slice(0, 1) : effect.tasks;
       const results: unknown[] = [];
+      const errors: TaskError[] = [];
       for (const child of children) {
-        results.push(await driveAsync(child, perform, checkInterrupted));
+        try {
+          results.push(await driveAsync(child, perform, checkInterrupted));
+        } catch (error) {
+          errors.push(
+            error instanceof TaskExecutionError
+              ? error.taskError
+              : { code: "INTERNAL", message: String(error) },
+          );
+        }
+      }
+      const primary = errors.at(0);
+      if (primary !== undefined) {
+        throw new TaskExecutionError({
+          ...primary,
+          suppressed: errors.length > 1 ? errors.slice(1) : undefined,
+        });
       }
       return effect._tag === "Race" ? results.at(0) : results;
     }

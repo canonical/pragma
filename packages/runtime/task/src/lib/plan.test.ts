@@ -563,6 +563,46 @@ describe("planTask — effect callbacks and structure", () => {
     const { value } = await planTask(parallel([pure(1), pure(2)]));
     expect(value).toEqual([1, 2]);
   });
+
+  it("a failing parallel child does not stop its siblings — runTask's shape", async () => {
+    // `runTask` drives every child through `Promise.allSettled`. A `for` loop
+    // that rethrew the first child's error made the PLAN reach fewer effects
+    // than the RUN performs — the PRA-104 direction, and one no residual in
+    // `plan.ts`'s list names. Measured before the fix, against real temp dirs:
+    // plan `Parallel,ReadFile` vs run `Parallel,ReadFile,WriteFile`.
+    const { effects } = await planTask(
+      orElse(
+        parallel([
+          readFile(join(dir, "absent.txt")),
+          writeFile(join(dir, "sibling.txt"), "written"),
+        ]),
+        pure("recovered"),
+      ),
+    );
+
+    expect(effects.map((e: Effect) => e._tag)).toEqual([
+      "ReadFile",
+      "WriteFile",
+    ]);
+  });
+
+  it("a parallel throws the FIRST error with the rest suppressed", async () => {
+    // The second half of the same divergence: `suppressed` was 0 to the plan
+    // and 1 to the run for `parallel([readFile(m1), readFile(m2)])`.
+    const failure = await planTask(
+      parallel([
+        readFile(join(dir, "missing-one.txt")),
+        readFile(join(dir, "missing-two.txt")),
+      ]),
+    ).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(TaskExecutionError);
+    const { taskError } = failure as TaskExecutionError;
+    expect(taskError.code).toBe("FILE_NOT_FOUND");
+    expect(taskError.message).toContain("missing-one.txt");
+    expect(taskError.suppressed).toHaveLength(1);
+    expect(taskError.suppressed?.[0]?.message).toContain("missing-two.txt");
+  });
 });
 
 describe("planTask — interruption", () => {
