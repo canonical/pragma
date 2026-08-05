@@ -82,6 +82,12 @@ interface ValidatedStories {
  * forever: the bin returns before dispatch and the noun answers nothing. It
  * failed silently and in the direction of a working-looking install.
  *
+ * THIS FUNCTION SCREENS THE PACKAGE TIER ONLY. The config tiers never come
+ * through here — {@link assembleEffectiveModules} parses them itself — so it
+ * reserves the same tokens again, on its own rejection. Measured against the
+ * real registry before the second half was added: a config story declaring
+ * noun `mcp` registered, with `mcp list` in the effective modules.
+ *
  * @param records - The raw story records the answering pack carries.
  * @param staticModules - The static capabilities, to detect a story claiming a
  *   noun the CLI already ships.
@@ -163,8 +169,9 @@ function projectStoryTiers(layers: ConfigLayers): readonly unknown[][] {
  *   carries (see {@link validateStories}); weaker than either config tier.
  * @returns The effective modules, uniqueness-checked.
  * @throws PragmaError CONFIG_ERROR on an invalid CONFIG story, a config story
- *   claiming an authored non-story noun, or a duplicate noun within one config
- *   tier. Package stories were already screened and never throw here.
+ *   claiming an authored non-story noun or a bin fast-path token, or a
+ *   duplicate noun within one config tier. Package stories were already
+ *   screened by {@link validateStories} and never throw here.
  */
 export function assembleEffectiveModules(
   staticModules: readonly CapabilityModule[],
@@ -214,6 +221,18 @@ export function assembleEffectiveModules(
       ) {
         throw PragmaError.configError(
           `Story noun "${definition.noun}" collides with a built-in command.`,
+        );
+      }
+      // The bin's fast-path tokens, on the CONFIG tier too. `staticNouns` is
+      // built from module names and none of the three is one, so without this
+      // a hand-written config story claiming `mcp` compiled, registered and
+      // then answered nothing — the same permanent unreachability the package
+      // tier already refuses, on the tier a user actually types. Fatal here
+      // rather than reported, matching the built-in collision above: a config
+      // story is the user's own file and a silent drop is worse than a stop.
+      if (BIN_FAST_PATH_TOKENS.some((token) => token === definition.noun)) {
+        throw PragmaError.configError(
+          `Story noun "${definition.noun}" is a token this CLI answers before the command tree is built, so a story behind it would never run.`,
         );
       }
       seen.add(definition.noun);

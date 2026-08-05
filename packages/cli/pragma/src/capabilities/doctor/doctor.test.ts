@@ -8,10 +8,17 @@
  * the MCP read-only envelope.
  */
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { BIN_NAME } from "../../constants.js";
 import type { ConfigLayers } from "../../kernel/config/types.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -29,6 +36,7 @@ import {
 import { bootFixtureRuntime } from "../../testing/helpers/fixtureGraph.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { checkMcpConfigured } from "./checks/checkMcpConfigured.js";
+import { checkSkillsSymlinked } from "./checks/checkSkillsSymlinked.js";
 import { doctorModule } from "./index.js";
 import { runChecks } from "./runChecks.js";
 import type { DoctorData } from "./types.js";
@@ -235,5 +243,65 @@ describe("doctor — MCP checks band by detected harness scope, not check name",
     expect(check.status).toBe("pass");
     expect(check.detail).toContain("Windsurf");
     expect(check.band).toBe("global"); // NOT the old static "project"
+  });
+});
+
+describe("doctor — the skills check tests what its name says", () => {
+  /**
+   * A project with a detected harness (Cursor, whose detector is a project
+   * directory), a discoverable skill, and a skills directory in one of three
+   * states.
+   *
+   * The skill lives under `.pragma/skills`, the project root `discoverSkills`
+   * reads first, so the check has something to consider linked.
+   */
+  const project = (state: "absent" | "empty" | "linked"): string => {
+    const cwd = tmp("pragma-doctor-skills-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // ⇒ Cursor detected
+    const source = join(cwd, ".pragma", "skills", "demo");
+    mkdirSync(source, { recursive: true });
+    writeFileSync(
+      join(source, "SKILL.md"),
+      "---\nname: demo\ndescription: A demo skill.\n---\n",
+    );
+    if (state === "absent") return cwd;
+    const skills = join(cwd, ".cursor", "skills");
+    mkdirSync(skills, { recursive: true });
+    if (state === "linked") symlinkSync(source, join(skills, "demo"));
+    return cwd;
+  };
+
+  it("fails on an EMPTY skills directory, where it used to pass", async () => {
+    // The defect, pinned in the direction it failed. The check tested
+    // `existsSync(skillsPath)`, so a `.claude/skills/` with nothing in it —
+    // the state of a user whose install never ran — reported a green pass with
+    // no remedy. Reproduced against the built binary before the fix:
+    // `✓  Skills symlinked   Claude Code`.
+    const check = await checkSkillsSymlinked(project("empty"));
+    expect(check.status).toBe("fail");
+    expect(check.detail).toContain("Cursor");
+    expect(check.remedy).toBe(`${BIN_NAME} setup skills`);
+  });
+
+  it("fails on an ABSENT skills directory (the case that already worked)", async () => {
+    const check = await checkSkillsSymlinked(project("absent"));
+    expect(check.status).toBe("fail");
+  });
+
+  it("passes once a real symlink is in place", async () => {
+    // The other direction, so the check cannot be satisfied by always failing.
+    const check = await checkSkillsSymlinked(project("linked"));
+    expect(check.status).toBe("pass");
+    expect(check.detail).toContain("Cursor");
+  });
+
+  it("skips when the project has no skill to link at all", async () => {
+    // Not a misconfiguration: `setup skills` would create nothing, so failing
+    // would print a remedy that cannot change the answer.
+    const cwd = tmp("pragma-doctor-skills-");
+    mkdirSync(join(cwd, ".cursor", "skills"), { recursive: true });
+    const check = await checkSkillsSymlinked(cwd);
+    expect(check.status).toBe("skip");
+    expect(check.detail).toBe("no skills to link");
   });
 });

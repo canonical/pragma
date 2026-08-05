@@ -100,10 +100,12 @@ const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
 /**
  * The tokens `bin.ts` answers at `argv[0]` BEFORE the command tree is built.
  *
- * Declared here rather than as literals in `bin.ts` because two places must
- * agree and one of them cannot see the other: the bin dispatches these, and
- * `kernel/packs/collect.ts` must REFUSE to let a pack story claim one as its
- * noun. A pack claiming `mcp` used to compile, register and then be
+ * Declared here rather than as literals in `bin.ts` because three places must
+ * agree and one of them cannot see the other two: the bin dispatches these,
+ * and `kernel/packs/collect.ts` must REFUSE to let a story claim one as its
+ * noun — on BOTH tiers, `validateStories` for the package tier and
+ * `assembleEffectiveModules` for the config tiers, which do not share a code
+ * path. A story claiming `mcp` used to compile, register and then be
  * permanently unreachable, because the bin answers `mcp` and returns before
  * `buildProgram` runs — a noun that exists in the model, appears nowhere, and
  * dispatches never.
@@ -115,6 +117,11 @@ const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
  *
  * `__store-probe` is included though no pack would plausibly claim it: the
  * property is "the bin answered it first", and that is true of all three.
+ *
+ * MEASURED: only `mcp` was ever CLAIMABLE. A story noun must be kebab-case, so
+ * `parsePackDefinition` refuses the two underscore tokens one layer earlier,
+ * on both tiers. All three are reserved anyway, because the kebab rule and the
+ * reservation are independent and either can be relaxed alone.
  */
 const BIN_FAST_PATH_TOKENS = ["mcp", "__complete", "__store-probe"] as const;
 

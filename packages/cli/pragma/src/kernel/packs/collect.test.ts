@@ -144,6 +144,29 @@ describe("assembleEffectiveModules (PROTECTED)", () => {
     ).toThrow(/built-in command/);
   });
 
+  it("rejects every bin fast-path token on the CONFIG tier too", () => {
+    // The package tier's reservation lives in `validateStories`, which the
+    // config tiers never reach — `assembleEffectiveModules` parses them
+    // itself. MEASURED before the fix, against the real registry: a config
+    // story with noun `mcp` returned an effective module carrying `mcp list`,
+    // permanently unreachable because `bin.ts` answers `mcp` at argv[0].
+    //
+    // Driven off `BIN_FAST_PATH_TOKENS`, the same declaration the bin
+    // destructures and the package tier reserves, so a fourth token cannot be
+    // dispatched without arriving here too. As on the package tier the two
+    // underscore tokens are stopped one layer earlier by the kebab-case rule;
+    // both messages are asserted because the two layers regress independently.
+    for (const token of BIN_FAST_PATH_TOKENS) {
+      expect(() =>
+        assembleEffectiveModules(STATIC, layers([validPack(token)])),
+      ).toThrow(
+        token === "mcp"
+          ? /answers before the command tree is built/
+          : /kebab-case/,
+      );
+    }
+  });
+
   it("rejects a duplicate story noun within one config tier", () => {
     expect(() =>
       assembleEffectiveModules(
