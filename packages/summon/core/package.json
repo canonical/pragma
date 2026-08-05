@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./testing": {
+      "types": "./dist/types/testing/conformance/index.d.ts",
+      "import": "./dist/esm/testing/conformance/index.js"
     }
   },
   "files": [
