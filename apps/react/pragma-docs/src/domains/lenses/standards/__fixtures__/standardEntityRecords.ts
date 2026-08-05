@@ -21,6 +21,12 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const standardEntityRecords = {
+  "client:http://pragma.canonical.com/codestandards#react.component.link_component:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#react.component.link_component:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:react.component.link_component",
+    },
   "client:http://pragma.canonical.com/codestandards#react.component.link_component:categories(first:8)":
     {
       __id: "client:http://pragma.canonical.com/codestandards#react.component.link_component:categories(first:8)",
@@ -58,6 +64,12 @@ const standardEntityRecords = {
           "http://pragma.canonical.com/codestandards#react.component.props",
       },
     },
+  "client:http://pragma.canonical.com/codestandards#react.component.props:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#react.component.props:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:react.component.props",
+    },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
@@ -87,12 +99,20 @@ const standardEntityRecords = {
       __ref:
         "client:http://pragma.canonical.com/codestandards#react.component.link_component:extends(first:8)",
     },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#react.component.link_component:_meta",
+    },
   },
   "http://pragma.canonical.com/codestandards#react.component.props": {
     __id: "http://pragma.canonical.com/codestandards#react.component.props",
     __typename: "CodeStandard",
     uri: "http://pragma.canonical.com/codestandards#react.component.props",
     name: null,
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#react.component.props:_meta",
+    },
   },
 } as unknown as RecordMap;
 

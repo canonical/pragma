@@ -17,6 +17,9 @@ const relationsSectionFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -25,6 +28,9 @@ const relationsSectionFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -64,7 +70,7 @@ const RelationsSection = ({
         <ul>
           {data.subcomponents.edges.map(({ node }) => (
             <li key={node.uri}>
-              {node.name ?? node.uri} <code>{node.uri}</code>
+              {node.name ?? node._meta.curie} <code>{node._meta.curie}</code>
             </li>
           ))}
         </ul>
@@ -76,7 +82,7 @@ const RelationsSection = ({
         <ul>
           {data.modifierFamilies.edges.map(({ node }) => (
             <li key={node.uri}>
-              {node.name ?? node.uri} <code>{node.uri}</code>
+              {node.name ?? node._meta.curie} <code>{node._meta.curie}</code>
             </li>
           ))}
         </ul>

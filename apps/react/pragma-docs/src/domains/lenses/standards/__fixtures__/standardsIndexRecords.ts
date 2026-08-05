@@ -29,6 +29,11 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const standardsIndexRecords = {
+  "client:http://pragma.canonical.com/codestandards#code.api.stability:_meta": {
+    __id: "client:http://pragma.canonical.com/codestandards#code.api.stability:_meta",
+    __typename: "EntityMeta",
+    curie: "cs:code.api.stability",
+  },
   "client:http://pragma.canonical.com/codestandards#code.api.stability:categories(first:1)":
     {
       __id: "client:http://pragma.canonical.com/codestandards#code.api.stability:categories(first:1)",
@@ -46,6 +51,12 @@ const standardsIndexRecords = {
       node: {
         __ref: "http://pragma.canonical.com/codestandards#code",
       },
+    },
+  "client:http://pragma.canonical.com/codestandards#code.array.safe_access:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#code.array.safe_access:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:code.array.safe_access",
     },
   "client:http://pragma.canonical.com/codestandards#code.array.safe_access:categories(first:1)":
     {
@@ -65,6 +76,12 @@ const standardsIndexRecords = {
         __ref: "http://pragma.canonical.com/codestandards#code",
       },
     },
+  "client:http://pragma.canonical.com/codestandards#code.assertion.non_null:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#code.assertion.non_null:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:code.assertion.non_null",
+    },
   "client:http://pragma.canonical.com/codestandards#code.assertion.non_null:categories(first:1)":
     {
       __id: "client:http://pragma.canonical.com/codestandards#code.assertion.non_null:categories(first:1)",
@@ -82,6 +99,12 @@ const standardsIndexRecords = {
       node: {
         __ref: "http://pragma.canonical.com/codestandards#code",
       },
+    },
+  "client:http://pragma.canonical.com/codestandards#css.selectors.specificity:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#css.selectors.specificity:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:css.selectors.specificity",
     },
   "client:http://pragma.canonical.com/codestandards#css.selectors.specificity:categories(first:1)":
     {
@@ -101,6 +124,12 @@ const standardsIndexRecords = {
         __ref: "http://pragma.canonical.com/codestandards#css",
       },
     },
+  "client:http://pragma.canonical.com/codestandards#react.component.link_component:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#react.component.link_component:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:react.component.link_component",
+    },
   "client:http://pragma.canonical.com/codestandards#react.component.link_component:categories(first:1)":
     {
       __id: "client:http://pragma.canonical.com/codestandards#react.component.link_component:categories(first:1)",
@@ -118,6 +147,12 @@ const standardsIndexRecords = {
       node: {
         __ref: "http://pragma.canonical.com/codestandards#react",
       },
+    },
+  "client:http://pragma.canonical.com/codestandards#react.component.props:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#react.component.props:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:react.component.props",
     },
   "client:http://pragma.canonical.com/codestandards#react.component.props:categories(first:1)":
     {
@@ -137,6 +172,12 @@ const standardsIndexRecords = {
         __ref: "http://pragma.canonical.com/codestandards#react",
       },
     },
+  "client:http://pragma.canonical.com/codestandards#storybook.story.documentation:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#storybook.story.documentation:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:storybook.story.documentation",
+    },
   "client:http://pragma.canonical.com/codestandards#storybook.story.documentation:categories(first:1)":
     {
       __id: "client:http://pragma.canonical.com/codestandards#storybook.story.documentation:categories(first:1)",
@@ -154,6 +195,12 @@ const standardsIndexRecords = {
       node: {
         __ref: "http://pragma.canonical.com/codestandards#storybook",
       },
+    },
+  "client:http://pragma.canonical.com/codestandards#styling.tokens.creation:_meta":
+    {
+      __id: "client:http://pragma.canonical.com/codestandards#styling.tokens.creation:_meta",
+      __typename: "EntityMeta",
+      curie: "cs:styling.tokens.creation",
     },
   "client:http://pragma.canonical.com/codestandards#styling.tokens.creation:categories(first:1)":
     {
@@ -407,6 +454,10 @@ const standardsIndexRecords = {
       __ref:
         "client:http://pragma.canonical.com/codestandards#code.api.stability:categories(first:1)",
     },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#code.api.stability:_meta",
+    },
   },
   "http://pragma.canonical.com/codestandards#code.array.safe_access": {
     __id: "http://pragma.canonical.com/codestandards#code.array.safe_access",
@@ -417,6 +468,10 @@ const standardsIndexRecords = {
       __ref:
         "client:http://pragma.canonical.com/codestandards#code.array.safe_access:categories(first:1)",
     },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#code.array.safe_access:_meta",
+    },
   },
   "http://pragma.canonical.com/codestandards#code.assertion.non_null": {
     __id: "http://pragma.canonical.com/codestandards#code.assertion.non_null",
@@ -426,6 +481,10 @@ const standardsIndexRecords = {
     "categories(first:1)": {
       __ref:
         "client:http://pragma.canonical.com/codestandards#code.assertion.non_null:categories(first:1)",
+    },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#code.assertion.non_null:_meta",
     },
   },
   "http://pragma.canonical.com/codestandards#css": {
@@ -443,6 +502,10 @@ const standardsIndexRecords = {
       __ref:
         "client:http://pragma.canonical.com/codestandards#css.selectors.specificity:categories(first:1)",
     },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#css.selectors.specificity:_meta",
+    },
   },
   "http://pragma.canonical.com/codestandards#react": {
     __id: "http://pragma.canonical.com/codestandards#react",
@@ -459,6 +522,10 @@ const standardsIndexRecords = {
       __ref:
         "client:http://pragma.canonical.com/codestandards#react.component.link_component:categories(first:1)",
     },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#react.component.link_component:_meta",
+    },
   },
   "http://pragma.canonical.com/codestandards#react.component.props": {
     __id: "http://pragma.canonical.com/codestandards#react.component.props",
@@ -468,6 +535,10 @@ const standardsIndexRecords = {
     "categories(first:1)": {
       __ref:
         "client:http://pragma.canonical.com/codestandards#react.component.props:categories(first:1)",
+    },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#react.component.props:_meta",
     },
   },
   "http://pragma.canonical.com/codestandards#storybook": {
@@ -485,6 +556,10 @@ const standardsIndexRecords = {
       __ref:
         "client:http://pragma.canonical.com/codestandards#storybook.story.documentation:categories(first:1)",
     },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#storybook.story.documentation:_meta",
+    },
   },
   "http://pragma.canonical.com/codestandards#styling": {
     __id: "http://pragma.canonical.com/codestandards#styling",
@@ -500,6 +575,10 @@ const standardsIndexRecords = {
     "categories(first:1)": {
       __ref:
         "client:http://pragma.canonical.com/codestandards#styling.tokens.creation:categories(first:1)",
+    },
+    _meta: {
+      __ref:
+        "client:http://pragma.canonical.com/codestandards#styling.tokens.creation:_meta",
     },
   },
 } as unknown as RecordMap;

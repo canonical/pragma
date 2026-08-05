@@ -15,9 +15,16 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const componentEntityRecordsCard = {
+  "client:https://ds.canonical.com/apps_workplaceengineering.pattern.travel_provider_card:_meta":
+    {
+      __id: "client:https://ds.canonical.com/apps_workplaceengineering.pattern.travel_provider_card:_meta",
+      __typename: "EntityMeta",
+      curie: "ds:apps_workplaceengineering.pattern.travel_provider_card",
+    },
   "client:https://ds.canonical.com/global.component.card:_meta": {
     __id: "client:https://ds.canonical.com/global.component.card:_meta",
     __typename: "EntityMeta",
+    curie: "ds:global.component.card",
     type: {
       __ref: "https://ds.canonical.com/Component",
     },
@@ -196,6 +203,36 @@ const componentEntityRecordsCard = {
       __typename: "PageInfo",
       hasNextPage: false,
     },
+  "client:https://ds.canonical.com/global.subcomponent.card-content:_meta": {
+    __id: "client:https://ds.canonical.com/global.subcomponent.card-content:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.subcomponent.card-content",
+  },
+  "client:https://ds.canonical.com/global.subcomponent.card-footer:_meta": {
+    __id: "client:https://ds.canonical.com/global.subcomponent.card-footer:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.subcomponent.card-footer",
+  },
+  "client:https://ds.canonical.com/global.subcomponent.card-header:_meta": {
+    __id: "client:https://ds.canonical.com/global.subcomponent.card-header:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.subcomponent.card-header",
+  },
+  "client:https://ds.canonical.com/global.subcomponent.card-image:_meta": {
+    __id: "client:https://ds.canonical.com/global.subcomponent.card-image:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.subcomponent.card-image",
+  },
+  "client:https://ds.canonical.com/global.subcomponent.card-thumbnail:_meta": {
+    __id: "client:https://ds.canonical.com/global.subcomponent.card-thumbnail:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.subcomponent.card-thumbnail",
+  },
+  "client:https://ds.canonical.com/global:_meta": {
+    __id: "client:https://ds.canonical.com/global:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global",
+  },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
@@ -216,12 +253,19 @@ const componentEntityRecordsCard = {
       __typename: "Pattern",
       uri: "https://ds.canonical.com/apps_workplaceengineering.pattern.travel_provider_card",
       name: "TravelProviderCard",
+      _meta: {
+        __ref:
+          "client:https://ds.canonical.com/apps_workplaceengineering.pattern.travel_provider_card:_meta",
+      },
     },
   "https://ds.canonical.com/global": {
     __id: "https://ds.canonical.com/global",
     __typename: "Tier",
     uri: "https://ds.canonical.com/global",
     name: "Global",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.card": {
     __id: "https://ds.canonical.com/global.component.card",
@@ -272,30 +316,50 @@ const componentEntityRecordsCard = {
     __typename: "Subcomponent",
     uri: "https://ds.canonical.com/global.subcomponent.card-content",
     name: "Card.Content",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.subcomponent.card-content:_meta",
+    },
   },
   "https://ds.canonical.com/global.subcomponent.card-footer": {
     __id: "https://ds.canonical.com/global.subcomponent.card-footer",
     __typename: "Subcomponent",
     uri: "https://ds.canonical.com/global.subcomponent.card-footer",
     name: "Card.Footer",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.subcomponent.card-footer:_meta",
+    },
   },
   "https://ds.canonical.com/global.subcomponent.card-header": {
     __id: "https://ds.canonical.com/global.subcomponent.card-header",
     __typename: "Subcomponent",
     uri: "https://ds.canonical.com/global.subcomponent.card-header",
     name: "Card.Header",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.subcomponent.card-header:_meta",
+    },
   },
   "https://ds.canonical.com/global.subcomponent.card-image": {
     __id: "https://ds.canonical.com/global.subcomponent.card-image",
     __typename: "Subcomponent",
     uri: "https://ds.canonical.com/global.subcomponent.card-image",
     name: "Card.Image",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.subcomponent.card-image:_meta",
+    },
   },
   "https://ds.canonical.com/global.subcomponent.card-thumbnail": {
     __id: "https://ds.canonical.com/global.subcomponent.card-thumbnail",
     __typename: "Subcomponent",
     uri: "https://ds.canonical.com/global.subcomponent.card-thumbnail",
     name: "Card.Thumbnail",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.subcomponent.card-thumbnail:_meta",
+    },
   },
 } as unknown as RecordMap;
 

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a792f54014a6cf328559deec04fd1edd>>
+ * @generated SignedSource<<c79206d54e0a3ef60a8bd61b3ec82dfb>>
  * @lightSyntaxTransform
  */
 
@@ -14,9 +14,15 @@ export type ComponentProbeQuery$variables = {
 };
 export type ComponentProbeQuery$data = {
   readonly component: {
+    readonly _meta: {
+      readonly curie: string;
+    };
     readonly modifierFamilies: {
       readonly edges: ReadonlyArray<{
         readonly node: {
+          readonly _meta: {
+            readonly curie: string;
+          };
           readonly name: string | null | undefined;
           readonly uri: string;
         };
@@ -26,6 +32,9 @@ export type ComponentProbeQuery$data = {
     readonly subcomponents: {
       readonly edges: ReadonlyArray<{
         readonly node: {
+          readonly _meta: {
+            readonly curie: string;
+          };
           readonly name: string | null | undefined;
           readonly uri: string;
         };
@@ -65,14 +74,28 @@ v2 = {
 v3 = {
   "alias": null,
   "args": null,
+  "concreteType": "EntityMeta",
+  "kind": "LinkedField",
+  "name": "_meta",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "curie",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v4 = {
+  "alias": null,
+  "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v4 = [
-  (v2/*:: as any*/),
-  (v3/*:: as any*/)
-],
 v5 = [
   {
     "kind": "Variable",
@@ -81,6 +104,11 @@ v5 = [
   }
 ],
 v6 = [
+  (v2/*:: as any*/),
+  (v3/*:: as any*/),
+  (v4/*:: as any*/)
+],
+v7 = [
   {
     "alias": null,
     "args": [
@@ -97,6 +125,7 @@ v6 = [
     "selections": [
       (v2/*:: as any*/),
       (v3/*:: as any*/),
+      (v4/*:: as any*/),
       {
         "alias": null,
         "args": null,
@@ -111,7 +140,10 @@ v6 = [
         "kind": "LinkedField",
         "name": "tier",
         "plural": false,
-        "selections": (v4/*:: as any*/),
+        "selections": [
+          (v2/*:: as any*/),
+          (v4/*:: as any*/)
+        ],
         "storageKey": null
       },
       {
@@ -137,7 +169,7 @@ v6 = [
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
-                "selections": (v4/*:: as any*/),
+                "selections": (v6/*:: as any*/),
                 "storageKey": null
               }
             ],
@@ -169,7 +201,7 @@ v6 = [
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
-                "selections": (v4/*:: as any*/),
+                "selections": (v6/*:: as any*/),
                 "storageKey": null
               }
             ],
@@ -191,7 +223,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ComponentProbeQuery",
-    "selections": (v6/*:: as any*/),
+    "selections": (v7/*:: as any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -203,19 +235,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ComponentProbeQuery",
-    "selections": (v6/*:: as any*/)
+    "selections": (v7/*:: as any*/)
   },
   "params": {
-    "cacheID": "33b7157828200d6a4374c8857bfd5892",
+    "cacheID": "912a80fe5fc6ba574fc80daf4a612761",
     "id": null,
     "metadata": {},
     "name": "ComponentProbeQuery",
     "operationKind": "query",
-    "text": "query ComponentProbeQuery(\n  $uri: String!\n  $count: Int!\n) {\n  component(uri: $uri) {\n    uri\n    name\n    summary\n    tier {\n      uri\n      name\n    }\n    subcomponents(first: $count) {\n      edges {\n        node {\n          uri\n          name\n        }\n      }\n    }\n    modifierFamilies(first: $count) {\n      edges {\n        node {\n          uri\n          name\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query ComponentProbeQuery(\n  $uri: String!\n  $count: Int!\n) {\n  component(uri: $uri) {\n    uri\n    _meta {\n      curie\n    }\n    name\n    summary\n    tier {\n      uri\n      name\n    }\n    subcomponents(first: $count) {\n      edges {\n        node {\n          uri\n          _meta {\n            curie\n          }\n          name\n        }\n      }\n    }\n    modifierFamilies(first: $count) {\n      edges {\n        node {\n          uri\n          _meta {\n            curie\n          }\n          name\n        }\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "43d72211a9442afdf3b6fe72e81f5c39";
+(node as any).hash = "2fbbaa447bfa8c04f6a8eb43acfc7418";
 
 export default node;

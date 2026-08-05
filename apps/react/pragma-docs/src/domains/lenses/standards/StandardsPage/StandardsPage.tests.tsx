@@ -56,6 +56,7 @@ const pageTwoResponse = {
           node: {
             __typename: "CodeStandard",
             uri: "cs:turtle.naming.unified_prefix",
+            _meta: { curie: "cs:turtle.naming.unified_prefix" },
             name: "Unified Prefix",
             categories: {
               edges: [
@@ -75,6 +76,7 @@ const pageTwoResponse = {
           node: {
             __typename: "CodeStandard",
             uri: "cs:testing.file.structure",
+            _meta: { curie: "cs:testing.file.structure" },
             name: null,
             categories: {
               edges: [

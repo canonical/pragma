@@ -39,6 +39,9 @@ const lobbyQuerySource = (): unknown => graphql`
             __typename
             ... on Component {
               uri
+              _meta {
+                curie
+              }
               name
             }
           }
@@ -78,13 +81,15 @@ const LobbyBands = (): React.ReactElement => {
   const patternCount = data.patternClass?.instanceCount;
   const standardCount = data.standardClass?.instanceCount;
 
-  // Only `Component` instances carry uri/name in this selection; the
+  // Only `Component` instances carry uri/_meta/name in this selection; the
   // inline fragment leaves other typenames without them, so the strip
   // keeps the ones it can honestly address rather than linking nowhere.
+  // The ADDRESS is `_meta.curie` — the graph's compact rendering of the
+  // absolute `uri` — because that is the segment `componentEntity` takes.
   const exemplars = (data.componentClass?.instances.edges ?? []).flatMap(
     ({ node }) =>
-      node.__typename === "Component" && node.uri !== undefined
-        ? [{ uri: node.uri, name: node.name ?? node.uri }]
+      node.__typename === "Component" && node._meta !== undefined
+        ? [{ uri: node._meta.curie, name: node.name ?? node._meta.curie }]
         : [],
   );
 

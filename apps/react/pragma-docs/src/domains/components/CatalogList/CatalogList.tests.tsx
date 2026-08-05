@@ -102,6 +102,12 @@ const untieredRecords = {
     uri: "ds:global.component.button",
     summary: "Buttons trigger actions.",
     tier: { __ref: "ds:global" },
+    _meta: { __ref: "client:ds:global.component.button:_meta" },
+  },
+  "client:ds:global.component.button:_meta": {
+    __id: "client:ds:global.component.button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.button",
   },
   "ds:limbo.component.orphan": {
     __id: "ds:limbo.component.orphan",
@@ -110,6 +116,12 @@ const untieredRecords = {
     uri: "ds:limbo.component.orphan",
     summary: null,
     tier: null,
+    _meta: { __ref: "client:ds:limbo.component.orphan:_meta" },
+  },
+  "client:ds:limbo.component.orphan:_meta": {
+    __id: "client:ds:limbo.component.orphan:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:limbo.component.orphan",
   },
   "ds:global": {
     __id: "ds:global",

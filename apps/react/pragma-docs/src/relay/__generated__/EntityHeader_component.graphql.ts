@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<894ee3aac0db35b96f3ed5437323f861>>
+ * @generated SignedSource<<4a251215fba0c41ab2de0bb71daa3c19>>
  * @lightSyntaxTransform
  */
 
@@ -10,9 +10,15 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type EntityHeader_component$data = {
+  readonly _meta: {
+    readonly curie: string;
+  };
   readonly name: string | null | undefined;
   readonly summary: string | null | undefined;
   readonly tier: {
+    readonly _meta: {
+      readonly curie: string;
+    };
     readonly name: string | null | undefined;
     readonly uri: string;
   } | null | undefined;
@@ -35,6 +41,24 @@ var v0 = {
 v1 = {
   "alias": null,
   "args": null,
+  "concreteType": "EntityMeta",
+  "kind": "LinkedField",
+  "name": "_meta",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "curie",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v2 = {
+  "alias": null,
+  "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
@@ -47,6 +71,7 @@ return {
   "selections": [
     (v0/*:: as any*/),
     (v1/*:: as any*/),
+    (v2/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -63,6 +88,7 @@ return {
       "plural": false,
       "selections": [
         (v0/*:: as any*/),
+        (v2/*:: as any*/),
         (v1/*:: as any*/)
       ],
       "storageKey": null
@@ -73,6 +99,6 @@ return {
 };
 })();
 
-(node as any).hash = "3d81931396a3e511b220ea5c2a57434e";
+(node as any).hash = "336146a97b523f1ae5c867a7145409a6";
 
 export default node;

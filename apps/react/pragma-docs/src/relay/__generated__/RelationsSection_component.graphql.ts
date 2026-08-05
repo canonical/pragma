@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6b7a811592d95f366dbc9553cc2d6fab>>
+ * @generated SignedSource<<c014bbbf5d6eea089b1539fb7f7676ed>>
  * @lightSyntaxTransform
  */
 
@@ -13,6 +13,9 @@ export type RelationsSection_component$data = {
   readonly modifierFamilies: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -21,6 +24,9 @@ export type RelationsSection_component$data = {
   readonly subcomponents: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -47,6 +53,24 @@ v1 = [
     "args": null,
     "kind": "ScalarField",
     "name": "uri",
+    "storageKey": null
+  },
+  {
+    "alias": null,
+    "args": null,
+    "concreteType": "EntityMeta",
+    "kind": "LinkedField",
+    "name": "_meta",
+    "plural": false,
+    "selections": [
+      {
+        "alias": null,
+        "args": null,
+        "kind": "ScalarField",
+        "name": "curie",
+        "storageKey": null
+      }
+    ],
     "storageKey": null
   },
   {
@@ -139,6 +163,6 @@ return {
 };
 })();
 
-(node as any).hash = "568e4066ac9a4ecdf51556659d1addbc";
+(node as any).hash = "1d05b0de691e2a135f65c7a9452fecff";
 
 export default node;

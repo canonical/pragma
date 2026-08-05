@@ -50,6 +50,7 @@ const pageTwoResponse = {
             __typename: "Component",
             tier: { name: "Global", uri: "ds:global" },
             uri: "ds:global.component.tooltip",
+            _meta: { curie: "ds:global.component.tooltip" },
             name: "Tooltip",
             summary: "",
           },
@@ -63,6 +64,9 @@ const pageTwoResponse = {
               uri: "ds:apps_workplaceengineering",
             },
             uri: "ds:apps_workplaceengineering.component.theme_switcher",
+            _meta: {
+              curie: "ds:apps_workplaceengineering.component.theme_switcher",
+            },
             name: "ThemeSwitcher",
             summary: "",
           },

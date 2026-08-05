@@ -18,6 +18,7 @@ const componentEntityRecordsButton = {
   "client:https://ds.canonical.com/global.component.button:_meta": {
     __id: "client:https://ds.canonical.com/global.component.button:_meta",
     __typename: "EntityMeta",
+    curie: "ds:global.component.button",
     type: {
       __ref: "https://ds.canonical.com/Component",
     },
@@ -212,6 +213,26 @@ const componentEntityRecordsButton = {
       __typename: "PageInfo",
       hasNextPage: false,
     },
+  "client:https://ds.canonical.com/global.component.dropdown_button:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.dropdown_button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.dropdown_button",
+  },
+  "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta": {
+    __id: "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.modifier_family.anticipation",
+  },
+  "client:https://ds.canonical.com/global.modifier_family.importance:_meta": {
+    __id: "client:https://ds.canonical.com/global.modifier_family.importance:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.modifier_family.importance",
+  },
+  "client:https://ds.canonical.com/global:_meta": {
+    __id: "client:https://ds.canonical.com/global:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global",
+  },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
@@ -231,6 +252,9 @@ const componentEntityRecordsButton = {
     __typename: "Tier",
     uri: "https://ds.canonical.com/global",
     name: "Global",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.button": {
     __id: "https://ds.canonical.com/global.component.button",
@@ -285,18 +309,30 @@ const componentEntityRecordsButton = {
     __typename: "Component",
     uri: "https://ds.canonical.com/global.component.dropdown_button",
     name: "DropdownButton",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.component.dropdown_button:_meta",
+    },
   },
   "https://ds.canonical.com/global.modifier_family.anticipation": {
     __id: "https://ds.canonical.com/global.modifier_family.anticipation",
     __typename: "ModifierFamily",
     uri: "https://ds.canonical.com/global.modifier_family.anticipation",
     name: "Anticipation",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta",
+    },
   },
   "https://ds.canonical.com/global.modifier_family.importance": {
     __id: "https://ds.canonical.com/global.modifier_family.importance",
     __typename: "ModifierFamily",
     uri: "https://ds.canonical.com/global.modifier_family.importance",
     name: "Importance",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.modifier_family.importance:_meta",
+    },
   },
 } as unknown as RecordMap;
 

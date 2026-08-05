@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<93de41f5593070a0c89eb7c4b009bbc0>>
+ * @generated SignedSource<<c329f41c51df435d656331373dd45c1b>>
  * @lightSyntaxTransform
  */
 
@@ -114,6 +114,24 @@ return {
                   {
                     "alias": null,
                     "args": null,
+                    "concreteType": "EntityMeta",
+                    "kind": "LinkedField",
+                    "name": "_meta",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "curie",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
                     "kind": "ScalarField",
                     "name": "name",
                     "storageKey": null
@@ -225,12 +243,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "d0d755b1416c3db24b2e709da4f6f9ef",
+    "cacheID": "0941e5b59178b58435a33f26a9ca2295",
     "id": null,
     "metadata": {},
     "name": "StandardsIndexQuery",
     "operationKind": "query",
-    "text": "query StandardsIndexQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              uri\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query StandardsIndexQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        _meta {\n          curie\n        }\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              uri\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();

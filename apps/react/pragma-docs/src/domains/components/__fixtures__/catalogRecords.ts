@@ -26,6 +26,46 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const catalogRecords = {
+  "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta": {
+    __id: "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_lxd.component.back_link",
+  },
+  "client:https://ds.canonical.com/apps_lxd.component.meter:_meta": {
+    __id: "client:https://ds.canonical.com/apps_lxd.component.meter:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_lxd.component.meter",
+  },
+  "client:https://ds.canonical.com/global.component.accordion:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.accordion:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.accordion",
+  },
+  "client:https://ds.canonical.com/global.component.button:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.button",
+  },
+  "client:https://ds.canonical.com/global.component.card:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.card:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.card",
+  },
+  "client:https://ds.canonical.com/sites.component.blog_card:_meta": {
+    __id: "client:https://ds.canonical.com/sites.component.blog_card:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:sites.component.blog_card",
+  },
+  "client:https://ds.canonical.com/sites.component.quote:_meta": {
+    __id: "client:https://ds.canonical.com/sites.component.quote:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:sites.component.quote",
+  },
+  "client:https://ds.canonical.com/sites.component.rule:_meta": {
+    __id: "client:https://ds.canonical.com/sites.component.rule:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:sites.component.rule",
+  },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
@@ -243,6 +283,10 @@ const catalogRecords = {
     name: "BackLink",
     summary:
       'The **BackLink** component is a navigational breadcrumb element that provides users with contextual back navigation within a multi-step workflow. It displays a clickable back link with a left-pointing chevron icon, followed by the current page or step title, creating a clear visual hierarchy of "← Previous Context / Current Context".\n\n\n\n**Primary purpose**\n\nThis component enables intuitive backward navigation while maintaining context awareness, helping users understand their current location within a multi-step process and providing an easy path to return to the previous state.\n\n\n\n**Main use cases**\n\n- **Multi-Step modal navigation**: Navigate between steps in complex modal workflows like volume creation, instance migration, or storage configuration, where users need to move back and forth between different configuration stages\n- **Hierarchical form flows**: Provide navigation within nested form sections, such as permission group management where users drill down into specific configuration areas and need clear paths back to parent forms\n- **Wizard-style workflows**: Enable step-by-step process navigation in creation wizards (custom ISO upload, volume setup) where users may need to revisit previous steps to modify selections\n\n\n\n**Key features**\n\n- **Visual hierarchy**: Uses chevron-left icon and breadcrumb-style text formatting to clearly indicate navigation direction and current context\n- **Contextual labeling**: Displays both the previous context (back link text) and current context (title) for clear orientation\n- **Click handler integration**: Accepts custom onClick functions to handle state changes, modal navigation, or route transitions\n\n',
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
+    },
   },
   "https://ds.canonical.com/apps_lxd.component.meter": {
     __id: "https://ds.canonical.com/apps_lxd.component.meter",
@@ -254,6 +298,9 @@ const catalogRecords = {
     name: "Meter",
     summary:
       "The **Meter** component is a visual progress indicator designed to display percentage-based data with accompanying descriptive text. It renders a horizontal bar that fills proportionally to represent usage, capacity, or completion metrics.\n\n\n\n**Primary purpose**\n\nThis component visualizes numeric data as a percentage-filled bar, making it easy for users to quickly assess levels, usage, or progress at a glance.\n\n**Main use cases**\n\n- **Resource utilization**: Display storage usage, memory consumption, CPU load, or network bandwidth utilization\n- **Dual-Value Metrics**: Present two related percentage values simultaneously (e.g., allocated vs used, or primary vs secondary usage)\n- **Progress Tracking**: Indicate completion status of operations, downloads, or multi-step processes\n\n  \n**Key features**\n\n- **Single or dual display**: Can show one primary percentage or two complementary percentages\n- **Contextual text**: Includes descriptive text below the meter for clarity\n- **Hover information**: Optional tooltip support for additional details\n- **Responsive styling**: Automatically adapts to container width while maintaining minimum visibility\n\n",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/apps_lxd.component.meter:_meta",
+    },
   },
   "https://ds.canonical.com/global": {
     __id: "https://ds.canonical.com/global",
@@ -271,6 +318,9 @@ const catalogRecords = {
     name: "Accordion",
     summary:
       "The accordion is a vertically stacked content area which can be collapsed and expanded to reveal or hide its contents. An  can be opened or closed independently of its surrounding counterparts (i.e: multiple accordions can be open at the same time). \n\nAccordions can help browse different pieces of related content in a more efficient way. Be wary that they can also hide content from users and are not suitable when a user is meant to read all of the page content.\n\n",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.accordion:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.button": {
     __id: "https://ds.canonical.com/global.component.button",
@@ -282,6 +332,9 @@ const catalogRecords = {
     name: "Button",
     summary:
       "Buttons trigger actions within an interface, typically involving data transformation or manipulation. They provide clear visual indicators of the primary actions users can perform on a page or section.\n\n",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.button:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.card": {
     __id: "https://ds.canonical.com/global.component.card",
@@ -293,6 +346,9 @@ const catalogRecords = {
     name: "Card",
     summary:
       "The card is a container that is designed to represent data objects that share the same structure. Unlike the more flexible [Tile](https://docs.superhuman.com/d/_dNyzE_TLZDh#_tugrid-20dWwIHYhx/_rui-eThhoLZg3Y), a card is designed to have multiple units displayed beside one another. Because of this, the card has a predictable structure that allows the user to compare attributes across data objects.\n\n",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.card:_meta",
+    },
   },
   "https://ds.canonical.com/sites": {
     __id: "https://ds.canonical.com/sites",
@@ -309,6 +365,9 @@ const catalogRecords = {
     },
     name: "BlogCard",
     summary: "",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/sites.component.blog_card:_meta",
+    },
   },
   "https://ds.canonical.com/sites.component.quote": {
     __id: "https://ds.canonical.com/sites.component.quote",
@@ -319,6 +378,9 @@ const catalogRecords = {
     },
     name: "Quote",
     summary: "",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/sites.component.quote:_meta",
+    },
   },
   "https://ds.canonical.com/sites.component.rule": {
     __id: "https://ds.canonical.com/sites.component.rule",
@@ -329,6 +391,9 @@ const catalogRecords = {
     },
     name: "Rule",
     summary: "",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/sites.component.rule:_meta",
+    },
   },
 } as unknown as RecordMap;
 

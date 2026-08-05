@@ -79,6 +79,36 @@ const lobbyRecords = {
       __ref: "https://ds.canonical.com/apps_launchpad.component.badge",
     },
   },
+  "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta": {
+    __id: "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_launchpad.component.avatar",
+  },
+  "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta": {
+    __id: "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_launchpad.component.badge",
+  },
+  "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta": {
+    __id: "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_lxd.component.back_link",
+  },
+  "client:https://ds.canonical.com/global.component.accordion:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.accordion:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.accordion",
+  },
+  "client:https://ds.canonical.com/global.component.announcement:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.announcement:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.announcement",
+  },
+  "client:https://ds.canonical.com/global.component.avatar:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.avatar:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.avatar",
+  },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
@@ -118,36 +148,58 @@ const lobbyRecords = {
     __typename: "Component",
     uri: "https://ds.canonical.com/apps_launchpad.component.avatar",
     name: "Avatar",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta",
+    },
   },
   "https://ds.canonical.com/apps_launchpad.component.badge": {
     __id: "https://ds.canonical.com/apps_launchpad.component.badge",
     __typename: "Component",
     uri: "https://ds.canonical.com/apps_launchpad.component.badge",
     name: "Badge",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta",
+    },
   },
   "https://ds.canonical.com/apps_lxd.component.back_link": {
     __id: "https://ds.canonical.com/apps_lxd.component.back_link",
     __typename: "Component",
     uri: "https://ds.canonical.com/apps_lxd.component.back_link",
     name: "BackLink",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.accordion": {
     __id: "https://ds.canonical.com/global.component.accordion",
     __typename: "Component",
     uri: "https://ds.canonical.com/global.component.accordion",
     name: "Accordion",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.accordion:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.announcement": {
     __id: "https://ds.canonical.com/global.component.announcement",
     __typename: "Component",
     uri: "https://ds.canonical.com/global.component.announcement",
     name: "Announcement",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.component.announcement:_meta",
+    },
   },
   "https://ds.canonical.com/global.component.avatar": {
     __id: "https://ds.canonical.com/global.component.avatar",
     __typename: "Component",
     uri: "https://ds.canonical.com/global.component.avatar",
     name: "Avatar",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.avatar:_meta",
+    },
   },
 } as unknown as RecordMap;
 

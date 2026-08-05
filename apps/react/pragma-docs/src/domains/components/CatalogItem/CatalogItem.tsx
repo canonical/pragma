@@ -14,6 +14,9 @@ import "./styles.css";
 const catalogItemFragmentSource = (): unknown => graphql`
   fragment CatalogItem_component on Component {
     uri
+    _meta {
+      curie
+    }
     name
     summary
     tier {
@@ -47,8 +50,8 @@ const CatalogItem = ({
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
       <h4 className="catalog-item-name">
-        <Link params={{ uri: data.uri }} to="componentEntity">
-          {data.name ?? data.uri}
+        <Link params={{ uri: data._meta.curie }} to="componentEntity">
+          {data.name ?? data._meta.curie}
         </Link>
       </h4>
       <p className="catalog-item-tier">{data.tier?.name ?? "Untiered"}</p>

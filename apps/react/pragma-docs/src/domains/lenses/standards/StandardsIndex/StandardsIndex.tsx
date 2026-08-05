@@ -30,6 +30,9 @@ const standardsIndexFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
           categories(first: 1) {
             edges {
@@ -129,10 +132,12 @@ const StandardsIndex = ({
                 <li key={node.uri}>
                   {/* Link text: the human title when the graph has one
                       (4/131 at capture), else the prefixed URI — never a
-                      fabricated title. The address round-trips the D31
+                      fabricated title. Both the text and the address are
+                      `_meta.curie`, the graph's own compact rendering of
+                      the absolute `uri`; the address round-trips the D31
                       pin in routeQueries.tests.ts. */}
-                  <Link params={{ uri: node.uri }} to="standardEntity">
-                    {node.name ?? node.uri}
+                  <Link params={{ uri: node._meta.curie }} to="standardEntity">
+                    {node.name ?? node._meta.curie}
                   </Link>
                 </li>
               ))}

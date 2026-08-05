@@ -22,6 +22,7 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
     uri
     name
     _meta {
+      curie
       type {
         uri
         label
@@ -31,11 +32,17 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
     tier {
       uri
       name
+      _meta {
+        curie
+      }
     }
     subcomponents(first: $count) {
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -47,6 +54,9 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -58,6 +68,9 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -69,6 +82,9 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -80,6 +96,9 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -91,6 +110,9 @@ const neighbourhoodWellFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }

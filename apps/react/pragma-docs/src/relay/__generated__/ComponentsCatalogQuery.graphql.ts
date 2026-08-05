@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5a0a671e2fad099d23bf39db39f352b2>>
+ * @generated SignedSource<<f15f5c5ec94da0ed90eda4add8a0eb5b>>
  * @lightSyntaxTransform
  */
 
@@ -131,6 +131,24 @@ return {
                     ],
                     "storageKey": null
                   },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "EntityMeta",
+                    "kind": "LinkedField",
+                    "name": "_meta",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "curie",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  },
                   (v3/*:: as any*/),
                   {
                     "alias": null,
@@ -199,12 +217,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "8f60dc1da42c64a2eda851b62e55b748",
+    "cacheID": "9df9d06ee74f15e40de260fd5e734715",
     "id": null,
     "metadata": {},
     "name": "ComponentsCatalogQuery",
     "operationKind": "query",
-    "text": "query ComponentsCatalogQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...CatalogList_query_1G22uz\n}\n\nfragment CatalogItem_component on Component {\n  uri\n  name\n  summary\n  tier {\n    uri\n    name\n  }\n}\n\nfragment CatalogList_query_1G22uz on Query {\n  components(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        tier {\n          name\n          uri\n        }\n        ...CatalogItem_component\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query ComponentsCatalogQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...CatalogList_query_1G22uz\n}\n\nfragment CatalogItem_component on Component {\n  uri\n  _meta {\n    curie\n  }\n  name\n  summary\n  tier {\n    uri\n    name\n  }\n}\n\nfragment CatalogList_query_1G22uz on Query {\n  components(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        tier {\n          name\n          uri\n        }\n        ...CatalogItem_component\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();

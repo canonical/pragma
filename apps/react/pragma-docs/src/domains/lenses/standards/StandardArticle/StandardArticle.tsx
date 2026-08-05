@@ -25,6 +25,9 @@ import "./styles.css";
 const standardArticleFragmentSource = (): unknown => graphql`
   fragment StandardArticle_standard on CodeStandard {
     uri
+    _meta {
+      curie
+    }
     name
     description
     categories(first: 8) {
@@ -39,6 +42,9 @@ const standardArticleFragmentSource = (): unknown => graphql`
       edges {
         node {
           uri
+          _meta {
+            curie
+          }
           name
         }
       }
@@ -70,9 +76,11 @@ const splitProseBlocks = (text: string): string[] =>
  * blocks — deliberately no markdown pipeline (the R8 precedent defers
  * one), so inline backticks and `*emphasis*` marks in the source text
  * show verbatim. Honest over pretty until a sanctioned renderer lands.
- * The title falls back `name ?? uri`: only 4 of 131 live standards carry
- * a display name, and the URI is the entity's canonical identity, never
- * a fabricated title-case of it.
+ * The title falls back `name ?? _meta.curie`: only 4 of 131 live standards
+ * carry a display name, and the URI is the entity's canonical identity,
+ * never a fabricated title-case of it — rendered in the graph's own
+ * compact form (`cs:react.component.props`), while `uri` stays the
+ * absolute IRI Relay keys on.
  */
 const StandardArticle = ({
   className,
@@ -93,9 +101,9 @@ const StandardArticle = ({
       data-slot="reading-canvas"
     >
       <header className="standard-article-header">
-        <h1 id="standard-reading-title">{data.name ?? data.uri}</h1>
+        <h1 id="standard-reading-title">{data.name ?? data._meta.curie}</h1>
         <p className="standard-article-meta">
-          <code>{data.uri}</code>
+          <code>{data._meta.curie}</code>
           {categorySlugs.length > 0 ? (
             <span className="standard-article-categories">
               category: {categorySlugs.join(", ")}
@@ -126,8 +134,8 @@ const StandardArticle = ({
           <ul>
             {extendsNodes.map((node) => (
               <li key={node.uri}>
-                <Link params={{ uri: node.uri }} to="standardEntity">
-                  {node.name ?? node.uri}
+                <Link params={{ uri: node._meta.curie }} to="standardEntity">
+                  {node.name ?? node._meta.curie}
                 </Link>
               </li>
             ))}

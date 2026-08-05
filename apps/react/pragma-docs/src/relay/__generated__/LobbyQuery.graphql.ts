@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<82e9fadf98a393676809c148bc8fd17c>>
+ * @generated SignedSource<<b9f0cd28d630ecb74dc9f2429ee521f6>>
  * @lightSyntaxTransform
  */
 
@@ -21,6 +21,9 @@ export type LobbyQuery$data = {
       readonly edges: ReadonlyArray<{
         readonly node: {
           readonly __typename: "Component";
+          readonly _meta: {
+            readonly curie: string;
+          };
           readonly name: string | null | undefined;
           readonly uri: string;
         } | {
@@ -102,28 +105,46 @@ v8 = {
 v9 = {
   "alias": null,
   "args": null,
+  "concreteType": "EntityMeta",
+  "kind": "LinkedField",
+  "name": "_meta",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "curie",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v10 = {
+  "alias": null,
+  "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v10 = [
+v11 = [
   {
     "kind": "Variable",
     "name": "uri",
     "variableName": "patternClass"
   }
 ],
-v11 = [
+v12 = [
   (v5/*:: as any*/)
 ],
-v12 = [
+v13 = [
   {
     "kind": "Variable",
     "name": "uri",
     "variableName": "standardClass"
   }
 ],
-v13 = [
+v14 = [
   (v5/*:: as any*/),
   (v8/*:: as any*/)
 ];
@@ -177,7 +198,8 @@ return {
                         "kind": "InlineFragment",
                         "selections": [
                           (v8/*:: as any*/),
-                          (v9/*:: as any*/)
+                          (v9/*:: as any*/),
+                          (v10/*:: as any*/)
                         ],
                         "type": "Component",
                         "abstractKey": null
@@ -196,22 +218,22 @@ return {
       },
       {
         "alias": "patternClass",
-        "args": (v10/*:: as any*/),
+        "args": (v11/*:: as any*/),
         "concreteType": "OntologyClass",
         "kind": "LinkedField",
         "name": "ontologyClass",
         "plural": false,
-        "selections": (v11/*:: as any*/),
+        "selections": (v12/*:: as any*/),
         "storageKey": null
       },
       {
         "alias": "standardClass",
-        "args": (v12/*:: as any*/),
+        "args": (v13/*:: as any*/),
         "concreteType": "OntologyClass",
         "kind": "LinkedField",
         "name": "ontologyClass",
         "plural": false,
-        "selections": (v11/*:: as any*/),
+        "selections": (v12/*:: as any*/),
         "storageKey": null
       }
     ],
@@ -267,7 +289,8 @@ return {
                       {
                         "kind": "InlineFragment",
                         "selections": [
-                          (v9/*:: as any*/)
+                          (v9/*:: as any*/),
+                          (v10/*:: as any*/)
                         ],
                         "type": "Component",
                         "abstractKey": null
@@ -287,37 +310,37 @@ return {
       },
       {
         "alias": "patternClass",
-        "args": (v10/*:: as any*/),
+        "args": (v11/*:: as any*/),
         "concreteType": "OntologyClass",
         "kind": "LinkedField",
         "name": "ontologyClass",
         "plural": false,
-        "selections": (v13/*:: as any*/),
+        "selections": (v14/*:: as any*/),
         "storageKey": null
       },
       {
         "alias": "standardClass",
-        "args": (v12/*:: as any*/),
+        "args": (v13/*:: as any*/),
         "concreteType": "OntologyClass",
         "kind": "LinkedField",
         "name": "ontologyClass",
         "plural": false,
-        "selections": (v13/*:: as any*/),
+        "selections": (v14/*:: as any*/),
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "8abd9c94f83da002482f0cfa8ead0e8a",
+    "cacheID": "18cf28d20104e19b0019c8ff5f6bad73",
     "id": null,
     "metadata": {},
     "name": "LobbyQuery",
     "operationKind": "query",
-    "text": "query LobbyQuery(\n  $componentClass: String!\n  $patternClass: String!\n  $standardClass: String!\n  $exemplars: Int!\n) {\n  componentClass: ontologyClass(uri: $componentClass) {\n    instanceCount\n    instances(first: $exemplars) {\n      edges {\n        node {\n          __typename\n          ... on Component {\n            uri\n            name\n          }\n          uri\n        }\n      }\n    }\n    uri\n  }\n  patternClass: ontologyClass(uri: $patternClass) {\n    instanceCount\n    uri\n  }\n  standardClass: ontologyClass(uri: $standardClass) {\n    instanceCount\n    uri\n  }\n}\n"
+    "text": "query LobbyQuery(\n  $componentClass: String!\n  $patternClass: String!\n  $standardClass: String!\n  $exemplars: Int!\n) {\n  componentClass: ontologyClass(uri: $componentClass) {\n    instanceCount\n    instances(first: $exemplars) {\n      edges {\n        node {\n          __typename\n          ... on Component {\n            uri\n            _meta {\n              curie\n            }\n            name\n          }\n          uri\n        }\n      }\n    }\n    uri\n  }\n  patternClass: ontologyClass(uri: $patternClass) {\n    instanceCount\n    uri\n  }\n  standardClass: ontologyClass(uri: $standardClass) {\n    instanceCount\n    uri\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "592aa4a902f0f373d68a65d95bfe868c";
+(node as any).hash = "6fe7adfae605765c06171cbf64552e89";
 
 export default node;

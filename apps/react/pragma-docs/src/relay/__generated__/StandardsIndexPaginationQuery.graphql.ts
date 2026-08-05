@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6ffd8a891b4cd16363057a3072c00ec7>>
+ * @generated SignedSource<<f7461432d4490043700334dd20838fe7>>
  * @lightSyntaxTransform
  */
 
@@ -114,6 +114,24 @@ return {
                   {
                     "alias": null,
                     "args": null,
+                    "concreteType": "EntityMeta",
+                    "kind": "LinkedField",
+                    "name": "_meta",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "curie",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
                     "kind": "ScalarField",
                     "name": "name",
                     "storageKey": null
@@ -225,16 +243,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "de5c4698268b511a54cff8dc5ae4cc8d",
+    "cacheID": "35f3e89ea0d46b6cdeaa4f5e9c007aeb",
     "id": null,
     "metadata": {},
     "name": "StandardsIndexPaginationQuery",
     "operationKind": "query",
-    "text": "query StandardsIndexPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              uri\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query StandardsIndexPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        _meta {\n          curie\n        }\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              uri\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "4139b336b79a002b1e5e1ea16dd59a88";
+(node as any).hash = "a3dabca19f7eb49a87a6689bdd0cc79c";
 
 export default node;

@@ -17,11 +17,17 @@ import "./styles.css";
 const entityHeaderFragmentSource = (): unknown => graphql`
   fragment EntityHeader_component on Component {
     uri
+    _meta {
+      curie
+    }
     name
     summary
     tier {
       uri
       name
+      _meta {
+        curie
+      }
     }
   }
 `;
@@ -31,9 +37,13 @@ const componentCssClassName = "ds entity-header";
 
 /**
  * The component entity's identity block: name as the page's h1, the
- * prefixed URI as a code line, its tier, and the summary paragraph.
- * Schema-nullable text falls back `name ?? uri` (zero null tiers live, but
- * the schema allows them — same posture as `ComponentProbe`).
+ * COMPACT URI as a code line, its tier, and the summary paragraph.
+ * Schema-nullable text falls back `name ?? _meta.curie` (zero null tiers
+ * live, but the schema allows them — same posture as `ComponentProbe`).
+ *
+ * `uri` is the absolute IRI (ruling R-2) and stays the identity Relay keys
+ * on; `_meta.curie` is the graph's own compact rendering of it, so no
+ * namespace table is reconstructed app-side.
  */
 const EntityHeader = ({
   className,
@@ -48,12 +58,12 @@ const EntityHeader = ({
     <header
       className={[componentCssClassName, className].filter(Boolean).join(" ")}
     >
-      <h1 id="component-entity-title">{data.name ?? data.uri}</h1>
+      <h1 id="component-entity-title">{data.name ?? data._meta.curie}</h1>
       <p className="entity-header-meta">
-        <code>{data.uri}</code>
+        <code>{data._meta.curie}</code>
         {data.tier ? (
           <span className="entity-header-tier">
-            tier: {data.tier.name ?? data.tier.uri}
+            tier: {data.tier.name ?? data.tier._meta.curie}
           </span>
         ) : null}
       </p>

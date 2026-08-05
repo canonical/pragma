@@ -12,10 +12,16 @@ import "./styles.css";
 const entityAsideFragmentSource = (): unknown => graphql`
   fragment EntityAside_component on Component {
     uri
+    _meta {
+      curie
+    }
     version
     tier {
       uri
       name
+      _meta {
+        curie
+      }
     }
   }
 `;
@@ -49,12 +55,14 @@ const EntityAside = ({
       <dl>
         <dt>URI</dt>
         <dd>
-          <code>{data.uri}</code>
+          <code>{data._meta.curie}</code>
         </dd>
         <dt>Version</dt>
         <dd>{data.version ?? "unversioned"}</dd>
         <dt>Tier</dt>
-        <dd>{data.tier ? (data.tier.name ?? data.tier.uri) : "Untiered"}</dd>
+        <dd>
+          {data.tier ? (data.tier.name ?? data.tier._meta.curie) : "Untiered"}
+        </dd>
       </dl>
     </aside>
   );

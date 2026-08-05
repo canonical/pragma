@@ -15,15 +15,20 @@ import "./styles.css";
  * this tag to (re)generate the artifact imported above; the hook consumes
  * the generated node because this module sits on the server bricks' native
  * import chain (routes → here), where an evaluated tag throws at module
- * scope. Never invoked. `name`/`uri` ride at the root selection beside the
- * masked fragment spread: the page itself needs them for the head title
- * and the not-found line, and fragment data is invisible to it by design.
+ * scope. Never invoked. `name`/`uri`/`_meta.curie` ride at the root
+ * selection beside the masked fragment spread: the page itself needs them
+ * for the head title and the not-found line, and fragment data is
+ * invisible to it by design. The title's URI fallback is the COMPACT form
+ * (`_meta.curie`) — a browser tab is an identity line like any other.
  */
 const standardEntityQuerySource = (): unknown => graphql`
   query StandardEntityQuery($uri: String!) {
     codeStandard(uri: $uri) {
       name
       uri
+      _meta {
+        curie
+      }
       ...StandardArticle_standard
     }
   }
@@ -52,7 +57,7 @@ const ReadingContent = ({
   // effect (this app's SSR path emits no `<title>` — the P-5 register).
   useHead(
     {
-      title: `${standard ? (standard.name ?? standard.uri) : "Standard not found"} — Pragma docs`,
+      title: `${standard ? (standard.name ?? standard._meta.curie) : "Standard not found"} — Pragma docs`,
     },
     [standard],
   );

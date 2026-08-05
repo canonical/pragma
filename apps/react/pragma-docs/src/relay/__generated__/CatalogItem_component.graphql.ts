@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3a89cc8db01035470462fd84d18d9612>>
+ * @generated SignedSource<<ed44ac24118b7114faed06ffd5536cdf>>
  * @lightSyntaxTransform
  */
 
@@ -10,6 +10,9 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CatalogItem_component$data = {
+  readonly _meta: {
+    readonly curie: string;
+  };
   readonly name: string | null | undefined;
   readonly summary: string | null | undefined;
   readonly tier: {
@@ -46,6 +49,24 @@ return {
   "name": "CatalogItem_component",
   "selections": [
     (v0/*:: as any*/),
+    {
+      "alias": null,
+      "args": null,
+      "concreteType": "EntityMeta",
+      "kind": "LinkedField",
+      "name": "_meta",
+      "plural": false,
+      "selections": [
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "curie",
+          "storageKey": null
+        }
+      ],
+      "storageKey": null
+    },
     (v1/*:: as any*/),
     {
       "alias": null,
@@ -73,6 +94,6 @@ return {
 };
 })();
 
-(node as any).hash = "461dc7f748aed1828fdcc21c55b5fd46";
+(node as any).hash = "a51c5e09ff13b4c1e3b6a9df65b671e8";
 
 export default node;

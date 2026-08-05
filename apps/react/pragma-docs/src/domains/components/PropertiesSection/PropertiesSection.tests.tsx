@@ -50,6 +50,7 @@ const bareRecords = {
   "client:bare:meta": {
     __id: "client:bare:meta",
     __typename: "EntityMeta",
+    curie: BARE_URI,
     type: { __ref: "client:bare:meta:type" },
   },
   "client:bare:meta:type": {

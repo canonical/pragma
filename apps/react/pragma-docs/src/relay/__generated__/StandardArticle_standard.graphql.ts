@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b87f03d7c42d3af1659e101dc96a6938>>
+ * @generated SignedSource<<867d904e8c18b0233d038ea512cdb2e5>>
  * @lightSyntaxTransform
  */
 
@@ -10,6 +10,9 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type StandardArticle_standard$data = {
+  readonly _meta: {
+    readonly curie: string;
+  };
   readonly categories: {
     readonly edges: ReadonlyArray<{
       readonly node: {
@@ -22,6 +25,9 @@ export type StandardArticle_standard$data = {
   readonly extends: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -47,11 +53,29 @@ var v0 = {
 v1 = {
   "alias": null,
   "args": null,
+  "concreteType": "EntityMeta",
+  "kind": "LinkedField",
+  "name": "_meta",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "curie",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v2 = {
+  "alias": null,
+  "args": null,
   "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v2 = [
+v3 = [
   {
     "kind": "Literal",
     "name": "first",
@@ -66,6 +90,7 @@ return {
   "selections": [
     (v0/*:: as any*/),
     (v1/*:: as any*/),
+    (v2/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -75,7 +100,7 @@ return {
     },
     {
       "alias": null,
-      "args": (v2/*:: as any*/),
+      "args": (v3/*:: as any*/),
       "concreteType": "CategoryConnection",
       "kind": "LinkedField",
       "name": "categories",
@@ -116,7 +141,7 @@ return {
     },
     {
       "alias": null,
-      "args": (v2/*:: as any*/),
+      "args": (v3/*:: as any*/),
       "concreteType": "CodeStandardConnection",
       "kind": "LinkedField",
       "name": "extends",
@@ -139,7 +164,8 @@ return {
               "plural": false,
               "selections": [
                 (v0/*:: as any*/),
-                (v1/*:: as any*/)
+                (v1/*:: as any*/),
+                (v2/*:: as any*/)
               ],
               "storageKey": null
             }
@@ -155,6 +181,6 @@ return {
 };
 })();
 
-(node as any).hash = "ba3e5dce9e8154763179c0c8547bec35";
+(node as any).hash = "3d2d43bfcd88ed80595c5a33d8893a10";
 
 export default node;

@@ -114,6 +114,12 @@ const uncategorisedRecords = {
     "categories(first:1)": {
       __ref: "client:cs:webcomponents.component.naming:categories(first:1)",
     },
+    _meta: { __ref: "client:cs:webcomponents.component.naming:_meta" },
+  },
+  "client:cs:webcomponents.component.naming:_meta": {
+    __id: "client:cs:webcomponents.component.naming:_meta",
+    __typename: "EntityMeta",
+    curie: "cs:webcomponents.component.naming",
   },
   "client:cs:webcomponents.component.naming:categories(first:1)": {
     __id: "client:cs:webcomponents.component.naming:categories(first:1)",
@@ -144,6 +150,12 @@ const uncategorisedRecords = {
     "categories(first:1)": {
       __ref: "client:cs:limbo.orphan_rule:categories(first:1)",
     },
+    _meta: { __ref: "client:cs:limbo.orphan_rule:_meta" },
+  },
+  "client:cs:limbo.orphan_rule:_meta": {
+    __id: "client:cs:limbo.orphan_rule:_meta",
+    __typename: "EntityMeta",
+    curie: "cs:limbo.orphan_rule",
   },
   "client:cs:limbo.orphan_rule:categories(first:1)": {
     __id: "client:cs:limbo.orphan_rule:categories(first:1)",

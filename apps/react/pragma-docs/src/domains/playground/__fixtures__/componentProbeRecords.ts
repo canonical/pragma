@@ -15,6 +15,11 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const componentProbeRecords = {
+  "client:https://ds.canonical.com/global.component.button:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.button",
+  },
   "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12)":
     {
       __id: "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12)",
@@ -50,6 +55,16 @@ const componentProbeRecords = {
         __refs: [],
       },
     },
+  "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta": {
+    __id: "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.modifier_family.anticipation",
+  },
+  "client:https://ds.canonical.com/global.modifier_family.importance:_meta": {
+    __id: "client:https://ds.canonical.com/global.modifier_family.importance:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.modifier_family.importance",
+  },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
@@ -81,18 +96,29 @@ const componentProbeRecords = {
       __ref:
         "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12)",
     },
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.button:_meta",
+    },
   },
   "https://ds.canonical.com/global.modifier_family.anticipation": {
     __id: "https://ds.canonical.com/global.modifier_family.anticipation",
     __typename: "ModifierFamily",
     uri: "https://ds.canonical.com/global.modifier_family.anticipation",
     name: "Anticipation",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta",
+    },
   },
   "https://ds.canonical.com/global.modifier_family.importance": {
     __id: "https://ds.canonical.com/global.modifier_family.importance",
     __typename: "ModifierFamily",
     uri: "https://ds.canonical.com/global.modifier_family.importance",
     name: "Importance",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.modifier_family.importance:_meta",
+    },
   },
 } as unknown as RecordMap;
 

@@ -19,15 +19,20 @@ import "./styles.css";
  * this tag to (re)generate the artifact imported above; the hook consumes
  * the generated node because this module sits on the server bricks' native
  * import chain (routes → here), where an evaluated tag throws at module
- * scope. Never invoked. `name`/`uri` ride at the root selection beside the
- * masked fragment spreads: the page itself needs them for the head title
- * and the not-found line, and fragment data is invisible to it by design.
+ * scope. Never invoked. `name`/`uri`/`_meta.curie` ride at the root
+ * selection beside the masked fragment spreads: the page itself needs them
+ * for the head title and the not-found line, and fragment data is
+ * invisible to it by design. The title's URI fallback is the COMPACT form
+ * (`_meta.curie`) — a browser tab is an identity line like any other.
  */
 const componentEntityQuerySource = (): unknown => graphql`
   query ComponentEntityQuery($uri: String!, $count: Int!) {
     component(uri: $uri) {
       name
       uri
+      _meta {
+        curie
+      }
       ...EntityHeader_component
       ...PropertiesSection_component
       ...RelationsSection_component @arguments(count: $count)
@@ -66,7 +71,7 @@ const EntityContent = ({
   // SSR-escaping path (P-5 Relay/SSR review).
   useHead(
     {
-      title: `${component ? (component.name ?? component.uri) : "Component not found"} — Pragma docs`,
+      title: `${component ? (component.name ?? component._meta.curie) : "Component not found"} — Pragma docs`,
     },
     [component],
   );

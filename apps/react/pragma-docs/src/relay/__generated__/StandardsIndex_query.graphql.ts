@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<00d291520b17de98d27b933d756a3c52>>
+ * @generated SignedSource<<2730ad8556148d138e7ae714e7212d3c>>
  * @lightSyntaxTransform
  */
 
@@ -13,6 +13,9 @@ export type StandardsIndex_query$data = {
   readonly codeStandards: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly categories: {
           readonly edges: ReadonlyArray<{
             readonly node: {
@@ -109,6 +112,24 @@ return {
               "plural": false,
               "selections": [
                 (v1/*:: as any*/),
+                {
+                  "alias": null,
+                  "args": null,
+                  "concreteType": "EntityMeta",
+                  "kind": "LinkedField",
+                  "name": "_meta",
+                  "plural": false,
+                  "selections": [
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
+                      "name": "curie",
+                      "storageKey": null
+                    }
+                  ],
+                  "storageKey": null
+                },
                 {
                   "alias": null,
                   "args": null,
@@ -217,6 +238,6 @@ return {
 };
 })();
 
-(node as any).hash = "4139b336b79a002b1e5e1ea16dd59a88";
+(node as any).hash = "a3dabca19f7eb49a87a6689bdd0cc79c";
 
 export default node;
