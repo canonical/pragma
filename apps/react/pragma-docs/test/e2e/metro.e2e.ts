@@ -168,6 +168,59 @@ async function waitForHits(
   }
 }
 
+/**
+ * THE SERVED FRAME: the shell chrome around one page's canvas.
+ *
+ * Cut precisely, in two pieces, never by regex over the whole document:
+ * everything from `<body` up to and including the `<main data-region="canvas">`
+ * OPEN TAG, plus everything from `</main>` up to the first `<script` after it.
+ *
+ * The trailing cut is what `frameStability.tests.tsx` does not need. It renders
+ * in-process, so it never sees the hydration payload; a served page carries
+ * `__INITIAL_DATA__` and the module scripts inside `<body>` after the shell,
+ * and those are per-page DATA by construction. Cutting at the first script
+ * after the canvas removes them without a normalisation rule that could hide a
+ * real difference — the footer between `</main>` and that script stays in.
+ */
+function frameOf(html: string): string {
+  const bodyStart = html.indexOf("<body");
+  const bodyEnd = html.lastIndexOf("</body>");
+  expect(bodyStart).toBeGreaterThan(-1);
+  expect(bodyEnd).toBeGreaterThan(bodyStart);
+  const body = html.slice(bodyStart, bodyEnd);
+  // The canvas's structural identity must be unique for the cut to be exact.
+  expect(body.split("<main").length - 1).toBe(1);
+  expect(body.split("</main>").length - 1).toBe(1);
+  const open = body.indexOf("<main");
+  const openEnd = body.indexOf(">", open);
+  expect(body.slice(open, openEnd)).toContain('data-region="canvas"');
+  const tail = body.slice(body.lastIndexOf("</main>"));
+  const firstScript = tail.indexOf("<script");
+  expect(firstScript).toBeGreaterThan(-1);
+  return body.slice(0, openEnd + 1) + tail.slice(0, firstScript);
+}
+
+/** The strip's three claimed slots — the only frame content a lens owns. */
+const STRIP_CONTEXT_PATTERN =
+  /(<div class="strip-context" data-slot="context">)([\s\S]*?)(<\/div><div class="strip-controls")/;
+const STRIP_CONTROLS_PATTERN =
+  /(<div class="strip-controls" data-slot="controls">)([\s\S]*?)(<\/div><div class="strip-status")/;
+const STRIP_STATUS_PATTERN =
+  /(<div class="strip-status" data-slot="status">)([\s\S]*?)(<\/div><\/header>)/;
+
+/**
+ * Forgive exactly the accounted-for deltas, nothing else — the same three
+ * strip slots and the same router attribute `frameStability.tests.tsx`
+ * forgives, so this measures its property rather than a weaker one.
+ */
+function normalizeFrame(frame: string): string {
+  return frame
+    .replaceAll(' aria-current="page"', "")
+    .replace(STRIP_CONTEXT_PATTERN, "$1$3")
+    .replace(STRIP_CONTROLS_PATTERN, "$1$3")
+    .replace(STRIP_STATUS_PATTERN, "$1$3");
+}
+
 describe("the core lenses render against a provider that has never heard of pragma", () => {
   it(
     "dev:bun serves Definitions and Standards from @canonical/prism-graph-example",
@@ -434,6 +487,26 @@ describe("the core lenses render against a provider that has never heard of prag
         //    beat to flush before asserting nothing ELSE arrived.
         await new Promise((resolve) => setTimeout(resolve, 200));
         expect(provider.hits("client")).toBe(clientHitsBefore + 1);
+
+        // 9. THE PORTABLE SKELETON, measured rather than asserted. Every
+        //    route above got `expectPortableFrame`, which only proves the two
+        //    regions exist. This is the stronger claim `frameStability.tests
+        //    .tsx` makes in-process: the served frame is BYTE-IDENTICAL
+        //    between two different lenses once the three slots a lens owns
+        //    are blanked. That fixture-driven suite seeds itself from pragma
+        //    records and never contacts a provider, so it cannot say this
+        //    about a foreign graph. This can.
+        const standardsFrame = frameOf(standardsIndexHtml);
+        const definitionsFrame = frameOf(definitionsHtml);
+        //    Teeth first: the RAW frames must DIFFER. Without this the
+        //    equality below would also pass if the cut returned nothing, or
+        //    if the normaliser wiped everything that varies AND everything
+        //    that does not.
+        expect(standardsFrame).not.toBe(definitionsFrame);
+        expect(normalizeFrame(standardsFrame).length).toBeGreaterThan(1_000);
+        expect(normalizeFrame(standardsFrame)).toBe(
+          normalizeFrame(definitionsFrame),
+        );
       } finally {
         await server.stop();
         await provider.stop();
