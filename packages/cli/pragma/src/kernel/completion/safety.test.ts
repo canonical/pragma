@@ -1,5 +1,11 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +29,21 @@ vi.mock("@canonical/ke", () => ({
     throw new Error("createStore called on the storeless completion path");
   }),
 }));
+
+/** Whether a shell of this id is on PATH and runnable. */
+function hasShell(id: string): boolean {
+  return (
+    spawnSync(id, ["-c", "printf ok"], { encoding: "utf-8" }).stdout === "ok"
+  );
+}
+
+/** `<shell> -n <file>`: does the shell accept this text as a script at all? */
+function parses(shell: string, script: string): number | null {
+  const dir = mkdtempSync(join(tmpdir(), "pragma-reserved-"));
+  const file = join(dir, `script.${shell}`);
+  writeFileSync(file, script);
+  return spawnSync(shell, ["-n", file], { encoding: "utf-8" }).status;
+}
 
 /** A hostile module whose names try to smuggle shell syntax. */
 function adversarialModule(path: readonly [string, string?]): CapabilityModule {
@@ -101,11 +122,57 @@ describe("injection safety (PROTECTED)", () => {
     expect([...matches].sort()).toEqual([...legitimate].sort());
   });
 
-  it("buildCompletionModel and emitScripts throw for the same hostile grammar", () => {
+  it("buildCompletionModel and emitScripts throw for the same hostile INJECTION grammar", () => {
+    // Same gate on both sides for injection. The two gates are NOT identical
+    // overall — see the reserved-word describe below, where emit is strictly
+    // stricter — so this case is scoped to what they do share rather than
+    // stating an equivalence that no longer holds.
     for (const name of HOSTILE_NAMES) {
       const module = adversarialModule(["thing", name]);
       expect(() => buildCompletionModel([module])).toThrow(/unsafe token/);
       expect(() => emitScripts([module])).toThrow(/unsafe token/);
+    }
+  });
+});
+
+describe("shell reserved words are refused at EMIT (PROTECTED)", () => {
+  // `SAFE_TOKEN_RE` admits `esac`, `in`, `do`, `done`, `fi` — they are ordinary
+  // lowercase words. Inlined as a `case` pattern they end the statement, so the
+  // rest of the script is a syntax error and `_pragma` is never defined: the
+  // failure mode is NO COMPLETION AT ALL, silently, from a valid-looking
+  // installed file. `fish -n` does not catch it either (fish's script has no
+  // `case`). No live noun trips it; the gate exists so none ever can.
+  it("buildCompletionModel accepts `esac` — the token IS shell-safe", () => {
+    expect(() =>
+      buildCompletionModel([adversarialModule(["esac", "list"])]),
+    ).not.toThrow();
+  });
+
+  it("emitScripts refuses it, naming the noun and the reason", () => {
+    expect(() => emitScripts([adversarialModule(["esac", "list"])])).toThrow(
+      /reserved shell word "esac" in noun "esac"/,
+    );
+  });
+
+  it("refuses a reserved VERB label too", () => {
+    expect(() => emitScripts([adversarialModule(["thing", "done"])])).toThrow(
+      /reserved shell word "done" in verb "thing done"/,
+    );
+  });
+
+  it("without the gate, bash and zsh REFUSE the emitted script", () => {
+    // The non-vacuity that matters: the guard is worth having only if the
+    // script it prevents is genuinely broken. Emit the same grammar with the
+    // reserved noun renamed away, then substitute the reserved word back into
+    // the generated text exactly where the noun appears — which is what emit
+    // would have produced — and hand it to the shells.
+    const scripts = emitScripts([adversarialModule(["esacx", "list"])]);
+    for (const shell of ["bash", "zsh"] as const) {
+      if (!hasShell(shell)) continue;
+      const good = scripts[shell];
+      expect(parses(shell, good)).toBe(0);
+      const broken = good.replaceAll("esacx", "esac");
+      expect(parses(shell, broken)).not.toBe(0);
     }
   });
 });

@@ -33,7 +33,11 @@
 
 import { BIN_NAME } from "../../constants.js";
 import type { CapabilityModule } from "../spec/types.js";
-import { assertSafeToken, buildCompletionModel } from "./model.js";
+import {
+  assertSafeToken,
+  assertShellUsableToken,
+  buildCompletionModel,
+} from "./model.js";
 import { bashScript } from "./templates/bash.js";
 import { fishScript } from "./templates/fish.js";
 import { zshScript } from "./templates/zsh.js";
@@ -120,6 +124,17 @@ export function emitScripts(
     buildCompletionModel(modules),
     new Set(options.disabledFamilies ?? []),
   );
+  // Nouns and verb labels are inlined as `case` patterns and function-name
+  // fragments, so a shell RESERVED WORD here breaks the script's grammar even
+  // though it passes the injection allowlist. Checked at emit — the one place a
+  // token becomes syntax — rather than in the model, which is on the
+  // `__complete` fast path and where a candidate is only ever printed.
+  for (const noun of model.nouns) {
+    assertShellUsableToken(noun.noun, `noun "${noun.noun}"`);
+    for (const verb of noun.verbs) {
+      assertShellUsableToken(verb.label, `verb "${noun.noun} ${verb.label}"`);
+    }
+  }
   return {
     bash: bashScript(model, binName, minChars),
     zsh: zshScript(model, binName, minChars),

@@ -39,6 +39,7 @@ import {
   readStaticGeneratorImports,
 } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
+import { emitScripts } from "../src/kernel/completion/emitScripts.js";
 import type { RawConfig } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 
@@ -257,6 +258,13 @@ export { writeReferenceDocs };
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
   checkDeclaredGenerators();
+  // The completion scripts are not a build ARTIFACT (`setup completions`
+  // renders them on the user's machine), but their emit gate is the only thing
+  // standing between a fork's `pragma.conf.ts` and an unparseable installed
+  // script. Emitting here makes a bad noun fail the BUILD, naming it, instead
+  // of failing silently at somebody's TAB — the same test-then-build precedent
+  // `checkDeclaredGenerators` follows, where neither reader is the only one.
+  emitScripts(capabilities);
 
   const embedded = generateTemplateManifest();
   console.log(
