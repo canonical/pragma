@@ -40,7 +40,7 @@ const INDIVIDUAL_PRIORITY = 0.3;
  * The `pragma:` URI scheme + the single reserved-expansion template variable.
  *
  * A LITERAL, and it must stay one until the wire identifiers move together.
- * `surface/surface.v2.json` freezes `pragma:{+uri}` as protocol identity, and
+ * `surface/covenant.json` freezes `pragma:{+uri}` as protocol identity, and
  * `buildResourceList` mints `pragma:<prefixed>` for every entry it lists —
  * three writings of one decision. Deriving only this one made a fork advertise
  * `recipes:{+uri}` over a list of 653 `pragma:` URIs: every resource the server

@@ -1,7 +1,7 @@
 /**
  * Frozen-covenant conformance (D1).
  *
- * `surface/surface.v2.json` is the designed, frozen surface. Each PR emits
+ * `surface/covenant.json` is the designed, frozen surface. Each PR emits
  * only the entries it has actually built and asserts that its emitted surface
  * *conforms* to the covenant: every emitted noun+verb exists in the covenant
  * and deep-equals it, every emitted tool is one the covenant blesses, and the
@@ -63,7 +63,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
  * Assert that an emitted surface conforms to the covenant.
  *
  * @param emitted - The surface produced by {@link emitSurface}.
- * @param covenant - The parsed `surface.v2.json` golden.
+ * @param covenant - The parsed `covenant.json` golden.
  * @throws Error with a specific path on the first non-conformance.
  */
 export function assertConforms(

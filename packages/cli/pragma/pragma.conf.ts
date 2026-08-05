@@ -503,7 +503,7 @@ worlds apart on one bit: \`capability.mutates\`.
 Every capability is a \`VerbSpec\` — a noun, its params, its effect profile, its
 formatters. The CLI commands, the MCP tools, shell completion, and the
 surface/docs are all *projections* of that one shape, so they cannot drift. The
-projected surface is frozen in a covenant (\`surface/surface.v2.json\`): a single
+projected surface is frozen in a covenant (\`surface/covenant.json\`): a single
 source of truth a test asserts the live grammar still emits, tool for tool.
 
 ## LLM-optimized output

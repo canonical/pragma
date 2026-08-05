@@ -3,7 +3,7 @@
  * request the `__complete` resolver answers, and the dynamic-tier seam.
  *
  * The model is derived from the capability modules (the specs), NOT parsed
- * from `surface.v2.json`: the emitted surface deliberately omits enum values,
+ * from `covenant.json`: the emitted surface deliberately omits enum values,
  * param kinds, and the `complete` field, and the grammar must not grow for a
  * projection. Agreement with the covenant is transitive — the projection
  * agreement test pins the model's noun/verb/flag sets to `emitSurface`, which

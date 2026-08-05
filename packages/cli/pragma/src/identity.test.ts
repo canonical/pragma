@@ -160,7 +160,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { capabilities } = await import("./capabilities/index.js");
 
     // The `pragma:` resource scheme is covenant-frozen PROTOCOL identity
-    // (surface.v2.json), not copy. The orientation DERIVES it from the emitted
+    // (covenant.json), not copy. The orientation DERIVES it from the emitted
     // surface, so mask exactly what the surface declares — a leak the kernel
     // authored itself would survive this substitution and fail below.
     const { resources } = emitSurface(capabilities).mcpSurface;
@@ -277,7 +277,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     //
     // ONE exemption, the same one the MCP orientation case above makes and for
     // the same reason: the `pragma:` resource scheme is covenant-frozen PROTOCOL
-    // identity (`surface.v2.json`), inherited by a fork along with the
+    // identity (`covenant.json`), inherited by a fork along with the
     // `pragma/box` and `pragma/instanceCount` `_meta` keys it travels with, and
     // `tools.md` reports it truthfully. Masked from the emitted surface, not by
     // a literal, so a leak the kernel authored itself still fails here.
@@ -313,11 +313,11 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // masked away and nothing asserts the scheme survived the rename.
     //
     // Under this mock the two diverge: a derivation emits `recipes:{+uri}` and
-    // the covenant still says `pragma:{+uri}`. Read from `surface.v2.json`, so
+    // the covenant still says `pragma:{+uri}`. Read from `covenant.json`, so
     // it is the published contract that decides and not a second literal here.
     const covenant = JSON.parse(
       readFileSync(
-        fileURLToPath(new URL("../surface/surface.v2.json", import.meta.url)),
+        fileURLToPath(new URL("../surface/covenant.json", import.meta.url)),
         "utf-8",
       ),
     ) as { mcpSurface: { resources: string[] } };

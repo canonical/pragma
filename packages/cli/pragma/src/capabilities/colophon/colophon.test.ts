@@ -35,7 +35,7 @@ import type { ColophonData } from "./types.js";
 /** The committed covenant, read from disk exactly as a consumer would. */
 const golden = JSON.parse(
   readFileSync(
-    fileURLToPath(new URL("../../../surface/surface.v2.json", import.meta.url)),
+    fileURLToPath(new URL("../../../surface/covenant.json", import.meta.url)),
     "utf-8",
   ),
 ) as Covenant;

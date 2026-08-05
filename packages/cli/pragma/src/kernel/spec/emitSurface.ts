@@ -1,6 +1,6 @@
 /**
  * Surface emitter: project capability modules into the machine-readable
- * surface document that the covenant (`surface/surface.v2.json`) freezes.
+ * surface document that the covenant (`surface/covenant.json`) freezes.
  *
  * The emitter is pure and zod-free so it sits on the `--help`/`__complete`
  * fast path. It reads only the grammar — never a run body — and merges in the

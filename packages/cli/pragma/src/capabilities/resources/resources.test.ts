@@ -177,7 +177,7 @@ describe("resource listing (storeless, over the pack index)", () => {
     const covenant = JSON.parse(
       readFileSync(
         fileURLToPath(
-          new URL("../../../surface/surface.v2.json", import.meta.url),
+          new URL("../../../surface/covenant.json", import.meta.url),
         ),
         "utf-8",
       ),

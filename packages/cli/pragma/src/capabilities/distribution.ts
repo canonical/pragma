@@ -8,7 +8,7 @@
  *
  * They are compiled STATICALLY rather than merged at dispatch on purpose: the
  * `--help` / `__complete` fast paths read the static capability set, and
- * `surface/surface.v2.json` freezes the emitted surface, so a noun that only
+ * `surface/covenant.json` freezes the emitted surface, so a noun that only
  * arrived at dispatch would vanish from help and completion on a fresh install.
  * That is affordable because this module is zod-free and pure — `pragma.conf.ts`
  * is inert data and `compilePack` builds specs without touching the store.

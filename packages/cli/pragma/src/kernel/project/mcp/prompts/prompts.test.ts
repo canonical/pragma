@@ -55,7 +55,7 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
 
   it("quotes the resource templates the MCP surface actually advertises", () => {
     // The `pragma:` scheme is covenant-frozen protocol identity
-    // (surface.v2.json). The orientation DERIVES it from the emitted surface
+    // (covenant.json). The orientation DERIVES it from the emitted surface
     // instead of hand-copying it, so the two cannot disagree.
     const { resources } = emitSurface(capabilities).mcpSurface;
     expect(resources.length).toBeGreaterThan(0);
