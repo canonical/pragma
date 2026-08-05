@@ -13,7 +13,6 @@ import {
 } from "@canonical/summon-core";
 import { exec, flatMap, info, mkdir, sequence_, when } from "@canonical/task";
 import pkg from "../../package.json" with { type: "json" };
-
 import {
   createTemplateContext,
   detectMonorepo,
@@ -22,6 +21,7 @@ import {
   type PackageAnswers,
   validatePackageName,
 } from "../shared/index.js";
+import { loadTemplateSync } from "../shared/loadTemplate.js";
 
 // =============================================================================
 // Template Paths
@@ -193,6 +193,7 @@ The generator auto-detects:
         // Create package.json
         template({
           source: templates.packageJson,
+          content: loadTemplateSync(templates.packageJson),
           dest: path.join(packageDir, "package.json"),
           vars: ctx,
         }),
@@ -202,6 +203,7 @@ The generator auto-detects:
           needsTs && answers.withReact,
           template({
             source: templates.tsconfigReact,
+            content: loadTemplateSync(templates.tsconfigReact),
             dest: path.join(packageDir, "tsconfig.json"),
             vars: ctx,
           }),
@@ -210,6 +212,7 @@ The generator auto-detects:
           needsTs && !answers.withReact,
           template({
             source: templates.tsconfig,
+            content: loadTemplateSync(templates.tsconfig),
             dest: path.join(packageDir, "tsconfig.json"),
             vars: ctx,
           }),
@@ -218,6 +221,7 @@ The generator auto-detects:
         // Create biome.json
         template({
           source: templates.biome,
+          content: loadTemplateSync(templates.biome),
           dest: path.join(packageDir, "biome.json"),
           vars: ctx,
         }),
@@ -227,6 +231,7 @@ The generator auto-detects:
           needsTs,
           template({
             source: templates.indexTs,
+            content: loadTemplateSync(templates.indexTs),
             dest: path.join(packageDir, "src", "index.ts"),
             vars: ctx,
           }),
@@ -237,6 +242,7 @@ The generator auto-detects:
           isCss,
           template({
             source: templates.indexCss,
+            content: loadTemplateSync(templates.indexCss),
             dest: path.join(packageDir, "src", "index.css"),
             vars: ctx,
           }),
@@ -247,6 +253,7 @@ The generator auto-detects:
           needsTs && answers.withCli,
           template({
             source: templates.cliTs,
+            content: loadTemplateSync(templates.cliTs),
             dest: path.join(packageDir, "src", "cli.ts"),
             vars: ctx,
           }),
@@ -255,6 +262,7 @@ The generator auto-detects:
         // Create README.md
         template({
           source: templates.readme,
+          content: loadTemplateSync(templates.readme),
           dest: path.join(packageDir, "README.md"),
           vars: ctx,
         }),
@@ -266,6 +274,7 @@ The generator auto-detects:
           answers.withPrTemplate,
           template({
             source: templates.pullRequestTemplate,
+            content: loadTemplateSync(templates.pullRequestTemplate),
             dest: path.join(packageDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
             vars: ctx,
           }),
@@ -282,6 +291,7 @@ The generator auto-detects:
           answers.withStorybook,
           template({
             source: templates.storybookMain,
+            content: loadTemplateSync(templates.storybookMain),
             dest: path.join(packageDir, ".storybook", "main.ts"),
             vars: ctx,
           }),
@@ -290,6 +300,7 @@ The generator auto-detects:
           answers.withStorybook,
           template({
             source: templates.storybookPreview,
+            content: loadTemplateSync(templates.storybookPreview),
             dest: path.join(packageDir, ".storybook", "preview.ts"),
             vars: ctx,
           }),

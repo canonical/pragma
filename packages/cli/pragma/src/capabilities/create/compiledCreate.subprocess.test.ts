@@ -55,74 +55,116 @@ function snapshot(dir: string): Map<string, string> {
   return out;
 }
 
-/** Run a `create component` in its own cwd and snapshot what it wrote. */
-function createComponent(
+/** Run one `create …` invocation in its own cwd and snapshot what it wrote. */
+function runCreate(
   bin: string,
+  prefix: readonly string[],
   args: readonly string[],
-  framework: string,
 ): Map<string, string> {
   const dir = freshCwd();
-  execFileSync(
-    bin,
-    [
-      ...args,
+  execFileSync(bin, [...prefix, ...args, "--yes"], { cwd: dir, stdio: "pipe" });
+  return snapshot(dir);
+}
+
+/**
+ * One case per shipped `create` noun, plus the component framework axis and the
+ * application's `--with-relay` branch (12 of its 62 verbatim assets are
+ * reachable only through it). The three component frameworks are load-bearing
+ * for the key collision; `package` and `application` are load-bearing for the
+ * seam fix that retired the source-run-only gate.
+ */
+const CASES: ReadonlyArray<{ name: string; args: readonly string[] }> = [
+  {
+    name: "component (react)",
+    args: [
       "create",
       "component",
       "src/components/Widget",
       "--framework",
-      framework,
-      "--yes",
+      "react",
     ],
-    { cwd: dir, stdio: "pipe" },
-  );
-  return snapshot(dir);
-}
+  },
+  {
+    name: "component (svelte)",
+    args: [
+      "create",
+      "component",
+      "src/components/Widget",
+      "--framework",
+      "svelte",
+    ],
+  },
+  {
+    name: "component (lit)",
+    args: [
+      "create",
+      "component",
+      "src/components/Widget",
+      "--framework",
+      "lit",
+    ],
+  },
+  {
+    name: "package",
+    args: [
+      "create",
+      "package",
+      "--name",
+      "@canonical/probe-lib",
+      "--type",
+      "library",
+    ],
+  },
+];
 
-describe("compiled pragma create component (PROTECTED)", () => {
-  for (const framework of ["react", "svelte", "lit"] as const) {
-    it(`${framework}: compiled binary ≡ source run, byte-for-byte`, () => {
-      // (1) The real standalone binary — templates come from the embedded manifest.
-      const compiled = createComponent(compiledBin, [], framework);
-      // (2) A source run — templates come from disk. The reference output.
-      const source = createComponent("bun", [pragmaBin], framework);
+describe("compiled pragma create (PROTECTED)", () => {
+  for (const { name, args } of CASES) {
+    it(`${name}: compiled binary ≡ source run, byte-for-byte`, () => {
+      // (1) The real standalone binary — every file read comes from the
+      // embedded manifest, because /$bunfs carries no template files at all.
+      const compiled = runCreate(compiledBin, [], args);
+      // (2) A source run — every file read comes from disk. The reference.
+      const source = runCreate("bun", [pragmaBin], args);
 
-      // Wrote something (fails on base, where the binary's create errors out).
+      // Wrote something. This is the assertion that fails on the parent commit
+      // for `package`: the gate refused, so the cwd was left empty.
       expect(compiled.size).toBeGreaterThan(0);
       // Same file set …
       expect([...compiled.keys()].sort()).toEqual([...source.keys()].sort());
-      // … and byte-identical contents (the collision fix: svelte/lit must NOT
-      // carry react's template text).
+      // … and byte-identical contents (the key-collision fix: svelte/lit must
+      // NOT carry react's template text, and no package may serve another's).
       for (const [path, content] of compiled) {
         expect(source.get(path), `content of ${path}`).toBe(content);
       }
-    }, 120_000);
+    }, 180_000);
   }
 });
 
 /**
- * PROTECTED — the compiled-binary `create` gate.
+ * PROTECTED — the compiled-binary `create` gate, now down to its last noun.
  *
- * `create component` runs from the binary (the describe above proves it byte for
- * byte) because summon-component routes every template read through
- * `loadTemplateSync` and passes `content:` into `template()`. `create package` /
- * `create application` do NOT: they call `template({ source })`, summon-core
- * falls through to `readFile(options.source)`, and the run dies with `ENOENT …
- * /$bunfs/templates/package.json.ejs` AFTER `mkdir` has already run — a
- * half-made package left on the user's disk. Measured against a real
- * `dist/pragma` with the gate lifted, for both nouns.
+ * `create component` and `create package` run from the binary (the describe
+ * above proves each byte for byte) because every file read they make routes
+ * through the shared embedded registry and passes the loaded `content:` on.
+ * `create application` does NOT yet: it calls `template({ source })` for its 15
+ * templates and `copyFile(source, dest)` for its 62 verbatim assets, so the run
+ * dies with `ENOENT … /$bunfs/…` AFTER `mkdir` has already run — a half-made
+ * tree left on the user's disk. Measured against a real `dist/pragma` with the
+ * gate lifted.
  *
- * A `--dry-run` does NOT test this: it exits 0 without reading a template and
- * merely PRINTS `Read file: /$bunfs/templates/package.json.ejs` as a planned
- * effect. That false positive is why the gate has to be pinned by a real run.
+ * A `--dry-run` does NOT test this: it exits 0 without reading a file and merely
+ * PRINTS `Read file: /$bunfs/…` as a planned effect. That false positive is why
+ * the gate has to be pinned by a real run.
  *
  * The `readdirSync(dir)` assertion is the load-bearing one: it fails with the
- * real symptom if the gate is ever lifted without fixing the generators.
+ * real symptom if the gate is ever lifted without fixing the generator.
  */
+
 describe("compiled pragma create gate (PROTECTED)", () => {
   // A LITERAL noun list, deliberately not derived from `create`'s own
   // declaration: changing the gate's input must turn this red rather than
   // silently drop the case.
-  for (const kind of ["package", "application"] as const) {
+  for (const kind of ["application"] as const) {
     it(`refuses \`create ${kind}\` and leaves the cwd untouched`, () => {
       const dir = freshCwd();
       const result = spawnSync(compiledBin, ["create", kind, "--yes"], {

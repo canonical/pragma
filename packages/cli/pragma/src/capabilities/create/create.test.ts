@@ -462,18 +462,18 @@ describe("declared generator bindings (PROTECTED)", () => {
     );
   });
 
-  it("exactly the two source-run-only verbs publish the availability caveat", () => {
+  it("exactly the one source-run-only verb publishes the availability caveat", () => {
     // A LITERAL list, for the same reason `compiledCreate.subprocess.test.ts`
     // uses one: the caveat is DERIVED from `readsEmbeddedTemplates`, so an
     // assertion derived from the same bit would agree with itself no matter
-    // which way the bit was flipped. These two are the nouns that test proves
-    // refuse on a real compiled binary, so this is what the reference is held
-    // to — and flipping the bit turns this red, along with the reference
-    // drift-guard, in the same run.
+    // which way the bit was flipped. This is the noun that test proves refuses
+    // on a real compiled binary, so this is what the reference is held to — and
+    // flipping the bit turns this red, along with the reference drift-guard, in
+    // the same run.
     const caveated = createModule.verbs
       .filter((verb) => verb.summary.includes("Source-run only."))
       .map((verb) => verb.path.at(1));
-    expect(caveated).toEqual(["package", "application"]);
+    expect(caveated).toEqual(["application"]);
     for (const verb of createModule.verbs) {
       const kind = verb.path.at(1);
       const gated = caveated.includes(kind);

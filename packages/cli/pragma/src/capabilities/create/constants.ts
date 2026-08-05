@@ -54,15 +54,13 @@ export const CREATE_GENERATORS = {
     /** The generator-map key `create package` runs. */
     key: "package",
     /**
-     * NOT runnable from the compiled binary: this generator calls
-     * `template({ source })` with no `content:`, so summon-core falls through to
-     * `readFile(options.source)`. Measured against a real `dist/pragma` with the
-     * gate lifted: `ENOENT: no such file or directory, open
-     * '/$bunfs/templates/package.json.ejs'`, after `mkdir` had already created
-     * `my-lib/` and `my-lib/src/` — a half-made package left on disk. A
-     * `--dry-run` exits 0 without reading a template, so it does NOT test this.
+     * Runs from the compiled binary: every one of its 11 `template({ source })`
+     * calls now passes the `content:` its `loadTemplateSync` returns, so
+     * summon-core never falls through to `readFile(options.source)` — the read
+     * that used to die with `ENOENT … '/$bunfs/templates/package.json.ejs'`
+     * after `mkdir` had already left `my-lib/` and `my-lib/src/` on disk.
      */
-    readsEmbeddedTemplates: false,
+    readsEmbeddedTemplates: true,
   },
   application: {
     /** The declaring package: the manifest scope its files embed under. */
