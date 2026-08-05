@@ -3,6 +3,29 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+### Features
+
+* **spec:** the generator definition ships as a versioned domain spec —
+  `spec/generator-definition.v1.json` states, field by field, what a generator
+  must supply and why, and a conformance test holds the TypeScript declarations
+  to it in both directions. It is SUMMON'S domain spec and explicitly not the
+  cross-tool shared contract; that contract is a separate programme's output and
+  is not derived from this file. The package now ships `spec/` alongside `dist/`.
+* **testing:** a new `@canonical/summon-core/testing` export subpath carries the
+  byte-equality conformance kit — one fixture generator, one answer set, the
+  exact tree they produce, and the comparison. Both product binaries drive it
+  through their own execution seams, so neither is measured against its own idea
+  of the answer. Marked `@experimental`: it is a testing surface, not a product
+  API, and it changes whenever a new part of the seam needs covering.
+
+### Documentation
+
+* **reference:** `GeneratorMeta` was documented without `displayName`, `author`,
+  `help` or `examples`, and with `version` marked optional where it is required.
+  Corrected against the declarations.
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon-core
