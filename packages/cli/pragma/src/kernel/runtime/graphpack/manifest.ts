@@ -85,25 +85,33 @@ export function readManifest(dir: string): Manifest | undefined {
 
 /** Whether a pack directory holds a complete pack: a valid manifest AND every
  * non-empty content artifact — the `data.nq` dump, the extracted `schema.json`,
- * the entity `index.json`, and the carried `stories.json`. The manifest alone is
+ * the entity `index.json` (gated on presence + size), and the carried
+ * `stories.json` (gated on being a JSON array, which implies both). The manifest alone is
  * not enough: an intact manifest beside a missing/truncated `data.nq` boots
  * EMPTY (a silent, then permanent, loss), and a torn or evicted
  * `schema.json`/`index.json` (manifest + dump intact) would be REUSED by
- * `buildPack` and then fail at BOOT as an internal error. `stories.json` is
- * gated for the same reason and unconditionally: it is written even when empty
- * (as `[]`, which is non-empty text), so a pack directory lacking it is one
- * whose content hash covers stories the directory does not hold — reusing it
- * would silently drop every package-declared noun. Requiring all four present +
- * non-empty makes `buildPack` rebuild a torn pack and makes the boot decision
- * surface STORE_UNAVAILABLE (the ordinary "not built" recovery) instead of a
- * "please report this" crash.
+ * `buildPack` and then fail at BOOT as an internal error. Requiring those three
+ * present + non-empty makes `buildPack` rebuild a torn pack and makes the boot
+ * decision surface STORE_UNAVAILABLE (the ordinary "not built" recovery)
+ * instead of a "please report this" crash.
  *
- * `stories.json` is the one whose SHAPE is load-bearing, and size alone did not
- * cover it. `stories.ts#parseRecords` returns `[]` for anything that is not a
- * JSON array, so a non-empty non-array — `{}`, `"x"`, a truncated `[{` — passed
- * this gate, `buildPack` REUSED the directory, `resolveSources` booted it, every
+ * `stories.json` is gated once, and on its SHAPE rather than its size, because
+ * shape is the stronger claim and it subsumes the weaker one. It is written even
+ * when empty (as `[]`, which is non-empty text), so a directory lacking it is
+ * one whose content hash covers stories it does not hold — and
+ * `stories.ts#parseRecords` returns `[]` for anything that is not a JSON array,
+ * so a non-empty NON-array (`{}`, `"x"`, a truncated `[{`) passed a size gate,
+ * `buildPack` REUSED the directory, `resolveSources` booted it, every
  * package-declared noun silently disappeared, and `sources update` reported
- * success. So it is READ and PARSED here and must be an array.
+ * success. It is therefore READ and PARSED here and must be an array.
+ *
+ * It was in the size loop TOO, which was one fact with two writings on the boot
+ * decision: only two states make the stat check answer false, and the parse
+ * block answers both — `readFileSync` throws ENOENT for the absent case,
+ * `JSON.parse("")` throws for the empty one, and any body that parses to an
+ * array is necessarily non-empty text. Probed against crafted pack directories
+ * (manifest/data/schema/index all valid, stories varied): missing → false,
+ * empty → false, `[]` → true, `{}` → false, with and without the stat entry.
  *
  * MEASURED, because this runs on the boot decision, which the command tree
  * reaches on every dispatch. Against the embedded pack's `stories.json` (2
@@ -114,7 +122,7 @@ export function readManifest(dir: string): Manifest | undefined {
  * 0.0053 ms; the difference does not justify accepting `[{` as complete. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
-  for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, STORIES_FILE]) {
+  for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE]) {
     try {
       if (statSync(join(dir, file)).size <= 0) return false;
     } catch {
