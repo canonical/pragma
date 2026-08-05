@@ -99,8 +99,16 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
         },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
-        // The one noun with no verb to speak for it (the bin special-cases it),
-        // so its summary is hand-written rather than derived.
+        // The one noun with no verb to speak for it, so its summary is a
+        // literal rather than derived. That was ALREADY the working mechanism
+        // when a `hidden: true` `mcp` spec still existed under
+        // `capabilities/meta/`: `buildProgram` filters hidden verbs before
+        // registering, `emitSurface` and `emitReference` filter them too, and
+        // `bin.ts` answers `mcp` at argv[0] before any of them run. The spec
+        // reached nothing, and this literal — with its twin in
+        // `completion/model.ts` — is what actually put `mcp` in help and in
+        // completions. The spec has since been deleted; this line is unchanged
+        // because it was never the fallback, it was the mechanism.
         { noun: "mcp", summary: "Start the MCP server over stdio" },
       ],
     },

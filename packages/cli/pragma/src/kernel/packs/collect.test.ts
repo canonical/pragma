@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
+import { BIN_FAST_PATH_TOKENS } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
 import type { CapabilityModule, VerbSpec } from "../spec/types.js";
 import {
@@ -247,6 +248,40 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
     expect(result.problems.map((problem) => problem.message)).toEqual([
       'its noun "config" is a command this CLI already ships and cannot be replaced by a package.',
       'its noun "standard" is a command this CLI already ships and cannot be replaced by a package.',
+    ]);
+  });
+
+  it("refuses every bin fast-path token, `mcp` by reservation and the rest by grammar", () => {
+    // The reservation reads `module.name`, and none of the three tokens
+    // `bin.ts` answers at argv[0] has ever been one. What made that look
+    // covered was the phantom `meta` capability, whose NAME was reserved
+    // because it was a module, while the tokens it held `hidden` specs for
+    // were not. Deleting `meta` removed the coincidence.
+    //
+    // MEASURED while writing this, and it narrows the defect: only `mcp` was
+    // ever claimable. `__complete` and `__store-probe` are already refused one
+    // layer earlier, by `parsePackDefinition`'s kebab-case rule — a leading
+    // underscore is not kebab-case — so they fail with a grammar message and
+    // never reach the reserved set. The hole was ONE noun wide, not three.
+    // Both messages are asserted rather than just "rejected somehow", because
+    // the two layers are independent and either could regress alone: relax the
+    // kebab rule and the underscore tokens fall through to reservation, which
+    // is exactly why all three are reserved rather than only the reachable one.
+    //
+    // Driven off `BIN_FAST_PATH_TOKENS`, the same declaration `bin.ts`
+    // destructures, so a fourth token cannot be dispatched without arriving
+    // here too.
+    const result = validateStories(
+      BIN_FAST_PATH_TOKENS.map((token) =>
+        record(`pkg/stories/${token}.json`, JSON.stringify(validPack(token))),
+      ),
+      STATIC,
+    );
+    expect(result.entries).toEqual([]);
+    expect(result.problems.map((problem) => problem.message)).toEqual([
+      'its noun "mcp" is a command this CLI already ships and cannot be replaced by a package.',
+      'Invalid story in pkg/stories/__complete.json at noun: must be lowercase kebab-case, e.g. "design-token"',
+      'Invalid story in pkg/stories/__store-probe.json at noun: must be lowercase kebab-case, e.g. "design-token"',
     ]);
   });
 

@@ -14,13 +14,27 @@
  */
 
 import type { Command } from "commander";
-import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "./constants.js";
+import {
+  BIN_FAST_PATH_TOKENS,
+  BIN_NAME,
+  PROGRAM_DESCRIPTION,
+  VERSION,
+} from "./constants.js";
+
+/**
+ * The three tokens answered below, destructured from the one declaration
+ * `kernel/packs/collect.ts` also reserves against. Naming them here rather than
+ * repeating the literals is what keeps the bin's dispatch and the pack
+ * reservation from drifting apart — they drifted before, and a pack could claim
+ * `mcp`.
+ */
+const [MCP_TOKEN, COMPLETE_TOKEN, STORE_PROBE_TOKEN] = BIN_FAST_PATH_TOKENS;
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
   // 1. MCP server entry (D9) — `pragma mcp` serves over stdio.
-  if (argv[0] === "mcp") {
+  if (argv[0] === MCP_TOKEN) {
     const [{ serveMcp }, { capabilities }] = await Promise.all([
       import("./kernel/project/mcp/serve.js"),
       import("./capabilities/index.js"),
@@ -35,7 +49,7 @@ async function main(): Promise<void> {
   //    user's end-of-options. Candidates go to stdout newline-delimited (zero
   //    candidates → zero bytes); the entity tier reads the active pack's index
   //    (storeless), never the store; `runComplete` never throws.
-  if (argv[0] === "__complete") {
+  if (argv[0] === COMPLETE_TOKEN) {
     const [{ runComplete }, { indexCompletionEnv }, { capabilities }] =
       await Promise.all([
         import("./kernel/completion/complete.js"),
@@ -54,7 +68,7 @@ async function main(): Promise<void> {
 
   // 2b. Internal store smoke probe — boots the embedded pack (oxigraph WASM +
   //     pack cache). Not a user command; the WASM-embed smoke test spawns it.
-  if (argv[0] === "__store-probe") {
+  if (argv[0] === STORE_PROBE_TOKEN) {
     const { runStoreProbe } = await import("./kernel/runtime/probe.js");
     process.stdout.write(`${await runStoreProbe()}\n`);
     return;

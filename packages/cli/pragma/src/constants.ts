@@ -97,8 +97,30 @@ type DetailLevel = (typeof DETAIL_LEVELS)[number];
 /** Default detail level when neither flag, config, nor spec pins one. */
 const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
 
+/**
+ * The tokens `bin.ts` answers at `argv[0]` BEFORE the command tree is built.
+ *
+ * Declared here rather than as literals in `bin.ts` because two places must
+ * agree and one of them cannot see the other: the bin dispatches these, and
+ * `kernel/packs/collect.ts` must REFUSE to let a pack story claim one as its
+ * noun. A pack claiming `mcp` used to compile, register and then be
+ * permanently unreachable, because the bin answers `mcp` and returns before
+ * `buildProgram` runs — a noun that exists in the model, appears nowhere, and
+ * dispatches never.
+ *
+ * Reservation was keyed on capability MODULE NAME, which meant the phantom
+ * module `meta` was reserved (it owned `hidden` specs for two of these) while
+ * the three tokens that actually short-circuit dispatch were not. Deleting
+ * `meta` removed even that accidental cover, so the real tokens are named.
+ *
+ * `__store-probe` is included though no pack would plausibly claim it: the
+ * property is "the bin answered it first", and that is true of all three.
+ */
+const BIN_FAST_PATH_TOKENS = ["mcp", "__complete", "__store-probe"] as const;
+
 export type { DetailLevel, OutputFormat };
 export {
+  BIN_FAST_PATH_TOKENS,
   BIN_NAME,
   DEFAULT_DETAIL_LEVEL,
   DETAIL_LEVELS,

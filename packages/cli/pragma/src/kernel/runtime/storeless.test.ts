@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { configModule } from "../../capabilities/config/index.js";
 import { infoModule } from "../../capabilities/info/index.js";
-import { completeVerb } from "../../capabilities/meta/complete.verb.js";
 import { sourcesModule } from "../../capabilities/sources/index.js";
 import { executeVerb } from "../project/cli/dispatch.js";
 import type { GlobalFlags, VerbSpec } from "../spec/types.js";
@@ -65,16 +64,15 @@ describe("storeless guarantee — the store never boots for storeless verbs (PRO
     expect(runtime.store.booted).toBe(false);
   });
 
-  it("__complete does not construct the store", async () => {
-    const runtime = bootRuntime(FLAGS, freshCwd());
-    await executeVerb(
-      completeVerb as VerbSpec,
-      { words: ["config"] },
-      NO_MUT,
-      runtime,
-    );
-    expect(runtime.store.booted).toBe(false);
-  });
+  // There was a `__complete does not construct the store` case here. It
+  // dispatched `capabilities/meta/complete.verb.ts` through `executeVerb` — a
+  // `hidden` spec `bin.ts` answers at argv[0] before the command tree exists,
+  // so that dispatch never happens in production. Both halves of what it
+  // claimed survive it, and both are stronger: the DISPATCHER not booting for
+  // a `needsStore: false` verb is the three cases above, and the real
+  // `__complete` path's storelessness is `completion/safety.test.ts`'s "an
+  // entity __complete resolves from the index, never constructs the store",
+  // which mocks `createStore` to THROW rather than reading a `booted` flag.
 
   it("a needsStore verb DOES construct the store (spy fires)", async () => {
     const runtime = bootRuntime(FLAGS, freshCwd());

@@ -24,6 +24,7 @@
  * costs nothing on `--help`/`__complete`.
  */
 
+import { BIN_FAST_PATH_TOKENS } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
 import { PragmaError } from "../error/PragmaError.js";
 import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
@@ -70,6 +71,17 @@ interface ValidatedStories {
  * while every verb behind it changed. Overriding a shipped noun stays a CONFIG
  * decision — that file is the user's own.
  *
+ * The bin's fast-path tokens are reserved TOO, and separately, because module
+ * names do not cover them. Reservation reads `module.name`, which is the
+ * capability's name and not necessarily any noun it registers: `mcp`,
+ * `__complete` and `__store-probe` are answered by `bin.ts` at `argv[0]`
+ * before the command tree is built, and none of the three was ever a module
+ * name. What WAS reserved was `meta` — a capability that owned `hidden` specs
+ * for two of them and was itself a phantom, reachable from nothing. So a pack
+ * declaring noun `mcp` parsed, compiled, registered, and was then unreachable
+ * forever: the bin returns before dispatch and the noun answers nothing. It
+ * failed silently and in the direction of a working-looking install.
+ *
  * @param records - The raw story records the answering pack carries.
  * @param staticModules - The static capabilities, to detect a story claiming a
  *   noun the CLI already ships.
@@ -79,7 +91,10 @@ export function validateStories(
   records: readonly PackStoryRecord[],
   staticModules: readonly CapabilityModule[],
 ): ValidatedStories {
-  const reserved = new Set(staticModules.map((module) => module.name));
+  const reserved = new Set([
+    ...staticModules.map((module) => module.name),
+    ...BIN_FAST_PATH_TOKENS,
+  ]);
   const byNoun = new Map<string, PackEntry>();
   const problems: StoryProblem[] = [];
   for (const record of records) {

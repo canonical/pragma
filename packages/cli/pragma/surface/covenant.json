@@ -231,15 +231,6 @@
     },
     "upgrade": {
       "verbs": [{ "v": "upgrade", "mutates": true, "mcp": "upgrade" }]
-    },
-    "mcp": {
-      "verbs": [
-        {
-          "v": "serve",
-          "mcp": false,
-          "note": "server entry, not an agent tool"
-        }
-      ]
     }
   },
   "mcpSurface": {

@@ -24,7 +24,6 @@ import { storyModules } from "./distribution.js";
 import { doctorModule } from "./doctor/index.js";
 import { graphModule } from "./graph/index.js";
 import { infoModule } from "./info/index.js";
-import { metaModule } from "./meta/index.js";
 import { ontologyModule } from "./ontology/index.js";
 import { promptModule } from "./prompt/index.js";
 import { setupModule } from "./setup/index.js";
@@ -47,7 +46,6 @@ const authored: readonly CapabilityModule[] = [
   setupModule,
   capabilitiesModule,
   colophonModule,
-  metaModule,
 ];
 
 const claimed = new Set(authored.map((module) => module.name));
