@@ -28,8 +28,9 @@
  * While this file spelled `{ cwd: rt.exec?.cwd, onEffectStart: rt.exec?.shapeEffect }`
  * inline, deleting exactly that from BOTH shipped plan branches (the CLI
  * dispatcher and the MCP projector) left the whole package green — 1121 passed,
- * 0 failed — while `create component --dry-run` planned every generated file 58
- * bytes short of what the run writes. The two changes that close it: both
+ * 0 failed — while `create component --dry-run` planned every generated file
+ * short by exactly its generated-by stamp (58 bytes for the line-comment form,
+ * 61 for `styles.css`'s CSS block-comment form). The two changes that close it: both
  * branches and this file now call the ONE `planEffectSeam`, and
  * `dryRunParity.test.ts`'s last case drives `--dry-run` through the shipped
  * dispatcher and compares its reported byte counts against the paired real run's

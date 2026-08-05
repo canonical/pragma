@@ -160,7 +160,9 @@ export interface RunnerOptions {
    * Measured before the split, `create package --name @acme/my-lib`: the plan
    * reported `src/index.ts (64 bytes)` / `README.md (253 bytes)` where the run
    * wrote **114** / **309** — every generated file short by exactly its
-   * generated-by stamp (50 bytes for the `//` form, 56 for the `#` form),
+   * generated-by stamp (50 bytes for `src/index.ts`'s `//` form, 56 for
+   * `README.md`'s `<!-- … -->` HTML form; `applyStamp` picks the comment
+   * syntax per extension, so the shortfall is per-file, not one constant),
    * because `createStampOnEffectStart` rides this seam and the plan branch
    * passed no callbacks at all.
    */

@@ -23,8 +23,14 @@
  * `onEffectStart` from the CLI dispatcher AND the MCP projector left the whole
  * package green (1121 passed, 0 failed) while `create component --dry-run`
  * planned `Widget.tsx (432) / types.ts (199) / index.ts (82) / styles.css (39)`
- * against a real run writing `490 / 257 / 140 / 100` — every file short by the
- * 58-byte stamp, the exact defect PR7 exists to close. One writing here, plus
+ * against a real run writing `490 / 257 / 140 / 100` — every file short by
+ * exactly its generated-by stamp, the exact defect PR7 exists to close. The
+ * stamp is NOT one number, which is why `styles.css` is the odd row here (39 →
+ * 100, a delta of 61): `applyStamp` picks the comment syntax per extension, so
+ * the six files taking the line-comment form carry 58 bytes and the CSS
+ * block-comment form carries 61. Measured by generating the component for real
+ * and splitting each file at its stamp: the 53-character message plus `// ` and
+ * a blank line is 58; wrapped in the CSS block delimiters it is 61. One writing here, plus
  * the end-to-end byte assertion in `testing/behavioral/dryRunParity.test.ts`,
  * is what makes that deletion fail rather than pass.
  */

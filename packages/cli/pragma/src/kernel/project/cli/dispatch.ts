@@ -221,11 +221,16 @@ export async function executeVerb(
     // execution, so a network-touching mutation can stay offline for the plan.
     // Also hand it the interaction context so an interactive verb can pick its
     // prompt strategy. The verb's `run` sets `mutationRuntime.exec` (the runner
-    // options) as its last act; the projector reads the HANDLERS back on the
-    // real-run branch only. The plan branch reads `exec.cwd` — and nothing else
-    // — because a plan that reads for real must resolve paths against the same
-    // jail root the run does; the undo branch reads nothing. Both stay
-    // handler-free: they mock prompts and install no callbacks.
+    // options) as its last act, and how much of it each branch reads is the one
+    // fact this comment carries — see `runtime/types.ts`'s `RunnerOptions`,
+    // which says the same thing. The REAL-RUN branch takes the whole bag. The
+    // PLAN branch takes exactly two fields, both through the single
+    // `planEffectSeam` writing below: `cwd` (a plan that reads for real must
+    // resolve against the same jail root the run does) and `shapeEffect` (a
+    // plan must describe the bytes the run would write, stamp included) — so it
+    // DOES install the content-shaping callback, and never the verb's UI
+    // `onEffectStart`, its `promptHandler`, `onLog` or `dispose`. The UNDO
+    // branch reads nothing. Both non-real branches mock prompts.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
       // Gate on STDERR (H3): the Ink wizard renders to stderr and reads stdin,

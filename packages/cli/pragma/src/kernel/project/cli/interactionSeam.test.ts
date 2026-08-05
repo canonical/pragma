@@ -106,10 +106,14 @@ describe("interaction/exec seam (PROTECTED)", () => {
     expect(outcome.exitCode).toBe(0);
     // The only effect is the Prompt (mocked) — filtered from the plan.
     expect(outcome.stdout).toContain("no effects");
-    // "Handler-free" as an ASSERTION, not a title. The plan branch now reads
-    // `exec.cwd` (planTask performs real reads and must resolve paths against
-    // the same jail root the run does), which makes it tempting to reach for
-    // the rest of `exec` too — these two spies are what forbids that.
+    // "Handler-free" as an ASSERTION, not a title, and scoped to the callbacks
+    // that ARE forbidden. The plan branch reads two fields of `exec`:
+    // `cwd` (planTask performs real reads and must resolve paths against the
+    // same jail root the run does) and `shapeEffect` (so the reported byte
+    // counts carry `create`'s stamp — `testing/behavioral/dryRunParity.test.ts`
+    // is what holds that one). Reading two makes it tempting to reach for the
+    // rest — these two spies are what forbids the UI half, the prompt handler
+    // and the teardown.
     expect(promptHandler).not.toHaveBeenCalled();
     expect(dispose).not.toHaveBeenCalled();
   });

@@ -32,7 +32,9 @@
  * nothing about the shipped wiring: deleting `onEffectStart` from BOTH plan
  * branches (CLI dispatcher and MCP projector) left this whole package green —
  * 1121 passed, 0 failed — while `create component --dry-run` planned every
- * generated file 58 bytes short of what the run writes. The final case closes
+ * generated file short by exactly its generated-by stamp — 58 bytes for the
+ * line-comment form, 61 for `styles.css`'s CSS block-comment form. The final
+ * case closes
  * that by driving `executeVerb` itself and comparing the RENDERED byte counts
  * against the paired real run's files on disk.
  *
@@ -307,8 +309,12 @@ describe("the SHIPPED --dry-run branch reports the bytes the run writes", () => 
     // `Widget.tsx (432) / types.ts (199) / index.ts (82) / Widget.tests.tsx
     // (759) / Widget.ssr.tests.tsx (364) / Widget.stories.tsx (459) /
     // styles.css (39)` against a real run writing `490 / 257 / 140 / 817 / 422
-    // / 517 / 100` — every file short by the 58-byte generated-by stamp, which
-    // is the PRA-104 residue this suite exists to close.
+    // / 517 / 100` — every file short by exactly its generated-by stamp, which
+    // is the PRA-104 residue this suite exists to close. Not one number: 58
+    // bytes for the six files taking the line-comment form, 61 for `styles.css`
+    // and its CSS block-comment form (39 → 100), measured by splitting each
+    // generated file at its stamp. This row recomputes neither — it compares
+    // against `Buffer.byteLength` of what is on disk.
     //
     // So this drives `executeVerb` — the shipped dispatcher, plan branch
     // included — and reads the byte count back out of the RENDERED plan line,
