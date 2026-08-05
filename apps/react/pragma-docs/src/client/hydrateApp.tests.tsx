@@ -26,8 +26,8 @@ import componentEntityRecordsButton from "#domains/components/__fixtures__/compo
 // side-effect import, no test behaviour of its own).
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
 import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
-import journeysExplorerRecords from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecords.js";
-import journeysExplorerRecordsJob from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecordsJob.js";
+import journeysExplorerRecords from "#addons/journeys/__fixtures__/journeysExplorerRecords.js";
+import journeysExplorerRecordsJob from "#addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import { LINK_COMPONENT_URI } from "#domains/lenses/standards/__fixtures__/standardsPageHarness.js";
 import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";

@@ -11,6 +11,13 @@
 // to pass is exactly the "shape it until it goes green" failure mode this gate
 // exists to prevent.
 //
+// That directory is the docsite's CORE LENS SET. It is not everything the
+// docsite renders: `apps/react/pragma-docs/src/addons/**` holds openly
+// pragma-specific add-ons, which are not scanned because they make no
+// neutrality claim. See this gate's header for the rule that governs which
+// tree a view belongs in — and for why "move it to addons" is not available to
+// a core lens that has merely gone red.
+//
 // Test infrastructure: excluded from the build (tsconfig.build.json) and from
 // coverage (vitest.config.ts).
 // =============================================================================
@@ -28,7 +35,10 @@ export const APP_ROOT: string = resolve(
   APP_RELATIVE_PATH,
 );
 
-/** Lens components. The operation set is whatever is declared under here. */
+/**
+ * The CORE lens components. The operation set is whatever is declared under
+ * here — and nothing else. `src/addons/**` is deliberately outside it.
+ */
 export const LENS_DIRECTORY: string = join(APP_ROOT, "src/domains/lenses");
 
 /** Relay's committed artifacts, which carry the full operation text. */

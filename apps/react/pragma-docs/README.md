@@ -76,7 +76,14 @@ the correct content type.
 src/
 ├── client/         Client entry (hydration)
 ├── server/         Server entry, compiled renderer, dev servers, sitemap
-├── domains/        Feature domains (each owns its routes and pages)
+├── domains/        Feature domains (each owns its routes and pages).
+│                   `domains/lenses/` is the CORE lens set — every operation
+│                   under it must execute against any provider implementing
+│                   @canonical/prism-contract, and a gate enforces that.
+├── addons/         pragma-SPECIFIC add-ons: views that read pragma's own
+│                   ontology and make no provider-neutrality claim, so they
+│                   are not core lenses. Wired by hand in routes.tsx until a
+│                   plugin mechanism exists. See addons/journeys/index.ts.
 ├── lib/            Shared components
 ├── relay/          Relay environment factory, executable mock schema,
 │                   and generated artifacts (__generated__/)

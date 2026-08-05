@@ -9,12 +9,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
-import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
 import {
   JOB_PAGE_SIZE,
   PAIRING_PAGE_SIZE,
-} from "#domains/lenses/journeys/journeysQuery.js";
+} from "#addons/journeys/journeysQuery.js";
+import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
+import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
 import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
 import {
   LOBBY_COMPONENT_CLASS,

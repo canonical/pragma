@@ -342,27 +342,47 @@ contradict the premise that this contract is implementable without pragma's mach
 ## The lens gate, and the two things it does not guard
 
 `src/testing/integration/lensOperations.test.ts` harvests **every** query operation
-declared under `apps/react/pragma-docs/src/domains/lenses/**` — at run time, from the
-committed Relay artifacts, never from a snapshot — and executes each one against this
-provider.
+declared under `apps/react/pragma-docs/src/domains/lenses/**` — the docsite's **core lens
+set** — at run time, from the committed Relay artifacts, never from a snapshot, and
+executes each one against this provider.
 
-It started life red by design, as a to-do list. The definitions lens and the standards
-lens have since been despecialised onto the contract and now execute green here:
+It started life red by design, as a to-do list. **It is now green.** The definitions lens
+and the standards lens were despecialised onto the contract and execute here:
 `DefinitionsExplorerQuery`, `StandardsIndexQuery`, `StandardsIndexPaginationQuery` and
-`StandardEntityQuery`. One operation is still red — `JourneysExplorerQuery`, which joins
-four ontology-derived root fields and walks eleven ontology-derived properties. That is
-not an oversight, and it is not fixable by rewriting the operation: **the contract has no
-field anywhere that returns the value of an arbitrary property on an arbitrary entity**
-(`EntityMeta.field(name:)` returns cardinality metadata, not a value), and generic
-instance-level relation traversal is all that lens is. Whether it is removed or the
-contract grows generic reflection is an owner's decision, not this package's.
+`StandardEntityQuery` — four operations, zero failures.
 
-**Do not make it green by narrowing the operation set, marking it `it.fails`, adding
-`skipIf`, or gating it behind an env var** — and do not relocate an operation out of the
-lens directory, which is the same thing under a different name. Every one of those
-converts a real signal into a silent one, and the operation set must stay
-directory-derived so a new lens is covered the day it lands. The gate also asserts it
-discovered a non-zero number of operations, so it cannot pass vacuously if the app moves.
+### The core set, and the one thing outside it
+
+The last red operation was `JourneysExplorerQuery`, which joins four ontology-derived root
+fields and walks eleven ontology-derived properties. It was never fixable by rewriting the
+operation: **the contract has no field anywhere that returns the value of an arbitrary
+property on an arbitrary entity** (`EntityMeta.field(name:)` returns cardinality metadata,
+not a value), and generic instance-level relation traversal is all that lens is. The
+README used to say the resolution was an owner's decision. **The owner decided**, in these
+words: *"keep it on side for now, it will be an add-on plugin not a core view."*
+
+Journeys is therefore **no longer a core lens**. It lives at
+`apps/react/pragma-docs/src/addons/journeys/**`, which this gate does not scan — and it is
+still fully built, routed, listed in the rail, and covered by its own tests in the app.
+Nothing was deleted. `src/addons/**` is the docsite's home for views that are openly
+pragma-specific and make no neutrality claim; journeys is expected to become a plugin
+proper once the docsite has a plugin mechanism.
+
+That distinction is the whole point, so state it plainly: **the scanned directory defines
+an obligation.** Membership of `src/domains/lenses/**` *is* the promise to be
+provider-neutral. A view either makes that promise and must execute here, or it is an
+add-on and does not. There is no third state, and nothing sits in the lens tree with an
+exemption.
+
+**`src/addons/**` is not an escape hatch.** Do not make this gate green by narrowing the
+operation set, marking it `it.fails`, adding `skipIf`, gating it behind an env var, or
+moving a core operation into the add-on tree — that last one is narrowing the set under a
+different name, and it is expressly forbidden. Only an owner reclassifying a view as an
+add-on may move one, and the move must land with the reasoning written down (see
+`src/addons/journeys/index.ts`). Every other route converts a real signal into a silent
+one, and the operation set must stay directory-derived so a new lens is covered the day it
+lands. The gate also asserts it discovered a non-zero number of operations, so it cannot
+pass vacuously if the app moves.
 
 Going forward, what this gate guards is one specific claim: **no lens operation asks for a
 field that exists only because pragma's compiler generated it from pragma's ontology.** It

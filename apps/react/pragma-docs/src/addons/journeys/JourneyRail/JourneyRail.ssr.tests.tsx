@@ -7,7 +7,7 @@ import { createStaticRouter } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { appRoutes, middleware, notFoundRoute } from "../../../../routes.js";
+import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import {
   JOURNEY_MODEL,
   PERSONAS,

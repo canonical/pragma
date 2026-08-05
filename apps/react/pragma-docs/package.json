@@ -6,6 +6,7 @@
   "license": "GPL-3.0-only",
   "imports": {
     "#lib/*": "./src/lib/*",
+    "#addons/*": "./src/addons/*",
     "#domains/*": "./src/domains/*",
     "#relay/*": "./src/relay/*",
     "#styles/*": "./src/styles/*"

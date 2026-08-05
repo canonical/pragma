@@ -1,17 +1,49 @@
 // =============================================================================
-// THE ACCEPTANCE GATE: every lens operation the docsite ships must execute
-// against a provider that has never heard of pragma.
+// THE ACCEPTANCE GATE: every CORE lens operation the docsite ships must
+// execute against a provider that has never heard of pragma.
 //
-// 🔴 THIS GATE IS EXPECTED TO FAIL until the docsite's lens operations are
-// despecialised onto the contract. That failure is the deliverable, not a
-// defect in this package — it is the measurement the whole exercise exists to
-// take, and its output names precisely what is still provider-specific.
+// WHAT THE SCANNED DIRECTORY MEANS.
+// `apps/react/pragma-docs/src/domains/lenses/**` is the docsite's CORE LENS
+// SET, and this gate's subject is exactly that directory — never a
+// hand-maintained allowlist. Membership of the core set IS the obligation to
+// be provider-neutral: put a lens there and it must execute here, the day it
+// lands. There is no third state.
 //
-// It is deliberately implemented at FULL STRENGTH. It is not filtered to the
-// operations that happen to validate, not marked `it.fails`, not `skipIf`'d,
-// and not hidden behind an env var. Every one of those turns a real signal
-// into a silent one, and a silent gate is worse than a red one: the red gate
-// is a to-do list, the silent one is a lie.
+// The docsite also has `src/addons/**`, which this gate does not scan. That is
+// deliberate and it is narrow. An add-on is a view that is openly
+// pragma-specific — it reads pragma's own ontology and makes no claim to run
+// anywhere else — and it is expected to become a plugin once the docsite has a
+// plugin mechanism. It is NOT a core lens, so it owes this gate nothing. It
+// remains fully built, routed and tested in the app.
+//
+// ONE operation lives there today: `JourneysExplorerQuery`, moved out of the
+// lens set by an OWNER DECISION, recorded verbatim: "keep it on side for now,
+// it will be an add-on plugin not a core view." It was reclassified because it
+// is not a core view; it was not reclassified because it was red.
+//
+// 🔴 `src/addons/**` IS NOT AN ESCAPE HATCH. A red operation does not get to
+// move there. If a lens is meant to be part of the core set and cannot execute
+// against this provider, the answer is to despecialise the operation — the
+// failure report below is the to-do list. Relocating a core operation out of
+// the scanned directory is "narrowing the operation set" under another name,
+// and it is exactly the failure mode this gate exists to catch. Only an owner
+// reclassifying a view as an add-on can move one, and the move must land with
+// that reasoning written down (see `src/addons/journeys/index.ts`, which
+// states what the contract cannot express and why).
+//
+// Journeys is on side for a reason no rewrite can fix: the contract exposes an
+// entity's class and that class's SCHEMA, but `EntityMeta.field(name:)`
+// returns CARDINALITY METADATA rather than a value, and no contract field
+// returns the value of an arbitrary property on an arbitrary entity. Generic
+// instance-level relation traversal is all that lens is.
+//
+// This gate is otherwise implemented at FULL STRENGTH. It is not filtered to
+// the operations that happen to validate, not marked `it.fails`, not
+// `skipIf`'d, and not hidden behind an env var. Every one of those turns a
+// real signal into a silent one, and a silent gate is worse than a red one:
+// the red gate is a to-do list, the silent one is a lie. It also asserts it
+// discovered a non-zero number of operations, so it cannot pass vacuously if
+// the core lens set is emptied or moved.
 // =============================================================================
 
 import {
@@ -32,11 +64,17 @@ import {
 
 const provider = createExampleProvider();
 
-/** The lane whose work this gate is waiting on. */
+/**
+ * The lane that owns any failure printed below.
+ *
+ * As of the journeys reclassification every operation in the core lens set
+ * executes green here, so this string is unreachable — it renders again the
+ * moment a core lens regresses or a new one lands unfinished.
+ */
 const BLOCKING_LANE =
-  "Lane A (apps/react/pragma-docs) — the lens operations are still written " +
-  "against the pre-contract schema. Until they are despecialised onto " +
-  "@canonical/prism-contract, no contract-conformant provider can serve them.";
+  "Lane A (apps/react/pragma-docs) — a core lens operation is written against " +
+  "something other than @canonical/prism-contract. Until it is despecialised " +
+  "onto the contract, no contract-conformant provider can serve it.";
 
 interface OperationFailure {
   readonly name: string;
@@ -122,8 +160,11 @@ const buildReport = (failures: readonly OperationFailure[]): string =>
     `WAITING ON: ${BLOCKING_LANE}`,
     "",
     "Do NOT fix this by narrowing the operation set, by marking the test " +
-      "`fails`, or by gating it on an env var. The list above IS the " +
-      "remaining despecialisation work.",
+      "`fails`, by gating it on an env var, or by relocating the operation " +
+      "into src/addons — that last one is narrowing the set under another " +
+      "name, and only an owner reclassifying a view as a pragma-specific " +
+      "add-on may move it. The list above IS the remaining despecialisation " +
+      "work.",
   ].join("\n");
 
 describe("the lens operations", () => {

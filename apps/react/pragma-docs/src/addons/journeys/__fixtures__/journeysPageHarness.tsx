@@ -27,7 +27,7 @@ import { RelayEnvironmentProvider } from "react-relay";
 import type { FetchFunction } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay/environment.js";
-import { appRoutes, middleware, notFoundRoute } from "../../../../routes.js";
+import { appRoutes, middleware, notFoundRoute } from "../../../routes.js";
 import { JourneysPage } from "../JourneysPage/index.js";
 import { JourneyViewProvider } from "../journeyViewContext.js";
 import { journeysStripSlots } from "../stripSlots.js";

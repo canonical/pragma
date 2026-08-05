@@ -26,7 +26,7 @@
  * strip's switch performs.
  */
 
-import "../../definitions/__fixtures__/stubReactFlowGlobals.js";
+import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { FetchFunction } from "relay-runtime";
 import { describe, expect, it, vi } from "vitest";

@@ -23,6 +23,18 @@ export interface LensEntry {
  * over the demand model rather than over the design system's own nouns, so
  * it reads as the last of the reference lenses, with Guides — the prose —
  * still last overall.
+ *
+ * Journeys is an ADD-ON, and it STAYS LISTED. It was reclassified out of the
+ * core lens set — its code lives in `#addons/journeys`, not
+ * `#domains/lenses`, because it reads pragma's own ontology and cannot be
+ * expressed on the provider-neutral contract (see `src/addons/journeys/
+ * index.ts`). The owner's ruling was "keep it on side", not "hide it": it is
+ * a real, working, shipped view of this deployment's graph, so hiding it
+ * would mean removing a working page from readers to make a classification
+ * legible, which serves nobody. A deployment that does NOT have pragma's
+ * demand model will drop the add-on and its rail entry together — which is
+ * what the eventual plugin mechanism is for, and is why this entry is the
+ * one place the rail knows about it.
  */
 export const LENS_ENTRIES: readonly LensEntry[] = [
   { to: "home", label: "Home", hint: "1" },

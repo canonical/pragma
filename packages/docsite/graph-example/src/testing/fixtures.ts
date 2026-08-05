@@ -34,12 +34,15 @@ export const LENS_OPERATION_VARIABLES: Record<
   Record<string, unknown>
 > = {
   DefinitionsExplorerQuery: { uri: SAMPLE_CLASS_URI, hasTerm: true },
-  JourneysExplorerQuery: {
-    jobs: 5,
-    pairings: 5,
-    uri: SAMPLE_ENTITY_URI,
-    hasJob: true,
-  },
+  // `JourneysExplorerQuery` used to be listed here. Journeys is no longer a
+  // core lens — an owner reclassified it as a pragma-specific add-on and it
+  // now lives in `apps/react/pragma-docs/src/addons/journeys`, outside the
+  // scanned set — so the gate never discovers the operation and the entry was
+  // dead config. Note the direction the gate checks: it walks DISCOVERED names
+  // and demands a variables entry for each, so a leftover entry here would
+  // never have failed anything. It was removed because it described nothing,
+  // not to make a test pass.
+  //
   // The standards lens now reaches its collection through the TBox, so it
   // needs a class binding — and this is the gate's OWN binding, never the
   // app's. The app's runtime binding lives in

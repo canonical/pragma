@@ -225,7 +225,9 @@ describe("ROUTE_BY_SURFACE", () => {
   it("points only at routes the app actually declares", () => {
     // The table is hand-written; this reads the real route declarations
     // so a surface can never link to a page that does not exist.
-    const routesDir = fileURLToPath(new URL("../../", import.meta.url));
+    // The route declarations live under `src/domains`; this add-on lives
+    // outside the core lens tree, so it walks back into it explicitly.
+    const routesDir = fileURLToPath(new URL("../../domains/", import.meta.url));
     const sources = [
       "components/routes.ts",
       "marketing/routes.ts",

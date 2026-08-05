@@ -1,6 +1,6 @@
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { withRouter } from "../../../../../.storybook/decorators/index.js";
+import { withRouter } from "../../../../.storybook/decorators/index.js";
 import { BROWSE_JOB, JOURNEY_MODEL } from "../__fixtures__/journeyModel.js";
 import JourneyWell from "./JourneyWell.js";
 
