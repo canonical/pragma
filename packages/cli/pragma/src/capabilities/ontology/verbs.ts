@@ -43,12 +43,12 @@ import type {
 import {
   listNamespaces,
   localName,
-  type OntologyShowData,
+  type OntologyLookupData,
   type OntologySummary,
   queryClasses,
   queryProperties,
 } from "./queries.js";
-import { ontologyListFormatters, ontologyShowFormatters } from "./render.js";
+import { ontologyListFormatters, ontologyLookupFormatters } from "./render.js";
 
 /** Resolve a prefix (`ds`) or full namespace URI to the `{ prefix, namespace }` pair. */
 function resolvePrefix(
@@ -164,7 +164,7 @@ const LOOKUP_CAPABILITY = {
 async function runLookup(
   params: Record<string, unknown>,
   rt: PragmaRuntime,
-): Promise<OntologyShowData> {
+): Promise<OntologyLookupData> {
   const session = await rt.store.get();
   const { prefix, namespace } = resolvePrefix(
     String(params.prefix),
@@ -219,7 +219,7 @@ async function runLookup(
   };
 }
 
-/** The `ontology` verbs (`list`, `lookup`). */
+/** `ontology list` — the namespace summary read. */
 export const ontologyListVerb = asVerb(listVerb);
 
 /** `ontology lookup <prefix>` — the by-name schema read. */
@@ -227,7 +227,7 @@ export const ontologyLookupVerb = asVerb({
   path: ["ontology", "lookup"],
   summary: "Look up a namespace's classes (hierarchy + counts) and properties.",
   params: LOOKUP_PARAMS,
-  output: { formatters: ontologyShowFormatters },
+  output: { formatters: ontologyLookupFormatters },
   examples: [
     { cmd: `${BIN_NAME} ontology lookup ds` },
     { cmd: `${BIN_NAME} ontology lookup ds --properties` },
@@ -236,4 +236,4 @@ export const ontologyLookupVerb = asVerb({
   disclosure: LOOKUP_DISCLOSURE,
   capability: LOOKUP_CAPABILITY,
   run: runLookup,
-} satisfies VerbSpec<Record<string, unknown>, OntologyShowData>);
+} satisfies VerbSpec<Record<string, unknown>, OntologyLookupData>);

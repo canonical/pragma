@@ -7,8 +7,8 @@ import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type {
   OntologyClass,
+  OntologyLookupData,
   OntologyProperty,
-  OntologyShowData,
   OntologySummary,
 } from "./queries.js";
 
@@ -49,7 +49,7 @@ function propLine(p: OntologyProperty, full: boolean, bullet: string): string {
   return `${bullet}${p.label} (${uri(p.uri, full)}) (${p.type})${domain}${range}`;
 }
 
-export const ontologyShowFormatters: Formatters<OntologyShowData> = {
+export const ontologyLookupFormatters: Formatters<OntologyLookupData> = {
   plain(data) {
     const title = `${data.prefix}: ${compactUri(data.namespace, DEFAULT_PREFIX_MAP)}${data.focus ? ` — ${data.focus}` : ""}`;
     const lines = [title, "═".repeat(Math.max(title.length, 24))];

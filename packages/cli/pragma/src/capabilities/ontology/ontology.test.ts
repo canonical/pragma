@@ -24,7 +24,7 @@ import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
 import { ontologyModule } from "./index.js";
-import type { OntologyShowData, OntologySummary } from "./queries.js";
+import type { OntologyLookupData, OntologySummary } from "./queries.js";
 
 const listVerb = ontologyModule.verbs.find(
   (v) => verbKey(v.path) === "ontology list",
@@ -60,7 +60,7 @@ describe("ontology lookup (primary by-name read)", () => {
     const data = (await lookupVerb.run(
       { prefix: "ds" },
       rt,
-    )) as OntologyShowData;
+    )) as OntologyLookupData;
     const component = data.classes.find((c) => c.uri.endsWith("Component"));
     expect(component?.superclass).toBe("https://ds.canonical.com/UIBlock");
     // Two Component individuals (Button, Modal) in the fixture.
@@ -78,7 +78,7 @@ describe("ontology lookup (primary by-name read)", () => {
     const data = (await lookupVerb.run(
       { prefix: "ds" },
       detailed,
-    )) as OntologyShowData;
+    )) as OntologyLookupData;
     expect(data.properties.length).toBeGreaterThan(0);
   });
 
@@ -90,7 +90,7 @@ describe("ontology lookup (primary by-name read)", () => {
     const data = (await lookupVerb.run(
       { prefix: "ds" },
       summary,
-    )) as OntologyShowData;
+    )) as OntologyLookupData;
     expect(data.properties).toEqual([]);
   });
 
@@ -98,7 +98,7 @@ describe("ontology lookup (primary by-name read)", () => {
     const data = (await lookupVerb.run(
       { prefix: "ds", class: "BlockProperty" },
       rt,
-    )) as OntologyShowData;
+    )) as OntologyLookupData;
     expect(data.classes.map((c) => c.uri.split(/[#/]/).pop())).toEqual([
       "BlockProperty",
     ]);
@@ -116,7 +116,7 @@ describe("ontology lookup (primary by-name read)", () => {
     const data = (await lookupVerb.run(
       { prefix: "ds", fullUris: true },
       rt,
-    )) as OntologyShowData;
+    )) as OntologyLookupData;
     expect(data.fullUris).toBe(true);
     const llm = lookupVerb.output.formatters.llm(data);
     expect(llm).toContain("https://ds.canonical.com/Component");

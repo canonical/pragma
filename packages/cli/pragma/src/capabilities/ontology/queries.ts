@@ -41,7 +41,7 @@ export interface OntologyProperty {
 }
 
 /** The `ontology lookup` payload — the detailed view plus render options. */
-export interface OntologyShowData {
+export interface OntologyLookupData {
   readonly prefix: string;
   readonly namespace: string;
   readonly classes: readonly OntologyClass[];
