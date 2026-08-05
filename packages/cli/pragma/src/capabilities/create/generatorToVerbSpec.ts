@@ -37,7 +37,7 @@ const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);
  * stay verbatim for the interactive wizard while the flag/MCP doc reads well.
  * Strip the trailing `?`/`:` and end with a period.
  */
-export function declarativeDoc(message: string): string {
+function declarativeDoc(message: string): string {
   const trimmed = message
     .trim()
     .replace(/\s*[?:]+$/, "")
@@ -52,7 +52,7 @@ export function declarativeDoc(message: string): string {
  * @param prompt - The generator's prompt definition.
  * @returns The equivalent {@link ParamSpec}.
  */
-export function promptToParam(prompt: PromptDefinition): ParamSpec {
+function promptToParam(prompt: PromptDefinition): ParamSpec {
   const required = prompt.default === undefined && !prompt.when;
   const positional = prompt.positional === true;
 

@@ -206,7 +206,7 @@ export const INCLUDE_FLAG_ALIASES: Record<
  * @param params - The coerced CLI/MCP param bag.
  * @returns A new bag with aliased keys renamed to the generator prompt names.
  */
-export function toGeneratorAnswers(
+function toGeneratorAnswers(
   kind: CreateKind,
   params: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> {

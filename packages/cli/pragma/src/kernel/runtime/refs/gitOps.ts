@@ -13,7 +13,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 /** Whether a ref looks like a commit SHA (7-40 hex chars). */
-export function isSha(ref: string): boolean {
+function isSha(ref: string): boolean {
   return /^[0-9a-f]{7,40}$/.test(ref);
 }
 

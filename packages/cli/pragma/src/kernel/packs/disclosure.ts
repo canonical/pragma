@@ -38,7 +38,7 @@ function levelIndex(level: string | undefined): number {
  * `activeLevel` undefined means "everything" (no disclosure requested — the
  * sample path, and lookups without a declared disclosure).
  */
-export function isActiveAtLevel(
+function isActiveAtLevel(
   entryLevel: string | undefined,
   activeLevel: string | undefined,
 ): boolean {

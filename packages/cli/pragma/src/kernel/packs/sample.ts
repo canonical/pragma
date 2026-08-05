@@ -14,7 +14,7 @@ export const MIN_SAMPLE_COUNT = 1;
 /** Largest number of samples the `sample` verb returns. */
 export const MAX_SAMPLE_COUNT = 5;
 /** Number of samples returned when the count is omitted. */
-export const DEFAULT_SAMPLE_COUNT = 2;
+const DEFAULT_SAMPLE_COUNT = 2;
 
 /** The default sample count a lookup declares, or the built-in default. */
 export function sampleDefaultCount(lookup: PackLookup): number {

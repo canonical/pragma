@@ -17,13 +17,13 @@ import { join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
 
 /** `$XDG_CONFIG_HOME/<bin>` (default `~/.config/<bin>`). */
-export function configDir(): string {
+function configDir(): string {
   const base = process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
   return join(base, BIN_NAME);
 }
 
 /** `$XDG_STATE_HOME/<bin>` (default `~/.local/state/<bin>`). */
-export function stateDir(): string {
+function stateDir(): string {
   const base = process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state");
   return join(base, BIN_NAME);
 }

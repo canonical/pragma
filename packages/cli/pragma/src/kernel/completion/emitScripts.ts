@@ -51,7 +51,7 @@ import type {
 } from "./types.js";
 
 /** The default `minChars` gate baked into the generated scripts. */
-export const DEFAULT_MIN_CHARS = 2;
+const DEFAULT_MIN_CHARS = 2;
 
 /**
  * The shell reserved words a NOUN may not be, because the templates inline a
@@ -121,7 +121,7 @@ function assertShellUsableNoun(noun: string): void {
 }
 
 /** Options for {@link emitScripts}. */
-export interface EmitScriptsOptions {
+interface EmitScriptsOptions {
   /** The binary to complete; defaults to {@link BIN_NAME} (`pragma`). */
   readonly binName?: string;
   /** Min chars before a name source execs `__complete` (default 2). */

@@ -87,7 +87,7 @@ function parseSimpleYaml(block: string): Record<string, unknown> {
 }
 
 /** Extract and validate SKILL.md frontmatter; `null` when missing/invalid. */
-export function parseFrontmatter(content: string): SkillFrontmatter | null {
+function parseFrontmatter(content: string): SkillFrontmatter | null {
   const match = content.match(FRONTMATTER_RE);
   if (!match?.[1]) return null;
   const parsed = parseSimpleYaml(match[1]);

@@ -89,7 +89,7 @@ export function listFormatters(
 }
 
 /** Build the shared per-entity render options for a lookup (reused by sample). */
-export function lookupOptions(
+function lookupOptions(
   lookup: PackLookup,
   prefixes: Readonly<Record<string, string>>,
 ): RenderLookupOptions<PackEntity> {
