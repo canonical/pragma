@@ -139,7 +139,8 @@ export default function setup(): void {
   const built = newestMtime(join(root, "dist", "pragma"));
   const inputs = [...INPUTS, ...workspaceDependencyDists(root)];
   const fresh =
-    built > 0 && inputs.every((input) => newestMtime(join(root, input)) < built);
+    built > 0 &&
+    inputs.every((input) => newestMtime(join(root, input)) < built);
   if (fresh) return;
 
   const result = spawnSync("bun", ["run", "scripts/build.ts"], {

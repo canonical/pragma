@@ -187,8 +187,22 @@ describe("the reserved NOUN is refused at EMIT (PROTECTED)", () => {
     // `select`, `time` or `in` as a story noun must not fail `bun run build`.
     // Same gating as above for zsh.
     const others = [
-      "case", "coproc", "do", "done", "elif", "else", "fi", "for",
-      "function", "if", "in", "select", "then", "time", "until", "while",
+      "case",
+      "coproc",
+      "do",
+      "done",
+      "elif",
+      "else",
+      "fi",
+      "for",
+      "function",
+      "if",
+      "in",
+      "select",
+      "then",
+      "time",
+      "until",
+      "while",
     ];
     for (const word of others) {
       const scripts = emitScripts([adversarialModule([word, "list"])]);
