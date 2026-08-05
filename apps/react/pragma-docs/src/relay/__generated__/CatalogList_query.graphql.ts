@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<51afab16c9d87f80c4ad50267e465941>>
+ * @generated SignedSource<<f5074ad2ff69e07f347da0ac5871760c>>
  * @lightSyntaxTransform
  */
 
@@ -13,10 +13,10 @@ export type CatalogList_query$data = {
   readonly components: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
         readonly tier: {
           readonly name: string | null | undefined;
         } | null | undefined;
+        readonly uri: string;
         readonly " $fragmentSpreads": FragmentRefs<"CatalogItem_component">;
       };
     }>;
@@ -100,7 +100,7 @@ return {
                   "alias": null,
                   "args": null,
                   "kind": "ScalarField",
-                  "name": "id",
+                  "name": "uri",
                   "storageKey": null
                 },
                 {
@@ -180,6 +180,6 @@ return {
 };
 })();
 
-(node as any).hash = "336f8fee3ebde618b18490b8bae46791";
+(node as any).hash = "8fc104d6ec9f151a0865ca444e0a5919";
 
 export default node;

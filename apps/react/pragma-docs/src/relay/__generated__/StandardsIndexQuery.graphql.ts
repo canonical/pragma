@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ba579fce3dfce3fb82a725aac60b4b34>>
+ * @generated SignedSource<<93de41f5593070a0c89eb7c4b009bbc0>>
  * @lightSyntaxTransform
  */
 
@@ -50,7 +50,7 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 };
 return {
@@ -111,13 +111,6 @@ return {
                 "plural": false,
                 "selections": [
                   (v2/*:: as any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "uri",
-                    "storageKey": null
-                  },
                   {
                     "alias": null,
                     "args": null,
@@ -232,12 +225,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "edd27ddb8c7a95ab9582b9d2b97af93c",
+    "cacheID": "d0d755b1416c3db24b2e709da4f6f9ef",
     "id": null,
     "metadata": {},
     "name": "StandardsIndexQuery",
     "operationKind": "query",
-    "text": "query StandardsIndexQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              id\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query StandardsIndexQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              uri\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();

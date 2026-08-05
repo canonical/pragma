@@ -147,6 +147,31 @@ const toFetchFunction =
     }) as Promise<GraphQLResponse>;
 
 /**
+ * The store's identity function: the graph's `uri`, never `id`.
+ *
+ * The converged base deleted `id` — `Node` is `{ uri: ID!  _meta: EntityMeta! }`
+ * and `uri` carries the absolute IRI. relay-compiler is told this by
+ * `relay.config.json`'s `schemaConfig.nodeInterfaceIdField`, but that is a
+ * COMPILE-TIME knob only: it decides which field the `generate_id_field`
+ * transform injects into a selection. It never reaches relay-runtime, whose
+ * `defaultGetDataID` reads `fieldValue.id` unconditionally
+ * (`relay-runtime/store/defaultGetDataID.js`). Without this override every
+ * record would normalise to a path-based client id
+ * (`client:root:component(uri:"…")`), so the store would lose stable
+ * identity: no cross-query record sharing, and every captured SSR snapshot
+ * keyed differently from the records a live query writes.
+ *
+ * Returning `undefined` for the embeddables is deliberate and correct.
+ * `Property` and `ChangeLogEntry` are blank-node-only — the schema gives
+ * them `_meta` but no `uri` — so Relay mints them a client id, which is
+ * exactly what an unaddressable value should get.
+ */
+const getDataID = (fieldValue: {
+  readonly [key: string]: unknown;
+}): string | undefined =>
+  typeof fieldValue.uri === "string" ? fieldValue.uri : undefined;
+
+/**
  * Creates a Relay `Environment` for the app.
  *
  * Call once per browser session (module scope in the client entry) and once
@@ -165,6 +190,7 @@ export const createEnvironment = (
     );
 
   return new Environment({
+    getDataID,
     network: Network.create(fetchFn),
     store: new Store(RecordSource.create(options.records)),
   });

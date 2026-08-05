@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<89f23c4c05c3d0418009f757caf644ae>>
+ * @generated SignedSource<<a792f54014a6cf328559deec04fd1edd>>
  * @lightSyntaxTransform
  */
 
@@ -14,12 +14,11 @@ export type ComponentProbeQuery$variables = {
 };
 export type ComponentProbeQuery$data = {
   readonly component: {
-    readonly id: string;
     readonly modifierFamilies: {
       readonly edges: ReadonlyArray<{
         readonly node: {
-          readonly id: string;
           readonly name: string | null | undefined;
+          readonly uri: string;
         };
       }>;
     };
@@ -27,7 +26,6 @@ export type ComponentProbeQuery$data = {
     readonly subcomponents: {
       readonly edges: ReadonlyArray<{
         readonly node: {
-          readonly id: string;
           readonly name: string | null | undefined;
           readonly uri: string;
         };
@@ -35,8 +33,8 @@ export type ComponentProbeQuery$data = {
     };
     readonly summary: string | null | undefined;
     readonly tier: {
-      readonly id: string;
       readonly name: string | null | undefined;
+      readonly uri: string;
     } | null | undefined;
     readonly uri: string;
   } | null | undefined;
@@ -61,35 +59,28 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 },
 v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "uri",
-  "storageKey": null
-},
-v4 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 },
-v5 = [
+v4 = [
   (v2/*:: as any*/),
-  (v4/*:: as any*/)
+  (v3/*:: as any*/)
 ],
-v6 = [
+v5 = [
   {
     "kind": "Variable",
     "name": "first",
     "variableName": "count"
   }
 ],
-v7 = [
+v6 = [
   {
     "alias": null,
     "args": [
@@ -106,7 +97,6 @@ v7 = [
     "selections": [
       (v2/*:: as any*/),
       (v3/*:: as any*/),
-      (v4/*:: as any*/),
       {
         "alias": null,
         "args": null,
@@ -121,12 +111,12 @@ v7 = [
         "kind": "LinkedField",
         "name": "tier",
         "plural": false,
-        "selections": (v5/*:: as any*/),
+        "selections": (v4/*:: as any*/),
         "storageKey": null
       },
       {
         "alias": null,
-        "args": (v6/*:: as any*/),
+        "args": (v5/*:: as any*/),
         "concreteType": "SubcomponentConnection",
         "kind": "LinkedField",
         "name": "subcomponents",
@@ -147,11 +137,7 @@ v7 = [
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
-                "selections": [
-                  (v2/*:: as any*/),
-                  (v3/*:: as any*/),
-                  (v4/*:: as any*/)
-                ],
+                "selections": (v4/*:: as any*/),
                 "storageKey": null
               }
             ],
@@ -162,7 +148,7 @@ v7 = [
       },
       {
         "alias": null,
-        "args": (v6/*:: as any*/),
+        "args": (v5/*:: as any*/),
         "concreteType": "ModifierFamilyConnection",
         "kind": "LinkedField",
         "name": "modifierFamilies",
@@ -183,7 +169,7 @@ v7 = [
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
-                "selections": (v5/*:: as any*/),
+                "selections": (v4/*:: as any*/),
                 "storageKey": null
               }
             ],
@@ -205,7 +191,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ComponentProbeQuery",
-    "selections": (v7/*:: as any*/),
+    "selections": (v6/*:: as any*/),
     "type": "Query",
     "abstractKey": null
   },
@@ -217,19 +203,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ComponentProbeQuery",
-    "selections": (v7/*:: as any*/)
+    "selections": (v6/*:: as any*/)
   },
   "params": {
-    "cacheID": "3a8304a0d61db592a1184a6e69e3b564",
+    "cacheID": "33b7157828200d6a4374c8857bfd5892",
     "id": null,
     "metadata": {},
     "name": "ComponentProbeQuery",
     "operationKind": "query",
-    "text": "query ComponentProbeQuery(\n  $uri: String!\n  $count: Int!\n) {\n  component(uri: $uri) {\n    id\n    uri\n    name\n    summary\n    tier {\n      id\n      name\n    }\n    subcomponents(first: $count) {\n      edges {\n        node {\n          id\n          uri\n          name\n        }\n      }\n    }\n    modifierFamilies(first: $count) {\n      edges {\n        node {\n          id\n          name\n        }\n      }\n    }\n  }\n}\n"
+    "text": "query ComponentProbeQuery(\n  $uri: String!\n  $count: Int!\n) {\n  component(uri: $uri) {\n    uri\n    name\n    summary\n    tier {\n      uri\n      name\n    }\n    subcomponents(first: $count) {\n      edges {\n        node {\n          uri\n          name\n        }\n      }\n    }\n    modifierFamilies(first: $count) {\n      edges {\n        node {\n          uri\n          name\n        }\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "fe10ac1d420531b13a205102ec3be1ec";
+(node as any).hash = "43d72211a9442afdf3b6fe72e81f5c39";
 
 export default node;

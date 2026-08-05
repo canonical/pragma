@@ -58,7 +58,6 @@ const termInspectorClassFragmentSource = (): unknown => graphql`
       edges {
         node {
           __typename
-          id
           uri
           ... on Entity {
             name
@@ -361,7 +360,7 @@ const ClassView = ({
       <>
         <ul>
           {data.instances.edges.map(({ node }) => (
-            <InstanceItem key={node.id} node={node} />
+            <InstanceItem key={node.uri} node={node} />
           ))}
         </ul>
         {data.instances.pageInfo.hasNextPage ? (

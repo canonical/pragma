@@ -94,6 +94,33 @@ const SDL_OUTPUT_PATH = fileURLToPath(
   new URL("../relay/schema.graphql", import.meta.url),
 );
 
+/**
+ * The one custom mapping this graph cannot boot without.
+ *
+ * `anatomy:uri` is an ordinary `owl:DatatypeProperty` on the anatomy DSL's
+ * `Node` class, and it maps to the GraphQL field name `uri` — which the
+ * converged base RESERVES: `uri: ID!` is the primary key the compiler
+ * injects on every Node implementer. The compiler used to rename such a
+ * collision silently (M002, which is where the committed `anatomyUri` came
+ * from); the converged compiler removed that branch, because a silent
+ * rename breaks the consumer's query without telling them which IRI did it.
+ * It now reports M005 — DROPPED, severity `error` — and `runPasses` refuses
+ * to hand out a schema with any error in it, so the whole boot dies.
+ *
+ * The remedy the diagnostic names is a custom mapping, and this is it. The
+ * name it restores is exactly the one the schema already carried, so nothing
+ * downstream moves. (`prefixing: "all"`, the other remedy, would rename
+ * EVERY field in the schema to clear one collision.)
+ *
+ * `mappings` is deprecated in favour of a `graphql:name` annotation on the
+ * term itself — the right home for this, since the collision is a fact about
+ * the anatomy ontology and not about this app. That ontology lives outside
+ * this repo (`/workspace/anatomy-dsl`), so the annotation is an upstream
+ * change; when it lands, delete this.
+ */
+const ANATOMY_URI = "http://anatomy-dsl.example.org/ontology#uri";
+const CUSTOM_MAPPINGS = { [ANATOMY_URI]: { graphqlName: "anatomyUri" } };
+
 interface TtlSource {
   readonly path: string;
   readonly content: string;
@@ -224,6 +251,7 @@ const bootGraphqlBackend = async (): Promise<GraphqlBackend> => {
   const prefixes = harvestPrefixes(sources);
   const graphql = createSchemaPlugin({
     incremental: true,
+    mappings: CUSTOM_MAPPINGS,
     sdlOutput: SDL_OUTPUT_PATH,
   });
   // biome-ignore lint: Plugin generic variance requires explicit unknown

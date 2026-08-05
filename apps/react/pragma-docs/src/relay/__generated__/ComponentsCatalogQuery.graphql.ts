@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<633a4d69b1b09eb2c18d78be46dcb947>>
+ * @generated SignedSource<<5a0a671e2fad099d23bf39db39f352b2>>
  * @lightSyntaxTransform
  */
 
@@ -50,7 +50,7 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 },
 v3 = {
@@ -131,13 +131,6 @@ return {
                     ],
                     "storageKey": null
                   },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "uri",
-                    "storageKey": null
-                  },
                   (v3/*:: as any*/),
                   {
                     "alias": null,
@@ -206,12 +199,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "591326cecaa0944e89354cc4953d57d0",
+    "cacheID": "8f60dc1da42c64a2eda851b62e55b748",
     "id": null,
     "metadata": {},
     "name": "ComponentsCatalogQuery",
     "operationKind": "query",
-    "text": "query ComponentsCatalogQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...CatalogList_query_1G22uz\n}\n\nfragment CatalogItem_component on Component {\n  id\n  uri\n  name\n  summary\n  tier {\n    id\n    name\n  }\n}\n\nfragment CatalogList_query_1G22uz on Query {\n  components(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        tier {\n          name\n          id\n        }\n        ...CatalogItem_component\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query ComponentsCatalogQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...CatalogList_query_1G22uz\n}\n\nfragment CatalogItem_component on Component {\n  uri\n  name\n  summary\n  tier {\n    uri\n    name\n  }\n}\n\nfragment CatalogList_query_1G22uz on Query {\n  components(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        tier {\n          name\n          uri\n        }\n        ...CatalogItem_component\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();

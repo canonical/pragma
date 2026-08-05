@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6e95129321bdce966c45c23c07b955dc>>
+ * @generated SignedSource<<6ffd8a891b4cd16363057a3072c00ec7>>
  * @lightSyntaxTransform
  */
 
@@ -50,7 +50,7 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 };
 return {
@@ -111,13 +111,6 @@ return {
                 "plural": false,
                 "selections": [
                   (v2/*:: as any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "uri",
-                    "storageKey": null
-                  },
                   {
                     "alias": null,
                     "args": null,
@@ -232,16 +225,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "8e1a9a94077c7f2139363eecb40b7d96",
+    "cacheID": "de5c4698268b511a54cff8dc5ae4cc8d",
     "id": null,
     "metadata": {},
     "name": "StandardsIndexPaginationQuery",
     "operationKind": "query",
-    "text": "query StandardsIndexPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              id\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query StandardsIndexPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              uri\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "b31c43aedf5f1d6daa9a277e08f4011b";
+(node as any).hash = "4139b336b79a002b1e5e1ea16dd59a88";
 
 export default node;

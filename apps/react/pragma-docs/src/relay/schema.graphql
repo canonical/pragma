@@ -27,9 +27,7 @@ directive @stream(
 Why an item is no longer (or never was) live: Superseded, Deprecated, Cancelled, Rejected (data/validities.ttl). Invalid items STAY in the graph with a mandatory note — the know-your-neighbour rule: anyone who finds the node learns its fate and its reason. Distinct from deferred (still wanted, consciously parked) and from assume:status (the epistemics of assumptions). Absence of validity means live.
 """
 type Validity implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -100,9 +98,15 @@ type Validity implements Node {
   deferred: Boolean
 }
 
+"""
+Everything addressable by an absolute IRI.
+"""
 interface Node {
-  id: ID!
-  uri: String!
+  """The entity's absolute IRI — the primary key."""
+  uri: ID!
+
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
 }
 
 type LensConnection {
@@ -196,9 +200,7 @@ type SubstrateEdge {
 The result of walking an exemplar: Renders (completes cleanly), Ceremony (completes but awkwardly — a friction worth recording), Wall (cannot complete — a real gap). Instances in data/verdicts.ttl. A verdict is dated and cites the surfaces walked; re-walking on a spec change is the regression test.
 """
 type Verdict implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -273,9 +275,7 @@ type Verdict implements Node {
 A worked story walked against the specification to a verdict — the sufficiency test that jobs (existence) and bets (assumption) cannot give. Where the no-job-no-element law grounds why a surface exists, an exemplar grounds whether the surfaces a job touches actually let a real person complete it. A story that cannot complete across a job's served surfaces is a WALL found before anything is built; one that completes only awkwardly is CEREMONY; one that completes cleanly RENDERS. Ported from the source falsification traditions (mriya's CLEAN/PIN/BREAK, the docsite's pilot go/no-go).
 """
 type Exemplar implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -383,9 +383,7 @@ type SurfaceEdge {
 A named, reusable discipline of well-specified surfaces — the distilled cross-corpus rules (one substrate many projections; every word has one home; four states or it doesn't ship). Laws are cited by grammars (grammar:law) and instantiated by project rulings (assume:derivedFrom). A sibling of Axiom and Heuristic under assume:Assumption, deliberately outside their id/phase regimes: laws are timeless, not scheduled.
 """
 type Law implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -460,9 +458,7 @@ type Law implements Node {
 A falsifiable design assumption with a named test or kill-criterion — the third species of assumption beside the hard axiom and the soft heuristic. A bet without a kill-criterion is an opinion. Bets live in one shared ledger; jobs reference them by id; ids are stable and never renumbered (gaps mean retired bets). Modal character: P? — wagered, awaiting evidence.
 """
 type Bet implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -550,9 +546,7 @@ type Bet implements Node {
 A layout's declaration of a region: which region, whether required, and — if optional — WHICH JOB SUMMONS IT (shape F8: no job, no region). One canvas always; everything else earns its slot. Layouts themselves are ds:Layout instances, reused directly (D12), carrying ds:grid/ds:name; surface adds the slot-and-demand layer ds lacks.
 """
 type Slot implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -640,9 +634,7 @@ type Slot implements Node {
 A typed slot kind, one shared vocabulary so 'where is it' means the same thing on every surface (canvas, rails, controls, status, aside…). Base instances in data/regions.ttl; projects extend (mriya adds rail). A region type never changes side — the compass is part of the stationary frame.
 """
 type Region implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -717,9 +709,7 @@ type Region implements Node {
 The reified job↔surface edge: THIS job reaches THIS surface, as primary or secondary, arriving with THIS preservation (curated surfaces only — ports take no arrival). The set of a job's pairings is how the spec answers 'is this job served, and at what cost'.
 """
 type Pairing implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -818,9 +808,7 @@ type PreservationEdge {
 Whether a pairing is the job's Primary serving surface or a Secondary route. Instances in data/arrivals.ttl.
 """
 type PairingRole implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -895,9 +883,7 @@ type PairingRole implements Node {
 What an arrival keeps, ordered by reorientation cost: ColdEntry(4) keeps nothing; SubjectKept(3) keeps the subject; ViewKept(2) keeps view and subject; NoMove(1) is in-place reach. Pure edge vocabulary — the ex-grade, minus the abolished CallGrade (invocability is a node fact). Instances in data/arrivals.ttl.
 """
 type Preservation implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -977,9 +963,7 @@ type Preservation implements Node {
 The invocable surface: where machine consumers call instead of look — API, MCP, CLI. Exposes capabilities directly; it curates nothing, so it has no slice (shape F6 forbids one), and pairings to it carry no arrival (agents have no reorientation to preserve).
 """
 type Port implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1129,9 +1113,7 @@ type RenderingEdge {
 A standalone writing surface you dwell in: authoring against the substrate at large rather than at one subject.
 """
 type Editor implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1231,9 +1213,7 @@ type Editor implements Node & Surface {
 An anchored writing surface: where a consumer puts value INTO the substrate at a subject — the run's composer, a proposal form on an entity. The write quadrant the kind-enum scheme could not express.
 """
 type ComposerSurface implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1333,9 +1313,7 @@ type ComposerSurface implements Node & Surface {
 A View woven through everything: inline mentions, status glyphs. Its pairings arrive at NoMove — reaching it costs nothing, which is its entire point.
 """
 type Mechanism implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1435,9 +1413,7 @@ type Mechanism implements Node & Surface {
 A View you pass through: preview without commitment, one step back up. Its pairings typically arrive at SubjectKept.
 """
 type Peek implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1537,9 +1513,7 @@ type Peek implements Node & Surface {
 A View you dwell in: one entity in depth — the entity page, the spec sheet. Its pairings typically arrive at ColdEntry (deeplinks) or SubjectKept.
 """
 type Detail implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1639,9 +1613,7 @@ type Detail implements Node & Surface {
 An anchored reading surface — curated, read-facing, subject-bound: it shows something OF something. Whether it is ambient (chips), transient (a peek), or dwelt-in (a detail page) is not a node fact: it shows in its pairings' arrivals.
 """
 type View implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1741,9 +1713,7 @@ type View implements Node & Surface {
 A way of looking at the substrate, tuned for one kind of task: curated, read-facing, standalone. You don't navigate into a lens like a folder — you switch lenses and the same entities re-present. A lens without a slice is a folder (shape F5).
 """
 type Lens implements Node & Surface {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1856,9 +1826,7 @@ type Lens implements Node & Surface {
 Whether the surface is coherent standalone (Free) or meaningless without a subject (SubjectBound — a peek OF something).
 """
 type Anchoring implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -1933,9 +1901,7 @@ type Anchoring implements Node {
 Which way value flows at this surface: ReadFace (consumer takes) or WriteFace (consumer puts). Multi-valued — a surface may carry both.
 """
 type Direction implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2010,9 +1976,7 @@ type Direction implements Node {
 What the surface does with the substrate: Curated (re-presents a chosen slice for perception) or Invocable (exposes operations for calling). Instances in data/dimensions.ttl.
 """
 type Rendering implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2087,9 +2051,7 @@ type Rendering implements Node {
 The species of authority a capability requires. Base instances (data/authority-families.ttl): read, observe, write, control, genesis. Projects extend with their own families (freefold adds ingress, derive, operator). Reachability and authorization are two layers: authority flows through handles, but write-authorization is checked at the target regardless of which handle called.
 """
 type AuthorityFamily implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2164,9 +2126,7 @@ type AuthorityFamily implements Node {
 A named, grantable operation over the substrate — the unit of 'what the system can do'. Verbs in a grammar name capabilities; projections bind them; channels expose them to machine consumers. Object-capability shaped: authority flows through whoever hands you the handle; bundles compose capabilities; attenuation only narrows (the derived capability's authority is a subset of its parent's).
 """
 type Capability implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2271,9 +2231,7 @@ type AuthorityFamilyEdge {
 The single source of truth a surface projects: a knowledge graph, a journal, a store. One substrate, many projections — every view shows its own slice, no view shows all of it, and state is derived from the substrate, never duplicated beside it. If two surfaces disagree, the substrate arbitrates.
 """
 type Substrate implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2348,9 +2306,7 @@ type Substrate implements Node {
 A named region in coordinate space — an archetype used for coverage planning and QA, never for navigation. A persona's jobs are DERIVED by overlap of its region with each job's coordinates; asserting the persona↔job link directly is a modelling error (the link is derived, not stored).
 """
 type Persona implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2433,9 +2389,7 @@ type Persona implements Node {
 Ordinal familiarity with the system on a coordinate axis: Newcomer < Fluent < Expert (data/fluencies.ttl, ordered by fluencyOrder). Expert is a fluency waypoint, not a role — authority positions are roles. Landed by D17 after the trigger fired twice (Yuki≡Dev in mriya; prose-only waypoint arcs in the docs graph).
 """
 type Fluency implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2513,9 +2467,7 @@ type Fluency implements Node {
 A consumer's discipline or authority position on a coordinate axis (engineer, designer, writer; author, operator). Authority is a role, not a fluency level. Project vocabulary: no base instances ship — each spec graph defines its own. An axis left unconstrained matches any role (wildcard). Added by D9 when the two-graph confrontation fired D5's reversal trigger.
 """
 type Role implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2590,9 +2542,7 @@ type Role implements Node {
 The species of consumer on a coordinate axis. Base instances: Human, Agent (data/actors.ttl). Surfaces are bi-modal by default — a machine consumer is a first-class actor, not an afterthought.
 """
 type Actor implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2667,9 +2617,7 @@ type Actor implements Node {
 A reified position or region in demand space. Currently one axis (actor); role and fluency axes join by discussion (decision D5). Reified so that jobs and personas share ONE type: a job's coordinates and a persona's region are compared axis by axis, and the persona↔job link is derived by overlap, never stored.
 """
 type Coordinate implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2789,9 +2737,7 @@ type ActorEdge {
 The unit of demand and of value (jobs-to-be-done). One thing a consumer is trying to get done, written as a story: when [circumstance], I want [desire], so I can [outcome], without [pain]. Jobs — not personas, not features — drive surface requirements: every surface element must trace back to at least one job; a job with no serving surface is a coverage gap, and a surface element with no job is decoration.
 """
 type Job implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2886,6 +2832,9 @@ type Job implements Node {
 A single dated record of a change to a UIBlock, with a timestamp, the change description, an owner, an optional GitHub link, and a change type.
 """
 type ChangeLogEntry {
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
   """The category of change (e.g. change, addition, deprecation)"""
   changeType: String
 
@@ -2922,9 +2871,7 @@ type ChangeLogEntry {
 A facet that groups related Tags (e.g. 'documentation stage', 'review status', 'channel', 'implementation status').
 """
 type TagCategory implements Node & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -2950,9 +2897,7 @@ type TagCategory implements Node & Entity {
 A controlled-vocabulary label applied to a UIBlock. Tags are grouped into facets by their category (e.g. 'documentation stage', 'review status', 'channel', 'implementation status'). The category-typed views over this vocabulary are tracked as future work; for now a Tag carries its name, category, and apply/remove guidance.
 """
 type Tag implements Node & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3003,9 +2948,7 @@ type TagCategoryEdge {
 A code library or package that provides platform-specific implementations of UIBlocks
 """
 type ImplementationLibrary implements Node & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3056,9 +2999,7 @@ type TierEdge {
 
 """Platform-specific implementation of a UI Block"""
 type ImplementationObject implements Node & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3110,9 +3051,7 @@ type ImplementationObject implements Node & Entity {
 A scope level in the design system hierarchy that determines where UIBlocks are intended to be used (e.g. global, apps, site)
 """
 type Tier implements Node & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3136,6 +3075,9 @@ type Tier implements Node & Entity {
 
 """A configurable property of a UI Block"""
 type Property {
+  """Self-describing TBox access for this entity."""
+  _meta: EntityMeta!
+
   """
   Constraints on valid values for this property. For choice types, lists allowed values (e.g. '[primary, secondary, tertiary]'). For numbers, specifies ranges. For objects, describes required structure.
   """
@@ -3173,9 +3115,7 @@ type Property {
 
 """A grouping of related modifiers that can be applied to UI Blocks"""
 type ModifierFamily implements Node & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3214,9 +3154,7 @@ type ModifierEdge {
 A named variant value within a ModifierFamily that alters the appearance or behaviour of a UIBlock (e.g. 'primary', 'secondary' within the 'importance' family)
 """
 type Modifier implements Node & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3245,9 +3183,7 @@ type Modifier implements Node & UIElement & Entity {
 A collection UIBlock: a container that arranges multiple instances of a single sibling UIBlock (typically a Component) as a repeating series. The plural counterpart of a singular Component (e.g. Cards groups Card units, Tiles groups Tile units), responsible for their shared layout rather than for any content of its own.
 """
 type Group implements Node & UIBlock & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3363,9 +3299,7 @@ type ModifierFamilyEdge {
 A named part of a Component that has design-system identity but is typically not used independently outside its parent
 """
 type Subcomponent implements Node & UIBlock & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3469,9 +3403,7 @@ type ComponentEdge {
 Layouts are an opinionated division of space to navigate a domain of information.
 """
 type Layout implements Node & UIBlock & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3567,9 +3499,7 @@ type Layout implements Node & UIBlock & UIElement & Entity {
 
 """A reusable solution to a recurring user problem in a specific context"""
 type Pattern implements Node & UIBlock & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3655,9 +3585,7 @@ type Pattern implements Node & UIBlock & UIElement & Entity {
 An implementable piece of user interface defined by its appearance and behaviour
 """
 type Component implements Node & UIBlock & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3756,9 +3684,7 @@ type SubcomponentEdge {
 A single do or don't example with a description, optional language tag, and optional code block
 """
 type Example implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3779,9 +3705,7 @@ type Example implements Node {
 A category for grouping related code standards (e.g., testing, components, react, typescript)
 """
 type Category implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3797,9 +3721,7 @@ type Category implements Node {
 
 """A coding standard or best practice guideline for software development"""
 type CodeStandard implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3859,9 +3781,7 @@ type CategoryEdge {
 
 """One alternative within a Switch."""
 type SwitchCase implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3872,9 +3792,7 @@ type SwitchCase implements Node {
 
 """Polymorphic position admitting several alternatives."""
 type Switch implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3898,9 +3816,7 @@ type SwitchCaseEdge {
 
 """A single style declaration binding a property key to a value."""
 type Style implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3914,9 +3830,7 @@ type Style implements Node {
 
 """Metadata qualifying a parent-child relationship."""
 type Relation implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3930,9 +3844,7 @@ type Relation implements Node {
 
 """Reified parent-child relationship in the anatomy tree."""
 type Edge implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3949,9 +3861,7 @@ type Edge implements Node {
 
 """Structural element without design system identity."""
 type AnonymousNode implements Node & AnatomyNode {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -3988,9 +3898,7 @@ type EdgeEdge {
 
 """Design system entity instantiable by consumers."""
 type NamedNode implements Node & AnatomyNode {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4007,9 +3915,7 @@ type NamedNode implements Node & AnatomyNode {
 
 """Root of an anatomy file."""
 type Specification implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4022,9 +3928,7 @@ type Specification implements Node {
 An addressable place of encounter between a consumer and the substrate. Its nature is carried by three dimensions (rendering, direction, anchoring); the idiom classes below are named cells whose dimension values materialize through the closure — assert the idiom, infer the physics. A surface matching no idiom is asserted as a plain Surface with raw dimensions: fully described, honestly unnamed. How a surface is PRESENT (ambient, transient, dwelt-in) is edge information and lives on pairings as arrival — never on the node (the presence-dimension deletion, D11).
 """
 interface Surface implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4124,9 +4028,7 @@ interface Surface implements Node {
 A category of visual or abstract entity that fulfills a particular role in composing user interfaces
 """
 interface UIBlock implements Node & UIElement & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4210,9 +4112,7 @@ interface UIBlock implements Node & UIElement & Entity {
 
 """Base class for all visual and interactive design system elements"""
 interface UIElement implements Node & Entity {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4238,9 +4138,7 @@ interface UIElement implements Node & Entity {
 Abstract root class for all design system entities. Provides common properties (name, summary) inherited by all classes.
 """
 interface Entity implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4264,9 +4162,7 @@ interface Entity implements Node {
 
 """Position in the anatomy tree."""
 interface AnatomyNode implements Node {
-  """Relay global ID — the entity's prefixed URI."""
-  id: ID!
-  uri: String!
+  uri: ID!
 
   """Self-describing TBox access for this entity."""
   _meta: EntityMeta!
@@ -4280,13 +4176,20 @@ interface AnatomyNode implements Node {
 
 """Self-describing TBox access attached to ABox types."""
 type EntityMeta {
+  title(lang: String = "en"): String!
+  label(lang: String = "en"): String
+  comment(lang: String = "en"): String
+  definition(lang: String = "en"): String
   type: OntologyClass!
   field(name: String!): ClassProperty
   fields: [ClassProperty!]!
 }
 
-type OntologyClass {
-  uri: String!
+type OntologyClass implements Node {
+  uri: ID!
+
+  """Self-describing TBox access for this class."""
+  _meta: EntityMeta!
   label: String
   definition: String
   superclass: OntologyClass
@@ -4316,7 +4219,7 @@ type ClassProperty {
 }
 
 type OntologyProperty {
-  uri: String!
+  uri: ID!
   label: String
   definition: String
   domain: OntologyClass

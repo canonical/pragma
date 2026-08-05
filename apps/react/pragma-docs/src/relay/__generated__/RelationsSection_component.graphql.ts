@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<38f5d0a60067658978609547a5461b98>>
+ * @generated SignedSource<<6b7a811592d95f366dbc9553cc2d6fab>>
  * @lightSyntaxTransform
  */
 
@@ -13,7 +13,6 @@ export type RelationsSection_component$data = {
   readonly modifierFamilies: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -22,7 +21,6 @@ export type RelationsSection_component$data = {
   readonly subcomponents: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -44,13 +42,6 @@ var v0 = [
   }
 ],
 v1 = [
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "id",
-    "storageKey": null
-  },
   {
     "alias": null,
     "args": null,
@@ -148,6 +139,6 @@ return {
 };
 })();
 
-(node as any).hash = "2ae9dcfe49fd99b4ee1cf9e9db8fcbc9";
+(node as any).hash = "568e4066ac9a4ecdf51556659d1addbc";
 
 export default node;

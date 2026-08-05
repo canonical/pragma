@@ -16,18 +16,16 @@ import { RELATION_PAGE_SIZE } from "./probeQuery.js";
 const componentProbeQuerySource = (): unknown => graphql`
   query ComponentProbeQuery($uri: String!, $count: Int!) {
     component(uri: $uri) {
-      id
       uri
       name
       summary
       tier {
-        id
+        uri
         name
       }
       subcomponents(first: $count) {
         edges {
           node {
-            id
             uri
             name
           }
@@ -36,7 +34,7 @@ const componentProbeQuerySource = (): unknown => graphql`
       modifierFamilies(first: $count) {
         edges {
           node {
-            id
+            uri
             name
           }
         }
@@ -98,7 +96,7 @@ export default function ComponentProbe({
       ) : (
         <ul>
           {component.subcomponents.edges.map(({ node }) => (
-            <li key={node.id}>
+            <li key={node.uri}>
               {node.name ?? node.uri} <code>{node.uri}</code>
             </li>
           ))}
@@ -110,7 +108,7 @@ export default function ComponentProbe({
       ) : (
         <ul>
           {component.modifierFamilies.edges.map(({ node }) => (
-            <li key={node.id}>{node.name ?? node.id}</li>
+            <li key={node.uri}>{node.name ?? node.uri}</li>
           ))}
         </ul>
       )}

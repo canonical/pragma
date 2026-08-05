@@ -24,7 +24,7 @@ const catalogListFragmentSource = (): unknown => graphql`
       @connection(key: "CatalogList_components") {
       edges {
         node {
-          id
+          uri
           tier {
             name
           }
@@ -115,7 +115,7 @@ const CatalogList = ({
             <h3 id={`${tierAnchorId(tierName)}-title`}>{tierName}</h3>
             <ul className="catalog-cards">
               {(groups.get(tierName) ?? []).map((node) => (
-                <CatalogItem component={node} key={node.id} />
+                <CatalogItem component={node} key={node.uri} />
               ))}
             </ul>
           </section>

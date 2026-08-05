@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3d5f21e119ffdb8b03984f814c1da1fd>>
+ * @generated SignedSource<<3a89cc8db01035470462fd84d18d9612>>
  * @lightSyntaxTransform
  */
 
@@ -10,12 +10,11 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CatalogItem_component$data = {
-  readonly id: string;
   readonly name: string | null | undefined;
   readonly summary: string | null | undefined;
   readonly tier: {
-    readonly id: string;
     readonly name: string | null | undefined;
+    readonly uri: string;
   } | null | undefined;
   readonly uri: string;
   readonly " $fragmentType": "CatalogItem_component";
@@ -30,7 +29,7 @@ var v0 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 },
 v1 = {
@@ -47,13 +46,6 @@ return {
   "name": "CatalogItem_component",
   "selections": [
     (v0/*:: as any*/),
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "uri",
-      "storageKey": null
-    },
     (v1/*:: as any*/),
     {
       "alias": null,
@@ -81,6 +73,6 @@ return {
 };
 })();
 
-(node as any).hash = "b1cd7daf43af0414c4b4a47ee8081131";
+(node as any).hash = "461dc7f748aed1828fdcc21c55b5fd46";
 
 export default node;

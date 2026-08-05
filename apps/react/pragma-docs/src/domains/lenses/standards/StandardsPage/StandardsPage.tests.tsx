@@ -55,7 +55,6 @@ const pageTwoResponse = {
         {
           node: {
             __typename: "CodeStandard",
-            id: "cs:turtle.naming.unified_prefix",
             uri: "cs:turtle.naming.unified_prefix",
             name: "Unified Prefix",
             categories: {
@@ -63,7 +62,7 @@ const pageTwoResponse = {
                 {
                   node: {
                     __typename: "Category",
-                    id: "cs:turtle",
+                    uri: "cs:turtle",
                     slug: "turtle",
                   },
                 },
@@ -75,7 +74,6 @@ const pageTwoResponse = {
         {
           node: {
             __typename: "CodeStandard",
-            id: "cs:testing.file.structure",
             uri: "cs:testing.file.structure",
             name: null,
             categories: {
@@ -83,7 +81,7 @@ const pageTwoResponse = {
                 {
                   node: {
                     __typename: "Category",
-                    id: "cs:testing",
+                    uri: "cs:testing",
                     slug: "testing",
                   },
                 },

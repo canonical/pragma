@@ -109,7 +109,6 @@ const uncategorisedRecords = {
   "cs:webcomponents.component.naming": {
     __id: "cs:webcomponents.component.naming",
     __typename: "CodeStandard",
-    id: "cs:webcomponents.component.naming",
     uri: "cs:webcomponents.component.naming",
     name: "Component Naming",
     "categories(first:1)": {
@@ -134,13 +133,12 @@ const uncategorisedRecords = {
   "cs:webcomponents": {
     __id: "cs:webcomponents",
     __typename: "Category",
-    id: "cs:webcomponents",
+    uri: "cs:webcomponents",
     slug: "webcomponents",
   },
   "cs:limbo.orphan_rule": {
     __id: "cs:limbo.orphan_rule",
     __typename: "CodeStandard",
-    id: "cs:limbo.orphan_rule",
     uri: "cs:limbo.orphan_rule",
     name: null,
     "categories(first:1)": {

@@ -13,12 +13,11 @@ import "./styles.css";
  */
 const catalogItemFragmentSource = (): unknown => graphql`
   fragment CatalogItem_component on Component {
-    id
     uri
     name
     summary
     tier {
-      id
+      uri
       name
     }
   }

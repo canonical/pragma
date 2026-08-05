@@ -11,6 +11,19 @@
  * already in the store, not a second fetch — which is why one fixture
  * covers both rows of every certification suite.
  *
+ * HAND-EDITED, NOT RE-CAPTURED (the converged-base migration). The
+ * converged `Node` base deleted the `id` field and `getDataID` now keys
+ * the store by `uri`, so every fixture had to move to `uri`-keyed records
+ * without an `id` field. The other nine were re-captured from a live
+ * boot; this one could not be, because the second source root — the
+ * semantics tree carrying `sem://surface#` and `sem://design-system-docs#`
+ * — is ABSENT from this environment, so `/journeys` cannot resolve here at
+ * all. Its record keys were ALREADY absolute (`sem://design-system-docs#job.a1`)
+ * and already equal to each record's `uri`, so the only edit needed was
+ * deleting the 294 `id:` lines — mechanically, with no other change. That
+ * makes this fixture UNVERIFIED against a live graph: re-capture it on a
+ * machine with the semantics tree before trusting it further.
+ *
  * Regenerate: boot `dev:bun`, copy `relay.records` out of the
  * `__INITIAL_DATA__` script served at /journeys.
  */
@@ -111,7 +124,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.architect-pair",
     },
-    id: "sem://design-system-docs#job.a1",
   },
   "sem://design-system-docs#coordinate.architect-pair": {
     __id: "sem://design-system-docs#coordinate.architect-pair",
@@ -127,7 +139,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.architect-pair:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.architect-pair",
   },
   "client:sem://design-system-docs#coordinate.architect-pair:actors": {
     __id: "client:sem://design-system-docs#coordinate.architect-pair:actors",
@@ -150,7 +161,6 @@ const journeysExplorerRecords = {
     __id: "surface:Agent",
     __typename: "Actor",
     uri: "surface:Agent",
-    id: "surface:Agent",
   },
   "client:sem://design-system-docs#coordinate.architect-pair:actors:edges:1": {
     __id: "client:sem://design-system-docs#coordinate.architect-pair:actors:edges:1",
@@ -163,7 +173,6 @@ const journeysExplorerRecords = {
     __id: "surface:Human",
     __typename: "Actor",
     uri: "surface:Human",
-    id: "surface:Human",
   },
   "client:sem://design-system-docs#coordinate.architect-pair:roles": {
     __id: "client:sem://design-system-docs#coordinate.architect-pair:roles",
@@ -185,7 +194,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#role.architect",
     __typename: "Role",
     uri: "sem://design-system-docs#role.architect",
-    id: "sem://design-system-docs#role.architect",
   },
   "client:sem://design-system-docs#coordinate.architect-pair:fluencies": {
     __id: "client:sem://design-system-docs#coordinate.architect-pair:fluencies",
@@ -211,7 +219,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.stewardship",
     },
-    id: "sem://design-system-docs#job.a2",
   },
   "sem://design-system-docs#coordinate.stewardship": {
     __id: "sem://design-system-docs#coordinate.stewardship",
@@ -226,7 +233,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.stewardship:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.stewardship",
   },
   "client:sem://design-system-docs#coordinate.stewardship:actors": {
     __id: "client:sem://design-system-docs#coordinate.stewardship:actors",
@@ -272,7 +278,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#role.steward",
     __typename: "Role",
     uri: "sem://design-system-docs#role.steward",
-    id: "sem://design-system-docs#role.steward",
   },
   "client:sem://design-system-docs#coordinate.stewardship:fluencies": {
     __id: "client:sem://design-system-docs#coordinate.stewardship:fluencies",
@@ -300,7 +305,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.migration-pair",
     },
-    id: "sem://design-system-docs#job.a3",
   },
   "sem://design-system-docs#coordinate.migration-pair": {
     __id: "sem://design-system-docs#coordinate.migration-pair",
@@ -316,7 +320,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.migration-pair:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.migration-pair",
   },
   "client:sem://design-system-docs#coordinate.migration-pair:actors": {
     __id: "client:sem://design-system-docs#coordinate.migration-pair:actors",
@@ -382,7 +385,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer-pair",
     },
-    id: "sem://design-system-docs#job.b1",
   },
   "sem://design-system-docs#coordinate.engineer-pair": {
     __id: "sem://design-system-docs#coordinate.engineer-pair",
@@ -398,7 +400,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.engineer-pair:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.engineer-pair",
   },
   "client:sem://design-system-docs#coordinate.engineer-pair:actors": {
     __id: "client:sem://design-system-docs#coordinate.engineer-pair:actors",
@@ -457,7 +458,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.word-makers",
     },
-    id: "sem://design-system-docs#job.b10",
   },
   "sem://design-system-docs#coordinate.word-makers": {
     __id: "sem://design-system-docs#coordinate.word-makers",
@@ -472,7 +472,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.word-makers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.word-makers",
   },
   "client:sem://design-system-docs#coordinate.word-makers:actors": {
     __id: "client:sem://design-system-docs#coordinate.word-makers:actors",
@@ -510,7 +509,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#role.writer",
     __typename: "Role",
     uri: "sem://design-system-docs#role.writer",
-    id: "sem://design-system-docs#role.writer",
   },
   "client:sem://design-system-docs#coordinate.word-makers:fluencies": {
     __id: "client:sem://design-system-docs#coordinate.word-makers:fluencies",
@@ -538,7 +536,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.builder-pair",
     },
-    id: "sem://design-system-docs#job.b11",
   },
   "sem://design-system-docs#coordinate.builder-pair": {
     __id: "sem://design-system-docs#coordinate.builder-pair",
@@ -554,7 +551,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.builder-pair:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.builder-pair",
   },
   "client:sem://design-system-docs#coordinate.builder-pair:actors": {
     __id: "client:sem://design-system-docs#coordinate.builder-pair:actors",
@@ -613,7 +609,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.system-readers",
     },
-    id: "sem://design-system-docs#job.b12",
   },
   "sem://design-system-docs#coordinate.system-readers": {
     __id: "sem://design-system-docs#coordinate.system-readers",
@@ -629,7 +624,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.system-readers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.system-readers",
   },
   "client:sem://design-system-docs#coordinate.system-readers:actors": {
     __id: "client:sem://design-system-docs#coordinate.system-readers:actors",
@@ -698,7 +692,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.builder-pair",
     },
-    id: "sem://design-system-docs#job.b2",
   },
   "client:root:jobs(first:100):edges:8": {
     __id: "client:root:jobs(first:100):edges:8",
@@ -717,7 +710,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.change-watchers",
     },
-    id: "sem://design-system-docs#job.b3",
   },
   "sem://design-system-docs#coordinate.change-watchers": {
     __id: "sem://design-system-docs#coordinate.change-watchers",
@@ -734,7 +726,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.change-watchers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.change-watchers",
   },
   "client:sem://design-system-docs#coordinate.change-watchers:actors": {
     __id: "client:sem://design-system-docs#coordinate.change-watchers:actors",
@@ -802,7 +793,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.builder-pair",
     },
-    id: "sem://design-system-docs#job.b4",
   },
   "client:root:jobs(first:100):edges:10": {
     __id: "client:root:jobs(first:100):edges:10",
@@ -823,7 +813,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.b5",
   },
   "sem://design-system-docs#coordinate.maker-duo": {
     __id: "sem://design-system-docs#coordinate.maker-duo",
@@ -838,7 +827,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.maker-duo:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.maker-duo",
   },
   "client:sem://design-system-docs#coordinate.maker-duo:actors": {
     __id: "client:sem://design-system-docs#coordinate.maker-duo:actors",
@@ -889,7 +877,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.b6",
   },
   "client:root:jobs(first:100):edges:12": {
     __id: "client:root:jobs(first:100):edges:12",
@@ -910,7 +897,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.b7",
   },
   "client:root:jobs(first:100):edges:13": {
     __id: "client:root:jobs(first:100):edges:13",
@@ -932,7 +918,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.copy-makers",
     },
-    id: "sem://design-system-docs#job.b8",
   },
   "sem://design-system-docs#coordinate.copy-makers": {
     __id: "sem://design-system-docs#coordinate.copy-makers",
@@ -947,7 +932,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.copy-makers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.copy-makers",
   },
   "client:sem://design-system-docs#coordinate.copy-makers:actors": {
     __id: "client:sem://design-system-docs#coordinate.copy-makers:actors",
@@ -1015,7 +999,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.agent",
     },
-    id: "sem://design-system-docs#job.b9",
   },
   "sem://design-system-docs#coordinate.agent": {
     __id: "sem://design-system-docs#coordinate.agent",
@@ -1030,7 +1013,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.agent:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.agent",
   },
   "client:sem://design-system-docs#coordinate.agent:actors": {
     __id: "client:sem://design-system-docs#coordinate.agent:actors",
@@ -1081,7 +1063,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.c1",
   },
   "client:root:jobs(first:100):edges:16": {
     __id: "client:root:jobs(first:100):edges:16",
@@ -1100,7 +1081,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.c2",
   },
   "client:root:jobs(first:100):edges:17": {
     __id: "client:root:jobs(first:100):edges:17",
@@ -1119,7 +1099,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.c3",
   },
   "client:root:jobs(first:100):edges:18": {
     __id: "client:root:jobs(first:100):edges:18",
@@ -1140,7 +1119,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.c4",
   },
   "client:root:jobs(first:100):edges:19": {
     __id: "client:root:jobs(first:100):edges:19",
@@ -1159,7 +1137,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.c5",
   },
   "client:root:jobs(first:100):edges:20": {
     __id: "client:root:jobs(first:100):edges:20",
@@ -1178,7 +1155,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.word-makers",
     },
-    id: "sem://design-system-docs#job.c6",
   },
   "client:root:jobs(first:100):edges:21": {
     __id: "client:root:jobs(first:100):edges:21",
@@ -1199,7 +1175,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer-agent",
     },
-    id: "sem://design-system-docs#job.cli-scaffold",
   },
   "sem://design-system-docs#coordinate.engineer-agent": {
     __id: "sem://design-system-docs#coordinate.engineer-agent",
@@ -1215,7 +1190,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.engineer-agent:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.engineer-agent",
   },
   "client:sem://design-system-docs#coordinate.engineer-agent:actors": {
     __id: "client:sem://design-system-docs#coordinate.engineer-agent:actors",
@@ -1274,7 +1248,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer",
     },
-    id: "sem://design-system-docs#job.cli-wire-tokens",
   },
   "sem://design-system-docs#coordinate.engineer": {
     __id: "sem://design-system-docs#coordinate.engineer",
@@ -1289,7 +1262,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.engineer:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.engineer",
   },
   "client:sem://design-system-docs#coordinate.engineer:actors": {
     __id: "client:sem://design-system-docs#coordinate.engineer:actors",
@@ -1335,7 +1307,6 @@ const journeysExplorerRecords = {
     __id: "surface:Fluent",
     __typename: "Fluency",
     uri: "surface:Fluent",
-    id: "surface:Fluent",
   },
   "client:sem://design-system-docs#coordinate.engineer:fluencies:edges:1": {
     __id: "client:sem://design-system-docs#coordinate.engineer:fluencies:edges:1",
@@ -1348,7 +1319,6 @@ const journeysExplorerRecords = {
     __id: "surface:Newcomer",
     __typename: "Fluency",
     uri: "surface:Newcomer",
-    id: "surface:Newcomer",
   },
   "client:root:jobs(first:100):edges:23": {
     __id: "client:root:jobs(first:100):edges:23",
@@ -1367,7 +1337,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer",
     },
-    id: "sem://design-system-docs#job.cli-health",
   },
   "client:root:jobs(first:100):edges:24": {
     __id: "client:root:jobs(first:100):edges:24",
@@ -1388,7 +1357,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.builder-pair",
     },
-    id: "sem://design-system-docs#job.cli-setup",
   },
   "client:root:jobs(first:100):edges:25": {
     __id: "client:root:jobs(first:100):edges:25",
@@ -1407,7 +1375,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer",
     },
-    id: "sem://design-system-docs#job.cli-pin",
   },
   "client:root:jobs(first:100):edges:26": {
     __id: "client:root:jobs(first:100):edges:26",
@@ -1428,7 +1395,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.first-encounter",
     },
-    id: "sem://design-system-docs#job.l1",
   },
   "sem://design-system-docs#coordinate.first-encounter": {
     __id: "sem://design-system-docs#coordinate.first-encounter",
@@ -1445,7 +1411,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.first-encounter:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.first-encounter",
   },
   "client:sem://design-system-docs#coordinate.first-encounter:actors": {
     __id: "client:sem://design-system-docs#coordinate.first-encounter:actors",
@@ -1523,7 +1488,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.system-readers",
     },
-    id: "sem://design-system-docs#job.l10",
   },
   "client:root:jobs(first:100):edges:28": {
     __id: "client:root:jobs(first:100):edges:28",
@@ -1544,7 +1508,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.structure-minded",
     },
-    id: "sem://design-system-docs#job.l11",
   },
   "sem://design-system-docs#coordinate.structure-minded": {
     __id: "sem://design-system-docs#coordinate.structure-minded",
@@ -1562,7 +1525,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.structure-minded:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.structure-minded",
   },
   "client:sem://design-system-docs#coordinate.structure-minded:actors": {
     __id: "client:sem://design-system-docs#coordinate.structure-minded:actors",
@@ -1631,7 +1593,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.change-watchers",
     },
-    id: "sem://design-system-docs#job.l12",
   },
   "client:root:jobs(first:100):edges:30": {
     __id: "client:root:jobs(first:100):edges:30",
@@ -1652,7 +1613,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.new-makers",
     },
-    id: "sem://design-system-docs#job.l2",
   },
   "sem://design-system-docs#coordinate.new-makers": {
     __id: "sem://design-system-docs#coordinate.new-makers",
@@ -1667,7 +1627,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.new-makers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.new-makers",
   },
   "client:sem://design-system-docs#coordinate.new-makers:actors": {
     __id: "client:sem://design-system-docs#coordinate.new-makers:actors",
@@ -1734,7 +1693,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.builder-pair",
     },
-    id: "sem://design-system-docs#job.l3",
   },
   "client:root:jobs(first:100):edges:32": {
     __id: "client:root:jobs(first:100):edges:32",
@@ -1755,7 +1713,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.analog-seekers",
     },
-    id: "sem://design-system-docs#job.l4",
   },
   "sem://design-system-docs#coordinate.analog-seekers": {
     __id: "sem://design-system-docs#coordinate.analog-seekers",
@@ -1771,7 +1728,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.analog-seekers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.analog-seekers",
   },
   "client:sem://design-system-docs#coordinate.analog-seekers:actors": {
     __id: "client:sem://design-system-docs#coordinate.analog-seekers:actors",
@@ -1830,7 +1786,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.all-disciplines",
     },
-    id: "sem://design-system-docs#job.l5",
   },
   "sem://design-system-docs#coordinate.all-disciplines": {
     __id: "sem://design-system-docs#coordinate.all-disciplines",
@@ -1847,7 +1802,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.all-disciplines:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.all-disciplines",
   },
   "client:sem://design-system-docs#coordinate.all-disciplines:actors": {
     __id: "client:sem://design-system-docs#coordinate.all-disciplines:actors",
@@ -1915,7 +1869,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.makers-and-writers",
     },
-    id: "sem://design-system-docs#job.l6",
   },
   "sem://design-system-docs#coordinate.makers-and-writers": {
     __id: "sem://design-system-docs#coordinate.makers-and-writers",
@@ -1933,7 +1886,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.makers-and-writers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.makers-and-writers",
   },
   "client:sem://design-system-docs#coordinate.makers-and-writers:actors": {
     __id: "client:sem://design-system-docs#coordinate.makers-and-writers:actors",
@@ -1995,7 +1947,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.rationale-seekers",
     },
-    id: "sem://design-system-docs#job.l7",
   },
   "sem://design-system-docs#coordinate.rationale-seekers": {
     __id: "sem://design-system-docs#coordinate.rationale-seekers",
@@ -2013,7 +1964,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.rationale-seekers:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.rationale-seekers",
   },
   "client:sem://design-system-docs#coordinate.rationale-seekers:actors": {
     __id: "client:sem://design-system-docs#coordinate.rationale-seekers:actors",
@@ -2088,7 +2038,6 @@ const journeysExplorerRecords = {
     __id: "surface:Expert",
     __typename: "Fluency",
     uri: "surface:Expert",
-    id: "surface:Expert",
   },
   "client:root:jobs(first:100):edges:36": {
     __id: "client:root:jobs(first:100):edges:36",
@@ -2109,7 +2058,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.word-makers",
     },
-    id: "sem://design-system-docs#job.l8",
   },
   "client:root:jobs(first:100):edges:37": {
     __id: "client:root:jobs(first:100):edges:37",
@@ -2130,7 +2078,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.guild-and-agents",
     },
-    id: "sem://design-system-docs#job.l9",
   },
   "sem://design-system-docs#coordinate.guild-and-agents": {
     __id: "sem://design-system-docs#coordinate.guild-and-agents",
@@ -2148,7 +2095,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.guild-and-agents:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.guild-and-agents",
   },
   "client:sem://design-system-docs#coordinate.guild-and-agents:actors": {
     __id: "client:sem://design-system-docs#coordinate.guild-and-agents:actors",
@@ -2234,7 +2180,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.guild-and-agents",
     },
-    id: "sem://design-system-docs#job.q1",
   },
   "client:root:jobs(first:100):edges:39": {
     __id: "client:root:jobs(first:100):edges:39",
@@ -2255,7 +2200,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.q2",
   },
   "client:root:jobs(first:100):edges:40": {
     __id: "client:root:jobs(first:100):edges:40",
@@ -2276,7 +2220,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer-pair",
     },
-    id: "sem://design-system-docs#job.q3",
   },
   "client:root:jobs(first:100):edges:41": {
     __id: "client:root:jobs(first:100):edges:41",
@@ -2297,7 +2240,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.whole-guild",
     },
-    id: "sem://design-system-docs#job.q4",
   },
   "sem://design-system-docs#coordinate.whole-guild": {
     __id: "sem://design-system-docs#coordinate.whole-guild",
@@ -2312,7 +2254,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.whole-guild:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.whole-guild",
   },
   "client:sem://design-system-docs#coordinate.whole-guild:actors": {
     __id: "client:sem://design-system-docs#coordinate.whole-guild:actors",
@@ -2386,7 +2327,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.engineer",
     },
-    id: "sem://design-system-docs#job.q5",
   },
   "client:root:jobs(first:100):edges:43": {
     __id: "client:root:jobs(first:100):edges:43",
@@ -2407,7 +2347,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.governors",
     },
-    id: "sem://design-system-docs#job.s1",
   },
   "sem://design-system-docs#coordinate.governors": {
     __id: "sem://design-system-docs#coordinate.governors",
@@ -2422,7 +2361,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.governors:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.governors",
   },
   "client:sem://design-system-docs#coordinate.governors:actors": {
     __id: "client:sem://design-system-docs#coordinate.governors:actors",
@@ -2498,7 +2436,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.steward-any",
     },
-    id: "sem://design-system-docs#job.s2",
   },
   "sem://design-system-docs#coordinate.steward-any": {
     __id: "sem://design-system-docs#coordinate.steward-any",
@@ -2513,7 +2450,6 @@ const journeysExplorerRecords = {
     fluencies: {
       __ref: "client:sem://design-system-docs#coordinate.steward-any:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.steward-any",
   },
   "client:sem://design-system-docs#coordinate.steward-any:actors": {
     __id: "client:sem://design-system-docs#coordinate.steward-any:actors",
@@ -2573,7 +2509,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.stewardship",
     },
-    id: "sem://design-system-docs#job.s3",
   },
   "client:root:jobs(first:100):edges:46": {
     __id: "client:root:jobs(first:100):edges:46",
@@ -2592,7 +2527,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.steward-any",
     },
-    id: "sem://design-system-docs#job.s4",
   },
   "client:root:jobs(first:100):edges:47": {
     __id: "client:root:jobs(first:100):edges:47",
@@ -2611,7 +2545,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.content-governors",
     },
-    id: "sem://design-system-docs#job.s5",
   },
   "sem://design-system-docs#coordinate.content-governors": {
     __id: "sem://design-system-docs#coordinate.content-governors",
@@ -2629,7 +2562,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.content-governors:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.content-governors",
   },
   "client:sem://design-system-docs#coordinate.content-governors:actors": {
     __id: "client:sem://design-system-docs#coordinate.content-governors:actors",
@@ -2701,7 +2633,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.designer-alone",
     },
-    id: "sem://design-system-docs#job.v1",
   },
   "sem://design-system-docs#coordinate.designer-alone": {
     __id: "sem://design-system-docs#coordinate.designer-alone",
@@ -2717,7 +2648,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#coordinate.designer-alone:fluencies",
     },
-    id: "sem://design-system-docs#coordinate.designer-alone",
   },
   "client:sem://design-system-docs#coordinate.designer-alone:actors": {
     __id: "client:sem://design-system-docs#coordinate.designer-alone:actors",
@@ -2766,7 +2696,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.maker-duo",
     },
-    id: "sem://design-system-docs#job.v2",
   },
   "client:root:jobs(first:100):edges:50": {
     __id: "client:root:jobs(first:100):edges:50",
@@ -2787,7 +2716,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.change-watchers",
     },
-    id: "sem://design-system-docs#job.v3",
   },
   "client:root:jobs(first:100):edges:51": {
     __id: "client:root:jobs(first:100):edges:51",
@@ -2806,7 +2734,6 @@ const journeysExplorerRecords = {
     coordinates: {
       __ref: "sem://design-system-docs#coordinate.builder-pair",
     },
-    id: "sem://design-system-docs#job.v4",
   },
   "client:root:pairings(first:100)": {
     __id: "client:root:pairings(first:100)",
@@ -2940,13 +2867,11 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-adoption",
     },
-    id: "sem://design-system-docs#pairing.a1-audit-adoption",
   },
   "surface:Primary": {
     __id: "surface:Primary",
     __typename: "PairingRole",
     uri: "surface:Primary",
-    id: "surface:Primary",
   },
   "client:sem://design-system-docs#pairing.a1-audit-adoption:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a1-audit-adoption:arrivals",
@@ -2969,7 +2894,6 @@ const journeysExplorerRecords = {
     __id: "surface:ColdEntry",
     __typename: "Preservation",
     uri: "surface:ColdEntry",
-    id: "surface:ColdEntry",
   },
   "sem://design-system-docs#view.audit-adoption": {
     __id: "sem://design-system-docs#view.audit-adoption",
@@ -2978,7 +2902,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.audit-adoption:composes",
     },
-    id: "sem://design-system-docs#view.audit-adoption",
   },
   "client:sem://design-system-docs#view.audit-adoption:composes": {
     __id: "client:sem://design-system-docs#view.audit-adoption:composes",
@@ -3010,13 +2933,11 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.a1-port",
   },
   "surface:Secondary": {
     __id: "surface:Secondary",
     __typename: "PairingRole",
     uri: "surface:Secondary",
-    id: "surface:Secondary",
   },
   "client:sem://design-system-docs#pairing.a1-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a1-port:arrivals",
@@ -3032,7 +2953,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#port:composes",
     },
-    id: "sem://design-system-docs#port",
   },
   "client:sem://design-system-docs#port:composes": {
     __id: "client:sem://design-system-docs#port:composes",
@@ -3065,7 +2985,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-adoption",
     },
-    id: "sem://design-system-docs#pairing.a2-audit-adoption",
   },
   "client:sem://design-system-docs#pairing.a2-audit-adoption:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a2-audit-adoption:arrivals",
@@ -3108,7 +3027,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-positioning",
     },
-    id: "sem://design-system-docs#pairing.a2-guide-positioning",
   },
   "client:sem://design-system-docs#pairing.a2-guide-positioning:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a2-guide-positioning:arrivals",
@@ -3134,7 +3052,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-positioning:composes",
     },
-    id: "sem://design-system-docs#view.guide-positioning",
   },
   "client:sem://design-system-docs#view.guide-positioning:composes": {
     __id: "client:sem://design-system-docs#view.guide-positioning:composes",
@@ -3167,7 +3084,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-gap-plan",
     },
-    id: "sem://design-system-docs#pairing.a3-audit-gap-plan",
   },
   "client:sem://design-system-docs#pairing.a3-audit-gap-plan:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a3-audit-gap-plan:arrivals",
@@ -3193,7 +3109,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.audit-gap-plan:composes",
     },
-    id: "sem://design-system-docs#view.audit-gap-plan",
   },
   "client:sem://design-system-docs#view.audit-gap-plan:composes": {
     __id: "client:sem://design-system-docs#view.audit-gap-plan:composes",
@@ -3226,7 +3141,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-migration",
     },
-    id: "sem://design-system-docs#pairing.a3-guide-migration",
   },
   "client:sem://design-system-docs#pairing.a3-guide-migration:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a3-guide-migration:arrivals",
@@ -3252,7 +3166,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-migration:composes",
     },
-    id: "sem://design-system-docs#view.guide-migration",
   },
   "client:sem://design-system-docs#view.guide-migration:composes": {
     __id: "client:sem://design-system-docs#view.guide-migration:composes",
@@ -3284,7 +3197,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.a3-port",
   },
   "client:sem://design-system-docs#pairing.a3-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.a3-port:arrivals",
@@ -3316,7 +3228,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-setup",
     },
-    id: "sem://design-system-docs#pairing.b1-guide-setup",
   },
   "client:sem://design-system-docs#pairing.b1-guide-setup:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b1-guide-setup:arrivals",
@@ -3341,7 +3252,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-setup:composes",
     },
-    id: "sem://design-system-docs#view.guide-setup",
   },
   "client:sem://design-system-docs#view.guide-setup:composes": {
     __id: "client:sem://design-system-docs#view.guide-setup:composes",
@@ -3374,7 +3284,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-contribute",
     },
-    id: "sem://design-system-docs#pairing.b10-composer-contribute",
   },
   "client:sem://design-system-docs#pairing.b10-composer-contribute:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b10-composer-contribute:arrivals",
@@ -3401,7 +3310,6 @@ const journeysExplorerRecords = {
       __ref:
         "client:sem://design-system-docs#view.composer-contribute:composes",
     },
-    id: "sem://design-system-docs#view.composer-contribute",
   },
   "client:sem://design-system-docs#view.composer-contribute:composes": {
     __id: "client:sem://design-system-docs#view.composer-contribute:composes",
@@ -3433,7 +3341,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b10-port",
   },
   "client:sem://design-system-docs#pairing.b10-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b10-port:arrivals",
@@ -3466,7 +3373,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-content",
     },
-    id: "sem://design-system-docs#pairing.b10-section-content",
   },
   "client:sem://design-system-docs#pairing.b10-section-content:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b10-section-content:arrivals",
@@ -3492,7 +3398,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-content:composes",
     },
-    id: "sem://design-system-docs#view.section-content",
   },
   "client:sem://design-system-docs#view.section-content:composes": {
     __id: "client:sem://design-system-docs#view.section-content:composes",
@@ -3525,7 +3430,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards-content",
     },
-    id: "sem://design-system-docs#pairing.b10-standards-content",
   },
   "client:sem://design-system-docs#pairing.b10-standards-content:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b10-standards-content:arrivals",
@@ -3551,7 +3455,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.standards-content:composes",
     },
-    id: "sem://design-system-docs#view.standards-content",
   },
   "client:sem://design-system-docs#view.standards-content:composes": {
     __id: "client:sem://design-system-docs#view.standards-content:composes",
@@ -3583,7 +3486,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.cascade",
     },
-    id: "sem://design-system-docs#pairing.b11-cascade",
   },
   "client:sem://design-system-docs#pairing.b11-cascade:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b11-cascade:arrivals",
@@ -3608,7 +3510,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.cascade:composes",
     },
-    id: "sem://design-system-docs#view.cascade",
   },
   "client:sem://design-system-docs#view.cascade:composes": {
     __id: "client:sem://design-system-docs#view.cascade:composes",
@@ -3640,7 +3541,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.b11-chips",
   },
   "client:sem://design-system-docs#pairing.b11-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b11-chips:arrivals",
@@ -3662,7 +3562,6 @@ const journeysExplorerRecords = {
     __id: "surface:NoMove",
     __typename: "Preservation",
     uri: "surface:NoMove",
-    id: "surface:NoMove",
   },
   "sem://design-system-docs#view.chips": {
     __id: "sem://design-system-docs#view.chips",
@@ -3671,7 +3570,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.chips:composes",
     },
-    id: "sem://design-system-docs#view.chips",
   },
   "client:sem://design-system-docs#view.chips:composes": {
     __id: "client:sem://design-system-docs#view.chips:composes",
@@ -3703,7 +3601,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b11-port",
   },
   "client:sem://design-system-docs#pairing.b11-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b11-port:arrivals",
@@ -3736,7 +3633,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-graph",
     },
-    id: "sem://design-system-docs#pairing.b12-section-graph",
   },
   "client:sem://design-system-docs#pairing.b12-section-graph:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b12-section-graph:arrivals",
@@ -3759,7 +3655,6 @@ const journeysExplorerRecords = {
     __id: "surface:SubjectKept",
     __typename: "Preservation",
     uri: "surface:SubjectKept",
-    id: "surface:SubjectKept",
   },
   "sem://design-system-docs#view.section-graph": {
     __id: "sem://design-system-docs#view.section-graph",
@@ -3768,7 +3663,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-graph:composes",
     },
-    id: "sem://design-system-docs#view.section-graph",
   },
   "client:sem://design-system-docs#view.section-graph:composes": {
     __id: "client:sem://design-system-docs#view.section-graph:composes",
@@ -3801,7 +3695,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.neighborhood",
     },
-    id: "sem://design-system-docs#pairing.b12-neighborhood",
   },
   "client:sem://design-system-docs#pairing.b12-neighborhood:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b12-neighborhood:arrivals",
@@ -3826,7 +3719,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.neighborhood:composes",
     },
-    id: "sem://design-system-docs#view.neighborhood",
   },
   "client:sem://design-system-docs#view.neighborhood:composes": {
     __id: "client:sem://design-system-docs#view.neighborhood:composes",
@@ -3858,7 +3750,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b12-port",
   },
   "client:sem://design-system-docs#pairing.b12-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b12-port:arrivals",
@@ -3891,7 +3782,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.token-consumers",
     },
-    id: "sem://design-system-docs#pairing.b12-token-consumers",
   },
   "client:sem://design-system-docs#pairing.b12-token-consumers:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b12-token-consumers:arrivals",
@@ -3917,7 +3807,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.token-consumers:composes",
     },
-    id: "sem://design-system-docs#view.token-consumers",
   },
   "client:sem://design-system-docs#view.token-consumers:composes": {
     __id: "client:sem://design-system-docs#view.token-consumers:composes",
@@ -3949,7 +3838,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.focus",
     },
-    id: "sem://design-system-docs#pairing.b2-focus",
   },
   "client:sem://design-system-docs#pairing.b2-focus:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b2-focus:arrivals",
@@ -3974,7 +3862,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.focus:composes",
     },
-    id: "sem://design-system-docs#view.focus",
   },
   "client:sem://design-system-docs#view.focus:composes": {
     __id: "client:sem://design-system-docs#view.focus:composes",
@@ -4006,7 +3893,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b2-port",
   },
   "client:sem://design-system-docs#pairing.b2-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b2-port:arrivals",
@@ -4039,7 +3925,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-usage",
     },
-    id: "sem://design-system-docs#pairing.b2-section-usage",
   },
   "client:sem://design-system-docs#pairing.b2-section-usage:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b2-section-usage:arrivals",
@@ -4064,7 +3949,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-usage:composes",
     },
-    id: "sem://design-system-docs#view.section-usage",
   },
   "client:sem://design-system-docs#view.section-usage:composes": {
     __id: "client:sem://design-system-docs#view.section-usage:composes",
@@ -4096,7 +3980,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.terminal-lookup",
     },
-    id: "sem://design-system-docs#pairing.b2-terminal",
   },
   "client:sem://design-system-docs#pairing.b2-terminal:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b2-terminal:arrivals",
@@ -4121,7 +4004,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.terminal-lookup:composes",
     },
-    id: "sem://design-system-docs#view.terminal-lookup",
   },
   "client:sem://design-system-docs#view.terminal-lookup:composes": {
     __id: "client:sem://design-system-docs#view.terminal-lookup:composes",
@@ -4153,7 +4035,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b3-port",
   },
   "client:sem://design-system-docs#pairing.b3-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b3-port:arrivals",
@@ -4185,7 +4066,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.status-badge",
     },
-    id: "sem://design-system-docs#pairing.b3-status-badge",
   },
   "client:sem://design-system-docs#pairing.b3-status-badge:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b3-status-badge:arrivals",
@@ -4210,7 +4090,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.status-badge:composes",
     },
-    id: "sem://design-system-docs#view.status-badge",
   },
   "client:sem://design-system-docs#view.status-badge:composes": {
     __id: "client:sem://design-system-docs#view.status-badge:composes",
@@ -4242,7 +4121,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b4-port",
   },
   "client:sem://design-system-docs#pairing.b4-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b4-port:arrivals",
@@ -4274,7 +4152,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-a11y",
     },
-    id: "sem://design-system-docs#pairing.b4-section-a11y",
   },
   "client:sem://design-system-docs#pairing.b4-section-a11y:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b4-section-a11y:arrivals",
@@ -4299,7 +4176,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-a11y:composes",
     },
-    id: "sem://design-system-docs#view.section-a11y",
   },
   "client:sem://design-system-docs#view.section-a11y:composes": {
     __id: "client:sem://design-system-docs#view.section-a11y:composes",
@@ -4331,7 +4207,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards",
     },
-    id: "sem://design-system-docs#pairing.b4-standards",
   },
   "client:sem://design-system-docs#pairing.b4-standards:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b4-standards:arrivals",
@@ -4356,7 +4231,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.standards:composes",
     },
-    id: "sem://design-system-docs#view.standards",
   },
   "client:sem://design-system-docs#view.standards:composes": {
     __id: "client:sem://design-system-docs#view.standards:composes",
@@ -4379,7 +4253,6 @@ const journeysExplorerRecords = {
     __typename: "Layout",
     uri: "sem://design-system-docs#layout.reading",
     name: "Reading",
-    id: "sem://design-system-docs#layout.reading",
   },
   "client:root:pairings(first:100):edges:28": {
     __id: "client:root:pairings(first:100):edges:28",
@@ -4404,7 +4277,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.b5-chips",
   },
   "client:sem://design-system-docs#pairing.b5-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b5-chips:arrivals",
@@ -4445,7 +4317,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b5-port",
   },
   "client:sem://design-system-docs#pairing.b5-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b5-port:arrivals",
@@ -4477,7 +4348,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#lens.terminal-catalog",
     },
-    id: "sem://design-system-docs#pairing.b5-terminal",
   },
   "client:sem://design-system-docs#pairing.b5-terminal:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b5-terminal:arrivals",
@@ -4502,7 +4372,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#lens.terminal-catalog:composes",
     },
-    id: "sem://design-system-docs#lens.terminal-catalog",
   },
   "client:sem://design-system-docs#lens.terminal-catalog:composes": {
     __id: "client:sem://design-system-docs#lens.terminal-catalog:composes",
@@ -4534,7 +4403,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.tokens",
     },
-    id: "sem://design-system-docs#pairing.b5-tokens",
   },
   "client:sem://design-system-docs#pairing.b5-tokens:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b5-tokens:arrivals",
@@ -4559,7 +4427,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.tokens:composes",
     },
-    id: "sem://design-system-docs#view.tokens",
   },
   "client:sem://design-system-docs#view.tokens:composes": {
     __id: "client:sem://design-system-docs#view.tokens:composes",
@@ -4583,7 +4450,6 @@ const journeysExplorerRecords = {
     __typename: "Layout",
     uri: "sem://design-system-docs#layout.catalog",
     name: "Catalog",
-    id: "sem://design-system-docs#layout.catalog",
   },
   "client:sem://design-system-docs#view.tokens:composes:edges:1": {
     __id: "client:sem://design-system-docs#view.tokens:composes:edges:1",
@@ -4597,7 +4463,6 @@ const journeysExplorerRecords = {
     __typename: "Layout",
     uri: "sem://design-system-docs#layout.explorer",
     name: "Explorer",
-    id: "sem://design-system-docs#layout.explorer",
   },
   "client:root:pairings(first:100):edges:32": {
     __id: "client:root:pairings(first:100):edges:32",
@@ -4622,7 +4487,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.cascade",
     },
-    id: "sem://design-system-docs#pairing.b6-cascade",
   },
   "client:sem://design-system-docs#pairing.b6-cascade:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b6-cascade:arrivals",
@@ -4663,7 +4527,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.compare",
     },
-    id: "sem://design-system-docs#pairing.b6-compare",
   },
   "client:sem://design-system-docs#pairing.b6-compare:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b6-compare:arrivals",
@@ -4688,7 +4551,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.compare:composes",
     },
-    id: "sem://design-system-docs#view.compare",
   },
   "client:sem://design-system-docs#view.compare:composes": {
     __id: "client:sem://design-system-docs#view.compare:composes",
@@ -4720,7 +4582,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b6-port",
   },
   "client:sem://design-system-docs#pairing.b6-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b6-port:arrivals",
@@ -4753,7 +4614,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-tokens",
     },
-    id: "sem://design-system-docs#pairing.b6-section-tokens",
   },
   "client:sem://design-system-docs#pairing.b6-section-tokens:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b6-section-tokens:arrivals",
@@ -4779,7 +4639,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-tokens:composes",
     },
-    id: "sem://design-system-docs#view.section-tokens",
   },
   "client:sem://design-system-docs#view.section-tokens:composes": {
     __id: "client:sem://design-system-docs#view.section-tokens:composes",
@@ -4811,7 +4670,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.configurator",
     },
-    id: "sem://design-system-docs#pairing.b7-configurator",
   },
   "client:sem://design-system-docs#pairing.b7-configurator:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b7-configurator:arrivals",
@@ -4836,7 +4694,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.configurator:composes",
     },
-    id: "sem://design-system-docs#view.configurator",
   },
   "client:sem://design-system-docs#view.configurator:composes": {
     __id: "client:sem://design-system-docs#view.configurator:composes",
@@ -4869,7 +4726,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-theming",
     },
-    id: "sem://design-system-docs#pairing.b7-guide-theming",
   },
   "client:sem://design-system-docs#pairing.b7-guide-theming:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b7-guide-theming:arrivals",
@@ -4894,7 +4750,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-theming:composes",
     },
-    id: "sem://design-system-docs#view.guide-theming",
   },
   "client:sem://design-system-docs#view.guide-theming:composes": {
     __id: "client:sem://design-system-docs#view.guide-theming:composes",
@@ -4926,7 +4781,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b7-port",
   },
   "client:sem://design-system-docs#pairing.b7-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b7-port:arrivals",
@@ -4958,7 +4812,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.b8-chips",
   },
   "client:sem://design-system-docs#pairing.b8-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b8-chips:arrivals",
@@ -4999,7 +4852,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.cmdk",
     },
-    id: "sem://design-system-docs#pairing.b8-cmdk",
   },
   "client:sem://design-system-docs#pairing.b8-cmdk:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b8-cmdk:arrivals",
@@ -5024,7 +4876,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.cmdk:composes",
     },
-    id: "sem://design-system-docs#view.cmdk",
   },
   "client:sem://design-system-docs#view.cmdk:composes": {
     __id: "client:sem://design-system-docs#view.cmdk:composes",
@@ -5056,7 +4907,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b8-port",
   },
   "client:sem://design-system-docs#pairing.b8-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b8-port:arrivals",
@@ -5088,7 +4938,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port.pragma",
     },
-    id: "sem://design-system-docs#pairing.b8-pragma-port",
   },
   "client:sem://design-system-docs#pairing.b8-pragma-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b8-pragma-port:arrivals",
@@ -5104,7 +4953,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#port.pragma:composes",
     },
-    id: "sem://design-system-docs#port.pragma",
   },
   "client:sem://design-system-docs#port.pragma:composes": {
     __id: "client:sem://design-system-docs#port.pragma:composes",
@@ -5136,7 +4984,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.b9-port",
   },
   "client:sem://design-system-docs#pairing.b9-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.b9-port:arrivals",
@@ -5169,7 +5016,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-contribute",
     },
-    id: "sem://design-system-docs#pairing.c1-composer-contribute",
   },
   "client:sem://design-system-docs#pairing.c1-composer-contribute:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c1-composer-contribute:arrivals",
@@ -5211,7 +5057,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-contribute",
     },
-    id: "sem://design-system-docs#pairing.c1-guide",
   },
   "client:sem://design-system-docs#pairing.c1-guide:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c1-guide:arrivals",
@@ -5236,7 +5081,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-contribute:composes",
     },
-    id: "sem://design-system-docs#view.guide-contribute",
   },
   "client:sem://design-system-docs#view.guide-contribute:composes": {
     __id: "client:sem://design-system-docs#view.guide-contribute:composes",
@@ -5268,7 +5112,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.definitions",
     },
-    id: "sem://design-system-docs#pairing.c1-definitions",
   },
   "client:sem://design-system-docs#pairing.c1-definitions:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c1-definitions:arrivals",
@@ -5293,7 +5136,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.definitions:composes",
     },
-    id: "sem://design-system-docs#view.definitions",
   },
   "client:sem://design-system-docs#view.definitions:composes": {
     __id: "client:sem://design-system-docs#view.definitions:composes",
@@ -5334,7 +5176,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.class-page",
     },
-    id: "sem://design-system-docs#pairing.c2-class-page",
   },
   "client:sem://design-system-docs#pairing.c2-class-page:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c2-class-page:arrivals",
@@ -5359,7 +5200,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.class-page:composes",
     },
-    id: "sem://design-system-docs#view.class-page",
   },
   "client:sem://design-system-docs#view.class-page:composes": {
     __id: "client:sem://design-system-docs#view.class-page:composes",
@@ -5382,7 +5222,6 @@ const journeysExplorerRecords = {
     __typename: "Layout",
     uri: "sem://design-system-docs#layout.entity",
     name: "Entity",
-    id: "sem://design-system-docs#layout.entity",
   },
   "client:root:pairings(first:100):edges:48": {
     __id: "client:root:pairings(first:100):edges:48",
@@ -5407,7 +5246,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.editor",
     },
-    id: "sem://design-system-docs#pairing.c2-editor",
   },
   "client:sem://design-system-docs#pairing.c2-editor:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c2-editor:arrivals",
@@ -5432,7 +5270,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.editor:composes",
     },
-    id: "sem://design-system-docs#view.editor",
   },
   "client:sem://design-system-docs#view.editor:composes": {
     __id: "client:sem://design-system-docs#view.editor:composes",
@@ -5464,7 +5301,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.c2-port",
   },
   "client:sem://design-system-docs#pairing.c2-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c2-port:arrivals",
@@ -5497,7 +5333,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-contribute",
     },
-    id: "sem://design-system-docs#pairing.c3-composer-contribute",
   },
   "client:sem://design-system-docs#pairing.c3-composer-contribute:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c3-composer-contribute:arrivals",
@@ -5540,7 +5375,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-upstream",
     },
-    id: "sem://design-system-docs#pairing.c3-guide-upstream",
   },
   "client:sem://design-system-docs#pairing.c3-guide-upstream:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c3-guide-upstream:arrivals",
@@ -5566,7 +5400,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-upstream:composes",
     },
-    id: "sem://design-system-docs#view.guide-upstream",
   },
   "client:sem://design-system-docs#view.guide-upstream:composes": {
     __id: "client:sem://design-system-docs#view.guide-upstream:composes",
@@ -5598,7 +5431,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.c4-chips",
   },
   "client:sem://design-system-docs#pairing.c4-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c4-chips:arrivals",
@@ -5639,7 +5471,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.c4-port",
   },
   "client:sem://design-system-docs#pairing.c4-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c4-port:arrivals",
@@ -5672,7 +5503,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards-code",
     },
-    id: "sem://design-system-docs#pairing.c4-standards-code",
   },
   "client:sem://design-system-docs#pairing.c4-standards-code:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c4-standards-code:arrivals",
@@ -5698,7 +5528,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.standards-code:composes",
     },
-    id: "sem://design-system-docs#view.standards-code",
   },
   "client:sem://design-system-docs#view.standards-code:composes": {
     __id: "client:sem://design-system-docs#view.standards-code:composes",
@@ -5730,7 +5559,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.terminal-lookup",
     },
-    id: "sem://design-system-docs#pairing.c4-terminal",
   },
   "client:sem://design-system-docs#pairing.c4-terminal:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c4-terminal:arrivals",
@@ -5772,7 +5600,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-coverage",
     },
-    id: "sem://design-system-docs#pairing.c5-audit-coverage",
   },
   "client:sem://design-system-docs#pairing.c5-audit-coverage:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c5-audit-coverage:arrivals",
@@ -5798,7 +5625,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.audit-coverage:composes",
     },
-    id: "sem://design-system-docs#view.audit-coverage",
   },
   "client:sem://design-system-docs#view.audit-coverage:composes": {
     __id: "client:sem://design-system-docs#view.audit-coverage:composes",
@@ -5831,7 +5657,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-proposal",
     },
-    id: "sem://design-system-docs#pairing.c5-composer-proposal",
   },
   "client:sem://design-system-docs#pairing.c5-composer-proposal:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c5-composer-proposal:arrivals",
@@ -5857,7 +5682,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.composer-proposal:composes",
     },
-    id: "sem://design-system-docs#view.composer-proposal",
   },
   "client:sem://design-system-docs#view.composer-proposal:composes": {
     __id: "client:sem://design-system-docs#view.composer-proposal:composes",
@@ -5890,7 +5714,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.proposal-status",
     },
-    id: "sem://design-system-docs#pairing.c5-proposal-status",
   },
   "client:sem://design-system-docs#pairing.c5-proposal-status:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c5-proposal-status:arrivals",
@@ -5916,7 +5739,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.proposal-status:composes",
     },
-    id: "sem://design-system-docs#view.proposal-status",
   },
   "client:sem://design-system-docs#view.proposal-status:composes": {
     __id: "client:sem://design-system-docs#view.proposal-status:composes",
@@ -5949,7 +5771,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-contribute",
     },
-    id: "sem://design-system-docs#pairing.c6-composer-contribute",
   },
   "client:sem://design-system-docs#pairing.c6-composer-contribute:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c6-composer-contribute:arrivals",
@@ -5992,7 +5813,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards-content",
     },
-    id: "sem://design-system-docs#pairing.c6-standards-content",
   },
   "client:sem://design-system-docs#pairing.c6-standards-content:arrivals": {
     __id: "client:sem://design-system-docs#pairing.c6-standards-content:arrivals",
@@ -6034,7 +5854,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#composer.create",
     },
-    id: "sem://design-system-docs#pairing.cli-scaffold",
   },
   "client:sem://design-system-docs#pairing.cli-scaffold:arrivals": {
     __id: "client:sem://design-system-docs#pairing.cli-scaffold:arrivals",
@@ -6059,7 +5878,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#composer.create:composes",
     },
-    id: "sem://design-system-docs#composer.create",
   },
   "client:sem://design-system-docs#composer.create:composes": {
     __id: "client:sem://design-system-docs#composer.create:composes",
@@ -6091,7 +5909,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port.pragma",
     },
-    id: "sem://design-system-docs#pairing.cli-wire",
   },
   "client:sem://design-system-docs#pairing.cli-wire:arrivals": {
     __id: "client:sem://design-system-docs#pairing.cli-wire:arrivals",
@@ -6123,7 +5940,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#lens.doctor",
     },
-    id: "sem://design-system-docs#pairing.cli-health",
   },
   "client:sem://design-system-docs#pairing.cli-health:arrivals": {
     __id: "client:sem://design-system-docs#pairing.cli-health:arrivals",
@@ -6148,7 +5964,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#lens.doctor:composes",
     },
-    id: "sem://design-system-docs#lens.doctor",
   },
   "client:sem://design-system-docs#lens.doctor:composes": {
     __id: "client:sem://design-system-docs#lens.doctor:composes",
@@ -6180,7 +5995,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port.pragma",
     },
-    id: "sem://design-system-docs#pairing.cli-setup",
   },
   "client:sem://design-system-docs#pairing.cli-setup:arrivals": {
     __id: "client:sem://design-system-docs#pairing.cli-setup:arrivals",
@@ -6212,7 +6026,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port.pragma",
     },
-    id: "sem://design-system-docs#pairing.cli-pin",
   },
   "client:sem://design-system-docs#pairing.cli-pin:arrivals": {
     __id: "client:sem://design-system-docs#pairing.cli-pin:arrivals",
@@ -6244,7 +6057,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guides",
     },
-    id: "sem://design-system-docs#pairing.l1-guides",
   },
   "client:sem://design-system-docs#pairing.l1-guides:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l1-guides:arrivals",
@@ -6269,7 +6081,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guides:composes",
     },
-    id: "sem://design-system-docs#view.guides",
   },
   "client:sem://design-system-docs#view.guides:composes": {
     __id: "client:sem://design-system-docs#view.guides:composes",
@@ -6308,7 +6119,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.home",
     },
-    id: "sem://design-system-docs#pairing.l1-home",
   },
   "client:sem://design-system-docs#pairing.l1-home:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l1-home:arrivals",
@@ -6333,7 +6143,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.home:composes",
     },
-    id: "sem://design-system-docs#view.home",
   },
   "client:sem://design-system-docs#view.home:composes": {
     __id: "client:sem://design-system-docs#view.home:composes",
@@ -6354,7 +6163,6 @@ const journeysExplorerRecords = {
     __typename: "Layout",
     uri: "sem://design-system-docs#layout.lobby",
     name: "Lobby",
-    id: "sem://design-system-docs#layout.lobby",
   },
   "client:root:pairings(first:100):edges:68": {
     __id: "client:root:pairings(first:100):edges:68",
@@ -6379,7 +6187,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.class-page",
     },
-    id: "sem://design-system-docs#pairing.l10-class-page",
   },
   "client:sem://design-system-docs#pairing.l10-class-page:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l10-class-page:arrivals",
@@ -6420,7 +6227,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l10-port",
   },
   "client:sem://design-system-docs#pairing.l10-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l10-port:arrivals",
@@ -6453,7 +6259,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.schema-graph",
     },
-    id: "sem://design-system-docs#pairing.l10-schema-graph",
   },
   "client:sem://design-system-docs#pairing.l10-schema-graph:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l10-schema-graph:arrivals",
@@ -6478,7 +6283,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.schema-graph:composes",
     },
-    id: "sem://design-system-docs#view.schema-graph",
   },
   "client:sem://design-system-docs#view.schema-graph:composes": {
     __id: "client:sem://design-system-docs#view.schema-graph:composes",
@@ -6511,7 +6315,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-graph",
     },
-    id: "sem://design-system-docs#pairing.l11-section-graph",
   },
   "client:sem://design-system-docs#pairing.l11-section-graph:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l11-section-graph:arrivals",
@@ -6554,7 +6357,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.neighborhood",
     },
-    id: "sem://design-system-docs#pairing.l11-neighborhood",
   },
   "client:sem://design-system-docs#pairing.l11-neighborhood:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l11-neighborhood:arrivals",
@@ -6595,7 +6397,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l11-port",
   },
   "client:sem://design-system-docs#pairing.l11-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l11-port:arrivals",
@@ -6628,7 +6429,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.schema-graph",
     },
-    id: "sem://design-system-docs#pairing.l11-schema-graph",
   },
   "client:sem://design-system-docs#pairing.l11-schema-graph:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l11-schema-graph:arrivals",
@@ -6669,7 +6469,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.changelog",
     },
-    id: "sem://design-system-docs#pairing.l12-changelog",
   },
   "client:sem://design-system-docs#pairing.l12-changelog:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l12-changelog:arrivals",
@@ -6694,7 +6493,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.changelog:composes",
     },
-    id: "sem://design-system-docs#view.changelog",
   },
   "client:sem://design-system-docs#view.changelog:composes": {
     __id: "client:sem://design-system-docs#view.changelog:composes",
@@ -6735,7 +6533,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l12-port",
   },
   "client:sem://design-system-docs#pairing.l12-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l12-port:arrivals",
@@ -6768,7 +6565,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.status-badge",
     },
-    id: "sem://design-system-docs#pairing.l12-status-badge",
   },
   "client:sem://design-system-docs#pairing.l12-status-badge:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l12-status-badge:arrivals",
@@ -6809,7 +6605,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.l2-chips",
   },
   "client:sem://design-system-docs#pairing.l2-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l2-chips:arrivals",
@@ -6851,7 +6646,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-foundations",
     },
-    id: "sem://design-system-docs#pairing.l2-guide-foundations",
   },
   "client:sem://design-system-docs#pairing.l2-guide-foundations:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l2-guide-foundations:arrivals",
@@ -6877,7 +6671,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-foundations:composes",
     },
-    id: "sem://design-system-docs#view.guide-foundations",
   },
   "client:sem://design-system-docs#view.guide-foundations:composes": {
     __id: "client:sem://design-system-docs#view.guide-foundations:composes",
@@ -6909,7 +6702,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.components",
     },
-    id: "sem://design-system-docs#pairing.l3-components",
   },
   "client:sem://design-system-docs#pairing.l3-components:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l3-components:arrivals",
@@ -6934,7 +6726,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.components:composes",
     },
-    id: "sem://design-system-docs#view.components",
   },
   "client:sem://design-system-docs#view.components:composes": {
     __id: "client:sem://design-system-docs#view.components:composes",
@@ -6975,7 +6766,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.neighborhood",
     },
-    id: "sem://design-system-docs#pairing.l3-neighborhood",
   },
   "client:sem://design-system-docs#pairing.l3-neighborhood:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l3-neighborhood:arrivals",
@@ -7016,7 +6806,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l3-port",
   },
   "client:sem://design-system-docs#pairing.l3-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l3-port:arrivals",
@@ -7048,7 +6837,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#lens.terminal-catalog",
     },
-    id: "sem://design-system-docs#pairing.l3-terminal",
   },
   "client:sem://design-system-docs#pairing.l3-terminal:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l3-terminal:arrivals",
@@ -7089,7 +6877,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.cmdk",
     },
-    id: "sem://design-system-docs#pairing.l4-cmdk",
   },
   "client:sem://design-system-docs#pairing.l4-cmdk:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l4-cmdk:arrivals",
@@ -7130,7 +6917,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.compare",
     },
-    id: "sem://design-system-docs#pairing.l4-compare",
   },
   "client:sem://design-system-docs#pairing.l4-compare:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l4-compare:arrivals",
@@ -7171,7 +6957,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-analog",
     },
-    id: "sem://design-system-docs#pairing.l4-guide-analog",
   },
   "client:sem://design-system-docs#pairing.l4-guide-analog:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l4-guide-analog:arrivals",
@@ -7196,7 +6981,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-analog:composes",
     },
-    id: "sem://design-system-docs#view.guide-analog",
   },
   "client:sem://design-system-docs#view.guide-analog:composes": {
     __id: "client:sem://design-system-docs#view.guide-analog:composes",
@@ -7228,7 +7012,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l4-port",
   },
   "client:sem://design-system-docs#pairing.l4-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l4-port:arrivals",
@@ -7261,7 +7044,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-showcase",
     },
-    id: "sem://design-system-docs#pairing.l5-guide-showcase",
   },
   "client:sem://design-system-docs#pairing.l5-guide-showcase:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l5-guide-showcase:arrivals",
@@ -7287,7 +7069,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-showcase:composes",
     },
-    id: "sem://design-system-docs#view.guide-showcase",
   },
   "client:sem://design-system-docs#view.guide-showcase:composes": {
     __id: "client:sem://design-system-docs#view.guide-showcase:composes",
@@ -7319,7 +7100,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.home",
     },
-    id: "sem://design-system-docs#pairing.l5-home",
   },
   "client:sem://design-system-docs#pairing.l5-home:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l5-home:arrivals",
@@ -7360,7 +7140,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l6-port",
   },
   "client:sem://design-system-docs#pairing.l6-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l6-port:arrivals",
@@ -7393,7 +7172,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-guidelines",
     },
-    id: "sem://design-system-docs#pairing.l6-section-guidelines",
   },
   "client:sem://design-system-docs#pairing.l6-section-guidelines:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l6-section-guidelines:arrivals",
@@ -7419,7 +7197,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-guidelines:composes",
     },
-    id: "sem://design-system-docs#view.section-guidelines",
   },
   "client:sem://design-system-docs#view.section-guidelines:composes": {
     __id: "client:sem://design-system-docs#view.section-guidelines:composes",
@@ -7451,7 +7228,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards",
     },
-    id: "sem://design-system-docs#pairing.l6-standards",
   },
   "client:sem://design-system-docs#pairing.l6-standards:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l6-standards:arrivals",
@@ -7492,7 +7268,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.definitions",
     },
-    id: "sem://design-system-docs#pairing.l7-definitions",
   },
   "client:sem://design-system-docs#pairing.l7-definitions:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l7-definitions:arrivals",
@@ -7534,7 +7309,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guide-principles",
     },
-    id: "sem://design-system-docs#pairing.l7-guide-principles",
   },
   "client:sem://design-system-docs#pairing.l7-guide-principles:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l7-guide-principles:arrivals",
@@ -7560,7 +7334,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.guide-principles:composes",
     },
-    id: "sem://design-system-docs#view.guide-principles",
   },
   "client:sem://design-system-docs#view.guide-principles:composes": {
     __id: "client:sem://design-system-docs#view.guide-principles:composes",
@@ -7592,7 +7365,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l8-port",
   },
   "client:sem://design-system-docs#pairing.l8-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l8-port:arrivals",
@@ -7625,7 +7397,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards-content",
     },
-    id: "sem://design-system-docs#pairing.l8-standards-content",
   },
   "client:sem://design-system-docs#pairing.l8-standards-content:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l8-standards-content:arrivals",
@@ -7667,7 +7438,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.l9-chips",
   },
   "client:sem://design-system-docs#pairing.l9-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l9-chips:arrivals",
@@ -7708,7 +7478,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.definitions",
     },
-    id: "sem://design-system-docs#pairing.l9-definitions",
   },
   "client:sem://design-system-docs#pairing.l9-definitions:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l9-definitions:arrivals",
@@ -7749,7 +7518,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.l9-port",
   },
   "client:sem://design-system-docs#pairing.l9-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l9-port:arrivals",
@@ -8358,7 +8126,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port.pragma",
     },
-    id: "sem://design-system-docs#pairing.l9-pragma-port",
   },
   "client:sem://design-system-docs#pairing.l9-pragma-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.l9-pragma-port:arrivals",
@@ -8390,7 +8157,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.cmdk",
     },
-    id: "sem://design-system-docs#pairing.q1-cmdk",
   },
   "client:sem://design-system-docs#pairing.q1-cmdk:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q1-cmdk:arrivals",
@@ -8431,7 +8197,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.q1-port",
   },
   "client:sem://design-system-docs#pairing.q1-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q1-port:arrivals",
@@ -8464,7 +8229,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.search-results",
     },
-    id: "sem://design-system-docs#pairing.q1-search-results",
   },
   "client:sem://design-system-docs#pairing.q1-search-results:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q1-search-results:arrivals",
@@ -8490,7 +8254,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.search-results:composes",
     },
-    id: "sem://design-system-docs#view.search-results",
   },
   "client:sem://design-system-docs#view.search-results:composes": {
     __id: "client:sem://design-system-docs#view.search-results:composes",
@@ -8522,7 +8285,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.component-detail",
     },
-    id: "sem://design-system-docs#pairing.q2-detail",
   },
   "client:sem://design-system-docs#pairing.q2-detail:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q2-detail:arrivals",
@@ -8547,7 +8309,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.component-detail:composes",
     },
-    id: "sem://design-system-docs#view.component-detail",
   },
   "client:sem://design-system-docs#view.component-detail:composes": {
     __id: "client:sem://design-system-docs#view.component-detail:composes",
@@ -8588,7 +8349,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-fit",
     },
-    id: "sem://design-system-docs#pairing.q2-fit",
   },
   "client:sem://design-system-docs#pairing.q2-fit:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q2-fit:arrivals",
@@ -8613,7 +8373,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-fit:composes",
     },
-    id: "sem://design-system-docs#view.section-fit",
   },
   "client:sem://design-system-docs#view.section-fit:composes": {
     __id: "client:sem://design-system-docs#view.section-fit:composes",
@@ -8645,7 +8404,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.status-badge",
     },
-    id: "sem://design-system-docs#pairing.q2-status-badge",
   },
   "client:sem://design-system-docs#pairing.q2-status-badge:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q2-status-badge:arrivals",
@@ -8686,7 +8444,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.changelog",
     },
-    id: "sem://design-system-docs#pairing.q3-changelog",
   },
   "client:sem://design-system-docs#pairing.q3-changelog:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q3-changelog:arrivals",
@@ -8727,7 +8484,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.q3-port",
   },
   "client:sem://design-system-docs#pairing.q3-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q3-port:arrivals",
@@ -8759,7 +8515,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-feedback",
     },
-    id: "sem://design-system-docs#pairing.q4-feedback",
   },
   "client:sem://design-system-docs#pairing.q4-feedback:arrivals": {
     __id: "client:sem://design-system-docs#pairing.q4-feedback:arrivals",
@@ -8784,7 +8539,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.composer-feedback:composes",
     },
-    id: "sem://design-system-docs#view.composer-feedback",
   },
   "client:sem://design-system-docs#view.composer-feedback:composes": {
     __id: "client:sem://design-system-docs#view.composer-feedback:composes",
@@ -8817,7 +8571,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-coverage",
     },
-    id: "sem://design-system-docs#pairing.s1-audit-coverage",
   },
   "client:sem://design-system-docs#pairing.s1-audit-coverage:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s1-audit-coverage:arrivals",
@@ -8859,7 +8612,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.chips",
     },
-    id: "sem://design-system-docs#pairing.s1-chips",
   },
   "client:sem://design-system-docs#pairing.s1-chips:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s1-chips:arrivals",
@@ -8900,7 +8652,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.governance",
     },
-    id: "sem://design-system-docs#pairing.s1-governance",
   },
   "client:sem://design-system-docs#pairing.s1-governance:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s1-governance:arrivals",
@@ -8925,7 +8676,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.governance:composes",
     },
-    id: "sem://design-system-docs#view.governance",
   },
   "client:sem://design-system-docs#view.governance:composes": {
     __id: "client:sem://design-system-docs#view.governance:composes",
@@ -8957,7 +8707,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.s1-port",
   },
   "client:sem://design-system-docs#pairing.s1-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s1-port:arrivals",
@@ -8990,7 +8739,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-contribute",
     },
-    id: "sem://design-system-docs#pairing.s2-composer-contribute",
   },
   "client:sem://design-system-docs#pairing.s2-composer-contribute:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s2-composer-contribute:arrivals",
@@ -9032,7 +8780,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.editor",
     },
-    id: "sem://design-system-docs#pairing.s2-editor",
   },
   "client:sem://design-system-docs#pairing.s2-editor:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s2-editor:arrivals",
@@ -9074,7 +8821,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-coverage",
     },
-    id: "sem://design-system-docs#pairing.s3-audit-coverage",
   },
   "client:sem://design-system-docs#pairing.s3-audit-coverage:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s3-audit-coverage:arrivals",
@@ -9117,7 +8863,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-proposal",
     },
-    id: "sem://design-system-docs#pairing.s3-composer-proposal",
   },
   "client:sem://design-system-docs#pairing.s3-composer-proposal:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s3-composer-proposal:arrivals",
@@ -9159,7 +8904,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.governance",
     },
-    id: "sem://design-system-docs#pairing.s3-governance",
   },
   "client:sem://design-system-docs#pairing.s3-governance:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s3-governance:arrivals",
@@ -9201,7 +8945,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.proposal-status",
     },
-    id: "sem://design-system-docs#pairing.s4-proposal-status",
   },
   "client:sem://design-system-docs#pairing.s4-proposal-status:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s4-proposal-status:arrivals",
@@ -9244,7 +8987,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.review-queues",
     },
-    id: "sem://design-system-docs#pairing.s4-review-queues",
   },
   "client:sem://design-system-docs#pairing.s4-review-queues:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s4-review-queues:arrivals",
@@ -9269,7 +9011,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.review-queues:composes",
     },
-    id: "sem://design-system-docs#view.review-queues",
   },
   "client:sem://design-system-docs#view.review-queues:composes": {
     __id: "client:sem://design-system-docs#view.review-queues:composes",
@@ -9301,7 +9042,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.editor",
     },
-    id: "sem://design-system-docs#pairing.s5-editor",
   },
   "client:sem://design-system-docs#pairing.s5-editor:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s5-editor:arrivals",
@@ -9343,7 +9083,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.standards-content",
     },
-    id: "sem://design-system-docs#pairing.s5-standards-content",
   },
   "client:sem://design-system-docs#pairing.s5-standards-content:arrivals": {
     __id: "client:sem://design-system-docs#pairing.s5-standards-content:arrivals",
@@ -9385,7 +9124,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.compare",
     },
-    id: "sem://design-system-docs#pairing.v1-compare",
   },
   "client:sem://design-system-docs#pairing.v1-compare:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v1-compare:arrivals",
@@ -9426,7 +9164,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.focus",
     },
-    id: "sem://design-system-docs#pairing.v1-focus",
   },
   "client:sem://design-system-docs#pairing.v1-focus:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v1-focus:arrivals",
@@ -9467,7 +9204,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.v1-port",
   },
   "client:sem://design-system-docs#pairing.v1-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v1-port:arrivals",
@@ -9500,7 +9236,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-structure",
     },
-    id: "sem://design-system-docs#pairing.v1-section-structure",
   },
   "client:sem://design-system-docs#pairing.v1-section-structure:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v1-section-structure:arrivals",
@@ -9526,7 +9261,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-structure:composes",
     },
-    id: "sem://design-system-docs#view.section-structure",
   },
   "client:sem://design-system-docs#view.section-structure:composes": {
     __id: "client:sem://design-system-docs#view.section-structure:composes",
@@ -9558,7 +9292,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.v2-port",
   },
   "client:sem://design-system-docs#pairing.v2-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v2-port:arrivals",
@@ -9591,7 +9324,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.section-states",
     },
-    id: "sem://design-system-docs#pairing.v2-section-states",
   },
   "client:sem://design-system-docs#pairing.v2-section-states:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v2-section-states:arrivals",
@@ -9617,7 +9349,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.section-states:composes",
     },
-    id: "sem://design-system-docs#view.section-states",
   },
   "client:sem://design-system-docs#view.section-states:composes": {
     __id: "client:sem://design-system-docs#view.section-states:composes",
@@ -9650,7 +9381,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.audit-conformance",
     },
-    id: "sem://design-system-docs#pairing.v3-audit-conformance",
   },
   "client:sem://design-system-docs#pairing.v3-audit-conformance:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v3-audit-conformance:arrivals",
@@ -9676,7 +9406,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.audit-conformance:composes",
     },
-    id: "sem://design-system-docs#view.audit-conformance",
   },
   "client:sem://design-system-docs#view.audit-conformance:composes": {
     __id: "client:sem://design-system-docs#view.audit-conformance:composes",
@@ -9708,7 +9437,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.guides",
     },
-    id: "sem://design-system-docs#pairing.v3-guides",
   },
   "client:sem://design-system-docs#pairing.v3-guides:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v3-guides:arrivals",
@@ -9749,7 +9477,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#port",
     },
-    id: "sem://design-system-docs#pairing.v3-port",
   },
   "client:sem://design-system-docs#pairing.v3-port:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v3-port:arrivals",
@@ -9782,7 +9509,6 @@ const journeysExplorerRecords = {
     pairsSurface: {
       __ref: "sem://design-system-docs#view.composer-issue",
     },
-    id: "sem://design-system-docs#pairing.v4-composer-issue",
   },
   "client:sem://design-system-docs#pairing.v4-composer-issue:arrivals": {
     __id: "client:sem://design-system-docs#pairing.v4-composer-issue:arrivals",
@@ -9808,7 +9534,6 @@ const journeysExplorerRecords = {
     composes: {
       __ref: "client:sem://design-system-docs#view.composer-issue:composes",
     },
-    id: "sem://design-system-docs#view.composer-issue",
   },
   "client:sem://design-system-docs#view.composer-issue:composes": {
     __id: "client:sem://design-system-docs#view.composer-issue:composes",
@@ -9842,7 +9567,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#persona.agent",
     __typename: "Persona",
     uri: "sem://design-system-docs#persona.agent",
-    id: "sem://design-system-docs#persona.agent",
   },
   "client:root:personas:edges:1": {
     __id: "client:root:personas:edges:1",
@@ -9855,7 +9579,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#persona.architect",
     __typename: "Persona",
     uri: "sem://design-system-docs#persona.architect",
-    id: "sem://design-system-docs#persona.architect",
   },
   "client:root:personas:edges:2": {
     __id: "client:root:personas:edges:2",
@@ -9868,7 +9591,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#persona.designer",
     __typename: "Persona",
     uri: "sem://design-system-docs#persona.designer",
-    id: "sem://design-system-docs#persona.designer",
   },
   "client:root:personas:edges:3": {
     __id: "client:root:personas:edges:3",
@@ -9881,7 +9603,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#persona.engineer",
     __typename: "Persona",
     uri: "sem://design-system-docs#persona.engineer",
-    id: "sem://design-system-docs#persona.engineer",
   },
   "client:root:personas:edges:4": {
     __id: "client:root:personas:edges:4",
@@ -9894,7 +9615,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#persona.steward",
     __typename: "Persona",
     uri: "sem://design-system-docs#persona.steward",
-    id: "sem://design-system-docs#persona.steward",
   },
   "client:root:personas:edges:5": {
     __id: "client:root:personas:edges:5",
@@ -9907,7 +9627,6 @@ const journeysExplorerRecords = {
     __id: "sem://design-system-docs#persona.writer",
     __typename: "Persona",
     uri: "sem://design-system-docs#persona.writer",
-    id: "sem://design-system-docs#persona.writer",
   },
 } as unknown as RecordMap;
 

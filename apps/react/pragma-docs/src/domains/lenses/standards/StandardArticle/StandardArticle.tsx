@@ -30,7 +30,7 @@ const standardArticleFragmentSource = (): unknown => graphql`
     categories(first: 8) {
       edges {
         node {
-          id
+          uri
           slug
         }
       }
@@ -38,7 +38,6 @@ const standardArticleFragmentSource = (): unknown => graphql`
     extends(first: 8) {
       edges {
         node {
-          id
           uri
           name
         }
@@ -126,7 +125,7 @@ const StandardArticle = ({
               quietly correct it. */}
           <ul>
             {extendsNodes.map((node) => (
-              <li key={node.id}>
+              <li key={node.uri}>
                 <Link params={{ uri: node.uri }} to="standardEntity">
                   {node.name ?? node.uri}
                 </Link>

@@ -48,8 +48,7 @@ const pageTwoResponse = {
         {
           node: {
             __typename: "Component",
-            id: "ds:global.component.tooltip",
-            tier: { name: "Global", id: "ds:global" },
+            tier: { name: "Global", uri: "ds:global" },
             uri: "ds:global.component.tooltip",
             name: "Tooltip",
             summary: "",
@@ -59,10 +58,9 @@ const pageTwoResponse = {
         {
           node: {
             __typename: "Component",
-            id: "ds:apps_workplaceengineering.component.theme_switcher",
             tier: {
               name: "Apps/WorkplaceEngineering",
-              id: "ds:apps_workplaceengineering",
+              uri: "ds:apps_workplaceengineering",
             },
             uri: "ds:apps_workplaceengineering.component.theme_switcher",
             name: "ThemeSwitcher",

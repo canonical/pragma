@@ -29,13 +29,12 @@ const standardsIndexFragmentSource = (): unknown => graphql`
       @connection(key: "StandardsIndex_codeStandards") {
       edges {
         node {
-          id
           uri
           name
           categories(first: 1) {
             edges {
               node {
-                id
+                uri
                 slug
               }
             }
@@ -127,7 +126,7 @@ const StandardsIndex = ({
             <h3 id={`${categoryAnchorId(slug)}-title`}>{slug}</h3>
             <ul className="standards-list">
               {(groups.get(slug) ?? []).map((node) => (
-                <li key={node.id}>
+                <li key={node.uri}>
                   {/* Link text: the human title when the graph has one
                       (4/131 at capture), else the prefixed URI — never a
                       fabricated title. The address round-trips the D31

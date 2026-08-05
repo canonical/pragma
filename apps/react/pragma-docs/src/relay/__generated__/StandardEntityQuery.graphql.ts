@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2c93170b82a100caa1cdbcbb46955a67>>
+ * @generated SignedSource<<84bd7045df7d6dec3e5b4f9accdbf82c>>
  * @lightSyntaxTransform
  */
 
@@ -14,7 +14,6 @@ export type StandardEntityQuery$variables = {
 };
 export type StandardEntityQuery$data = {
   readonly codeStandard: {
-    readonly id: string;
     readonly name: string | null | undefined;
     readonly uri: string;
     readonly " $fragmentSpreads": FragmentRefs<"StandardArticle_standard">;
@@ -44,24 +43,17 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "name",
   "storageKey": null
 },
 v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "name",
-  "storageKey": null
-},
-v4 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
   "name": "uri",
   "storageKey": null
 },
-v5 = [
+v4 = [
   {
     "kind": "Literal",
     "name": "first",
@@ -85,7 +77,6 @@ return {
         "selections": [
           (v2/*:: as any*/),
           (v3/*:: as any*/),
-          (v4/*:: as any*/),
           {
             "args": null,
             "kind": "FragmentSpread",
@@ -114,7 +105,6 @@ return {
         "selections": [
           (v2/*:: as any*/),
           (v3/*:: as any*/),
-          (v4/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -124,7 +114,7 @@ return {
           },
           {
             "alias": null,
-            "args": (v5/*:: as any*/),
+            "args": (v4/*:: as any*/),
             "concreteType": "CategoryConnection",
             "kind": "LinkedField",
             "name": "categories",
@@ -146,7 +136,7 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v2/*:: as any*/),
+                      (v3/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -165,7 +155,7 @@ return {
           },
           {
             "alias": null,
-            "args": (v5/*:: as any*/),
+            "args": (v4/*:: as any*/),
             "concreteType": "CodeStandardConnection",
             "kind": "LinkedField",
             "name": "extends",
@@ -187,9 +177,8 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v2/*:: as any*/),
-                      (v4/*:: as any*/),
-                      (v3/*:: as any*/)
+                      (v3/*:: as any*/),
+                      (v2/*:: as any*/)
                     ],
                     "storageKey": null
                   }
@@ -205,16 +194,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "4e7c02043eae88de872f97a588c2e5ee",
+    "cacheID": "455ebd310c15beef4bfae266a3f8d1d6",
     "id": null,
     "metadata": {},
     "name": "StandardEntityQuery",
     "operationKind": "query",
-    "text": "query StandardEntityQuery(\n  $uri: String!\n) {\n  codeStandard(uri: $uri) {\n    id\n    name\n    uri\n    ...StandardArticle_standard\n  }\n}\n\nfragment StandardArticle_standard on CodeStandard {\n  uri\n  name\n  description\n  categories(first: 8) {\n    edges {\n      node {\n        id\n        slug\n      }\n    }\n  }\n  extends(first: 8) {\n    edges {\n      node {\n        id\n        uri\n        name\n      }\n    }\n  }\n}\n"
+    "text": "query StandardEntityQuery(\n  $uri: String!\n) {\n  codeStandard(uri: $uri) {\n    name\n    uri\n    ...StandardArticle_standard\n  }\n}\n\nfragment StandardArticle_standard on CodeStandard {\n  uri\n  name\n  description\n  categories(first: 8) {\n    edges {\n      node {\n        uri\n        slug\n      }\n    }\n  }\n  extends(first: 8) {\n    edges {\n      node {\n        uri\n        name\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8f5306d6f87a783ff7b921bb6c3eb1ad";
+(node as any).hash = "d880567c7c5bf4ca61a2fb54c18fad4c";
 
 export default node;

@@ -14,7 +14,7 @@ const entityAsideFragmentSource = (): unknown => graphql`
     uri
     version
     tier {
-      id
+      uri
       name
     }
   }
@@ -54,7 +54,7 @@ const EntityAside = ({
         <dt>Version</dt>
         <dd>{data.version ?? "unversioned"}</dd>
         <dt>Tier</dt>
-        <dd>{data.tier ? (data.tier.name ?? data.tier.id) : "Untiered"}</dd>
+        <dd>{data.tier ? (data.tier.name ?? data.tier.uri) : "Untiered"}</dd>
       </dl>
     </aside>
   );

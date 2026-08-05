@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3eff42e2941f503aae8a341eff8fc09e>>
+ * @generated SignedSource<<2ed8b378f6e3da01a4fc64770ed24d7f>>
  * @lightSyntaxTransform
  */
 
@@ -50,7 +50,7 @@ v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 },
 v3 = {
@@ -131,13 +131,6 @@ return {
                     ],
                     "storageKey": null
                   },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "uri",
-                    "storageKey": null
-                  },
                   (v3/*:: as any*/),
                   {
                     "alias": null,
@@ -206,16 +199,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "0b00c65573a2add396139af3891c000f",
+    "cacheID": "dbce9031e2c9642c515436462f91a137",
     "id": null,
     "metadata": {},
     "name": "CatalogListPaginationQuery",
     "operationKind": "query",
-    "text": "query CatalogListPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...CatalogList_query_1G22uz\n}\n\nfragment CatalogItem_component on Component {\n  id\n  uri\n  name\n  summary\n  tier {\n    id\n    name\n  }\n}\n\nfragment CatalogList_query_1G22uz on Query {\n  components(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        tier {\n          name\n          id\n        }\n        ...CatalogItem_component\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query CatalogListPaginationQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...CatalogList_query_1G22uz\n}\n\nfragment CatalogItem_component on Component {\n  uri\n  name\n  summary\n  tier {\n    uri\n    name\n  }\n}\n\nfragment CatalogList_query_1G22uz on Query {\n  components(first: $count, after: $cursor) {\n    edges {\n      node {\n        uri\n        tier {\n          name\n          uri\n        }\n        ...CatalogItem_component\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "336f8fee3ebde618b18490b8bae46791";
+(node as any).hash = "8fc104d6ec9f151a0865ca444e0a5919";
 
 export default node;

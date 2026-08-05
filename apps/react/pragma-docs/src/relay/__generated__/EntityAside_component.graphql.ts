@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cd59af10f142fa2e79f1019316c9cee5>>
+ * @generated SignedSource<<25ba7b4b06312fc5b2387c1aa0ac44f0>>
  * @lightSyntaxTransform
  */
 
@@ -11,8 +11,8 @@ import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type EntityAside_component$data = {
   readonly tier: {
-    readonly id: string;
     readonly name: string | null | undefined;
+    readonly uri: string;
   } | null | undefined;
   readonly uri: string;
   readonly version: string | null | undefined;
@@ -23,19 +23,21 @@ export type EntityAside_component$key = {
   readonly " $fragmentSpreads": FragmentRefs<"EntityAside_component">;
 };
 
-const node: ReaderFragment = {
+const node: ReaderFragment = (function(){
+var v0 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "uri",
+  "storageKey": null
+};
+return {
   "argumentDefinitions": [],
   "kind": "Fragment",
   "metadata": null,
   "name": "EntityAside_component",
   "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "uri",
-      "storageKey": null
-    },
+    (v0/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -51,13 +53,7 @@ const node: ReaderFragment = {
       "name": "tier",
       "plural": false,
       "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "id",
-          "storageKey": null
-        },
+        (v0/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -72,7 +68,8 @@ const node: ReaderFragment = {
   "type": "Component",
   "abstractKey": null
 };
+})();
 
-(node as any).hash = "6c84dbe668bebf48fe49392fda38d5b5";
+(node as any).hash = "12d5a94ce23b57912b22e370bfaffbdc";
 
 export default node;

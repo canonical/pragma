@@ -20,7 +20,7 @@ const entityHeaderFragmentSource = (): unknown => graphql`
     name
     summary
     tier {
-      id
+      uri
       name
     }
   }
@@ -53,7 +53,7 @@ const EntityHeader = ({
         <code>{data.uri}</code>
         {data.tier ? (
           <span className="entity-header-tier">
-            tier: {data.tier.name ?? data.tier.id}
+            tier: {data.tier.name ?? data.tier.uri}
           </span>
         ) : null}
       </p>

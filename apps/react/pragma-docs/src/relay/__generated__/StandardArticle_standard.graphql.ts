@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f98267a494a4489dfa53a7c4a10548eb>>
+ * @generated SignedSource<<b87f03d7c42d3af1659e101dc96a6938>>
  * @lightSyntaxTransform
  */
 
@@ -13,8 +13,8 @@ export type StandardArticle_standard$data = {
   readonly categories: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
         readonly slug: string | null | undefined;
+        readonly uri: string;
       };
     }>;
   };
@@ -22,7 +22,6 @@ export type StandardArticle_standard$data = {
   readonly extends: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -58,14 +57,7 @@ v2 = [
     "name": "first",
     "value": 8
   }
-],
-v3 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "id",
-  "storageKey": null
-};
+];
 return {
   "argumentDefinitions": [],
   "kind": "Fragment",
@@ -105,7 +97,7 @@ return {
               "name": "node",
               "plural": false,
               "selections": [
-                (v3/*:: as any*/),
+                (v0/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -146,7 +138,6 @@ return {
               "name": "node",
               "plural": false,
               "selections": [
-                (v3/*:: as any*/),
                 (v0/*:: as any*/),
                 (v1/*:: as any*/)
               ],
@@ -164,6 +155,6 @@ return {
 };
 })();
 
-(node as any).hash = "a655b01daf31deb5359ca52be04e96a8";
+(node as any).hash = "ba3e5dce9e8154763179c0c8547bec35";
 
 export default node;

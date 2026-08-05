@@ -26,7 +26,6 @@ import "./styles.css";
 const componentEntityQuerySource = (): unknown => graphql`
   query ComponentEntityQuery($uri: String!, $count: Int!) {
     component(uri: $uri) {
-      id
       name
       uri
       ...EntityHeader_component

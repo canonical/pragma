@@ -22,7 +22,6 @@ import "./styles.css";
 const standardEntityQuerySource = (): unknown => graphql`
   query StandardEntityQuery($uri: String!) {
     codeStandard(uri: $uri) {
-      id
       name
       uri
       ...StandardArticle_standard

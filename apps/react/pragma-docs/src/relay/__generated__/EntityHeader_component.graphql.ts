@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e1ef94359c2664f6be513ebe6a2ad538>>
+ * @generated SignedSource<<894ee3aac0db35b96f3ed5437323f861>>
  * @lightSyntaxTransform
  */
 
@@ -13,8 +13,8 @@ export type EntityHeader_component$data = {
   readonly name: string | null | undefined;
   readonly summary: string | null | undefined;
   readonly tier: {
-    readonly id: string;
     readonly name: string | null | undefined;
+    readonly uri: string;
   } | null | undefined;
   readonly uri: string;
   readonly " $fragmentType": "EntityHeader_component";
@@ -29,6 +29,13 @@ var v0 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
+  "name": "uri",
+  "storageKey": null
+},
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 };
@@ -38,14 +45,8 @@ return {
   "metadata": null,
   "name": "EntityHeader_component",
   "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "uri",
-      "storageKey": null
-    },
     (v0/*:: as any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -61,14 +62,8 @@ return {
       "name": "tier",
       "plural": false,
       "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "id",
-          "storageKey": null
-        },
-        (v0/*:: as any*/)
+        (v0/*:: as any*/),
+        (v1/*:: as any*/)
       ],
       "storageKey": null
     }
@@ -78,6 +73,6 @@ return {
 };
 })();
 
-(node as any).hash = "899eb38f4ab031ab3e97b09a448c42e8";
+(node as any).hash = "3d81931396a3e511b220ea5c2a57434e";
 
 export default node;
