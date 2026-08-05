@@ -402,7 +402,7 @@ _No input parameters._
 
 ### tier_lookup
 
-Resolve one or more tiers to their graph identity by name, prefixed name, IRI, or glob. Use when you need a tier's IRI, or to confirm a tier name exists before using it. Example: tier_lookup { name: ["apps/lxd"] }.
+Resolve one or more tiers to their graph identity by name, prefixed name, IRI, or glob. Use to confirm a tier exists and to get the graph's own spelling of its name — the plain and llm renderings print that name and nothing else, while the JSON payload carries the tier's IRI beside it. To browse the hierarchy with an IRI column, list the tiers instead. Example: tier_lookup { name: ["apps/lxd"] }.
 
 Read-only.
 
