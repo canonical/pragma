@@ -7,13 +7,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-* **task:** `planTask` — the PLAN interpreter, exported from `@canonical/task/node`. It performs every OBSERVING effect for real (`ReadFile`, `Exists`, `Glob`, `ReadContext`/`WriteContext`, and `TransformFile`'s read half) and simulates only what would destroy, create, or escape the process. This is what backs a user-facing `--dry-run`; `dryRun` in the base entry cannot, and is documented as the mock/test collector it is. Its residual falsehoods are enumerated in `lib/plan.ts`'s module docblock: `Exec` answers empty-and-successful, `Glob` does not see the plan's own writes, a copy source is not probed, a copied or `mkdir`-ed path exists to the plan but has no readable bytes, and a simulated delete is not subtracted.
+* **task:** `planTask` — the PLAN interpreter, exported from `@canonical/task/node`. It performs every OBSERVING effect for real (`ReadFile`, `Exists`, `Glob`, `ReadContext`/`WriteContext`, and `TransformFile`'s read half) and simulates only what would destroy, create, or escape the process. This is what backs a user-facing `--dry-run`; `dryRun` in the base entry cannot, and is documented as the mock/test collector it is. `planTask`, `PlanTaskOptions`, `PlanResult` and `LeafEffect` all ship from `@canonical/task/node`, matching the `runUndo`/`UndoResult` precedent. Its residual falsehoods are enumerated in `lib/plan.ts`'s module docblock: `Exec` answers empty-and-successful, `Glob` does not see the plan's own writes, a copy source is not probed, a copied or `mkdir`-ed path exists to the plan but has no readable bytes, and a simulated delete is not subtracted.
 
-### BREAKING CHANGES
-
-| was | now | notes |
-| --- | --- | --- |
-| `import type { PlanResult } from "@canonical/task"` | `import type { PlanResult } from "@canonical/task/node"` | A result type ships from the entry its producer ships from — the precedent `runUndo`/`UndoResult` already set — and `planTask` is on the node entry. There is no alias. |
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/task
 

@@ -388,7 +388,7 @@ Call `.unwrap()` to extract the underlying `Task<A>` when you need to pass it to
 
 ### Interpreters
 
-Tasks are inert data until an interpreter walks the structure and decides what to do with each effect. The package ships three interpreters:
+Tasks are inert data until an interpreter walks the structure and decides what to do with each effect. The package ships four interpreters:
 
 #### Production interpreter (`runTask`)
 
@@ -441,9 +441,27 @@ try {
 }
 ```
 
-#### Dry-run interpreter (`dryRun`)
+#### Plan interpreter (`planTask`)
 
-Collects effects without executing them. Each effect gets a mock return value so the task can continue:
+**This is the one to reach for when a human or an agent will read the result.** It performs every *observing* effect for real and simulates only what would destroy, create, or escape the process — so a preview describes the branch the run would actually take, and a task whose real run dies on a read fails the plan too, with the same error:
+
+```typescript
+import { planTask } from "@canonical/task/node";
+
+const { value, effects } = await planTask(myTask, { cwd: projectRoot });
+// value:   the task's return value, computed against REAL reads
+// effects: readonly LeafEffect[] — every effect it reached, in order
+```
+
+Real: `ReadFile`, `Exists`, `Glob`, `ReadContext`/`WriteContext`, and `TransformFile`'s read half. Simulated over a virtual overlay: `WriteFile`, `AppendFile`, `TransformFile`'s output, `CopyFile`, `CopyDirectory`, `MakeDir`, `Symlink` — plus the ancestor directories each of those would create, because the real interpreter `mkdir -p`s them. Also simulated: `DeleteFile`, `DeleteDirectory`, `Exec`, `Log`. Mocked: `Prompt`.
+
+`cwd` matters here in a way it does not for a collector: a plan that reads for real must resolve relative paths against the same base its run does. `onEffectStart` fires *before* each effect is interpreted and may rewrite it in place, which is how a caller stamps generated content into the byte counts a preview reports.
+
+What a plan still cannot tell you is enumerated in `lib/plan.ts`'s module docblock — `Exec` answers empty-and-successful, `Glob` does not see the plan's own writes, a copy source is not probed, a copied or `mkdir`-ed path exists to the plan but has no readable bytes, and a simulated delete is not subtracted.
+
+#### Mock/test collector (`dryRun`)
+
+**Not a user-facing preview** — use `planTask` for that. This one executes nothing and reads nothing, giving each effect a mock return value so the task can continue, which makes it the right tool for unit tests over a task's *shape*:
 
 ```typescript
 import { dryRun } from "@canonical/task";
@@ -603,7 +621,7 @@ result.toNotWriteFile("output/secret.key");
 | **Resources** | `bracket`, `ensure` |
 | **Utilities** | `tap`, `tapError`, `delay`, `timeout`, `fold`, `zip`, `zip3` |
 | **Production interpreter** (`@canonical/task/node`) | `runTask`, `run`, `executeEffect`, `RunTaskOptions` |
-| **Plan interpreter** (`@canonical/task/node`) | `planTask`, `PlanTaskOptions`, `PlanResult` |
+| **Plan interpreter** (`@canonical/task/node`) | `planTask`, `PlanTaskOptions`, `PlanResult`, `LeafEffect` |
 | **Mock/test interpreter** | `dryRun`, `dryRunWith`, `mockEffect`, `collectEffects`, `countEffects`, `filterEffects`, `getFileWrites`, `getAffectedFiles`, `assertEffects`, `assertFileWrites`, `expectTask` |
 | **Undo** | `collectUndos` (base), `UndoOptions` (base); `runUndo`, `UndoResult` (`@canonical/task/node`) |
 | **Errors** | `TaskExecutionError` (base — thrown by the interpreters, catchable anywhere) |
