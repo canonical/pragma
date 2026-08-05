@@ -1,6 +1,6 @@
 # Getting started
 
-pragma turns a design system into a queryable knowledge graph, then projects it as a CLI and an MCP server. This guide walks from a fresh install to reading the graph, tuning scope, and orienting an agent.
+pragma turns a design system into a queryable knowledge graph, then projects it as a CLI and an MCP server. This guide walks from a fresh install to reading the graph, configuring the CLI, and orienting an agent.
 
 ## Install and check
 
