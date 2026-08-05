@@ -179,12 +179,13 @@ index actually touches) is therefore unmeasured, as is MCP `resources/list`,
 whose budget probe (`capabilities`) is deliberately index-free. Both are
 recorded here rather than closed with a new case that would flake on this box.
 
-## PR7 — `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
+## `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
 
-PR7 completes the MCP surface; PR8 removes `token add-config` from it; and the
-prerelease cleanup removes `ontology show`, the deprecated alias of `ontology
-lookup`. So the catalog these two budgets are sized against is 36 tools. The two
-budgets PR4 seeded go enforced. They are split by MEASUREMENT TYPE:
+The MCP surface is complete; `token add-config` was removed from it alongside
+the last hand-written data command; and the prerelease cleanup removed `ontology
+show`, the deprecated alias of `ontology lookup`. So the catalog these two
+budgets are sized against is 36 tools, and the two seeded budgets go enforced.
+They are split by MEASUREMENT TYPE:
 
 - **`mcpP95Warm` (latency → serial perf pass).** Enforced in `budgets.test.ts`
   (the `(PROTECTED)` suite, run by the isolated serial `test:perf` pass so
@@ -209,8 +210,8 @@ budgets PR4 seeded go enforced. They are split by MEASUREMENT TYPE:
   16 999 → 16 481, a 518-char saving, which is the deleted tool's own name +
   description + inputSchema and not 1/37th of the total. This row previously
   read 11 068 chars ≈ 2767 tokens, and that figure had already gone stale before
-  PR8: a REMOVAL can only shrink the catalog, so 37 tools measuring 4250 cannot
-  be reached from a true 2767 over 38. Descriptions grew between the reading and
+  the last removal: a REMOVAL can only shrink the catalog, so 37 tools measuring
+  4250 cannot be reached from a true 2767 over 38. Descriptions grew between the reading and
   now, and the case asserts
   against the LIVE catalog with a fixed ceiling, so nothing went red while the
   table said the budget was a third spent instead of half. The budget genuinely
@@ -229,7 +230,7 @@ Confirmed by the spike:
   (`src/capabilities/lazy.test.ts`) walks the static import graph from
   `buildProgram` and `capabilities/index` and asserts neither reaches a zod
   schema module nor any `collect*` run body (those are dynamic-imported). The
-  `capabilities/index` assertion became an EXACT EMPTY SET in PR7: until then it
+  `capabilities/index` assertion became an EXACT EMPTY SET: until then it
   pinned one tolerated importer, `runtime/graphpack/types.ts`, reached through
   `resources/provider.ts → resolveSources → packIsComplete → readManifest →
   manifestSchema.parse`. Re-measured on the compiled binary (trimmed mean of 40
@@ -340,7 +341,7 @@ materializes the embedded pack, runs one `SELECT (COUNT(*))` and disposes — no
 `loadConfig`, no `loadEffectiveModules`, no dispatch, no formatter.
 
 That gap mattered little while `block list` was hand-written TypeScript. It
-matters now: PR8 removed the last hand-written data command, so the ENTIRE read
+matters now: the last hand-written data command is gone, so the ENTIRE read
 surface is compiled from `pragma.conf.ts`, and a story edit — another
 `COALESCE`, another `OPTIONAL`, a widened `VALUES` set — can add 100+ ms to
 every noun with a green gate.

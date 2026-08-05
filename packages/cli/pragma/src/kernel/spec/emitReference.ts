@@ -53,8 +53,12 @@ type ReferenceDocs = ReadonlyMap<string, string>;
  */
 const ERROR_CODE_DESCRIPTIONS: Record<(typeof ERROR_CODES)[number], string> = {
   ENTITY_NOT_FOUND: "A named entity (block, standard, token, …) was not found.",
-  EMPTY_RESULTS:
-    "A query or listing resolved to nothing under the active scope.",
+  // No scope narrows a read: `capabilities` says so in the shipped copy ("Reads
+  // are UNSCOPED: every list and lookup answers from the whole graph"), and the
+  // last scope was removed with `block list`'s tier/channel filter. This page
+  // went on telling a reader to look for the scope that narrowed their read,
+  // which is a dead end, and it is the writing an agent is steered to first.
+  EMPTY_RESULTS: "A query or listing matched nothing in the graph.",
   INVALID_INPUT: "An argument was malformed, out of range, or the wrong shape.",
   AMBIGUOUS_INPUT:
     "A name resolved to several entities (reserved; not yet raised).",

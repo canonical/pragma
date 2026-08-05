@@ -252,16 +252,23 @@ export const raceEffect = (tasks: Task<unknown>[]): Effect => ({
  *
  * `describeEffect` is the one writing of what a `--dry-run` tells a user (and,
  * through `--format json`, an agent) about the size of a write, and the run it
- * previews writes UTF-8. Measured on the consuming distribution before the fix:
- * `setup completions --dry-run` reported **8564** bytes where the run wrote
- * **8566** — one U+2014 em dash in the emitted script header, one UTF-16 code
- * unit and three UTF-8 bytes. A second verb was short by the same 2 for the
- * same em dash, `token add-config`; that command has since been removed from
- * the consuming distribution, so `setup completions` is the live example and
- * the only one a reader can still reproduce. `TextEncoder` rather than
- * `Buffer.byteLength` because this module is on the NODE-FREE base entry
- * (`index.node-free.test.ts` walks its import closure for `node:` specifiers);
- * `TextEncoder` is a web global and costs no edge.
+ * previews writes UTF-8. The defect this fixes: the consuming distribution's
+ * `setup completions --dry-run` reported a byte count 2 SHORT of what the run
+ * wrote, for every shell, because the emitted script header carries exactly one
+ * U+2014 em dash — one UTF-16 code unit and three UTF-8 bytes.
+ *
+ * THE INVARIANT, not the absolute size, is what a reader can check: one em
+ * dash, so bytes exceed code units by exactly 2. The absolute figure moves
+ * whenever the verb set moves, and it has — the earlier writing of this
+ * docblock recorded 8564/8566 for a tree two commits older, and by the time it
+ * was committed the same lane had removed a verb and invalidated it. Re-measured
+ * against this tree, `emitScripts(capabilities)` and the built binary agreeing:
+ * bash 7990 code units / 7992 bytes, zsh 6878 / 6880, fish 8550 / 8552. The
+ * delta is 2 at every one, which is the claim.
+ *
+ * `TextEncoder` rather than `Buffer.byteLength` because this module is on the
+ * NODE-FREE base entry (`index.node-free.test.ts` walks its import closure for
+ * `node:` specifiers); `TextEncoder` is a web global and costs no edge.
  *
  * @param content - The text an effect would write.
  * @returns Its UTF-8 length in bytes.

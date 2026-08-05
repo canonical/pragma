@@ -41,7 +41,7 @@ Every `error.code` in a failure envelope is one of the following:
 | Code | Meaning |
 | --- | --- |
 | `ENTITY_NOT_FOUND` | A named entity (block, standard, token, …) was not found. |
-| `EMPTY_RESULTS` | A query or listing resolved to nothing under the active scope. |
+| `EMPTY_RESULTS` | A query or listing matched nothing in the graph. |
 | `INVALID_INPUT` | An argument was malformed, out of range, or the wrong shape. |
 | `AMBIGUOUS_INPUT` | A name resolved to several entities (reserved; not yet raised). |
 | `UNKNOWN_VERB` | The command noun or verb is not recognized. |
