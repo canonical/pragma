@@ -1,0 +1,388 @@
+/**
+ * `planTask` — reads are real, destruction is simulated.
+ *
+ * Every assertion here runs against a REAL temp directory, because the whole
+ * point of this interpreter is that it observes the filesystem the run would
+ * observe. Two cases pin the exact bits the mocking collector gets wrong and
+ * that a `--dry-run` therefore lied about:
+ *
+ * - `readFile` yields the file's REAL bytes, not `[mock content of <path>]`;
+ * - `exists` is TRUE for a pre-existing file — `dryRun`'s `mockEffectWithFs`
+ *   answers from a virtual set that starts empty, so it says false, and the
+ *   read-and-merge branch of a config write was skipped entirely.
+ *
+ * And the invariant that makes it safe: after a plan containing writes, mkdirs,
+ * symlinks and deletes, the tree is byte-identical.
+ */
+
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { orElse, parallel, race, sequence_ } from "./combinators.js";
+import { dryRun } from "./dry-run.js";
+import { raceEffect } from "./effect.js";
+import { TaskExecutionError } from "./errors.js";
+import { planTask } from "./plan.js";
+import {
+  appendFile,
+  copyDirectory,
+  copyFile,
+  deleteDirectory,
+  deleteFile,
+  exec,
+  exists,
+  getContext,
+  glob,
+  info,
+  mkdir,
+  promptText,
+  readFile,
+  setContext,
+  symlink,
+  transformFile,
+  writeFile,
+} from "./primitives.js";
+import { $, effect, gen, pure } from "./task.js";
+import type { Effect } from "./types.js";
+
+let dir: string;
+
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), "task-plan-"));
+});
+afterEach(() => {
+  rmSync(dir, { recursive: true, force: true });
+});
+
+/** A stable snapshot of the fixture tree: every path and every file's bytes. */
+const snapshot = (root: string): Record<string, string> => {
+  const out: Record<string, string> = {};
+  const walk = (at: string, prefix: string): void => {
+    for (const entry of readdirSync(at, { withFileTypes: true }).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    )) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        out[`${rel}/`] = "";
+        walk(join(at, entry.name), rel);
+      } else if (entry.isSymbolicLink()) {
+        out[rel] = "<symlink>";
+      } else {
+        out[rel] = readFileSync(join(at, entry.name), "utf-8");
+      }
+    }
+  };
+  walk(root, "");
+  return out;
+};
+
+describe("planTask — reads are real", () => {
+  it("readFile yields the file's real bytes, where dryRun yields a mock string", async () => {
+    const file = join(dir, "real.txt");
+    writeFileSync(file, "the actual contents\n");
+
+    const planned = await planTask(readFile(file));
+    expect(planned.value).toBe("the actual contents\n");
+
+    // The defect this replaces, pinned so the contrast cannot be lost.
+    expect(dryRun(readFile(file)).value).toBe(`[mock content of ${file}]`);
+  });
+
+  it("exists is TRUE for a pre-existing file — the bit mockEffectWithFs gets wrong", async () => {
+    const file = join(dir, "present.txt");
+    writeFileSync(file, "x");
+
+    expect((await planTask(exists(file))).value).toBe(true);
+    expect((await planTask(exists(join(dir, "absent.txt")))).value).toBe(false);
+
+    expect(dryRun(exists(file)).value).toBe(false);
+  });
+
+  it("exists is TRUE for a path an earlier simulated write would have created", async () => {
+    const file = join(dir, "nested", "planned.txt");
+    const task = gen(function* () {
+      yield* $(writeFile(file, "planned"));
+      return yield* $(exists(file));
+    });
+
+    expect((await planTask(task)).value).toBe(true);
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it("readFile of a path this plan would have written yields the planned content", async () => {
+    const file = join(dir, "planned.txt");
+    const task = gen(function* () {
+      yield* $(writeFile(file, "planned bytes"));
+      return yield* $(readFile(file));
+    });
+
+    expect((await planTask(task)).value).toBe("planned bytes");
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it("glob matches the real tree", async () => {
+    writeFileSync(join(dir, "a.md"), "");
+    writeFileSync(join(dir, "b.txt"), "");
+
+    const { value } = await planTask(glob("*.md", dir));
+    expect(value).toEqual(["a.md"]);
+  });
+
+  it("resolves relative effect paths under cwd, as the real run does", async () => {
+    writeFileSync(join(dir, "under-cwd.txt"), "found me");
+
+    const { value } = await planTask(readFile("under-cwd.txt"), { cwd: dir });
+    expect(value).toBe("found me");
+  });
+
+  it("keys the overlay on the RESOLVED path, so cwd-relative and absolute agree", async () => {
+    const task = gen(function* () {
+      yield* $(writeFile("rel.txt", "body"));
+      return yield* $(exists(join(dir, "rel.txt")));
+    });
+
+    expect((await planTask(task, { cwd: dir })).value).toBe(true);
+  });
+});
+
+describe("planTask — a read that fails, fails the plan", () => {
+  it("rejects with FILE_NOT_FOUND when the real read is missing", async () => {
+    const missing = join(dir, "nope.txt");
+    await expect(planTask(readFile(missing))).rejects.toBeInstanceOf(
+      TaskExecutionError,
+    );
+    await planTask(readFile(missing)).catch((error: unknown) => {
+      expect((error as TaskExecutionError).code).toBe("FILE_NOT_FOUND");
+    });
+  });
+
+  it("routes the failed read through the recovery channel, so orElse sees it", async () => {
+    const { value } = await planTask(
+      orElse(readFile(join(dir, "nope.txt")), pure("fallback")),
+    );
+    expect(value).toBe("fallback");
+  });
+});
+
+describe("planTask — destruction is simulated", () => {
+  it("leaves the tree byte-identical after writes, mkdir, symlink, copy and deletes", async () => {
+    mkdirSync(join(dir, "keep"));
+    writeFileSync(join(dir, "keep", "existing.txt"), "untouched\n");
+    const before = snapshot(dir);
+
+    const task = sequence_([
+      writeFile(join(dir, "new.txt"), "would be written"),
+      appendFile(join(dir, "keep", "existing.txt"), "appended", true),
+      mkdir(join(dir, "made"), true),
+      symlink(join(dir, "keep", "existing.txt"), join(dir, "link.txt")),
+      copyFile(join(dir, "keep", "existing.txt"), join(dir, "copy.txt")),
+      copyDirectory(join(dir, "keep"), join(dir, "keep-copy")),
+      deleteFile(join(dir, "keep", "existing.txt")),
+      deleteDirectory(join(dir, "keep")),
+    ]);
+
+    await planTask(task);
+
+    expect(snapshot(dir)).toEqual(before);
+  });
+
+  it("does not subtract a simulated delete from what a later exists sees", async () => {
+    const file = join(dir, "doomed.txt");
+    writeFileSync(file, "x");
+    const task = gen(function* () {
+      yield* $(deleteFile(file));
+      return yield* $(exists(file));
+    });
+
+    // Documented residual falsehood: the overlay models additions only.
+    expect((await planTask(task)).value).toBe(true);
+  });
+
+  it("simulates exec with an empty successful result and runs no process", async () => {
+    const marker = join(dir, "ran.txt");
+    const { value } = await planTask(
+      exec("sh", ["-c", `printf x > ${marker}`]),
+    );
+
+    expect(value).toEqual({ stdout: "", stderr: "", exitCode: 0 });
+    expect(existsSync(marker)).toBe(false);
+  });
+
+  it("simulates log rather than emitting it (the caller renders it as a plan line)", async () => {
+    const { effects } = await planTask(info("hello"));
+    expect(effects.map((e) => e._tag)).toEqual(["Log"]);
+  });
+
+  it("mocks prompts with the same defaults dryRun uses, installing no handler", async () => {
+    const { value } = await planTask(
+      promptText("name", "Name?", "the-default"),
+    );
+    expect(value).toBe("the-default");
+  });
+});
+
+describe("planTask — transformFile", () => {
+  it("performs the read half and leaves the file byte-identical", async () => {
+    const file = join(dir, "t.txt");
+    writeFileSync(file, "original\n");
+    let seen: string | undefined;
+
+    await planTask(
+      transformFile(file, (source) => {
+        seen = source;
+        return source.toUpperCase();
+      }),
+    );
+
+    expect(seen).toBe("original\n");
+    expect(readFileSync(file, "utf-8")).toBe("original\n");
+  });
+
+  it("fails the plan when the file is missing, exactly as the run fails", async () => {
+    await expect(
+      planTask(transformFile(join(dir, "gone.txt"), (s) => s)),
+    ).rejects.toBeInstanceOf(TaskExecutionError);
+  });
+
+  it("fails the plan when the transform throws", async () => {
+    const file = join(dir, "t.txt");
+    writeFileSync(file, "x");
+    await expect(
+      planTask(
+        transformFile(file, () => {
+          throw new Error("bad transform");
+        }),
+      ),
+    ).rejects.toThrow("bad transform");
+  });
+
+  it("transforms what this plan would have written when the file is planned, not on disk", async () => {
+    const file = join(dir, "planned.txt");
+    let seen: string | undefined;
+    const task = sequence_([
+      writeFile(file, "planned body"),
+      transformFile(file, (source) => {
+        seen = source;
+        return source;
+      }),
+    ]);
+
+    await planTask(task);
+    expect(seen).toBe("planned body");
+    expect(existsSync(file)).toBe(false);
+  });
+});
+
+describe("planTask — context is real", () => {
+  it("round-trips writeContext through readContext within one plan", async () => {
+    const task = gen(function* () {
+      yield* $(setContext("k", 42));
+      return yield* $(getContext<number>("k"));
+    });
+
+    expect((await planTask(task)).value).toBe(42);
+  });
+
+  it("reads a context value the caller seeded", async () => {
+    const { value } = await planTask(getContext<string>("seeded"), {
+      context: new Map<string, unknown>([["seeded", "yes"]]),
+    });
+    expect(value).toBe("yes");
+  });
+});
+
+describe("planTask — effect callbacks and structure", () => {
+  it("fires onEffectStart once per effect, in order — the stamp a caller needs", async () => {
+    const file = join(dir, "seen.txt");
+    writeFileSync(file, "x");
+    const started: string[] = [];
+    const completed: string[] = [];
+
+    await planTask(
+      sequence_([
+        exists(file),
+        readFile(file),
+        writeFile(join(dir, "out.txt"), "y"),
+      ]),
+      {
+        onEffectStart: (e) => started.push(e._tag),
+        onEffectComplete: (e) => completed.push(e._tag),
+      },
+    );
+
+    expect(started).toEqual(["Exists", "ReadFile", "WriteFile"]);
+    expect(completed).toEqual(started);
+  });
+
+  it("collects effects in reached order, including structural children", async () => {
+    const { effects } = await planTask(
+      parallel([
+        writeFile(join(dir, "a"), "a"),
+        writeFile(join(dir, "b"), "b"),
+      ]),
+    );
+
+    expect(effects.map((e: Effect) => e._tag)).toEqual([
+      "WriteFile",
+      "WriteFile",
+    ]);
+  });
+
+  it("fires the structural callbacks for Parallel and Race", async () => {
+    const started: string[] = [];
+    await planTask(parallel([pure(1), pure(2)]), {
+      onEffectStart: (e) => started.push(e._tag),
+    });
+    await planTask(race([pure(1)]), {
+      onEffectStart: (e) => started.push(e._tag),
+    });
+
+    expect(started).toEqual(["Parallel", "Race"]);
+  });
+
+  it("describes the FIRST branch of a race and yields its value", async () => {
+    const { value, effects } = await planTask(
+      race([
+        writeFile(join(dir, "first"), "1"),
+        writeFile(join(dir, "second"), "2"),
+      ]),
+    );
+
+    expect(value).toBeUndefined();
+    expect(effects).toHaveLength(1);
+    expect(effects[0]).toMatchObject({ path: join(dir, "first") });
+  });
+
+  it("yields undefined for an empty race", async () => {
+    // `race([])` fails at the combinator, so the empty Race effect is only
+    // constructible directly — pinned anyway so the planner's zero-child path
+    // is not merely unreached code.
+    const { value } = await planTask(effect(raceEffect([])));
+    expect(value).toBeUndefined();
+  });
+
+  it("yields the children's values for a parallel", async () => {
+    const { value } = await planTask(parallel([pure(1), pure(2)]));
+    expect(value).toEqual([1, 2]);
+  });
+});
+
+describe("planTask — interruption", () => {
+  it("refuses to start when the signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      planTask(pure(1), { signal: controller.signal }),
+    ).rejects.toThrow("Task interrupted");
+  });
+});

@@ -11,6 +11,18 @@ import type { Effect, Task } from "./types.js";
  * lives in the base entry; executing the collected undos against the host
  * is `runUndo`'s job (`@canonical/task/node`).
  *
+ * KNOWN, MEASURED GAP, left open deliberately. Because the forward walk mocks
+ * reads, a branch a task takes only after reading something real is never
+ * walked, so its undos are never collected. Concrete case: pragma's
+ * `writeConfigField` backs up a corrupt global config before overwriting it —
+ * reachable only when a real read returns unparseable JSON — so `--undo`
+ * collects no undo for that backup write. This is the same defect `--dry-run`
+ * had, and the same `planTask` machinery would close it, but a plan-based
+ * collector is node-touching and `collectUndos` is exported from the node-free
+ * base entry to out-of-scope consumers. Closing it means either a second,
+ * node-side collector or a breaking change to a shared export — a ruling for
+ * the slice that owns those consumers, not a silent fix here.
+ *
  * @param task - The task to collect undos from
  * @returns Array of undo tasks in forward execution order
  */

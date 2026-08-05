@@ -7,7 +7,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import driveAsync from "./driveAsync.js";
+import driveAsync, { interruptGuard } from "./driveAsync.js";
 import { TaskExecutionError } from "./errors.js";
 import type { Effect, ExecResult, Task, TaskError } from "./types.js";
 
@@ -347,16 +347,7 @@ export const runTask = async <A>(
     signal,
   } = options;
 
-  const checkInterrupted = (): void => {
-    if (signal?.aborted) {
-      throw new TaskExecutionError({
-        code: "TASK_INTERRUPTED",
-        message: signal.reason
-          ? `Task interrupted: ${signal.reason}`
-          : "Task interrupted",
-      });
-    }
-  };
+  const checkInterrupted = interruptGuard(signal);
 
   // Perform a single effect for real and return its result. Structural
   // Parallel/Race effects drive their children through a fresh pass, and every
@@ -367,7 +358,9 @@ export const runTask = async <A>(
       const startTime = performance.now();
 
       const settled = await Promise.allSettled(
-        effect.tasks.map((child) => driveAsync(child, performRaw, checkInterrupted)),
+        effect.tasks.map((child) =>
+          driveAsync(child, performRaw, checkInterrupted),
+        ),
       );
 
       const errors: TaskError[] = [];
@@ -403,7 +396,9 @@ export const runTask = async <A>(
       const startTime = performance.now();
 
       const result = await Promise.race(
-        effect.tasks.map((child) => driveAsync(child, performRaw, checkInterrupted)),
+        effect.tasks.map((child) =>
+          driveAsync(child, performRaw, checkInterrupted),
+        ),
       );
 
       onEffectComplete?.(effect, performance.now() - startTime);

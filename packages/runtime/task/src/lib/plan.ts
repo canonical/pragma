@@ -1,0 +1,233 @@
+/**
+ * The PLAN interpreter: reads are real, destruction is simulated.
+ *
+ * This is what backs a user-facing `--dry-run` / plan-first preview. It exists
+ * because the node-free mocking collector (`dryRun`, in `lib/dry-run.ts`)
+ * cannot back one honestly: it answers `ReadFile` with the literal string
+ * `[mock content of <path>]` and `Exists` from a virtual filesystem that starts
+ * EMPTY, so a task whose shape depends on what it reads plans a different shape
+ * than it runs — and a task whose real run dies on a read plans a full success.
+ *
+ * Measured on `pragma config set tier apps/lxd` against an existing global
+ * config holding two other fields: the mocked preview reported
+ * `Check exists / Created dir / Write file (25 bytes)` with **no read at all**,
+ * because `exists` answered false and the read-and-merge branch was skipped
+ * entirely. The real run reads, merges, and writes **78 bytes**. The preview
+ * advertised a write that would have deleted two of the user's settings, and
+ * exited 0.
+ *
+ * ## The rule
+ *
+ * An effect is performed FOR REAL when it only observes, and SIMULATED when it
+ * would destroy, create, or escape the process:
+ *
+ * - real, delegated to `executeEffect`: `ReadFile`, `Exists`, `Glob`,
+ *   `ReadContext`, `WriteContext`;
+ * - real read half only: `TransformFile`;
+ * - simulated: `WriteFile`, `AppendFile`, `CopyFile`, `CopyDirectory`,
+ *   `DeleteFile`, `DeleteDirectory`, `MakeDir`, `Symlink`, `Exec`, `Log`;
+ * - mocked: `Prompt`.
+ *
+ * Decisions worth their reasons:
+ *
+ * - **The real arms delegate to `executeEffect` rather than re-implementing fs
+ *   access.** Two readings of "read a file" would drift, and this package
+ *   enforces 100% coverage — a small module is a coverable one.
+ * - **`WriteContext` is real.** It is in-memory and escapes nothing. Mocking it
+ *   (as `mockEffect` does, returning `undefined`) makes every later
+ *   `ReadContext` in the same task read nothing, so a context-carrying plan
+ *   diverges from its own run for no gain.
+ * - **`TransformFile` performs its read.** A missing file or a throwing
+ *   transform then fails the plan exactly as it fails the run. The transformed
+ *   text is discarded; nothing is written.
+ * - **`Log` is simulated.** The caller renders a `Log` effect as a plan line;
+ *   executing it too would print the message twice.
+ * - **`Prompt` reuses `mockEffect`'s arm** (imported from the node-free
+ *   `./dry-run.js`) so the two interpreters cannot drift on prompt defaults,
+ *   and so a plan still installs no prompt handler — `PlanTaskOptions` has no
+ *   `promptHandler` field at all, rather than accepting and ignoring one.
+ * - **A virtual overlay** records what a simulated write WOULD leave at a path,
+ *   keyed on the RESOLVED path so it agrees with `executeEffect`'s own `at()`.
+ *   A later `Exists` on a path this plan just "wrote" answers true, and a later
+ *   `ReadFile` on one answers with the planned content: a plan is consistent
+ *   with itself without touching the disk.
+ *
+ * ## Residual falsehoods, named rather than hidden
+ *
+ * - `Exec` answers `{ stdout: "", stderr: "", exitCode: 0 }`, so a task that
+ *   branches on an exec's output plans against an empty string. Running the
+ *   command for real is the thing a plan most obviously must not do.
+ * - `CopyFile`/`CopyDirectory` do not probe their SOURCE. A probe would add an
+ *   `Exists` the real run does not perform, and a plan whose effect sequence
+ *   differs from its run's defeats the harness that compares them. A missing
+ *   copy source is therefore still a plan/run divergence.
+ * - A simulated DELETE is not subtracted from the real filesystem's answers: a
+ *   later `Exists` still sees the file. Modelling subtraction would mean
+ *   modelling the real tree, and a wrong subtraction reads as "gone" when it is
+ *   not.
+ *
+ * @module
+ */
+
+import * as path from "node:path";
+import driveAsync, { interruptGuard } from "./driveAsync.js";
+import { mockEffect } from "./dry-run.js";
+import { executeEffect } from "./interpreter.js";
+import type { Effect, PlanResult, Task } from "./types.js";
+
+/** Every effect except the structural ones the planner resolves itself. */
+type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;
+
+/**
+ * Options for {@link planTask}. Deliberately a subset of `RunTaskOptions`:
+ * there is no `promptHandler` (a plan never asks) and no `onLog` (a plan never
+ * logs — the `Log` effect is a plan line, not output).
+ */
+export interface PlanTaskOptions {
+  /** Context for storing values between effects. */
+  context?: Map<string, unknown>;
+  /**
+   * Base directory RELATIVE fs-effect paths resolve against — the same meaning
+   * `RunTaskOptions.cwd` carries. A plan that reads for real MUST resolve paths
+   * exactly as its run does, or it reads the wrong files.
+   */
+  cwd?: string;
+  /** Called before each effect is interpreted. */
+  onEffectStart?: (effect: Effect) => void;
+  /** Called after each effect is interpreted. */
+  onEffectComplete?: (effect: Effect, duration: number) => void;
+  /** AbortSignal for interrupting the plan. */
+  signal?: AbortSignal;
+}
+
+/**
+ * Interpret a task as a PLAN: perform every observing effect for real, simulate
+ * every destructive one, and collect the effects in the order they were reached.
+ *
+ * A real read that throws is normalised and routed through the same recovery
+ * channel `runTask` uses, so `recover`/`orElse`/`retry` see it and, unhandled,
+ * it escapes as a `TaskExecutionError` — which is the point: a capability whose
+ * real run dies on a read can no longer plan a full success.
+ *
+ * @typeParam A - The task's result type.
+ * @param task - The task to plan.
+ * @param options - Context, cwd, effect callbacks, and abort signal.
+ * @returns The task's value and the effects it reached.
+ * @note Impure — performs real reads.
+ */
+export const planTask = async <A>(
+  task: Task<A>,
+  options: PlanTaskOptions = {},
+): Promise<PlanResult<A>> => {
+  const {
+    context = new Map(),
+    cwd,
+    onEffectStart,
+    onEffectComplete,
+    signal,
+  } = options;
+
+  const effects: Effect[] = [];
+  /** Resolved path → the content a simulated write would leave there. */
+  const overlay = new Map<string, string | undefined>();
+  const at = (p: string): string => (cwd ? path.resolve(cwd, p) : p);
+  const checkInterrupted = interruptGuard(signal);
+
+  /** Delegate one effect to the real interpreter, with no prompt/log handler. */
+  const real = (effect: Effect): Promise<unknown> =>
+    executeEffect(effect, context, undefined, undefined, cwd);
+
+  /**
+   * The bytes a `ReadFile`/`TransformFile` should observe: what this plan
+   * already planned to write there, else the real file.
+   */
+  const sourceOf = async (target: string): Promise<string> => {
+    const planned = overlay.get(at(target));
+    return planned === undefined
+      ? ((await real({ _tag: "ReadFile", path: target })) as string)
+      : planned;
+  };
+
+  // `Parallel`/`Race` are resolved by `perform` before a leaf is reached, so
+  // they are typed OUT here rather than handled as unreachable arms — the
+  // exhaustiveness check then costs no uncoverable code.
+  const interpretLeaf = async (effect: LeafEffect): Promise<unknown> => {
+    switch (effect._tag) {
+      // ---- observed for real -------------------------------------------
+      case "Exists":
+        // A path this plan would have created exists as far as this plan is
+        // concerned; otherwise ask the disk.
+        return overlay.has(at(effect.path)) ? true : real(effect);
+
+      case "ReadFile":
+        return sourceOf(effect.path);
+
+      case "Glob":
+      case "ReadContext":
+      case "WriteContext":
+        return real(effect);
+
+      case "TransformFile": {
+        // The READ half for real; the transform runs (so a throwing transform
+        // fails the plan as it fails the run) and its output is discarded.
+        effect.transform(await sourceOf(effect.path));
+        overlay.set(at(effect.path), undefined);
+        return undefined;
+      }
+
+      // ---- simulated ----------------------------------------------------
+      case "WriteFile":
+        overlay.set(at(effect.path), effect.content);
+        return undefined;
+
+      case "AppendFile":
+      case "MakeDir":
+      case "Symlink":
+        overlay.set(at(effect.path), undefined);
+        return undefined;
+
+      case "CopyFile":
+      case "CopyDirectory":
+        overlay.set(at(effect.dest), undefined);
+        return undefined;
+
+      case "DeleteFile":
+      case "DeleteDirectory":
+        return undefined;
+
+      case "Exec":
+      case "Log":
+      case "Prompt":
+        return mockEffect(effect);
+    }
+  };
+
+  const perform = async (effect: Effect): Promise<unknown> => {
+    if (effect._tag === "Parallel" || effect._tag === "Race") {
+      onEffectStart?.(effect);
+      const structuralStart = performance.now();
+      // Children are driven SEQUENTIALLY through the same overlay. A plan is a
+      // description, and interleaving children's overlay writes would make the
+      // recorded effect order depend on scheduling. `Race` describes the first
+      // branch, matching the mocking collector.
+      const children =
+        effect._tag === "Race" ? effect.tasks.slice(0, 1) : effect.tasks;
+      const results: unknown[] = [];
+      for (const child of children) {
+        results.push(await driveAsync(child, perform, checkInterrupted));
+      }
+      onEffectComplete?.(effect, performance.now() - structuralStart);
+      return effect._tag === "Race" ? results.at(0) : results;
+    }
+
+    effects.push(effect);
+    onEffectStart?.(effect);
+    const startTime = performance.now();
+    const result = await interpretLeaf(effect);
+    onEffectComplete?.(effect, performance.now() - startTime);
+    return result;
+  };
+
+  const value = await driveAsync(task, perform, checkInterrupted);
+  return { value, effects };
+};

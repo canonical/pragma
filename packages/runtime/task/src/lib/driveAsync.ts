@@ -47,6 +47,28 @@ export const normalizeThrownError = (thrown: unknown): TaskError => {
 };
 
 /**
+ * Build the loop-top interruption guard {@link driveAsync} calls. One spelling
+ * for both node-side interpreters: the message an aborted run reports is part
+ * of the CLI's observable behaviour (`isInterruption` matches on the code), and
+ * a plan that reported a different one would diverge from the run it previews.
+ *
+ * @param signal - The caller's abort signal, if any.
+ * @returns A guard that throws `TASK_INTERRUPTED` once the signal is aborted.
+ */
+export const interruptGuard =
+  (signal: AbortSignal | undefined): (() => void) =>
+  (): void => {
+    if (signal?.aborted) {
+      throw new TaskExecutionError({
+        code: "TASK_INTERRUPTED",
+        message: signal.reason
+          ? `Task interrupted: ${signal.reason}`
+          : "Task interrupted",
+      });
+    }
+  };
+
+/**
  * Drive a task to its final value asynchronously, resolving each leaf effect
  * through `performEffect`. This is the shared engine behind every node-side
  * interpreter: `runTask` (which performs effects for real) and `planTask`

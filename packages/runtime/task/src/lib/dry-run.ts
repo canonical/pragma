@@ -1,8 +1,31 @@
 /**
- * Dry-Run Interpreter
+ * The node-free MOCKING collector — for tests, not for previews.
  *
- * This module provides interpreters for testing and previewing tasks
- * without actually executing their effects.
+ * Nothing here previews anything. `ReadFile` answers with the literal string
+ * `[mock content of <path>]`; `Exists` answers from a virtual set that starts
+ * EMPTY (`mockEffectWithFs`) or from an unconditional `true` (`mockEffect`,
+ * reached via `dryRunWith`/`collectEffects`). A task whose shape depends on
+ * what it reads therefore takes a DIFFERENT branch here than it takes for real,
+ * and a task whose real run dies on a read collects a full, successful effect
+ * list.
+ *
+ * That is fine for what this is for — asserting the effect vocabulary a task
+ * emits, and walking a tree to collect undos — and it is why a user-facing
+ * `--dry-run` no longer uses it. Measured before the split, on
+ * `pragma config set tier apps/lxd` against an existing global config: this
+ * collector planned a 25-byte write with no read at all, where the real run
+ * reads, merges and writes 78 bytes. `@canonical/task/node#planTask` is the
+ * interpreter that backs a preview; it performs reads for real and simulates
+ * only destruction.
+ *
+ * Kept node-free deliberately: it is exported from the base entry, whose whole
+ * import closure is asserted to reach no `node:` builtin
+ * (`index.node-free.test.ts`).
+ *
+ * The name `dryRun` now misdescribes it — `mockRun` is what it is. Renaming it
+ * is a follow-up, not a free change: `packages/summon/{core,component,package,
+ * application,monorepo}` and `packages/cli/core` all import it, and the root
+ * type-check spans every one of them.
  */
 
 import driveSync from "./driveSync.js";

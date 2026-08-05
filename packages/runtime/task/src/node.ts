@@ -24,6 +24,16 @@ export {
 } from "./lib/interpreter.js";
 
 // =============================================================================
+// Plan Interpreter (reads for real, simulates destruction — what backs a
+// user-facing `--dry-run`. It lives HERE, not in the base entry, because real
+// reads need node; `dryRun` in the base entry stays the node-free mocking
+// collector for unit tests.)
+// =============================================================================
+
+export type { PlanTaskOptions } from "./lib/plan.js";
+export { planTask } from "./lib/plan.js";
+
+// =============================================================================
 // Undo Interpreter (collection is node-free and lives in the base entry —
 // `collectUndos` ships from `@canonical/task`; only execution lives here)
 // =============================================================================
