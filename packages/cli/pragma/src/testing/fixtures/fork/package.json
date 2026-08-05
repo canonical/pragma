@@ -1,0 +1,10 @@
+{
+  "name": "@canonical/pragma-fork-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A fork's manifest, read by scripts/build.ts --fork to check its declaration against what it depends on. Not a workspace member and never published.",
+  "dependencies": {
+    "@canonical/summon-monorepo": "^0.33.0"
+  }
+}

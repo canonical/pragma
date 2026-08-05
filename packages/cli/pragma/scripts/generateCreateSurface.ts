@@ -14,23 +14,26 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import conf from "../pragma.conf.js";
+import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
 
-/** The declared generator packages, in declaration order. */
-const DECLARED = conf.generators;
-
-/** Where the generated value module lands. */
-const GENERATORS_OUT = fileURLToPath(
-  new URL("../src/capabilities/create/generators.generated.ts", scriptsUrl),
+/**
+ * Where the shipped distribution's generated modules land — the DEFAULT, not a
+ * constant. A fork build passes its own directory, which is what makes the
+ * declaration a parameter of the build rather than an import of it.
+ */
+export const DEFAULT_GENERATED_DIR = fileURLToPath(
+  new URL("../src/capabilities/create/", scriptsUrl),
 );
 
-/** Where the generated data module lands. */
-const SURFACE_OUT = fileURLToPath(
-  new URL("../src/capabilities/create/surface.generated.ts", scriptsUrl),
-);
+/** The value module's basename, shared with the bundler's fork alias. */
+export const GENERATORS_MODULE = "generators.generated.ts";
+
+/** The data module's basename, shared with the bundler's fork alias. */
+export const SURFACE_MODULE = "surface.generated.ts";
 
 /** The shape a generator package exposes: its `generators` map. */
 type GeneratorLike = {
@@ -182,15 +185,20 @@ function deriveNounSurface(
  * data. Deterministic: nouns in declaration order, object keys written in a
  * fixed order, so a rebuild is a working-tree no-op.
  *
+ * @param declared - The declaring config's `generators`, in declaration order.
+ * @param outDir - Where the two modules land. A fork build passes its own.
  * @returns The nouns generated, in surface order.
  * @note Impure — imports the declared packages and writes two modules.
  */
-export async function generateCreateSurface(): Promise<string[]> {
+export async function generateCreateSurface(
+  declared: readonly GeneratorDeclaration[],
+  outDir: string = DEFAULT_GENERATED_DIR,
+): Promise<string[]> {
   const surface: Record<string, unknown> = {};
   const importLines: string[] = [];
   const mapEntries: string[] = [];
 
-  for (const [index, declaration] of DECLARED.entries()) {
+  for (const [index, declaration] of declared.entries()) {
     const local = `g${index}`;
     importLines.push(
       `import { generators as ${local} } from ${JSON.stringify(declaration.name)};`,
@@ -246,7 +254,7 @@ ${mapEntries.join("\n")}
 export const CREATE_SURFACE = ${JSON.stringify(surface, null, 2)} as const;
 `;
 
-  writeWhenChanged(GENERATORS_OUT, valueModule);
-  writeWhenChanged(SURFACE_OUT, dataModule);
+  writeWhenChanged(join(outDir, GENERATORS_MODULE), valueModule);
+  writeWhenChanged(join(outDir, SURFACE_MODULE), dataModule);
   return Object.keys(surface);
 }

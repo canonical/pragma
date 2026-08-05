@@ -1,0 +1,5 @@
+# Build outputs of `scripts/build.ts --fork`. The DECLARATION is the fixture;
+# what the build derives from it is regenerated on every proof run, and
+# committing it would let a stale copy stand in for a real rebuild.
+*.generated.ts
+pragma

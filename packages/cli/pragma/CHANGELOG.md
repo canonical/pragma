@@ -11,6 +11,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * **cli:** `generators` returns to `pragma.conf.ts`, load-bearing. It went away INERT (validated, layered, read by nothing) and comes back read at BUILD time: `scripts/build.ts` writes the literal import specifiers a `--compile` bundle needs, harvests each declared package's template roots, and derives the whole `create` surface — prompt mirrors, framework axis, path params, summaries and examples — from it. `src/capabilities/create/` names no generator package at all. Distribution-only, like the identity fields: a global or project layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries.
 
+* **cli:** the distribution config is a PARAMETER of the build, not an import of it. `scripts/build.ts --fork <dir> [--outfile <path>]` compiles the distribution declared by `<dir>/pragma.conf.ts`, checked against `<dir>/package.json`, writing its generated modules beside it and aliasing the three of them at bundle time. That is what makes the create surface's despecialization checkable rather than asserted: `forkGenerator.subprocess.test.ts` builds a fork declaring one generator package this distribution does not ship, and proves the fork binary runs `create monorepo` while the shipped binary has never heard of it.
+
 ### BREAKING CHANGES
 
 * **summon-component:** the `./embedded` subpath export is removed. The embedded-file registry lives in `@canonical/summon-core/embedded`; hosts inject through its `setEmbeddedFiles`.

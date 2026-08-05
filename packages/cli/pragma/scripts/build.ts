@@ -42,33 +42,109 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
-import conf from "../pragma.conf.js";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { assertDeclaredGenerators } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
+import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
-import { generateCreateSurface } from "./generateCreateSurface.js";
+import {
+  DEFAULT_GENERATED_DIR,
+  GENERATORS_MODULE,
+  generateCreateSurface,
+  SURFACE_MODULE,
+} from "./generateCreateSurface.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
 
+/** The manifest module's basename, shared with the bundler's fork alias. */
+const MANIFEST_MODULE = "templates.embedded.generated.ts";
+
 /**
- * The declared generator packages. Asserted against `package.json#dependencies`
- * on EVERY build, so a declaration that names a package the binary would not
- * link fails here rather than at a user's `create`.
+ * A distribution this build compiles: where its declaration lives, where its
+ * generated modules land, and what binary it produces.
+ *
+ * THE CONF IS A PARAMETER OF THE BUILD, NOT AN IMPORT OF IT. That is the whole
+ * thesis stated in the one script that can state it: `--fork <dir>` builds the
+ * distribution declared by `<dir>/pragma.conf.ts` against `<dir>/package.json`,
+ * writes ITS generated modules into `<dir>`, and aliases the three of them at
+ * bundle time. `src/capabilities/create/forkGenerator.subprocess.test.ts` uses
+ * it to prove a fork adds a `create` noun by editing one file.
  */
-const DECLARED = conf.generators;
-assertDeclaredGenerators(
-  DECLARED,
-  (
-    JSON.parse(
-      readFileSync(
-        fileURLToPath(new URL("../package.json", scriptsUrl)),
-        "utf-8",
-      ),
-    ) as { dependencies?: Record<string, string> }
-  ).dependencies ?? {},
-);
+interface BuildTarget {
+  /** Directory holding `pragma.conf.ts` and `package.json`. */
+  readonly dir: string;
+  /** Where the three generated modules are written. */
+  readonly generatedDir: string;
+  /** The compiled binary's path. */
+  readonly outfile: string;
+  /** Whether to regenerate the committed `docs/reference/` tree. */
+  readonly reference: boolean;
+}
+
+/**
+ * Read the build target from `process.argv`.
+ *
+ * @param argv - The arguments after the script name.
+ * @returns The distribution to build.
+ * @throws Error when `--fork` or `--outfile` is given without a value.
+ */
+function readBuildTarget(argv: readonly string[]): BuildTarget {
+  const packageDir = fileURLToPath(new URL("..", scriptsUrl));
+  const forkAt = argv.indexOf("--fork");
+  const outAt = argv.indexOf("--outfile");
+  const outfileArg = outAt === -1 ? undefined : argv.at(outAt + 1);
+  if (outAt !== -1 && outfileArg === undefined) {
+    throw new Error("--outfile needs a path.");
+  }
+  if (forkAt === -1) {
+    return {
+      dir: packageDir,
+      generatedDir: DEFAULT_GENERATED_DIR,
+      outfile: outfileArg ?? "dist/pragma",
+      reference: true,
+    };
+  }
+  const forkArg = argv.at(forkAt + 1);
+  if (forkArg === undefined) throw new Error("--fork needs a directory.");
+  const dir = isAbsolute(forkArg) ? forkArg : resolve(process.cwd(), forkArg);
+  return {
+    dir,
+    generatedDir: dir,
+    outfile: outfileArg ?? join(dir, "pragma"),
+    // A fork's reference tree is its own; regenerating THIS package's committed
+    // `docs/reference/` from a fork's surface would corrupt the distribution.
+    reference: false,
+  };
+}
+
+const TARGET = readBuildTarget(process.argv.slice(2));
+
+/**
+ * The target distribution's `generators`, asserted against ITS OWN
+ * `package.json#dependencies` on EVERY build, so a declaration naming a package
+ * the binary would not link fails here rather than at a user's `create`.
+ *
+ * @returns The declared generator packages, in declaration order.
+ * @note Impure — imports the target's config and reads its package manifest.
+ */
+async function readDeclaredGenerators(): Promise<
+  readonly GeneratorDeclaration[]
+> {
+  const conf = (
+    (await import(pathToFileURL(join(TARGET.dir, "pragma.conf.ts")).href)) as {
+      default: { generators?: readonly GeneratorDeclaration[] };
+    }
+  ).default;
+  const declared = conf.generators ?? [];
+  const manifest = JSON.parse(
+    readFileSync(join(TARGET.dir, "package.json"), "utf-8"),
+  ) as { dependencies?: Record<string, string> };
+  assertDeclaredGenerators(declared, manifest.dependencies ?? {});
+  return declared;
+}
+
+const DECLARED = await readDeclaredGenerators();
 
 /**
  * Every directory named `templates` under a package's `src/`, deepest paths
@@ -117,12 +193,7 @@ const TEMPLATE_ROOTS: ReadonlyArray<{ name: string; root: string }> =
     ).map((root) => ({ name, root })),
   );
 
-const MANIFEST_OUT = fileURLToPath(
-  new URL(
-    "../src/capabilities/create/templates.embedded.generated.ts",
-    scriptsUrl,
-  ),
-);
+const MANIFEST_OUT = join(TARGET.generatedDir, MANIFEST_MODULE);
 
 /**
  * Recursively collect EVERY file path under a directory.
@@ -243,26 +314,73 @@ function writeReferenceDocs(): number {
 
 export { writeReferenceDocs };
 
+/**
+ * The three generated modules a fork build substitutes, by basename.
+ *
+ * `src/capabilities/create/` imports them relatively (`./surface.generated.js`),
+ * so the bundler's resolver is the one seam where a fork's copies can take their
+ * place — the capability sources themselves stay untouched, which is the point:
+ * a fork edits `pragma.conf.ts`, never code.
+ */
+const FORK_ALIASED = new Set([
+  GENERATORS_MODULE,
+  SURFACE_MODULE,
+  MANIFEST_MODULE,
+]);
+
+/**
+ * A `Bun.build` plugin resolving the three generated create modules to the
+ * fork's copies.
+ *
+ * Scoped by BASENAME and by importing directory: only a `*.generated.js`
+ * specifier that is one of {@link FORK_ALIASED} and is imported from the create
+ * capability is redirected, so `runtime/graphpack/embedded/pack.generated.ts` —
+ * a different generated module entirely, and one a fork does not replace here —
+ * resolves normally.
+ *
+ * @returns The plugin.
+ */
+function aliasGeneratedModules(): import("bun").BunPlugin {
+  const createDir = fileURLToPath(
+    new URL("../src/capabilities/create/", scriptsUrl),
+  );
+  return {
+    name: "fork-generated-create-surface",
+    setup(build) {
+      build.onResolve({ filter: /\.generated\.js$/ }, (args) => {
+        const basename = args.path.slice(args.path.lastIndexOf("/") + 1);
+        const asSource = basename.replace(/\.js$/, ".ts");
+        if (!FORK_ALIASED.has(asSource)) return undefined;
+        if (relative(createDir, dirname(args.importer)) !== "")
+          return undefined;
+        return { path: join(TARGET.generatedDir, asSource) };
+      });
+    },
+  };
+}
+
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
-  const nouns = await generateCreateSurface();
+  mkdirSync(TARGET.generatedDir, { recursive: true });
+
+  const nouns = await generateCreateSurface(DECLARED, TARGET.generatedDir);
   console.log(
-    `Generated the create surface for ${nouns.join(", ")} → generators.generated.ts + surface.generated.ts`,
+    `Generated the create surface for ${nouns.join(", ")} → ${GENERATORS_MODULE} + ${SURFACE_MODULE}`,
   );
 
   const embedded = generateTemplateManifest();
-  console.log(
-    `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,
-  );
+  console.log(`Embedded ${embedded} generator templates → ${MANIFEST_MODULE}`);
 
-  const changedDocs = writeReferenceDocs();
-  console.log(
-    `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
-  );
+  if (TARGET.reference) {
+    const changedDocs = writeReferenceDocs();
+    console.log(
+      `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
+    );
+  }
 
   const result = await Bun.build({
-    entrypoints: ["src/bin.ts"],
+    entrypoints: [fileURLToPath(new URL("../src/bin.ts", scriptsUrl))],
     minify: true,
     // Code-splitting is load-bearing for cold-start: it emits the lazily
     // `import()`ed summon-core + generators (+ Ink/React) as SEPARATE chunks the
@@ -271,9 +389,10 @@ if (import.meta.main) {
     // it, the fast paths stay at/under their budgets while `create` loads summon
     // only when it runs.
     splitting: true,
+    plugins: TARGET.reference ? [] : [aliasGeneratedModules()],
     compile: {
       target: "bun-linux-x64",
-      outfile: "dist/pragma",
+      outfile: TARGET.outfile,
     },
   });
 
@@ -285,5 +404,5 @@ if (import.meta.main) {
     process.exit(1);
   }
 
-  console.log("Built dist/pragma");
+  console.log(`Built ${TARGET.outfile}`);
 }

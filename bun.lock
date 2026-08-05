@@ -323,6 +323,7 @@
         "@biomejs/biome": "2.4.9",
         "@canonical/anatomy-dsl": "^0.2.2",
         "@canonical/biome-config": "^0.33.0",
+        "@canonical/summon-monorepo": "^0.33.0",
         "@canonical/typescript-config": "^0.33.0",
         "@canonical/webarchitect": "^0.33.0",
         "@types/bun": "^1.3.10",
@@ -1333,8 +1334,8 @@
         "vitest": "^4.0.18",
       },
       "peerDependencies": {
-        "@canonical/summon-core": "^0.30.0",
-        "@canonical/task": "^0.30.0",
+        "@canonical/summon-core": "^0.33.0",
+        "@canonical/task": "^0.33.0",
       },
     },
     "packages/summon/core": {
@@ -1368,14 +1369,14 @@
       "name": "@canonical/summon-monorepo",
       "version": "0.33.0",
       "dependencies": {
-        "@canonical/summon-core": "^0.31.0",
-        "@canonical/task": "^0.31.0",
+        "@canonical/summon-core": "^0.33.0",
+        "@canonical/task": "^0.33.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.31.0",
-        "@canonical/typescript-config": "^0.31.0",
-        "@canonical/webarchitect": "^0.31.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config": "^0.33.0",
+        "@canonical/webarchitect": "^0.33.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -1399,8 +1400,8 @@
         "vitest": "^4.0.18",
       },
       "peerDependencies": {
-        "@canonical/summon-core": "^0.18.0 || ^0.20.0",
-        "@canonical/task": "^0.18.0 || ^0.20.0",
+        "@canonical/summon-core": "^0.33.0",
+        "@canonical/task": "^0.33.0",
       },
     },
     "packages/svelte/ds-app": {
