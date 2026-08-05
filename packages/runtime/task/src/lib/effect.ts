@@ -253,10 +253,12 @@ export const raceEffect = (tasks: Task<unknown>[]): Effect => ({
  * `describeEffect` is the one writing of what a `--dry-run` tells a user (and,
  * through `--format json`, an agent) about the size of a write, and the run it
  * previews writes UTF-8. Measured on the consuming distribution before the fix:
- * `token add-config --dry-run` reported `389 bytes` where the run wrote **391**
- * — one U+2014 em dash in the generated header, one code unit and three bytes.
- * `setup completions` carries the same em dash in its emitted script header and
- * was short by the same 2. `TextEncoder` rather than
+ * `setup completions --dry-run` reported **8564** bytes where the run wrote
+ * **8566** — one U+2014 em dash in the emitted script header, one UTF-16 code
+ * unit and three UTF-8 bytes. A second verb was short by the same 2 for the
+ * same em dash, `token add-config`; that command has since been removed from
+ * the consuming distribution, so `setup completions` is the live example and
+ * the only one a reader can still reproduce. `TextEncoder` rather than
  * `Buffer.byteLength` because this module is on the NODE-FREE base entry
  * (`index.node-free.test.ts` walks its import closure for `node:` specifiers);
  * `TextEncoder` is a web global and costs no edge.
@@ -264,7 +266,7 @@ export const raceEffect = (tasks: Task<unknown>[]): Effect => ({
  * @param content - The text an effect would write.
  * @returns Its UTF-8 length in bytes.
  */
-const byteLength = (content: string): number =>
+const measureByteLength = (content: string): number =>
   new TextEncoder().encode(content).length;
 
 /**
@@ -275,9 +277,9 @@ export const describeEffect = (effect: Effect): string => {
     case "ReadFile":
       return `Read file: ${effect.path}`;
     case "WriteFile":
-      return `Write file: ${effect.path} (${byteLength(effect.content)} bytes)`;
+      return `Write file: ${effect.path} (${measureByteLength(effect.content)} bytes)`;
     case "AppendFile":
-      return `Append to file: ${effect.path} (${byteLength(effect.content)} bytes)${effect.createIfMissing ? " [create if missing]" : ""}`;
+      return `Append to file: ${effect.path} (${measureByteLength(effect.content)} bytes)${effect.createIfMissing ? " [create if missing]" : ""}`;
     case "TransformFile":
       return `Transform file: ${effect.path}`;
     case "CopyFile":

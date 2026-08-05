@@ -65,7 +65,7 @@
  *    DIRECT `dependencies` left `packages/utils/dist` unwatched — it is a
  *    dependency of summon-core / -component / -application / -package, not of
  *    this package, and the bundler inlines it regardless. See
- *    {@link workspaceDependencyRoots} for the measurement. 1514 entries → 1716.
+ *    {@link collectWorkspaceDependencyRoots} for the measurement. 1514 entries → 1716.
  *
  * What is still NOT covered, because it is a different build: a BUILT workspace
  * dependency's own `dist` going stale against its own `src`. This setup rebuilds
@@ -133,7 +133,7 @@ import { CREATE_GENERATORS } from "../../capabilities/create/constants.js";
  * @returns Package-root-relative paths, or `[]` when nothing resolves.
  * @note Impure — reads `package.json` files and resolves symlinks.
  */
-function workspaceDependencyRoots(root: string): string[] {
+function collectWorkspaceDependencyRoots(root: string): string[] {
   const monorepo = resolve(root, "..", "..", "..");
   const roots: string[] = [];
   const visited = new Set<string>();
@@ -163,7 +163,7 @@ function workspaceDependencyRoots(root: string): string[] {
       if (!resolved.startsWith(`${monorepo}/packages/`)) continue;
       if (visited.has(resolved)) continue;
       visited.add(resolved);
-      roots.push(relative(root, join(resolved, entryRoot(resolved))));
+      roots.push(relative(root, join(resolved, readEntryRoot(resolved))));
       visit(resolved);
     }
   };
@@ -194,7 +194,7 @@ function workspaceDependencyRoots(root: string): string[] {
  * @returns One path segment, relative to that package's root.
  * @note Impure — reads the dependency's `package.json`.
  */
-export function entryRoot(packageRoot: string): string {
+export function readEntryRoot(packageRoot: string): string {
   let manifest: {
     exports?: Record<string, unknown>;
     module?: string;
@@ -231,7 +231,7 @@ export function entryRoot(packageRoot: string): string {
     unwrap(manifest.exports?.["."]) ?? manifest.module ?? manifest.main;
   const segment =
     typeof entry === "string"
-      ? entry.replace(/^\.\//, "").split("/")[0]
+      ? entry.replace(/^\.\//, "").split("/").at(0)
       : undefined;
   return segment && segment !== ".." && segment !== "" ? segment : "dist";
 }
@@ -275,7 +275,7 @@ function newestMtime(path: string): number {
 export default function setup(): void {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
   const built = newestMtime(join(root, "dist", "pragma"));
-  const inputs = [...INPUTS, ...workspaceDependencyRoots(root)];
+  const inputs = [...INPUTS, ...collectWorkspaceDependencyRoots(root)];
   const fresh =
     built > 0 &&
     inputs.every((input) => newestMtime(join(root, input)) < built);

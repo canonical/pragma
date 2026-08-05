@@ -2,7 +2,7 @@
  * `perf/globalSetup.ts`'s input derivation, unit-tested.
  *
  * The module had no test file at all, which mattered for one reason: its
- * `entryRoot` carries branches no live manifest reaches. All ten workspace
+ * `readEntryRoot` carries branches no live manifest reaches. All ten workspace
  * dependencies declare either a FLAT `exports["."]` whose `import` is a string
  * (nine of them) or no `exports` at all with `main: "src/index.ts"` (one), so
  * an instrumented copy of the recursion reports max depth 1, the `default`
@@ -10,11 +10,11 @@
  * asserting that a guard is correct is not evidence; these rows drive each
  * branch with a hand-written manifest.
  *
- * The failure they prevent is silent, not loud. `entryRoot` falling through to
+ * The failure they prevent is silent, not loud. `readEntryRoot` falling through to
  * its `dist` default for a dependency that ships from `src` points the
  * staleness walk at a directory that does not exist, `newestMtime` answers 0,
  * and every spawned-binary guard grades a stale `dist/pragma` — the hole
- * `workspaceDependencyRoots` exists to close.
+ * `collectWorkspaceDependencyRoots` exists to close.
  *
  * It lives here rather than beside the module because `vitest.config.ts`
  * excludes `src/testing/perf/**` from the default pass (those are the serial
@@ -26,7 +26,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { entryRoot } from "./perf/globalSetup.js";
+import { readEntryRoot } from "./perf/globalSetup.js";
 
 const roots: string[] = [];
 
@@ -45,10 +45,10 @@ function packageWith(manifest: unknown): string {
   return dir;
 }
 
-describe("entryRoot — the directory a linked dependency's code lives under", () => {
+describe("readEntryRoot — the directory a linked dependency's code lives under", () => {
   it("reads a FLAT export condition, the shape nine of ten workspace deps use", () => {
     expect(
-      entryRoot(
+      readEntryRoot(
         packageWith({
           exports: {
             ".": {
@@ -67,7 +67,7 @@ describe("entryRoot — the directory a linked dependency's code lives under", (
     // object, the segment read is skipped, and this answers `dist` — which for
     // a src-shipping package is a directory that does not exist.
     expect(
-      entryRoot(
+      readEntryRoot(
         packageWith({
           exports: {
             ".": {
@@ -81,40 +81,40 @@ describe("entryRoot — the directory a linked dependency's code lives under", (
 
   it("falls back to the `default` condition when there is no `import`", () => {
     expect(
-      entryRoot(
+      readEntryRoot(
         packageWith({ exports: { ".": { default: "./lib/index.js" } } }),
       ),
     ).toBe("lib");
   });
 
   it("reads `main` when no exports map is declared — summon-package's shape", () => {
-    expect(entryRoot(packageWith({ main: "src/index.ts" }))).toBe("src");
+    expect(readEntryRoot(packageWith({ main: "src/index.ts" }))).toBe("src");
   });
 
   it("prefers `module` over `main`", () => {
     expect(
-      entryRoot(
+      readEntryRoot(
         packageWith({ module: "./esm/index.js", main: "./cjs/index.js" }),
       ),
     ).toBe("esm");
   });
 
   it("answers `dist` for a manifest that declares no entry at all", () => {
-    expect(entryRoot(packageWith({ name: "@scope/nothing" }))).toBe("dist");
+    expect(readEntryRoot(packageWith({ name: "@scope/nothing" }))).toBe("dist");
   });
 
   it("answers `dist` for an unreadable manifest", () => {
-    expect(entryRoot(packageWith(undefined))).toBe("dist");
+    expect(readEntryRoot(packageWith(undefined))).toBe("dist");
   });
 
   it("refuses an entry that escapes the package root or names nothing", () => {
     // A `..` segment would point the walk OUTSIDE the dependency; an entry that
     // is bare (`"index.js"` splits to a file, not a directory, and `"./"` to
     // the empty string) has no directory to watch.
-    expect(entryRoot(packageWith({ main: "../elsewhere/index.js" }))).toBe(
+    expect(readEntryRoot(packageWith({ main: "../elsewhere/index.js" }))).toBe(
       "dist",
     );
-    expect(entryRoot(packageWith({ main: "./" }))).toBe("dist");
+    expect(readEntryRoot(packageWith({ main: "./" }))).toBe("dist");
   });
 
   it("unwraps to the depth cap, and stops one level past it", () => {
@@ -123,7 +123,9 @@ describe("entryRoot — the directory a linked dependency's code lives under", (
     // whatever a pathological manifest declares.
     const nest = (levels: number): unknown =>
       levels === 0 ? "./a/b.js" : { import: nest(levels - 1) };
-    expect(entryRoot(packageWith({ exports: { ".": nest(5) } }))).toBe("a");
-    expect(entryRoot(packageWith({ exports: { ".": nest(6) } }))).toBe("dist");
+    expect(readEntryRoot(packageWith({ exports: { ".": nest(5) } }))).toBe("a");
+    expect(readEntryRoot(packageWith({ exports: { ".": nest(6) } }))).toBe(
+      "dist",
+    );
   });
 });

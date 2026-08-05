@@ -112,7 +112,8 @@ export function readStaticGeneratorImports(
   for (const match of source.matchAll(
     /import\s*\{\s*generators as (\w+)\s*\}\s*from\s*"([^"]+)"/g,
   )) {
-    if (match[1] && match[2]) specifierOf.set(match[1], match[2]);
+    const [, local, specifier] = match;
+    if (local && specifier) specifierOf.set(local, specifier);
   }
   const bound: Record<string, string> = {};
   for (const match of source.matchAll(
@@ -164,7 +165,7 @@ export function readStaticGeneratorImports(
  */
 export function readEmbeddedManifestImport(source: string): string | undefined {
   for (const match of source.matchAll(/\bimport\(\s*"([^"]+)"\s*\)/g)) {
-    const specifier = match[1];
+    const specifier = match.at(1);
     if (specifier?.endsWith("/embedded") && !specifier.startsWith(".")) {
       return specifier.slice(0, -"/embedded".length);
     }

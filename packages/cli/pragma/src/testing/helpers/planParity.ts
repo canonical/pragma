@@ -66,7 +66,7 @@ export interface PlanVsRun {
 }
 
 /** Build the mutation runtime the dispatcher builds, for one branch. */
-function mutationRuntime(
+function buildMutationRuntime(
   runtime: PragmaRuntime,
   preview: boolean,
 ): PragmaRuntime {
@@ -92,7 +92,7 @@ export async function interpretAsPlan(
   params: Record<string, unknown>,
   runtime: PragmaRuntime,
 ): Promise<Interpretation> {
-  const rt = mutationRuntime(runtime, true);
+  const rt = buildMutationRuntime(runtime, true);
   if (verb.capability.needsStore) await rt.store.get();
   const task = await Promise.resolve(verb.run(params, rt));
   const planned = await planTask(task as never, planEffectSeam(rt.exec));
@@ -114,7 +114,7 @@ export async function interpretForReal(
   params: Record<string, unknown>,
   runtime: PragmaRuntime,
 ): Promise<Interpretation> {
-  const rt = mutationRuntime(runtime, false);
+  const rt = buildMutationRuntime(runtime, false);
   if (verb.capability.needsStore) await rt.store.get();
   const task = await Promise.resolve(verb.run(params, rt));
   const effects: LeafEffect[] = [];
@@ -146,7 +146,16 @@ export async function interpretForReal(
   return { effects, value };
 }
 
-/** A stable snapshot of a tree: every path, and every file's exact bytes. */
+/**
+ * A stable snapshot of a tree: every path, and every file's exact bytes.
+ *
+ * @param root - The directory to walk.
+ * @returns Relative POSIX-style path -> file contents, or the link target for
+ *   a symlink.
+ * @note Impure — reads the filesystem. That is the point: this is the
+ *   before/after oracle a plan is checked against, so it must observe the real
+ *   tree rather than any interpreter's model of it.
+ */
 export function snapshotTree(root: string): Record<string, string> {
   const out: Record<string, string> = {};
   const walk = (at: string, prefix: string): void => {
@@ -170,7 +179,7 @@ export function snapshotTree(root: string): Record<string, string> {
 }
 
 /** The comparable shape of one effect: everything a read could have decided. */
-function observable(effect: LeafEffect): Record<string, unknown> {
+function describeObservable(effect: LeafEffect): Record<string, unknown> {
   switch (effect._tag) {
     case "WriteFile":
       // The CONTENT, not its length: a plan that merged the wrong document
@@ -212,14 +221,16 @@ export function expectReadParity(
   both: PlanVsRun,
   scrub: (value: string) => string = (value) => value,
 ): void {
-  const shape = (effects: readonly LeafEffect[]): unknown[] =>
+  const describeShape = (effects: readonly LeafEffect[]): unknown[] =>
     effects.map((effect) =>
       Object.fromEntries(
-        Object.entries(observable(effect)).map(([key, value]) => [
+        Object.entries(describeObservable(effect)).map(([key, value]) => [
           key,
           typeof value === "string" ? scrub(value) : value,
         ]),
       ),
     );
-  expect(shape(both.plan.effects)).toEqual(shape(both.run.effects));
+  expect(describeShape(both.plan.effects)).toEqual(
+    describeShape(both.run.effects),
+  );
 }

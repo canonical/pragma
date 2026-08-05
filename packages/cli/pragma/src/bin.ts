@@ -32,9 +32,13 @@ const [MCP_TOKEN, COMPLETE_TOKEN, STORE_PROBE_TOKEN] = BIN_FAST_PATH_TOKENS;
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
+  // Read the dispatch token ONCE. `.at(0)` per cs:code.array.safe_access: the
+  // three comparisons below are against a possibly-absent element (`pragma`
+  // with no argument is the `--help` path), and `.at()` says so in the type.
+  const token = argv.at(0);
 
   // 1. MCP server entry (D9) — `pragma mcp` serves over stdio.
-  if (argv[0] === MCP_TOKEN) {
+  if (token === MCP_TOKEN) {
     const [{ serveMcp }, { capabilities }] = await Promise.all([
       import("./kernel/project/mcp/serve.js"),
       import("./capabilities/index.js"),
@@ -49,14 +53,14 @@ async function main(): Promise<void> {
   //    user's end-of-options. Candidates go to stdout newline-delimited (zero
   //    candidates → zero bytes); the entity tier reads the active pack's index
   //    (storeless), never the store; `runComplete` never throws.
-  if (argv[0] === COMPLETE_TOKEN) {
+  if (token === COMPLETE_TOKEN) {
     const [{ runComplete }, { indexCompletionEnv }, { capabilities }] =
       await Promise.all([
         import("./kernel/completion/complete.js"),
         import("./kernel/completion/entitySource.js"),
         import("./capabilities/index.js"),
       ]);
-    const words = argv[1] === "--" ? argv.slice(2) : argv.slice(1);
+    const words = argv.at(1) === "--" ? argv.slice(2) : argv.slice(1);
     const matches = await runComplete(
       words,
       capabilities,
@@ -68,7 +72,7 @@ async function main(): Promise<void> {
 
   // 2b. Internal store smoke probe — boots the embedded pack (oxigraph WASM +
   //     pack cache). Not a user command; the WASM-embed smoke test spawns it.
-  if (argv[0] === STORE_PROBE_TOKEN) {
+  if (token === STORE_PROBE_TOKEN) {
     const { runStoreProbe } = await import("./kernel/runtime/probe.js");
     process.stdout.write(`${await runStoreProbe()}\n`);
     return;

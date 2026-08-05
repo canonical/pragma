@@ -211,7 +211,7 @@ export const planTask = async <A>(
    * that cannot tell "absent" from "content unknown".
    */
   const overlay = new Map<string, string | undefined>();
-  const at = (p: string): string => (cwd ? path.resolve(cwd, p) : p);
+  const resolvePath = (p: string): string => (cwd ? path.resolve(cwd, p) : p);
   const checkInterrupted = interruptGuard(signal);
 
   /**
@@ -247,13 +247,18 @@ export const planTask = async <A>(
   };
 
   /** Delegate one effect to the real interpreter, with no prompt/log handler. */
-  const real = (effect: Effect): Promise<unknown> =>
+  const performForReal = (effect: Effect): Promise<unknown> =>
     executeEffect(effect, context, undefined, undefined, cwd);
 
   /** The real file's bytes, or `undefined` when it is not there. */
-  const realSource = async (target: string): Promise<string | undefined> => {
+  const readRealSource = async (
+    target: string,
+  ): Promise<string | undefined> => {
     try {
-      return (await real({ _tag: "ReadFile", path: target })) as string;
+      return (await performForReal({
+        _tag: "ReadFile",
+        path: target,
+      })) as string;
     } catch {
       return undefined;
     }
@@ -265,11 +270,11 @@ export const planTask = async <A>(
    * WITHOUT modelled content falls through to the real read, and so still
    * fails the way a read of a file this plan has not written fails.
    */
-  const sourceOf = async (target: string): Promise<string> => {
-    const key = at(target);
+  const readPlannedOrRealSource = async (target: string): Promise<string> => {
+    const key = resolvePath(target);
     const planned = overlay.get(key);
     if (planned !== undefined) return planned;
-    return (await real({ _tag: "ReadFile", path: target })) as string;
+    return (await performForReal({ _tag: "ReadFile", path: target })) as string;
   };
 
   // `Parallel`/`Race` are resolved by `perform` before a leaf is reached, so
@@ -281,15 +286,17 @@ export const planTask = async <A>(
       case "Exists":
         // A path this plan would have created exists as far as this plan is
         // concerned; otherwise ask the disk.
-        return overlay.has(at(effect.path)) ? true : real(effect);
+        return overlay.has(resolvePath(effect.path))
+          ? true
+          : performForReal(effect);
 
       case "ReadFile":
-        return sourceOf(effect.path);
+        return readPlannedOrRealSource(effect.path);
 
       case "Glob":
       case "ReadContext":
       case "WriteContext":
-        return real(effect);
+        return performForReal(effect);
 
       case "TransformFile": {
         // The READ half for real (so a missing file or a throwing transform
@@ -298,29 +305,29 @@ export const planTask = async <A>(
         // one's output and a later `ReadFile` answers with the transformed text.
         // Nothing reaches the disk.
         overlay.set(
-          at(effect.path),
-          effect.transform(await sourceOf(effect.path)),
+          resolvePath(effect.path),
+          effect.transform(await readPlannedOrRealSource(effect.path)),
         );
         return undefined;
       }
 
       // ---- simulated ----------------------------------------------------
       case "WriteFile":
-        markAncestors(at(effect.path));
-        overlay.set(at(effect.path), effect.content);
+        markAncestors(resolvePath(effect.path));
+        overlay.set(resolvePath(effect.path), effect.content);
         return undefined;
 
       case "AppendFile":
         // The appended document, so a later read answers with it. The real read
-        // of the base goes through `real()`, which does not push into `effects`
+        // of the base goes through `performForReal()`, which does not push into `effects`
         // — the plan's effect SEQUENCE still matches the run's. `executeEffect`
         // appends with node's default `a` flag, which creates a missing file, so
         // an absent base is the empty string on both sides.
-        markAncestors(at(effect.path));
+        markAncestors(resolvePath(effect.path));
         overlay.set(
-          at(effect.path),
-          (overlay.get(at(effect.path)) ??
-            (await realSource(effect.path)) ??
+          resolvePath(effect.path),
+          (overlay.get(resolvePath(effect.path)) ??
+            (await readRealSource(effect.path)) ??
             "") + effect.content,
         );
         return undefined;
@@ -328,19 +335,19 @@ export const planTask = async <A>(
       case "MakeDir":
         // `recursive: false` is `fs.mkdir`'s own contract: the parent must
         // already be there, so the run creates no ancestor either.
-        if (effect.recursive) markAncestors(at(effect.path));
-        overlay.set(at(effect.path), undefined);
+        if (effect.recursive) markAncestors(resolvePath(effect.path));
+        overlay.set(resolvePath(effect.path), undefined);
         return undefined;
 
       case "Symlink":
-        markAncestors(at(effect.path));
-        overlay.set(at(effect.path), undefined);
+        markAncestors(resolvePath(effect.path));
+        overlay.set(resolvePath(effect.path), undefined);
         return undefined;
 
       case "CopyFile":
       case "CopyDirectory":
-        markAncestors(at(effect.dest));
-        overlay.set(at(effect.dest), undefined);
+        markAncestors(resolvePath(effect.dest));
+        overlay.set(resolvePath(effect.dest), undefined);
         return undefined;
 
       case "DeleteFile":

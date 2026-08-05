@@ -26,7 +26,7 @@ function fnBase(binName: string): string {
 }
 
 /** AND a `minChars` guard into a name rule's condition (or start one). */
-function withMinChars(
+function requireMinChars(
   fn: string,
   condition: string | undefined,
   minChars: number,
@@ -48,11 +48,11 @@ function withMinChars(
  * one process spawn per TAB on a flag name, AND the delegate's reply landing in
  * the user's candidate list beside the flags.
  *
- * Composed beside {@link withMinChars} rather than spelled inline so the two
+ * Composed beside {@link requireMinChars} rather than spelled inline so the two
  * guards read as one policy: a name rule execs only for a long-enough,
  * non-flag token.
  */
-function withoutFlagToken(condition: string | undefined): string | undefined {
+function rejectFlagToken(condition: string | undefined): string | undefined {
   const guard = "not string match -q -- '-*' (commandline -ct)";
   return condition ? `${condition}; and ${guard}` : guard;
 }
@@ -70,7 +70,7 @@ function flagRule(
   // position condition (enum/file/none complete on bare TAB).
   const cond =
     flag.takesValue && flag.source.kind === "names"
-      ? withMinChars(fn, condition, minChars)
+      ? requireMinChars(fn, condition, minChars)
       : condition;
   const parts = [`complete -c ${binName}`];
   if (cond) parts.push(`-n "${cond}"`);
@@ -120,7 +120,7 @@ function positionalRule(
   // flag; a values/files positional execs nothing, so it keeps the bare
   // position condition and still completes on bare TAB.
   const cond = names
-    ? withoutFlagToken(withMinChars(fn, condition, minChars))
+    ? rejectFlagToken(requireMinChars(fn, condition, minChars))
     : condition;
   const parts = [`complete -c ${binName} -n "${cond}"`];
   if (names) {

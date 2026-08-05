@@ -548,10 +548,11 @@ describe("Effect Utilities - describeEffect", () => {
 
   // Every other row here is pure ASCII, where `String.length` and the UTF-8
   // byte count coincide — which is exactly how the shipped `--dry-run` reported
-  // a number the run did not write for two of the consuming distribution's
-  // verbs (`token add-config`: planned 389, wrote 391; `setup completions`:
-  // planned 8564, wrote 8566 — one em dash each). These two rows are the ones
-  // that separate the two readings.
+  // a number the run did not write for the consuming distribution's `setup
+  // completions` (planned 8564, wrote 8566 — one em dash in the emitted script
+  // header). A second verb was wrong the same way and by the same 2, `token
+  // add-config`, which the distribution has since removed; `setup completions`
+  // is the reproducible one. These two rows separate the two readings.
   it("counts a write in UTF-8 BYTES, not UTF-16 code units", () => {
     const effect = writeFileEffect("/out.mjs", "// a — b\n");
     // 9 code units; the em dash is 3 bytes, so 11 on disk.
