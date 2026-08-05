@@ -170,17 +170,22 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "tool-tier-lookup-lists-scoped-blocks",
+    id: "tool-tier-lookup-resolves-the-tier-identity",
     kind: "tool",
     input:
-      "tier_lookup {name:apps/lxd} resolves the tier and lists the blocks scoped to it (LXD Panel).",
+      "tier_lookup {name:[apps/lxd]} resolves the tier to its graph identity (name + IRI).",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("tier_lookup", { name: "apps/lxd" });
+        const result = await mcp.callTool("tier_lookup", {
+          name: ["apps/lxd"],
+        });
         assert.equal(result.ok, true);
-        const data = result.data as { name: string; blocks: string[] };
-        assert.equal(data.name, "apps/lxd");
-        assert.ok(data.blocks.includes("LXD Panel"));
+        const data = result.data as {
+          results: { name: string; uri: string }[];
+        };
+        assert.equal(data.results.length, 1);
+        assert.equal(data.results[0]?.name, "apps/lxd");
+        assert.match(String(data.results[0]?.uri), /apps_lxd$/);
       });
     },
   },

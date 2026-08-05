@@ -311,9 +311,15 @@ const designSystemStories: readonly PackDefinition[] = [
 
   // Tiers. The hierarchy is encoded in the slash-separated path string
   // (`apps/lxd`), not in graph edges, so `tier list` is a flat, name-ordered
-  // list; the ordered-inheritance logic lives in the block list's tier chain.
-  // `tier lookup` stays hand-written because the covenant freezes it with a
-  // single `<name>` positional where a pack lookup emits a variadic `<name...>`.
+  // list.
+  //
+  // A tier carries exactly two facts in this graph — its class and its name —
+  // so the lookup declares no fields: it resolves a name (or prefixed name,
+  // IRI, or glob) to the entity, and that IS the whole record. The blocks
+  // scoped to a tier are NOT here: that is the inverse of `ds:tier`, which the
+  // grammar admits in neither source (a term must start with a letter, so
+  // `^ds:tier` is not a term, and an expand walks a relation forward from the
+  // resolved entity). Blocks name their own tier — `block lookup` shows it.
   {
     noun: "tier",
     description: "List all tiers in the design system ontology.",
@@ -330,6 +336,13 @@ const designSystemStories: readonly PackDefinition[] = [
         { field: "uri", label: "IRI" },
         { field: "name", label: "Name" },
       ],
+    },
+    lookup: {
+      by: "ds:name",
+      type: "ds:Tier",
+      description: "Resolve tiers by name, IRI, or glob.",
+      toolDescription:
+        'Resolve one or more tiers to their graph identity by name, prefixed name, IRI, or glob. Use when you need a tier\'s IRI, or to confirm a tier name exists before using it. Example: tier_lookup { names: ["apps/lxd"] }.',
     },
   },
 ];

@@ -149,7 +149,8 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   tier_lookup: {
     category: "read",
-    use_when: "Need the blocks scoped to a specific tier by name",
+    use_when:
+      "Resolving a tier name to its IRI, or confirming a tier name exists",
   },
   token_list: {
     category: "read",

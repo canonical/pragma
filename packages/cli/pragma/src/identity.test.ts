@@ -369,7 +369,9 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // hardcoded term still passes every other test in this suite: the fixtures
     // on both sides would simply agree. So capture what the readers EMIT.
     const { DEFAULT_PREFIX_MAP } = await import("./kernel/render/prefixes.js");
-    const { runTierLookup } = await import("./capabilities/tier/runLookup.js");
+    const { buildIndex } = await import(
+      "./kernel/runtime/graphpack/buildIndex.js"
+    );
     const { readPrompts } = await import(
       "./kernel/project/mcp/prompts/source.js"
     );
@@ -382,13 +384,14 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       "http://www.w3.org/2000/01/rdf-schema#",
     );
 
-    // The tier noun's LIST query is no longer code: it is a story the
-    // distribution declares, so a fork writes its own terms into it directly
-    // and there is nothing here for a hardcoded term to hide in.
-    // `distribution.test.ts` holds this distribution's declaration to the same
-    // class and property the tier code below reads.
-    //
-    // The two generated reads, captured off a stub facade.
+    // No domain noun is code any more: every one of them is a story the
+    // distribution declares, so a fork writes its own terms into the query text
+    // directly and there is nothing left there for a hardcoded term to hide in
+    // (`distribution.test.ts` holds THIS distribution's declaration to itself).
+    // What still reads the graph on the fork's behalf is the kernel's own
+    // machinery, and these are the two generated reads it emits: the prompt
+    // reader, and the index builder — the one that makes a fork's declared name
+    // property completable without a store.
     const queries: string[] = [];
     const recorder = {
       query: {
@@ -398,16 +401,23 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
         },
       },
     } as never;
+    const store = {
+      query: (query: string) => {
+        queries.push(query);
+        return Promise.resolve({ termBindings: [] });
+      },
+    } as never;
 
-    await expect(runTierLookup(recorder, "Starters")).rejects.toMatchObject({
-      code: "ENTITY_NOT_FOUND",
-    });
     await expect(readPrompts(recorder)).resolves.toEqual([]);
+    await buildIndex(store, { rcp: "https://example.invalid/recipes/" }, "h");
 
     const emitted = queries.join("\n");
-    expect(emitted).toContain("rcp:name");
     expect(emitted).toContain("rcp:Prompt");
     expect(emitted).toContain("rcp:promptBody");
+    // `buildIndex` expands the fork's declared name property against the PACK's
+    // own prefixes before querying, so what lands in the query is the full IRI
+    // rather than the `rcp:` token — the same fact, one resolution later.
+    expect(emitted).toContain("<https://example.invalid/recipes/name>");
     expect(emitted).not.toMatch(THIS_DISTRIBUTION);
   });
 });

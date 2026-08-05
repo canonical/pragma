@@ -404,7 +404,7 @@ _No input parameters._
 
 ### tier_lookup
 
-Look up a single tier by its name (e.g. apps/lxd) and list the blocks scoped directly to it.
+Resolve one or more tiers to their graph identity by name, prefixed name, IRI, or glob. Use when you need a tier's IRI, or to confirm a tier name exists before using it. Example: tier_lookup { names: ["apps/lxd"] }.
 
 Read-only.
 
@@ -412,7 +412,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | string | yes | The tier name (e.g. apps/lxd). |
+| `name` | string[] | yes | Tier names, prefixed names/IRIs, or glob patterns. |
 
 ### token_list
 

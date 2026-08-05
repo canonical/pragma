@@ -49,7 +49,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "lookup",
       "sample",
     ]);
-    // tier carries a bespoke single-name lookup; block/modifier/token carry
+    // tier declares list + lookup and no sample; block/modifier/token carry
     // no-argument samples (the story's `sample.fixedCount`).
     expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual([
       "list",
@@ -80,11 +80,11 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       },
       { v: "sample", needsStore: true, mcp: "block_sample" },
     ]);
-    // The bespoke tier lookup emits the SINGLE-name positional the covenant
-    // freezes (a pack lookup would emit the variadic `<name...>`).
+    // Every declared lookup emits the same variadic positional, tier included —
+    // there is no hand-written read verb left to spell an argument differently.
     expect(emitted.nouns.tier?.verbs).toContainEqual({
       v: "lookup",
-      args: ["<name>"],
+      args: ["<name...>"],
       needsStore: true,
       mcp: "tier_lookup",
     });

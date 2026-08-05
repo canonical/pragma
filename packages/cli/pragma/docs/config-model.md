@@ -24,7 +24,7 @@ Stories reach the CLI from three places, weakest to strongest:
 | **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
 | **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
 
-Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported, because replacing a noun replaces its whole module, and `block` and `tier` carry a hand-written verb next to their story.
+Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported, because replacing a noun replaces its whole module, and `block` carries a hand-written verb next to its story.
 
 Within your config the top-level `stories` wins over `packs[].stories` for the same noun — declaring it in both is a refinement, not a conflict — and declaring the same noun twice inside your config is an error. Inside one package the last story file wins and `doctor` names the shadowed one.
 

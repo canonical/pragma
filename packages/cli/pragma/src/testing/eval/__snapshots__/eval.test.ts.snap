@@ -173,7 +173,7 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
-    "id": "tool-tier-lookup-lists-scoped-blocks",
+    "id": "tool-tier-lookup-resolves-the-tier-identity",
     "kind": "tool",
     "passed": true,
   },

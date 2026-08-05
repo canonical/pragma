@@ -44,8 +44,9 @@ function projectWithIndex(index: unknown): string {
  * PROTECTED contract describe below reads the shipped index for plain entity
  * NAMES, and `safety.test.ts`'s "every declared name source resolves without
  * constructing the store" drives the live grammar over the shipped index for
- * the `altNames` field (`tier lookup ap` → `Apps/Juju`, carried only by the
- * declared alt-name property) and for `prefixes`.
+ * the `name` field and for `prefixes`. `altNames` is covered ONLY here: no
+ * shipped verb asks for that field, because every read noun is a declared story
+ * now and the story grammar offers no way to name one.
  */
 const CRAFTED_INDEX = {
   version: 2,

@@ -16,13 +16,12 @@ import { parsePackDefinition } from "../kernel/packs/schema.js";
 import { VOCABULARY } from "../kernel/vocabulary.js";
 import { declaredStories } from "./distribution.js";
 import { capabilities } from "./index.js";
-import { TIER_TYPE } from "./tier/constants.js";
 
 describe("the distribution's declared stories (PROTECTED)", () => {
   it("declares exactly the five domain nouns", () => {
-    // The composites (`block`, `token`, `tier`) read their story by name and
-    // fall back to no verbs if it is missing, so a renamed or dropped noun must
-    // fail HERE rather than silently shrink a command.
+    // `block` composes its story with hand-written code, reading it by name and
+    // falling back to no verbs if it is missing, so a renamed or dropped noun
+    // must fail HERE rather than silently shrink a command.
     expect([...declaredStories.keys()].sort()).toEqual([
       "block",
       "modifier",
@@ -52,16 +51,26 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     }
   });
 
-  it("the tier story names the same class and property the tier code reads", () => {
-    // `tier list` is declared data and `tier lookup` is hand-written code, so
-    // the two can now disagree about what a tier IS and what addresses it —
-    // the coupling where a candidate completes and then fails to resolve.
-    // While the query lived in `capabilities/tier/pack.ts` it interpolated
-    // these two symbols and could not drift; the declaration spells them
-    // literally, because `pragma.conf.ts` is inert data and imports nothing.
-    // This is what replaces that guarantee.
-    const query = declaredStories.get("tier")?.list?.query ?? "";
-    expect(query).toContain(`a ${TIER_TYPE}`);
+  it("the tier story agrees with itself about what a tier is and what names it", () => {
+    // The tier noun is entirely declared now, so nothing outside this object
+    // decides what a tier IS — but the object can still disagree with itself,
+    // and that disagreement is the coupling where a candidate completes and
+    // then fails to resolve. Completion draws candidates from the index entries
+    // whose type is `lookup.type`; the name resolve constrains on the same
+    // class and matches on `lookup.by`. If `list.query` selected one class and
+    // the lookup another, `tier list` would advertise names `tier lookup`
+    // rejects.
+    //
+    // `by` is held to `VOCABULARY.altName` because that is the property the
+    // pack index projects into `altNames`, so a name shown by `tier list` is a
+    // name the lookup can match. `pragma.conf.ts` is inert data and imports
+    // nothing, so it spells both literally; this is what keeps them equal.
+    const story = declaredStories.get("tier");
+    const query = story?.list?.query ?? "";
+    const type = story?.lookup?.type;
+    expect(type).toBeDefined();
+    expect(query).toContain(`a ${type}`);
+    expect(story?.lookup?.by).toBe(VOCABULARY.altName);
     expect(query).toContain(`${VOCABULARY.altName} ?name`);
   });
 });

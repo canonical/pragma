@@ -450,8 +450,8 @@ describe("storeless guarantee (PROTECTED)", () => {
 
   it("every declared name source resolves without constructing the store", async () => {
     // skills (filesystem), prefixes (index ∪ default map) and the index's own
-    // `label`/`altNames` fields — every family completes storelessly against
-    // the live capabilities. A fresh cwd → no pointer → the embedded index.
+    // entity names — every family completes storelessly against the live
+    // capabilities. A fresh cwd → no pointer → the embedded index.
     const cwd = mkdtempSync(join(tmpdir(), "pragma-storeless-src-"));
     const env = indexCompletionEnv(cwd);
 
@@ -460,13 +460,19 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["ontology", "show", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
-    // index + `field: "altNames"`: a real alt name of a real tier comes back
-    // from the embedded index. `Apps/Juju` is carried ONLY by the declared
-    // alt-name property — it is neither an entity name nor a label — so this
-    // fails if the field ever stops being read.
-    await expect(
-      runComplete(["tier", "lookup", "ap"], capabilities, env),
-    ).resolves.toContain("Apps/Juju");
+    // index + the default `name` field, type-filtered: a real tier comes back
+    // from the embedded index under its compacted IRI, which is the form every
+    // declared lookup completes and `resolveEntity` accepts. No shipped verb
+    // asks for `field: "altNames"` any more — `entitySource.test.ts` holds that
+    // branch on its own fixtures — so what this pins is that the live tier
+    // lookup reads the index at all, and reads only tiers out of it.
+    const tiers = await runComplete(
+      ["tier", "lookup", "ap"],
+      capabilities,
+      env,
+    );
+    expect(tiers).toContain("ds:apps_juju");
+    expect(tiers.every((name) => name.startsWith("ds:app"))).toBe(true);
 
     // skills (no skills root here) and prompt labels (this graph carries no
     // prompt entities) have nothing to offer, and the honest storeless answer
