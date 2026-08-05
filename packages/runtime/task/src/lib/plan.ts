@@ -56,6 +56,13 @@
  *   with itself without touching the disk. That holds for the three tags whose
  *   result is a document — `WriteFile`, `AppendFile`, `TransformFile` — and the
  *   boundary for the rest is stated below rather than left to be discovered.
+ * - **The ANCESTOR directories a write brings into being are marked too.**
+ *   `executeEffect` `mkdir -p`s the parent before every `WriteFile`,
+ *   `AppendFile`, copy and `Symlink`, and `MakeDir` honours `recursive`, so the
+ *   run creates directories no leaf path names. Before this, `writeFile("a/b.txt")`
+ *   then `exists("a")` answered `false` to the plan and `true` to the run — a
+ *   divergence in the OPPOSITE direction from every residual named below, and
+ *   therefore the one a reader of that list would have ruled out.
  *
  * ## Residual falsehoods, named rather than hidden
  *
@@ -173,6 +180,39 @@ export const planTask = async <A>(
   const at = (p: string): string => (cwd ? path.resolve(cwd, p) : p);
   const checkInterrupted = interruptGuard(signal);
 
+  /**
+   * Mark the DIRECTORIES a simulated write would bring into being, so a plan
+   * agrees with its run about them.
+   *
+   * `executeEffect` runs `fs.mkdir(dirname(target), { recursive: true })` before
+   * every `WriteFile`, `AppendFile`, copy and `Symlink`, and `MakeDir` honours
+   * `recursive` — so the run creates ancestors the overlay never recorded.
+   * Measured before this: `writeFile("a/b.txt")` then `exists("a")` answered
+   * `false` to the plan and `true` to the run; `mkdir("x/y", recursive)` then
+   * `exists("x")` the same. That is the OPPOSITE direction from the residuals
+   * named above (which make a plan claim more exists than does), so a reader of
+   * that list would have concluded it could not happen.
+   *
+   * Presence only, never content — the same split `MakeDir` itself records, so
+   * a `ReadFile` of a marked directory still falls through to the disk and
+   * fails the way it fails for the run. Walking stops at the first path already
+   * in the overlay, which makes the whole loop amortized O(1) after the first
+   * write under a given root, and never overwrites a path whose bytes ARE
+   * modelled.
+   *
+   * @param target - An already-resolved leaf path.
+   */
+  const markAncestors = (target: string): void => {
+    let dir = path.dirname(target);
+    while (!overlay.has(dir)) {
+      overlay.set(dir, undefined);
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  };
+
+
   /** Delegate one effect to the real interpreter, with no prompt/log handler. */
   const real = (effect: Effect): Promise<unknown> =>
     executeEffect(effect, context, undefined, undefined, cwd);
@@ -233,6 +273,7 @@ export const planTask = async <A>(
 
       // ---- simulated ----------------------------------------------------
       case "WriteFile":
+        markAncestors(at(effect.path));
         overlay.set(at(effect.path), effect.content);
         return undefined;
 
@@ -242,6 +283,7 @@ export const planTask = async <A>(
         // — the plan's effect SEQUENCE still matches the run's. `executeEffect`
         // appends with node's default `a` flag, which creates a missing file, so
         // an absent base is the empty string on both sides.
+        markAncestors(at(effect.path));
         overlay.set(
           at(effect.path),
           (overlay.get(at(effect.path)) ??
@@ -251,12 +293,20 @@ export const planTask = async <A>(
         return undefined;
 
       case "MakeDir":
+        // `recursive: false` is `fs.mkdir`'s own contract: the parent must
+        // already be there, so the run creates no ancestor either.
+        if (effect.recursive) markAncestors(at(effect.path));
+        overlay.set(at(effect.path), undefined);
+        return undefined;
+
       case "Symlink":
+        markAncestors(at(effect.path));
         overlay.set(at(effect.path), undefined);
         return undefined;
 
       case "CopyFile":
       case "CopyDirectory":
+        markAncestors(at(effect.dest));
         overlay.set(at(effect.dest), undefined);
         return undefined;
 

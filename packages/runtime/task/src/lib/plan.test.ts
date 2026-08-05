@@ -195,6 +195,66 @@ describe("planTask — destruction is simulated", () => {
     expect(snapshot(dir)).toEqual(before);
   });
 
+  it("marks the ANCESTOR directories a write brings into being", async () => {
+    // `executeEffect` mkdir -p's the parent before every write, so the run
+    // creates directories no leaf path names. Measured before this arm:
+    // `writeFile("a/b.txt")` then `exists("a")` answered false to the plan and
+    // TRUE to the run — the one divergence direction the residuals list rules
+    // out. Both the immediate parent and the grandparent, so the walk is a
+    // walk and not one `dirname`.
+    const nested = gen(function* () {
+      yield* $(writeFile(join(dir, "a", "b", "c.txt"), "x"));
+      return [
+        yield* $(exists(join(dir, "a", "b"))),
+        yield* $(exists(join(dir, "a"))),
+      ];
+    });
+    expect((await planTask(nested)).value).toEqual([true, true]);
+
+    // `mkdir` recursive creates ancestors; non-recursive is `fs.mkdir`'s own
+    // contract that the parent already exists, so the run creates none either.
+    const recursive = gen(function* () {
+      yield* $(mkdir(join(dir, "x", "y"), true));
+      return yield* $(exists(join(dir, "x")));
+    });
+    expect((await planTask(recursive)).value).toBe(true);
+
+    const shallow = gen(function* () {
+      yield* $(mkdir(join(dir, "p", "q"), false));
+      return yield* $(exists(join(dir, "p")));
+    });
+    expect((await planTask(shallow)).value).toBe(false);
+
+    // PRESENCE, not content: a marked directory has no readable bytes, so a
+    // read of one still fails the way it fails for the run.
+    expect(existsSync(join(dir, "a"))).toBe(false);
+  });
+
+  it("marks ancestors for the copy destination and the symlink location too", async () => {
+    const source = join(dir, "src.txt");
+    writeFileSync(source, "bytes");
+
+    const copied = gen(function* () {
+      yield* $(copyFile(source, join(dir, "out", "deep", "copy.txt")));
+      return yield* $(exists(join(dir, "out")));
+    });
+    expect((await planTask(copied)).value).toBe(true);
+
+    const linked = gen(function* () {
+      yield* $(symlink(source, join(dir, "links", "here.txt")));
+      return yield* $(exists(join(dir, "links")));
+    });
+    expect((await planTask(linked)).value).toBe(true);
+
+    const appended = gen(function* () {
+      yield* $(appendFile(join(dir, "logs", "run.txt"), "line", true));
+      return yield* $(exists(join(dir, "logs")));
+    });
+    expect((await planTask(appended)).value).toBe(true);
+
+    expect(readdirSync(dir)).toEqual(["src.txt"]);
+  });
+
   it("does not subtract a simulated delete from what a later exists sees", async () => {
     const file = join(dir, "doomed.txt");
     writeFileSync(file, "x");
