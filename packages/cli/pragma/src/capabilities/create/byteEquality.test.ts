@@ -13,18 +13,21 @@
  * — component × {react, svelte, lit}, package, application — over the real
  * `create` verbs. They are about THIS product's output.
  *
- * The CONFORMANCE case at the end drives the fixture generator
+ * The CONFORMANCE cases at the end drive the fixture generator
  * `@canonical/summon-core/testing` ships, with the answers and the expected
- * path set that module declares. `packages/cli/summon` runs the same fixture
- * through its own composition, so the two bins are measured against ONE thing
- * neither of them owns. Read that module's docblock for what "both bins" can
- * and cannot mean here: neither bin can dispatch the other's generators, so
- * the claim is about the two execution seams, not the two CLI entry points.
+ * path set that module declares, through PRAGMA's seam — `executeVerb` over a
+ * locally-built `VerbSpec` that reproduces `runCreate`'s wiring, so the bytes
+ * come out of the kernel's own dispatch and effect seam. `packages/cli/summon`
+ * runs the same fixture through ITS composition, so the two bins are measured
+ * against ONE thing neither of them owns. Read that module's docblock for what
+ * "both bins" can and cannot mean here: neither bin can dispatch the other's
+ * generators, so the claim is about the two execution seams, not the two CLI
+ * entry points.
  *
  * A cross-binary subprocess guard lives in byteEquality.subprocess.test.ts.
  */
 
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -39,6 +42,7 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { createFormatters } from "./create.render.js";
 import { createVerbs } from "./create.verb.js";
 import type { CreateKind } from "./types.js";
 
@@ -49,22 +53,6 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-golden-"));
-
-/** Read a directory tree into a sorted map of relative path → contents. */
-function snapshot(dir: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const walk = (d: string, base: string): void => {
-    for (const entry of readdirSync(d, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    )) {
-      const rel = base ? `${base}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(join(d, entry.name), rel);
-      else out.set(rel, readFileSync(join(d, entry.name), "utf-8"));
-    }
-  };
-  walk(dir, "");
-  return out;
-}
 
 /** Producer (1): the full pragma kernel path — dispatcher runs the create verb. */
 async function producePragma(
@@ -85,7 +73,7 @@ async function producePragma(
   } finally {
     process.chdir(prev);
   }
-  return snapshot(dir);
+  return snapshotTree(dir);
 }
 
 /** Producer (2): summon-core execute + autoPrompt + the shared stamp core. */
@@ -113,7 +101,7 @@ async function produceSummon(
       onLog: () => {},
     },
   );
-  return snapshot(dir);
+  return snapshotTree(dir);
 }
 
 /** One golden case: the create-verb params, and the equivalent summon answers. */
@@ -234,36 +222,94 @@ describe("byte-equality goldens — pragma create ≡ summon execute (PROTECTED)
   }
 });
 
+/**
+ * Producer (3): the shared fixture through PRAGMA's execution seam.
+ *
+ * pragma's `create` is bound to three declared generator packages and refuses
+ * anything else, so the kernel cannot DISPATCH the core's fixture generator —
+ * there is no `create conformance` noun and there must not be one. What the
+ * kernel can do, and what this does, is run the fixture over the same seam a
+ * real `create` runs on: a `VerbSpec` whose `run` reproduces `runCreate`'s
+ * non-interactive wiring, driven by `executeVerb`. The tree below is therefore
+ * written by pragma's mutation dispatch, its {@link runEffectSeam} composition
+ * and its Task interpretation — NOT by summon-core's own runner, which is what
+ * this case used to call and what made it a third copy of the core's own test.
+ *
+ * The reproduction's one load-bearing detail is the stamp's SLOT.
+ * `create.verb.ts` puts it on `shapeEffect`, never `onEffectStart`: the stamp
+ * is what the written bytes ARE, so a `--dry-run` must apply it, while the
+ * wizard's progress render must not run on a plan. Conflating the two was a
+ * real bug once. Reproducing it here on `onEffectStart` would have this case
+ * measuring a composition pragma does not have, so it reproduces the slot the
+ * verb actually uses.
+ *
+ * @returns The tree pragma's seam wrote, keyed by relative path.
+ * @note Impure — writes a fresh temp tree and reads it back.
+ */
+async function producePragmaConformance(): Promise<Map<string, string>> {
+  const {
+    execute,
+    autoPrompt,
+    createGeneratorStamp,
+    createStampOnEffectStart,
+  } = await import("@canonical/summon-core");
+  const answers = { ...CONFORMANCE_ANSWERS };
+  const stamp = createGeneratorStamp(conformanceGenerator);
+  const dir = freshCwd();
+  const conformanceVerb: VerbSpec = {
+    path: ["conformance"],
+    summary: "Run the shared conformance fixture through pragma's create seam.",
+    params: [],
+    output: { formatters: createFormatters },
+    capability: {
+      needsStore: false,
+      mutates: true,
+      destructive: false,
+      interactive: true,
+      mcp: { expose: false, reason: "a test fixture, never a shipped verb" },
+    },
+    run: (_params, rt) => {
+      const prompt = autoPrompt(answers);
+      rt.exec = {
+        cwd: rt.cwd,
+        promptHandler: prompt,
+        shapeEffect: createStampOnEffectStart(stamp),
+        onLog: () => {},
+      };
+      return execute(conformanceGenerator, {
+        prompt,
+        params: answers,
+      }) as never;
+    },
+  };
+  const outcome = await executeVerb(
+    conformanceVerb,
+    {},
+    { dryRun: false, undo: false, yes: true },
+    bootRuntime(FLAGS, dir),
+  );
+  expect(outcome.exitCode).toBe(0);
+  return snapshotTree(dir);
+}
+
 describe("byte-equality conformance — the shared fixture (PROTECTED)", () => {
-  it("produces the summon-core conformance tree through the kernel's execute seam", async () => {
+  it("produces the summon-core conformance tree through pragma's own seam", async () => {
     // The same kit `packages/cli/summon/src/conformance.test.ts` runs, against
     // the same written-down tree. Neither bin can pass by measuring itself
     // against its own idea of what the generator should emit: the paths, the
     // bytes and the stamp identity all come from the core.
-    const {
-      execute,
-      autoPrompt,
-      runGeneratorTask,
-      createGeneratorStamp,
-      createStampOnEffectStart,
-    } = await import("@canonical/summon-core");
-    const answers = { ...CONFORMANCE_ANSWERS };
-    const dir = freshCwd();
-    await runGeneratorTask(
-      execute(conformanceGenerator, {
-        prompt: autoPrompt(answers),
-        params: answers,
-      }),
-      {
-        cwd: dir,
-        promptHandler: autoPrompt(answers),
-        onEffectStart: createStampOnEffectStart(
-          createGeneratorStamp(conformanceGenerator),
-        ),
-        onLog: () => {},
-      },
-    );
-    const produced = snapshotTree(dir);
+    const produced = await producePragmaConformance();
     expect(() => assertByteEqual(produced, CONFORMANCE_TREE)).not.toThrow();
+  });
+
+  it("carries the stamp through `shapeEffect`, the slot `create` wires", async () => {
+    // Named rather than only diffed, because it is the ONE part of the seam
+    // pragma derives for itself. `runEffectSeam` composes `shapeEffect` before
+    // the UI half, so a kernel that stopped reading `shapeEffect` writes the
+    // same paths with unstamped bytes — a difference the path set cannot see.
+    const produced = await producePragmaConformance();
+    expect(produced.get("src/widget-factory/index.ts")?.split("\n").at(0)).toBe(
+      "// Generated by @canonical/summon-core:conformance v1.0.0",
+    );
   });
 });
