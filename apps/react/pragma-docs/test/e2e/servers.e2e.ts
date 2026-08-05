@@ -300,7 +300,7 @@ describe("server matrix (2×3) serves correctly", () => {
 
             // 5c. Definitions block (P-5): the ontology explorer SSRs
             //     from the live graph. The term page carries the
-            //     inspector's class record, the React Flow well's
+            //     inspector's class record, the hierarchy well's
             //     server-rendered node DOM, and the serialised store —
             //     all in the raw HTML, before any client JS.
             const definitionsTerm = await fetch(
@@ -310,7 +310,7 @@ describe("server matrix (2×3) serves correctly", () => {
             const definitionsTermHtml = await definitionsTerm.text();
             expect(definitionsTermHtml).toContain("UI Block");
             expect(definitionsTermHtml).toContain("ds:UIBlock");
-            expect(definitionsTermHtml).toContain("react-flow__node-term");
+            expect(definitionsTermHtml).toContain("hierarchy-node-shell");
             expect(definitionsTermHtml).toContain("__INITIAL_DATA__");
             expect(definitionsTermHtml).toContain('"records"');
 
@@ -333,15 +333,28 @@ describe("server matrix (2×3) serves correctly", () => {
             //     class-link count, both derived from THIS response
             //     (drift-proof, catches a partial well). Floors catch the
             //     both-surfaces-rot-to-zero case the equality alone would
-            //     wave through (0 === 0), and edges stay strictly below
-            //     nodes — each edge is one non-root class's superclass
-            //     link, and every non-empty ontology has a root.
+            //     wave through (0 === 0).
+            //
+            //     THE EDGE COUNT IS THE STRUCTURAL FAMILY ONLY, and the
+            //     bound moved with it. Until AV-364 the well was a tree,
+            //     so "edges strictly below nodes" held of every edge it
+            //     drew. It is not a tree any more: `buildClassGraph` adds
+            //     a SEMANTIC arc per domain→range pair of drawn classes,
+            //     and those can outnumber the classes. The surviving
+            //     invariant is about subclass links — one per non-root
+            //     class, and every non-empty ontology has a root — so it
+            //     is stated over `hierarchy-edge-structural` alone, which
+            //     is the same quantity `HierarchyWell.ssr.tests.tsx:66`
+            //     pins against its fixture. The semantic family is
+            //     asserted present separately; its absence is what made
+            //     the old well an organigram.
             const wellNodeCount = (
-              definitionsTermHtml.match(/react-flow__node-term/g) ?? []
+              definitionsTermHtml.match(/hierarchy-node-shell/g) ?? []
             ).length;
             const wellEdgeCount = (
-              definitionsTermHtml.match(/react-flow__edge-path/g) ?? []
+              definitionsTermHtml.match(/hierarchy-edge-structural/g) ?? []
             ).length;
+            expect(definitionsTermHtml).toContain("hierarchy-edge-semantic");
             const railClassLinkCount =
               // The headings now carry a match count ("Classes 17 of 17"),
               // so the opening tag is matched loosely up to its close.
@@ -370,9 +383,8 @@ describe("server matrix (2×3) serves correctly", () => {
             //   convey nothing, so the spared one-hop neighbourhood is
             //   what proves the rule is a neighbourhood and not a wash.
             const fadedNodeCount = (
-              definitionsTermHtml.match(
-                /react-flow__node-term[^"]*is-faded/g,
-              ) ?? []
+              definitionsTermHtml.match(/hierarchy-node-shell[^"]*is-faded/g) ??
+              []
             ).length;
             expect(fadedNodeCount).toBeGreaterThan(0);
             expect(fadedNodeCount).toBeLessThan(wellNodeCount);
