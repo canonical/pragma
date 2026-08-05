@@ -2,12 +2,11 @@
  * The closed set of pragma error codes.
  *
  * Every {@link PragmaError} carries one of these; the CLI projector maps each
- * to a process exit code and the covenant freezes the exit-code table. Ported
- * with two additions for the exit model:
- * `STORE_UNAVAILABLE` (its own exit code, D2) and `UNKNOWN_VERB` (the usage
- * class the unknown-command suggester resolves to). A store failure is either
- * `STORE_UNAVAILABLE` (can't reach it) or a plain `INTERNAL_ERROR`, so no
- * distinct `STORE_ERROR` code is carried.
+ * to a process exit code and the covenant freezes the exit-code table. Two of
+ * them exist for the exit model: `STORE_UNAVAILABLE` (its own exit code, D2)
+ * and `UNKNOWN_VERB` (the usage class the unknown-command suggester resolves
+ * to). A store failure is either `STORE_UNAVAILABLE` (can't reach it) or a
+ * plain `INTERNAL_ERROR`, so no distinct `STORE_ERROR` code is carried.
  */
 
 /** All recognized pragma error codes as a const tuple. */

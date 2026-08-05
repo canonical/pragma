@@ -4,7 +4,6 @@
  * Bun's runtime can segfault when a single very large string is written to
  * stdout in one call; writing in ≤4 KiB pieces avoids it. Every command's final
  * output goes through {@link writeStdout} so large list/graph payloads stay safe.
- * A chunked-write guard.
  *
  * The text is encoded to a UTF-8 `Buffer` first and sliced on byte boundaries.
  * Slicing the *string* by UTF-16 unit could split an astral character's

@@ -2,8 +2,8 @@
  * Rank candidate names by similarity to a failed token.
  *
  * Prefix matches rank first, then Damerau-Levenshtein edit-distance matches
- * under a normalized threshold. Used
- * by the unknown-command suggester to turn a typo into "Did you mean: …?".
+ * under a normalized threshold. Used by the unknown-command suggester to turn
+ * a typo into "Did you mean: …?".
  */
 
 /**
