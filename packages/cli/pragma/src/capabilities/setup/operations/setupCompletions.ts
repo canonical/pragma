@@ -5,7 +5,7 @@
  * and the grammar-driven `emitScripts(capabilities)` body — with the config's
  * `minChars` gate and per-family opt-out baked in at emit time — done up front so
  * the wizard's recap/preview and a `--dry-run` are accurate) and a pure `compose`
- * phase (the file write the dry-run interpreter mocks). The script body is the
+ * phase (the file write the PLAN interpreter simulates). The script body is the
  * static tier the covenant names ("shell script tier emitted by
  * `setup completions`").
  */

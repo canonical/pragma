@@ -41,7 +41,15 @@
 export interface StoryOrigin {
   /** Who authored the story. */
   readonly kind: "distribution" | "config" | "package";
-  /** Human attribution for diagnostics (a file path, or `config`). */
+  /**
+   * Human attribution for diagnostics: a story file's path
+   * (`@acme/recipes/stories/recipe.json`), `config`, `pragma.conf.ts`, or — for
+   * a query this binary composes rather than reads from a story — the noun
+   * being read (`block`, `tier`, `prompt`). All three shapes are live; the
+   * narrower "a file path, or `config`" this said forbade what three of the six
+   * call sites pass, and reaches a user through `runSelect`'s "Story query in
+   * <label> must be a SELECT".
+   */
   readonly label: string;
 }
 
@@ -67,7 +75,9 @@ export interface StoryOrigin {
  * the tree is in `sparql/runSelect.test.ts`, where a unit test building its own
  * origins by hand is the point.
  *
- * @param label - Human attribution for diagnostics (the noun being read).
+ * @param label - Human attribution for diagnostics; see {@link
+ * StoryOrigin.label}. The distribution's own sites pass either the declaring
+ * file (`pragma.conf.ts`) or the noun being read (`block`, `tier`, `prompt`).
  * @returns The distribution-authored origin.
  */
 export const distributionOrigin = (label: string): StoryOrigin => ({

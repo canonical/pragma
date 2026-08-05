@@ -71,8 +71,9 @@ export async function detectLsp(cwd: string): Promise<LspDetection> {
  * Compose the LSP-install exec.
  *
  * Built from re-runnable combinators (NOT a single-use `gen`) because `execute`
- * interprets the task twice (preview + perform). Under the dry-run preview the
- * `exec` is MOCKED to `exitCode 0`, so `assertExecOk` passes there; a real run's
+ * interprets the task twice (preview + perform). Under the plan interpreter the
+ * `Exec` is MOCKED to `exitCode 0` — the one effect a plan still answers from
+ * `mockEffect` — so `assertExecOk` passes there; a real run's
  * nonzero exit still fails loudly. When detection already found the extension
  * `installed`, the install is SKIPPED — a re-run is a true no-op.
  *

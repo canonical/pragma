@@ -5,8 +5,8 @@
  * Split into `detectSkills` (skill discovery, harness detection, and the
  * per-link create/skip/replace DECISION all run against REAL fs up front, so the
  * wizard recap and a `--dry-run` plan reflect true state) and `composeSkills` (a
- * pure, re-runnable body performing only the symlink/delete effects the dry-run
- * interpreter mocks). Idempotent by construction.
+ * pure, re-runnable body performing only the symlink/delete effects the PLAN
+ * interpreter simulates). Idempotent by construction.
  */
 
 import { existsSync, readlinkSync } from "node:fs";

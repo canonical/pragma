@@ -96,7 +96,7 @@ export function buildPackPrefixes(
  *
  * A plan-only Task: it reads the config to list the refs a real update would
  * resolve and build, then models the project mutation (the active-pack pointer
- * write) as effects the dry-run interpreter can describe WITHOUT running them.
+ * write) as effects the PLAN interpreter can describe WITHOUT running them.
  * No git, no compile, no cache write — so `--dry-run` and an MCP plan-first call
  * are offline-safe. Config refs are parsed (a cheap, offline validity check) but
  * never resolved.

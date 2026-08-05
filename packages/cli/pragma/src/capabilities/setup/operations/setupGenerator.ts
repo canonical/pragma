@@ -105,8 +105,8 @@ const selectChosenGroups = (
  * PATH) REJECTS the exec with ENOENT, which would otherwise collapse to
  * INTERNAL_ERROR ("please report this issue") at the CLI/MCP boundary;
  * `guardMissingBinary` names it a UNSUPPORTED "`bunx` not found on PATH" with an
- * actionable install recovery instead. Preview-transparent — a dry-run mocks the
- * exec (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`
+ * actionable install recovery instead. Preview-transparent — the plan
+ * interpreter mocks `Exec` (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`
  * is combinator-built), so it survives `execute`'s double interpretation.
  */
 const composeGuardedLsp = (rt: PragmaRuntime, state: LspState): Task<void> =>

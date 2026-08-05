@@ -75,8 +75,8 @@ export function isMissingBinaryError(error: unknown): boolean {
  * absent binary (`upgrade`'s package manager, `setup lsp`'s `bunx`) wraps its
  * Task with this so they never reach the catch-all.
  *
- * Only real execution can trip it: a dry-run/plan mocks `exec` (exit 0, no
- * spawn), so the guard is transparent to the preview. A nonzero exit RESOLVES
+ * Only real execution can trip it: the plan interpreter mocks `Exec` (exit 0,
+ * no spawn), so the guard is transparent to the preview. A nonzero exit RESOLVES
  * the effect and is still {@link assertExecOk}'s job (its throw is a synchronous
  * generator-body throw, not an effect failure, so it bypasses this handler); any
  * other effect failure re-raises unchanged.

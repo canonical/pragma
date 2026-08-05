@@ -160,7 +160,9 @@ export interface ErrorSpec {
  * A single verb: the atom the projectors consume.
  *
  * `run` is the effect seam — a read returns `Promise<R>`; a mutation returns a
- * `Task<R>` the dispatcher interprets under the node / dry-run interpreters. A
+ * `Task<R>` the dispatcher interprets under the node, plan, or undo
+ * interpreters (`--yes`, `--dry-run`, `--undo` — `dispatch.ts`'s own docblock
+ * names the same three). A
  * mutation that needs async setup before its effects are known (e.g.
  * `sources update` resolves and builds before pointing the project at the pack)
  * actually returns a
