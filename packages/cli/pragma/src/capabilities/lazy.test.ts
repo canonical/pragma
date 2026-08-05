@@ -269,6 +269,14 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
   // __complete fast path — never loads the WASM runtime or the harness scan.
   // Dynamic `import("…")` (used by the lazy store + setup ops) has no `from`,
   // so it is allowed.
+  //
+  // SUBPATHS count. Each pattern admits `<pkg>` and `<pkg>/<anything>`, because
+  // an exact match on the bare specifier is a hole a plausible import walks
+  // straight through — that is not hypothetical, it is what the zod case below
+  // was until PR7's second fix-fold, where `zod/v4` kept an EMPTY-set guard
+  // green while putting 65 modules on both fast paths. `oxigraph` and
+  // `@canonical/ke` publish subpaths too; fixing one guard and not its
+  // neighbour would leave the identical defect one screen away.
   it("capabilities/index pulls no ke/ke-graphql/oxigraph/harnesses into the static graph (PROTECTED)", () => {
     const heavy = [
       "@canonical/ke",
@@ -281,7 +289,9 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
       const source = readFileSync(file, "utf-8");
       for (const pkg of heavy) {
         const escaped = pkg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const staticImport = new RegExp(`from\\s*["']${escaped}["']`);
+        const staticImport = new RegExp(
+          `from\\s*["']${escaped}(\\/[^"']*)?["']`,
+        );
         expect(
           staticImport.test(source),
           `${file} statically imports ${pkg}`,
@@ -305,10 +315,11 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // is worse than none.
     //
     // The walk follows RELATIVE specifiers ONLY (`if (!spec.startsWith("."))
-    // continue`). So what it pins is zod arriving through THIS PACKAGE'S OWN
-    // modules: any file of ours that appears on this graph and value-imports
-    // zod fails, because the expectation is an empty set rather than a tolerated
-    // list. It is blind in two directions, both of them real:
+    // continue`). So what it pins is zod arriving through a MODULE OF OURS that
+    // appears on this graph and names zod by any of its published specifiers —
+    // the bare `zod` or a subpath (`zod/v4`, `zod/v3`, `zod/v4/core`, …). The
+    // expectation is an empty set rather than a tolerated list, so any such file
+    // fails. It is blind in two directions, both of them real:
     //
     //  - It is TEXTUAL, so it cannot distinguish `import type` from a value
     //    import: a type-only edge to a zod-importing module of ours would fail
@@ -339,10 +350,23 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // `completion/safety.test.ts`'s storeless graph, and `@canonical/task`'s
     // node-free closure walk) each of which currently derives its authority from
     // being simple and textual. Half-doing it is worse than naming the residue.
+    //
+    // A THIRD blind spot was open until PR7's second fix-fold and is now closed,
+    // because unlike the two above it cost one character class. The pattern was
+    // an EXACT match on `"zod"`, while the installed zod 3.25.76 publishes
+    // `./v3 ./v4 ./v4-mini ./v4/mini ./v4/core ./v4/locales …` — every one a
+    // live specifier a module of ours could import. Measured on a scratch copy
+    // of HEAD: `import { z } from "zod/v4"` added to `graphpack/manifest.ts` (a
+    // module on this graph) left this test GREEN while putting 65 zod modules on
+    // both fast paths, +17.5 ms on `__complete` and on `--help` — roughly four
+    // times what taking zod off this graph recovered. The specifier the guard
+    // could not see is the one this docblock cites two paragraphs above.
     const graph = staticImportGraph(resolve(here, "index.ts"));
     const pkgRoot = resolve(here, "..", "..");
     const zodImporters = [...graph]
-      .filter((file) => /from\s*["']zod["']/.test(readFileSync(file, "utf-8")))
+      .filter((file) =>
+        /from\s*["']zod(\/[^"']*)?["']/.test(readFileSync(file, "utf-8")),
+      )
       .map((file) => relative(pkgRoot, file))
       .sort();
     expect(zodImporters).toEqual([]);

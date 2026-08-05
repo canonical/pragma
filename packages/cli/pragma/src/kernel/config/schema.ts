@@ -18,9 +18,16 @@
  * not the importer. The schemas left `graphpack/types.ts` for
  * `graphpack/schemas.ts` and the seam count never changed.
  *
+ * The register is a census of specifiers, not of one specifier. zod publishes
+ * subpaths (`zod/v3`, `zod/v4`, `zod/v4/core`, …) and a module importing one of
+ * those is a sixth seam that a `grep 'from "zod"'` would not report — which is
+ * exactly how `capabilities/lazy.test.ts`'s guard was blind until PR7's second
+ * fix-fold. Take the census with `grep -E 'from "zod(/[^"]*)?"'`.
+ *
  * None of the five is reached from the `--help` or `__complete` fast path, which
  * are storeless and config-free — `capabilities/lazy.test.ts` holds that as an
- * EXACT empty set, over this package's own relative-import graph.
+ * EXACT empty set, over this package's own relative-import graph, and that guard
+ * now matches subpath specifiers too.
  *
  * Validates the raw shape a global JSON file or an evaluated `pragma.config.ts`
  * declares; unknown keys are stripped for forward compatibility, and only
