@@ -257,7 +257,7 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "token",
     description: "List all design tokens.",
     toolDescription:
-      "List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.",
+      "List every design token in the graph with its type. Use when browsing what exists before looking one up. Example: token_list {}.",
     list: {
       query: [
         "SELECT ?uri ?name ?category WHERE {",
@@ -377,7 +377,7 @@ const designSystemStories: readonly PackDefinition[] = [
     noun: "tier",
     description: "List all tiers in the design system ontology.",
     toolDescription:
-      "List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.",
+      "List all tiers in the design-system ontology. Use when you need the tier hierarchy the design system is organized by, or a tier's IRI. Example: tier_list {}.",
     list: {
       query: [
         "SELECT ?uri ?name WHERE {",

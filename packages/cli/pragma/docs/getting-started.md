@@ -89,7 +89,7 @@ pragma block list --format json
 pragma config show
 ```
 
-Two fields scope what the read commands see. Set the active tier and release channel (written to your global config):
+Two fields are recorded in your config and narrow nothing today: `tier` has no behavioural reader at all, and `channel`'s only reader is `info`'s update check, which resolves the matching npm dist-tag. Set them for forward compatibility (written to your global config):
 
 ```bash
 pragma config set tier apps/lxd

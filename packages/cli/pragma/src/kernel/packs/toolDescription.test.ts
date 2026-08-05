@@ -60,7 +60,9 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     await mcp.cleanup();
     // The rich description reaches MCP (was previously dropped — only `summary`
     // reached the tool), including the authored call example.
-    expect(desc).toContain("List all design tokens with their type.");
+    expect(desc).toContain(
+      "List every design token in the graph with its type.",
+    );
     expect(desc).toContain("Example: token_list {}");
   });
 
@@ -83,7 +85,9 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     expect(lookupHelp).not.toContain("Example:");
 
     const listHelp = formatVerbHelp("pragma", verb(tokenModule, "list"));
-    expect(listHelp).toContain("List all design tokens with their type.");
+    expect(listHelp).toContain(
+      "List every design token in the graph with its type.",
+    );
     expect(listHelp).not.toContain("token_list {");
   });
 });

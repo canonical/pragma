@@ -49,7 +49,7 @@ const setVerb: VerbSpec<Record<string, unknown>, ConfigFieldResult> = {
   examples: [
     {
       cmd: `${BIN_NAME} config set tier apps/lxd`,
-      note: "scope reads to a tier",
+      note: "record a tier — no read narrows on it today",
     },
     { cmd: `${BIN_NAME} config set channel experimental` },
     { cmd: `${BIN_NAME} config set tier none`, note: "clear the tier" },

@@ -392,7 +392,7 @@ Read-only.
 
 ### tier_list
 
-List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.
+List all tiers in the design-system ontology. Use when you need the tier hierarchy the design system is organized by, or a tier's IRI. Example: tier_list {}.
 
 Read-only.
 
@@ -414,7 +414,7 @@ Read-only.
 
 ### token_list
 
-List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.
+List every design token in the graph with its type. Use when browsing what exists before looking one up. Example: token_list {}.
 
 Read-only.
 

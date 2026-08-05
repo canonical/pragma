@@ -140,7 +140,7 @@ pragma config set <key> <value>
 **Examples**
 
 ```bash
-pragma config set tier apps/lxd  # scope reads to a tier
+pragma config set tier apps/lxd  # record a tier — no read narrows on it today
 pragma config set channel experimental
 pragma config set tier none  # clear the tier
 ```
@@ -856,7 +856,7 @@ pragma standard sample 3
 
 List all tiers in the design system ontology.
 
-List all tiers in the design-system ontology. Use when understanding the tier hierarchy before setting a tier filter. Example: tier_list {}.
+List all tiers in the design-system ontology. Use when you need the tier hierarchy the design system is organized by, or a tier's IRI. Example: tier_list {}.
 
 ```
 pragma tier list
@@ -903,7 +903,7 @@ pragma tier lookup <name>
 
 List all design tokens.
 
-List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.
+List every design token in the graph with its type. Use when browsing what exists before looking one up. Example: token_list {}.
 
 ```
 pragma token list
