@@ -20,7 +20,10 @@
 
 import conf from "../../pragma.conf.js";
 import { compilePack } from "../kernel/packs/compile.js";
-import type { PackDefinition } from "../kernel/packs/types.js";
+import {
+  distributionOrigin,
+  type PackDefinition,
+} from "../kernel/packs/types.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { CapabilityModule } from "../kernel/spec/types.js";
 
@@ -46,7 +49,7 @@ export const storyModules: ReadonlyMap<string, CapabilityModule> = new Map(
       story: true,
       verbs: compilePack(
         story,
-        { kind: "distribution", label: "pragma.conf.ts" },
+        distributionOrigin("pragma.conf.ts"),
         DEFAULT_PREFIX_MAP,
       ),
       colophon: story.colophon,

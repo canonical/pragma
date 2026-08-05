@@ -59,6 +59,14 @@ export interface StoryOrigin {
  * carrying a word-for-word duplicated six-line docblock, and one undocumented
  * object literal at a call site.
  *
+ * EVERY distribution-authored origin is built here, including the distribution's
+ * own compile site (`capabilities/distribution.ts`, which passes this to
+ * `compilePack` for each story `pragma.conf.ts` declares). A helper that covered
+ * half its sites would leave two spellings permanently and no rule for choosing
+ * between them, which is the drift it exists to prevent. The one literal left in
+ * the tree is in `sparql/runSelect.test.ts`, where a unit test building its own
+ * origins by hand is the point.
+ *
  * @param label - Human attribution for diagnostics (the noun being read).
  * @returns The distribution-authored origin.
  */

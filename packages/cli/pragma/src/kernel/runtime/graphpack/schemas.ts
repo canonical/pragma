@@ -21,14 +21,20 @@
  * the count: `capabilities/lazy.test.ts` asserts an exact EMPTY set on the
  * command-tree graph, and this module is deliberately off that graph, so the
  * enumeration is the only record there is. Adding an importer to this directory
- * is a decision, not a convenience.
+ * is a decision, not a convenience. Take the census with
+ * `grep -E 'from "zod(/[^"]*)?"'` — the bare form alone misses a subpath import.
+ *
+ * ONE export, for one importer. `packIndexEntitySchema` is module-private
+ * because nothing outside this file has ever referenced it — it was already a
+ * dead export in `graphpack/types.ts`, and the move that created this module
+ * carried the deadness along rather than dropping it while the file was open.
  */
 
 import { z } from "zod";
 import type { PackIndex, PackIndexEntity } from "./types.js";
 
 /** zod schema validating a persisted {@link PackIndexEntity}. */
-export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
+const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
   name: z.string(),
   type: z.string(),
   uri: z.string().optional(),

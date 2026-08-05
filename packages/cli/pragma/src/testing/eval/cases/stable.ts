@@ -8,7 +8,10 @@
 
 import assert from "node:assert/strict";
 import { compilePack } from "../../../kernel/packs/compile.js";
-import type { PackDefinition } from "../../../kernel/packs/types.js";
+import {
+  distributionOrigin,
+  type PackDefinition,
+} from "../../../kernel/packs/types.js";
 import type { CapabilityModule } from "../../../kernel/spec/types.js";
 import { bootFixtureRuntime } from "../../helpers/fixtureGraph.js";
 import { projectMcp } from "../../helpers/projectMcp.js";
@@ -112,7 +115,7 @@ export const stableEvalCases: readonly EvalCase[] = [
           name: "widget",
           verbs: compilePack(
             WIDGET_PACK,
-            { kind: "distribution", label: "test:widget" },
+            distributionOrigin("test:widget"),
             WIDGET_PREFIXES,
           ),
         };
