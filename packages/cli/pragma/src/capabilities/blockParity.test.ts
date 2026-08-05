@@ -202,9 +202,21 @@ describe("block list — unfiltered, with the row shape the renderer wants", () 
       "density",
       "importance",
     ]);
-    // The untiered block still shows a tier CELL, empty rather than absent —
-    // the COALESCE is what keeps the column addressable for every row.
-    expect(rows.find((row) => row.name === "Button Icon")?.tier).toBe("");
+    // Both aggregate/OPTIONAL columns show a CELL on the block that binds
+    // neither, empty rather than absent — the COALESCE is what keeps them
+    // addressable for every row. `modifiers` is asserted alongside `tier`
+    // because it shipped unguarded and unwrapped once: a consumer doing
+    // `row.modifiers.split(", ")` threw on every block with no modifier family.
+    const buttonIcon = rows.find((row) => row.name === "Button Icon");
+    expect(buttonIcon?.tier).toBe("");
+    expect(buttonIcon?.modifiers).toBe("");
+    expect(Object.keys(buttonIcon ?? {}).sort()).toEqual([
+      "modifiers",
+      "name",
+      "tier",
+      "type",
+      "uri",
+    ]);
   });
 
   it("takes no flags — there is nothing left to widen", () => {

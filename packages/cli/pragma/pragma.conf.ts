@@ -113,7 +113,14 @@ const designSystemStories: readonly PackDefinition[] = [
     list: {
       query: [
         "SELECT ?uri ?name ?type ?tier",
-        '       (GROUP_CONCAT(DISTINCT ?modName; separator=", ") AS ?modifiers)',
+        // COALESCE, exactly as `?tier` below: a block with no
+        // `ds:hasModifierFamily` leaves `?modName` unbound, and an aggregate
+        // over an empty group projects UNBOUND rather than "". An unbound
+        // projection is an ABSENT key in the row, so `row.modifiers` would be
+        // `undefined` on 248 of the 251 live blocks while the declared column
+        // and the tool description both promise it. Measured on the live graph:
+        // 3 blocks bind a family, 248 do not.
+        '       (COALESCE(GROUP_CONCAT(DISTINCT ?modName; separator=", "), "") AS ?modifiers)',
         "WHERE {",
         "  VALUES ?class { ds:Component ds:Pattern ds:Layout ds:Subcomponent }",
         "  ?uri a ?class .",
