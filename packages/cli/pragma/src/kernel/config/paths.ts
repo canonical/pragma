@@ -17,23 +17,23 @@ import { join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
 
 /** `$XDG_CONFIG_HOME/<bin>` (default `~/.config/<bin>`). */
-function configDir(): string {
+function resolveConfigDir(): string {
   const base = process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
   return join(base, BIN_NAME);
 }
 
 /** `$XDG_STATE_HOME/<bin>` (default `~/.local/state/<bin>`). */
-function stateDir(): string {
+function resolveStateDir(): string {
   const base = process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state");
   return join(base, BIN_NAME);
 }
 
 /** The global config file: `$XDG_CONFIG_HOME/<bin>/config.json`. */
 export function globalConfigPath(): string {
-  return join(configDir(), "config.json");
+  return join(resolveConfigDir(), "config.json");
 }
 
 /** The evaluated-project-config cache dir: `$XDG_STATE_HOME/<bin>/config-cache`. */
 export function configCacheDir(): string {
-  return join(stateDir(), "config-cache");
+  return join(resolveStateDir(), "config-cache");
 }

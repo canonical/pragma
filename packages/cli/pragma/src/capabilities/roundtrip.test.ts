@@ -1,3 +1,14 @@
+/**
+ * `info` and `config show` render correctly on the CLI's plain and llm paths.
+ *
+ * IT USED TO ASSERT CLI-json == MCP PARITY FOR BOTH TOO, and that claim now has
+ * a stronger home. `testing/helpers/parity.ts#assertCliMcpParity` is the one
+ * asserter, `testing/behavioral/parity.test.ts` drives it over these exact two
+ * modules and verbs, and B5 sweeps it across EVERY read noun. Two hand-written
+ * copies of a swept property are two things to keep true; the plain/llm
+ * rendering below is what this file alone still holds.
+ */
+
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -7,7 +18,6 @@ import { executeVerb } from "../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../kernel/runtime/types.js";
 import type { VerbSpec } from "../kernel/spec/types.js";
-import { projectMcp } from "../testing/helpers/projectMcp.js";
 import { configModule } from "./config/index.js";
 import { infoModule } from "./info/index.js";
 
@@ -51,25 +61,6 @@ describe("info round-trip", () => {
     );
     expect(llm.stdout).toContain(`# pragma v${VERSION}`);
   });
-
-  it("CLI --format json deep-equals the MCP tool envelope", async () => {
-    const cwd = freshEnv();
-    const cli = await executeVerb(
-      infoVerb,
-      {},
-      NO_MUT,
-      bootRuntime(flags("json"), cwd),
-    );
-    const cliEnvelope = JSON.parse(cli.stdout as string);
-
-    const mcp = await projectMcp([infoModule], cwd);
-    const mcpEnvelope = await mcp.callTool("info");
-    await mcp.cleanup();
-
-    expect(cliEnvelope).toEqual(mcpEnvelope);
-    expect(cliEnvelope.ok).toBe(true);
-    expect((cliEnvelope.data as { version: string }).version).toBe(VERSION);
-  });
 });
 
 describe("config show round-trip", () => {
@@ -83,25 +74,5 @@ describe("config show round-trip", () => {
     );
     expect(plain.stdout).toContain("channel: normal");
     expect(plain.stdout).toContain("detail: standard");
-  });
-
-  it("CLI --format json deep-equals the MCP tool envelope", async () => {
-    const cwd = freshEnv();
-    const cli = await executeVerb(
-      showVerb,
-      {},
-      NO_MUT,
-      bootRuntime(flags("json"), cwd),
-    );
-    const cliEnvelope = JSON.parse(cli.stdout as string);
-
-    const mcp = await projectMcp([configModule], cwd);
-    const mcpEnvelope = await mcp.callTool("config_show");
-    await mcp.cleanup();
-
-    expect(cliEnvelope).toEqual(mcpEnvelope);
-    expect(
-      (cliEnvelope.data as { config: { channel: string } }).config.channel,
-    ).toBe("normal");
   });
 });

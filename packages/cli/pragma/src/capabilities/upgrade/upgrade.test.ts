@@ -28,10 +28,7 @@ import {
   guardMissingBinary,
   isMissingBinaryError,
 } from "../shared/assertExecOk.js";
-import {
-  checkRegistryVersion,
-  REGISTRY_TIMEOUT_MS,
-} from "../shared/registry.js";
+import { checkRegistryVersion } from "../shared/registry.js";
 import { runUpgrade } from "./runUpgrade.js";
 import type { UpgradeData } from "./types.js";
 import { upgradeModule } from "./upgrade.verb.js";
@@ -112,9 +109,10 @@ describe("checkRegistryVersion — unit contract", () => {
     expect(calls[0]?.url).toBe(
       "https://registry.npmjs.org/%40canonical%2Fpragma-cli",
     );
-    // The timeout is wired via AbortSignal.timeout(3000).
+    // The timeout is WIRED — that a signal reaches fetch is the fact a test can
+    // hold. Its value used to be asserted here too, which only restated the
+    // constant's own literal back at itself.
     expect(calls[0]?.opts.signal).toBeInstanceOf(AbortSignal);
-    expect(REGISTRY_TIMEOUT_MS).toBe(3000);
 
     expect((await checkRegistryVersion("x", "experimental"))?.latest).toBe(
       "1.1.0-exp",

@@ -12,15 +12,9 @@
  * `manifest.json` is treated as absent (a torn build), so writes are always
  * temp-dir + atomic rename.
  *
- * FIVE AND ONLY FIVE: the constants below are the single place the artifact set
- * is named, and three modules must agree with them — `buildPack` writes them,
- * `packIsComplete` gates on them, and `materializeEmbeddedPack` writes them back
- * out. A sixth artifact added to only some of those makes a pack whose content
- * hash claims more than its directory holds, which the next build then reuses,
- * silently dropping the difference. The agreement is pinned by `graphpack.test.ts`'s
- * "the committed embedded pack (PROTECTED) > materializes exactly the files
- * buildPack produces" — extend the set here and that test fails until every
- * side follows.
+ * The five filenames are NOT here: a `types.ts` holds types
+ * (cs:code.types.file), so they live in `constants.ts` beside it, which is also
+ * where the FIVE-AND-ONLY-FIVE argument for the set now lives.
  *
  * THIS MODULE IMPORTS NOTHING, and that is load-bearing rather than tidy. It
  * used to declare the pack schemas in zod, and `manifest.ts` value-imported
@@ -46,28 +40,6 @@
  * defect was recorded with. The `--help` figure is inside its own run-to-run
  * spread, so the honest claim is `__complete`; `--help` is not slower.
  */
-
-/** The n-quads store dump — ke boots it via `createStore({ cache })`. */
-export const DATA_FILE = "data.nq";
-/** The serialized ke-graphql extraction — boots via `compileFromExtraction`. */
-export const SCHEMA_FILE = "schema.json";
-/** The storeless entity index (PR-C's dynamic-completion contract). */
-export const INDEX_FILE = "index.json";
-/**
- * The read stories the packages shipped, as raw text: one
- * `{ source, content }` record per `stories/*.json` file, in a JSON array.
- *
- * Written ALWAYS, even as `[]`, and gated by `packIsComplete` alongside the
- * other three — an optional artifact would put the same condition in all three
- * modules below, which is exactly how a pack ends up claiming stories its
- * directory does not hold. Raw text rather than parsed definitions so the pack stays a
- * faithful carrier of the package's bytes and EVERY interpretation failure
- * (malformed JSON and schema-invalid JSON alike) is caught behind the one guard
- * in `kernel/packs/collect.validateStories`.
- */
-export const STORIES_FILE = "stories.json";
-/** Provenance + prefixes; its presence marks a pack directory as complete. */
-export const MANIFEST_FILE = "manifest.json";
 
 /**
  * One indexed entity. The `{ name, type }` pair is the FROZEN minimum the

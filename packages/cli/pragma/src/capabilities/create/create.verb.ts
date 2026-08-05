@@ -180,7 +180,7 @@ const APPLICATION_MIRROR: PromptDefinition[] = [
  * unified `--with-X` convention, so their params arrive keyed `withSsr`/
  * `withRouter`/`withForms`/`withRelay`; the summon generator reads the bare
  * `ssr`/`router`/`forms`/`relay`. We normalize at the ONE CLI↔generator seam
- * ({@link toGeneratorAnswers}), keeping the generator prompt names (and their
+ * ({@link buildGeneratorAnswers}), keeping the generator prompt names (and their
  * templates/goldens) untouched. Component and package already use `--with-X`
  * names that match their prompts, so their maps are empty.
  */
@@ -206,7 +206,7 @@ export const INCLUDE_FLAG_ALIASES: Record<
  * @param params - The coerced CLI/MCP param bag.
  * @returns A new bag with aliased keys renamed to the generator prompt names.
  */
-function toGeneratorAnswers(
+function buildGeneratorAnswers(
   kind: CreateKind,
   params: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> {
@@ -354,7 +354,7 @@ async function runCreate(
   // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
   // (AV-228 B8) once, at this seam; every summon interaction below reads the
   // generator-facing `answers` bag so the generator prompt names stay stable.
-  const answers = toGeneratorAnswers(kind, params);
+  const answers = buildGeneratorAnswers(kind, params);
 
   const generator = pickGenerator(kind, answers);
 

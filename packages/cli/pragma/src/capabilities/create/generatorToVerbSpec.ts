@@ -37,7 +37,7 @@ const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);
  * stay verbatim for the interactive wizard while the flag/MCP doc reads well.
  * Strip the trailing `?`/`:` and end with a period.
  */
-function declarativeDoc(message: string): string {
+function formatDeclarativeDoc(message: string): string {
   const trimmed = message
     .trim()
     .replace(/\s*[?:]+$/, "")
@@ -52,7 +52,7 @@ function declarativeDoc(message: string): string {
  * @param prompt - The generator's prompt definition.
  * @returns The equivalent {@link ParamSpec}.
  */
-function promptToParam(prompt: PromptDefinition): ParamSpec {
+function convertPromptToParam(prompt: PromptDefinition): ParamSpec {
   const required = prompt.default === undefined && !prompt.when;
   const positional = prompt.positional === true;
 
@@ -61,7 +61,7 @@ function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "boolean",
         name: prompt.name,
-        doc: declarativeDoc(prompt.message),
+        doc: formatDeclarativeDoc(prompt.message),
         required,
         positional,
         ...(prompt.default !== undefined
@@ -72,7 +72,7 @@ function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "enum",
         name: prompt.name,
-        doc: declarativeDoc(prompt.message),
+        doc: formatDeclarativeDoc(prompt.message),
         values: (prompt.choices ?? []).map((choice) => choice.value),
         required,
         positional,
@@ -84,7 +84,7 @@ function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "string[]",
         name: prompt.name,
-        doc: declarativeDoc(prompt.message),
+        doc: formatDeclarativeDoc(prompt.message),
         required,
         positional,
         complete: { kind: "values" },
@@ -93,7 +93,7 @@ function promptToParam(prompt: PromptDefinition): ParamSpec {
       return {
         kind: "string",
         name: prompt.name,
-        doc: declarativeDoc(prompt.message),
+        doc: formatDeclarativeDoc(prompt.message),
         required,
         positional,
         ...(prompt.default !== undefined ? { default: prompt.default } : {}),
@@ -106,5 +106,5 @@ function promptToParam(prompt: PromptDefinition): ParamSpec {
 export function generatorToParams(
   prompts: readonly PromptDefinition[],
 ): ParamSpec[] {
-  return prompts.map(promptToParam);
+  return prompts.map(convertPromptToParam);
 }

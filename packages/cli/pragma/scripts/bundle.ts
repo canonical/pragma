@@ -47,7 +47,7 @@ import {
   MANIFEST_FILE,
   SCHEMA_FILE,
   STORIES_FILE,
-} from "../src/kernel/runtime/graphpack/types.js";
+} from "../src/kernel/runtime/graphpack/constants.js";
 import { parsePackDeclaration } from "../src/kernel/runtime/refs/parseRef.js";
 import {
   detectPrefixClashes,

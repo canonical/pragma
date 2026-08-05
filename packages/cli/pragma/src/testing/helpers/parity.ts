@@ -8,8 +8,9 @@
  * `mcp/envelope.ts` reuses the CLI's envelope builders verbatim), so parity
  * simplifies to structural data-equality — no byte-exact `condensed ===
  * fmt.llm(...)` comparison to reproduce. This generalizes the pattern already
- * proven ad hoc in `mcp/parity.test.ts` (`probe echo`) and `sources.test.ts`
- * (`sources status`) into one reusable helper every read noun's tests drive.
+ * proven ad hoc — in a `mcp/parity.test.ts` over `probe echo`, since deleted as
+ * this helper's predecessor, and in `sources.test.ts` over `sources status` —
+ * into one reusable helper every read noun's tests drive.
  */
 
 import { expect } from "vitest";

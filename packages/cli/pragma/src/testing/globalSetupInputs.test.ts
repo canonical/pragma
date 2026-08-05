@@ -12,7 +12,7 @@
  *
  * The failure they prevent is silent, not loud. `readEntryRoot` falling through to
  * its `dist` default for a dependency that ships from `src` points the
- * staleness walk at a directory that does not exist, `newestMtime` answers 0,
+ * staleness walk at a directory that does not exist, `findNewestMtime` answers 0,
  * and every spawned-binary guard grades a stale `dist/pragma` — the hole
  * `collectWorkspaceDependencyRoots` exists to close.
  *

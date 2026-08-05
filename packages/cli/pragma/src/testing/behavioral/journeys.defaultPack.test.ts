@@ -41,8 +41,8 @@ import {
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
+import { SCHEMA_FILE } from "../../kernel/runtime/graphpack/constants.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
-import { SCHEMA_FILE } from "../../kernel/runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../../kernel/runtime/paths.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";

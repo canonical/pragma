@@ -20,10 +20,10 @@ import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
-  type Manifest,
   SCHEMA_FILE,
   STORIES_FILE,
-} from "./types.js";
+} from "./constants.js";
+import type { Manifest } from "./types.js";
 
 /** Every value in `record` is a string (and `record` is a plain object). */
 function isStringRecord(value: unknown): value is Record<string, string> {

@@ -21,7 +21,7 @@
  * against 24.9 ms, which described this package's own tree before the two
  * dependency holes below were closed, and disagreed with a second count twenty
  * lines further down. The declared set is now `INPUTS` plus 10 workspace
- * dependency roots: **1716 entries**. Walking them with `newestMtime` costs
+ * dependency roots: **1716 entries**. Walking them with `findNewestMtime` costs
  * **16–25 ms** across six runs on this (noisy) box; SHA-256 over the same
  * entries costs **50–66 ms**, dominated by
  * `graphpack/embedded/pack.generated.ts` (1.87 MB) and
@@ -213,7 +213,7 @@ export function readEntryRoot(packageRoot: string): string {
   // makes reading `.replace` off an object impossible. The cost of not
   // unwrapping is SILENT: a nested map falls through to the `dist` default, and
   // a dependency that ships from `src` (as `@canonical/summon-package` does)
-  // would then be watched at a directory that does not exist, `newestMtime`
+  // would then be watched at a directory that does not exist, `findNewestMtime`
   // would answer 0, and the binary would be graded stale-blind — the same
   // under-watching hole this function exists to close, one legal manifest shape
   // away.
@@ -257,7 +257,7 @@ const INPUTS = [
  * @returns Epoch milliseconds of the newest entry beneath it.
  * @note Impure — stats the source tree.
  */
-function newestMtime(path: string): number {
+function findNewestMtime(path: string): number {
   let stats: ReturnType<typeof statSync>;
   try {
     stats = statSync(path);
@@ -267,18 +267,18 @@ function newestMtime(path: string): number {
   if (!stats.isDirectory()) return stats.mtimeMs;
   let newest = stats.mtimeMs;
   for (const entry of readdirSync(path)) {
-    newest = Math.max(newest, newestMtime(join(path, entry)));
+    newest = Math.max(newest, findNewestMtime(join(path, entry)));
   }
   return newest;
 }
 
 export default function setup(): void {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
-  const built = newestMtime(join(root, "dist", "pragma"));
+  const built = findNewestMtime(join(root, "dist", "pragma"));
   const inputs = [...INPUTS, ...collectWorkspaceDependencyRoots(root)];
   const fresh =
     built > 0 &&
-    inputs.every((input) => newestMtime(join(root, input)) < built);
+    inputs.every((input) => findNewestMtime(join(root, input)) < built);
   if (fresh) return;
 
   const result = spawnSync("bun", ["run", "scripts/build.ts"], {

@@ -19,9 +19,9 @@ import { compileFromExtraction } from "@canonical/ke-graphql";
 import { PragmaError } from "../../error/PragmaError.js";
 import { cliRecovery } from "../../error/recovery.js";
 import type { StoreSession } from "../types.js";
+import { DATA_FILE, INDEX_FILE, SCHEMA_FILE } from "./constants.js";
 import { readManifest } from "./manifest.js";
 import { packIndexSchema } from "./schemas.js";
-import { DATA_FILE, INDEX_FILE, SCHEMA_FILE } from "./types.js";
 
 /** STORE_UNAVAILABLE with the canonical `pragma sources update` recovery (CLI + MCP). */
 function packUnavailable(reason: string): PragmaError {

@@ -19,8 +19,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SourcesDecision } from "../resolveSources.js";
+import { STORIES_FILE } from "./constants.js";
 import { storiesJson } from "./embedded/pack.stories.generated.js";
-import { STORIES_FILE } from "./types.js";
 
 /** One package-declared story as the pack carries it: the file it came from, verbatim. */
 export interface PackStoryRecord {

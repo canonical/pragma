@@ -89,7 +89,7 @@ export function listFormatters(
 }
 
 /** Build the shared per-entity render options for a lookup (reused by sample). */
-function lookupOptions(
+function buildLookupOptions(
   lookup: PackLookup,
   prefixes: Readonly<Record<string, string>>,
 ): RenderLookupOptions<PackEntity> {
@@ -127,7 +127,7 @@ export function lookupFormatters(
   lookup: PackLookup,
   prefixes: Readonly<Record<string, string>>,
 ): Formatters<LookupOutput> {
-  const options = lookupOptions(lookup, prefixes);
+  const options = buildLookupOptions(lookup, prefixes);
   return {
     plain: (output) =>
       renderOutput(output, (entity) => renderLookupPlain(entity, options)),
@@ -143,7 +143,7 @@ export function sampleFormatters(
   noun: string,
   prefixes: Readonly<Record<string, string>>,
 ): Formatters<SampleOutput> {
-  const options = lookupOptions(lookup, prefixes);
+  const options = buildLookupOptions(lookup, prefixes);
   return {
     plain: (data) => {
       const body = data.samples

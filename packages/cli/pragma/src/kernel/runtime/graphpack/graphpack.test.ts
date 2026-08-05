@@ -11,19 +11,19 @@ import { basename, join } from "node:path";
 import { executeLocal } from "@canonical/ke-graphql";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildPack } from "./build.js";
-import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
-import { contentHash } from "./hash.js";
-import { packIsComplete, parseManifest } from "./manifest.js";
-import { readPack } from "./read.js";
-import { activeStories } from "./stories.js";
-import type { PackIndex } from "./types.js";
 import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
   SCHEMA_FILE,
   STORIES_FILE,
-} from "./types.js";
+} from "./constants.js";
+import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
+import { contentHash } from "./hash.js";
+import { packIsComplete, parseManifest } from "./manifest.js";
+import { readPack } from "./read.js";
+import { activeStories } from "./stories.js";
+import type { PackIndex } from "./types.js";
 
 const PREFIXES = {
   ex: "https://pragma.canonical.com/sample#",
