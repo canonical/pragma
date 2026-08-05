@@ -43,7 +43,7 @@ import {
 } from "./types.js";
 
 /** One RDF source to build into a pack. */
-export interface BuildPackInput {
+interface BuildPackInput {
   /** Stable path label — part of the content hash. */
   readonly path: string;
   /** Raw RDF content. */
@@ -51,7 +51,7 @@ export interface BuildPackInput {
 }
 
 /** Provenance and options for a pack build. */
-export interface BuildPackOptions {
+interface BuildPackOptions {
   readonly name: string;
   readonly version: string;
   /** The config `packs` ref (verbatim) or a label. */
@@ -68,7 +68,7 @@ export interface BuildPackOptions {
 }
 
 /** The outcome of a pack build (or cache hit). */
-export interface BuildPackResult {
+interface BuildPackResult {
   readonly dir: string;
   readonly contentHash: string;
   readonly manifest: Manifest;

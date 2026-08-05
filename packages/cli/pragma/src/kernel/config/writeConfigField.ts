@@ -31,7 +31,7 @@ import { globalConfigPath } from "./paths.js";
 import type { RawConfig } from "./types.js";
 
 /** The result of a global-config write. */
-export interface WriteConfigResult {
+interface WriteConfigResult {
   readonly path: string;
   readonly field: string;
 }

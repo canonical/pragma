@@ -42,7 +42,7 @@
  * scoped-name split has no other observation point); no production module
  * outside this one imports either name.
  */
-export type ParsedGeneratorSource =
+type ParsedGeneratorSource =
   | { readonly kind: "npm"; readonly name: string; readonly range: string }
   | { readonly kind: "other" };
 

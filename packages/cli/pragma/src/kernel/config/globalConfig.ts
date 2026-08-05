@@ -17,7 +17,7 @@ import { parseRawConfig } from "./schema.js";
 import type { RawConfig } from "./types.js";
 
 /** A read of the global config layer. */
-export interface GlobalConfigRead {
+interface GlobalConfigRead {
   readonly values: RawConfig;
   readonly exists: boolean;
   readonly path: string;

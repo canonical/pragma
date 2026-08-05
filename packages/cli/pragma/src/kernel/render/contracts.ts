@@ -5,6 +5,11 @@
  * list shows, which fields and sections a lookup renders — with no coupling to
  * store shapes, filters, or effects. Domain formatters (PR2+) build these
  * option bags and hand them to {@link renderers}.
+ *
+ * Every name here is exported, including the ones no other file names
+ * today: this is the domain's type file, so its members ARE the surface,
+ * and each unnamed one composes a shape that IS read elsewhere. A
+ * stray-export scan will flag them; that is a false positive, not residue.
  */
 
 /** A single column in a list rendering. */

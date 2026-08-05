@@ -9,6 +9,11 @@
  * `[noun, verb]` -> CLI `pragma <noun> <verb>`, tool `<noun>_<verb>`.
  * Positionals are params with `positional: true`, in declared order; every
  * other param is a kebab-cased flag.
+ *
+ * Every name here is exported, including the ones no other file names
+ * today: this is the domain's type file, so its members ARE the surface,
+ * and each unnamed one composes a shape that IS read elsewhere. A
+ * stray-export scan will flag them; that is a false positive, not residue.
  */
 
 import type { Task } from "@canonical/task";

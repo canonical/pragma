@@ -42,7 +42,7 @@ import type {
 } from "./types.js";
 
 /** The reference doc set: relative path under `docs/reference/` → file content. */
-export type ReferenceDocs = ReadonlyMap<string, string>;
+type ReferenceDocs = ReadonlyMap<string, string>;
 
 /**
  * The closed error-code → one-line meaning map. Typed as an exhaustive

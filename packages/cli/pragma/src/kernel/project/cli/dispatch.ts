@@ -55,7 +55,7 @@ const logToStderr = (_level: string, message: string): void => {
 };
 
 /** The result of running a verb: what to write where, and the exit code. */
-export interface DispatchOutcome {
+interface DispatchOutcome {
   readonly stdout?: string;
   readonly stderr?: string;
   readonly exitCode: number;

@@ -35,7 +35,7 @@ import type { PackDefinition, PackEntry } from "./types.js";
 import { assertUniqueVerbs } from "./uniqueness.js";
 
 /** One package-declared story that could not be used, and why. */
-export interface StoryProblem {
+interface StoryProblem {
   /** The story file, e.g. `@acme/recipes/stories/recipe.json`. */
   readonly source: string;
   /** Why it was ignored, in one sentence. */

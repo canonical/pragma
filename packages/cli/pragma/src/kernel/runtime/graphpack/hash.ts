@@ -19,7 +19,7 @@
 import { hashSources, sha256Hex } from "@canonical/ke-graphql";
 
 /** A single source input: a stable path label and its raw text content. */
-export interface HashInput {
+interface HashInput {
   readonly path: string;
   readonly content: string;
 }

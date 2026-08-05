@@ -16,7 +16,7 @@ import { basename, join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
 
 /** Parsed SKILL.md frontmatter. */
-export interface SkillFrontmatter {
+interface SkillFrontmatter {
   readonly name: string;
   readonly description: string;
   /** #856 — whether this skill also registers as an MCP prompt. */

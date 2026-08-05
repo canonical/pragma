@@ -20,7 +20,7 @@ import { formatRootHelp } from "./rootHelp.js";
 import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
 
 /** Options controlling the built program. */
-export interface BuildProgramOptions {
+interface BuildProgramOptions {
   /** Global flags for this invocation, closed over by every verb action. */
   readonly globalFlags: GlobalFlags;
   /** Binary name (defaults to `pragma`). */
