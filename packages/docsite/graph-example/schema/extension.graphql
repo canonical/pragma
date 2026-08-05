@@ -1,0 +1,88 @@
+# =============================================================================
+# This provider's own types, appended to the authored contract SDL.
+#
+# WHY THIS FILE EXISTS AT ALL. The contract declares exactly one type that
+# `implements Node` — OntologyClass. A NodeConnection built from the contract
+# alone can therefore contain nothing but ontology classes: there is no type
+# an ABox entity could be. Every provider must extend the contract SDL with
+# its own concrete Node implementers, and that extension is precisely what the
+# contract's superset rule is for (contract.graphql:39-42). `buildSchema` over
+# the contract alone cannot serve instance data.
+#
+# NOTE WHAT IS ABSENT: there is no `extend type Query`. Every type below is
+# reachable through the contract's own root fields — `node(id:)` and
+# `OntologyClass.instances`. Adding provider root fields would have been
+# easier and would have proved less: the point is that the contract's five
+# roots suffice.
+# =============================================================================
+
+"""
+A metro line. A root class in the TBox (no superclass), so it demonstrates
+that `OntologyClass.superclass` is legitimately null.
+"""
+type Line implements Node {
+  uri: ID!
+  _meta: EntityMeta!
+  name: String
+  servedBy: [Station!]!
+}
+
+"""
+A station on the network. `name` is nullable in GraphQL even though the TBox
+marks `metro:name` required on this class: SHACL cardinality is an assertion
+about the data, and this dataset deliberately contains stations that violate
+it so `_meta.title`'s fallback chain has something to fall back from.
+"""
+type Station implements Node {
+  uri: ID!
+  _meta: EntityMeta!
+  name: String
+  platformCount: Int
+  location: GeoPoint
+  servesLine: [Line!]!
+  inZone: Zone
+}
+
+"""
+A fare band. Lives in the SECOND namespace (`geo:`), which is the point: with
+entities in only one namespace, a `_meta.curie` implementation could hardcode
+a single prefix and still look correct on every row.
+"""
+type Zone implements Node {
+  uri: ID!
+  _meta: EntityMeta!
+  name: String
+}
+
+"""
+A station where two or more lines meet — a subclass of Station in the TBox.
+GraphQL has no type inheritance, so the relationship lives entirely in the
+TBox and shows up through `superclasses` / `subclasses` / `inherited`.
+"""
+type Interchange implements Node {
+  uri: ID!
+  _meta: EntityMeta!
+  name: String
+  platformCount: Int
+  location: GeoPoint
+  servesLine: [Line!]!
+  inZone: Zone
+  transferMinutes: Int
+}
+
+"""
+A latitude/longitude pair. NOT a Node: it has no IRI, so it is unreachable
+through `node(id:)` and can never appear in a NodeConnection.
+
+The contract does not require an embeddable — nothing in it references a
+non-Node value type. This one exists to probe the last tier of `_meta.title`'s
+fallback chain (the typename tier, reached only when there is no IRI to fall
+back to) and to show that a provider may add value types freely. Note that it
+still carries `_meta: EntityMeta!`, and EntityMeta.type is non-null, so even a
+coordinate pair needs a class in the TBox.
+"""
+type GeoPoint {
+  _meta: EntityMeta!
+  latitude: Float!
+  longitude: Float!
+}
