@@ -135,13 +135,20 @@ describe("injection safety (PROTECTED)", () => {
   });
 });
 
-describe("shell reserved words are refused at EMIT (PROTECTED)", () => {
-  // `SAFE_TOKEN_RE` admits `esac`, `in`, `do`, `done`, `fi` — they are ordinary
-  // lowercase words. Inlined as a `case` pattern they end the statement, so the
-  // rest of the script is a syntax error and `_pragma` is never defined: the
-  // failure mode is NO COMPLETION AT ALL, silently, from a valid-looking
-  // installed file. `fish -n` does not catch it either (fish's script has no
-  // `case`). No live noun trips it; the gate exists so none ever can.
+describe("the reserved NOUN is refused at EMIT (PROTECTED)", () => {
+  // `SAFE_TOKEN_RE` admits `esac` — an ordinary lowercase word. Inlined at
+  // `case`-pattern start it terminates the noun dispatch, so the rest of the
+  // script is a syntax error and `_pragma` is never defined: the failure mode is
+  // NO COMPLETION AT ALL, silently, from a valid-looking installed file.
+  // `fish -n` does not catch it either (fish's script has no `case`). No live
+  // noun trips it; the gate exists so none ever can.
+  //
+  // ONE word, because one word is what measurement supports. All 17 of bash's
+  // reserved words were rendered into the live templates as the noun and handed
+  // to real bash 5.2.21 and real zsh 5.9: only `esac` is rejected (rc 2 / rc 1),
+  // and in a VERB position all 17 parse in both shells. The case below proves
+  // the rejection for `esac`; the case after it proves the other direction — the
+  // guard does not refuse a word the shells accept.
   it("buildCompletionModel accepts `esac` — the token IS shell-safe", () => {
     expect(() =>
       buildCompletionModel([adversarialModule(["esac", "list"])]),
@@ -154,18 +161,16 @@ describe("shell reserved words are refused at EMIT (PROTECTED)", () => {
     );
   });
 
-  it("refuses a reserved VERB label too", () => {
-    expect(() => emitScripts([adversarialModule(["thing", "done"])])).toThrow(
-      /reserved shell word "done" in verb "thing done"/,
-    );
-  });
-
   it("without the gate, bash and zsh REFUSE the emitted script", () => {
     // The non-vacuity that matters: the guard is worth having only if the
     // script it prevents is genuinely broken. Emit the same grammar with the
     // reserved noun renamed away, then substitute the reserved word back into
     // the generated text exactly where the noun appears — which is what emit
     // would have produced — and hand it to the shells.
+    //
+    // GATED: this box ships bash only, so the zsh half `continue`s here and on
+    // today's CI (L.01 §10.5 item 6 — installing zsh and fish in the test job is
+    // still open). It was executed against zsh 5.9 provisioned per-session.
     const scripts = emitScripts([adversarialModule(["esacx", "list"])]);
     for (const shell of ["bash", "zsh"] as const) {
       if (!hasShell(shell)) continue;
@@ -173,6 +178,38 @@ describe("shell reserved words are refused at EMIT (PROTECTED)", () => {
       expect(parses(shell, good)).toBe(0);
       const broken = good.replaceAll("esacx", "esac");
       expect(parses(shell, broken)).not.toBe(0);
+    }
+  });
+
+  it("emits, and both shells ACCEPT, the 16 words that are not `esac`", () => {
+    // The guard's other edge, and the reason it is one word rather than a
+    // category: every other reserved word is a legal noun, so a fork declaring
+    // `select`, `time` or `in` as a story noun must not fail `bun run build`.
+    // Same gating as above for zsh.
+    const others = [
+      "case", "coproc", "do", "done", "elif", "else", "fi", "for",
+      "function", "if", "in", "select", "then", "time", "until", "while",
+    ];
+    for (const word of others) {
+      const scripts = emitScripts([adversarialModule([word, "list"])]);
+      for (const shell of ["bash", "zsh"] as const) {
+        if (!hasShell(shell)) continue;
+        expect(parses(shell, scripts[shell]), `${shell} rejected ${word}`).toBe(
+          0,
+        );
+      }
+    }
+  });
+
+  it("a reserved VERB label is emitted and parses in every shell", () => {
+    // Measured, not assumed: a verb reaches a script only inside a compound
+    // pattern (`thing/done)`), a `compgen -W` word list or a `compadd --` list —
+    // never at pattern start. Guarding verb labels would cost a fork 17 words of
+    // vocabulary for a hazard that does not exist.
+    const scripts = emitScripts([adversarialModule(["thing", "done"])]);
+    for (const shell of ["bash", "zsh"] as const) {
+      if (!hasShell(shell)) continue;
+      expect(parses(shell, scripts[shell])).toBe(0);
     }
   });
 });

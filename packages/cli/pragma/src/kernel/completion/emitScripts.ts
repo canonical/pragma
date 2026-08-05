@@ -33,11 +33,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import type { CapabilityModule } from "../spec/types.js";
-import {
-  assertSafeToken,
-  assertShellUsableToken,
-  buildCompletionModel,
-} from "./model.js";
+import { assertSafeToken, buildCompletionModel } from "./model.js";
 import { bashScript } from "./templates/bash.js";
 import { fishScript } from "./templates/fish.js";
 import { zshScript } from "./templates/zsh.js";
@@ -50,6 +46,67 @@ import type {
 
 /** The default `minChars` gate baked into the generated scripts. */
 export const DEFAULT_MIN_CHARS = 2;
+
+/**
+ * The shell reserved words a NOUN may not be, because the templates inline a
+ * noun at `case`-pattern start and the shell reads it as grammar there.
+ *
+ * ONE word, and the set is the measurement rather than a category. Every one of
+ * bash's 17 reserved words was rendered into the live `bashScript`/`zshScript`
+ * as `nouns[0].noun` and handed to real GNU bash 5.2.21 and real zsh 5.9:
+ *
+ * | `bash -n` / `zsh -n` | words |
+ * |---|---|
+ * | rejects | `esac` (bash rc 2, zsh rc 1) |
+ * | accepts | `case coproc do done elif else fi for function if in select then time until while` |
+ *
+ * A reserved word is only reserved in COMMAND position, and a `case` arm pattern
+ * is not one — so only the terminator of `case "$noun" in … esac` closes the
+ * statement early. The rest of the file is then a syntax error, `_pragma` is
+ * never defined, and the user gets NO COMPLETION AT ALL, silently, from a
+ * valid-looking installed file. `fish -n` does not catch it either, because
+ * fish's script is `complete -c` lines with no `case`.
+ *
+ * VERB LABELS are not checked. The same 17 words were re-measured in a verb
+ * position and all 17 parse in both shells, because a verb only ever reaches a
+ * script inside a compound pattern (`block/esac)`), a `compgen -W` word list or
+ * a `compadd --` list — never at pattern start. Guarding them would take 17
+ * plausible words away from what a fork may declare as CONTENT, on a hazard
+ * measurement contradicts.
+ */
+const RESERVED_NOUNS: ReadonlySet<string> = new Set(["esac"]);
+
+/**
+ * Assert a noun may be INLINED into a shell script's grammar, not merely printed
+ * as a candidate.
+ *
+ * Deliberately separate from `assertSafeToken`, and deliberately living HERE
+ * rather than in `model.ts`. The two hazards are not the same:
+ *
+ * - `assertSafeToken` guards INJECTION. It must run everywhere a token reaches
+ *   a shell, including at runtime — `resolve.ts` filters `__complete`
+ *   candidates through `SAFE_TOKEN_RE` before printing them.
+ * - This guards a token being taken for GRAMMAR. That can only happen where a
+ *   token is written INTO a script, which is this module. At runtime a reserved
+ *   word is harmless: a candidate is printed, never evaluated.
+ *
+ * So it is module-private to the emitter, which nothing on the `__complete` fast
+ * path imports — where `model.ts`, which `complete.ts` does import, would have
+ * carried both the set and two exports that path never uses.
+ *
+ * @param noun - The candidate noun.
+ * @throws Error when the noun is a reserved word the templates cannot inline.
+ */
+function assertShellUsableNoun(noun: string): void {
+  if (RESERVED_NOUNS.has(noun)) {
+    throw new Error(
+      `completion: reserved shell word ${JSON.stringify(noun)} in noun ` +
+        `${JSON.stringify(noun)} — it terminates the \`case "$noun" in … esac\` ` +
+        "dispatch, so bash and zsh refuse the generated script and no " +
+        "completion is installed at all; rename it",
+    );
+  }
+}
 
 /** Options for {@link emitScripts}. */
 export interface EmitScriptsOptions {
@@ -124,17 +181,12 @@ export function emitScripts(
     buildCompletionModel(modules),
     new Set(options.disabledFamilies ?? []),
   );
-  // Nouns and verb labels are inlined as `case` patterns and function-name
-  // fragments, so a shell RESERVED WORD here breaks the script's grammar even
-  // though it passes the injection allowlist. Checked at emit — the one place a
-  // token becomes syntax — rather than in the model, which is on the
-  // `__complete` fast path and where a candidate is only ever printed.
-  for (const noun of model.nouns) {
-    assertShellUsableToken(noun.noun, `noun "${noun.noun}"`);
-    for (const verb of noun.verbs) {
-      assertShellUsableToken(verb.label, `verb "${noun.noun} ${verb.label}"`);
-    }
-  }
+  // A noun is inlined at `case`-pattern start, so a shell RESERVED WORD there
+  // breaks the script's grammar even though it passes the injection allowlist.
+  // Checked at emit — the one place a token becomes syntax — rather than in the
+  // model, which is on the `__complete` fast path and where a candidate is only
+  // ever printed. Verb labels are NOT checked; see `RESERVED_NOUNS`.
+  for (const noun of model.nouns) assertShellUsableNoun(noun.noun);
   return {
     bash: bashScript(model, binName, minChars),
     zsh: zshScript(model, binName, minChars),
