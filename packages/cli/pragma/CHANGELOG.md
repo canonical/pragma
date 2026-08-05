@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+### Features
+
+* **cli:** `create package` and `create application` run from the compiled binary. Their generators route every read — 11 templates for `package`, 15 templates and 62 verbatim assets for `application` — through `@canonical/summon-core/embedded`, so the binary serves them from its inlined manifest instead of a filesystem it does not have. The source-run-only caveat is withdrawn from both, and the gate that enforced it is deleted.
+
+### BREAKING CHANGES
+
+* **summon-component:** the `./embedded` subpath export is removed. The embedded-file registry lives in `@canonical/summon-core/embedded`; hosts inject through its `setEmbeddedFiles`.
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 

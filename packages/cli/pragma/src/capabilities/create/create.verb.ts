@@ -238,24 +238,14 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
 // =============================================================================
 
 /**
- * The standalone `bun build --compile` binary resolves every bundled module
- * under the virtual `/$bunfs` filesystem — a marker absent from any source or
- * `bun`-run module URL. Only a generator that routes its template reads through
- * the embedded manifest can run there
- * (`CREATE_GENERATORS[kind].readsEmbeddedTemplates`);
- * the others call `template({ source })`, which falls through to
- * `readFile(source)` and dies with `ENOENT … /$bunfs/…` after `mkdir` has
- * already run, leaving partially-created files behind.
- * `compiledCreate.subprocess.test.ts` pins the refusal AND the empty cwd.
- */
-const IS_COMPILED_BINARY = import.meta.url.includes("/$bunfs/");
-
-/**
  * True when a dynamic import failed because the module could not be RESOLVED.
- * summon-core + the generators are now bundled into the binary, so this should
- * not arise; {@link loadCreateRuntime} keeps it as a defensive backstop that
- * turns a resolution failure into a clean gate rather than a raw "internal bug"
- * report. Matched structurally across bun (`ResolveMessage`) and node
+ *
+ * This is NOT the retired source-run-only gate — it is a BUNDLING backstop, and
+ * it survives that gate's deletion for a different reason. summon-core and the
+ * generators reach the binary through static dynamic imports; if a bundler
+ * change ever drops one, the symptom is an unresolvable specifier at run time,
+ * and without this it surfaces as "Internal error — please report this issue".
+ * Matched structurally across bun (`ResolveMessage`) and node
  * (`ERR_MODULE_NOT_FOUND`) so a genuine runtime error still propagates.
  */
 export function isModuleNotFound(cause: unknown): boolean {
@@ -290,20 +280,14 @@ export function isModuleNotFound(cause: unknown): boolean {
  * cannot leave this import pointing at a package it no longer ships. In a source
  * run the disk read wins and the manifest is inert.
  *
- * A binding whose generator does not read through that manifest is gated to a
- * source run here ({@link IS_COMPILED_BINARY}). A stale resolution failure is a
- * defensive backstop {@link isModuleNotFound} turns into the same clean gate.
+ * Every declared generator reads through the registry, so there is nothing left
+ * to gate: all three `create` nouns run from the shipped binary, each proved
+ * byte-for-byte against a source run in `compiledCreate.subprocess.test.ts`. A
+ * resolution failure — the bundling regression {@link isModuleNotFound}
+ * detects — is turned into a readable refusal rather than an internal-bug
+ * report.
  */
-async function loadCreateRuntime(kind: CreateKind) {
-  if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].readsEmbeddedTemplates) {
-    throw new PragmaError({
-      code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled ${BIN_NAME} binary — ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`,
-      recovery: {
-        message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
-      },
-    });
-  }
+async function loadCreateRuntime() {
   try {
     // Inject the embedded manifest before the generators evaluate.
     const [{ setEmbeddedFiles }, { TEMPLATES }] = await Promise.all([
@@ -322,9 +306,9 @@ async function loadCreateRuntime(kind: CreateKind) {
       throw new PragmaError({
         code: "UNSUPPORTED",
         message:
-          "`create` could not load its generator runtime. Run it from a source checkout, or use the `summon` CLI.",
+          "`create` could not load its generator runtime — its generator modules were not resolvable. This is a build defect, not a limitation of this installation.",
         recovery: {
-          message: "Run `create` from a source checkout, or use `summon`.",
+          message: `Reinstall ${BIN_NAME}, or report the issue if a reinstall does not fix it.`,
         },
       });
     }
@@ -349,10 +333,9 @@ async function runCreate(
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
   // Lazy: importing these pulls summon-core (and with it React) — kept off every
-  // non-create path. Now STATIC dynamic imports so `--compile` bundles them; the
-  // embedded `.ejs` manifest is injected here. A binding that does not read
-  // through it stays a source-run feature in the binary.
-  const { pickGenerator, summon } = await loadCreateRuntime(kind);
+  // non-create path. STATIC dynamic imports so `--compile` bundles them; the
+  // embedded file manifest is injected here.
+  const { pickGenerator, summon } = await loadCreateRuntime();
 
   // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
   // (AV-228 B8) once, at this seam; every summon interaction below reads the
@@ -446,50 +429,12 @@ const CREATE_CAPABILITY = {
 };
 
 /**
- * Why a binding is source-run only — the ONE authoring of it, shared by the
- * documentation below and by {@link loadCreateRuntime}'s `UNSUPPORTED` refusal,
- * so what the reference promises and what the binary does cannot disagree.
- */
-const SOURCE_ONLY_REASON =
-  "its generator reads templates from disk, which the binary does not carry";
-
-/**
- * The published caveat for a binding the compiled binary cannot run. DERIVED
- * from `CREATE_GENERATORS[kind].readsEmbeddedTemplates` — flipping that bit
- * moves the caveat, `docs/reference/*.md`, and `create.test.ts`'s binding
- * assertion together.
- *
- * It LEADS WITH THE PURPOSE, because `tools.md` and the MCP tool description
- * both render `doc ?? summary` — so a caveat alone REPLACED the only sentence
- * saying what the tool makes, and an agent enumerating tools could not learn
- * that `create_package` scaffolds a package. The tool works from a source
- * checkout; describing nothing but its refusal made a live tool
- * undiscoverable. The repeated sentence in `commands.md`'s section is the
- * cheaper of the two costs.
- *
- * It names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
- * agent has no flags): the plan-only refusal is stated in the terms BOTH
- * surfaces share.
- *
- * @param kind - The create binding.
- * @param summary - The verb's own one-liner, which the `doc` replaces on MCP.
- * @returns The `doc` for a source-run-only binding, or `undefined`.
- */
-function buildAvailabilityDoc(
-  kind: CreateKind,
-  summary: string,
-): string | undefined {
-  if (CREATE_GENERATORS[kind].readsEmbeddedTemplates) return undefined;
-  return `${summary} From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
-}
-
-/**
  * Build a create verb. `run` presents `Promise<Task<R>>` through the `Task<R>`
  * arm by an honest cast at this one site (mirroring `sources update`): a literal
  * `Promise<Task<R>>` arm in the union would poison async read-verb inference.
  *
- * A binding the compiled binary cannot run says so in its `summary` (which is
- * what `--help` and the noun listing show) and explains itself in its `doc`.
+ * No availability caveat: every `create` noun runs from the shipped binary, so
+ * the `summary` is the whole story and there is nothing for a `doc` to withdraw.
  */
 function createVerb(
   kind: CreateKind,
@@ -497,11 +442,9 @@ function createVerb(
   params: ParamSpec[],
   examples: VerbSpec["examples"],
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
-  const doc = buildAvailabilityDoc(kind, summary);
   return {
     path: ["create", kind],
-    summary: doc ? `${summary} Source-run only.` : summary,
-    ...(doc ? { doc } : {}),
+    summary,
     params,
     output: { formatters: createFormatters },
     examples,

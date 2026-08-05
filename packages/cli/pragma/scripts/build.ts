@@ -4,20 +4,21 @@
  * Two steps: (1) codegen the embedded template manifest, then (2) compile the
  * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
  *
- * COMPILED `create` (PR7, resolved) — `create component` runs from the shipped
- * binary. `create.verb.ts` reaches summon-core + the generators through STATIC
+ * COMPILED `create` — all three nouns run from the shipped binary. `create.verb.ts` reaches summon-core + the generators through STATIC
  * dynamic imports (behind its lazy boundary), so bun's `--compile` bundler
- * includes them. The generators load their `.ejs` templates from disk
- * (`import.meta`-relative), which do not exist in a standalone binary, so this
- * script inlines the reachable generator templates into `create/templates`
- * `.embedded.generated.ts` — the same inline-strings-survive-`--compile`
- * technique as `graphpack/embedded/pack.generated.ts` — keyed by
- * directory-qualified path (`component/react/types.ts.ejs`). The component
- * loader consults that manifest when its disk read fails, keyed by the qualified
- * path so react/svelte/lit never collide. A compiled-binary smoke test
- * (create/compiledCreate.subprocess.test.ts) proves the three frameworks are
- * byte-identical to a source run, and pins the refusal for the nouns that stay a
- * source-run feature.
+ * includes them. The generators resolve their template and asset paths
+ * `import.meta`-relative, and those files do not exist in a standalone binary,
+ * so this
+ * script inlines every declared generator's templates AND verbatim assets into
+ * `create/templates.embedded.generated.ts` — the same
+ * inline-strings-survive-`--compile` technique as
+ * `graphpack/embedded/pack.generated.ts` — keyed by PACKAGE-SCOPED path
+ * (`@canonical/summon-component/react/types.ts.ejs`). Every generator resolves
+ * its reads through `@canonical/summon-core/embedded`, which consults that
+ * manifest when the disk read fails; the package scope lets one manifest serve
+ * several packages, and the path tail keeps react/svelte/lit apart. A
+ * compiled-binary smoke test (create/compiledCreate.subprocess.test.ts) proves
+ * every shipped noun byte-identical to a source run.
  */
 
 import {
@@ -62,9 +63,9 @@ function collectTemplateRoots(dir: string): string[] {
 }
 
 /**
- * The generator packages whose template files the binary must carry: exactly
- * the bindings `create.verb.ts` lets run from the compiled binary
- * (`readsEmbeddedTemplates`). Keys are `<package>/<path-relative-to-root>` —
+ * The generator packages whose template files the binary must carry — every
+ * declared binding, because every declared generator now reads through the
+ * shared embedded registry. Keys are `<package>/<path-relative-to-root>` —
  * the same rule `@canonical/summon-core/embedded`'s `deriveEmbeddedKey` applies
  * to a file's runtime source path, so harvest and lookup agree by construction.
  * The package scope is what lets several generator packages share ONE manifest.
@@ -82,13 +83,9 @@ const TEMPLATE_ROOTS: ReadonlyArray<{
   name: string;
   root: string;
 }> = Object.entries(CREATE_GENERATORS).flatMap(([id, binding]) =>
-  binding.readsEmbeddedTemplates
-    ? collectTemplateRoots(
-        fileURLToPath(
-          new URL(`../node_modules/${binding.name}/src`, scriptsUrl),
-        ),
-      ).map((root) => ({ id, name: binding.name, root }))
-    : [],
+  collectTemplateRoots(
+    fileURLToPath(new URL(`../node_modules/${binding.name}/src`, scriptsUrl)),
+  ).map((root) => ({ id, name: binding.name, root })),
 );
 
 const MANIFEST_OUT = fileURLToPath(

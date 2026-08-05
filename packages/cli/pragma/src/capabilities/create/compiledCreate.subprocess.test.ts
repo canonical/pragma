@@ -2,21 +2,26 @@
  * PROTECTED — the compiled-binary `create` guard.
  *
  * Builds the real standalone `dist/pragma` (`bun build --compile`) and spawns
- * `pragma create component … --yes` for react, svelte AND lit, asserting each
- * tree is BYTE-IDENTICAL to a source run of the same generator (`bun src/bin.ts
- * …`, which reads the `.ejs` templates from disk).
+ * every shipped `create` noun against it, asserting each tree is
+ * BYTE-IDENTICAL to a source run of the same generator (`bun src/bin.ts …`,
+ * which reads its files from disk).
  *
  * This is what proves PR7's two compiled-`create` fixes end-to-end:
  *   1. Summon is bundled — a computed-specifier import used to keep summon-core +
  *      the generators OUT of the binary; static dynamic imports now include them.
- *   2. The templates are embedded AND resolved by DIRECTORY-QUALIFIED path. The
- *      svelte + lit cases are load-bearing: `types.ts.ejs` / `index.ts.ejs` /
+ *   2. The files are embedded AND resolved by PACKAGE-SCOPED path. The svelte +
+ *      lit cases are load-bearing: `types.ts.ejs` / `index.ts.ejs` /
  *      `styles.css.ejs` / `stories.ts.ejs` exist in react/, svelte/ AND lit/, so
- *      the old basename-matching fallback could emit the WRONG framework's file
- *      in the binary. A wrong file would differ from the source run → red here.
+ *      a basename-matching fallback could emit the WRONG framework's file in the
+ *      binary. A wrong file would differ from the source run → red here. The
+ *      package scope is what keeps four generator packages' identically-named
+ *      files (`package.json.ejs` is in three of them) apart in ONE manifest.
  *
- * On base (summon not bundled, templates not embedded) the binary's `create`
- * writes nothing (it errors), so `compiled.size > 0` already fails.
+ * Every shipped `create` noun is covered. There is no longer a refusal to pin:
+ * the source-run-only gate is gone because the generators it gated now read
+ * every file through the shared embedded registry, and each of them has a
+ * positive case here instead. A run that cannot reach its files writes nothing,
+ * so `compiled.size > 0` is the assertion that catches a regression.
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
@@ -115,6 +120,11 @@ const CASES: ReadonlyArray<{ name: string; args: readonly string[] }> = [
       "library",
     ],
   },
+  { name: "application", args: ["create", "application", "probe-app"] },
+  {
+    name: "application (--with-relay)",
+    args: ["create", "application", "probe-app", "--with-relay"],
+  },
 ];
 
 describe("compiled pragma create (PROTECTED)", () => {
@@ -126,8 +136,8 @@ describe("compiled pragma create (PROTECTED)", () => {
       // (2) A source run — every file read comes from disk. The reference.
       const source = runCreate("bun", [pragmaBin], args);
 
-      // Wrote something. This is the assertion that fails on the parent commit
-      // for `package`: the gate refused, so the cwd was left empty.
+      // Wrote something. This is the assertion that failed while the gate was
+      // live for `package` and `application`: it refused, leaving the cwd empty.
       expect(compiled.size).toBeGreaterThan(0);
       // Same file set …
       expect([...compiled.keys()].sort()).toEqual([...source.keys()].sort());
@@ -137,53 +147,6 @@ describe("compiled pragma create (PROTECTED)", () => {
         expect(source.get(path), `content of ${path}`).toBe(content);
       }
     }, 180_000);
-  }
-});
-
-/**
- * PROTECTED — the compiled-binary `create` gate, now down to its last noun.
- *
- * `create component` and `create package` run from the binary (the describe
- * above proves each byte for byte) because every file read they make routes
- * through the shared embedded registry and passes the loaded `content:` on.
- * `create application` does NOT yet: it calls `template({ source })` for its 15
- * templates and `copyFile(source, dest)` for its 62 verbatim assets, so the run
- * dies with `ENOENT … /$bunfs/…` AFTER `mkdir` has already run — a half-made
- * tree left on the user's disk. Measured against a real `dist/pragma` with the
- * gate lifted.
- *
- * A `--dry-run` does NOT test this: it exits 0 without reading a file and merely
- * PRINTS `Read file: /$bunfs/…` as a planned effect. That false positive is why
- * the gate has to be pinned by a real run.
- *
- * The `readdirSync(dir)` assertion is the load-bearing one: it fails with the
- * real symptom if the gate is ever lifted without fixing the generator.
- */
-
-describe("compiled pragma create gate (PROTECTED)", () => {
-  // A LITERAL noun list, deliberately not derived from `create`'s own
-  // declaration: changing the gate's input must turn this red rather than
-  // silently drop the case.
-  for (const kind of ["application"] as const) {
-    it(`refuses \`create ${kind}\` and leaves the cwd untouched`, () => {
-      const dir = freshCwd();
-      const result = spawnSync(compiledBin, ["create", kind, "--yes"], {
-        cwd: dir,
-        stdio: "pipe",
-        encoding: "utf-8",
-      });
-      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
-      // 1, not merely non-zero: UNSUPPORTED is a runtime refusal, which
-      // `kernel/error/constants.ts` maps to the generic runtime exit.
-      expect(result.status).toBe(1);
-      expect(output).toContain("not available in the compiled pragma binary");
-      // The clean refusal, not the crash it exists to prevent.
-      expect(output).not.toMatch(/ENOENT/);
-      expect(output).not.toMatch(/Internal error/);
-      // And nothing half-made on disk: the generator's `mkdir` effects run
-      // BEFORE its first template read, so a lifted gate leaves a stub tree.
-      expect(readdirSync(dir)).toEqual([]);
-    }, 30_000);
   }
 });
 
