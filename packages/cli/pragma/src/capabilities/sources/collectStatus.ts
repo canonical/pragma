@@ -10,12 +10,9 @@
  * it is where the store summary is reported — `info` shows one total instead.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import type { PackDeclaration } from "../../kernel/config/types.js";
 import { embeddedManifest } from "../../kernel/runtime/graphpack/embedded.js";
 import { readManifest } from "../../kernel/runtime/graphpack/manifest.js";
-import { INDEX_FILE } from "../../kernel/runtime/graphpack/types.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { SourcesStatusData } from "./types.js";
@@ -24,32 +21,6 @@ const entryName = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : entry.name;
 const entrySource = (entry: PackDeclaration): string =>
   typeof entry === "string" ? entry : (entry.source ?? entry.name);
-
-/**
- * The distinct-abox entity count from a built pack's index.json (storeless).
- *
- * Only reached for LEGACY packs whose manifest predates the persisted
- * `entityCount` (A10) — a current pack's count is read straight from the
- * manifest, no index parse. Counts distinct abox subjects so the figure matches
- * both the manifest count and `info`'s `entityTotal` (A1).
- */
-function indexEntityCount(dir: string): number | null {
-  const path = join(dir, INDEX_FILE);
-  if (!existsSync(path)) return null;
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8")) as {
-      entities?: { box?: string; uri?: string; name?: string }[];
-    };
-    if (!Array.isArray(parsed.entities)) return null;
-    const subjects = new Set<string>();
-    for (const entity of parsed.entities) {
-      if (entity.box === "abox") subjects.add(entity.uri ?? entity.name ?? "");
-    }
-    return subjects.size;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Assemble the `sources status` payload for the runtime's cwd.
@@ -89,9 +60,15 @@ export async function collectStatus(
         contentHash: decision.contentHash,
         sourceRef: manifest?.sourceRef ?? null,
         builtAt: manifest?.createdAt ?? null,
-        // Prefer the manifest's persisted count (no index parse); a legacy pack
-        // without it falls back to counting the index's abox subjects (A10).
-        entityCount: manifest?.entityCount ?? indexEntityCount(decision.dir),
+        // Read straight from the manifest — no index parse. The fallback that
+        // used to sit here re-counted the index's abox subjects for a "legacy"
+        // pack whose manifest predated the field. `buildPack` has written
+        // `entityCount` on every manifest since, the embedded snapshot carries
+        // it (550), and no test ever reached the fallback: it was ~25 lines
+        // answering for a pack shape this tree cannot produce. A manifest
+        // genuinely missing it now reports `null`, which the renderers already
+        // print as `?`.
+        entityCount: manifest?.entityCount ?? null,
       };
     }
     case "unavailable":

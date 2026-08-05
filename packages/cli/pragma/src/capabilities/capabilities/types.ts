@@ -54,6 +54,5 @@ export interface CapabilitiesData {
   readonly counts: ToolCounts;
   readonly limits: {
     readonly output_modes: readonly string[];
-    readonly condensed_available: boolean;
   };
 }

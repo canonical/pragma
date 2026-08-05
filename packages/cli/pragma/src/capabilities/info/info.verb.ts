@@ -28,9 +28,6 @@ const infoVerb: VerbSpec<Record<string, unknown>, InfoData> = {
   capability: {
     needsStore: false,
     mutates: false,
-    // Network-aware (PR6 enrichment): the update-check reads the registry. This
-    // does NOT affect the emitted surface — `emitVerb` ignores `needsNetwork`.
-    needsNetwork: true,
     mcp: {
       expose: true,
       annotations: { readOnlyHint: true, openWorldHint: false },

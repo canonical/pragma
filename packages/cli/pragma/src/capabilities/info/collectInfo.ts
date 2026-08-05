@@ -51,7 +51,6 @@ export async function collectInfo(runtime: PragmaRuntime): Promise<InfoData> {
           command: pmUpdateCommand(install.pm, PRAGMA_PACKAGE),
         }
       : undefined;
-  const updateSkipped = registry === undefined;
 
   // Entity total: storeless, over the pack the boot decision names — so a
   // configured-but-unbuilt project reports no total rather than the snapshot's.
@@ -62,7 +61,6 @@ export async function collectInfo(runtime: PragmaRuntime): Promise<InfoData> {
     version: runtime.version,
     installSource: install.label,
     ...(update ? { update } : {}),
-    updateSkipped,
     ...(entities !== undefined ? { entities } : {}),
     config: {
       ...(config.tier !== undefined ? { tier: config.tier } : {}),

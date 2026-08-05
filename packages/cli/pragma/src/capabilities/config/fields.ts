@@ -2,9 +2,12 @@
  * The config field table — one declarative row per writable field. Since AV-228
  * B3 retired the per-field `config tier`/`channel`/`detail` verbs, this table no
  * longer emits verbs of its own: it is the shared source of truth that drives
- * `config set <key> <value>` (via `runSet` → `runField`), giving `set` its
- * `<key>` enum, per-field reset sentinels, enum validation, and positional
- * shaping for free.
+ * `config set <key> <value>` (via `runSet`), giving `set` its `<key>` enum,
+ * per-field reset sentinels and enum validation for free.
+ *
+ * It also carried a `positional` name per row until `config set` became the one
+ * setter: with one param bag there is nothing to re-key, and the field had no
+ * consumer beyond the round trip it existed to serve.
  */
 
 import { DETAIL_LEVELS } from "../../constants.js";
@@ -15,8 +18,6 @@ import { CHANNELS } from "../../kernel/config/types.js";
 export interface ConfigFieldSpec {
   /** The `RawConfig` key written (also the `config set` `<key>` enum member). */
   readonly field: keyof RawConfig & ("tier" | "channel" | "detail");
-  /** The positional param NAME — its usage token is `<positional>` (covenant). */
-  readonly positional: string;
   /** A free string (`tier`) or a fixed enum (`channel` / `detail`). */
   readonly kind: "string" | "enum";
   /** The allowed values for an enum field. */
@@ -35,19 +36,16 @@ export interface ConfigFieldSpec {
 export const CONFIG_FIELDS: readonly ConfigFieldSpec[] = [
   {
     field: "tier",
-    positional: "path",
     kind: "string",
     resetSentinel: ["none", "default", "-"],
   },
   {
     field: "channel",
-    positional: "name",
     kind: "enum",
     values: CHANNELS,
   },
   {
     field: "detail",
-    positional: "level",
     kind: "enum",
     values: DETAIL_LEVELS,
   },

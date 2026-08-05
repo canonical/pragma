@@ -75,23 +75,25 @@ describe("info — update-check enrichment", () => {
 
     expect(data.update).toMatchObject({ current: VERSION, latest: "99.0.0" });
     expect(data.update?.command).toContain("@canonical/pragma-cli");
-    expect(data.updateSkipped).toBe(false);
     // The storeless invariant: the enrichment must NOT boot the store.
     expect(rt.store.booted).toBe(false);
   });
 
-  it("marks `updateSkipped` when the registry is unreachable", async () => {
+  it("reports no update when the registry is unreachable", async () => {
+    // There used to be an `updateSkipped` boolean distinguishing this case from
+    // the up-to-date one below. It reached no renderer in any of the three
+    // formats — plain, llm and json all print `update` or nothing — so the two
+    // cases were already indistinguishable to every reader, and the field was
+    // asserted only here. Absent `update` is the whole observable answer.
     stubRegistry("offline");
     const data = await collect(bootRuntime(FLAGS_JSON, tmpCwd()));
     expect(data.update).toBeUndefined();
-    expect(data.updateSkipped).toBe(true);
   });
 
   it("reports no update when already at the latest version", async () => {
     stubRegistry(VERSION);
     const data = await collect(bootRuntime(FLAGS_JSON, tmpCwd()));
     expect(data.update).toBeUndefined();
-    expect(data.updateSkipped).toBe(false);
   });
 });
 

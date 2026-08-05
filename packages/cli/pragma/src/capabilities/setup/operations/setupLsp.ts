@@ -33,7 +33,6 @@ const TERRAZZO_EXTENSION_MATCH = "terrazzo";
  * `absent`, or `unknown` (the `code` CLI is not on PATH, so we cannot enumerate).
  */
 export interface LspDetection {
-  readonly available: true;
   readonly state: LspState;
 }
 
@@ -64,7 +63,7 @@ export async function detectLsp(cwd: string): Promise<LspDetection> {
     // leave `unknown` so the installer still runs.
     state = "unknown";
   }
-  return { available: true, state };
+  return { state };
 }
 
 /**

@@ -123,7 +123,7 @@ export function buildCapabilitiesData(
     discovery_sequence: buildDiscoverySequence(tools),
     tools: catalogTools,
     counts: countByCategory(catalogTools),
-    limits: { output_modes: OUTPUT_MODES, condensed_available: false },
+    limits: { output_modes: OUTPUT_MODES },
   };
 }
 

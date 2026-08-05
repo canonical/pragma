@@ -44,7 +44,6 @@ export const updateVerb: VerbSpec<
   capability: {
     needsStore: false,
     mutates: true,
-    needsNetwork: true,
     mcp: {
       expose: true,
       annotations: { readOnlyHint: false, openWorldHint: true },

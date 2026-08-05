@@ -56,7 +56,6 @@ const BARE: ConfigShowData = {
 const BARE_INFO: InfoData = {
   version: "0.0.0",
   installSource: "npm",
-  updateSkipped: true,
   config: {
     channel: BARE.config.channel,
     origins: BARE.origins,

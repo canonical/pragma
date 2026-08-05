@@ -382,7 +382,7 @@ export async function classifySourceBuildError(
 ): Promise<PragmaError> {
   if (error instanceof PragmaError) return error;
   const parserMessage = error instanceof Error ? error.message : String(error);
-  const culprit = await isolateBadSource(inputs);
+  const culprit = (await collectBadSources(inputs)).at(0);
   const detail = culprit?.message ?? parserMessage;
   const where = culprit
     ? `Package source "${culprit.path}" could not be parsed`
@@ -396,39 +396,20 @@ export async function classifySourceBuildError(
 }
 
 /**
- * Re-parse each source alone to find the first that fails to parse.
- *
- * @param inputs - The labelled sources.
- * @returns The offending source's path + parser message, or `undefined` if none
- *   fails in isolation (a build failure unrelated to a single bad source).
- * @note Impure — boots a throwaway ke store per source; error path only.
- */
-async function isolateBadSource(
-  inputs: readonly { readonly path: string; readonly content: string }[],
-): Promise<{ path: string; message: string } | undefined> {
-  const { createStore } = await import("@canonical/ke");
-  for (const input of inputs) {
-    try {
-      const store = await createStore({
-        sources: [{ content: input.content, path: input.path }],
-      });
-      store.dispose();
-    } catch (error) {
-      return {
-        path: input.path,
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
-  }
-  return undefined;
-}
-
-/**
  * Re-parse each source in isolation and collect EVERY one that fails to parse.
  *
- * Backs `--skip-invalid`: {@link isolateBadSource} returns just the first
- * culprit (for the error message), whereas the skip path needs the full set to
- * drop before rebuilding. Error path only — one throwaway ke store per source.
+ * TWO CALLERS, ONE FUNCTION. `--skip-invalid` needs the full set to drop before
+ * rebuilding; `classifySourceBuildError` needs only the first, for the message,
+ * and takes `.at(0)`. There used to be a second function for that — the same
+ * loop, the same throwaway store, differing only in returning at the first
+ * failure instead of accumulating — so `collectBadSources(x).at(0)` WAS
+ * `isolateBadSource(x)` and the two could drift in what counts as unparseable.
+ *
+ * The short-circuit is what that duplicate bought, and giving it up is
+ * deliberate: this is the error path of a build that has ALREADY failed once,
+ * and `--skip-invalid` walks every source here anyway. The worst case is one
+ * throwaway store per configured source instead of one, on a path that only
+ * runs to explain a failure.
  *
  * @param inputs - The labelled sources.
  * @returns Every source that fails to parse alone, with its parser message.

@@ -152,7 +152,7 @@ describe("config set — input rejection (INVALID_INPUT)", () => {
     }
   });
 
-  it("an out-of-set enum value is rejected by the shared runField backstop", () => {
+  it("an out-of-set enum value is rejected by runSet's enum backstop", () => {
     expect(() => runSet({ key: "channel", value: "bogus" })).toThrow(
       /Invalid channel/,
     );

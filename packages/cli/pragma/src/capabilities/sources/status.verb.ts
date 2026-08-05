@@ -36,7 +36,6 @@ export const statusVerb: VerbSpec<
   capability: {
     needsStore: false,
     mutates: false,
-    needsNetwork: false,
     mcp: {
       expose: true,
       annotations: { readOnlyHint: true, openWorldHint: false },

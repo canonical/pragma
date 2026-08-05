@@ -34,8 +34,6 @@ export interface InfoData {
   readonly installSource: string;
   /** Set when a newer CLI release is available on the active channel. */
   readonly update?: InfoUpdate;
-  /** True when the registry could not be reached (the update-check was skipped). */
-  readonly updateSkipped: boolean;
   /** Total indexed entities from the storeless pack index, when reachable. */
   readonly entities?: number;
   readonly config: InfoConfig;

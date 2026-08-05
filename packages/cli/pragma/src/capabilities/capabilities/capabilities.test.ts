@@ -132,9 +132,15 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     expect(seq[storeCheck]?.purpose).toContain("sources_update");
   });
 
-  it("reports the output limits (plain/json/llm, no condensed mode)", () => {
+  it("reports the output limits (the three real --format modes)", () => {
+    // `condensed_available: false` used to sit beside this, and it was a
+    // permanent literal that CONTRADICTED the same binary's `--format` help
+    // ("llm = condensed Markdown for agents") — in the payload an agent reads
+    // to learn what output it can ask for. `llm` IS the condensed mode, and it
+    // is auto-selected off a TTY, so the field said no to a thing that was
+    // already on by default. It is gone rather than flipped to `true`, because
+    // `output_modes` already names `llm`.
     expect(data.limits.output_modes).toEqual(["plain", "json", "llm"]);
-    expect(data.limits.condensed_available).toBe(false);
   });
 
   it("carries the four orientation conventions", () => {

@@ -47,9 +47,7 @@ export const capabilitiesFormatters: Formatters<CapabilitiesData> = {
     lines.push(
       `${counts.total} tools: ${counts.read} read, ${counts.write} write, ${counts.orientation} orientation, ${counts.diagnostic} diagnostic`,
     );
-    lines.push(
-      `output: ${data.limits.output_modes.join(", ")} | condensed: ${data.limits.condensed_available ? "yes" : "no"}`,
-    );
+    lines.push(`output: ${data.limits.output_modes.join(", ")}`);
     return lines.join("\n");
   },
 

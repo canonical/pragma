@@ -35,8 +35,6 @@ export type Capability = {
   needsStore: boolean;
   mutates: boolean;
   destructive?: boolean;
-  needsNetwork?: boolean;
-  interactive?: boolean;
   mcp:
     | { expose: true; annotations?: McpAnnotations }
     | { expose: false; reason: string };

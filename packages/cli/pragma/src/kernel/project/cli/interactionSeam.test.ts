@@ -38,7 +38,6 @@ function seamVerb(onExec?: () => void, onPrompt?: () => void): VerbSpec {
     capability: {
       needsStore: false,
       mutates: true,
-      interactive: true,
       mcp: { expose: false, reason: "test fixture" },
     },
     run: (_params, rt) => {

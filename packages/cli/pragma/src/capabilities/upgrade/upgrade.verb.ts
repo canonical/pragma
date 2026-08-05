@@ -37,7 +37,6 @@ const upgradeVerb: VerbSpec<Record<string, unknown>, UpgradeData> = {
     needsStore: false,
     mutates: true,
     destructive: false,
-    needsNetwork: true,
     mcp: {
       expose: true,
       annotations: {
