@@ -4,11 +4,11 @@
  * Main CLI application component using React Ink.
  */
 
-import { formatContentPreview } from "@canonical/cli-core";
-import type {
-  GeneratorDefinition,
-  PromptDefinition,
-  StampConfig,
+import {
+  formatContentPreview,
+  type GeneratorDefinition,
+  type PromptDefinition,
+  type StampConfig,
 } from "@canonical/summon-core";
 import {
   dryRun,
