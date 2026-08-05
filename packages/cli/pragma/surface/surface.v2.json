@@ -149,13 +149,8 @@
       "verbs": [
         {
           "v": "component",
-          "args": ["[componentPath]"],
-          "flags": [
-            "--framework",
-            "--with-styles",
-            "--with-stories",
-            "--with-ssr-tests"
-          ],
+          "args": ["[framework]", "[componentPath]"],
+          "flags": ["--with-styles", "--with-stories", "--with-ssr-tests"],
           "mutates": true,
           "mcp": "create_component"
         },

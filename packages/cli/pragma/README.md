@@ -48,7 +48,7 @@ pragma is extended along two independent planes:
 `@canonical/summon` is a separate scaffolding product. pragma reuses summon's generator core so that its scaffolding commands —
 
 ```bash
-pragma create component src/components/Button --framework react
+pragma create component react src/components/Button
 ```
 
 — produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency: the generators are embedded in the `pragma` binary, so `pragma create component` runs from a clean install.
