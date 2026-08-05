@@ -6,9 +6,11 @@
  * suppressed (`-f`); enum values are inlined literals; file params force
  * native files back on (`-rF`); only `{kind:"names"}` contexts exec the CLI
  * via a command substitution — fish treats substitution results as literal
- * candidates (split on newlines, never evaluated). Each name rule ANDs a
- * `__<bin>_minchars` guard into its condition, so the exec waits for `minChars`
- * typed chars. No `eval`, no backticks.
+ * candidates (split on newlines, never evaluated). Each name POSITIONAL rule
+ * ANDs two guards into its condition: `__<bin>_minchars` (wait for `minChars`
+ * typed chars) and "the current token is not a flag" (fish evaluates every
+ * matching rule, so without it a purely structural `--<TAB>` execs). No `eval`,
+ * no backticks.
  *
  * Static-tier coarseness (the resolver is exact): positional value rules are
  * not index-gated, and a mixed self-verb + sub-verb noun only offers its
@@ -31,6 +33,27 @@ function withMinChars(
 ): string | undefined {
   if (minChars <= 0) return condition;
   const guard = `${fn}_minchars ${minChars}`;
+  return condition ? `${condition}; and ${guard}` : guard;
+}
+
+/**
+ * AND "the current token is not a flag" into a name rule's condition.
+ *
+ * The one place fish differs structurally from bash and zsh: those route a
+ * completion request through a single exclusive `case` arm, so a `--<TAB>` hits
+ * the flag-name arm and nothing else. fish evaluates EVERY `complete` rule
+ * whose condition matches the position, so a positional's
+ * `-a "(pragma __complete -- …)"` fired alongside the flag-name rules the
+ * moment the token cleared `minChars` — and `--` is two characters. Measured:
+ * one process spawn per TAB on a flag name, AND the delegate's reply landing in
+ * the user's candidate list beside the flags.
+ *
+ * Composed beside {@link withMinChars} rather than spelled inline so the two
+ * guards read as one policy: a name rule execs only for a long-enough,
+ * non-flag token.
+ */
+function withoutFlagToken(condition: string | undefined): string | undefined {
+  const guard = "not string match -q -- '-*' (commandline -ct)";
   return condition ? `${condition}; and ${guard}` : guard;
 }
 
@@ -93,9 +116,12 @@ function positionalRule(
     if (positional.source.kind === "names") names = true;
     if (positional.source.kind === "files") files = true;
   }
-  // A name source gates its exec on `minChars`; a values/files positional keeps
-  // the bare position condition so it still completes on bare TAB.
-  const cond = names ? withMinChars(fn, condition, minChars) : condition;
+  // A name source gates its exec on `minChars` AND on the token not being a
+  // flag; a values/files positional execs nothing, so it keeps the bare
+  // position condition and still completes on bare TAB.
+  const cond = names
+    ? withoutFlagToken(withMinChars(fn, condition, minChars))
+    : condition;
   const parts = [`complete -c ${binName} -n "${cond}"`];
   if (names) {
     parts.push(`-a "(${binName} __complete -- (${fn}_words) 2>/dev/null)"`);

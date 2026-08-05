@@ -4,9 +4,13 @@
  * Builds the completion model from the capability modules (the same
  * derivation the `__complete` resolver uses — the tiers cannot disagree) and
  * renders one script per supported shell. The static tier answers STRUCTURE
- * with zero exec: nouns, verbs, flag names, enum values, mutation + global
- * flags, native file completion. Only `{kind:"names"}` value contexts shell
- * out to `<bin> __complete`.
+ * with zero exec — nouns, verbs, flag names, enum values, mutation + global
+ * flags, native file completion — and that is now true of ALL THREE shells,
+ * executed rather than asserted (`shellDrive.test.ts`). It was a bash/zsh claim
+ * until PR7: fish evaluates every `complete` rule matching a position rather
+ * than one exclusive `case` arm, so a flag-name TAB fired the positional's
+ * delegation too. Only `{kind:"names"}` value contexts shell out to
+ * `<bin> __complete`.
  *
  * PR6 boundary (`setup completions`): this module exports pure CONTENT only
  * — shell detection, install paths, mkdir/write effects, and hints all

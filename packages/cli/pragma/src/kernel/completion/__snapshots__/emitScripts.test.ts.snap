@@ -185,14 +185,14 @@ complete -c pragma -n "__pragma_at block" -a "diff get list remove"
 complete -c pragma -n "__pragma_at standard" -a "list"
 
 # block/diff
-complete -c pragma -n "__pragma_at block diff; and __pragma_minchars 2" -a "(pragma __complete -- (__pragma_words) 2>/dev/null)"
+complete -c pragma -n "__pragma_at block diff; and __pragma_minchars 2; and not string match -q -- '-*' (commandline -ct)" -a "(pragma __complete -- (__pragma_words) 2>/dev/null)"
 
 # block/get
 complete -c pragma -n "__pragma_at block get" -l view -x -a "anatomy full summary"
 complete -c pragma -n "__pragma_at block get" -l out -rF
 complete -c pragma -n "__pragma_at block get" -l with-meta
 complete -c pragma -n "__pragma_at block get" -l note -x
-complete -c pragma -n "__pragma_at block get; and __pragma_minchars 2" -a "(pragma __complete -- (__pragma_words) 2>/dev/null)"
+complete -c pragma -n "__pragma_at block get; and __pragma_minchars 2; and not string match -q -- '-*' (commandline -ct)" -a "(pragma __complete -- (__pragma_words) 2>/dev/null)"
 
 # block/list
 complete -c pragma -n "__pragma_at block list" -l tags -x

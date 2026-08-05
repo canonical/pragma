@@ -558,30 +558,33 @@ describe.skipIf(!hasShell("fish"))(
       expect(reply).toEqual(answersFor("ds:global.component.but"));
     });
 
-    it("answers `--<TAB>` with the flag names, but DOES exec where bash and zsh do not", () => {
-      // The sixth `STRUCTURE` row, which the table above cannot hold because
-      // fish behaves differently here — measured, not assumed. bash and zsh
-      // route a flag-name context through one exclusive `case` arm and exec
-      // nothing; fish evaluates EVERY `complete` rule matching the position, so
-      // the positional's `-a "(pragma __complete -- …)"` fires alongside the
-      // flag-name rules whenever the token clears `minChars` — and `--` is two
-      // characters. The candidates are right either way; the cost is a process
-      // spawn on a purely structural TAB. `emitScripts.ts`'s "structure execs
-      // nothing" is therefore a bash/zsh claim, not a fish one.
+    it("answers `--<TAB>` with the flag names and execs NOTHING, as bash and zsh do", () => {
+      // The sixth `STRUCTURE` row, kept out of the table above because it is
+      // the record of a fixed defect. fish evaluates EVERY `complete` rule
+      // whose condition matches a position, where bash and zsh route a
+      // flag-name context through one exclusive `case` arm — so the
+      // positional's `-a "(pragma __complete -- …)"` used to fire alongside the
+      // flag-name rules the moment the token cleared `minChars`, and `--` is
+      // two characters. Measured then: one recorded call,
+      // `["__complete","--","block","lookup","--"]`, i.e. a process spawn per
+      // TAB on a flag name, AND `answersFor("--")` landing in the user's
+      // candidate list beside the four flags.
+      //
+      // `positionalRule` now ANDs `not string match -q -- '-*' (commandline
+      // -ct)` into every name rule's condition, so "structure execs nothing" is
+      // a claim about all three shells rather than about bash and zsh.
       const { reply, calls } = driveFish(live.fish, "pragma block lookup --");
-      expect(calls).toEqual([["__complete", "--", "block", "lookup", "--"]]);
-      // And the exec's answer is OFFERED alongside the flags, so the cost is
-      // not only the spawn: whatever `__complete` returns for a `--` partial
-      // lands in the user's candidate list. (It returns nothing today.)
+      expect(calls).toEqual([]);
       expect(reply.sort()).toEqual(
-        [
-          "--detail",
-          "--format",
-          "--help",
-          "--verbose",
-          ...answersFor("--"),
-        ].sort(),
+        ["--detail", "--format", "--help", "--verbose"].sort(),
       );
+    });
+
+    it("still execs for a non-flag token that clears minChars", () => {
+      // The positive half of the guard above: forbidding the flag case must not
+      // have forbidden the case the delegation exists for.
+      const { calls } = driveFish(live.fish, "pragma block lookup ds:g");
+      expect(calls).toEqual([["__complete", "--", "block", "lookup", "ds:g"]]);
     });
 
     it("gates the exec on minChars: one typed char execs nothing, two execs once", () => {
