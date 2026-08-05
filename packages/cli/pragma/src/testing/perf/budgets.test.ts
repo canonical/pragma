@@ -117,7 +117,10 @@ describe("perf budgets (PROTECTED)", () => {
   // vitest's 5 s default. The other spawn cases fit under it only because the
   // commands they time are cheaper — this one measures the expensive thing on
   // purpose.
-  it("warm declared read stays under budget", { retry: 2, timeout: 30_000 }, () => {
+  it("warm declared read stays under budget", {
+    retry: 2,
+    timeout: 30_000,
+  }, () => {
     // The case above measures `__store-probe`, which is store work and nothing
     // else. This one measures a whole verb: config load, effective-module
     // assembly, dispatch, the story's SELECT and rendering. Every data read in

@@ -130,8 +130,12 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
     expect(button.tier).toBe(`${DS}global`);
 
     // Guidance + anatomy sections — each cross-checked against the graph.
-    expect(button.summary).toBe(await readOneValue(`${DS}button`, "ds:summary"));
-    expect(button.whenToUse).toBe(await readOneValue(`${DS}button`, "ds:whenToUse"));
+    expect(button.summary).toBe(
+      await readOneValue(`${DS}button`, "ds:summary"),
+    );
+    expect(button.whenToUse).toBe(
+      await readOneValue(`${DS}button`, "ds:whenToUse"),
+    );
     expect(button.whenNotToUse).toBe(
       await readOneValue(`${DS}button`, "ds:whenNotToUse"),
     );
@@ -141,7 +145,9 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
     expect(button.anatomyDsl).toBe(
       await readOneValue(`${DS}button`, "ds:anatomyDsl"),
     );
-    expect(button.figmaLink).toBe(await readOneValue(`${DS}button`, "ds:figmaLink"));
+    expect(button.figmaLink).toBe(
+      await readOneValue(`${DS}button`, "ds:figmaLink"),
+    );
   });
 
   it("resolves the nested modifier families with values (inverse union)", async () => {
@@ -188,7 +194,9 @@ describe("block lookup — Modal content parity (GraphQL, detailed)", () => {
     expect(modal.uri).toBe(`${DS}modal`);
     expect(modal.name).toBe("Modal");
     expect(modal.summary).toBe(await readOneValue(`${DS}modal`, "ds:summary"));
-    expect(modal.whenToUse).toBe(await readOneValue(`${DS}modal`, "ds:whenToUse"));
+    expect(modal.whenToUse).toBe(
+      await readOneValue(`${DS}modal`, "ds:whenToUse"),
+    );
     const families = modal.modifierFamilies as {
       name: string;
       values?: string[];
