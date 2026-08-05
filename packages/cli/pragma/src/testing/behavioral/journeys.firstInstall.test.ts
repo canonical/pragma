@@ -43,13 +43,13 @@ const NO_MUTATION = { dryRun: false, undo: false, yes: false };
  * only through a declared story is exactly as real here as one with a directory,
  * and this file must not be able to tell the difference.
  */
-const moduleOf = (name: string): CapabilityModule => {
+const findRegisteredModule = (name: string): CapabilityModule => {
   const found = capabilities.find((module) => module.name === name);
   if (!found) throw new Error(`the registry ships no "${name}" noun`);
   return found;
 };
 
-const verbOf = (module: CapabilityModule, path: string): VerbSpec => {
+const findVerb = (module: CapabilityModule, path: string): VerbSpec => {
   const found = module.verbs.find((verb) => verb.path.join(" ") === path);
   if (!found) throw new Error(`the registry ships no "${path}" verb`);
   return found;
@@ -85,7 +85,7 @@ async function readData(verb: VerbSpec, cwd: string): Promise<unknown> {
 describe("first install — an empty cwd answers real reads offline", () => {
   it("block list resolves the design system's blocks", async () => {
     const rows = (await readData(
-      verbOf(moduleOf("block"), "block list"),
+      findVerb(findRegisteredModule("block"), "block list"),
       emptyCwd(),
     )) as { name: string }[];
     expect(rows.map((row) => row.name)).toContain("Button");
@@ -93,7 +93,7 @@ describe("first install — an empty cwd answers real reads offline", () => {
 
   it("standard list resolves the code standards", async () => {
     const rows = (await readData(
-      verbOf(moduleOf("standard"), "standard list"),
+      findVerb(findRegisteredModule("standard"), "standard list"),
       emptyCwd(),
     )) as { uri: string; name: string }[];
     expect(rows.length).toBeGreaterThan(0);
@@ -105,7 +105,7 @@ describe("first install — an empty cwd answers real reads offline", () => {
 
   it("tier list resolves the tier hierarchy", async () => {
     const rows = (await readData(
-      verbOf(moduleOf("tier"), "tier list"),
+      findVerb(findRegisteredModule("tier"), "tier list"),
       emptyCwd(),
     )) as { name: string }[];
     expect(rows.map((row) => row.name)).toContain("Global");
@@ -115,7 +115,7 @@ describe("first install — an empty cwd answers real reads offline", () => {
 describe("first install — empty results are honest, not papered over", () => {
   it("token list exits calmly with no rows (the graph carries no ds:Token)", async () => {
     expect(
-      await readData(verbOf(moduleOf("token"), "token list"), emptyCwd()),
+      await readData(findVerb(findRegisteredModule("token"), "token list"), emptyCwd()),
     ).toEqual([]);
   });
 
@@ -131,7 +131,7 @@ describe("first install — a project with its own unbuilt packs is refused", ()
     let caught: unknown;
     try {
       await readData(
-        verbOf(moduleOf("block"), "block list"),
+        findVerb(findRegisteredModule("block"), "block list"),
         unbuiltProjectCwd(),
       );
     } catch (error) {

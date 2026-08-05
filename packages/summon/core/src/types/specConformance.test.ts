@@ -230,19 +230,21 @@ describe("a real generator satisfies the spec's required sets", () => {
     const metaFields = readSpecType("GeneratorMeta").fields;
     const promptFields = readSpecType("PromptDefinition").fields;
 
-    const requiredOf = (fields: Record<string, { required: boolean }>) =>
+    const listRequiredFields = (
+      fields: Record<string, { required: boolean }>,
+    ) =>
       Object.entries(fields)
         .filter(([, entry]) => entry.required)
         .map(([name]) => name);
 
-    for (const field of requiredOf(definitionFields)) {
+    for (const field of listRequiredFields(definitionFields)) {
       expect(conformanceGenerator, field).toHaveProperty(field);
     }
-    for (const field of requiredOf(metaFields)) {
+    for (const field of listRequiredFields(metaFields)) {
       expect(conformanceGenerator.meta, field).toHaveProperty(field);
     }
     for (const prompt of conformanceGenerator.prompts) {
-      for (const field of requiredOf(promptFields)) {
+      for (const field of listRequiredFields(promptFields)) {
         expect(prompt, `${prompt.name}.${field}`).toHaveProperty(field);
       }
       for (const key of Object.keys(prompt)) {

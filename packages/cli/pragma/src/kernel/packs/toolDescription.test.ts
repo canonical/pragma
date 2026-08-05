@@ -18,14 +18,14 @@ import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { formatVerbHelp } from "../project/cli/verbHelp.js";
 import type { VerbSpec } from "../spec/types.js";
 
-const storyOf = (noun: string): { verbs: readonly VerbSpec[] } => {
+const findStory = (noun: string): { verbs: readonly VerbSpec[] } => {
   const found = storyModules.get(noun);
   if (!found) throw new Error(`pragma.conf.ts declares no story for "${noun}"`);
   return found;
 };
 
-const standardModule = storyOf("standard");
-const tokenModule = storyOf("token");
+const standardModule = findStory("standard");
+const tokenModule = findStory("token");
 
 const verb = (
   module: { verbs: readonly VerbSpec[] },
