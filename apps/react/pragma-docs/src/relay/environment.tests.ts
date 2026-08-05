@@ -37,17 +37,14 @@ const jsonResponse = (payload: unknown): Response =>
 
 describe("the client HTTP network's wire format", () => {
   const originalFetch = globalThis.fetch;
-  const originalGraphqlUrl = process.env.VITE_GRAPHQL_URL;
-
-  /** Set (or clear) the endpoint override on both sources the resolver reads. */
+  /**
+   * Set (or clear) the endpoint override on BOTH sources the resolver reads.
+   * `vi.stubEnv` writes `process.env` and `import.meta.env` together and
+   * `vi.unstubAllEnvs` restores them — see graphqlEndpoint.tests.ts, which
+   * pins the same variable and explains the empty-string case.
+   */
   const setConfiguredUrl = (value: string | undefined): void => {
-    if (value === undefined) {
-      delete process.env.VITE_GRAPHQL_URL;
-      delete import.meta.env.VITE_GRAPHQL_URL;
-      return;
-    }
-    process.env.VITE_GRAPHQL_URL = value;
-    import.meta.env.VITE_GRAPHQL_URL = value;
+    vi.stubEnv("VITE_GRAPHQL_URL", value);
   };
 
   // The default-endpoint test below asserts against DEFAULT_GRAPHQL_URL, and
@@ -61,7 +58,7 @@ describe("the client HTTP network's wire format", () => {
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
-    setConfiguredUrl(originalGraphqlUrl);
+    vi.unstubAllEnvs();
   });
 
   it("POSTs a JSON body carrying query text, operation name, and variables", async () => {

@@ -17,28 +17,31 @@
  * property the resolver is claiming in the first place.
  */
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_GRAPHQL_URL,
   GRAPHQL_URL_ENV_VAR,
   resolveGraphqlUrl,
 } from "./graphqlEndpoint.js";
 
-const originalUrl = process.env.VITE_GRAPHQL_URL;
-
-/** Set (or clear) the env var on both sources the resolver reads. */
+/**
+ * Set (or clear) the env var on BOTH sources the resolver reads.
+ *
+ * `vi.stubEnv` writes `process.env` and `import.meta.env` together, which is
+ * exactly the pair this resolver spans, and `vi.unstubAllEnvs` restores the
+ * ambient value — so no test can leak an endpoint into the next one.
+ *
+ * It also preserves the empty-string case, which is the subtle one this suite
+ * exists to pin: `stubEnv(name, "")` stores `""` on both sides rather than
+ * deleting the key, so "empty reads as unset" stays a claim about the
+ * RESOLVER and cannot pass vacuously because the harness unset it.
+ */
 const setConfiguredUrl = (value: string | undefined): void => {
-  if (value === undefined) {
-    delete process.env.VITE_GRAPHQL_URL;
-    delete import.meta.env.VITE_GRAPHQL_URL;
-    return;
-  }
-  process.env.VITE_GRAPHQL_URL = value;
-  import.meta.env.VITE_GRAPHQL_URL = value;
+  vi.stubEnv(GRAPHQL_URL_ENV_VAR, value);
 };
 
 afterEach(() => {
-  setConfiguredUrl(originalUrl);
+  vi.unstubAllEnvs();
 });
 
 describe("resolveGraphqlUrl", () => {
