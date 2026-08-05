@@ -16,22 +16,29 @@
  * docblock warns that an unreachable bundle "would leave the whole suite green"
  * was itself green against a binary that predated the change under test.
  *
- * MTIME, not a content hash — decided in PR7 with the numbers. Walking the 454
- * declared input entries costs **3.5 ms**; content-hashing the same set costs
- * **24.9 ms**, dominated by `graphpack/embedded/pack.generated.ts` (1.87 MB) and
- * `pack.index.generated.ts` (181 KB), and it would need the digest persisted
- * somewhere that is neither committed nor stale — a new artefact to gitignore
- * and to get wrong. What hashing buys is immunity to "the bytes came back but
- * the clock moved forward", and git does not produce that case: `git checkout`
- * and `git switch` stamp mtime at checkout time, so moving between branches
- * always makes sources newer than the binary and forces the rebuild. Seven
- * times the cost on every vitest start, for a case the VCS does not generate,
- * is not a trade.
+ * MTIME, not a content hash. RE-MEASURED over the set this module declares
+ * TODAY — the earlier writing of this paragraph quoted 454 entries / 3.5 ms
+ * against 24.9 ms, which described this package's own tree before the two
+ * dependency holes below were closed, and disagreed with a second count twenty
+ * lines further down. The declared set is now `INPUTS` plus 10 workspace
+ * dependency roots: **1716 entries**. Walking them with `newestMtime` costs
+ * **16–25 ms** across six runs on this (noisy) box; SHA-256 over the same
+ * entries costs **50–66 ms**, dominated by
+ * `graphpack/embedded/pack.generated.ts` (1.87 MB) and
+ * `pack.index.generated.ts` (181 KB) — roughly 3× — and it would need the
+ * digest persisted somewhere that is neither committed nor stale, a new
+ * artefact to gitignore and to get wrong. What hashing buys is immunity to "the
+ * bytes came back but the clock moved forward", and git does not produce that
+ * case: `git checkout` and `git switch` stamp mtime at checkout time, so moving
+ * between branches always makes sources newer than the binary and forces the
+ * rebuild. Three times the cost on every vitest start, for a case the VCS does
+ * not generate, is not a trade — the ratio shrank when the input set grew, and
+ * the conclusion did not change.
  *
- * The holes that WERE open are a different bug from mtime granularity, and both
- * are closed here. Both had the same shape: `INPUTS` said "everything the binary
- * is built from" while listing only this package's own tree, and everything the
- * BUNDLER pulls in through `node_modules` was outside it.
+ * The holes that WERE open are a different bug from mtime granularity, and all
+ * three are closed here. All three had the same shape: `INPUTS` said
+ * "everything the binary is built from" while naming a proper subset of it, and
+ * everything the BUNDLER pulls in past that subset was invisible.
  *
  * 1. **Generator templates.** `scripts/build.ts#generateTemplateManifest` reads
  *    every `.ejs` under the declared generators' `src/templates` and INLINES
@@ -52,8 +59,13 @@
  *    storeless PROTECTED cases, `create/compiledCreate.subprocess.test.ts` —
  *    was grading a binary that predated the change under test, and PR7's
  *    `--dry-run` correctness lives in `@canonical/task`. Cost of closing it,
- *    measured: 479 entries / 6.7 ms → 1470 / 19.8 ms, against the 24.9 ms
- *    content-hashing rejected below.
+ *    measured: 456 own-tree entries → 481 with the template roots → 1514 with
+ *    the eight direct workspace deps.
+ * 3. **TRANSITIVE workspace dependency code.** Closing (2) over this package's
+ *    DIRECT `dependencies` left `packages/utils/dist` unwatched — it is a
+ *    dependency of summon-core / -component / -application / -package, not of
+ *    this package, and the bundler inlines it regardless. See
+ *    {@link workspaceDependencyRoots} for the measurement. 1514 entries → 1716.
  *
  * What is still NOT covered, because it is a different build: a BUILT workspace
  * dependency's own `dist` going stale against its own `src`. This setup rebuilds
@@ -61,7 +73,9 @@
  * dependency actually ships from, so an edit under a shipping `src` IS seen while
  * an unbuilt edit under a built package's `src` is not. A monorepo dev loop that
  * edits `packages/runtime/task/src` must run that package's build; what it no
- * longer has to remember is to rebuild the binary afterwards.
+ * longer has to remember is to rebuild the binary afterwards. That is now the
+ * whole of the gap, which is the claim the previous writing of this paragraph
+ * made while (3) was open.
  */
 
 import { spawnSync } from "node:child_process";
@@ -95,25 +109,67 @@ import { CREATE_GENERATORS } from "../../capabilities/create/constants.js";
  * — the verb PRA-104's own repro used — was the one input every spawned-binary
  * guard could not see.
  *
+ * TRANSITIVELY, which is the third iteration of this same hole and the reason
+ * the walk is a closure rather than one `flatMap` over `dependencies`. The
+ * bundler does not stop at the direct dependency: `@canonical/utils` is a
+ * dependency of summon-core / -component / -application / -package, NOT of this
+ * package, so `Object.keys(manifest.dependencies)` never reached it — while its
+ * code is inlined into `dist/pragma` all the same. Measured on the emitted
+ * source map for the same `Bun.build` options `scripts/build.ts` passes:
+ * `packages/utils/dist/esm` contributes 12 modules to the bundle, and
+ * `toKebabCase` — defined only in that package — appears in two emitted chunks.
+ * `touch packages/utils/dist/**` left `fresh === true`, so every spawned-binary
+ * guard graded a binary that predated the change under test: the same failure
+ * mode the own-tree-only and hardcoded-`dist` iterations were spent closing.
+ *
+ * Cost of the closure, measured on this box: the watched set goes from 13 roots
+ * / 1514 entries to 15 roots / 1706 entries (`packages/utils/dist` and
+ * `packages/ds-types/dist`), and the walk from 8.4 ms to 9.2 ms.
+ *
+ * What is still NOT covered is stated at the module docblock, and the change
+ * narrows it rather than closing it.
+ *
  * @param root - The package root.
  * @returns Package-root-relative paths, or `[]` when nothing resolves.
  * @note Impure — reads `package.json` files and resolves symlinks.
  */
 function workspaceDependencyRoots(root: string): string[] {
-  const manifest = JSON.parse(
-    readFileSync(join(root, "package.json"), "utf-8"),
-  ) as { dependencies?: Record<string, string> };
   const monorepo = resolve(root, "..", "..", "..");
-  return Object.keys(manifest.dependencies ?? {}).flatMap((name) => {
-    let resolved: string;
+  const roots: string[] = [];
+  const visited = new Set<string>();
+
+  // Bun links a workspace dep into the DEPENDENT's own `node_modules`, so
+  // resolution restarts from each package as it is reached; the monorepo root
+  // is the fallback for a hoisted link. Keyed on the realpath, so a package
+  // reached through two dependents is walked once.
+  const visit = (from: string): void => {
+    let manifest: { dependencies?: Record<string, string> };
     try {
-      resolved = realpathSync(join(root, "node_modules", name));
+      manifest = JSON.parse(readFileSync(join(from, "package.json"), "utf-8"));
     } catch {
-      return [];
+      return;
     }
-    if (!resolved.startsWith(`${monorepo}/packages/`)) return [];
-    return [relative(root, join(resolved, entryRoot(resolved)))];
-  });
+    for (const name of Object.keys(manifest.dependencies ?? {})) {
+      let resolved: string | undefined;
+      for (const base of [from, monorepo]) {
+        try {
+          resolved = realpathSync(join(base, "node_modules", name));
+          break;
+        } catch {
+          /* try the next base */
+        }
+      }
+      if (resolved === undefined) continue;
+      if (!resolved.startsWith(`${monorepo}/packages/`)) continue;
+      if (visited.has(resolved)) continue;
+      visited.add(resolved);
+      roots.push(relative(root, join(resolved, entryRoot(resolved))));
+      visit(resolved);
+    }
+  };
+
+  visit(root);
+  return roots;
 }
 
 /**
