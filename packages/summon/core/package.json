@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./embedded": {
+      "types": "./dist/types/embedded/index.d.ts",
+      "import": "./dist/esm/embedded/index.js"
     }
   },
   "files": [
