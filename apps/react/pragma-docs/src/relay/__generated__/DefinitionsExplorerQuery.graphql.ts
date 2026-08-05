@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<aad4df3d5b1697dab42e61b76e3489c3>>
+ * @generated SignedSource<<c549e588bb8d655d513ae12f19185f59>>
  * @lightSyntaxTransform
  */
 
@@ -421,6 +421,24 @@ return {
                           },
                           (v4/*:: as any*/),
                           {
+                            "alias": null,
+                            "args": null,
+                            "concreteType": "EntityMeta",
+                            "kind": "LinkedField",
+                            "name": "_meta",
+                            "plural": false,
+                            "selections": [
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "curie",
+                                "storageKey": null
+                              }
+                            ],
+                            "storageKey": null
+                          },
+                          {
                             "kind": "InlineFragment",
                             "selections": [
                               {
@@ -527,12 +545,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "74285c7caebb83959ff2b8fdf4c2c19c",
+    "cacheID": "f3e88df970d86a57475d200fbcdfb488",
     "id": null,
     "metadata": {},
     "name": "DefinitionsExplorerQuery",
     "operationKind": "query",
-    "text": "query DefinitionsExplorerQuery(\n  $uri: String!\n  $hasTerm: Boolean!\n) {\n  ontologies {\n    prefix\n    namespace\n    classes {\n      uri\n      isAbstract\n    }\n    ...TermRail_ontologies\n    ...HierarchyWell_ontologies\n  }\n  ontologyClass(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_class\n    uri\n  }\n  ontologyProperty(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_property\n    uri\n  }\n}\n\nfragment HierarchyWell_ontologies on Ontology {\n  prefix\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    superclass {\n      uri\n    }\n  }\n  properties {\n    uri\n    label\n    kind\n    domain {\n      uri\n    }\n    range\n  }\n}\n\nfragment TermInspector_class on OntologyClass {\n  uri\n  label\n  definition\n  isAbstract\n  namespace\n  instanceCount\n  superclass {\n    uri\n    label\n  }\n  superclasses {\n    uri\n    label\n  }\n  subclasses {\n    uri\n    label\n  }\n  properties {\n    required\n    singular\n    inherited\n    property {\n      uri\n      label\n      definition\n      range\n      kind\n    }\n  }\n  instances(first: 12) {\n    edges {\n      node {\n        __typename\n        uri\n        ... on Entity {\n          __isEntity: __typename\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment TermInspector_property on OntologyProperty {\n  uri\n  label\n  definition\n  kind\n  functional\n  range\n  namespace\n  domain {\n    uri\n    label\n  }\n  inverse {\n    uri\n    label\n  }\n  acceptanceCriteria\n  completionGuidance\n}\n\nfragment TermRail_ontologies on Ontology {\n  prefix\n  label\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    instanceCount\n  }\n  properties {\n    uri\n    label\n    kind\n  }\n}\n"
+    "text": "query DefinitionsExplorerQuery(\n  $uri: String!\n  $hasTerm: Boolean!\n) {\n  ontologies {\n    prefix\n    namespace\n    classes {\n      uri\n      isAbstract\n    }\n    ...TermRail_ontologies\n    ...HierarchyWell_ontologies\n  }\n  ontologyClass(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_class\n    uri\n  }\n  ontologyProperty(uri: $uri) @include(if: $hasTerm) {\n    ...TermInspector_property\n    uri\n  }\n}\n\nfragment HierarchyWell_ontologies on Ontology {\n  prefix\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    superclass {\n      uri\n    }\n  }\n  properties {\n    uri\n    label\n    kind\n    domain {\n      uri\n    }\n    range\n  }\n}\n\nfragment TermInspector_class on OntologyClass {\n  uri\n  label\n  definition\n  isAbstract\n  namespace\n  instanceCount\n  superclass {\n    uri\n    label\n  }\n  superclasses {\n    uri\n    label\n  }\n  subclasses {\n    uri\n    label\n  }\n  properties {\n    required\n    singular\n    inherited\n    property {\n      uri\n      label\n      definition\n      range\n      kind\n    }\n  }\n  instances(first: 12) {\n    edges {\n      node {\n        __typename\n        uri\n        _meta {\n          curie\n        }\n        ... on Entity {\n          __isEntity: __typename\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment TermInspector_property on OntologyProperty {\n  uri\n  label\n  definition\n  kind\n  functional\n  range\n  namespace\n  domain {\n    uri\n    label\n  }\n  inverse {\n    uri\n    label\n  }\n  acceptanceCriteria\n  completionGuidance\n}\n\nfragment TermRail_ontologies on Ontology {\n  prefix\n  label\n  namespace\n  classes {\n    uri\n    label\n    isAbstract\n    instanceCount\n  }\n  properties {\n    uri\n    label\n    kind\n  }\n}\n"
   }
 };
 })();

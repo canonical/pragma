@@ -547,6 +547,30 @@ ex:WideShape a sh:NodeShape ; sh:targetClass ex:Wide ;
 ex:b1 a ex:Base . ex:w1 a ex:Wide .
 `;
 
+// An INSTANCE-FREE superclass, which the compiler emits as an interface rather
+// than a type. The (class, property) name index is built from types AND
+// interfaces, and only the interface half can be observed here: ex:part is a
+// multi-valued object property, so the emitted field is `parts` while the OWL
+// local name is `part`. Every other ClassProperty.name fixture uses concrete
+// classes, or abstract ones whose singular fields make the two spellings
+// coincide — so without this pair, dropping `mapped.interfaces` from the index
+// leaves the whole suite green while abstract classes silently answer a name
+// `field(name:)` rejects. ex:Piece exists to give ex:part a declared range.
+const ABSTRACT_FIELD_NAME_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Container a owl:Class ; rdfs:label "Container" .
+ex:Box a owl:Class ; rdfs:subClassOf ex:Container ; rdfs:label "Box" .
+ex:Piece a owl:Class ; rdfs:label "Piece" .
+
+ex:part a owl:ObjectProperty ; rdfs:domain ex:Container ; rdfs:range ex:Piece .
+
+ex:b1 a ex:Box .
+ex:p1 a ex:Piece .
+`;
+
 describe("EntityMeta.curie", () => {
   it("renders the compact form of an entity IRI and of a class IRI", async () => {
     const compiled = await setup(DS_REALISTIC_TTL);
@@ -691,6 +715,44 @@ describe("ClassProperty.name", () => {
       singular: false,
       property: { uri: "http://example.org/tag" },
     });
+  });
+
+  it("answers the EMITTED field name for an abstract class, not the OWL local name", async () => {
+    const compiled = await setup(ABSTRACT_FIELD_NAME_TTL);
+    const result = await run(
+      compiled,
+      `{
+        container: ontologyClass(uri: "ex:Container") {
+          isAbstract
+          properties { name property { uri } }
+        }
+        boxClass: ontologyClass(uri: "ex:Box") { properties { name property { uri } } }
+        boxInstance: box(uri: "ex:b1") { _meta { field(name: "parts") { name } } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const container = result.data?.container as {
+      isAbstract: boolean;
+      properties: { name: string; property: { uri: string } }[];
+    };
+    // The fixture only bites while ex:Container really is instance-free — an
+    // added instance would emit it as a type and the interface half of the
+    // index would go unobserved again, silently.
+    expect(container.isAbstract).toBe(true);
+    // `parts`, the pluralized name the interface actually emits — NOT `part`,
+    // the OWL local name the last-rung fallback hands back when the class is
+    // missing from the index.
+    expect(container.properties).toEqual([
+      { name: "parts", property: { uri: "http://example.org/part" } },
+    ]);
+    expect(
+      (result.data?.boxClass as { properties: unknown }).properties,
+    ).toEqual(container.properties);
+    // And it is a name field(name:) accepts, which `part` is not — the
+    // round-trip guarantee the field's own description promises.
+    expect(
+      (result.data?.boxInstance as { _meta: { field: unknown } })._meta.field,
+    ).toEqual({ name: "parts" });
   });
 
   it("answers a synthetic inverse field by the name it was configured under", async () => {

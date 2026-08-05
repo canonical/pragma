@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<71e3bb4e3edbea0a11cfd21bcff3996a>>
+ * @generated SignedSource<<05f16dc121af4ec034d38232bf5f970c>>
  * @lightSyntaxTransform
  */
 
@@ -17,6 +17,9 @@ export type TermInspector_class$data = {
     readonly edges: ReadonlyArray<{
       readonly node: {
         readonly __typename: string;
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name?: string | null | undefined;
         readonly uri: string;
       };
@@ -245,6 +248,24 @@ return {
                 },
                 (v0/*:: as any*/),
                 {
+                  "alias": null,
+                  "args": null,
+                  "concreteType": "EntityMeta",
+                  "kind": "LinkedField",
+                  "name": "_meta",
+                  "plural": false,
+                  "selections": [
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
+                      "name": "curie",
+                      "storageKey": null
+                    }
+                  ],
+                  "storageKey": null
+                },
+                {
                   "kind": "InlineFragment",
                   "selections": [
                     {
@@ -291,6 +312,6 @@ return {
 };
 })();
 
-(node as any).hash = "7588b2841a5bda26669421f45e8a275a";
+(node as any).hash = "b637b320d55c44109810d9d02e792eb2";
 
 export default node;

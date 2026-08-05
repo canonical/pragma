@@ -59,6 +59,9 @@ const termInspectorClassFragmentSource = (): unknown => graphql`
         node {
           __typename
           uri
+          _meta {
+            curie
+          }
           ... on Entity {
             name
           }
@@ -244,30 +247,40 @@ const PropertyTable = ({
  * rule: a mention links to the noun's home, and only components have one
  * — `/components/:uri`). Every other instance renders as plain text until
  * its lens lands.
+ *
+ * Every reader-facing string here is `_meta.curie`, NOT `uri`. Under the
+ * converged base `uri` is the absolute IRI, and this lens is the one place
+ * an ABox entity surfaces from a TBox route — so reading `uri` raw would
+ * both print a 45-character IRI at a reader and mint a SECOND address for
+ * an entity the catalog already addresses as `/components/ds%3A…`. One
+ * entity, one canonical URL: the D31 rule is about where a mention lands,
+ * and two spellings of the same landing is the same defect as none.
+ * `uri` stays Relay's identity and stays the list key.
  */
 const InstanceItem = ({
   node,
 }: {
   readonly node: {
     readonly __typename: string;
-    readonly uri: string;
+    readonly _meta: { readonly curie: string };
     readonly name?: string | null | undefined;
   };
 }): React.ReactElement => {
-  const display = node.name ?? node.uri;
+  const curie = node._meta.curie;
+  const display = node.name ?? curie;
   if (node.__typename === "Component") {
     return (
       <li>
-        <Link params={{ uri: node.uri }} to="componentEntity">
+        <Link params={{ uri: curie }} to="componentEntity">
           {display}
         </Link>{" "}
-        <code>{node.uri}</code>
+        <code>{curie}</code>
       </li>
     );
   }
   return (
     <li>
-      {display} <code>{node.uri}</code>
+      {display} <code>{curie}</code>
     </li>
   );
 };

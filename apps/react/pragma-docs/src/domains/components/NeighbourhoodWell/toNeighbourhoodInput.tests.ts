@@ -123,11 +123,17 @@ describe("toNeighbourhoodInput", () => {
         variantOfs: connectionOf(["ds:global.component.card"]),
       }),
     );
-    expect(
-      input.neighbours.some(
-        (neighbour) => neighbour.uri === "ds:global.component.card",
-      ),
-    ).toBe(false);
+    // Asserted as the EXACT list, not as the absence of one string. The
+    // dedup seed is the centre's `_meta.curie`, so an extraction that
+    // regressed to reading `uri` would emit the subject a second time under
+    // its ABSOLUTE IRI — a string no absence-check written against the
+    // compact literal can see, which is how this test used to report green
+    // on the very defect it is named for. A self node under ANY spelling
+    // now fails the length.
+    expect(input.neighbours.map((neighbour) => neighbour.uri)).toEqual([
+      "ds:Component",
+      "ds:tier.global",
+    ]);
   });
 
   it("surfaces capped connections as truncated predicates (the partial state)", () => {
