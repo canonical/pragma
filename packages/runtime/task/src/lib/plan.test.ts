@@ -52,7 +52,7 @@ import {
   writeFile,
 } from "./primitives.js";
 import { $, effect, flatMap, gen, pure } from "./task.js";
-import type { Effect } from "./types.js";
+import type { Effect, Task } from "./types.js";
 
 let dir: string;
 
@@ -602,6 +602,30 @@ describe("planTask — effect callbacks and structure", () => {
     expect(taskError.message).toContain("missing-one.txt");
     expect(taskError.suppressed).toHaveLength(1);
     expect(taskError.suppressed?.[0]?.message).toContain("missing-two.txt");
+  });
+
+  it("wraps a RAW continuation failure in a parallel child as INTERNAL", async () => {
+    // A throw from a continuation escapes `driveAsync` unnormalised — the only
+    // way the aggregator sees something that is not a `TaskExecutionError`. The
+    // node interpreter's own row (`interpreter.test.ts`, "wraps a raw
+    // continuation failure in a parallel child as INTERNAL") is the precedent;
+    // this holds the plan to the same aggregation.
+    const rawChild: Task<number> = {
+      _tag: "Effect",
+      effect: { _tag: "ReadContext", key: "unused" },
+      cont: () => {
+        throw new Error("raw continuation");
+      },
+    };
+
+    const failure = await planTask(
+      effect<unknown[]>({ _tag: "Parallel", tasks: [rawChild, pure(2)] }),
+    ).catch((error: unknown) => error);
+
+    expect(failure).toBeInstanceOf(TaskExecutionError);
+    const { taskError } = failure as TaskExecutionError;
+    expect(taskError.code).toBe("INTERNAL");
+    expect(taskError.message).toContain("raw continuation");
   });
 });
 
