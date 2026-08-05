@@ -50,8 +50,7 @@
     "test:vitest": "vitest run --coverage",
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "eval": "bun run src/testing/eval/report.ts"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@canonical/harnesses": "^0.33.0",

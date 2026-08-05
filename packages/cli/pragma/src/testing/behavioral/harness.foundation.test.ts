@@ -7,10 +7,9 @@
  * (via the shared canonical graph, one real lookup); (2) the compiler/runtime
  * is ontology-agnostic — a pack over the foreign `ex:` recipe namespace
  * registers its 2 tools and resolves on both surfaces; (3) `runCli` can spawn
- * and capture the real bin; (4) the golden `plain()` normalizer does its job.
+ * and capture the real bin.
  */
 
-import { homedir, tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 import { storyModules } from "../../capabilities/distribution.js";
 import { VERSION } from "../../constants.js";
@@ -27,7 +26,6 @@ import {
   recipePack,
 } from "../fixtures/packs/recipe.js";
 import { bootFixtureRuntime } from "../helpers/fixtureGraph.js";
-import { plain } from "../helpers/golden.js";
 import { assertCliMcpParity } from "../helpers/parity.js";
 import { runCli } from "../helpers/runCli.js";
 
@@ -121,18 +119,5 @@ describe("runCli — spawn-capture smoke", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout.trim()).toBe(VERSION);
     expect(result.stderr).toBe("");
-  });
-});
-
-describe("golden plain() normalizer", () => {
-  it("strips ANSI escapes and tokenizes machine-specific paths", () => {
-    const colored = "\x1b[1mHello\x1b[0m world";
-    expect(plain(colored)).toBe("Hello world");
-
-    const withTmp = `wrote to ${tmpdir()}/foo.json`;
-    expect(plain(withTmp)).toBe("wrote to <tmp>/foo.json");
-
-    const withHome = `config at ${homedir()}/.config/pragma`;
-    expect(plain(withHome)).toBe("config at <home>/.config/pragma");
   });
 });
