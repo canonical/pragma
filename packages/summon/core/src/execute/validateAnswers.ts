@@ -7,9 +7,9 @@
  *
  * Reuses the exact `validate` the interactive prompt already runs, so a
  * flag-driven or MCP-arg run (non-interactive) rejects the same bad input a
- * wizard would — e.g. an empty component path or an unknown package type. This
- * is the moved v1 `executeGenerator.findInvalidAnswer`, now run inside
- * {@link execute} so both interactive and non-interactive paths share it.
+ * wizard would — e.g. an empty component path or an unknown package type. It
+ * runs inside {@link execute} rather than at either front end, so both paths
+ * share one enforcement point and neither host can forget it.
  */
 
 import type PromptDefinition from "../types/PromptDefinition.js";

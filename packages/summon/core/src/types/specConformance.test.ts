@@ -27,7 +27,11 @@ interface SpecType {
   readonly description: string;
   readonly fields: Record<
     string,
-    { readonly required: boolean; readonly description: string }
+    {
+      readonly required: boolean;
+      readonly description: string;
+      readonly values?: readonly string[];
+    }
   >;
 }
 
@@ -70,6 +74,37 @@ function readDeclaredMembers(source: string): Map<string, boolean> {
 }
 
 /**
+ * Read the string-literal union one member declares, from its source text.
+ *
+ * The same strip-then-match pass as {@link readDeclaredMembers}, narrowed to
+ * one member's type position. It exists because a `values` array in the spec
+ * document is the one part of that document nothing else checks: the field-name
+ * and required-flag passes below never look at it, so an enumeration could
+ * describe four cases while the interface admitted five.
+ *
+ * @param source - The module's source text.
+ * @param member - The member whose type position to read.
+ * @returns The quoted literals of that union, in declaration order.
+ * @throws Error when the member declares no type position at all.
+ */
+function readDeclaredUnion(source: string, member: string): readonly string[] {
+  const body = source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/[^\n]*/g, "");
+  const declaration = new RegExp(`^\\s{2}${member}\\??\\s*:([^;]*);`, "m").exec(
+    body,
+  );
+  const position = declaration?.at(1);
+  if (position === undefined) {
+    throw new Error(`the declaration has no member "${member}"`);
+  }
+  return [...position.matchAll(/"([^"]*)"/g)].flatMap((match) => {
+    const literal = match.at(1);
+    return literal === undefined ? [] : [literal];
+  });
+}
+
+/**
  * Load one declaration module's members by file name.
  *
  * @param fileName - The declaration module, relative to this file.
@@ -77,8 +112,20 @@ function readDeclaredMembers(source: string): Map<string, boolean> {
  * @note Impure — reads the declaration file from disk.
  */
 function loadMembers(fileName: string): Map<string, boolean> {
-  return readDeclaredMembers(
-    readFileSync(fileURLToPath(new URL(fileName, import.meta.url)), "utf-8"),
+  return readDeclaredMembers(loadDeclarationSource(fileName));
+}
+
+/**
+ * Read one declaration module's source text.
+ *
+ * @param fileName - The declaration module, relative to this file.
+ * @returns The file's text.
+ * @note Impure — reads the declaration file from disk.
+ */
+function loadDeclarationSource(fileName: string): string {
+  return readFileSync(
+    fileURLToPath(new URL(fileName, import.meta.url)),
+    "utf-8",
   );
 }
 
@@ -138,6 +185,20 @@ describe("generator-definition spec conformance (PROTECTED)", () => {
         !optional,
       );
     }
+  });
+
+  it("pins its one enumeration to the union the declaration admits", () => {
+    // `PromptDefinition.type` is the only field the spec describes with a
+    // machine-readable `values` array. Without this the array is prose: a fifth
+    // prompt type added to the interface would leave the document claiming four
+    // and every other case green.
+    const described = readSpecType("PromptDefinition").fields.type;
+    const declared = readDeclaredUnion(
+      loadDeclarationSource("./PromptDefinition.ts"),
+      "type",
+    );
+    expect(declared.length).toBeGreaterThan(1);
+    expect(described?.values).toEqual(declared);
   });
 
   it("every described field carries a reason a reader can use", () => {
