@@ -24,10 +24,24 @@ import { assertByteEqual, snapshotTree } from "./snapshotTree.js";
 
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "core-conf-"));
 
-/** Produce the fixture through the core's own `execute` composition. */
-async function produce(): Promise<Map<string, string>> {
+/**
+ * Produce the fixture through the core's own `execute` composition.
+ *
+ * The composition is written ONCE. The conditional case below used to repeat it
+ * character-for-character to vary one answer, which meant a change to
+ * `RunGeneratorTaskOptions` or a stamp-slot move had to be made twice in the
+ * file whose whole purpose is to be the single place the core's composition is
+ * written — and the two cases would have stopped measuring the same thing the
+ * moment one was edited and the other was not.
+ *
+ * @param answers - The answer set to run the fixture generator under.
+ * @returns The produced tree, keyed by relative POSIX path.
+ * @note Impure — writes a fresh temp tree and reads it back.
+ */
+async function produce(
+  answers: Record<string, unknown> = { ...CONFORMANCE_ANSWERS },
+): Promise<Map<string, string>> {
   const dir = freshCwd();
-  const answers = { ...CONFORMANCE_ANSWERS };
   await runGeneratorTask(
     execute(conformanceGenerator, {
       prompt: autoPrompt(answers),
@@ -53,24 +67,11 @@ describe("the conformance fixture produces the written-down tree", () => {
 
   it("skips NOTES.md when the conditional prompt is answered false", async () => {
     // The `when`-gated file is the one part of the fixture the default answer
-    // set cannot show is CONDITIONAL rather than unconditional.
-    const dir = freshCwd();
-    const answers = { ...CONFORMANCE_ANSWERS, withNotes: false };
-    await runGeneratorTask(
-      execute(conformanceGenerator, {
-        prompt: autoPrompt(answers),
-        params: answers,
-      }),
-      {
-        cwd: dir,
-        promptHandler: autoPrompt(answers),
-        onEffectStart: createStampOnEffectStart(
-          createGeneratorStamp(conformanceGenerator),
-        ),
-        onLog: () => {},
-      },
-    );
-    expect([...snapshotTree(dir).keys()]).toEqual([
+    // set cannot show is CONDITIONAL rather than unconditional. Same
+    // composition as the byte-equality case above, one answer apart — which is
+    // the point: the two cases provably run one composition.
+    const tree = await produce({ ...CONFORMANCE_ANSWERS, withNotes: false });
+    expect([...tree.keys()]).toEqual([
       "src/widget-factory/config.json",
       "src/widget-factory/index.ts",
     ]);
