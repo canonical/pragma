@@ -119,9 +119,13 @@ export interface PlanResult<A> {
 type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;
 
 /**
- * Options for {@link planTask}. Deliberately a subset of `RunTaskOptions`:
- * there is no `promptHandler` (a plan never asks) and no `onLog` (a plan never
- * logs — the `Log` effect is a plan line, not output).
+ * Options for {@link planTask}. Deliberately a subset of `RunTaskOptions`, and
+ * each omission has a reason: no `promptHandler` (a plan never asks), no
+ * `onLog` (a plan never logs — the `Log` effect is a plan line, not output),
+ * and no `onEffectComplete`. That last one was carried for shape-parity and had
+ * no caller in this repo or its consumer: the only duration a plan can report
+ * is the cost of SIMULATING an effect, which is not a fact anyone wants, and
+ * two `performance.now()` calls per effect were paying for it.
  */
 export interface PlanTaskOptions {
   /** Context for storing values between effects. */
@@ -132,10 +136,22 @@ export interface PlanTaskOptions {
    * exactly as its run does, or it reads the wrong files.
    */
   cwd?: string;
-  /** Called before each effect is interpreted. */
+  /**
+   * Called before each effect is interpreted, and therefore BEFORE its result
+   * is computed. A caller may REWRITE the effect in place here, and one does:
+   * pragma's `create` prepends a generated-by stamp to `WriteFile.content` on
+   * this callback, so what the overlay records — and what a later `ReadFile` of
+   * that path answers with, and what `describeEffect` reports as the byte count
+   * — is the SHAPED effect, not the one the generator constructed.
+   *
+   * The ordering is the mechanism, not an implementation detail: `perform`
+   * announces, then interprets. Moving the call after `interpretLeaf` would
+   * leave every test in this package green while a `--dry-run` under-reported
+   * every generated file by exactly its stamp — measured in the consumer at 58
+   * bytes a file. `planTask.test.ts`'s "the interpreter sees the SHAPED effect"
+   * row is what holds it here.
+   */
   onEffectStart?: (effect: Effect) => void;
-  /** Called after each effect is interpreted. */
-  onEffectComplete?: (effect: Effect, duration: number) => void;
   /** AbortSignal for interrupting the plan. */
   signal?: AbortSignal;
 }
@@ -159,13 +175,7 @@ export const planTask = async <A>(
   task: Task<A>,
   options: PlanTaskOptions = {},
 ): Promise<PlanResult<A>> => {
-  const {
-    context = new Map(),
-    cwd,
-    onEffectStart,
-    onEffectComplete,
-    signal,
-  } = options;
+  const { context = new Map(), cwd, onEffectStart, signal } = options;
 
   const effects: Effect[] = [];
   /**
@@ -324,7 +334,6 @@ export const planTask = async <A>(
   const perform = async (effect: Effect): Promise<unknown> => {
     if (effect._tag === "Parallel" || effect._tag === "Race") {
       onEffectStart?.(effect);
-      const structuralStart = performance.now();
       // Children are driven SEQUENTIALLY through the same overlay. A plan is a
       // description, and interleaving children's overlay writes would make the
       // recorded effect order depend on scheduling. `Race` describes the first
@@ -335,16 +344,15 @@ export const planTask = async <A>(
       for (const child of children) {
         results.push(await driveAsync(child, perform, checkInterrupted));
       }
-      onEffectComplete?.(effect, performance.now() - structuralStart);
       return effect._tag === "Race" ? results.at(0) : results;
     }
 
     effects.push(effect);
+    // ANNOUNCE, then interpret — in that order, because the callback may
+    // rewrite the effect (see `PlanTaskOptions.onEffectStart`) and
+    // `interpretLeaf` is what reads `effect.content` into the overlay.
     onEffectStart?.(effect);
-    const startTime = performance.now();
-    const result = await interpretLeaf(effect);
-    onEffectComplete?.(effect, performance.now() - startTime);
-    return result;
+    return interpretLeaf(effect);
   };
 
   const value = await driveAsync(task, perform, checkInterrupted);

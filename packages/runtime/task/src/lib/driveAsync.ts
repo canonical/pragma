@@ -48,9 +48,13 @@ const normalizeThrownError = (thrown: unknown): TaskError => {
 
 /**
  * Build the loop-top interruption guard {@link driveAsync} calls. One spelling
- * for both node-side interpreters: the message an aborted run reports is part
- * of the CLI's observable behaviour (`isInterruption` matches on the code), and
- * a plan that reported a different one would diverge from the run it previews.
+ * for both node-side interpreters because the CODE is what is observable:
+ * `driveAsync` carves `TASK_INTERRUPTED` out of its recovery channel, and the
+ * consumer maps it to exit 130 (`isInterruption` in pragma's `fromTaskError`
+ * reads `taskErrorCode(error) === TASK_INTERRUPTED`) — so a plan raising a
+ * different code would be recoverable where its run is not. The MESSAGE is
+ * shared for the cheaper reason that a plan and its run should read alike;
+ * nothing outside this package's own tests consumes the string.
  *
  * @param signal - The caller's abort signal, if any.
  * @returns A guard that throws `TASK_INTERRUPTED` once the signal is aborted.

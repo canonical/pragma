@@ -51,7 +51,7 @@ import {
   transformFile,
   writeFile,
 } from "./primitives.js";
-import { $, effect, gen, pure } from "./task.js";
+import { $, effect, flatMap, gen, pure } from "./task.js";
 import type { Effect } from "./types.js";
 
 let dir: string;
@@ -473,7 +473,6 @@ describe("planTask — effect callbacks and structure", () => {
     const file = join(dir, "seen.txt");
     writeFileSync(file, "x");
     const started: string[] = [];
-    const completed: string[] = [];
 
     await planTask(
       sequence_([
@@ -481,14 +480,36 @@ describe("planTask — effect callbacks and structure", () => {
         readFile(file),
         writeFile(join(dir, "out.txt"), "y"),
       ]),
-      {
-        onEffectStart: (e) => started.push(e._tag),
-        onEffectComplete: (e) => completed.push(e._tag),
-      },
+      { onEffectStart: (e) => started.push(e._tag) },
     );
 
     expect(started).toEqual(["Exists", "ReadFile", "WriteFile"]);
-    expect(completed).toEqual(started);
+  });
+
+  it("the interpreter sees the SHAPED effect — announce, THEN interpret", async () => {
+    // `onEffectStart` is documented as a place a caller may REWRITE the effect,
+    // and both of pragma's plan branches do exactly that (the generated-by
+    // stamp). Nothing in this package held the ordering that makes it work:
+    // announcing AFTER `interpretLeaf` left every row here green while the
+    // consumer's `--dry-run` under-reported every generated file by 58 bytes.
+    // So assert what the OVERLAY recorded, which is what `interpretLeaf`
+    // computed, rather than what the callback was handed.
+    const target = join(dir, "shaped.txt");
+    const { value } = await planTask(
+      flatMap(writeFile(target, "body"), () => readFile(target)),
+      {
+        onEffectStart: (effect) => {
+          if (effect._tag === "WriteFile") {
+            (effect as { content: string }).content =
+              `stamp\n${effect.content}`;
+          }
+        },
+      },
+    );
+
+    expect(value).toBe("stamp\nbody");
+    // And nothing reached the disk, so the rewrite is the plan's, not a write.
+    expect(existsSync(target)).toBe(false);
   });
 
   it("collects effects in reached order, including structural children", async () => {
