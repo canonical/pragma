@@ -31,7 +31,8 @@
 
 import { readPackIndex } from "../../../completion/entitySource.js";
 import { runSelect } from "../../../packs/sparql/runSelect.js";
-import { distributionOrigin, type PackRow } from "../../../packs/types.js";
+import { buildDistributionOrigin } from "../../../packs/storyOrigin.js";
+import type { PackRow } from "../../../packs/types.js";
 import type { SourcesDecision } from "../../../runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 import { VOCABULARY } from "../../../vocabulary.js";
@@ -40,7 +41,7 @@ import { VOCABULARY } from "../../../vocabulary.js";
 const PROMPT = VOCABULARY.prompt;
 
 /** This module's SPARQL is composed here, not declared — see the helper. */
-const PROMPT_ORIGIN = distributionOrigin("prompt");
+const PROMPT_ORIGIN = buildDistributionOrigin("prompt");
 
 /** One declared argument of a prompt template. */
 export interface PromptArgument {

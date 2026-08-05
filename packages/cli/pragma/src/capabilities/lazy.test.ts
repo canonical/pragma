@@ -167,8 +167,10 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // What the loop below pins is that none of the other three pulls anything
     // FURTHER onto this graph — the absence of more edges, not the absence of
     // any evaluation. Say it that way, because two of them do evaluate: the
-    // conf is a literal, `kernel/config/types.ts` freezes a three-element
-    // `CHANNELS` tuple, and `kernel/packs/types.ts` declares one pure helper.
+    // conf is a literal and `kernel/config/types.ts` freezes a three-element
+    // `CHANNELS` tuple. `kernel/packs/types.ts` used to be a third — it
+    // declared one pure helper — and is now types only, its constructor having
+    // moved to `kernel/packs/storyOrigin.ts` so the type file stays erasable.
     // That is the property this module actually depends on, and the `pragma.
     // conf.ts` case above states it the same way.
     for (const file of graph.filter((f) => f !== relative(pkgRoot, entry))) {

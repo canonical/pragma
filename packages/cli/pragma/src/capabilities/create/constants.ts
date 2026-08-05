@@ -84,7 +84,20 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 const BOUND_NOUNS = ["component", "package", "application"] as const;
 
 /**
- * The name declared for `noun`, or a loud failure.
+ * Read the name declared for `noun`, or fail loudly.
+ *
+ * This is a FUNCTION in a `constants.ts`, which cs:code.constants.file forbids,
+ * and it stays here deliberately. Extracting it to a sibling module was tried
+ * and measured: `lazy.test.ts`'s "the create binding table stays a leaf on the
+ * fast path (PROTECTED)" pins this module's import graph to an EXACT file list
+ * AND asserts that every file on it except this one has no value imports
+ * (`/^import (?!type\b)/m`). The extracted module must value-import
+ * `PragmaError` and `pragma.conf.ts`, so it failed that assertion even after
+ * the enumeration was widened to admit it — the guard went red both ways. Only
+ * this file is exempt, because only this file is the entry. Moving the function
+ * out is therefore not a refactor, it is a request to weaken a PROTECTED
+ * fast-path guard, and the guard is worth more than the file-role rule here.
+ * The name is a verb, which is the half of the standards fix that costs nothing.
  *
  * A fork that declares fewer generators than this surface binds would otherwise
  * bind `undefined` as a package name and fail later, somewhere else. This throw
@@ -110,7 +123,7 @@ const BOUND_NOUNS = ["component", "package", "application"] as const;
  *   edit — the same seam and the same code `kernel/vocabulary.ts` raises for
  *   the other distribution declaration validated at module load.
  */
-function declaredGeneratorName(noun: (typeof BOUND_NOUNS)[number]): string {
+function readDeclaredGeneratorName(noun: (typeof BOUND_NOUNS)[number]): string {
   const declared = (conf as RawConfig).generators ?? [];
   const name = declared[BOUND_NOUNS.indexOf(noun)]?.name;
   if (name === undefined) {
@@ -132,7 +145,7 @@ export const CREATE_GENERATORS = {
      * The declaring package, read from the distribution's `generators`:
      * `scripts/build.ts` harvests its `.ejs` for the binary.
      */
-    name: declaredGeneratorName("component"),
+    name: readDeclaredGeneratorName("component"),
     /** `--framework <f>` runs `component/<f>`; the FIRST is the enum default. */
     frameworks: ["react", "svelte", "lit"],
     /**
@@ -146,7 +159,7 @@ export const CREATE_GENERATORS = {
   },
   package: {
     /** The declaring package, read from the distribution's `generators`. */
-    name: declaredGeneratorName("package"),
+    name: readDeclaredGeneratorName("package"),
     /** The generator-map key `create package` runs. */
     key: "package",
     /**
@@ -169,7 +182,7 @@ export const CREATE_GENERATORS = {
   },
   application: {
     /** The declaring package, read from the distribution's `generators`. */
-    name: declaredGeneratorName("application"),
+    name: readDeclaredGeneratorName("application"),
     /** The generator-map key `create application` runs. */
     key: "application/react",
     /**
