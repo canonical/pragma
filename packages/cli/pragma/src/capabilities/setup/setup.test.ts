@@ -4,7 +4,8 @@
  * exactly like `create`.
  *
  * Never spawns the real LSP installer (bunx) — every LSP path is exercised only
- * under `--dry-run` / plan-first, which MOCK the exec — and never writes outside
+ * under `--dry-run` / plan-first, which SIMULATE the exec (a plan reads for real
+ * but never runs a command or writes) — and never writes outside
  * isolated HOME/cwd temps. Covers: completions (exact emitScripts output /
  * preview-accurate dry-run / undo reversal / no-shell warn), the MCP recap gate
  * (auto-confirm writes, decline writes nothing), skills (empty → EMPTY_RESULTS,

@@ -32,14 +32,18 @@ Stories from a project's config, or from a `stories/*.json` a package ships, mer
 
 Two thin frontends turn the grammar into runnable surfaces:
 
-- **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node / dry-run / undo interpreters) and renders the outcome.
+- **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node, plan, or undo interpreters) and renders the outcome.
 - **MCP** — `buildServer` registers every exposed verb via `registerVerb`, installs the resource and prompt surfaces, and attaches the handshake instructions.
 
 Both frontends resolve configuration through the same **config seam** — the three-layer resolver described in [config-model.md](./config-model.md) — so the CLI and the MCP server always agree on the active tier, channel, and package sources.
 
 ## The effect seam
 
-Mutations never touch the filesystem directly. A mutating `run` returns a `Task` — a description of its effects — which the frontend interprets. The CLI interprets it under `--dry-run` (describe only), `--undo` (reverse), or real execution; the MCP handler interprets it as a plan unless `confirm: true`. One Task description, several interpreters — the reason `--dry-run` and MCP's plan-first preview share exactly one code path.
+Mutations never touch the filesystem directly. A mutating `run` returns a `Task` — a description of its effects — which the frontend interprets. The CLI interprets it under `--dry-run` (plan), `--undo` (reverse), or real execution; the MCP handler interprets it as a plan unless `confirm: true`. One Task description, several interpreters — and `--dry-run` and MCP's plan-first preview share exactly one of them (`planTask`, from `@canonical/task/node`).
+
+**A plan READS FOR REAL and simulates only destruction.** `ReadFile`, `Exists`, `Glob` and the context effects are performed against the real filesystem, and `TransformFile` performs its read half and discards the result; `WriteFile`, `AppendFile`, `CopyFile`, `CopyDirectory`, `DeleteFile`, `DeleteDirectory`, `MakeDir`, `Symlink`, `Exec` and `Log` are simulated over a virtual overlay of the paths the plan would create. That is what lets a plan describe the shape a run would actually take: a mutation whose next effect depends on what it just read plans the same branch it runs, and a mutation whose real run dies on a read fails the plan too, with the same exit code, instead of reporting a full success.
+
+What a plan still cannot tell you: `Exec` answers empty-and-successful (running the command is the one thing a plan must not do), and `CopyFile`/`CopyDirectory` do not probe their source. `src/testing/behavioral/dryRunParity.test.ts` runs real capabilities both ways and asserts the two effect sequences agree — same tags, same paths, same bytes written — with those two boundaries stated rather than assumed.
 
 ## Further reading
 

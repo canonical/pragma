@@ -6,9 +6,13 @@
  * shaped by the outcome. The `exec` effect is the SOLE mutation, so the effect
  * seam does the rest for free:
  *
- * - `--dry-run` (dispatcher `dryRun`) MOCKS the exec and describes the plan —
- *   both the `Log` version-delta line AND the `Execute: <command>` line show,
- *   and nothing runs.
+ * - `--dry-run` (the dispatcher's `planTask`) simulates the EXEC — the one
+ *   effect a plan must never perform — and describes the plan: both the `Log`
+ *   version-delta line AND the `Execute: <command>` line show, and nothing runs.
+ *   Everything else the plan touches is read for real; this verb's reads all
+ *   happen in the async setup above the Task anyway. The simulated exec answers
+ *   `{stdout:"", stderr:"", exitCode:0}`, which is why `assertExecOk` reports a
+ *   clean plan even for a command that would fail.
  * - `--yes` / MCP `confirm` runs the exec for real; a nonzero exit is surfaced
  *   by `assertExecOk` as an actionable UNSUPPORTED (exit 1) — the interpreter
  *   RESOLVES on a nonzero exit, so the check is the consumer's job.
