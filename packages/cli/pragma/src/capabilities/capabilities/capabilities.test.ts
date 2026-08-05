@@ -1,6 +1,7 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -36,15 +37,52 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     expect(stale).toEqual([]);
   });
 
-  it("hint categories agree with the live surface (write ⟺ mutates)", () => {
-    const mutating = mutatingTools(capabilities);
-    for (const tool of tools) {
-      const isWrite = TOOL_HINTS[tool]?.category === "write";
-      expect(
-        isWrite,
-        `${tool}: hint category "${TOOL_HINTS[tool]?.category}" vs mutates=${mutating.has(tool)}`,
-      ).toBe(mutating.has(tool));
+  it("the catalog's write set is the covenant's mutating set, name for name", () => {
+    // THE SAME PROPERTY THIS SUITE ALWAYS HELD, moved to the payload. It used
+    // to read `TOOL_HINTS[tool].category === "write"` and compare that to
+    // `mutates` — which is exactly what proved the authored column was
+    // derivable and got it deleted. Now that nothing authors a category,
+    // asserting the hint table agrees would assert nothing at all.
+    //
+    // Not a recomputation of `catalog.ts`: this reads the EMITTED SURFACE's
+    // per-verb `mutates`/`mcp` and compares the resulting names to the payload
+    // the tool ships, pinning the two surfaces to each other rather than
+    // re-running the derivation.
+    const emittedMutators = new Set<string>();
+    for (const { verbs } of Object.values(emitSurface(capabilities).nouns)) {
+      for (const verb of verbs) {
+        if (verb.mutates && typeof verb.mcp === "string") {
+          emittedMutators.add(verb.mcp);
+        }
+      }
     }
+    const catalogWrites = data.tools
+      .filter((tool) => tool.category === "write")
+      .map((tool) => tool.name)
+      .sort();
+    expect(catalogWrites).toEqual([...emittedMutators].sort());
+    // Non-vacuous: an empty write set would satisfy the equality above only if
+    // the surface had no mutating verb, and it has several. This is the reading
+    // that broke — a missing hint degraded to `read`, so a fork reported every
+    // mutating tool as a read and `counts.write` as 0.
+    expect(catalogWrites.length).toBeGreaterThan(0);
+  });
+
+  it("the category is not read from the hint table at all (the fork case)", () => {
+    // `ToolHint` no longer carries `category`, so `tsc` is most of this proof.
+    // What `tsc` cannot say is that a future edit will not reintroduce a
+    // hint-shaped fallback — which is the precise shape of the defect: the old
+    // `hint?.category ?? "read"` meant a fork that had not authored this table
+    // reported every mutating tool as a read.
+    const source = readFileSync(
+      fileURLToPath(new URL("./catalog.ts", import.meta.url)),
+      "utf-8",
+    );
+    expect(source).not.toMatch(/category:\s*(?:hint|TOOL_HINTS)/);
+    // And the derivation is still reachable from a name a reader would look
+    // for, so deleting the constant fails here rather than silently widening
+    // `read`.
+    expect(source).toContain("CATEGORY_BY_KERNEL_TOOL");
   });
 
   it("the catalog tool set equals the live emitted tool set, in order", () => {

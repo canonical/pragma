@@ -13,9 +13,13 @@ import type { DiscoveryStage } from "../../kernel/spec/types.js";
 /** A tool's behavioural category, used for grouping + counts. */
 export type ToolCategory = "read" | "write" | "orientation" | "diagnostic";
 
-/** The one authored fact per tool: its category + a one-line "use when" hint. */
+/**
+ * The one authored fact per tool: a one-line "use when" hint.
+ *
+ * It carried `category` too until that was found to be derivable — see
+ * `hints.ts` and `catalog.ts#CATEGORY_BY_KERNEL_TOOL`.
+ */
 export interface ToolHint {
-  readonly category: ToolCategory;
   readonly use_when: string;
 }
 
