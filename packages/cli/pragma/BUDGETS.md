@@ -215,7 +215,17 @@ Confirmed by the spike:
 - **help path imports no zod / no run body** — the module-graph probe
   (`src/capabilities/lazy.test.ts`) walks the static import graph from
   `buildProgram` and `capabilities/index` and asserts neither reaches a zod
-  schema module nor any `collect*` run body (those are dynamic-imported).
+  schema module nor any `collect*` run body (those are dynamic-imported). The
+  `capabilities/index` assertion became an EXACT EMPTY SET in PR7: until then it
+  pinned one tolerated importer, `runtime/graphpack/types.ts`, reached through
+  `resources/provider.ts → resolveSources → packIsComplete → readManifest →
+  manifestSchema.parse`. Re-measured on the compiled binary (trimmed mean of 40
+  spawns, netted against `--version` from the same binary in the same run):
+  `__complete block ''` **24.1 / 26.1 ms → 19.5 / 21.5 ms**, `--help`
+  **26.7 / 30.9 ms → 26.3 / 25.2 ms** (inside its own spread — the honest claim
+  is `__complete`). The manifest is now read by a hand-written structural check
+  in `graphpack/manifest.ts`; the surviving pack schemas live in
+  `graphpack/schemas.ts`, behind the store boot.
 - **`__complete` is storeless** — resolved from the grammar alone
   (`complete.test.ts`), no config or store read.
 - **project config is served warm** — `evaluateProjectConfig` returns the

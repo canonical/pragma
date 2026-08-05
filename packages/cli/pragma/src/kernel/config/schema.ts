@@ -1,9 +1,14 @@
 /**
  * Zod validation for a config layer.
  *
- * One of the three sanctioned zod seams (validate.ts / mcp/registerVerb.ts /
- * config/schema.ts) — never reached from the `--help` or `__complete` fast
- * path, which are storeless and config-free. Validates the raw shape a global
+ * One of the FOUR sanctioned zod seams — `spec/validate.ts` (the covenant
+ * grammar), `project/mcp/registerVerb.ts` (tool schemas), this module (the
+ * config grammar), and `packs/schema.ts` (the pack-definition grammar, lazily
+ * imported). This sentence used to say "three" and predated `packs/schema.ts`;
+ * a fifth, `runtime/graphpack/types.ts`, was on the command-tree graph until PR7
+ * moved it into `graphpack/schemas.ts` behind the store boot. None is reached
+ * from the `--help` or `__complete` fast path, which are storeless and
+ * config-free — `capabilities/lazy.test.ts` holds that as an EXACT empty set. Validates the raw shape a global
  * JSON file or an evaluated `pragma.config.ts` declares; unknown keys are
  * stripped for forward compatibility, and only present keys survive so layer
  * merging keeps honest per-field provenance.

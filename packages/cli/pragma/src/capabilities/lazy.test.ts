@@ -290,23 +290,36 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     }
   });
 
-  it("exactly one module on that graph statically imports zod", () => {
-    // zod is NOT dynamic-import-only here, and this pins the one place it is
-    // not, by measurement rather than by claim. `resolveSources` (which the
-    // resource provider and the prompt provider both reach) calls
-    // `packIsComplete` → `readManifest` → `manifestSchema.parse`, so
-    // `graphpack/types.ts` and its zod dependency are evaluated whenever the
-    // command tree is built — including on `__complete`.
+  it("NO module on that graph statically imports zod (PROTECTED)", () => {
+    // Until PR7 this expected exactly ONE: `graphpack/types.ts` declared the
+    // pack schemas, `manifest.ts` value-imported `manifestSchema` for
+    // `readManifest`, `packIsComplete` called that, and `resolveSources` called
+    // `packIsComplete` — reached here through
+    // `graph/index.ts → resources/index.ts → resources/provider.ts`. So zod was
+    // evaluated whenever the command tree was built, `__complete` included, for
+    // ~3–4 ms of a ~25 ms path. The manifest is now read by a hand-written
+    // structural check and the surviving schemas live in `graphpack/schemas.ts`,
+    // behind the store boot.
     //
-    // An EXACT set, not a tolerated-name list: a second importer fails this,
-    // and so does removing the edge, which is what makes the day it is fixed
-    // impossible to miss.
+    // WHAT THIS DOES AND DOES NOT COVER, stated because a guard that overclaims
+    // is worse than none. It is a TEXTUAL walk of `from "…"` specifiers, so it
+    // cannot distinguish `import type` from a value import: a type-only edge to
+    // a zod-importing module would fail this test even though it erases. In the
+    // other direction it is exact and complete FOR THIS GRAPH — a brand-new
+    // module value-importing zod anywhere reachable from `capabilities/index.ts`
+    // fails, because the expectation is an empty set rather than a tolerated
+    // list. What it says nothing about is zod OFF this graph. A type-aware
+    // import walker would close that residue; it was deliberately not attempted
+    // in PR7, because it is a rewrite of three PROTECTED guards
+    // (this file's three exact enumerations, `completion/safety.test.ts`'s
+    // storeless graph, and `@canonical/task`'s node-free closure walk) each of
+    // which currently derives its authority from being simple and textual.
     const graph = staticImportGraph(resolve(here, "index.ts"));
     const pkgRoot = resolve(here, "..", "..");
     const zodImporters = [...graph]
       .filter((file) => /from\s*["']zod["']/.test(readFileSync(file, "utf-8")))
       .map((file) => relative(pkgRoot, file))
       .sort();
-    expect(zodImporters).toEqual(["src/kernel/runtime/graphpack/types.ts"]);
+    expect(zodImporters).toEqual([]);
   });
 });

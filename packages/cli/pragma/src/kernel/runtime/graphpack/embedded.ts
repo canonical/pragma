@@ -35,17 +35,17 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { PragmaError } from "../../error/PragmaError.js";
 import { packDir, packsCacheDir } from "../paths.js";
 import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
 import { indexJson } from "./embedded/pack.index.generated.js";
 import { storiesJson } from "./embedded/pack.stories.generated.js";
-import { packIsComplete } from "./manifest.js";
+import { packIsComplete, parseManifest } from "./manifest.js";
 import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
   type Manifest,
-  manifestSchema,
   SCHEMA_FILE,
   STORIES_FILE,
 } from "./types.js";
@@ -58,9 +58,24 @@ import {
  * counts — plus the `contentHash` that names its cache directory. Reading it
  * costs one `JSON.parse` of a ~1 KB string, so neither surface has to
  * materialize the 1.9 MB pack just to describe it.
+ *
+ * Validated by the SAME {@link parseManifest} every on-disk manifest goes
+ * through, so the inlined snapshot cannot hold a shape a built pack would be
+ * rejected for. Unlike a built pack — where an unreadable manifest legitimately
+ * means "no pack here" — a bad embedded manifest is a BUILD defect: the bundler
+ * wrote it, so it fails loudly rather than degrading to "not built".
+ *
+ * @returns The embedded pack's manifest.
+ * @throws PragmaError INTERNAL_ERROR when the inlined manifest is unreadable.
  */
 export function embeddedManifest(): Manifest {
-  return manifestSchema.parse(JSON.parse(manifestJson));
+  const manifest = parseManifest(JSON.parse(manifestJson));
+  if (manifest === undefined) {
+    throw PragmaError.internalError(
+      `the embedded pack's ${MANIFEST_FILE} is not a valid manifest`,
+    );
+  }
+  return manifest;
 }
 
 /**

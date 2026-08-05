@@ -1,6 +1,6 @@
 /**
- * Graphpack artifact contracts — the five files a built pack directory holds
- * and the zod schemas that keep them honest on read.
+ * Graphpack artifact contracts — the five files a built pack directory holds,
+ * and the shapes they carry.
  *
  * A pack is the content-addressed, boot-ready form of a set of RDF sources:
  * `data.nq` (the store's n-quads dump — boots via ke's cache path, no TTL
@@ -22,18 +22,30 @@
  * buildPack produces" — extend the set here and that test fails until every
  * side follows.
  *
- * Its zod dependency IS on the storeless fast path, contrary to what this
- * docblock used to claim. `manifest.ts` imports {@link manifestSchema} as a
- * value for `readManifest`, `packIsComplete` calls it, and `resolveSources`
- * calls that — so building the command tree evaluates zod, `__complete`
- * included. Measured at ~3–4 ms of a ~30 ms fast path. `capabilities/lazy.test.ts`
- * pins this module as the ONLY zod importer on that graph, so the cost cannot
- * grow silently and removing it cannot pass unnoticed. Splitting the schemas
- * out so the boot decision reads a manifest without zod is the fix, and it is
- * the pack runtime's to make, not this type module's.
+ * THIS MODULE IMPORTS NOTHING, and that is load-bearing rather than tidy. It
+ * used to declare the pack schemas in zod, and `manifest.ts` value-imported
+ * `manifestSchema` for `readManifest`; `packIsComplete` calls that, and
+ * `resolveSources` calls `packIsComplete`. The live chain was
+ * `capabilities/index.ts → graph/index.ts → resources/index.ts →
+ * resources/provider.ts → resolveSources.ts → graphpack/manifest.ts →
+ * graphpack/types.ts → zod`, so BUILDING THE COMMAND TREE evaluated zod —
+ * `__complete` and `--help` included. The schemas that survive live in
+ * `schemas.ts`, reached only from `read.ts`, which is off that graph; the
+ * manifest is validated by `manifest.ts`'s hand-written `parseManifest`.
+ *
+ * Measured on this box (compiled binary, trimmed mean of 40 spawns, netted
+ * against `--version` from the same binary in the same run, because process
+ * start here swings by tens of ms):
+ *
+ * | | before (2 runs) | after (2 runs) |
+ * |---|---|---|
+ * | `__complete block ''` net | 24.1 / 26.1 ms | 19.5 / 21.5 ms |
+ * | `--help` net | 26.7 / 30.9 ms | 26.3 / 25.2 ms |
+ *
+ * — about 4 ms off `__complete`'s ~25 ms of work, matching the estimate the
+ * defect was recorded with. The `--help` figure is inside its own run-to-run
+ * spread, so the honest claim is `__complete`; `--help` is not slower.
  */
-
-import { z } from "zod";
 
 /** The n-quads store dump — ke boots it via `createStore({ cache })`. */
 export const DATA_FILE = "data.nq";
@@ -106,37 +118,24 @@ export interface PackIndex {
   readonly instanceCountByType: Readonly<Record<string, number>>;
 }
 
-/** zod schema validating a persisted {@link PackIndexEntity}. */
-export const packIndexEntitySchema: z.ZodType<PackIndexEntity> = z.object({
-  name: z.string(),
-  type: z.string(),
-  uri: z.string().optional(),
-  prefixed: z.string().optional(),
-  types: z.array(z.string()).optional(),
-  label: z.string().nullable().optional(),
-  altNames: z.array(z.string()).optional(),
-  box: z.enum(["tbox", "abox"]).optional(),
-  description: z.string().nullable().optional(),
-});
-
-/** zod schema validating a persisted {@link PackIndex}. */
-export const packIndexSchema: z.ZodType<PackIndex> = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
-  contentHash: z.string(),
-  prefixes: z.record(z.string(), z.string()),
-  entities: z.array(packIndexEntitySchema),
-  instanceCountByType: z.record(z.string(), z.number()),
-});
-
-/** zod schema validating a persisted `manifest.json`. */
-export const manifestSchema = z.object({
-  name: z.string(),
-  version: z.string(),
+/**
+ * Pack provenance and the prefixes the store was built with — the shape of
+ * `manifest.json`.
+ *
+ * Hand-written rather than inferred from a zod schema: this is the ONE artifact
+ * the BOOT DECISION reads (`resolveSources` → `packIsComplete` →
+ * `readManifest`), so its declaration must not drag a validator onto the
+ * storeless fast path. `manifest.ts#parseManifest` is its single structural
+ * reader.
+ */
+export interface Manifest {
+  readonly name: string;
+  readonly version: string;
   /** The config `packs` ref this pack was built from (verbatim), or a label. */
-  sourceRef: z.string(),
-  contentHash: z.string(),
-  prefixes: z.record(z.string(), z.string()),
-  createdAt: z.string(),
+  readonly sourceRef: string;
+  readonly contentHash: string;
+  readonly prefixes: Readonly<Record<string, string>>;
+  readonly createdAt: string;
   /**
    * The store's triple count at build time. Cross-checked against the booted
    * store so a truncated-but-non-empty `data.nq` (a partial graph that passes
@@ -144,14 +143,11 @@ export const manifestSchema = z.object({
    * than being served silently (A9). Optional — packs built before this field
    * skip the check.
    */
-  tripleCount: z.number().optional(),
+  readonly tripleCount?: number;
   /**
-   * The distinct abox entity count (matches {@link entityTotal}). Lets
-   * `sources status` report the figure without parsing the whole `index.json`
-   * (A10). Optional — packs built before this field fall back to the index read.
+   * The distinct abox entity count. Lets `sources status` report the figure
+   * without parsing the whole `index.json` (A10). Optional — packs built before
+   * this field fall back to the index read.
    */
-  entityCount: z.number().optional(),
-});
-
-/** Pack provenance and the prefixes the store was built with. */
-export type Manifest = z.infer<typeof manifestSchema>;
+  readonly entityCount?: number;
+}

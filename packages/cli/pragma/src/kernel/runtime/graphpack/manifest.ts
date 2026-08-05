@@ -3,6 +3,15 @@
  * directory without a valid manifest is a torn build (writes land in a temp
  * directory and the manifest is renamed in last), so an absent or invalid
  * manifest means "treat the pack as not there".
+ *
+ * ZOD-FREE BY CONSTRUCTION, and that is the point of {@link parseManifest}.
+ * This module is on the BOOT DECISION: `resolveSources` calls
+ * `packIsComplete`, which calls `readManifest`, and `resolveSources` is
+ * value-reachable from `capabilities/index.ts` — so whatever validates a
+ * manifest is evaluated when the command tree is built, `__complete` and
+ * `--help` included. The schema used to live in `types.ts` and cost ~3–4 ms of
+ * a ~25 ms fast path; the hand-written check below costs a JSON.parse it was
+ * doing anyway plus a dozen `typeof`s.
  */
 
 import { existsSync, readFileSync, statSync } from "node:fs";
@@ -12,10 +21,50 @@ import {
   INDEX_FILE,
   MANIFEST_FILE,
   type Manifest,
-  manifestSchema,
   SCHEMA_FILE,
   STORIES_FILE,
 } from "./types.js";
+
+/** Every value in `record` is a string (and `record` is a plain object). */
+function isStringRecord(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.values(value).every((entry) => typeof entry === "string")
+  );
+}
+
+/** An absent-or-number field: present means it must be a number. */
+function isOptionalNumber(value: unknown): value is number | undefined {
+  return value === undefined || typeof value === "number";
+}
+
+/**
+ * Structurally validate a parsed `manifest.json`.
+ *
+ * The SINGLE reader of the manifest grammar — `readManifest` (every built pack)
+ * and `embeddedManifest` (the inlined snapshot) both go through it, so there is
+ * no second writing to drift from. Deliberately structural rather than
+ * schema-driven: see this module's docblock for the measurement.
+ *
+ * @param value - The result of `JSON.parse` on a manifest's bytes.
+ * @returns The manifest, or `undefined` when the shape does not hold.
+ */
+export function parseManifest(value: unknown): Manifest | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  const candidate = value as Record<string, unknown>;
+  const strings = ["name", "version", "sourceRef", "contentHash", "createdAt"];
+  if (strings.some((field) => typeof candidate[field] !== "string")) {
+    return undefined;
+  }
+  if (!isStringRecord(candidate.prefixes)) return undefined;
+  if (!isOptionalNumber(candidate.tripleCount)) return undefined;
+  if (!isOptionalNumber(candidate.entityCount)) return undefined;
+  return candidate as unknown as Manifest;
+}
 
 /**
  * Read and validate a pack directory's manifest.
@@ -28,7 +77,7 @@ export function readManifest(dir: string): Manifest | undefined {
   const path = join(dir, MANIFEST_FILE);
   if (!existsSync(path)) return undefined;
   try {
-    return manifestSchema.parse(JSON.parse(readFileSync(path, "utf-8")));
+    return parseManifest(JSON.parse(readFileSync(path, "utf-8")));
   } catch {
     return undefined;
   }

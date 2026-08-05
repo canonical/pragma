@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildPack } from "./build.js";
 import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
 import { contentHash } from "./hash.js";
-import { packIsComplete } from "./manifest.js";
+import { packIsComplete, parseManifest } from "./manifest.js";
 import { readPack } from "./read.js";
 import { activeStories } from "./stories.js";
 import type { PackIndex } from "./types.js";
@@ -218,6 +218,59 @@ describe("graphpack carried stories (PROTECTED)", () => {
     expect(activeStories({ kind: "pack", dir, contentHash: "z" })).toEqual([
       { source: STORY.path, content: STORY.content },
     ]);
+  });
+});
+
+describe("graphpack manifest — structural, zod-free parsing (PROTECTED)", () => {
+  // `parseManifest` replaced a zod schema that sat on the storeless fast path
+  // (`resolveSources` → `packIsComplete` → `readManifest`). These hold the hand
+  // validator to what the schema rejected, so the swap did not buy speed by
+  // dropping checks.
+  const VALID = {
+    name: "n",
+    version: "1",
+    sourceRef: "ref",
+    contentHash: "abc",
+    prefixes: { ex: "https://example.com/#" },
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("accepts a minimal manifest and its optional counts", () => {
+    expect(parseManifest(VALID)).toEqual(VALID);
+    expect(parseManifest({ ...VALID, tripleCount: 3, entityCount: 2 })).toEqual(
+      {
+        ...VALID,
+        tripleCount: 3,
+        entityCount: 2,
+      },
+    );
+  });
+
+  it("rejects the shapes the schema rejected", () => {
+    expect(parseManifest({ ...VALID, prefixes: ["ex"] })).toBeUndefined();
+    expect(parseManifest({ ...VALID, prefixes: { ex: 1 } })).toBeUndefined();
+    expect(parseManifest({ ...VALID, contentHash: 7 })).toBeUndefined();
+    expect(parseManifest({ ...VALID, tripleCount: "3" })).toBeUndefined();
+    expect(parseManifest({ ...VALID, entityCount: null })).toBeUndefined();
+    expect(parseManifest({ ...VALID, name: undefined })).toBeUndefined();
+    expect(parseManifest([VALID])).toBeUndefined();
+    expect(parseManifest(null)).toBeUndefined();
+    expect(parseManifest("{}")).toBeUndefined();
+  });
+
+  it("a pack whose manifest fails the check is INCOMPLETE, so buildPack rebuilds", async () => {
+    const { dir } = await build([{ path: "a.ttl", content: TTL }]);
+    expect(packIsComplete(dir)).toBe(true);
+    const manifest = JSON.parse(
+      readFileSync(join(dir, MANIFEST_FILE), "utf-8"),
+    ) as Record<string, unknown>;
+    // `prefixes` as an ARRAY: non-empty, parseable JSON, wrong shape — exactly
+    // what a size-only gate would wave through.
+    writeFileSync(
+      join(dir, MANIFEST_FILE),
+      JSON.stringify({ ...manifest, prefixes: ["ex"] }),
+    );
+    expect(packIsComplete(dir)).toBe(false);
   });
 });
 
