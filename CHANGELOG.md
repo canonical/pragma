@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+
+### BREAKING CHANGES
+
+* **cli-core:** `@canonical/cli-core` is removed. It had one consumer in this
+repository — the `summon` bin — and every export that consumer used was already
+a re-export shim of `@canonical/summon-core`; the ten symbols are unchanged
+there (`formatContentPreview`, `formatEffectLine`, `formatEffectWithContent`,
+`formatLlmJson`, `formatLlmMarkdown`, `isVisibleEffect`,
+`answerPromptWithDefaults`, `createStampOnEffectStart`, `createGeneratorStamp`,
+`runGeneratorTask`), except that `formatGeneratorLlmHelp` is summon-core's
+`formatLlmHelp`. The rest of the package — `registerAll`, `formatHelp` and
+friends, the completion builders, `createOutputAdapter`, `convertGenerator`,
+`executeGenerator`, `createExitResult`/`createOutputResult`, `convertCase` and
+the `CommandDefinition` type family — had no consumer anywhere in the monorepo
+and is deleted with no replacement. An external consumer migrates the shimmed
+symbols to `@canonical/summon-core` and vendors anything else it depended on.
+`packages/cli/` now holds the two product bins and no framework package.
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 

@@ -7,8 +7,7 @@
  * lazily). Verbs are grouped by noun: a self-verb (`["info"]`) attaches to the
  * root, sub-verbs (`["config","show"]`) hang under a noun parent. Positionals
  * become usage tokens, other params become kebab flags, and a mutating verb
- * gains the auto-injected `--dry-run` / `--undo` / `--yes` flags. Ported from
- * the v1 cli-core `registerAll`, retargeted at the grammar.
+ * gains the auto-injected `--dry-run` / `--undo` / `--yes` flags.
  */
 
 import { Command, Option } from "commander";

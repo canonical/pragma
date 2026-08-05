@@ -9,9 +9,9 @@
  * a single seam where cross-cutting behavior (progress, interception) can be
  * added without touching the callers.
  *
- * Moved into summon-core (from the v1 cli-core) so it sits below both the
- * summon bin and the pragma kernel — the shared seam the byte-equality
- * guarantee rests on. cli-core re-exports it while it is retired.
+ * It sits below both the summon bin and the pragma kernel — the shared seam
+ * the byte-equality guarantee rests on — so neither bin can drift from the
+ * other's execution semantics.
  */
 
 import type { Task } from "@canonical/task";

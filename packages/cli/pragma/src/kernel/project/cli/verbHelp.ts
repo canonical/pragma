@@ -4,8 +4,7 @@
  * Help is designed, not auto-generated: a usage line with positional tokens,
  * the summary and optional extended doc, a flags block, and the verb's own
  * authored examples. Reads only the spec's declarative fields — never the run
- * body — so it stays on the fast `--help` path. Ported from the v1 cli-core
- * `formatVerbHelp`, retargeted at the grammar.
+ * body — so it stays on the fast `--help` path.
  */
 
 import { kebabCase } from "../../spec/emitSurface.js";

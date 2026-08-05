@@ -23,9 +23,8 @@
  * (`index.node-free.test.ts`).
  *
  * The name `dryRun` now misdescribes it — `mockRun` is what it is. Renaming it
- * is a follow-up, not a free change: `packages/summon/{core,component,package,
- * application,monorepo}` and `packages/cli/core` all import it, and the root
- * type-check spans every one of them.
+ * is a follow-up, not a free change: every `packages/summon/*` package and both
+ * product bins import it, and the root type-check spans every one of them.
  */
 
 import driveSync from "./driveSync.js";

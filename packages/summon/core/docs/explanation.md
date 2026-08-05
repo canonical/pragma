@@ -249,7 +249,7 @@ These are just function calls that return Tasks. No async/await ceremony. No cal
 Effects-as-data pays off most when more than one program interprets the same
 Task. Summon generators are consumed by two front-ends — the `summon` CLI and
 pragma's `create`/`setup` commands — and both run generators through a **single
-shared production interpreter** (`runGeneratorTask`, in `@canonical/cli-core`)
+shared production interpreter** (`runGeneratorTask`, in `@canonical/summon-core`)
 rather than each re-implementing execution.
 
 Because the interpreter owns execution and the binaries only decorate it, the

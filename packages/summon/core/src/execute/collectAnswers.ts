@@ -9,8 +9,7 @@
  * conditions are evaluated against the answers collected so far, and each
  * remaining definition maps onto the task alphabet's `PromptQuestion`.
  *
- * Moved into summon-core (from the v1 cli-core `promptForAnswers`) as the
- * answer-collection phase of {@link execute}.
+ * This is the answer-collection phase of {@link execute}.
  */
 
 import {

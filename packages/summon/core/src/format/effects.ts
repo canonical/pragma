@@ -1,11 +1,10 @@
 /**
  * Effect formatting utilities for CLI output.
  *
- * Moved into summon-core (from the v1 cli-core `formatEffects`) so both the
- * summon bin and the pragma kernel share one effect-formatting surface without
- * either importing the other. The pragma `create` render layer reuses these
- * helpers to project a {@link GeneratorResult}; cli-core re-exports them while
- * it is retired.
+ * These live below both product bins so the summon bin and the pragma kernel
+ * share one effect-formatting surface without either importing the other. The
+ * pragma `create` render layer reuses these helpers to project a
+ * {@link GeneratorResult}.
  */
 
 import * as path from "node:path";

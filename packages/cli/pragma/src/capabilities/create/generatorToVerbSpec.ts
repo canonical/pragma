@@ -1,7 +1,6 @@
 /**
  * The generator→grammar adapter: map a summon {@link PromptDefinition} onto the
- * one grammar's {@link ParamSpec}, mirroring the v1 cli-core
- * `convertGenerator.promptToParameter`.
+ * one grammar's {@link ParamSpec}.
  *
  *   text        → { kind: "string" }   (+ positional; `complete: files` for paths)
  *   confirm     → { kind: "boolean" }

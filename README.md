@@ -270,7 +270,6 @@ The following tables list all workspace packages with their location and purpose
 |---------|------|-------------|
 | `@canonical/webarchitect` | `packages/webarchitect` | Architecture validation CLI with JSON Schema rulesets |
 | `@canonical/pragma-cli` | `packages/cli/pragma` | CLI and MCP server for querying the design system |
-| `@canonical/cli-core` | `packages/cli/core` | Shared CLI machinery: command definitions, registration, completions, output adapters |
 | `@canonical/summon` | `packages/cli/summon` | Interactive code generator CLI with Ink UI and shell completion |
 | `@canonical/summon-core` | `packages/summon/core` | Code generation framework: generator definitions, templates, discovery |
 | `@canonical/summon-component` | `packages/summon/component` | React, Svelte, and Lit component generators |
