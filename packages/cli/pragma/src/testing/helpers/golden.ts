@@ -1,10 +1,9 @@
 /**
  * Golden-snapshot normalizer for spawn-captured / rendered text.
  *
- * Ported from the old-shell `executor-golden.test.ts#plain()` idiom: strip ANSI
- * escapes and tokenize machine-specific paths so a snapshot compares equal in
- * CI and on a developer's machine. Apply to any stdout/stderr text before
- * `toMatchSnapshot()`.
+ * Strips ANSI escapes and tokenizes machine-specific paths, so a snapshot
+ * compares equal in CI and on a developer's machine. Apply to any
+ * stdout/stderr text before `toMatchSnapshot()`.
  */
 
 import { homedir, tmpdir } from "node:os";

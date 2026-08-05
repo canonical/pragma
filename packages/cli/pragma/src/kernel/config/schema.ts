@@ -190,8 +190,8 @@ export function parseRawConfig(
     );
   }
   // Shape detection, the third of these and the same argument as the two above:
-  // a config that was VALID before must fail audibly, naming the edit. The
-  // A `colophon` declared as a bare byline string; it is `{ markdown, summary? }`
+  // a config that was VALID before must fail audibly, naming the edit. A
+  // `colophon` declared as a bare byline string is `{ markdown, summary? }`
   // now. Unlike the two above this one does not vanish — zod rejects it — but it
   // rejects it with "Expected object, received string" and no recovery, which
   // names the field and not the new shape. Every other break this slice landed

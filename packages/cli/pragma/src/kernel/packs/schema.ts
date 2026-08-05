@@ -1,8 +1,8 @@
 /**
  * The zod pack-definition validator — the single gate for DYNAMIC (config- and
- * package-declared) packs and the parity round-trip tests. It replaces the old
- * ~1,000-line hand validator with a schema plus a handful of cross-field
- * refinements that encode the source rule (§3): `type` XOR `types`, a
+ * package-declared) packs and the parity round-trip tests. A zod schema plus a
+ * handful of cross-field refinements that encode the source rule (§3): `type`
+ * XOR `types`, a
  * graphql-sourced lookup names its fragment target, SPARQL expands stay
  * single-hop, GraphQL fields reject property paths, and every disclosure `level`
  * names a declared canonical level. Two more refinements make the definition

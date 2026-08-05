@@ -1,9 +1,9 @@
 /**
  * Glob expansion for pack lookups (`react/component/*`, `Nav*`, trailing `.`).
  *
- * A glob expands against the pack's known entity
- * names; a non-glob passes through unchanged so callers can pipe the result
- * straight into the lookup batch.
+ * A glob expands against the pack's known entity names; a non-glob passes
+ * through unchanged, so callers can pipe the result straight into the lookup
+ * batch.
  */
 
 /** Whether a string contains glob meta-characters (`*` or a trailing `.`). */

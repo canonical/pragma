@@ -2,10 +2,10 @@
  * The `capabilities` orientation verb (noun `capabilities`, self-verb).
  *
  * Storeless read: it returns the grammar-derived tool catalog + conventions +
- * discovery sequence an agent reads at session start. It replaces the retired
- * old-shell `llm` tool — the live-context half of that tool (tier/channel/entity
- * counts) is deliberately DROPPED here (it would require a store boot at
- * orientation) and lives in `info` / `config show` / `sources status` instead.
+ * discovery sequence an agent reads at session start. Live context
+ * (tier/channel/entity counts) is deliberately NOT here — it would require a
+ * store boot at orientation — and lives in `info` / `config show` /
+ * `sources status` instead.
  *
  * `run` is a lazy thunk that dynamic-imports the catalog, the capability
  * registry barrel and the dispatch-time merge, so building the command tree

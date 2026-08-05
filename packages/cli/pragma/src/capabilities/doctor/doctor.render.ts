@@ -1,12 +1,13 @@
 /**
  * Formatters for `pragma doctor` — plain (chalk on a TTY), llm (Markdown), json.
  *
- * Three renderings of one check list, behind the kernel `Formatters` contract. The plain path is colored ONLY on a color-capable
- * TTY: it consults the shared {@link defaultStyle} seam (stdout `isTTY` AND a
- * non-zero chalk level), so a piped / redirected / CI run — where `supports-color`
- * can report a level with no TTY (`GITHUB_ACTIONS`, `FORCE_COLOR`) — renders the
- * plain form byte-for-byte instead of leaking ANSI into `doctor --format plain`.
- * Glyphs are plain constants tinted at render time; nothing is baked at load.
+ * Three renderings of one check list, behind the kernel `Formatters` contract.
+ * The plain path is colored ONLY on a color-capable TTY: it consults the shared
+ * {@link defaultStyle} seam (stdout `isTTY` AND a non-zero chalk level), so a
+ * piped / redirected / CI run — where `supports-color` can report a level with
+ * no TTY (`GITHUB_ACTIONS`, `FORCE_COLOR`) — renders the plain form
+ * byte-for-byte instead of leaking ANSI into `doctor --format plain`. Glyphs
+ * are plain constants tinted at render time; nothing is baked at load.
  */
 
 import chalk from "chalk";

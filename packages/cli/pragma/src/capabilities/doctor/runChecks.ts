@@ -3,9 +3,10 @@
  *
  * Checks are started eagerly (they run concurrently) and collected in
  * declaration order for a deterministic report. Each is guarded so a thrown
- * check becomes an attributable `fail` rather than aborting the whole run — the
- * same discipline throughout. Lazily imported by `doctor.verb.ts`, so
- * neither the checks nor `@canonical/harnesses` land on the fast path.
+ * check becomes an attributable `fail` rather than aborting the whole run: one
+ * broken check costs its own row, never the report. Lazily imported by
+ * `doctor.verb.ts`, so neither the checks nor `@canonical/harnesses` land on
+ * the fast path.
  */
 
 import { BIN_NAME } from "../../constants.js";

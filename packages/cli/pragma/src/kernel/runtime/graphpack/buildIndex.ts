@@ -3,10 +3,9 @@
  *
  * A few bulk SPARQL queries — types (which also yield the instance counts),
  * labels, descriptions and alternative names — joined in memory, rather than a
- * query per subject. Only
- * the last names a DOMAIN property, and it is read from the distribution's
- * declaration rather than spelled out here; see {@link resolveAltNamePredicate} for
- * the pack that binds no such prefix.
+ * query per subject. Only the last names a DOMAIN property, and it is read
+ * from the distribution's declaration rather than spelled out here; see
+ * {@link resolveAltNamePredicate} for the pack that binds no such prefix.
  *
  * Only typed named-node subjects are indexed (untyped subjects and blank-node
  * subjects are reachable via `graph query` but never listed). Each entity

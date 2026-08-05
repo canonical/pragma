@@ -3,11 +3,11 @@
  * `upgrade` (mutation) both consume.
  *
  * The version check and its `DIST_TAG_MAP`/`REGISTRY_TIMEOUT_MS` constants live
- * together, because the timeout and the tag map mean nothing apart from it. A single GET against the
- * registry's package document, a 3s timeout, and `undefined` on any failure
- * (offline, non-2xx, timeout, missing dist-tag) — so a caller degrades silently
- * rather than erroring. The whole request is preview-safe: it is a plain read
- * with no side effects.
+ * together, because the timeout and the tag map mean nothing apart from it. It
+ * is a single GET against the registry's package document, a 3s timeout, and
+ * `undefined` on any failure (offline, non-2xx, timeout, missing dist-tag) — so
+ * a caller degrades silently rather than erroring. The whole request is
+ * preview-safe: it is a plain read with no side effects.
  */
 
 import type { Channel } from "../../kernel/config/types.js";

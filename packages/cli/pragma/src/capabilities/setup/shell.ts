@@ -1,6 +1,6 @@
 /**
- * Shell detection + completion-script install paths (ported from the old
- * shell's `setup/helpers/detectShell` + `completionScripts` path helpers).
+ * Shell detection, and the completion-script install path for each supported
+ * shell.
  *
  * The covenant `setup completions` sub-verb carries NO flags, so shell selection
  * is detection-only: there is no flag to force a shell.

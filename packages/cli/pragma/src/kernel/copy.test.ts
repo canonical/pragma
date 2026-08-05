@@ -14,7 +14,8 @@
  * `pragma.conf.ts` is the file a fork edits, so it is content by definition;
  * `src/capabilities/**` still carries the hand-written `ds:` residue
  * (`block list`, `tier lookup`) plus runtime copy no doc publishes, and a guard
- * needing a 65-entry exemption list is a guard that mostly exempts. Two narrower rules reach it instead, at the bottom of this
+ * needing a 65-entry exemption list is a guard that mostly exempts. Two
+ * narrower rules reach it instead, at the bottom of this
  * file — *a command a user is told to run is never a literal*, stated once as
  * a POSITION ({@link COMMAND_POSITIONS}, read over raw source so it holds
  * whatever the scanner can see) and once as a SHAPE (a backticked command

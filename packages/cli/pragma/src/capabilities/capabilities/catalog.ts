@@ -5,8 +5,9 @@
  * surface, walks `mcpSurface.tools` (the sorted, covenant-conformant set), and
  * annotates each tool from the authored `TOOL_HINTS` table. The tool set, the
  * category counts, and the discovery-sample list are all DERIVED — never pinned
- * — so the catalog tracks the surface automatically (a hand-maintained catalog
- * hand-maintained list, which drifted to name retired tools).
+ * — so the catalog tracks the surface automatically, which a hand-maintained
+ * list does not: that is the failure mode where the catalog goes on naming
+ * retired tools.
  *
  * Pure + zod-free: it reads only `emitSurface` (itself fast-path-safe), so the
  * verb's storeless guarantee holds. The conventions + discovery strings are
@@ -78,8 +79,8 @@ export function liveTools(modules: readonly CapabilityModule[]): string[] {
  * Build the discovery sequence, deriving the sample list from the tools that
  * ACTUALLY exist (block/standard/modifier/token declare samples today), plus a
  * store-state pre-check so a cold agent is never sent into `*_sample` (or any
- * store read) blind — every
- * store read fails STORE_UNAVAILABLE until `sources_update` has built the store.
+ * store read) blind — every store read fails STORE_UNAVAILABLE until
+ * `sources_update` has built the store.
  */
 export function buildDiscoverySequence(
   tools: readonly string[],

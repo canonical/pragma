@@ -6,8 +6,9 @@
  * every field keeps its built-in default and `config show` reports honest
  * provenance. Modeled as a {@link Task} so the effects stay declarative and
  * testable. The banner goes to stderr — stdout belongs to command output
- * (`--format json`, MCP stdio) and must never be corrupted. Ported from the
- * first-run pipeline; runs before dispatch and tolerates every failure.
+ * (`--format json`, MCP stdio) and must never be corrupted. Runs before
+ * dispatch, and tolerates every failure: a first run that cannot write its
+ * config still answers the command the user typed.
  */
 
 import { dirname } from "node:path";
