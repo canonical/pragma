@@ -36,9 +36,9 @@
  */
 
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -255,6 +255,7 @@ describe("dry-run cannot exit 0 when the real run dies on a read (PROTECTED)", (
     // Driven through the PROCESS boundary, because the exit code is the claim:
     // `executeVerb` throws and it is `dispatch` that maps the throw to a code.
     mkdirSync(globalConfigPath(), { recursive: true });
+    const before = snapshotTree(xdg);
     const env = { XDG_CONFIG_HOME: xdg };
     const args = ["config", "set", "tier", "apps/lxd"];
 
@@ -272,7 +273,13 @@ describe("dry-run cannot exit 0 when the real run dies on a read (PROTECTED)", (
     expect(dry.exitCode).not.toBe(0);
     expect(dry.exitCode).toBe(real.exitCode);
     expect(dry.stdout).not.toContain("Dry run");
-    // Still no partial state: the directory is untouched and no file appeared.
-    expect(existsSync(join(globalConfigPath(), "config.json"))).toBe(false);
+    // Still no partial state: the directory is untouched and nothing appeared
+    // beside it. This used to read `existsSync(join(globalConfigPath(),
+    // "config.json"))` — a path nothing in the tree can create, since
+    // `globalConfigPath()` IS `<xdg>/<bin>/config.json` and `writeConfigField`
+    // writes to it directly (and here fails EISDIR). The assertion could not
+    // fail for any behaviour of the code under test.
+    expect(readdirSync(globalConfigPath())).toEqual([]);
+    expect(snapshotTree(xdg)).toEqual(before);
   });
 });
