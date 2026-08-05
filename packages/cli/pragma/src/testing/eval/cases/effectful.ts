@@ -43,7 +43,7 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     id: "tool-graph-query-counts-components",
     kind: "tool",
     input:
-      "graph_query (the real PR6 verb, closing graph-query-deferred) counts exactly 4 ds:Component individuals in the canonical graph.",
+      "graph_query counts exactly 4 ds:Component individuals in the canonical graph.",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
         const result = await mcp.callTool("graph_query", {

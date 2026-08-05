@@ -104,7 +104,9 @@ shape; don't write one and don't byte-compare against one.
 
 Two things this helper does NOT handle, and neither is a bug:
 - A mutating verb's plan-first preview differs in `meta` shape between a CLI
-  `--dry-run` and an unconfirmed MCP call by design (`plan-first-meta-differs`).
+  `--dry-run` and an unconfirmed MCP call by design: the MCP plan carries
+  `{ planOnly: true, confirmRequired: true }`, which tells an agent to repeat
+  the call with `confirm: true`, and a CLI user has no such second call to make.
 - `sample` verbs draw an independent random selection per call — never assert
   content equality on one, only structure.
 
