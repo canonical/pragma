@@ -15,13 +15,13 @@ import {
 } from "@canonical/summon-core";
 import { exec, flatMap, info, mkdir, sequence_, when } from "@canonical/task";
 import pkg from "../../package.json" with { type: "json" };
-
 import {
   createTemplateContext,
   type MonorepoAnswers,
   validateMonorepoName,
   validateRepository,
 } from "../shared/index.js";
+import { loadTemplateSync } from "../shared/loadTemplate.js";
 
 // =============================================================================
 // Template Paths
@@ -197,46 +197,55 @@ POST-SETUP:
       // Root config files
       template({
         source: templates.packageJson,
+        content: loadTemplateSync(templates.packageJson),
         dest: path.join(repoDir, "package.json"),
         vars: ctx,
       }),
       template({
         source: templates.lernaJson,
+        content: loadTemplateSync(templates.lernaJson),
         dest: path.join(repoDir, "lerna.json"),
         vars: ctx,
       }),
       template({
         source: templates.nxJson,
+        content: loadTemplateSync(templates.nxJson),
         dest: path.join(repoDir, "nx.json"),
         vars: ctx,
       }),
       template({
         source: templates.tsconfigJson,
+        content: loadTemplateSync(templates.tsconfigJson),
         dest: path.join(repoDir, "tsconfig.json"),
         vars: ctx,
       }),
       template({
         source: templates.biomeJson,
+        content: loadTemplateSync(templates.biomeJson),
         dest: path.join(repoDir, "biome.json"),
         vars: ctx,
       }),
       template({
         source: templates.gitignore,
+        content: loadTemplateSync(templates.gitignore),
         dest: path.join(repoDir, ".gitignore"),
         vars: ctx,
       }),
       template({
         source: templates.readme,
+        content: loadTemplateSync(templates.readme),
         dest: path.join(repoDir, "README.md"),
         vars: ctx,
       }),
       template({
         source: templates.license,
+        content: loadTemplateSync(templates.license),
         dest: path.join(repoDir, "LICENSE"),
         vars: ctx,
       }),
       template({
         source: templates.renovateJson,
+        content: loadTemplateSync(templates.renovateJson),
         dest: path.join(repoDir, "renovate.json"),
         vars: ctx,
       }),
@@ -244,6 +253,7 @@ POST-SETUP:
       // Scripts
       template({
         source: templates.publishStatus,
+        content: loadTemplateSync(templates.publishStatus),
         dest: path.join(repoDir, "scripts", "publish-status.ts"),
         vars: ctx,
       }),
@@ -251,6 +261,7 @@ POST-SETUP:
       // GitHub PR template
       template({
         source: templates.prTemplate,
+        content: loadTemplateSync(templates.prTemplate),
         dest: path.join(repoDir, ".github", "PULL_REQUEST_TEMPLATE.md"),
         vars: ctx,
       }),
@@ -258,16 +269,19 @@ POST-SETUP:
       // GitHub workflows
       template({
         source: templates.ciYml,
+        content: loadTemplateSync(templates.ciYml),
         dest: path.join(repoDir, ".github", "workflows", "ci.yml"),
         vars: ctx,
       }),
       template({
         source: templates.prLintYml,
+        content: loadTemplateSync(templates.prLintYml),
         dest: path.join(repoDir, ".github", "workflows", "pr-lint.yml"),
         vars: ctx,
       }),
       template({
         source: templates.tagYml,
+        content: loadTemplateSync(templates.tagYml),
         dest: path.join(repoDir, ".github", "workflows", "tag.yml"),
         vars: ctx,
       }),
@@ -275,6 +289,7 @@ POST-SETUP:
       // GitHub actions
       template({
         source: templates.setupEnv,
+        content: loadTemplateSync(templates.setupEnv),
         dest: path.join(
           repoDir,
           ".github",
@@ -286,6 +301,7 @@ POST-SETUP:
       }),
       template({
         source: templates.setupGit,
+        content: loadTemplateSync(templates.setupGit),
         dest: path.join(
           repoDir,
           ".github",
@@ -297,6 +313,7 @@ POST-SETUP:
       }),
       template({
         source: templates.lernaVersionAction,
+        content: loadTemplateSync(templates.lernaVersionAction),
         dest: path.join(
           repoDir,
           ".github",
@@ -308,6 +325,7 @@ POST-SETUP:
       }),
       template({
         source: templates.versionSh,
+        content: loadTemplateSync(templates.versionSh),
         dest: path.join(
           repoDir,
           ".github",
@@ -319,6 +337,7 @@ POST-SETUP:
       }),
       template({
         source: templates.gitCommitSh,
+        content: loadTemplateSync(templates.gitCommitSh),
         dest: path.join(
           repoDir,
           ".github",
