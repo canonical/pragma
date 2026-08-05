@@ -27,12 +27,30 @@ import { PragmaError } from "../../error/PragmaError.js";
 import { activeExpands, activeFields } from "./../sparql/buildLookupQuery.js";
 import type {
   PackExpand,
+  PackExpandSelect,
   PackField,
   PackLookup,
   PackNestedExpand,
 } from "../types.js";
-import { isNestedExpand } from "../types.js";
 import { MAX_PAGE_SIZE, pluralize, stripVerbPrefix } from "./nameMap.js";
+
+/**
+ * Whether an expand-select entry is a nested expand (vs a plain field).
+ *
+ * Lives here rather than in `../types.js` because this file is its only
+ * consumer (cs:code.function.location), and because a `types.ts` holds types
+ * (cs:code.types.file) — the same move `kernel/packs/storyOrigin.ts` records
+ * for the story-origin constructor. It was the last value export on
+ * `kernel/packs/types.ts`, so `capabilities/lazy.test.ts`'s rationale for the
+ * fast-path graph — that the file is types only, and therefore erasable — is
+ * true now rather than aspirational.
+ *
+ * @param entry - One entry of an expand's `select`.
+ * @returns Whether it declares a nested expand.
+ */
+function isNestedExpand(entry: PackExpandSelect): entry is PackNestedExpand {
+  return "relation" in entry;
+}
 
 type GraphQLSchema = import("graphql").GraphQLSchema;
 

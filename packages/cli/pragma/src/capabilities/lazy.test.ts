@@ -168,11 +168,16 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // FURTHER onto this graph — the absence of more edges, not the absence of
     // any evaluation. Say it that way, because two of them do evaluate: the
     // conf is a literal and `kernel/config/types.ts` freezes a three-element
-    // `CHANNELS` tuple. `kernel/packs/types.ts` used to be a third — it
-    // declared one pure helper — and is now types only, its constructor having
-    // moved to `kernel/packs/storyOrigin.ts` so the type file stays erasable.
-    // That is the property this module actually depends on, and the `pragma.
-    // conf.ts` case above states it the same way.
+    // `CHANNELS` tuple. `kernel/packs/types.ts` used to be a third and is now
+    // types only: its story-origin constructor moved to
+    // `kernel/packs/storyOrigin.ts`, and the `isNestedExpand` predicate that
+    // outlived that move — leaving the file neither types-only nor erasable
+    // while this comment already claimed both — moved down to
+    // `packs/graphql/buildLookupDocument.ts`, its one consumer. The file is
+    // erasable now rather than aspirationally. NOTE what the loop below can
+    // and cannot see: it inspects IMPORT STATEMENTS, so it would not have
+    // caught either helper. The claim is checked by reading the file, not by
+    // the assertion, which is why it is written out here.
     for (const file of graph.filter((f) => f !== relative(pkgRoot, entry))) {
       expect(readFileSync(resolve(pkgRoot, file), "utf-8"), file).not.toMatch(
         /^import (?!type\b)/m,

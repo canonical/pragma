@@ -120,13 +120,6 @@ export interface PackNestedExpand {
 /** One entry of an expand's `select`: a child field or a nested expand. */
 export type PackExpandSelect = PackExpandField | PackNestedExpand;
 
-/** Whether an expand-select entry is a nested expand (vs a plain field). */
-export function isNestedExpand(
-  entry: PackExpandSelect,
-): entry is PackNestedExpand {
-  return "relation" in entry;
-}
-
 /**
  * A multi-valued nested projection: `entity → relation → child nodes`, each
  * child projected to a small record. Resolved with a generated, injection-safe
