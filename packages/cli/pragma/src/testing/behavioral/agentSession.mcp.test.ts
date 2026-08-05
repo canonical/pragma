@@ -8,11 +8,12 @@
  * the live surface for a `categories`-shaped verb (today only `standard`
  * declares one; the test degrades to a no-op if none exists).
  *
- * B2 (R2 — the live surface): `graph query` (tool `graph_query`) is now live as
- * of PR6, with its own SELECT/ASK/CONSTRUCT + parity coverage in
- * `capabilities/graph/query.test.ts`. B2 keeps exercising the escape hatch
- * through `PragmaRuntime.query.sparql` directly — the exact seam the live verb
- * delegates to (see PARITY_GAPS `graph-query-deferred`).
+ * B2 (R2 — the live surface): `graph query` (tool `graph_query`) is live, with
+ * its own SELECT/ASK/CONSTRUCT + parity coverage in
+ * `capabilities/graph/query.test.ts`. B2 deliberately keeps exercising the
+ * escape hatch through `PragmaRuntime.query.sparql` directly — the exact seam
+ * the live verb delegates to — rather than re-driving through the tool, so a
+ * break in the facade is attributed to the facade.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

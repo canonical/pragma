@@ -4,7 +4,10 @@
  * Exercises SELECT / ASK / CONSTRUCT with deterministic results (4 canonical
  * `ds:Component`s, COUNT=4), the syntax-error → INVALID_INPUT + `ontology_list`
  * recovery, the `needsStore` boot, and CLI-json ≡ MCP `graph_query` parity.
- * Closes the PARITY_GAP `graph-query-deferred`.
+ *
+ * The INVALID_INPUT classification is the deliberate one: a malformed query is
+ * the caller's error (exit 2, with an `ontology list` recovery), not a store
+ * failure.
  */
 
 import type { QueryResult } from "@canonical/ke";

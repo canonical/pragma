@@ -8,13 +8,13 @@
  *
  * 1. `<noun>_lookup` on a SINGLE or ALL-unknown batch FAILS the call
  *    (`ok:false, error.code==="ENTITY_NOT_FOUND"`) — `makeLookupRun` throws on
- *    a total miss; only a PARTIAL batch reports the miss while staying
- *    `ok:true` (that shape is B1's job, `agentSession.mcp.test.ts`). See
- *    PARITY_GAPS `single-lookup-miss-fails-batch-partial-reports`.
- * 2. A filtered list narrowed to zero rows is `{ok:true, data:[], meta:{}}` —
- *    there is no `meta.count` field on any read envelope (`dispatch.ts`
- *    always renders reads with `meta:{}`). See PARITY_GAPS
- *    `read-meta-always-empty`.
+ *    a TOTAL miss. Only a PARTIAL batch (at least one name resolves) reports
+ *    the miss in `data.errors` while staying `ok:true` with the hits in
+ *    `data.results`; that shape is B1's job, `agentSession.mcp.test.ts`.
+ * 2. A filtered list narrowed to zero rows is `{ok:true, data:[], meta:{}}`.
+ *    There is no `meta.count` or `meta.total` on ANY read envelope —
+ *    `dispatch.ts#executeVerb`'s read branch always renders `meta: {}` — so
+ *    the only way to know a list is empty is `data.length === 0`.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

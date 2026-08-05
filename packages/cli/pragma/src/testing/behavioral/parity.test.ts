@@ -106,9 +106,12 @@ describe("plan-first is uniform across surfaces (A6)", () => {
 
     // Same described effects...
     expect(cliEnvelope.data.plan).toEqual(mcpEnvelope.data.plan);
-    // ...under intentionally DIFFERENT meta shapes (PARITY_GAPS: plan-first-meta-differs) —
-    // a CLI --dry-run and an unconfirmed MCP call are different REQUESTS (one
-    // explicit, one implicit), so the envelope names the mode differently.
+    // ...under intentionally DIFFERENT meta shapes: `{dryRun:true}` from
+    // `dispatch.ts#renderPlan` vs `{planOnly:true,confirmRequired:true}` from
+    // `registerVerb.ts#mutateHandler`. A CLI --dry-run and an unconfirmed MCP
+    // call are different REQUESTS — one an explicit preview, one an implicit
+    // not-yet-confirmed call — so the envelope names the mode differently
+    // rather than forcing one vocabulary onto both.
     expect(cliEnvelope.meta).toEqual({ dryRun: true });
     expect(mcpEnvelope.meta).toEqual({ planOnly: true, confirmRequired: true });
     expect(existsSync(touchPath(name))).toBe(false);
@@ -147,10 +150,12 @@ describe("plan-first is uniform across surfaces (A6)", () => {
  * `liveReadSurface.ts` (never a noun copied from the plan); also sweeps any
  * extra list-shaped verb (e.g. `categories`) and `sample`, found the same way.
  *
- * RETIRES the old byte-exact `condensed === fmt.llm(...)` parity (R4 — v2 has
- * no condensed MCP shape, PARITY_GAPS `no-condensed-mcp-envelope`): this is
- * structural `--format json` deep-equality via `assertCliMcpParity`, exactly
- * like A5/A6 above — B5 is that same proof, just swept over every read noun.
+ * Parity is asserted as structural `--format json` deep-equality via
+ * `assertCliMcpParity`, exactly like A5/A6 above — B5 is that same proof, swept
+ * over every read noun. It is structural rather than byte-exact because an MCP
+ * tool result IS the CLI `--format json` envelope: both are built by the same
+ * `successEnvelope`/`errorEnvelope` in `kernel/render/envelope.ts`, so there is
+ * no separate condensed MCP shape for a byte comparison to be about.
  */
 describe("read-noun parity — every list/lookup/extra verb (B5)", () => {
   let fixture: FixtureGraph;

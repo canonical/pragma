@@ -14,10 +14,10 @@
  *
  * The per-field comparison is CONTENT-AGNOSTIC (key-set growth, not a named
  * field) so the sweep needs no per-noun knowledge of which field is "the deep
- * one" — canonical `digest`->`standard` rename (PARITY_GAPS
- * `digest-renamed-standard`) is exercised implicitly: gating is by canonical
- * index, and the sweep never names a level string other than the three
- * canonical ones.
+ * one". That is also what keeps it honest about the level NAMES: gating is by
+ * canonical INDEX over `constants.DETAIL_LEVELS` (`summary < standard <
+ * detailed`), not by a declared level name matching a fixed string, and the
+ * sweep never names a level outside those three.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

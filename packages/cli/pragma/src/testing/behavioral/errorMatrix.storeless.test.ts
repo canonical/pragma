@@ -10,9 +10,12 @@
  * an MCP-only recovery) across plain/llm/json, then grounds it with one REAL
  * spawn (`skill lookup <unknown>`) so the matrix isn't purely synthetic.
  *
- * The `error.filters` shape has no LIVE trigger among PR3's read nouns yet (see
- * PARITY_GAPS `no-empty-hook-on-free-filter`) — swept here with a directly
- * constructed error so the render layer's handling of it is proven regardless.
+ * The `error.filters` shape has no LIVE trigger among the read nouns: a
+ * zero-row list — narrowed by a declared filter, by an unmatched `--search`, or
+ * simply empty — is a calm `{ok:true, data:[], meta:{}}` at exit 0 with the
+ * story's empty message, never a typed EMPTY_RESULTS error. It is swept here
+ * with a directly constructed error so the render layer's handling of it is
+ * proven regardless.
  */
 
 import { mkdtempSync } from "node:fs";

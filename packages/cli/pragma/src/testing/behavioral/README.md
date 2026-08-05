@@ -40,12 +40,11 @@ the emitted set legitimately grows PR-by-PR.
 | `agentSession.mcp.test.ts` | A multi-step agent MCP session (list → pick → lookup) + the SPARQL escape hatch. |
 | `mcpSurface.test.ts` | Every MCP tool the live catalog exposes is callable and well-formed — the "surface ⊆ covenant, exercised" proof. |
 | `disclosure.test.ts` | The cross-noun disclosure sweep (mechanism itself is PR3's/kernel's protected unit test — this only sweeps the noun SET). |
-| `journeys.cli.test.ts` | The `block list` tier-chain/channel journey (the one hand-written verb). |
+| `journeys.cli.test.ts` | The `block list` CLI journey — real dispatch, and the pin that no config narrows it. |
 | `completion.test.ts` | The THIN main-line `__complete` candidate contract (§6 — see "Completion" below). |
 
-Plus `testing/eval/` (the eval harness + seed cases) and `testing/PARITY_GAPS.ts`
-(the consolidated accepted-divergence ledger) — siblings of this directory,
-same ownership.
+Plus `testing/eval/` (the eval harness + seed cases) — a sibling of this
+directory, same ownership.
 
 ## The shared fixture graph
 
@@ -98,13 +97,12 @@ await assertCliMcpParity({
 });
 ```
 
-v2's MCP envelope IS the CLI `--format json` envelope — this is structural
-deep-equality, not the old condensed-shape byte comparison. Don't reproduce a
-`condensed`/token-count MCP shape; there isn't one (`PARITY_GAPS`
-`no-condensed-mcp-envelope`).
+An MCP tool result IS the CLI `--format json` envelope — both are built by the
+same `successEnvelope`/`errorEnvelope` in `kernel/render/envelope.ts` — so this
+is structural deep-equality. There is no separate condensed/token-count MCP
+shape; don't write one and don't byte-compare against one.
 
-Two things this helper does NOT handle — check `PARITY_GAPS.ts` before
-assuming a mismatch is a bug:
+Two things this helper does NOT handle, and neither is a bug:
 - A mutating verb's plan-first preview differs in `meta` shape between a CLI
   `--dry-run` and an unconfirmed MCP call by design (`plan-first-meta-differs`).
 - `sample` verbs draw an independent random selection per call — never assert
@@ -125,9 +123,12 @@ assuming a mismatch is a bug:
    file (`EvalCase[]`) under `testing/eval/cases/`, mirroring
    `cases/readNouns.ts`, and wire it into `eval.test.ts`/`report.ts`'s
    `allSeedCases` concat.
-4. **Append to `PARITY_GAPS.ts`**, don't start a second ledger, when you find
-   (or design in) an intentional divergence from a naive parity/behavior
-   expectation.
+4. **State an intentional divergence where it is tested.** When a behaviour
+   deliberately differs from what a naive parity expectation would predict, say
+   so in the docblock of the case that pins it, in one sentence a reader can
+   check against the code beneath it. Do not start a ledger: a central list of
+   ids goes stale, and a citation of an id is a pointer the reader has to
+   follow.
 5. **Keep the spawn layer thin.** Only reach for `runCli` when the PROCESS
    BOUNDARY itself is what's under test (first-run, `--version`, real exit
    codes, `mcp` serve boot). Everything else: `executeVerb`/`projectCli`/
@@ -142,11 +143,10 @@ assuming a mismatch is a bug:
   query`)** — `C2`/`C3`/`C4` — **BUILT**. Each new verb ships its own
   in-diff coverage: `config/field.test.ts`, `info/info.test.ts`,
   `doctor/doctor.test.ts`, `upgrade/upgrade.test.ts`, `setup/setup.test.ts`,
-  `graph/query.test.ts`. `graph query` (tool `graph_query`) is now LIVE
-  (`PARITY_GAPS` `graph-query-deferred` reworded to record its two residual
-  divergences); B2's SPARQL-escape-hatch coverage continues to exercise the
-  shared `PragmaRuntime.query.sparql` facade the live verb delegates to. Future
-  work may re-drive B2 through the tool the way B1-B6 do for the read nouns.
+  `graph/query.test.ts`. `graph query` (tool `graph_query`) is LIVE; B2's
+  SPARQL-escape-hatch coverage continues to exercise the shared
+  `PragmaRuntime.query.sparql` facade the live verb delegates to. Future work
+  may re-drive B2 through the tool the way B1-B6 do for the read nouns.
 - **PR7 (capabilities catalog, MCP prompts, budget activation)** — `C5`. The
   eval harness (`testing/eval/`) is seeded with 14 representative cases across
   all 4 kinds (tool/content/disclosure/prompt) — populate the full matrix on
@@ -157,8 +157,9 @@ assuming a mismatch is a bug:
 - **PR8 (completion merge, PR-C)** — `R6`. This package's main-line
   `kernel/completion/complete.ts` is intentionally minimal; PR-C's fuller
   engine (shell drivers, script goldens, rank/parse/resolve) lands at PR8.
-  `completion.test.ts` documents two gaps the fuller engine may want to close
-  (verb-level candidates aren't sorted; there's no per-verb flag completion at
-  all today) — see `PARITY_GAPS` `completion-verb-level-not-sorted`. Don't
-  double-port the rich suite; this file's thin candidate-format/set contract
-  is all PR4 owns here.
+  `completion.test.ts` documents two gaps the fuller engine may want to close:
+  verb-level candidates are in AUTHORING order rather than sorted (noun-level
+  and entity-param candidates ARE sorted), and there is no per-verb flag
+  completion at all — a `-`-prefixed partial always resolves against the global
+  flags. Don't double-port the rich suite; this file's thin
+  candidate-format/set contract is all PR4 owns here.

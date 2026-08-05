@@ -7,9 +7,11 @@
  * while still reporting store health. `run` lazily imports the orchestrator, so
  * building the tree pulls neither the checks nor `@canonical/harnesses`.
  *
- * Exit-code decision: doctor always exits 0 — failures live in the `{ failed }`
- * envelope (agents read the data; CI greps it). See PARITY_GAP
- * `doctor-exit-zero-with-failures`.
+ * Exit-code decision: doctor always exits 0, even when checks fail — failures
+ * live in the `{ failed }` count of the envelope, which agents read and CI
+ * greps. The dispatcher maps only `PragmaError` codes to a non-zero exit, and
+ * doctor raises none, so this follows from the verb rather than being enforced
+ * separately.
  */
 
 import { BIN_NAME } from "../../constants.js";
