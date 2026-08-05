@@ -24,6 +24,7 @@ import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
 import { App } from "../components/App.js";
+import { applyDefaults } from "./applyDefaults.js";
 import type { CommandEntry, OptionInfo } from "./types.js";
 
 // =============================================================================
@@ -260,22 +261,6 @@ const hasAllRequiredAnswers = (
     }
   }
   return true;
-};
-
-/**
- * Apply defaults for prompts that don't have answers.
- */
-const applyDefaults = (
-  prompts: GeneratorDefinition["prompts"],
-  answers: Record<string, unknown>,
-): Record<string, unknown> => {
-  const result = { ...answers };
-  for (const prompt of prompts) {
-    if (!(prompt.name in result) && prompt.default !== undefined) {
-      result[prompt.name] = prompt.default;
-    }
-  }
-  return result;
 };
 
 /**

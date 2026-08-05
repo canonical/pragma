@@ -18,13 +18,14 @@
  * that catches the failure this exists for: a bin deriving the stamp, the
  * answers, or the run options itself and drifting.
  *
- * Each consumer's case is a REPRODUCTION of its own action handler's wiring —
- * summon's of `registerFromBarrel`'s defaulting, pragma's of `runCreate`'s
- * runner options driven through `executeVerb` — because both handlers are
- * bound to their own generator sets. A reproduction is only worth running while
- * it stays faithful in the parts each bin derives for itself, so each case
- * names the part it is reproducing and asserts the stamp directly rather than
- * only diffing paths. A case that called this package's own `execute` and
+ * Each consumer's case reproduces its own action handler's wiring — summon's
+ * of `registerFromBarrel`'s run options around the very `applyDefaults` that
+ * handler calls, pragma's of `runCreate`'s runner options driven through
+ * `executeVerb` — because both handlers are bound to their own generator sets.
+ * A reproduction is only worth running while it stays faithful in the parts
+ * each bin derives for itself, so each case names the part it is reproducing,
+ * imports rather than copies what it can, and asserts the stamp directly
+ * rather than only diffing paths. A case that called this package's own `execute` and
  * `runGeneratorTask` and nothing else would be a third copy of the test below
  * it, and would go green through any consumer-side regression.
  *

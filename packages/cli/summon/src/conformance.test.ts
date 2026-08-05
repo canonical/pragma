@@ -9,15 +9,20 @@
  *
  * The composition below is the one `registerFromBarrel`'s action handler
  * performs, and it is not the same as pragma's: this bin calls
- * `generator.generate` DIRECTLY over answers it defaulted itself, where pragma
- * goes through summon-core's `execute`. Two paths into one core is exactly the
- * shape a stamp or answer divergence hides in, so the reproduction here is
- * deliberate rather than a shortcut through `execute`.
+ * `generator.generate` DIRECTLY over answers `applyDefaults` filled in, where
+ * pragma drives `executeVerb` over a `VerbSpec` with the stamp on
+ * `shapeEffect` (`packages/cli/pragma/src/capabilities/create/
+ * byteEquality.test.ts` owns that one). Two paths into one core is exactly the
+ * shape a stamp or answer divergence hides in.
  *
- * Both compositions are checked against the SAME written-down `CONFORMANCE_TREE`
- * the core ships, so a failure names which composition moved rather than only
- * that the two disagree — and neither can pass by agreeing with the other on a
- * tree they both got wrong.
+ * The defaulting is IMPORTED from `registration/applyDefaults.ts` rather than
+ * reproduced: a copy here would stay green through the drift in the production
+ * copy that this suite exists to catch on the answer side.
+ *
+ * There is deliberately no case driving summon-core's own `execute` here. The
+ * core runs that composition itself, in its own third-consumer case, and a copy
+ * of it in this package would exercise no code this package owns — the kit's
+ * index says so in as many words.
  */
 
 import { mkdtempSync } from "node:fs";
@@ -25,11 +30,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   answerPromptWithDefaults,
-  autoPrompt,
   createGeneratorStamp,
   createStampOnEffectStart,
-  execute,
-  type GeneratorDefinition,
   runGeneratorTask,
 } from "@canonical/summon-core";
 import {
@@ -40,36 +42,28 @@ import {
   snapshotTree,
 } from "@canonical/summon-core/testing";
 import { describe, expect, it } from "vitest";
+import { applyDefaults } from "./registration/applyDefaults.js";
 
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "summon-conf-"));
 
 /**
- * Fill in a generator's prompt defaults for answers the caller did not give.
+ * The summon bin's composition: defaults → generate → runGeneratorTask.
  *
- * A verbatim reproduction of `registerFromBarrel`'s `applyDefaults`, which is a
- * module-private helper of the action handler. Reproduced rather than exported:
- * the point of the case is that the bin's OWN defaulting agrees with
- * summon-core's, so importing the core's would assume what is under test.
+ * `withNotes` is deliberately WITHHELD from the supplied answers. Its value in
+ * `CONFORMANCE_ANSWERS` is also its prompt default and it gates a whole file,
+ * so the shared tree only comes out right if `applyDefaults` puts it back —
+ * which is what makes this case measure the bin's defaulting instead of
+ * passing straight through it. The other two answers are supplied, as a real
+ * invocation supplies its flags.
+ *
+ * @returns The produced tree, keyed by relative POSIX path.
+ * @note Impure — writes a fresh temp tree and reads it back.
  */
-function applyDefaults(
-  prompts: GeneratorDefinition["prompts"],
-  answers: Record<string, unknown>,
-): Record<string, unknown> {
-  const result = { ...answers };
-  for (const prompt of prompts) {
-    if (!(prompt.name in result) && prompt.default !== undefined) {
-      result[prompt.name] = prompt.default;
-    }
-  }
-  return result;
-}
-
-/** The summon bin's composition: defaults → generate → runGeneratorTask. */
 async function produceViaSummonBin(): Promise<Map<string, string>> {
   const dir = freshCwd();
-  const answers = applyDefaults(conformanceGenerator.prompts, {
-    ...CONFORMANCE_ANSWERS,
-  });
+  const { withNotes: _withheld, ...supplied } = CONFORMANCE_ANSWERS;
+  const answers = applyDefaults(conformanceGenerator.prompts, supplied);
+  expect(answers).toEqual({ ...CONFORMANCE_ANSWERS });
   await runGeneratorTask(conformanceGenerator.generate(answers), {
     cwd: dir,
     promptHandler: answerPromptWithDefaults,
@@ -81,25 +75,23 @@ async function produceViaSummonBin(): Promise<Map<string, string>> {
   return snapshotTree(dir);
 }
 
-/** The `execute` composition — the one pragma's kernel drives. */
-async function produceViaExecute(): Promise<Map<string, string>> {
-  const dir = freshCwd();
-  const answers = { ...CONFORMANCE_ANSWERS };
-  await runGeneratorTask(
-    execute(conformanceGenerator, {
-      prompt: autoPrompt(answers),
-      params: answers,
-    }),
-    {
-      cwd: dir,
-      promptHandler: autoPrompt(answers),
-      onEffectStart: createStampOnEffectStart(
-        createGeneratorStamp(conformanceGenerator),
-      ),
-      onLog: () => {},
-    },
-  );
-  return snapshotTree(dir);
+/**
+ * One produced file's bytes, or a throw naming the path that is absent.
+ *
+ * The tree is this test's own output, not an external payload, so a `?? ""`
+ * here would report a content mismatch against an empty string where the real
+ * failure is a seam that stopped writing the file (cs:code.fallback.defensive).
+ *
+ * @param tree - The snapshot `produceViaSummonBin` returned.
+ * @param path - The POSIX-relative path `CONFORMANCE_TREE` declares.
+ * @returns The file's bytes as text.
+ */
+function readProduced(tree: Map<string, string>, path: string): string {
+  const source = tree.get(path);
+  if (source === undefined) {
+    throw new Error(`the produced tree is missing ${path}`);
+  }
+  return source;
 }
 
 describe("byte-equality conformance — the summon bin's seam (PROTECTED)", () => {
@@ -108,25 +100,19 @@ describe("byte-equality conformance — the summon bin's seam (PROTECTED)", () =
     expect(() => assertByteEqual(viaBin, CONFORMANCE_TREE)).not.toThrow();
   });
 
-  it("agrees with the `execute` composition pragma's kernel drives", async () => {
-    const viaExecute = await produceViaExecute();
-    expect(() => assertByteEqual(viaExecute, CONFORMANCE_TREE)).not.toThrow();
-  });
-
   it("stamps with the generator's DISPLAY name, and leaves JSON unstamped", async () => {
     // The stamp identity is the one thing a bin can derive for itself, so it is
     // the one thing worth naming rather than only diffing. JSON has no comment
     // syntax, so a bin that stamps unconditionally diverges on that file alone.
     const tree = await produceViaSummonBin();
-    const source = tree.get("src/widget-factory/index.ts") ?? "";
-    expect(source.split("\n").at(0)).toBe(
+    expect(readProduced(tree, "src/widget-factory/index.ts").split("\n").at(0)).toBe(
       "// Generated by @canonical/summon-core:conformance v1.0.0",
     );
-    expect(tree.get("src/widget-factory/NOTES.md")?.split("\n").at(0)).toBe(
+    expect(readProduced(tree, "src/widget-factory/NOTES.md").split("\n").at(0)).toBe(
       "<!-- Generated by @canonical/summon-core:conformance v1.0.0 -->",
     );
-    expect(tree.get("src/widget-factory/config.json")?.startsWith("{")).toBe(
-      true,
-    );
+    expect(
+      readProduced(tree, "src/widget-factory/config.json").startsWith("{"),
+    ).toBe(true);
   });
 });
