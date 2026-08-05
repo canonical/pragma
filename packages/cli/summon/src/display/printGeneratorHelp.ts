@@ -6,10 +6,7 @@
  * @note Impure — writes to stdout, loads generators via dynamic import.
  */
 
-import {
-  formatLlmHelp as formatGeneratorLlmHelp,
-  type GeneratorNode,
-} from "@canonical/summon-core";
+import { formatLlmHelp, type GeneratorNode } from "@canonical/summon-core";
 import { toKebabCase } from "@canonical/utils";
 import chalk from "chalk";
 import { loadGenerator } from "../discovery/index.js";
@@ -29,7 +26,7 @@ export default async function printGeneratorHelp(
 
     // LLM mode: output structured markdown help and return
     if (llmMode) {
-      process.stdout.write(formatGeneratorLlmHelp(generator, commandPath));
+      process.stdout.write(formatLlmHelp(generator, commandPath));
       return;
     }
 
