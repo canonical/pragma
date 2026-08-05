@@ -2,11 +2,9 @@ import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { BIN_NAME } from "../../../constants.js";
-import {
-  emitScripts,
-  indexCompletionEnv,
-  runComplete,
-} from "../../../kernel/completion/index.js";
+import { runComplete } from "../../../kernel/completion/complete.js";
+import { emitScripts } from "../../../kernel/completion/emitScripts.js";
+import { indexCompletionEnv } from "../../../kernel/completion/entitySource.js";
 import { capabilities } from "../../index.js";
 import { detectCompletions } from "../../setup/operations/setupCompletions.js";
 import { activationHint, type ShellId } from "../../setup/shell.js";

@@ -335,11 +335,35 @@ const has = (graph: Set<string>, fragment: string): boolean =>
   [...graph].some((file) => file.includes(fragment));
 
 describe("storeless guarantee (PROTECTED)", () => {
+  /**
+   * The roots of every storeless completion path. FIVE, where this list used
+   * to name four — and the substitution is the point, because two of the old
+   * four were deleted and the tempting repair was to drop them and walk two.
+   *
+   * `completion/index.ts` (a barrel with one importer that took 3 of its 26
+   * names) was the WIDEST root here at 28 files, and
+   * `capabilities/meta/complete.verb.ts` was a `hidden: true` spec `bin.ts`
+   * intercepted before `buildProgram` ever ran. Both are gone. Measured on the
+   * commit that removed them: the barrel's graph minus itself is exactly 27
+   * files and the meta verb's is 8 (7 of them shared), and the union of
+   * `complete` + `emitScripts` + `entitySource` + `model` + `bin` contains
+   * every one of those 34 with `bin.ts` left over. So this walks the identical
+   * file set through MORE named roots, and the root count went 4 → 5 rather
+   * than 4 → 2.
+   *
+   * `staticImportGraph` returns an EMPTY set for a path that does not exist,
+   * which is why a deleted entry must be replaced rather than removed: a stale
+   * entry does not fail loudly here, it silently stops constraining anything
+   * while the `configModules` equality below reports a confusing `[] !== [...]`.
+   * `bin.ts` is the process entry itself, so the argv fast path that dispatches
+   * `__complete` is now walked from the outside as well as the inside.
+   */
   const entries = [
-    resolve(here, "index.ts"),
     resolve(here, "complete.ts"),
     resolve(here, "emitScripts.ts"),
-    resolve(here, "../../capabilities/meta/complete.verb.ts"),
+    resolve(here, "entitySource.ts"),
+    resolve(here, "model.ts"),
+    resolve(here, "../../bin.ts"),
   ];
 
   it("the completion import graph never reaches boot, config, store, or zod", () => {
