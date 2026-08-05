@@ -196,6 +196,36 @@ describe("graphpack carried stories (PROTECTED)", () => {
     expect(packIsComplete(dir)).toBe(false);
   });
 
+  it.each([
+    { label: "an object", body: '{"not":"an array"}' },
+    { label: "a bare string", body: '"stories"' },
+    { label: "a truncated array", body: "[{" },
+  ])("a stories.json that is $label makes the pack INCOMPLETE, so buildPack rebuilds", async ({
+    body,
+  }) => {
+    // Requires hand-corrupting the cache, which is exactly what a torn write
+    // or a half-evicted directory produces. The old gate was `size > 0`, and
+    // every body here is non-empty: the pack was REUSED, `resolveSources`
+    // booted it, `parseRecords` returned `[]` for the non-array, and every
+    // package-declared noun silently disappeared while `sources update`
+    // reported success.
+    const inputs = [{ path: "corrupt.ttl", content: TTL }];
+    const first = await build(inputs, [STORY]);
+    expect(packIsComplete(first.dir)).toBe(true);
+
+    writeFileSync(join(first.dir, STORIES_FILE), body);
+    expect(packIsComplete(first.dir)).toBe(false);
+
+    // The assertion that matters is REUSE, not the boolean: a rebuild is what
+    // restores the stories the content hash claims.
+    const second = await build(inputs, [STORY]);
+    expect(second.reused).toBe(false);
+    expect(second.dir).toBe(first.dir);
+    expect(
+      JSON.parse(readFileSync(join(second.dir, STORIES_FILE), "utf-8")),
+    ).toEqual([{ source: STORY.path, content: STORY.content }]);
+  });
+
   it("reads only records shaped { source, content } from a pack directory", async () => {
     // `stories.json` lives in a user-writable cache. An element that is not a
     // record used to be cast straight through and reported as

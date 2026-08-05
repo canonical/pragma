@@ -96,7 +96,22 @@ export function readManifest(dir: string): Manifest | undefined {
  * would silently drop every package-declared noun. Requiring all four present +
  * non-empty makes `buildPack` rebuild a torn pack and makes the boot decision
  * surface STORE_UNAVAILABLE (the ordinary "not built" recovery) instead of a
- * "please report this" crash. */
+ * "please report this" crash.
+ *
+ * `stories.json` is the one whose SHAPE is load-bearing, and size alone did not
+ * cover it. `stories.ts#parseRecords` returns `[]` for anything that is not a
+ * JSON array, so a non-empty non-array — `{}`, `"x"`, a truncated `[{` — passed
+ * this gate, `buildPack` REUSED the directory, `resolveSources` booted it, every
+ * package-declared noun silently disappeared, and `sources update` reported
+ * success. So it is READ and PARSED here and must be an array.
+ *
+ * MEASURED, because this runs on the boot decision, which the command tree
+ * reaches on every dispatch. Against the embedded pack's `stories.json` (2
+ * bytes, `[]`): `statSync().size` 0.0039 ms, read+`JSON.parse`+`Array.isArray`
+ * 0.0042 ms — 0.3 µs. Against a synthetic three-pack payload (4.7 KB, 12
+ * records): 0.0035 ms vs 0.0133 ms — 10 µs, against a warm-store budget of
+ * 500 ms. A first-byte probe (`raw.trimStart()[0] === "["`) would have cost
+ * 0.0053 ms; the difference does not justify accepting `[{` as complete. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
   for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, STORIES_FILE]) {
@@ -105,6 +120,15 @@ export function packIsComplete(dir: string): boolean {
     } catch {
       return false;
     }
+  }
+  try {
+    if (
+      !Array.isArray(JSON.parse(readFileSync(join(dir, STORIES_FILE), "utf-8")))
+    ) {
+      return false;
+    }
+  } catch {
+    return false;
   }
   return true;
 }
