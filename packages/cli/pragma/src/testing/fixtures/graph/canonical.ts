@@ -6,9 +6,12 @@
  * `block` content-parity + `ontology`/`graph inspect` tests are protected
  * against) byte-for-byte and EXTENDS it with the entities the other bundled
  * read nouns (`standard`, `modifier`, `token`, `tier`) need, plus two more
- * blocks that exercise tier-chain inheritance and channel visibility (PR3's
- * hand-written `block list`, Risk5). Because `BLOCK_TTL` is reused verbatim,
- * Button/Modal content can never drift between PR3's fixture and this one.
+ * blocks — one in a child tier, one on a prerelease channel — that exist so
+ * the ABSENCE of tier and channel scoping is provable: `block list` is
+ * declared content and filters on neither, so both blocks must appear under
+ * every config, which is what `journeys.cli.test.ts` and the `readNouns` eval
+ * cases assert. Because `BLOCK_TTL` is reused verbatim, Button/Modal content
+ * can never drift between PR3's fixture and this one.
  *
  * Composed as one Turtle document, so ONE store answers every read noun:
  * `block`/`ontology`/`graph inspect` were already provable on `BLOCK_TTL`

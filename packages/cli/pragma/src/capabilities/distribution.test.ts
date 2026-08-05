@@ -19,9 +19,12 @@ import { capabilities } from "./index.js";
 
 describe("the distribution's declared stories (PROTECTED)", () => {
   it("declares exactly the five domain nouns", () => {
-    // `block` composes its story with hand-written code, reading it by name and
-    // falling back to no verbs if it is missing, so a renamed or dropped noun
-    // must fail HERE rather than silently shrink a command.
+    // Every domain noun now reaches the registry ONLY through `storyModules`:
+    // no authored module claims one, so `index.ts` appends them all unclaimed.
+    // A renamed or dropped key therefore removes the noun from `capabilities`,
+    // and with it from `--help`, `__complete` and the emitted surface — the
+    // one hole the offline-install work exists to keep shut, and it would
+    // close silently. Pinning the key set makes that fail HERE first.
     expect([...declaredStories.keys()].sort()).toEqual([
       "block",
       "modifier",
