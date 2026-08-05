@@ -70,5 +70,11 @@ describe("eval harness — seed gate", () => {
     expect(report.cases.length).toBeGreaterThanOrEqual(35);
     expect(report.cases.length).toBeLessThanOrEqual(60);
     expect(normalize(report.cases)).toMatchSnapshot();
-  });
+    // Explicit timeout, like the other suite-level gates: this drives every
+    // seed case through a real runtime AND a real MCP server, and since a
+    // preview now performs its reads for real rather than answering from a
+    // mock, the effectful cases pay genuine IO. Measured 3.7s before that
+    // change and 5.4s after, so the vitest 5s default fails it on cost the
+    // PR intends to pay — not on a defect. 60s leaves room for CI contention.
+  }, 60_000);
 });
