@@ -2,8 +2,12 @@
  * The eval harness.
  *
  * A minimal, typed runner over a fixture-graph-backed `PragmaRuntime` and
- * `McpHarness`, producing a machine-readable report so both a vitest gate
- * (`eval.test.ts`) and a standalone script (`report.ts`) drive the SAME cases.
+ * `McpHarness`, producing a machine-readable report. `eval.test.ts` is the ONE
+ * driver. There was a standalone `report.ts` too, and the report shape existed
+ * so both could run the same cases; it composed 2 of the 4 case sets the gate
+ * composes, so it would have passed on a failure the gate catches, and nothing
+ * invoked it — it is deleted. The report shape survives on its own merit: it
+ * lets the gate report every case's pass/fail instead of aborting at the first.
  * It is the only harness in the tree — the other `eval` hits are the config
  * `evaluate` verb, an unrelated homonym.
  */

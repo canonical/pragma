@@ -189,8 +189,12 @@ function bareSelfVerb(label: string): VerbEntry {
  *
  * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
  * The bin-served `mcp` entry is injected so `pragma mc<Tab>` completes it,
- * matching the root help.
- * TODO(spec): drop the injection when `mcp` lands as a real (non-hidden) spec.
+ * matching the root help — and the injection is the MECHANISM, not a fallback
+ * awaiting a real spec. `bin.ts` answers `mcp` at argv[0] before the command
+ * tree is built, so a non-hidden `mcp` spec would be unreachable; a
+ * `hidden: true` one existed and reached nothing, because this and its twin in
+ * `project/cli/rootHelp.ts` are what actually put `mcp` in completions and in
+ * help. That spec is deleted; these two literals are unchanged.
  *
  * @param modules - The capability modules.
  * @returns The completion model, nouns and verbs sorted.

@@ -12,8 +12,13 @@
  * deprecated alias of `ontology lookup` (AV-228 B1) with the same params, the
  * same disclosure, the same formatters and a reference to the same handler; its
  * own test asserted the two produced identical output. It is gone, and with it
- * the `byNameVerb` factory and the three constants that existed only so two
- * verbs could share them — all three are now inlined at the single use.
+ * the `byNameVerb` factory, which existed only to stamp out two specs that
+ * differed by a name. The three constants it closed over are renamed
+ * `BY_NAME_*` → `LOOKUP_*` and stay module-level: `LOOKUP_PARAMS` and
+ * `LOOKUP_CAPABILITY` have one reader each and are named to keep the spec
+ * literal below skimmable, and `LOOKUP_DISCLOSURE` still has TWO readers — the
+ * spec and `run` — which is the reason its own docblock gives for not being an
+ * inline literal.
  *
  * Disclosure (B5): rather than reinvent its own scheme, the by-name read declares
  * the canonical disclosure ladder and honours the `--detail`/config `detail` the

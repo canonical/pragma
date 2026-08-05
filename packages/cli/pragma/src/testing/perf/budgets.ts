@@ -68,7 +68,7 @@ export const BUDGET_DECLARED_READ_MS = 700;
  * Warm in-process MCP tool-call ceiling (ms). This ceiling is ENFORCED, not
  * seeded. Measured over a warm, storeless tool (`capabilities`): pure envelope
  * + dispatch, no store boot, no network, so it isolates the per-call overhead
- * of the whole 37-tool catalog. Measured p95 is ~0.4 ms here (huge headroom),
+ * of the whole 36-tool catalog. Measured p95 is ~0.4 ms here (huge headroom),
  * so 100 ms guards against a gross regression without flaking. `info` is
  * deliberately NOT used — its network update-check makes it ~55 ms (see
  * BUDGETS.md).

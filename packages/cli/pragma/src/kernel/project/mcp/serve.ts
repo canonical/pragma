@@ -1,10 +1,14 @@
 /**
  * Serve the MCP projector over stdio.
  *
- * The bin's `mcp` special-case (D9) and the hidden `mcp` meta verb both call
- * this: build the server from the capabilities and connect it to a stdio
- * transport. Kept separate from {@link buildServer} so tests can build a server
- * without touching stdio.
+ * `bin.ts` answers `mcp` at argv[0] (D9) and calls this — the ONE caller: build
+ * the server from the capabilities and connect it to a stdio transport. There
+ * was a second, a `hidden: true` `mcp` meta verb, and it could never reach
+ * here: the bin intercepted the token before `buildProgram` ran, and
+ * `buildProgram` filters hidden verbs so the spec was never registered either.
+ * It has been deleted. Kept separate from {@link buildServer} so tests can
+ * build a server without touching stdio — that, not a second caller, is what
+ * the split buys.
  */
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
