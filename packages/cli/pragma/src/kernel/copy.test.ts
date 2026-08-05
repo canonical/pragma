@@ -12,17 +12,18 @@
  *
  * `src/capabilities/**` and `pragma.conf.ts` are OUT of the rule above.
  * `pragma.conf.ts` is the file a fork edits, so it is content by definition;
- * `src/capabilities/**` still carries the hand-written `ds:` residue
- * (`block list`, `tier lookup`) plus runtime copy no doc publishes, and a guard
- * needing a 65-entry exemption list is a guard that mostly exempts. Two
- * narrower rules reach it instead, at the bottom of this
- * file — *a command a user is told to run is never a literal*, stated once as
- * a POSITION ({@link COMMAND_POSITIONS}, read over raw source so it holds
- * whatever the scanner can see) and once as a SHAPE (a backticked command
- * inside any authored literal, read through {@link readCopy} so an
- * interpolated one leaves no matching chunk). ZERO exemptions between them: the
- * one they used to carry — the built-in colophon narrative — became declared
- * content and its file no longer exists. See {@link capabilitySources}.
+ * `src/capabilities/**` still carries `ds:` residue in the verbs that stayed
+ * hand-written — `graph query`'s and `graph inspect`'s prefixed-name examples,
+ * the URI hint in `resources/provider.ts` — plus runtime copy no doc publishes,
+ * and a guard needing a 65-entry exemption list is a guard that mostly exempts.
+ * Two narrower rules reach it instead, at the bottom of this file — *a command
+ * a user is told to run is never a literal*, stated once as a POSITION
+ * ({@link COMMAND_POSITIONS}, read over raw source so it holds whatever the
+ * scanner can see) and once as a SHAPE (a backticked command inside any
+ * authored literal, read through {@link readCopy} so an interpolated one leaves
+ * no matching chunk). ZERO exemptions between them: the one they used to carry
+ * — the built-in colophon narrative — became declared content and its file no
+ * longer exists. See {@link capabilitySources}.
  *
  * NOTE for a reader of an older revision: this docblock used to say the
  * `examples[].cmd` sweep and the `docs/reference/*.md` regen "have to move
