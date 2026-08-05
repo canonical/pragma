@@ -277,3 +277,39 @@ is therefore the best available direct measure of that cost, and it is inside
 the noise band. Independent replications on this box (250-round `--version`-only
 interleave; 120-round three-case) put it at +0.07 to +0.5 ms. If a true control
 is ever wanted here, it has to be a process outside the module graph.
+
+## `block list` as declared content — measured, and it costs (A/B)
+
+The stories move above is a MOVE. `block list` is not: it was the one
+hand-written read, and its SELECT was rewritten to do in SPARQL what the verb
+used to do in TypeScript — the local-name extraction for the `type` and `tier`
+display columns, and a `COALESCE` around the `GROUP_CONCAT` so `modifiers` is an
+addressable cell on all 251 rows rather than an absent key on 248 of them. That
+work is not free, and no ceiling catches it: `block list` is not a budget case,
+and the 500 ms warm-store ceiling is enforced on `__store-probe`, which this
+query does not touch.
+
+Method: ONE binary, ONE store, `graph query` driving each query text as an
+argument, rotated round-robin so process start and page cache cancel; the
+trivial control (`SELECT ?s WHERE { ?s a ds:Component } LIMIT 1`) is subtracted
+to leave query work. The baseline is the pre-slice query with `buildTierFilter`
+and `buildChannelFilter` removed — the OLD SHAPE, UNFILTERED — so the comparison
+isolates the SPARQL move rather than the removal of the filtering.
+
+| Query text                   | run 1 (n=25) | run 2 (n=20) |
+| ---------------------------- | ------------ | ------------ |
+| trivial control              | 339.6 ms     | 333.6 ms     |
+| old shape, unfiltered        | +37.1 ms     | +51.0 ms     |
+| shipped (`pragma.conf.ts`)   | +65.2 ms     | +73.7 ms     |
+| shipped, without `COALESCE`  | —            | +59.4 ms     |
+
+**Δ ≈ +23 to +28 ms of query work per `block list` invocation**, of which
+~14 ms is the `COALESCE` wrapper alone. The absolutes drift between runs with
+box load; the deltas within a run are the measurement. Output is set-identical
+to the old query's over the shipped pack (251 rows either way).
+
+**No budget constant changes** — nothing here is near a ceiling, and the row is
+recorded so the next reader does not take the declared-content move to be free.
+The `COALESCE` cost is not removable without dropping `modifiers` from 248 of
+251 rows, which the column and the tool description both promise; that trade was
+considered and refused.
