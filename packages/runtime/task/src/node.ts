@@ -30,7 +30,7 @@ export {
 // collector for unit tests.)
 // =============================================================================
 
-export type { PlanTaskOptions } from "./lib/plan.js";
+export type { PlanResult, PlanTaskOptions } from "./lib/plan.js";
 export { planTask } from "./lib/plan.js";
 
 // =============================================================================

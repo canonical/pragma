@@ -27,7 +27,7 @@ type AsyncFrame =
  * @param thrown - The value thrown while performing an effect.
  * @returns The equivalent structured task error.
  */
-export const normalizeThrownError = (thrown: unknown): TaskError => {
+const normalizeThrownError = (thrown: unknown): TaskError => {
   if (thrown instanceof TaskExecutionError) {
     return thrown.taskError;
   }

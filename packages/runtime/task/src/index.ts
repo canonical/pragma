@@ -17,7 +17,6 @@ export type {
   ExecResult,
   LogLevel,
   MultiselectPrompt,
-  PlanResult,
   PromptQuestion,
   PromptQuestionBase,
   SelectPrompt,

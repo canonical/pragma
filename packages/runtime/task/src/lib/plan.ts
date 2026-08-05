@@ -88,7 +88,25 @@ import * as path from "node:path";
 import driveAsync, { interruptGuard } from "./driveAsync.js";
 import { mockEffect } from "./dry-run.js";
 import { executeEffect } from "./interpreter.js";
-import type { Effect, PlanResult, Task } from "./types.js";
+import type { Effect, Task } from "./types.js";
+
+/**
+ * The outcome of interpreting a task as a PLAN: the value the task produced
+ * against real reads, and the effects it reached. Structurally identical to
+ * `DryRunResult` and deliberately a separate name — the two carry different
+ * promises about how their `value` was obtained, and a shared alias would invite
+ * the mocking collector back onto a user-facing preview.
+ *
+ * Declared HERE, and published from `@canonical/task/node` beside {@link
+ * planTask}, because a result type belongs to the entry its producer ships from
+ * — the precedent `runUndo`/`UndoResult` already set. It was on the base entry
+ * while its only producer was on the node entry, so a consumer typing a
+ * `planTask` result had to import from two places.
+ */
+export interface PlanResult<A> {
+  value: A;
+  effects: Effect[];
+}
 
 /** Every effect except the structural ones the planner resolves itself. */
 type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;

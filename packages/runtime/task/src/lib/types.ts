@@ -306,19 +306,6 @@ export interface DryRunResult<A> {
   effects: Effect[];
 }
 
-/**
- * The outcome of interpreting a task as a PLAN (`planTask`, in
- * `@canonical/task/node`): the value the task produced against real reads, and
- * the effects it reached. Structurally identical to {@link DryRunResult} and
- * deliberately a separate name — the two carry different promises about how
- * their `value` was obtained, and a shared alias would invite the mocking
- * collector back onto a user-facing preview.
- */
-export interface PlanResult<A> {
-  value: A;
-  effects: Effect[];
-}
-
 // =============================================================================
 // Tracing Types
 // =============================================================================
