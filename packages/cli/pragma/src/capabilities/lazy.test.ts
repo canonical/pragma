@@ -256,11 +256,14 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
   it("the help path (buildProgram) reaches no config reader or defaults layer", () => {
     // NOT the zod claim its title used to make. This checked two module names
     // — `config/schema.ts` and `spec/validate.ts` — while the register in
-    // `config/schema.ts` names FIVE seams, so `packs/schema.ts` or
-    // `graphpack/schemas.ts` arriving here left it green. The zod claim is now
-    // held as an empty set over this same root, below, and this row keeps only
-    // what it can actually answer: the config LAYER stays behind the dynamic
-    // boundary.
+    // `config/schema.ts` then named FIVE seams, so `packs/schema.ts` or
+    // `graphpack/schemas.ts` arriving here left it green. `spec/validate.ts`
+    // has since been deleted outright (no caller but its own test) and the
+    // register reads FOUR, which is the second demonstration that a guard
+    // naming modules decays: one of the two names this row carried no longer
+    // resolves. The zod claim is now held as an empty set over this same root,
+    // below, and this row keeps only what it can actually answer: the config
+    // LAYER stays behind the dynamic boundary.
     const graph = staticImportGraph(
       resolve(here, "../kernel/project/cli/buildProgram.ts"),
     );

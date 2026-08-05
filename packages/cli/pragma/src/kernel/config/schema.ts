@@ -1,22 +1,28 @@
 /**
  * Zod validation for a config layer.
  *
- * One of the FIVE sanctioned zod seams, which is every module in `src/` that
+ * One of the FOUR sanctioned zod seams, which is every module in `src/` that
  * value-imports zod:
  *
- * 1. `spec/validate.ts` — the covenant grammar;
- * 2. `project/mcp/registerVerb.ts` — tool schemas;
- * 3. this module — the config grammar;
- * 4. `packs/schema.ts` — the pack-definition grammar, lazily imported;
- * 5. `runtime/graphpack/schemas.ts` — the pack-artifact grammar, reached only
+ * 1. `project/mcp/registerVerb.ts` — tool schemas;
+ * 2. this module — the config grammar;
+ * 3. `packs/schema.ts` — the pack-definition grammar, lazily imported;
+ * 4. `runtime/graphpack/schemas.ts` — the pack-artifact grammar, reached only
  *    from `read.ts`, i.e. behind the store boot.
  *
- * The count is the register this programme keeps and it has been wrong twice.
- * It said "three" before `packs/schema.ts` existed; it then said "four" and
- * described the fifth as something PR7 had *moved away*, which read as
- * elimination — but what PR7 removed is the EDGE from the command-tree graph,
- * not the importer. The schemas left `graphpack/types.ts` for
- * `graphpack/schemas.ts` and the seam count never changed.
+ * The count is the register this programme keeps and it has been wrong twice,
+ * so the arithmetic is written down rather than adjusted. It said "three"
+ * before `packs/schema.ts` existed; it then said "four" and described the
+ * fifth as something PR7 had *moved away*, which read as elimination — but
+ * what PR7 removed is the EDGE from the command-tree graph, not the importer.
+ * The schemas left `graphpack/types.ts` for `graphpack/schemas.ts` and the seam
+ * count never changed.
+ *
+ * It reads four again now, and this time an importer really is gone:
+ * `spec/validate.ts` held a fifth seam — a zod mirror of the whole capability
+ * grammar — whose `validateModule` had ZERO callers outside its own test. Its
+ * docblock called it a lazily-imported registration seam; no registration path
+ * imported it. Deleting the module is what took the census from five to four.
  *
  * The register is a census of specifiers, not of one specifier. zod publishes
  * subpaths (`zod/v3`, `zod/v4`, `zod/v4/core`, …) and a module importing one of
@@ -24,11 +30,11 @@
  * exactly how `capabilities/lazy.test.ts`'s guard was blind until PR7's second
  * fix-fold. Take the census with `grep -E 'from "zod(/[^"]*)?"'`.
  *
- * None of the five is reached from the `--help` or `__complete` fast path, which
+ * None of the four is reached from the `--help` or `__complete` fast path, which
  * are storeless and config-free — `capabilities/lazy.test.ts` holds that as an
  * EXACT empty set over every root its `FAST_PATH_ENTRIES` declares (the process
  * entry, the command tree, `buildProgram`, the completion responder), and
- * `completion/safety.test.ts` holds the same empty set over the four completion
+ * `completion/safety.test.ts` holds the same empty set over its five completion
  * roots. Both scans are textual over this package's own relative-import graph
  * and match subpath specifiers.
  *

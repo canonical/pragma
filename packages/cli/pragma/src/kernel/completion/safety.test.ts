@@ -393,13 +393,18 @@ describe("storeless guarantee (PROTECTED)", () => {
       ]);
       // zod stays off the fast path — as an EMPTY SET over the graph, not by
       // naming one module. This named `spec/validate.ts` alone while
-      // `config/schema.ts`'s register lists FIVE modules that value-import zod
-      // (`spec/validate.ts`, `config/schema.ts`, `project/mcp/registerVerb.ts`,
-      // `packs/schema.ts`, `runtime/graphpack/schemas.ts`), so four of the five
-      // — and any sixth — could arrive here green. Subpath-aware, because zod
-      // publishes `zod/v3`, `zod/v4`, `zod/v4/core` …, and an exact match on
-      // the bare specifier is the hole `capabilities/lazy.test.ts`'s twin of
-      // this check walked straight through until PR7's second fix-fold.
+      // `config/schema.ts`'s register listed FIVE modules that value-import zod,
+      // so four of the five — and any sixth — could arrive here green. The
+      // register now reads FOUR (`config/schema.ts`, `project/mcp/registerVerb.
+      // ts`, `packs/schema.ts`, `runtime/graphpack/schemas.ts`), because
+      // `spec/validate.ts` — the very module this check used to name — was
+      // deleted: its `validateModule` had no caller but its own test. That is
+      // the argument for the empty set rather than a name list, made twice
+      // over: the one name this guard knew was the one that stopped existing.
+      // Subpath-aware, because zod publishes `zod/v3`, `zod/v4`, `zod/v4/core`
+      // …, and an exact match on the bare specifier is the hole
+      // `capabilities/lazy.test.ts`'s twin of this check walked straight
+      // through until PR7's second fix-fold.
       const zodImporters = [...graph]
         .filter((file) =>
           /from\s*["']zod(\/[^"']*)?["']/.test(readFileSync(file, "utf-8")),
