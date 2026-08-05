@@ -47,9 +47,13 @@ const spec = JSON.parse(
  * mistaken for a declaration — every member in these files carries one, so
  * without the strip the extraction would be dominated by prose.
  *
+ * Both capture groups are read with `.at`: group 2 is `(\?)?`, genuinely
+ * absent on a required member. This package's tsconfig does not set
+ * `noUncheckedIndexedAccess`, so `match[2]` would type as `string` while
+ * being `undefined` at runtime, and the fallibility would be invisible.
+ *
  * @param source - The module's source text.
  * @returns Member name → whether it is optional, in declaration order.
- * @note Impure only in that it reads text the caller loaded; the parse is pure.
  */
 function readDeclaredMembers(source: string): Map<string, boolean> {
   const body = source
@@ -58,14 +62,20 @@ function readDeclaredMembers(source: string): Map<string, boolean> {
   const start = body.indexOf("{", body.indexOf("interface "));
   const members = new Map<string, boolean>();
   for (const match of body.slice(start).matchAll(/^\s{2}(\w+)(\?)?\s*[:(]/gm)) {
-    const name = match[1];
+    const name = match.at(1);
     if (name === undefined) continue;
-    members.set(name, match[2] === "?");
+    members.set(name, match.at(2) === "?");
   }
   return members;
 }
 
-/** Load one declaration module's members by file name. */
+/**
+ * Load one declaration module's members by file name.
+ *
+ * @param fileName - The declaration module, relative to this file.
+ * @returns Member name → whether it is optional, in declaration order.
+ * @note Impure — reads the declaration file from disk.
+ */
 function loadMembers(fileName: string): Map<string, boolean> {
   return readDeclaredMembers(
     readFileSync(fileURLToPath(new URL(fileName, import.meta.url)), "utf-8"),
@@ -78,6 +88,27 @@ const DECLARATIONS: Record<string, string> = {
   PromptDefinition: "./PromptDefinition.ts",
 };
 
+/**
+ * The spec document's entry for one type, or a throw naming the missing type.
+ *
+ * Deliberately not a `?? {}` fallback: an empty field set AGREES with a
+ * declaration that declares nothing, so a spec that lost a type would be read
+ * as a spec that describes an empty one. The first case below pins the two key
+ * sets equal, so reaching this throw means that case is already red — and this
+ * one then says which type it was rather than failing on an empty comparison.
+ *
+ * @param typeName - The type as `DECLARATIONS` keys it.
+ * @returns The spec's entry for that type.
+ * @throws Error naming the type the spec document does not describe.
+ */
+function readSpecType(typeName: string): SpecType {
+  const type = spec.types[typeName];
+  if (type === undefined) {
+    throw new Error(`the spec document describes no type "${typeName}"`);
+  }
+  return type;
+}
+
 describe("generator-definition spec conformance (PROTECTED)", () => {
   it("describes exactly the three types the declarations define", () => {
     expect(Object.keys(spec.types).sort()).toEqual(
@@ -86,21 +117,22 @@ describe("generator-definition spec conformance (PROTECTED)", () => {
     expect(spec.specVersion).toBe(1);
   });
 
+  // Driven over ENTRIES, so the declaration file is bound rather than looked
+  // up: a `?? ""` on the lookup would resolve `new URL("", import.meta.url)` to
+  // this test file and parse its own text into a plausible-looking member set.
   it.each(
-    Object.keys(DECLARATIONS),
-  )("%s: the spec's field set is the declaration's field set", (typeName) => {
-    const fileName = DECLARATIONS[typeName];
-    expect(fileName).toBeDefined();
-    const declared = loadMembers(fileName ?? "");
-    const described = spec.types[typeName]?.fields ?? {};
+    Object.entries(DECLARATIONS),
+  )("%s: the spec's field set is the declaration's field set", (typeName, fileName) => {
+    const declared = loadMembers(fileName);
+    const described = readSpecType(typeName).fields;
     expect([...declared.keys()].sort()).toEqual(Object.keys(described).sort());
   });
 
   it.each(
-    Object.keys(DECLARATIONS),
-  )("%s: the spec agrees with the declaration about what is REQUIRED", (typeName) => {
-    const declared = loadMembers(DECLARATIONS[typeName] ?? "");
-    const described = spec.types[typeName]?.fields ?? {};
+    Object.entries(DECLARATIONS),
+  )("%s: the spec agrees with the declaration about what is REQUIRED", (typeName, fileName) => {
+    const declared = loadMembers(fileName);
+    const described = readSpecType(typeName).fields;
     for (const [field, optional] of declared) {
       expect(described[field]?.required, `${typeName}.${field}`).toBe(
         !optional,
@@ -133,9 +165,9 @@ describe("generator-definition spec conformance (PROTECTED)", () => {
 
 describe("a real generator satisfies the spec's required sets", () => {
   it("the conformance fixture carries every required field, and no unknown one", () => {
-    const definitionFields = spec.types.GeneratorDefinition?.fields ?? {};
-    const metaFields = spec.types.GeneratorMeta?.fields ?? {};
-    const promptFields = spec.types.PromptDefinition?.fields ?? {};
+    const definitionFields = readSpecType("GeneratorDefinition").fields;
+    const metaFields = readSpecType("GeneratorMeta").fields;
+    const promptFields = readSpecType("PromptDefinition").fields;
 
     const requiredOf = (fields: Record<string, { required: boolean }>) =>
       Object.entries(fields)
