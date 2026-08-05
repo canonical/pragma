@@ -457,7 +457,7 @@ Real: `ReadFile`, `Exists`, `Glob`, `ReadContext`/`WriteContext`, and `Transform
 
 `cwd` matters here in a way it does not for a collector: a plan that reads for real must resolve relative paths against the same base its run does. `onEffectStart` fires *before* each effect is interpreted and may rewrite it in place, which is how a caller stamps generated content into the byte counts a preview reports.
 
-What a plan still cannot tell you is enumerated in `lib/plan.ts`'s module docblock — `Exec` answers empty-and-successful, `Glob` does not see the plan's own writes, a copy source is not probed, a copied or `mkdir`-ed path exists to the plan but has no readable bytes, and a simulated delete is not subtracted.
+What a plan still cannot tell you is enumerated in `lib/plan.ts`'s module docblock — `Exec` answers empty-and-successful, `Glob` does not see the plan's own writes, a copy source is not probed, a copied or `mkdir`-ed path exists to the plan but has no readable bytes, a simulated delete is not subtracted, and a simulated write/`mkdir`/copy cannot FAIL where its real counterpart does. That docblock is the single writing; every summary of it, here or in a consumer, defers to it.
 
 #### Mock/test collector (`dryRun`)
 

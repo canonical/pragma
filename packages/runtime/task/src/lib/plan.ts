@@ -87,6 +87,20 @@
  *   later `Exists` still sees the file. Modelling subtraction would mean
  *   modelling the real tree, and a wrong subtraction reads as "gone" when it is
  *   not.
+ * - **A simulated effect cannot FAIL.** `WriteFile`, `AppendFile`, `MakeDir`,
+ *   `Symlink` and the two copies always succeed, so a plan runs past an
+ *   `EEXIST`/`ENOENT`/`EISDIR` its run raises. Measured: `mkdir("<tmp>/a/b",
+ *   recursive: false)` with `a` absent plans `"ok"` where the run throws
+ *   `FILE_NOT_FOUND: ENOENT … mkdir`; `appendFile("<tmp>/sub", "x")` where
+ *   `sub` is a DIRECTORY plans `"ok"` where the run throws `INTERNAL: EISDIR`.
+ *   The `MakeDir` case leaks further than a plan line: the overlay records
+ *   presence unconditionally, so `mkdir("a/b", false)` then `exists("a/b")`
+ *   answers **true** to the plan while the run never reaches the `Exists` at
+ *   all — a wrong value inside the plan's own branch decisions, not merely a
+ *   wrong report. Deciding a simulated creation's fate needs the real tree, the
+ *   same modelling the delete bullet above declines; probing the parent for
+ *   `MakeDir` alone would make one of the six behave unlike the other five,
+ *   which is the trade the PRESENCE bullet already made the other way.
  *
  * @module
  */
@@ -158,8 +172,8 @@ export interface PlanTaskOptions {
    * announces, then interprets. Moving the call after `interpretLeaf` would
    * leave every test in this package green while a `--dry-run` under-reported
    * every generated file by exactly its stamp — measured in the consumer at 58
-   * bytes a file. `planTask.test.ts`'s "the interpreter sees the SHAPED effect"
-   * row is what holds it here.
+   * bytes a file. `plan.test.ts`'s "the interpreter sees the SHAPED effect —
+   * announce, THEN interpret" row is what holds it here.
    */
   onEffectStart?: (effect: Effect) => void;
   /** AbortSignal for interrupting the plan. */
