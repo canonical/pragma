@@ -220,8 +220,7 @@ export const ontologyListVerb = asVerb(listVerb);
 /** `ontology lookup <prefix>` — the by-name schema read. */
 export const ontologyLookupVerb = asVerb({
   path: ["ontology", "lookup"],
-  summary:
-    "Look up a namespace's classes (hierarchy + counts) and properties.",
+  summary: "Look up a namespace's classes (hierarchy + counts) and properties.",
   params: LOOKUP_PARAMS,
   output: { formatters: ontologyShowFormatters },
   examples: [
