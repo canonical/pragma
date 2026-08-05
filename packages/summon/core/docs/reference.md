@@ -6,6 +6,10 @@ Complete reference for all Summon exports. For conceptual understanding, see [Ex
 
 ## Generator Definition
 
+The generator shape is also published as a document: [`spec/generator-definition.v1.json`](../spec/generator-definition.v1.json), shipped in the package. It states, field by field, what a generator must supply and why, and `src/types/specConformance.test.ts` holds the TypeScript declarations to it in both directions — so the tables below and that document cannot drift.
+
+It is **summon's own domain spec**, not a cross-tool shared contract. A contract several tools agree on is a separate programme's output; nothing about it should be inferred from this file. The spec carries its own version for that reason.
+
 ### `GeneratorDefinition<A>`
 
 The shape of a generator. `A` is the answers type.
@@ -13,18 +17,24 @@ The shape of a generator. `A` is the answers type.
 ```typescript
 interface GeneratorDefinition<A extends Record<string, unknown>> {
   meta: GeneratorMeta;
-  prompts: Prompt[];
+  prompts: PromptDefinition[];
   generate: (answers: A) => Task<void>;
 }
 ```
+
+`generate` must be PURE — it returns a `Task` describing the generation and touches nothing itself. That is what lets one description be read as a dry run, an undo, or a real run.
 
 ### `GeneratorMeta`
 
 ```typescript
 interface GeneratorMeta {
-  name: string;           // Display name
-  description: string;    // One-line description
-  version?: string;       // Semver version
+  name: string;          // CLI path, e.g. "component/react"
+  displayName: string;   // Name written into generated-file stamps
+  description: string;   // One-line description
+  version: string;       // Semver version, also written into the stamp
+  author?: string;
+  help?: string;         // Extended help
+  examples?: string[];   // Example invocations
 }
 ```
 

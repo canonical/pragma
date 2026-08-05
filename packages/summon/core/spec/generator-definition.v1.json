@@ -1,0 +1,98 @@
+{
+  "$comment": "SUMMON'S DOMAIN SPEC for a generator definition — version 1. This document is the written form of the shape a generator package must supply for summon-core to execute it: the field set of `GeneratorDefinition`, `GeneratorMeta` and `PromptDefinition`, which of them are required, and what each is for. `src/types/specConformance.test.ts` reads the TypeScript declarations and holds them to this file in both directions, so the shape cannot move in code without moving here, and cannot be described here without existing in code. THIS IS EXPLICITLY NOT THE CROSS-TOOL SHARED CONTRACT. There is a separate programme whose output is a contract several tools agree on; that contract is not this file, is not derived from this file, and must not be inferred from it. What is written here is what SUMMON requires, decided by summon, and free to change when summon's needs change — which is why it carries its own version. The `.v1` in the filename mirrors `specVersion` so a consumer can pin by path; a version 2 would ship as a second file beside this one rather than replacing it. Field DESCRIPTIONS are prose for a reader; the machine-checked part is the name set and the required set.",
+  "specVersion": 1,
+  "types": {
+    "GeneratorDefinition": {
+      "description": "The complete definition of a generator. Generic over the answers type; the runtime shape is the same either way.",
+      "fields": {
+        "meta": {
+          "required": true,
+          "description": "Identity and help text — see GeneratorMeta."
+        },
+        "prompts": {
+          "required": true,
+          "description": "The questions that produce the answers object, in ask order. Each also becomes a CLI flag. May be empty."
+        },
+        "generate": {
+          "required": true,
+          "description": "A PURE function from answers to a Task describing the generation. It must not touch the filesystem itself: the returned Task is what a host interprets, and that is what makes a dry run, an undo and a real run three readings of one description."
+        }
+      }
+    },
+    "GeneratorMeta": {
+      "description": "Identity and help text for one generator.",
+      "fields": {
+        "name": {
+          "required": true,
+          "description": "The generator's path in the CLI (e.g. `component/react`)."
+        },
+        "displayName": {
+          "required": true,
+          "description": "The name written into generated-file stamps, which may differ from the CLI path (e.g. `@canonical/summon-component:react`). Required here because the stamp identity is what the cross-binary byte-equality guarantee rests on. NOTE for implementors: `createGeneratorStamp` still falls back to `name` when it is absent, because a generator definition arrives from a third-party package and the runtime treats it as untrusted input."
+        },
+        "description": {
+          "required": true,
+          "description": "One line, shown in generator listings."
+        },
+        "version": {
+          "required": true,
+          "description": "The generator's own semantic version. It is written into the stamp, so it identifies which generator produced a file."
+        },
+        "author": {
+          "required": false,
+          "description": "Author name or email."
+        },
+        "help": {
+          "required": false,
+          "description": "Extended help shown for the generator on its own and under --help."
+        },
+        "examples": {
+          "required": false,
+          "description": "Example invocations shown in help."
+        }
+      }
+    },
+    "PromptDefinition": {
+      "description": "One question. The name is the answer key; a kebab-cased form of it is the CLI flag (`componentPath` becomes `--component-path`).",
+      "fields": {
+        "name": {
+          "required": true,
+          "description": "Unique within the generator. Used as the answer key and as the flag name."
+        },
+        "message": {
+          "required": true,
+          "description": "The question text shown to a user."
+        },
+        "type": {
+          "required": true,
+          "description": "One of `text`, `confirm`, `select`, `multiselect`.",
+          "values": ["text", "confirm", "select", "multiselect"]
+        },
+        "default": {
+          "required": false,
+          "description": "Used when no answer is supplied. A host running non-interactively answers every prompt from here, so a prompt with no default and no supplied value is what makes a batch run fail."
+        },
+        "choices": {
+          "required": false,
+          "description": "`{ label, value }` options for `select` and `multiselect`."
+        },
+        "when": {
+          "required": false,
+          "description": "Predicate over the answers so far. Returning false SKIPS the prompt, and the answer key is then absent rather than defaulted."
+        },
+        "validate": {
+          "required": false,
+          "description": "Returns true, or an error message string."
+        },
+        "group": {
+          "required": false,
+          "description": "Heading to file the option under in --help. Ungrouped options appear under `Options`."
+        },
+        "positional": {
+          "required": false,
+          "description": "Accept this answer as a positional argument. At most one prompt per generator, and only a `text` prompt."
+        }
+      }
+    }
+  }
+}

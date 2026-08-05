@@ -16,7 +16,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "spec"
   ],
   "author": {
     "email": "webteam@canonical.com",
