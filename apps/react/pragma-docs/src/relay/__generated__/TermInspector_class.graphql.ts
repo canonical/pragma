@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<05f16dc121af4ec034d38232bf5f970c>>
+ * @generated SignedSource<<e795f28b6d0d89e3c3e3dd0e4db5832a>>
  * @lightSyntaxTransform
  */
 
@@ -16,11 +16,13 @@ export type TermInspector_class$data = {
   readonly instances: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly __typename: string;
         readonly _meta: {
           readonly curie: string;
+          readonly title: string;
+          readonly type: {
+            readonly uri: string;
+          };
         };
-        readonly name?: string | null | undefined;
         readonly uri: string;
       };
     }>;
@@ -239,13 +241,6 @@ return {
               "name": "node",
               "plural": false,
               "selections": [
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "__typename",
-                  "storageKey": null
-                },
                 (v0/*:: as any*/),
                 {
                   "alias": null,
@@ -261,23 +256,28 @@ return {
                       "kind": "ScalarField",
                       "name": "curie",
                       "storageKey": null
-                    }
-                  ],
-                  "storageKey": null
-                },
-                {
-                  "kind": "InlineFragment",
-                  "selections": [
+                    },
                     {
                       "alias": null,
                       "args": null,
                       "kind": "ScalarField",
-                      "name": "name",
+                      "name": "title",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "concreteType": "OntologyClass",
+                      "kind": "LinkedField",
+                      "name": "type",
+                      "plural": false,
+                      "selections": [
+                        (v0/*:: as any*/)
+                      ],
                       "storageKey": null
                     }
                   ],
-                  "type": "Entity",
-                  "abstractKey": "__isEntity"
+                  "storageKey": null
                 }
               ],
               "storageKey": null
@@ -312,6 +312,6 @@ return {
 };
 })();
 
-(node as any).hash = "b637b320d55c44109810d9d02e792eb2";
+(node as any).hash = "d33dd0305b6da7d3100dc81584ccae1e";
 
 export default node;

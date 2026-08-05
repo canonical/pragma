@@ -18,6 +18,13 @@
  * The `surface` records ride the same proven rule but are UNVERIFIED
  * against a live graph; re-capture on a machine with the semantics tree.
  *
+ * TRIMMED when the inspector despecialised: `ds:hasSubcomponent`'s
+ * `acceptanceCriteria` and `completionGuidance` are gone from its
+ * `OntologyProperty` record. ke-graphql still emits both fields, but the
+ * contract excludes them and the inspector no longer selects them, so a
+ * re-capture would no longer carry them either. Keeping them would make
+ * this fixture disagree with the operation it serves.
+ *
  * Regenerate: boot `dev:bun`, copy `relay.records` out of the
  * `__INITIAL_DATA__` script served at /definitions/ds%3AhasSubcomponent.
  */
@@ -1091,9 +1098,6 @@ const definitionsExplorerRecordsProperty = {
   "https://ds.canonical.com/hasSubcomponent": {
     __id: "https://ds.canonical.com/hasSubcomponent",
     __typename: "OntologyProperty",
-    acceptanceCriteria:
-      "Inverse of ds:parentComponent. Each referenced entity must be a ds:Subcomponent.",
-    completionGuidance: null,
     definition: "Subcomponents that are structural parts of this component",
     domain: {
       __ref: "https://ds.canonical.com/Component",

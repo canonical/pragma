@@ -135,15 +135,10 @@ describe("TermInspector", () => {
     const terms = within(panel)
       .getAllByRole("term")
       .map((dt) => dt.textContent);
-    expect(terms).toEqual([
-      "Kind",
-      "Functional",
-      "Range",
-      "Domain",
-      "Inverse",
-      "Acceptance criteria",
-      "Completion guidance",
-    ]);
+    // Five terms, not seven: `acceptanceCriteria` and `completionGuidance`
+    // are annotation-derived fields the contract deliberately excludes, so
+    // the inspector cannot ask an arbitrary provider for them.
+    expect(terms).toEqual(["Kind", "Functional", "Range", "Domain", "Inverse"]);
     expect(within(panel).getByText("ds:Subcomponent")).toBeInTheDocument();
     // Domain and inverse are term links.
     expect(
@@ -156,9 +151,6 @@ describe("TermInspector", () => {
         .getByRole("link", { name: "parentComponent" })
         .getAttribute("href"),
     ).toBe("/definitions/ds%3AparentComponent");
-    expect(
-      within(panel).getByText(/Inverse of ds:parentComponent/),
-    ).toBeInTheDocument();
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
@@ -176,7 +168,9 @@ describe("TermInspector", () => {
     const panel = inspector();
 
     // Component instances land on /components/<encoded uri> — the only
-    // live entity route (the D31 landing rule).
+    // live entity route (the D31 landing rule). The link TEXT is
+    // `_meta.title`, which is total, and the address is `_meta.curie`, the
+    // same compact form the catalog addresses this entity by.
     expect(
       within(panel)
         .getByRole("link", { name: "Accordion" })
@@ -184,6 +178,44 @@ describe("TermInspector", () => {
     ).toBe("/components/ds%3Aglobal.component.accordion");
     // The truncation line is honest about the page size.
     expect(within(panel).getByText(/and more/)).toBeInTheDocument();
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("leaves an instance of ANOTHER class as plain text, D31's other half", {
+    timeout: DEFINITIONS_TEST_TIMEOUT_MS,
+  }, () => {
+    // The teeth for the new discriminator. Every instance in the captured
+    // fixture is a Component, so the negative branch of the landing rule
+    // has no live exemplar — and the discriminator is now a CLASS
+    // comparison (`_meta.type.uri` against the components binding) rather
+    // than a `__typename` test, so "everything links" is a real failure
+    // mode this file must be able to see. One instance's `_meta` is
+    // repointed at `ds:Pattern`, a class this same fixture already carries.
+    const fetchFn = createFetchSpy();
+    const accordionMeta =
+      "client:https://ds.canonical.com/global.component.accordion:_meta";
+    const patternInstanceRecords = {
+      ...definitionsExplorerRecordsComponent,
+      [accordionMeta]: {
+        ...(
+          definitionsExplorerRecordsComponent as unknown as Record<
+            string,
+            Record<string, unknown>
+          >
+        )[accordionMeta],
+        type: { __ref: "https://ds.canonical.com/Pattern" },
+      },
+    } as unknown as RecordMap;
+    render(definitionsPageAt("ds:Component", patternInstanceRecords, fetchFn));
+    const panel = inspector();
+
+    expect(within(panel).queryByRole("link", { name: "Accordion" })).toBeNull();
+    expect(within(panel).getByText("Accordion")).toBeInTheDocument();
+    // …while its Component siblings still link, so this is the class
+    // comparison biting and not the whole list going flat.
+    expect(
+      within(panel).getByRole("link", { name: "Announcement" }),
+    ).toBeInTheDocument();
     expect(fetchFn).not.toHaveBeenCalled();
   });
 

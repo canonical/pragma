@@ -30,6 +30,17 @@
  * ARGUMENT (`/definitions/ds%3AComponent`), not an identity, and are
  * correct as they stand.
  *
+ * RESHAPED AGAIN when the inspector despecialised. The instances block
+ * used to select `__typename` and `... on Entity { name }`; it now selects
+ * `_meta { curie title type { uri } }`, so the 12 `EntityMeta` records
+ * gained `title` (the same string `name` carried — `_meta.title` resolves
+ * an entity's `ds:name` through the compiler's label tier) and `type`, a
+ * link to the `ds:Component` class record that was already in this file.
+ * The 12 `Component` node records lost `name` for the same reason the
+ * property fixture lost its two annotation fields: nothing selects it, so
+ * a re-capture would not carry it. `__typename` stays — Relay writes it on
+ * every record regardless of the selection.
+ *
  * Regenerate: boot `dev:bun`, copy `relay.records` out of the
  * `__INITIAL_DATA__` script served at /definitions/ds%3AComponent.
  */
@@ -350,63 +361,111 @@ const definitionsExplorerRecordsComponent = {
     __id: "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta",
     __typename: "EntityMeta",
     curie: "ds:apps_launchpad.component.avatar",
+    title: "Avatar",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta": {
     __id: "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta",
     __typename: "EntityMeta",
     curie: "ds:apps_launchpad.component.badge",
+    title: "Badge",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/apps_launchpad.component.breadcrumbs:_meta":
     {
       __id: "client:https://ds.canonical.com/apps_launchpad.component.breadcrumbs:_meta",
       __typename: "EntityMeta",
       curie: "ds:apps_launchpad.component.breadcrumbs",
+      title: "Breadcrumbs",
+      type: {
+        __ref: "https://ds.canonical.com/Component",
+      },
     },
   "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta": {
     __id: "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
     __typename: "EntityMeta",
     curie: "ds:apps_lxd.component.back_link",
+    title: "BackLink",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/apps_portal.component.badge:_meta": {
     __id: "client:https://ds.canonical.com/apps_portal.component.badge:_meta",
     __typename: "EntityMeta",
     curie: "ds:apps_portal.component.badge",
+    title: "Badge",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/global.component.accordion:_meta": {
     __id: "client:https://ds.canonical.com/global.component.accordion:_meta",
     __typename: "EntityMeta",
     curie: "ds:global.component.accordion",
+    title: "Accordion",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/global.component.announcement:_meta": {
     __id: "client:https://ds.canonical.com/global.component.announcement:_meta",
     __typename: "EntityMeta",
     curie: "ds:global.component.announcement",
+    title: "Announcement",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/global.component.avatar:_meta": {
     __id: "client:https://ds.canonical.com/global.component.avatar:_meta",
     __typename: "EntityMeta",
     curie: "ds:global.component.avatar",
+    title: "Avatar",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/global.component.badge:_meta": {
     __id: "client:https://ds.canonical.com/global.component.badge:_meta",
     __typename: "EntityMeta",
     curie: "ds:global.component.badge",
+    title: "Badge",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/global.component.breadcrumbs:_meta": {
     __id: "client:https://ds.canonical.com/global.component.breadcrumbs:_meta",
     __typename: "EntityMeta",
     curie: "ds:global.component.breadcrumbs",
+    title: "Breadcrumbs",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/sites.component.blog_card:_meta": {
     __id: "client:https://ds.canonical.com/sites.component.blog_card:_meta",
     __typename: "EntityMeta",
     curie: "ds:sites.component.blog_card",
+    title: "BlogCard",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
   },
   "client:https://ds.canonical.com/sites_webcomponentsprototype.component.blog_cards:_meta":
     {
       __id: "client:https://ds.canonical.com/sites_webcomponentsprototype.component.blog_cards:_meta",
       __typename: "EntityMeta",
       curie: "ds:sites_webcomponentsprototype.component.blog_cards",
+      title: "BlogCards",
+      type: {
+        __ref: "https://ds.canonical.com/Component",
+      },
     },
   "client:root": {
     __id: "client:root",
@@ -1310,7 +1369,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/apps_launchpad.component.avatar": {
     __id: "https://ds.canonical.com/apps_launchpad.component.avatar",
     __typename: "Component",
-    name: "Avatar",
     uri: "https://ds.canonical.com/apps_launchpad.component.avatar",
     _meta: {
       __ref:
@@ -1320,7 +1378,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/apps_launchpad.component.badge": {
     __id: "https://ds.canonical.com/apps_launchpad.component.badge",
     __typename: "Component",
-    name: "Badge",
     uri: "https://ds.canonical.com/apps_launchpad.component.badge",
     _meta: {
       __ref:
@@ -1330,7 +1387,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/apps_launchpad.component.breadcrumbs": {
     __id: "https://ds.canonical.com/apps_launchpad.component.breadcrumbs",
     __typename: "Component",
-    name: "Breadcrumbs",
     uri: "https://ds.canonical.com/apps_launchpad.component.breadcrumbs",
     _meta: {
       __ref:
@@ -1340,7 +1396,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/apps_lxd.component.back_link": {
     __id: "https://ds.canonical.com/apps_lxd.component.back_link",
     __typename: "Component",
-    name: "BackLink",
     uri: "https://ds.canonical.com/apps_lxd.component.back_link",
     _meta: {
       __ref:
@@ -1350,7 +1405,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/apps_portal.component.badge": {
     __id: "https://ds.canonical.com/apps_portal.component.badge",
     __typename: "Component",
-    name: "Badge",
     uri: "https://ds.canonical.com/apps_portal.component.badge",
     _meta: {
       __ref:
@@ -1506,7 +1560,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/global.component.accordion": {
     __id: "https://ds.canonical.com/global.component.accordion",
     __typename: "Component",
-    name: "Accordion",
     uri: "https://ds.canonical.com/global.component.accordion",
     _meta: {
       __ref: "client:https://ds.canonical.com/global.component.accordion:_meta",
@@ -1515,7 +1568,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/global.component.announcement": {
     __id: "https://ds.canonical.com/global.component.announcement",
     __typename: "Component",
-    name: "Announcement",
     uri: "https://ds.canonical.com/global.component.announcement",
     _meta: {
       __ref:
@@ -1525,7 +1577,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/global.component.avatar": {
     __id: "https://ds.canonical.com/global.component.avatar",
     __typename: "Component",
-    name: "Avatar",
     uri: "https://ds.canonical.com/global.component.avatar",
     _meta: {
       __ref: "client:https://ds.canonical.com/global.component.avatar:_meta",
@@ -1534,7 +1585,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/global.component.badge": {
     __id: "https://ds.canonical.com/global.component.badge",
     __typename: "Component",
-    name: "Badge",
     uri: "https://ds.canonical.com/global.component.badge",
     _meta: {
       __ref: "client:https://ds.canonical.com/global.component.badge:_meta",
@@ -1543,7 +1593,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/global.component.breadcrumbs": {
     __id: "https://ds.canonical.com/global.component.breadcrumbs",
     __typename: "Component",
-    name: "Breadcrumbs",
     uri: "https://ds.canonical.com/global.component.breadcrumbs",
     _meta: {
       __ref:
@@ -1828,7 +1877,6 @@ const definitionsExplorerRecordsComponent = {
   "https://ds.canonical.com/sites.component.blog_card": {
     __id: "https://ds.canonical.com/sites.component.blog_card",
     __typename: "Component",
-    name: "BlogCard",
     uri: "https://ds.canonical.com/sites.component.blog_card",
     _meta: {
       __ref: "client:https://ds.canonical.com/sites.component.blog_card:_meta",
@@ -1838,7 +1886,6 @@ const definitionsExplorerRecordsComponent = {
     {
       __id: "https://ds.canonical.com/sites_webcomponentsprototype.component.blog_cards",
       __typename: "Component",
-      name: "BlogCards",
       uri: "https://ds.canonical.com/sites_webcomponentsprototype.component.blog_cards",
       _meta: {
         __ref:
