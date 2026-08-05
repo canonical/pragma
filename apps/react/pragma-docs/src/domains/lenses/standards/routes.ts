@@ -1,5 +1,6 @@
 import { route } from "@canonical/router-core";
 import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
+import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
 import { shellStripFacet } from "#lib/Shell/stripFacet.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
@@ -53,6 +54,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: standardsIndexRouteEntry,
       ...shellStripFacet.of({ Context: StandardsContext }),
+      ...routeShortcutFacet.of("4"),
     },
   }),
   standardEntity: route({

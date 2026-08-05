@@ -12,14 +12,23 @@
  * None of these declare `SHELL_STRIP_META_KEY` strip slots: a stub has no
  * controls or status to claim, so every strip socket renders its sensible
  * empty — which is exactly what `frameStability.tests.tsx` measures.
+ *
+ * `guides` does declare ONE thing, and only one: its keyboard shortcut
+ * (`#lib/routeShortcut`). A stub is still a destination, and the digit
+ * belongs to whichever route owns the address — being unbuilt does not
+ * change who allocates it.
  */
 
 import { route } from "@canonical/router-core";
+import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
 import LensPlaceholder from "./LensPlaceholder.js";
 
 const routes = {
   guides: route({
     url: "/guides",
+    meta: {
+      ...routeShortcutFacet.of("6"),
+    },
     component: () => (
       <LensPlaceholder
         builtBy="P-5 (reading views)"

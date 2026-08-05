@@ -1,4 +1,5 @@
 import { route } from "@canonical/router-core";
+import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
 import { shellStripFacet } from "#lib/Shell/stripFacet.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
@@ -51,6 +52,7 @@ const routes = {
     meta: {
       [ROUTE_QUERY_META_KEY]: journeysRouteEntry,
       ...shellStripFacet.of({ ...journeysStripSlots }),
+      ...routeShortcutFacet.of("5"),
     },
   }),
   journeysJob: route({
