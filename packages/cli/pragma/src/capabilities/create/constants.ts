@@ -156,7 +156,14 @@ export const CREATE_GENERATORS = {
      * gate lifted: `ENOENT: no such file or directory, open
      * '/$bunfs/templates/package.json.ejs'`, after `mkdir` had already created
      * `my-lib/` and `my-lib/src/` — a half-made package left on disk. A
-     * `--dry-run` exits 0 without reading a template, so it does NOT test this.
+     * `--dry-run` DOES test this now, which is the PR7 change: `planTask`
+     * performs the template `ReadFile` for real, so with the gate lifted a
+     * preview dies on the same ENOENT with the same exit code as the run.
+     * Verified from source on the branch tip — `create package --name
+     * @acme/my-lib --dry-run` emits real `Read file:` effects for all five
+     * `.ejs` templates and writes nothing. So what keeps `create package` from
+     * being attempted in the binary is the gate ABOVE the interpreter, not the
+     * plan's silence.
      */
     readsEmbeddedTemplates: false,
   },
