@@ -45,7 +45,10 @@
  * `bun run test:proof`.
  */
 import { describe, expect, it } from "vitest";
-import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
+import {
+  DEPLOYMENT_ENV_VAR,
+  DEPLOYMENTS,
+} from "#lib/graphBindings/deployments.js";
 import { startMetroProvider, startServer } from "./serverHarness.js";
 
 const CWD = process.cwd();
@@ -69,9 +72,9 @@ const DEV_READY_MS = 90_000;
 const TEST_TIMEOUT_MS = DEV_READY_MS + 90_000;
 
 /**
- * PRAGMA'S OWN VOCABULARY, taken from the app's shipped binding table rather
- * than retyped, so the negative control provably blocks the real prefixes.
- * A hand-written blocklist of invented strings would pass forever.
+ * PRAGMA'S OWN VOCABULARY, taken from the pragma deployment table rather than
+ * retyped, so the negative control provably blocks the real prefixes. A
+ * hand-written blocklist of invented strings would pass forever.
  *
  * This is the one place the proof imports an app module — `servers.e2e.ts`
  * keeps the server a black box, and that rule is worth bending exactly here:
@@ -83,7 +86,7 @@ const TEST_TIMEOUT_MS = DEV_READY_MS + 90_000;
  */
 const PRAGMA_PREFIXES = [
   ...new Set(
-    Object.values(GRAPH_BINDINGS).map(
+    Object.values(DEPLOYMENTS.pragma).map(
       (binding) => `${binding.classUri.split(":")[0]}:`,
     ),
   ),
@@ -147,14 +150,37 @@ function storeMentionsMetro(records: Record<string, unknown>): boolean {
   return JSON.stringify(records).includes("metro:");
 }
 
+/** Poll until the provider's hit counter shows `count` of `source`. */
+async function waitForHits(
+  provider: { hits: (source: "ssr" | "client") => number },
+  source: "client" | "ssr",
+  count: number,
+  timeoutMs = 5_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (provider.hits(source) < count) {
+    if (Date.now() > deadline) {
+      throw new Error(
+        `only ${provider.hits(source)} ${source} hits seen within ${timeoutMs}ms (wanted ${count})`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
 describe("the core lenses render against a provider that has never heard of pragma", () => {
   it(
-    "dev:bun serves Definitions from @canonical/prism-graph-example",
+    "dev:bun serves Definitions and Standards from @canonical/prism-graph-example",
     async () => {
       const provider = await startMetroProvider(GRAPH_EXAMPLE_CWD);
       const server = await startServer("dev:bun", CWD, {
         timeoutMs: DEV_READY_MS,
         graphqlUrl: provider.url,
+        // The Standards lens roots at a class named from OUTSIDE the graph,
+        // so it is the one lens that needs the deployment said out loud.
+        // Definitions takes its variables from the URL and would render
+        // against metro with this unset.
+        env: { [DEPLOYMENT_ENV_VAR]: "metro" },
       });
       try {
         // 1. THE PRECONDITION, stated as an assertion rather than a skip: the
@@ -285,6 +311,129 @@ describe("the core lenses render against a provider that has never heard of prag
         expect(termHtml).toContain("<h3>Instances</h3>");
         expect(termHtml).toContain("metro:northgate");
         expectNoPragmaVocabulary("/definitions/metro:Station", termHtml);
+
+        // 6. /standards — the lens that could NOT render against metro before
+        //    the deployment table existed. Its root class comes from
+        //    `GRAPH_BINDINGS`, so with the pragma table it asked for
+        //    `cs:CodeStandard`, a class metro does not have, and rendered its
+        //    honest "No standards in the graph." This block is the deployment
+        //    seam's whole reason for existing.
+        const standardsIndex = await fetch(`${server.base}/standards`);
+        expect(standardsIndex.status).toBe(200);
+        const standardsIndexHtml = await standardsIndex.text();
+        expectPortableFrame(standardsIndexHtml);
+        //    THE CROSS-REGISTRY PAIR. The prepare step runs in the Bun-native
+        //    registry and the render in the Vite SSR one; if they resolved
+        //    different deployments the store would fill while
+        //    `useLazyLoadQuery` missed, and the page would serve
+        //    `Loading the standards…` with a full record map underneath.
+        //    Records AND content, therefore, or neither proves anything.
+        expect(
+          storeMentionsMetro(initialRelayRecords(standardsIndexHtml)),
+        ).toBe(true);
+        expect(standardsIndexHtml).not.toContain("No standards in the graph");
+
+        //    Grouping is by the instance's own CLASS. `metro:Station` has 14
+        //    direct instances and 2 `metro:Interchange` (a Station subclass),
+        //    so there are exactly TWO groups — a dataset fact
+        //    (`packages/docsite/graph-example/src/lib/provider/dataset.ts`),
+        //    and the reason this class was bound rather than `metro:Stop`,
+        //    which yields one group and never renders the jump-nav at all.
+        const groupSections =
+          standardsIndexHtml.match(/<section[^>]*id="standards-group-/g) ?? [];
+        expect(groupSections).toHaveLength(2);
+        expect(standardsIndexHtml).toContain('id="standards-group-station"');
+        expect(standardsIndexHtml).toContain(
+          'id="standards-group-interchange"',
+        );
+        //    The jump rail lists one anchor per group when there is more than
+        //    one group — derived from THIS response, so the relation holds as
+        //    the dataset grows.
+        const groupJumpLinkCount = (
+          standardsIndexHtml.match(/href="#standards-group-/g) ?? []
+        ).length;
+        expect(groupJumpLinkCount).toBe(groupSections.length);
+        //    A group exists only because standards fill it, so links strictly
+        //    exceed sections. Both counted from this response.
+        const standardLinkCount = (
+          standardsIndexHtml.match(/href="\/standards\/https%3A/g) ?? []
+        ).length;
+        expect(standardLinkCount).toBeGreaterThan(groupSections.length);
+
+        //    THE COMPACT IDENTITY. The link text is `_meta.title` and the
+        //    href the absolute IRI, so without this the reader could lose the
+        //    curie form entirely while every href assertion still passed.
+        expect(standardsIndexHtml).toContain("<code>metro:northgate</code>");
+        //    The D31 href: the percent-encoded ABSOLUTE IRI, the only address
+        //    `node(id:)` accepts — over a namespace pragma has never seen.
+        expect(standardsIndexHtml).toContain(
+          'href="/standards/https%3A%2F%2Fmetro.example%2Fonto%23northgate"',
+        );
+        //    Deliberately NO `Load more` assertion: 16 instances sit under the
+        //    app's 100-item page size, so `hasNextPage` is false and the
+        //    button correctly does not render. Asserting it would be asserting
+        //    a pragma-scale fact about a metro-scale graph.
+        expectNoPragmaVocabulary("/standards", standardsIndexHtml);
+
+        // 7. /standards/<northgate> — the reading page over a foreign entity.
+        const standardReading = await fetch(
+          `${server.base}/standards/${encodeURIComponent(
+            "https://metro.example/onto#northgate",
+          )}`,
+        );
+        expect(standardReading.status).toBe(200);
+        const standardReadingHtml = await standardReading.text();
+        expectPortableFrame(standardReadingHtml);
+        expect(
+          storeMentionsMetro(initialRelayRecords(standardReadingHtml)),
+        ).toBe(true);
+        //    The other half of the cross-registry pair, and the sharpest one
+        //    on this route: before the seam, the prepare step already warmed
+        //    the store with `metro:northgate` and the page STILL said "No
+        //    standard found" — because the `boundClass` guard compared
+        //    against pragma's class. Records without content is exactly that
+        //    failure, so it is named explicitly rather than left to a
+        //    positive assertion to imply.
+        expect(standardReadingHtml).not.toContain("No standard found");
+        expect(standardReadingHtml).toContain('data-slot="reading-canvas"');
+        expect(standardReadingHtml).toContain("Northgate");
+        expect(standardReadingHtml).toContain("metro:northgate");
+        //    The article's one piece of graph metadata outside the prose.
+        //    React splits the text node, hence the comment marker.
+        expect(standardReadingHtml).toContain("class: <!-- -->");
+        //    The prose arrives through `_meta.definition` and SSRs verbatim.
+        expect(standardReadingHtml).toContain("The northern terminus.");
+        expectNoPragmaVocabulary("/standards/<northgate>", standardReadingHtml);
+
+        // 8. WHO MADE THE REQUESTS. Every page above was fetched with plain
+        //    `fetch` — no browser, no client JS — yet six data-bearing routes
+        //    rendered real metro data. So the provider must have been hit
+        //    MANY times by the SERVER and NEVER by a client. Without this the
+        //    proof cannot distinguish "the server fetched and rendered" from
+        //    "the HTML happened to contain the right strings".
+        //
+        //    Deliberately no exact N: the page count drifts with the routes.
+        expect(provider.hits("ssr")).toBeGreaterThan(5);
+        const clientHitsBefore = provider.hits("client");
+        expect(clientHitsBefore).toBe(0);
+
+        //    Teeth, as a STRICT DELTA: a direct POST with no `x-pragma-ssr`
+        //    header is what a browser looks like, and it must move the client
+        //    counter by exactly one. Without this the zero above could be
+        //    vacuous — a counter that never counts anything reads as zero
+        //    forever.
+        const browserLikePost = await fetch(provider.url, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ query: "{ __typename }" }),
+        });
+        expect(browserLikePost.status).toBe(200);
+        await browserLikePost.text();
+        await waitForHits(provider, "client", clientHitsBefore + 1);
+        //    Counters grow from async pipe chunks, so give trailing chunks a
+        //    beat to flush before asserting nothing ELSE arrived.
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        expect(provider.hits("client")).toBe(clientHitsBefore + 1);
       } finally {
         await server.stop();
         await provider.stop();
