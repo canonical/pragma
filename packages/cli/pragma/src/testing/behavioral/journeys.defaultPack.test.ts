@@ -71,9 +71,16 @@ const JSON_FLAGS: GlobalFlags = {
 };
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
 
-const blockListVerb = storyModules
-  .get("block")
-  ?.verbs.find((verb) => verb.path.join(" ") === "block list") as VerbSpec;
+const blockModule = storyModules.get("block");
+if (!blockModule) {
+  throw new Error('pragma.conf.ts declares no story for "block"');
+}
+const blockListVerb = blockModule.verbs.find(
+  (verb) => verb.path.join(" ") === "block list",
+);
+if (!blockListVerb) {
+  throw new Error('the "block" story compiles no `block list` verb');
+}
 
 /** Track fixtures so a single `afterAll` disposes every temp dir + store. */
 const fixtures: FixtureGraph[] = [];
