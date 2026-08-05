@@ -7,6 +7,7 @@
 
 import {
   appendFileEffect,
+  type CopyFileOptions,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,
@@ -81,11 +82,16 @@ export const transformFile = (
 /**
  * Copy a file from source to destination.
  * Default undo: delete the destination file.
+ *
+ * Pass `{ content }` when the source's bytes are already in hand and `source`
+ * is not readable — a compiled binary's inlined assets. The effect stays a
+ * `CopyFile`, so the dry-run label, the undo, and the "not a generated write"
+ * classification are unchanged; only the read is skipped.
  */
 export const copyFile = (
   source: string,
   dest: string,
-  opts?: UndoOptions,
+  opts?: CopyFileOptions,
 ): Task<void> => effect(copyFileEffect(source, dest, opts));
 
 /**

@@ -59,6 +59,7 @@ export {
 
 export {
   appendFileEffect,
+  type CopyFileOptions,
   copyDirectoryEffect,
   copyFileEffect,
   deleteDirectoryEffect,

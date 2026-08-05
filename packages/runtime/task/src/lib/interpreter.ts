@@ -104,6 +104,13 @@ export const executeEffect = async (
     case "CopyFile": {
       const dest = at(effect.dest);
       await fs.mkdir(path.dirname(dest), { recursive: true });
+      // Pre-loaded content short-circuits the read (the compiled-binary case).
+      // Keyed off `undefined`, not falsiness: an empty asset (`.gitkeep`) is a
+      // legitimate content, and reading its absent source would throw ENOENT.
+      if (effect.content !== undefined) {
+        await fs.writeFile(dest, effect.content, "utf-8");
+        return undefined;
+      }
       await fs.copyFile(at(effect.source), dest);
       return undefined;
     }

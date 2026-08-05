@@ -124,8 +124,20 @@ export type Effect =
       transform: (source: string) => string;
       undo?: Task<void>;
     }
-  /** Copy a single file */
-  | { _tag: "CopyFile"; source: string; dest: string; undo?: Task<void> }
+  /**
+   * Copy a single file. `content`, when present, is the source's contents
+   * ALREADY LOADED — the interpreter writes it verbatim instead of reading
+   * `source`, which is how a compiled binary materializes an asset whose
+   * `source` path does not exist on any filesystem. `source` is still carried:
+   * it is what the dry-run plan and the undo log name.
+   */
+  | {
+      _tag: "CopyFile";
+      source: string;
+      dest: string;
+      content?: string;
+      undo?: Task<void>;
+    }
   /** Recursively copy a directory */
   | {
       _tag: "CopyDirectory";
