@@ -42,13 +42,13 @@ export interface StoryOrigin {
   /** Who authored the story. */
   readonly kind: "distribution" | "config" | "package";
   /**
-   * Human attribution for diagnostics: a story file's path
-   * (`@acme/recipes/stories/recipe.json`), `config`, `pragma.conf.ts`, or — for
-   * a query this binary composes rather than reads from a story — the noun
-   * being read (`block`, `tier`, `prompt`). All three shapes are live; the
-   * narrower "a file path, or `config`" this said forbade what three of the six
-   * call sites pass, and reaches a user through `runSelect`'s "Story query in
-   * <label> must be a SELECT".
+   * Human attribution for diagnostics. Four shapes are live: a package story
+   * file's path (`@acme/recipes/stories/recipe.json`), `config`,
+   * `pragma.conf.ts` for the distribution's own compile site, and — for the one
+   * query this binary composes rather than reads from a story — the noun being
+   * read (`prompt`). The narrower "a file path, or `config`" this once said
+   * forbade what most call sites pass, and reaches a user through `runSelect`'s
+   * "Story query in <label> must be a SELECT".
    */
   readonly label: string;
 }
@@ -62,22 +62,25 @@ export interface StoryOrigin {
  * the term, and `sources update` is the answer; the same condition under a
  * config- or package-declared story means the store IS built and the story names
  * a term it does not bind, which `sources update` cannot fix. `runSelect`
- * branches on exactly this, so the three bespoke readers that compose their own
- * SPARQL must agree — and they were three spellings: two module constants
- * carrying a word-for-word duplicated six-line docblock, and one undocumented
- * object literal at a call site.
+ * branches on exactly this, so every distribution-authored origin must be built
+ * the same way — and before this helper existed they were three spellings: two
+ * module constants carrying a word-for-word duplicated six-line docblock, and
+ * one undocumented object literal at a call site.
  *
- * EVERY distribution-authored origin is built here, including the distribution's
- * own compile site (`capabilities/distribution.ts`, which passes this to
- * `compilePack` for each story `pragma.conf.ts` declares). A helper that covered
- * half its sites would leave two spellings permanently and no rule for choosing
- * between them, which is the drift it exists to prevent. The one literal left in
- * the tree is in `sparql/runSelect.test.ts`, where a unit test building its own
+ * EVERY distribution-authored origin is built here. Two production sites remain
+ * after the read nouns became declared content: the compile site
+ * (`capabilities/distribution.ts`, which passes this to `compilePack` for each
+ * story `pragma.conf.ts` declares) and `project/mcp/prompts/source.ts`, the one
+ * SPARQL this binary still composes by hand. A helper that covered half its
+ * sites would leave two spellings permanently and no rule for choosing between
+ * them, which is the drift it exists to prevent. The one literal left in the
+ * tree is in `sparql/runSelect.test.ts`, where a unit test building its own
  * origins by hand is the point.
  *
  * @param label - Human attribution for diagnostics; see {@link
  * StoryOrigin.label}. The distribution's own sites pass either the declaring
- * file (`pragma.conf.ts`) or the noun being read (`block`, `tier`, `prompt`).
+ * file (`pragma.conf.ts`) or, for the one composed query, the noun being read
+ * (`prompt`).
  * @returns The distribution-authored origin.
  */
 export const distributionOrigin = (label: string): StoryOrigin => ({
