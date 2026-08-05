@@ -67,6 +67,11 @@ const BANNED: readonly BannedPattern[] = [
     reason:
       "retired `--llm` flag (now the `--format llm` form, auto-detected when piped)",
   },
+  {
+    pattern: /pragma\s+ontology\s+show\b|\bontology_show\b/,
+    reason:
+      "removed `ontology show` — the deprecated alias of `ontology lookup`, which is now the only by-name ontology read",
+  },
 ];
 
 // Every shipped doc must be free of retired vocabulary: the README plus every

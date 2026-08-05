@@ -121,7 +121,7 @@ For deeper exploration, query the knowledge graph directly:
 pragma ontology list
 
 # Inspect a specific ontology schema
-pragma ontology show ds
+pragma ontology lookup ds
 
 # Execute a SPARQL query
 pragma graph query "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"
@@ -207,7 +207,7 @@ The MCP server exposes 30+ tools that mirror the CLI commands:
 - `token_list`, `token_lookup` — design tokens
 - `tier_list`, `tier_lookup` — package tier hierarchy
 - `config_show`, `config_set` — configuration
-- `ontology_list`, `ontology_show` — ontology schemas
+- `ontology_list`, `ontology_lookup` — ontology schemas
 - `graph_query`, `graph_inspect` — knowledge graph
 - `doctor`, `info` — diagnostics
 - `capabilities` — list all available tools

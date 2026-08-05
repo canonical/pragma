@@ -61,7 +61,7 @@ and \`channel\` settings narrow nothing.
 
 One graph makes every relationship first-class and queryable: \`block lookup\`
 follows edges to modifiers and subcomponents, \`graph query\` runs arbitrary
-SPARQL, and \`ontology show\` reads the schema itself. The store is built once
+SPARQL, and \`ontology lookup\` reads the schema itself. The store is built once
 by \`sources update\` and addressed by content hash, so the domain you query is
 exactly the domain that was published.`;
 
