@@ -94,8 +94,9 @@ describe("indexCompletionEnv — multi-source names(ref)", () => {
   it("index + field altNames: emits only the alt names, never a label in their place", async () => {
     const env = indexCompletionEnv(projectWithIndex(CRAFTED_INDEX));
     // `ex:tier.lxd` carries `apps/lxd`; `ex:tier.core` carries none, so its
-    // label `core` is NOT offered — a bespoke tier lookup filters on the
-    // declared alt-name property and would refuse it.
+    // label `core` is NOT offered. The reader emits the declared field's tokens
+    // and never substitutes a label in their place, so a verb that declares
+    // `altNames` can never be completed with a token its resolve would refuse.
     expect(
       await env.names({ from: "index", type: "ex:Tier", field: "altNames" }),
     ).toEqual(["apps/lxd"]);

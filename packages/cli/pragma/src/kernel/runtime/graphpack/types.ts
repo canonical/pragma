@@ -89,9 +89,9 @@ export interface PackIndexEntity {
   readonly label?: string | null;
   /**
    * Alternative completable names — the values of the distribution's declared
-   * alternative-name property (`kernel/vocabulary.ts`), which is what a
-   * bespoke lookup matches on, when they differ from `name`/`label`.
-   * Enrichment for the storeless name-completion sources.
+   * alternative-name property (`kernel/vocabulary.ts`), which is what an
+   * authored `VerbSpec` may address a family by, when they differ from
+   * `name`/`label`. Enrichment for the storeless name-completion sources.
    */
   readonly altNames?: readonly string[];
   /** Schema (`tbox`) vs individual (`abox`). */

@@ -142,9 +142,9 @@ const valuesList = (uris: readonly string[]): string =>
  * Expand the declared alternative-name property against a pack's prefix map.
  *
  * That property is what a family is addressed by, so the storeless completion
- * sources can offer those tokens exactly and a bespoke lookup can match them,
- * without a store boot. Distinct from the display `label`: a subject may carry
- * both.
+ * sources can offer those tokens exactly — and a verb declaring the field can
+ * match them — without a store boot. Distinct from the display `label`: a
+ * subject may carry both.
  *
  * The distribution DECLARES it as a prefixed name; this resolves it against the
  * PACK's own prefixes, which are not the distribution's. A pack that binds no

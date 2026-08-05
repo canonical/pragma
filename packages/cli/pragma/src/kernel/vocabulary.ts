@@ -41,7 +41,8 @@ import { PragmaError } from "./error/PragmaError.js";
 export interface DeclaredVocabulary {
   /**
    * The property an entity family is addressed by, beside `rdfs:label` — the
-   * tokens the index offers as candidates and a bespoke lookup matches on.
+   * tokens the index offers as candidates, and the ones a verb that declares
+   * the alt-name field resolves against.
    */
   readonly altName: string;
   /** The prompt entity shape the MCP prompt surface reads. */
