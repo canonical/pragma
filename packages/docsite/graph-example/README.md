@@ -339,23 +339,56 @@ contradict the premise that this contract is implementable without pragma's mach
 
 ---
 
-## The lens gate is expected to be RED
+## The lens gate, and the two things it does not guard
 
 `src/testing/integration/lensOperations.test.ts` harvests **every** query operation
 declared under `apps/react/pragma-docs/src/domains/lenses/**` — at run time, from the
 committed Relay artifacts, never from a snapshot — and executes each one against this
 provider.
 
-It currently **fails**, and that failure is the deliverable. The docsite's lens
-operations are still written against the pre-contract schema, so no contract-conformant
-provider can serve them. The test's output names each operation and each error, which is
-exactly the remaining despecialisation work.
+It started life red by design, as a to-do list. The definitions lens and the standards
+lens have since been despecialised onto the contract and now execute green here:
+`DefinitionsExplorerQuery`, `StandardsIndexQuery`, `StandardsIndexPaginationQuery` and
+`StandardEntityQuery`. One operation is still red — `JourneysExplorerQuery`, which joins
+four ontology-derived root fields and walks eleven ontology-derived properties. That is
+not an oversight, and it is not fixable by rewriting the operation: **the contract has no
+field anywhere that returns the value of an arbitrary property on an arbitrary entity**
+(`EntityMeta.field(name:)` returns cardinality metadata, not a value), and generic
+instance-level relation traversal is all that lens is. Whether it is removed or the
+contract grows generic reflection is an owner's decision, not this package's.
 
 **Do not make it green by narrowing the operation set, marking it `it.fails`, adding
-`skipIf`, or gating it behind an env var.** Every one of those converts a real signal into
-a silent one, and the operation set must stay directory-derived so a new lens is covered
-the day it lands. The gate also asserts it discovered a non-zero number of operations, so
-it cannot pass vacuously if the app moves.
+`skipIf`, or gating it behind an env var** — and do not relocate an operation out of the
+lens directory, which is the same thing under a different name. Every one of those
+converts a real signal into a silent one, and the operation set must stay
+directory-derived so a new lens is covered the day it lands. The gate also asserts it
+discovered a non-zero number of operations, so it cannot pass vacuously if the app moves.
+
+Going forward, what this gate guards is one specific claim: **no lens operation asks for a
+field that exists only because pragma's compiler generated it from pragma's ontology.** It
+parses each operation against this provider's schema, executes it, and rejects a result
+whose every root field came back null — so an operation cannot pass by looking nothing up.
+
+Two things it does **not** guard, both worth knowing before trusting a green run.
+
+**It does not guard the app's runtime bindings.** The contract's root surface names no
+subject, so a lens that enumerates things is handed a class URI from outside the graph.
+This gate supplies its OWN (`metro:Station`, in `src/testing/fixtures.ts`); the app
+supplies its own from `apps/react/pragma-docs/src/lib/graphBindings`. **The two must never
+meet.** Importing the app's binding here would make the gate go green because the app
+agreed with itself, when the point is that the operation is neutral about which class it
+is pointed at. The consequence is that an operation can be contract-clean here and still
+be handed the wrong thing in production — which is why, for example, the standards reading
+page carries its own wrong-class guard and its own test for it, in the app.
+
+**It does not guard cursor continuity.** It executes each operation exactly once, with
+`cursor: null`. `src/testing/integration/lensPagination.test.ts` covers that separately:
+it pages through a real connection, asserts page 2 is non-empty and disjoint from page 1,
+and — the load-bearing part — asserts every cursor decodes to the absolute IRI of the node
+it belongs to. That bond is the only reason a cursor minted by ke-graphql is located by
+this provider and vice versa, and a broken cursor is otherwise invisible: an unrecognised
+cursor is answered with page 1 and no error, deliberately, so drift would show up as a
+reader stuck on page 1 rather than as a failure.
 
 This gate's natural long-term home is the app, which owns the lenses. It lives here only
 because the app could not take a dependency on this package while both were being written.
