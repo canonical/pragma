@@ -24,7 +24,6 @@ import { storyModules } from "../../capabilities/distribution.js";
 import { verbKey } from "../../kernel/packs/uniqueness.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
 import {
   CANONICAL_CONFIG,
   CANONICAL_TTL,
@@ -36,9 +35,16 @@ import {
 } from "../helpers/fixtureGraph.js";
 import { JSON_FLAGS, NO_MUTATION } from "../helpers/parity.js";
 
-const listVerb = storyModules
-  .get("block")
-  ?.verbs.find((v) => verbKey(v.path) === "block list") as VerbSpec;
+const blockModule = storyModules.get("block");
+if (!blockModule) {
+  throw new Error('pragma.conf.ts declares no story for "block"');
+}
+const listVerb = blockModule.verbs.find(
+  (verb) => verbKey(verb.path) === "block list",
+);
+if (!listVerb) {
+  throw new Error('the "block" story compiles no `block list` verb');
+}
 
 /** Every block the canonical fixture graph carries, sorted by name. */
 const EVERY_BLOCK = [

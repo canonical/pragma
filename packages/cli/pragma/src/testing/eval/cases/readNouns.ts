@@ -176,7 +176,7 @@ export const readNounEvalCases: readonly EvalCase[] = [
       // The INVERSE of what this case used to assert. `normal` excluded the
       // beta-only block; the declared list carries no channel filter, so both
       // configs answer identically and the beta block is in both answers.
-      const namesFor = async (
+      const listBlockNamesUnder = async (
         config: typeof CANONICAL_CONFIG | typeof ALL_VISIBLE_CONFIG,
       ): Promise<string[]> => {
         let names: string[] = [];
@@ -186,8 +186,8 @@ export const readNounEvalCases: readonly EvalCase[] = [
         });
         return names;
       };
-      const normal = await namesFor(CANONICAL_CONFIG);
-      const prerelease = await namesFor(ALL_VISIBLE_CONFIG);
+      const normal = await listBlockNamesUnder(CANONICAL_CONFIG);
+      const prerelease = await listBlockNamesUnder(ALL_VISIBLE_CONFIG);
       assert.deepEqual(normal, prerelease);
       assert.ok(normal.includes("Beta Widget"));
     },

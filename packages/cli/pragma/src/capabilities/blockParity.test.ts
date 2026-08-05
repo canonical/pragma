@@ -41,12 +41,17 @@ const compiled = compilePack(
   distributionOrigin("pragma.conf.ts"),
   DEFAULT_PREFIX_MAP,
 );
-const listVerb = compiled.find(
-  (v) => verbKey(v.path) === "block list",
-) as VerbSpec;
-const lookupVerb = compiled.find(
-  (v) => verbKey(v.path) === "block lookup",
-) as VerbSpec;
+/** Resolve one compiled verb by key, or fail naming the key that is missing. */
+function findCompiledVerb(key: string): VerbSpec {
+  const verb = compiled.find((candidate) => verbKey(candidate.path) === key);
+  if (!verb) {
+    throw new Error(`the "block" story compiles no \`${key}\` verb`);
+  }
+  return verb;
+}
+
+const listVerb = findCompiledVerb("block list");
+const lookupVerb = findCompiledVerb("block lookup");
 
 let rt: PragmaRuntime;
 
