@@ -105,11 +105,17 @@ const RESERVED_NOUNS: ReadonlySet<string> = new Set(["esac"]);
  */
 function assertShellUsableNoun(noun: string): void {
   if (RESERVED_NOUNS.has(noun)) {
+    // ONE writing of the noun. This sentence carried it twice — `reserved shell
+    // word "esac" in noun "esac"` — a frame borrowed from `assertSafeToken(token,
+    // where)`, whose second slot is a LOCATION (`unsafe token "X" in verb "block
+    // lookup"`). Reusing it with one binding said the same word twice and named
+    // nowhere, which is the only thing a fork's author needs in order to find
+    // the declaration to change.
     throw new Error(
-      `completion: reserved shell word ${JSON.stringify(noun)} in noun ` +
-        `${JSON.stringify(noun)} — it terminates the \`case "$noun" in … esac\` ` +
-        "dispatch, so bash and zsh refuse the generated script and no " +
-        "completion is installed at all; rename it",
+      `completion: noun ${JSON.stringify(noun)} is a shell reserved word — ` +
+        'it terminates the `case "$noun" in … esac` dispatch, so bash and zsh ' +
+        "refuse the generated script and no completion is installed at all; " +
+        "rename the noun in the story that declares it",
     );
   }
 }

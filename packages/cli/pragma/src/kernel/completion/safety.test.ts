@@ -156,8 +156,12 @@ describe("the reserved NOUN is refused at EMIT (PROTECTED)", () => {
   });
 
   it("emitScripts refuses it, naming the noun and the reason", () => {
+    // The regex matches the noun ONCE. It pinned `reserved shell word "esac" in
+    // noun "esac"` verbatim, which made a doubled interpolation load-bearing;
+    // the case below is what carries this guard's non-vacuity (the shells
+    // genuinely refuse the substituted script), so nothing is weakened here.
     expect(() => emitScripts([adversarialModule(["esac", "list"])])).toThrow(
-      /reserved shell word "esac" in noun "esac"/,
+      /noun "esac" is a shell reserved word/,
     );
   });
 
