@@ -29,7 +29,7 @@ import { successEnvelope } from "../../render/envelope.js";
 import { selectFormatter } from "../../render/formatters.js";
 import { writeStdout } from "../../render/writeStdout.js";
 import { bootRuntime } from "../../runtime/boot.js";
-import { runEffectSeam } from "../../runtime/effectSeam.js";
+import { planEffectSeam, runEffectSeam } from "../../runtime/effectSeam.js";
 import type {
   GlobalFlags,
   InteractionRuntime,
@@ -258,17 +258,15 @@ export async function executeVerb(
       // A plan is the effects a mutation WOULD apply — a `Prompt` is not one, so
       // the interactive confirm gate / answer prompts never clutter the preview.
       //
-      // `planTask` reads for real, so it MUST resolve relative effect paths
-      // against the same base the real run does: `rt.exec.cwd` is the SEC-2 jail
-      // root the verb wired in, and a plan resolving elsewhere would read the
-      // wrong files. `shapeEffect` rides along for the same reason one step
-      // later: it is the seam `create`'s generated-by stamp rewrites
-      // `WriteFile.content` on, so a plan without it reports every generated
-      // file short by the stamp. Never `promptHandler`, `onEffectStart`,
-      // `onLog` or `dispose` — a plan installs no UI and runs no teardown.
+      // `planEffectSeam` is the one writing of what a plan takes from the
+      // verb's runner options — its `cwd` (so real reads resolve against the
+      // same base the run does) and its CONTENT-shaping half (so the reported
+      // byte counts carry `create`'s stamp). Never the verb's UI callbacks, its
+      // `promptHandler`, `onLog` or `dispose`: a plan installs no UI and runs no
+      // teardown. `shapeEffect` lands in `planTask`'s `onEffectStart` slot
+      // because that interpreter has one seam where the runtime has two.
       const planned = await planTask(task, {
-        cwd: mutationRuntime.exec?.cwd,
-        onEffectStart: mutationRuntime.exec?.shapeEffect,
+        ...planEffectSeam(mutationRuntime.exec),
         signal: interaction.signal,
       });
       return renderPlan(

@@ -1,6 +1,6 @@
 import type { Effect } from "@canonical/task";
 import { describe, expect, it } from "vitest";
-import { runEffectSeam } from "./effectSeam.js";
+import { planEffectSeam, runEffectSeam } from "./effectSeam.js";
 
 const write = (content: string): Effect => ({
   _tag: "WriteFile",
@@ -43,5 +43,36 @@ describe("runEffectSeam", () => {
 
     expect(observed).toEqual(["stamp\nbody"]);
     expect((effect as { content: string }).content).toBe("stamp\nbody");
+  });
+});
+
+describe("planEffectSeam", () => {
+  it("takes the SHAPING half and drops the UI half", () => {
+    // The asymmetry with `runEffectSeam` is the whole point: a plan mounts no
+    // progress render, but it must report the bytes the stamp will write.
+    const shapeEffect = (): void => {};
+    const onEffectStart = (): void => {};
+    expect(planEffectSeam({ shapeEffect, onEffectStart })).toEqual({
+      cwd: undefined,
+      onEffectStart: shapeEffect,
+    });
+  });
+
+  it("defaults cwd to the verb's own, so the plan reads where the run reads", () => {
+    expect(planEffectSeam({ cwd: "/jail" }).cwd).toBe("/jail");
+  });
+
+  it("honours the caller's cwd OVERRIDE — the MCP projector's jail root", () => {
+    // MCP resolves against the per-call root it validated, which is not
+    // necessarily the one the verb wired in. That difference is a decision, so
+    // it is passed rather than inferred.
+    expect(planEffectSeam({ cwd: "/verb" }, "/per-call").cwd).toBe("/per-call");
+  });
+
+  it("survives a verb that declared no runner options at all", () => {
+    expect(planEffectSeam(undefined)).toEqual({
+      cwd: undefined,
+      onEffectStart: undefined,
+    });
   });
 });

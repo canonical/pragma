@@ -5,9 +5,11 @@
  * projector reaches for zod (to build the input schema the SDK validates). The
  * tool name follows the grammar's naming rule, annotations derive from the
  * capability, and a mutating verb gains the plan-first `confirm` flow: without
- * `confirm`, the verb's `Task` is dry-run and a plan is returned
+ * `confirm`, the verb's `Task` is interpreted by `planTask` — real reads,
+ * simulated destruction — and the plan is returned
  * (`{ planOnly: true, confirmRequired: true }`); with `confirm: true`, it runs
- * for real.
+ * for real. That is the SAME interpreter the CLI's `--dry-run` takes; the
+ * mocking collector this line used to name is gone from the file.
  */
 
 import { statSync } from "node:fs";
@@ -19,7 +21,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { asPragmaError } from "../../error/fromTaskError.js";
 import { PragmaError } from "../../error/PragmaError.js";
-import { runEffectSeam } from "../../runtime/effectSeam.js";
+import { planEffectSeam, runEffectSeam } from "../../runtime/effectSeam.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
 import { toolName } from "../../spec/emitSurface.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
@@ -202,15 +204,16 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       if (preview) {
         // The PLAN interpreter, not the mocking collector: it performs the
         // reads for real and simulates only destruction, so a preview whose
-        // real run would die on a read fails here too. `effectiveCwd` is the
-        // same SEC-2 jail root the real run resolves against — a plan reading
-        // elsewhere would read the wrong files, and `shapeEffect` is threaded
-        // for the same reason: it carries `create`'s generated-by stamp, so a
-        // preview without it advertises byte counts the run would not write. No
-        // prompt handler is passed, and `planTask` has no field to pass one to.
+        // real run would die on a read fails here too. `planEffectSeam` is the
+        // one writing of what a plan takes from the verb's runner options — its
+        // CONTENT-shaping half, which carries `create`'s generated-by stamp, so
+        // a preview without it advertises byte counts the run would not write.
+        // The `cwd` OVERRIDE is this call site's alone: a plan resolves against
+        // the per-call SEC-2 jail root validated above, the same value threaded
+        // as `rt.cwd`. No prompt handler is passed, and `planTask` has no field
+        // to pass one to.
         const planned = await planTask(task, {
-          cwd: effectiveCwd,
-          onEffectStart: mutationRuntime.exec?.shapeEffect,
+          ...planEffectSeam(mutationRuntime.exec, effectiveCwd),
         });
         const plan = planned.effects
           .filter((effect) => effect._tag !== "Prompt")

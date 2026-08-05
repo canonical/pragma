@@ -15,33 +15,42 @@
  *
  * Both sides are driven through the same construction the dispatcher performs
  * (`kernel/project/cli/dispatch.ts#executeVerb`): the verb's `run` receives a
- * mutation runtime and sets `rt.exec` as its last act, the interpreter gets
- * `exec.cwd`, and BOTH sides go through `runEffectSeam`/`exec.shapeEffect` — the
- * content-shaping half of the seam, which the plan branch also takes. Mirroring
- * the dispatcher rather than calling `executeVerb` is what makes the effect
- * lists observable at all — the dispatcher renders them to strings and drops the
- * objects — and mirroring it FAITHFULLY is what makes them worth comparing.
+ * mutation runtime and sets `rt.exec` as its last act, and each side then CALLS
+ * the shipped seam — `planEffectSeam` on the plan side, `runEffectSeam` on the
+ * real one. Mirroring the dispatcher rather than calling `executeVerb` is what
+ * makes the effect lists observable at all — the dispatcher renders them to
+ * strings and drops the objects — and mirroring it FAITHFULLY is what makes them
+ * worth comparing.
+ *
+ * ## What mirroring cannot do, and what covers it instead
+ *
+ * A harness that mirrors a call site cannot prove the call site is still wired.
+ * While this file spelled `{ cwd: rt.exec?.cwd, onEffectStart: rt.exec?.shapeEffect }`
+ * inline, deleting exactly that from BOTH shipped plan branches (the CLI
+ * dispatcher and the MCP projector) left the whole package green — 1121 passed,
+ * 0 failed — while `create component --dry-run` planned every generated file 58
+ * bytes short of what the run writes. The two changes that close it: both
+ * branches and this file now call the ONE `planEffectSeam`, and
+ * `dryRunParity.test.ts`'s last case drives `--dry-run` through the shipped
+ * dispatcher and compares its reported byte counts against the paired real run's
+ * files on disk. MCP is then held by `create.mcp.test.ts`, which pins its plan
+ * to the CLI's — anchored now that the CLI side has an absolute claim.
  */
 
 import { readdirSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
-import type { Effect } from "@canonical/task";
+import type { LeafEffect } from "@canonical/task/node";
 import { planTask, runTask } from "@canonical/task/node";
 import { expect } from "vitest";
-import { runEffectSeam } from "../../kernel/runtime/effectSeam.js";
+import {
+  planEffectSeam,
+  runEffectSeam,
+} from "../../kernel/runtime/effectSeam.js";
 import type {
   InteractionRuntime,
   PragmaRuntime,
 } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
-
-/**
- * The effects both sides collect. `planTask` pushes LEAF effects only —
- * `Parallel`/`Race` are resolved before a leaf is reached — so the run side
- * drops them too, and structural arms cannot silently accumulate here as dead
- * code documenting an asymmetry.
- */
-type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;
 
 /** One interpretation of a verb's Task: the effects it reached and its value. */
 export interface Interpretation {
@@ -85,13 +94,8 @@ export async function interpretAsPlan(
   const rt = mutationRuntime(runtime, true);
   if (verb.capability.needsStore) await rt.store.get();
   const task = await Promise.resolve(verb.run(params, rt));
-  const planned = await planTask(task as never, {
-    cwd: rt.exec?.cwd,
-    onEffectStart: rt.exec?.shapeEffect,
-  });
-  // `planTask` collects leaves only (its own `LeafEffect` exclusion), so this
-  // narrowing restates the interpreter's contract rather than assuming one.
-  return { effects: planned.effects as LeafEffect[], value: planned.value };
+  const planned = await planTask(task as never, planEffectSeam(rt.exec));
+  return { effects: planned.effects, value: planned.value };
 }
 
 /**
