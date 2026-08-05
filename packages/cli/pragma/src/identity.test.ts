@@ -321,9 +321,9 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
         "utf-8",
       ),
     ) as { mcpSurface: { resources: string[] } };
-    const frozen = covenant.mcpSurface.resources[0];
+    const frozen = covenant.mcpSurface.resources.at(0);
     expect(frozen).toBeTruthy();
-    const scheme = String(frozen).split(":")[0];
+    const scheme = frozen?.split(":").at(0);
 
     const { emitSurface } = await import("./kernel/spec/emitSurface.js");
     const { capabilities } = await import("./capabilities/index.js");

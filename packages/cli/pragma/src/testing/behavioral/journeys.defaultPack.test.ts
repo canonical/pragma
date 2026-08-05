@@ -272,7 +272,7 @@ describe("default-pack journey — block list, populated and empty (E1)", () => 
   });
 });
 
-describe("default-pack journey — ontology list/show, populated and empty (E1)", () => {
+describe("default-pack journey — ontology list/lookup, populated and empty (E1)", () => {
   it("lists the ds namespace with its class and property counts", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const envelope = await readVerb(ontologyListVerb, {}, fixture.cwd);

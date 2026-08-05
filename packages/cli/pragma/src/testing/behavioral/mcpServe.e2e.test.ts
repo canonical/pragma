@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 import { runCli } from "../helpers/runCli.js";
 
-describe("mcp serve — stdin close boots and exits cleanly (A7, e2e)", () => {
+describe("pragma mcp — stdin close boots and exits cleanly (A7, e2e)", () => {
   it("exits 0 with no output and no signal", () => {
     const result = runCli(["mcp"]);
     expect(result.exitCode).toBe(0);

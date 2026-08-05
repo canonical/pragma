@@ -125,7 +125,7 @@ const BOUND_NOUNS = ["component", "package", "application"] as const;
  */
 function readDeclaredGeneratorName(noun: (typeof BOUND_NOUNS)[number]): string {
   const declared = (conf as RawConfig).generators ?? [];
-  const name = declared[BOUND_NOUNS.indexOf(noun)]?.name;
+  const name = declared.at(BOUND_NOUNS.indexOf(noun))?.name;
   if (name === undefined) {
     throw PragmaError.configError(
       `Invalid config in pragma.conf.ts: it declares ${declared.length} generator(s); the create surface binds ${BOUND_NOUNS.length}, in this order: ${BOUND_NOUNS.join(", ")}.`,

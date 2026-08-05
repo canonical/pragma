@@ -16,7 +16,7 @@ import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { McpHarness } from "../helpers/projectMcp.js";
 
 /** The four kinds of thing an eval case can put under test. */
-export type EvalKind = "tool" | "content" | "disclosure" | "prompt";
+type EvalKind = "tool" | "content" | "disclosure" | "prompt";
 
 /** What an eval case's `expect` is handed to probe the system under test. */
 export interface EvalEnv {
@@ -51,7 +51,7 @@ export interface EvalCaseResult {
 }
 
 /** The full report: pass/fail counts plus every case's outcome. */
-export interface EvalReport {
+interface EvalReport {
   readonly passed: number;
   readonly failed: number;
   readonly cases: readonly EvalCaseResult[];

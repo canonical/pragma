@@ -170,8 +170,8 @@ export default async function driveAsync<A>(
         const value = cur.value;
         let resumed = false;
         while (stack.length > 0) {
-          const frame = stack.pop() as AsyncFrame;
-          if (frame.kind === "bind") {
+          const frame = stack.pop();
+          if (frame?.kind === "bind") {
             cur = frame.f(value);
             resumed = true;
             break;

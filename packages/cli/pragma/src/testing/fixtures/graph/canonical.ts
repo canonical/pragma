@@ -28,7 +28,7 @@
  * `code/function/purity`.
  */
 
-import { BLOCK_PREFIXES, BLOCK_TTL } from "../blockGraph.js";
+import { BLOCK_TTL } from "../blockGraph.js";
 
 /** Extra `ds:` individuals: a tier-chain + a beta-only block, tokens, tiers. */
 const DS_EXTRA_TTL = `
@@ -165,12 +165,6 @@ ds:prompt.scaffold-component a ds:Prompt ;
   ds:promptArgument [ ds:argName "framework" ; rdfs:comment "react | svelte | lit." ; ds:argRequired false ] .
 `;
 
-/** The prefixes the canonical store is built and queried with. */
-export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
-  ...BLOCK_PREFIXES,
-  cs: "http://pragma.canonical.com/codestandards#",
-};
-
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */
 export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}`;
 
@@ -194,6 +188,3 @@ export const CANONICAL_CONFIG = { channel: "normal" as const };
  * them.
  */
 export const ALL_VISIBLE_CONFIG = { channel: "prerelease" as const };
-
-/** Re-exported so callers needn't also import `blockGraph.ts` directly. */
-export { BLOCK_PREFIXES, BLOCK_TTL };

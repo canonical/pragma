@@ -157,10 +157,10 @@ describe("colophon — combined content (pragma + active domain)", () => {
     const { sections } = await collectColophon(bootRuntime(FLAGS, tmpCwd()));
     const declared = sections.find((s) => s.kind === "distribution");
     const headings = [...(declared?.markdown ?? "").matchAll(/^##\s+(.+)$/gm)]
-      .map((match) => match[1]?.trim() ?? "")
+      .map((match) => match.at(1)?.trim() ?? "")
       .filter((heading) => heading.length > 0);
     expect(headings.length).toBeGreaterThan(0);
-    const doc = colophonModule.verbs[0]?.doc?.toLowerCase() ?? "";
+    const doc = colophonModule.verbs.at(0)?.doc?.toLowerCase() ?? "";
     expect(doc.length).toBeGreaterThan(0);
     expect(
       headings.filter((heading) => doc.includes(heading.toLowerCase())),

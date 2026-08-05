@@ -6,10 +6,8 @@
  * global XDG JSON, and the nearest evaluated `pragma.config.ts` — each field
  * carrying its {@link ConfigOrigin} so `config show` reports honest provenance.
  *
- * Every name here is exported, including the ones no other file names
- * today: this is the domain's type file, so its members ARE the surface,
- * and each unnamed one composes a shape that IS read elsewhere. A
- * stray-export scan will flag them; that is a false positive, not residue.
+ * Type file: every member is exported by design — see `kernel/spec/types.ts`
+ * for why a stray-export scan flags them falsely.
  */
 
 /** Allowed release channel values. */

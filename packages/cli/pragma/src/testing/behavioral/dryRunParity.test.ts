@@ -381,7 +381,10 @@ describe("the SHIPPED --dry-run branch reports the bytes the run writes", () => 
     const planned = new Map<string, number>();
     for (const line of (preview.stdout ?? "").split("\n")) {
       const match = /Write file: (\S+) \((\d+) bytes\)/.exec(line);
-      if (match?.[1] && match[2]) planned.set(match[1], Number(match[2]));
+      const path = match?.at(1);
+      const bytes = match?.at(2);
+      if (path !== undefined && bytes !== undefined)
+        planned.set(path, Number(bytes));
     }
     expect(planned.size).toBeGreaterThan(0);
 

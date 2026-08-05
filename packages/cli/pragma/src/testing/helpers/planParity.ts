@@ -54,13 +54,13 @@ import type {
 import type { VerbSpec } from "../../kernel/spec/types.js";
 
 /** One interpretation of a verb's Task: the effects it reached and its value. */
-export interface Interpretation {
+interface Interpretation {
   readonly effects: readonly LeafEffect[];
   readonly value: unknown;
 }
 
 /** The two interpretations of the same capability against the same state. */
-export interface PlanVsRun {
+interface PlanVsRun {
   readonly plan: Interpretation;
   readonly run: Interpretation;
 }

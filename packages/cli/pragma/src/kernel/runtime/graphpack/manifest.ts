@@ -83,7 +83,8 @@ export function readManifest(dir: string): Manifest | undefined {
   }
 }
 
-/** Whether a pack directory holds a complete pack: a valid manifest AND every
+/**
+ * Whether a pack directory holds a complete pack: a valid manifest AND every
  * non-empty content artifact — the `data.nq` dump, the extracted `schema.json`,
  * the entity `index.json` (gated on presence + size), and the carried
  * `stories.json` (gated on being a JSON array, which implies both). The manifest alone is
@@ -119,7 +120,13 @@ export function readManifest(dir: string): Manifest | undefined {
  * 0.0042 ms — 0.3 µs. Against a synthetic three-pack payload (4.7 KB, 12
  * records): 0.0035 ms vs 0.0133 ms — 10 µs, against a warm-store budget of
  * 500 ms. A first-byte probe (`raw.trimStart()[0] === "["`) would have cost
- * 0.0053 ms; the difference does not justify accepting `[{` as complete. */
+ * 0.0053 ms; the difference does not justify accepting `[{` as complete.
+ *
+ * @param dir - The pack directory.
+ * @returns Whether the directory holds a complete pack.
+ * @note Impure — stats and reads the pack directory. The name reads as a pure
+ *   predicate; it is not.
+ */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
   for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE]) {

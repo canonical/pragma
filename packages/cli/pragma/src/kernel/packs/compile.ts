@@ -314,6 +314,3 @@ function quoteExample(value: string): string {
 function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
-
-/** Re-export the definition type for the compiled-module barrels. */
-export type { PackDefinition };

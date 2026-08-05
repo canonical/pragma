@@ -548,7 +548,7 @@ describe("planTask — effect callbacks and structure", () => {
 
     expect(value).toBeUndefined();
     expect(effects).toHaveLength(1);
-    expect(effects[0]).toMatchObject({ path: join(dir, "first") });
+    expect(effects.at(0)).toMatchObject({ path: join(dir, "first") });
   });
 
   it("yields undefined for an empty race", async () => {

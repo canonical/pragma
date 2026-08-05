@@ -182,9 +182,9 @@ describe("resource listing (storeless, over the pack index)", () => {
         "utf-8",
       ),
     ) as { mcpSurface: { resources: string[] } };
-    const covenantTemplate = covenant.mcpSurface.resources[0];
+    const covenantTemplate = covenant.mcpSurface.resources.at(0);
     expect(covenantTemplate).toBeDefined();
-    const scheme = String(covenantTemplate).split(":")[0];
+    const scheme = covenantTemplate?.split(":").at(0);
     expect(scheme).toBeTruthy();
 
     // 1. what the live grammar emits as the surface.

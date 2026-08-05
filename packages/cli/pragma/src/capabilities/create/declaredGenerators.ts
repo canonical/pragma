@@ -320,7 +320,7 @@ function assertEmbeddedManifestMatchesBinding(
 /**
  * Fail the build when the generator declaration and the shipped binary disagree.
  *
- * Four claims, each with its own failure and its own fix:
+ * Five claims, each with its own failure and its own fix:
  *  1. every declared `source` PARSES — an unreadable ref is a typo, not a
  *     forward-compatible unknown;
  *  2. an `npm:` source names the SAME package as its entry's `name`, so a
@@ -353,9 +353,10 @@ function assertEmbeddedManifestMatchesBinding(
  *
  * The five claims are three INDEPENDENT families over three disjoint loops, so
  * they are three functions and this one composes them in order
- * (cs:code.function.composition). That is what lets the embedded-manifest check
- * be exercised without first constructing a fully valid declaration and binding
- * map just to reach it.
+ * (cs:code.function.composition): one function per family, one loop each, and
+ * three separate failure vocabularies. The three are module-private and run in
+ * fixed order, so this buys readability and not an independent test seam — a
+ * caller still reaches the embedded-manifest check only through claims 1-4.
  *
  * @param input - The declaration, the bindings, the statics, the dependencies,
  *   and the embedded-manifest import.

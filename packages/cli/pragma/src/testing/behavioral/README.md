@@ -123,7 +123,7 @@ Two things this helper does NOT handle, and neither is a bug:
    or similar), following the naming/parameterization conventions above.
 3. **Extend, don't duplicate, the eval seed.** Add a `cases/<yourArea>.ts`
    file (`EvalCase[]`) under `testing/eval/cases/`, mirroring
-   `cases/readNouns.ts`, and wire it into `eval.test.ts`/`report.ts`'s
+   `cases/readNouns.ts`, and wire it into `eval.test.ts`'s
    `allSeedCases` concat.
 4. **State an intentional divergence where it is tested.** When a behaviour
    deliberately differs from what a naive parity expectation would predict, say

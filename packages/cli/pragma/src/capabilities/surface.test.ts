@@ -37,7 +37,10 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
     // info stays a data-only enrichment — its emitted verb is unchanged.
     expect(emitted.nouns.info?.verbs).toEqual([{ v: "info", mcp: "info" }]);
-    // Hidden meta verbs (__complete, mcp) are excluded from the surface.
+    // `mcp` and `__complete` are bin-level tokens answered at argv[0], never
+    // nouns: `kernel/packs/collect.ts` reserves them against packs and config
+    // stories via BIN_FAST_PATH_TOKENS, and nothing in `capabilities/` declares
+    // them. These two lines bar a capability from reintroducing either.
     expect(emitted.nouns.mcp).toBeUndefined();
     expect(emitted.nouns.__complete).toBeUndefined();
   });
