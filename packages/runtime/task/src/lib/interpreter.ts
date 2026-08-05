@@ -7,40 +7,11 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import driveAsync from "./driveAsync.js";
 import { TaskExecutionError } from "./errors.js";
 import type { Effect, ExecResult, Task, TaskError } from "./types.js";
 
 export { TaskExecutionError };
-
-/**
- * Normalise a value thrown while performing an effect into a structured
- * {@link TaskError}, so a real I/O exception can be routed through the
- * interpreter's recovery channel rather than escaping it. A
- * {@link TaskExecutionError} carries its `taskError` through unchanged; a
- * filesystem `ENOENT` maps to `FILE_NOT_FOUND`; anything else becomes
- * `INTERNAL`, preserving the original throw as `cause`.
- *
- * @param thrown - The value thrown while performing an effect.
- * @returns The equivalent structured task error.
- */
-const normalizeThrownError = (thrown: unknown): TaskError => {
-  if (thrown instanceof TaskExecutionError) {
-    return thrown.taskError;
-  }
-
-  const isFileNotFound =
-    typeof thrown === "object" &&
-    thrown !== null &&
-    "code" in thrown &&
-    (thrown as { code: unknown }).code === "ENOENT";
-
-  return {
-    code: isFileNotFound ? "FILE_NOT_FOUND" : "INTERNAL",
-    message: thrown instanceof Error ? thrown.message : String(thrown),
-    cause: thrown,
-    stack: thrown instanceof Error ? thrown.stack : undefined,
-  };
-};
 
 // =============================================================================
 // Effect Executor
@@ -353,20 +324,14 @@ export interface RunTaskOptions {
 // =============================================================================
 
 /**
- * A frame on the interpreter's explicit continuation stack: either a pending
- * bind (the `f` of a `FlatMap`) or an installed error-recovery handler (the
- * `handler` of a `Recover`).
- */
-type Frame =
-  | { kind: "bind"; f: (x: unknown) => Task<unknown> }
-  | { kind: "recover"; handler: (error: TaskError) => Task<unknown> };
-
-/**
  * Run a task to completion, executing all effects.
  *
- * Bind and recovery are realised on an explicit continuation/handler-frame
- * stack rather than by recursing through the task structure, so arbitrarily
- * long `flatMap`/`gen` chains run in constant call-stack depth.
+ * Bind and recovery are realised by the shared {@link driveAsync} trampoline on
+ * an explicit continuation/handler-frame stack rather than by recursing through
+ * the task structure, so arbitrarily long `flatMap`/`gen` chains run in constant
+ * call-stack depth. This module now supplies only the *performer* — what an
+ * effect actually does — which is the one thing that differs between running a
+ * task and planning it.
  */
 export const runTask = async <A>(
   task: Task<A>,
@@ -402,7 +367,7 @@ export const runTask = async <A>(
       const startTime = performance.now();
 
       const settled = await Promise.allSettled(
-        effect.tasks.map((child) => drive(child, performRaw)),
+        effect.tasks.map((child) => driveAsync(child, performRaw, checkInterrupted)),
       );
 
       const errors: TaskError[] = [];
@@ -438,7 +403,7 @@ export const runTask = async <A>(
       const startTime = performance.now();
 
       const result = await Promise.race(
-        effect.tasks.map((child) => drive(child, performRaw)),
+        effect.tasks.map((child) => driveAsync(child, performRaw, checkInterrupted)),
       );
 
       onEffectComplete?.(effect, performance.now() - startTime);
@@ -458,95 +423,7 @@ export const runTask = async <A>(
     return result;
   };
 
-  // The trampoline: drive a task to its final value on an explicit stack of
-  // bind/recover frames, so no node type recurses through the host call stack.
-  // `performEffect` supplies each leaf effect's result.
-  const drive = async (
-    root: Task<unknown>,
-    performEffect: (effect: Effect) => Promise<unknown>,
-  ): Promise<unknown> => {
-    const stack: Frame[] = [];
-    let cur: Task<unknown> = root;
-
-    // Unwind to the nearest recovery frame, discarding pending binds. With no
-    // recovery frame installed the error escapes as a TaskExecutionError.
-    const recoverFrom = (error: TaskError): Task<unknown> => {
-      while (stack.length > 0) {
-        const frame = stack.pop();
-        if (frame?.kind === "recover") {
-          return frame.handler(error);
-        }
-      }
-      throw new TaskExecutionError(error);
-    };
-
-    for (;;) {
-      checkInterrupted();
-
-      switch (cur._tag) {
-        case "FlatMap":
-          stack.push({ kind: "bind", f: cur.f });
-          cur = cur.inner;
-          break;
-
-        case "Recover":
-          stack.push({ kind: "recover", handler: cur.handler });
-          cur = cur.inner;
-          break;
-
-        case "Effect": {
-          // A raw exception from the effect (e.g. ENOENT from a real read, or a
-          // throwing TransformFile transform) is normalised and routed through
-          // the recovery channel, so recover/retry/orElse can see real I/O
-          // failures — not just explicit Fail nodes.
-          let result: unknown;
-          try {
-            result = await performEffect(cur.effect);
-          } catch (thrown) {
-            const taskError = normalizeThrownError(thrown);
-            // Interruption is not recoverable: an abort surfaced from a
-            // Parallel/Race child (whose own guard fired mid-flight) bypasses
-            // recovery, preserving the invariant that a cancelled task cannot
-            // be resurrected by an enclosing recover/orElse/retry.
-            if (taskError.code === "TASK_INTERRUPTED") {
-              throw thrown;
-            }
-            cur = recoverFrom(taskError);
-            break;
-          }
-          cur = cur.cont(result);
-          break;
-        }
-
-        case "Pure": {
-          // Success: unwind to the next bind frame, discarding recovery frames.
-          const value = cur.value;
-          let resumed = false;
-          while (stack.length > 0) {
-            const frame = stack.pop() as Frame;
-            if (frame.kind === "bind") {
-              cur = frame.f(value);
-              resumed = true;
-              break;
-            }
-          }
-          if (!resumed) {
-            return value;
-          }
-          break;
-        }
-
-        case "Fail":
-          // Failure: unwind to the nearest recovery frame, discarding binds.
-          cur = recoverFrom(cur.error);
-          break;
-      }
-    }
-  };
-
-  const result = await drive(task as Task<unknown>, performRaw);
-
-  return result as A;
+  return driveAsync(task, performRaw, checkInterrupted);
 };
 
 /**
