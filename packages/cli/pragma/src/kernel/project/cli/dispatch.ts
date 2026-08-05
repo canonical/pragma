@@ -5,14 +5,14 @@
  * on this path), boots the runtime, runs the verb across the effect seam, and
  * renders. The seam is the discriminator `capability.mutates`: a read is a
  * plain `Promise` rendered directly; a mutation is a `Task` interpreted under
- * the node interpreter (`--yes`), the dry-run interpreter (`--dry-run`), or the
- * undo interpreter (`--undo`). `--format json` wraps output in the full
+ * the node interpreter (`--yes`), the PLAN interpreter (`--dry-run` — real
+ * reads, simulated destruction), or the undo interpreter (`--undo`). `--format json` wraps output in the full
  * `{ ok, data, meta }` envelope (D3); errors render to stderr with a mapped
  * exit code.
  */
 
-import { describeEffect, dryRun, type Task } from "@canonical/task";
-import { runTask, runUndo } from "@canonical/task/node";
+import { describeEffect, type Task } from "@canonical/task";
+import { planTask, runTask, runUndo } from "@canonical/task/node";
 import {
   asPragmaError,
   CANCELLED_MESSAGE,
@@ -220,9 +220,11 @@ export async function executeVerb(
     // execution, so a network-touching mutation can stay offline for the plan.
     // Also hand it the interaction context so an interactive verb can pick its
     // prompt strategy. The verb's `run` sets `mutationRuntime.exec` (the runner
-    // options) as its last act; the projector reads it back on the real-run
-    // branch only — the dry-run/undo branches stay handler-free (they mock
-    // prompts), so `--dry-run`/`--undo` are unchanged by this seam.
+    // options) as its last act; the projector reads the HANDLERS back on the
+    // real-run branch only. The plan branch reads `exec.cwd` — and nothing else
+    // — because a plan that reads for real must resolve paths against the same
+    // jail root the run does; the undo branch reads nothing. Both stay
+    // handler-free: they mock prompts and install no callbacks.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
       // Gate on STDERR (H3): the Ink wizard renders to stderr and reads stdin,
@@ -254,10 +256,21 @@ export async function executeVerb(
     if (mutation.dryRun) {
       // A plan is the effects a mutation WOULD apply — a `Prompt` is not one, so
       // the interactive confirm gate / answer prompts never clutter the preview.
+      //
+      // `planTask` reads for real, so it MUST resolve relative effect paths
+      // against the same base the real run does: `rt.exec.cwd` is the SEC-2 jail
+      // root the verb wired in, and a plan resolving elsewhere would read the
+      // wrong files. Only `cwd` and `signal` are taken — never `promptHandler`,
+      // `onEffectStart`, `onLog` or `dispose`, so a plan still installs no
+      // handlers and runs no teardown.
+      const planned = await planTask(task, {
+        cwd: mutationRuntime.exec?.cwd,
+        signal: interaction.signal,
+      });
       return renderPlan(
         flags,
-        dryRun(task)
-          .effects.filter((effect) => effect._tag !== "Prompt")
+        planned.effects
+          .filter((effect) => effect._tag !== "Prompt")
           .map(describeEffect),
       );
     }

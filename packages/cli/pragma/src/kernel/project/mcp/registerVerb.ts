@@ -12,8 +12,8 @@
 
 import { statSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import { describeEffect, dryRun, type Task } from "@canonical/task";
-import { runTask } from "@canonical/task/node";
+import { describeEffect, type Task } from "@canonical/task";
+import { planTask, runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
@@ -199,8 +199,15 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
           | Promise<Task<unknown>>,
       );
       if (preview) {
-        const plan = dryRun(task)
-          .effects.filter((effect) => effect._tag !== "Prompt")
+        // The PLAN interpreter, not the mocking collector: it performs the
+        // reads for real and simulates only destruction, so a preview whose
+        // real run would die on a read fails here too. `effectiveCwd` is the
+        // same SEC-2 jail root the real run resolves against — a plan reading
+        // elsewhere would read the wrong files. No prompt handler is passed,
+        // and `planTask` has no field to pass one to.
+        const planned = await planTask(task, { cwd: effectiveCwd });
+        const plan = planned.effects
+          .filter((effect) => effect._tag !== "Prompt")
           .map(describeEffect);
         return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });
       }

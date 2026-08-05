@@ -22,8 +22,14 @@ const noMutation: MutationFlags = { dryRun: false, undo: false, yes: false };
 
 const json = (d: unknown) => JSON.stringify(d);
 
-/** A mutating verb whose task prompts once and whose `run` wires `exec`. */
-function seamVerb(onExec?: () => void): VerbSpec {
+/**
+ * A mutating verb whose task prompts once and whose `run` wires `exec`.
+ *
+ * @param onExec - Spy for the teardown the dispatcher runs after a real run.
+ * @param onPrompt - Spy for the INJECTED prompt handler, so "handler-free" can
+ * be asserted rather than only asserted-about in a title.
+ */
+function seamVerb(onExec?: () => void, onPrompt?: () => void): VerbSpec {
   return {
     path: ["fixture", "seam"],
     summary: "A prompting mutation.",
@@ -40,7 +46,10 @@ function seamVerb(onExec?: () => void): VerbSpec {
       // as the injected prompt handler + optional teardown.
       const answer = rt.interaction?.yes ? "confirmed" : "attended";
       rt.exec = {
-        promptHandler: () => Promise.resolve(answer),
+        promptHandler: () => {
+          onPrompt?.();
+          return Promise.resolve(answer);
+        },
         dispose: onExec,
       };
       return gen(function* () {
@@ -85,9 +94,11 @@ describe("interaction/exec seam (PROTECTED)", () => {
   });
 
   it("dry-run stays handler-free, mocks the prompt, and omits it from the plan", async () => {
+    const dispose = vi.fn();
+    const promptHandler = vi.fn();
     const runtime = bootRuntime(FLAGS);
     const outcome = await executeVerb(
-      seamVerb(),
+      seamVerb(dispose, promptHandler),
       {},
       { ...noMutation, dryRun: true },
       runtime,
@@ -95,5 +106,11 @@ describe("interaction/exec seam (PROTECTED)", () => {
     expect(outcome.exitCode).toBe(0);
     // The only effect is the Prompt (mocked) — filtered from the plan.
     expect(outcome.stdout).toContain("no effects");
+    // "Handler-free" as an ASSERTION, not a title. The plan branch now reads
+    // `exec.cwd` (planTask performs real reads and must resolve paths against
+    // the same jail root the run does), which makes it tempting to reach for
+    // the rest of `exec` too — these two spies are what forbids that.
+    expect(promptHandler).not.toHaveBeenCalled();
+    expect(dispose).not.toHaveBeenCalled();
   });
 });
