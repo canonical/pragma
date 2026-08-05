@@ -123,8 +123,7 @@
       "name": "pragma-docs",
       "version": "0.0.0",
       "dependencies": {
-        "@canonical/ke": "^0.32.0",
-        "@canonical/ke-graphql": "^0.32.0",
+        "@canonical/prism-pragma-provider": "^0.32.0",
         "@canonical/react-ds-global": "^0.32.0",
         "@canonical/react-head": "^0.32.0",
         "@canonical/react-hooks": "^0.32.0",
