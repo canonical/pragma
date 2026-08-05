@@ -26,8 +26,8 @@
  * used to declare the pack schemas in zod, and `manifest.ts` value-imported
  * `manifestSchema` for `readManifest`; `packIsComplete` calls that, and
  * `resolveSources` calls `packIsComplete`. The live chain was
- * `capabilities/index.ts → graph/index.ts → resources/index.ts →
- * resources/provider.ts → resolveSources.ts → graphpack/manifest.ts →
+ * `capabilities/index.ts → graph/index.ts → graph/resources.provider.ts →
+ * resolveSources.ts → graphpack/manifest.ts →
  * graphpack/types.ts → zod`, so BUILDING THE COMMAND TREE evaluated zod —
  * `__complete` and `--help` included. The schemas that survive live in
  * `schemas.ts`, reached only from `read.ts`, which is off that graph; the

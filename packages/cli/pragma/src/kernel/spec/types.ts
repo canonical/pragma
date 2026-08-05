@@ -259,3 +259,16 @@ export interface CapabilityModule {
   /** An optional MCP prompt surface (NOT a VerbSpec field — a module hook). */
   readonly mcpPrompts?: McpPromptProvider;
 }
+
+/**
+ * A single stage in the discovery flow an agent follows at session start.
+ *
+ * Here rather than in `capabilities/capabilities/types.ts`, where it used to
+ * live, because `kernel/orientation.ts` builds the sequence and a kernel module
+ * may not reach into a capability for its own return type.
+ */
+export interface DiscoveryStage {
+  readonly stage: number;
+  readonly tool: string;
+  readonly purpose: string;
+}

@@ -21,7 +21,7 @@
  * unchanged.
  *
  * `doc`'s parenthetical enumerates the four conventions and must track
- * `CONVENTIONS` in `catalog.ts`. It is the FIRST writing an agent reads — MCP
+ * `CONVENTIONS` in `kernel/orientation.ts`. It is the FIRST writing an agent reads — MCP
  * `tools/list` serves it before the tool is ever called — so a stale one sets
  * an expectation the payload then denies. It named a tier/channel scoping model
  * after `CONVENTIONS.model` had been rewritten to state that reads are

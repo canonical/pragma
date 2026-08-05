@@ -22,13 +22,13 @@ import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { TEST_FLAGS } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
-import { graphModule } from "../graph/index.js";
 import { capabilities } from "../index.js";
+import { graphModule } from "./index.js";
 import {
   buildResourceList,
   rankUriCompletions,
   resourceProvider,
-} from "./provider.js";
+} from "./resources.provider.js";
 
 /**
  * Two entities of the committed embedded pack, chosen for what they PROVE: an

@@ -3,8 +3,8 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
+import type { DiscoveredSkill } from "../../kernel/skills/discover.js";
 import type { Formatters } from "../../kernel/spec/types.js";
-import type { DiscoveredSkill } from "./discover.js";
 import type { SkillLookup } from "./verbs.js";
 
 /** Empty-state guidance (U5) — where skills come from now that packs ship them. */

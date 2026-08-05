@@ -335,7 +335,7 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // pack schemas, `manifest.ts` value-imported `manifestSchema` for
     // `readManifest`, `packIsComplete` called that, and `resolveSources` called
     // `packIsComplete` — reached here through
-    // `graph/index.ts → resources/index.ts → resources/provider.ts`. So zod was
+    // `graph/index.ts → graph/resources.provider.ts`. So zod was
     // evaluated whenever the command tree was built, `__complete` included, for
     // ~3–4 ms of a ~25 ms path. The manifest is now read by a hand-written
     // structural check and the surviving schemas live in `graphpack/schemas.ts`,
@@ -357,8 +357,8 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     //  - It never resolves a BARE specifier, so zod arriving through a
     //    DEPENDENCY is invisible. This is not hypothetical: this graph already
     //    reaches `@modelcontextprotocol/sdk` (`graph/index.ts` →
-    //    `resources/index.ts` → `resources/provider.ts` →
-    //    `project/mcp/mcpError.ts`), and the SDK's `types.js` imports `zod/v4`.
+    //    `graph/resources.provider.ts` → `project/mcp/mcpError.ts`), and the
+    //    SDK's `types.js` imports `zod/v4`.
     //    Today that edge is `import type` and erases — a runtime module probe
     //    over the source tree reports ZOD=0 for `__complete` and `--help`, and
     //    ZOD=10 for `config show`, so the probe is not vacuous. Making it a

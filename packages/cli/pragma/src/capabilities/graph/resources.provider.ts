@@ -16,6 +16,15 @@
  * The MCP SDK's `ResourceTemplate` is dynamic-imported inside `register` so this
  * module — reachable on the capabilities import graph — never pulls the SDK onto
  * the `--help`/`__complete` fast path.
+ *
+ * A SUB-MODULE OF `graph`, not a sibling of it. It used to sit in its own
+ * `capabilities/resources/` directory behind a barrel, which read as a
+ * capability and was not one: it declares no `CapabilityModule`, it is absent
+ * from the `authored` array, and its one production importer was
+ * `graph/index.ts`, which hangs it off `graphModule.mcpResources`. Nothing
+ * user-visible moved with the file — the noun set, every `--help`, `tools/list`
+ * and the covenant's `mcpSurface.resources` all derive from `graphModule`, and
+ * the resource scheme is frozen independently of where this file lives.
  */
 
 import { BIN_NAME } from "../../constants.js";

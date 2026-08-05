@@ -3,10 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GetPromptRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { CONVENTIONS } from "../../../../capabilities/capabilities/catalog.js";
 import { capabilities } from "../../../../capabilities/index.js";
 import type { McpHarness } from "../../../../testing/helpers/projectMcp.js";
 import { projectMcp } from "../../../../testing/helpers/projectMcp.js";
+import { CONVENTIONS } from "../../../orientation.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 import { emitSurface } from "../../../spec/emitSurface.js";
 import type { CapabilityModule } from "../../../spec/types.js";
@@ -44,7 +44,7 @@ describe("instructions — handshake orientation (PROTECTED)", () => {
     );
   });
 
-  it("opens with the shared catalog's conventions, verbatim and once", () => {
+  it("opens with the shared orientation's conventions, verbatim and once", () => {
     // The conventions are authored once (capabilities/catalog.ts); instructions
     // must OPEN with them, so a second hand-written preamble cannot creep back
     // in and drift from the `capabilities` tool the same handshake carries.

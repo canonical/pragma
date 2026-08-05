@@ -34,9 +34,9 @@ import {
 } from "../../kernel/runtime/refs/resolve.js";
 import { createLazyStore } from "../../kernel/runtime/store.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
+import { discoverSkills } from "../../kernel/skills/discover.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
-import { discoverSkills } from "../skill/discover.js";
 import { collectStatus } from "./collectStatus.js";
 import { sourcesModule } from "./index.js";
 import { buildUpdateTask } from "./runUpdate.js";

@@ -13,9 +13,12 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import {
+  type DiscoveredSkill,
+  discoverSkills,
+} from "../../kernel/skills/discover.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
-import { type DiscoveredSkill, discoverSkills } from "./discover.js";
 import { skillListFormatters, skillLookupFormatters } from "./render.js";
 
 /** A looked-up skill: its metadata plus the SKILL.md instructions body. */

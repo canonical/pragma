@@ -5,18 +5,16 @@
  * It carries the same content the retired `llm` tool front-loaded: the
  * conventions + the discovery sequence. To guarantee it never diverges from the
  * `capabilities` tool, the WHOLE orientation — the opening line included —
- * derives from the SAME source: `CONVENTIONS` and
- * `buildDiscoverySequence` in `capabilities/capabilities/catalog.ts`. Live
+ * derives from the SAME source: `CONVENTIONS` and `buildDiscoverySequence` in
+ * `kernel/orientation.ts`, which this module used to reach three levels up into
+ * `capabilities/capabilities/catalog.ts` for. Live
  * numbers (tier/channel/entity counts) are deliberately DROPPED (they would need
  * a store boot at handshake); agents fetch those via `info`/`config show`/
  * `sources status`. Kept short (a hard length ceiling is asserted in the test),
  * since it counts against every session's context.
  */
 
-import {
-  buildDiscoverySequence,
-  CONVENTIONS,
-} from "../../../capabilities/capabilities/catalog.js";
+import { buildDiscoverySequence, CONVENTIONS } from "../../orientation.js";
 import { emitSurface } from "../../spec/emitSurface.js";
 import type { CapabilityModule } from "../../spec/types.js";
 

@@ -47,7 +47,7 @@ import {
   resolvePackage,
 } from "../../kernel/runtime/refs/resolve.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import { installedSkillsDir } from "../skill/discover.js";
+import { installedSkillsDir } from "../../kernel/skills/discover.js";
 import { planSkillInstall } from "./installSkills.js";
 import type { SourcesUpdateData } from "./types.js";
 

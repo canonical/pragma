@@ -17,7 +17,7 @@
 import { existsSync, lstatSync, readdirSync, readlinkSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
 import type { ResolvedPackage } from "../../kernel/runtime/refs/resolve.js";
-import { installedSkillsDir } from "../skill/discover.js";
+import { installedSkillsDir } from "../../kernel/skills/discover.js";
 
 /** One planned skill symlink into the installed-skills root. */
 export interface SkillLinkAction {

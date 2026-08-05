@@ -8,6 +8,8 @@
  * authored input, and `catalog.ts` for the derivation.
  */
 
+import type { DiscoveryStage } from "../../kernel/spec/types.js";
+
 /** A tool's behavioural category, used for grouping + counts. */
 export type ToolCategory = "read" | "write" | "orientation" | "diagnostic";
 
@@ -22,13 +24,6 @@ export interface CatalogTool {
   readonly name: string;
   readonly category: ToolCategory;
   readonly use_when: string;
-}
-
-/** A single stage in the discovery flow an agent follows at session start. */
-export interface DiscoveryStage {
-  readonly stage: number;
-  readonly tool: string;
-  readonly purpose: string;
 }
 
 /** Tool counts by category (all DERIVED from the live catalog, never pinned). */

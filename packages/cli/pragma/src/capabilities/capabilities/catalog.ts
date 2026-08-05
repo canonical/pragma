@@ -10,51 +10,22 @@
  * retired tools.
  *
  * Pure + zod-free: it reads only `emitSurface` (itself fast-path-safe), so the
- * verb's storeless guarantee holds. The conventions + discovery strings are
- * exported so `kernel/project/mcp/instructions.ts` derives the handshake
- * orientation from the SAME source and the two can never diverge.
+ * verb's storeless guarantee holds. The conventions + discovery strings live in
+ * `kernel/orientation.ts`, which `kernel/project/mcp/instructions.ts` reads
+ * too, so the handshake and this payload derive from the SAME source and can
+ * never diverge. They moved there from here: the handshake reaching three
+ * levels up into a concrete capability was a kernel→capabilities back-edge.
  */
 
-import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../constants.js";
+import { VERSION } from "../../constants.js";
+import {
+  buildDiscoverySequence,
+  CONVENTIONS,
+} from "../../kernel/orientation.js";
 import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 import { TOOL_HINTS } from "./hints.js";
-import type {
-  CapabilitiesData,
-  CatalogTool,
-  DiscoveryStage,
-  ToolCounts,
-} from "./types.js";
-
-/**
- * The four orientation conventions, and the single source both the
- * `capabilities` tool and the MCP handshake read, so the two cannot contradict
- * each other. `system` projects the distribution's identity rather than naming
- * a domain — the live tool catalog the same handshake carries already says
- * which nouns exist. Every connecting agent is told these four things before it
- * calls anything, so each must be TRUE of the tools it is about to reach:
- * `model` told agents to scope data by tier and channel via `config_set` until
- * `block list` — the last verb that filtered on either — became a declared
- * story with no term for them, at which point it became a falsehood shipped in
- * the handshake.
- */
-export const CONVENTIONS = {
-  // `help` is authored as a bare phrase (`--help` renders it as one), so the
-  // self-description trails in parentheses rather than after a period this
-  // string would have to add — a fork writing "Explore the recipe graph."
-  // otherwise reads "recipe graph.. A CLI and MCP server…".
-  system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
-  // Length is load-bearing: this string ships in the MCP handshake, which
-  // carries a hard character ceiling (`INSTRUCTIONS_MAX_CHARS`) because it
-  // costs every session's context. Say the true thing in about the space the
-  // false one took, rather than raising the ceiling to fit better prose.
-  model:
-    "Reads are UNSCOPED: every list and lookup answers from the whole graph. The tier and channel config fields are recorded but narrow nothing today; filter the rows you get back, or use graph_query for a scoped SELECT.",
-  querying:
-    "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
-  mutations:
-    "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
-} as const;
+import type { CapabilitiesData, CatalogTool, ToolCounts } from "./types.js";
 
 /** The output modes the renderers offer. */
 const OUTPUT_MODES = ["plain", "json", "llm"] as const;
@@ -73,44 +44,6 @@ function mutatingTools(modules: readonly CapabilityModule[]): Set<string> {
 /** The live sorted tool names the covenant blesses, from the emitted surface. */
 export function liveTools(modules: readonly CapabilityModule[]): string[] {
   return emitSurface(modules).mcpSurface.tools;
-}
-
-/**
- * Build the discovery sequence, deriving the sample list from the tools that
- * ACTUALLY exist (block/standard/modifier/token declare samples today), plus a
- * store-state pre-check so a cold agent is never sent into `*_sample` (or any
- * store read) blind — every store read fails STORE_UNAVAILABLE until
- * `sources_update` has built the store.
- */
-export function buildDiscoverySequence(
-  tools: readonly string[],
-): DiscoveryStage[] {
-  const samples = tools.filter((tool) => tool.endsWith("_sample"));
-  const sampleList = samples.length > 0 ? samples.join(", ") : "the *_sample";
-  return [
-    {
-      stage: 1,
-      tool: "capabilities",
-      purpose: "Understand conventions, available tools, and how to navigate",
-    },
-    {
-      stage: 2,
-      tool: "sources_status",
-      purpose:
-        "See which pack is answering. A fresh install answers reads from the snapshot embedded in the binary and needs no build; only an `unavailable` status requires sources_update (confirm: true), which is a project that declared its own packs and has not built them.",
-    },
-    {
-      stage: 3,
-      tool: "*_sample",
-      purpose: `Call ${sampleList} tools to see real data shapes before querying. Prevents guessing at property names.`,
-    },
-    {
-      stage: 4,
-      tool: "domain tools",
-      purpose:
-        "Query specific entities — block_list, standard_lookup, etc. Use the use_when hints above to pick the right tool.",
-    },
-  ];
 }
 
 /** Tally the catalog tools by category (all counts DERIVED, never pinned). */

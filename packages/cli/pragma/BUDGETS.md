@@ -232,7 +232,7 @@ Confirmed by the spike:
   schema module nor any `collect*` run body (those are dynamic-imported). The
   `capabilities/index` assertion became an EXACT EMPTY SET: until then it
   pinned one tolerated importer, `runtime/graphpack/types.ts`, reached through
-  `resources/provider.ts → resolveSources → packIsComplete → readManifest →
+  `graph/resources.provider.ts → resolveSources → packIsComplete → readManifest →
   manifestSchema.parse`. Re-measured on the compiled binary (trimmed mean of 40
   spawns, netted against `--version` from the same binary in the same run):
   `__complete block ''` **24.1 / 26.1 ms → 19.5 / 21.5 ms**, `--help`

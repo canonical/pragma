@@ -67,7 +67,7 @@ export async function detectSkills(
   const cwd = rt.cwd;
   const [{ discoverSkills }, { detectHarnesses }, { runTask }] =
     await Promise.all([
-      import("../../skill/discover.js"),
+      import("../../../kernel/skills/discover.js"),
       import("@canonical/harnesses"),
       import("@canonical/task/node"),
     ]);

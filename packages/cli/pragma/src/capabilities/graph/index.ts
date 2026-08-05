@@ -4,9 +4,9 @@
  */
 
 import type { CapabilityModule } from "../../kernel/spec/types.js";
-import { resourceProvider } from "../resources/index.js";
 import { graphInspectVerb } from "./inspect.verb.js";
 import { graphQueryVerb } from "./query.verb.js";
+import { resourceProvider } from "./resources.provider.js";
 
 /**
  * The `graph` capability module. Carries the MCP resource browser: `graph

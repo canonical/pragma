@@ -4,7 +4,7 @@ import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses } from "@canonical/harnesses";
 import { runTask } from "@canonical/task/node";
 import { BIN_NAME } from "../../../constants.js";
-import { discoverSkills } from "../../skill/discover.js";
+import { discoverSkills } from "../../../kernel/skills/discover.js";
 import type { CheckResult } from "../types.js";
 
 /**

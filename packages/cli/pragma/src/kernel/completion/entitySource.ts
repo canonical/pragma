@@ -58,7 +58,6 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { discoverSkills } from "../../capabilities/skill/discover.js";
 // Inlined embedded index — its OWN generated module (only the index string), so
 // the storeless `__complete` path never pulls the n-quads/schema/manifest
 // strings that live in `pack.generated.ts`.
@@ -67,6 +66,7 @@ import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../runtime/paths.js";
 import type { SourcesDecision } from "../runtime/resolveSources.js";
+import { discoverSkills } from "../skills/discover.js";
 import type { CompletionField, CompletionSourceRef } from "../spec/types.js";
 import type { CompletionEnv } from "./types.js";
 

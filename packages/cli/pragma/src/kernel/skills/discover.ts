@@ -8,6 +8,19 @@
  * with missing files and invalid frontmatter skipped gracefully. Reads only the
  * filesystem, never the graph store, so `skill list`/`lookup` are storeless
  * (needsStore: false).
+ *
+ * IN `kernel/` RATHER THAN `capabilities/skill/`, WHERE IT USED TO LIVE,
+ * because `kernel/completion/entitySource.ts` reads it — one of the tree's only
+ * two kernel→capabilities back-edges, and an arrow that has to point the other
+ * way before the command model can be extracted with `kernel/` depending on
+ * `capabilities/` solely through `CapabilityModule`. It had one in-directory
+ * consumer and five outside it (the completion entity source, the doctor skills
+ * check, `sources` install + update, and `setup skills`), so its own directory
+ * was never where it belonged.
+ *
+ * Nothing user-visible moves: `skill list`/`lookup` still compose from
+ * `capabilities/skill/verbs.ts`, which imports down into the kernel like every
+ * other capability.
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";

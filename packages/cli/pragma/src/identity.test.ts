@@ -200,7 +200,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // read the other's skills and could not install its own without collision.
     process.env.XDG_DATA_HOME = join(tmpdir(), "identity-data");
     const { skillRoots, installedSkillsDir } = await import(
-      "./capabilities/skill/discover.js"
+      "./kernel/skills/discover.js"
     );
     expect(installedSkillsDir().endsWith(join("recipes", "skills"))).toBe(true);
     expect(skillRoots("/work")).toEqual([
@@ -328,7 +328,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { emitSurface } = await import("./kernel/spec/emitSurface.js");
     const { capabilities } = await import("./capabilities/index.js");
     const { buildResourceList, resourceProvider } = await import(
-      "./capabilities/resources/provider.js"
+      "./capabilities/graph/resources.provider.js"
     );
     const { readPackIndex } = await import(
       "./kernel/completion/entitySource.js"
