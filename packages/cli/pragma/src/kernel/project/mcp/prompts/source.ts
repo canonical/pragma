@@ -31,22 +31,16 @@
 
 import { readPackIndex } from "../../../completion/entitySource.js";
 import { runSelect } from "../../../packs/sparql/runSelect.js";
-import type { PackRow, StoryOrigin } from "../../../packs/types.js";
+import { distributionOrigin, type PackRow } from "../../../packs/types.js";
 import type { SourcesDecision } from "../../../runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 import { VOCABULARY } from "../../../vocabulary.js";
 
 /** The declared prompt terms this module reads the graph with. */
-/**
- * This query is written by THIS BINARY rather than by a story file, so its
- * origin is the distribution: an unbound prefix here means the store was never
- * built from a pack that binds the term, and `sources update` is the answer.
- * A config- or package-declared story naming an unbound prefix is a different
- * condition and gets a different error — see {@link StoryOrigin}.
- */
-const PROMPT_ORIGIN: StoryOrigin = { kind: "distribution", label: "prompt" };
-
 const PROMPT = VOCABULARY.prompt;
+
+/** This module's SPARQL is composed here, not declared — see the helper. */
+const PROMPT_ORIGIN = distributionOrigin("prompt");
 
 /** One declared argument of a prompt template. */
 export interface PromptArgument {

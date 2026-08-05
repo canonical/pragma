@@ -302,18 +302,43 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // behind the store boot.
     //
     // WHAT THIS DOES AND DOES NOT COVER, stated because a guard that overclaims
-    // is worse than none. It is a TEXTUAL walk of `from "…"` specifiers, so it
-    // cannot distinguish `import type` from a value import: a type-only edge to
-    // a zod-importing module would fail this test even though it erases. In the
-    // other direction it is exact and complete FOR THIS GRAPH — a brand-new
-    // module value-importing zod anywhere reachable from `capabilities/index.ts`
-    // fails, because the expectation is an empty set rather than a tolerated
-    // list. What it says nothing about is zod OFF this graph. A type-aware
-    // import walker would close that residue; it was deliberately not attempted
-    // in PR7, because it is a rewrite of three PROTECTED guards
-    // (this file's three exact enumerations, `completion/safety.test.ts`'s
-    // storeless graph, and `@canonical/task`'s node-free closure walk) each of
-    // which currently derives its authority from being simple and textual.
+    // is worse than none.
+    //
+    // The walk follows RELATIVE specifiers ONLY (`if (!spec.startsWith("."))
+    // continue`). So what it pins is zod arriving through THIS PACKAGE'S OWN
+    // modules: any file of ours that appears on this graph and value-imports
+    // zod fails, because the expectation is an empty set rather than a tolerated
+    // list. It is blind in two directions, both of them real:
+    //
+    //  - It is TEXTUAL, so it cannot distinguish `import type` from a value
+    //    import: a type-only edge to a zod-importing module of ours would fail
+    //    it even though the edge erases.
+    //  - It never resolves a BARE specifier, so zod arriving through a
+    //    DEPENDENCY is invisible. This is not hypothetical: this graph already
+    //    reaches `@modelcontextprotocol/sdk` (`graph/index.ts` →
+    //    `resources/index.ts` → `resources/provider.ts` →
+    //    `project/mcp/mcpError.ts`), and the SDK's `types.js` imports `zod/v4`.
+    //    Today that edge is `import type` and erases — a runtime module probe
+    //    over the source tree reports ZOD=0 for `__complete` and `--help`, and
+    //    ZOD=10 for `config show`, so the probe is not vacuous. Making it a
+    //    value import (plus one runtime use, since bare bindings used only in
+    //    `typeof` position are elided) puts 65 zod modules on BOTH fast paths
+    //    while this test and `completion/safety.test.ts` stay green: 29 tests
+    //    passed. Compiled A/B, trimmed mean of 30 spawns netted against
+    //    `--version` from the same binary, run twice each way:
+    //    `__complete` 20.2 / 20.8 ms → 47.3 / 46.8, `--help` 24.6 / 25.6 →
+    //    51.4 / 51.5 — about +26 ms on each, five times what taking zod off this
+    //    graph recovered, and still inside the 100 / 130 ms perf ceilings, so
+    //    nothing else catches it either.
+    //
+    // Closing the bare-specifier hole needs the TYPE-AWARENESS the first bullet
+    // lacks — a zod-only `Bun.resolveSync` from each graph file would flag
+    // today's erasing `mcpError.ts` edge and be wrong. A type-aware walker is
+    // the fix for both and was deliberately not attempted in PR7: it is a
+    // rewrite of three PROTECTED guards (this file's three exact enumerations,
+    // `completion/safety.test.ts`'s storeless graph, and `@canonical/task`'s
+    // node-free closure walk) each of which currently derives its authority from
+    // being simple and textual. Half-doing it is worse than naming the residue.
     const graph = staticImportGraph(resolve(here, "index.ts"));
     const pkgRoot = resolve(here, "..", "..");
     const zodImporters = [...graph]

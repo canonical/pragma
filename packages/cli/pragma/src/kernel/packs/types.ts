@@ -45,6 +45,28 @@ export interface StoryOrigin {
   readonly label: string;
 }
 
+/**
+ * The origin of a query THIS BINARY writes, rather than one a story file
+ * declares.
+ *
+ * One fact about the kernel with one writing. An unbound prefix in a query the
+ * distribution composed means the store was never built from a pack that binds
+ * the term, and `sources update` is the answer; the same condition under a
+ * config- or package-declared story means the store IS built and the story names
+ * a term it does not bind, which `sources update` cannot fix. `runSelect`
+ * branches on exactly this, so the three bespoke readers that compose their own
+ * SPARQL must agree — and they were three spellings: two module constants
+ * carrying a word-for-word duplicated six-line docblock, and one undocumented
+ * object literal at a call site.
+ *
+ * @param label - Human attribution for diagnostics (the noun being read).
+ * @returns The distribution-authored origin.
+ */
+export const distributionOrigin = (label: string): StoryOrigin => ({
+  kind: "distribution",
+  label,
+});
+
 /** A list column: a SELECT variable to display. */
 export interface PackColumn {
   /** SELECT variable name (without `?`). */

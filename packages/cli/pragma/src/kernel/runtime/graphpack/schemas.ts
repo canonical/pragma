@@ -15,10 +15,13 @@
  * validator kept beside a retained zod schema would be two writings of the same
  * grammar, which is the shape of defect this programme keeps finding.
  *
- * zod is a WATCHED dependency here (`capabilities/lazy.test.ts` asserts the
- * command-tree graph reaches none of it, `config/schema.ts`'s docblock lists
- * the sanctioned seams). Adding an importer to this directory is a decision,
- * not a convenience.
+ * zod is a WATCHED dependency here. This module is the FIFTH of the sanctioned
+ * seams `config/schema.ts`'s docblock enumerates — that list is the register,
+ * and it undercounted by one (this one) until PR7's fix-fold. Nothing enforces
+ * the count: `capabilities/lazy.test.ts` asserts an exact EMPTY set on the
+ * command-tree graph, and this module is deliberately off that graph, so the
+ * enumeration is the only record there is. Adding an importer to this directory
+ * is a decision, not a convenience.
  */
 
 import { z } from "zod";

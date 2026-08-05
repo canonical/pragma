@@ -1,17 +1,30 @@
 /**
  * Zod validation for a config layer.
  *
- * One of the FOUR sanctioned zod seams — `spec/validate.ts` (the covenant
- * grammar), `project/mcp/registerVerb.ts` (tool schemas), this module (the
- * config grammar), and `packs/schema.ts` (the pack-definition grammar, lazily
- * imported). This sentence used to say "three" and predated `packs/schema.ts`;
- * a fifth, `runtime/graphpack/types.ts`, was on the command-tree graph until PR7
- * moved it into `graphpack/schemas.ts` behind the store boot. None is reached
- * from the `--help` or `__complete` fast path, which are storeless and
- * config-free — `capabilities/lazy.test.ts` holds that as an EXACT empty set. Validates the raw shape a global
- * JSON file or an evaluated `pragma.config.ts` declares; unknown keys are
- * stripped for forward compatibility, and only present keys survive so layer
- * merging keeps honest per-field provenance.
+ * One of the FIVE sanctioned zod seams, which is every module in `src/` that
+ * value-imports zod:
+ *
+ * 1. `spec/validate.ts` — the covenant grammar;
+ * 2. `project/mcp/registerVerb.ts` — tool schemas;
+ * 3. this module — the config grammar;
+ * 4. `packs/schema.ts` — the pack-definition grammar, lazily imported;
+ * 5. `runtime/graphpack/schemas.ts` — the pack-artifact grammar, reached only
+ *    from `read.ts`, i.e. behind the store boot.
+ *
+ * The count is the register this programme keeps and it has been wrong twice.
+ * It said "three" before `packs/schema.ts` existed; it then said "four" and
+ * described the fifth as something PR7 had *moved away*, which read as
+ * elimination — but what PR7 removed is the EDGE from the command-tree graph,
+ * not the importer. The schemas left `graphpack/types.ts` for
+ * `graphpack/schemas.ts` and the seam count never changed.
+ *
+ * None of the five is reached from the `--help` or `__complete` fast path, which
+ * are storeless and config-free — `capabilities/lazy.test.ts` holds that as an
+ * EXACT empty set, over this package's own relative-import graph.
+ *
+ * Validates the raw shape a global JSON file or an evaluated `pragma.config.ts`
+ * declares; unknown keys are stripped for forward compatibility, and only
+ * present keys survive so layer merging keeps honest per-field provenance.
  *
  * FOUR edits to the config surface are checked BEFORE validation, each raising
  * a CONFIG_ERROR that names the file AND the edit that fixes it. Two of them —

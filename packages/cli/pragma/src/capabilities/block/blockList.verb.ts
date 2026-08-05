@@ -11,6 +11,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
+import { distributionOrigin } from "../../kernel/packs/types.js";
 import type {
   ColumnDef,
   RenderListOptions,
@@ -24,6 +25,9 @@ import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { Formatters, VerbSpec } from "../../kernel/spec/types.js";
 import { buildChannelFilter, buildTierFilter } from "./tierChain.js";
+
+/** This verb's SELECT is composed here, not declared — see the helper. */
+const BLOCK_ORIGIN = distributionOrigin("block");
 
 /** One block summary row. */
 export interface BlockRow {
@@ -146,10 +150,7 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
       layers.config.channel,
       params.allTiers === true,
     );
-    const rows = await runSelect(rt, query, {
-      kind: "distribution",
-      label: "block",
-    });
+    const rows = await runSelect(rt, query, BLOCK_ORIGIN);
     return rows.map((row) => ({
       uri: row.component ?? "",
       // An unnamed block still needs a token to show — fall back to its IRI's

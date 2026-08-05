@@ -6,9 +6,9 @@
  * renders. The seam is the discriminator `capability.mutates`: a read is a
  * plain `Promise` rendered directly; a mutation is a `Task` interpreted under
  * the node interpreter (`--yes`), the PLAN interpreter (`--dry-run` — real
- * reads, simulated destruction), or the undo interpreter (`--undo`). `--format json` wraps output in the full
- * `{ ok, data, meta }` envelope (D3); errors render to stderr with a mapped
- * exit code.
+ * reads, simulated destruction), or the undo interpreter (`--undo`).
+ * `--format json` wraps output in the full `{ ok, data, meta }` envelope (D3);
+ * errors render to stderr with a mapped exit code.
  */
 
 import { describeEffect, type Task } from "@canonical/task";

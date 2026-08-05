@@ -17,7 +17,7 @@
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
-import type { StoryOrigin } from "../../kernel/packs/types.js";
+import { distributionOrigin } from "../../kernel/packs/types.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
@@ -26,14 +26,8 @@ import { VOCABULARY } from "../../kernel/vocabulary.js";
 import { TIER_TYPE } from "./constants.js";
 import type { TierLookupData } from "./lookup.render.js";
 
-/**
- * This query is written by THIS BINARY rather than by a story file, so its
- * origin is the distribution: an unbound prefix here means the store was never
- * built from a pack that binds the term, and `sources update` is the answer.
- * A config- or package-declared story naming an unbound prefix is a different
- * condition and gets a different error — see {@link StoryOrigin}.
- */
-const TIER_ORIGIN: StoryOrigin = { kind: "distribution", label: "tier" };
+/** This module's SPARQL is composed here, not declared — see the helper. */
+const TIER_ORIGIN = distributionOrigin("tier");
 
 /**
  * Read every tier name in the store, ordered.
