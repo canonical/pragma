@@ -196,6 +196,128 @@ export interface DeclaredGeneratorCheck {
 }
 
 /**
+ * Check each declared generator against this package's own dependencies.
+ *
+ * Claims 1-3: the source parses; an `npm:` source names the same package the
+ * entry calls itself; and its range equals `dependencies[name]`, which is what
+ * makes `source` load-bearing, since the dependency decides what links in.
+ *
+ * @param declared - The `generators` entries from `pragma.conf.ts`.
+ * @param dependencies - This package's `dependencies` map.
+ * @throws Error naming the offending entry and the edit that fixes it.
+ */
+function assertDeclarationMatchesDependencies(
+  declared: DeclaredGeneratorCheck["declared"],
+  dependencies: DeclaredGeneratorCheck["dependencies"],
+): void {
+  for (const entry of declared) {
+    // Prefixed with the file, like every other failure this module raises:
+    // `parseGeneratorSource` takes a bare string and cannot name the declaration
+    // it came from, so its two messages used to be the only ones here that did
+    // not begin with the file a builder has to open.
+    let parsed: ParsedGeneratorSource;
+    try {
+      parsed = parseGeneratorSource(entry.source);
+    } catch (cause) {
+      throw new Error(
+        `pragma.conf.ts generator "${entry.name}": ${cause instanceof Error ? cause.message : String(cause)}`,
+      );
+    }
+    if (parsed.kind !== "npm") continue;
+    if (parsed.name !== entry.name) {
+      throw new Error(
+        `pragma.conf.ts generator "${entry.name}" declares source "${entry.source}", which names ${parsed.name}. Make the two agree.`,
+      );
+    }
+    const installed = dependencies[entry.name];
+    if (installed === undefined) {
+      throw new Error(
+        `pragma.conf.ts declares generator ${entry.name}, which is not in this package's dependencies — the build would link nothing for it. Add it, or drop the declaration.`,
+      );
+    }
+    if (installed !== parsed.range) {
+      throw new Error(
+        `pragma.conf.ts declares ${entry.name}@${parsed.range}; package.json depends on ${installed}. The dependency is what links into the binary, so update the declaration.`,
+      );
+    }
+  }
+}
+
+/**
+ * Check each bound noun against the declaration and `pickGenerator.ts`.
+ *
+ * Claim 4: the noun is bound to a DECLARED name, and the static import
+ * specifier for that noun is the same string. See
+ * {@link assertDeclaredGenerators} for why the first half cannot fail from
+ * either live caller.
+ *
+ * @param declared - The `generators` entries from `pragma.conf.ts`.
+ * @param bound - Noun to package name, as the create surface binds it.
+ * @param statics - Noun to the literal specifier `pickGenerator.ts` imports.
+ * @throws Error naming the offending noun and the edit that fixes it.
+ */
+function assertBindingsMatchStaticImports(
+  declared: DeclaredGeneratorCheck["declared"],
+  bound: DeclaredGeneratorCheck["bound"],
+  statics: DeclaredGeneratorCheck["statics"],
+): void {
+  const declaredNames = new Set(declared.map((entry) => entry.name));
+  for (const [noun, name] of Object.entries(bound)) {
+    if (!declaredNames.has(name)) {
+      throw new Error(
+        `create ${noun} binds ${name}, which pragma.conf.ts does not declare. Declare it under generators, or rebind the noun.`,
+      );
+    }
+    const specifier = statics[noun];
+    if (specifier === undefined) {
+      throw new Error(
+        `create ${noun} has no static generator import in pickGenerator.ts — a compiled binary would carry no generator for it.`,
+      );
+    }
+    if (specifier !== name) {
+      throw new Error(
+        `create ${noun} binds ${name} but pickGenerator.ts statically imports ${specifier}. The static specifiers cannot be derived (--compile bundles only literal ones), so the declaration and they must be edited together.`,
+      );
+    }
+  }
+}
+
+/**
+ * Check the embedded-template loader against the binding.
+ *
+ * Claim 5, and the one drift the other checks cannot see: `scripts/build.ts`
+ * harvests templates for the declaring binding, while `create.verb.ts`'s
+ * dynamic `<package>/embedded` import decides whose loader registry receives
+ * them.
+ *
+ * @param bound - Noun to package name, as the create surface binds it.
+ * @param embeddedNouns - The nouns declaring `readsEmbeddedTemplates`.
+ * @param embeddedFrom - The package named by `create.verb.ts`'s `/embedded`
+ *   import, or `undefined` when it writes none.
+ * @throws Error naming the offending noun and the edit that fixes it.
+ */
+function assertEmbeddedManifestMatchesBinding(
+  bound: DeclaredGeneratorCheck["bound"],
+  embeddedNouns: DeclaredGeneratorCheck["embeddedNouns"],
+  embeddedFrom: DeclaredGeneratorCheck["embeddedFrom"],
+): void {
+  for (const noun of embeddedNouns) {
+    const name = bound[noun];
+    if (name === undefined) continue;
+    if (embeddedFrom === undefined) {
+      throw new Error(
+        `create ${noun} reads embedded templates but create.verb.ts imports no "<package>/embedded" module — the compiled binary would harvest ${name}'s templates and register them nowhere. Write import("${name}/embedded") in loadCreateRuntime.`,
+      );
+    }
+    if (embeddedFrom !== name) {
+      throw new Error(
+        `create ${noun} binds ${name} but create.verb.ts injects the embedded manifest into ${embeddedFrom}. scripts/build.ts harvests ${name}'s templates, so the binary would populate the wrong loader and fail reading one. Edit that import with the declaration.`,
+      );
+    }
+  }
+}
+
+/**
  * Fail the build when the generator declaration and the shipped binary disagree.
  *
  * Four claims, each with its own failure and its own fix:
@@ -229,77 +351,23 @@ export interface DeclaredGeneratorCheck {
  *     that edited only `pragma.conf.ts` and `pickGenerator.ts` shipped a
  *     PASSING build whose `create` died reading a template.
  *
+ * The five claims are three INDEPENDENT families over three disjoint loops, so
+ * they are three functions and this one composes them in order
+ * (cs:code.function.composition). That is what lets the embedded-manifest check
+ * be exercised without first constructing a fully valid declaration and binding
+ * map just to reach it.
+ *
  * @param input - The declaration, the bindings, the statics, the dependencies,
  *   and the embedded-manifest import.
  * @throws Error naming the offending entry and the edit that fixes it.
  */
 export function assertDeclaredGenerators(input: DeclaredGeneratorCheck): void {
   const { declared, bound, statics, dependencies } = input;
-
-  for (const entry of declared) {
-    // Prefixed with the file, like every other failure this function raises:
-    // `parseGeneratorSource` takes a bare string and cannot name the declaration
-    // it came from, so its two messages used to be the only ones here that did
-    // not begin with the file a builder has to open.
-    let parsed: ParsedGeneratorSource;
-    try {
-      parsed = parseGeneratorSource(entry.source);
-    } catch (cause) {
-      throw new Error(
-        `pragma.conf.ts generator "${entry.name}": ${cause instanceof Error ? cause.message : String(cause)}`,
-      );
-    }
-    if (parsed.kind !== "npm") continue;
-    if (parsed.name !== entry.name) {
-      throw new Error(
-        `pragma.conf.ts generator "${entry.name}" declares source "${entry.source}", which names ${parsed.name}. Make the two agree.`,
-      );
-    }
-    const installed = dependencies[entry.name];
-    if (installed === undefined) {
-      throw new Error(
-        `pragma.conf.ts declares generator ${entry.name}, which is not in this package's dependencies — the build would link nothing for it. Add it, or drop the declaration.`,
-      );
-    }
-    if (installed !== parsed.range) {
-      throw new Error(
-        `pragma.conf.ts declares ${entry.name}@${parsed.range}; package.json depends on ${installed}. The dependency is what links into the binary, so update the declaration.`,
-      );
-    }
-  }
-
-  const declaredNames = new Set(declared.map((entry) => entry.name));
-  for (const [noun, name] of Object.entries(bound)) {
-    if (!declaredNames.has(name)) {
-      throw new Error(
-        `create ${noun} binds ${name}, which pragma.conf.ts does not declare. Declare it under generators, or rebind the noun.`,
-      );
-    }
-    const specifier = statics[noun];
-    if (specifier === undefined) {
-      throw new Error(
-        `create ${noun} has no static generator import in pickGenerator.ts — a compiled binary would carry no generator for it.`,
-      );
-    }
-    if (specifier !== name) {
-      throw new Error(
-        `create ${noun} binds ${name} but pickGenerator.ts statically imports ${specifier}. The static specifiers cannot be derived (--compile bundles only literal ones), so the declaration and they must be edited together.`,
-      );
-    }
-  }
-
-  for (const noun of input.embeddedNouns) {
-    const name = bound[noun];
-    if (name === undefined) continue;
-    if (input.embeddedFrom === undefined) {
-      throw new Error(
-        `create ${noun} reads embedded templates but create.verb.ts imports no "<package>/embedded" module — the compiled binary would harvest ${name}'s templates and register them nowhere. Write import("${name}/embedded") in loadCreateRuntime.`,
-      );
-    }
-    if (input.embeddedFrom !== name) {
-      throw new Error(
-        `create ${noun} binds ${name} but create.verb.ts injects the embedded manifest into ${input.embeddedFrom}. scripts/build.ts harvests ${name}'s templates, so the binary would populate the wrong loader and fail reading one. Edit that import with the declaration.`,
-      );
-    }
-  }
+  assertDeclarationMatchesDependencies(declared, dependencies);
+  assertBindingsMatchStaticImports(declared, bound, statics);
+  assertEmbeddedManifestMatchesBinding(
+    bound,
+    input.embeddedNouns,
+    input.embeddedFrom,
+  );
 }
