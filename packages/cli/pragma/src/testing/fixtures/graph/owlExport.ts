@@ -12,7 +12,7 @@
  * - A MULTI-DOMAIN individual (`ex:toggle`: two domain classes) — so the
  *   primary-type tie-break must be deterministic, not store-order (A3).
  * - An UNTIERED block (`ds:datePicker`: a `ds:Component` with no `ds:tier`) —
- *   which `block list --all-tiers` must surface, not hide (A2).
+ *   which `block list` must surface, not drop from its join (A2).
  * - A blank-node `rdf:type` (`ex:field`'s anonymous SHACL-style class) — which
  *   must NOT become a `type:"_:b0"` primary key (A6).
  * - An OWL-PUNNED subject (`ex:Slider`: a class that is ALSO a metaclass

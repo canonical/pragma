@@ -31,10 +31,14 @@ import { projectMcp } from "../helpers/projectMcp.js";
 import { listVerbs, lookupVerbs } from "./liveReadSurface.js";
 
 /**
- * List verbs with a STRING or ENUM (narrowable, non-boolean) flag — e.g.
- * `standard_list --category`. Excludes boolean escape hatches like `block
- * list --all-tiers`, which reject a string value at the schema layer rather
- * than narrowing to an empty result.
+ * List verbs with a STRING or ENUM flag — e.g. `standard_list --category`.
+ *
+ * The cases below feed a flag a value that matches nothing and assert an EMPTY
+ * result rather than an error, so the flag has to be one that NARROWS. A
+ * boolean flag rejects a string at the schema layer instead, which is a
+ * different answer to a different question; no live list verb declares one
+ * today, and the filter is written so one arriving is skipped rather than
+ * mistaken for a narrowing flag.
  */
 const filteredListVerbs = listVerbs
   .map((v) => {

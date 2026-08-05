@@ -53,6 +53,11 @@ const BANNED: readonly BannedPattern[] = [
       "removed `token add-config` — the declared-content grammar has no verb for mutations, and there is no replacement",
   },
   {
+    pattern: /--all-tiers\b/,
+    reason:
+      "removed `--all-tiers` — `block list` narrows by neither tier nor channel now, so there is nothing left to widen",
+  },
+  {
     pattern: /--llm\b/,
     reason:
       "retired `--llm` flag (now the `--format llm` form, auto-detected when piped)",

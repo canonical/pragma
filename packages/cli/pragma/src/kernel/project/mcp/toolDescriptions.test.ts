@@ -2,7 +2,7 @@
  * MCP tool descriptions carry NO CLI-syntax leaks (a PR8 doc→MCP residue).
  *
  * A verb's `doc` doubles as its MCP tool description (`registerVerb`), so a doc
- * authored in CLI terms leaks flags an agent can't use — `--all-tiers`,
+ * authored in CLI terms leaks flags an agent can't use — `--category`,
  * `--dry-run`/`--yes`, or a `pragma …` shell command — into the agent-facing
  * catalog. Tool descriptions are NOT frozen in the covenant, so this is the guard
  * against the leak (and its recurrence). Storeless: listing tools never boots the
@@ -137,12 +137,17 @@ describe("MCP tool descriptions — no CLI-syntax leaks (doc→MCP residue)", ()
     const byName = new Map(
       descriptions.map((tool) => [tool.name, tool.description]),
     );
-    expect(byName.get("block_list")).not.toContain("--all-tiers");
+    // `standard_list` replaces `block_list` here: `block list` has no flags at
+    // all now, so an assertion about its description naming one could never
+    // fail again. `standard_list` is the one live read verb that still HAS
+    // narrowing flags, and its description names them in prose (`filter by
+    // category or search term`) — so it is where the CLI spelling would leak.
+    expect(byName.get("standard_list")).not.toMatch(/--category|--search/);
     expect(byName.get("graph_query")).not.toContain("pragma ontology list");
     expect(byName.get("setup")).not.toMatch(/--dry-run|--yes/);
     expect(byName.get("upgrade")).not.toContain("--dry-run");
     // The scrub rephrases; it must not gut the description.
-    for (const tool of ["block_list", "graph_query", "setup", "upgrade"]) {
+    for (const tool of ["standard_list", "graph_query", "setup", "upgrade"]) {
       expect((byName.get(tool) ?? "").length, tool).toBeGreaterThan(20);
     }
   });
