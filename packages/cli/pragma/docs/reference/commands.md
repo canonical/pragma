@@ -8,19 +8,13 @@ Global flags apply to every command: `--format <plain|llm|json>` (auto-detected 
 
 ### pragma block list
 
-List blocks visible under the current tier and channel.
+List all design system blocks.
 
-List design system blocks visible under the active tier chain and channel. Optionally list across every tier, ignoring the tier filter.
+List every design-system block — components, patterns, layouts and subcomponents — with its type, tier and modifier families. Use when browsing what exists before looking one up. Example: block_list {}.
 
 ```
-pragma block list [options]
+pragma block list
 ```
-
-**Flags**
-
-| Flag | Value | Description |
-| --- | --- | --- |
-| `--all-tiers` | — | Show blocks from all tiers, ignoring the tier filter. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `block_list` tool.
@@ -29,7 +23,6 @@ pragma block list [options]
 
 ```bash
 pragma block list
-pragma block list --all-tiers
 pragma block list --format llm
 ```
 

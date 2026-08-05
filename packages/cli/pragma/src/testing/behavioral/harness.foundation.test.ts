@@ -12,7 +12,7 @@
 
 import { homedir, tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { blockModule } from "../../capabilities/block/index.js";
+import { storyModules } from "../../capabilities/distribution.js";
 import { VERSION } from "../../constants.js";
 import { compilePack } from "../../kernel/packs/compile.js";
 import { verbKey } from "../../kernel/packs/uniqueness.js";
@@ -38,6 +38,8 @@ describe("bootFixtureRuntime — the shared canonical graph (commit-1 smoke)", (
       config: CANONICAL_CONFIG,
     });
     try {
+      const blockModule = storyModules.get("block");
+      if (!blockModule) throw new Error("no declared block story");
       const lookupVerb = blockModule.verbs.find(
         (v) => verbKey(v.path) === "block lookup",
       );

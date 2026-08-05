@@ -85,9 +85,16 @@ export interface CompletionConfig {
  * `[project]` marker the kernel does not honour.
  */
 export interface PragmaConfig {
-  /** Active tier path, or absent when no tier is configured. */
+  /**
+   * Active tier path, or absent when no tier is configured. No read narrows on
+   * it: it is validated, stored and reported, and every list and lookup answers
+   * from the whole graph.
+   */
   readonly tier?: string;
-  /** Release channel controlling component visibility. */
+  /**
+   * Release channel. Read only by the update check, which resolves the matching
+   * npm dist-tag; it does not gate entity visibility.
+   */
   readonly channel: Channel;
   /**
    * Default progressive-disclosure level — one of `constants.DETAIL_LEVELS`.

@@ -31,7 +31,10 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { capabilities } from "../../capabilities/index.js";
 import { readActivePack } from "../../kernel/runtime/paths.js";
-import { DEFAULT_PACK_TTL } from "../fixtures/graph/defaultPack.js";
+import {
+  DEFAULT_PACK_BLOCK_NAMES,
+  DEFAULT_PACK_TTL,
+} from "../fixtures/graph/defaultPack.js";
 import { type McpHarness, projectMcp } from "../helpers/projectMcp.js";
 
 /** The transient roots one test creates; removed in `afterEach`. */
@@ -104,7 +107,7 @@ describe("MCP lifecycle — cold store recovers after sources_update (E2, C1)", 
     const names = (warm.data as { name: string }[])
       .map((row) => row.name)
       .sort();
-    expect(names).toEqual(["Button", "Card"]);
+    expect(names).toEqual([...DEFAULT_PACK_BLOCK_NAMES]);
   });
 });
 

@@ -6,15 +6,13 @@ Mutating tools are plan-first: called without `confirm: true` they return the pl
 
 ### block_list
 
-List design system blocks visible under the active tier chain and channel. Optionally list across every tier, ignoring the tier filter.
+List every design-system block — components, patterns, layouts and subcomponents — with its type, tier and modifier families. Use when browsing what exists before looking one up. Example: block_list {}.
 
 Read-only.
 
 **Input**
 
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `allTiers` | boolean | no | Show blocks from all tiers, ignoring the tier filter. |
+_No input parameters._
 
 ### block_lookup
 

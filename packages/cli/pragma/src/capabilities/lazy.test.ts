@@ -240,7 +240,6 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // which modules get to make that promise.
     expect([...found].sort()).toEqual(
       [
-        "src/capabilities/block/tierChain.ts",
         "src/capabilities/config/fields.ts",
         "src/capabilities/config/show.render.ts",
         "src/capabilities/config/types.ts",

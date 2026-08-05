@@ -42,7 +42,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
-  it("emits the read nouns/verbs the packs add (block list hand-written, sample only where declared)", () => {
+  it("emits the read nouns/verbs the packs add (every one declared, sample only where declared)", () => {
     expect(emitted.nouns.standard?.verbs.map((v) => v.v)).toEqual([
       "list",
       "categories",
@@ -66,12 +66,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "sample",
     ]);
     expect(emitted.nouns.block?.verbs).toEqual([
-      {
-        v: "list",
-        flags: ["--all-tiers"],
-        needsStore: true,
-        mcp: "block_list",
-      },
+      { v: "list", needsStore: true, mcp: "block_list" },
       {
         v: "lookup",
         args: ["<name...>"],

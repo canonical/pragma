@@ -14,7 +14,7 @@ A higher layer **replaces** a lower one field by field. No field merges: a proje
 
 ## Read stories
 
-A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about the story itself is hand-written code; three shipped nouns keep one hand-written verb each alongside their story, listed in [architecture.md](./architecture.md).
+A **read story** is a noun described as data — a SPARQL `list`, a generated `lookup`, and the columns, filters and disclosure levels they project — which the CLI compiles into real commands and MCP tools. Nothing about a story is hand-written code, and every design-system read noun this CLI ships is one — see [architecture.md](./architecture.md).
 
 Stories reach the CLI from three places, weakest to strongest:
 
@@ -24,7 +24,7 @@ Stories reach the CLI from three places, weakest to strongest:
 | **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
 | **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
 
-Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported, because replacing a noun replaces its whole module, and `block` carries a hand-written verb next to its story.
+Only your **config** may replace a noun the CLI already ships, and then only one that is itself story-backed — never a built-in command such as `config` or `doctor`. A **package** may add a noun the CLI does not have, and nothing else: a package story naming a shipped noun is ignored and reported. Every shipped noun is reserved against a package, the story-backed ones included, because the merge replaces a noun WHOLESALE — a package claiming `block` would substitute its own reads for the distribution's on nothing more than a declared dependency, while `--help` went on advertising the noun. Overriding a shipped noun stays a decision your own config makes.
 
 Within your config the top-level `stories` wins over `packs[].stories` for the same noun — declaring it in both is a refinement, not a conflict — and declaring the same noun twice inside your config is an error. Inside one package the last story file wins and `doctor` names the shadowed one.
 
@@ -65,7 +65,7 @@ export const vocabulary = {
 };
 ```
 
-These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames`, which is what a name completion offers and what `tier lookup` matches), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
+These are the domain terms the generic kernel reads a graph with: the property entities are addressed by (projected into the pack index as `altNames`, and the property a declared lookup matches a typed name against), and the shape of a prompt entity (which the `prompt_*` tools and the native MCP `prompts/*` surface both read).
 
 It is **not** a config layer field, and cannot be set in a global or project config. Its readers are the storeless `--help`/`__complete` fast path and the pack index builder — neither can reach a config layer at all, so a layered field would be one you could set to no effect. A fork changes these values in its own `pragma.conf.ts` and rebuilds its binary; that, plus `prefixes` and the identity fields, is the whole of what makes the CLI *this* distribution.
 
@@ -90,8 +90,8 @@ pragma config set detail detailed
 pragma config set tier none
 ```
 
-- `tier` is a free string with meaningful reset sentinels: `none`, `default`, or `-` clear it.
+- `tier` is a free string with meaningful reset sentinels: `none`, `default`, or `-` clear it. **No read narrows on it today** — it is validated, stored and reported by `config show`, and every list and lookup answers from the whole graph. The same is true of `channel`, whose one live reader is the update check's npm dist-tag.
 - `channel` and `detail` are closed enums; reset them by setting their default (`normal` / `standard`).
 - `config set <key> <value>` is the one-command form of the per-field setters — `key` is one of `tier`, `channel`, or `detail`, and the field's own reset rules still apply.
 
-See [getting-started.md](./getting-started.md) for how the tier and channel scope the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.
+See [getting-started.md](./getting-started.md) for the read commands, the [configuration reference](./reference/config.md) for every field, and the [command reference](./reference/commands.md) for each setter's full signature.

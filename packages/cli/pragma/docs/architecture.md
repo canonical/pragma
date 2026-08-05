@@ -24,7 +24,7 @@ At runtime a **`LazyStore`** boots the graph on first use and memoizes it. A sto
 
 ### Capabilities — the catalog
 
-The concrete verbs live under `src/capabilities/` as `CapabilityModule`s, collected into one array. A directory exists there only where its noun needs hand-written code — the kernel's own nouns (`info`, `config`, `sources`, `doctor`, `graph`, `ontology`, `prompt`, `skill`, `setup`, `upgrade`, `create`, `capabilities`, `colophon`, `meta`), and one DOMAIN verb the story grammar cannot express: `block list` (a tier-chain and channel filter the grammar has no term for). Every other design-system read noun is a **declarative story**: the distribution's own five are declared as data in `pragma.conf.ts` and compiled at module load through the same compiler a third-party story goes through.
+The concrete verbs live under `src/capabilities/` as `CapabilityModule`s, collected into one array. A directory exists there only where its noun needs hand-written code — the kernel's own nouns (`info`, `config`, `sources`, `doctor`, `graph`, `ontology`, `prompt`, `skill`, `setup`, `upgrade`, `create`, `capabilities`, `colophon`, `meta`), and nothing else. There are ZERO hand-written data commands: every design-system read noun is a **declarative story**, and the distribution's own five are declared as data in `pragma.conf.ts` and compiled at module load through the same compiler a third-party story goes through. A fork defines its entire read surface in its own config, with no code.
 
 Stories from a project's config, or from a `stories/*.json` a package ships, merge into that array at dispatch — see [config-model.md](./config-model.md#read-stories) for the tiers and their precedence. The projectors consume the one array, so a new module or a new story appears in the CLI, the MCP server, and the generated reference at once.
 
@@ -35,7 +35,7 @@ Two thin frontends turn the grammar into runnable surfaces:
 - **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node, plan, or undo interpreters) and renders the outcome.
 - **MCP** — `buildServer` registers every exposed verb via `registerVerb`, installs the resource and prompt surfaces, and attaches the handshake instructions.
 
-Both frontends resolve configuration through the same **config seam** — the three-layer resolver described in [config-model.md](./config-model.md) — so the CLI and the MCP server always agree on the active tier, channel, and package sources.
+Both frontends resolve configuration through the same **config seam** — the three-layer resolver described in [config-model.md](./config-model.md) — so the CLI and the MCP server always agree on the resolved configuration and the package sources.
 
 ## The effect seam
 

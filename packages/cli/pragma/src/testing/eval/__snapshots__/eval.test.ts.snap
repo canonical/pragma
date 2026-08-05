@@ -23,6 +23,11 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
     "passed": true,
   },
   {
+    "id": "content-channel-no-longer-scopes-block-list",
+    "kind": "content",
+    "passed": true,
+  },
+  {
     "id": "content-code-function-purity-description-mentions-pure",
     "kind": "content",
     "passed": true,
@@ -54,11 +59,6 @@ exports[`eval harness — seed gate > runs the full seed (stable + read-noun) ca
   },
   {
     "id": "content-native-prompts-list-nonempty",
-    "kind": "content",
-    "passed": true,
-  },
-  {
-    "id": "content-normal-channel-drops-beta-only-block",
     "kind": "content",
     "passed": true,
   },

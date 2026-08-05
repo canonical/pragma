@@ -90,15 +90,15 @@ export const readNounEvalCases: readonly EvalCase[] = [
     id: "content-canonical-graph-has-4-components",
     kind: "content",
     input:
-      "the canonical fixture graph carries 4 ds:Component individuals (Button, Modal, LXD Panel, Beta Widget); block list --all-tiers also surfaces the untiered Button Icon subcomponent (A2).",
+      "the canonical fixture graph carries 4 ds:Component individuals (Button, Modal, LXD Panel, Beta Widget); block_list also surfaces the untiered Button Icon subcomponent (A2).",
     async expect() {
       await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("block_list", { allTiers: true });
+        const result = await mcp.callTool("block_list");
         const names = (result.data as { name: string }[])
           .map((r) => r.name)
           .sort();
-        // --all-tiers now reveals the untiered Button Icon subcomponent
-        // alongside the 4 tiered components (A2).
+        // The declared list rides ds:tier on an OPTIONAL, so the untiered
+        // Button Icon subcomponent lists alongside the 4 tiered components (A2).
         assert.deepEqual(names, [
           "Beta Widget",
           "Button",
@@ -168,25 +168,28 @@ export const readNounEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "content-normal-channel-drops-beta-only-block",
+    id: "content-channel-no-longer-scopes-block-list",
     kind: "content",
     input:
-      "the normal channel (CANONICAL_CONFIG) excludes the beta-only block; the prerelease channel (ALL_VISIBLE_CONFIG) includes it.",
+      "block_list returns the same rows under the normal channel (CANONICAL_CONFIG) as under prerelease (ALL_VISIBLE_CONFIG), the beta-only block included.",
     async expect() {
-      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
-        const normal = await mcp.callTool("block_list", { allTiers: true });
-        const normalNames = (normal.data as { name: string }[]).map(
-          (r) => r.name,
-        );
-        assert.ok(!normalNames.includes("Beta Widget"));
-      });
-      await withCanonicalFixture(ALL_VISIBLE_CONFIG, async (mcp) => {
-        const prerelease = await mcp.callTool("block_list", { allTiers: true });
-        const prereleaseNames = (prerelease.data as { name: string }[]).map(
-          (r) => r.name,
-        );
-        assert.ok(prereleaseNames.includes("Beta Widget"));
-      });
+      // The INVERSE of what this case used to assert. `normal` excluded the
+      // beta-only block; the declared list carries no channel filter, so both
+      // configs answer identically and the beta block is in both answers.
+      const namesFor = async (
+        config: typeof CANONICAL_CONFIG | typeof ALL_VISIBLE_CONFIG,
+      ): Promise<string[]> => {
+        let names: string[] = [];
+        await withCanonicalFixture(config, async (mcp) => {
+          const result = await mcp.callTool("block_list");
+          names = (result.data as { name: string }[]).map((r) => r.name).sort();
+        });
+        return names;
+      };
+      const normal = await namesFor(CANONICAL_CONFIG);
+      const prerelease = await namesFor(ALL_VISIBLE_CONFIG);
+      assert.deepEqual(normal, prerelease);
+      assert.ok(normal.includes("Beta Widget"));
     },
   },
   {

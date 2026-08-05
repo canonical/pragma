@@ -59,7 +59,7 @@ pragma ontology list
 pragma tier list
 ```
 
-- `block list` shows blocks visible under the active tier chain and channel; add `--all-tiers` to ignore the tier filter.
+- `block list` lists every block in the graph — components, patterns, layouts and subcomponents. It takes no flags and is not narrowed by the configured tier or channel.
 - `block lookup Button` returns the full spec of one or more blocks by name, IRI, or glob.
 - `standard list` lists code standards; narrow with `--category react`.
 - `token list`, `ontology list`, and `tier list` browse tokens, ontology namespaces, and the tier hierarchy. This distribution's graph currently carries no token entities, so `token list` is honestly empty until a pack that ships them is configured and built.

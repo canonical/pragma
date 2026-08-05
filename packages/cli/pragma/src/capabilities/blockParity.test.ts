@@ -1,34 +1,50 @@
 /**
- * Block content-parity (PROTECTED) — on a FIXTURE graph, not the live one.
+ * Block content-parity (PROTECTED) — the `block` story `pragma.conf.ts`
+ * declares, over a fixture graph rather than the live one.
  *
- * The hand-written block lookup is gone; parity is asserted against the fixture
+ * The block noun is entirely declared now, so parity is asserted against the
  * graph directly: Button and Modal resolve through the GraphQL `block lookup`
  * with the same content a direct SPARQL oracle returns (summary, guidance,
  * anatomy, tier, modifier families with values, properties, subcomponents). The
  * fixture DECLARES whenToUse/whenNotToUse (which the live graph superseded with
- * ds:usage), so those sections are exercised here. The hand-written `block list`
- * is checked for its tier/channel filtering and --all-tiers.
+ * ds:usage), so those sections are exercised here.
+ *
+ * The `list` half pins the OPPOSITE of what it used to. The hand-written verb
+ * narrowed rows by the configured tier chain and by channel; the declared one
+ * cannot, so the cases below assert that every block is listed — untiered ones
+ * included — and that the row shape the renderer wants (display words in
+ * `type`/`tier`, not compacted IRIs) survives the move into SPARQL.
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import type { LookupOutput } from "../../kernel/packs/resolveEntity.js";
-import { verbKey } from "../../kernel/packs/uniqueness.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
-import {
-  BLOCK_PREFIXES,
-  BLOCK_TTL,
-} from "../../testing/fixtures/blockGraph.js";
-import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
-import type { BlockRow } from "./blockList.verb.js";
-import { blockModule } from "./index.js";
+import { compilePack } from "../kernel/packs/compile.js";
+import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
+import type { PackRow } from "../kernel/packs/types.js";
+import { distributionOrigin } from "../kernel/packs/types.js";
+import { verbKey } from "../kernel/packs/uniqueness.js";
+import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
+import type { PragmaRuntime } from "../kernel/runtime/types.js";
+import type { VerbSpec } from "../kernel/spec/types.js";
+import { BLOCK_PREFIXES, BLOCK_TTL } from "../testing/fixtures/blockGraph.js";
+import { buildFixtureRuntime } from "../testing/helpers/packRuntime.js";
+import { declaredStories } from "./distribution.js";
 
 const DS = "https://ds.canonical.com/";
 
-const listVerb = blockModule.verbs.find(
+const blockPack = declaredStories.get("block");
+if (!blockPack) {
+  throw new Error('pragma.conf.ts declares no story for "block"');
+}
+
+const compiled = compilePack(
+  blockPack,
+  distributionOrigin("pragma.conf.ts"),
+  DEFAULT_PREFIX_MAP,
+);
+const listVerb = compiled.find(
   (v) => verbKey(v.path) === "block list",
 ) as VerbSpec;
-const lookupVerb = blockModule.verbs.find(
+const lookupVerb = compiled.find(
   (v) => verbKey(v.path) === "block lookup",
 ) as VerbSpec;
 
@@ -157,31 +173,41 @@ describe("block lookup — disclosure trims to the base view at summary", () => 
   });
 });
 
-describe("block list — hand-written tier/channel filtering", () => {
-  it("lists visible blocks with the summary row shape", async () => {
-    const rows = (await listVerb.run({}, rt)) as BlockRow[];
-    const byName = new Map(rows.map((r) => [r.name, r]));
-    expect([...byName.keys()].sort()).toEqual(["Button", "Modal"]);
-    const button = byName.get("Button");
-    expect(button?.type).toBe("component");
-    expect(button?.tier).toBe("global");
-    expect(button?.uri).toBe(`${DS}button`);
-    // GROUP_CONCAT of the family names (order-independent).
-    expect(button?.modifiers.split(", ").sort()).toEqual([
-      "density",
-      "importance",
-    ]);
-  });
-
-  it("--all-tiers also reveals the untiered subcomponent (A2)", async () => {
-    // Button Icon is a ds:Subcomponent with NO ds:tier: the scoped/default view
-    // omits it (a block joins the list through its tier), but --all-tiers must
-    // surface every block, including untiered ones.
-    const rows = (await listVerb.run({ allTiers: true }, rt)) as BlockRow[];
-    expect(rows.map((r) => r.name).sort()).toEqual([
+describe("block list — unfiltered, with the row shape the renderer wants", () => {
+  it("lists EVERY block, the untiered subcomponent included", async () => {
+    // Button Icon is a ds:Subcomponent carrying no ds:tier. The hand-written
+    // verb joined through the tier and dropped it unless `--all-tiers` was
+    // passed; the declared query rides ds:tier on an OPTIONAL, so there is no
+    // view in which it is hidden and no flag left to pass.
+    const rows = (await listVerb.run({}, rt)) as PackRow[];
+    expect(rows.map((row) => row.name).sort()).toEqual([
       "Button",
       "Button Icon",
       "Modal",
     ]);
+  });
+
+  it("keeps type and tier as display words, not compacted IRIs", async () => {
+    // The local-name extraction moved from a TypeScript post-pass into the
+    // query (`REPLACE(STR(?x), "^.*[/#]", "")`). Without it these columns would
+    // render `ds:Component` / `ds:global`, which is the one visible thing the
+    // move could have broken silently.
+    const rows = (await listVerb.run({}, rt)) as PackRow[];
+    const button = rows.find((row) => row.name === "Button");
+    expect(button?.type).toBe("component");
+    expect(button?.tier).toBe("global");
+    expect(button?.uri).toBe(`${DS}button`);
+    // GROUP_CONCAT of the family names (order-independent).
+    expect(button?.modifiers?.split(", ").sort()).toEqual([
+      "density",
+      "importance",
+    ]);
+    // The untiered block still shows a tier CELL, empty rather than absent —
+    // the COALESCE is what keeps the column addressable for every row.
+    expect(rows.find((row) => row.name === "Button Icon")?.tier).toBe("");
+  });
+
+  it("takes no flags — there is nothing left to widen", () => {
+    expect(listVerb.params).toEqual([]);
   });
 });

@@ -504,12 +504,12 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   tier: {
     type: "string (optional)",
     notes:
-      "Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
+      "Active tier path. NO READ NARROWS ON IT TODAY: it is validated, stored and reported by `config show`, and every list and lookup answers from the whole graph regardless. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
   },
   channel: {
     type: `${CHANNELS.map((channel) => `\`${channel}\``).join(" | ")} (optional)`,
     notes:
-      "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
+      "Release channel. Defaults to `normal`. It no longer gates entity visibility — the only thing that reads it is the update check, which resolves the matching npm dist-tag. Set it with `config set channel <name>`.",
   },
   detail: {
     type: `${DETAIL_LEVELS.map((level) => `\`${level}\``).join(" | ")} (optional)`,

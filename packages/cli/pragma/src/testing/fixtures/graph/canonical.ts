@@ -171,13 +171,25 @@ export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */
 export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}`;
 
-/** Default viewing config: no tier set, `normal` channel — drops the beta-only block. */
+/**
+ * Default viewing config: no tier set, `normal` channel.
+ *
+ * Neither field narrows a read any more. `block list` was the only verb that
+ * filtered by tier or channel, and it is a declared story now — so every read
+ * over this graph returns the same rows under this config as under
+ * {@link ALL_VISIBLE_CONFIG}. The two are kept apart because the suites that
+ * name them are asserting things other than visibility, and because the fields
+ * are still real config a project may set.
+ */
 export const CANONICAL_CONFIG = { channel: "normal" as const };
 
-/** Scoped to the `apps/lxd` tier — own + inherited (LXD Panel, Modal, Button). */
-export const FILTERED_CONFIG = { tier: "apps/lxd" as const };
-
-/** `prerelease` channel, no tier — the one config where all 4 components are listed. */
+/**
+ * `prerelease` channel, no tier.
+ *
+ * Read-equivalent to {@link CANONICAL_CONFIG} — see its note. It used to be the
+ * one config under which every component listed; that is now true of all of
+ * them.
+ */
 export const ALL_VISIBLE_CONFIG = { channel: "prerelease" as const };
 
 /** Re-exported so callers needn't also import `blockGraph.ts` directly. */

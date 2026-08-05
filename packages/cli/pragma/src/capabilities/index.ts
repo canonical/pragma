@@ -5,9 +5,10 @@
  * Two sources, in this order: the literal array of AUTHORED modules (in
  * authoring order; projectors sort where they need to), then every story
  * `pragma.conf.ts` declares that no authored module already claims. A noun with
- * hand-written code appears in the authored array and composes its story there
- * (`block`); a noun that is purely declarative appears only in the config. No
- * noun literal is written here — the second half is derived.
+ * hand-written code appears in the authored array and composes its story
+ * there; a noun that is purely declarative appears only in the config. Every
+ * design-system read noun is in the second group now — no noun literal is
+ * written here, and the second half is derived.
  *
  * Importing this barrel pulls only spec + formatter modules — every run body is
  * behind a lazy dynamic import, and `distribution.ts` is zod-free — so the
@@ -15,7 +16,6 @@
  */
 
 import type { CapabilityModule } from "../kernel/spec/types.js";
-import { blockModule } from "./block/index.js";
 import { capabilitiesModule } from "./capabilities/index.js";
 import { colophonModule } from "./colophon/index.js";
 import { configModule } from "./config/index.js";
@@ -38,7 +38,6 @@ const authored: readonly CapabilityModule[] = [
   configModule,
   createModule,
   sourcesModule,
-  blockModule,
   ontologyModule,
   skillModule,
   graphModule,

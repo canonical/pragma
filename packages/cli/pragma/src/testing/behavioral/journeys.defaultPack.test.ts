@@ -10,7 +10,7 @@
  * a torn `schema.json`, a corrupt `schema.json`).
  *
  * It also pins, in-process, the real-data shapes the clean fixture masked — the
- * `entityTotal` double-count (A1), the untiered block that `block list` drops
+ * `entityTotal` double-count (A1), the untiered block `block list` used to drop
  * (A2), and the multilingual label (A7). These were HAND-OFFS to lane A, pinned
  * with `it.fails`; lane A's fixes have landed, so they are now LIVE regression
  * guards. This is the durable fix the issue asks for: "we'd have caught this in
@@ -27,7 +27,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { blockModule } from "../../capabilities/block/index.js";
+import { storyModules } from "../../capabilities/distribution.js";
 import { graphQueryVerb } from "../../capabilities/graph/query.verb.js";
 import {
   ontologyListVerb,
@@ -49,6 +49,7 @@ import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import {
   DEFAULT_PACK_ALL_VISIBLE_CONFIG,
+  DEFAULT_PACK_BLOCK_NAMES,
   DEFAULT_PACK_CONFIG,
   DEFAULT_PACK_TTL,
   INSTANCE_ONLY_TTL,
@@ -70,9 +71,9 @@ const JSON_FLAGS: GlobalFlags = {
 };
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
 
-const blockListVerb = blockModule.verbs.find(
-  (verb) => verb.path.join(" ") === "block list",
-) as VerbSpec;
+const blockListVerb = storyModules
+  .get("block")
+  ?.verbs.find((verb) => verb.path.join(" ") === "block list") as VerbSpec;
 
 /** Track fixtures so a single `afterAll` disposes every temp dir + store. */
 const fixtures: FixtureGraph[] = [];
@@ -125,11 +126,8 @@ async function readVerb(
 }
 
 /** The sorted `name` column of a `block list` invocation. */
-async function blockListNames(
-  cwd: string,
-  allTiers: boolean,
-): Promise<string[]> {
-  const envelope = await readVerb(blockListVerb, { allTiers }, cwd);
+async function blockListNames(cwd: string): Promise<string[]> {
+  const envelope = await readVerb(blockListVerb, {}, cwd);
   const rows = envelope.data as { name: string }[];
   return rows.map((row) => row.name).sort();
 }
@@ -165,17 +163,13 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
       );
       expect(outcome.exitCode).toBe(0);
       expect(readActivePack(cwd)).toMatch(/^[0-9a-f]{64}$/);
-      // A SEPARATE, fresh runtime boots the just-built pack from the pointer. No
-      // channel is configured, so the default `normal` channel hides the
-      // beta-gated Beta Badge. Assert the two global blocks are present while
-      // staying TOLERANT of the untiered Orphan Widget: whether it appears under
-      // --all-tiers is the A2 behavior, asserted in exactly one place below (the
-      // A2 regression guard). Filtering Orphan out keeps this test focused on the
-      // two global blocks, and still pins that Beta Badge is hidden.
-      const globalBlocks = (await blockListNames(cwd, true)).filter(
-        (name) => name !== UNTIERED_BLOCK_NAME,
-      );
-      expect(globalBlocks).toEqual(["Button", "Card"]);
+      // A SEPARATE, fresh runtime boots the just-built pack from the pointer
+      // and reads every block out of it. `block list` is a declared story with
+      // no tier or channel filter left, so the whole fixture lists — the
+      // beta-gated Beta Badge and the untiered Orphan Widget included. What
+      // this case is really pinning is that the freshly built pack ANSWERS, so
+      // the assertion is the fixture's full census.
+      expect(await blockListNames(cwd)).toEqual([...DEFAULT_PACK_BLOCK_NAMES]);
     } finally {
       rmSync(pkg, { recursive: true, force: true });
       rmSync(cwd, { recursive: true, force: true });
@@ -234,52 +228,38 @@ describe("default-pack journey — graph query over the real pack (E1)", () => {
 });
 
 describe("default-pack journey — block list, populated and empty (E1)", () => {
-  it("normal channel lists the two global blocks, hiding the beta-gated one", async () => {
-    const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    expect(await blockListNames(fixture.cwd, false)).toEqual([
-      "Button",
-      "Card",
-    ]);
-  });
-
-  it("prerelease channel reveals the beta-gated block across the tier chain", async () => {
-    const fixture = await boot(
-      DEFAULT_PACK_TTL,
+  it("lists every block in the pack, whatever the channel says", async () => {
+    // `normal` used to hide the beta-gated Beta Badge. Nothing reads the
+    // channel on this path any more, so the census is the same under both
+    // configs — asserted for both rather than described, because "the config
+    // makes no difference" is the claim.
+    for (const config of [
+      DEFAULT_PACK_CONFIG,
       DEFAULT_PACK_ALL_VISIBLE_CONFIG,
-    );
-    // Same inputs as the A2 regression guard below (ALL_VISIBLE + allTiers).
-    // Assert the tiered blocks (prerelease reveals the beta-gated Beta Badge)
-    // while staying TOLERANT of the untiered Orphan Widget — its --all-tiers
-    // visibility is the A2 truth, asserted in exactly one place below. Filtering
-    // Orphan out keeps this green pre-A2 (absent) and post-A2 (present), so it
-    // never contradicts that hand-off.
-    const tieredBlocks = (await blockListNames(fixture.cwd, true)).filter(
-      (name) => name !== UNTIERED_BLOCK_NAME,
-    );
-    expect(tieredBlocks).toEqual(["Beta Badge", "Button", "Card"]);
+    ]) {
+      const fixture = await boot(DEFAULT_PACK_TTL, config);
+      expect(await blockListNames(fixture.cwd)).toEqual([
+        ...DEFAULT_PACK_BLOCK_NAMES,
+      ]);
+    }
   });
 
-  it("the apps tier inherits its parent chain (global) plus its own block", async () => {
+  it("a configured tier does not narrow it either", async () => {
+    // `apps` used to mean [global, apps] — Button/Card inherited plus Beta
+    // Badge — and to exclude nothing else because the fixture has no deeper
+    // tier. It now means the same thing every other value means: everything.
     const fixture = await boot(DEFAULT_PACK_TTL, {
       tier: "apps",
       channel: "prerelease",
     });
-    // resolveTierChain("apps") = [global, apps]: Button/Card (global, inherited)
-    // + Beta Badge (apps, own).
-    expect(await blockListNames(fixture.cwd, false)).toEqual([
-      "Beta Badge",
-      "Button",
-      "Card",
+    expect(await blockListNames(fixture.cwd)).toEqual([
+      ...DEFAULT_PACK_BLOCK_NAMES,
     ]);
   });
 
-  it("an ontology-only pack with no tiered blocks lists empty — a calm exit 0", async () => {
+  it("an ontology-only pack with no blocks lists empty — a calm exit 0", async () => {
     const fixture = await boot(NO_BLOCKS_TTL);
-    const envelope = await readVerb(
-      blockListVerb,
-      { allTiers: true },
-      fixture.cwd,
-    );
+    const envelope = await readVerb(blockListVerb, {}, fixture.cwd);
     expect(envelope.ok).toBe(true);
     expect(envelope.data).toEqual([]);
   });
@@ -356,7 +336,7 @@ describe("default-pack journey — error paths (E1)", () => {
     try {
       await executeVerb(
         blockListVerb,
-        { allTiers: true },
+        {},
         NO_MUTATION,
         bootRuntime(JSON_FLAGS, fixture.cwd),
       );
@@ -428,18 +408,17 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     );
   });
 
-  it("A2: an untiered block must still appear in `block list --all-tiers`", async () => {
+  it("A2: an untiered block appears in `block list`, unconditionally", async () => {
     const fixture = await boot(
       DEFAULT_PACK_TTL,
       DEFAULT_PACK_ALL_VISIBLE_CONFIG,
     );
     // `block list`'s SELECT once inner-joined `?c ds:tier ?t`, dropping a
     // ds:Component with no ds:tier even under --all-tiers (though `graph query`
-    // found it, proven above). Lane A made the tier join OPTIONAL, so an
-    // untiered block now appears under --all-tiers — guard it stays visible.
-    expect(await blockListNames(fixture.cwd, true)).toContain(
-      UNTIERED_BLOCK_NAME,
-    );
+    // found it, proven above). Lane A made the tier join OPTIONAL; the declared
+    // story keeps it OPTIONAL and has no scoped view to escape from, so an
+    // untiered block is visible with no flag at all.
+    expect(await blockListNames(fixture.cwd)).toContain(UNTIERED_BLOCK_NAME);
   });
 
   // KNOWN GAP / product follow-up (NOT a lane hand-off): a corrupt, NON-EMPTY
@@ -461,7 +440,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     try {
       await executeVerb(
         blockListVerb,
-        { allTiers: true },
+        {},
         NO_MUTATION,
         bootRuntime(JSON_FLAGS, fixture.cwd),
       );

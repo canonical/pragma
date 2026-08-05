@@ -5,7 +5,6 @@
       "verbs": [
         {
           "v": "list",
-          "flags": ["--all-tiers"],
           "needsStore": true,
           "mcp": "block_list"
         },

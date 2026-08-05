@@ -37,9 +37,9 @@ export const declaredStories: ReadonlyMap<string, PackDefinition> = new Map(
 /**
  * Those stories compiled to capability modules, by noun.
  *
- * `capabilities/index.ts` appends every module no authored one claims; the three
- * composite nouns (`block`, `token`, `tier`, which keep a hand-written verb the
- * pack grammar cannot express) take their verbs from here by name.
+ * `capabilities/index.ts` appends every module no authored one claims, and no
+ * authored module claims a domain noun any more — the five design-system nouns
+ * reach the registry entirely from here.
  */
 export const storyModules: ReadonlyMap<string, CapabilityModule> = new Map(
   [...declaredStories].map(([noun, story]) => [

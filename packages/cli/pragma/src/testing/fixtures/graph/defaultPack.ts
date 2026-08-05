@@ -19,9 +19,10 @@
  *  2. Two+ domain classes (`ds:Component` and `ds:Pattern`) so a read that keys
  *     off the primary domain type is exercised across more than one class.
  *  3. An UNTIERED block (`ds:orphanWidget` — a `ds:Component` with a `ds:name`
- *     but NO `ds:tier`). `block list`'s SELECT inner-joins `?c ds:tier ?t`, so an
- *     untiered block is silently dropped from every listing (A2), even though
- *     `graph query` finds it — the fixture pins both halves of that divergence.
+ *     but NO `ds:tier`). `block list`'s SELECT once inner-joined `?c ds:tier ?t`,
+ *     so an untiered block was silently dropped from every listing (A2) even
+ *     though `graph query` found it. The declared story's tier pattern is
+ *     OPTIONAL; the fixture keeps the shape so the fix cannot regress.
  *  4. A multilingual `rdfs:label "Button"@en, "Bouton"@fr` — two same-predicate
  *     labels whose winner in the single-valued index is store-order-arbitrary
  *     (A7), a shape a bare-string fixture can never produce.
@@ -108,18 +109,26 @@ ds:betaBadge a owl:NamedIndividual, ds:Component ;
   ds:summary "An experimental badge, gated to the prerelease channel." .
 
 # An UNTIERED component — a real ds:Component with a ds:name but NO ds:tier.
-# It IS in the graph (graph query finds it) but block list's mandatory
-# tier join (?c ds:tier ?t) drops it (A2).
+# It IS in the graph (graph query finds it), and block list's mandatory tier
+# join (?c ds:tier ?t) used to drop it (A2). The declared story rides ds:tier on
+# an OPTIONAL, so it lists.
 ds:orphanWidget a owl:NamedIndividual, ds:Component ;
   ds:name "Orphan Widget" ;
   rdfs:label "Orphan Widget" ;
   ds:summary "A component shipped without a tier assignment." .
 `;
 
-/** No-tier viewing config, `normal` channel — hides the beta-only Beta Badge. */
+/**
+ * No-tier viewing config, `normal` channel.
+ *
+ * It used to hide the beta-only Beta Badge. Nothing filters on the channel any
+ * more, so this is read-equivalent to
+ * {@link DEFAULT_PACK_ALL_VISIBLE_CONFIG} — the pair is kept so the suites can
+ * assert that the two configs agree.
+ */
 export const DEFAULT_PACK_CONFIG = { channel: "normal" as const };
 
-/** `prerelease` channel, no tier — the config where every channel-gated block shows. */
+/** `prerelease` channel, no tier — see {@link DEFAULT_PACK_CONFIG}. */
 export const DEFAULT_PACK_ALL_VISIBLE_CONFIG = {
   channel: "prerelease" as const,
 };
@@ -132,7 +141,7 @@ export const DEFAULT_PACK_BLOCK_NAMES = [
   "Orphan Widget",
 ] as const;
 
-/** The block excluded from `block list` for want of a `ds:tier` (A2 anchor). */
+/** The block `block list` once excluded for want of a `ds:tier` (A2 anchor). */
 export const UNTIERED_BLOCK_NAME = "Orphan Widget";
 
 /**

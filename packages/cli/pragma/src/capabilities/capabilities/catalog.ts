@@ -30,9 +30,12 @@ import type {
  * `capabilities` tool and the MCP handshake read, so the two cannot contradict
  * each other. `system` projects the distribution's identity rather than naming
  * a domain — the live tool catalog the same handshake carries already says
- * which nouns exist. `model`/`querying` are verbatim from the old shell (the
- * tier-channel / SPARQL model is still accurate for v2); `mutations` is new in
- * v2, surfacing the plan-first/confirm gate.
+ * which nouns exist. Every connecting agent is told these four things before it
+ * calls anything, so each must be TRUE of the tools it is about to reach:
+ * `model` told agents to scope data by tier and channel via `config_set` until
+ * `block list` — the last verb that filtered on either — became a declared
+ * story with no term for them, at which point it became a falsehood shipped in
+ * the handshake.
  */
 export const CONVENTIONS = {
   // `help` is authored as a bare phrase (`--help` renders it as one), so the
@@ -40,8 +43,12 @@ export const CONVENTIONS = {
   // string would have to add — a fork writing "Explore the recipe graph."
   // otherwise reads "recipe graph.. A CLI and MCP server…".
   system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
+  // Length is load-bearing: this string ships in the MCP handshake, which
+  // carries a hard character ceiling (`INSTRUCTIONS_MAX_CHARS`) because it
+  // costs every session's context. Say the true thing in about the space the
+  // false one took, rather than raising the ceiling to fit better prose.
   model:
-    "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
+    "Reads are UNSCOPED: every list and lookup answers from the whole graph. The tier and channel config fields are recorded but narrow nothing today; filter the rows you get back, or use graph_query for a scoped SELECT.",
   querying:
     "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
   mutations:

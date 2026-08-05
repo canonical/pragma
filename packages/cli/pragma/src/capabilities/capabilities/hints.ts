@@ -42,7 +42,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   block_list: {
     category: "read",
     use_when:
-      "Browsing available components, patterns, layouts under current tier/channel",
+      "Browsing every component, pattern, layout and subcomponent in the graph",
   },
   block_lookup: {
     category: "read",
@@ -60,7 +60,8 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   config_show: {
     category: "read",
-    use_when: "Checking active tier and channel before querying",
+    use_when:
+      "Checking the resolved configuration and which layer supplied each field",
   },
   graph_inspect: {
     category: "read",
@@ -145,7 +146,8 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   tier_list: {
     category: "read",
-    use_when: "Understanding the tier hierarchy before setting a tier filter",
+    use_when:
+      "Understanding the tier hierarchy the design system is organized by",
   },
   tier_lookup: {
     category: "read",
@@ -172,7 +174,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   config_set: {
     category: "write",
     use_when:
-      "Setting any config field by name — tier, channel, or detail (e.g. `config set tier apps/lxd`)",
+      "Setting any config field by name — tier, channel, or detail (e.g. `config set detail detailed`)",
   },
   create_component: {
     category: "write",

@@ -49,10 +49,13 @@ over GraphQL or raw SPARQL.
 ## How it fits together
 
 - **Tiers** are a hierarchy (\`global\` > \`apps\` > \`apps/lxd\`): a lower tier
-  inherits and overrides the blocks of its ancestors, so scoping a query to a
-  tier walks that chain.
-- **Channels** (\`normal\`, \`experimental\`, \`prerelease\`) gate visibility, so an
-  in-progress block never leaks into a stable answer.
+  inherits and overrides the blocks of its ancestors. A block records the tier
+  it belongs to, and \`block lookup\` reports it.
+- **Channels** (\`normal\`, \`experimental\`, \`prerelease\`) record how finished a
+  block is.
+
+Neither is a filter today: reads answer from the whole graph, and the \`tier\`
+and \`channel\` settings narrow nothing.
 
 ## Why RDF
 
@@ -74,15 +77,25 @@ exactly the domain that was published.`;
  * layer does not know the pack grammar (`parsePackDefinition` does).
  */
 const designSystemStories: readonly PackDefinition[] = [
+  // `block list` selects every UI block in the store. It is UNFILTERED: the
+  // hand-written verb it replaces narrowed the rows by the configured tier's
+  // parent chain and by the channel's release levels, and the grammar has a
+  // term for neither, so both are gone rather than reimplemented here. Every
+  // block lists for everyone, experimental and alpha included.
+  //
+  // The row shape is preserved against the renderer's expectations by doing the
+  // local-name extraction IN SPARQL — `type` and `tier` are display words
+  // (`component`, `global`), not compacted IRIs — and by falling an unnamed
+  // block back to its own local name so it still shows a token. `?type` and
+  // `?tier` ride OPTIONAL, so an untiered or unnamed block is listed rather
+  // than dropped from the join.
+  //
   // `block lookup` is served over the GraphQL fetch path (ONE generated document
-  // over the `UIBlock` interface covering Component/Pattern/Layout/Subcomponent);
-  // `block list` deliberately stays HAND-WRITTEN (tier-chain inheritance +
-  // channel + `--all-tiers`), so this story ships the lookup half only. Base
-  // level mirrors the old summary view (name/tier/summary); the default is
-  // `detailed`, matching the old CLI which rendered anatomy and modifiers
-  // without a flag. A derived name that maps onto no schema field is omitted
-  // (OPTIONAL parity), so a graph lacking whenToUse/whenNotToUse degrades
-  // gracefully.
+  // over the `UIBlock` interface covering Component/Pattern/Layout/Subcomponent).
+  // Its base level is name/tier/summary; the default is `detailed`, so anatomy
+  // and modifiers render without a flag. A derived name that maps onto no schema
+  // field is omitted (OPTIONAL parity), so a graph lacking whenToUse/whenNotToUse
+  // degrades gracefully.
   //
   // Disclosure declares the FULL canonical ladder `[summary, standard,
   // detailed]` — the same set `standard` declares — so a config
@@ -93,8 +106,41 @@ const designSystemStories: readonly PackDefinition[] = [
   // (`block` rich-by-default, `standard` terse-by-default).
   {
     noun: "block",
-    description: "Look up design system blocks.",
+    description: "List all design system blocks.",
+    toolDescription:
+      "List every design-system block — components, patterns, layouts and subcomponents — with its type, tier and modifier families. Use when browsing what exists before looking one up. Example: block_list {}.",
     colophon: DESIGN_SYSTEM_COLOPHON,
+    list: {
+      query: [
+        "SELECT ?uri ?name ?type ?tier",
+        '       (GROUP_CONCAT(DISTINCT ?modName; separator=", ") AS ?modifiers)',
+        "WHERE {",
+        "  VALUES ?class { ds:Component ds:Pattern ds:Layout ds:Subcomponent }",
+        "  ?uri a ?class .",
+        "  OPTIONAL { ?uri ds:name ?declaredName }",
+        "  OPTIONAL { ?uri ds:tier ?tierUri }",
+        "  OPTIONAL { ?uri ds:hasModifierFamily ?family . ?family ds:name ?modName }",
+        '  BIND(REPLACE(STR(?uri), "^.*[/#]", "") AS ?localName)',
+        "  BIND(COALESCE(?declaredName, ?localName) AS ?name)",
+        '  BIND(LCASE(REPLACE(STR(?class), "^.*[/#]", "")) AS ?type)',
+        '  BIND(COALESCE(REPLACE(STR(?tierUri), "^.*[/#]", ""), "") AS ?tier)',
+        "}",
+        "GROUP BY ?uri ?name ?type ?tier",
+        "ORDER BY ?name",
+      ].join("\n"),
+      columns: [
+        { field: "name", label: "Name" },
+        { field: "type", label: "Type" },
+        { field: "tier", label: "Tier" },
+        { field: "modifiers", label: "Modifiers" },
+        { field: "uri", label: "IRI" },
+      ],
+      emptyRecovery: {
+        message:
+          "No blocks in the store. Build it from the configured design-system packs.",
+        cli: "sources update",
+      },
+    },
     lookup: {
       source: "graphql",
       toolDescription:
