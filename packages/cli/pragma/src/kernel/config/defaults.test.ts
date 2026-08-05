@@ -58,12 +58,21 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     expect(storyCounts).toEqual([4, 0, 1]);
   });
 
-  it("declares no removed field — the validator would refuse to load one", () => {
-    // `generators` was deleted (L-OPEN-1 ruling): validated, layered, and read
-    // by nothing. The distribution config goes through the same strict
-    // `parseRawConfig` as every layer, so a `generators:` reintroduced here
-    // would fail the eager validation at import — this pins the honest state.
-    expect(defaults).not.toHaveProperty("generators");
+  it("declares the generator packages, and they survive validation", () => {
+    // `generators` went away INERT (validated, layered, read by nothing) and
+    // came back LOAD-BEARING: `scripts/build.ts` writes the literal import
+    // specifiers and the whole `create` surface from it. The distribution config
+    // goes through the same strict `parseRawConfig` as every layer, so this pins
+    // that the field survives that validation rather than being stripped as an
+    // unknown key — which would leave the build reading `undefined`.
+    expect(defaults.generators?.map((generator) => generator.name)).toEqual([
+      "@canonical/summon-component",
+      "@canonical/summon-package",
+      "@canonical/summon-application",
+    ]);
+    // It is DISTRIBUTION-ONLY: no config layer can change which modules an
+    // already-compiled binary carries, so it never reaches the effective config.
+    expect(defaults.generators).toBeDefined();
   });
 
   it("declares the domain namespaces the store is built with and the CLI resolves", () => {

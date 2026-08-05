@@ -186,7 +186,7 @@ pragma create application [appPath] [options]
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[appPath]` | no | Application directory. (default: my-app) |
+| `[appPath]` | no | Application directory name. (default: my-app) |
 
 **Flags**
 
@@ -195,7 +195,7 @@ pragma create application [appPath] [options]
 | `--with-ssr` | — | Include SSR. (default: true) |
 | `--with-router` | — | Include router. (default: true) |
 | `--with-forms` | — | Include form components. (default: true) |
-| `--with-relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
+| `--with-relay` | — | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
 | `--run-install` | — | Install dependencies now. (default: false) |
 
 - Store: storeless.
@@ -221,7 +221,7 @@ pragma create component [componentPath] [options]
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[componentPath]` | no | Component path (its final segment is the PascalCase component name). |
+| `[componentPath]` | no | Component path. |
 
 **Flags**
 
@@ -260,9 +260,9 @@ pragma create package [options]
 | `--description` | `<string>` | Package description. (default: ) |
 | `--with-react` | — | Include React dependencies. (default: false) |
 | `--with-storybook` | — | Include Storybook setup. (default: false) |
-| `--with-cli` | — | Include a CLI binary entry point. (default: false) |
-| `--with-pr-template` | — | Include a PR template. (default: false) |
-| `--run-install` | — | Run the package manager install after creation. (default: false) |
+| `--with-cli` | — | Include CLI binary entry point. (default: false) |
+| `--with-pr-template` | — | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
+| `--run-install` | — | Run package manager install after creation. (default: false) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.

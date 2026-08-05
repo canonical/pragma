@@ -29,10 +29,11 @@ The `Type` column is prose; the field set and each field's optionality are check
 | `stories` | array (optional) | Read stories not attached to any pack, in the pack grammar. Compiled at dispatch, and they win over the same noun declared under `packs[].stories`. |
 | `prefixes` | record (optional) | Namespace prefixes the pack is built with — they win every harvest, so this decides which IRI a prefix binds in the store and the index. Every surface uses the compiled-in display/expansion map to compact and expand prefixed names; only the DISTRIBUTION layer seeds it, because it is also read on the storeless fast path, before any config layer exists. |
 | `completion` | object (optional) | Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. It is the one field `config show` carries with NO origin at all. |
+| `generators` | array (optional) | The generator packages the distribution links in and the `create` nouns they expose. **Distribution-only, and read at BUILD time**: the build writes the literal import specifiers and the whole `create` surface from it. A global or project layer declaring it is accepted and ignored — the modules a compiled binary carries were decided when it was built. |
 
 ## Distribution-only fields
 
-`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
+`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. `generators` is distribution-only for a different reason: it is read at BUILD time, where `scripts/build.ts` turns it into the literal import specifiers the bundler needs and the whole `create` surface. A layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries. Changing any of these means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
 
 ## What `config show` reports
 
@@ -41,10 +42,6 @@ The `Type` column is prose; the field set and each field's optionality are check
 ## Renamed: `packages` → `packs`
 
 The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.
-
-## Removed: `generators`
-
-The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.
 
 ## Removed: `completion.caseSensitive`
 

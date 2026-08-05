@@ -520,6 +520,11 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
     notes:
       "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. It is the one field `config show` carries with NO origin at all.",
   },
+  generators: {
+    type: "array (optional)",
+    notes:
+      "The generator packages the distribution links in and the `create` nouns they expose. **Distribution-only, and read at BUILD time**: the build writes the literal import specifiers and the whole `create` surface from it. A global or project layer declaring it is accepted and ignored — the modules a compiled binary carries were decided when it was built.",
+  },
 };
 
 /**
@@ -559,13 +564,11 @@ function renderConfigPage(): string {
     "The `Type` column is prose; the field set and each field's optionality are checked against the validator.",
     rows.join("\n"),
     "## Distribution-only fields",
-    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read from the same file at render time: the \`colophon\` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
+    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read from the same file at render time: the \`colophon\` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. \`generators\` is distribution-only for a different reason: it is read at BUILD time, where \`scripts/build.ts\` turns it into the literal import specifiers the bundler needs and the whole \`create\` surface. A layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries. Changing any of these means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
     "## What `config show` reports",
     `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",
     "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
-    "## Removed: `generators`",
-    "The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.",
     "## Removed: `completion.caseSensitive`",
     "The `completion.caseSensitive` field was removed: it was accepted by the validator and read by nothing — completion matching is declared per parameter by the capability grammar, never configured. A layer that still sets it fails loudly at load with an error naming the removed field; delete the key. `completion.minChars` and `completion.families` are unchanged.",
     "## Reading and writing",

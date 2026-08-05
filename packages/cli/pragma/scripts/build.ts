@@ -1,24 +1,37 @@
 /**
  * Build script for the `pragma` compiled binary.
  *
- * Two steps: (1) codegen the embedded template manifest, then (2) compile the
- * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
+ * Two steps: (1) codegen from the declaration, then (2) compile the CLI entry
+ * (`src/bin.ts`) into a standalone executable with `Bun.build`.
  *
- * COMPILED `create` — all three nouns run from the shipped binary. `create.verb.ts` reaches summon-core + the generators through STATIC
- * dynamic imports (behind its lazy boundary), so bun's `--compile` bundler
- * includes them. The generators resolve their template and asset paths
- * `import.meta`-relative, and those files do not exist in a standalone binary,
- * so this
- * script inlines every declared generator's templates AND verbatim assets into
- * `create/templates.embedded.generated.ts` — the same
- * inline-strings-survive-`--compile` technique as
- * `graphpack/embedded/pack.generated.ts` — keyed by PACKAGE-SCOPED path
- * (`@canonical/summon-component/react/types.ts.ejs`). Every generator resolves
- * its reads through `@canonical/summon-core/embedded`, which consults that
- * manifest when the disk read fails; the package scope lets one manifest serve
- * several packages, and the path tail keeps react/svelte/lit apart. A
- * compiled-binary smoke test (create/compiledCreate.subprocess.test.ts) proves
- * every shipped noun byte-identical to a source run.
+ * THE ASYMMETRY THE CODEGEN EXISTS FOR. `bun build --compile` bundles only
+ * LITERAL import specifiers — a computed `import(name)` leaves the module out of
+ * the binary (measured: `Cannot find module '@canonical/summon-component' from
+ * '/$bunfs/root/…'`). This build, by contrast, runs on a real filesystem where a
+ * computed specifier resolves fine. So the build READS the declaration and
+ * WRITES the literals: a fork decides which generator packages the binary
+ * carries by editing `pragma.conf.ts` and rebuilding, and nothing under
+ * `src/capabilities/create/` names a generator package at all. The premise that
+ * "a declaration can never decide what a compiled binary runs" is false, and
+ * this script is the disproof.
+ *
+ * THREE GENERATED MODULES, THREE IMPORT DISCIPLINES:
+ *  - `create/generators.generated.ts` — a VALUE module of literal
+ *    `import { generators } from "<declared package>"` lines. Reached only
+ *    through `pickGenerator.ts`, i.e. only behind `create`'s lazy boundary.
+ *  - `create/surface.generated.ts` — a DATA module with ZERO imports, carrying
+ *    each noun's prompt mirror, axis values, path param, summary and examples.
+ *    Statically imported by `create.verb.ts`, so `--help` and `__complete` read
+ *    the surface without loading a generator.
+ *  - `create/templates.embedded.generated.ts` — every declared generator's
+ *    templates AND verbatim assets inlined as strings, the same
+ *    inline-strings-survive-`--compile` technique as
+ *    `graphpack/embedded/pack.generated.ts`, keyed by PACKAGE-SCOPED path.
+ *    Generators resolve their reads through `@canonical/summon-core/embedded`,
+ *    which consults it when the disk read fails; the package scope lets one
+ *    manifest serve several packages, and the path tail keeps react/svelte/lit
+ *    apart. `create/compiledCreate.subprocess.test.ts` proves every shipped noun
+ *    byte-identical to a source run.
  */
 
 import {
@@ -31,11 +44,31 @@ import {
 } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
+import conf from "../pragma.conf.js";
+import { assertDeclaredGenerators } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
+import { generateCreateSurface } from "./generateCreateSurface.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
+
+/**
+ * The declared generator packages. Asserted against `package.json#dependencies`
+ * on EVERY build, so a declaration that names a package the binary would not
+ * link fails here rather than at a user's `create`.
+ */
+const DECLARED = conf.generators;
+assertDeclaredGenerators(
+  DECLARED,
+  (
+    JSON.parse(
+      readFileSync(
+        fileURLToPath(new URL("../package.json", scriptsUrl)),
+        "utf-8",
+      ),
+    ) as { dependencies?: Record<string, string> }
+  ).dependencies ?? {},
+);
 
 /**
  * Every directory named `templates` under a package's `src/`, deepest paths
@@ -63,30 +96,26 @@ function collectTemplateRoots(dir: string): string[] {
 }
 
 /**
- * The generator packages whose template files the binary must carry — every
- * declared binding, because every declared generator now reads through the
- * shared embedded registry. Keys are `<package>/<path-relative-to-root>` —
- * the same rule `@canonical/summon-core/embedded`'s `deriveEmbeddedKey` applies
- * to a file's runtime source path, so harvest and lookup agree by construction.
- * The package scope is what lets several generator packages share ONE manifest.
+ * Every declared package's template roots.
  *
  * Roots are reached through this package's own `node_modules`, which bun links
  * to the sibling workspace directory, and read from the package's `src` — the
- * source of truth, identical to any dist copy, and the reason the key rule
- * looks only at the tail after the last `/templates/`. That is a MONOREPO BUILD
- * path, not npm resolution: the published tarballs ship `dist` only, so only a
- * checkout satisfies it. The binding's `name` is the single declared fact it
- * consumes.
+ * source of truth, identical to any dist copy, and the reason the key rule looks
+ * only at the tail after the last `/templates/`. That is a MONOREPO BUILD path,
+ * not npm resolution: the published tarballs ship `dist` only, so only a
+ * checkout satisfies it.
+ *
+ * Keys are `<package>/<path-relative-to-root>` — the same rule
+ * `@canonical/summon-core/embedded`'s `deriveEmbeddedKey` applies to a file's
+ * runtime source path, so harvest and lookup agree by construction. The package
+ * scope is what lets several generator packages share ONE manifest.
  */
-const TEMPLATE_ROOTS: ReadonlyArray<{
-  id: string;
-  name: string;
-  root: string;
-}> = Object.entries(CREATE_GENERATORS).flatMap(([id, binding]) =>
-  collectTemplateRoots(
-    fileURLToPath(new URL(`../node_modules/${binding.name}/src`, scriptsUrl)),
-  ).map((root) => ({ id, name: binding.name, root })),
-);
+const TEMPLATE_ROOTS: ReadonlyArray<{ name: string; root: string }> =
+  DECLARED.flatMap(({ name }) =>
+    collectTemplateRoots(
+      fileURLToPath(new URL(`../node_modules/${name}/src`, scriptsUrl)),
+    ).map((root) => ({ name, root })),
+  );
 
 const MANIFEST_OUT = fileURLToPath(
   new URL(
@@ -130,7 +159,7 @@ function collectTemplateFiles(dir: string): string[] {
  */
 function generateTemplateManifest(): number {
   const entries: Record<string, string> = {};
-  for (const { id, name, root } of TEMPLATE_ROOTS) {
+  for (const { name, root } of TEMPLATE_ROOTS) {
     const files = collectTemplateFiles(root);
     // Fail loud PER ROOT rather than ship a manifest missing a binding's
     // files: the binary's `create <id>` would otherwise die with "Embedded file
@@ -139,7 +168,7 @@ function generateTemplateManifest(): number {
     // exists and holds nothing.
     if (files.length === 0) {
       throw new Error(
-        `No template files under ${root} for \`create ${id}\` — is the workspace linked?`,
+        `No template files under ${root} for ${name} — is the workspace linked?`,
       );
     }
     for (const file of files) {
@@ -217,6 +246,11 @@ export { writeReferenceDocs };
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
+  const nouns = await generateCreateSurface();
+  console.log(
+    `Generated the create surface for ${nouns.join(", ")} → generators.generated.ts + surface.generated.ts`,
+  );
+
   const embedded = generateTemplateManifest();
   console.log(
     `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,

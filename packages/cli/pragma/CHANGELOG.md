@@ -9,6 +9,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * **cli:** `create package` and `create application` run from the compiled binary. Their generators route every read — 11 templates for `package`, 15 templates and 62 verbatim assets for `application` — through `@canonical/summon-core/embedded`, so the binary serves them from its inlined manifest instead of a filesystem it does not have. The source-run-only caveat is withdrawn from both, and the gate that enforced it is deleted.
 
+* **cli:** `generators` returns to `pragma.conf.ts`, load-bearing. It went away INERT (validated, layered, read by nothing) and comes back read at BUILD time: `scripts/build.ts` writes the literal import specifiers a `--compile` bundle needs, harvests each declared package's template roots, and derives the whole `create` surface — prompt mirrors, framework axis, path params, summaries and examples — from it. `src/capabilities/create/` names no generator package at all. Distribution-only, like the identity fields: a global or project layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries.
+
 ### BREAKING CHANGES
 
 * **summon-component:** the `./embedded` subpath export is removed. The embedded-file registry lives in `@canonical/summon-core/embedded`; hosts inject through its `setEmbeddedFiles`.
@@ -34,6 +36,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # Unreleased
 
+
+* **cli:** `generators` returns to `pragma.conf.ts`, load-bearing. It went away INERT (validated, layered, read by nothing) and comes back read at BUILD time: `scripts/build.ts` writes the literal import specifiers a `--compile` bundle needs, harvests each declared package's template roots, and derives the whole `create` surface — prompt mirrors, framework axis, path params, summaries and examples — from it. `src/capabilities/create/` names no generator package at all. Distribution-only, like the identity fields: a global or project layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries.
 
 ### BREAKING CHANGES
 
@@ -126,6 +130,8 @@ See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and
 * **cli:** story packs — declarative read stories for any ontology (experimental) ([#778](https://github.com/canonical/pragma/issues/778)) ([23f1227](https://github.com/canonical/pragma/commit/23f122701a88668dba8bee6d0652d40417d5dbf5))
 * **pragma-cli:** graphql serve + config-driven build/check over semantic packages ([#682](https://github.com/canonical/pragma/issues/682)) ([d3a09f5](https://github.com/canonical/pragma/commit/d3a09f56b113bad0adc63158c38715c7eb39ec1f))
 
+
+* **cli:** `generators` returns to `pragma.conf.ts`, load-bearing. It went away INERT (validated, layered, read by nothing) and comes back read at BUILD time: `scripts/build.ts` writes the literal import specifiers a `--compile` bundle needs, harvests each declared package's template roots, and derives the whole `create` surface — prompt mirrors, framework axis, path params, summaries and examples — from it. `src/capabilities/create/` names no generator package at all. Distribution-only, like the identity fields: a global or project layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries.
 
 ### BREAKING CHANGES
 
@@ -341,6 +347,8 @@ Claude-Session: https://claude.ai/code/session_01DF9ExVCukzqpe1Fus9V1no
 
 * **ci:** parallel jobs with Nx remote cache server ([#523](https://github.com/canonical/pragma/issues/523)) ([053a2ec](https://github.com/canonical/pragma/commit/053a2ec8a7ea4dc05e4e31000c09a56fc15f77bf))
 
+
+* **cli:** `generators` returns to `pragma.conf.ts`, load-bearing. It went away INERT (validated, layered, read by nothing) and comes back read at BUILD time: `scripts/build.ts` writes the literal import specifiers a `--compile` bundle needs, harvests each declared package's template roots, and derives the whole `create` surface — prompt mirrors, framework axis, path params, summaries and examples — from it. `src/capabilities/create/` names no generator package at all. Distribution-only, like the identity fields: a global or project layer declaring it is accepted and ignored, because no config layer can change which modules an already-compiled binary carries.
 
 ### BREAKING CHANGES
 

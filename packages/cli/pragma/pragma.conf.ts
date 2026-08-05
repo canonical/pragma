@@ -536,6 +536,82 @@ Made by the Canonical Webteam — https://canonical.com.`,
 Made by the Canonical Webteam — https://canonical.com.`,
   },
   issuesUrl: "https://github.com/canonical/pragma/issues",
+  // The generator packages this distribution links in, and the `create` nouns
+  // they expose. READ AT BUILD TIME: `scripts/build.ts` writes the literal
+  // import specifiers from `name` (a `--compile` bundle carries only literal
+  // specifiers — the build writes them), harvests each package's template roots,
+  // and derives the whole `create` surface from `nouns`. A fork adds, swaps or
+  // drops a generator package by editing this block and rebuilding; nothing in
+  // `src/capabilities/create/` names a generator package at all.
+  //
+  // `summary` and `examples` are CONTENT: a generator's `meta.description`
+  // addresses `summon`, and its `meta.examples` are `summon …` invocations.
+  // `cmd` omits the binary name — the verb builder composes it from `BIN_NAME`,
+  // the same rule `emptyRecovery.cli` follows.
+  generators: [
+    {
+      name: "@canonical/summon-component",
+      source: "npm:@canonical/summon-component@^0.33.0",
+      nouns: {
+        // A FRAMEWORK AXIS: the package's `component/react`, `component/svelte`
+        // and `component/lit` generators collapse into one verb plus a
+        // `--framework` enum whose values are the map keys under the prefix, in
+        // map order, the first being the default. `componentPath` drops its
+        // ParamSpec default so the SELECTED framework's own prompt default
+        // applies — react and svelte/lit differ.
+        component: {
+          keyPrefix: "component",
+          axis: "framework",
+          summary: "Scaffold a React, Svelte, or Lit component.",
+          noDefault: ["componentPath"],
+          examples: [
+            {
+              cmd: "create component src/components/Button --framework react",
+              note: "React component with tests, stories, and styles",
+            },
+            {
+              cmd: "create component src/lib/Card --framework svelte --dry-run",
+              note: "preview the files without writing",
+            },
+          ],
+        },
+      },
+    },
+    {
+      name: "@canonical/summon-package",
+      source: "npm:@canonical/summon-package@^0.33.0",
+      nouns: {
+        package: {
+          key: "package",
+          summary: "Scaffold a new npm package for the monorepo.",
+          optIn: ["runInstall"],
+          examples: [
+            { cmd: "create package --name @canonical/my-lib --type library" },
+            { cmd: "create package --name @canonical/my-tool --run-install" },
+          ],
+        },
+      },
+    },
+    {
+      name: "@canonical/summon-application",
+      source: "npm:@canonical/summon-application@^0.33.0",
+      nouns: {
+        // The package also ships `domain`, `route` and `wrapper`; `create`
+        // exposes one of its four generators. Surfacing a noun is a
+        // declaration, so widening the surface is an edit here and nowhere else.
+        application: {
+          key: "application/react",
+          summary: "Scaffold a full React application with SSR and routing.",
+          optIn: ["runInstall"],
+          withPrefixed: ["ssr", "router", "forms", "relay"],
+          examples: [
+            { cmd: "create application my-app" },
+            { cmd: "create application my-app --with-relay" },
+          ],
+        },
+      },
+    },
+  ],
   packs: [
     {
       name: "@canonical/design-system",

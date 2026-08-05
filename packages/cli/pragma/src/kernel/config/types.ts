@@ -56,6 +56,61 @@ export interface ColophonDeclaration {
 }
 
 /**
+ * One `create` noun a declared generator package exposes.
+ *
+ * `key` names the generator-map entry the noun runs. `keyPrefix` + `axis`
+ * declare a FRAMEWORK AXIS instead: the noun collapses several generators
+ * (`component/react`, `component/svelte`, `component/lit`) into one verb plus an
+ * enum flag named by `axis`, whose values are the map keys under the prefix, in
+ * map order, the first being the default. Exactly one of the two forms.
+ *
+ * `summary` and `examples` are CONTENT, not derivable: a generator's own
+ * `meta.description` describes it to `summon`, and its `meta.examples` are
+ * `summon …` invocations. `examples[].cmd` OMITS the binary name — the spec
+ * builder composes it from `BIN_NAME`, the same rule `emptyRecovery.cli` follows
+ * and `kernel/copy.test.ts` enforces over `src/capabilities/**`.
+ *
+ * The last three are CLI-GRAMMAR facts about prompts, not generator facts:
+ *  - `optIn` names confirm prompts forced to `default: false`, because the
+ *    grammar has no `--no-` form and a default-true boolean could never be
+ *    turned off;
+ *  - `withPrefixed` names prompts exposed under the `--with-X` include-flag
+ *    convention (`ssr` → `--with-ssr`), re-keyed back at the one CLI↔generator
+ *    seam so the generator's prompt names, templates and goldens stay stable;
+ *  - `noDefault` names params whose ParamSpec default is dropped so the
+ *    SELECTED axis value's own prompt default applies instead.
+ */
+export interface GeneratorNoun {
+  readonly key?: string;
+  readonly keyPrefix?: string;
+  readonly axis?: string;
+  readonly summary: string;
+  readonly examples?: readonly {
+    readonly cmd: string;
+    readonly note?: string;
+  }[];
+  readonly optIn?: readonly string[];
+  readonly withPrefixed?: readonly string[];
+  readonly noDefault?: readonly string[];
+}
+
+/**
+ * A generator package the distribution links in, and the `create` nouns it
+ * exposes.
+ *
+ * `name` is the specifier `scripts/build.ts` writes into the generated static
+ * import — `bun build --compile` bundles only LITERAL specifiers, and the build
+ * writes them. `source` names the range the distribution installs; the build
+ * asserts it matches this package's own `dependencies` entry, because the
+ * dependency — not the declaration — is what actually links in.
+ */
+export interface GeneratorDeclaration {
+  readonly name: string;
+  readonly source: string;
+  readonly nouns: Readonly<Record<string, GeneratorNoun>>;
+}
+
+/**
  * Completion policy, read at `setup completions` emit time (never on the
  * storeless `__complete` fast path). Derive-by-default, tune-by-exception:
  * `minChars` gates the `__complete` exec in the generated scripts, and
@@ -109,10 +164,11 @@ export interface PragmaConfig {
  * wins during the merge.
  *
  * WIDER than {@link PragmaConfig}: the DISTRIBUTION layer (`pragma.conf.ts`)
- * is `satisfies RawConfig` and declares the four identity fields, which are
- * read statically and never merged. A global or project layer declaring one is
- * accepted by the validator and has no effect — `docs/reference/config.md`
- * says so, and `readConfig.test.ts` pins it.
+ * is `satisfies RawConfig` and declares the four identity fields plus
+ * `generators`, all of which are read outside the merge — the identity fields
+ * at module load, `generators` at BUILD time. A global or project layer
+ * declaring one is accepted by the validator and has no effect —
+ * `docs/reference/config.md` says so, and `readConfig.test.ts` pins it.
  */
 export interface RawConfig {
   readonly name?: string;
@@ -126,6 +182,16 @@ export interface RawConfig {
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly completion?: CompletionConfig;
+  /**
+   * The generator packages the DISTRIBUTION links in, and the `create` nouns
+   * they expose. Read at BUILD time by `scripts/build.ts`, which writes the
+   * literal import specifiers and the derived create surface from it — so it is
+   * distribution-only, exactly like the identity fields, and deliberately NOT in
+   * {@link PragmaConfig}. A global or project layer cannot change which modules
+   * were linked into an already-compiled binary; merging it would let
+   * `config show` report a value the binary does not honour.
+   */
+  readonly generators?: readonly GeneratorDeclaration[];
 }
 
 /** Which layer supplied an effective field value. */

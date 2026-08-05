@@ -17,6 +17,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import conf from "../../../pragma.conf.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
   executeVerb,
@@ -25,14 +26,14 @@ import {
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { ParamSpec } from "../../kernel/spec/types.js";
-import { CREATE_GENERATORS } from "./constants.js";
 import {
   createVerbs,
-  INCLUDE_FLAG_ALIASES,
   isModuleNotFound,
+  toGeneratorAnswers,
 } from "./create.verb.js";
-import { generatorToParams } from "./generatorToVerbSpec.js";
 import { createModule } from "./index.js";
+import { CREATE_SURFACE } from "./surface.generated.js";
+import type { CreateKind } from "./types.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -207,6 +208,19 @@ describe("lazy-React discipline (PROTECTED)", () => {
     expect([...graph].some((f) => f.endsWith("create/pickGenerator.ts"))).toBe(
       false,
     );
+    // …and so is the generated VALUE module it imports them through. The DATA
+    // module is on the graph and must stay import-free, which the assertion
+    // below pins.
+    expect(
+      [...graph].some((f) => f.endsWith("create/generators.generated.ts")),
+    ).toBe(false);
+    // DERIVED from the declaration, not spelled by hand: the forbidden set is
+    // exactly the generator packages THIS distribution declares, plus the
+    // runtime they pull. A fork that swaps its packages gets its own packages
+    // forbidden with no edit here — strictly stronger than a fixed list, which
+    // would go quiet the moment the declaration changed.
+    const declared = conf.generators.map((generator) => generator.name);
+    expect(declared.length).toBeGreaterThan(0);
     const forbidden = [
       "react",
       "react-dom",
@@ -214,12 +228,10 @@ describe("lazy-React discipline (PROTECTED)", () => {
       "ink-select-input",
       "ink-text-input",
       "ink-spinner",
-      "@canonical/summon-component",
-      "@canonical/summon-package",
-      "@canonical/summon-application",
+      ...declared,
       // The generators pull summon-core, and summon-core is what costs the
       // fast paths (+43 MB RSS once it loads). Dropping the `type` from one of
-      // the four `import type … from "@canonical/summon-core"` lines in this
+      // the `import type … from "@canonical/summon-core"` lines in this
       // directory is a one-word regression nothing else catches.
       "@canonical/summon-core",
     ];
@@ -261,158 +273,127 @@ describe("lazy-React discipline (PROTECTED)", () => {
   });
 });
 
-describe("generator→grammar adapter parity (PROTECTED)", () => {
-  // The static mirrors in create.verb.ts are AUTHORITATIVE for omitted CLI
-  // flags: dispatch.extractParams fills ParamSpec.default when a flag is absent,
-  // so a drifted mirror default silently overrides the generator's own default.
-  // These guards assert the EMITTED grammar (names, kinds, defaults, choices)
-  // still matches the real generators for all three create nouns — the
-  // byte-equality goldens can't catch this (they pass every param explicitly).
+describe("derived create surface (PROTECTED)", () => {
+  const dir = dirname(fileURLToPath(import.meta.url));
 
-  /** Drop `doc` (help text is intentionally paraphrased in the mirrors) so the
-   * comparison is purely behavioural: names, kinds, defaults, choices. */
-  const behavioural = (
-    params: readonly ParamSpec[],
-  ): Record<string, unknown>[] =>
-    params.map((p) => {
-      const clone: Record<string, unknown> = { ...p };
-      delete clone.doc;
-      return clone;
-    });
+  // The surface is GENERATED from `pragma.conf.ts` + the live generators, so
+  // there is no hand-written mirror left to drift. What can still go wrong is
+  // (a) the committed module going stale against the generators, and (b) a
+  // derivation quietly producing the wrong thing. (a) is a regenerate-and-
+  // compare guard; (b) is pinned against literals and, for the flag set, against
+  // the FROZEN COVENANT — a check the derivation cannot satisfy by agreeing
+  // with itself.
 
-  /** `runInstall` is a DELIBERATE divergence (package + application): the real
-   * generators default it `true`, but the CLI grammar has no `--no-` form, so
-   * the mirror makes install opt-in (`default:false`, enabled by `--run-install`).
-   * Apply that same override to the generator side before comparing. */
-  const applyRunInstallOverride = (params: readonly ParamSpec[]): ParamSpec[] =>
-    params.map((p) =>
-      p.name === "runInstall" ? ({ ...p, default: false } as ParamSpec) : p,
+  it("the generated value module imports exactly the declared packages", () => {
+    // Read as SOURCE TEXT and compared to the DECLARATION — input against
+    // output, not the derivation against itself. This is what catches a codegen
+    // bug that writes a specifier the declaration does not name (or drops one):
+    // the binary would then link a package the distribution never declared.
+    //
+    // A regenerate-and-compare staleness guard was tried here and DELETED as
+    // vacuous: `testing/perf/globalSetup.ts` rebuilds `dist/pragma` whenever
+    // anything under `src/`, `scripts/`, `pragma.conf.ts` or `package.json` is
+    // newer, and that build regenerates these modules — so by the time any test
+    // body runs, the committed bytes on disk are always fresh and the guard
+    // could not fail. Measured: hand-editing a prompt default and an import
+    // specifier both passed. What keeps the committed bytes honest is the
+    // `git status` after a gate run, and the covenant conformance below.
+    const source = readFileSync(
+      resolve(dir, "generators.generated.ts"),
+      "utf-8",
     );
-
-  it("component: framework collapse + shared confirms match the react generator", async () => {
-    const { generators } = await import("@canonical/summon-component");
-    const real = generatorToParams(
-      (generators as Record<string, { prompts: unknown[] }>)["component/react"]
-        .prompts as never,
+    const specifiers = [
+      ...source.matchAll(/import \{ generators as \w+ \} from "([^"]+)";/g),
+    ].map((match) => match.at(1));
+    expect(specifiers.length).toBeGreaterThan(0);
+    expect(specifiers.sort()).toEqual(
+      conf.generators.map((generator) => generator.name).sort(),
     );
-    const verb = createVerbs.component.params;
+  });
 
-    // The verb SYNTHESIZES a `framework` enum (the 3 framework generators
-    // collapse to one verb): react|svelte|lit, default react — no generator
-    // prompt corresponds to it.
-    expect(verb.find((p) => p.name === "framework")).toMatchObject({
-      kind: "enum",
-      values: ["react", "svelte", "lit"],
-      default: "react",
+  it("the generated DATA module has no import at all", () => {
+    // `create.verb.ts` reads it on the `--help` and `__complete` fast paths. One
+    // value import here would drag a generator — and summon-core, +43 MB RSS —
+    // onto every invocation. The lazy-React graph walk cannot see this, because
+    // it only forbids NAMED packages; a relative import would slip through.
+    const source = readFileSync(resolve(dir, "surface.generated.ts"), "utf-8");
+    expect(source).not.toMatch(/^import /m);
+  });
+
+  it("the derived path param is exactly the argument each noun jails (SEC-2)", () => {
+    // A LITERAL expectation, because a derivation that silently yielded
+    // `undefined` would DELETE the workspace jail for that noun rather than
+    // fail. `package` has no positional path — it writes into a subdirectory
+    // derived from `--name`, which `cwdJail.test.ts` covers separately.
+    const derived = Object.fromEntries(
+      Object.entries(CREATE_SURFACE).map(([kind, noun]) => [
+        kind,
+        (noun as { pathParam?: string }).pathParam,
+      ]),
+    );
+    expect(derived).toEqual({
+      component: "componentPath",
+      package: undefined,
+      application: "appPath",
     });
+  });
 
-    // componentPath deliberately drops its ParamSpec default so the SELECTED
-    // framework's own prompt default applies (react vs svelte/lit differ).
-    const verbPath = verb.find((p) => p.name === "componentPath") as
-      | Record<string, unknown>
-      | undefined;
-    const realPath = real.find((p) => p.name === "componentPath") as
-      | Record<string, unknown>
-      | undefined;
-    expect(verbPath).toMatchObject({
+  it("the axis collapses the declared package's real generator keys", () => {
+    const component = CREATE_SURFACE.component as {
+      axis: string;
+      axisValues: readonly string[];
+      keyPrefix: string;
+    };
+    expect(component.axis).toBe("framework");
+    expect(component.keyPrefix).toBe("component");
+    expect([...component.axisValues]).toEqual(["react", "svelte", "lit"]);
+  });
+
+  it("the CLI-grammar overlays are applied, and only where declared", () => {
+    // `runInstall` is a DELIBERATE divergence from the generators, which default
+    // it TRUE: the grammar has no `--no-` form, so a default-true boolean could
+    // never be turned off. It is declared per noun (`optIn`), not inferred.
+    for (const kind of ["package", "application"] as const) {
+      expect(
+        createVerbs[kind].params.find((p) => p.name === "runInstall"),
+        kind,
+      ).toMatchObject({ kind: "boolean", default: false });
+    }
+    // The include-flag rename (`--with-X`) is declared too: application's four
+    // booleans are exposed prefixed, and the bare names must NOT survive.
+    const names = createVerbs.application.params.map((p) => p.name);
+    for (const flag of ["withSsr", "withRouter", "withForms", "withRelay"]) {
+      expect(names).toContain(flag);
+    }
+    for (const bare of ["ssr", "router", "forms", "relay"]) {
+      expect(names).not.toContain(bare);
+    }
+    // `componentPath` drops its ParamSpec default so the SELECTED framework's
+    // own prompt default applies — and stays optional despite having none here.
+    const componentPath = createVerbs.component.params.find(
+      (p) => p.name === "componentPath",
+    ) as Record<string, unknown> | undefined;
+    expect(componentPath).toMatchObject({
       kind: "string",
       positional: true,
       complete: { kind: "files" },
+      required: false,
     });
-    expect(verbPath?.default).toBeUndefined();
-    expect(realPath?.default).toBe("src/components/MyComponent");
-
-    // Every other prompt (the shared confirms) must match names, kinds, AND
-    // defaults exactly — the silent-drift surface.
-    const shared = (ps: readonly ParamSpec[]) =>
-      behavioural(
-        ps.filter((p) => p.name !== "framework" && p.name !== "componentPath"),
-      );
-    expect(shared(verb)).toEqual(shared(real));
+    expect(componentPath?.default).toBeUndefined();
   });
 
-  it("package: mirror matches the package generator (defaults + type choices)", async () => {
-    const { generators } = await import("@canonical/summon-package");
-    const real = generatorToParams(
-      (generators as Record<string, { prompts: unknown[] }>).package
-        .prompts as never,
-    );
-    // The package verb's grammar IS generatorToParams(PACKAGE_MIRROR).
-    expect(behavioural(createVerbs.package.params)).toEqual(
-      behavioural(applyRunInstallOverride(real)),
-    );
-
-    // Guard the intentional runInstall override so it can't silently flip.
-    const realRunInstall = real.find((p) => p.name === "runInstall") as
-      | Record<string, unknown>
-      | undefined;
-    const mirrorRunInstall = createVerbs.package.params.find(
-      (p) => p.name === "runInstall",
-    ) as Record<string, unknown> | undefined;
-    expect(realRunInstall?.default).toBe(true);
-    expect(mirrorRunInstall?.default).toBe(false);
-
-    // The `--type` enum choices are load-bearing and must match exactly.
-    const realType = real.find((p) => p.name === "type");
-    expect(realType).toMatchObject({
-      kind: "enum",
-      values: ["tool-ts", "library", "css"],
-      default: "tool-ts",
-    });
-  });
-
-  /** Map a mirror's CLI `--with-X` include-flag names back to the generator
-   * prompt names (AV-228 B8) so the parity comparison still checks kinds and
-   * defaults against the real generator despite the deliberate flag rename. */
-  const toGeneratorNames = (
-    kind: "application",
-    params: readonly ParamSpec[],
-  ): ParamSpec[] =>
-    params.map((p) => {
-      const generatorName = INCLUDE_FLAG_ALIASES[kind][p.name];
-      return generatorName ? ({ ...p, name: generatorName } as ParamSpec) : p;
-    });
-
-  it("application: mirror matches the application/react generator (defaults)", async () => {
-    const { generators } = await import("@canonical/summon-application");
-    const real = generatorToParams(
-      (generators as Record<string, { prompts: unknown[] }>)[
-        "application/react"
-      ].prompts as never,
-    );
-    // Bridge the B8 include-flag rename before comparing: the CLI grammar
-    // exposes `withSsr`/`withRouter`/`withForms`, which map back to the
-    // generator's `ssr`/`router`/`forms`.
+  it("the include-flag aliases round-trip a param bag to generator prompt names", () => {
     expect(
-      behavioural(
-        toGeneratorNames("application", createVerbs.application.params),
-      ),
-    ).toEqual(behavioural(applyRunInstallOverride(real)));
-
-    // Guard the B8 rename itself: ALL application include-flags ARE on the
-    // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`/
-    // `withRelay`), not the bare `ssr`/`router`/`forms`/`relay` booleans.
-    const names = createVerbs.application.params.map((p) => p.name);
-    expect(names).toContain("withSsr");
-    expect(names).toContain("withRouter");
-    expect(names).toContain("withForms");
-    expect(names).toContain("withRelay");
-    expect(names).not.toContain("ssr");
-    expect(names).not.toContain("relay");
-
-    const realRunInstall = real.find((p) => p.name === "runInstall") as
-      | Record<string, unknown>
-      | undefined;
-    const mirrorRunInstall = createVerbs.application.params.find(
-      (p) => p.name === "runInstall",
-    ) as Record<string, unknown> | undefined;
-    expect(realRunInstall?.default).toBe(true);
-    expect(mirrorRunInstall?.default).toBe(false);
-
-    // appPath is the positional entry point (its default carries across).
-    expect(
-      createVerbs.application.params.find((p) => p.name === "appPath"),
-    ).toMatchObject({ kind: "string", positional: true, default: "my-app" });
+      toGeneratorAnswers("application", {
+        withSsr: true,
+        withRelay: false,
+        appPath: "x",
+      }),
+    ).toEqual({ ssr: true, relay: false, appPath: "x" });
+    // A noun with no declared aliases passes its bag through untouched.
+    expect(toGeneratorAnswers("package", { name: "@a/b" })).toEqual({
+      name: "@a/b",
+    });
   });
 });
 
@@ -446,20 +427,31 @@ describe("declared generator bindings (PROTECTED)", () => {
   // written down. What is checkable against something outside itself — the live
   // generator maps and the embedded manifest — is checked here.
 
-  it("every binding resolves to the generator it names", async () => {
+  it("every declared noun resolves to the generator it names", async () => {
     const { pickGenerator } = await import("./pickGenerator.js");
-    // `meta.name` is the generator's OWN identity, so a swapped `key` or a
-    // framework the map does not carry turns this red — which `toBeDefined()`
-    // on a non-nullable return could not.
-    for (const framework of CREATE_GENERATORS.component.frameworks) {
-      expect(pickGenerator("component", { framework }).meta.name).toBe(
-        `component/${framework}`,
-      );
+    // `meta.name` is the generator's OWN identity, so a swapped key or an axis
+    // value the package does not carry turns this red — which `toBeDefined()`
+    // on a non-nullable return could not. Derived from the declaration, so a
+    // fork's nouns are checked the same way.
+    const nouns = Object.keys(CREATE_SURFACE) as CreateKind[];
+    expect(nouns.length).toBeGreaterThan(0);
+    for (const kind of nouns) {
+      const noun = CREATE_SURFACE[kind] as {
+        key: string;
+        axis?: string;
+        axisValues?: readonly string[];
+        keyPrefix?: string;
+      };
+      if (noun.axis !== undefined && noun.axisValues !== undefined) {
+        for (const value of noun.axisValues) {
+          expect(pickGenerator(kind, { [noun.axis]: value }).meta.name).toBe(
+            `${noun.keyPrefix}/${value}`,
+          );
+        }
+      } else {
+        expect(pickGenerator(kind, {}).meta.name).toBe(noun.key);
+      }
     }
-    expect(pickGenerator("package", {}).meta.name).toBe("package");
-    expect(pickGenerator("application", {}).meta.name).toBe(
-      "application/react",
-    );
   });
 
   it("no create verb publishes an availability caveat", () => {
@@ -497,9 +489,7 @@ describe("declared generator bindings (PROTECTED)", () => {
     // package's scope is dead weight no loader can ever key. Non-empty first:
     // `.filter()` over an empty list is vacuous.
     expect(keys.length).toBeGreaterThan(0);
-    const scopes = Object.values(CREATE_GENERATORS).map(
-      (binding) => `${binding.name}/`,
-    );
+    const scopes = conf.generators.map((generator) => `${generator.name}/`);
     expect(scopes.length).toBeGreaterThan(0);
     expect(
       keys.filter((key) => !scopes.some((scope) => key.startsWith(scope))),

@@ -94,11 +94,11 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `appPath` | string | no | Application directory. (default: my-app) |
+| `appPath` | string | no | Application directory name. (default: my-app) |
 | `withSsr` | boolean | no | Include SSR. (default: true) |
 | `withRouter` | boolean | no | Include router. (default: true) |
 | `withForms` | boolean | no | Include form components. (default: true) |
-| `withRelay` | boolean | no | Include a Relay (GraphQL) data layer. (default: false) |
+| `withRelay` | boolean | no | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
 | `runInstall` | boolean | no | Install dependencies now. (default: false) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
@@ -114,7 +114,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `framework` | enum(react, svelte, lit) | no | Component framework. (one of: react, svelte, lit) (default: react) |
-| `componentPath` | string | no | Component path (its final segment is the PascalCase component name). |
+| `componentPath` | string | no | Component path. |
 | `withStyles` | boolean | no | Include styles. (default: true) |
 | `withStories` | boolean | no | Include Storybook stories. (default: true) |
 | `withSsrTests` | boolean | no | Include SSR tests. (default: true) |
@@ -136,9 +136,9 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `description` | string | no | Package description. (default: ) |
 | `withReact` | boolean | no | Include React dependencies. (default: false) |
 | `withStorybook` | boolean | no | Include Storybook setup. (default: false) |
-| `withCli` | boolean | no | Include a CLI binary entry point. (default: false) |
-| `withPrTemplate` | boolean | no | Include a PR template. (default: false) |
-| `runInstall` | boolean | no | Run the package manager install after creation. (default: false) |
+| `withCli` | boolean | no | Include CLI binary entry point. (default: false) |
+| `withPrTemplate` | boolean | no | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
+| `runInstall` | boolean | no | Run package manager install after creation. (default: false) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
 | `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
 

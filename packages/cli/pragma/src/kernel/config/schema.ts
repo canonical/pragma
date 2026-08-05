@@ -10,9 +10,10 @@
  * unknown-key stripping: each is detected before validation and rejected with
  * a loud CONFIG_ERROR naming the file and the fix, so an old config fails
  * telling the user exactly what to change instead of silently ignoring the
- * field. Three today: the `packages` key (renamed to `packs`), and the removed
- * `completion.caseSensitive` and `generators` fields (each validated and read
- * by nothing).
+ * field. Two today: the `packages` key (renamed to `packs`) and the removed
+ * `completion.caseSensitive` field. `generators` was a third until it came back
+ * — see `RawConfig.generators`: it went away INERT (validated, layered, read by
+ * nothing) and returned LOAD-BEARING at build time.
  */
 
 import { z } from "zod";
@@ -31,6 +32,42 @@ const packDeclarationSchema = z.union([
     stories: z.array(z.unknown()).optional(),
   }),
 ]);
+
+/**
+ * A `create` noun a declared generator package exposes. `key` XOR
+ * `keyPrefix`+`axis` is checked here rather than left to the build: a
+ * declaration naming neither would otherwise reach codegen and fail there with
+ * a message about a missing generator rather than about the config that is
+ * wrong.
+ */
+const generatorNounSchema = z
+  .object({
+    key: z.string().min(1).optional(),
+    keyPrefix: z.string().min(1).optional(),
+    axis: z.string().min(1).optional(),
+    summary: z.string().min(1),
+    examples: z
+      .array(z.object({ cmd: z.string().min(1), note: z.string().optional() }))
+      .optional(),
+    optIn: z.array(z.string().min(1)).optional(),
+    withPrefixed: z.array(z.string().min(1)).optional(),
+    noDefault: z.array(z.string().min(1)).optional(),
+  })
+  .refine(
+    (noun) =>
+      (noun.key !== undefined) !==
+      (noun.keyPrefix !== undefined && noun.axis !== undefined),
+    {
+      message:
+        'a generator noun declares either "key", or both "keyPrefix" and "axis" — not neither and not both',
+    },
+  );
+
+const generatorDeclarationSchema = z.object({
+  name: z.string().min(1),
+  source: z.string().min(1),
+  nouns: z.record(z.string().min(1), generatorNounSchema),
+});
 
 const completionSchema = z.object({
   minChars: z.number().int().min(0).optional(),
@@ -77,6 +114,7 @@ export const rawConfigSchema = z.object({
   // the three valid values, not a value `config show` reports as honoured.
   detail: z.enum(DETAIL_LEVELS).optional(),
   packs: z.array(packDeclarationSchema).optional(),
+  generators: z.array(generatorDeclarationSchema).optional(),
   stories: z.array(z.unknown()).optional(),
   prefixes: z.record(z.string(), z.string()).optional(),
   completion: completionSchema.optional(),
@@ -90,7 +128,7 @@ export const rawConfigSchema = z.object({
  * @returns The validated layer values (only the keys actually present).
  * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
  *   value declares the legacy `packages` key (renamed to `packs`), or when it
- *   still sets the removed `generators` or `completion.caseSensitive` fields.
+ *   still sets the removed `completion.caseSensitive` field.
  */
 export function parseRawConfig(value: unknown, source: string): RawConfig {
   // Rename detection must precede validation: unknown keys are stripped, so a
@@ -105,22 +143,9 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
       },
     );
   }
-  // Removed-field detection, before validation for the same reason: each field
-  // was accepted and read by NOTHING, so a config still setting one gets a
-  // loud error naming the removed field, not silence. `generators` was ruled
-  // dead (L-OPEN-1): `resolveSources` never read it and the `create` verbs
-  // resolve their generators statically — declaring it only changed what
-  // `config show` printed.
-  if (typeof value === "object" && value !== null && "generators" in value) {
-    throw PragmaError.configError(
-      `Invalid config in ${source}: the "generators" field was removed — it was read by nothing. The create verbs resolve their generators statically.`,
-      {
-        recovery: {
-          message: `In ${source}, delete the "generators" field.`,
-        },
-      },
-    );
-  }
+  // Removed-field detection, before validation for the same reason: the field
+  // was accepted and read by NOTHING, so a config still setting one gets a loud
+  // error naming the removed field, not silence.
   if ("caseSensitive" in (declaredCompletion(value) ?? {})) {
     throw PragmaError.configError(
       `Invalid config in ${source}: the "completion.caseSensitive" field was removed — it was read by nothing. Completion matching is declared by the grammar, not configured.`,

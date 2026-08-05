@@ -19,188 +19,24 @@ import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
-import { CREATE_GENERATORS } from "./constants.js";
 import { createFormatters } from "./create.render.js";
-import { generatorToParams } from "./generatorToVerbSpec.js";
+import { promptToParam } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
-import type { CreateKind } from "./types.js";
+import { CREATE_SURFACE } from "./surface.generated.js";
+import type { CreateKind, SerializedPrompt } from "./types.js";
 
 // =============================================================================
-// Static params (mirrors of the generators' prompts — see the module doc)
+// The static surface — DERIVED, not mirrored
 // =============================================================================
-
-/** `--framework` — the declared component generators collapsed to one enum. */
-const FRAMEWORK_PARAM: ParamSpec = {
-  kind: "enum",
-  name: "framework",
-  doc: "Component framework.",
-  values: CREATE_GENERATORS.component.frameworks,
-  // The FIRST declared framework, so the default is always inside the enum.
-  default: CREATE_GENERATORS.component.frameworks[0],
-};
-
-/**
- * `componentPath` — positional, and deliberately WITHOUT a ParamSpec default so
- * the selected framework's own prompt default applies (react vs svelte/lit
- * differ); `required: false` keeps it optional despite having no default here.
- */
-const COMPONENT_PATH_PARAM: ParamSpec = {
-  kind: "string",
-  name: "componentPath",
-  doc: "Component path (its final segment is the PascalCase component name).",
-  required: false,
-  positional: true,
-  complete: { kind: "files" },
-};
-
-const SHARED_COMPONENT_MIRROR: PromptDefinition[] = [
-  {
-    name: "withStyles",
-    type: "confirm",
-    message: "Include styles?",
-    default: true,
-  },
-  {
-    name: "withStories",
-    type: "confirm",
-    message: "Include Storybook stories?",
-    default: true,
-  },
-  {
-    name: "withSsrTests",
-    type: "confirm",
-    message: "Include SSR tests?",
-    default: true,
-  },
-];
-
-const PACKAGE_MIRROR: PromptDefinition[] = [
-  {
-    name: "name",
-    type: "text",
-    message: "Package name:",
-    default: "@canonical/my-package",
-  },
-  {
-    name: "type",
-    type: "select",
-    message: "Package type:",
-    choices: [
-      { label: "tool-ts", value: "tool-ts" },
-      { label: "library", value: "library" },
-      { label: "css", value: "css" },
-    ],
-    default: "tool-ts",
-  },
-  {
-    name: "description",
-    type: "text",
-    message: "Package description:",
-    default: "",
-  },
-  {
-    name: "withReact",
-    type: "confirm",
-    message: "Include React dependencies?",
-    default: false,
-  },
-  {
-    name: "withStorybook",
-    type: "confirm",
-    message: "Include Storybook setup?",
-    default: false,
-  },
-  {
-    name: "withCli",
-    type: "confirm",
-    message: "Include a CLI binary entry point?",
-    default: false,
-  },
-  {
-    name: "withPrTemplate",
-    type: "confirm",
-    message: "Include a PR template?",
-    default: false,
-  },
-  // Opt-in (default false): the grammar has no `--no-` form, so a default-true
-  // boolean could never be turned off. `--run-install` enables it.
-  {
-    name: "runInstall",
-    type: "confirm",
-    message: "Run the package manager install after creation?",
-    default: false,
-  },
-];
-
-// The include-flag prompts carry the CLI grammar's `--with-X` names
-// (`withSsr`/`withRouter`/`withForms`/`withRelay`, AV-228 B8) rather than the
-// summon generator's bare prompt names (`ssr`/`router`/`forms`/`relay`). {@link
-// INCLUDE_FLAG_ALIASES} maps them back at the CLI↔generator boundary so the
-// generator prompt names — and their embedded templates + byte-equality
-// goldens — stay stable. `--run-install` (default false) is an action flag, not
-// an include, so it keeps its spelling.
-const APPLICATION_MIRROR: PromptDefinition[] = [
-  {
-    name: "appPath",
-    type: "text",
-    message: "Application directory:",
-    default: "my-app",
-    positional: true,
-  },
-  { name: "withSsr", type: "confirm", message: "Include SSR?", default: true },
-  {
-    name: "withRouter",
-    type: "confirm",
-    message: "Include router?",
-    default: true,
-  },
-  {
-    name: "withForms",
-    type: "confirm",
-    message: "Include form components?",
-    default: true,
-  },
-  {
-    name: "withRelay",
-    type: "confirm",
-    message: "Include a Relay (GraphQL) data layer?",
-    default: false,
-  },
-  {
-    name: "runInstall",
-    type: "confirm",
-    message: "Install dependencies now?",
-    default: false,
-  },
-];
-
-/**
- * CLI include-flag names → summon generator prompt names, per create kind
- * (AV-228 B8). All four `create application` include-flags are exposed on the
- * unified `--with-X` convention, so their params arrive keyed `withSsr`/
- * `withRouter`/`withForms`/`withRelay`; the summon generator reads the bare
- * `ssr`/`router`/`forms`/`relay`. We normalize at the ONE CLI↔generator seam
- * ({@link toGeneratorAnswers}), keeping the generator prompt names (and their
- * templates/goldens) untouched. Component and package already use `--with-X`
- * names that match their prompts, so their maps are empty.
- */
-export const INCLUDE_FLAG_ALIASES: Record<
-  CreateKind,
-  Readonly<Record<string, string>>
-> = {
-  component: {},
-  package: {},
-  application: {
-    withSsr: "ssr",
-    withRouter: "router",
-    withForms: "forms",
-    withRelay: "relay",
-  },
-};
 
 /**
  * Re-key a param bag's CLI include-flag aliases to the generator prompt names,
  * so the summon generator reads `ssr` where the CLI grammar exposes `--with-ssr`.
+ *
+ * The alias map is DECLARED per noun (`withPrefixed`) and generated into the
+ * surface, because it is a CLI-grammar convention rather than a generator fact:
+ * the generator keeps its bare prompt names, and with them its templates and
+ * byte-equality goldens.
  *
  * @param kind - The create noun (selects the alias map).
  * @param params - The coerced CLI/MCP param bag.
@@ -210,7 +46,8 @@ export function toGeneratorAnswers(
   kind: CreateKind,
   params: Readonly<Record<string, unknown>>,
 ): Record<string, unknown> {
-  const aliases = INCLUDE_FLAG_ALIASES[kind];
+  const aliases: Readonly<Record<string, string>> =
+    CREATE_SURFACE[kind].aliases;
   const answers: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(params)) {
     answers[aliases[key] ?? key] = value;
@@ -218,20 +55,74 @@ export function toGeneratorAnswers(
   return answers;
 }
 
-const componentParams: ParamSpec[] = [
-  FRAMEWORK_PARAM,
-  COMPONENT_PATH_PARAM,
-  ...generatorToParams(SHARED_COMPONENT_MIRROR),
-];
-const packageParams: ParamSpec[] = generatorToParams(PACKAGE_MIRROR);
-const applicationParams: ParamSpec[] = generatorToParams(APPLICATION_MIRROR);
+/**
+ * Build one noun's params from its derived surface.
+ *
+ * Three CLI-grammar overlays sit on top of the generator's own prompts, each
+ * DECLARED in `pragma.conf.ts` rather than assumed here:
+ *  - `withPrefixed` renames a prompt onto the `--with-X` include-flag
+ *    convention;
+ *  - `optIn` forces a confirm to `default: false`, because the grammar has no
+ *    `--no-` form and a default-true boolean could never be turned off;
+ *  - `noDefault` drops a ParamSpec default so the SELECTED axis value's own
+ *    prompt default applies instead (react and svelte/lit differ on
+ *    `componentPath`). The param stays optional: `required` was already
+ *    computed from the generator's real default, before it was dropped.
+ *
+ * A declared axis prepends its enum, whose values are the generator keys the
+ * package actually ships and whose default is the first — so `--help` can never
+ * advertise a default outside the enum.
+ *
+ * @param kind - The create noun.
+ * @returns Its params, in surface order.
+ */
+function buildParams(kind: CreateKind): ParamSpec[] {
+  const noun = CREATE_SURFACE[kind] as {
+    prompts: readonly SerializedPrompt[];
+    aliases: Readonly<Record<string, string>>;
+    optIn: readonly string[];
+    noDefault: readonly string[];
+    axis?: string;
+    axisValues?: readonly string[];
+  };
+  const toGeneratorName: Record<string, string> = {};
+  for (const [flag, bare] of Object.entries(noun.aliases)) {
+    toGeneratorName[bare] = flag;
+  }
 
-/** The path param each noun jails (package writes into a name-derived subdir). */
-const PATH_PARAM: Record<CreateKind, string | undefined> = {
-  component: "componentPath",
-  package: undefined,
-  application: "appPath",
-};
+  const params = noun.prompts.map((prompt) => {
+    const named = {
+      ...prompt,
+      name: toGeneratorName[prompt.name] ?? prompt.name,
+      ...(noun.optIn.includes(prompt.name) ? { default: false } : {}),
+      // `promptToParam` reads `when` for truthiness only.
+      ...(prompt.conditional === true ? { when: () => true } : {}),
+    } as PromptDefinition;
+    const param = promptToParam(named) as Record<string, unknown>;
+    if (noun.noDefault.includes(prompt.name)) delete param.default;
+    return param as unknown as ParamSpec;
+  });
+
+  const { axis, axisValues } = noun;
+  if (axis === undefined || axisValues === undefined) return params;
+  const enumParam: ParamSpec = {
+    kind: "enum",
+    name: axis,
+    doc: "Component framework.",
+    values: axisValues,
+    // The FIRST declared value, so the default is always inside the enum.
+    default: axisValues.at(0),
+  };
+  return [enumParam, ...params];
+}
+
+/** The path param each noun jails, derived by the build (SEC-2). */
+const PATH_PARAM: Record<CreateKind, string | undefined> = Object.fromEntries(
+  Object.entries(CREATE_SURFACE).map(([kind, noun]) => [
+    kind,
+    (noun as { pathParam?: string }).pathParam,
+  ]),
+) as Record<CreateKind, string | undefined>;
 
 // =============================================================================
 // The lazy run — the one-line summon↔pragma seam per invocation
@@ -455,50 +346,32 @@ function createVerb(
 }
 
 /**
- * The `create` verbs, one per declared generator binding — so adding a binding
- * to {@link CREATE_GENERATORS} without surfacing it is a type error rather than
- * a silent no-op. Key order is authoring order, which `index.ts` preserves into
- * the command tree, `--help` and the emitted surface.
+ * The `create` verbs, one per DECLARED noun — key order is the declaration's,
+ * which `index.ts` preserves into the command tree, `--help` and the emitted
+ * surface. Adding a noun is an edit to `pragma.conf.ts` and a rebuild; there is
+ * nothing to add here.
+ *
+ * `examples[].cmd` is composed from `BIN_NAME` at this one site. The
+ * declaration writes the command WITHOUT the binary name — the same rule
+ * `emptyRecovery.cli` follows, and what `kernel/copy.test.ts` enforces over
+ * `src/capabilities/**`.
  */
 export const createVerbs: Record<
   CreateKind,
   VerbSpec<Record<string, unknown>, GeneratorResult>
-> = {
-  component: createVerb(
-    "component",
-    "Scaffold a React, Svelte, or Lit component.",
-    componentParams,
-    [
-      {
-        cmd: `${BIN_NAME} create component src/components/Button --framework react`,
-        note: "React component with tests, stories, and styles",
-      },
-      {
-        cmd: `${BIN_NAME} create component src/lib/Card --framework svelte --dry-run`,
-        note: "preview the files without writing",
-      },
-    ],
-  ),
-  package: createVerb(
-    "package",
-    "Scaffold a new npm package for the monorepo.",
-    packageParams,
-    [
-      {
-        cmd: `${BIN_NAME} create package --name @canonical/my-lib --type library`,
-      },
-      {
-        cmd: `${BIN_NAME} create package --name @canonical/my-tool --run-install`,
-      },
-    ],
-  ),
-  application: createVerb(
-    "application",
-    "Scaffold a full React application with SSR and routing.",
-    applicationParams,
-    [
-      { cmd: `${BIN_NAME} create application my-app` },
-      { cmd: `${BIN_NAME} create application my-app --with-relay` },
-    ],
-  ),
-};
+> = Object.fromEntries(
+  Object.entries(CREATE_SURFACE).map(([kind, noun]) => [
+    kind,
+    createVerb(
+      kind as CreateKind,
+      noun.summary,
+      buildParams(kind as CreateKind),
+      (noun.examples as ReadonlyArray<{ cmd: string; note?: string }>).map(
+        (example) => ({
+          cmd: `${BIN_NAME} ${example.cmd}`,
+          ...(example.note !== undefined ? { note: example.note } : {}),
+        }),
+      ),
+    ),
+  ]),
+) as Record<CreateKind, VerbSpec<Record<string, unknown>, GeneratorResult>>;
