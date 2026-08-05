@@ -38,10 +38,11 @@ you different behaviours from the same description:
 | Interpreter | What it does |
 |---|---|
 | `runTask` | Executes effects against real I/O |
+| `planTask` | Performs the reads for real, simulates only destruction |
 | `dryRun` | Collects effects, returns mock values, touches nothing |
 | `runUndo` | Walks the tree, collects undo steps, executes them in reverse |
 
-One task definition. Three capabilities for free.
+One task definition. Four capabilities for free.
 
 ## Building it from scratch
 
@@ -254,15 +255,23 @@ Give users a `--dry-run` flag that shows exactly what would happen:
 
 ```typescript
 if (options.dryRun) {
-  const { effects } = dryRun(program);
+  const { effects } = await planTask(program);
   for (const e of effects) console.log(describeEffect(e));
 } else {
   await runTask(program);
 }
 ```
 
-This is not a hand-maintained preview. It is derived mechanically from the same
-code that does the real work. It cannot fall out of sync.
+`planTask`, not `dryRun`. The preview is derived mechanically from the same code
+that does the real work, so its SHAPE cannot fall out of sync — but only if the
+interpreter answers the reads the way the run does. `dryRun` does not: it answers
+`ReadFile` with `[mock content of <path>]` and `Exists` from a virtual set that
+starts empty, so a task whose shape depends on what it reads previews a different
+shape than it runs, and a task whose real run dies on a read previews a full
+success and exits 0. That is a real defect this package shipped. `planTask`
+performs every observing effect for real and simulates only what would destroy,
+create, or escape the process; the falsehoods it still carries are enumerated in
+its own module docblock.
 
 ### Reversible operations
 

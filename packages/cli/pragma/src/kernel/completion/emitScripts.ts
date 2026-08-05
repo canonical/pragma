@@ -5,12 +5,18 @@
  * derivation the `__complete` resolver uses — the tiers cannot disagree) and
  * renders one script per supported shell. The static tier answers STRUCTURE
  * with zero exec — nouns, verbs, flag names, enum values, mutation + global
- * flags, native file completion — and that is now true of ALL THREE shells,
- * executed rather than asserted (`shellDrive.test.ts`). It was a bash/zsh claim
- * until PR7: fish evaluates every `complete` rule matching a position rather
- * than one exclusive `case` arm, so a flag-name TAB fired the positional's
- * delegation too. Only `{kind:"names"}` value contexts shell out to
+ * flags, native file completion — and that is now true of ALL THREE shells. It
+ * was a bash/zsh claim until PR7: fish evaluates every `complete` rule matching
+ * a position rather than one exclusive `case` arm, so a flag-name TAB fired the
+ * positional's delegation too. Only `{kind:"names"}` value contexts shell out to
  * `<bin> __complete`.
+ *
+ * `shellDrive.test.ts` EXECUTES that claim rather than asserting it — against
+ * real bash 5.2.21, and against real zsh 5.9 / fish 3.7.0 where those shells are
+ * on PATH. They are not on this build box or on today's CI, so those describes
+ * SKIP there (L.01 §10.5 item 6 is still open); they were run against shells
+ * provisioned per-session. A green run on a bash-only box is not evidence the
+ * fish guard still holds.
  *
  * PR6 boundary (`setup completions`): this module exports pure CONTENT only
  * — shell detection, install paths, mkdir/write effects, and hints all

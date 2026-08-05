@@ -14,8 +14,8 @@ bun add @canonical/task
 
 The package ships two entries, split by what they reach:
 
-- **`@canonical/task`** — the node-free base: core types, the task monad, effect constructors, primitives, combinators, the dry-run/testing interpreters (`dryRun`, `dryRunWith`, `collectEffects`, …), undo collection (`collectUndos`), and `TaskExecutionError`. No Node builtin is reachable from this entry's import graph (pinned by a closure-walking test), so it bundles cleanly for browser and edge targets. Everything about *describing*, *composing*, and *previewing* work lives here.
-- **`@canonical/task/node`** — the node-touching interpreters: `runTask` / `run` / `executeEffect` (which execute filesystem, exec, and prompt effects, importing `node:fs/promises`, `node:path`, and `node:child_process`) and `runUndo`. Only actually *running* a task against the host needs this entry.
+- **`@canonical/task`** — the node-free base: core types, the task monad, effect constructors, primitives, combinators, the mock/testing interpreters (`dryRun`, `dryRunWith`, `collectEffects`, …), undo collection (`collectUndos`), and `TaskExecutionError`. No Node builtin is reachable from this entry's import graph (pinned by a closure-walking test), so it bundles cleanly for browser and edge targets. Everything about *describing*, *composing*, and *mock-collecting* work lives here. **A user-facing preview does not** — `dryRun` answers `ReadFile` with `[mock content of <path>]` and `Exists` from an empty virtual set, so it is for tests. Reach for `planTask` in the node entry instead.
+- **`@canonical/task/node`** — the node-touching interpreters: `runTask` / `run` / `executeEffect` (which execute filesystem, exec, and prompt effects, importing `node:fs/promises`, `node:path`, and `node:child_process`), `planTask` (the PLAN interpreter: real reads, simulated destruction — what backs a `--dry-run`), and `runUndo`. Only actually *running*, or honestly *previewing*, a task against the host needs this entry.
 
 The split matters because module resolution happens before tree-shaking: if the interpreters lived in the base entry, importing even a single pure function would pull `node:` imports into the module graph and fail any browser-platform build — regardless of what the bundle actually uses.
 
@@ -603,7 +603,8 @@ result.toNotWriteFile("output/secret.key");
 | **Resources** | `bracket`, `ensure` |
 | **Utilities** | `tap`, `tapError`, `delay`, `timeout`, `fold`, `zip`, `zip3` |
 | **Production interpreter** (`@canonical/task/node`) | `runTask`, `run`, `executeEffect`, `RunTaskOptions` |
-| **Dry-run interpreter** | `dryRun`, `dryRunWith`, `mockEffect`, `collectEffects`, `countEffects`, `filterEffects`, `getFileWrites`, `getAffectedFiles`, `assertEffects`, `assertFileWrites`, `expectTask` |
+| **Plan interpreter** (`@canonical/task/node`) | `planTask`, `PlanTaskOptions`, `PlanResult` |
+| **Mock/test interpreter** | `dryRun`, `dryRunWith`, `mockEffect`, `collectEffects`, `countEffects`, `filterEffects`, `getFileWrites`, `getAffectedFiles`, `assertEffects`, `assertFileWrites`, `expectTask` |
 | **Undo** | `collectUndos` (base), `UndoOptions` (base); `runUndo`, `UndoResult` (`@canonical/task/node`) |
 | **Errors** | `TaskExecutionError` (base — thrown by the interpreters, catchable anywhere) |
 | **Effect constructors** | `readFileEffect`, `writeFileEffect`, `appendFileEffect`, `copyFileEffect`, `copyDirectoryEffect`, `deleteFileEffect`, `deleteDirectoryEffect`, `makeDirEffect`, `existsEffect`, `symlinkEffect`, `globEffect`, `execEffect`, `promptEffect`, `logEffect`, `readContextEffect`, `writeContextEffect`, `parallelEffect`, `raceEffect` |

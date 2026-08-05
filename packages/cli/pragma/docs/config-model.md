@@ -30,7 +30,7 @@ Within your config the top-level `stories` wins over `packs[].stories` for the s
 
 Package stories are third-party data, so they are never fatal: a malformed or schema-invalid file is dropped, the rest of the package still works, and `pragma doctor` names each ignored file under `pack refs` (which stays `pass` — the pack does answer reads).
 
-One limit a package author should know: a query naming a prefix the answering graph does not bind currently reports `STORE_UNAVAILABLE` with a `sources update` recovery rather than naming the prefix — check your prefixes against `pragma graph query` first.
+One limit a package author should know: a query naming a prefix the answering graph does not bind fails with `CONFIG_ERROR` (exit 1) naming the story that wrote it, and with **no recovery command** — rebuilding cannot bind a prefix nothing declares. The prefix itself is still not named, so check your prefixes against `pragma graph query` first. The distribution's own stories keep `STORE_UNAVAILABLE` (exit 3) with a `sources update` recovery for the same condition, where it does mean the store was never built.
 
 An `emptyRecovery.cli` hint is the command **without** a binary name (`"sources update"`, not `"pragma sources update"`). The consuming distribution prepends its own, so one story is portable. A hint carrying **this** distribution's own name is rejected with a `CONFIG_ERROR` naming the change — in your config that is fatal, and a package's `stories/*.json` carrying it is dropped and named under `doctor`'s `pack refs`, like any other invalid package story. A hint carrying some *other* distribution's name cannot be detected, and renders doubled.
 
