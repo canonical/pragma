@@ -11,6 +11,7 @@ interface Node {
 }
 
 type EntityMeta {
+  curie: String!
   title(lang: String = "en"): String!
   label(lang: String = "en"): String
   comment(lang: String = "en"): String
@@ -66,6 +67,7 @@ type OntologyClass implements Node {
 }
 
 type ClassProperty {
+  name: String!
   property: OntologyProperty!
   required: Boolean!
   singular: Boolean!

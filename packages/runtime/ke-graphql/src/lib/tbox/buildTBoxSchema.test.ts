@@ -15,6 +15,7 @@ import {
 } from "graphql";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  BLANK_NODES_TTL,
   DS_REALISTIC_TTL,
   INHERITANCE_TTL,
   MINIMAL_TTL,
@@ -522,6 +523,233 @@ describe("EntityMeta edge cases", () => {
   });
 });
 
+// One property reached from two classes with different per-class cardinality.
+// A datatype property is singular by default, so ex:tag is `tag` on Base; the
+// SHACL shape re-opens it to many on Wide, where it is `tags`. That is the
+// whole justification for ClassProperty.name being class-scoped — the SAME
+// property has two field names, and no consumer can derive which from
+// property.uri.
+const PER_CLASS_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+ex:Base a owl:Class ; rdfs:label "Base" .
+ex:Wide a owl:Class ; rdfs:subClassOf ex:Base ; rdfs:label "Wide" .
+
+ex:tag a owl:DatatypeProperty ; rdfs:domain ex:Base ; rdfs:range xsd:string .
+
+ex:WideShape a sh:NodeShape ; sh:targetClass ex:Wide ;
+  sh:property [ sh:path ex:tag ; sh:maxCount 5 ] .
+
+ex:b1 a ex:Base . ex:w1 a ex:Wide .
+`;
+
+describe("EntityMeta.curie", () => {
+  it("renders the compact form of an entity IRI and of a class IRI", async () => {
+    const compiled = await setup(DS_REALISTIC_TTL);
+    const result = await run(
+      compiled,
+      `{
+        components(first: 1) { edges { node { uri _meta { curie } } } }
+        ontologyClass(uri: "ds:Component") { uri _meta { curie } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const node = (
+      result.data?.components as {
+        edges: { node: { uri: string; _meta: { curie: string } } }[];
+      }
+    ).edges[0]?.node;
+    // Identity is untouched — curie is a SECOND string, not a replacement.
+    expect(node?.uri).toBe("https://ds.canonical.com/global.component.button");
+    expect(node?._meta.curie).toBe("ds:global.component.button");
+    expect(result.data?.ontologyClass).toEqual({
+      uri: "https://ds.canonical.com/Component",
+      _meta: { curie: "ds:Component" },
+    });
+  });
+
+  it("answers the GraphQL type name for an embedded value with no IRI", async () => {
+    const compiled = await setup(BLANK_NODES_TTL);
+    const result = await run(
+      compiled,
+      `{ standard(uri: "ex:s1") { uri _meta { curie } examples { _meta { curie title } } } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const standard = result.data?.standard as {
+      uri: string;
+      _meta: { curie: string };
+      examples: { _meta: { curie: string; title: string } }[];
+    };
+    expect(standard.uri).toBe("http://example.org/s1");
+    expect(standard._meta.curie).toBe("ex:s1");
+    // A blank node has no IRI to compact — the same tail `title` takes.
+    expect(standard.examples).toHaveLength(2);
+    for (const example of standard.examples) {
+      expect(example._meta.curie).toBe("Example");
+      expect(example._meta.title).toBe("Example");
+    }
+  });
+});
+
+describe("ClassProperty.name", () => {
+  it("is the exact string field(name:) accepts — every entry round-trips", async () => {
+    const compiled = await setup(DS_REALISTIC_TTL);
+    const result = await run(
+      compiled,
+      `{
+        ontologyClass(uri: "ds:Component") {
+          properties { name property { uri } }
+        }
+        components(first: 1) { edges { node { _meta {
+          fields { name property { uri } }
+        } } } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const fields = (
+      result.data?.components as {
+        edges: {
+          node: {
+            _meta: { fields: { name: string; property: { uri: string } }[] };
+          };
+        }[];
+      }
+    ).edges[0]?.node._meta.fields as {
+      name: string;
+      property: { uri: string };
+    }[];
+    // Names are the EMITTED field names, pluralized where the class's
+    // cardinality made the field a list — not the OWL local names.
+    expect(fields.map((f) => f.name)).toEqual([
+      "subcomponents",
+      "properties",
+      "modifierFamilies",
+      "tier",
+      "summary",
+      "name",
+    ]);
+    // OntologyClass.properties agrees with EntityMeta.fields: one index.
+    expect(
+      (
+        result.data?.ontologyClass as {
+          properties: { name: string; property: { uri: string } }[];
+        }
+      ).properties,
+    ).toEqual(fields);
+
+    // The round trip, driven from the answers rather than from a literal.
+    const roundTrip = await run(
+      compiled,
+      `{ components(first: 1) { edges { node { _meta {
+        ${fields.map((f, i) => `f${i}: field(name: "${f.name}") { name property { uri } }`).join("\n")}
+      } } } } }`,
+    );
+    expect(roundTrip.errors).toBeUndefined();
+    const meta = (
+      roundTrip.data?.components as {
+        edges: { node: { _meta: Record<string, unknown> } }[];
+      }
+    ).edges[0]?.node._meta as Record<string, unknown>;
+    for (const [i, field] of fields.entries()) {
+      expect(meta[`f${i}`]).toEqual(field);
+    }
+  });
+
+  it("is class-scoped: one property, two names, from per-class cardinality", async () => {
+    const compiled = await setup(PER_CLASS_TTL);
+    const result = await run(
+      compiled,
+      `{
+        base: ontologyClass(uri: "ex:Base") { properties { name singular property { uri } } }
+        wide: ontologyClass(uri: "ex:Wide") { properties { name singular property { uri } } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const firstOf = (key: string) =>
+      (
+        result.data?.[key] as {
+          properties: {
+            name: string;
+            singular: boolean;
+            property: { uri: string };
+          }[];
+        }
+      ).properties[0];
+    // Same ex:tag, two classes, two field names. This is the derivation a
+    // consumer cannot perform from property.uri, which is why `name` exists.
+    expect(firstOf("base")).toEqual({
+      name: "tag",
+      singular: true,
+      property: { uri: "http://example.org/tag" },
+    });
+    expect(firstOf("wide")).toEqual({
+      name: "tags",
+      singular: false,
+      property: { uri: "http://example.org/tag" },
+    });
+  });
+
+  it("answers a synthetic inverse field by the name it was configured under", async () => {
+    // The synthetic inverse field carries the FORWARD property's URI, so a
+    // reverse lookup on (class, property) would answer with the forward
+    // field's name or with nothing. field(name:) carries the real name across.
+    const compiled = await setup(DS_REALISTIC_TTL, {
+      mappings: {
+        "ds:implementsBlock": { inverse: { graphqlName: "usedBy" } },
+      },
+    });
+    const result = await run(
+      compiled,
+      `{ components(first: 1) { edges { node { _meta {
+        field(name: "usedBy") { name property { uri } }
+      } } } } }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(
+      (
+        result.data?.components as {
+          edges: { node: { _meta: { field: unknown } } }[];
+        }
+      ).edges[0]?.node._meta.field,
+    ).toEqual({
+      name: "usedBy",
+      property: { uri: "https://ds.canonical.com/implementsBlock" },
+    });
+  });
+
+  it("falls back to the OWL local name when the class projects no field", async () => {
+    // SHACL sh:maxCount 0 omits ex:legacy from Spec (V010) while leaving it in
+    // the class's property list. There is no name field(name:) would accept —
+    // the local name is returned as a LABEL, and field() proves it is one.
+    const compiled = await setup(SHACL_TTL);
+    const result = await run(
+      compiled,
+      `{
+        ontologyClass(uri: "ex:Spec") { properties { name property { uri } } }
+        spec(uri: "ex:s1") { _meta { field(name: "legacy") { name } } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    expect(
+      (
+        result.data?.ontologyClass as {
+          properties: { name: string; property: { uri: string } }[];
+        }
+      ).properties,
+    ).toEqual([
+      { name: "root", property: { uri: "http://example.org/root" } },
+      { name: "legacy", property: { uri: "http://example.org/legacy" } },
+    ]);
+    expect(
+      (result.data?.spec as { _meta: { field: unknown } })._meta.field,
+    ).toBeNull();
+  });
+});
+
 describe("datatype list fields", () => {
   it("resolves multi-valued datatype properties when forced to list", async () => {
     const compiled = await setup(MINIMAL_TTL, {
@@ -694,6 +922,16 @@ const buildSyntheticSchema = (): GraphQLSchema => {
           ]),
         }),
       },
+      // EntityMeta whose IRI is in NO registered namespace — the arm where
+      // toPrefixed finds no match and hands the input straight back.
+      foreignMeta: {
+        type: tbox.entityMeta,
+        resolve: () => ({
+          uri: "https://elsewhere.example/widgets/17",
+          typename: "Known",
+          triples: new Map(),
+        }),
+      },
       // ClassNode with an empty stats map and a ghost own-property
       knownClass: {
         type: tbox.ontologyClass,
@@ -747,15 +985,41 @@ describe("TBox defensive branches (synthetic parents)", () => {
     expect(props).toHaveLength(2);
   });
 
+  it("hands back the absolute IRI when no registered namespace matches", async () => {
+    const schema = buildSyntheticSchema();
+    const result = await graphql({
+      schema,
+      contextValue: orphanContext,
+      source: `{
+        matched: interfaceMeta { curie }
+        unmatched: foreignMeta { curie }
+        noIri: orphanMeta { curie }
+      }`,
+    });
+    expect(result.errors).toBeUndefined();
+    // A registered namespace compacts…
+    expect(result.data?.matched).toEqual({ curie: "t:embedded" });
+    // …and an IRI outside every registered namespace passes through
+    // unchanged, which is what makes `curie` total without a null.
+    expect(result.data?.unmatched).toEqual({
+      curie: "https://elsewhere.example/widgets/17",
+    });
+    // No IRI at all: the typename tail, exactly where `title` ends up.
+    expect(result.data?.noIri).toEqual({ curie: "NotAType" });
+  });
+
   it("reports false cardinality and inherited for a ClassProperty with unknown URIs", async () => {
     const schema = buildSyntheticSchema();
     const result = await graphql({
       schema,
       contextValue: orphanContext,
-      source: `{ orphanProp { required singular inherited } }`,
+      source: `{ orphanProp { name required singular inherited } }`,
     });
     expect(result.errors).toBeUndefined();
-    const cp = result.data?.orphanProp as Record<string, boolean>;
+    const cp = result.data?.orphanProp as Record<string, unknown>;
+    // No container is indexed under this class at all, so `name` cannot come
+    // from the emitted schema — the OWL local name answers.
+    expect(cp.name).toBe("ghostProp");
     expect(cp.required).toBe(false);
     expect(cp.singular).toBe(false);
     // The class is unknown → ownProperties lookup yields the `?? false` default,

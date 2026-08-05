@@ -5,11 +5,19 @@
 // Node.uri, node(id:), the loader keys, the SPARQL currency, and the connection
 // cursors are all the same string. These two helpers survive for the edges:
 //
-//   toPrefixed — a DISPLAY helper with ZERO internal callers, deliberately.
-//     It is public API (a consumer rendering "lib:dune" instead of a 60-char
-//     IRI); nothing inside this package may call it, because every internal
-//     call site was exactly the place where the prefixed form could drift out
-//     of sync with a cursor.
+//   toPrefixed — a DISPLAY helper. NO IDENTITY-BEARING PATH MAY CALL IT.
+//     That is the whole rule, and it is narrower than the "zero internal
+//     callers" this header used to claim. The hazard was never the call, it
+//     was the CURRENCY: every former call site sat on a path where the
+//     prefixed form could reach a cursor, a loader key, a listing window, or
+//     a `node(id:)` argument and drift out of sync with the absolute IRI.
+//     Those paths are still forbidden — the pagination path performs no
+//     conversion at all.
+//     One internal caller exists, and it is the use this header always named
+//     as legitimate: `EntityMeta.curie` (lib/tbox/buildTBoxSchema.ts) renders
+//     the short form for a consumer. It writes to a String field that nothing
+//     reads back, so no identity can be derived from it. A second such
+//     resolver would be fine; a second cursor would not.
 //   toFull — expands the singular `<type>(uri:)` lookup's ARGUMENT, which
 //     still accepts the prefixed convenience form. That is its only caller.
 // =============================================================================
@@ -23,7 +31,9 @@ import type { NamespaceInfo } from "../shared/index.js";
  * prefixed form regardless of namespace discovery order. Returns the input
  * unchanged when no registered namespace matches.
  *
- * Display only — see this file's header. Never use it to derive an identity.
+ * Display only — see this file's header. Never use it to derive an identity:
+ * not a cursor, not a loader key, not a window entry, not a `node(id:)`
+ * argument. `EntityMeta.curie` is the one internal caller.
  */
 export const toPrefixed = (
   fullUri: string,

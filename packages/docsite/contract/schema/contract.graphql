@@ -60,8 +60,21 @@ descriptive fields a lens renders without knowing the concrete type. `title`
 is total (the provider computes a fallback chain ending at the IRI); `label`,
 `comment`, and `definition` are asserted-only and null when nothing is
 asserted.
+
+`curie` is the DISPLAY form of `uri`, and it lives here rather than beside
+`uri` on `Node` for the reason every derived value does: `uri` is asserted
+identity, `curie` is computed from the provider's namespace inventory, and
+`_meta` is where computed things go. It never replaces `uri` — an address a
+consumer stores, sends, or compares must be the absolute IRI.
 """
 type EntityMeta {
+  """
+  Compact display form of `uri`: `prefix:local` when the provider's namespace
+  inventory has a match, else the absolute IRI unchanged, else — for a value
+  with no IRI at all (an embedded blank node) — the GraphQL type name. TOTAL,
+  exactly like `title`, and never an identity: `uri` is the only address.
+  """
+  curie: String!
   title(lang: String = "en"): String!
   label(lang: String = "en"): String
   comment(lang: String = "en"): String
@@ -126,9 +139,23 @@ type OntologyClass implements Node {
 
 """
 Class-scoped view of a property: SHACL cardinality is a fact about a
-(class, property) pair, not about the property alone.
+(class, property) pair, not about the property alone — and so is `name`.
 """
 type ClassProperty {
+  """
+  The field name this property answers to ON THIS CLASS — the exact string
+  `EntityMeta.field(name:)` accepts, so `fields { name }` and `field(name:)`
+  round-trip. Class-scoped because the name is: per-class cardinality decides
+  whether the field is pluralized, so one property can be `part` on one class
+  and `parts` on another, and no consumer can derive that from `property.uri`.
+
+  When the property projects no field on this class at all (a provider may
+  omit one — SHACL `sh:maxCount 0`, an unexposed range, an unprojected class)
+  there is no name `field(name:)` would accept; the OWL local name is returned
+  as a label. It tells a consumer nothing `property.uri` did not already, which
+  is the point: the fallback never fabricates a plausible-but-wrong field name.
+  """
+  name: String!
   property: OntologyProperty!
   required: Boolean!
   singular: Boolean!

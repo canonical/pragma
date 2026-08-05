@@ -102,6 +102,36 @@ describe("readContractSdl", () => {
     expect(String(fields.field?.type)).toBe("ClassProperty");
   });
 
+  it("puts the compact form on _meta, not on Node, and makes it total", () => {
+    // RULING PIN: `uri` is the ABSOLUTE IRI and stays the only identity; the
+    // compact form is a DERIVED display value, so it lives behind `_meta`
+    // (where derived things go) and never beside `uri` on the interface —
+    // which the "identity plus self-description and nothing else" test above
+    // pins from the other side. String! because it is total: prefixed, else
+    // the absolute IRI, else the type name for a value with no IRI.
+    const schema = buildSchema(readContractSdl());
+    const meta = assertObjectType(schema.getType("EntityMeta"));
+    expect(String(meta.getFields().curie?.type)).toBe("String!");
+    // No `lang` — a CURIE is not a lexical form, so it takes no arguments.
+    expect(meta.getFields().curie?.args).toEqual([]);
+  });
+
+  it("gives ClassProperty the name field(name:) accepts", () => {
+    // RULING PIN: `fields` hands back ClassProperty rows and `field(name:)`
+    // takes a name, so without this a consumer had to reconstruct the name
+    // from `property.uri` through naming rules it does not own (pluralization
+    // is decided by PER-CLASS cardinality, so it genuinely cannot).
+    const schema = buildSchema(readContractSdl());
+    const classProperty = assertObjectType(schema.getType("ClassProperty"));
+    expect(String(classProperty.getFields().name?.type)).toBe("String!");
+    const meta = assertObjectType(schema.getType("EntityMeta"));
+    const lookupArg = meta
+      .getFields()
+      .field?.args.find((a) => a.name === "name");
+    // The two must agree, or `fields { name }` cannot feed `field(name:)`.
+    expect(String(lookupArg?.type)).toBe("String!");
+  });
+
   it("makes OntologyClass a Node; OntologyProperty stays a non-Node with ID identity", () => {
     const schema = buildSchema(readContractSdl());
     const ontologyClass = assertObjectType(schema.getType("OntologyClass"));

@@ -153,7 +153,7 @@ toPrefixed(fullUri: string, namespaces: ReadonlyMap<string, NamespaceInfo>): str
 toFull(prefixed: string, namespaces: ReadonlyMap<string, NamespaceInfo>): string | undefined // → full IRI, or undefined for unknown prefix
 ```
 
-`toPrefixed` is a **display** helper with zero internal callers, deliberately: every place it used to be called was a place the prefixed form could drift out of sync with a cursor. `toFull` expands the singular `<type>(uri:)` lookup argument, its only caller.
+`toPrefixed` is a **display** helper, and the rule is that no IDENTITY-BEARING path may call it: every place it used to be called was a place the prefixed form could drift out of sync with a cursor. Its one internal caller is the `EntityMeta.curie` resolver, which writes a string nothing reads back. `toFull` expands the singular `<type>(uri:)` lookup argument, its only caller.
 
 ```ts
 isAbsoluteIri(value: string): boolean   // RFC 3986 §3.1 scheme + non-empty remainder

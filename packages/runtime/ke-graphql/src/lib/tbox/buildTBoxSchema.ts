@@ -6,7 +6,7 @@
 //   Ontology        → NamespaceInfo
 //   OntologyClass   → ClassNode (IR, or the frozen owl:Class meta-node)
 //   OntologyProperty→ PropertyNode (IR)
-//   ClassProperty   → { propertyUri, classUri } (per-class scope)
+//   ClassProperty   → { propertyUri, classUri, graphqlName? } (per-class scope)
 //   EntityMeta      → EntityValue (the ABox parent, or the ClassNode adapter
 //                     minted for OntologyClass._meta)
 //
@@ -26,6 +26,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
+import { toPrefixed } from "../dataloader/uris.js";
 import {
   connectionFromPage,
   emptyConnection,
@@ -46,6 +47,7 @@ import {
   DEFAULT_LANG,
   DEFINITION_LOCAL_NAMES,
   type EntityValue,
+  getLocalName,
   LABEL_LOCAL_NAMES,
   LANG_ARGS,
   type MappedIR,
@@ -62,6 +64,18 @@ import { OWL_CLASS_NODE, OWL_CLASS_PREFIXED } from "./metaClass.js";
 interface ClassPropertyValue {
   propertyUri: string;
   classUri: string;
+  /**
+   * The GraphQL field name this row answers to, when the producer already
+   * knows it. `EntityMeta.field(name:)` does — it found the row BY that name
+   * — and carrying it makes `field(name: X) { name }` return X by
+   * construction rather than by a reverse lookup that can disagree. It can:
+   * a synthetic inverse field (`mappings: { … inverse: { graphqlName } }`)
+   * carries the FORWARD property's URI, so reversing propertyUri → field name
+   * on the range class would answer with the forward field's name, or with
+   * nothing. Producers that only know (class, property) leave it undefined and
+   * the `name` resolver derives it.
+   */
+  graphqlName?: string;
 }
 
 /** The canonical (universal) predicate tier of each descriptive field. */
@@ -266,6 +280,55 @@ export default function buildTBoxSchema(
     return value;
   };
 
+  // ── The (class, property) → field name index ──
+  // `ClassProperty.name` must return the SAME string EntityMeta.field(name:)
+  // accepts, and that lookup is served from MappedType.fields, which Pass 4
+  // keys by MappedField.graphqlName. So the index is built from the very same
+  // maps, once, at build time — not recomputed from the naming rules, which
+  // would be a second implementation free to drift.
+  //
+  // Keyed per CLASS because the name is a per-class fact, not a per-property
+  // one: computeFieldName pluralizes from the cardinality resolved FOR THAT
+  // CLASS, so one property is `part` on a class whose SHACL says maxCount 1
+  // and `parts` on one that does not. That is precisely the derivation a
+  // consumer cannot perform from `property.uri`, which is why the field exists.
+  //
+  // Interfaces are indexed alongside types: an abstract class is browsable as
+  // an OntologyClass and its properties are real fields on the emitted
+  // interface. Keyed by MappedField.owlUri, not propertyUri, so a synthetic
+  // inverse field (owlUri "<uri>#inverse", propertyUri the FORWARD property)
+  // cannot answer for the forward property it merely points at.
+  const fieldNamesByClass = new Map<string, ReadonlyMap<string, string>>();
+  for (const container of [
+    ...mapped.types.values(),
+    ...mapped.interfaces.values(),
+  ]) {
+    const byOwlUri = new Map<string, string>();
+    for (const field of container.fields.values()) {
+      byOwlUri.set(field.owlUri, field.graphqlName);
+    }
+    fieldNamesByClass.set(container.owlUri, byOwlUri);
+  }
+
+  /**
+   * The field name a ClassProperty row answers to. Carried when its producer
+   * knew it; else the class's own emitted field for that property; else — the
+   * property projects NO field on this class (SHACL sh:maxCount 0, an
+   * unexposed range under mode "explicit", or a class that was never
+   * projected) — the OWL local name.
+   *
+   * The last rung is deliberately the rawest possible answer. There is no
+   * string `field(name:)` would accept here, and the tempting alternatives
+   * (the global name map's entry for this property, or a re-run of the naming
+   * rules) both hand back a plausible field name that this class does not
+   * serve. The local name adds nothing the consumer did not already have in
+   * `property.uri`, so it cannot be mistaken for one that works.
+   */
+  const classPropertyName = (cp: ClassPropertyValue): string =>
+    cp.graphqlName ??
+    fieldNamesByClass.get(cp.classUri)?.get(cp.propertyUri) ??
+    getLocalName(cp.propertyUri);
+
   const propertyKind = new GraphQLEnumType({
     name: "PropertyKind",
     values: {
@@ -348,8 +411,14 @@ export default function buildTBoxSchema(
   >({
     name: "ClassProperty",
     description:
-      "Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair.",
+      "Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair — and so is `name`.",
     fields: () => ({
+      name: {
+        type: new GraphQLNonNull(GraphQLString),
+        description:
+          "The field name this property answers to ON THIS CLASS — the exact string `EntityMeta.field(name:)` accepts, so `fields { name }` and `field(name:)` round-trip. Class-scoped because per-class cardinality decides pluralization: one property is `part` on one class and `parts` on another. When the property projects no field on this class (SHACL sh:maxCount 0, an unexposed range, an unprojected class) the OWL local name is returned as a label — there is no name `field(name:)` would accept.",
+        resolve: (cp) => classPropertyName(cp),
+      },
       property: {
         type: new GraphQLNonNull(ontologyProperty),
         resolve: (cp) => ir.properties.get(cp.propertyUri),
@@ -529,6 +598,20 @@ export default function buildTBoxSchema(
     description:
       "Self-describing TBox access attached to every generated type, plus the generic descriptive fields a lens renders without knowing the concrete type.",
     fields: () => ({
+      curie: {
+        type: new GraphQLNonNull(GraphQLString),
+        description:
+          "Compact display form of `uri`: `prefix:local` from the compiled namespace inventory, else the absolute IRI unchanged, else the GraphQL type name when the value has no IRI at all (an embedded blank node). TOTAL, exactly like `title`. NEVER an identity — `uri` is the only address; this string is not accepted by `node(id:)` and never appears in a cursor.",
+        // The one internal caller of toPrefixed, and the use its header names
+        // as legitimate: a String a consumer renders, that nothing reads back.
+        // The inventory is the compiled one (mapped.namespaces, the same map
+        // the context carries), read from the closure like every other
+        // structural fact in this file — no store, no request state.
+        resolve: (parent) =>
+          parent.uri === null
+            ? parent.typename
+            : toPrefixed(parent.uri, mapped.namespaces),
+      },
       title: {
         type: new GraphQLNonNull(GraphQLString),
         args: LANG_ARGS,
@@ -603,7 +686,15 @@ export default function buildTBoxSchema(
           if (!classUri || !field || !ir.properties.has(field.propertyUri)) {
             return null;
           }
-          return { propertyUri: field.propertyUri, classUri };
+          // graphqlName comes from the FIELD, not from args.name — they are
+          // the same string (Pass 4 keys the map by graphqlName), and taking
+          // it from the field keeps the answer sourced from the schema rather
+          // than echoed back from the caller.
+          return {
+            propertyUri: field.propertyUri,
+            classUri,
+            graphqlName: field.graphqlName,
+          };
         },
       },
       fields: {

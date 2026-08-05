@@ -94,6 +94,7 @@ interface Node {           # identity + self-description, and nothing else
 }
 
 type EntityMeta {          # every generic answer lives here, off the data surface
+  curie: String!                         # DISPLAY form of uri ("lib:dune") — never an identity
   title(lang: String = "en"): String!    # TOTAL — never null, always renderable
   label(lang: String = "en"): String
   comment(lang: String = "en"): String
@@ -156,7 +157,7 @@ Reading the output back against the input shows most of the compiler's rules at 
 - **`reviews` is a plain list while `authors` is a connection.** `Review` instances are blank nodes: no URI means no global ID, no cursor, no standalone resolution. The compiler marks such classes *embeddable* and resolves them inline from the parent's own triples. Everything URI-addressable gets a paginated Relay connection instead. An embeddable still carries `_meta`, because knowing your own class is a fact about the class, not about identity — and it means a class with zero properties of its own still compiles.
 - **One field per side of the inverse pair, and direction doesn't matter.** `hasAuthor`/`authored` produce `Book.authors` and `Author.authoreds` — never the duplicates. At resolution time each side takes the union of forward and reverse assertions, so data written in either direction answers identically from both ends.
 - **`inPrint: Boolean` works even though the data says `"true"`.** Real-world TTL stores booleans as strings; the resolver coerces (`"true"/"false"/"1"/"0"`) and reports anything else through the runtime-warning channel instead of crashing the response.
-- **Identity is the absolute IRI**, not an opaque token and not a prefixed form. `uri: ID!` on every node, `node(id: "https://example.org/library/dune")`, the loader keys, and the connection cursors are all the same string — one currency, so an `after:` cursor can never quietly miss. The prefixed form survives in exactly one place: the singular `book(uri: "lib:dune")` lookup ARGUMENT, as a typing convenience. Rendering a prefixed URI is the consumer's job — `toPrefixed` is exported for it.
+- **Identity is the absolute IRI**, not an opaque token and not a prefixed form. `uri: ID!` on every node, `node(id: "https://example.org/library/dune")`, the loader keys, and the connection cursors are all the same string — one currency, so an `after:` cursor can never quietly miss. The prefixed form survives in exactly two places, neither of them identity-bearing: the singular `book(uri: "lib:dune")` lookup ARGUMENT, as a typing convenience, and `_meta.curie`, the DISPLAY form — a string to render, never to store, send back, or compare. `toPrefixed` is exported so a consumer can compute it themselves too.
 - **Everything generic moved behind `_meta`.** `title`/`label`/`comment`/`definition` are `EntityMeta` fields with a `lang` argument, so the whole data surface — every field name except `uri` and `_meta` — belongs to your ontology. `title` is total: it falls through label, then any-language literal, then the IRI local name, so a lens always has something to render.
 
 About `authoreds` — that's the pluralizer being mechanically right and ergonomically wrong. Which brings us to:
@@ -238,8 +239,10 @@ The compiler emits two connected schemas. Alongside the data types, a hand-writt
     _meta {
       title                                                 # generic, total, renderable
       label(lang: "en")                                     # generic, nullable
+      curie                                                 # "lib:dune" — display only
       type { label definition superclasses { label } }      # the OWL class
       fields {                                              # every applicable property
+        name          # what field(name:) accepts — pluralized FOR THIS class
         property { label range acceptanceCriteria }
         required      # SHACL sh:minCount, for THIS class
         singular
