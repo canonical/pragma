@@ -1,14 +1,14 @@
 /**
- * Read-noun eval seed cases (commit 4) — extends `cases/stable.ts` once PR3's
- * read nouns are live. Representative, NOT exhaustive (PR7 populates the full
- * MCP eval matrix); each case builds its OWN fixture via `bootFixtureRuntime`
- * so it stays independent of `eval.test.ts`'s shared env.
+ * Read-noun eval cases, extending `cases/stable.ts` over the declared read
+ * nouns. Representative, NOT exhaustive; each case builds its OWN fixture via
+ * `bootFixtureRuntime` so it stays independent of `eval.test.ts`'s shared env.
  *
  * Anchor VALUES (Button, `importance`->`primary`, `code/function/purity`, 4
- * components) come from the ported canonical fixture graph
- * (`testing/fixtures/graph/canonical.ts`), which THIS package controls — not
- * from PR3's noun/verb/tool SET, which is read from the live surface
- * elsewhere (`liveReadSurface.ts`) per R2.
+ * components) come from the canonical fixture graph this package owns
+ * (`testing/fixtures/graph/canonical.ts`) — never from the noun/verb/tool SET,
+ * which is read from the live surface elsewhere (`liveReadSurface.ts`). Pinning
+ * the set here would make this file a second, hand-maintained copy of the
+ * surface.
  */
 
 import assert from "node:assert/strict";
