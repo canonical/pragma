@@ -115,7 +115,10 @@ describe("first install — an empty cwd answers real reads offline", () => {
 describe("first install — empty results are honest, not papered over", () => {
   it("token list exits calmly with no rows (the graph carries no ds:Token)", async () => {
     expect(
-      await readData(findVerb(findRegisteredModule("token"), "token list"), emptyCwd()),
+      await readData(
+        findVerb(findRegisteredModule("token"), "token list"),
+        emptyCwd(),
+      ),
     ).toEqual([]);
   });
 

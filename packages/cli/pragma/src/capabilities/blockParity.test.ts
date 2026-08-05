@@ -186,7 +186,7 @@ describe("block lookup — disclosure trims to the base view at summary", () => 
     )) as LookupOutput;
     const button = out.results.at(0);
     if (!button) {
-      throw new Error("block lookup returned no result for \"Button\"");
+      throw new Error('block lookup returned no result for "Button"');
     }
     expect(button.name).toBe("Button");
     expect(button.summary).toBeDefined();
