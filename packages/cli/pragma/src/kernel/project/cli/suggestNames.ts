@@ -1,8 +1,8 @@
 /**
  * Rank candidate names by similarity to a failed token.
  *
- * Ported near-verbatim from the v1 suggester: prefix matches first, then
- * Damerau-Levenshtein edit-distance matches under a normalized threshold. Used
+ * Prefix matches rank first, then Damerau-Levenshtein edit-distance matches
+ * under a normalized threshold. Used
  * by the unknown-command suggester to turn a typo into "Did you mean: …?".
  */
 

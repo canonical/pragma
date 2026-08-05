@@ -157,7 +157,7 @@ describe("the removed `completion.caseSensitive` fails loudly", () => {
   });
 });
 
-describe("the pre-v2 `colophon` byline fails with the edit that fixes it", () => {
+describe("a bare-string `colophon` fails with the edit that fixes it", () => {
   it("names the file and the new shape, not just the type mismatch", () => {
     // The third break of the same class, and the one that nearly shipped
     // without the treatment the other two got. zod DOES reject a string here,

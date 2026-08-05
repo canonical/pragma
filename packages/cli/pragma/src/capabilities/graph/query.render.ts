@@ -1,7 +1,7 @@
 /**
  * Formatters for `pragma graph query` — plain, llm, json (no ink).
  *
- * Ported verbatim from the old shell's `graph/formatters/query.ts`:
+ * SELECT, ASK and CONSTRUCT, each rendered in all three modes:
  * - plain: a tab-separated table for SELECT, `ASK: true/false`, readable triple
  *   lines for CONSTRUCT.
  * - llm: condensed Markdown (a table for SELECT, one line for ASK, a triple list

@@ -1,7 +1,7 @@
 /**
  * Git operations for cached package clones.
  *
- * Ported from the v1 refs domain. Every call is `execFileSync` with the default
+ * Every call is `execFileSync` with the default
  * `shell: false`, so refs and URLs are passed as argv, never interpolated into
  * a shell. Authentication is delegated entirely to the user's git client (SSH
  * keys, credential helpers) — zero custom auth. Shallow clones (`--depth 1`)

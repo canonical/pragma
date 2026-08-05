@@ -103,7 +103,8 @@ export interface PackIndexEntity {
 /**
  * The storeless entity index a pack ships as `index.json`.
  *
- * `version` is `2` for packs built by this kernel (the v2 enrichment fields on
+ * `version` is `2` for packs built by this kernel — the pack-index FORMAT
+ * version, unrelated to any product version (the enrichment fields on
  * each entity + the resource browser depend on it); `1` is a legacy artifact
  * whose enrichment is absent — the resources provider degrades to a "run
  * `pragma sources update`" hint rather than a live re-index.

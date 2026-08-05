@@ -119,7 +119,7 @@ cs:code.function.purity a cs:CodeStandard ;
 
 /** The `ds:Prompt` workflow templates — the ONE source both the `prompt_list`/
  * `prompt_lookup` content tools and the native MCP `prompts/*` surface project.
- * Adapted from the old shell's `DECISION_TREES`. `rdfs:label` is the prompt name
+ * `rdfs:label` is the prompt name
  * (indexed → storeless native list); `ds:promptBody` + `ds:promptArgument`
  * blank nodes are store-backed. Arguments are untyped blank nodes so they never
  * enter the entity index (the same shape `cs:do`/`cs:dont` examples use). */

@@ -396,8 +396,8 @@ const designSystemStories: readonly PackDefinition[] = [
 /**
  * The read story the code-standards pack supplies — `standard` as declared data.
  *
- * Normalized for the v2 grammar: the old `digest` level is the canonical
- * `standard`, so disclosure gates by the canonical index. The default is
+ * Disclosure gates by the CANONICAL index, so the level a story declares must
+ * be one of `summary`/`standard`/`detailed`. The default is
  * `summary` (base fields by name), `--detail standard` adds the `dos` examples,
  * `--detail detailed` adds `donts`. `cs:extends` stays the raw IRI in JSON
  * (renderers compact it at display time).

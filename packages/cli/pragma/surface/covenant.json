@@ -287,7 +287,7 @@
     "instructions": true
   },
   "bins": {
-    "pragma": "pragma v2 CLI and MCP server host (stdio)"
+    "pragma": "pragma CLI and MCP server host (stdio)"
   },
   "globalFlags": [
     {

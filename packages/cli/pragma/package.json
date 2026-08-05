@@ -1,6 +1,6 @@
 {
   "name": "@canonical/pragma-cli",
-  "description": "Next-generation CLI and MCP kernel for Canonical's design system (pragma v2).",
+  "description": "The CLI and MCP server for Canonical's design system: query the design-system knowledge graph, and scaffold code from it.",
   "version": "0.33.0",
   "type": "module",
   "module": "src/index.ts",

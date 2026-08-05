@@ -1,9 +1,9 @@
 /**
  * Plain `(noun, verb)` uniqueness across compiled verbs.
  *
- * Replaces the old reserved-verb / derive-reserved machinery: every verb the
- * projectors see — authored, distribution-declared, or dynamic — must own a
- * distinct `(noun, verb)` key. Precedence (config > package > distribution) is
+ * ONE rule, and no reserved-verb list to keep: every verb the projectors see —
+ * authored, distribution-declared, or dynamic — must own a distinct
+ * `(noun, verb)` key. Precedence (config > package > distribution) is
  * resolved by NOUN before this runs, so a surviving collision here is a real
  * conflict, reported with both sources.
  */

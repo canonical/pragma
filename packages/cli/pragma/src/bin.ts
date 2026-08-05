@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * CLI entry point for `pragma` (v2 kernel).
+ * CLI entry point for `pragma`.
  *
  * The composition root. Ordered early exits keep the hot paths minimal and
  * side-effect-free: `mcp` serves over stdio (D9); `__complete` resolves

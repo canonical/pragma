@@ -5,7 +5,7 @@
  * `<bin>.config.js`) at or above `cwd`. The walk is bounded: it stops after
  * the first directory containing `.git` (the repo root), after the home
  * directory, and at the filesystem root — a config outside the repo or home
- * never leaks in. Ported from the v1 `findProjectConfigPath`.
+ * never leaks in.
  */
 
 import { existsSync } from "node:fs";

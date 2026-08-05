@@ -4,11 +4,11 @@
  * `--format`, `--verbose`, and `--detail` may appear anywhere on the line, so
  * they are scanned and stripped before Commander sees argv — otherwise
  * `enablePositionalOptions()` scoping would reject a flag placed after a verb.
- * Ported from the v1 `parseGlobalFlags`, with two v2 changes: a new `--detail`
- * flag and the `--format text` value renamed to `plain` (the kernel's
- * {@link OutputFormat}). The dedicated `--llm` flag was folded into
- * `--format llm`, leaving auto-detection as the sole implicit trigger. Both the
- * space (`--format json`) and equals (`--format=json`) forms are recognized.
+ * `--format` takes one of the kernel's {@link OutputFormat} values, `llm`
+ * among them: there is no separate `--llm` flag, so the only implicit way to
+ * reach the condensed form is the auto-detection that fires when stdout is not
+ * a terminal. Both the space (`--format json`) and equals (`--format=json`)
+ * forms are recognized.
  */
 
 import { DETAIL_LEVELS, type DetailLevel } from "../../../constants.js";

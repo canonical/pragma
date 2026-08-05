@@ -2,8 +2,8 @@
  * Synthesize `setup` (and each sub-verb) as a summon `GeneratorDefinition`, so
  * they all flow through the SAME `execute` seam `create` uses — inheriting the
  * Ink wizard, the recap/confirm gate, live progress, colours, and the shared
- * cancel fixes (H1/H2/H3/M1) by construction. Replaces the old readline
- * `promptStrategy` + `setupAll`.
+ * cancel fixes (H1/H2/H3/M1) by construction. A hand-rolled readline prompt
+ * loop beside `create`'s wizard would have to earn every one of those again.
  *
  * The shape mirrors `create`: detection runs FOR REAL up front (in each
  * `detectX`), then a PURE `generate` composes only the effects for the SELECTED

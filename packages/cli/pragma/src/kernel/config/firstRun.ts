@@ -6,7 +6,7 @@
  * every field keeps its built-in default and `config show` reports honest
  * provenance. Modeled as a {@link Task} so the effects stay declarative and
  * testable. The banner goes to stderr — stdout belongs to command output
- * (`--format json`, MCP stdio) and must never be corrupted. Ported from the v1
+ * (`--format json`, MCP stdio) and must never be corrupted. Ported from the
  * first-run pipeline; runs before dispatch and tolerates every failure.
  */
 

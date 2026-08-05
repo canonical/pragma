@@ -6,7 +6,7 @@
  * manager comes from npm's `npm_config_user_agent` (set by npm/pnpm/yarn/bun
  * when they run a script), the scope from whether the binary sits under
  * `node_modules`. With no agent we report the honest runtime rather than
- * guessing. The old shell's full package.json walk (`#package-manager`) is
+ * guessing. A full package.json walk (reading `#package-manager`) is
  * dropped — only this heuristic and the update-command map survive.
  */
 

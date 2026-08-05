@@ -3,7 +3,7 @@
  * shell's `setup/helpers/detectShell` + `completionScripts` path helpers).
  *
  * The covenant `setup completions` sub-verb carries NO flags, so shell selection
- * is detection-only (the old `--zsh`/`--bash`/`--fish` force-flags are dropped).
+ * is detection-only: there is no flag to force a shell.
  * `$HOME` is read at call time so tests can isolate it.
  */
 

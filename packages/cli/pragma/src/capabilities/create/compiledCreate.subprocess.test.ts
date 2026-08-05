@@ -12,7 +12,7 @@
  *   2. The templates are embedded AND resolved by DIRECTORY-QUALIFIED path. The
  *      svelte + lit cases are load-bearing: `types.ts.ejs` / `index.ts.ejs` /
  *      `styles.css.ejs` / `stories.ts.ejs` exist in react/, svelte/ AND lit/, so
- *      the old basename-matching fallback could emit the WRONG framework's file
+ *      a basename-matching fallback could emit the WRONG framework's file
  *      in the binary. A wrong file would differ from the source run → red here.
  *
  * On base (summon not bundled, templates not embedded) the binary's `create`

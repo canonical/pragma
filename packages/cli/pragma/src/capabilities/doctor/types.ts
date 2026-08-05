@@ -1,5 +1,5 @@
 /**
- * Data shapes for `pragma doctor` (ported verbatim from the old shell).
+ * Data shapes for `pragma doctor`.
  */
 
 /**

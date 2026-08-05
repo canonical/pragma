@@ -4,7 +4,7 @@
  * Domain formatters delegate to these pure, layout-only functions: each takes
  * a typed options bag (see {@link contracts}) and returns a fully formatted
  * string — no I/O, no side effects. The single-field record collapse and
- * URI-compaction behaviour are ported verbatim from the v1 renderers.
+ * URI-compaction behaviour are single-sourced here.
  */
 
 import { compactUri } from "./compactUri.js";

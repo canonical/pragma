@@ -7,7 +7,7 @@
  *   static scripts' `compgen -W` would produce for the same table.
  * - {@link rankCandidates} for VALUE sets (enum values, entity names):
  *   case-insensitive exact > prefix > substring, deduped, tie-broken
- *   lexicographically, capped — ported from the v1 `rankUriCompletions`.
+ *   lexicographically, capped.
  */
 
 import type { CompletionMatch } from "../spec/types.js";

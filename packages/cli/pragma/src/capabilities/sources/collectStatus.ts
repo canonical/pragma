@@ -6,8 +6,8 @@
  * answers reads, so it can never disagree with what the next read actually
  * loads. Everything else is provenance read straight off that pack's manifest
  * (a plain `JSON.parse`, no store, no oxigraph). This is the capability that
- * must stay off the store factory (the storeless-guarantee spy covers it). It
- * absorbs the v1 `info store` summary.
+ * must stay off the store factory (the storeless-guarantee spy covers it), and
+ * it is where the store summary is reported — `info` shows one total instead.
  */
 
 import { existsSync, readFileSync } from "node:fs";

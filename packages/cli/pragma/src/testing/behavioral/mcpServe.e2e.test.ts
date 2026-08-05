@@ -1,7 +1,7 @@
 /**
  * A7 — `pragma mcp` serve boot, observed through the real compiled binary.
  *
- * Replaces the old mocked-SIGINT unit test: `runCli` spawns with no `input`,
+ * A real spawn rather than a mocked SIGINT: `runCli` spawns with no `input`,
  * which gives the child an immediately-EOF stdin (verified equivalent to
  * `< /dev/null`) — the shape a host that closes the pipe on shutdown produces.
  * The server must connect and exit cleanly, not hang or crash.

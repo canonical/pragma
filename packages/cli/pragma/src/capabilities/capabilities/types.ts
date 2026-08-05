@@ -3,7 +3,7 @@
  *
  * The catalog is DERIVED from the live grammar (`emitSurface`) plus an authored
  * hint table — never a hand-maintained tool list — so it cannot drift from the
- * real surface (the exact failure mode of the old shell's `TOOL_CATALOG`, which
+ * real surface (the failure mode of a hand-maintained tool catalog, which
  * still named retired tools). See {@link ToolHint} + `hints.ts` for the one
  * authored input, and `catalog.ts` for the derivation.
  */

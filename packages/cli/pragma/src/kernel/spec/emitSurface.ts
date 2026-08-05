@@ -79,7 +79,7 @@ export interface EmittedSurface {
  */
 export const FIXED_SURFACE = {
   bins: {
-    [BIN_NAME]: `${BIN_NAME} v2 CLI and MCP server host (stdio)`,
+    [BIN_NAME]: `${BIN_NAME} CLI and MCP server host (stdio)`,
   },
   globalFlags: [
     {

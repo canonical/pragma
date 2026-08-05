@@ -2,8 +2,7 @@
  * Formatters for `pragma config show` — plain, llm, json (no ink).
  *
  * Each resolved field carries a `[global]`/`[project]` origin marker so the
- * user sees which layer won; default values carry no marker. Ported from the
- * v1 config-show formatters.
+ * user sees which layer won; default values carry no marker.
  */
 
 import type { ConfigOrigin } from "../../kernel/config/types.js";

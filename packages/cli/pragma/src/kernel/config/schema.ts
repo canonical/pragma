@@ -49,7 +49,7 @@
  * a legacy `packages` key (renamed to `packs`) and a removed
  * `completion.caseSensitive` — exist because the unknown-key stripping would
  * otherwise eat them, and stripping is indistinguishable from working to the
- * person who wrote the file. The other two — a pre-v2 `colophon` byline string
+ * person who wrote the file. The other two — a `colophon` declared as a bare string
  * and an out-of-range `detail` — exist because zod DOES reject them, but with a
  * shape or range message that names neither the new form nor the edit. Only the
  * `colophon` one branches its remedy on the layer. See `parseRawConfig`.
@@ -133,7 +133,7 @@ export const rawConfigSchema = z.object({
  * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
  *   value declares the legacy `packages` key (renamed to `packs`), when it
  *   declares the removed `completion.caseSensitive`, when it declares
- *   `colophon` in the pre-v2 byline-string form, or when it declares a `detail`
+ *   `colophon` as a bare byline string, or when it declares a `detail`
  *   outside `DETAIL_LEVELS`. The four pre-validation checks all exist for one
  *   reason: a config that USED to be valid must fail with the edit that fixes
  *   it, not with a stripped key, a shape mismatch or a range message — which is
@@ -191,7 +191,7 @@ export function parseRawConfig(
   }
   // Shape detection, the third of these and the same argument as the two above:
   // a config that was VALID before must fail audibly, naming the edit. The
-  // pre-v2 `colophon` was a bare byline string; it is `{ markdown, summary? }`
+  // A `colophon` declared as a bare byline string; it is `{ markdown, summary? }`
   // now. Unlike the two above this one does not vanish — zod rejects it — but it
   // rejects it with "Expected object, received string" and no recovery, which
   // names the field and not the new shape. Every other break this slice landed

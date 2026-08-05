@@ -9,7 +9,7 @@
  * `graph inspect` uses — so a resource read and a `graph inspect` of the same
  * URI return identical content (the mirror contract).
  *
- * Degradation (Risk4): on a missing or legacy (pre-v2) index the listing returns
+ * Degradation (Risk4): on a missing or pre-format-2 index the listing returns
  * a single "run `pragma sources update`" hint — never a live re-index of the
  * store on the resource path.
  *
@@ -91,7 +91,7 @@ export interface ListedResource {
  *
  * @param index - The active pack index, or `undefined` when none is reachable.
  * @returns One resource per indexed entity, schema (TBox) first; a single
- *   recovery entry when the index is missing or pre-v2 (no enrichment).
+ *   recovery entry when the index is missing or pre-format-2 (no enrichment).
  */
 export function buildResourceList(
   index: PackIndex | undefined,
@@ -126,7 +126,7 @@ export function buildResourceList(
     if (seen.has(uri)) continue;
     seen.add(uri);
     const isTbox = entity.box === "tbox";
-    // Port of the old shell's `_meta` taxonomy: `pragma/box` + a priority that
+    // The `_meta` taxonomy: `pragma/box` + a priority that
     // ranks schema (classes/properties) above individuals, so an agent browsing
     // the resource list sees the schema first. `pragma/instanceCount` is the
     // per-type count carried in the index for a TBox class entry.

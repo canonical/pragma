@@ -1,7 +1,7 @@
 /**
  * Parse a config `packs` declaration into a typed {@link PackageRef}.
  *
- * Ported from the v1 refs domain. Three resolution strategies, discriminated by
+ * Three resolution strategies, discriminated by
  * `kind`: `npm` (a bare package name, resolved via `require.resolve`), `file`
  * (a `file://` local path override), and `git` (a `git+<proto>://…#ref` shallow
  * clone). The `source` string is kept verbatim so `sources status` reports

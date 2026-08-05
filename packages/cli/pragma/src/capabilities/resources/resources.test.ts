@@ -66,7 +66,7 @@ describe("resource listing (storeless, over the pack index)", () => {
     expect(buildResourceList(legacy)[0]?.uri).toBe("pragma:sources");
   });
 
-  it("lists the enriched (v2) embedded index, schema entries first", () => {
+  it("lists the enriched (format-2) embedded index, schema entries first", () => {
     const index = readPackIndex({ kind: "embedded" });
     expect(index?.version).toBe(2);
     const resources = buildResourceList(index);

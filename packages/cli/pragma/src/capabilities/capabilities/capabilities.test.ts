@@ -94,7 +94,7 @@ describe("capabilities catalog — grammar-derived, drift-guarded (PROTECTED)", 
     expect(seq[storeCheck]?.purpose).toContain("sources_update");
   });
 
-  it("reports the v2 output limits (plain/json/llm, condensed retired)", () => {
+  it("reports the output limits (plain/json/llm, no condensed mode)", () => {
     expect(data.limits.output_modes).toEqual(["plain", "json", "llm"]);
     expect(data.limits.condensed_available).toBe(false);
   });

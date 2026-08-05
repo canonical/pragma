@@ -1,9 +1,9 @@
 /**
  * E1 (AV-231, Backlog E) — the hermetic default-pack journey.
  *
- * The root method fix: the pre-existing suite tested specs against a clean,
- * single-typed 6-entity fixture, never the PRODUCT against a cold, real,
- * multi-typed pack. This file drives the REAL path end to end over the vendored
+ * The root method fix: it is easy to test specs against a clean, single-typed
+ * 6-entity fixture and never test the PRODUCT against a cold, real, multi-typed
+ * pack. This file drives the REAL path end to end over the vendored
  * {@link DEFAULT_PACK_TTL} default pack — `sources update` (resolve → build →
  * point, via `bootFixtureRuntime`) → boot → `graph query` → `block list` /
  * `ontology list` (populated AND empty) → the error paths (malformed `.ttl`,

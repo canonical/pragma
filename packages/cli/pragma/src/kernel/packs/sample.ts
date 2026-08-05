@@ -1,7 +1,7 @@
 /**
  * Sample-count parsing and uniform random selection for the `sample` verb.
  *
- * Ported from the v1 shared helpers: a missing count falls back to the default,
+ * A missing count falls back to the default,
  * a non-integer is rejected as invalid input, and a valid integer is clamped to
  * the supported 1–5 range. Selection is a Fisher-Yates partial shuffle.
  */

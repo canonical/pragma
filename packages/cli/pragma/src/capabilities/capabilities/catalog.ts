@@ -5,7 +5,7 @@
  * surface, walks `mcpSurface.tools` (the sorted, covenant-conformant set), and
  * annotates each tool from the authored `TOOL_HINTS` table. The tool set, the
  * category counts, and the discovery-sample list are all DERIVED — never pinned
- * — so the catalog tracks the surface automatically (the fix for the old shell's
+ * — so the catalog tracks the surface automatically (a hand-maintained catalog
  * hand-maintained list, which drifted to name retired tools).
  *
  * Pure + zod-free: it reads only `emitSurface` (itself fast-path-safe), so the
@@ -55,7 +55,7 @@ export const CONVENTIONS = {
     "Mutating tools are plan-first: call once WITHOUT confirm to get a plan (meta.planOnly, no writes), then repeat the call with confirm: true to execute.",
 } as const;
 
-/** The output modes v2 renders (dropped "text" → "plain"; condensed retired). */
+/** The output modes the renderers offer. */
 const OUTPUT_MODES = ["plain", "json", "llm"] as const;
 
 /** The set of tool names that mutate, read from the emitted surface. */
@@ -76,9 +76,9 @@ export function liveTools(modules: readonly CapabilityModule[]): string[] {
 
 /**
  * Build the discovery sequence, deriving the sample list from the tools that
- * ACTUALLY exist (v2 ships block/standard/modifier/token samples). Wording is
- * ported from the old `buildCapabilitiesData`, plus a store-state pre-check so a
- * cold agent is never sent into `*_sample` (or any store read) blind — every
+ * ACTUALLY exist (block/standard/modifier/token declare samples today), plus a
+ * store-state pre-check so a cold agent is never sent into `*_sample` (or any
+ * store read) blind — every
  * store read fails STORE_UNAVAILABLE until `sources_update` has built the store.
  */
 export function buildDiscoverySequence(

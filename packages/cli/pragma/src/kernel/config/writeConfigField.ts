@@ -9,7 +9,7 @@
  *
  * The Task effect vocabulary has no rename effect, so the write is a single
  * `WriteFile` (the interpreter creates the parent dir) rather than the
- * temp-file-plus-rename the v1 sync writer used — the closest atomicity the
+ * temp-file-plus-rename — the closest atomicity the
  * effect model expresses. If the existing file is corrupt (unparseable), it is
  * backed up to a timestamped sibling before the overwrite — consistent with the
  * read path (globalConfig) so a torn write is never silently discarded.

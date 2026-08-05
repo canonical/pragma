@@ -1,7 +1,7 @@
 /**
  * Formatters for `pragma capabilities` — plain, llm, json.
  *
- * `plain` is ported from the old shell's `renderCapabilities`; `llm` is the same
+ * `plain` is the human-readable catalog; `llm` is the same
  * information as compact Markdown for agents; `json` is the raw structured map
  * (what the MCP tool returns through the envelope).
  */

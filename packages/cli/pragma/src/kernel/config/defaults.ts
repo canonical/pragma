@@ -15,6 +15,6 @@ import rawConfig from "../../../pragma.conf.js";
 import { parseRawConfig } from "./schema.js";
 
 // `"distribution"` is not decoration: it is the one layer where `colophon` is
-// read, so it is the one layer whose pre-v2-byline remedy may say "rewrite it"
+// read, so it is the one layer whose bare-string-colophon remedy may say "rewrite it"
 // rather than "delete it". This is the single caller that passes it.
 export default parseRawConfig(rawConfig, "pragma.conf.ts", "distribution");

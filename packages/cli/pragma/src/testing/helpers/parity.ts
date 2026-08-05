@@ -1,10 +1,10 @@
 /**
  * Uniform CLI-json == MCP-json parity asserter.
  *
- * v2's MCP envelope IS the CLI `--format json` `{ ok, data, meta }` envelope —
+ * An MCP tool result IS the CLI `--format json` `{ ok, data, meta }` envelope —
  * both projectors build it from the SAME `successEnvelope`/`errorEnvelope`
  * (`kernel/render/envelope.ts` via `kernel/project/mcp/envelope.ts`). There is
- * no separate condensed/text/tokens MCP shape in v2 (confirmed:
+ * no separate condensed/text/tokens MCP shape (confirmed:
  * `mcp/envelope.ts` reuses the CLI's envelope builders verbatim), so parity
  * simplifies to structural data-equality — no byte-exact `condensed ===
  * fmt.llm(...)` comparison to reproduce. This generalizes the pattern already

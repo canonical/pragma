@@ -4,7 +4,7 @@
  * Checks are started eagerly (they run concurrently) and collected in
  * declaration order for a deterministic report. Each is guarded so a thrown
  * check becomes an attributable `fail` rather than aborting the whole run — the
- * same discipline the old shell used. Lazily imported by `doctor.verb.ts`, so
+ * same discipline throughout. Lazily imported by `doctor.verb.ts`, so
  * neither the checks nor `@canonical/harnesses` land on the fast path.
  */
 

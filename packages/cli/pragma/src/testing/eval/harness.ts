@@ -1,12 +1,11 @@
 /**
  * The eval harness — the runner PR4 seeds and PR7 populates.
  *
- * No formal eval harness existed anywhere in the old shell (confirmed — the
- * only `eval` hits there are the config `evaluate` verb, an unrelated
- * homonym). This is new: a minimal, typed runner over a fixture-graph-backed
+ * A minimal, typed runner over a fixture-graph-backed
  * `PragmaRuntime`/`McpHarness`, producing a machine-readable report so both a
- * vitest gate (`eval.test.ts`) and a standalone script (`report.ts`) can drive
- * the SAME cases.
+ * vitest gate (`eval.test.ts`) and a standalone script (`report.ts`) drive the
+ * SAME cases. It is the only one in the tree — the other `eval` hits are the
+ * config `evaluate` verb, an unrelated homonym.
  */
 
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";

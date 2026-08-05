@@ -1,5 +1,5 @@
 /**
- * The pack grammar (v2) — "reads as data".
+ * The pack grammar — "reads as data".
  *
  * A pack maps a noun to preferred queries: a SPARQL SELECT for the list story
  * and a generated, injection-safe lookup. One grammar and one compiler

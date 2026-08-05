@@ -6,11 +6,12 @@
  * per code, through the actual process exit path (`bin.ts`'s catch ladder →
  * `dispatch`/`handleProgramError` → `process.exitCode`).
  *
- * DIVERGENCE NOTE (kept from the plan, verified against `exitCodes.ts`): v2
- * COLLAPSED the old shell's 6-code exit map (NOT_FOUND=1, EMPTY=2,
- * INVALID/AMBIGUOUS=3, CONFIG=4, STORE=5, INTERNAL=127) into 4 codes — success,
- * a generic runtime failure (1), a usage failure (2), and an unavailable store
- * (3). This test pins v2's table, not the old one.
+ * The table is deliberately SMALL, and verified here against `exitCodes.ts`:
+ * four outcomes, not one per error class. Success (0), a generic runtime
+ * failure (1), a usage failure (2), and an unavailable store (3) — which is the
+ * only condition a caller can act on differently, so it is the only one that
+ * earns a code of its own. Everything else a script would branch on is in the
+ * error envelope.
  */
 
 import { mkdtempSync, writeFileSync } from "node:fs";

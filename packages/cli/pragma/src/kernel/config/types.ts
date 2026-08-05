@@ -1,7 +1,7 @@
 /**
  * Configuration data shapes.
  *
- * The v2 config is deliberately smaller than v1's: no `trace`, no `framework`.
+ * The config is deliberately small: no `trace` field, no `framework` field.
  * A {@link PragmaConfig} is resolved from three layers — built-in defaults, the
  * global XDG JSON, and the nearest evaluated `pragma.config.ts` — each field
  * carrying its {@link ConfigOrigin} so `config show` reports honest provenance.

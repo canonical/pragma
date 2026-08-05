@@ -1,8 +1,7 @@
 /**
  * Formatters for `pragma doctor` — plain (chalk on a TTY), llm (Markdown), json.
  *
- * Ported from the old shell's `doctor/formatters/doctor.ts`, retargeted at the
- * kernel `Formatters` contract. The plain path is colored ONLY on a color-capable
+ * Three renderings of one check list, behind the kernel `Formatters` contract. The plain path is colored ONLY on a color-capable
  * TTY: it consults the shared {@link defaultStyle} seam (stdout `isTTY` AND a
  * non-zero chalk level), so a piped / redirected / CI run — where `supports-color`
  * can report a level with no TTY (`GITHUB_ACTIONS`, `FORCE_COLOR`) — renders the

@@ -2,8 +2,8 @@
  * The `graph query` run body (lazily imported, off the fast path).
  *
  * Delegates to the `rt.query.sparql` facade (which the dispatcher has already
- * booted the store for) and translates a query failure into the v2 error
- * kernel. The old shell raised `STORE_ERROR`; v2 has no such code, so a SPARQL
+ * booted the store for) and translates a query failure into the error kernel's
+ * four-code vocabulary. There is no store-error code, so a SPARQL
  * syntax/execution failure becomes INVALID_INPUT (exit 2) with a recovery
  * pointer to the loaded namespaces. A `PragmaError` that already carries a
  * precise code (e.g. STORE_UNAVAILABLE from a cold boot) is re-thrown unchanged.
