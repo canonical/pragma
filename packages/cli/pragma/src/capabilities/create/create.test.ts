@@ -506,15 +506,20 @@ describe("declared generator bindings (PROTECTED)", () => {
     expect(values).toContain(framework?.default);
   });
 
-  it("embeds only the templates the component loader can key", async () => {
+  it("embeds every key under a declared package's scope, and no other", async () => {
     const { TEMPLATES } = await import("./templates.embedded.generated.js");
     const keys = Object.keys(TEMPLATES);
-    // summon-component's `qualifiedKey()` prefixes EVERY lookup with
-    // `component/`, so any other entry ships dead weight the binary can never
-    // read — and a binding embedded without a manifest-reading generator would
-    // put one here. Non-empty first: `.every()` over an empty list is vacuous.
+    // The manifest is package-scoped, so an entry outside every declared
+    // package's scope is dead weight no loader can ever key. Non-empty first:
+    // `.filter()` over an empty list is vacuous.
     expect(keys.length).toBeGreaterThan(0);
-    expect(keys.filter((k) => !k.startsWith("component/"))).toEqual([]);
+    const scopes = Object.values(CREATE_GENERATORS).map(
+      (binding) => `${binding.name}/`,
+    );
+    expect(scopes.length).toBeGreaterThan(0);
+    expect(
+      keys.filter((key) => !scopes.some((scope) => key.startsWith(scope))),
+    ).toEqual([]);
   });
 
   it("create surfaces exactly the three declared nouns", () => {

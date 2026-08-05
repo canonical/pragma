@@ -1,141 +1,63 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import loadTemplate, { setEmbeddedTemplates } from "./loadTemplate.js";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+import { setEmbeddedFiles } from "@canonical/summon-core/embedded";
+import { afterEach, describe, expect, it } from "vitest";
+import loadTemplate from "./loadTemplate.js";
 
-/** Write a file, creating parent dirs — for the disk-read cases. */
-function writeTemplate(path: string, content: string): void {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, content);
-}
+const here = path.dirname(fileURLToPath(import.meta.url));
+const templatesDir = path.join(here, "..", "templates");
+/** A path shaped like the compiled binary's — nothing is on disk under it. */
+const inBinary = (rel: string) => `/$bunfs/root/templates/${rel}`;
+
+afterEach(() => {
+  setEmbeddedFiles({});
+});
 
 describe("loadTemplate", () => {
-  let dir: string;
-
-  beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), "pragma-load-template-"));
+  it("reads a real template from disk", async () => {
+    const result = await loadTemplate(
+      path.join(templatesDir, "react", "types.ts.ejs"),
+    );
+    expect(result.content).toContain("Props");
   });
 
-  afterEach(() => {
-    rmSync(dir, { recursive: true, force: true });
-    // Clear the injected manifest so module-level state never leaks between tests.
-    setEmbeddedTemplates({});
-  });
+  it("binds the embedded lookup to THIS package's scope", async () => {
+    // The scope is the fact this module owns. An entry embedded under another
+    // package's name must NOT serve a component template — that is the failure
+    // a fork hit when the manifest and the loader disagreed on the prefix.
+    setEmbeddedFiles({ "@canonical/summon-package/react/types.ts.ejs": "NO" });
+    await expect(loadTemplate(inBinary("react/types.ts.ejs"))).rejects.toThrow(
+      /@canonical\/summon-component\/react\/types\.ts\.ejs/,
+    );
 
-  it("reads template content from the filesystem", async () => {
-    const path = join(dir, "templates", "react", "component.tsx.ejs");
-    writeTemplate(path, "export const <%= name %> = () => null;");
-
-    const result = await loadTemplate(path);
-
-    expect(result.source).toBe(path);
-    expect(result.content).toBe("export const <%= name %> = () => null;");
-  });
-
-  it("falls back to the embedded manifest when the file is not on disk", async () => {
-    // No file on disk → fs read fails → the injected manifest is consulted,
-    // keyed by the directory-qualified path `component/react/types.ts.ejs`.
-    const missingPath = join(dir, "templates", "react", "types.ts.ejs");
-    setEmbeddedTemplates({
-      "component/react/types.ts.ejs": "EMBEDDED CONTENT",
+    setEmbeddedFiles({
+      "@canonical/summon-component/react/types.ts.ejs": "YES",
     });
-
-    const result = await loadTemplate(missingPath);
-
-    expect(result.content).toBe("EMBEDDED CONTENT");
-    expect(result.source).toBe(missingPath);
+    expect((await loadTemplate(inBinary("react/types.ts.ejs"))).content).toBe(
+      "YES",
+    );
   });
 
-  it("resolves the shared/ styles template by its qualified key", async () => {
-    // react pulls its stylesheet from templates/shared/, not templates/react/.
-    const missingPath = join(dir, "templates", "shared", "styles.css.ejs");
-    setEmbeddedTemplates({ "component/shared/styles.css.ejs": ".x{}" });
-
-    const result = await loadTemplate(missingPath);
-
-    expect(result.content).toBe(".x{}");
-  });
-
-  it("returns the disk content even when an embedded entry also exists", async () => {
-    const path = join(dir, "templates", "react", "types.ts.ejs");
-    writeTemplate(path, "DISK WINS");
-    setEmbeddedTemplates({ "component/react/types.ts.ejs": "EMBEDDED" });
-
-    const result = await loadTemplate(path);
-
-    expect(result.content).toBe("DISK WINS");
-  });
-
-  // The collision-fix proof: the four basenames that exist in react/, svelte/
-  // AND lit/ used to be matched by BARE BASENAME, so a compiled binary could
-  // emit the wrong framework's file. Keyed by the framework-qualified path, the
-  // three frameworks resolve to DISTINCT contents.
-  it("resolves react/svelte/lit collisions to distinct contents (no basename collision)", async () => {
-    setEmbeddedTemplates({
-      "component/react/types.ts.ejs": "REACT_TYPES",
-      "component/svelte/types.ts.ejs": "SVELTE_TYPES",
-      "component/lit/types.ts.ejs": "LIT_TYPES",
-      "component/react/index.ts.ejs": "REACT_INDEX",
-      "component/svelte/index.ts.ejs": "SVELTE_INDEX",
-      "component/lit/index.ts.ejs": "LIT_INDEX",
+  it("keeps same-named templates of different frameworks apart", async () => {
+    setEmbeddedFiles({
+      "@canonical/summon-component/react/types.ts.ejs": "REACT",
+      "@canonical/summon-component/svelte/types.ts.ejs": "SVELTE",
+      "@canonical/summon-component/lit/types.ts.ejs": "LIT",
     });
-
-    const react = await loadTemplate(
-      join(dir, "templates", "react", "types.ts.ejs"),
+    expect((await loadTemplate(inBinary("react/types.ts.ejs"))).content).toBe(
+      "REACT",
     );
-    const svelte = await loadTemplate(
-      join(dir, "templates", "svelte", "types.ts.ejs"),
+    expect((await loadTemplate(inBinary("svelte/types.ts.ejs"))).content).toBe(
+      "SVELTE",
     );
-    const lit = await loadTemplate(
-      join(dir, "templates", "lit", "types.ts.ejs"),
-    );
-
-    expect(react.content).toBe("REACT_TYPES");
-    expect(svelte.content).toBe("SVELTE_TYPES");
-    expect(lit.content).toBe("LIT_TYPES");
-    // All three distinct — a basename match would have collapsed them.
-    expect(new Set([react.content, svelte.content, lit.content]).size).toBe(3);
-
-    const reactIndex = await loadTemplate(
-      join(dir, "templates", "react", "index.ts.ejs"),
-    );
-    const litIndex = await loadTemplate(
-      join(dir, "templates", "lit", "index.ts.ejs"),
-    );
-    expect(reactIndex.content).toBe("REACT_INDEX");
-    expect(litIndex.content).toBe("LIT_INDEX");
-  });
-
-  // A total miss (no disk file, no matching embedded entry) must fail loud:
-  // callers await this for required templates and do not guard against empty
-  // content, so a silent "" would generate blank files (notably in a compiled
-  // binary, where the disk read always fails).
-  it("throws on a total miss (no disk, no embedded match)", async () => {
-    const missingPath = join(dir, "templates", "react", "nonexistent.ejs");
-
-    await expect(loadTemplate(missingPath)).rejects.toThrow(
-      /Template not found/,
+    expect((await loadTemplate(inBinary("lit/types.ts.ejs"))).content).toBe(
+      "LIT",
     );
   });
 
-  it("throws when the manifest exists but has no matching qualified key", async () => {
-    const missingPath = join(dir, "templates", "react", "wanted.ejs");
-    setEmbeddedTemplates({ "component/svelte/wanted.ejs": "wrong framework" });
-
-    await expect(loadTemplate(missingPath)).rejects.toThrow(
-      /Template not found/,
-    );
-  });
-
-  it("throws for a path with no templates/ segment (no qualified key)", async () => {
-    // No `/templates/` in the path → no qualified key can be derived, so the
-    // manifest is never consulted and the loader fails loud.
-    const missingPath = join(dir, "stray.ejs");
-    setEmbeddedTemplates({ "component/react/types.ts.ejs": "irrelevant" });
-
-    await expect(loadTemplate(missingPath)).rejects.toThrow(
-      /Template not found/,
+  it("throws — never returns empty — when nothing serves the path", async () => {
+    await expect(loadTemplate(inBinary("react/absent.ejs"))).rejects.toThrow(
+      /Embedded file not found/,
     );
   });
 });

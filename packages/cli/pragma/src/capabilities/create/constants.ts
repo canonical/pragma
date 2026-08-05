@@ -49,6 +49,8 @@ export const CREATE_GENERATORS = {
     readsEmbeddedTemplates: true,
   },
   package: {
+    /** The declaring package: the manifest scope its files embed under. */
+    name: "@canonical/summon-package",
     /** The generator-map key `create package` runs. */
     key: "package",
     /**
@@ -63,6 +65,8 @@ export const CREATE_GENERATORS = {
     readsEmbeddedTemplates: false,
   },
   application: {
+    /** The declaring package: the manifest scope its files embed under. */
+    name: "@canonical/summon-application",
     /** The generator-map key `create application` runs. */
     key: "application/react",
     /**

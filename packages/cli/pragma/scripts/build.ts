@@ -39,8 +39,11 @@ const scriptsUrl = new URL(".", import.meta.url);
 /**
  * The generators whose `.ejs` the binary must carry: exactly the bindings
  * `create.verb.ts` lets run from the compiled binary
- * (`readsEmbeddedTemplates`). Keys are `<id>/<path-relative-to-root>`, matching
- * the qualified key the component loader derives from a template's source path.
+ * (`readsEmbeddedTemplates`). Keys are `<package>/<path-relative-to-root>` —
+ * the same rule `@canonical/summon-core/embedded`'s `deriveEmbeddedKey` applies
+ * to a template's runtime source path, so harvest and lookup agree by
+ * construction. The package scope is what lets several generator packages share
+ * ONE manifest.
  *
  * The root is the declared package's `src/templates` — the source of truth,
  * identical to that package's dist copy — reached through this package's own
@@ -55,12 +58,17 @@ const scriptsUrl = new URL(".", import.meta.url);
  * every lookup with `component/` — their entries were unreachable by
  * construction (26 of the 46 previously embedded).
  */
-const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> =
+const TEMPLATE_ROOTS: ReadonlyArray<{
+  id: string;
+  name: string;
+  root: string;
+}> =
   Object.entries(CREATE_GENERATORS).flatMap(([id, binding]) =>
     binding.readsEmbeddedTemplates
       ? [
           {
             id,
+            name: binding.name,
             root: fileURLToPath(
               new URL(
                 `../node_modules/${binding.name}/src/templates`,
@@ -100,7 +108,7 @@ function collectEjs(dir: string): string[] {
  */
 function generateTemplateManifest(): number {
   const entries: Record<string, string> = {};
-  for (const { id, root } of TEMPLATE_ROOTS) {
+  for (const { id, name, root } of TEMPLATE_ROOTS) {
     const files = collectEjs(root);
     // Fail loud PER ROOT rather than ship a manifest missing a binding's
     // templates: the binary's `create <id>` would otherwise die with "Template
@@ -115,7 +123,7 @@ function generateTemplateManifest(): number {
     }
     for (const file of files) {
       const rel = relative(root, file).split(/[\\/]/).join("/");
-      entries[`${id}/${rel}`] = readFileSync(file, "utf-8");
+      entries[`${name}/${rel}`] = readFileSync(file, "utf-8");
     }
   }
 

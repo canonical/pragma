@@ -280,12 +280,15 @@ export function isModuleNotFound(cause: unknown): boolean {
  * `--compile` bundler includes them — they stay behind this lazy boundary, so
  * the fast paths and `create --yes` still load neither summon-core nor React).
  *
- * The manifest is injected BEFORE `pickGenerator` — the component loader
- * consults it when its disk read fails (the compiled binary), and the generators
- * load their templates on first `generate()`. It is imported from
- * summon-component's `loadTemplate` submodule so this does not evaluate the
- * generator index first. In a source run the disk read wins and the manifest is
- * inert.
+ * The manifest is injected BEFORE `pickGenerator` — every declared generator
+ * reads through the registry when its disk read fails (the compiled binary), and
+ * loads its files on first `generate()`. The registry is imported from
+ * `@canonical/summon-core/embedded`, a submodule with no imports beyond
+ * `node:fs`, so this does not evaluate a generator index. Naming summon-core —
+ * infrastructure this CLI depends on regardless — rather than a declared
+ * generator package is deliberate: a fork that swaps its generator packages
+ * cannot leave this import pointing at a package it no longer ships. In a source
+ * run the disk read wins and the manifest is inert.
  *
  * A binding whose generator does not read through that manifest is gated to a
  * source run here ({@link IS_COMPILED_BINARY}). A stale resolution failure is a
@@ -303,11 +306,11 @@ async function loadCreateRuntime(kind: CreateKind) {
   }
   try {
     // Inject the embedded manifest before the generators evaluate.
-    const [{ setEmbeddedTemplates }, { TEMPLATES }] = await Promise.all([
-      import("@canonical/summon-component/embedded"),
+    const [{ setEmbeddedFiles }, { TEMPLATES }] = await Promise.all([
+      import("@canonical/summon-core/embedded"),
       import("./templates.embedded.generated.js"),
     ]);
-    setEmbeddedTemplates(TEMPLATES);
+    setEmbeddedFiles(TEMPLATES);
 
     const [pick, summon] = await Promise.all([
       import("./pickGenerator.js"),
