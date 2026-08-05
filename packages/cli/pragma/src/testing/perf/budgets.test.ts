@@ -8,6 +8,7 @@ import { evaluateProjectConfig } from "../../kernel/config/evaluateProjectConfig
 import { projectMcp } from "../helpers/projectMcp.js";
 import {
   BUDGET_COMPLETE_MS,
+  BUDGET_DECLARED_READ_MS,
   BUDGET_HELP_MS,
   BUDGET_MCP_P95_WARM_MS,
   BUDGET_PROJECT_CONFIG_MS,
@@ -110,6 +111,36 @@ describe("perf budgets (PROTECTED)", () => {
     });
     expect(result.medianMs).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
     expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_WARM_STORE_MS);
+  });
+
+  // `timeout` is explicit: 15 spawns of a ~415 ms verb is ~6.2 s, over
+  // vitest's 5 s default. The other spawn cases fit under it only because the
+  // commands they time are cheaper — this one measures the expensive thing on
+  // purpose.
+  it("warm declared read stays under budget", { retry: 2, timeout: 30_000 }, () => {
+    // The case above measures `__store-probe`, which is store work and nothing
+    // else. This one measures a whole verb: config load, effective-module
+    // assembly, dispatch, the story's SELECT and rendering. Every data read in
+    // the distribution is compiled from `pragma.conf.ts` now, so without this
+    // case a story edit could add 100+ ms to every noun with a green gate.
+    //
+    // `--format llm` is passed EXPLICITLY. Off a TTY `--format` auto-selects
+    // `llm` anyway, but naming it keeps the case honest about which projection
+    // it guards — the heaviest one, over the heaviest declared read.
+    const result = measureCommand(
+      BINARY,
+      ["block", "list", "--format", "llm"],
+      {
+        runs: 12,
+        warmups: 3,
+        env: {
+          ...perfEnv,
+          XDG_CACHE_HOME: mkdtempSync(join(tmpdir(), "pragma-perf-cache-")),
+        },
+      },
+    );
+    expect(result.medianMs).toBeLessThanOrEqual(BUDGET_DECLARED_READ_MS);
+    expect(result.p95Ms).toBeLessThanOrEqual(BUDGET_DECLARED_READ_MS);
   });
 
   it("warm in-process MCP tool call stays under budget (mcpP95Warm)", {

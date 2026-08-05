@@ -42,6 +42,29 @@ export const BUDGET_PROJECT_CONFIG_MS = 10;
 export const BUDGET_WARM_STORE_MS = 500;
 
 /**
+ * Warm declared-read ceiling (ms) — a whole verb, end to end, in the compiled
+ * binary: config load, effective-module assembly, dispatch, the story's SELECT,
+ * and rendering.
+ *
+ * Exists because every data read in the distribution is compiled from
+ * `pragma.conf.ts` now, and {@link BUDGET_WARM_STORE_MS} does not reach any of
+ * them: it is enforced on `__store-probe`, which materializes the pack, runs one
+ * `SELECT (COUNT(*))` and disposes — no config read, no dispatch, no formatter.
+ * Measured here, `__store-probe` is ~300 ms median while `block list` is
+ * ~410–445 ms, so a story edit could add 100+ ms to every noun with a green
+ * gate.
+ *
+ * The guarded case is `block list --format llm`: the heaviest projection (251
+ * rows) of the heaviest declared read, so the ceiling covers the others. Same
+ * arithmetic as {@link BUDGET_WARM_STORE_MS} — `ceil(p95 × 1.25 / 50) × 50` —
+ * over the worst p95 observed across formats and runs (553.8 ms under load;
+ * 421–474 ms unloaded): 553.8 × 1.25 = 692 → 700. That is 1.7× the ~415 ms
+ * median, between the 1.6× this box's warm-store ceiling uses and the 2× rule
+ * the `help`/`__complete` ceilings use. BUDGETS.md carries the raw runs.
+ */
+export const BUDGET_DECLARED_READ_MS = 700;
+
+/**
  * Warm in-process MCP tool-call ceiling (ms). This ceiling is ENFORCED, not
  * seeded. Measured over a warm, storeless tool (`capabilities`): pure envelope
  * + dispatch, no store boot, no network, so it isolates the per-call overhead

@@ -308,8 +308,49 @@ isolates the SPARQL move rather than the removal of the filtering.
 box load; the deltas within a run are the measurement. Output is set-identical
 to the old query's over the shipped pack (251 rows either way).
 
-**No budget constant changes** — nothing here is near a ceiling, and the row is
-recorded so the next reader does not take the declared-content move to be free.
 The `COALESCE` cost is not removable without dropping `modifiers` from 248 of
 251 rows, which the column and the tool description both promise; that trade was
 considered and refused.
+
+### `BUDGET_DECLARED_READ_MS`: a new ceiling, 700
+
+The A/B above isolates query work. It says nothing about what the whole verb
+costs, and the first draft of this section inferred from it that "nothing here
+is near a ceiling". Measured end to end, that was wrong.
+
+Method: `measureCommand` on the compiled binary, fresh XDG config/state/cache
+dirs per case, 25 spawns, 3 warmups.
+
+| Command                    | rep 1 med / p95 | rep 2 med / p95 |
+| -------------------------- | --------------- | --------------- |
+| `__store-probe`            | 300.3 / 327.1   | 307.4 / 341.7   |
+| `block list --format json` | 410.9 / 439.7   | 409.4 / 439.4   |
+| `block list --format plain`| 419.2 / 461.2   | 413.4 / 473.6   |
+| `block list --format llm`  | 407.7 / 421.9   | 444.0 / 469.7   |
+
+So the real verb is **~110 ms (≈ 37%) more expensive than `__store-probe`**,
+the only case `BUDGET_WARM_STORE_MS` is enforced on. Against that 500 ms
+ceiling `block list` sits at ~83% median and ~92% p95, while the guarded probe
+sits at ~61%. The probe is not a proxy for a verb: `kernel/runtime/probe.ts`
+materializes the embedded pack, runs one `SELECT (COUNT(*))` and disposes — no
+`loadConfig`, no `loadEffectiveModules`, no dispatch, no formatter.
+
+That gap mattered little while `block list` was hand-written TypeScript. It
+matters now: PR8 removed the last hand-written data command, so the ENTIRE read
+surface is compiled from `pragma.conf.ts`, and a story edit — another
+`COALESCE`, another `OPTIONAL`, a widened `VALUES` set — can add 100+ ms to
+every noun with a green gate.
+
+`BUDGET_WARM_STORE_MS` keeps `__store-probe`, which is the WASM-embed smoke
+test it is documented to be. A second ceiling guards a whole verb:
+
+- Guarded case: `block list --format llm` — the heaviest projection of the
+  heaviest declared read, so it covers the other formats and the lighter nouns.
+  The format is passed explicitly; off a TTY `--format` auto-selects `llm`
+  anyway, but naming it says which projection is under the ceiling.
+- Derivation, the same arithmetic as `BUDGET_WARM_STORE_MS`:
+  `ceil(p95 × 1.25 / 50) × 50` over the worst p95 seen across formats and runs
+  — 553.8 ms on a loaded box, against 421–474 ms in the table above.
+  `553.8 × 1.25 = 692.25` → **700**. That is 1.7× the ~415 ms median: tighter
+  than the 2× rule the `help`/`__complete` ceilings use, looser than the 1.6×
+  the warm-store ceiling landed on.
