@@ -68,7 +68,7 @@ import { globalConfigPath } from "../../kernel/config/paths.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
 import {
   expectReadParity,
   interpretAsPlan,
@@ -84,10 +84,30 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 
-const setVerb = configModule.verbs.find((v) => v.path[1] === "set") as VerbSpec;
-const completionsVerb = setupModule.verbs.find(
-  (v) => v.path[1] === "completions",
-) as VerbSpec;
+/**
+ * Bind one verb of a capability module by its second path segment.
+ *
+ * `find(...) as VerbSpec` erases the `undefined` a moved or renamed verb
+ * produces, so every case below failed with "Cannot read properties of
+ * undefined (reading 'run')" — a stack trace that names this file and not the
+ * verb that moved. `.at(1)` and a throw put the name in the failure.
+ *
+ * @param module - The capability module to search.
+ * @param segment - The verb's second path segment (`config set` → `set`).
+ * @returns The matching verb spec.
+ */
+function findVerb(module: CapabilityModule, segment: string): VerbSpec {
+  const found = module.verbs.find((verb) => verb.path.at(1) === segment);
+  if (!found) {
+    throw new Error(
+      `the "${module.name}" module declares no \`${segment}\` verb`,
+    );
+  }
+  return found;
+}
+
+const setVerb = findVerb(configModule, "set");
+const completionsVerb = findVerb(setupModule, "completions");
 const createVerb = createVerbs.component as VerbSpec;
 
 let xdg: string;

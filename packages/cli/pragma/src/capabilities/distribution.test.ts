@@ -69,11 +69,18 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     // name the lookup can match. `pragma.conf.ts` is inert data and imports
     // nothing, so it spells both literally; this is what keeps them equal.
     const story = declaredStories.get("tier");
-    const query = story?.list?.query ?? "";
-    const type = story?.lookup?.type;
-    expect(type).toBeDefined();
+    if (!story) {
+      throw new Error('pragma.conf.ts declares no story for "tier"');
+    }
+    const query = story.list?.query;
+    const type = story.lookup?.type;
+    if (query === undefined || type === undefined) {
+      throw new Error(
+        'the "tier" story declares no list query or no lookup type',
+      );
+    }
     expect(query).toContain(`a ${type}`);
-    expect(story?.lookup?.by).toBe(VOCABULARY.altName);
+    expect(story.lookup?.by).toBe(VOCABULARY.altName);
     expect(query).toContain(`${VOCABULARY.altName} ?name`);
   });
 });
