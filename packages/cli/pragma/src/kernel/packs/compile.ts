@@ -37,6 +37,7 @@ import type {
   PackLookup,
   PackRow,
   PackSearch,
+  StoryOrigin,
 } from "./types.js";
 
 // The run bodies pull the SPARQL/GraphQL fetch layer; they are dynamic-imported
@@ -58,13 +59,14 @@ const READ_CAPABILITY = {
  * Compile a validated pack definition into its verbs.
  *
  * @param definition - A validated pack definition.
- * @param source - Where the definition came from, for diagnostics.
+ * @param origin - Who authored the definition, for diagnostics AND for
+ * deciding whose fault an unbound prefix is (see {@link StoryOrigin}).
  * @param prefixes - The merged prefix map used for display compaction.
  * @returns The compiled verbs (list, extra verbs, lookup, sample), in order.
  */
 export function compilePack(
   definition: PackDefinition,
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec[] {
   const { noun } = definition;
@@ -77,7 +79,7 @@ export function compilePack(
         verb: "list",
         summary: definition.description ?? `List ${noun} entries.`,
         doc: definition.toolDescription,
-        source,
+        origin,
         prefixes,
       }),
     );
@@ -90,16 +92,16 @@ export function compilePack(
         verb: verb.verb,
         summary: verb.description ?? `List ${noun} ${verb.verb}.`,
         doc: verb.toolDescription,
-        source,
+        origin,
         prefixes,
       }),
     );
   }
 
   if (definition.lookup) {
-    verbs.push(compileLookupVerb(definition.lookup, noun, source, prefixes));
+    verbs.push(compileLookupVerb(definition.lookup, noun, origin, prefixes));
     if (definition.lookup.sample) {
-      verbs.push(compileSampleVerb(definition.lookup, noun, source, prefixes));
+      verbs.push(compileSampleVerb(definition.lookup, noun, origin, prefixes));
     }
   }
 
@@ -113,7 +115,7 @@ interface ListVerbMeta {
   readonly summary: string;
   /** The authored MCP tool description (from `toolDescription`), if any. */
   readonly doc?: string;
-  readonly source: string;
+  readonly origin: StoryOrigin;
   readonly prefixes: Readonly<Record<string, string>>;
 }
 
@@ -152,7 +154,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeListRun(shape, { source: meta.source })(params, rt),
+        m.makeListRun(shape, { origin: meta.origin })(params, rt),
       ),
   };
   return asVerb(verb);
@@ -162,7 +164,7 @@ function compileListVerb(shape: PackList, meta: ListVerbMeta): VerbSpec {
 function compileLookupVerb(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec {
   // Derive-by-default: every lookup completes its `<name>` from the pack index
@@ -206,7 +208,7 @@ function compileLookupVerb(
     capability: READ_CAPABILITY,
     run: (params: Record<string, unknown>, rt: PragmaRuntime) =>
       runBodies().then((m) =>
-        m.makeLookupRun(lookup, noun, source, prefixes)(params, rt),
+        m.makeLookupRun(lookup, noun, origin, prefixes)(params, rt),
       ),
   };
   return asVerb(verb);
@@ -216,7 +218,7 @@ function compileLookupVerb(
 function compileSampleVerb(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
 ): VerbSpec {
   const defaultCount = sampleDefaultCount(lookup);
@@ -252,7 +254,7 @@ function compileSampleVerb(
         m.makeSampleRun(
           lookup,
           noun,
-          source,
+          origin,
           prefixes,
           defaultCount,
         )(params, rt),

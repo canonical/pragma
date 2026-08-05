@@ -23,14 +23,14 @@ import { parseSampleCount, pickRandom } from "./sample.js";
 import { applyPackFilters } from "./sparql/applyFilters.js";
 import { applyPackSearch } from "./sparql/applySearch.js";
 import { runSelect } from "./sparql/runSelect.js";
-import type { PackList, PackLookup, PackRow } from "./types.js";
+import type { PackList, PackLookup, PackRow, StoryOrigin } from "./types.js";
 
 /** The highest canonical level — sample fetches everything for shape discovery. */
 const HIGHEST_LEVEL = "detailed";
 
 /** Facts a list-shaped run body needs beyond its `shape`. */
 export interface ListRunMeta {
-  readonly source: string;
+  readonly origin: StoryOrigin;
 }
 
 /**
@@ -49,7 +49,7 @@ export function makeListRun(
   return async (params, rt) =>
     applyPackSearch(
       applyPackFilters(
-        await runSelect(rt, shape.query, meta.source),
+        await runSelect(rt, shape.query, meta.origin),
         shape.filters,
         params,
       ),
@@ -62,7 +62,7 @@ export function makeListRun(
 export function makeLookupRun(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
 ): (
   params: Record<string, unknown>,
@@ -76,7 +76,7 @@ export function makeLookupRun(
       lookup,
       noun,
       names,
-      source,
+      origin,
       prefixes,
       level,
     );
@@ -105,7 +105,7 @@ export function makeLookupRun(
 export function makeSampleRun(
   lookup: PackLookup,
   noun: string,
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
   defaultCount: number,
 ): (
@@ -114,7 +114,7 @@ export function makeSampleRun(
 ) => Promise<SampleOutput> {
   return async (params, rt) => {
     const count = parseSampleCount(params.count ?? defaultCount);
-    const names = await listEntityNames(rt, lookup, source);
+    const names = await listEntityNames(rt, lookup, origin);
     // An empty population is a clean EMPTY_RESULTS (nothing to sample), not the
     // "(empty)" INVALID_INPUT resolveLookup would raise on a zero-length batch.
     if (names.length === 0) {
@@ -133,7 +133,7 @@ export function makeSampleRun(
       lookup,
       noun,
       selected,
-      source,
+      origin,
       prefixes,
       HIGHEST_LEVEL,
     );

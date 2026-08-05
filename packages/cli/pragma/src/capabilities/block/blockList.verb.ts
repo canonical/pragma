@@ -146,7 +146,10 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
       layers.config.channel,
       params.allTiers === true,
     );
-    const rows = await runSelect(rt, query, "block");
+    const rows = await runSelect(rt, query, {
+      kind: "distribution",
+      label: "block",
+    });
     return rows.map((row) => ({
       uri: row.component ?? "",
       // An unnamed block still needs a token to show — fall back to its IRI's

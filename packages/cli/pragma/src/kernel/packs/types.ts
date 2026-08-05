@@ -19,6 +19,32 @@
  * of the canonical set.
  */
 
+/**
+ * WHERE a compiled story came from — threaded from `compilePack` to the SPARQL
+ * choke point so a failure can be attributed to the right author.
+ *
+ * It exists because one condition means two different things. When a generated
+ * query names a prefix the built store does not bind, the DISTRIBUTION's own
+ * stories are asking about a store that was never built — `sources update` is
+ * the answer. A story a package or the user's config declared is asking about a
+ * vocabulary this store simply does not have, and telling its author to run
+ * `sources update` sends them to a lever that cannot help. `buildIndex` already
+ * treats the same condition as the ordinary third-party case and degrades; only
+ * the query path escalated.
+ *
+ * `label` is the human attribution the diagnostics already carried as a bare
+ * string (`"pragma.conf.ts"`, `"config"`, `"@acme/recipes/stories/recipe.json"`);
+ * `kind` is what the code may branch on. Declared HERE because this module is an
+ * import-free leaf already on the `pragma.conf.ts` and `--help` graphs, so the
+ * type costs no import edge.
+ */
+export interface StoryOrigin {
+  /** Who authored the story. */
+  readonly kind: "distribution" | "config" | "package";
+  /** Human attribution for diagnostics (a file path, or `config`). */
+  readonly label: string;
+}
+
 /** A list column: a SELECT variable to display. */
 export interface PackColumn {
   /** SELECT variable name (without `?`). */

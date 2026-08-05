@@ -17,6 +17,7 @@
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { cliRecovery } from "../../kernel/error/recovery.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
+import type { StoryOrigin } from "../../kernel/packs/types.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import { compactUri } from "../../kernel/render/compactUri.js";
 import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
@@ -24,6 +25,15 @@ import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import { VOCABULARY } from "../../kernel/vocabulary.js";
 import { TIER_TYPE } from "./constants.js";
 import type { TierLookupData } from "./lookup.render.js";
+
+/**
+ * This query is written by THIS BINARY rather than by a story file, so its
+ * origin is the distribution: an unbound prefix here means the store was never
+ * built from a pack that binds the term, and `sources update` is the answer.
+ * A config- or package-declared story naming an unbound prefix is a different
+ * condition and gets a different error — see {@link StoryOrigin}.
+ */
+const TIER_ORIGIN: StoryOrigin = { kind: "distribution", label: "tier" };
 
 /**
  * Read every tier name in the store, ordered.
@@ -40,7 +50,7 @@ async function selectTierNames(rt: PragmaRuntime): Promise<string[]> {
   const rows = await runSelect(
     rt,
     `SELECT ?name WHERE { ?tier a ${TIER_TYPE} ; ${VOCABULARY.altName} ?name } ORDER BY ?name`,
-    "tier",
+    TIER_ORIGIN,
   );
   return rows
     .map((row) => row.name as string | undefined)
@@ -74,7 +84,7 @@ export async function runTierLookup(
   // store — a generated `ds:` query hitting an unknown prefix — is remapped to an
   // actionable STORE_UNAVAILABLE with `pragma sources update` recovery, instead of
   // a raw "Prefix not found" collapsing to INTERNAL_ERROR at the boundary.
-  const rows = await runSelect(rt, query, "tier");
+  const rows = await runSelect(rt, query, TIER_ORIGIN);
   const uri = rows[0]?.uri;
   if (!uri) {
     // Rank "did you mean?" candidates from the full tier list — the only entity

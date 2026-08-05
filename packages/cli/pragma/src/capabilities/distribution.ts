@@ -44,7 +44,11 @@ export const storyModules: ReadonlyMap<string, CapabilityModule> = new Map(
     {
       name: noun,
       story: true,
-      verbs: compilePack(story, "pragma.conf.ts", DEFAULT_PREFIX_MAP),
+      verbs: compilePack(
+        story,
+        { kind: "distribution", label: "pragma.conf.ts" },
+        DEFAULT_PREFIX_MAP,
+      ),
       colophon: story.colophon,
     },
   ]),

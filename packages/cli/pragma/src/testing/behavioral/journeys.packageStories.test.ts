@@ -18,9 +18,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { runTask } from "@canonical/task/node";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { storyModules } from "../../capabilities/distribution.js";
 import { runChecks } from "../../capabilities/doctor/runChecks.js";
 import { capabilities } from "../../capabilities/index.js";
 import { buildUpdateTask } from "../../capabilities/sources/runUpdate.js";
+import type { PragmaError } from "../../kernel/error/PragmaError.js";
 import { loadEffectiveModules } from "../../kernel/packs/collect.js";
 import { packDir, readActivePack } from "../../kernel/runtime/paths.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
@@ -58,6 +60,20 @@ const RECIPE_STORY = JSON.stringify({
 /** Schema-invalid: a well-formed JSON document the pack grammar rejects. */
 const INVALID_STORY = JSON.stringify({ noun: "Bad Noun", list: {} });
 
+/**
+ * A schema-VALID story whose query names a prefix the built store does not
+ * bind — the typo a third-party author actually makes. It compiles, dispatches,
+ * and fails at the SPARQL choke point.
+ */
+const UNBOUND_STORY = JSON.stringify({
+  noun: "gadget",
+  description: "List gadgets.",
+  list: {
+    query: "SELECT ?uri WHERE { ?uri a nope:Gadget }",
+    columns: [{ field: "uri" }],
+  },
+});
+
 let graph: FixtureGraph;
 beforeAll(async () => {
   graph = await bootFixtureRuntime({
@@ -67,6 +83,7 @@ beforeAll(async () => {
       // Not JSON at all.
       "broken.json": "{ this is not json",
       "invalid.json": INVALID_STORY,
+      "unbound.json": UNBOUND_STORY,
     },
   });
 }, 60_000);
@@ -85,6 +102,7 @@ describe("a package's stories reach the pack", () => {
       "fixture/stories/broken.json",
       "fixture/stories/invalid.json",
       "fixture/stories/recipe.json",
+      "fixture/stories/unbound.json",
     ]);
     expect(
       carried.find((r) => r.source === "fixture/stories/recipe.json")?.content,
@@ -119,6 +137,50 @@ describe("a package-declared noun answers reads (in-process)", () => {
   });
 });
 
+describe("an unbound prefix is attributed to whoever wrote the story", () => {
+  // The store here IS built — it just binds `ex:` and nothing else. Before
+  // `StoryOrigin` was threaded, both halves below reported STORE_UNAVAILABLE
+  // with "run `pragma sources update`", which for a package author is a lever
+  // that cannot help: rebuilding cannot bind a prefix nothing declares.
+  it("a PACKAGE story gets CONFIG_ERROR naming the story, with no sources-update hint", async () => {
+    const { modules } = await loadEffectiveModules(capabilities, graph.cwd);
+    const list = modules
+      .find((module) => module.name === "gadget")
+      ?.verbs.find((verb) => verb.path.join(" ") === "gadget list") as VerbSpec;
+
+    let caught: unknown;
+    try {
+      await list.run({}, graph.runtime);
+    } catch (error) {
+      caught = error;
+    }
+    expect((caught as PragmaError).code).toBe("CONFIG_ERROR");
+    expect((caught as PragmaError).message).toContain(
+      "fixture/stories/unbound.json",
+    );
+    expect((caught as PragmaError).recovery).toBeUndefined();
+  });
+
+  it("a DISTRIBUTION story on the same store still gets STORE_UNAVAILABLE + sources update", async () => {
+    // The paired half, and what makes the first non-vacuous: the distribution's
+    // own compiled stories query `ds:`, which this fixture's store does not
+    // bind either — and for THEM the store genuinely has not been built from a
+    // pack that defines the terms, so `sources update` is the right answer.
+    const list = storyModules
+      .get("token")
+      ?.verbs.find((verb) => verb.path.join(" ") === "token list") as VerbSpec;
+
+    let caught: unknown;
+    try {
+      await list.run({}, graph.runtime);
+    } catch (error) {
+      caught = error;
+    }
+    expect((caught as PragmaError).code).toBe("STORE_UNAVAILABLE");
+    expect((caught as PragmaError).recovery?.cli).toBe("pragma sources update");
+  });
+});
+
 describe("the two recoveries still run with bad stories in the pack", () => {
   it("sources update re-resolves and reports the carried story count", async () => {
     const result = await runTask(await buildUpdateTask(graph.runtime));
@@ -127,7 +189,7 @@ describe("the two recoveries still run with bad stories in the pack", () => {
         name: "fixture",
         resolved: expect.any(String),
         sourceCount: 1,
-        storyCount: 3,
+        storyCount: 4,
       },
     ]);
   });

@@ -28,7 +28,12 @@ import {
   buildNameResolveQuery,
 } from "./sparql/buildLookupQuery.js";
 import { runSelect } from "./sparql/runSelect.js";
-import type { PackChildRow, PackEntity, PackLookup } from "./types.js";
+import type {
+  PackChildRow,
+  PackEntity,
+  PackLookup,
+  StoryOrigin,
+} from "./types.js";
 
 /** A structured per-query lookup failure (never rejects the whole batch). */
 export interface LookupError {
@@ -57,7 +62,7 @@ export async function resolveLookup(
   lookup: PackLookup,
   noun: string,
   queries: readonly string[],
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
 ): Promise<LookupOutput> {
@@ -69,12 +74,12 @@ export async function resolveLookup(
     });
   }
 
-  const expanded = await expandQueries(rt, lookup, noun, source, queries);
+  const expanded = await expandQueries(rt, lookup, noun, origin, queries);
   const results: PackEntity[] = [];
   const errors: LookupError[] = [...expanded.globErrors];
   const settled = await Promise.allSettled(
     expanded.names.map((query) =>
-      lookupOne(rt, lookup, noun, query, source, prefixes, level),
+      lookupOne(rt, lookup, noun, query, origin, prefixes, level),
     ),
   );
   for (const [index, outcome] of settled.entries()) {
@@ -110,12 +115,12 @@ async function expandQueries(
   rt: LookupRuntime,
   lookup: PackLookup,
   noun: string,
-  source: string,
+  origin: StoryOrigin,
   queries: readonly string[],
 ): Promise<{ names: string[]; globErrors: LookupError[] }> {
   if (!queries.some(isGlobPattern))
     return { names: [...queries], globErrors: [] };
-  const allNames = await listEntityNames(rt, lookup, source);
+  const allNames = await listEntityNames(rt, lookup, origin);
   const names: string[] = [];
   const globErrors: LookupError[] = [];
   for (const query of queries) {
@@ -143,7 +148,7 @@ async function lookupOne(
   lookup: PackLookup,
   noun: string,
   query: string,
-  source: string,
+  origin: StoryOrigin,
   prefixes: Readonly<Record<string, string>>,
   level: string | undefined,
 ): Promise<PackEntity> {
@@ -153,11 +158,11 @@ async function lookupOne(
     graphqlSourced
       ? buildNameResolveQuery(lookup, query)
       : buildEntityQuery(lookup, query, prefixes, level),
-    source,
+    origin,
   );
   const base = rows.at(0);
   if (!base?.uri) {
-    const candidates = await listEntityNames(rt, lookup, source);
+    const candidates = await listEntityNames(rt, lookup, origin);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
       recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
@@ -172,7 +177,9 @@ async function lookupOne(
       lookup,
       base.uri,
       base.name ?? query,
-      source,
+      // The GraphQL fetch path performs no SPARQL, so it needs only the
+      // attribution, not the discriminant.
+      origin.label,
       prefixes,
       level,
     );
@@ -183,7 +190,7 @@ async function lookupOne(
     entity[expand.name] = (await runSelect(
       rt,
       buildExpandQuery(expand, base.uri),
-      source,
+      origin,
     )) as readonly PackChildRow[];
   }
   return entity;
@@ -222,8 +229,8 @@ function looksLikeIri(query: string): boolean {
 export async function listEntityNames(
   rt: LookupRuntime,
   lookup: PackLookup,
-  source: string,
+  origin: StoryOrigin,
 ): Promise<string[]> {
-  const rows = await runSelect(rt, buildLookupNamesQuery(lookup), source);
+  const rows = await runSelect(rt, buildLookupNamesQuery(lookup), origin);
   return rows.map((row) => row.name ?? "").filter((name) => name !== "");
 }
