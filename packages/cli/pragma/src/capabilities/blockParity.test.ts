@@ -67,10 +67,26 @@ afterAll(async () => {
   (await rt.store.get()).store.dispose();
 });
 
-async function lookup(name: string): Promise<Record<string, unknown>> {
+/**
+ * The single result of a `block lookup`, or a throw naming the block.
+ *
+ * `.at(0)` is `T | undefined` for a reason: a lookup that resolved nothing
+ * returns an empty `results`. Casting that away sent `undefined` into every
+ * assertion below, where it surfaced as a TypeError on a property read instead
+ * of naming the block that did not resolve.
+ *
+ * @param name - The block name to look up.
+ * @returns The one result row.
+ * @note Impure — runs the compiled verb against the shared fixture runtime.
+ */
+async function lookupOneBlock(name: string): Promise<Record<string, unknown>> {
   const out = (await lookupVerb.run({ name: [name] }, rt)) as LookupOutput;
   expect(out.errors).toEqual([]);
-  return out.results.at(0) as Record<string, unknown>;
+  const first = out.results.at(0);
+  if (!first) {
+    throw new Error(`block lookup returned no result for "${name}"`);
+  }
+  return first as Record<string, unknown>;
 }
 
 /** Oracle: a single scalar from the graph, queried directly. */
@@ -83,7 +99,7 @@ async function oracle(subject: string, predicate: string): Promise<string> {
 
 describe("block lookup — Button content parity (GraphQL, detailed)", () => {
   it("resolves the full Button spec with content matching the SPARQL oracle", async () => {
-    const button = await lookup("Button");
+    const button = await lookupOneBlock("Button");
     expect(button.uri).toBe(`${DS}button`);
     expect(button.name).toBe("Button");
     expect(button.tier).toBe(`${DS}global`);
@@ -104,7 +120,7 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
   });
 
   it("resolves the nested modifier families with values (inverse union)", async () => {
-    const button = await lookup("Button");
+    const button = await lookupOneBlock("Button");
     const families = button.modifierFamilies as {
       name: string;
       values?: string[];
@@ -118,7 +134,7 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
   });
 
   it("resolves properties and the subtype-scoped subcomponents identity field", async () => {
-    const button = await lookup("Button");
+    const button = await lookupOneBlock("Button");
     expect(button.properties).toEqual([
       { name: "disabled", type: "boolean", optional: "true" },
     ]);
@@ -143,7 +159,7 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
 
 describe("block lookup — Modal content parity (GraphQL, detailed)", () => {
   it("resolves the full Modal spec (a different block, same document engine)", async () => {
-    const modal = await lookup("Modal");
+    const modal = await lookupOneBlock("Modal");
     expect(modal.uri).toBe(`${DS}modal`);
     expect(modal.name).toBe("Modal");
     expect(modal.summary).toBe(await oracle(`${DS}modal`, "ds:summary"));
@@ -153,7 +169,7 @@ describe("block lookup — Modal content parity (GraphQL, detailed)", () => {
       values?: string[];
     }[];
     expect(families.map((f) => f.name)).toEqual(["size"]);
-    expect(families[0]?.values?.sort()).toEqual(["large", "small"]);
+    expect(families.at(0)?.values?.sort()).toEqual(["large", "small"]);
     expect(modal.properties).toEqual([
       { name: "open", type: "boolean", optional: "false" },
     ]);
@@ -168,7 +184,10 @@ describe("block lookup — disclosure trims to the base view at summary", () => 
       { name: ["Button"] },
       { ...rt, globalFlags: { ...rt.globalFlags, detail: "summary" } },
     )) as LookupOutput;
-    const button = out.results.at(0) as Record<string, unknown>;
+    const button = out.results.at(0);
+    if (!button) {
+      throw new Error("block lookup returned no result for \"Button\"");
+    }
     expect(button.name).toBe("Button");
     expect(button.summary).toBeDefined();
     expect(button.whenToUse).toBeUndefined();
@@ -213,9 +232,12 @@ describe("block list — unfiltered, with the row shape the renderer wants", () 
     // because it shipped unguarded and unwrapped once: a consumer doing
     // `row.modifiers.split(", ")` threw on every block with no modifier family.
     const buttonIcon = rows.find((row) => row.name === "Button Icon");
-    expect(buttonIcon?.tier).toBe("");
-    expect(buttonIcon?.modifiers).toBe("");
-    expect(Object.keys(buttonIcon ?? {}).sort()).toEqual([
+    if (!buttonIcon) {
+      throw new Error('`block list` returned no row named "Button Icon"');
+    }
+    expect(buttonIcon.tier).toBe("");
+    expect(buttonIcon.modifiers).toBe("");
+    expect(Object.keys(buttonIcon).sort()).toEqual([
       "modifiers",
       "name",
       "tier",
