@@ -184,8 +184,10 @@ export const effectfulEvalCases: readonly EvalCase[] = [
           results: { name: string; uri: string }[];
         };
         assert.equal(data.results.length, 1);
-        assert.equal(data.results[0]?.name, "apps/lxd");
-        assert.match(String(data.results[0]?.uri), /apps_lxd$/);
+        const tier = data.results.at(0);
+        assert.ok(tier, "tier_lookup resolved no result for apps/lxd");
+        assert.equal(tier.name, "apps/lxd");
+        assert.match(tier.uri, /apps_lxd$/);
       });
     },
   },
