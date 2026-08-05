@@ -47,9 +47,7 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
       "Get type and theme values for one or more design tokens by name.",
     );
     // The authored MCP tool-call example survives on the MCP surface.
-    expect(desc).toContain(
-      'Example: token_lookup { names: ["color.primary"] }',
-    );
+    expect(desc).toContain('Example: token_lookup { name: ["color.primary"] }');
   });
 
   it("routes the definition-level toolDescription to the MCP list tool", async () => {

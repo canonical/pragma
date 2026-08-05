@@ -151,7 +151,7 @@ const designSystemStories: readonly PackDefinition[] = [
     lookup: {
       source: "graphql",
       toolDescription:
-        'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { names: ["Button"] }.',
+        'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { name: ["Button"] }.',
       by: "ds:name",
       types: ["ds:Component", "ds:Pattern", "ds:Layout", "ds:Subcomponent"],
       graphqlType: "UIBlock",
@@ -286,7 +286,7 @@ const designSystemStories: readonly PackDefinition[] = [
       by: "ds:tokenId",
       type: "ds:Token",
       toolDescription:
-        'Get type and theme values for one or more design tokens by name. Use when resolving specific tokens\' light/dark values. Example: token_lookup { names: ["color.primary"] }.',
+        'Get type and theme values for one or more design tokens by name. Use when resolving specific tokens\' light/dark values. Example: token_lookup { name: ["color.primary"] }.',
       fields: [
         {
           name: "category",
@@ -345,7 +345,7 @@ const designSystemStories: readonly PackDefinition[] = [
       by: "ds:name",
       type: "ds:ModifierFamily",
       toolDescription:
-        'Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { names: ["importance"] }.',
+        'Get values and usage details for one or more modifier families by name. Use when you need the allowed values of specific families. Example: modifier_lookup { name: ["importance"] }.',
       expand: [
         {
           name: "values",
@@ -395,7 +395,7 @@ const designSystemStories: readonly PackDefinition[] = [
       type: "ds:Tier",
       description: "Resolve tiers by name, IRI, or glob.",
       toolDescription:
-        'Resolve one or more tiers to their graph identity by name, prefixed name, IRI, or glob. Use when you need a tier\'s IRI, or to confirm a tier name exists before using it. Example: tier_lookup { names: ["apps/lxd"] }.',
+        'Resolve one or more tiers to their graph identity by name, prefixed name, IRI, or glob. Use when you need a tier\'s IRI, or to confirm a tier name exists before using it. Example: tier_lookup { name: ["apps/lxd"] }.',
     },
   },
 ];
