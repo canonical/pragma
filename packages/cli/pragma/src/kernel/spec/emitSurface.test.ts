@@ -21,7 +21,7 @@ describe("naming rules", () => {
 
   it("kebab-cases camelCase flag names", () => {
     expect(kebabCase("withHistory")).toBe("with-history");
-    expect(kebabCase("allTiers")).toBe("all-tiers");
+    expect(kebabCase("fullUris")).toBe("full-uris");
     expect(kebabCase("name")).toBe("name");
   });
 });

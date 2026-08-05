@@ -15,7 +15,7 @@ import {
 } from "../../constants.js";
 import type { CapabilityModule, ParamSpec, VerbSpec } from "./types.js";
 
-/** kebab-case a camelCase param name for its flag form (`allTiers` -> `all-tiers`). */
+/** kebab-case a camelCase param name for its flag form (`fullUris` -> `full-uris`). */
 export function kebabCase(name: string): string {
   return name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 }

@@ -414,7 +414,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
       DEFAULT_PACK_ALL_VISIBLE_CONFIG,
     );
     // `block list`'s SELECT once inner-joined `?c ds:tier ?t`, dropping a
-    // ds:Component with no ds:tier even under --all-tiers (though `graph query`
+    // ds:Component with no ds:tier from every listing (though `graph query`
     // found it, proven above). Lane A made the tier join OPTIONAL; the declared
     // story keeps it OPTIONAL and has no scoped view to escape from, so an
     // untiered block is visible with no flag at all.
