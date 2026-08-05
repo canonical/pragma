@@ -3,17 +3,10 @@
  */
 
 import type { CapabilityModule } from "../../kernel/spec/types.js";
-import {
-  ontologyListVerb,
-  ontologyLookupVerb,
-  ontologyShowVerb,
-} from "./verbs.js";
+import { ontologyListVerb, ontologyLookupVerb } from "./verbs.js";
 
-/**
- * The `ontology` capability module (`list`, `lookup`, and the deprecated `show`
- * alias — AV-228 B1).
- */
+/** The `ontology` capability module (`list`, `lookup`). */
 export const ontologyModule: CapabilityModule = {
   name: "ontology",
-  verbs: [ontologyListVerb, ontologyLookupVerb, ontologyShowVerb],
+  verbs: [ontologyListVerb, ontologyLookupVerb],
 };

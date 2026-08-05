@@ -242,22 +242,6 @@ Read-only.
 | `class` | string | no | Focus on one class and its properties. |
 | `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default summary). |
 
-### ontology_show
-
-Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
-
-Read-only.
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `prefix` | string | yes | The namespace prefix (ds) or full URI. |
-| `properties` | boolean | no | Include the properties section (also implied by --detail standard or higher). |
-| `fullUris` | boolean | no | Show full IRIs instead of prefixed. |
-| `class` | string | no | Focus on one class and its properties. |
-| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default summary). |
-
 ### prompt_list
 
 Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.

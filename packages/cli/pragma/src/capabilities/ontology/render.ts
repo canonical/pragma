@@ -1,5 +1,5 @@
 /**
- * Formatters for `ontology list` and `ontology show`.
+ * Formatters for `ontology list` and `ontology lookup`.
  */
 
 import { compactUri } from "../../kernel/render/compactUri.js";

@@ -148,7 +148,7 @@ ds:prompt.audit-standards a ds:Prompt ;
 ds:prompt.explore-design-system a ds:Prompt ;
   rdfs:label "explore-design-system" ;
   rdfs:comment "Orient in an unfamiliar design system before querying." ;
-  ds:promptBody "Explore the design system. 1) capabilities for the tool map. 2) block_sample / modifier_sample for real data shapes. 3) ontology_list then ontology_show <ns> for the schema. 4) tier_list for the tier hierarchy. 5) graph_query for raw SPARQL joins." .
+  ds:promptBody "Explore the design system. 1) capabilities for the tool map. 2) block_sample / modifier_sample for real data shapes. 3) ontology_list then ontology_lookup <ns> for the schema. 4) tier_list for the tier hierarchy. 5) graph_query for raw SPARQL joins." .
 
 ds:prompt.configure a ds:Prompt ;
   rdfs:label "configure" ;

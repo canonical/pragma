@@ -32,9 +32,6 @@ const listVerb = ontologyModule.verbs.find(
 const lookupVerb = ontologyModule.verbs.find(
   (v) => verbKey(v.path) === "ontology lookup",
 ) as VerbSpec;
-const showVerb = ontologyModule.verbs.find(
-  (v) => verbKey(v.path) === "ontology show",
-) as VerbSpec;
 
 let rt: PragmaRuntime;
 beforeAll(async () => {
@@ -132,40 +129,22 @@ describe("ontology lookup (primary by-name read)", () => {
   });
 });
 
-describe("ontology show — deprecated alias of lookup (AV-228 B1)", () => {
-  it("is marked deprecated in its summary and steers callers to `ontology lookup`", () => {
-    expect(showVerb.summary.toLowerCase()).toContain("deprecated");
-    expect(showVerb.summary).toContain("ontology lookup");
-  });
-
-  it("shares the lookup handler — same payload for the same input", async () => {
-    const viaLookup = (await lookupVerb.run(
-      { prefix: "ds", properties: true },
-      rt,
-    )) as OntologyShowData;
-    const viaShow = (await showVerb.run(
-      { prefix: "ds", properties: true },
-      rt,
-    )) as OntologyShowData;
-    expect(viaShow).toEqual(viaLookup);
-  });
-
-  it("still rejects an unknown prefix (the alias is a full, callable verb)", async () => {
-    await expect(showVerb.run({ prefix: "nope" }, rt)).rejects.toThrow(
-      /prefix/i,
-    );
-  });
-});
-
-describe("ontology_show honours detail over MCP (B5)", () => {
-  // The CLI B5 cases above seed `globalFlags.detail` and call `showVerb.run`
+describe("ontology_lookup honours detail over MCP (B5)", () => {
+  // The CLI B5 cases above seed `globalFlags.detail` and call `lookupVerb.run`
   // directly. Over MCP there are NO global flags — the ONLY detail channel is
   // the per-tool `detail` param the projector injects from the VerbSpec
-  // disclosure. Under an AMBIENT config `detail: standard`, an `ontology_show`
+  // disclosure. Under an AMBIENT config `detail: standard`, an `ontology_lookup`
   // with no declared disclosure would force the properties section with no
   // per-call escape (the AV-228 MCP-opt-out asymmetry `block`/`standard` lack);
   // declaring disclosure lights the param up, so an agent can ask for
   // classes-only per call and can equally override upward.
+  //
+  // These cases were written against `ontology_show`, the deprecated alias, and
+  // were RETARGETED rather than deleted when it was removed — they are the only
+  // coverage of detail injection over MCP for this noun. Two of the six were
+  // dropped as exact duplicates of their `ontology_lookup` twins once
+  // retargeted (param injection, and the per-call summary override); the four
+  // that remain each assert something no other case does.
   let fixture: FixtureGraph;
   let mcp: Awaited<ReturnType<typeof projectMcp>>;
 
@@ -182,15 +161,6 @@ describe("ontology_show honours detail over MCP (B5)", () => {
   afterAll(async () => {
     await mcp.cleanup();
     await fixture.dispose();
-  });
-
-  it("injects a detail param onto the ontology_show tool (symmetric with block/standard)", async () => {
-    const tools = await mcp.listTools();
-    const show = tools.find((t) => t.name === "ontology_show");
-    const schema = show?.inputSchema as {
-      properties?: Record<string, unknown>;
-    };
-    expect(schema.properties?.detail).toBeDefined();
   });
 
   it("exposes the primary ontology_lookup tool with the same injected detail param (AV-228 B1)", async () => {
@@ -217,25 +187,14 @@ describe("ontology_show honours detail over MCP (B5)", () => {
   it("honours the ambient detail=standard config when no per-call detail is set", async () => {
     // Proves the ambient level really is standard, so the summary case below is
     // a genuine per-call override rather than merely the spec default.
-    const result = await mcp.callTool("ontology_show", { prefix: "ds" });
+    const result = await mcp.callTool("ontology_lookup", { prefix: "ds" });
     expect(result.ok).toBe(true);
     const data = result.data as { properties: unknown[] };
     expect(data.properties.length).toBeGreaterThan(0);
   });
 
-  it("a per-call detail=summary returns classes-only despite the ambient standard", async () => {
-    const result = await mcp.callTool("ontology_show", {
-      prefix: "ds",
-      detail: "summary",
-    });
-    expect(result.ok).toBe(true);
-    const data = result.data as { classes: unknown[]; properties: unknown[] };
-    expect(data.classes.length).toBeGreaterThan(0);
-    expect(data.properties).toEqual([]);
-  });
-
   it("an explicit detail=detailed overrides upward to include properties", async () => {
-    const result = await mcp.callTool("ontology_show", {
+    const result = await mcp.callTool("ontology_lookup", {
       prefix: "ds",
       detail: "detailed",
     });

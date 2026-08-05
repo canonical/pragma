@@ -8,10 +8,12 @@
  * `--class <name>` narrows to one class and the properties whose domain is that
  * class.
  *
- * `ontology show` is the DEPRECATED alias of `ontology lookup` (AV-228 B1): the
- * verb was renamed to `lookup` for consistency with block/standard/tier/etc.
- * (the ratified by-name read name), and `show` is kept callable — both share the
- * same params, disclosure, and handler, and both stay blessed in the covenant.
+ * There were TWO by-name verbs here. `ontology show` was a self-declared
+ * deprecated alias of `ontology lookup` (AV-228 B1) with the same params, the
+ * same disclosure, the same formatters and a reference to the same handler; its
+ * own test asserted the two produced identical output. It is gone, and with it
+ * the `byNameVerb` factory and the three constants that existed only so two
+ * verbs could share them — all three are now inlined at the single use.
  *
  * Disclosure (B5): rather than reinvent its own scheme, the by-name read declares
  * the canonical disclosure ladder and honours the `--detail`/config `detail` the
@@ -95,22 +97,23 @@ const listVerb: VerbSpec<Record<string, unknown>, OntologySummary[]> = {
 };
 
 /**
- * The canonical disclosure the by-name read folds onto (B5). Declared on both
- * the primary {@link ontologyLookupVerb} and its deprecated {@link
- * ontologyShowVerb} alias — so the MCP projector injects the `detail` enum tool
- * param and its per-call `withDetail` seeding light up (symmetric with
- * `block`/`standard`, which an inline resolve left dark over MCP) — AND read by
- * `run` to resolve the effective level, so the advertised param and the fetched
- * level share ONE source. The levels are the full canonical ladder; the fold is
- * two-behaviour (`summary` = classes only, `standard`/`detailed` add properties).
+ * The canonical disclosure `ontology lookup` folds onto (B5). Declared on the
+ * verb — so the MCP projector injects the `detail` enum tool param and its
+ * per-call `withDetail` seeding light up (symmetric with `block`/`standard`,
+ * which an inline resolve left dark over MCP) — AND read by `run` to resolve the
+ * effective level, so the advertised param and the fetched level share ONE
+ * source. It stays a named constant rather than an inline literal for exactly
+ * that reason: two readers, one declaration. The levels are the full canonical
+ * ladder; the fold is two-behaviour (`summary` = classes only,
+ * `standard`/`detailed` add properties).
  */
-const BY_NAME_DISCLOSURE: DisclosureSpec = {
+const LOOKUP_DISCLOSURE: DisclosureSpec = {
   levels: ["summary", "standard", "detailed"],
   default: "summary",
 };
 
-/** The params shared by `ontology lookup` and its deprecated `ontology show` alias. */
-const BY_NAME_PARAMS: ParamSpec[] = [
+/** The `ontology lookup` params. */
+const LOOKUP_PARAMS: ParamSpec[] = [
   {
     kind: "string",
     name: "prefix",
@@ -136,8 +139,8 @@ const BY_NAME_PARAMS: ParamSpec[] = [
   },
 ];
 
-/** The by-name read capability — a storeless-free, read-only MCP tool. */
-const BY_NAME_CAPABILITY = {
+/** The `ontology lookup` capability — a store-backed, read-only MCP tool. */
+const LOOKUP_CAPABILITY = {
   needsStore: true,
   mutates: false,
   mcp: {
@@ -147,13 +150,13 @@ const BY_NAME_CAPABILITY = {
 };
 
 /**
- * The by-name read handler shared by `ontology lookup` and `ontology show`.
+ * The `ontology lookup` handler.
  *
  * @param params - The coerced param bag (`prefix`, `properties`, `fullUris`, `class`).
  * @param rt - The runtime (store + disclosure precedence).
  * @returns The namespace's classes (and, per disclosure, properties) payload.
  */
-async function runByName(
+async function runLookup(
   params: Record<string, unknown>,
   rt: PragmaRuntime,
 ): Promise<OntologyShowData> {
@@ -164,12 +167,12 @@ async function runByName(
   );
   const focus = typeof params.class === "string" ? params.class : undefined;
   // Fold ontology's bespoke disclosure onto the canonical `--detail` (B5),
-  // resolving through the SAME {@link BY_NAME_DISCLOSURE} the verb declares (so
+  // resolving through the SAME {@link LOOKUP_DISCLOSURE} the verb declares (so
   // the MCP `detail` param and its withDetail seeding resolve identically, not
   // just the CLI `--detail` flag) and the SAME precedence packs use (flag >
   // explicit config > default). The frozen `--properties` flag and a `--class`
   // focus still force the section, so honouring the level is covenant-safe.
-  const level = await resolvePackDetail(rt, BY_NAME_DISCLOSURE);
+  const level = await resolvePackDetail(rt, LOOKUP_DISCLOSURE);
   const wantProperties =
     params.properties === true || focus !== undefined || level !== "summary";
 
@@ -211,59 +214,22 @@ async function runByName(
   };
 }
 
-/**
- * Build one by-name read verb (`lookup` primary or `show` deprecated alias) —
- * both share {@link BY_NAME_PARAMS}, {@link BY_NAME_DISCLOSURE}, the formatters,
- * and {@link runByName}; only the path label, summary, doc, and examples differ.
- */
-function byNameVerb(
-  verb: "lookup" | "show",
-  summary: string,
-  examples: VerbSpec["examples"],
-  doc?: string,
-): VerbSpec<Record<string, unknown>, OntologyShowData> {
-  return {
-    path: ["ontology", verb],
-    summary,
-    ...(doc !== undefined ? { doc } : {}),
-    params: BY_NAME_PARAMS,
-    output: { formatters: ontologyShowFormatters },
-    examples,
-    disclosure: BY_NAME_DISCLOSURE,
-    capability: BY_NAME_CAPABILITY,
-    run: runByName,
-  };
-}
-
-/** The `ontology` verbs (`list`, `lookup`, and the deprecated `show` alias). */
+/** The `ontology` verbs (`list`, `lookup`). */
 export const ontologyListVerb = asVerb(listVerb);
 
-/** `ontology lookup <prefix>` — the primary by-name schema read. */
-export const ontologyLookupVerb = asVerb(
-  byNameVerb(
-    "lookup",
+/** `ontology lookup <prefix>` — the by-name schema read. */
+export const ontologyLookupVerb = asVerb({
+  path: ["ontology", "lookup"],
+  summary:
     "Look up a namespace's classes (hierarchy + counts) and properties.",
-    [
-      { cmd: `${BIN_NAME} ontology lookup ds` },
-      { cmd: `${BIN_NAME} ontology lookup ds --properties` },
-      { cmd: `${BIN_NAME} ontology lookup ds --class Component` },
-    ],
-  ),
-);
-
-/**
- * `ontology show <prefix>` — DEPRECATED alias of {@link ontologyLookupVerb}
- * (AV-228 B1). Kept callable and blessed in the covenant; shares the same
- * handler, so it behaves identically. New callers should use `ontology lookup`.
- */
-export const ontologyShowVerb = asVerb(
-  byNameVerb(
-    "show",
-    "(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.",
-    [
-      { cmd: `${BIN_NAME} ontology lookup ds`, note: "prefer `lookup`" },
-      { cmd: `${BIN_NAME} ontology show ds`, note: "deprecated alias" },
-    ],
-    "Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.",
-  ),
-);
+  params: LOOKUP_PARAMS,
+  output: { formatters: ontologyShowFormatters },
+  examples: [
+    { cmd: `${BIN_NAME} ontology lookup ds` },
+    { cmd: `${BIN_NAME} ontology lookup ds --properties` },
+    { cmd: `${BIN_NAME} ontology lookup ds --class Component` },
+  ],
+  disclosure: LOOKUP_DISCLOSURE,
+  capability: LOOKUP_CAPABILITY,
+  run: runLookup,
+} satisfies VerbSpec<Record<string, unknown>, OntologyShowData>);

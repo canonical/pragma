@@ -95,15 +95,6 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         needsStore: true,
         mcp: "ontology_lookup",
       },
-      // `show` is the deprecated alias of `lookup` (AV-228 B1) — same shape,
-      // both blessed in the covenant.
-      {
-        v: "show",
-        args: ["<prefix>"],
-        flags: ["--properties", "--full-uris", "--class"],
-        needsStore: true,
-        mcp: "ontology_show",
-      },
     ]);
     // skill discovery is storeless (filesystem) — no needsStore.
     expect(emitted.nouns.skill?.verbs).toEqual([
@@ -203,14 +194,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 37) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 36) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(37);
+    expect(emitted.mcpSurface.tools).toHaveLength(36);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

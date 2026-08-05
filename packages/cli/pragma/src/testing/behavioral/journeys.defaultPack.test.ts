@@ -31,7 +31,7 @@ import { storyModules } from "../../capabilities/distribution.js";
 import { graphQueryVerb } from "../../capabilities/graph/query.verb.js";
 import {
   ontologyListVerb,
-  ontologyShowVerb,
+  ontologyLookupVerb,
 } from "../../capabilities/ontology/verbs.js";
 import { updateVerb } from "../../capabilities/sources/update.verb.js";
 import {
@@ -291,10 +291,10 @@ describe("default-pack journey — ontology list/show, populated and empty (E1)"
     ]);
   });
 
-  it("ontology show ds surfaces the two block domain classes", async () => {
+  it("ontology lookup ds surfaces the two block domain classes", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     const envelope = await readVerb(
-      ontologyShowVerb,
+      ontologyLookupVerb,
       { prefix: "ds" },
       fixture.cwd,
     );
@@ -311,11 +311,11 @@ describe("default-pack journey — ontology list/show, populated and empty (E1)"
     expect(envelope.data).toEqual([]);
   });
 
-  it("ontology show of an unknown prefix is NOT_FOUND, not a crash", async () => {
+  it("ontology lookup of an unknown prefix is NOT_FOUND, not a crash", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
     await expect(
       executeVerb(
-        ontologyShowVerb,
+        ontologyLookupVerb,
         { prefix: "nope" },
         NO_MUTATION,
         bootRuntime(JSON_FLAGS, fixture.cwd),

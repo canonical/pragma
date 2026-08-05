@@ -488,40 +488,6 @@ pragma ontology lookup ds --properties
 pragma ontology lookup ds --class Component
 ```
 
-### pragma ontology show
-
-(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.
-
-Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
-
-```
-pragma ontology show <prefix> [options]
-```
-
-**Arguments**
-
-| Argument | Required | Description |
-| --- | --- | --- |
-| `<prefix>` | yes | The namespace prefix (ds) or full URI. |
-
-**Flags**
-
-| Flag | Value | Description |
-| --- | --- | --- |
-| `--properties` | — | Include the properties section (also implied by --detail standard or higher). |
-| `--full-uris` | — | Show full IRIs instead of prefixed. |
-| `--class` | `<string>` | Focus on one class and its properties. |
-
-- Store: reads the local store (`pragma sources update` builds it).
-- MCP: exposed as the `ontology_show` tool.
-
-**Examples**
-
-```bash
-pragma ontology lookup ds  # prefer `lookup`
-pragma ontology show ds  # deprecated alias
-```
-
 ## prompt
 
 ### pragma prompt list

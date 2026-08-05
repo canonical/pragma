@@ -181,9 +181,10 @@ recorded here rather than closed with a new case that would flake on this box.
 
 ## PR7 — `mcpP95Warm` + `condensedSDL` activated (seeded → enforced)
 
-PR7 completes the MCP surface, and PR8 removes `token add-config` from it, so
-the catalog these two budgets are sized against is 37 tools. The two budgets PR4
-seeded go enforced. They are split by MEASUREMENT TYPE:
+PR7 completes the MCP surface; PR8 removes `token add-config` from it; and the
+prerelease cleanup removes `ontology show`, the deprecated alias of `ontology
+lookup`. So the catalog these two budgets are sized against is 36 tools. The two
+budgets PR4 seeded go enforced. They are split by MEASUREMENT TYPE:
 
 - **`mcpP95Warm` (latency → serial perf pass).** Enforced in `budgets.test.ts`
   (the `(PROTECTED)` suite, run by the isolated serial `test:perf` pass so
@@ -201,13 +202,16 @@ seeded go enforced. They are split by MEASUREMENT TYPE:
   the aggregate tool catalog (name + description + inputSchema), so CPU
   contention cannot affect it — it stays a deterministic assertion in the eval
   harness (`cases/stable.ts#content-condensed-sdl-token-budget`, coverage pass),
-  NOT the serial perf pass. Re-measured over the full 37-tool catalog by an
+  NOT the serial perf pass. Re-measured over the full 36-tool catalog by an
   `initialize` + `tools/list` handshake against the compiled binary:
-  **16 999 chars ≈ 4250 tokens** (~4 chars/token), under the **8000** ceiling
-  with 47% of it unspent. This row previously read 11 068 chars ≈ 2767 tokens,
-  and that figure had already gone stale before PR8: a REMOVAL can only shrink
-  the catalog, so 37 tools measuring 4250 cannot be reached from a true 2767
-  over 38. Descriptions grew between the reading and now, and the case asserts
+  **16 481 chars ≈ 4121 tokens** (~4 chars/token), under the **8000** ceiling
+  with 48% of it unspent. Re-measured, not scaled: dropping `ontology_show` took
+  16 999 → 16 481, a 518-char saving, which is the deleted tool's own name +
+  description + inputSchema and not 1/37th of the total. This row previously
+  read 11 068 chars ≈ 2767 tokens, and that figure had already gone stale before
+  PR8: a REMOVAL can only shrink the catalog, so 37 tools measuring 4250 cannot
+  be reached from a true 2767 over 38. Descriptions grew between the reading and
+  now, and the case asserts
   against the LIVE catalog with a fixed ceiling, so nothing went red while the
   table said the budget was a third spent instead of half. The budget genuinely
   constrains description length — verbose `use_when`/tool descriptions are what
@@ -217,7 +221,7 @@ seeded go enforced. They are split by MEASUREMENT TYPE:
 | Budget         | Measured (full catalog)      | Ceiling      | Pass                 |
 | -------------- | ---------------------------- | ------------ | -------------------- |
 | `mcpP95Warm`   | p95 ≈ 0.4 ms (in-process)    | 100 ms       | serial perf (`test:perf`) |
-| `condensedSDL` | 4250 tokens / 16 999 chars (37 tools) | 8000 tokens  | eval/coverage        |
+| `condensedSDL` | 4121 tokens / 16 481 chars (36 tools) | 8000 tokens  | eval/coverage        |
 
 Confirmed by the spike:
 

@@ -97,11 +97,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Exploring the full schema of a namespace by name — classes, properties, and hierarchy",
   },
-  ontology_show: {
-    category: "read",
-    use_when:
-      "Deprecated alias of ontology_lookup — exploring a namespace's schema (prefer ontology_lookup)",
-  },
   prompt_list: {
     category: "read",
     use_when: "Browsing the workflow prompt templates the active graph offers",

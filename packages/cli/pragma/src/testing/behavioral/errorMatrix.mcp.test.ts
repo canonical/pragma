@@ -1,6 +1,6 @@
 /**
  * B3 — the error/recovery MATRIX, fixture-backed half: per-read-noun lookup
- * misses, an empty-filtered list, and `ontology_show`'s bad-prefix error.
+ * misses, an empty-filtered list, and `ontology_lookup`'s bad-prefix error.
  * Parameterized over `liveReadSurface.ts` — never a hard-coded noun.
  *
  * TWO ADAPTATIONS from the plan's wording, both verified empirically against
@@ -113,9 +113,9 @@ describe("list — a narrowing filter to zero rows is a plain empty list (B3, ad
   });
 });
 
-describe("ontology_show — an unknown prefix is INVALID_INPUT (B3)", () => {
+describe("ontology_lookup — an unknown prefix is INVALID_INPUT (B3)", () => {
   it("fails with the enumerated valid prefixes", async () => {
-    const result = await mcp.callTool("ontology_show", { prefix: "nope" });
+    const result = await mcp.callTool("ontology_lookup", { prefix: "nope" });
     expect(result.ok).toBe(false);
     const error = result.error as { code: string; validOptions: string[] };
     expect(error.code).toBe("INVALID_INPUT");
