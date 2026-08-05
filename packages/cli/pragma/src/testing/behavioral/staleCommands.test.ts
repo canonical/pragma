@@ -1,8 +1,9 @@
 /**
  * Stale-command gate: the published README and every doc under `docs/` must be
- * free of the retired v1 vocabulary. This is an ENFORCED test, not a lint — a
- * doc that reintroduces a removed command (or the retired `--llm` flag) fails
- * the build. The live `--format llm` form is deliberately NOT banned.
+ * free of every command, noun and flag this CLI has removed. This is an
+ * ENFORCED test, not a lint — a doc that reintroduces one fails the build. The
+ * live `--format llm` form is deliberately NOT banned; the removed `--llm` flag
+ * is.
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -30,7 +31,7 @@ interface BannedPattern {
   readonly reason: string;
 }
 
-/** The retired v1 vocabulary. The live `--format llm` form is intentionally absent. */
+/** The removed vocabulary. The live `--format llm` form is intentionally absent. */
 const BANNED: readonly BannedPattern[] = [
   {
     pattern: /\bupdate-refs\b/,
@@ -43,8 +44,13 @@ const BANNED: readonly BannedPattern[] = [
     reason: "retired plural `tokens` noun (now singular `token`)",
   },
   {
-    pattern: /\btokens_(list|lookup|sample|add-config)\b/,
+    pattern: /\btokens_(list|lookup|sample)\b/,
     reason: "retired plural `tokens_*` tools (now `token_*`)",
+  },
+  {
+    pattern: /pragma\s+token\s+add-config\b|\btoken_add-config\b/,
+    reason:
+      "removed `token add-config` — the declared-content grammar has no verb for mutations, and there is no replacement",
   },
   {
     pattern: /--llm\b/,
@@ -55,15 +61,16 @@ const BANNED: readonly BannedPattern[] = [
 
 // Every shipped doc must be free of retired vocabulary: the README plus every
 // page under `docs/`. CHANGELOG.md (at the package root, outside `docs/`) is
-// DELIBERATELY exempt — its migration table legitimately cites the retired
-// names (`data`, `update-refs`, plural `tokens`) to tell readers what they
-// became, so scanning it would false-positive on that historical vocabulary.
+// DELIBERATELY exempt — its migration table legitimately cites the removed
+// names (`data`, `update-refs`, plural `tokens`, `token add-config`) to tell
+// readers what they became or that they are gone, so scanning it would
+// false-positive on exactly the prose that exists to help.
 const files = [
   join(packageRoot, "README.md"),
   ...collectMarkdown(join(packageRoot, "docs")),
 ];
 
-describe("stale-command gate — docs never mention retired v1 commands", () => {
+describe("stale-command gate — docs never mention a removed command", () => {
   for (const file of files) {
     const rel = relative(packageRoot, file);
     it(`${rel} is free of retired commands`, () => {

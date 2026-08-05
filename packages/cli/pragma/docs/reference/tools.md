@@ -414,19 +414,6 @@ Read-only.
 | --- | --- | --- | --- |
 | `name` | string | yes | The tier name (e.g. apps/lxd). |
 
-### token_add-config
-
-Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
-
-Mutation — plan-first (set `confirm: true` to apply).
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
-| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
-
 ### token_list
 
 List all design tokens with their type. Use when browsing which tokens exist under the active scope. Example: token_list {}.

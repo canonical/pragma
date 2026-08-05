@@ -199,9 +199,7 @@ const designSystemStories: readonly PackDefinition[] = [
   // Design tokens: SPARQL-sourced on both verbs. There is no `ds:Token` GraphQL
   // type to project against when the graph ships no tokens, and the lookup reads
   // a property path (`ds:tokenType/rdfs:label`) only SPARQL can express. The
-  // `emptyRecovery` install hint is the story users see on an empty store;
-  // `token add-config` (a mutation) stays hand-written — the pack compiler emits
-  // reads only.
+  // `emptyRecovery` install hint is the story users see on an empty store.
   {
     noun: "token",
     description: "List all design tokens.",

@@ -62,13 +62,7 @@
           "needsStore": true,
           "mcp": "token_lookup"
         },
-        { "v": "sample", "needsStore": true, "mcp": "token_sample" },
-        {
-          "v": "add-config",
-          "mutates": true,
-          "needsStore": true,
-          "mcp": "token_add-config"
-        }
+        { "v": "sample", "needsStore": true, "mcp": "token_sample" }
       ]
     },
     "tier": {
@@ -284,7 +278,6 @@
       "standard_sample",
       "tier_list",
       "tier_lookup",
-      "token_add-config",
       "token_list",
       "token_lookup",
       "token_sample",

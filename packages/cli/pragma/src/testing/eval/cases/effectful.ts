@@ -170,22 +170,6 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "tool-token-add-config-is-plan-first",
-    kind: "tool",
-    input:
-      "token_add-config (needsStore mutation) without `confirm` returns a plan naming tokens.config.mjs and writes nothing.",
-    async expect() {
-      await withCanonicalFixture(CANONICAL_CONFIG, async (mcp) => {
-        const result = await mcp.callTool("token_add-config");
-        assert.equal(result.ok, true);
-        const meta = result.meta as { planOnly?: boolean };
-        assert.equal(meta.planOnly, true);
-        const data = result.data as { plan: string[] };
-        assert.match(data.plan.join("\n"), /tokens\.config\.mjs/);
-      });
-    },
-  },
-  {
     id: "tool-tier-lookup-lists-scoped-blocks",
     kind: "tool",
     input:

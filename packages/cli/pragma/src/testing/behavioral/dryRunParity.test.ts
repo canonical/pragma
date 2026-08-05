@@ -62,7 +62,8 @@ import type { Effect } from "@canonical/task";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { configModule } from "../../capabilities/config/index.js";
 import { createVerbs } from "../../capabilities/create/create.verb.js";
-import { tokenModule } from "../../capabilities/token/index.js";
+import { setupModule } from "../../capabilities/setup/index.js";
+import { completionScriptPath } from "../../capabilities/setup/shell.js";
 import { globalConfigPath } from "../../kernel/config/paths.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -84,8 +85,8 @@ const FLAGS: GlobalFlags = {
 };
 
 const setVerb = configModule.verbs.find((v) => v.path[1] === "set") as VerbSpec;
-const addConfigVerb = tokenModule.verbs.find(
-  (v) => v.path[1] === "add-config",
+const completionsVerb = setupModule.verbs.find(
+  (v) => v.path[1] === "completions",
 ) as VerbSpec;
 const createVerb = createVerbs.component as VerbSpec;
 
@@ -100,16 +101,29 @@ const tmp = (prefix: string): string => {
 };
 
 let prevXdg: string | undefined;
+let prevHome: string | undefined;
+let prevShell: string | undefined;
+let home: string;
 
 beforeEach(() => {
   prevXdg = process.env.XDG_CONFIG_HOME;
+  prevHome = process.env.HOME;
+  prevShell = process.env.SHELL;
   xdg = tmp("pragma-parity-xdg-");
   process.env.XDG_CONFIG_HOME = xdg;
+  // `setup completions` installs under `homedir()` and picks its dialect from
+  // `$SHELL`, so both are pointed at the fixture: a real install path nothing
+  // shares, and a shell this box need not have.
+  home = tmp("pragma-parity-home-");
+  process.env.HOME = home;
+  process.env.SHELL = "/bin/bash";
   project = tmp("pragma-parity-proj-");
 });
 
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = prevXdg;
+  process.env.HOME = prevHome;
+  process.env.SHELL = prevShell;
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
   roots.length = 0;
 });
@@ -202,25 +216,29 @@ describe("dry-run read fidelity — the plan observes what the run observes", ()
     );
   });
 
-  it("token add-config agrees on alreadyExisted — a VALUE no plan line shows", async () => {
-    writeFileSync(join(project, "tokens.config.mjs"), "// pre-existing\n");
-    const before = snapshotTree(project);
+  it("setup completions agrees on the PRIOR on-disk state, over a stale script", async () => {
+    // The class the three `config set` rows above cannot reach: a read whose
+    // answer is a VALUE rather than a branch. `detectCompletions` classifies
+    // whatever is already installed as absent/installed/stale, and both
+    // interpretations must reach the same verdict against the same fixture — a
+    // plan that answered its probe from a virtual, empty filesystem would call
+    // a stale script `absent` and tell the user it was installing a first copy.
+    const path = completionScriptPath("bash");
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, "# a different script\n");
+    const before = snapshotTree(home);
 
-    const plan = await interpretAsPlan(addConfigVerb, {}, runtime());
-    expect(snapshotTree(project)).toEqual(before);
+    const plan = await interpretAsPlan(completionsVerb, {}, runtime());
+    expect(snapshotTree(home)).toEqual(before);
 
-    const run = await interpretForReal(addConfigVerb, {}, runtime());
+    const run = await interpretForReal(completionsVerb, {}, runtime());
     expectReadParity({ plan, run });
 
-    // `describeEffect` never renders this, so only the Task's VALUE catches it.
-    // Under the mocking collector `exists` answered false and the plan claimed
-    // it would create a file it was in fact about to overwrite.
-    expect((plan.value as { alreadyExisted: boolean }).alreadyExisted).toBe(
-      true,
-    );
-    expect((run.value as { alreadyExisted: boolean }).alreadyExisted).toBe(
-      true,
-    );
+    expect((plan.value as { state: string }).state).toBe("stale");
+    expect((run.value as { state: string }).state).toBe("stale");
+    // And the write really landed, so the row cannot pass by both sides
+    // declining to do anything.
+    expect(readFileSync(path, "utf-8")).not.toBe("# a different script\n");
   });
 
   it("create component plans the STAMPED bytes, not the generator's", async () => {
@@ -367,7 +385,7 @@ describe("the SHIPPED --dry-run branch reports the bytes the run writes", () => 
     }
   });
 
-  it("token add-config: the planned count is BYTES, not code units", async () => {
+  it("setup completions: the planned count is BYTES, not code units", async () => {
     // The row above cannot hold that claim on its own, and did not: every file
     // `create component` and `create package` write is pure ASCII (490 / 257 /
     // 140 / 817 / 422 / 517 / 100 and 1191 / 155 / 97 / 114 / 309), so
@@ -375,23 +393,24 @@ describe("the SHIPPED --dry-run branch reports the bytes the run writes", () => 
     // passed against a producer that had never measured bytes. `describeEffect`
     // reported `effect.content.length` under the label "bytes".
     //
-    // `tokens.config.mjs` carries exactly one non-ASCII character — the U+2014
-    // em dash in its `// tokens.config.mjs — generated by ...` header — so it is
-    // the smallest live fixture that separates the two readings. Measured on
-    // this branch before the fix: `--dry-run` said 389, `--yes` wrote 391.
-    // `setup completions` is the second live case — `templates/bash.ts` writes
-    // the same em dash into its script header — and the number reaches an agent
-    // through `--format json`, not only a human through `plain`.
+    // The emitted completion script carries exactly one non-ASCII character —
+    // the U+2014 em dash in its `# pragma bash completion (static tier) —
+    // generated by ...` header — so it separates the two readings by exactly
+    // two, the em dash's three UTF-8 bytes against its one UTF-16 unit. The
+    // absolute is deliberately not written down: the script's length moves with
+    // the grammar, the gap does not. The number reaches an agent through
+    // `--format json`, not only a human through `plain`. Proved non-vacuous by
+    // making `describeEffect` report `content.length`: this row failed by two.
     const mutation = { undo: false, yes: false };
 
     const preview = await executeVerb(
-      addConfigVerb,
+      completionsVerb,
       {},
       { ...mutation, dryRun: true },
       runtime(),
     );
     expect(preview.exitCode).toBe(0);
-    expect(readdirSync(project)).toEqual([]);
+    expect(readdirSync(home)).toEqual([]);
 
     const match = /Write file: (\S+) \((\d+) bytes\)/.exec(
       preview.stdout ?? "",
@@ -401,7 +420,7 @@ describe("the SHIPPED --dry-run branch reports the bytes the run writes", () => 
     const plannedBytes = Number(match?.[2]);
 
     const real = await executeVerb(
-      addConfigVerb,
+      completionsVerb,
       {},
       { ...mutation, dryRun: false, yes: true },
       runtime(),

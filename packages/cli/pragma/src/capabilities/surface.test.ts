@@ -49,8 +49,8 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "lookup",
       "sample",
     ]);
-    // PR7 completes the surface: tier gains a bespoke single-name lookup;
-    // block/modifier/token gain no-argument samples (fixedCount).
+    // tier carries a bespoke single-name lookup; block/modifier/token carry
+    // no-argument samples (the story's `sample.fixedCount`).
     expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
@@ -64,7 +64,6 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "list",
       "lookup",
       "sample",
-      "add-config",
     ]);
     expect(emitted.nouns.block?.verbs).toEqual([
       {
@@ -209,14 +208,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 38) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 37) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(38);
+    expect(emitted.mcpSurface.tools).toHaveLength(37);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

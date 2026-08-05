@@ -171,19 +171,6 @@ export const assemblyEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "prompt-tokens-config-maps-to-token-add-config",
-    kind: "prompt",
-    input:
-      '"Generate a terrazzo tokens config" should map to `token_add-config`.',
-    async expect({ mcp }) {
-      assertIntentTool(
-        await mcp.listTools(),
-        "token_add-config",
-        /token|terrazzo/i,
-      );
-    },
-  },
-  {
     id: "prompt-browse-prompts-maps-to-prompt-list",
     kind: "prompt",
     input:

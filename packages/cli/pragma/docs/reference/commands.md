@@ -906,27 +906,6 @@ pragma tier lookup apps/lxd
 
 ## token
 
-### pragma token add-config
-
-Generate a tokens.config.mjs for the terrazzo token pipeline.
-
-Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
-
-```
-pragma token add-config
-```
-
-- Store: reads the local store (`pragma sources update` builds it).
-- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
-- MCP: exposed as the `token_add-config` tool.
-
-**Examples**
-
-```bash
-pragma token add-config --dry-run  # preview the write
-pragma token add-config --yes  # write the config
-```
-
 ### pragma token list
 
 List all design tokens.

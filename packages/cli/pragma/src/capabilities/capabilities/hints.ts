@@ -6,10 +6,8 @@
  * fails CI if a live tool has no hint, a hint names a tool that no longer
  * exists, or a hint's category disagrees with the tool's real `mutates` flag.
  *
- * `use_when` strings for the surviving tools are ported verbatim from the old
- * shell's `domains/llm/data/toolCatalog.ts`; the net-new v2 tools (config_set,
- * graph_query, setup, upgrade, doctor, capabilities, prompt_*, token_add-config,
- * sources_*, tier_lookup, create_*) are authored here.
+ * Every entry is authored: one line saying when an agent should reach for that
+ * tool, in the agent's decision vocabulary rather than the tool's own summary.
  */
 
 import { BIN_NAME } from "../../constants.js";
@@ -197,10 +195,6 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "write",
     use_when:
       "Building or refreshing the knowledge-graph pack from the configured packs",
-  },
-  "token_add-config": {
-    category: "write",
-    use_when: "Generating a tokens.config.mjs for the terrazzo token pipeline",
   },
   upgrade: {
     category: "write",

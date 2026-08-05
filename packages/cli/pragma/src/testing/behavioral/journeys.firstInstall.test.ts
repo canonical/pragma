@@ -17,13 +17,10 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { blockModule } from "../../capabilities/block/index.js";
-import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
+import { capabilities } from "../../capabilities/index.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
 import { collectStatus } from "../../capabilities/sources/collectStatus.js";
-import { tierModule } from "../../capabilities/tier/index.js";
-import { tokenModule } from "../../capabilities/token/index.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -38,13 +35,25 @@ const JSON_FLAGS: GlobalFlags = {
 };
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
 
-const standardModule = storyModules.get("standard");
-if (!standardModule) {
-  throw new Error('pragma.conf.ts declares no story for "standard"');
-}
+/**
+ * The SHIPPED registry's module for a noun.
+ *
+ * Read from `capabilities` rather than from a module file, because what a fresh
+ * install answers with is what the registry holds — a noun that reaches dispatch
+ * only through a declared story is exactly as real here as one with a directory,
+ * and this file must not be able to tell the difference.
+ */
+const moduleOf = (name: string): CapabilityModule => {
+  const found = capabilities.find((module) => module.name === name);
+  if (!found) throw new Error(`the registry ships no "${name}" noun`);
+  return found;
+};
 
-const verbOf = (module: CapabilityModule, path: string): VerbSpec =>
-  module.verbs.find((verb) => verb.path.join(" ") === path) as VerbSpec;
+const verbOf = (module: CapabilityModule, path: string): VerbSpec => {
+  const found = module.verbs.find((verb) => verb.path.join(" ") === path);
+  if (!found) throw new Error(`the registry ships no "${path}" verb`);
+  return found;
+};
 
 /** A cwd with nothing in it — the cold-install shape (the XDG dirs are isolated). */
 const emptyCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-first-"));
@@ -76,7 +85,7 @@ async function readData(verb: VerbSpec, cwd: string): Promise<unknown> {
 describe("first install — an empty cwd answers real reads offline", () => {
   it("block list resolves the design system's blocks", async () => {
     const rows = (await readData(
-      verbOf(blockModule, "block list"),
+      verbOf(moduleOf("block"), "block list"),
       emptyCwd(),
     )) as { name: string }[];
     expect(rows.map((row) => row.name)).toContain("Button");
@@ -84,7 +93,7 @@ describe("first install — an empty cwd answers real reads offline", () => {
 
   it("standard list resolves the code standards", async () => {
     const rows = (await readData(
-      verbOf(standardModule, "standard list"),
+      verbOf(moduleOf("standard"), "standard list"),
       emptyCwd(),
     )) as { uri: string; name: string }[];
     expect(rows.length).toBeGreaterThan(0);
@@ -96,7 +105,7 @@ describe("first install — an empty cwd answers real reads offline", () => {
 
   it("tier list resolves the tier hierarchy", async () => {
     const rows = (await readData(
-      verbOf(tierModule, "tier list"),
+      verbOf(moduleOf("tier"), "tier list"),
       emptyCwd(),
     )) as { name: string }[];
     expect(rows.map((row) => row.name)).toContain("Global");
@@ -106,7 +115,7 @@ describe("first install — an empty cwd answers real reads offline", () => {
 describe("first install — empty results are honest, not papered over", () => {
   it("token list exits calmly with no rows (the graph carries no ds:Token)", async () => {
     expect(
-      await readData(verbOf(tokenModule, "token list"), emptyCwd()),
+      await readData(verbOf(moduleOf("token"), "token list"), emptyCwd()),
     ).toEqual([]);
   });
 
@@ -121,7 +130,10 @@ describe("first install — a project with its own unbuilt packs is refused", ()
   it("a read throws STORE_UNAVAILABLE naming `pragma sources update`", async () => {
     let caught: unknown;
     try {
-      await readData(verbOf(blockModule, "block list"), unbuiltProjectCwd());
+      await readData(
+        verbOf(moduleOf("block"), "block list"),
+        unbuiltProjectCwd(),
+      );
     } catch (error) {
       caught = error;
     }
