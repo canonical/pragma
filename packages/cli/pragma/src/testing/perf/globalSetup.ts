@@ -143,17 +143,28 @@ function entryRoot(packageRoot: string): string {
   } catch {
     return "dist";
   }
-  const dot = manifest.exports?.["."];
-  const fromExports =
-    typeof dot === "string"
-      ? dot
-      : typeof dot === "object" && dot !== null
-        ? ((dot as { import?: string; default?: string }).import ??
-          (dot as { import?: string; default?: string }).default)
-        : undefined;
-  const entry = fromExports ?? manifest.module ?? manifest.main;
-  const segment = entry?.replace(/^\.\//, "").split("/")[0];
-  return segment && segment !== ".." ? segment : "dist";
+  // A condition value may itself be a nested condition object
+  // (`{ import: { types, default } }`), so unwrap until a string or nothing —
+  // reading `.replace` off an object would throw inside a global setup, which
+  // fails the whole suite for a dependency that merely writes its exports map a
+  // legal second way.
+  const unwrap = (value: unknown, depth = 0): string | undefined => {
+    if (typeof value === "string") return value;
+    if (typeof value !== "object" || value === null || depth > 4)
+      return undefined;
+    const conditions = value as Record<string, unknown>;
+    return (
+      unwrap(conditions.import, depth + 1) ??
+      unwrap(conditions.default, depth + 1)
+    );
+  };
+  const entry =
+    unwrap(manifest.exports?.["."]) ?? manifest.module ?? manifest.main;
+  const segment =
+    typeof entry === "string"
+      ? entry.replace(/^\.\//, "").split("/")[0]
+      : undefined;
+  return segment && segment !== ".." && segment !== "" ? segment : "dist";
 }
 
 /** Everything the compiled binary is built FROM, relative to the package root. */
