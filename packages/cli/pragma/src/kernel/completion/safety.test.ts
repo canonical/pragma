@@ -343,13 +343,25 @@ describe("storeless guarantee (PROTECTED)", () => {
    * `completion/index.ts` (a barrel with one importer that took 3 of its 26
    * names) was the WIDEST root here at 28 files, and
    * `capabilities/meta/complete.verb.ts` was a `hidden: true` spec `bin.ts`
-   * intercepted before `buildProgram` ever ran. Both are gone. Measured on the
-   * commit that removed them: the barrel's graph minus itself is exactly 27
-   * files and the meta verb's is 8 (7 of them shared), and the union of
-   * `complete` + `emitScripts` + `entitySource` + `model` + `bin` contains
-   * every one of those 34 with `bin.ts` left over. So this walks the identical
-   * file set through MORE named roots, and the root count went 4 → 5 rather
-   * than 4 → 2.
+   * intercepted before `buildProgram` ever ran. Both are gone.
+   *
+   * Measured with a byte-identical copy of `staticImportGraph` run over the
+   * lane base and over this tree: the OLD four roots walked 29 files, the NEW
+   * five walk 28, and the set difference is exact in both directions — the
+   * only files that left coverage are `completion/index.ts` and
+   * `capabilities/meta/complete.verb.ts` (the two deleted roots themselves),
+   * and the only file added is `bin.ts`. So no third file stopped being
+   * walked. The two deleted roots reached 27 distinct files other than
+   * themselves (the barrel's graph minus itself is 27, the meta verb's is 8,
+   * 7 shared), and all 27 are still walked.
+   *
+   * `entitySource` and `model` are ALREADY subsumed: `complete` + `emitScripts`
+   * alone union to the same 27, so those two roots constrain nothing beyond
+   * what the first two do and are named for legibility — a reader looking for
+   * "is the entity source storeless?" finds it as a root. `bin.ts` is the one
+   * root that adds a file, and it adds exactly itself. So this is not MORE
+   * coverage; it is the identical file set reached through roots that each
+   * name a path a reader would look for.
    *
    * `staticImportGraph` returns an EMPTY set for a path that does not exist,
    * which is why a deleted entry must be replaced rather than removed: a stale
@@ -485,8 +497,14 @@ describe("storeless guarantee (PROTECTED)", () => {
     const env = indexCompletionEnv(cwd);
 
     // prefixes: `ds` is in the default display map, so it comes back for `d`.
+    // This walked `ontology show` until that verb was deleted as a deprecated
+    // alias, at which point `parseWords` classified it as an unknown verb and
+    // `resolveRequest` answered `[]` — so the case went red rather than
+    // silently passing, which is what a name-source pin is for. `lookup`
+    // declares the IDENTICAL `{ from: "prefixes" }` completion on its
+    // positional, so the family under test is unchanged.
     await expect(
-      runComplete(["ontology", "show", "d"], capabilities, env),
+      runComplete(["ontology", "lookup", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
     // index + the default `name` field, type-filtered: a real tier comes back
