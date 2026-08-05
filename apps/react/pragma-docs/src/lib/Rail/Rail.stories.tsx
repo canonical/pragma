@@ -2,17 +2,55 @@
 
 import { route } from "@canonical/router-core";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { routeShortcutFacet } from "#lib/routeShortcut/index.js";
 import { withRouter } from "../../../.storybook/decorators/index.js";
 import Rail from "./Rail.js";
 
-/** Name-compatible bare routes: the rail's links resolve without mounting
- * the app's real pages (whose wrapper would nest a whole Shell here). */
+/**
+ * Name-compatible bare routes: the rail's links resolve without mounting
+ * the app's real pages (whose wrapper would nest a whole Shell here).
+ *
+ * THEY MUST CARRY THE SHORTCUT FACET. The rail no longer reads its digits
+ * from `LENS_ENTRIES`; it collects them off the router's own table, so a
+ * table without the annotation renders a rail with no `kbd` at all — and
+ * nothing in `bun run test` would catch it, because stories are outside
+ * vitest's `*.tests.ts(x)` include. Keep these six in step with the real
+ * route modules.
+ *
+ * `journeys` is here for the same class of reason: the rail links to it,
+ * and until now this table had no such route, so that link had no target.
+ */
 const bareRoutes = {
-  home: route({ url: "/", component: () => null }),
-  components: route({ url: "/components", component: () => null }),
-  definitions: route({ url: "/definitions", component: () => null }),
-  standards: route({ url: "/standards", component: () => null }),
-  guides: route({ url: "/guides", component: () => null }),
+  home: route({
+    url: "/",
+    component: () => null,
+    meta: routeShortcutFacet.of("1"),
+  }),
+  components: route({
+    url: "/components",
+    component: () => null,
+    meta: routeShortcutFacet.of("2"),
+  }),
+  definitions: route({
+    url: "/definitions",
+    component: () => null,
+    meta: routeShortcutFacet.of("3"),
+  }),
+  standards: route({
+    url: "/standards",
+    component: () => null,
+    meta: routeShortcutFacet.of("4"),
+  }),
+  journeys: route({
+    url: "/journeys",
+    component: () => null,
+    meta: routeShortcutFacet.of("5"),
+  }),
+  guides: route({
+    url: "/guides",
+    component: () => null,
+    meta: routeShortcutFacet.of("6"),
+  }),
   playground: route({ url: "/playground", component: () => null }),
   account: route({ url: "/account", component: () => null }),
 } as const;
@@ -27,6 +65,7 @@ const meta: Meta<typeof Rail> = {
 export default meta;
 type Story = StoryObj<typeof Rail>;
 
-/** The primary rail: brand, the five lenses with keyboard hints, and the
- * non-lens utility cluster. Hover an entry to reveal its digit. */
+/** The primary rail: brand, the six lenses with the keyboard hints their
+ * own routes allocate, and the non-lens utility cluster. Hover an entry to
+ * reveal its digit. */
 export const Default: Story = {};

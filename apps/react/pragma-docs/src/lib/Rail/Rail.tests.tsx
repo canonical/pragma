@@ -4,6 +4,10 @@ import { createMemoryRouter } from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import {
+  collectShortcuts,
+  ROUTE_SHORTCUT_META_KEY,
+} from "#lib/routeShortcut/index.js";
 import { appRoutes, notFoundRoute } from "../../routes.js";
 import { LENS_ENTRIES } from "./constants.js";
 import Rail from "./Rail.js";
@@ -41,11 +45,70 @@ describe("Rail", () => {
 
   it("shows each lens's keyboard hint as kbd and aria-keyshortcuts", () => {
     renderRail();
-    for (const { label, hint } of LENS_ENTRIES) {
+    // Sourced from the ROUTES' allocation, not from a literal here: the
+    // point of the derivation is that this test cannot pass by agreeing
+    // with a second hand-written table.
+    const { byRoute } = collectShortcuts(appRoutes);
+    for (const { to, label } of LENS_ENTRIES) {
+      const hint = byRoute.get(to);
       const link = screen.getByRole("link", { name: label });
       expect(link).toHaveAttribute("aria-keyshortcuts", hint);
       expect(link.querySelector("kbd")?.textContent).toBe(hint);
     }
+  });
+
+  it("renders the ruled lens order's digits as 1–6", () => {
+    renderRail();
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    const digits = [...nav.querySelectorAll(".rail-lenses kbd")].map(
+      (kbd) => kbd.textContent,
+    );
+    expect(digits).toEqual(["1", "2", "3", "4", "5", "6"]);
+  });
+
+  it("displays and wires whatever key the ROUTE allocates", async () => {
+    // The derivation proof. Re-allocate Components to "9" on a copy of the
+    // table and the rail must follow — display AND listener — with the old
+    // key going dead. Nothing here touches LENS_ENTRIES, so a rail that
+    // still read its digits from that table would fail every assertion.
+    // A spread copy of a route is complete: `route()` returns own
+    // enumerable properties only, which is what `group()` already relies on.
+    const routes = {
+      ...appRoutes,
+      components: {
+        ...appRoutes.components,
+        meta: {
+          ...appRoutes.components.meta,
+          [ROUTE_SHORTCUT_META_KEY]: "9",
+        },
+      },
+    };
+    const router = createMemoryRouter(routes, "/", {
+      notFound: notFoundRoute,
+    });
+    render(
+      <RouterProvider router={router}>
+        <Rail />
+      </RouterProvider>,
+    );
+
+    expect(screen.getByRole("link", { name: "Components" })).toHaveAttribute(
+      "aria-keyshortcuts",
+      "9",
+    );
+
+    // The old digit first, while the router is still at "/": nothing
+    // allocates "2" any more, so it must navigate nowhere. Asserting this
+    // AFTER the "9" navigation would prove nothing — "2" would be heading
+    // to /components either way.
+    fireEvent.keyDown(document, { key: "2" });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(router.getState().location.pathname).toBe("/");
+
+    fireEvent.keyDown(document, { key: "9" });
+    await waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/components");
+    });
   });
 
   it("marks the active lens with the router's aria-current", () => {
