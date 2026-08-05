@@ -19,6 +19,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { asPragmaError } from "../../error/fromTaskError.js";
 import { PragmaError } from "../../error/PragmaError.js";
+import { runEffectSeam } from "../../runtime/effectSeam.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
 import { toolName } from "../../spec/emitSurface.js";
 import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
@@ -203,19 +204,29 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
         // reads for real and simulates only destruction, so a preview whose
         // real run would die on a read fails here too. `effectiveCwd` is the
         // same SEC-2 jail root the real run resolves against — a plan reading
-        // elsewhere would read the wrong files. No prompt handler is passed,
-        // and `planTask` has no field to pass one to.
-        const planned = await planTask(task, { cwd: effectiveCwd });
+        // elsewhere would read the wrong files, and `shapeEffect` is threaded
+        // for the same reason: it carries `create`'s generated-by stamp, so a
+        // preview without it advertises byte counts the run would not write. No
+        // prompt handler is passed, and `planTask` has no field to pass one to.
+        const planned = await planTask(task, {
+          cwd: effectiveCwd,
+          onEffectStart: mutationRuntime.exec?.shapeEffect,
+        });
         const plan = planned.effects
           .filter((effect) => effect._tag !== "Prompt")
           .map(describeEffect);
         return toolSuccess({ plan }, { planOnly: true, confirmRequired: true });
       }
-      // Real execution: spread the verb's runner options (prompt handler,
-      // stamping) into the interpreter; run teardown afterwards.
+      // Real execution: spread the verb's runner options (prompt handler, log
+      // routing) into the interpreter, joining the two halves of its effect
+      // seam; run teardown afterwards.
       const exec = mutationRuntime.exec ?? {};
       try {
-        const result = await runTask(task, { onLog: logToStderr, ...exec });
+        const result = await runTask(task, {
+          onLog: logToStderr,
+          ...exec,
+          onEffectStart: runEffectSeam(exec),
+        });
         return toolSuccess(JSON.parse(verb.output.formatters.json(result)));
       } finally {
         // A real mutation may have changed the pack/config on disk. This runtime

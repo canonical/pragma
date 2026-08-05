@@ -29,6 +29,7 @@ import { successEnvelope } from "../../render/envelope.js";
 import { selectFormatter } from "../../render/formatters.js";
 import { writeStdout } from "../../render/writeStdout.js";
 import { bootRuntime } from "../../runtime/boot.js";
+import { runEffectSeam } from "../../runtime/effectSeam.js";
 import type {
   GlobalFlags,
   InteractionRuntime,
@@ -260,11 +261,14 @@ export async function executeVerb(
       // `planTask` reads for real, so it MUST resolve relative effect paths
       // against the same base the real run does: `rt.exec.cwd` is the SEC-2 jail
       // root the verb wired in, and a plan resolving elsewhere would read the
-      // wrong files. Only `cwd` and `signal` are taken — never `promptHandler`,
-      // `onEffectStart`, `onLog` or `dispose`, so a plan still installs no
-      // handlers and runs no teardown.
+      // wrong files. `shapeEffect` rides along for the same reason one step
+      // later: it is the seam `create`'s generated-by stamp rewrites
+      // `WriteFile.content` on, so a plan without it reports every generated
+      // file short by the stamp. Never `promptHandler`, `onEffectStart`,
+      // `onLog` or `dispose` — a plan installs no UI and runs no teardown.
       const planned = await planTask(task, {
         cwd: mutationRuntime.exec?.cwd,
+        onEffectStart: mutationRuntime.exec?.shapeEffect,
         signal: interaction.signal,
       });
       return renderPlan(
@@ -279,13 +283,18 @@ export async function executeVerb(
       return renderUndo(flags, undoCount);
     }
     // Real execution: spread the verb's runner options into the node
-    // interpreter (prompt handler, stamping/progress callbacks, log routing,
-    // signal). Teardown (e.g. unmount an Ink render) runs in `finally`.
+    // interpreter (prompt handler, log routing, signal) and join the two halves
+    // of its effect seam into the one callback the interpreter takes. Teardown
+    // (e.g. unmount an Ink render) runs in `finally`.
     const exec = mutationRuntime.exec ?? {};
     const onSigint = (): void => controller.abort();
     process.once("SIGINT", onSigint);
     try {
-      const value = await runTask(task, { onLog: logToStderr, ...exec });
+      const value = await runTask(task, {
+        onLog: logToStderr,
+        ...exec,
+        onEffectStart: runEffectSeam(exec),
+      });
       return renderData(verb, flags, value, {});
     } finally {
       process.removeListener("SIGINT", onSigint);

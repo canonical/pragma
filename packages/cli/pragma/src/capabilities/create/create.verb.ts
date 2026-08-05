@@ -390,10 +390,13 @@ async function runCreate(
     rt.exec = {
       cwd: rt.cwd,
       promptHandler: session.promptHandler,
-      onEffectStart: summon.createStampOnEffectStart(
-        stamp,
-        session.onEffectStart,
-      ),
+      // The stamp rides `shapeEffect`, NOT `onEffectStart`: it is what the
+      // written bytes are, so `--dry-run` must apply it too, while the wizard's
+      // live progress render must not run on a plan. Composing the two onto one
+      // callback (as this did until PR7's fix-fold) made the plan's only choice
+      // "both or neither", and it took neither.
+      shapeEffect: summon.createStampOnEffectStart(stamp),
+      onEffectStart: session.onEffectStart,
       onEffectComplete: session.onEffectComplete,
       onLog: session.onLog,
       dispose: session.dispose,
@@ -416,7 +419,7 @@ async function runCreate(
   rt.exec = {
     cwd: rt.cwd,
     promptHandler: prompt,
-    onEffectStart: summon.createStampOnEffectStart(stamp),
+    shapeEffect: summon.createStampOnEffectStart(stamp),
     onLog: (_level, message) => process.stderr.write(`${message}\n`),
     signal,
   };

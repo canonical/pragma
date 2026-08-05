@@ -15,10 +15,12 @@
  *
  * Both sides are driven through the same construction the dispatcher performs
  * (`kernel/project/cli/dispatch.ts#executeVerb`): the verb's `run` receives a
- * mutation runtime and sets `rt.exec` as its last act, and the interpreter gets
- * `exec.cwd`. Mirroring it here rather than calling `executeVerb` is what makes
- * the effect lists observable at all — the dispatcher renders them to strings
- * and drops the objects.
+ * mutation runtime and sets `rt.exec` as its last act, the interpreter gets
+ * `exec.cwd`, and BOTH sides go through `runEffectSeam`/`exec.shapeEffect` — the
+ * content-shaping half of the seam, which the plan branch also takes. Mirroring
+ * the dispatcher rather than calling `executeVerb` is what makes the effect
+ * lists observable at all — the dispatcher renders them to strings and drops the
+ * objects — and mirroring it FAITHFULLY is what makes them worth comparing.
  */
 
 import { readdirSync, readFileSync, readlinkSync } from "node:fs";
@@ -26,15 +28,24 @@ import { join } from "node:path";
 import type { Effect } from "@canonical/task";
 import { planTask, runTask } from "@canonical/task/node";
 import { expect } from "vitest";
+import { runEffectSeam } from "../../kernel/runtime/effectSeam.js";
 import type {
   InteractionRuntime,
   PragmaRuntime,
 } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 
+/**
+ * The effects both sides collect. `planTask` pushes LEAF effects only —
+ * `Parallel`/`Race` are resolved before a leaf is reached — so the run side
+ * drops them too, and structural arms cannot silently accumulate here as dead
+ * code documenting an asymmetry.
+ */
+type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;
+
 /** One interpretation of a verb's Task: the effects it reached and its value. */
 export interface Interpretation {
-  readonly effects: readonly Effect[];
+  readonly effects: readonly LeafEffect[];
   readonly value: unknown;
 }
 
@@ -74,8 +85,13 @@ export async function interpretAsPlan(
   const rt = mutationRuntime(runtime, true);
   if (verb.capability.needsStore) await rt.store.get();
   const task = await Promise.resolve(verb.run(params, rt));
-  const planned = await planTask(task as never, { cwd: rt.exec?.cwd });
-  return { effects: planned.effects, value: planned.value };
+  const planned = await planTask(task as never, {
+    cwd: rt.exec?.cwd,
+    onEffectStart: rt.exec?.shapeEffect,
+  });
+  // `planTask` collects leaves only (its own `LeafEffect` exclusion), so this
+  // narrowing restates the interpreter's contract rather than assuming one.
+  return { effects: planned.effects as LeafEffect[], value: planned.value };
 }
 
 /**
@@ -96,14 +112,30 @@ export async function interpretForReal(
   const rt = mutationRuntime(runtime, false);
   if (verb.capability.needsStore) await rt.store.get();
   const task = await Promise.resolve(verb.run(params, rt));
-  const effects: Effect[] = [];
+  const effects: LeafEffect[] = [];
   const exec = rt.exec ?? {};
+  // COMPOSE with the verb's own seam, never override it. Overriding stripped
+  // the real side of exactly the transform the dispatcher applies — `create`'s
+  // stamp mutates `WriteFile.content` in place on this seam — so both sides
+  // recorded un-stamped bytes and agreed, while the shipped `--dry-run` was
+  // short by 50 bytes a file. The recorder runs LAST so what it pushes is what
+  // the interpreter is about to perform.
+  const seam = runEffectSeam(exec);
   const value = await runTask(task as never, {
     // Swallow log output: the dispatcher routes it to stderr, which is noise
     // here. A verb that sets its own `onLog` still wins (spread order).
     onLog: () => {},
     ...exec,
-    onEffectStart: (effect) => effects.push(effect),
+    onEffectStart: (effect) => {
+      seam?.(effect);
+      // `planTask` collects LEAF effects only; `runTask` announces `Parallel`
+      // and `Race` through this same callback, so recording them would make the
+      // two lists differ in LENGTH for any capability that uses them — a
+      // spurious failure whose cheapest reading is "the harness is too strict".
+      if (effect._tag !== "Parallel" && effect._tag !== "Race") {
+        effects.push(effect);
+      }
+    },
   });
   await exec.dispose?.();
   return { effects, value };
@@ -133,7 +165,7 @@ export function snapshotTree(root: string): Record<string, string> {
 }
 
 /** The comparable shape of one effect: everything a read could have decided. */
-function observable(effect: Effect): Record<string, unknown> {
+function observable(effect: LeafEffect): Record<string, unknown> {
   switch (effect._tag) {
     case "WriteFile":
       // The CONTENT, not its length: a plan that merged the wrong document
@@ -154,8 +186,6 @@ function observable(effect: Effect): Record<string, unknown> {
     case "WriteContext":
       return { tag: effect._tag, key: effect.key };
     case "Prompt":
-    case "Parallel":
-    case "Race":
       return { tag: effect._tag };
     default:
       return { tag: effect._tag, path: effect.path };
@@ -177,7 +207,7 @@ export function expectReadParity(
   both: PlanVsRun,
   scrub: (value: string) => string = (value) => value,
 ): void {
-  const shape = (effects: readonly Effect[]): unknown[] =>
+  const shape = (effects: readonly LeafEffect[]): unknown[] =>
     effects.map((effect) =>
       Object.fromEntries(
         Object.entries(observable(effect)).map(([key, value]) => [

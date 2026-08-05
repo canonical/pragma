@@ -131,11 +131,14 @@ export interface InteractionRuntime {
 
 /**
  * The opaque runner options a mutating verb's `run` assembles and the projector
- * spreads into the node interpreter on the REAL-run branch only (never on
- * dry-run/undo, which stay handler-free and mock prompts). It carries the
- * interactivity + progress seam: the prompt handler, the stamping/progress
- * effect callbacks, log routing, and an optional teardown the projector runs in
- * a `finally` (e.g. to dispose an Ink render).
+ * spreads into the node interpreter. It carries the interactivity + progress
+ * seam: the prompt handler, the progress callbacks, log routing, and an optional
+ * teardown the projector runs in a `finally` (e.g. to dispose an Ink render).
+ *
+ * Only the REAL-run branch takes the whole bag — dry-run and undo stay
+ * handler-free and mock prompts. Two fields are the exception and are reached on
+ * both: `cwd` (a plan that reads for real must resolve where the run resolves)
+ * and `shapeEffect` (a plan must describe the bytes the run would write).
  *
  * The task-effect types are referenced inline so this module carries no static
  * import of the node interpreter — the runtime stays cheap to construct.
@@ -145,7 +148,24 @@ export interface RunnerOptions {
   promptHandler?: (
     effect: import("@canonical/task").Effect & { _tag: "Prompt" },
   ) => Promise<unknown>;
-  /** Called before each effect — the stamping + progress seam. */
+  /**
+   * The CONTENT-SHAPING half of the effect seam: a pure-in-intent transform
+   * applied to each effect BEFORE it is interpreted, on the PLAN branch as well
+   * as the real one.
+   *
+   * Split out of {@link RunnerOptions.onEffectStart} because the two halves want
+   * opposite treatment on a plan. The UI half must NOT run (a `--dry-run` that
+   * mounted the Ink progress render would draw a run that is not happening); the
+   * shaping half MUST, or the plan describes bytes the run would not write.
+   * Measured before the split, `create package --name @acme/my-lib`: the plan
+   * reported `src/index.ts (64 bytes)` / `README.md (253 bytes)` where the run
+   * wrote **114** / **309** — every generated file short by exactly its
+   * generated-by stamp (50 bytes for the `//` form, 56 for the `#` form),
+   * because `createStampOnEffectStart` rides this seam and the plan branch
+   * passed no callbacks at all.
+   */
+  shapeEffect?: (effect: import("@canonical/task").Effect) => void;
+  /** Called before each effect — the progress seam (UI only; see `shapeEffect`). */
   onEffectStart?: (effect: import("@canonical/task").Effect) => void;
   /** Called after each effect completes (with its duration). */
   onEffectComplete?: (
