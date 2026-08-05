@@ -30,6 +30,16 @@ jobs:
       - name: Test
         run: bunx nx affected -t test --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
 
+      # The despecialisation proof: boot the docsite against
+      # `@canonical/prism-graph-example` and assert the core lenses render.
+      # A separate target from `test` because it spawns two real servers and
+      # takes ~30s — it has no business inside the unit run — and separate
+      # from `test:e2e` because that suite needs the pragma refs cache, which
+      # no runner has. `nx affected` is a no-op for projects lacking the
+      # target, so this step only ever runs the docsite.
+      - name: Despecialisation proof
+        run: bunx nx affected -t test:proof --base=origin/${{ github.event.pull_request.base.ref }} --head=HEAD
+
   build-gate:
     runs-on: ubuntu-latest
     needs: build-matrix
