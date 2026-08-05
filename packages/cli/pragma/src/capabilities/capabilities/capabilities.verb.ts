@@ -19,6 +19,14 @@
  * advertises — the hand-maintained drift this catalog exists to end. With no
  * declared stories the merge returns the registry by identity, so the payload is
  * unchanged.
+ *
+ * `doc`'s parenthetical enumerates the four conventions and must track
+ * `CONVENTIONS` in `catalog.ts`. It is the FIRST writing an agent reads — MCP
+ * `tools/list` serves it before the tool is ever called — so a stale one sets
+ * an expectation the payload then denies. It named a tier/channel scoping model
+ * after `CONVENTIONS.model` had been rewritten to state that reads are
+ * unscoped, which told agents to reach for `config_set` to narrow a read that
+ * narrows for nobody.
  */
 
 import { BIN_NAME } from "../../constants.js";
@@ -30,7 +38,7 @@ import type { CapabilitiesData } from "./types.js";
 const capabilitiesVerb: VerbSpec<Record<string, unknown>, CapabilitiesData> = {
   path: ["capabilities"],
   summary: `Discover ${BIN_NAME} conventions, the annotated tool catalog, and the discovery sequence.`,
-  doc: "Storeless orientation for agents. Returns the conventions (KG / tier-channel / SPARQL model), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.",
+  doc: "Storeless orientation for agents. Returns the four conventions (what this server is, the UNSCOPED read rule, SPARQL/prefixed-IRI addressing, and the plan-first mutation gate), a four-stage discovery sequence, and every live tool with a behavioural use_when hint and category — all derived from the live grammar, so it never drifts. Call it first at session start.",
   params: [],
   output: { formatters: capabilitiesFormatters },
   examples: [

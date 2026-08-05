@@ -58,6 +58,11 @@ const BANNED: readonly BannedPattern[] = [
       "removed `--all-tiers` — `block list` narrows by neither tier nor channel now, so there is nothing left to widen",
   },
   {
+    pattern: /\btier-channel\b/,
+    reason:
+      "retired `tier-channel` scoping model — reads are unscoped, so a doc naming a tier/channel model promises a narrowing no verb performs",
+  },
+  {
     pattern: /--llm\b/,
     reason:
       "retired `--llm` flag (now the `--format llm` form, auto-detected when piped)",
