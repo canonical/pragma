@@ -254,12 +254,19 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     );
   });
 
-  it("the help path (buildProgram) imports no zod schema module", () => {
+  it("the help path (buildProgram) reaches no config reader or defaults layer", () => {
+    // NOT the zod claim its title used to make. This checked two module names
+    // — `config/schema.ts` and `spec/validate.ts` — while the register in
+    // `config/schema.ts` names FIVE seams, so `packs/schema.ts` or
+    // `graphpack/schemas.ts` arriving here left it green. The zod claim is now
+    // held as an empty set over this same root, below, and this row keeps only
+    // what it can actually answer: the config LAYER stays behind the dynamic
+    // boundary.
     const graph = staticImportGraph(
       resolve(here, "../kernel/project/cli/buildProgram.ts"),
     );
-    expect(has(graph, "kernel/config/schema.ts")).toBe(false);
-    expect(has(graph, "kernel/spec/validate.ts")).toBe(false);
+    expect(has(graph, "kernel/config/readConfig.ts")).toBe(false);
+    expect(has(graph, "kernel/config/defaults.ts")).toBe(false);
   });
 
   // The store code (ke / ke-graphql / oxigraph) AND @canonical/harnesses (the
@@ -300,7 +307,21 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     }
   });
 
-  it("NO module on that graph statically imports zod (PROTECTED)", () => {
+  it("NO module on ANY fast-path graph statically imports zod (PROTECTED)", () => {
+    // WHICH GRAPHS, because this is what the register in `config/schema.ts`
+    // cites and the citation was wider than the guard. Until round 3 this
+    // walked `capabilities/index.ts` alone — 129 files — while the register
+    // said "none of the five [zod seams] is reached from the `--help` or
+    // `__complete` fast path". Those two roots are DIFFERENT graphs:
+    // `buildProgram.ts` walks 27 files of which 16 are not on the
+    // capabilities/index graph, and `completion/complete.ts` 22 of which 6 are
+    // not (complete.ts, model.ts, parse.ts, rank.ts, resolve.ts,
+    // spec/emitSurface.ts). Their only zod coverage was two named-module checks
+    // listing 2 of the 5 seams and 1 of the 5 — so `packs/schema.ts` or
+    // `graphpack/schemas.ts` appearing on either left all three green. The
+    // empty set is now held over every root `FAST_PATH_ENTRIES` declares, which
+    // is the same derived-not-enumerated move the config-edge case makes.
+    //
     // Until PR7 this expected exactly ONE: `graphpack/types.ts` declared the
     // pack schemas, `manifest.ts` value-imported `manifestSchema` for
     // `readManifest`, `packIsComplete` called that, and `resolveSources` called
@@ -361,14 +382,16 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     // both fast paths, +17.5 ms on `__complete` and on `--help` — roughly four
     // times what taking zod off this graph recovered. The specifier the guard
     // could not see is the one this docblock cites two paragraphs above.
-    const graph = staticImportGraph(resolve(here, "index.ts"));
     const pkgRoot = resolve(here, "..", "..");
-    const zodImporters = [...graph]
-      .filter((file) =>
-        /from\s*["']zod(\/[^"']*)?["']/.test(readFileSync(file, "utf-8")),
-      )
-      .map((file) => relative(pkgRoot, file))
-      .sort();
-    expect(zodImporters).toEqual([]);
+    for (const entry of FAST_PATH_ENTRIES) {
+      const graph = staticImportGraph(resolve(here, entry));
+      const zodImporters = [...graph]
+        .filter((file) =>
+          /from\s*["']zod(\/[^"']*)?["']/.test(readFileSync(file, "utf-8")),
+        )
+        .map((file) => relative(pkgRoot, file))
+        .sort();
+      expect(zodImporters, `reached from ${entry}`).toEqual([]);
+    }
   });
 });

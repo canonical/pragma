@@ -367,8 +367,24 @@ describe("storeless guarantee (PROTECTED)", () => {
         "pragma.conf.ts",
         "src/kernel/config/types.ts",
       ]);
-      // zod stays off the fast path (validate.ts is the registration seam).
-      expect(has(graph, "kernel/spec/validate.ts")).toBe(false);
+      // zod stays off the fast path — as an EMPTY SET over the graph, not by
+      // naming one module. This named `spec/validate.ts` alone while
+      // `config/schema.ts`'s register lists FIVE modules that value-import zod
+      // (`spec/validate.ts`, `config/schema.ts`, `project/mcp/registerVerb.ts`,
+      // `packs/schema.ts`, `runtime/graphpack/schemas.ts`), so four of the five
+      // — and any sixth — could arrive here green. Subpath-aware, because zod
+      // publishes `zod/v3`, `zod/v4`, `zod/v4/core` …, and an exact match on
+      // the bare specifier is the hole `capabilities/lazy.test.ts`'s twin of
+      // this check walked straight through until PR7's second fix-fold.
+      const zodImporters = [...graph]
+        .filter((file) =>
+          /from\s*["']zod(\/[^"']*)?["']/.test(readFileSync(file, "utf-8")),
+        )
+        .map((file) => relative(pkgRoot, file))
+        .sort();
+      expect(zodImporters, `reached from ${relative(pkgRoot, entry)}`).toEqual(
+        [],
+      );
       // No store/graph modules, present or future.
       expect(has(graph, "store")).toBe(false);
       expect(has(graph, "oxigraph")).toBe(false);

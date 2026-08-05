@@ -26,8 +26,19 @@
  *
  * None of the five is reached from the `--help` or `__complete` fast path, which
  * are storeless and config-free — `capabilities/lazy.test.ts` holds that as an
- * EXACT empty set, over this package's own relative-import graph, and that guard
- * now matches subpath specifiers too.
+ * EXACT empty set over every root its `FAST_PATH_ENTRIES` declares (the process
+ * entry, the command tree, `buildProgram`, the completion responder), and
+ * `completion/safety.test.ts` holds the same empty set over the four completion
+ * roots. Both scans are textual over this package's own relative-import graph
+ * and match subpath specifiers.
+ *
+ * That sentence was wrong for one round and the correction is the point: the
+ * empty set was held over `capabilities/index.ts` ALONE — 129 files — while the
+ * two surfaces it named are different graphs (`buildProgram.ts` walks 27 files,
+ * 16 of them not on the capabilities/index graph; `completion/complete.ts` 22,
+ * 6 not) guarded by named-module checks listing 2 of these 5 seams and 1 of
+ * them. A guard that overclaims is worse than none, so the guards were widened
+ * to match the claim rather than the claim narrowed.
  *
  * Validates the raw shape a global JSON file or an evaluated `pragma.config.ts`
  * declares; unknown keys are stripped for forward compatibility, and only
