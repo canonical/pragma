@@ -25,7 +25,6 @@ import {
 } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
-import type { ParamSpec } from "../../kernel/spec/types.js";
 import {
   createVerbs,
   isModuleNotFound,

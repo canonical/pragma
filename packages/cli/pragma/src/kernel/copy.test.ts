@@ -119,10 +119,46 @@ const files = [
  * @returns The authored string literals.
  */
 function readCopy(source: string): string[] {
-  const copy: string[] = [];
-  scanCode(source, 0, copy);
-  return copy;
+  const sink: LiteralSink = { literals: [], keepSpecifiers: false };
+  scanCode(source, 0, sink);
+  return sink.literals;
 }
+
+/**
+ * Read every authored literal INCLUDING the module specifiers {@link readCopy}
+ * drops, for the one rule that is ABOUT specifiers.
+ *
+ * Read through the scanner rather than over raw text, for the same reason
+ * {@link readCopy} is: a docblock that RECORDS a measurement may legitimately
+ * quote a package name — `declaredGenerators.ts` quotes a real
+ * `Cannot find module '…'` failure and a `source` format example — and a
+ * raw-text rule would have to choose between losing those docblocks and
+ * reporting them forever.
+ *
+ * @param source - The file's text.
+ * @returns The authored string literals, specifiers included.
+ */
+function readCopyWithSpecifiers(source: string): string[] {
+  const sink: LiteralSink = { literals: [], keepSpecifiers: true };
+  scanCode(source, 0, sink);
+  return sink.literals;
+}
+
+/**
+ * Where a scan puts what it finds, and what it keeps.
+ *
+ * The filter travels WITH the accumulator rather than in a module-level flag,
+ * so the scanner stays reentrant and a caller cannot leave the next one reading
+ * under someone else's rule. Parameterized rather than duplicated: the scanner
+ * is the delicate part (four ordering hazards, each one a leak it once missed),
+ * so the two callers share it and differ only in this one bit.
+ */
+type LiteralSink = {
+  /** Authored literals, in source order. */
+  readonly literals: string[];
+  /** Whether `@`- and `.`-leading literals — module specifiers — are kept. */
+  readonly keepSpecifiers: boolean;
+};
 
 /** A `/` opens a regex only where a VALUE may start; after a value it divides. */
 const REGEX_OPENS_AFTER = "=(,:[!&|?{};+-*%~^<>";
@@ -132,14 +168,14 @@ const REGEX_OPENS_AFTER = "=(,:[!&|?{};+-*%~^<>";
  *
  * @param source - The file's text.
  * @param from - Index to start reading at.
- * @param copy - Accumulator the authored literals are pushed onto.
+ * @param sink - Accumulator the authored literals are pushed onto.
  * @param untilBrace - Stop at the `}` closing a template substitution.
  * @returns The index the scan stopped at.
  */
 function scanCode(
   source: string,
   from: number,
-  copy: string[],
+  sink: LiteralSink,
   untilBrace = false,
 ): number {
   // One character of context decides regex-vs-division — the last significant
@@ -183,7 +219,7 @@ function scanCode(
       continue;
     }
     if (char === "`") {
-      i = scanTemplate(source, i + 1, copy);
+      i = scanTemplate(source, i + 1, sink);
       previous = char;
       continue;
     }
@@ -200,7 +236,7 @@ function scanCode(
     while (i < source.length && source[i] !== char) {
       i += source[i] === "\\" ? 2 : 1;
     }
-    pushCopy(copy, source.slice(start, i));
+    pushCopy(sink, source.slice(start, i));
     previous = char;
   }
   return source.length;
@@ -213,10 +249,10 @@ function scanCode(
  *
  * @param source - The file's text.
  * @param from - Index of the first character after the opening backtick.
- * @param copy - Accumulator the authored chunks are pushed onto.
+ * @param sink - Accumulator the authored chunks are pushed onto.
  * @returns The index of the closing backtick.
  */
-function scanTemplate(source: string, from: number, copy: string[]): number {
+function scanTemplate(source: string, from: number, sink: LiteralSink): number {
   let chunk = "";
   let i = from;
   while (i < source.length && source[i] !== "`") {
@@ -226,20 +262,31 @@ function scanTemplate(source: string, from: number, copy: string[]): number {
       continue;
     }
     if (source[i] === "$" && source[i + 1] === "{") {
-      i = scanCode(source, i + 2, copy, true) + 1;
+      i = scanCode(source, i + 2, sink, true) + 1;
       continue;
     }
     chunk += source[i];
     i += 1;
   }
-  pushCopy(copy, chunk);
+  pushCopy(sink, chunk);
   return i;
 }
 
-/** Keep a literal unless it is empty or names a module rather than a user. */
-function pushCopy(copy: string[], literal: string): void {
-  if (literal && !literal.startsWith(".") && !literal.startsWith("@")) {
-    copy.push(literal);
+/**
+ * Keep a literal unless it is empty, or names a module rather than a user and
+ * this sink is not collecting specifiers.
+ *
+ * @param sink - Accumulator, carrying the one bit the two rules differ on.
+ * @param literal - The authored literal just read.
+ */
+function pushCopy(sink: LiteralSink, literal: string): void {
+  if (!literal) return;
+  if (sink.keepSpecifiers) {
+    sink.literals.push(literal);
+    return;
+  }
+  if (!literal.startsWith(".") && !literal.startsWith("@")) {
+    sink.literals.push(literal);
   }
 }
 
@@ -292,6 +339,16 @@ describe("the copy scanner (PROTECTED)", () => {
     // asserts nothing.
     const source = `const rate = done / all; const LEAK = "${leak}";`;
     expect(readCopy(source)).toEqual([leak]);
+  });
+
+  it("hides a module specifier from the copy rules and shows it to the package rule", () => {
+    // The two callers differ ONLY here. `pushCopy` drops `@`- and `.`-leading
+    // literals, which is how the copy rules skip imports; the declared-package
+    // rule below is about exactly those, so it reads the same scan with the
+    // filter off.
+    const source = 'import { x } from "@scope/pkg";\nconst LEAK = "plain";';
+    expect(readCopy(source)).toEqual(["plain"]);
+    expect(readCopyWithSpecifiers(source)).toEqual(["@scope/pkg", "plain"]);
   });
 
   it("reads a template substitution as code, not as the end of the literal", () => {
@@ -441,6 +498,50 @@ describe("capability commands (PROTECTED)", () => {
     for (const file of capabilitySources) {
       for (const literal of readCopy(readFileSync(file, "utf-8"))) {
         if (pattern.test(literal)) {
+          offenders.push(`${relative(root, file)}: ${literal}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("no capability source names a package the DISTRIBUTION declares", () => {
+    // The leak this rule exists for survived ten slices because the kernel rule
+    // above polices `src/kernel/**`, and `capabilities/create/` is not kernel:
+    // `pickGenerator.ts` imported three summon packages by literal specifier and
+    // `constants.ts` named a fourth, so a fork shipping its own generators had
+    // to edit code, not content. That is now codegen from `pragma.conf.ts`, and
+    // this keeps it from coming back.
+    //
+    // SCOPED TO WHAT THE DISTRIBUTION DECLARES, not to `@canonical/` at large.
+    // Measured: a blanket scope rule would report 75 occurrences across 33
+    // capability sources, dominated by this CLI's own infrastructure
+    // (`@canonical/task` ×34, `@canonical/harnesses` ×23, `@canonical/ke` ×7) —
+    // a guard nobody could keep green. Scoped to `conf.generators[].name` ∪
+    // `conf.packs[].name` it reported THREE, every one of them removed by the
+    // slice that added this rule.
+    //
+    // `*.generated.ts` is exempt, with the measurement: the embedded manifest
+    // carries the text of 108 scaffold files, ~100 of whose lines are
+    // `@canonical/…` dependency entries inside a `package.json.ejs`. That is
+    // template CONTENT the build harvested, not a specifier anyone authored —
+    // and the generated modules are the one place the declaration is SUPPOSED
+    // to appear, because the build writes it there.
+    const declared = [
+      ...conf.generators.map((generator) => generator.name),
+      ...conf.packs.map((pack) =>
+        typeof pack === "string" ? pack : pack.name,
+      ),
+    ];
+    // Non-vacuous: an empty declaration would make the loop below pass on
+    // nothing at all.
+    expect(declared.length).toBeGreaterThan(0);
+    const offenders: string[] = [];
+    for (const file of capabilitySources) {
+      if (file.endsWith(".generated.ts")) continue;
+      const source = readFileSync(file, "utf-8");
+      for (const literal of readCopyWithSpecifiers(source)) {
+        if (declared.some((name) => literal.includes(name))) {
           offenders.push(`${relative(root, file)}: ${literal}`);
         }
       }
