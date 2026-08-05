@@ -89,12 +89,37 @@ async function lookupOneBlock(name: string): Promise<Record<string, unknown>> {
   return first as Record<string, unknown>;
 }
 
-/** Oracle: a single scalar from the graph, queried directly. */
-async function oracle(subject: string, predicate: string): Promise<string> {
+/**
+ * Read one scalar straight from the graph — the oracle the compiled verb's
+ * output is checked against.
+ *
+ * The `?? ""` this carried was a way for the oracle to AGREE with a verb that
+ * read nothing: a non-SELECT result and an unbound predicate both collapsed to
+ * the empty string, so a compiled verb that had stopped projecting the property
+ * could have matched the oracle. Both now throw naming subject and predicate.
+ *
+ * @param subject - Absolute IRI of the subject to read.
+ * @param predicate - Prefixed name of the property to read.
+ * @returns The single bound value.
+ * @note Impure — queries the shared fixture runtime.
+ */
+async function readOneValue(
+  subject: string,
+  predicate: string,
+): Promise<string> {
   const result = await rt.query.sparql(
     `SELECT ?v WHERE { <${subject}> ${predicate} ?v }`,
   );
-  return result.type === "select" ? (result.bindings[0]?.v ?? "") : "";
+  if (result.type !== "select") {
+    throw new Error(
+      `oracle for <${subject}> ${predicate} returned a ${result.type} result, not a SELECT`,
+    );
+  }
+  const value = result.bindings.at(0)?.v;
+  if (value === undefined) {
+    throw new Error(`the graph binds no ${predicate} on <${subject}>`);
+  }
+  return value;
 }
 
 describe("block lookup — Button content parity (GraphQL, detailed)", () => {
@@ -105,18 +130,18 @@ describe("block lookup — Button content parity (GraphQL, detailed)", () => {
     expect(button.tier).toBe(`${DS}global`);
 
     // Guidance + anatomy sections — each cross-checked against the graph.
-    expect(button.summary).toBe(await oracle(`${DS}button`, "ds:summary"));
-    expect(button.whenToUse).toBe(await oracle(`${DS}button`, "ds:whenToUse"));
+    expect(button.summary).toBe(await readOneValue(`${DS}button`, "ds:summary"));
+    expect(button.whenToUse).toBe(await readOneValue(`${DS}button`, "ds:whenToUse"));
     expect(button.whenNotToUse).toBe(
-      await oracle(`${DS}button`, "ds:whenNotToUse"),
+      await readOneValue(`${DS}button`, "ds:whenNotToUse"),
     );
     expect(button.guidelines).toBe(
-      await oracle(`${DS}button`, "ds:guidelines"),
+      await readOneValue(`${DS}button`, "ds:guidelines"),
     );
     expect(button.anatomyDsl).toBe(
-      await oracle(`${DS}button`, "ds:anatomyDsl"),
+      await readOneValue(`${DS}button`, "ds:anatomyDsl"),
     );
-    expect(button.figmaLink).toBe(await oracle(`${DS}button`, "ds:figmaLink"));
+    expect(button.figmaLink).toBe(await readOneValue(`${DS}button`, "ds:figmaLink"));
   });
 
   it("resolves the nested modifier families with values (inverse union)", async () => {
@@ -162,8 +187,8 @@ describe("block lookup — Modal content parity (GraphQL, detailed)", () => {
     const modal = await lookupOneBlock("Modal");
     expect(modal.uri).toBe(`${DS}modal`);
     expect(modal.name).toBe("Modal");
-    expect(modal.summary).toBe(await oracle(`${DS}modal`, "ds:summary"));
-    expect(modal.whenToUse).toBe(await oracle(`${DS}modal`, "ds:whenToUse"));
+    expect(modal.summary).toBe(await readOneValue(`${DS}modal`, "ds:summary"));
+    expect(modal.whenToUse).toBe(await readOneValue(`${DS}modal`, "ds:whenToUse"));
     const families = modal.modifierFamilies as {
       name: string;
       values?: string[];
