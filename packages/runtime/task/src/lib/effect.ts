@@ -247,6 +247,27 @@ export const raceEffect = (tasks: Task<unknown>[]): Effect => ({
 // =============================================================================
 
 /**
+ * The number of BYTES a string occupies once written — not `String.length`,
+ * which counts UTF-16 code units.
+ *
+ * `describeEffect` is the one writing of what a `--dry-run` tells a user (and,
+ * through `--format json`, an agent) about the size of a write, and the run it
+ * previews writes UTF-8. Measured on the consuming distribution before the fix:
+ * `token add-config --dry-run` reported `389 bytes` where the run wrote **391**
+ * — one U+2014 em dash in the generated header, one code unit and three bytes.
+ * `setup completions` carries the same em dash in its emitted script header and
+ * was short by the same 2. `TextEncoder` rather than
+ * `Buffer.byteLength` because this module is on the NODE-FREE base entry
+ * (`index.node-free.test.ts` walks its import closure for `node:` specifiers);
+ * `TextEncoder` is a web global and costs no edge.
+ *
+ * @param content - The text an effect would write.
+ * @returns Its UTF-8 length in bytes.
+ */
+const byteLength = (content: string): number =>
+  new TextEncoder().encode(content).length;
+
+/**
  * Get a human-readable description of an effect.
  */
 export const describeEffect = (effect: Effect): string => {
@@ -254,9 +275,9 @@ export const describeEffect = (effect: Effect): string => {
     case "ReadFile":
       return `Read file: ${effect.path}`;
     case "WriteFile":
-      return `Write file: ${effect.path} (${effect.content.length} bytes)`;
+      return `Write file: ${effect.path} (${byteLength(effect.content)} bytes)`;
     case "AppendFile":
-      return `Append to file: ${effect.path} (${effect.content.length} bytes)${effect.createIfMissing ? " [create if missing]" : ""}`;
+      return `Append to file: ${effect.path} (${byteLength(effect.content)} bytes)${effect.createIfMissing ? " [create if missing]" : ""}`;
     case "TransformFile":
       return `Transform file: ${effect.path}`;
     case "CopyFile":

@@ -546,6 +546,25 @@ describe("Effect Utilities - describeEffect", () => {
     expect(describeEffect(effect)).toBe("Append to file: /log.txt (6 bytes)");
   });
 
+  // Every other row here is pure ASCII, where `String.length` and the UTF-8
+  // byte count coincide — which is exactly how the shipped `--dry-run` reported
+  // a number the run did not write for two of the consuming distribution's
+  // verbs (`token add-config`: planned 389, wrote 391; `setup completions`:
+  // planned 8564, wrote 8566 — one em dash each). These two rows are the ones
+  // that separate the two readings.
+  it("counts a write in UTF-8 BYTES, not UTF-16 code units", () => {
+    const effect = writeFileEffect("/out.mjs", "// a — b\n");
+    // 9 code units; the em dash is 3 bytes, so 11 on disk.
+    expect("// a — b\n".length).toBe(9);
+    expect(describeEffect(effect)).toBe("Write file: /out.mjs (11 bytes)");
+  });
+
+  it("counts an append in UTF-8 BYTES too", () => {
+    const effect = appendFileEffect("/log.txt", "é\n", false);
+    expect("é\n".length).toBe(2);
+    expect(describeEffect(effect)).toBe("Append to file: /log.txt (3 bytes)");
+  });
+
   it("describes CopyFile effect", () => {
     const effect = copyFileEffect("/source.txt", "/dest.txt");
     expect(describeEffect(effect)).toBe("Copy file: /source.txt → /dest.txt");
