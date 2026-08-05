@@ -112,11 +112,20 @@ import type { Effect, Task } from "./types.js";
  */
 export interface PlanResult<A> {
   value: A;
-  effects: Effect[];
+  effects: readonly LeafEffect[];
 }
 
-/** Every effect except the structural ones the planner resolves itself. */
-type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;
+/**
+ * Every effect except the structural ones the planner resolves itself.
+ *
+ * EXPORTED because {@link PlanResult.effects} is typed by it, and a consumer
+ * that had to narrow the list itself would be re-declaring this exclusion — the
+ * one-fact-two-writings shape this programme keeps finding. pragma's dry-vs-real
+ * harness declared the identical `Exclude<…>` and then cast, so the guarantee
+ * `perform` actually makes was carried by a comment and an unchecked assertion
+ * rather than by the type.
+ */
+export type LeafEffect = Exclude<Effect, { _tag: "Parallel" | "Race" }>;
 
 /**
  * Options for {@link planTask}. Deliberately a subset of `RunTaskOptions`, and
@@ -177,7 +186,7 @@ export const planTask = async <A>(
 ): Promise<PlanResult<A>> => {
   const { context = new Map(), cwd, onEffectStart, signal } = options;
 
-  const effects: Effect[] = [];
+  const effects: LeafEffect[] = [];
   /**
    * Resolved path → the content a simulated write would leave there, or
    * `undefined` for "this plan creates it, but its bytes are not modelled"
@@ -221,7 +230,6 @@ export const planTask = async <A>(
       dir = parent;
     }
   };
-
 
   /** Delegate one effect to the real interpreter, with no prompt/log handler. */
   const real = (effect: Effect): Promise<unknown> =>
