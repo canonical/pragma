@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2c93170b82a100caa1cdbcbb46955a67>>
+ * @generated SignedSource<<f7bdf29512962ca0afbd7b61325e441a>>
  * @lightSyntaxTransform
  */
 
@@ -10,12 +10,24 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type StandardEntityQuery$variables = {
+  classUri: string;
   uri: string;
 };
 export type StandardEntityQuery$data = {
-  readonly codeStandard: {
-    readonly id: string;
-    readonly name: string | null | undefined;
+  readonly boundClass: {
+    readonly subclasses: ReadonlyArray<{
+      readonly uri: string;
+    }>;
+    readonly uri: string;
+  } | null | undefined;
+  readonly node: {
+    readonly _meta: {
+      readonly curie: string;
+      readonly title: string;
+      readonly type: {
+        readonly uri: string;
+      };
+    };
     readonly uri: string;
     readonly " $fragmentSpreads": FragmentRefs<"StandardArticle_standard">;
   } | null | undefined;
@@ -26,66 +38,118 @@ export type StandardEntityQuery = {
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = [
-  {
-    "defaultValue": null,
-    "kind": "LocalArgument",
-    "name": "uri"
-  }
-],
-v1 = [
-  {
-    "kind": "Variable",
-    "name": "uri",
-    "variableName": "uri"
-  }
-],
+var v0 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "classUri"
+},
+v1 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "uri"
+},
 v2 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "id",
-  "storageKey": null
-},
-v3 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "name",
-  "storageKey": null
-},
-v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "uri",
   "storageKey": null
 },
+v3 = [
+  (v2/*:: as any*/)
+],
+v4 = {
+  "alias": "boundClass",
+  "args": [
+    {
+      "kind": "Variable",
+      "name": "uri",
+      "variableName": "classUri"
+    }
+  ],
+  "concreteType": "OntologyClass",
+  "kind": "LinkedField",
+  "name": "ontologyClass",
+  "plural": false,
+  "selections": [
+    (v2/*:: as any*/),
+    {
+      "alias": null,
+      "args": null,
+      "concreteType": "OntologyClass",
+      "kind": "LinkedField",
+      "name": "subclasses",
+      "plural": true,
+      "selections": (v3/*:: as any*/),
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
 v5 = [
   {
-    "kind": "Literal",
-    "name": "first",
-    "value": 8
+    "kind": "Variable",
+    "name": "id",
+    "variableName": "uri"
   }
-];
+],
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "curie",
+  "storageKey": null
+},
+v7 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "title",
+  "storageKey": null
+};
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*:: as any*/),
+    "argumentDefinitions": [
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
+    ],
     "kind": "Fragment",
     "metadata": null,
     "name": "StandardEntityQuery",
     "selections": [
+      (v4/*:: as any*/),
       {
         "alias": null,
-        "args": (v1/*:: as any*/),
-        "concreteType": "CodeStandard",
+        "args": (v5/*:: as any*/),
+        "concreteType": null,
         "kind": "LinkedField",
-        "name": "codeStandard",
+        "name": "node",
         "plural": false,
         "selections": [
           (v2/*:: as any*/),
-          (v3/*:: as any*/),
-          (v4/*:: as any*/),
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "EntityMeta",
+            "kind": "LinkedField",
+            "name": "_meta",
+            "plural": false,
+            "selections": [
+              (v6/*:: as any*/),
+              (v7/*:: as any*/),
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "OntologyClass",
+                "kind": "LinkedField",
+                "name": "type",
+                "plural": false,
+                "selections": (v3/*:: as any*/),
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
           {
             "args": null,
             "kind": "FragmentSpread",
@@ -100,104 +164,77 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*:: as any*/),
+    "argumentDefinitions": [
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
+    ],
     "kind": "Operation",
     "name": "StandardEntityQuery",
     "selections": [
+      (v4/*:: as any*/),
       {
         "alias": null,
-        "args": (v1/*:: as any*/),
-        "concreteType": "CodeStandard",
+        "args": (v5/*:: as any*/),
+        "concreteType": null,
         "kind": "LinkedField",
-        "name": "codeStandard",
+        "name": "node",
         "plural": false,
         "selections": [
-          (v2/*:: as any*/),
-          (v3/*:: as any*/),
-          (v4/*:: as any*/),
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "description",
+            "name": "__typename",
+            "storageKey": null
+          },
+          (v2/*:: as any*/),
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "EntityMeta",
+            "kind": "LinkedField",
+            "name": "_meta",
+            "plural": false,
+            "selections": [
+              (v6/*:: as any*/),
+              (v7/*:: as any*/),
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "OntologyClass",
+                "kind": "LinkedField",
+                "name": "type",
+                "plural": false,
+                "selections": [
+                  (v2/*:: as any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "EntityMeta",
+                    "kind": "LinkedField",
+                    "name": "_meta",
+                    "plural": false,
+                    "selections": [
+                      (v7/*:: as any*/)
+                    ],
+                    "storageKey": null
+                  }
+                ],
+                "storageKey": null
+              },
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "definition",
+                "storageKey": null
+              }
+            ],
             "storageKey": null
           },
           {
-            "alias": null,
-            "args": (v5/*:: as any*/),
-            "concreteType": "CategoryConnection",
-            "kind": "LinkedField",
-            "name": "categories",
-            "plural": false,
-            "selections": [
-              {
-                "alias": null,
-                "args": null,
-                "concreteType": "CategoryEdge",
-                "kind": "LinkedField",
-                "name": "edges",
-                "plural": true,
-                "selections": [
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "Category",
-                    "kind": "LinkedField",
-                    "name": "node",
-                    "plural": false,
-                    "selections": [
-                      (v2/*:: as any*/),
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "slug",
-                        "storageKey": null
-                      }
-                    ],
-                    "storageKey": null
-                  }
-                ],
-                "storageKey": null
-              }
-            ],
-            "storageKey": "categories(first:8)"
-          },
-          {
-            "alias": null,
-            "args": (v5/*:: as any*/),
-            "concreteType": "CodeStandardConnection",
-            "kind": "LinkedField",
-            "name": "extends",
-            "plural": false,
-            "selections": [
-              {
-                "alias": null,
-                "args": null,
-                "concreteType": "CodeStandardEdge",
-                "kind": "LinkedField",
-                "name": "edges",
-                "plural": true,
-                "selections": [
-                  {
-                    "alias": null,
-                    "args": null,
-                    "concreteType": "CodeStandard",
-                    "kind": "LinkedField",
-                    "name": "node",
-                    "plural": false,
-                    "selections": [
-                      (v2/*:: as any*/),
-                      (v4/*:: as any*/),
-                      (v3/*:: as any*/)
-                    ],
-                    "storageKey": null
-                  }
-                ],
-                "storageKey": null
-              }
-            ],
-            "storageKey": "extends(first:8)"
+            "kind": "TypeDiscriminator",
+            "abstractKey": "__isNode"
           }
         ],
         "storageKey": null
@@ -205,16 +242,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "4e7c02043eae88de872f97a588c2e5ee",
+    "cacheID": "43a7380349c9067f2485a88cebfc5d5e",
     "id": null,
     "metadata": {},
     "name": "StandardEntityQuery",
     "operationKind": "query",
-    "text": "query StandardEntityQuery(\n  $uri: String!\n) {\n  codeStandard(uri: $uri) {\n    id\n    name\n    uri\n    ...StandardArticle_standard\n  }\n}\n\nfragment StandardArticle_standard on CodeStandard {\n  uri\n  name\n  description\n  categories(first: 8) {\n    edges {\n      node {\n        id\n        slug\n      }\n    }\n  }\n  extends(first: 8) {\n    edges {\n      node {\n        id\n        uri\n        name\n      }\n    }\n  }\n}\n"
+    "text": "query StandardEntityQuery(\n  $uri: ID!\n  $classUri: String!\n) {\n  boundClass: ontologyClass(uri: $classUri) {\n    uri\n    subclasses {\n      uri\n    }\n  }\n  node(id: $uri) {\n    __typename\n    uri\n    _meta {\n      curie\n      title\n      type {\n        uri\n      }\n    }\n    ...StandardArticle_standard\n  }\n}\n\nfragment StandardArticle_standard on Node {\n  __isNode: __typename\n  uri\n  _meta {\n    curie\n    title\n    definition\n    type {\n      uri\n      _meta {\n        title\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8f5306d6f87a783ff7b921bb6c3eb1ad";
+(node as any).hash = "4a7f5cf8f14a23d80addd18f4d9097e7";
 
 export default node;

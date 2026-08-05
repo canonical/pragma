@@ -2,12 +2,20 @@
  * Node module hook that resolves `.css` imports to an empty module.
  *
  * The Express dev server imports the app's route modules NATIVELY (see
- * `prepareRelayData.ts` — the route→query map must live in the same registry
- * as the backend), and that import chain carries client CSS side-effect
- * imports (e.g. `src/lib/Chip/styles.css`), which Node cannot load
- * (ERR_UNKNOWN_FILE_EXTENSION — tsx transforms TS/TSX only). Vite is not in
- * that chain, so the styles are dropped harmlessly: the render world still
- * loads through Vite, which processes the same CSS for the page.
+ * `routeQueries.ts` — the data pass runs to completion before the render
+ * pass, which is what lives behind `ssrLoadModule`), and that import chain
+ * carries client CSS side-effect imports (e.g. `src/lib/Chip/styles.css`),
+ * which Node cannot load (ERR_UNKNOWN_FILE_EXTENSION — tsx transforms
+ * TS/TSX only). Vite is not in that chain, so the styles are dropped
+ * harmlessly: the render world still loads through Vite, which processes
+ * the same CSS for the page.
+ *
+ * The graph backend is NOT why this native chain exists — not any more. It
+ * once was (an in-process ke-graphql singleton the route map had to share a
+ * registry with); since the PRD-3 process split the graph is its own
+ * process and the only remaining reason is the data-before-render ordering
+ * above. Moving `prepareRelayData` onto `ssrLoadModule` would retire this
+ * hook entirely; that is a separate story.
  *
  * MUST be preloaded via a `--import` flag AFTER `--import tsx` (see the
  * `dev:express` script): ESM loads a static import graph in full before any

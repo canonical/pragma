@@ -96,13 +96,14 @@ import { fileURLToPath } from "node:url";
 import { renderToString } from "react-dom/server";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it } from "vitest";
+import journeysExplorerRecords from "#addons/journeys/__fixtures__/journeysExplorerRecords.js";
+import journeysExplorerRecordsJob from "#addons/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import catalogRecords from "#domains/components/__fixtures__/catalogRecords.js";
 import componentEntityRecordsButton from "#domains/components/__fixtures__/componentEntityRecordsButton.js";
 import definitionsExplorerRecords from "#domains/lenses/definitions/__fixtures__/definitionsExplorerRecords.js";
-import journeysExplorerRecords from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecords.js";
-import journeysExplorerRecordsJob from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
 import standardsIndexRecords from "#domains/lenses/standards/__fixtures__/standardsIndexRecords.js";
+import { LINK_COMPONENT_URI } from "#domains/lenses/standards/__fixtures__/standardsPageHarness.js";
 import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
 import EntryServer from "../../server/entry.js";
 
@@ -127,9 +128,10 @@ const BUTTON_ENTITY_URL = "/components/ds%3Aglobal.component.button";
 const DEFINITIONS_TERM_URL = "/definitions/ds%3AUIBlock";
 
 /** The P-5 standards exemplar: the reading page — a third non-lens URL,
- * whose canvas is layout.reading's measured prose column. Same R3
- * posture: no rail entry is exact-current here. */
-const STANDARD_READING_URL = "/standards/cs%3Areact.component.link_component";
+ * whose canvas is layout.reading's measured prose column. Its param is
+ * the entity's ABSOLUTE IRI, percent-encoded: `node(id:)` accepts nothing
+ * else. Same R3 posture: no rail entry is exact-current here. */
+const STANDARD_READING_URL = `/standards/${encodeURIComponent(LINK_COMPONENT_URI)}`;
 
 /** The AV-351 journeys exemplar: the job view — a fourth non-lens URL,
  * and the second whose canvas carries a React Flow well's server-rendered
@@ -159,8 +161,9 @@ const PAGE_RECORDS: Readonly<Record<string, RecordMap>> = {
   // definitions addresses.
   "/definitions": definitionsExplorerRecords,
   [DEFINITIONS_TERM_URL]: definitionsExplorerRecords,
-  // Standards rows (P-5): the grouped index from its trimmed capture,
-  // the reading page from its verbatim capture.
+  // Standards rows (P-5): the grouped index and the reading page from
+  // their hand-written-then-Relay-normalised fixtures (the `cs:` package
+  // is not present in this environment, so neither can be captured).
   "/standards": standardsIndexRecords,
   [STANDARD_READING_URL]: standardEntityRecords,
   // Journeys rows (AV-351): the same operation at both addresses, but
@@ -254,7 +257,7 @@ const EXPECTED_STRIP_CONTEXT: Readonly<Record<string, string>> = {
   }),
   [STANDARD_READING_URL]: trail("Standards", {
     lensHref: "/standards",
-    current: "cs:react.component.link_component",
+    current: LINK_COMPONENT_URI,
   }),
   [JOURNEYS_JOB_URL]: trail("Journeys", {
     lensHref: "/journeys",
@@ -490,14 +493,15 @@ describe("frame stability across lens switches (the P-4.1 certification)", () =>
     expect(mustGet("/standards").canvas).toContain('id="lens-standards-title"');
     // The standards canvases render REAL content from their fixture
     // records: the index carries a grouped standard link, the reading
-    // canvas carries the article's identity h1 (URI-as-title — no live
-    // display name) inside layout.reading's prose column.
+    // canvas carries the article's identity h1 (`_meta.title`, which for a
+    // standard with no asserted name is the IRI's local name) inside
+    // layout.reading's prose column.
     expect(mustGet("/standards").canvas).toContain("cs:code.array.safe_access");
     expect(mustGet(STANDARD_READING_URL).canvas).toContain(
       'data-view="standard-reading"',
     );
     expect(mustGet(STANDARD_READING_URL).canvas).toContain(
-      '<h1 id="standard-reading-title">cs:react.component.link_component</h1>',
+      '<h1 id="standard-reading-title">react.component.link_component</h1>',
     );
     expect(mustGet(STANDARD_READING_URL).canvas).toContain(
       'data-slot="reading-canvas"',
@@ -842,13 +846,14 @@ describe("the shared tokens are defined once (the stylesheet half)", () => {
   // and every region claims its width by SPANNING them. These tokens must
   // not exist anywhere; a reintroduction is a regression toward the old
   // fixed-track frame.
-  it.each(["--rail-w", "--subnav-w", "--aside-w"])(
-    "does NOT define %s — the width tokens are dissolved (span, not token)",
-    (token) => {
-      const definitions = allCss.match(new RegExp(`${token}\\s*:`, "g")) ?? [];
-      expect(definitions).toHaveLength(0);
-    },
-  );
+  it.each([
+    "--rail-w",
+    "--subnav-w",
+    "--aside-w",
+  ])("does NOT define %s — the width tokens are dissolved (span, not token)", (token) => {
+    const definitions = allCss.match(new RegExp(`${token}\\s*:`, "g")) ?? [];
+    expect(definitions).toHaveLength(0);
+  });
 
   // THE INTRINSIC-GRID INVARIANT (the strict model's teeth, owner ruling
   // 2026-07-22: EVERYTHING is a subgrid, no exceptions). Exactly ONE grid

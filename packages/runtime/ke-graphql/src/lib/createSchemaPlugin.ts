@@ -3,15 +3,16 @@
 // store; onReload recompiles (note: with `cache:` configured, ke's reload()
 // short-circuits on a cache hit — pass { force: true } in dev flows).
 //
-// Failure policy: the schema is produced even through non-composition
-// errors (the tsc model — diagnostics never abort the pipeline); only a
-// CompilationError (composition failed) propagates and fails the boot. All
-// diagnostics are logged either way.
+// Failure policy: ANY error-severity diagnostic fails the compile — a
+// CompilationError propagates and fails the boot (a schema minus silently
+// dropped fields must never be served). Warnings and infos never abort.
+// All diagnostics are logged either way, including on the failure path.
 // =============================================================================
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { definePlugin, type PluginContext, type SPARQL } from "@canonical/ke";
 import {
+  CompilationError,
   compile,
   compileFromExtraction,
   type Diagnostic,
@@ -102,11 +103,11 @@ export default function createSchemaPlugin(
 /**
  * Compile for a plugin lifecycle hook: boot from the extraction artifact
  * when fresh, fall back to a live compile otherwise, then log diagnostics
- * and write the SDL output when configured.
+ * and write the SDL output when configured and the compile printed one.
  *
  * @note Impure — reads the extraction artifact from disk, executes SPARQL
  * queries on a live compile, logs to the console, and writes the SDL output
- * file when configured.
+ * file when configured (never on an artifact boot, which prints no SDL).
  */
 const compileForContext = async (
   ctx: PluginContext,
@@ -123,28 +124,44 @@ const compileForContext = async (
   const cycleSources = [...sourceContents];
   sourceContents.length = 0;
 
-  if (options.extraction !== undefined) {
-    const artifact =
-      typeof options.extraction === "string"
-        ? (JSON.parse(
-            readFileSync(options.extraction, "utf-8"),
-          ) as SerializedExtraction)
-        : options.extraction;
-    const { sourcesHash } = deserializeExtraction(artifact);
-    const loadedHash = hashSources(cycleSources);
-    if (sourcesHash === loadedHash) {
-      result = compileFromExtraction(artifact, options);
-    } else {
-      console.warn(
-        `[ke-graphql] extraction artifact is stale (artifact ${sourcesHash}, sources ${loadedHash}) — falling back to a live compile. Regenerate it (pragma graphql build).`,
-      );
+  try {
+    if (options.extraction !== undefined) {
+      const artifact =
+        typeof options.extraction === "string"
+          ? (JSON.parse(
+              readFileSync(options.extraction, "utf-8"),
+            ) as SerializedExtraction)
+          : options.extraction;
+      const { sourcesHash } = deserializeExtraction(artifact);
+      const loadedHash = hashSources(cycleSources);
+      if (sourcesHash === loadedHash) {
+        result = compileFromExtraction(artifact, options);
+      } else {
+        console.warn(
+          `[ke-graphql] extraction artifact is stale (artifact ${sourcesHash}, sources ${loadedHash}) — falling back to a live compile. Regenerate it (pragma graphql build).`,
+        );
+      }
     }
+    result ??= await compile(createPluginQueryFn(ctx), ctx.prefixes, options);
+  } catch (error) {
+    // A refused compile still logs its full diagnostic list before failing
+    // the boot — the boot dies loudly, but not silently: the operator sees
+    // every finding, not only the error summary baked into the thrown
+    // message. Non-compilation failures (a missing artifact file, a version
+    // mismatch) have no diagnostic list and pass through unchanged.
+    if (error instanceof CompilationError) {
+      logDiagnostics(error.diagnostics);
+    }
+    throw error;
   }
-
-  result ??= await compile(createPluginQueryFn(ctx), ctx.prefixes, options);
   logDiagnostics(result.diagnostics);
 
-  if (options.sdlOutput) {
+  // Only a compile that PRINTED an SDL may write one. An artifact boot runs
+  // with assumeValid and skips printSchema, leaving `sdl` as "" by contract —
+  // writing that would TRUNCATE a committed schema.graphql to nothing, which
+  // is strictly worse than leaving yesterday's correct file in place (the SDL
+  // feeds relay-compiler, so an empty one breaks every client build).
+  if (options.sdlOutput && result.sdl !== "") {
     writeFileSync(options.sdlOutput, result.sdl, "utf-8");
   }
 

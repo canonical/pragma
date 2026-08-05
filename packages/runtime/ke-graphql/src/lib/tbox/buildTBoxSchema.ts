@@ -4,10 +4,11 @@
 //
 // Value conventions:
 //   Ontology        → NamespaceInfo
-//   OntologyClass   → ClassNode (IR)
+//   OntologyClass   → ClassNode (IR, or the frozen owl:Class meta-node)
 //   OntologyProperty→ PropertyNode (IR)
-//   ClassProperty   → { propertyUri, classUri } (per-class scope)
-//   EntityMeta      → EntityValue (the ABox parent)
+//   ClassProperty   → { propertyUri, classUri, graphqlName? } (per-class scope)
+//   EntityMeta      → EntityValue (the ABox parent, or the ClassNode adapter
+//                     minted for OntologyClass._meta)
 //
 // Structural facts come from the frozen IR (resolver closures); only the
 // instances connection hits the loaders.
@@ -17,6 +18,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   type GraphQLFieldConfigMap,
+  GraphQLID,
   GraphQLInt,
   type GraphQLInterfaceType,
   GraphQLList,
@@ -24,26 +26,104 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { toFull, toPrefixed } from "../dataloader/index.js";
+import { toPrefixed } from "../dataloader/uris.js";
 import {
   connectionFromPage,
+  emptyConnection,
   paginateUriWindow,
+  resolveLabel,
+  resolveTitle,
+  selectAnnotatedSource,
+  selectDescriptivePredicates,
+  selectLexicals,
+  toConnection,
   unwrapEntities,
 } from "../resolver/index.js";
 import {
   type ClassNode,
+  COMMENT_LOCAL_NAMES,
   CONNECTION_ARGS,
   type CompilerContext,
+  DEFAULT_LANG,
+  DEFINITION_LOCAL_NAMES,
   type EntityValue,
+  getLocalName,
+  LABEL_LOCAL_NAMES,
+  LANG_ARGS,
   type MappedIR,
   type NamespaceInfo,
   type PropertyNode,
+  RDFS_COMMENT,
+  RDFS_LABEL,
+  SKOS_DEFINITION,
+  SKOS_PREF_LABEL,
+  type TripleSet,
 } from "../shared/index.js";
+import { OWL_CLASS_NODE, OWL_CLASS_PREFIXED } from "./metaClass.js";
 
 interface ClassPropertyValue {
   propertyUri: string;
   classUri: string;
+  /**
+   * The GraphQL field name this row answers to, when the producer already
+   * knows it. `EntityMeta.field(name:)` does — it found the row BY that name
+   * — and carrying it makes `field(name: X) { name }` return X by
+   * construction rather than by a reverse lookup that can disagree. It can:
+   * a synthetic inverse field (`mappings: { … inverse: { graphqlName } }`)
+   * carries the FORWARD property's URI, so reversing propertyUri → field name
+   * on the range class would answer with the forward field's name, or with
+   * nothing. Producers that only know (class, property) leave it undefined and
+   * the `name` resolver derives it.
+   */
+  graphqlName?: string;
 }
+
+/** The canonical (universal) predicate tier of each descriptive field. */
+const LABEL_UNIVERSAL = [RDFS_LABEL, SKOS_PREF_LABEL];
+const COMMENT_UNIVERSAL = [RDFS_COMMENT];
+const DEFINITION_UNIVERSAL = [SKOS_DEFINITION];
+
+/** The argument shape every descriptive resolver receives. */
+interface LangArgs {
+  lang?: string | null;
+}
+
+/**
+ * Normalize the `lang` argument at the resolver boundary. LANG_ARGS defaults
+ * `lang` to "en" only when the argument is OMITTED — an EXPLICIT `lang: null`
+ * bypasses the default and reaches the resolver as null, where unguarded tag
+ * matching would throw (a request-killing error on the non-null `title`).
+ * Null and undefined both mean "the default chain", exactly as omission does.
+ */
+const resolveLang = (args: LangArgs): string => args.lang ?? DEFAULT_LANG;
+
+/**
+ * The four predicate chains a single GraphQL type resolves through. `title`
+ * is a chain of its own so graphql:titleFrom can head it independently; for
+ * an unannotated class it IS the label chain, keeping the historical
+ * title-reads-label behavior byte-identical.
+ */
+interface DescriptiveChains {
+  title: readonly string[];
+  label: readonly string[];
+  comment: readonly string[];
+  definition: readonly string[];
+}
+
+/**
+ * The chains used when a parent's typename is not a concrete mapped type.
+ * `EntityValue.typename` can carry an INTERFACE name (resolveEmbeddedTypename
+ * maps a blank node's rdf:type through the global name map, which also holds
+ * abstract classes), and mapped.types is keyed by concrete types only. The
+ * canonical tier is still exactly right there; only the class-specific
+ * local-name tier is unknowable.
+ */
+const FALLBACK_CHAINS: DescriptiveChains = {
+  title: LABEL_UNIVERSAL,
+  label: LABEL_UNIVERSAL,
+  comment: COMMENT_UNIVERSAL,
+  definition: DEFINITION_UNIVERSAL,
+};
 
 /**
  * Get an annotation value on a property by the annotation property's local
@@ -71,6 +151,13 @@ export interface TBoxSchema {
   ontologyProperty: GraphQLObjectType;
   entityMeta: GraphQLObjectType;
   queryFields: GraphQLFieldConfigMap<unknown, CompilerContext>;
+  /**
+   * Identity predicate for Node.resolveType: is this runtime value one of
+   * THIS build's TBox ClassNodes (or the meta-class), i.e. an OntologyClass
+   * parent? Identity-based on purpose — resolvers only ever hand out the IR's
+   * own instances, so no ABox EntityValue can satisfy it by shape.
+   */
+  isClassNode(value: unknown): boolean;
 }
 
 /**
@@ -85,6 +172,162 @@ export default function buildTBoxSchema(
   nodeConnection: () => GraphQLObjectType,
 ): TBoxSchema {
   const { ir } = mapped;
+
+  // Descriptive chains are computed ONCE per GraphQL type, here at build time.
+  // selectDescriptivePredicates walks a class's whole allProperties list, so
+  // calling it inside a resolver would repeat that walk for every descriptive
+  // field of every node of every page.
+  //
+  // An annotated source predicate (graphql:*From, nearest ancestor wins)
+  // HEADS its chain — it must beat rdfs:label, or the override is useless
+  // exactly when both exist. Absence on an instance still falls through the
+  // fixed tiers, so `title` stays total. The title chain builds on the
+  // EFFECTIVE label chain (labelFrom included): title's first tier is label
+  // resolution, annotated or not.
+  const headed = (
+    head: string | undefined,
+    chain: readonly string[],
+  ): readonly string[] => (head ? [...new Set([head, ...chain])] : chain);
+
+  const chainsByType = new Map<string, DescriptiveChains>();
+  for (const type of mapped.types.values()) {
+    const label = headed(
+      selectAnnotatedSource(type.owlUri, ir, "labelFrom"),
+      selectDescriptivePredicates(
+        type.owlUri,
+        ir,
+        LABEL_UNIVERSAL,
+        LABEL_LOCAL_NAMES,
+      ),
+    );
+    chainsByType.set(type.graphqlName, {
+      title: headed(selectAnnotatedSource(type.owlUri, ir, "titleFrom"), label),
+      label,
+      comment: headed(
+        selectAnnotatedSource(type.owlUri, ir, "commentFrom"),
+        selectDescriptivePredicates(
+          type.owlUri,
+          ir,
+          COMMENT_UNIVERSAL,
+          COMMENT_LOCAL_NAMES,
+        ),
+      ),
+      definition: headed(
+        selectAnnotatedSource(type.owlUri, ir, "definitionFrom"),
+        selectDescriptivePredicates(
+          type.owlUri,
+          ir,
+          DEFINITION_UNIVERSAL,
+          DEFINITION_LOCAL_NAMES,
+        ),
+      ),
+    });
+  }
+  const getChainsFor = (typename: string): DescriptiveChains =>
+    chainsByType.get(typename) ?? FALLBACK_CHAINS;
+
+  // ── OntologyClass as a Node ──
+  // The identity set behind Node.resolveType's TBox branch: exactly this
+  // build's class nodes plus the meta-class. Membership is by identity, never
+  // by shape — the resolvers only ever hand out these instances.
+  const classNodeIdentities = new Set<unknown>(ir.classes.values());
+  classNodeIdentities.add(OWL_CLASS_NODE);
+  const isClassNode = (value: unknown): boolean =>
+    classNodeIdentities.has(value);
+
+  // Population guard: a class is projected when its URI resolves to a minted
+  // type or interface. Under mode "explicit" a class outside the expose
+  // allowlist stays browsable in the TBox (the browser is complete on
+  // purpose), but its `instances`/`instanceCount` answer empty/0 —
+  // `instanceCount` is DEFINED as the population `instances` paginates, and
+  // an unprojected class's instances cannot be typed into the emitted
+  // schema. In every other mode a compiled schema has all classes projected
+  // (an unregistered class means a fatal M001), so the guard changes
+  // nothing.
+  const isProjected = (classUri: string): boolean => {
+    const name = mapped.nameMap.toGraphQL(classUri);
+    return (
+      name !== undefined &&
+      (mapped.types.has(name) || mapped.interfaces.has(name))
+    );
+  };
+
+  // Every EntityMeta resolver takes an EntityValue parent. A ClassNode is
+  // TBox IR, not an ABox value, so `OntologyClass._meta` adapts one into the
+  // other: the node's own label/definition become literal triples under the
+  // canonical predicates, and the existing descriptive-resolution chain
+  // (title fallback, exact-tag-else-untagged language handling) treats them
+  // exactly like asserted data. "OntologyClass" is a reserved type name, so
+  // the typename can never collide with a generated type's chain entry — the
+  // canonical FALLBACK_CHAINS tier answers, which is precisely right here.
+  // Minted values are remembered by identity so `_meta.type` can answer the
+  // meta-class without trusting anything spoofable.
+  const tboxMetaParents = new WeakSet<EntityValue>();
+  const classNodeEntityValue = (node: ClassNode): EntityValue => {
+    const triples: TripleSet = new Map();
+    triples.set(RDFS_LABEL, [{ kind: "literal", value: node.label }]);
+    if (node.definition !== undefined) {
+      triples.set(SKOS_DEFINITION, [
+        { kind: "literal", value: node.definition },
+      ]);
+    }
+    const value: EntityValue = {
+      uri: node.uri,
+      typename: "OntologyClass",
+      triples,
+    };
+    tboxMetaParents.add(value);
+    return value;
+  };
+
+  // ── The (class, property) → field name index ──
+  // `ClassProperty.name` must return the SAME string EntityMeta.field(name:)
+  // accepts, and that lookup is served from MappedType.fields, which Pass 4
+  // keys by MappedField.graphqlName. So the index is built from the very same
+  // maps, once, at build time — not recomputed from the naming rules, which
+  // would be a second implementation free to drift.
+  //
+  // Keyed per CLASS because the name is a per-class fact, not a per-property
+  // one: computeFieldName pluralizes from the cardinality resolved FOR THAT
+  // CLASS, so one property is `part` on a class whose SHACL says maxCount 1
+  // and `parts` on one that does not. That is precisely the derivation a
+  // consumer cannot perform from `property.uri`, which is why the field exists.
+  //
+  // Interfaces are indexed alongside types: an abstract class is browsable as
+  // an OntologyClass and its properties are real fields on the emitted
+  // interface. Keyed by MappedField.owlUri, not propertyUri, so a synthetic
+  // inverse field (owlUri "<uri>#inverse", propertyUri the FORWARD property)
+  // cannot answer for the forward property it merely points at.
+  const fieldNamesByClass = new Map<string, ReadonlyMap<string, string>>();
+  for (const container of [
+    ...mapped.types.values(),
+    ...mapped.interfaces.values(),
+  ]) {
+    const byOwlUri = new Map<string, string>();
+    for (const field of container.fields.values()) {
+      byOwlUri.set(field.owlUri, field.graphqlName);
+    }
+    fieldNamesByClass.set(container.owlUri, byOwlUri);
+  }
+
+  /**
+   * The field name a ClassProperty row answers to. Carried when its producer
+   * knew it; else the class's own emitted field for that property; else — the
+   * property projects NO field on this class (SHACL sh:maxCount 0, an
+   * unexposed range under mode "explicit", or a class that was never
+   * projected) — the OWL local name.
+   *
+   * The last rung is deliberately the rawest possible answer. There is no
+   * string `field(name:)` would accept here, and the tempting alternatives
+   * (the global name map's entry for this property, or a re-run of the naming
+   * rules) both hand back a plausible field name that this class does not
+   * serve. The local name adds nothing the consumer did not already have in
+   * `property.uri`, so it cannot be mistaken for one that works.
+   */
+  const classPropertyName = (cp: ClassPropertyValue): string =>
+    cp.graphqlName ??
+    fieldNamesByClass.get(cp.classUri)?.get(cp.propertyUri) ??
+    getLocalName(cp.propertyUri);
 
   const propertyKind = new GraphQLEnumType({
     name: "PropertyKind",
@@ -114,7 +357,7 @@ export default function buildTBoxSchema(
     name: "OntologyProperty",
     fields: () => ({
       uri: {
-        type: new GraphQLNonNull(GraphQLString),
+        type: new GraphQLNonNull(GraphQLID),
         resolve: (p) => p.uri,
       },
       label: { type: GraphQLString, resolve: (p) => p.label },
@@ -168,8 +411,14 @@ export default function buildTBoxSchema(
   >({
     name: "ClassProperty",
     description:
-      "Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair.",
+      "Class-scoped view of a property: SHACL cardinality is a fact about a (class, property) pair — and so is `name`.",
     fields: () => ({
+      name: {
+        type: new GraphQLNonNull(GraphQLString),
+        description:
+          "The field name this property answers to ON THIS CLASS — the exact string `EntityMeta.field(name:)` accepts, so `fields { name }` and `field(name:)` round-trip. Class-scoped because per-class cardinality decides pluralization: one property is `part` on one class and `parts` on another. When the property projects no field on this class (SHACL sh:maxCount 0, an unexposed range, an unprojected class) the OWL local name is returned as a label — there is no name `field(name:)` would accept.",
+        resolve: (cp) => classPropertyName(cp),
+      },
       property: {
         type: new GraphQLNonNull(ontologyProperty),
         resolve: (cp) => ir.properties.get(cp.propertyUri),
@@ -214,8 +463,21 @@ export default function buildTBoxSchema(
     CompilerContext
   >({
     name: "OntologyClass",
+    // A real Node: identity (uri: ID!) plus self-description (_meta), like
+    // every generated type. The old blocker — EntityMeta resolvers key off
+    // EntityValue and a ClassNode is not one — is closed by the
+    // classNodeEntityValue adapter above; `_meta.type` answers the
+    // meta-class owl:Class. OntologyProperty deliberately does NOT get the
+    // same treatment (kept as scope, not principle): it keeps uri: ID! and
+    // stays a non-Node.
+    interfaces: () => [nodeInterface],
     fields: () => ({
-      uri: { type: new GraphQLNonNull(GraphQLString), resolve: (c) => c.uri },
+      uri: { type: new GraphQLNonNull(GraphQLID), resolve: (c) => c.uri },
+      _meta: {
+        type: new GraphQLNonNull(entityMeta),
+        description: "Self-describing TBox access for this class.",
+        resolve: (c) => classNodeEntityValue(c),
+      },
       label: { type: GraphQLString, resolve: (c) => c.label },
       definition: { type: GraphQLString, resolve: (c) => c.definition },
       superclass: {
@@ -253,21 +515,43 @@ export default function buildTBoxSchema(
         description:
           "Named instances of this class (blank-node instances are embeddable and not standalone-resolvable).",
         resolve: async (c, args, ctx) => {
-          const fullUris = await ctx.listLoader.load(c.uri);
-          const prefixed = fullUris.map((uri) =>
-            toPrefixed(uri, mapped.namespaces),
-          );
-          const page = paginateUriWindow(prefixed, args);
-          const entities = await ctx.entityLoader.loadMany(
-            page.window.map((uri) => toFull(uri, mapped.namespaces) ?? uri),
-          );
+          // META BRANCH: the meta-class's instances are the classes
+          // themselves, straight from the frozen IR — no store round-trip.
+          // Each edge node is a ClassNode, which Node.resolveType's
+          // identity branch sends to OntologyClass. toConnection sorts by
+          // URI, so cursors are stable across requests.
+          if (c === OWL_CLASS_NODE) {
+            return toConnection([...ir.classes.values()], args);
+          }
+          // Unprojected class (mode "explicit" outside the allowlist): the
+          // population is empty by definition — see isProjected.
+          if (!isProjected(c.uri)) {
+            return emptyConnection();
+          }
+          // The loader's list is already in absolute-IRI currency — the same
+          // currency the cursors encode and EntityValue.uri carries.
+          const uris = await ctx.listLoader.load(c.uri);
+          const page = paginateUriWindow(uris, args);
+          const entities = await ctx.entityLoader.loadMany(page.window);
           return connectionFromPage(unwrapEntities(entities), page);
         },
       },
       instanceCount: {
         type: new GraphQLNonNull(GraphQLInt),
         description: "Count of NAMED instances (matches `instances`).",
-        resolve: (c) => ir.extraction.instanceStats.get(c.uri)?.named ?? 0,
+        // The meta-class counts ir.classes — the exact set its `instances`
+        // connection yields — NOT instanceStats(owl:Class), which counts
+        // every `a owl:Class` subject in the store, including declarations
+        // the compiler filtered (standard-vocabulary classes). The two must
+        // never drift: `instances` and `instanceCount` are one promise —
+        // which is also why an unprojected class answers 0 (its `instances`
+        // connection is empty by definition; see isProjected).
+        resolve: (c) =>
+          c === OWL_CLASS_NODE
+            ? ir.classes.size
+            : isProjected(c.uri)
+              ? (ir.extraction.instanceStats.get(c.uri)?.named ?? 0)
+              : 0,
       },
       isAbstract: {
         type: new GraphQLNonNull(GraphQLBoolean),
@@ -311,11 +595,83 @@ export default function buildTBoxSchema(
 
   const entityMeta = new GraphQLObjectType<EntityValue, CompilerContext>({
     name: "EntityMeta",
-    description: "Self-describing TBox access attached to ABox types.",
+    description:
+      "Self-describing TBox access attached to every generated type, plus the generic descriptive fields a lens renders without knowing the concrete type.",
     fields: () => ({
+      curie: {
+        type: new GraphQLNonNull(GraphQLString),
+        description:
+          "Compact display form of `uri`: `prefix:local` from the compiled namespace inventory, else the absolute IRI unchanged, else the GraphQL type name when the value has no IRI at all (an embedded blank node). TOTAL, exactly like `title`. NEVER an identity — `uri` is the only address; this string is not accepted by `node(id:)` and never appears in a cursor.",
+        // The one internal caller of toPrefixed, and the use its header names
+        // as legitimate: a String a consumer renders, that nothing reads back.
+        // The inventory is the compiled one (mapped.namespaces, the same map
+        // the context carries), read from the closure like every other
+        // structural fact in this file — no store, no request state.
+        resolve: (parent) =>
+          parent.uri === null
+            ? parent.typename
+            : toPrefixed(parent.uri, mapped.namespaces),
+      },
+      title: {
+        type: new GraphQLNonNull(GraphQLString),
+        args: LANG_ARGS,
+        description:
+          "TOTAL display string: label(lang), else any-tag literal, else the IRI local name, else the IRI, else the GraphQL type name when the value has no IRI at all (an embedded blank node). Never null — render this.",
+        resolve: (parent, args: LangArgs) =>
+          resolveTitle(
+            selectLexicals(parent.triples, getChainsFor(parent.typename).title),
+            resolveLang(args),
+            parent.uri,
+            parent.typename,
+          ),
+      },
+      label: {
+        type: GraphQLString,
+        args: LANG_ARGS,
+        description:
+          "rdfs:label, else skos:prefLabel, else the class's own name/title predicate — exact language tag, else untagged. Null when none is asserted; `title` is the total alternative.",
+        resolve: (parent, args: LangArgs) =>
+          resolveLabel(
+            selectLexicals(parent.triples, getChainsFor(parent.typename).label),
+            resolveLang(args),
+          ),
+      },
+      comment: {
+        type: GraphQLString,
+        args: LANG_ARGS,
+        description:
+          "Incidental prose: rdfs:comment, else the class's own summary predicate. Null when none is asserted.",
+        resolve: (parent, args: LangArgs) =>
+          resolveLabel(
+            selectLexicals(
+              parent.triples,
+              getChainsFor(parent.typename).comment,
+            ),
+            resolveLang(args),
+          ),
+      },
+      definition: {
+        type: GraphQLString,
+        args: LANG_ARGS,
+        description:
+          "Defining prose: skos:definition, else the class's own description predicate. Null when none is asserted.",
+        resolve: (parent, args: LangArgs) =>
+          resolveLabel(
+            selectLexicals(
+              parent.triples,
+              getChainsFor(parent.typename).definition,
+            ),
+            resolveLang(args),
+          ),
+      },
       type: {
         type: new GraphQLNonNull(ontologyClass),
         resolve: (parent) => {
+          // TBox branch: an OntologyClass parent's class is the meta-class.
+          // Identity-based — only the adapter mints members of the set.
+          if (tboxMetaParents.has(parent)) {
+            return OWL_CLASS_NODE;
+          }
           const classUri = mapped.nameMap.toOWL(parent.typename);
           return classUri ? ir.classes.get(classUri) : null;
         },
@@ -330,7 +686,15 @@ export default function buildTBoxSchema(
           if (!classUri || !field || !ir.properties.has(field.propertyUri)) {
             return null;
           }
-          return { propertyUri: field.propertyUri, classUri };
+          // graphqlName comes from the FIELD, not from args.name — they are
+          // the same string (Pass 4 keys the map by graphqlName), and taking
+          // it from the field keeps the answer sourced from the schema rather
+          // than echoed back from the caller.
+          return {
+            propertyUri: field.propertyUri,
+            classUri,
+            graphqlName: field.graphqlName,
+          };
         },
       },
       fields: {
@@ -360,8 +724,14 @@ export default function buildTBoxSchema(
     ontologyClass: {
       type: ontologyClass,
       args: { uri: { type: new GraphQLNonNull(GraphQLString) } },
+      // The meta-class round-trips through the same two spellings every IR
+      // class does — the absolute IRI and the `${namespace}:${localName}`
+      // convenience form — checked after the IR map so the IR always wins.
       resolve: (_parent, args: { uri: string }) =>
         ir.classes.get(args.uri) ??
+        (args.uri === OWL_CLASS_NODE.uri || args.uri === OWL_CLASS_PREFIXED
+          ? OWL_CLASS_NODE
+          : null) ??
         [...ir.classes.values()].find(
           (c) => `${c.namespace}:${c.uri.split(/[#/]/).pop()}` === args.uri,
         ) ??
@@ -379,10 +749,6 @@ export default function buildTBoxSchema(
     },
   };
 
-  // The Node interface is referenced through nodeConnection (lazily); the
-  // parameter is accepted to make the dependency explicit at the call site.
-  void nodeInterface;
-
   return {
     ontology,
     ontologyClass,
@@ -390,5 +756,6 @@ export default function buildTBoxSchema(
     ontologyProperty,
     entityMeta,
     queryFields,
+    isClassNode,
   };
 }

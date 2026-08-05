@@ -27,6 +27,7 @@ export {
   type DiagnosticSeverity,
   deserializeExtraction,
   type EntityValue,
+  type FieldPrefixing,
   hashSources,
   type InstanceStats,
   type MappedField,
@@ -38,6 +39,7 @@ export {
   type NonNullOverrides,
   type OntologyIR,
   type PassResult,
+  type ProjectionMode,
   type PropertyNode,
   type QueryFn,
   type RangeSpec,
@@ -73,10 +75,12 @@ export {
 } from "./execution/index.js";
 export {
   clampConnectionArgs,
+  createBoundedCache,
   createDepthLimitRule,
   DEFAULT_MAX_QUERY_DEPTH,
   DEFAULT_PAGE_SIZE,
   DEFAULT_PROCESS_CACHE_SIZE,
+  isAbsoluteIri,
   isSafeIri,
   MAX_PAGE_SIZE,
   maskError,

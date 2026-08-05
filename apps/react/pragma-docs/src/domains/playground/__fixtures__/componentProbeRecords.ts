@@ -15,83 +15,111 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const componentProbeRecords = {
-  "client:ds:global.component.button:modifierFamilies(first:12)": {
-    __id: "client:ds:global.component.button:modifierFamilies(first:12)",
-    __typename: "ModifierFamilyConnection",
-    edges: {
-      __refs: [
-        "client:ds:global.component.button:modifierFamilies(first:12):edges:0",
-        "client:ds:global.component.button:modifierFamilies(first:12):edges:1",
-      ],
-    },
+  "client:https://ds.canonical.com/global.component.button:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.button",
   },
-  "client:ds:global.component.button:modifierFamilies(first:12):edges:0": {
-    __id: "client:ds:global.component.button:modifierFamilies(first:12):edges:0",
-    __typename: "ModifierFamilyEdge",
-    node: {
-      __ref: "ds:global.modifier_family.anticipation",
+  "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12)":
+    {
+      __id: "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12)",
+      __typename: "ModifierFamilyConnection",
+      edges: {
+        __refs: [
+          "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12):edges:0",
+          "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12):edges:1",
+        ],
+      },
     },
+  "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12):edges:0":
+    {
+      __id: "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12):edges:0",
+      __typename: "ModifierFamilyEdge",
+      node: {
+        __ref: "https://ds.canonical.com/global.modifier_family.anticipation",
+      },
+    },
+  "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12):edges:1":
+    {
+      __id: "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12):edges:1",
+      __typename: "ModifierFamilyEdge",
+      node: {
+        __ref: "https://ds.canonical.com/global.modifier_family.importance",
+      },
+    },
+  "client:https://ds.canonical.com/global.component.button:subcomponents(first:12)":
+    {
+      __id: "client:https://ds.canonical.com/global.component.button:subcomponents(first:12)",
+      __typename: "SubcomponentConnection",
+      edges: {
+        __refs: [],
+      },
+    },
+  "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta": {
+    __id: "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.modifier_family.anticipation",
   },
-  "client:ds:global.component.button:modifierFamilies(first:12):edges:1": {
-    __id: "client:ds:global.component.button:modifierFamilies(first:12):edges:1",
-    __typename: "ModifierFamilyEdge",
-    node: {
-      __ref: "ds:global.modifier_family.importance",
-    },
-  },
-  "client:ds:global.component.button:subcomponents(first:12)": {
-    __id: "client:ds:global.component.button:subcomponents(first:12)",
-    __typename: "SubcomponentConnection",
-    edges: {
-      __refs: [],
-    },
+  "client:https://ds.canonical.com/global.modifier_family.importance:_meta": {
+    __id: "client:https://ds.canonical.com/global.modifier_family.importance:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.modifier_family.importance",
   },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
     'component(uri:"ds:global.component.button")': {
-      __ref: "ds:global.component.button",
+      __ref: "https://ds.canonical.com/global.component.button",
     },
   },
-  "ds:global": {
-    __id: "ds:global",
+  "https://ds.canonical.com/global": {
+    __id: "https://ds.canonical.com/global",
     __typename: "Tier",
-    id: "ds:global",
+    uri: "https://ds.canonical.com/global",
     name: "Global",
   },
-  "ds:global.component.button": {
-    __id: "ds:global.component.button",
+  "https://ds.canonical.com/global.component.button": {
+    __id: "https://ds.canonical.com/global.component.button",
     __typename: "Component",
-    id: "ds:global.component.button",
-    "modifierFamilies(first:12)": {
-      __ref: "client:ds:global.component.button:modifierFamilies(first:12)",
-    },
+    uri: "https://ds.canonical.com/global.component.button",
     name: "Button",
-    "subcomponents(first:12)": {
-      __ref: "client:ds:global.component.button:subcomponents(first:12)",
-    },
     summary:
       "Buttons trigger actions within an interface, typically involving data transformation or manipulation. They provide clear visual indicators of the primary actions users can perform on a page or section.\n\n",
     tier: {
-      __ref: "ds:global",
+      __ref: "https://ds.canonical.com/global",
     },
-    uri: "ds:global.component.button",
+    "subcomponents(first:12)": {
+      __ref:
+        "client:https://ds.canonical.com/global.component.button:subcomponents(first:12)",
+    },
+    "modifierFamilies(first:12)": {
+      __ref:
+        "client:https://ds.canonical.com/global.component.button:modifierFamilies(first:12)",
+    },
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.button:_meta",
+    },
   },
-  "ds:global.modifier_family.anticipation": {
-    __id: "ds:global.modifier_family.anticipation",
+  "https://ds.canonical.com/global.modifier_family.anticipation": {
+    __id: "https://ds.canonical.com/global.modifier_family.anticipation",
     __typename: "ModifierFamily",
-    id: "ds:global.modifier_family.anticipation",
+    uri: "https://ds.canonical.com/global.modifier_family.anticipation",
     name: "Anticipation",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.modifier_family.anticipation:_meta",
+    },
   },
-  "ds:global.modifier_family.importance": {
-    __id: "ds:global.modifier_family.importance",
+  "https://ds.canonical.com/global.modifier_family.importance": {
+    __id: "https://ds.canonical.com/global.modifier_family.importance",
     __typename: "ModifierFamily",
-    id: "ds:global.modifier_family.importance",
+    uri: "https://ds.canonical.com/global.modifier_family.importance",
     name: "Importance",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.modifier_family.importance:_meta",
+    },
   },
-  // The literal above is wider than `RecordMap`'s nominal record type (and
-  // `RecordMap` isn't root-exported from relay-runtime — hence the deep
-  // import above) — hence the double cast.
 } as unknown as RecordMap;
 
 export default componentProbeRecords;

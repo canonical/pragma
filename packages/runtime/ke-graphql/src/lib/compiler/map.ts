@@ -1,15 +1,17 @@
 // =============================================================================
 // Pass 4 — Map: OntologyIR → MappedIR
 //
-// Pure. OWL names → GraphQL names (custom overrides, has/is stripping, case
-// convention, pluralization, collision resolution), range → field type specs,
-// resolver template assignment, embeddable/interface interaction, synthetic
-// inverse fields, standard-vocab fields, non-null overrides.
+// Pure. OWL names → GraphQL names (config + graphql:name overrides, has/is
+// stripping, case convention, pluralization, collision resolution), range →
+// field type specs, resolver template assignment, embeddable/interface
+// interaction, synthetic inverse fields, standard-vocab fields, non-null
+// promotion (config list OR graphql:nonNull).
 // =============================================================================
 
 import {
   type ClassNode,
   type Diagnostic,
+  EMBEDDABLE_STRUCTURAL_FIELD_NAMES,
   type FieldTypeSpec,
   getLocalName,
   type MappedField,
@@ -20,20 +22,56 @@ import {
   type OntologyIR,
   type PassResult,
   type PropertyNode,
-  RESERVED_FIELD_NAMES,
   RESERVED_TYPE_NAMES,
   type ResolverTemplate,
+  STRUCTURAL_FIELD_NAMES,
 } from "../shared/index.js";
+import areAllImplementorsEmbeddable from "./areAllImplementorsEmbeddable.js";
 import BidirectionalNameMap from "./BidirectionalNameMap.js";
+import { DEFAULT_MODE, DEFAULT_PREFIXING } from "./constants.js";
 import {
   camelize,
   pluralize,
   sanitizeGraphQLName,
+  sanitizePrefixComponent,
   stripVerbPrefix,
 } from "./nameMap.js";
 import type { CustomMapping, SchemaPluginOptions } from "./types.js";
 
 const PHASE = "map";
+
+// The structural field-name sets (shared/constants.ts) are what wireRelay
+// injects on every container in Pass 6. An ontology property that maps onto
+// one of them is DROPPED with an M005 error rather than renamed: a same-named
+// ontology field would take the structural field's slot in the merged map and
+// break the Node interface at validateSchema — silently, because the merge
+// keeps the first POSITION but the last VALUE.
+
+/** The remedy that always works, whatever the collision: rename one side. */
+const RENAME_REMEDY =
+  'add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })';
+
+/**
+ * The M005 remedy set — named in the M005 message.
+ *
+ * `prefixing: "all"` ALWAYS clears an M005: the structural names the compiler
+ * owns (`uri`, `_meta`) carry no namespace prefix, so prefixing every
+ * generated field moves the ontology's claimant off the structural slot for
+ * good (`ex:uri` → `exUri`).
+ */
+const STRUCTURAL_COLLISION_REMEDIES = `${RENAME_REMEDY} or namespace-prefix every field with prefixing: "all"`;
+
+/**
+ * The M001 field-collision remedy set — named in the M001 message.
+ *
+ * `prefixing: "all"` is NOT a schema-wide remedy here. It moves each field
+ * into ITS OWN property's namespace prefix, which separates two claimants
+ * only when their IRIs sit in DIFFERENT namespaces (`ex:name` + `ds:name` →
+ * `exName` + `dsName`). Two same-namespace IRIs take the same prefix and
+ * collide again — `ex:name` and `ex:hasName` both strip to `name` and both
+ * become `exName` — so that case needs the rename.
+ */
+const FIELD_COLLISION_REMEDIES = `${RENAME_REMEDY}; prefixing: "all" resolves it only when the two IRIs are in different namespaces (same-namespace claimants take the same prefix and collide again)`;
 
 interface MapperState {
   ir: OntologyIR;
@@ -63,8 +101,25 @@ const findMapping = (
 /** Resolve every class URI to its GraphQL type name with collision handling. */
 const resolveTypeNames = (state: MapperState): void => {
   const taken = new Set<string>(RESERVED_TYPE_NAMES);
+  const owners = new Map<string, string>(); // resolved name → first class URI
+  // mode "explicit": only classes annotated graphql:expose true are
+  // projected. A skipped class is never registered — exactly an
+  // M001-dropped class downstream (no type, no root fields, tolerated by
+  // every consumer of typeNames) — and A007 aggregates the whole dropped
+  // set once, sorted, instead of one diagnostic per class.
+  const explicit = (state.options.mode ?? DEFAULT_MODE) === "explicit";
+  const outsideAllowlist: string[] = [];
   for (const node of state.ir.classes.values()) {
-    const custom = findMapping(state, node.uri)?.graphqlName;
+    if (explicit && state.ir.graphql.classes.get(node.uri)?.expose !== true) {
+      outsideAllowlist.push(node.uri);
+      continue;
+    }
+    // config ?? annotation, both with custom-name semantics: verbatim, never
+    // auto-prefixed on a reserved collision (M001 instead of M004), always
+    // M002-sanitized when illegal.
+    const custom =
+      findMapping(state, node.uri)?.graphqlName ??
+      state.ir.graphql.classes.get(node.uri)?.name;
     let name = custom ?? getLocalName(node.uri);
     const sanitized = sanitizeGraphQLName(name);
     if (sanitized !== name) {
@@ -78,31 +133,92 @@ const resolveTypeNames = (state: MapperState): void => {
       name = sanitized;
     }
     if (taken.has(name) && !custom) {
-      // Rule 6a: prefix with PascalCase namespace prefix (M004 info).
+      // Rule 6a: prefix with the PascalCased namespace prefix (M004 info).
+      // The prefix is sanitized BEFORE composition: a legal Turtle prefix may
+      // carry '-' or '.' ("ds-global"), which would mint an illegal GraphQL
+      // type name if concatenated raw.
+      const component = sanitizePrefixComponent(node.namespace);
       const prefixed =
-        node.namespace.charAt(0).toUpperCase() + node.namespace.slice(1) + name;
+        component.charAt(0).toUpperCase() + component.slice(1) + name;
+      // The name is `taken` for one of two reasons, and they are not the same
+      // finding. A compiler-reserved name (Query, Node, String, …) is the
+      // compiler's own claim; another MAPPED class holding it is a fact about
+      // the consumer's ontology, and naming only the renamed IRI would send
+      // them looking for a reserved word that isn't there. `owners` already
+      // carries the first claimant, so say which one it was.
+      const holder = owners.get(name);
       state.diagnostics.push({
         severity: "info",
         code: "M004",
-        message: `type name ${name} collides with a reserved name — renamed to ${prefixed}`,
+        message: holder
+          ? `${holder} and ${node.uri} both map to type ${name} — renamed to ${prefixed}`
+          : `type name ${name} collides with a reserved name — renamed to ${prefixed}`,
         source: node.uri,
         phase: PHASE,
       });
       name = prefixed;
     }
     if (taken.has(name)) {
+      // Aligned with the field-level M001 policy: the message names both
+      // claimants, and the LATER class is DROPPED — not registered at all —
+      // so it can neither overwrite the first class at types.set nor poison
+      // the name map. (The silent alternative registered both URIs to one
+      // name and let the later class win.)
+      const first = owners.get(name);
       state.diagnostics.push({
         severity: "error",
         code: "M001",
-        message: `type name ${name} (${node.uri}) collides and cannot be auto-resolved — add a custom mapping`,
+        message: first
+          ? `${first} and ${node.uri} both map to type ${name} — the second class is DROPPED (not registered). To keep both, add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })`
+          : `${node.uri} maps to the compiler-reserved type name ${name} — the class is DROPPED (not registered). To keep it, add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })`,
         source: node.uri,
         phase: PHASE,
       });
+      continue;
     }
     taken.add(name);
+    owners.set(name, node.uri);
     state.typeNames.set(node.uri, name);
     state.nameMap.set(node.uri, name);
   }
+  if (explicit && outsideAllowlist.length > 0) {
+    const sorted = [...outsideAllowlist].sort();
+    state.diagnostics.push({
+      severity: "info",
+      code: "A007",
+      message: `mode "explicit": ${sorted.length} class(es) outside the graphql:expose allowlist were not projected: ${sorted.join(", ")}`,
+      phase: PHASE,
+    });
+  }
+};
+
+/**
+ * Apply the `prefixing` policy to a generated field name: under
+ * `prefixing: "all"` every field carries its property's namespace prefix
+ * (`ex:uri` → `exUri`). That always clears an M005 (structural names carry no
+ * prefix) but clears an M001 only across namespaces — see
+ * FIELD_COLLISION_REMEDIES. The `"x"` fallback covers a predicate that is not
+ * a known ontology property (a standard-vocab field's predicate, typically).
+ *
+ * The composed result is kept legal by sanitizing the prefix component
+ * BEFORE concatenation (the field part was already sanitized upstream): a
+ * legal Turtle prefix may carry '-' or '.' ("ds-global"), which raw
+ * concatenation would smuggle past sanitizeGraphQLName into an illegal
+ * GraphQL name. The capitalization rule is unchanged — the prefix keeps its
+ * case, the field's first character is uppercased ("ds-global" + "x" →
+ * "dsGlobalX").
+ */
+const applyPrefixing = (
+  state: MapperState,
+  owlUri: string,
+  name: string,
+): string => {
+  if ((state.options.prefixing ?? DEFAULT_PREFIXING) !== "all") {
+    return name;
+  }
+  const namespace = state.ir.properties.get(owlUri)?.namespace ?? "x";
+  const prefix = sanitizePrefixComponent(namespace);
+  return `${prefix}${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 };
 
 /** Compute the GraphQL field name for a property. */
@@ -113,13 +229,31 @@ const computeFieldName = (
 ): string => {
   const custom = findMapping(state, property.uri)?.graphqlName;
   if (custom) {
-    return custom;
+    return custom; // an explicit graphqlName is authoritative — never prefixed
+  }
+  const annotated = state.ir.graphql.properties.get(property.uri)?.name;
+  if (annotated) {
+    // graphql:name is verbatim like a config graphqlName — never pluralized,
+    // never prefixed — but an illegal value is sanitized with the same M002
+    // diagnose-and-fall-back the class path applies, so one ontology
+    // compiles identically on every provider instead of dying at C003.
+    const sanitized = sanitizeGraphQLName(annotated);
+    if (sanitized !== annotated) {
+      state.diagnostics.push({
+        severity: "warning",
+        code: "M002",
+        message: `graphql:name "${annotated}" is not a legal GraphQL field name - sanitized to ${sanitized}`,
+        source: property.uri,
+        phase: PHASE,
+      });
+    }
+    return sanitized;
   }
   let name = stripVerbPrefix(getLocalName(property.uri));
   if (isList) {
     name = pluralize(name);
   }
-  return sanitizeGraphQLName(name);
+  return applyPrefixing(state, property.uri, sanitizeGraphQLName(name));
 };
 
 /** Compute the GraphQL field type spec for a property's resolved range. */
@@ -239,34 +373,47 @@ const buildFields = (
   typeName: string,
 ): Map<string, MappedField> => {
   const fields = new Map<string, MappedField>();
-  const used = new Set<string>(node.embeddable ? [] : RESERVED_FIELD_NAMES);
+  // The guard must protect exactly the fields Pass 6 will inject on THIS
+  // container. For a concrete class that is decided by its own embeddable
+  // flag; for an abstract class the interface's structural surface is decided
+  // by whether ALL concrete implementors are embeddable (the same shared
+  // predicate Pass 5 stores as InterfacePlan.embeddableOnly). Using the
+  // class's own flag for interfaces fails both ways: an embeddable abstract
+  // class with a non-embeddable subclass would let an ontology `uri` shadow
+  // the injected `uri: ID!` (C003), and a non-embeddable abstract parent of
+  // all-embeddable implementors would M005-drop a field its interface never
+  // injects.
+  const embeddableSurface = node.isAbstract
+    ? areAllImplementorsEmbeddable(state.ir, node.uri)
+    : node.embeddable;
+  const structural = embeddableSurface
+    ? EMBEDDABLE_STRUCTURAL_FIELD_NAMES
+    : STRUCTURAL_FIELD_NAMES;
 
   const addField = (field: MappedField) => {
-    if (used.has(field.graphqlName)) {
-      // Rule 7: reserved/colliding field — namespace-prefix it.
-      const renamed = `${state.ir.properties.get(field.owlUri)?.namespace ?? "x"}${
-        field.graphqlName.charAt(0).toUpperCase() + field.graphqlName.slice(1)
-      }`;
-      state.diagnostics.push({
-        severity: "warning",
-        code: "M002",
-        message: `field ${typeName}.${field.graphqlName} collides with a reserved name — renamed to ${renamed}`,
-        source: field.owlUri,
-        phase: PHASE,
-      });
-      field = { ...field, graphqlName: renamed };
-    }
-    if (fields.has(field.graphqlName)) {
+    // A silent rename is worse than a loud drop: the consumer's query breaks
+    // either way, but only the drop tells them which IRI caused it.
+    if (structural.has(field.graphqlName)) {
       state.diagnostics.push({
         severity: "error",
-        code: "M001",
-        message: `two properties map to ${typeName}.${field.graphqlName}`,
+        code: "M005",
+        message: `${field.owlUri} maps to ${typeName}.${field.graphqlName}, a structural field the compiler owns — the field is DROPPED. To keep it, ${STRUCTURAL_COLLISION_REMEDIES}`,
         source: field.owlUri,
         phase: PHASE,
       });
       return;
     }
-    used.add(field.graphqlName);
+    const existing = fields.get(field.graphqlName);
+    if (existing) {
+      state.diagnostics.push({
+        severity: "error",
+        code: "M001",
+        message: `${existing.owlUri} and ${field.owlUri} both map to ${typeName}.${field.graphqlName} — the second is DROPPED. To keep both, ${FIELD_COLLISION_REMEDIES}`,
+        source: field.owlUri,
+        phase: PHASE,
+      });
+      return;
+    }
     fields.set(field.graphqlName, field);
     state.nameMap.set(field.owlUri, field.graphqlName);
   };
@@ -285,13 +432,47 @@ const buildFields = (
     const embedded = isEmbeddedRange(state, property);
     const list = !singular;
     const name = computeFieldName(state, property, list);
+    // Effective non-null = the consumer's per-type list OR graphql:nonNull —
+    // both only ever promote, so the merge is a plain disjunction (no A005
+    // contradiction is expressible here).
     const nonNull =
-      state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false;
+      (state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false) ||
+      (state.ir.graphql.properties.get(property.uri)?.nonNull ?? false);
+    const fieldType = computeFieldType(state, property);
+    // mode "explicit": a field whose range class is compiled but NOT exposed
+    // is OMITTED with A008 — not String-fallbacked, which would leak entity
+    // IRIs as raw strings, and not fatal, because absence is this mode's
+    // design and the drop is loud. A union field whose effective member set
+    // emptied out (every member unexposed) is omitted the same way — an
+    // empty union cannot compose. An unknown range (B003) keeps its String
+    // fallback exactly as in every other mode.
+    if ((state.options.mode ?? DEFAULT_MODE) === "explicit") {
+      const unexposedRange =
+        property.range.kind === "class" &&
+        state.ir.classes.has(property.range.uri) &&
+        !state.typeNames.has(property.range.uri)
+          ? property.range.uri
+          : undefined;
+      const emptiedUnion =
+        fieldType.kind === "union" && fieldType.members.length === 0;
+      if (unexposedRange !== undefined || emptiedUnion) {
+        state.diagnostics.push({
+          severity: "warning",
+          code: "A008",
+          message:
+            unexposedRange !== undefined
+              ? `mode "explicit": ${typeName}.${name} is omitted — its range class ${unexposedRange} is not exposed (graphql:expose)`
+              : `mode "explicit": ${typeName}.${name} is omitted — no member of its union range is exposed (graphql:expose)`,
+          source: property.uri,
+          phase: PHASE,
+        });
+        continue;
+      }
+    }
     // Declared owl:inverseOf pair: the ABox may assert either direction, so
     // each side resolves the union of forward + reverse assertions.
     // List sides switch to the inverse template; singular sides keep their
     // template but carry inverseOf for the reverse fallback.
-    const fieldType = computeFieldType(state, property);
     const declaredInverse =
       property.kind === "object" && fieldType.kind === "type" && !embedded
         ? property.inverse
@@ -351,13 +532,15 @@ const buildFields = (
     });
   }
 
-  // Opt-in instance-level standard-vocab fields.
+  // Opt-in instance-level standard-vocab fields (deprecated — superseded by
+  // the graphql:*From annotations). They share the prefixing policy and the
+  // collision rules with every other field: no special case.
   const vocabFields = state.options.standardVocabFields?.[typeName];
   if (vocabFields) {
     for (const [predicate, name] of Object.entries(vocabFields)) {
       addField({
         owlUri: predicate,
-        graphqlName: name,
+        graphqlName: applyPrefixing(state, predicate, name),
         type: { kind: "scalar", name: "String" },
         nullable: true,
         list: false,
@@ -371,16 +554,6 @@ const buildFields = (
 
   return fields;
 };
-
-/**
- * An interface qualifies for embeddable implementors only when every
- * concrete descendant is embeddable (no uri/_meta on the interface then).
- */
-const isInterfaceEmbeddable = (ir: OntologyIR, node: ClassNode): boolean =>
-  collectConcreteDescendants(ir, node).every((uri) => {
-    /* v8 ignore next -- descendant URIs come from the class map, so the lookup always resolves and the false fallback is unreachable */
-    return ir.classes.get(uri)?.embeddable ?? false;
-  });
 
 /**
  * Map the OntologyIR to the GraphQL-shaped MappedIR (Pass 4): resolved type
@@ -425,9 +598,8 @@ export default function map(
 
   for (const node of ir.classes.values()) {
     const typeName = state.typeNames.get(node.uri);
-    /* v8 ignore next 3 -- resolveTypeNames assigns a name to every class in this same map, so a class without a resolved type name is unreachable */
     if (!typeName) {
-      continue;
+      continue; // M001-dropped class: never registered, never emitted
     }
     const fields = buildFields(state, node, typeName);
     // Field-name reverse lookups are scoped per type and served from
@@ -453,11 +625,14 @@ export default function map(
     }
 
     // Embeddable types implement an ancestor interface only when that
-    // interface itself is embeddable-safe (all implementors embeddable).
+    // interface itself is embeddable-safe (all implementors embeddable —
+    // the same shared predicate that selects the structural guard).
     const implemented = node.ancestors
       .map((a) => ir.classes.get(a))
       .filter((a): a is ClassNode => Boolean(a?.isAbstract))
-      .filter((a) => !node.embeddable || isInterfaceEmbeddable(ir, a))
+      .filter(
+        (a) => !node.embeddable || areAllImplementorsEmbeddable(ir, a.uri),
+      )
       .map((a) => state.typeNames.get(a.uri))
       .filter((n): n is string => n !== undefined);
 
@@ -473,10 +648,28 @@ export default function map(
     });
   }
 
-  // Collect union specs from field types.
+  // Collect union specs from field types. A union name is single-occupancy
+  // PER member set: two same-local-name properties on different types mint
+  // the same synthesized "<Prop>Union" name, and letting the first
+  // registration win silently would serve the second field with the wrong
+  // members. Identical member sets share one union (an inherited field
+  // appears on several containers — that is the normal case); a DIFFERENT
+  // member set under an already-registered name is an M006 error and the
+  // later definition is dropped.
+  const memberKey = (members: readonly string[]): string =>
+    [...members].sort().join(" | ");
+  const unionSources = new Map<string, { owlUri: string; key: string }>();
   for (const container of [...types.values(), ...interfaces.values()]) {
     for (const field of container.fields.values()) {
-      if (field.type.kind === "union" && !unions.has(field.type.name)) {
+      if (field.type.kind !== "union") {
+        continue;
+      }
+      const existing = unionSources.get(field.type.name);
+      if (!existing) {
+        unionSources.set(field.type.name, {
+          owlUri: field.owlUri,
+          key: memberKey(field.type.members),
+        });
         unions.set(field.type.name, {
           name: field.type.name,
           members: field.type.members,
@@ -485,6 +678,16 @@ export default function map(
           severity: "info",
           code: field.type.name.endsWith("Union") ? "X003" : "X002",
           message: `union ${field.type.name} = ${field.type.members.join(" | ")}`,
+          phase: PHASE,
+        });
+        continue;
+      }
+      if (existing.key !== memberKey(field.type.members)) {
+        diagnostics.push({
+          severity: "error",
+          code: "M006",
+          message: `union ${field.type.name} is minted by both ${existing.owlUri} (${existing.key}) and ${field.owlUri} (${memberKey(field.type.members)}) with different member sets — the later definition is DROPPED. To separate them, declare a named owl:unionOf class for one range (anonymous ranges synthesize the union name from the property's local name)`,
+          source: field.owlUri,
           phase: PHASE,
         });
       }

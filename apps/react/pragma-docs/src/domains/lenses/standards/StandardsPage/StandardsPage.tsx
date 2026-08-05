@@ -6,7 +6,7 @@ import ErrorBoundary from "#lib/ErrorBoundary/index.js";
 import type { StandardsIndexQuery } from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import standardsIndexQueryNode from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import { StandardsIndex } from "../StandardsIndex/index.js";
-import { STANDARDS_PAGE_SIZE } from "../standardsIndexQuery.js";
+import { standardsIndexVariables } from "../standardsIndexQuery.js";
 import type { StandardsPageProps } from "./types.js";
 import "./styles.css";
 
@@ -17,8 +17,9 @@ import "./styles.css";
  * invoked.
  */
 const standardsIndexQuerySource = (): unknown => graphql`
-  query StandardsIndexQuery($count: Int!, $cursor: String) {
-    ...StandardsIndex_query @arguments(count: $count, cursor: $cursor)
+  query StandardsIndexQuery($classUri: String!, $count: Int!, $cursor: String) {
+    ...StandardsIndex_query
+      @arguments(classUri: $classUri, count: $count, cursor: $cursor)
   }
 `;
 void standardsIndexQuerySource;
@@ -30,10 +31,13 @@ const componentCssClassName = "ds standards-page";
  * pagination fragment fans out from the query root.
  */
 const IndexContent = (): React.ReactElement => {
-  const data = useLazyLoadQuery<StandardsIndexQuery>(standardsIndexQueryNode, {
-    count: STANDARDS_PAGE_SIZE,
-    cursor: null,
-  });
+  const data = useLazyLoadQuery<StandardsIndexQuery>(
+    standardsIndexQueryNode,
+    // The one variables builder the prepare step and the prefetch seam
+    // also call — byte-identical variables, or the warmed store does not
+    // fulfil this operation.
+    standardsIndexVariables(),
+  );
 
   return <StandardsIndex query={data} />;
 };

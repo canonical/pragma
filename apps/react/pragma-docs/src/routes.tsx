@@ -11,12 +11,12 @@ import {
   wrapper,
 } from "@canonical/router-core";
 import type { ReactElement, ReactNode } from "react";
+import { JourneyViewProvider } from "#addons/journeys/journeyViewContext.js";
+import journeysRoutes from "#addons/journeys/routes.js";
 import accountRoutes from "#domains/account/routes.js";
 import componentsRoutes from "#domains/components/routes.js";
 import { LensFilterProvider } from "#domains/lenses/definitions/lensFilterContext.js";
 import definitionsRoutes from "#domains/lenses/definitions/routes.js";
-import { JourneyViewProvider } from "#domains/lenses/journeys/journeyViewContext.js";
-import journeysRoutes from "#domains/lenses/journeys/routes.js";
 import lensRoutes from "#domains/lenses/routes.js";
 import standardsRoutes from "#domains/lenses/standards/routes.js";
 import marketingRoutes from "#domains/marketing/routes.js";
@@ -140,6 +140,16 @@ const [playground] = group(publicLayout, [
 // category-grouped index + reading pages, P-5) from
 // `#domains/lenses/standards`; Guides stays a stub until P-5 builds its
 // views.
+//
+// Journeys is in this table but is NOT one of them. It is a pragma-specific
+// ADD-ON (`#addons/journeys`, not `#domains/lenses/…`) — an owner
+// reclassification, because it reads pragma's own ontology through generic
+// instance-level relation traversal, which the provider-neutral contract
+// cannot express. It is wired in BY HAND here, alongside the core lenses,
+// only because the docsite has no plugin mechanism yet; when one exists the
+// add-on registers its own routes and these two lines go away. Until then it
+// stays live and addressable — the ruling was "keep it on side", not "hide
+// it". See `src/addons/journeys/index.ts`.
 const [
   components,
   definitions,

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e1ef94359c2664f6be513ebe6a2ad538>>
+ * @generated SignedSource<<4a251215fba0c41ab2de0bb71daa3c19>>
  * @lightSyntaxTransform
  */
 
@@ -10,11 +10,17 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type EntityHeader_component$data = {
+  readonly _meta: {
+    readonly curie: string;
+  };
   readonly name: string | null | undefined;
   readonly summary: string | null | undefined;
   readonly tier: {
-    readonly id: string;
+    readonly _meta: {
+      readonly curie: string;
+    };
     readonly name: string | null | undefined;
+    readonly uri: string;
   } | null | undefined;
   readonly uri: string;
   readonly " $fragmentType": "EntityHeader_component";
@@ -29,6 +35,31 @@ var v0 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
+  "name": "uri",
+  "storageKey": null
+},
+v1 = {
+  "alias": null,
+  "args": null,
+  "concreteType": "EntityMeta",
+  "kind": "LinkedField",
+  "name": "_meta",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "curie",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v2 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
   "name": "name",
   "storageKey": null
 };
@@ -38,14 +69,9 @@ return {
   "metadata": null,
   "name": "EntityHeader_component",
   "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "uri",
-      "storageKey": null
-    },
     (v0/*:: as any*/),
+    (v1/*:: as any*/),
+    (v2/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -61,14 +87,9 @@ return {
       "name": "tier",
       "plural": false,
       "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "id",
-          "storageKey": null
-        },
-        (v0/*:: as any*/)
+        (v0/*:: as any*/),
+        (v2/*:: as any*/),
+        (v1/*:: as any*/)
       ],
       "storageKey": null
     }
@@ -78,6 +99,6 @@ return {
 };
 })();
 
-(node as any).hash = "899eb38f4ab031ab3e97b09a448c42e8";
+(node as any).hash = "336146a97b523f1ae5c867a7145409a6";
 
 export default node;

@@ -25,6 +25,7 @@ import type {
   MappedIR,
   PassResult,
 } from "../shared/index.js";
+import areAllImplementorsEmbeddable from "./areAllImplementorsEmbeddable.js";
 
 /** A reference to a (possibly not-yet-constructed) GraphQL type. */
 export interface TypeRef {
@@ -151,8 +152,11 @@ export default function emit(mapped: MappedIR): PassResult<SchemaPlan> {
       owlUri: mappedInterface.owlUri,
       parents: [...mappedInterface.parentInterfaces],
       fields: planFields(mappedInterface.fields),
+      // The SAME predicate Pass 4 used for the M005 structural guard — the
+      // shared helper keeps the interface's structural surface and the guard
+      // that protects it derived from one signal.
       embeddableOnly: areAllImplementorsEmbeddable(
-        mapped,
+        mapped.ir,
         mappedInterface.owlUri,
       ),
       description: node?.definition,
@@ -180,34 +184,3 @@ export default function emit(mapped: MappedIR): PassResult<SchemaPlan> {
     diagnostics,
   };
 }
-
-/** Are all concrete implementors of an interface embeddable? Cycle-safe walk. */
-const areAllImplementorsEmbeddable = (
-  mapped: MappedIR,
-  interfaceUri: string,
-): boolean => {
-  const node = mapped.ir.classes.get(interfaceUri);
-  if (!node) {
-    return false;
-  }
-  const concrete: boolean[] = [];
-  const visited = new Set<string>();
-  const walk = (uri: string) => {
-    if (visited.has(uri)) {
-      return; // subClassOf cycles (B001) must not overflow the stack
-    }
-    visited.add(uri);
-    const current = mapped.ir.classes.get(uri);
-    if (!current) {
-      return;
-    }
-    if (!current.isAbstract) {
-      concrete.push(current.embeddable);
-    }
-    for (const sub of current.subclasses) {
-      walk(sub);
-    }
-  };
-  walk(interfaceUri);
-  return concrete.length > 0 && concrete.every(Boolean);
-};

@@ -23,134 +23,183 @@
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 
 const lobbyRecords = {
+  "client:https://ds.canonical.com/Component:instances(first:6)": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6)",
+    __typename: "NodeConnection",
+    edges: {
+      __refs: [
+        "client:https://ds.canonical.com/Component:instances(first:6):edges:0",
+        "client:https://ds.canonical.com/Component:instances(first:6):edges:1",
+        "client:https://ds.canonical.com/Component:instances(first:6):edges:2",
+        "client:https://ds.canonical.com/Component:instances(first:6):edges:3",
+        "client:https://ds.canonical.com/Component:instances(first:6):edges:4",
+        "client:https://ds.canonical.com/Component:instances(first:6):edges:5",
+      ],
+    },
+  },
+  "client:https://ds.canonical.com/Component:instances(first:6):edges:0": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6):edges:0",
+    __typename: "NodeEdge",
+    node: {
+      __ref: "https://ds.canonical.com/global.component.accordion",
+    },
+  },
+  "client:https://ds.canonical.com/Component:instances(first:6):edges:1": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6):edges:1",
+    __typename: "NodeEdge",
+    node: {
+      __ref: "https://ds.canonical.com/global.component.announcement",
+    },
+  },
+  "client:https://ds.canonical.com/Component:instances(first:6):edges:2": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6):edges:2",
+    __typename: "NodeEdge",
+    node: {
+      __ref: "https://ds.canonical.com/apps_launchpad.component.avatar",
+    },
+  },
+  "client:https://ds.canonical.com/Component:instances(first:6):edges:3": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6):edges:3",
+    __typename: "NodeEdge",
+    node: {
+      __ref: "https://ds.canonical.com/global.component.avatar",
+    },
+  },
+  "client:https://ds.canonical.com/Component:instances(first:6):edges:4": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6):edges:4",
+    __typename: "NodeEdge",
+    node: {
+      __ref: "https://ds.canonical.com/apps_lxd.component.back_link",
+    },
+  },
+  "client:https://ds.canonical.com/Component:instances(first:6):edges:5": {
+    __id: "client:https://ds.canonical.com/Component:instances(first:6):edges:5",
+    __typename: "NodeEdge",
+    node: {
+      __ref: "https://ds.canonical.com/apps_launchpad.component.badge",
+    },
+  },
+  "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta": {
+    __id: "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_launchpad.component.avatar",
+  },
+  "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta": {
+    __id: "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_launchpad.component.badge",
+  },
+  "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta": {
+    __id: "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:apps_lxd.component.back_link",
+  },
+  "client:https://ds.canonical.com/global.component.accordion:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.accordion:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.accordion",
+  },
+  "client:https://ds.canonical.com/global.component.announcement:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.announcement:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.announcement",
+  },
+  "client:https://ds.canonical.com/global.component.avatar:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.avatar:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.avatar",
+  },
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
     'ontologyClass(uri:"ds:Component")': {
-      __ref: 'client:root:ontologyClass(uri:"ds:Component")',
+      __ref: "https://ds.canonical.com/Component",
     },
     'ontologyClass(uri:"ds:Pattern")': {
-      __ref: 'client:root:ontologyClass(uri:"ds:Pattern")',
+      __ref: "https://ds.canonical.com/Pattern",
     },
     'ontologyClass(uri:"cs:CodeStandard")': {
-      __ref: 'client:root:ontologyClass(uri:"cs:CodeStandard")',
+      __ref: "http://pragma.canonical.com/codestandards#CodeStandard",
     },
   },
-  'client:root:ontologyClass(uri:"ds:Component")': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component")',
+  "http://pragma.canonical.com/codestandards#CodeStandard": {
+    __id: "http://pragma.canonical.com/codestandards#CodeStandard",
     __typename: "OntologyClass",
-    instanceCount: 108,
+    instanceCount: 144,
+    uri: "http://pragma.canonical.com/codestandards#CodeStandard",
+  },
+  "https://ds.canonical.com/Component": {
+    __id: "https://ds.canonical.com/Component",
+    __typename: "OntologyClass",
+    instanceCount: 109,
     "instances(first:6)": {
-      __ref: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6)',
+      __ref: "client:https://ds.canonical.com/Component:instances(first:6)",
     },
+    uri: "https://ds.canonical.com/Component",
   },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6)': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6)',
-    __typename: "NodeConnection",
-    edges: {
-      __refs: [
-        'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:0',
-        'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:1',
-        'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:2',
-        'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:3',
-        'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:4',
-        'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:5',
-      ],
-    },
+  "https://ds.canonical.com/Pattern": {
+    __id: "https://ds.canonical.com/Pattern",
+    __typename: "OntologyClass",
+    instanceCount: 42,
+    uri: "https://ds.canonical.com/Pattern",
   },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:0': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:0',
-    __typename: "NodeEdge",
-    node: {
-      __ref: "ds:global.component.accordion",
-    },
-  },
-  "ds:global.component.accordion": {
-    __id: "ds:global.component.accordion",
+  "https://ds.canonical.com/apps_launchpad.component.avatar": {
+    __id: "https://ds.canonical.com/apps_launchpad.component.avatar",
     __typename: "Component",
-    uri: "ds:global.component.accordion",
-    name: "Accordion",
-    id: "ds:global.component.accordion",
-  },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:1': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:1',
-    __typename: "NodeEdge",
-    node: {
-      __ref: "ds:global.component.announcement",
-    },
-  },
-  "ds:global.component.announcement": {
-    __id: "ds:global.component.announcement",
-    __typename: "Component",
-    uri: "ds:global.component.announcement",
-    name: "Announcement",
-    id: "ds:global.component.announcement",
-  },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:2': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:2',
-    __typename: "NodeEdge",
-    node: {
-      __ref: "ds:apps_launchpad.component.avatar",
-    },
-  },
-  "ds:apps_launchpad.component.avatar": {
-    __id: "ds:apps_launchpad.component.avatar",
-    __typename: "Component",
-    uri: "ds:apps_launchpad.component.avatar",
+    uri: "https://ds.canonical.com/apps_launchpad.component.avatar",
     name: "Avatar",
-    id: "ds:apps_launchpad.component.avatar",
-  },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:3': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:3',
-    __typename: "NodeEdge",
-    node: {
-      __ref: "ds:global.component.avatar",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_launchpad.component.avatar:_meta",
     },
   },
-  "ds:global.component.avatar": {
-    __id: "ds:global.component.avatar",
+  "https://ds.canonical.com/apps_launchpad.component.badge": {
+    __id: "https://ds.canonical.com/apps_launchpad.component.badge",
     __typename: "Component",
-    uri: "ds:global.component.avatar",
-    name: "Avatar",
-    id: "ds:global.component.avatar",
-  },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:4': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:4',
-    __typename: "NodeEdge",
-    node: {
-      __ref: "ds:apps_lxd.component.back_link",
-    },
-  },
-  "ds:apps_lxd.component.back_link": {
-    __id: "ds:apps_lxd.component.back_link",
-    __typename: "Component",
-    uri: "ds:apps_lxd.component.back_link",
-    name: "BackLink",
-    id: "ds:apps_lxd.component.back_link",
-  },
-  'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:5': {
-    __id: 'client:root:ontologyClass(uri:"ds:Component"):instances(first:6):edges:5',
-    __typename: "NodeEdge",
-    node: {
-      __ref: "ds:apps_launchpad.component.badge",
-    },
-  },
-  "ds:apps_launchpad.component.badge": {
-    __id: "ds:apps_launchpad.component.badge",
-    __typename: "Component",
-    uri: "ds:apps_launchpad.component.badge",
+    uri: "https://ds.canonical.com/apps_launchpad.component.badge",
     name: "Badge",
-    id: "ds:apps_launchpad.component.badge",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_launchpad.component.badge:_meta",
+    },
   },
-  'client:root:ontologyClass(uri:"ds:Pattern")': {
-    __id: 'client:root:ontologyClass(uri:"ds:Pattern")',
-    __typename: "OntologyClass",
-    instanceCount: 41,
+  "https://ds.canonical.com/apps_lxd.component.back_link": {
+    __id: "https://ds.canonical.com/apps_lxd.component.back_link",
+    __typename: "Component",
+    uri: "https://ds.canonical.com/apps_lxd.component.back_link",
+    name: "BackLink",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/apps_lxd.component.back_link:_meta",
+    },
   },
-  'client:root:ontologyClass(uri:"cs:CodeStandard")': {
-    __id: 'client:root:ontologyClass(uri:"cs:CodeStandard")',
-    __typename: "OntologyClass",
-    instanceCount: 131,
+  "https://ds.canonical.com/global.component.accordion": {
+    __id: "https://ds.canonical.com/global.component.accordion",
+    __typename: "Component",
+    uri: "https://ds.canonical.com/global.component.accordion",
+    name: "Accordion",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.accordion:_meta",
+    },
+  },
+  "https://ds.canonical.com/global.component.announcement": {
+    __id: "https://ds.canonical.com/global.component.announcement",
+    __typename: "Component",
+    uri: "https://ds.canonical.com/global.component.announcement",
+    name: "Announcement",
+    _meta: {
+      __ref:
+        "client:https://ds.canonical.com/global.component.announcement:_meta",
+    },
+  },
+  "https://ds.canonical.com/global.component.avatar": {
+    __id: "https://ds.canonical.com/global.component.avatar",
+    __typename: "Component",
+    uri: "https://ds.canonical.com/global.component.avatar",
+    name: "Avatar",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.avatar:_meta",
+    },
   },
 } as unknown as RecordMap;
 

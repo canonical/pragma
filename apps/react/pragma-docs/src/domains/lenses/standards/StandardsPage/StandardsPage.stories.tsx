@@ -22,13 +22,13 @@ const meta: Meta<typeof StandardsPage> = {
   parameters: {
     relay: {
       mockResolvers: {
-        CodeStandard: () => ({
-          uri: "cs:code.array.safe_access",
-          name: null,
-          description:
-            "Use `.at(index)` instead of bracket notation for array element access.",
+        OntologyClass: () => ({
+          uri: "http://pragma.canonical.com/codestandards#CodeStandard",
         }),
-        Category: () => ({ slug: "code" }),
+        EntityMeta: () => ({
+          curie: "cs:code.array.safe_access",
+          title: "code.array.safe_access",
+        }),
         PageInfo: () => ({ hasNextPage: false }),
       },
     },

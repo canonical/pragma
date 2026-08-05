@@ -1,6 +1,7 @@
 import { Link } from "@canonical/router-react";
 import type React from "react";
 import { graphql, useFragment } from "react-relay";
+import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
 import type {
   TermInspector_class$data,
   TermInspector_class$key,
@@ -57,11 +58,13 @@ const termInspectorClassFragmentSource = (): unknown => graphql`
     instances(first: 12) {
       edges {
         node {
-          __typename
-          id
           uri
-          ... on Entity {
-            name
+          _meta {
+            curie
+            title
+            type {
+              uri
+            }
           }
         }
       }
@@ -73,6 +76,16 @@ const termInspectorClassFragmentSource = (): unknown => graphql`
 `;
 void termInspectorClassFragmentSource;
 
+/**
+ * DELIBERATELY NOT SELECTED: `acceptanceCriteria` and `completionGuidance`.
+ * ke-graphql still emits both unconditionally on `OntologyProperty`, but
+ * they are annotation-derived and excluded from the contract on purpose,
+ * so an arbitrary conforming provider does not have them. GraphQL has no
+ * optional field selection: one operation cannot select a field where it
+ * exists and skip it where it does not. This lens feature therefore cannot
+ * exist against an arbitrary provider, and the honest answer is to drop
+ * it rather than fork the operation behind a capability probe.
+ */
 const termInspectorPropertyFragmentSource = (): unknown => graphql`
   fragment TermInspector_property on OntologyProperty {
     uri
@@ -90,8 +103,6 @@ const termInspectorPropertyFragmentSource = (): unknown => graphql`
       uri
       label
     }
-    acceptanceCriteria
-    completionGuidance
   }
 `;
 void termInspectorPropertyFragmentSource;
@@ -245,30 +256,65 @@ const PropertyTable = ({
  * rule: a mention links to the noun's home, and only components have one
  * — `/components/:uri`). Every other instance renders as plain text until
  * its lens lands.
+ *
+ * WHAT DISCRIMINATES A COMPONENT is the instance's own CLASS, read off
+ * `_meta.type.uri` and compared against the app's components binding —
+ * never `__typename`. The contract's `NodeEdge.node` is `Node!` and a
+ * conforming provider's concrete typenames are its own business, so a
+ * `__typename === "Component"` test asks a question only pragma's compiled
+ * schema can answer. `_meta.type` is the class the graph itself assigns,
+ * and it is non-null on every node. The comparison runs through
+ * `toPrefixedUri` because `ontologyClass(uri:)` echoes back the ABSOLUTE
+ * IRI while the binding is stated prefixed: the two forms must be brought
+ * onto the same footing before `===` means anything. `namespaces` already
+ * rides this component as a prop and the query already fetches
+ * `ontologies { prefix namespace }` — no new variable, no new round trip.
+ *
+ * The displayed name is `_meta.title`, which is TOTAL by construction (the
+ * provider computes a fallback chain ending at the IRI). There is no
+ * `?? curie` branch because there is no case that reaches it — a fallback
+ * on a total field is unreachable code wearing defence's clothes.
+ *
+ * Every reader-facing string here is `_meta.curie`, NOT `uri`. Under the
+ * converged base `uri` is the absolute IRI, and this lens is the one place
+ * an ABox entity surfaces from a TBox route — so reading `uri` raw would
+ * both print a 45-character IRI at a reader and mint a SECOND address for
+ * an entity the catalog already addresses as `/components/ds%3A…`. One
+ * entity, one canonical URL: the D31 rule is about where a mention lands,
+ * and two spellings of the same landing is the same defect as none.
+ * `uri` stays Relay's identity and stays the list key.
  */
 const InstanceItem = ({
   node,
+  namespaces,
 }: {
   readonly node: {
-    readonly __typename: string;
-    readonly uri: string;
-    readonly name?: string | null | undefined;
+    readonly _meta: {
+      readonly curie: string;
+      readonly title: string;
+      readonly type: { readonly uri: string };
+    };
   };
+  readonly namespaces: readonly OntologyNamespace[];
 }): React.ReactElement => {
-  const display = node.name ?? node.uri;
-  if (node.__typename === "Component") {
+  const curie = node._meta.curie;
+  const display = node._meta.title;
+  if (
+    toPrefixedUri(node._meta.type.uri, namespaces) ===
+    GRAPH_BINDINGS.components.classUri
+  ) {
     return (
       <li>
-        <Link params={{ uri: node.uri }} to="componentEntity">
+        <Link params={{ uri: curie }} to="componentEntity">
           {display}
         </Link>{" "}
-        <code>{node.uri}</code>
+        <code>{curie}</code>
       </li>
     );
   }
   return (
     <li>
-      {display} <code>{node.uri}</code>
+      {display} <code>{curie}</code>
     </li>
   );
 };
@@ -361,7 +407,7 @@ const ClassView = ({
       <>
         <ul>
           {data.instances.edges.map(({ node }) => (
-            <InstanceItem key={node.id} node={node} />
+            <InstanceItem key={node.uri} namespaces={namespaces} node={node} />
           ))}
         </ul>
         {data.instances.pageInfo.hasNextPage ? (
@@ -422,10 +468,6 @@ const PropertyView = ({
           "none"
         )}
       </dd>
-      <dt>Acceptance criteria</dt>
-      <dd>{data.acceptanceCriteria ?? "none recorded"}</dd>
-      <dt>Completion guidance</dt>
-      <dd>{data.completionGuidance ?? "none recorded"}</dd>
     </dl>
   </article>
 );

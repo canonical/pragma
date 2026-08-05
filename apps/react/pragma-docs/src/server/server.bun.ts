@@ -28,16 +28,15 @@ import fs from "node:fs";
 import * as process from "node:process";
 import { viteFetchMiddleware } from "@canonical/react-ssr/server";
 import { createServer as createViteServer } from "vite";
-import { getGraphqlBackend } from "./graphql.js";
+import { resolveGraphqlUrl } from "#relay/graphqlEndpoint.js";
 import { prepareRelayData } from "./prepareRelayData.js";
 
 const PORT = Number(process.env.PORT) || 5174;
 
-// HTTP hits on the /graphql brick, logged per request so the e2e suite can
-// assert that a server-rendered first load makes ZERO of them (the prepare
-// step executes in-process and never appears here). Keep the log line in
-// sync with GRAPHQL_HIT_MARKER in test/e2e/servers.e2e.ts.
-let graphqlHits = 0;
+// The graph runs in its OWN process now (`graph.ts`, started by
+// `withGraph.ts`); this server neither mounts nor proxies `/graphql`. Resolved
+// once at module scope so every request uses the same endpoint.
+const graphqlUrl = resolveGraphqlUrl();
 
 const vite = await createViteServer({
   server: { middlewareMode: true },
@@ -54,19 +53,6 @@ Bun.serve({
     const requestUrl = url.pathname + url.search;
 
     try {
-      // The graph endpoint comes first so it never reaches the Vite
-      // middleware stack — the config-registered plugin instance would boot
-      // a second store in this process otherwise.
-      if (url.pathname === "/graphql") {
-        const { handle } = await getGraphqlBackend();
-        graphqlHits += 1;
-        // Counts HTTP requests reaching the brick, not successful
-        // executions — a malformed-JSON 400 still increments this, since it
-        // runs before `handle` sees the request.
-        console.info(`[graphql] http hit #${graphqlHits}`);
-        return handle(req);
-      }
-
       // Malformed percent-encoding guard (P-5 review finding, pre-existing
       // class): Vite decodes the path while serving assets, so a request
       // like /components/%ZZ would 500 with a Vite stack trace. Answer an
@@ -107,11 +93,11 @@ Bun.serve({
       );
 
       const { theme } = extractPreferences(req.headers.get("cookie"));
-      // Execute the matched route's query in-process and serialise the store
-      // BEFORE the renderer is constructed — initialData is embedded eagerly
-      // (P-2 Stage 1). `relay` is omitted (not `undefined`) on unmapped
+      // Execute the matched route's query against the graph server and
+      // serialise the store BEFORE the renderer is constructed — initialData
+      // is embedded eagerly. `relay` is omitted (not `undefined`) on unmapped
       // routes so the embedded JSON carries no dangling key.
-      const relay = await prepareRelayData(requestUrl);
+      const relay = await prepareRelayData(requestUrl, graphqlUrl);
       const renderer = new JSXRenderer(
         EntryServer,
         // The cookie is client-controlled, so only the known theme values reach
@@ -140,3 +126,4 @@ Bun.serve({
 });
 
 console.log(`Bun dev server on http://localhost:${PORT}/`);
+console.log(`  graph endpoint: ${graphqlUrl}`);

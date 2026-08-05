@@ -19,12 +19,14 @@ export default function PlaygroundPage(): ReactElement {
       <h1 id="playground-title">Playground</h1>
       <p>
         A real projection of the pragma graph: <code>ComponentProbe</code>{" "}
-        issues a <code>useLazyLoadQuery</code> against the in-process ke-graphql
-        schema at <code>/graphql</code> — the same endpoint GraphiQL serves.
+        issues a <code>useLazyLoadQuery</code> over HTTP to the standalone graph
+        server (<code>src/server/graph.ts</code>, at the endpoint{" "}
+        <code>VITE_GRAPHQL_URL</code> names) — the same endpoint GraphiQL
+        serves.
       </p>
       {/*
-        No `ClientOnly` guard any more (P-2 Stage 1): the SSR dev servers
-        execute the route's query in-process before rendering and seed the
+        No `ClientOnly` guard any more (P-2 Stage 1): the SSR servers POST
+        the route's query to the graph server before rendering and seed the
         per-request Relay environment, so the hook below reads the warm store
         without suspending. The Suspense boundary still serves the SPA cells
         (and any cell whose prepare step degraded), where the query fetches

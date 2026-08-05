@@ -20,7 +20,9 @@ import path from "node:path";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
+import { resolveGraphqlUrl } from "#relay/graphqlEndpoint.js";
 import EntryServer, { type InitialData } from "./entry.js";
+import { prepareRelayData } from "./prepareRelayData.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -38,18 +40,34 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
  * Per-request factory for the JSX app renderer. Accepts either a Web `Request`
  * (`serve-bun`) or a Node `IncomingMessage` (`serve-express`); it derives the
  * URL for routing and the cookie-backed theme so the first paint matches the
- * user's preference, passing both as the renderer's initial data.
+ * user's preference, and runs the Relay prepare step so the preview bricks
+ * server-render real data — all three ride the renderer's initial data.
  *
- * No `relay` prepare step here yet: the preview servers carry no graph
- * backend, and bundling the Oxigraph WASM store into the compiled
- * `dist/server` output is an unverified spike that gates them (P-2 design
- * note §3) — the dev bricks integrate `prepareRelayData` first.
+ * **The Oxigraph-bundle spike is CLOSED, and this is where it shows.** The
+ * preview bricks used to carry no prepare step because preparing meant
+ * importing an in-process ke-graphql backend, and nobody had verified that a
+ * WASM store could be bundled into `dist/server`. Since the PRD-3 process
+ * split, preparing means POSTing to the graph server — so this module's
+ * import graph reaches `prepareRelayData` → `routeQueries` → the app's routes
+ * and stops there. It never reaches the store or the schema-plugin packages,
+ * and no WASM enters `dist/server`. The standing proof is to build the server
+ * bundle and grep the emitted code for the store package's name: zero hits
+ * (matches inside TSDoc do not count — this bundle preserves comments).
+ *
+ * Async because of that step: the two preview bricks await this factory.
  */
-export default function createAppRenderer(request: Request | IncomingMessage) {
+export default async function createAppRenderer(
+  request: Request | IncomingMessage,
+) {
+  const url = getRequestUrl(request);
   const { theme } = extractPreferences(cookieHeader(request));
+  // `relay` is omitted (not `undefined`) on unmapped routes so the embedded
+  // JSON carries no dangling key.
+  const relay = await prepareRelayData(url, resolveGraphqlUrl());
   const initialData: InitialData = {
-    url: getRequestUrl(request),
+    url,
     theme: theme === "light" || theme === "dark" ? theme : undefined,
+    ...(relay ? { relay } : {}),
   };
   return new JSXRenderer(EntryServer, initialData, { htmlString });
 }

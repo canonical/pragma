@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2d827efc05f59469ec4a89730c4a819a>>
+ * @generated SignedSource<<77b4c2b0d8a818f0a3d2789620f96b1d>>
  * @lightSyntaxTransform
  */
 
@@ -11,6 +11,7 @@ import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type NeighbourhoodWell_component$data = {
   readonly _meta: {
+    readonly curie: string;
     readonly type: {
       readonly label: string | null | undefined;
       readonly namespace: string;
@@ -20,6 +21,9 @@ export type NeighbourhoodWell_component$data = {
   readonly inheritsFroms: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -31,6 +35,9 @@ export type NeighbourhoodWell_component$data = {
   readonly modifierFamilies: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -43,6 +50,9 @@ export type NeighbourhoodWell_component$data = {
   readonly specializedBies: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -54,6 +64,9 @@ export type NeighbourhoodWell_component$data = {
   readonly subcomponents: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -63,6 +76,9 @@ export type NeighbourhoodWell_component$data = {
     };
   };
   readonly tier: {
+    readonly _meta: {
+      readonly curie: string;
+    };
     readonly name: string | null | undefined;
     readonly uri: string;
   } | null | undefined;
@@ -70,6 +86,9 @@ export type NeighbourhoodWell_component$data = {
   readonly variantOfs: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -81,6 +100,9 @@ export type NeighbourhoodWell_component$data = {
   readonly variants: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -111,18 +133,38 @@ v1 = {
   "name": "name",
   "storageKey": null
 },
-v2 = [
-  (v0/*:: as any*/),
-  (v1/*:: as any*/)
-],
-v3 = [
+v2 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "curie",
+  "storageKey": null
+},
+v3 = {
+  "alias": null,
+  "args": null,
+  "concreteType": "EntityMeta",
+  "kind": "LinkedField",
+  "name": "_meta",
+  "plural": false,
+  "selections": [
+    (v2/*:: as any*/)
+  ],
+  "storageKey": null
+},
+v4 = [
   {
     "kind": "Variable",
     "name": "first",
     "variableName": "count"
   }
 ],
-v4 = {
+v5 = [
+  (v0/*:: as any*/),
+  (v3/*:: as any*/),
+  (v1/*:: as any*/)
+],
+v6 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -140,7 +182,7 @@ v4 = {
   ],
   "storageKey": null
 },
-v5 = [
+v7 = [
   {
     "alias": null,
     "args": null,
@@ -156,13 +198,13 @@ v5 = [
         "kind": "LinkedField",
         "name": "node",
         "plural": false,
-        "selections": (v2/*:: as any*/),
+        "selections": (v5/*:: as any*/),
         "storageKey": null
       }
     ],
     "storageKey": null
   },
-  (v4/*:: as any*/)
+  (v6/*:: as any*/)
 ];
 return {
   "argumentDefinitions": [
@@ -186,6 +228,7 @@ return {
       "name": "_meta",
       "plural": false,
       "selections": [
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -222,12 +265,16 @@ return {
       "kind": "LinkedField",
       "name": "tier",
       "plural": false,
-      "selections": (v2/*:: as any*/),
+      "selections": [
+        (v0/*:: as any*/),
+        (v1/*:: as any*/),
+        (v3/*:: as any*/)
+      ],
       "storageKey": null
     },
     {
       "alias": null,
-      "args": (v3/*:: as any*/),
+      "args": (v4/*:: as any*/),
       "concreteType": "SubcomponentConnection",
       "kind": "LinkedField",
       "name": "subcomponents",
@@ -248,59 +295,59 @@ return {
               "kind": "LinkedField",
               "name": "node",
               "plural": false,
-              "selections": (v2/*:: as any*/),
+              "selections": (v5/*:: as any*/),
               "storageKey": null
             }
           ],
           "storageKey": null
         },
-        (v4/*:: as any*/)
+        (v6/*:: as any*/)
       ],
       "storageKey": null
     },
     {
       "alias": null,
-      "args": (v3/*:: as any*/),
+      "args": (v4/*:: as any*/),
       "concreteType": "UIBlockConnection",
       "kind": "LinkedField",
       "name": "variants",
       "plural": false,
-      "selections": (v5/*:: as any*/),
+      "selections": (v7/*:: as any*/),
       "storageKey": null
     },
     {
       "alias": null,
-      "args": (v3/*:: as any*/),
+      "args": (v4/*:: as any*/),
       "concreteType": "UIBlockConnection",
       "kind": "LinkedField",
       "name": "variantOfs",
       "plural": false,
-      "selections": (v5/*:: as any*/),
+      "selections": (v7/*:: as any*/),
       "storageKey": null
     },
     {
       "alias": null,
-      "args": (v3/*:: as any*/),
+      "args": (v4/*:: as any*/),
       "concreteType": "UIBlockConnection",
       "kind": "LinkedField",
       "name": "inheritsFroms",
       "plural": false,
-      "selections": (v5/*:: as any*/),
+      "selections": (v7/*:: as any*/),
       "storageKey": null
     },
     {
       "alias": null,
-      "args": (v3/*:: as any*/),
+      "args": (v4/*:: as any*/),
       "concreteType": "UIBlockConnection",
       "kind": "LinkedField",
       "name": "specializedBies",
       "plural": false,
-      "selections": (v5/*:: as any*/),
+      "selections": (v7/*:: as any*/),
       "storageKey": null
     },
     {
       "alias": null,
-      "args": (v3/*:: as any*/),
+      "args": (v4/*:: as any*/),
       "concreteType": "ModifierFamilyConnection",
       "kind": "LinkedField",
       "name": "modifierFamilies",
@@ -321,13 +368,13 @@ return {
               "kind": "LinkedField",
               "name": "node",
               "plural": false,
-              "selections": (v2/*:: as any*/),
+              "selections": (v5/*:: as any*/),
               "storageKey": null
             }
           ],
           "storageKey": null
         },
-        (v4/*:: as any*/)
+        (v6/*:: as any*/)
       ],
       "storageKey": null
     }
@@ -337,6 +384,6 @@ return {
 };
 })();
 
-(node as any).hash = "dfc820ead3fa9d36571b1c6baaad7e79";
+(node as any).hash = "2abe310b3fcb11b83b39d2a69b52e608";
 
 export default node;

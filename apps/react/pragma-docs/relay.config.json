@@ -4,5 +4,9 @@
   "language": "typescript",
   "eagerEsModules": true,
   "artifactDirectory": "./src/relay/__generated__",
-  "excludes": ["**/node_modules/**", "**/__generated__/**", "**/dist/**"]
+  "excludes": ["**/node_modules/**", "**/__generated__/**", "**/dist/**"],
+  "schemaConfig": {
+    "nodeInterfaceIdField": "uri",
+    "nodeInterfaceIdVariableName": "id"
+  }
 }

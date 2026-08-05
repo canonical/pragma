@@ -19,18 +19,29 @@ import type DataLoader from "dataloader";
 // ---------------------------------------------------------------------------
 // Diagnostics
 //
-// The compiler never aborts on the first error. Every pass returns its output
-// plus diagnostics; codes are stable and append-only (X001 is retired and
-// never reused).
+// The compiler never aborts on the first error: every pass runs to completion
+// and returns its output plus diagnostics. At the end of the pipeline, any
+// error-severity diagnostic refuses the compile (CompilationError carrying
+// the full list); warnings and infos never do. Codes are stable and
+// append-only (X001 is retired and never reused).
 // ---------------------------------------------------------------------------
 
-/** Severity of a compiler diagnostic; only errors can prevent schema creation. */
+/** Severity of a compiler diagnostic; any error refuses the compile at the end of the pipeline. */
 export type DiagnosticSeverity = "error" | "warning" | "info";
 
 /** Stable, append-only diagnostic codes emitted by the compiler passes. */
 export type DiagnosticCode =
   // Extraction
   | "E001" // SPARQL query failed
+  // Annotation resolution (head of the build pass) + projection modes
+  | "A001" // conflicting graphql: annotation values — never tiebroken
+  | "A002" // graphql: annotation targets a foreign or unknown IRI
+  | "A003" // malformed graphql: annotation value
+  | "A004" // unrecognized graphql: term or inapplicable target kind — ignored
+  | "A005" // consumer config shadows a graphql: annotation — config wins
+  | "A006" // mode "auto": annotations present but the overlay is not consulted
+  | "A007" // mode "explicit": classes outside the expose allowlist not projected
+  | "A008" // mode "explicit": field omitted — its range class is not exposed
   // Build
   | "B001" // class cycle in subClassOf chain
   | "B002" // property references unknown class in domain
@@ -55,12 +66,16 @@ export type DiagnosticCode =
   | "V016" // concrete class with subclasses — polymorphic returns flattened
   // Mapping
   | "M001" // name collision after GraphQL name mapping
-  | "M002" // reserved GraphQL name conflict
+  | "M002" // class local name is not a legal GraphQL name — sanitized
   | "M003" // custom mapping references unknown property/class
   | "M004" // type name collision auto-resolved by namespace prefixing
+  | "M005" // property claims a structural field name (uri/_meta)
+  | "M006" // one union name minted with two different member sets
   // Emission
   | "X002" // union type created for polymorphic range
   | "X003" // union type synthesized from anonymous range
+  // Relay wiring
+  | "W001" // two root query fields claim one name — the later is dropped
   // Composition
   | "C001" // extension references unknown type
   | "C002" // extension field conflicts with generated field
@@ -86,9 +101,10 @@ export interface PassResult<T> {
 // ---------------------------------------------------------------------------
 // Pass 1 output — RawExtraction
 //
-// Direct output of the twelve SPARQL queries. Includes the ABox probes
+// Direct output of the extraction queries. Includes the ABox probes
 // (instance stats, self-references, functional violations, undeclared
-// predicates) so that Passes 2–7 never touch the store.
+// predicates, annotations, blank-node depth) so that Passes 2–7 never touch
+// the store.
 // ---------------------------------------------------------------------------
 
 /** A class row as extracted from the store (Pass 1, pre-IR). */
@@ -158,9 +174,29 @@ export interface InstanceStats {
 }
 
 /**
- * Pass 1 output: the complete, serializable result of the twelve SPARQL
- * queries — the TBox structure plus the ABox probes that keep Passes 2–7
- * pure.
+ * The RDF value kind of a `graphql:` vocabulary assertion's object: a
+ * NamedNode ("iri") or a Literal ("literal"). Captured with the value so
+ * Pass 2 can validate each term's expected kind (A003) without re-querying
+ * the store; blank-node objects are not capturable (no stable identity to
+ * serialize) and are dropped at extraction.
+ */
+export type GraphqlAnnotationValueKind = "iri" | "literal";
+
+/**
+ * One `graphql:` vocabulary assertion as extracted from the store:
+ * [target IRI, term IRI, object value, object kind]. Rows are plain tuples
+ * so the extraction artifact serializes them verbatim.
+ */
+export type GraphqlAnnotationRow = readonly [
+  target: string,
+  term: string,
+  value: string,
+  kind: GraphqlAnnotationValueKind,
+];
+
+/**
+ * Pass 1 output: the complete, serializable result of the extraction queries
+ * — the TBox structure plus the ABox probes that keep Passes 2–7 pure.
  */
 export interface RawExtraction {
   classes: RawClass[];
@@ -192,6 +228,15 @@ export interface RawExtraction {
    * loader fetches only a single-hop blank-node closure, so deeper nesting
    * would be truncated. */
   deepBlankNesting: boolean;
+  /**
+   * Every `graphql:` vocabulary assertion in the store, captured verbatim:
+   * deduplicated (RDF set semantics — the same assertion loaded twice is one
+   * fact, not a conflict) and sorted by (target, term, kind, value) so
+   * artifacts and diagnostic messages are deterministic. Capture is
+   * mode-independent — the artifact must serve any projection mode at
+   * rebuild time; resolution and validation happen in Pass 2.
+   */
+  graphqlAnnotations: readonly GraphqlAnnotationRow[];
 }
 
 // ---------------------------------------------------------------------------
@@ -223,8 +268,9 @@ export interface ClassNode {
   isAbstract: boolean;
   /**
    * Instances are exclusively blank nodes (from Pass 1 instanceStats) or
-   * forced via custom mapping. Embeddable types implement no Node
-   * interface and have no id/uri/_meta or root queries.
+   * forced via custom mapping. Embeddable types implement no Node interface
+   * and have no `uri` or root queries — but they DO carry `_meta`, because
+   * self-description is a fact about the class, not about identity.
    */
   embeddable: boolean;
   /** Properties whose rdfs:domain is this class. */
@@ -298,11 +344,75 @@ export interface PropertyNode {
   annotations: ReadonlyMap<string, string>;
 }
 
+/**
+ * Class-targeted `graphql:` overrides, resolved and validated. Absent fields
+ * mean "unannotated — the heuristic decides"; `abstract`/`embeddable` are
+ * tri-state exactly like the config knobs (an explicit `false` forces the
+ * heuristic off).
+ */
+export interface GraphqlClassOverlay {
+  /** graphql:name — verbatim GraphQL type name (never pluralized/prefixed). */
+  name?: string;
+  /** graphql:abstract — interface vs concrete type, overriding detection. */
+  abstract?: boolean;
+  /** graphql:embeddable — embedded (no uri/roots), overriding detection. */
+  embeddable?: boolean;
+  /** graphql:expose — allowlist membership under `mode: "explicit"`. */
+  expose?: boolean;
+  /** graphql:titleFrom — predicate heading the `_meta.title` chain. */
+  titleFrom?: string;
+  /** graphql:labelFrom — predicate heading the `_meta.label` chain. */
+  labelFrom?: string;
+  /** graphql:commentFrom — predicate heading the `_meta.comment` chain. */
+  commentFrom?: string;
+  /** graphql:definitionFrom — predicate heading the `_meta.definition` chain. */
+  definitionFrom?: string;
+}
+
+/** Property-targeted `graphql:` overrides, resolved and validated. */
+export interface GraphqlPropertyOverlay {
+  /** graphql:name — verbatim GraphQL field name (never pluralized/prefixed). */
+  name?: string;
+  /** graphql:singular — cardinality: config > annotation > functional > SHACL > kind. */
+  singular?: boolean;
+  /** graphql:nonNull — OR-merged with the NonNullOverrides config list. */
+  nonNull?: boolean;
+  /** graphql:inverse — declared-pair inverse (same semantics as owl:inverseOf). */
+  inverse?: string;
+  /**
+   * graphql:searchable — IR capture ONLY in this release: no schema surface
+   * reads it (no search root field, no connection, no OntologyProperty
+   * field), so the emitted SDL is byte-identical with or without the term.
+   * The search feature (PRA-91) consumes this flag when it builds its index.
+   * Its recorded default, decided here so the boundary is explicit: an
+   * ontology with ZERO graphql:searchable annotations indexes the
+   * descriptive-chain sources (title/label/definition) — a silently empty
+   * index is rejected, and no server-side predicate/class config block
+   * replaces this term.
+   */
+  searchable?: boolean;
+}
+
+/**
+ * The resolved `graphql:` annotation overlay: one validated source of truth
+ * for every consumption site (`config ?? overlay ?? heuristic`). Produced at
+ * the head of Pass 2 from RawExtraction.graphqlAnnotations and carried on
+ * the IR so Passes 3–7 and the TBox never re-derive it.
+ */
+export interface GraphqlOverlay {
+  classes: ReadonlyMap<string, GraphqlClassOverlay>;
+  properties: ReadonlyMap<string, GraphqlPropertyOverlay>;
+  /** graphql:prefix — namespace IRI → declared prefix (validated, injective). */
+  prefixes: ReadonlyMap<string, string>;
+}
+
 /** Pass 2 output: the typed class/property graph plus namespace inventory. */
 export interface OntologyIR {
   classes: ReadonlyMap<string, ClassNode>;
   properties: ReadonlyMap<string, PropertyNode>;
   namespaces: ReadonlyMap<string, NamespaceInfo>;
+  /** The resolved `graphql:` annotation overlay (empty when unannotated). */
+  graphql: GraphqlOverlay;
   /** Carried through from Pass 1 for the validate/map passes. */
   extraction: RawExtraction;
 }
@@ -413,7 +523,9 @@ export type TripleValue =
 
 /**
  * The uniform parent value flowing through every resolver. Named entities
- * carry their prefixed URI; embedded blank-node values carry uri: null.
+ * carry their ABSOLUTE IRI — the same string SPARQL, the loaders, `Node.uri`,
+ * `node(id:)`, and the connection cursors all key on. Embedded blank-node
+ * values carry uri: null (a blank node has no stable identity to expose).
  */
 export interface EntityValue {
   uri: string | null;
@@ -440,9 +552,11 @@ export interface CompilerContext {
   inverseLoader: DataLoader<string, string[]>;
   nameMap: NameMap;
   /**
-   * The compiled namespace inventory — resolvers use it for full-IRI ↔
-   * prefixed-URI conversion (e.g. paginating an object connection by its
-   * cursor-stable prefixed form before hydration).
+   * The compiled namespace inventory. The pagination path performs NO
+   * full ↔ prefixed conversion — windows, cursors, and loader keys are the
+   * absolute IRI end to end. The inventory serves exactly two edges: the
+   * singular `<type>(uri:)` lookup's input expansion (toFull) and display
+   * (toPrefixed, for consumers rendering a short form).
    */
   namespaces: ReadonlyMap<string, NamespaceInfo>;
   /**

@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from "vitest";
 import {
+  GRAPHQL_TERMS,
   type RawExtraction,
   type RawProperty,
   type RawShaclConstraint,
@@ -34,6 +35,7 @@ const makeExtraction = (
   functionalViolations: new Set(),
   undeclaredPredicates: new Set(),
   annotations: new Map(),
+  graphqlAnnotations: [],
   deepBlankNesting: false,
   ...partial,
 });
@@ -661,5 +663,176 @@ describe("build — annotation properties", () => {
     expect(
       output.properties.get(uri("name"))?.annotations.get(uri("note")),
     ).toBe("hi");
+  });
+});
+
+describe("build — graphql: annotation overlay binding", () => {
+  it("binds graphql:abstract and graphql:embeddable over the heuristics (tri-state)", () => {
+    const extraction = makeExtraction({
+      classes: [
+        // heuristic says concrete (has instances) — annotation forces abstract
+        { uri: uri("Forced"), superclasses: [] },
+        // heuristic says abstract (0 instances + subclass) — false forces concrete
+        { uri: uri("Kept"), superclasses: [] },
+        { uri: uri("Sub"), superclasses: [uri("Kept")] },
+        // heuristic says non-embeddable (named instances) — annotation forces
+        { uri: uri("Embed"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Forced"), { total: 2, named: 2 }],
+        [uri("Sub"), { total: 1, named: 1 }],
+        [uri("Embed"), { total: 1, named: 1 }],
+      ]),
+      graphqlAnnotations: [
+        [uri("Embed"), GRAPHQL_TERMS.embeddable, "true", "literal"],
+        [uri("Forced"), GRAPHQL_TERMS.abstract, "true", "literal"],
+        [uri("Kept"), GRAPHQL_TERMS.abstract, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(diagnostics).toEqual([]);
+    expect(output.classes.get(uri("Forced"))?.isAbstract).toBe(true);
+    expect(output.classes.get(uri("Kept"))?.isAbstract).toBe(false);
+    expect(output.classes.get(uri("Embed"))?.embeddable).toBe(true);
+  });
+
+  it("keeps config ahead of the annotation for abstract/embeddable (A005 names the shadow)", () => {
+    const extraction = makeExtraction({
+      classes: [{ uri: uri("Thing"), superclasses: [] }],
+      instanceStats: new Map([[uri("Thing"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("Thing"), GRAPHQL_TERMS.abstract, "true", "literal"],
+        [uri("Thing"), GRAPHQL_TERMS.embeddable, "true", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction, {
+      "ex:Thing": { abstract: false, embeddable: false },
+    });
+    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(false);
+    expect(output.classes.get(uri("Thing"))?.embeddable).toBe(false);
+    expect(
+      diagnostics.filter((d) => d.code === "A005").map((d) => d.severity),
+    ).toEqual(["warning", "warning"]);
+  });
+
+  it("binds graphql:singular into the cardinality tier between config and owl/SHACL", () => {
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Thing"), superclasses: [] },
+        { uri: uri("Other"), superclasses: [] },
+      ],
+      properties: [
+        // object property defaults to list — annotation makes it singular
+        {
+          uri: uri("rel"),
+          kind: "object",
+          domains: [uri("Thing")],
+          ranges: [uri("Other")],
+        },
+        // datatype property defaults to singular — annotation makes it a list
+        datatypeProp("tags"),
+        // config wins over a contradicting annotation
+        datatypeProp("cfg"),
+      ],
+      graphqlAnnotations: [
+        [uri("cfg"), GRAPHQL_TERMS.singular, "false", "literal"],
+        [uri("rel"), GRAPHQL_TERMS.singular, "true", "literal"],
+        [uri("tags"), GRAPHQL_TERMS.singular, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction, {
+      "ex:cfg": { singular: true },
+    });
+    expect(output.properties.get(uri("rel"))?.functional).toBe(true);
+    expect(output.properties.get(uri("tags"))?.functional).toBe(false);
+    expect(output.properties.get(uri("cfg"))?.functional).toBe(true);
+    expect(diagnostics.filter((d) => d.code === "A005")).toHaveLength(1);
+  });
+
+  it("joins graphql:inverse pairs with owl:inverseOf declared-pair semantics", () => {
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Parent"), superclasses: [] },
+        { uri: uri("Child"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("hasChild"),
+          kind: "object",
+          domains: [uri("Parent")],
+          ranges: [uri("Child")],
+        },
+        {
+          uri: uri("childOf"),
+          kind: "object",
+          domains: [uri("Child")],
+          ranges: [uri("Parent")],
+        },
+      ],
+      graphqlAnnotations: [
+        // a name-only overlay entry must NOT mint an inverse pair
+        [uri("childOf"), GRAPHQL_TERMS.name, "parent", "literal"],
+        [uri("hasChild"), GRAPHQL_TERMS.inverse, uri("childOf"), "iri"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(diagnostics).toEqual([]);
+    // Forward side set by the annotation; backward auto-completed exactly
+    // like an asymmetric owl:inverseOf.
+    expect(output.properties.get(uri("hasChild"))?.inverse).toBe(
+      uri("childOf"),
+    );
+    expect(output.properties.get(uri("childOf"))?.inverse).toBe(
+      uri("hasChild"),
+    );
+  });
+
+  it("keeps a dangling graphql:inverse on the owl:inverseOf parity path", () => {
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Parent"), superclasses: [] },
+        { uri: uri("Child"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("hasChild"),
+          kind: "object",
+          domains: [uri("Parent")],
+          ranges: [uri("Child")],
+        },
+      ],
+      graphqlAnnotations: [
+        [uri("hasChild"), GRAPHQL_TERMS.inverse, uri("ghost"), "iri"],
+      ],
+    });
+    const { output } = build(extraction);
+    // The pair joins the IR; Pass 3's existing B004 reports the dangle.
+    expect(output.properties.get(uri("hasChild"))?.inverse).toBe(uri("ghost"));
+  });
+
+  it("carries the resolved overlay on the IR and leads prefixes with it", () => {
+    // Pass 1 folded the declaration into extraction.namespaces ("exx"); the
+    // overlay agrees, and both the node namespaces and the NamespaceInfo
+    // keying read the overlay's value first.
+    const extraction = makeExtraction({
+      classes: [{ uri: uri("Thing"), superclasses: [] }],
+      namespaces: new Map([[NS, "exx"]]),
+      graphqlAnnotations: [[NS, GRAPHQL_TERMS.prefix, "exx", "literal"]],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(diagnostics).toEqual([]);
+    expect(output.graphql.prefixes.get(NS)).toBe("exx");
+    expect(output.classes.get(uri("Thing"))?.namespace).toBe("exx");
+    expect(output.namespaces.get("exx")?.uri).toBe(NS);
+    expect(output.namespaces.get("exx")?.classCount).toBe(1);
+  });
+
+  it("exposes an empty overlay for an unannotated extraction", () => {
+    const { output } = build(
+      makeExtraction({ classes: [{ uri: uri("Thing"), superclasses: [] }] }),
+    );
+    expect(output.graphql.classes.size).toBe(0);
+    expect(output.graphql.properties.size).toBe(0);
+    expect(output.graphql.prefixes.size).toBe(0);
   });
 });

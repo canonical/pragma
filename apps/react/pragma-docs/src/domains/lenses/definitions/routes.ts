@@ -14,8 +14,9 @@ import { definitionsStripSlots } from "./stripSlots.js";
  * mount the same page over the same ONE `RouteQueryEntry`
  * (`definitionsQuery.ts`), parked twice per the P-2/P-5 handshake:
  *
- * - `meta[ROUTE_QUERY_META_KEY]` — the server prepare step executes the
- *   query in-process and serialises the store (`prepareRelayData`);
+ * - `meta[ROUTE_QUERY_META_KEY]` — the server prepare step POSTs the query
+ *   to the graph server and serialises the reply into the store
+ *   (`prepareRelayData`);
  * - `prefetch` — hover (router-react's `Link`) and the initial hydration
  *   load warm the client store through `warmRouteQuery`.
  *

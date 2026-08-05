@@ -14,6 +14,7 @@
     "noEmit": true,
     "paths": {
       "#lib/*": ["./lib/*"],
+      "#addons/*": ["./addons/*"],
       "#domains/*": ["./domains/*"],
       "#relay/*": ["./relay/*"],
       "#styles/*": ["./styles/*"]

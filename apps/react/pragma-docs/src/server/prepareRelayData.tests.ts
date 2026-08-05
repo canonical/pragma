@@ -37,11 +37,21 @@ vi.mock("../routes.js", async () => {
   };
 });
 
+/**
+ * A deliberately dead endpoint. Both cases below throw inside
+ * `matchRouteQuery` — the collector walks the malformed entry before any
+ * transport is constructed — so the URL is never dialled and a bogus one
+ * keeps the suite honest: if either case ever DID reach the network, the
+ * connection refusal would make that obvious rather than letting a real
+ * request slip out of a unit test.
+ */
+const DEAD_GRAPHQL_URL = "http://127.0.0.1:1/graphql";
+
 /** Runs `prepareRelayData` with the degradation log silenced and captured. */
 const prepareSilenced = async (url: string) => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
   try {
-    const prepared = await prepareRelayData(url);
+    const prepared = await prepareRelayData(url, DEAD_GRAPHQL_URL);
     return { prepared, consoleError: consoleError.mock.calls };
   } finally {
     consoleError.mockRestore();

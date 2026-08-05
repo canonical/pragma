@@ -43,7 +43,9 @@ const triples = (entries: [string, TripleValue[]][] = []): TripleSet =>
   new Map(entries);
 
 const entity = (over: Partial<EntityValue>): EntityValue => ({
-  uri: "ds:thing",
+  // EntityValue.uri is the ABSOLUTE IRI everywhere now — the inverse loader's
+  // cache key is built straight from it, unexpanded.
+  uri: `${NS}thing`,
   typename: "Widget",
   triples: triples(),
   ...over,
@@ -177,14 +179,14 @@ describe("createObjectSingularResolver", () => {
     const ctx = makeCtx({
       inverseLoader: { load: vi.fn(async () => [`${NS}back`]) },
     } as Partial<CompilerContext>);
-    const parent = entity({ uri: "ds:thing", triples: triples() });
+    const parent = entity({ uri: `${NS}thing`, triples: triples() });
     const result = (await resolve(
       parent,
       noArgs,
       ctx,
       {} as never,
     )) as EntityValue;
-    expect(ctx.inverseLoader.load).toHaveBeenCalledWith(`${NS}fwd ds:thing`);
+    expect(ctx.inverseLoader.load).toHaveBeenCalledWith(`${NS}fwd ${NS}thing`);
     expect(result.uri).toBe(`${NS}back`);
   });
 
@@ -195,13 +197,13 @@ describe("createObjectSingularResolver", () => {
     const ctx = makeCtx({
       inverseLoader: { load: vi.fn(async () => [] as string[]) },
     } as Partial<CompilerContext>);
-    const parent = entity({ uri: "ds:thing", triples: triples() });
+    const parent = entity({ uri: `${NS}thing`, triples: triples() });
     expect(await resolve(parent, noArgs, ctx, {} as never)).toBeNull();
   });
 
   it("returns null with no URI value and no declared inverse", async () => {
     const resolve = createObjectSingularResolver(field({}));
-    const parent = entity({ uri: "ds:thing", triples: triples() });
+    const parent = entity({ uri: `${NS}thing`, triples: triples() });
     expect(await resolve(parent, noArgs, makeCtx(), {} as never)).toBeNull();
   });
 
@@ -244,20 +246,38 @@ describe("createObjectListResolver", () => {
     )) as {
       edges: { node: EntityValue }[];
     };
-    // Sorted by prefixed URI: ds:a, ds:b.
+    // Sorted by absolute IRI — the cursor currency — so ".../a" then ".../b".
     expect(result.edges.map((e) => e.node.uri)).toEqual([`${NS}a`, `${NS}b`]);
   });
 
-  it("keeps a value verbatim when its prefix does not expand (toFull fallback)", async () => {
+  it("passes an unregistered IRI through to the loader verbatim", async () => {
     const resolve = createObjectListResolver(field({}));
     const ctx = makeCtx();
-    // "zz:thing" has no registered namespace: toPrefixed leaves it, and
-    // toFull returns undefined → the loader key falls back to the raw value.
+    // No namespace conversion happens at all any more: whatever the triple
+    // says is the loader key, the sort key, and the cursor.
     const parent = entity({
       triples: triples([[`${NS}p`, [uri("zz:thing")]]]),
     });
     await resolve(parent, { first: 10 } as never, ctx, {} as never);
     expect(ctx.entityLoader.loadMany).toHaveBeenCalledWith(["zz:thing"]);
+  });
+
+  it("orders the cursor window by codepoint, not by locale", async () => {
+    const resolve = createObjectListResolver(field({}));
+    const ctx = makeCtx();
+    // Locale-aware collation (full ICU) would sort "é" with "e" — BEFORE
+    // "z" — making cursor order differ between hosts. Codepoint order puts
+    // "z" (U+007A) ahead of "é" (U+00E9) on every environment.
+    const parent = entity({
+      triples: triples([[`${NS}p`, [uri(`${NS}é`), uri(`${NS}z`)]]]),
+    });
+    const result = (await resolve(
+      parent,
+      { first: 10 } as never,
+      ctx,
+      {} as never,
+    )) as { edges: { node: EntityValue }[] };
+    expect(result.edges.map((e) => e.node.uri)).toEqual([`${NS}z`, `${NS}é`]);
   });
 });
 
@@ -268,7 +288,7 @@ describe("createInverseResolver", () => {
       inverseLoader: { load: vi.fn(async () => [`${NS}b`]) },
     } as Partial<CompilerContext>);
     const parent = entity({
-      uri: "ds:thing",
+      uri: `${NS}thing`,
       triples: triples([[`${NS}p`, [uri(`${NS}a`), lit("skip")]]]),
     });
     const result = (await resolve(
@@ -280,7 +300,7 @@ describe("createInverseResolver", () => {
       edges: { node: EntityValue }[];
     };
     expect(result.edges.map((e) => e.node.uri)).toEqual([`${NS}a`, `${NS}b`]);
-    expect(ctx.inverseLoader.load).toHaveBeenCalledWith(`${NS}fwd ds:thing`);
+    expect(ctx.inverseLoader.load).toHaveBeenCalledWith(`${NS}fwd ${NS}thing`);
   });
 
   it("uses only forward triples when the parent has no uri", async () => {

@@ -16,19 +16,23 @@ import { RELATION_PAGE_SIZE } from "./probeQuery.js";
 const componentProbeQuerySource = (): unknown => graphql`
   query ComponentProbeQuery($uri: String!, $count: Int!) {
     component(uri: $uri) {
-      id
       uri
+      _meta {
+        curie
+      }
       name
       summary
       tier {
-        id
+        uri
         name
       }
       subcomponents(first: $count) {
         edges {
           node {
-            id
             uri
+            _meta {
+              curie
+            }
             name
           }
         }
@@ -36,7 +40,10 @@ const componentProbeQuerySource = (): unknown => graphql`
       modifierFamilies(first: $count) {
         edges {
           node {
-            id
+            uri
+            _meta {
+              curie
+            }
             name
           }
         }
@@ -79,11 +86,11 @@ export default function ComponentProbe({
   }
 
   return (
-    <article aria-label={component.name ?? component.uri}>
+    <article aria-label={component.name ?? component._meta.curie}>
       <header>
-        <h2>{component.name ?? component.uri}</h2>
+        <h2>{component.name ?? component._meta.curie}</h2>
         <p>
-          <code>{component.uri}</code>
+          <code>{component._meta.curie}</code>
           {component.tier?.name ? <> · tier: {component.tier.name}</> : null}
         </p>
       </header>
@@ -98,8 +105,8 @@ export default function ComponentProbe({
       ) : (
         <ul>
           {component.subcomponents.edges.map(({ node }) => (
-            <li key={node.id}>
-              {node.name ?? node.uri} <code>{node.uri}</code>
+            <li key={node.uri}>
+              {node.name ?? node._meta.curie} <code>{node._meta.curie}</code>
             </li>
           ))}
         </ul>
@@ -110,7 +117,7 @@ export default function ComponentProbe({
       ) : (
         <ul>
           {component.modifierFamilies.edges.map(({ node }) => (
-            <li key={node.id}>{node.name ?? node.id}</li>
+            <li key={node.uri}>{node.name ?? node._meta.curie}</li>
           ))}
         </ul>
       )}

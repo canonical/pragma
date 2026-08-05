@@ -1,30 +1,39 @@
 /**
- * The server-side data prepare step (P-2 Stage 1): match the URL, execute the
- * matched route's query to completion against the in-process ke-graphql
- * backend, and serialise the resulting Relay store for hydration.
+ * The server-side data prepare step: match the URL, execute the matched
+ * route's query to completion against the graph server, and serialise the
+ * resulting Relay store for hydration.
  *
- * One function, integrated into the two dev server bricks (`server.bun.ts`,
- * `server.express.ts`) ahead of renderer construction. The two preview bricks
- * are explicitly NOT integrated yet: they carry no backend at all, and
- * bundling the Oxigraph WASM store into the compiled `dist/server` output is
- * an unverified spike that gates them (see the P-2 design note, §3).
+ * One function, integrated into ALL FOUR server bricks — the two dev servers
+ * (`server.bun.ts`, `server.express.ts`) and, since the PRD-3 process split,
+ * the two preview bricks by way of the compiled `renderer.tsx`. The preview
+ * bricks could not have it before because the backend was in-process and
+ * bundling an Oxigraph WASM store into `dist/server` was an unverified spike.
+ * The graph is a separate process now, so the prepare step is just an HTTP
+ * client and every brick can have one.
  *
- * The backend handle stays in THIS (native) module registry: `EntryServer`
- * and the rest of the render world load via `ssrLoadModule`, and an SSR-graph
- * import of `getGraphqlBackend` would boot a second store in the process.
- * Only plain data (the serialised records) crosses the registry boundary.
+ * ## No incremental drain here any more
+ *
+ * The previous in-process adapter had to drain ke-graphql's incremental
+ * results itself (`isIncrementalResults` / `mergeIncremental`) because it
+ * called the executor directly. Over HTTP that is the SERVER's job, and
+ * ke-graphql already does it: `createGraphQLHandler` merges incremental
+ * results into one complete JSON response whenever the request does not
+ * accept `multipart/mixed` — see
+ * `node_modules/.../ke-graphql/src/http/createGraphQLHandler.ts:392-400`.
+ * Its `accepts` helper (`:133-143`) requires an EXACT media-type match, and
+ * the wildcard `Accept` header relay-runtime's fetch sends selects no
+ * media type exactly — so the drain always fires for us.
+ *
+ * The route→query map still lives in THIS (native) module registry: the dev
+ * bricks load `EntryServer` and the rest of the render world via
+ * `ssrLoadModule`, so the deliberate double-match (one here for data, one in
+ * `EntryServer` for render) crosses a registry boundary carrying only plain
+ * data — see `routeQueries.ts`.
  */
 
-import { isIncrementalResults, mergeIncremental } from "@canonical/ke-graphql";
-import {
-  type FetchFunction,
-  fetchQuery,
-  type GraphQLResponse,
-  type OperationType,
-} from "relay-runtime";
+import { fetchQuery, type OperationType } from "relay-runtime";
 import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { createEnvironment } from "#relay/environment.js";
-import { type GraphqlBackend, getGraphqlBackend } from "./graphql.js";
 import { matchRouteQuery } from "./routeQueries.js";
 
 /** The serialised store snapshot for `initialData.relay`. */
@@ -33,50 +42,24 @@ export interface PreparedRelayData {
 }
 
 /**
- * Adapt the backend's in-process executor to relay-runtime's `FetchFunction`.
- * Relay hands over the operation's full text (`params.text` — generated
- * artifacts carry it with `id: null`), which is also what keeps the
- * two-graphql-versions boundary text-only (see `GraphqlExecuteArgs`).
+ * Marks the outgoing request as this app's own server-side traffic. The graph
+ * server logs `ssr` vs `client` off it, which is what lets the e2e suite
+ * prove a server-rendered first load made no BROWSER requests.
  */
-export const toBackendFetchFn =
-  (backend: GraphqlBackend): FetchFunction =>
-  (params, variables) => {
-    const { text } = params;
-    if (!text) {
-      throw new Error(
-        `operation ${params.name} carries no text — persisted queries are ` +
-          "not supported at the in-process boundary",
-      );
-    }
-    return (async (): Promise<GraphQLResponse> => {
-      const result = await backend.execute({
-        source: text,
-        variableValues: variables,
-        operationName: params.name,
-      });
-      // Stage 1 has no streaming: if the executor ever returns an
-      // incremental stream, drain it into one complete result
-      // (correctness-preserving; Stage 2 replaces this with a multi-payload
-      // observable). The cast is the graphql-17/relay boundary: both sides
-      // describe the same executed-result wire shape.
-      const complete = isIncrementalResults(result)
-        ? await mergeIncremental(result)
-        : result;
-      return complete as GraphQLResponse;
-    })();
-  };
+const SSR_HEADERS = { "x-pragma-ssr": "1" } as const;
 
 /**
- * Execute the matched route's query and serialise the store. Returns
- * `undefined` when the route maps to no query — and on any failure
- * (malformed route meta, execution error), logging it: the page then renders
- * without server data and the client fetches over HTTP, which is the pre-P-2
- * behaviour rather than a 500.
+ * Execute the matched route's query against `graphqlUrl` and serialise the
+ * store. Returns `undefined` when the route maps to no query — and on any
+ * failure (malformed route meta, unreachable graph, execution error),
+ * logging it: the page then renders without server data and the client
+ * fetches over HTTP, which is a degraded page rather than a 500.
  *
- * @note Impure — boots the shared backend singleton on first mapped request.
+ * @note Impure — performs a network request to the graph server.
  */
 export const prepareRelayData = async (
   url: string,
+  graphqlUrl: string,
 ): Promise<PreparedRelayData | undefined> => {
   try {
     // Matching happens INSIDE the try: the collector behind `matchRouteQuery`
@@ -85,11 +68,11 @@ export const prepareRelayData = async (
     // into 500s instead of degrading to the no-server-data path below.
     const matched = matchRouteQuery(url);
     if (!matched) return undefined;
-    const backend = await getGraphqlBackend();
-    // A dedicated per-request execution environment (never a shared one), so
-    // the serialised snapshot contains exactly this route's data (P-2 D9).
+    // A dedicated per-request environment (never a shared one), so the
+    // serialised snapshot contains exactly this route's data (P-2 D9).
     const environment = createEnvironment({
-      fetchFn: toBackendFetchFn(backend),
+      graphqlUrl,
+      headers: SSR_HEADERS,
     });
     await fetchQuery<OperationType>(
       environment,
@@ -103,7 +86,7 @@ export const prepareRelayData = async (
     return { records };
   } catch (error) {
     console.error(
-      `[ssr] relay prepare failed for ${url} — rendering without server data`,
+      `[ssr] relay prepare failed for ${url} against ${graphqlUrl} — rendering without server data`,
       error,
     );
     return undefined;

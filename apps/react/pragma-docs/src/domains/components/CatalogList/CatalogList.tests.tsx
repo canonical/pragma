@@ -98,25 +98,35 @@ const untieredRecords = {
   "ds:global.component.button": {
     __id: "ds:global.component.button",
     __typename: "Component",
-    id: "ds:global.component.button",
     name: "Button",
     uri: "ds:global.component.button",
     summary: "Buttons trigger actions.",
     tier: { __ref: "ds:global" },
+    _meta: { __ref: "client:ds:global.component.button:_meta" },
+  },
+  "client:ds:global.component.button:_meta": {
+    __id: "client:ds:global.component.button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.button",
   },
   "ds:limbo.component.orphan": {
     __id: "ds:limbo.component.orphan",
     __typename: "Component",
-    id: "ds:limbo.component.orphan",
     name: "Orphan",
     uri: "ds:limbo.component.orphan",
     summary: null,
     tier: null,
+    _meta: { __ref: "client:ds:limbo.component.orphan:_meta" },
+  },
+  "client:ds:limbo.component.orphan:_meta": {
+    __id: "client:ds:limbo.component.orphan:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:limbo.component.orphan",
   },
   "ds:global": {
     __id: "ds:global",
     __typename: "Tier",
-    id: "ds:global",
+    uri: "ds:global",
     name: "Global",
   },
 } as unknown as RecordMap;

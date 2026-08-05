@@ -2,55 +2,71 @@
 // Pass 6 — Wire Relay: SchemaPlan → SchemaPlan
 //
 // Pure plan surgery (no graphql-js objects yet):
-// - id/uri/_meta on every non-embeddable type
+// - uri + _meta on every non-embeddable type; _meta alone on embeddables
+//   (self-description is a fact about the class, not about identity)
 // - Node membership for non-embeddable types AND for generated interfaces
 //   whose concrete implementors are all non-embeddable (Relay @refetchable
-//   fragments on UIBlock need Node + id)
+//   fragments on UIBlock need Node)
 // - list object fields → connections with the four pagination args
-// - root query fields: node(id), per-type lookup + listing
+// - root query fields: node(id), per-type lookup + listing — single-occupancy
+//   names (a later claimant is dropped with W001, never silently overwritten)
+//
+// Identity is the ABSOLUTE IRI end to end: EntityValue.uri, Node.uri, the
+// node(id:) argument, the listing's URI window, and the cursors derived from
+// it are all the same string. The prefixed form survives only as the singular
+// `<type>(uri:)` lookup's INPUT convenience, expanded by toFull.
 // =============================================================================
 
-import { toFull, toPrefixed } from "../dataloader/index.js";
+import { toFull } from "../dataloader/index.js";
+import { isAbsoluteIri } from "../hardening/index.js";
 import {
   connectionFromPage,
   paginateUriWindow,
   unwrapEntities,
 } from "../resolver/index.js";
-import type {
-  CompilerContext,
-  Diagnostic,
-  EntityValue,
-  PassResult,
+import {
+  type CompilerContext,
+  type Diagnostic,
+  type EntityValue,
+  type PassResult,
+  STRUCTURAL_META,
+  STRUCTURAL_URI,
 } from "../shared/index.js";
+import { OWL_CLASS, OWL_CLASS_NODE } from "../tbox/index.js";
 import type { FieldPlan, SchemaPlan } from "./emit.js";
 
-/** Create the Relay global-ID field plan (id: ID!). */
-const createIdField = (): FieldPlan => ({
-  name: "id",
+const PHASE = "wireRelay";
+
+/** Create the uri field plan (uri: ID!) — the entity's absolute IRI. */
+const createUriField = (): FieldPlan => ({
+  name: STRUCTURAL_URI,
   type: { base: "ID", kind: "scalar", list: false, nonNull: true },
   resolve: (parent: EntityValue) => parent.uri,
-  description: "Relay global ID — the entity's prefixed URI.",
-});
-
-/** Create the uri field plan (uri: String!). */
-const createUriField = (): FieldPlan => ({
-  name: "uri",
-  type: { base: "String", kind: "scalar", list: false, nonNull: true },
-  resolve: (parent: EntityValue) => parent.uri,
+  description: "The entity's absolute IRI — the primary key.",
 });
 
 /** Create the _meta field plan (self-describing TBox access). */
 const createMetaField = (): FieldPlan => ({
-  name: "_meta",
+  name: STRUCTURAL_META,
   type: { base: "EntityMeta", kind: "named", list: false, nonNull: true },
   resolve: (parent: EntityValue) => parent,
   description: "Self-describing TBox access for this entity.",
 });
 
 /**
+ * The structural fields injected ahead of the generated ones. Embeddable
+ * containers get `_meta` only: a blank node has no IRI to expose, but it does
+ * have a class — and a zero-property embeddable would otherwise emit a type
+ * with no fields at all (a C003 validateSchema failure).
+ */
+const planStructuralFields = (embeddable: boolean): FieldPlan[] =>
+  embeddable ? [createMetaField()] : [createUriField(), createMetaField()];
+
+/**
  * Wire the Relay server conventions into the SchemaPlan (Pass 6): Node
- * membership with id/uri/_meta on non-embeddable types, connection-wrapping
- * of list object fields, and the root node/lookup/listing query fields.
+ * membership with uri/_meta on non-embeddable types, _meta on embeddable ones,
+ * connection-wrapping of list object fields, and the root node/lookup/listing
+ * query fields.
  * Pure plan surgery — no graphql-js objects are constructed here.
  */
 export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
@@ -89,48 +105,89 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
     wrapConnections(iface.fields);
   }
 
-  // ── id/uri/_meta + Node membership ──
+  // ── uri/_meta + Node membership ──
+  // Map merge note: a duplicate key keeps the FIRST position but takes the
+  // LAST value, so an ontology field named `uri` would replace the structural
+  // one. Pass 4 drops those with M005 — this merge must never see one.
   for (const type of plan.types.values()) {
-    if (type.embeddable) {
-      continue;
-    }
-    const structural = [createIdField(), createUriField(), createMetaField()];
-    const existing = type.fields;
+    const structural = planStructuralFields(type.embeddable);
     type.fields = new Map([
       ...structural.map((f): [string, FieldPlan] => [f.name, f]),
-      ...existing,
+      ...type.fields,
     ]);
-    type.interfaces = ["Node", ...type.interfaces];
+    if (!type.embeddable) {
+      type.interfaces = ["Node", ...type.interfaces];
+    }
   }
   for (const iface of plan.interfaces.values()) {
-    if (iface.embeddableOnly) {
-      continue;
-    }
-    const structural = [createIdField(), createUriField(), createMetaField()];
+    const structural = planStructuralFields(iface.embeddableOnly);
     iface.fields = new Map([
       ...structural.map((f): [string, FieldPlan] => [f.name, f]),
       ...iface.fields,
     ]);
-    iface.parents = ["Node", ...iface.parents];
+    if (!iface.embeddableOnly) {
+      iface.parents = ["Node", ...iface.parents];
+    }
   }
 
   // ── root query fields ──
-  plan.queryFields.set("node", {
-    name: "node",
-    type: { base: "Node", kind: "named", list: false, nonNull: false },
-    args: { id: { type: "ID", required: true } },
-    resolve: async (_parent, args: { id?: string }, ctx: CompilerContext) => {
-      if (!args.id) {
-        return null;
-      }
-      const full = toFull(args.id, mapped.namespaces);
-      if (!full) {
-        return null; // unknown prefix
-      }
-      return ctx.entityLoader.load(full);
+  // Root names are single-occupancy. pluralize() is the identity for
+  // s-ending names, so a type whose camelized name already ends in "s"
+  // (Lens, Status) mints singular == plural; a lookup or listing could
+  // equally land on "node". The FIRST claimant keeps the name; a later one
+  // is dropped with W001 — never silently overwritten. Fatal at compile
+  // level: a schema silently missing a root field must never be served.
+  const rootClaimants = new Map<string, string>();
+  const claimRootField = (
+    field: FieldPlan,
+    claimant: string,
+    source?: string,
+  ) => {
+    const holder = rootClaimants.get(field.name);
+    if (holder) {
+      diagnostics.push({
+        severity: "error",
+        code: "W001",
+        message: `root field Query.${field.name} is claimed by both ${holder} and ${claimant} — the later field is DROPPED. To keep both, rename the class (mappings: { "<iri>": { graphqlName: "…" } })`,
+        source,
+        phase: PHASE,
+      });
+      return;
+    }
+    rootClaimants.set(field.name, claimant);
+    plan.queryFields.set(field.name, field);
+  };
+
+  claimRootField(
+    {
+      name: "node",
+      type: { base: "Node", kind: "named", list: false, nonNull: false },
+      args: { id: { type: "ID", required: true } },
+      resolve: async (_parent, args: { id?: string }, ctx: CompilerContext) => {
+        // The argument keeps the Relay name `id`; its VALUE is the absolute IRI
+        // (which is also `Node.uri`). No prefix map is consulted: an id that is
+        // not a syntactically absolute IRI resolves to null, never to a guess.
+        if (!args.id || !isAbsoluteIri(args.id)) {
+          return null;
+        }
+        // ABox first, TBox second — strictly additive: every id the entity
+        // loader used to answer still answers identically, and only ids it
+        // resolves to null (a class IRI has no mapped rdf:type) fall through
+        // to the class nodes. owl:Class itself resolves to the meta-node, so
+        // the class of a class is a Node too.
+        const entity = await ctx.entityLoader.load(args.id);
+        if (entity) {
+          return entity;
+        }
+        return (
+          mapped.ir.classes.get(args.id) ??
+          (args.id === OWL_CLASS ? OWL_CLASS_NODE : null)
+        );
+      },
+      description: "Relay node resolution by absolute IRI.",
     },
-    description: "Relay node resolution by prefixed-URI global ID.",
-  });
+    "the node(id:) field",
+  );
 
   for (const type of plan.types.values()) {
     if (type.embeddable || !type.owlUri) {
@@ -142,41 +199,62 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
     }
     const classUri = type.owlUri;
 
-    plan.queryFields.set(mappedType.singularName, {
-      name: mappedType.singularName,
-      type: { base: type.name, kind: "named", list: false, nonNull: false },
-      args: { uri: { type: "String", required: true } },
-      resolve: async (
-        _parent,
-        args: { uri?: string },
-        ctx: CompilerContext,
-      ) => {
-        if (!args.uri) {
-          return null;
-        }
-        const full = toFull(args.uri, mapped.namespaces) ?? args.uri;
-        return ctx.entityLoader.load(full);
+    claimRootField(
+      {
+        name: mappedType.singularName,
+        type: { base: type.name, kind: "named", list: false, nonNull: false },
+        // Deliberately String!, not ID!: this argument accepts the PREFIXED
+        // convenience form, and promoting it to ID! would reject every existing
+        // client query declaring `$uri: String!` (String is not a subtype of ID).
+        args: { uri: { type: "String", required: true } },
+        resolve: async (
+          _parent,
+          args: { uri?: string },
+          ctx: CompilerContext,
+        ) => {
+          if (!args.uri) {
+            return null;
+          }
+          const full = toFull(args.uri, mapped.namespaces) ?? args.uri;
+          // Same admission contract as node(id:): a value that is not a
+          // syntactically absolute IRI resolves to null WITHOUT touching the
+          // loader. Unvalidated, a colon-free argument ("dune") would ride the
+          // batched CONSTRUCT as an invalid IRIREF and fail the whole batch —
+          // poisoning every valid sibling lookup in the same tick.
+          if (!isAbsoluteIri(full)) {
+            return null;
+          }
+          return ctx.entityLoader.load(full);
+        },
       },
-    });
+      `the ${type.name} singular lookup`,
+      classUri,
+    );
 
-    plan.queryFields.set(mappedType.pluralName, {
-      name: mappedType.pluralName,
-      type: { base: type.name, kind: "connection", list: false, nonNull: true },
-      connectionArgs: true,
-      resolve: async (_parent, args, ctx: CompilerContext) => {
-        // Slice BEFORE hydration: cursors and pageInfo need only the
-        // (name-sorted) URI list; entities are loaded for the page alone.
-        const fullUris = await ctx.listLoader.load(classUri);
-        const prefixed = fullUris.map((uri) =>
-          toPrefixed(uri, mapped.namespaces),
-        );
-        const page = paginateUriWindow(prefixed, args);
-        const entities = await ctx.entityLoader.loadMany(
-          page.window.map((uri) => toFull(uri, mapped.namespaces) ?? uri),
-        );
-        return connectionFromPage(unwrapEntities(entities), page);
+    claimRootField(
+      {
+        name: mappedType.pluralName,
+        type: {
+          base: type.name,
+          kind: "connection",
+          list: false,
+          nonNull: true,
+        },
+        connectionArgs: true,
+        resolve: async (_parent, args, ctx: CompilerContext) => {
+          // Slice BEFORE hydration: cursors and pageInfo need only the
+          // (name-sorted) IRI list; entities are loaded for the page alone.
+          // The list is already in the loader's absolute-IRI currency, which is
+          // exactly what the cursors encode — no round-trip, no drift.
+          const uris = await ctx.listLoader.load(classUri);
+          const page = paginateUriWindow(uris, args);
+          const entities = await ctx.entityLoader.loadMany(page.window);
+          return connectionFromPage(unwrapEntities(entities), page);
+        },
       },
-    });
+      `the ${type.name} listing`,
+      classUri,
+    );
   }
 
   return { output: plan, diagnostics };

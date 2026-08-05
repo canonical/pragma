@@ -27,7 +27,7 @@ const graphql = createSchemaPlugin();
 
 const store = await createStore({
   sources: ["./ontology.ttl", "./data/**/*.ttl"],
-  prefixes: { lib: "https://example.org/library/" }, // drives global IDs — register every domain prefix
+  prefixes: { lib: "https://example.org/library/" }, // display prefixes + the `lib:dune` lookup shorthand
   plugins: [graphql],
 });
 
@@ -80,9 +80,32 @@ lib:herbert a lib:Author ; lib:name "Frank Herbert" .
 the compiler emits the following (fields lightly reordered for reading, Relay boilerplate and the TBox types elided — `pragma graphql build` regenerates the full file):
 
 ```graphql
+# ke-graphql · canonical SDL
+# graphql-schema-spec: 1
+# provider: unknown
+# mode: annotated
+# validated-store: false
+# revision: 0
+# prefixing: none
+
+interface Node {           # identity + self-description, and nothing else
+  uri: ID!
+  _meta: EntityMeta!
+}
+
+type EntityMeta {          # every generic answer lives here, off the data surface
+  curie: String!                         # DISPLAY form of uri ("lib:dune") — never an identity
+  title(lang: String = "en"): String!    # TOTAL — never null, always renderable
+  label(lang: String = "en"): String
+  comment(lang: String = "en"): String
+  definition(lang: String = "en"): String
+  type: OntologyClass!
+  field(name: String!): ClassProperty
+  fields: [ClassProperty!]!
+}
+
 interface Work implements Node {
-  id: ID!
-  uri: String!
+  uri: ID!
   _meta: EntityMeta!
   title: String
   authors(first: Int, after: String, last: Int, before: String): AuthorConnection!
@@ -90,8 +113,7 @@ interface Work implements Node {
 }
 
 type Book implements Node & Work {
-  id: ID!                  # the prefixed URI: "lib:dune"
-  uri: String!
+  uri: ID!                 # the absolute IRI: "https://example.org/library/dune"
   _meta: EntityMeta!
   title: String
   pageCount: Int
@@ -101,14 +123,14 @@ type Book implements Node & Work {
 }
 
 type Author implements Node {
-  id: ID!
-  uri: String!
+  uri: ID!
   _meta: EntityMeta!
   name: String
   authoreds(first: Int, after: String, last: Int, before: String): WorkConnection!
 }
 
-type Review {              # embeddable: no Node, no id — it lives inside its parent
+type Review {              # embeddable: no Node, no uri — it lives inside its parent
+  _meta: EntityMeta!       # …but it still knows its own class
   rating: Int
   comment: String
 }
@@ -132,16 +154,38 @@ Reading the output back against the input shows most of the compiler's rules at 
 
 - **`Work` became an interface.** It has subclasses and no direct instances, so it's abstract — and because all of its concrete implementors are full entities, the interface itself implements `Node`, which is what lets Relay refetch a fragment written against `Work`. (A class with subclasses *and* direct instances of its own stays a concrete type and earns a `V016` warning: a supertype-typed field can't surface its subclasses' fields. Force it abstract with `{ abstract: true }` when it has no direct instances; the interface-plus-companion-type alternative is a deferred option.)
 - **`hasAuthor` became `authors`.** Field names strip a leading `has`/`is` verb; list fields are pluralized (`category → categories`, `child → children` — the pluralizer knows the irregulars).
-- **`reviews` is a plain list while `authors` is a connection.** `Review` instances are blank nodes: no URI means no global ID, no cursor, no standalone resolution. The compiler marks such classes *embeddable* and resolves them inline from the parent's own triples. Everything URI-addressable gets a paginated Relay connection instead.
+- **`reviews` is a plain list while `authors` is a connection.** `Review` instances are blank nodes: no URI means no global ID, no cursor, no standalone resolution. The compiler marks such classes *embeddable* and resolves them inline from the parent's own triples. Everything URI-addressable gets a paginated Relay connection instead. An embeddable still carries `_meta`, because knowing your own class is a fact about the class, not about identity — and it means a class with zero properties of its own still compiles.
 - **One field per side of the inverse pair, and direction doesn't matter.** `hasAuthor`/`authored` produce `Book.authors` and `Author.authoreds` — never the duplicates. At resolution time each side takes the union of forward and reverse assertions, so data written in either direction answers identically from both ends.
 - **`inPrint: Boolean` works even though the data says `"true"`.** Real-world TTL stores booleans as strings; the resolver coerces (`"true"/"false"/"1"/"0"`) and reports anything else through the runtime-warning channel instead of crashing the response.
-- **`id` is the prefixed URI**, not an opaque token. `node(id: "lib:dune")` works in GraphiQL, in URLs, and in the CLI alike.
+- **Identity is the absolute IRI**, not an opaque token and not a prefixed form. `uri: ID!` on every node, `node(id: "https://example.org/library/dune")`, the loader keys, and the connection cursors are all the same string — one currency, so an `after:` cursor can never quietly miss. The prefixed form survives in exactly two places, neither of them identity-bearing: the singular `book(uri: "lib:dune")` lookup ARGUMENT, as a typing convenience, and `_meta.curie`, the DISPLAY form — a string to render, never to store, send back, or compare. `toPrefixed` is exported so a consumer can compute it themselves too.
+- **Everything generic moved behind `_meta`.** `title`/`label`/`comment`/`definition` are `EntityMeta` fields with a `lang` argument, so the whole data surface — every field name except `uri` and `_meta` — belongs to your ontology. `title` is total: it falls through label, then any-language literal, then the IRI local name, so a lens always has something to render.
 
 About `authoreds` — that's the pluralizer being mechanically right and ergonomically wrong. Which brings us to:
 
-## Custom mappings
+## Annotation-driven binding: the `graphql:` vocabulary
 
-Mappings are the escape hatch for everything the ontology can't express ergonomically. Keys are full IRIs or prefixed names; values override one aspect each:
+The primary transport for projection intent is the ontology itself. Thirteen annotation terms — declared on the class or property they describe and captured by the extractor from any loaded source — bind the same knobs the config once carried, so every consumer of an ontology resolves it identically:
+
+```turtle
+@prefix graphql: <http://pragma.canonical.com/graphql#> .
+
+lib:Book     graphql:name "Publication" ;         # verbatim type name
+             graphql:expose true ;                # allowlist member under mode: "explicit"
+             graphql:titleFrom lib:heading .      # _meta.title reads lib:heading first
+lib:authored graphql:name "works" .               # verbatim field name — never pluralized/prefixed
+lib:hasPublisher graphql:singular true .          # cardinality without owl/SHACL markers
+lib:title    graphql:nonNull true ;               # promote to String!
+             graphql:searchable true .            # search-index membership (consumed by the search feature)
+lib:cites    graphql:inverse lib:citedBy .        # declared pair, same semantics as owl:inverseOf
+lib:Annotation graphql:embeddable true .          # force embedded shape
+<https://lib.example/> graphql:prefix "lib" .     # namespace prefix, ahead of the registered map
+```
+
+The class-side terms are `name`, `abstract`, `embeddable`, `expose`, and the four descriptive sources `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom` (nearest ancestor wins — annotate a root class to cover its tree); the property-side terms are `name`, `singular`, `nonNull`, `inverse`, `searchable`; `prefix` targets the namespace or ontology subject. Validation is loud and never tiebreaks: conflicting values are a fatal `A001`, foreign targets (`rdfs:label`, an absent vocabulary, a typo) a fatal `A002`, malformed values a fatal `A003`; an unrecognized local name or inapplicable target is ignored with `A004`. Under `mode: "auto"` the annotations are deliberately not consulted (`A006`) — the escape hatch that compiles even a broken annotation set.
+
+## Custom mappings (config — deprecated)
+
+Config mappings survive as the workspace-local shadow: keys are full IRIs or prefixed names; values override one aspect each. A config key that contradicts an annotation **wins per key** with an `A005` warning naming both values — the draft-locally workflow. Upstream the value into the ontology and delete the key when it stabilizes. (The synthetic `inverse: { graphqlName }` form stays config-only: a synthesized field has no IRI to annotate.)
 
 ```typescript
 const graphql = createSchemaPlugin({
@@ -168,18 +212,21 @@ const graphql = createSchemaPlugin({
 
 A mapping that references nothing in the ontology produces an `M003` diagnostic rather than silently doing nothing.
 
-Names the compiler owns (`Node`, `Query`, `PageInfo`, the built-in scalars, …) are auto-resolved on collision by prefixing the namespace — a class named `lib:Node` becomes `LibNode` with an `M004` info diagnostic. Illegal GraphQL characters in local names are sanitized (`My-Class → My_Class`) with a warning.
+TYPE names the compiler owns (`Node`, `Query`, `PageInfo`, the built-in scalars, …) are auto-resolved on collision by prefixing the namespace — a class named `lib:Node` becomes `LibNode` with an `M004` info diagnostic. Illegal GraphQL characters in local names are sanitized (`My-Class → My_Class`) with an `M002` warning.
+
+FIELD names are never silently renamed. The compiler owns exactly two — `uri` and `_meta` — and a property mapping onto either is **dropped** with an error-severity `M005` naming the IRI and both remedies; two properties mapping to one name drop the second with `M001` naming both IRIs. A rename would break the consumer's query just as surely while hiding which IRI caused it. Fix one clash with `mappings`; `prefixing: "all"`, which namespace-prefixes every generated field name (`lib:uri` → `libUri`), fixes every `M005` at once but only those `M001`s whose two IRIs come from different namespaces — same-namespace claimants (`ex:name` and `ex:hasName`, both stripping to `name`) take the same prefix and still collide.
 
 ## Cardinality: how a property becomes singular or a list
 
 Precedence, highest first:
 
-1. custom mapping `{ singular }` override
-2. `owl:FunctionalProperty`
-3. SHACL `sh:maxCount 1` — per *(class, property)* pair, so the same property can be singular on one class and a list on another; `sh:or` branches merge to the most permissive interpretation, repeated shapes for one path merge as the SHACL conjunction
-4. kind default: **datatype and annotation properties are singular; object properties are lists.** (Multi-valued literals are the exception in RDF practice; opt a datatype property back into a list with `{ singular: false }`.)
+1. custom mapping `{ singular }` override (the config shadow)
+2. `graphql:singular` annotation on the property
+3. `owl:FunctionalProperty`
+4. SHACL `sh:maxCount 1` — per *(class, property)* pair, so the same property can be singular on one class and a list on another; `sh:or` branches merge to the most permissive interpretation, repeated shapes for one path merge as the SHACL conjunction
+5. kind default: **datatype and annotation properties are singular; object properties are lists.** (Multi-valued literals are the exception in RDF practice; opt a datatype property back into a list with `graphql:singular false` or `{ singular: false }`.)
 
-Nullability is deliberate and honest: `id` and `uri` are non-null, list and connection fields are non-null with empty defaults — and *everything else is nullable*, because OWL ontologies don't promise completeness. SHACL `sh:minCount` is **recorded** (queryable as `ClassProperty.required`) but never auto-promoted to GraphQL non-null: a single missing value would take down whole responses. Consumers who know their data promote specific fields via `nonNullOverrides: { Book: ["title"] }`.
+Nullability is deliberate and honest: `uri` and `_meta` are non-null, list and connection fields are non-null with empty defaults — and *everything else is nullable*, because OWL ontologies don't promise completeness. SHACL `sh:minCount` is **recorded** (queryable as `ClassProperty.required`) but never auto-promoted to GraphQL non-null: a single missing value would take down whole responses. An ontology that knows its data promotes a field with `graphql:nonNull true`; the deprecated `nonNullOverrides: { Book: ["title"] }` config keeps working and OR-merges with it (both only ever promote).
 
 ## The second schema: `_meta` and the ontology browser
 
@@ -190,8 +237,12 @@ The compiler emits two connected schemas. Alongside the data types, a hand-writt
   book(uri: "lib:dune") {
     title
     _meta {
+      title                                                 # generic, total, renderable
+      label(lang: "en")                                     # generic, nullable
+      curie                                                 # "lib:dune" — display only
       type { label definition superclasses { label } }      # the OWL class
       fields {                                              # every applicable property
+        name          # what field(name:) accepts — pluralized FOR THIS class
         property { label range acceptanceCriteria }
         required      # SHACL sh:minCount, for THIS class
         singular
@@ -202,12 +253,12 @@ The compiler emits two connected schemas. Alongside the data types, a hand-writt
   ontologyClass(uri: "https://example.org/library/Work") {
     isAbstract
     subclasses { label }
-    instances(first: 10) { edges { node { id } } }          # TBox → ABox hop
+    instances(first: 10) { edges { node { uri } } }         # TBox → ABox hop
   }
 }
 ```
 
-This is what powers documentation UIs: "which fields *should* this entity have, which are required, what does good look like" — asked of the schema itself, in the same query as the data. The TBox resolvers read the compiler's frozen IR, **never the store**: ontology browsing works before the TTL finishes parsing and even against a disposed store, and it can't disagree with the schema's own shape because both came from the same compilation.
+This is what powers documentation UIs: "which fields *should* this entity have, which are required, what does good look like" — asked of the schema itself, in the same query as the data. The reflective surface reads the compiler's frozen IR, **not the store** — labels, definitions, cardinality, sub/superclasses, `isAbstract`, even `instanceCount` (a Pass 1 statistic) — so ontology browsing answers before the TTL finishes parsing and even against a disposed store, and it can't disagree with the schema's own shape because both came from the same compilation. The one exception is `OntologyClass.instances`: it hands back real entities, so it reaches the store through the same loaders as any data field and needs a live one.
 
 ## Diagnostics
 
@@ -216,27 +267,36 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 | Range | Meaning | Examples |
 |---|---|---|
 | `E001` | extraction/SPARQL failure | query failed, unregistered namespace (synthetic prefix assigned), blank nodes nested deeper than the loader's closure |
+| `A001–A008` | `graphql:` annotation resolution + projection modes | conflicting values, never tiebroken (`A001`, error), foreign/unknown target (`A002`, error), malformed value (`A003`, error), unrecognized term or inapplicable target ignored (`A004`), config shadows an annotation — config wins (`A005`), `mode: "auto"` ignoring present annotations (`A006`, info), the `mode: "explicit"` dropped-class aggregate (`A007`, info), field omitted for an unexposed range class (`A008`) |
 | `B001–B004` | build references | `subClassOf` cycle, unknown domain/range/inverse |
 | `V001–V016` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`), abstract mapping with direct instances (`V015`), concrete supertype flattening (`V016`) |
-| `M001–M004` | naming | unresolvable collision (`M001`, error), reserved-name rename (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`) |
+| `M001–M006` | naming | duplicate type or field name, later claimant dropped (`M001`, error), illegal class local name sanitized (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`), property claims a structural field name and is dropped (`M005`, error), one union name minted with different member sets (`M006`, error) |
 | `X002–X003` | union emission | named / synthesized union created |
-| `C001–C003` | composition | extension targets unknown type, extension field conflict, `validateSchema` failure |
+| `W001` | Relay wiring | two root query fields claim one name, later field dropped (error) |
+| `C001–C003` | composition | extension targets unknown type, extension field conflict (incl. a generated root field colliding with a TBox root field), `validateSchema` failure |
 
-Only **composition errors (`C00x`) prevent schema creation** — `compile()` then throws `CompilationError` carrying the complete diagnostic list. Everything else surfaces in `result.diagnostics` while the schema still builds; the consumer chooses its failure policy (the `pragma graphql check` command, for instance, fails CI on any error-severity diagnostic).
+**Any error-severity diagnostic refuses the compile** — `compile()` throws `CompilationError` carrying the complete diagnostic list. A schema minus silently dropped fields must never be served, so a boot dies loudly instead. Warnings and infos surface in `result.diagnostics` while the schema builds; the consumer chooses its policy for those.
 
 ## Plugin options
 
 ```typescript
 createSchemaPlugin({
-  mappings,                          // CustomMappings (above)
+  mappings,                          // DEPRECATED — CustomMappings (above); config wins per key with A005
   extensions,                        // consumer fields — object or factory form (below)
-  relay: true,                       // Node/global IDs/connections/root queries (default true)
+  relay: true,                       // Node/uri/_meta/connections/root queries (default true)
   incremental: false,                // add @defer/@stream directives (below)
-  sdlOutput: "./schema.graphql",     // write the SDL on every (re)compile — feed relay-compiler
-  nonNullOverrides: { Book: ["title"] },
-  standardVocabFields: {             // opt-in instance-level rdfs:label/comment as fields —
+  sdlOutput: "./schema.graphql",     // write the SDL on every compile that prints one — feed
+                                     // relay-compiler (artifact boots skip printing and leave
+                                     // the file untouched)
+  nonNullOverrides: { Book: ["title"] },  // DEPRECATED — prefer graphql:nonNull (OR-merged)
+  prefixing: "none",                 // or "all" — namespace-prefix EVERY field name
+  mode: "annotated",                 // "auto" (ignore annotations) | "annotated" (bind them)
+                                     // | "explicit" (graphql:expose allowlist)
+  provider: "library",               // stamped into the SDL provenance header
+  revision: "a1b2c3d",               // stamped into the SDL provenance header
+  standardVocabFields: {             // DEPRECATED, superseded by the graphql:*From annotations:
     Category: { "http://www.w3.org/2000/01/rdf-schema#label": "label" },
-  },                                 // by default only declared ontology properties become fields
+  },                                 // opt-in instance-level rdfs:label/comment as ordinary fields
   loaderCache: "request",            // or "process" — see Performance
   extraction: "./extraction.json",   // precomputed boot artifact — see Fast boot
   onRuntimeWarning: (w) => log.warn(w),  // coercion failures at resolve time
@@ -331,7 +391,7 @@ const result = await executeLocal({
 const artifacts = await extractStatic({
   schema, mapped: result.mapped, context: createContext(store),
   queries: [
-    { name: "AllBooks", text: "{ books(first: 500) { edges { node { id title } } } }" },
+    { name: "AllBooks", text: "{ books(first: 500) { edges { node { uri title } } } }" },
     { name: "BookPage",
       text: "query($uri: String!) { book(uri: $uri) { title authors(first: 10) { edges { node { name } } } } }",
       variables: { uri: "String!" } },
@@ -406,3 +466,5 @@ the package but ships nowhere: it is excluded from the build and the npm
 tarball.
 
 The intermediate representations (`RawExtraction`, `OntologyIR`, `MappedIR`) are exported public contracts, not internals — tooling can consume them the way Prisma generators consume the DMMF. They are pinned by the golden-SDL snapshot in the test suite, so changes to the emitted shape are caught.
+
+The emitted base is additionally gated by `@canonical/prism-contract` (a devDependency): `src/testing/integration/contract.test.ts` runs `assertSatisfiesContract` on the **live emitted SDL** of every fixture — semantic subsumption via `findBreakingChanges`, with the SDL crossing the package boundary as a string — plus two controls: `prefixing: "all"` still conforms (the contract names no ontology terms), and `relay: false` fails by exactly one violation (`FIELD_REMOVED` on `Query.node`).

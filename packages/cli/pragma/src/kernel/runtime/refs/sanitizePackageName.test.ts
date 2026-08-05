@@ -33,7 +33,7 @@ describe("sanitizePackageName", () => {
   it("still strips the other filesystem-illegal characters, per segment", () => {
     // `:*?"<>|` and backslash are illegal path chars — collapsed to `_` —
     // but the scope `/` survives as a real directory boundary.
-    expect(sanitizePackageName('@sc:ope/na*me')).toBe("@sc_ope/na_me");
+    expect(sanitizePackageName("@sc:ope/na*me")).toBe("@sc_ope/na_me");
     expect(sanitizePackageName("@a/b\\c")).toBe("@a/b_c");
   });
 

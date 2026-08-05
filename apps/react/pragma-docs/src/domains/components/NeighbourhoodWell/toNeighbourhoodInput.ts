@@ -3,6 +3,11 @@
  * exist and where they may link lives here (the RELATION_SPECS table
  * supplies the grammar); `buildNeighbourhood` only does geometry.
  *
+ * ADDRESS FORM: every `uri` below is the COMPACT form (`_meta.curie` —
+ * the graph's own rendering of the absolute `uri`), because that is what a
+ * chip href, a `data-well-uri` handle, and a fallback label all want. The
+ * absolute IRI never reaches this layer's output.
+ *
  * Linking posture: a neighbour gets an href only when its relation row is
  * `linkable` — the entities whose canonical homes exist today (components
  * via `/components/:uri`, ontology terms via `/definitions/:term`, the
@@ -45,6 +50,7 @@ interface EntityConnection {
   readonly edges: readonly ({
     readonly node: {
       readonly uri: string;
+      readonly _meta: { readonly curie: string };
       readonly name?: string | null | undefined;
     };
   } | null)[];
@@ -69,18 +75,24 @@ const toNeighbours = (
   (connection?.edges ?? [])
     .filter((edge) => edge !== null)
     .map((edge) => {
+      // The well addresses and labels every node in the COMPACT form the
+      // graph itself hands back (`_meta.curie`) — chip hrefs, the D31
+      // landing addresses, and `data-well-uri` are all that form. `uri`
+      // stays the absolute IRI and stays Relay's identity; it is never the
+      // string a reader sees.
+      const curie = edge.node._meta.curie;
       // The URI's own kind segment outranks the relation's default: a
       // `subcomponents` edge can legally deliver a pattern, and the shape
       // channel must not lie about it.
-      const kind = detectKindInUri(edge.node.uri) ?? spec.kind;
+      const kind = detectKindInUri(curie) ?? spec.kind;
       return {
-        uri: edge.node.uri,
-        label: edge.node.name ?? edge.node.uri,
+        uri: curie,
+        label: edge.node.name ?? curie,
         spec,
         kind,
         href:
           spec.linkable && LIVE_ROUTE_KINDS.has(kind)
-            ? resolveChipHref(edge.node.uri, kind)
+            ? resolveChipHref(curie, kind)
             : undefined,
       };
     });
@@ -141,8 +153,8 @@ export const toNeighbourhoodInput = (
   }
   if (data.tier !== null && data.tier !== undefined) {
     gathered.push({
-      uri: data.tier.uri,
-      label: data.tier.name ?? data.tier.uri,
+      uri: data.tier._meta.curie,
+      label: data.tier.name ?? data.tier._meta.curie,
       spec: getSpec("tier"),
     });
   }
@@ -153,7 +165,8 @@ export const toNeighbourhoodInput = (
   gather(data.modifierFamilies, "modifierFamily");
   gather(data.subcomponents, "subcomponent");
 
-  const seen = new Set<string>([data.uri]);
+  const centreCurie = data._meta.curie;
+  const seen = new Set<string>([centreCurie]);
   const neighbours = gathered.filter((neighbour) => {
     if (seen.has(neighbour.uri)) return false;
     seen.add(neighbour.uri);
@@ -162,8 +175,8 @@ export const toNeighbourhoodInput = (
 
   return {
     input: {
-      centreUri: data.uri,
-      centreLabel: data.name ?? data.uri,
+      centreUri: centreCurie,
+      centreLabel: data.name ?? centreCurie,
       neighbours,
     },
     truncated,

@@ -3,6 +3,12 @@
  * everything else stays inert; one entity is one node however many
  * relations name it; capped connections surface as `truncated`; and the
  * class term derives from data, never a namespace table.
+ *
+ * Every payload below carries the two-field identity the converged base
+ * serves — `uri` the ABSOLUTE IRI, `_meta.curie` the graph's compact
+ * rendering of it — and the two are deliberately DIFFERENT strings, so an
+ * extraction that reverted to reading `uri` would fail every address
+ * assertion here rather than passing by coincidence.
  */
 
 import { describe, expect, it } from "vitest";
@@ -17,8 +23,18 @@ const emptyConnection = {
   pageInfo: { hasNextPage: false },
 } as const;
 
-const connectionOf = (uris: readonly string[], hasNextPage = false) => ({
-  edges: uris.map((uri) => ({ node: { uri, name: uri.split(".").at(-1) } })),
+/** The absolute IRI a `ds:`-prefixed compact form expands to. */
+const absolute = (curie: string): string =>
+  `https://ds.canonical.com/${curie.slice(curie.indexOf(":") + 1)}`;
+
+const connectionOf = (curies: readonly string[], hasNextPage = false) => ({
+  edges: curies.map((curie) => ({
+    node: {
+      uri: absolute(curie),
+      _meta: { curie },
+      name: curie.split(".").at(-1),
+    },
+  })),
   pageInfo: { hasNextPage },
 });
 
@@ -27,16 +43,21 @@ const payload = (
   overrides: Partial<NeighbourhoodWell_component$data>,
 ): NeighbourhoodWell_component$data =>
   ({
-    uri: "ds:global.component.card",
+    uri: absolute("ds:global.component.card"),
     name: "Card",
     _meta: {
+      curie: "ds:global.component.card",
       type: {
         uri: "https://ds.canonical.com/Component",
         label: "Component",
         namespace: "ds",
       },
     },
-    tier: { uri: "ds:tier.global", name: "Global" },
+    tier: {
+      uri: absolute("ds:global"),
+      name: "Global",
+      _meta: { curie: "ds:tier.global" },
+    },
     subcomponents: emptyConnection,
     variants: emptyConnection,
     variantOfs: emptyConnection,
@@ -102,11 +123,17 @@ describe("toNeighbourhoodInput", () => {
         variantOfs: connectionOf(["ds:global.component.card"]),
       }),
     );
-    expect(
-      input.neighbours.some(
-        (neighbour) => neighbour.uri === "ds:global.component.card",
-      ),
-    ).toBe(false);
+    // Asserted as the EXACT list, not as the absence of one string. The
+    // dedup seed is the centre's `_meta.curie`, so an extraction that
+    // regressed to reading `uri` would emit the subject a second time under
+    // its ABSOLUTE IRI — a string no absence-check written against the
+    // compact literal can see, which is how this test used to report green
+    // on the very defect it is named for. A self node under ANY spelling
+    // now fails the length.
+    expect(input.neighbours.map((neighbour) => neighbour.uri)).toEqual([
+      "ds:Component",
+      "ds:tier.global",
+    ]);
   });
 
   it("surfaces capped connections as truncated predicates (the partial state)", () => {
@@ -125,6 +152,7 @@ describe("toNeighbourhoodInput", () => {
     const { input } = toNeighbourhoodInput(
       payload({
         _meta: {
+          curie: "ds:global.component.card",
           type: {
             uri: "https://elsewhere.example/Component",
             label: "Component",

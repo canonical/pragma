@@ -7,11 +7,12 @@ import type { CompilerResult, SchemaPluginOptions } from "./types.js";
  * Run the full seven-pass pipeline against a query surface (ke
  * PluginContext.query at plugin time, or createStoreQueryFn(store) directly).
  *
- * The schema is produced whenever composition succeeds — error diagnostics
- * from earlier passes do not abort compilation (tsc model); only
- * composition failure stops schema creation. The
- * consumer decides its failure policy. Throws CompilationError only when
- * composition fails.
+ * Every pass runs to completion and contributes diagnostics (the tsc
+ * model — nothing aborts mid-pipeline), but ANY error-severity diagnostic
+ * refuses the compile: a CompilationError carrying the full list is thrown.
+ * A schema minus silently dropped fields must never be served, so a boot
+ * dies loudly instead. Warnings and infos surface in result.diagnostics
+ * while the schema builds; the consumer decides its policy for those.
  *
  * @note Impure — Pass 1 executes SPARQL queries against the store through
  * the provided query function.

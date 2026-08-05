@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ba579fce3dfce3fb82a725aac60b4b34>>
+ * @generated SignedSource<<9ecf99ef7ca253da1edba5b20c53c9b4>>
  * @lightSyntaxTransform
  */
 
@@ -10,6 +10,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type StandardsIndexQuery$variables = {
+  classUri: string;
   count: number;
   cursor?: string | null | undefined;
 };
@@ -26,6 +27,11 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
+    "name": "classUri"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
     "name": "count"
   },
   {
@@ -34,7 +40,14 @@ var v0 = [
     "name": "cursor"
   }
 ],
-v1 = [
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "uri",
+  "storageKey": null
+},
+v2 = [
   {
     "kind": "Variable",
     "name": "after",
@@ -46,11 +59,11 @@ v1 = [
     "variableName": "count"
   }
 ],
-v2 = {
+v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "title",
   "storageKey": null
 };
 return {
@@ -62,6 +75,11 @@ return {
     "selections": [
       {
         "args": [
+          {
+            "kind": "Variable",
+            "name": "classUri",
+            "variableName": "classUri"
+          },
           {
             "kind": "Variable",
             "name": "count",
@@ -88,79 +106,86 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v1/*:: as any*/),
-        "concreteType": "CodeStandardConnection",
+        "args": [
+          {
+            "kind": "Variable",
+            "name": "uri",
+            "variableName": "classUri"
+          }
+        ],
+        "concreteType": "OntologyClass",
         "kind": "LinkedField",
-        "name": "codeStandards",
+        "name": "ontologyClass",
         "plural": false,
         "selections": [
+          (v1/*:: as any*/),
           {
             "alias": null,
-            "args": null,
-            "concreteType": "CodeStandardEdge",
+            "args": (v2/*:: as any*/),
+            "concreteType": "NodeConnection",
             "kind": "LinkedField",
-            "name": "edges",
-            "plural": true,
+            "name": "instances",
+            "plural": false,
             "selections": [
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "CodeStandard",
+                "concreteType": "NodeEdge",
                 "kind": "LinkedField",
-                "name": "node",
-                "plural": false,
+                "name": "edges",
+                "plural": true,
                 "selections": [
-                  (v2/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
-                    "kind": "ScalarField",
-                    "name": "uri",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "name",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": [
-                      {
-                        "kind": "Literal",
-                        "name": "first",
-                        "value": 1
-                      }
-                    ],
-                    "concreteType": "CategoryConnection",
+                    "concreteType": null,
                     "kind": "LinkedField",
-                    "name": "categories",
+                    "name": "node",
                     "plural": false,
                     "selections": [
                       {
                         "alias": null,
                         "args": null,
-                        "concreteType": "CategoryEdge",
+                        "kind": "ScalarField",
+                        "name": "__typename",
+                        "storageKey": null
+                      },
+                      (v1/*:: as any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "EntityMeta",
                         "kind": "LinkedField",
-                        "name": "edges",
-                        "plural": true,
+                        "name": "_meta",
+                        "plural": false,
                         "selections": [
                           {
                             "alias": null,
                             "args": null,
-                            "concreteType": "Category",
+                            "kind": "ScalarField",
+                            "name": "curie",
+                            "storageKey": null
+                          },
+                          (v3/*:: as any*/),
+                          {
+                            "alias": null,
+                            "args": null,
+                            "concreteType": "OntologyClass",
                             "kind": "LinkedField",
-                            "name": "node",
+                            "name": "type",
                             "plural": false,
                             "selections": [
-                              (v2/*:: as any*/),
+                              (v1/*:: as any*/),
                               {
                                 "alias": null,
                                 "args": null,
-                                "kind": "ScalarField",
-                                "name": "slug",
+                                "concreteType": "EntityMeta",
+                                "kind": "LinkedField",
+                                "name": "_meta",
+                                "plural": false,
+                                "selections": [
+                                  (v3/*:: as any*/)
+                                ],
                                 "storageKey": null
                               }
                             ],
@@ -170,13 +195,13 @@ return {
                         "storageKey": null
                       }
                     ],
-                    "storageKey": "categories(first:1)"
+                    "storageKey": null
                   },
                   {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "__typename",
+                    "name": "cursor",
                     "storageKey": null
                   }
                 ],
@@ -185,8 +210,26 @@ return {
               {
                 "alias": null,
                 "args": null,
-                "kind": "ScalarField",
-                "name": "cursor",
+                "concreteType": "PageInfo",
+                "kind": "LinkedField",
+                "name": "pageInfo",
+                "plural": false,
+                "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "endCursor",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "hasNextPage",
+                    "storageKey": null
+                  }
+                ],
                 "storageKey": null
               }
             ],
@@ -194,54 +237,29 @@ return {
           },
           {
             "alias": null,
-            "args": null,
-            "concreteType": "PageInfo",
-            "kind": "LinkedField",
-            "name": "pageInfo",
-            "plural": false,
-            "selections": [
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "endCursor",
-                "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "hasNextPage",
-                "storageKey": null
-              }
-            ],
-            "storageKey": null
+            "args": (v2/*:: as any*/),
+            "filters": null,
+            "handle": "connection",
+            "key": "StandardsIndex_instances",
+            "kind": "LinkedHandle",
+            "name": "instances"
           }
         ],
         "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": (v1/*:: as any*/),
-        "filters": null,
-        "handle": "connection",
-        "key": "StandardsIndex_codeStandards",
-        "kind": "LinkedHandle",
-        "name": "codeStandards"
       }
     ]
   },
   "params": {
-    "cacheID": "edd27ddb8c7a95ab9582b9d2b97af93c",
+    "cacheID": "941d97cca115e27876b6151f48a96cee",
     "id": null,
     "metadata": {},
     "name": "StandardsIndexQuery",
     "operationKind": "query",
-    "text": "query StandardsIndexQuery(\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1G22uz\n}\n\nfragment StandardsIndex_query_1G22uz on Query {\n  codeStandards(first: $count, after: $cursor) {\n    edges {\n      node {\n        id\n        uri\n        name\n        categories(first: 1) {\n          edges {\n            node {\n              id\n              slug\n            }\n          }\n        }\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query StandardsIndexQuery(\n  $classUri: String!\n  $count: Int!\n  $cursor: String\n) {\n  ...StandardsIndex_query_1XDTmS\n}\n\nfragment StandardsIndex_query_1XDTmS on Query {\n  ontologyClass(uri: $classUri) {\n    uri\n    instances(first: $count, after: $cursor) {\n      edges {\n        node {\n          __typename\n          uri\n          _meta {\n            curie\n            title\n            type {\n              uri\n              _meta {\n                title\n              }\n            }\n          }\n        }\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "e4c697c8879399189978f1fb44c85640";
+(node as any).hash = "22230b72d617a73e3ffbb16633e299f9";
 
 export default node;

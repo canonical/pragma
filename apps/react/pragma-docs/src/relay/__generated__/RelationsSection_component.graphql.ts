@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<38f5d0a60067658978609547a5461b98>>
+ * @generated SignedSource<<c014bbbf5d6eea089b1539fb7f7676ed>>
  * @lightSyntaxTransform
  */
 
@@ -13,7 +13,9 @@ export type RelationsSection_component$data = {
   readonly modifierFamilies: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -22,7 +24,9 @@ export type RelationsSection_component$data = {
   readonly subcomponents: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly id: string;
+        readonly _meta: {
+          readonly curie: string;
+        };
         readonly name: string | null | undefined;
         readonly uri: string;
       };
@@ -48,14 +52,25 @@ v1 = [
     "alias": null,
     "args": null,
     "kind": "ScalarField",
-    "name": "id",
+    "name": "uri",
     "storageKey": null
   },
   {
     "alias": null,
     "args": null,
-    "kind": "ScalarField",
-    "name": "uri",
+    "concreteType": "EntityMeta",
+    "kind": "LinkedField",
+    "name": "_meta",
+    "plural": false,
+    "selections": [
+      {
+        "alias": null,
+        "args": null,
+        "kind": "ScalarField",
+        "name": "curie",
+        "storageKey": null
+      }
+    ],
     "storageKey": null
   },
   {
@@ -148,6 +163,6 @@ return {
 };
 })();
 
-(node as any).hash = "2ae9dcfe49fd99b4ee1cf9e9db8fcbc9";
+(node as any).hash = "1d05b0de691e2a135f65c7a9452fecff";
 
 export default node;

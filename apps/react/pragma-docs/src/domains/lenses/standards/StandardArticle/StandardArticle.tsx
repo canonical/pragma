@@ -1,4 +1,3 @@
-import { Link } from "@canonical/router-react";
 import type React from "react";
 import { graphql, useFragment } from "react-relay";
 import type { StandardArticle_standard$key } from "#relay/__generated__/StandardArticle_standard.graphql.js";
@@ -10,37 +9,34 @@ import "./styles.css";
  * Codegen source of truth for `StandardArticle_standard` (see
  * `EntityHeader` for the native-import rationale: this module rides the
  * server bricks' native import chain through the reading route). Never
- * invoked. The literal connection args are deliberate bounds, verified
- * live: every standard carries exactly one category and at most one
- * `extends` target (7/131 carry any) — 8 is headroom, not a page.
+ * invoked.
  *
- * DELIBERATELY NOT SELECTED: `dos` and `donts`. Both are real schema
- * fields (`ExampleConnection!`) on `CodeStandard`, but the live graph
- * carried ZERO example rows for either across all 131 standards at
- * capture — so querying them would cost a round trip to render nothing,
- * and the article has no examples section to render them into. This is
- * the selection site: when examples land upstream, add them here (and a
- * section below) rather than assuming the omission was an oversight.
+ * THE FRAGMENT IS ON `Node`, not on `CodeStandard`. `CodeStandard` is an
+ * ontology-derived type that exists only on a provider that loaded
+ * pragma's `cs:` vocabulary; `Node` is the contract's own interface, and
+ * everything this article renders is on `_meta`.
+ *
+ * The prose survives the move with no ontology change. ke-graphql's
+ * fallback tiers are `DEFINITION_LOCAL_NAMES = ["description"]` and
+ * `LABEL_LOCAL_NAMES = ["name", "title"]`, and `CodeStandard` carries both
+ * `description` and `name` — so `_meta.definition` resolves the standard's
+ * `cs:description` and `_meta.title` its `cs:name` through the compiler's
+ * local-name tier. UNVERIFIED HERE against a live boot (no `code-standards`
+ * package in this environment); if it turns out the instance asserts no
+ * `skos:definition` AND the class declares no `graphql:definitionFrom`,
+ * the fix is that annotation upstream, not a change in this file.
  */
 const standardArticleFragmentSource = (): unknown => graphql`
-  fragment StandardArticle_standard on CodeStandard {
+  fragment StandardArticle_standard on Node {
     uri
-    name
-    description
-    categories(first: 8) {
-      edges {
-        node {
-          id
-          slug
-        }
-      }
-    }
-    extends(first: 8) {
-      edges {
-        node {
-          id
-          uri
-          name
+    _meta {
+      curie
+      title
+      definition
+      type {
+        uri
+        _meta {
+          title
         }
       }
     }
@@ -64,16 +60,18 @@ const splitProseBlocks = (text: string): string[] =>
 
 /**
  * The reading column — `layout.reading`'s required `reading-canvas` slot:
- * identity header (title, prefixed URI, category slugs), the standard's
- * prose, and its `extends` cross-links.
+ * identity header (title, compact URI, the entity's class) and the
+ * standard's prose.
  *
- * Prose is the graph's `description` rendered as PLAIN TEXT paragraph
+ * Prose is the graph's `_meta.definition` rendered as PLAIN TEXT paragraph
  * blocks — deliberately no markdown pipeline (the R8 precedent defers
  * one), so inline backticks and `*emphasis*` marks in the source text
  * show verbatim. Honest over pretty until a sanctioned renderer lands.
- * The title falls back `name ?? uri`: only 4 of 131 live standards carry
- * a display name, and the URI is the entity's canonical identity, never
- * a fabricated title-case of it.
+ * The title is `_meta.title`, which is TOTAL: the provider computes a
+ * fallback chain ending at the IRI, so there is no `??` arm and never a
+ * fabricated title-case. `_meta.curie` carries the compact identity for
+ * the reader while `uri` stays the absolute IRI Relay keys on — and, now,
+ * the address `node(id:)` accepts.
  */
 const StandardArticle = ({
   className,
@@ -83,10 +81,6 @@ const StandardArticle = ({
     standardArticleFragmentNode,
     standard,
   );
-  const categorySlugs = data.categories.edges
-    .map(({ node }) => node.slug)
-    .filter((slug): slug is string => slug !== null && slug !== undefined);
-  const extendsNodes = data.extends.edges.map(({ node }) => node);
 
   return (
     <article
@@ -94,47 +88,27 @@ const StandardArticle = ({
       data-slot="reading-canvas"
     >
       <header className="standard-article-header">
-        <h1 id="standard-reading-title">{data.name ?? data.uri}</h1>
+        <h1 id="standard-reading-title">{data._meta.title}</h1>
         <p className="standard-article-meta">
-          <code>{data.uri}</code>
-          {categorySlugs.length > 0 ? (
-            <span className="standard-article-categories">
-              category: {categorySlugs.join(", ")}
-            </span>
-          ) : null}
+          <code>{data._meta.curie}</code>
+          {/* The class replaces the category line. `CodeStandard.categories`
+              is an ontology-derived relation the contract cannot traverse,
+              and the instance's own class is the only grouping axis it does
+              expose — the same axis the index now groups by. */}
+          <span className="standard-article-categories">
+            class: {data._meta.type._meta.title}
+          </span>
         </p>
       </header>
-      {data.description ? (
+      {data._meta.definition ? (
         <div className="standard-article-prose">
-          {splitProseBlocks(data.description).map((block) => (
+          {splitProseBlocks(data._meta.definition).map((block) => (
             <p key={block}>{block}</p>
           ))}
         </div>
       ) : (
         <p className="standard-article-prose">No description recorded.</p>
       )}
-      {extendsNodes.length > 0 ? (
-        <section
-          aria-labelledby="standard-article-extends-title"
-          className="standard-article-extends"
-        >
-          <h2 id="standard-article-extends-title">Extends</h2>
-          {/* A standard may extend ITSELF here — `cs:react.component.
-              structure.folder` does, live. That is real upstream data, so
-              it renders as-is (a link back to this same page) rather than
-              being filtered: the lens reports the graph, it does not
-              quietly correct it. */}
-          <ul>
-            {extendsNodes.map((node) => (
-              <li key={node.id}>
-                <Link params={{ uri: node.uri }} to="standardEntity">
-                  {node.name ?? node.uri}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </article>
   );
 };

@@ -37,11 +37,26 @@ const createFetchSpy = () =>
  * Read a class's captured `instanceCount` straight off the fixture, so
  * every count assertion below tracks a recapture instead of pinning a
  * graph number.
+ *
+ * It FOLLOWS the root's link rather than addressing the record directly.
+ * `getDataID` keys every addressable record by its `uri` — the absolute
+ * IRI — so a class record no longer hangs off its parent's storage key as
+ * `client:root:ontologyClass(uri:"…")`. Reading the ref out of `client:root`
+ * keeps this helper written in the query's own vocabulary (the compact URI
+ * the variable carries) instead of hardcoding a namespace here.
  */
 const capturedInstanceCount = (classUri: string): number => {
-  const record = (lobbyRecords as unknown as Record<string, unknown>)[
-    `client:root:ontologyClass(uri:"${classUri}")`
-  ] as { instanceCount?: unknown } | undefined;
+  const records = lobbyRecords as unknown as Record<
+    string,
+    Record<string, unknown> | undefined
+  >;
+  const link = records["client:root"]?.[`ontologyClass(uri:"${classUri}")`] as
+    | { __ref?: string }
+    | undefined;
+  const record =
+    link?.__ref === undefined
+      ? undefined
+      : (records[link.__ref] as { instanceCount?: unknown } | undefined);
   const count = record?.instanceCount;
   if (typeof count !== "number") {
     throw new Error(

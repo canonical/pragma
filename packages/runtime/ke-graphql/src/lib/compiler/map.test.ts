@@ -9,6 +9,7 @@
 import { describe, expect, it } from "vitest";
 import {
   type ClassNode,
+  GRAPHQL_TERMS,
   type OntologyIR,
   type PropertyNode,
   type RawExtraction,
@@ -36,6 +37,7 @@ const makeExtraction = (
   functionalViolations: new Set(),
   undeclaredPredicates: new Set(),
   annotations: new Map(),
+  graphqlAnnotations: [],
   deepBlankNesting: false,
   ...partial,
 });
@@ -45,6 +47,18 @@ const buildIR = (
   partial: Partial<RawExtraction>,
   mappings: Parameters<typeof build>[1] = {},
 ): OntologyIR => build(makeExtraction(partial), mappings).output;
+
+/** A raw datatype property rooted at ex:Thing unless overridden. */
+const datatypeProp = (
+  local: string,
+  overrides: Partial<RawExtraction["properties"][number]> = {},
+): RawExtraction["properties"][number] => ({
+  uri: uri(local),
+  kind: "datatype",
+  domains: [uri("Thing")],
+  ranges: [`${XSD}string`],
+  ...overrides,
+});
 
 const codes = (diagnostics: { code: string }[]) =>
   diagnostics.map((d) => d.code);
@@ -66,11 +80,63 @@ describe("map — type name resolution", () => {
       instanceStats: new Map([[uri("Query"), { total: 1, named: 1 }]]),
     });
     const { output, diagnostics } = map(ir);
-    expect(codes(diagnostics)).toContain("M004");
+    const m004 = diagnostics.filter((d) => d.code === "M004");
+    expect(m004).toHaveLength(1);
+    // The reserved-name case keeps its own message: there is no prior class
+    // to name, and the claimant really is the compiler.
+    expect(m004[0]?.message).toContain("collides with a reserved name");
+    expect(m004[0]?.message).toContain("ExQuery");
     expect(output.types.has("ExQuery")).toBe(true);
   });
 
-  it("reports M001 when two custom mappings force the same type name", () => {
+  it("M004 names BOTH class IRIs when the prior claimant is a mapped class", () => {
+    // Same local name in two namespaces: the first registers `Doc`, the second
+    // is auto-renamed to `DsDoc`. Reporting that as "collides with a reserved
+    // name" sends the reader hunting for a reserved word that is not there —
+    // the actual claimant is their own other class, so name both IRIs.
+    const OTHER = "https://ds.canonical.com/";
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Doc"), superclasses: [] },
+        { uri: `${OTHER}Doc`, superclasses: [] },
+      ],
+      namespaces: new Map([
+        [NS, "ex"],
+        [OTHER, "ds"],
+      ]),
+      instanceStats: new Map([
+        [uri("Doc"), { total: 1, named: 1 }],
+        [`${OTHER}Doc`, { total: 1, named: 1 }],
+      ]),
+    });
+    const { output, diagnostics } = map(ir);
+    const m004 = diagnostics.filter((d) => d.code === "M004");
+    expect(m004).toHaveLength(1);
+    expect(m004[0]?.severity).toBe("info");
+    expect(m004[0]?.message).toContain(uri("Doc"));
+    expect(m004[0]?.message).toContain(`${OTHER}Doc`);
+    expect(m004[0]?.message).toContain("DsDoc");
+    expect(m004[0]?.message).not.toContain("reserved");
+    // Both classes survive — the rename is an auto-resolution, not a drop.
+    expect(output.types.has("Doc")).toBe(true);
+    expect(output.types.has("DsDoc")).toBe(true);
+  });
+
+  it("sanitizes a dashed Turtle prefix in the M004 rename", () => {
+    // The M004 auto-rename composes the namespace prefix into the type name;
+    // a raw "ds-global" would mint the illegal "Ds-globalQuery".
+    const DASHED = "http://dashed.example/";
+    const ir = buildIR({
+      classes: [{ uri: `${DASHED}Query`, superclasses: [] }],
+      namespaces: new Map([[DASHED, "ds-global"]]),
+      instanceStats: new Map([[`${DASHED}Query`, { total: 1, named: 1 }]]),
+    });
+    const { output, diagnostics } = map(ir);
+    expect(codes(diagnostics)).toContain("M004");
+    expect(output.types.has("DsGlobalQuery")).toBe(true);
+  });
+
+  it("M001 names BOTH class IRIs and DROPS the later class (not registered)", () => {
     const ir = buildIR({
       classes: [
         { uri: uri("A"), superclasses: [] },
@@ -81,13 +147,46 @@ describe("map — type name resolution", () => {
         [uri("B"), { total: 1, named: 1 }],
       ]),
     });
-    const { diagnostics } = map(ir, {
+    const { output, diagnostics } = map(ir, {
       mappings: {
         "ex:A": { graphqlName: "Dup" },
         "ex:B": { graphqlName: "Dup" },
       },
     });
-    expect(codes(diagnostics)).toContain("M001");
+    const m001 = diagnostics.filter((d) => d.code === "M001");
+    expect(m001).toHaveLength(1);
+    const [diagnostic] = m001;
+    expect(diagnostic?.severity).toBe("error");
+    // aligned with the field-level policy: both IRIs, the drop, the remedy
+    expect(diagnostic?.message).toContain(uri("A"));
+    expect(diagnostic?.message).toContain(uri("B"));
+    expect(diagnostic?.message).toContain("DROPPED");
+    expect(diagnostic?.message).toContain("graphqlName");
+    // The FIRST class keeps the name; the second is gone entirely — it does
+    // not overwrite the first at types.set and never enters the name map.
+    expect(output.types.get("Dup")?.owlUri).toBe(uri("A"));
+    expect([...output.types.values()].some((t) => t.owlUri === uri("B"))).toBe(
+      false,
+    );
+    expect(output.nameMap.toOWL("Dup")).toBe(uri("A"));
+  });
+
+  it("DROPS a class custom-mapped onto a compiler-reserved type name", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("A"), superclasses: [] }],
+      instanceStats: new Map([[uri("A"), { total: 1, named: 1 }]]),
+    });
+    // A custom graphqlName skips the M004 auto-rename, so the reserved name
+    // collides directly — there is no first CLASS to blame, only the
+    // compiler's own name.
+    const { output, diagnostics } = map(ir, {
+      mappings: { "ex:A": { graphqlName: "Query" } },
+    });
+    const m001 = diagnostics.filter((d) => d.code === "M001");
+    expect(m001).toHaveLength(1);
+    expect(m001[0]?.message).toContain("compiler-reserved");
+    expect(m001[0]?.message).toContain(uri("A"));
+    expect(output.types.size).toBe(0);
   });
 });
 
@@ -361,11 +460,86 @@ describe("map — field type specs", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir);
     const field = output.types.get("Doc")?.fields.get("rel");
     expect(field?.type).toEqual({ kind: "scalar", name: "String" });
+  });
+});
+
+describe("map — anonymous union name occupancy (M006)", () => {
+  /**
+   * Two properties with the same LOCAL name on different types, each with an
+   * anonymous union range: both synthesize the name "SubjectUnion".
+   */
+  const twoSubjectProperties = (membersA: string[], membersB: string[]) =>
+    buildIR({
+      classes: [
+        { uri: uri("Doc1"), superclasses: [] },
+        { uri: uri("Doc2"), superclasses: [] },
+        { uri: uri("Cat"), superclasses: [] },
+        { uri: uri("Dog"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("v1#subject"),
+          kind: "object",
+          domains: [uri("Doc1")],
+          ranges: [],
+        },
+        {
+          uri: uri("v2#subject"),
+          kind: "object",
+          domains: [uri("Doc2")],
+          ranges: [],
+        },
+      ],
+      unions: [
+        { property: uri("v1#subject"), members: membersA },
+        { property: uri("v2#subject"), members: membersB },
+      ],
+      functionals: new Set([uri("v1#subject"), uri("v2#subject")]),
+      instanceStats: new Map([
+        [uri("Doc1"), { total: 1, named: 1 }],
+        [uri("Doc2"), { total: 1, named: 1 }],
+        [uri("Cat"), { total: 1, named: 1 }],
+        [uri("Dog"), { total: 1, named: 1 }],
+      ]),
+    });
+
+  it("errors when one union name is minted with two DIFFERENT member sets", () => {
+    const ir = twoSubjectProperties([uri("Cat")], [uri("Dog")]);
+    const { output, diagnostics } = map(ir);
+    const m006 = diagnostics.filter((d) => d.code === "M006");
+    expect(m006).toHaveLength(1);
+    const [diagnostic] = m006;
+    expect(diagnostic?.severity).toBe("error");
+    // names BOTH minting property IRIs
+    expect(diagnostic?.message).toContain(uri("v1#subject"));
+    expect(diagnostic?.message).toContain(uri("v2#subject"));
+    expect(diagnostic?.message).toContain("SubjectUnion");
+    // first registration wins; the later definition is dropped, not merged
+    expect([...(output.unions.get("SubjectUnion")?.members ?? [])]).toEqual([
+      "Cat",
+    ]);
+  });
+
+  it("shares one union silently when the member sets are identical", () => {
+    const ir = twoSubjectProperties(
+      [uri("Cat"), uri("Dog")],
+      [uri("Dog"), uri("Cat")], // same set, different declaration order
+    );
+    const { output, diagnostics } = map(ir);
+    expect(diagnostics.filter((d) => d.code === "M006")).toHaveLength(0);
+    // one union, one info diagnostic — exactly the pre-existing behavior
+    expect(diagnostics.filter((d) => d.code === "X003")).toHaveLength(1);
+    expect(output.unions.size).toBe(1);
   });
 });
 
@@ -401,29 +575,162 @@ describe("map — concrete descendant collection", () => {
   });
 });
 
-describe("map — field name collisions", () => {
-  it("renames a field colliding with a reserved field name", () => {
-    const ir = buildIR({
+describe("map — structural field collisions (M005)", () => {
+  const docWith = (locals: string[]) =>
+    buildIR({
       classes: [{ uri: uri("Doc"), superclasses: [] }],
+      properties: locals.map((local) => ({
+        uri: uri(local),
+        kind: "datatype" as const,
+        domains: [uri("Doc")],
+        ranges: [`${XSD}string`],
+      })),
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+
+  it("DROPS a property claiming `uri` and names the IRI and both remedies", () => {
+    const { output, diagnostics } = map(docWith(["uri"]));
+    const m005 = diagnostics.filter((d) => d.code === "M005");
+    expect(m005).toHaveLength(1);
+    const [diagnostic] = m005;
+    expect(diagnostic?.severity).toBe("error");
+    expect(diagnostic?.source).toBe(uri("uri"));
+    expect(diagnostic?.message).toContain(uri("uri"));
+    expect(diagnostic?.message).toContain("Doc.uri");
+    expect(diagnostic?.message).toContain("graphqlName");
+    expect(diagnostic?.message).toContain('prefixing: "all"');
+    // Neither kept NOR renamed: the field is gone, and no silent `exUri`
+    // survives to make the drop look like a rename.
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("uri")).toBe(false);
+    expect(fields?.has("exUri")).toBe(false);
+    expect(fields?.size).toBe(0);
+  });
+
+  it("DROPS a property claiming `_meta` too", () => {
+    const { output, diagnostics } = map(docWith(["_meta"]));
+    expect(diagnostics.filter((d) => d.code === "M005")).toHaveLength(1);
+    expect(output.types.get("Doc")?.fields.size).toBe(0);
+  });
+
+  it("leaves the former reserved names free for the ontology to use", () => {
+    // label/comment/definition/kind/id moved behind _meta (or were deleted), so
+    // an ontology declaring them keeps its OWN names — no rename, no diagnostic.
+    const { output, diagnostics } = map(
+      docWith(["label", "comment", "definition", "kind", "id", "description"]),
+    );
+    expect(diagnostics.filter((d) => d.code === "M005")).toHaveLength(0);
+    expect(diagnostics.filter((d) => d.code === "M002")).toHaveLength(0);
+    const fields = output.types.get("Doc")?.fields;
+    for (const name of [
+      "label",
+      "comment",
+      "definition",
+      "kind",
+      "id",
+      "description",
+    ]) {
+      expect(fields?.has(name)).toBe(true);
+    }
+  });
+
+  it("reserves only `_meta` on an embeddable class — it has no uri to shadow", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Card"), superclasses: [] }],
       properties: [
         {
           uri: uri("uri"),
           kind: "datatype",
-          domains: [uri("Doc")],
+          domains: [uri("Card")],
           ranges: [`${XSD}string`],
         },
       ],
-      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      // blank-node-only instances → embeddable
+      instanceStats: new Map([[uri("Card"), { total: 2, named: 0 }]]),
     });
     const { output, diagnostics } = map(ir);
-    expect(codes(diagnostics)).toContain("M002");
-    // "uri" is reserved → namespace-prefixed to "exUri".
-    expect(output.types.get("Doc")?.fields.has("exUri")).toBe(true);
+    expect(diagnostics.filter((d) => d.code === "M005")).toHaveLength(0);
+    expect(output.types.get("Card")?.fields.has("uri")).toBe(true);
   });
 
-  it("reports M001 when a renamed field collides with an existing field", () => {
-    // First property takes "dup"; second takes the prefixed form "exDup"; the
-    // third's "dup" collides → renamed to "exDup", which already exists → M001.
+  it("guards an abstract class by its IMPLEMENTORS, not its own embeddable flag (direction A)", () => {
+    // Media: all-blank instances (embeddable flag true) but forced abstract,
+    // with a concrete NON-embeddable subclass Film. The interface's actual
+    // structural surface follows the implementors — Film keeps Node
+    // membership, so the interface gets uri: ID! — and an ontology property
+    // named `uri` must be M005-dropped, or it would shadow the injected
+    // uri: ID! in the Pass 6 merge and crash validateSchema (C003).
+    const ir = buildIR(
+      {
+        classes: [
+          { uri: uri("Media"), superclasses: [] },
+          { uri: uri("Film"), superclasses: [uri("Media")] },
+        ],
+        properties: [
+          {
+            uri: uri("uri"),
+            kind: "datatype",
+            domains: [uri("Media")],
+            ranges: [`${XSD}string`],
+          },
+        ],
+        instanceStats: new Map([
+          [uri("Media"), { total: 2, named: 0 }], // blank-only → embeddable
+          [uri("Film"), { total: 1, named: 1 }], // named → NOT embeddable
+        ]),
+      },
+      { "ex:Media": { abstract: true } },
+    );
+    const { output, diagnostics } = map(ir);
+    const m005 = diagnostics.filter((d) => d.code === "M005");
+    // dropped from the interface AND from the inheriting concrete Film
+    expect(m005.some((d) => d.message.includes("Media.uri"))).toBe(true);
+    expect(m005.some((d) => d.message.includes("Film.uri"))).toBe(true);
+    expect(output.interfaces.get("Media")?.fields.has("uri")).toBe(false);
+    expect(output.types.get("Film")?.fields.has("uri")).toBe(false);
+  });
+
+  it("protects only `_meta` on an abstract class whose implementors are all embeddable (direction B)", () => {
+    // Section: auto-abstract (no instances, has a subclass) so its own
+    // embeddable flag is FALSE — but its only concrete implementor Card is
+    // embeddable, so the interface gets `_meta` alone and never injects
+    // `uri`. A property named `uri` must SURVIVE on the interface (and on
+    // Card); only a property named `_meta` is a true structural collision.
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Section"), superclasses: [] },
+        { uri: uri("Card"), superclasses: [uri("Section")] },
+      ],
+      properties: [
+        {
+          uri: uri("uri"),
+          kind: "datatype",
+          domains: [uri("Section")],
+          ranges: [`${XSD}string`],
+        },
+        {
+          uri: uri("_meta"),
+          kind: "datatype",
+          domains: [uri("Section")],
+          ranges: [`${XSD}string`],
+        },
+      ],
+      instanceStats: new Map([[uri("Card"), { total: 2, named: 0 }]]),
+    });
+    const { output, diagnostics } = map(ir);
+    const m005 = diagnostics.filter((d) => d.code === "M005");
+    // no false M005 for `uri` — the interface never gets a structural uri
+    expect(m005.some((d) => d.message.includes(".uri"))).toBe(false);
+    // `_meta` is still owned by the compiler on both containers
+    expect(m005.every((d) => d.message.includes("._meta"))).toBe(true);
+    expect(m005).toHaveLength(2);
+    expect(output.interfaces.get("Section")?.fields.has("uri")).toBe(true);
+    expect(output.types.get("Card")?.fields.has("uri")).toBe(true);
+  });
+});
+
+describe("map — duplicate field collisions (M001)", () => {
+  it("DROPS the second property and names BOTH IRIs and both remedies", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Doc"), superclasses: [] }],
       properties: [
@@ -439,8 +746,46 @@ describe("map — field name collisions", () => {
           domains: [uri("Doc")],
           ranges: [`${XSD}string`],
         },
+      ],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output, diagnostics } = map(ir, {
+      mappings: {
+        "ex:a": { graphqlName: "dup" },
+        "ex:b": { graphqlName: "dup" },
+      },
+    });
+    const m001 = diagnostics.filter((d) => d.code === "M001");
+    expect(m001).toHaveLength(1);
+    const [diagnostic] = m001;
+    expect(diagnostic?.severity).toBe("error");
+    expect(diagnostic?.message).toContain(uri("a"));
+    expect(diagnostic?.message).toContain(uri("b"));
+    expect(diagnostic?.message).toContain("Doc.dup");
+    expect(diagnostic?.message).toContain("graphqlName");
+    expect(diagnostic?.message).toContain('prefixing: "all"');
+    // The FIRST property keeps the name; the second is dropped, not renamed.
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.get("dup")?.owlUri).toBe(uri("a"));
+    expect(fields?.has("exDup")).toBe(false);
+    expect(fields?.size).toBe(1);
+  });
+});
+
+describe('map — prefixing: "all"', () => {
+  it("resolves a structural collision schema-wide with ZERO diagnostics", () => {
+    // The very input that produces M005 above compiles clean under prefixing.
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      properties: [
         {
-          uri: uri("c"),
+          uri: uri("uri"),
+          kind: "datatype",
+          domains: [uri("Doc")],
+          ranges: [`${XSD}string`],
+        },
+        {
+          uri: uri("title"),
           kind: "datatype",
           domains: [uri("Doc")],
           ranges: [`${XSD}string`],
@@ -448,14 +793,138 @@ describe("map — field name collisions", () => {
       ],
       instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
     });
-    const { diagnostics } = map(ir, {
-      mappings: {
-        "ex:a": { graphqlName: "dup" },
-        "ex:b": { graphqlName: "exDup" },
-        "ex:c": { graphqlName: "dup" },
-      },
+    const { output, diagnostics } = map(ir, { prefixing: "all" });
+    expect(diagnostics).toHaveLength(0);
+    const fields = output.types.get("Doc")?.fields;
+    // EVERY field is prefixed, not only the colliding one
+    expect(fields?.has("exUri")).toBe(true);
+    expect(fields?.has("exTitle")).toBe(true);
+    expect(fields?.has("uri")).toBe(false);
+    expect(fields?.has("title")).toBe(false);
+  });
+
+  it("resolves a CROSS-namespace field collision: both fields survive, prefixed", () => {
+    // ex:name and ds:name are two different properties on one class that both
+    // want the field `name`. Their prefixes differ, so prefixing separates
+    // them — this is the case the remedy string promises.
+    const OTHER = "https://ds.canonical.com/";
+    const crossNamespaceIR = () =>
+      buildIR({
+        classes: [{ uri: uri("Doc"), superclasses: [] }],
+        properties: [
+          {
+            uri: uri("name"),
+            kind: "datatype",
+            domains: [uri("Doc")],
+            ranges: [`${XSD}string`],
+          },
+          {
+            uri: `${OTHER}name`,
+            kind: "datatype",
+            domains: [uri("Doc")],
+            ranges: [`${XSD}string`],
+          },
+        ],
+        namespaces: new Map([
+          [NS, "ex"],
+          [OTHER, "ds"],
+        ]),
+        instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      });
+
+    // Baseline: the collision is real under the default policy.
+    expect(codes(map(crossNamespaceIR()).diagnostics)).toContain("M001");
+
+    const { output, diagnostics } = map(crossNamespaceIR(), {
+      prefixing: "all",
     });
-    expect(codes(diagnostics)).toContain("M001");
+    expect(codes(diagnostics)).not.toContain("M001");
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("exName")).toBe(true);
+    expect(fields?.has("dsName")).toBe(true);
+    expect(fields?.has("name")).toBe(false);
+  });
+
+  it("does NOT resolve a SAME-namespace field collision: M001 survives", () => {
+    // ex:name and ex:hasName both strip to `name` and both take the `ex`
+    // prefix, so prefixing renames them onto ONE name all over again. The
+    // remedy string must not promise otherwise — only a mappings rename
+    // separates these two.
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      properties: [
+        {
+          uri: uri("name"),
+          kind: "datatype",
+          domains: [uri("Doc")],
+          ranges: [`${XSD}string`],
+        },
+        {
+          uri: uri("hasName"),
+          kind: "datatype",
+          domains: [uri("Doc")],
+          ranges: [`${XSD}string`],
+        },
+      ],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output, diagnostics } = map(ir, { prefixing: "all" });
+    const m001 = diagnostics.filter((d) => d.code === "M001");
+    expect(m001).toHaveLength(1);
+    expect(m001[0]?.severity).toBe("error");
+    expect(m001[0]?.message).toContain("Doc.exName");
+    expect(m001[0]?.message).toContain(uri("name"));
+    expect(m001[0]?.message).toContain(uri("hasName"));
+    // …and the message says so, rather than pointing at prefixing as the fix.
+    expect(m001[0]?.message).toContain("different namespaces");
+    // One field kept, the second dropped — exactly as under prefixing "none".
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.get("exName")?.owlUri).toBe(uri("name"));
+    expect(fields?.size).toBe(1);
+  });
+
+  it("never prefixes an explicit graphqlName", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      properties: [
+        {
+          uri: uri("title"),
+          kind: "datatype",
+          domains: [uri("Doc")],
+          ranges: [`${XSD}string`],
+        },
+      ],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir, {
+      prefixing: "all",
+      mappings: { "ex:title": { graphqlName: "heading" } },
+    });
+    expect(output.types.get("Doc")?.fields.has("heading")).toBe(true);
+  });
+
+  it("sanitizes a dashed Turtle prefix into the composed field name", () => {
+    // "ds-global" is a legal Turtle prefix but "-" is illegal in a GraphQL
+    // name: raw concatenation would mint "ds-globalTitle" AFTER the field
+    // part was already sanitized, smuggling the dash into the schema.
+    const DASHED = "http://dashed.example/";
+    const ir = buildIR({
+      classes: [{ uri: `${DASHED}Doc`, superclasses: [] }],
+      properties: [
+        {
+          uri: `${DASHED}title`,
+          kind: "datatype",
+          domains: [`${DASHED}Doc`],
+          ranges: [`${XSD}string`],
+        },
+      ],
+      namespaces: new Map([[DASHED, "ds-global"]]),
+      instanceStats: new Map([[`${DASHED}Doc`, { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir, { prefixing: "all" });
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("dsGlobalTitle")).toBe(true);
+    expect(fields?.has("ds-globalTitle")).toBe(false);
   });
 });
 
@@ -522,6 +991,11 @@ describe("map — synthetic inverse fields", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir, {
@@ -611,20 +1085,50 @@ describe("map — standard-vocab fields", () => {
     expect(field?.type).toEqual({ kind: "scalar", name: "String" });
   });
 
-  it("renames a standard-vocab field colliding with a reserved name", () => {
-    // The predicate is not a known property, so the rename's namespace lookup
-    // misses and falls back to the "x" prefix → "xId".
+  it("keeps a standard-vocab field named `label` — the README example is now true", () => {
+    // `label` moved behind _meta, so nothing reserves it any more: the
+    // documented mapping finally produces the documented field name.
     const ir = buildIR({
       classes: [{ uri: uri("Doc"), superclasses: [] }],
       instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
     });
     const { output, diagnostics } = map(ir, {
       standardVocabFields: {
-        Doc: { "http://www.w3.org/2000/01/rdf-schema#seeAlso": "id" },
+        Doc: { "http://www.w3.org/2000/01/rdf-schema#label": "label" },
       },
     });
-    expect(codes(diagnostics)).toContain("M002");
-    expect(output.types.get("Doc")?.fields.has("xId")).toBe(true);
+    expect(diagnostics).toHaveLength(0);
+    expect(output.types.get("Doc")?.fields.has("label")).toBe(true);
+  });
+
+  it("DROPS a standard-vocab field claiming a structural name (M005)", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output, diagnostics } = map(ir, {
+      standardVocabFields: {
+        Doc: { "http://www.w3.org/2000/01/rdf-schema#seeAlso": "uri" },
+      },
+    });
+    expect(codes(diagnostics)).toContain("M005");
+    expect(output.types.get("Doc")?.fields.size).toBe(0);
+  });
+
+  it('prefixes a standard-vocab field under prefixing: "all", falling back to "x"', () => {
+    // The predicate is not a known ontology property, so the namespace lookup
+    // misses and the "x" fallback fires → "xLabel".
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir, {
+      prefixing: "all",
+      standardVocabFields: {
+        Doc: { "http://www.w3.org/2000/01/rdf-schema#label": "label" },
+      },
+    });
+    expect(output.types.get("Doc")?.fields.has("xLabel")).toBe(true);
   });
 });
 
@@ -682,6 +1186,11 @@ describe("map — defensive guards on a malformed IR", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir);
@@ -737,6 +1246,11 @@ describe("map — defensive guards on a malformed IR", () => {
       namespaces: new Map([
         ["ex", { prefix: "ex", uri: NS, classCount: 2, propertyCount: 1 }],
       ]),
+      graphql: {
+        classes: new Map(),
+        properties: new Map(),
+        prefixes: new Map(),
+      },
       extraction: makeExtraction(),
     };
     const { output } = map(ir);
@@ -1013,5 +1527,219 @@ describe("map — cardinality and interface coverage", () => {
     const refs = output.types.get("Doc")?.fields.get("refs");
     expect(refs?.type).toEqual({ kind: "scalar", name: "String" });
     expect(refs?.resolverTemplate).toBe("datatype-list");
+  });
+});
+
+describe("map — graphql: annotation binding (name, nonNull)", () => {
+  it("binds graphql:name on a class verbatim and propagates it to the root names", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "Item", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    expect(diagnostics).toEqual([]);
+    const item = output.types.get("Item");
+    expect(item?.owlUri).toBe(uri("Widget"));
+    expect(item?.singularName).toBe("item");
+    expect(item?.pluralName).toBe("items");
+    expect(output.nameMap.toGraphQL(uri("Widget"))).toBe("Item");
+    expect(output.types.has("Widget")).toBe(false);
+  });
+
+  it("keeps the config graphqlName ahead of graphql:name (A005 names the shadow)", () => {
+    const built = build(
+      makeExtraction({
+        classes: [{ uri: uri("Widget"), superclasses: [] }],
+        instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+        graphqlAnnotations: [
+          [uri("Widget"), GRAPHQL_TERMS.name, "Annotated", "literal"],
+        ],
+      }),
+      { "ex:Widget": { graphqlName: "Configured" } },
+    );
+    expect(built.diagnostics.map((d) => d.code)).toContain("A005");
+    const { output } = map(built.output, {
+      mappings: { "ex:Widget": { graphqlName: "Configured" } },
+    });
+    expect(output.types.has("Configured")).toBe(true);
+    expect(output.types.has("Annotated")).toBe(false);
+  });
+
+  it("treats an annotated name as custom on a reserved collision: M001 drop, never an M004 rename", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "Query", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    const found = diagnostics.map((d) => d.code);
+    expect(found).toContain("M001");
+    expect(found).not.toContain("M004");
+    expect(output.types.size).toBe(0);
+  });
+
+  it("binds graphql:name on a property verbatim — never pluralized, never prefixed", () => {
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Parent"), superclasses: [] },
+        { uri: uri("Kid"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Parent"), { total: 1, named: 1 }],
+        [uri("Kid"), { total: 1, named: 1 }],
+      ]),
+      properties: [
+        {
+          uri: uri("hasKid"),
+          kind: "object",
+          domains: [uri("Parent")],
+          ranges: [uri("Kid")],
+        },
+        datatypeProp("note", { domains: [uri("Parent")] }),
+      ],
+      graphqlAnnotations: [
+        // a LIST field annotated with a singular noun stays singular —
+        // pluralize() must not touch an explicit name
+        [uri("hasKid"), GRAPHQL_TERMS.name, "child", "literal"],
+      ],
+    });
+    const { output } = map(ir, { prefixing: "all" });
+    const parent = output.types.get("Parent");
+    // the annotated name is untouched by prefixing: "all"...
+    expect(parent?.fields.has("child")).toBe(true);
+    expect(parent?.fields.has("children")).toBe(false);
+    // ...while the derived sibling field IS prefixed (the policy still works)
+    expect(parent?.fields.has("exNote")).toBe(true);
+  });
+
+  it("sanitizes an illegal annotated name with M002 on both target kinds", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [datatypeProp("note", { domains: [uri("Widget")] })],
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "My-Item", "literal"],
+        [uri("note"), GRAPHQL_TERMS.name, "bad-name", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    const m002 = diagnostics.filter((d) => d.code === "M002");
+    expect(m002).toHaveLength(2);
+    expect(m002.map((d) => d.severity)).toEqual(["warning", "warning"]);
+    expect(
+      m002.some((d) => d.message.includes('graphql:name "bad-name"')),
+    ).toBe(true);
+    expect(output.types.get("My_Item")?.fields.has("bad_name")).toBe(true);
+  });
+
+  it("promotes graphql:nonNull and OR-merges it with the config list", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [
+        datatypeProp("a", { domains: [uri("Widget")] }),
+        datatypeProp("b", { domains: [uri("Widget")] }),
+        datatypeProp("c", { domains: [uri("Widget")] }),
+      ],
+      graphqlAnnotations: [
+        [uri("a"), GRAPHQL_TERMS.nonNull, "true", "literal"],
+        [uri("b"), GRAPHQL_TERMS.nonNull, "true", "literal"],
+      ],
+    });
+    const { output } = map(ir, { nonNullOverrides: { Widget: ["b", "c"] } });
+    const fields = output.types.get("Widget")?.fields;
+    // annotation only
+    expect(fields?.get("a")?.nonNull).toBe(true);
+    expect(fields?.get("a")?.nullable).toBe(false);
+    // both sources agree — still simply non-null
+    expect(fields?.get("b")?.nonNull).toBe(true);
+    // config only — the existing path is untouched
+    expect(fields?.get("c")?.nonNull).toBe(true);
+  });
+});
+
+describe("map — mode explicit corners", () => {
+  it("keeps the String fallback for an UNKNOWN range under explicit (B003 territory, not A008)", () => {
+    const ir = buildIR({
+      classes: [{ uri: uri("Doc"), superclasses: [] }],
+      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      properties: [
+        {
+          uri: uri("weird"),
+          kind: "object",
+          domains: [uri("Doc")],
+          ranges: ["http://external.example/Mystery"],
+        },
+      ],
+      graphqlAnnotations: [
+        [uri("Doc"), GRAPHQL_TERMS.expose, "true", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir, { mode: "explicit" });
+    // The range was never a compiled class, so the existing unknown-range
+    // String fallback applies in every mode — A008 is only for classes the
+    // allowlist excluded.
+    expect(codes(diagnostics)).not.toContain("A008");
+    expect(output.types.get("Doc")?.fields.get("weirds")?.type).toEqual({
+      kind: "scalar",
+      name: "String",
+    });
+  });
+
+  it("omits a union field whose member set emptied out, keeps a partial union", () => {
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Doc"), superclasses: [] },
+        { uri: uri("A"), superclasses: [] },
+        { uri: uri("B"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Doc"), { total: 1, named: 1 }],
+        [uri("A"), { total: 1, named: 1 }],
+        [uri("B"), { total: 1, named: 1 }],
+      ]),
+      properties: [
+        {
+          uri: uri("darkChoice"),
+          kind: "object",
+          domains: [uri("Doc")],
+          ranges: [],
+        },
+        {
+          uri: uri("halfChoice"),
+          kind: "object",
+          domains: [uri("Doc")],
+          ranges: [],
+        },
+      ],
+      unions: [
+        // every member outside the allowlist → the union empties → omitted
+        { property: uri("darkChoice"), members: [uri("B")] },
+        // one member exposed → the union narrows and the field survives
+        { property: uri("halfChoice"), members: [uri("A"), uri("B")] },
+      ],
+      graphqlAnnotations: [
+        [uri("A"), GRAPHQL_TERMS.expose, "true", "literal"],
+        [uri("Doc"), GRAPHQL_TERMS.expose, "true", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir, { mode: "explicit" });
+    const a008 = diagnostics.filter((d) => d.code === "A008");
+    expect(a008).toHaveLength(1);
+    expect(a008[0]?.source).toBe(uri("darkChoice"));
+    expect(a008[0]?.message).toContain("no member of its union range");
+    const fields = output.types.get("Doc")?.fields;
+    expect(fields?.has("darkChoices")).toBe(false);
+    const half = fields?.get("halfChoices");
+    expect(half?.type).toEqual({
+      kind: "union",
+      name: "HalfChoiceUnion",
+      members: ["A"],
+    });
   });
 });

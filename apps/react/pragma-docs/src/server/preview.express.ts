@@ -49,10 +49,12 @@ app.use(express.static("dist/client", { index: false }));
 
 app.use(async (req, res, next) => {
   try {
+    // The app renderer is async — it runs the Relay prepare step against the
+    // graph server before constructing the renderer.
     const renderer =
       req.path === "/sitemap.xml"
         ? (createSitemapRenderer as CreateSitemapRenderer)()
-        : (createAppRenderer as CreateAppRenderer)(req);
+        : await (createAppRenderer as CreateAppRenderer)(req);
     const result = renderer.renderToPipeableStream();
 
     await renderer.statusReady;

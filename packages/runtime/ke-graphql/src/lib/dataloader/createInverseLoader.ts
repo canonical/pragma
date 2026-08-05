@@ -5,8 +5,7 @@
 // =============================================================================
 
 import DataLoader from "dataloader";
-import type { MappedIR, QueryFn } from "../shared/index.js";
-import { toFull } from "./uris.js";
+import type { QueryFn } from "../shared/index.js";
 
 /** Encode an inverse-loader cache key from its property and object parts. */
 const encodeInverseKey = (property: string, object: string): string =>
@@ -24,7 +23,6 @@ const encodeInverseKey = (property: string, object: string): string =>
  */
 export default function createInverseLoader(
   query: QueryFn,
-  mapped: MappedIR,
   cacheMap?: Map<string, Promise<string[]>>,
 ): DataLoader<string, string[]> {
   const loader: DataLoader<string, string[]> = new DataLoader(
@@ -43,9 +41,8 @@ export default function createInverseLoader(
       const space = key.indexOf(" ");
       const property = key.slice(0, space);
       const object = key.slice(space + 1);
-      // EntityValue.uri carries the prefixed form; expand for SPARQL.
-      const full = toFull(object, mapped.namespaces) ?? object;
-      pairs.push(`(<${property}> <${full}>)`);
+      // EntityValue.uri IS the absolute IRI — nothing to expand.
+      pairs.push(`(<${property}> <${object}>)`);
     }
     const result = await query(
       `SELECT ?property ?object ?subject WHERE {
@@ -78,8 +75,7 @@ export default function createInverseLoader(
       const space = key.indexOf(" ");
       const property = key.slice(0, space);
       const object = key.slice(space + 1);
-      const full = toFull(object, mapped.namespaces) ?? object;
-      return byKey.get(encodeInverseKey(property, full)) ?? [];
+      return byKey.get(encodeInverseKey(property, object)) ?? [];
     });
   };
 

@@ -23,11 +23,21 @@ import { appRoutes, middleware, notFoundRoute } from "../../../../routes.js";
 import { StandardReadingPage } from "../StandardReadingPage/index.js";
 import { StandardsPage } from "../StandardsPage/index.js";
 
-/** The reading exemplar the captured entity fixture serves. */
-export const LINK_COMPONENT_URI = "cs:react.component.link_component";
+/** The `cs:` namespace, spelled once. */
+export const CS_NAMESPACE = "http://pragma.canonical.com/codestandards#";
 
-/** The exemplar's one `extends` target (a live standard). */
-export const LINK_COMPONENT_EXTENDS_URI = "cs:react.component.props";
+/**
+ * The reading exemplar the entity fixture serves — the ABSOLUTE IRI.
+ * `node(id:)` accepts nothing else, so the route param carries the IRI
+ * percent-encoded and this constant is what the tests round-trip.
+ */
+export const LINK_COMPONENT_URI = `${CS_NAMESPACE}react.component.link_component`;
+
+/** Its compact display form, which the reader still sees in the article. */
+export const LINK_COMPONENT_CURIE = "cs:react.component.link_component";
+
+/** The class the standards lens is bound to, as the graph spells it back. */
+export const CODE_STANDARD_CLASS_URI = `${CS_NAMESPACE}CodeStandard`;
 
 /**
  * Contention insurance (the components lens's F3 precedent,

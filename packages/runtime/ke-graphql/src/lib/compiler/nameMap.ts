@@ -80,3 +80,19 @@ export const sanitizeGraphQLName = (name: string): string => {
   }
   return /^[_a-zA-Z]/.test(cleaned) ? cleaned : `_${cleaned}`;
 };
+
+/**
+ * Make a Turtle namespace prefix a legal GraphQL name COMPONENT for
+ * composed names (`prefixing: "all"` field names, M004 type renames).
+ * A legal Turtle prefix may carry characters GraphQL forbids ('-', '.'):
+ * segments split on them are camel-joined (`ds-global` → `dsGlobal`) so the
+ * composed name stays legal AND readable, then sanitized for the residue
+ * camel-joining cannot fix (a digit-leading or empty prefix).
+ */
+export const sanitizePrefixComponent = (prefix: string): string => {
+  const segments = prefix.split(/[^_a-zA-Z0-9]+/).filter((s) => s.length > 0);
+  const joined = segments
+    .map((s, i) => (i === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)))
+    .join("");
+  return sanitizeGraphQLName(joined);
+};

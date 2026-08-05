@@ -9,12 +9,12 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
-import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
 import {
   JOB_PAGE_SIZE,
   PAIRING_PAGE_SIZE,
-} from "#domains/lenses/journeys/journeysQuery.js";
+} from "#addons/journeys/journeysQuery.js";
+import { CATALOG_PAGE_SIZE } from "#domains/components/catalogQuery.js";
+import { RELATION_PAGE_SIZE } from "#domains/components/entityQuery.js";
 import { STANDARDS_PAGE_SIZE } from "#domains/lenses/standards/standardsIndexQuery.js";
 import {
   LOBBY_COMPONENT_CLASS,
@@ -27,15 +27,22 @@ import {
   PROBE_URI,
 } from "#domains/playground/probeQuery.js";
 import { resolveChipHref } from "#lib/Chip/index.js";
+import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
 import { appRoutes } from "../routes.js";
 import { matchRouteQuery } from "./routeQueries.js";
 
 /** The definitions exemplar term (percent-encoded in URLs). */
 const UIBLOCK_TERM = "ds:UIBlock";
 
-/** The standards exemplar (percent-encoded in URLs). Its local name
- * encodes no kind segment, so the D31 pin below stays warning-silent. */
-const STANDARD_URI = "cs:code.array.safe_access";
+/**
+ * The standards exemplar — now the ABSOLUTE IRI, percent-encoded in URLs.
+ * `node(id:)` accepts nothing else, so the reading route's param stopped
+ * being the compact form. `resolveChipHref` is form-agnostic and would
+ * have kept passing with the old compact constant; it is changed anyway,
+ * because a pin that tests a shape the app no longer emits tests nothing.
+ */
+const STANDARD_URI =
+  "http://pragma.canonical.com/codestandards#code.array.safe_access";
 
 describe("matchRouteQuery", () => {
   it("resolves /playground to the probe's exact variables", () => {
@@ -77,20 +84,28 @@ describe("matchRouteQuery", () => {
     expect(resolved?.variables).toEqual({ uri: "", hasTerm: false });
   });
 
-  // Standards block (P-5): the index runs one full page of the
-  // codeStandards connection; the reading URL runs the lookup with its
-  // percent-decoded uri.
-  it("resolves /standards to one full page, no cursor", () => {
+  // Standards block (P-5): the index runs one full page of the bound
+  // class's instances; the reading URL runs `node(id:)` with its
+  // percent-decoded IRI. Both carry the app's class binding, which is
+  // what makes them reach a collection at all now that no root field
+  // names one.
+  it("resolves /standards to one full page of the bound class, no cursor", () => {
     const resolved = matchRouteQuery("/standards");
     expect(resolved?.variables).toEqual({
+      classUri: GRAPH_BINDINGS.standards.classUri,
       count: STANDARDS_PAGE_SIZE,
       cursor: null,
     });
   });
 
-  it("resolves the standard reading URL with its percent-decoded uri", () => {
-    const resolved = matchRouteQuery("/standards/cs%3Acode.array.safe_access");
-    expect(resolved?.variables).toEqual({ uri: STANDARD_URI });
+  it("resolves the standard reading URL with its percent-decoded IRI", () => {
+    const resolved = matchRouteQuery(
+      `/standards/${encodeURIComponent(STANDARD_URI)}`,
+    );
+    expect(resolved?.variables).toEqual({
+      uri: STANDARD_URI,
+      classUri: GRAPH_BINDINGS.standards.classUri,
+    });
   });
 
   // Journeys block (AV-351): both addresses run the ONE explorer

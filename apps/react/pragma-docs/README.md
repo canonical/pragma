@@ -76,7 +76,14 @@ the correct content type.
 src/
 ├── client/         Client entry (hydration)
 ├── server/         Server entry, compiled renderer, dev servers, sitemap
-├── domains/        Feature domains (each owns its routes and pages)
+├── domains/        Feature domains (each owns its routes and pages).
+│                   `domains/lenses/` is the CORE lens set — every operation
+│                   under it must execute against any provider implementing
+│                   @canonical/prism-contract, and a gate enforces that.
+├── addons/         pragma-SPECIFIC add-ons: views that read pragma's own
+│                   ontology and make no provider-neutrality claim, so they
+│                   are not core lenses. Wired by hand in routes.tsx until a
+│                   plugin mechanism exists. See addons/journeys/index.ts.
 ├── lib/            Shared components
 ├── relay/          Relay environment factory, executable mock schema,
 │                   and generated artifacts (__generated__/)
@@ -94,29 +101,32 @@ files. This app ships both `src/assets/` (assets imported in code) and `public/`
 
 ## Data layer (Relay)
 
-The `catalog` domain demonstrates the app's [Relay](https://relay.dev) data
-layer: `ProductList` fetches a page of products with `useLazyLoadQuery`, and
-each `ProductCard` reads its own colocated `useFragment` — the component owns
-its field selection, the parent query just spreads it.
+The `components` domain demonstrates the app's [Relay](https://relay.dev) data
+layer: `ComponentsCatalogPage` fetches a page of entities with
+`useLazyLoadQuery`, and each `CatalogItem` reads its own colocated
+`useFragment` — the component owns its field selection, the parent query just
+spreads it.
 
-**By default the app needs no backend.** `createEnvironment`
-(`src/relay/environment.ts`) resolves every GraphQL operation in-process
-against an executable mock schema (`src/relay/schema.ts`, built from the SDL
-in `src/relay/schema.graphql`) backed by a small deterministic catalog. Set
-`VITE_GRAPHQL_URL` (or pass `graphqlUrl` to `createEnvironment`) to switch the
-environment to posting operations to a real GraphQL endpoint instead — no code
-changes needed.
+**The app needs a graph, and it runs as its own process.** `bun run graph`
+(`src/server/graph.ts`) compiles pragma's knowledge graph into an executable
+GraphQL schema and serves it at `http://127.0.0.1:5175/graphql` — nothing
+else, no HTML. Every `dev*` / `preview*` script starts one for you via the
+launcher (`src/server/withGraph.ts`), so in normal use you never run it by
+hand. `createEnvironment` (`src/relay/environment.ts`) posts every operation
+there; the address is decided in exactly one place
+(`src/relay/graphqlEndpoint.ts`) and `VITE_GRAPHQL_URL` overrides it. Setting
+that variable also tells the launcher an endpoint already exists, so it starts
+no graph of its own — which is how you point the app at a shared or remote
+one.
+
+**Prerequisite:** the graph compiles from the pragma CLI's refs cache, so
+`~/.cache/pragma/refs/@canonical` must be populated (`pragma sources update`,
+or point `PRAGMA_REFS_DIR` at a cache) before any server script serves data.
 
 **Generated artifacts are committed.** The Vite plugin runs with
 `codegen: false`, so `src/relay/__generated__/` is not rebuilt on the fly:
 after editing a `graphql` tag or the schema, run `bun run relay` (or keep
 `bun run relay:watch` running) to regenerate the artifacts, and commit them.
-
-**SSR ships no data yet.** `useLazyLoadQuery` fetches (and suspends) while
-rendering, and the server cannot serialize the fetched store for the client
-yet, so the catalog page wraps its query subtree in `ClientOnly`
-(`src/lib/ClientOnly/`): the server streams the fallback and the browser
-fetches after hydration.
 
 **Patched dependencies.** `patches/` carries two package patches applied via
 `patchedDependencies` in `package.json` (a bun feature — with another package

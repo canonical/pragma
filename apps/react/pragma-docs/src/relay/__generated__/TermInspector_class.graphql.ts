@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4a689be371d23a43faa26b2d8094c1de>>
+ * @generated SignedSource<<e795f28b6d0d89e3c3e3dd0e4db5832a>>
  * @lightSyntaxTransform
  */
 
@@ -16,9 +16,13 @@ export type TermInspector_class$data = {
   readonly instances: {
     readonly edges: ReadonlyArray<{
       readonly node: {
-        readonly __typename: string;
-        readonly id: string;
-        readonly name?: string | null | undefined;
+        readonly _meta: {
+          readonly curie: string;
+          readonly title: string;
+          readonly type: {
+            readonly uri: string;
+          };
+        };
         readonly uri: string;
       };
     }>;
@@ -237,34 +241,43 @@ return {
               "name": "node",
               "plural": false,
               "selections": [
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "__typename",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "id",
-                  "storageKey": null
-                },
                 (v0/*:: as any*/),
                 {
-                  "kind": "InlineFragment",
+                  "alias": null,
+                  "args": null,
+                  "concreteType": "EntityMeta",
+                  "kind": "LinkedField",
+                  "name": "_meta",
+                  "plural": false,
                   "selections": [
                     {
                       "alias": null,
                       "args": null,
                       "kind": "ScalarField",
-                      "name": "name",
+                      "name": "curie",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
+                      "name": "title",
+                      "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "concreteType": "OntologyClass",
+                      "kind": "LinkedField",
+                      "name": "type",
+                      "plural": false,
+                      "selections": [
+                        (v0/*:: as any*/)
+                      ],
                       "storageKey": null
                     }
                   ],
-                  "type": "Entity",
-                  "abstractKey": "__isEntity"
+                  "storageKey": null
                 }
               ],
               "storageKey": null
@@ -299,6 +312,6 @@ return {
 };
 })();
 
-(node as any).hash = "17130f864473950f134bef4d9f78d94b";
+(node as any).hash = "d33dd0305b6da7d3100dc81584ccae1e";
 
 export default node;

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5b72444919c0bc1f669214c18ad17c46>>
+ * @generated SignedSource<<14113f12133b02b3a11cd0d3f2eef9fb>>
  * @lightSyntaxTransform
  */
 
@@ -11,8 +11,6 @@ import { ReaderFragment } from 'relay-runtime';
 export type PropertyKind = "ANNOTATION" | "DATATYPE" | "OBJECT" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type TermInspector_property$data = {
-  readonly acceptanceCriteria: string | null | undefined;
-  readonly completionGuidance: string | null | undefined;
   readonly definition: string | null | undefined;
   readonly domain: {
     readonly label: string | null | undefined;
@@ -116,20 +114,6 @@ return {
       "plural": false,
       "selections": (v2/*:: as any*/),
       "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "acceptanceCriteria",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "completionGuidance",
-      "storageKey": null
     }
   ],
   "type": "OntologyProperty",
@@ -137,6 +121,6 @@ return {
 };
 })();
 
-(node as any).hash = "aa56c62bacf0903b0031dbfab758ce0e";
+(node as any).hash = "39c51e1c0d552781827434b5487f11da";
 
 export default node;

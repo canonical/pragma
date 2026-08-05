@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<3d5f21e119ffdb8b03984f814c1da1fd>>
+ * @generated SignedSource<<ed44ac24118b7114faed06ffd5536cdf>>
  * @lightSyntaxTransform
  */
 
@@ -10,12 +10,14 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CatalogItem_component$data = {
-  readonly id: string;
+  readonly _meta: {
+    readonly curie: string;
+  };
   readonly name: string | null | undefined;
   readonly summary: string | null | undefined;
   readonly tier: {
-    readonly id: string;
     readonly name: string | null | undefined;
+    readonly uri: string;
   } | null | undefined;
   readonly uri: string;
   readonly " $fragmentType": "CatalogItem_component";
@@ -30,7 +32,7 @@ var v0 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "uri",
   "storageKey": null
 },
 v1 = {
@@ -50,8 +52,19 @@ return {
     {
       "alias": null,
       "args": null,
-      "kind": "ScalarField",
-      "name": "uri",
+      "concreteType": "EntityMeta",
+      "kind": "LinkedField",
+      "name": "_meta",
+      "plural": false,
+      "selections": [
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "curie",
+          "storageKey": null
+        }
+      ],
       "storageKey": null
     },
     (v1/*:: as any*/),
@@ -81,6 +94,6 @@ return {
 };
 })();
 
-(node as any).hash = "b1cd7daf43af0414c4b4a47ee8081131";
+(node as any).hash = "a51c5e09ff13b4c1e3b6a9df65b671e8";
 
 export default node;

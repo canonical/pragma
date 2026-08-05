@@ -18,6 +18,15 @@ export {
   unwrapEntities,
 } from "./connection.js";
 export {
+  type DescriptiveSourceField,
+  type Lexical,
+  resolveLabel,
+  resolveTitle,
+  selectAnnotatedSource,
+  selectDescriptivePredicates,
+  selectLexicals,
+} from "./descriptive.js";
+export {
   createDatatypeListResolver,
   createDatatypeResolver,
   createEmbeddedListResolver,

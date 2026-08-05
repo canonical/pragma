@@ -1,9 +1,19 @@
 /**
- * The reading page's warm-store proof: a store seeded with the captured
- * fixture renders the whole reading column WITHOUT the network being
- * consulted — with teeth, because the same render against an empty store
- * does hit the network. Plus the null standard (the R4 precedent's
- * in-canvas not-found: a 200 with an honest alert, never an HTTP 404).
+ * The reading page's warm-store proof: a store seeded with the fixture
+ * renders the whole reading column WITHOUT the network being consulted —
+ * with teeth, because the same render against an empty store does hit the
+ * network. Plus the two not-found branches (the R4 precedent's in-canvas
+ * posture: a 200 with an honest alert, never an HTTP 404).
+ *
+ * THE SECOND NOT-FOUND BRANCH IS NEW AND IS THE POINT OF THIS FILE.
+ * `codeStandard(uri:)` returned null for anything that was not a standard,
+ * so the route got its type check for free. `node(id:)` returns ANY node,
+ * so `/standards/<a component IRI>` would render a standards page for a
+ * component unless the page guards it. Nothing in the acceptance gate can
+ * see that failure — the gate executes the operation against its own
+ * fixture variables and an operation can be perfectly contract-clean while
+ * the deployment hands it the wrong thing. This test is what stands
+ * between a green gate and a broken deployment.
  */
 
 import { render, screen } from "@testing-library/react";
@@ -12,7 +22,8 @@ import type { RecordMap } from "relay-runtime/store/RelayStoreTypes.js";
 import { describe, expect, it, vi } from "vitest";
 import standardEntityRecords from "../__fixtures__/standardEntityRecords.js";
 import {
-  LINK_COMPONENT_EXTENDS_URI,
+  CS_NAMESPACE,
+  LINK_COMPONENT_CURIE,
   LINK_COMPONENT_URI,
   STANDARDS_TEST_TIMEOUT_MS,
   standardReadingPageAt,
@@ -23,19 +34,92 @@ const createFetchSpy = () =>
   vi.fn(() => new Promise<never>(() => {})) as ReturnType<typeof vi.fn> &
     FetchFunction;
 
-/** An unknown URI resolved to null — the server's own answer, verbatim. */
-const NO_SUCH_URI = "cs:no.such.standard";
+/** An unknown IRI resolved to null — the server's own answer, verbatim. */
+const NO_SUCH_URI = `${CS_NAMESPACE}no.such.standard`;
 const notFoundRecords = {
   "client:root": {
     __id: "client:root",
     __typename: "__Root",
-    'codeStandard(uri:"cs:no.such.standard")': null,
+    'ontologyClass(uri:"cs:CodeStandard")': {
+      __ref: `${CS_NAMESPACE}CodeStandard`,
+    },
+    [`node(id:"${NO_SUCH_URI}")`]: null,
+  },
+  [`${CS_NAMESPACE}CodeStandard`]: {
+    __id: `${CS_NAMESPACE}CodeStandard`,
+    __typename: "OntologyClass",
+    uri: `${CS_NAMESPACE}CodeStandard`,
+    subclasses: { __refs: [] },
+  },
+} as unknown as RecordMap;
+
+/**
+ * A REAL node of the WRONG class, at the standards route. Deliberately a
+ * `ds:` component and not a metro fixture: the failure this guards against
+ * is a pragma deployment addressing one of its own entities through the
+ * wrong lens, and that is what the store must contain to prove it.
+ */
+const WRONG_CLASS_URI = "https://ds.canonical.com/global.component.button";
+const wrongClassRecords = {
+  "client:root": {
+    __id: "client:root",
+    __typename: "__Root",
+    'ontologyClass(uri:"cs:CodeStandard")': {
+      __ref: "http://pragma.canonical.com/codestandards#CodeStandard",
+    },
+    'node(id:"https://ds.canonical.com/global.component.button")': {
+      __ref: "https://ds.canonical.com/global.component.button",
+    },
+  },
+  "http://pragma.canonical.com/codestandards#CodeStandard": {
+    __id: "http://pragma.canonical.com/codestandards#CodeStandard",
+    __typename: "OntologyClass",
+    uri: "http://pragma.canonical.com/codestandards#CodeStandard",
+    subclasses: {
+      __refs: [],
+    },
+  },
+  "https://ds.canonical.com/global.component.button": {
+    __id: "https://ds.canonical.com/global.component.button",
+    __typename: "Component",
+    uri: "https://ds.canonical.com/global.component.button",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/global.component.button:_meta",
+    },
+  },
+  "client:https://ds.canonical.com/global.component.button:_meta": {
+    __id: "client:https://ds.canonical.com/global.component.button:_meta",
+    __typename: "EntityMeta",
+    curie: "ds:global.component.button",
+    title: "Button",
+    type: {
+      __ref: "https://ds.canonical.com/Component",
+    },
+    definition: "A button.",
+  },
+  "https://ds.canonical.com/Component": {
+    __id: "https://ds.canonical.com/Component",
+    __typename: "OntologyClass",
+    uri: "https://ds.canonical.com/Component",
+    _meta: {
+      __ref: "client:https://ds.canonical.com/Component:_meta",
+    },
+  },
+  "client:https://ds.canonical.com/Component:_meta": {
+    __id: "client:https://ds.canonical.com/Component:_meta",
+    __typename: "EntityMeta",
+    title: "Component",
+  },
+  "client:__type:Component": {
+    __id: "client:__type:Component",
+    __typename: "__TypeSchema",
+    __isNode: true,
   },
 } as unknown as RecordMap;
 
 describe("StandardReadingPage against a warm store", () => {
   it(
-    "renders the reading column from the captured fixture without fetching",
+    "renders the reading column from the fixture without fetching",
     () => {
       const fetchFn = createFetchSpy();
       render(
@@ -46,14 +130,18 @@ describe("StandardReadingPage against a warm store", () => {
         ),
       );
 
-      // Identity header: no display name in the graph for this standard,
-      // so the URI IS the title (never a fabricated title-case).
+      // Identity header: `_meta.title`, which is TOTAL — this standard
+      // asserts no name, so the title is the IRI's local name and never a
+      // fabricated title-case.
       const heading = screen.getByRole("heading", {
         level: 1,
-        name: LINK_COMPONENT_URI,
+        name: "react.component.link_component",
       });
       expect(heading.id).toBe("standard-reading-title");
-      expect(screen.getByText(/category: react/)).toBeInTheDocument();
+      // The compact identity still reaches the reader…
+      expect(screen.getByText(LINK_COMPONENT_CURIE)).toBeInTheDocument();
+      // …and the class replaces the old category line.
+      expect(screen.getByText(/class: CodeStandard/)).toBeInTheDocument();
       // The breadcrumb routes back to the index.
       const breadcrumb = screen.getByRole("navigation", {
         name: "Breadcrumb",
@@ -61,21 +149,17 @@ describe("StandardReadingPage against a warm store", () => {
       expect(breadcrumb.querySelector("a")?.getAttribute("href")).toBe(
         "/standards",
       );
-      // Prose: plain-text paragraph blocks from the captured description —
-      // the blank-line split yields MULTIPLE paragraphs, and the source's
+      // Prose: plain-text paragraph blocks from `_meta.definition` — the
+      // blank-line split yields MULTIPLE paragraphs, and the source's
       // inline code marks show verbatim (no markdown pipeline, R8).
       expect(screen.getByText(/A \*complex\* component/)).toBeInTheDocument();
       expect(
         document.querySelectorAll(".standard-article-prose p").length,
       ).toBeGreaterThan(1);
-      // Extends: the captured cross-link addresses ITS reading page.
-      expect(
-        screen
-          .getByRole("link", { name: LINK_COMPONENT_EXTENDS_URI })
-          .getAttribute("href"),
-      ).toBe(`/standards/${encodeURIComponent(LINK_COMPONENT_EXTENDS_URI)}`);
       // Head: the client-only title (document.title via useHead).
-      expect(document.title).toBe(`${LINK_COMPONENT_URI} — Pragma docs`);
+      expect(document.title).toBe(
+        "react.component.link_component — Pragma docs",
+      );
       // …and the network was NEVER consulted.
       expect(fetchFn).not.toHaveBeenCalled();
     },
@@ -83,7 +167,7 @@ describe("StandardReadingPage against a warm store", () => {
   );
 
   it(
-    "renders the in-canvas not-found alert for a null standard (R4), no fetch",
+    "renders the in-canvas not-found alert for a null node (R4), no fetch",
     () => {
       const fetchFn = createFetchSpy();
       render(standardReadingPageAt(NO_SUCH_URI, notFoundRecords, fetchFn));
@@ -91,6 +175,33 @@ describe("StandardReadingPage against a warm store", () => {
       const alert = screen.getByRole("alert");
       expect(alert.textContent).toContain(NO_SUCH_URI);
       expect(alert.textContent).toContain("No standard found");
+      expect(document.title).toBe("Standard not found — Pragma docs");
+      expect(fetchFn).not.toHaveBeenCalled();
+    },
+    STANDARDS_TEST_TIMEOUT_MS,
+  );
+
+  it(
+    "refuses a node of the WRONG class — the guard the gate cannot provide",
+    () => {
+      // The store holds a real, fully-populated Component. Without the
+      // `boundClass` guard this renders as a standards article: right
+      // layout, right breadcrumb, entirely wrong lens. The permitted set
+      // is `boundClass.uri` plus one level of its subclasses, and
+      // `ds:Component` is in neither.
+      const fetchFn = createFetchSpy();
+      render(
+        standardReadingPageAt(WRONG_CLASS_URI, wrongClassRecords, fetchFn),
+      );
+
+      const alert = screen.getByRole("alert");
+      expect(alert.textContent).toContain("No standard found");
+      expect(alert.textContent).toContain(WRONG_CLASS_URI);
+      // Nothing of the component leaked into the reading column.
+      expect(screen.queryByText("Button")).not.toBeInTheDocument();
+      expect(
+        document.querySelector(".ds.standard-article"),
+      ).not.toBeInTheDocument();
       expect(document.title).toBe("Standard not found — Pragma docs");
       expect(fetchFn).not.toHaveBeenCalled();
     },

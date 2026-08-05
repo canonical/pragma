@@ -611,8 +611,8 @@ describe("extractStatic (build-time static extraction)", () => {
     const perEntity = [...results.keys()].filter((k) =>
       k.startsWith("ThingQuery:"),
     );
-    expect(perEntity).toEqual(["ThingQuery:ex:widget"]);
-    const widget = results.get("ThingQuery:ex:widget");
+    expect(perEntity).toEqual(["ThingQuery:http://example.org/widget"]);
+    const widget = results.get("ThingQuery:http://example.org/widget");
     expect((widget?.data?.thing as { name: string }).name).toBe("Widget");
   });
 
