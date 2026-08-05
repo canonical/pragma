@@ -182,11 +182,19 @@ function workspaceDependencyRoots(root: string): string[] {
  * ships TypeScript. Falls back to `dist` only when a manifest declares no entry
  * at all, which is the shape the previous unconditional `dist` assumed.
  *
+ * Exported for `src/testing/globalSetupInputs.test.ts`, which is the whole
+ * reason the generality below is defensible: every workspace dependency on this
+ * tree declares a FLAT `exports["."]` whose `import` is a string, so the nested
+ * recursion, the `default` branch and the segment guards are reached by no live
+ * manifest. Untested code guarding a case nothing exhibits is the shape this
+ * programme keeps deleting; the test drives each branch with a hand-written
+ * manifest instead, so they are exercised rather than asserted in prose.
+ *
  * @param packageRoot - The resolved (real) directory of the linked package.
  * @returns One path segment, relative to that package's root.
  * @note Impure — reads the dependency's `package.json`.
  */
-function entryRoot(packageRoot: string): string {
+export function entryRoot(packageRoot: string): string {
   let manifest: {
     exports?: Record<string, unknown>;
     module?: string;
@@ -200,10 +208,15 @@ function entryRoot(packageRoot: string): string {
     return "dist";
   }
   // A condition value may itself be a nested condition object
-  // (`{ import: { types, default } }`), so unwrap until a string or nothing —
-  // reading `.replace` off an object would throw inside a global setup, which
-  // fails the whole suite for a dependency that merely writes its exports map a
-  // legal second way.
+  // (`{ import: { types, default } }`), so unwrap until a string or nothing.
+  // NOT to avoid a throw — the `typeof entry === "string"` check below already
+  // makes reading `.replace` off an object impossible. The cost of not
+  // unwrapping is SILENT: a nested map falls through to the `dist` default, and
+  // a dependency that ships from `src` (as `@canonical/summon-package` does)
+  // would then be watched at a directory that does not exist, `newestMtime`
+  // would answer 0, and the binary would be graded stale-blind — the same
+  // under-watching hole this function exists to close, one legal manifest shape
+  // away.
   const unwrap = (value: unknown, depth = 0): string | undefined => {
     if (typeof value === "string") return value;
     if (typeof value !== "object" || value === null || depth > 4)

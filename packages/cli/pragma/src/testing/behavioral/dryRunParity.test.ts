@@ -387,7 +387,9 @@ describe("the SHIPPED --dry-run branch reports the bytes the run writes", () => 
     expect(preview.exitCode).toBe(0);
     expect(readdirSync(project)).toEqual([]);
 
-    const match = /Write file: (\S+) \((\d+) bytes\)/.exec(preview.stdout ?? "");
+    const match = /Write file: (\S+) \((\d+) bytes\)/.exec(
+      preview.stdout ?? "",
+    );
     expect(match, preview.stdout).not.toBeNull();
     const plannedPath = match?.[1] as string;
     const plannedBytes = Number(match?.[2]);
