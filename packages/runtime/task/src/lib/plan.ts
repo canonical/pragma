@@ -38,8 +38,11 @@
  *   `ReadContext` in the same task read nothing, so a context-carrying plan
  *   diverges from its own run for no gain.
  * - **`TransformFile` performs its read.** A missing file or a throwing
- *   transform then fails the plan exactly as it fails the run. The transformed
- *   text is discarded; nothing is written.
+ *   transform then fails the plan exactly as it fails the run. Its OUTPUT goes
+ *   to the overlay, not to the disk — so a transform chain plans the bytes it
+ *   runs. Discarding it made `transform(+"|one")` then `transform(+"|two")`
+ *   then `read` plan `"base"` where the run produced `"base|one|two"`, with the
+ *   second transform fed the pre-plan text.
  * - **`Log` is simulated.** The caller renders a `Log` effect as a plan line;
  *   executing it too would print the message twice.
  * - **`Prompt` reuses `mockEffect`'s arm** (imported from the node-free
@@ -50,17 +53,29 @@
  *   keyed on the RESOLVED path so it agrees with `executeEffect`'s own `at()`.
  *   A later `Exists` on a path this plan just "wrote" answers true, and a later
  *   `ReadFile` on one answers with the planned content: a plan is consistent
- *   with itself without touching the disk.
+ *   with itself without touching the disk. That holds for the three tags whose
+ *   result is a document — `WriteFile`, `AppendFile`, `TransformFile` — and the
+ *   boundary for the rest is stated below rather than left to be discovered.
  *
  * ## Residual falsehoods, named rather than hidden
  *
  * - `Exec` answers `{ stdout: "", stderr: "", exitCode: 0 }`, so a task that
  *   branches on an exec's output plans against an empty string. Running the
  *   command for real is the thing a plan most obviously must not do.
- * - `CopyFile`/`CopyDirectory` do not probe their SOURCE. A probe would add an
- *   `Exists` the real run does not perform, and a plan whose effect sequence
- *   differs from its run's defeats the harness that compares them. A missing
- *   copy source is therefore still a plan/run divergence.
+ * - **`CopyFile`/`CopyDirectory`, `MakeDir` and `Symlink` record PRESENCE, not
+ *   content.** A later `Exists` on the destination answers true; a later
+ *   `ReadFile` of it falls through to the disk and fails, where the run would
+ *   have read the copied bytes. `CopyDirectory` and `MakeDir` have no single
+ *   document to model at all, and modelling `CopyFile` alone would mean one of
+ *   the four behaving unlike the other three. `CopyFile`/`CopyDirectory` also do
+ *   not probe their SOURCE, so a missing copy source is a plan that succeeds
+ *   where the run fails.
+ * - **`Glob` does not see the overlay.** It is delegated whole to the real
+ *   interpreter, so a plan that writes `new.txt` and then globs `*.txt` gets the
+ *   pre-plan file set — measured: plan `["src.txt","a.txt"]`, run
+ *   `["src.txt","new.txt","a.txt"]`. Answering it honestly means re-implementing
+ *   the matcher over virtual paths, and a matcher that disagreed with the real
+ *   one would be a worse falsehood than this one.
  * - A simulated DELETE is not subtracted from the real filesystem's answers: a
  *   later `Exists` still sees the file. Modelling subtraction would mean
  *   modelling the real tree, and a wrong subtraction reads as "gone" when it is
@@ -128,7 +143,14 @@ export const planTask = async <A>(
   } = options;
 
   const effects: Effect[] = [];
-  /** Resolved path → the content a simulated write would leave there. */
+  /**
+   * Resolved path → the content a simulated write would leave there, or
+   * `undefined` for "this plan creates it, but its bytes are not modelled"
+   * (`MakeDir`, `Symlink`, a copy destination). PRESENCE is what `Exists`
+   * answers from; the VALUE is what a read answers with, so the two questions
+   * are asked separately — `has` vs `get` — rather than through one `undefined`
+   * that cannot tell "absent" from "content unknown".
+   */
   const overlay = new Map<string, string | undefined>();
   const at = (p: string): string => (cwd ? path.resolve(cwd, p) : p);
   const checkInterrupted = interruptGuard(signal);
@@ -137,15 +159,26 @@ export const planTask = async <A>(
   const real = (effect: Effect): Promise<unknown> =>
     executeEffect(effect, context, undefined, undefined, cwd);
 
+  /** The real file's bytes, or `undefined` when it is not there. */
+  const realSource = async (target: string): Promise<string | undefined> => {
+    try {
+      return (await real({ _tag: "ReadFile", path: target })) as string;
+    } catch {
+      return undefined;
+    }
+  };
+
   /**
    * The bytes a `ReadFile`/`TransformFile` should observe: what this plan
-   * already planned to write there, else the real file.
+   * already planned to write there, else the real file. A path the plan created
+   * WITHOUT modelled content falls through to the real read, and so still
+   * fails the way a read of a file this plan has not written fails.
    */
   const sourceOf = async (target: string): Promise<string> => {
-    const planned = overlay.get(at(target));
-    return planned === undefined
-      ? ((await real({ _tag: "ReadFile", path: target })) as string)
-      : planned;
+    const key = at(target);
+    const planned = overlay.get(key);
+    if (planned !== undefined) return planned;
+    return (await real({ _tag: "ReadFile", path: target })) as string;
   };
 
   // `Parallel`/`Race` are resolved by `perform` before a leaf is reached, so
@@ -168,10 +201,15 @@ export const planTask = async <A>(
         return real(effect);
 
       case "TransformFile": {
-        // The READ half for real; the transform runs (so a throwing transform
-        // fails the plan as it fails the run) and its output is discarded.
-        effect.transform(await sourceOf(effect.path));
-        overlay.set(at(effect.path), undefined);
+        // The READ half for real (so a missing file or a throwing transform
+        // fails the plan exactly as it fails the run); the WRITE half lands in
+        // the overlay, so a second transform of the same path sees the first
+        // one's output and a later `ReadFile` answers with the transformed text.
+        // Nothing reaches the disk.
+        overlay.set(
+          at(effect.path),
+          effect.transform(await sourceOf(effect.path)),
+        );
         return undefined;
       }
 
@@ -181,6 +219,19 @@ export const planTask = async <A>(
         return undefined;
 
       case "AppendFile":
+        // The appended document, so a later read answers with it. The real read
+        // of the base goes through `real()`, which does not push into `effects`
+        // — the plan's effect SEQUENCE still matches the run's. `executeEffect`
+        // appends with node's default `a` flag, which creates a missing file, so
+        // an absent base is the empty string on both sides.
+        overlay.set(
+          at(effect.path),
+          (overlay.get(at(effect.path)) ??
+            (await realSource(effect.path)) ??
+            "") + effect.content,
+        );
+        return undefined;
+
       case "MakeDir":
       case "Symlink":
         overlay.set(at(effect.path), undefined);

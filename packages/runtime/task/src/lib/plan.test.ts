@@ -280,6 +280,114 @@ describe("planTask — transformFile", () => {
     expect(seen).toBe("planned body");
     expect(existsSync(file)).toBe(false);
   });
+
+  it("a CHAIN of transforms plans the bytes the run produces", async () => {
+    // The transformed text used to be computed and thrown away, so each
+    // transform re-read the pre-plan file and a later `readFile` answered with
+    // it. Measured then: plan `"base"` / transform inputs `["base","base"]`;
+    // run `"base|one|two"` / inputs `["base","base|one"]`.
+    const file = join(dir, "chain.txt");
+    writeFileSync(file, "base");
+    const seen: string[] = [];
+    const chain = gen(function* () {
+      yield* $(
+        transformFile(file, (source) => {
+          seen.push(source);
+          return `${source}|one`;
+        }),
+      );
+      yield* $(
+        transformFile(file, (source) => {
+          seen.push(source);
+          return `${source}|two`;
+        }),
+      );
+      return yield* $(readFile(file));
+    });
+
+    const { value } = await planTask(chain);
+
+    expect(seen).toEqual(["base", "base|one"]);
+    expect(value).toBe("base|one|two");
+    // And the disk is untouched, which is the whole point of planning it.
+    expect(readFileSync(file, "utf-8")).toBe("base");
+  });
+});
+
+describe("planTask — the overlay answers reads of what it planned", () => {
+  it("reads back an APPENDED document, where the plan used to throw ENOENT", async () => {
+    // `appendFile` recorded presence-without-content, and `sourceOf` could not
+    // tell that from absence — so the read fell through to a disk that has no
+    // such file and the PLAN failed where the run succeeds.
+    const file = join(dir, "appended.txt");
+    const task = gen(function* () {
+      yield* $(appendFile(file, "hello", true));
+      return yield* $(readFile(file));
+    });
+
+    expect((await planTask(task)).value).toBe("hello");
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it("appends onto the REAL bytes when the file is already there", async () => {
+    const file = join(dir, "log.txt");
+    writeFileSync(file, "one\n");
+    const task = gen(function* () {
+      yield* $(appendFile(file, "two\n", false));
+      yield* $(appendFile(file, "three\n", false));
+      return yield* $(readFile(file));
+    });
+
+    const { value, effects } = await planTask(task);
+
+    expect(value).toBe("one\ntwo\nthree\n");
+    // The base read goes through the un-recorded real interpreter, so the plan's
+    // effect SEQUENCE is still the run's — three effects, no extra `ReadFile`.
+    expect(effects.map((e) => e._tag)).toEqual([
+      "AppendFile",
+      "AppendFile",
+      "ReadFile",
+    ]);
+    expect(readFileSync(file, "utf-8")).toBe("one\n");
+  });
+
+  it("a COPY destination exists but has no readable bytes — the stated boundary", async () => {
+    // Named in the module docblock's residual falsehoods rather than modelled:
+    // `CopyDirectory` and `MakeDir` have no single document to carry, so all
+    // four presence-only tags behave alike.
+    const source = join(dir, "src.txt");
+    const dest = join(dir, "dst.txt");
+    writeFileSync(source, "SOURCE");
+
+    const seenExists = await planTask(
+      gen(function* () {
+        yield* $(copyFile(source, dest));
+        return yield* $(exists(dest));
+      }),
+    );
+    expect(seenExists.value).toBe(true);
+
+    await expect(
+      planTask(
+        gen(function* () {
+          yield* $(copyFile(source, dest));
+          return yield* $(readFile(dest));
+        }),
+      ),
+    ).rejects.toBeInstanceOf(TaskExecutionError);
+  });
+
+  it("GLOB does not see the overlay — the other stated boundary", async () => {
+    writeFileSync(join(dir, "a.txt"), "a");
+    const { value } = await planTask(
+      gen(function* () {
+        yield* $(writeFile(join(dir, "new.txt"), "hi"));
+        return yield* $(glob("*.txt", dir));
+      }),
+    );
+
+    expect(value).toEqual(["a.txt"]);
+  });
 });
 
 describe("planTask — context is real", () => {
