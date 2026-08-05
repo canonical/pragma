@@ -453,6 +453,24 @@
         "vitest": "^4.0.18",
       },
     },
+    "packages/docsite/pragma-provider": {
+      "name": "@canonical/prism-pragma-provider",
+      "version": "0.32.0",
+      "dependencies": {
+        "@canonical/ke": "^0.32.0",
+        "@canonical/ke-graphql": "^0.32.0",
+      },
+      "devDependencies": {
+        "@biomejs/biome": "2.4.9",
+        "@canonical/biome-config": "^0.32.0",
+        "@canonical/typescript-config": "^0.32.0",
+        "@canonical/webarchitect": "^0.32.0",
+        "@types/bun": "^1.3.10",
+        "@types/node": "^24.12.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.18",
+      },
+    },
     "packages/ds-assets": {
       "name": "@canonical/ds-assets",
       "version": "0.32.0",
@@ -1894,6 +1912,8 @@
     "@canonical/prism-contract": ["@canonical/prism-contract@workspace:packages/docsite/contract"],
 
     "@canonical/prism-graph-example": ["@canonical/prism-graph-example@workspace:packages/docsite/graph-example"],
+
+    "@canonical/prism-pragma-provider": ["@canonical/prism-pragma-provider@workspace:packages/docsite/pragma-provider"],
 
     "@canonical/react-boilerplate-vite": ["@canonical/react-boilerplate-vite@workspace:apps/react/boilerplate-vite"],
 
