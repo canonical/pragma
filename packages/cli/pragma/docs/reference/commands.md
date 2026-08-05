@@ -105,7 +105,7 @@ pragma capabilities --format json  # the structured map
 
 Narrate how pragma and the active domain are made.
 
-Storeless — a colophon for the toolchain. Prints pragma's own story (the effect monad, one-grammar-many-projections, the render/LLM-output model, storeless modularity, and the domain-as-data pack model) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's `colophon`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 ```
 pragma colophon
@@ -176,7 +176,9 @@ pragma config show --format json
 
 ### pragma create application
 
-Scaffold a full React application with SSR and routing.
+Scaffold a full React application with SSR and routing. Source-run only.
+
+Scaffold a full React application with SSR and routing. From the compiled pragma binary, `create application` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 ```
 pragma create application [appPath] [options]
@@ -221,7 +223,7 @@ pragma create component [framework] [componentPath] [options]
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[framework]` | no | Component framework (react, svelte, or lit). (one of: react, svelte, lit) |
+| `[framework]` | no | Component framework. (one of: react, svelte, lit) |
 | `[componentPath]` | no | Component path (its final segment is the PascalCase component name). |
 
 **Flags**
@@ -245,7 +247,9 @@ pragma create component svelte src/lib/Card --dry-run  # preview the files witho
 
 ### pragma create package
 
-Scaffold a new npm package for the monorepo.
+Scaffold a new npm package for the monorepo. Source-run only.
+
+Scaffold a new npm package for the monorepo. From the compiled pragma binary, `create package` refuses with `UNSUPPORTED` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that its generator reads templates from disk, which the binary does not carry. Run it from a source checkout, or use the `summon` CLI.
 
 ```
 pragma create package [options]
@@ -531,7 +535,7 @@ pragma ontology show ds  # deprecated alias
 
 List the workflow prompt templates the design system offers.
 
-Browse the ds:Prompt entities in the active graph — name, description, and argument names. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
+Browse the prompt entities the active graph declares (ds:Prompt in this distribution) — name, description, and argument names. This distribution's graph carries none today. The same prompts are offered natively over MCP prompts/list; use prompt_lookup for the full template body.
 
 ```
 pragma prompt list
@@ -550,7 +554,7 @@ pragma prompt list
 
 Show one workflow prompt template's body and arguments by name.
 
-Fetch a single ds:Prompt entity's full template body (with {{arg}} placeholders) and its declared arguments.
+Fetch a single prompt entity's full template body (with {{arg}} placeholders) and its declared arguments. A prompt is addressed by its label; prompt_list names the ones the active graph carries.
 
 ```
 pragma prompt lookup <name>
@@ -560,16 +564,10 @@ pragma prompt lookup <name>
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `<name>` | yes | The prompt name (e.g. build-a-block). |
+| `<name>` | yes | The prompt name, as `prompt list` reports it. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `prompt_lookup` tool.
-
-**Examples**
-
-```bash
-pragma prompt lookup build-a-block
-```
 
 ## setup
 
@@ -714,9 +712,9 @@ pragma skill lookup docx
 
 ### pragma sources status
 
-Report the local store's readiness and per-source staleness.
+Report which pack answers reads, and the packs it was built from.
 
-Storeless — reads the lock, config, and pack cache without booting the store, so it works even when the store is cold.
+Storeless — reads config and the pack cache without booting the store, so it works even when the store is cold. Reports whether reads are answered by a locally built pack, by the embedded snapshot, or not at all.
 
 ```
 pragma sources status
@@ -734,9 +732,9 @@ pragma sources status --format json  # the full envelope
 
 ### pragma sources update
 
-Resolve configured packages, build the local store, and lock it.
+Resolve configured packs and build the local store from them.
 
-Resolves each configured package (git/file/npm), builds one content-addressed pack, and writes pragma.lock.json. Networkless boots then load from the lock.
+Resolves each configured pack (git/file/npm) and builds one content-addressed pack, which every later boot reads with no network access. Pin a revision by putting a commit SHA in the pack's source ref.
 
 ```
 pragma sources update [options]
@@ -746,7 +744,6 @@ pragma sources update [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--frozen` | — | Re-resolve to the lock's pinned revisions exactly; never advance. |
 | `--skip-invalid` | — | Skip sources that fail to parse (warning about each) and build from the rest, instead of failing the whole update. |
 
 - Store: storeless.
@@ -756,8 +753,7 @@ pragma sources update [options]
 **Examples**
 
 ```bash
-pragma sources update  # resolve, build, and lock
-pragma sources update --frozen  # reproduce the locked state
+pragma sources update  # resolve and build
 pragma sources update --skip-invalid  # build from the parseable sources, warning about any dropped
 ```
 
@@ -914,7 +910,7 @@ pragma tier lookup apps/lxd
 
 Generate a tokens.config.mjs for the terrazzo token pipeline.
 
-Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packages. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
+Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
 
 ```
 pragma token add-config

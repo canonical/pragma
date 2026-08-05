@@ -2,33 +2,26 @@
  * Resolve a {@link PackageRef} to its pinned revision and RDF source contents.
  *
  * `file` reads the local path in place; `npm` resolves the installed package
- * from the project's `node_modules`; `git` clones/fetches into the ref cache
- * (or, under `--frozen`, checks out exactly the lock's pinned commit and never
- * advances). Each package contributes its `definitions/**` and `data/**` TTL
- * files, labelled by a stable `pkg/relative-path` so the pack's content hash is
- * machine-independent. Reached only from the `sources update` Task body.
+ * from the project's `node_modules`; `git` clones/fetches into the ref cache.
+ * A ref that is already a commit SHA resolves to exactly that commit, which is
+ * how a project pins a revision. Each package contributes its `definitions/**`
+ * and `data/**` TTL files plus any `stories/*.json` it ships, labelled by a
+ * stable `pkg/relative-path` so the pack's content hash is machine-independent.
+ * Reached only from the `sources update` Task body.
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
-import { RECOVERY_CLI_PREFIX } from "../../../constants.js";
 import { PragmaError } from "../../error/PragmaError.js";
-import { cliRecovery } from "../../error/recovery.js";
 import { refsCacheDir } from "../paths.js";
-import {
-  checkoutCommit,
-  cloneRef,
-  fetchRef,
-  headCommit,
-  remoteHead,
-} from "./gitOps.js";
+import { cloneRef, fetchRef, headCommit, remoteHead } from "./gitOps.js";
 import { type PackageRef, redactUrl } from "./parseRef.js";
 
 /** A resolved package: its pinned revision and labelled RDF sources. */
 export interface ResolvedPackage {
   readonly name: string;
-  /** The config `packages` source ref, verbatim. */
+  /** The config `packs` source ref, verbatim. */
   readonly source: string;
   /** The resolved commit / version / absolute path. */
   readonly resolved: string;
@@ -40,18 +33,25 @@ export interface ResolvedPackage {
   readonly root: string;
   /** The labelled RDF sources (path label + content). */
   readonly sources: { readonly path: string; readonly content: string }[];
+  /**
+   * The package's `stories/*.json` files, as RAW TEXT — never parsed here. The
+   * pack carries the package's bytes verbatim so every interpretation failure
+   * (malformed JSON and schema-invalid JSON alike) is caught behind one guard
+   * at dispatch instead of two half-guards at two layers.
+   */
+  readonly stories: { readonly path: string; readonly content: string }[];
 }
 
-/** Options for a resolution: whether to honour a pinned commit (`--frozen`). */
+/** Options for a resolution — the project directory an `npm` ref resolves from. */
 export interface ResolveOptions {
   readonly cwd: string;
-  readonly frozen: boolean;
-  /** The lock's pinned revision for this package (used under `--frozen`). */
-  readonly pinned?: string;
 }
 
 /** The package subdirectories scanned for `.ttl` sources. */
 const TTL_DIRS = ["definitions", "data"];
+
+/** The package subdirectory whose immediate `*.json` children are read stories. */
+const STORIES_DIR = "stories";
 
 /** Sanitize a single ref (branch/tag/SHA) for use as ONE cache path
  * segment: every filesystem-illegal char — INCLUDING `/`, so a branch like
@@ -151,6 +151,47 @@ function readTtlSources(
   }
   sources.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
   return sources;
+}
+
+/**
+ * Read a package's `stories/*.json` as raw text, with stable labels.
+ *
+ * IMMEDIATE children only — the same discipline `skills/` uses, and recursion
+ * buys nothing. Hidden entries are skipped and a symlinked FILE is followed but
+ * a symlinked DIRECTORY is never recursed into, exactly as {@link walkTtl}
+ * argues. Sorted so the pack's content hash does not depend on readdir order.
+ *
+ * @param rootDir - The package root.
+ * @param label - The package name, used as the label prefix.
+ * @returns The labelled story files (`pkg/stories/name.json` + raw content).
+ * @note Impure — reads from disk.
+ */
+function readStorySources(
+  rootDir: string,
+  label: string,
+): { path: string; content: string }[] {
+  const dir = join(rootDir, STORIES_DIR);
+  if (!existsSync(dir)) return [];
+  const stories: { path: string; content: string }[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith(".") || !entry.name.endsWith(".json")) continue;
+    const full = join(dir, entry.name);
+    let isFile = entry.isFile();
+    if (entry.isSymbolicLink()) {
+      try {
+        isFile = statSync(full).isFile();
+      } catch {
+        continue;
+      }
+    }
+    if (!isFile) continue;
+    stories.push({
+      path: `${label}/${STORIES_DIR}/${entry.name}`,
+      content: readFileSync(full, "utf-8"),
+    });
+  }
+  stories.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+  return stories;
 }
 
 /**
@@ -280,31 +321,15 @@ export function resolvePackageJson(
  * Resolve a package reference to its revision and RDF sources.
  *
  * @param ref - The parsed package reference.
- * @param options - The cwd, frozen flag, and any pinned revision.
+ * @param options - The project directory an `npm` ref resolves from.
  * @returns The resolved package.
  * @throws PragmaError on a missing file path or unresolvable npm package.
- * @throws PragmaError under `--frozen` when the package has no lock entry.
  * @note Impure — may clone/fetch git, reads TTL from disk.
  */
 export async function resolvePackage(
   ref: PackageRef,
   options: ResolveOptions,
 ): Promise<ResolvedPackage> {
-  // `--frozen` means "reproduce the locked state exactly". A configured package
-  // with no lock entry has nothing to reproduce, so refuse rather than silently
-  // resolving it fresh (which would advance the very state the lock pins).
-  if (options.frozen && options.pinned === undefined) {
-    throw PragmaError.configError(
-      `Cannot resolve "${ref.pkg}" under --frozen: it has no entry in the lock.`,
-      {
-        recovery: cliRecovery(
-          `${RECOVERY_CLI_PREFIX}sources update`,
-          "Update the lock without --frozen, then commit it.",
-        ),
-      },
-    );
-  }
-
   switch (ref.kind) {
     case "file": {
       if (!existsSync(ref.path)) {
@@ -318,6 +343,7 @@ export async function resolvePackage(
         resolved: ref.path,
         root: ref.path,
         sources: readTtlSources(ref.path, ref.pkg),
+        stories: readStorySources(ref.path, ref.pkg),
       };
     }
 
@@ -348,41 +374,30 @@ export async function resolvePackage(
         resolved: version,
         root: dir,
         sources: readTtlSources(dir, ref.pkg),
+        stories: readStorySources(dir, ref.pkg),
       };
     }
 
     case "git": {
-      const useCommit = options.frozen && options.pinned;
       const dir = join(
         refsCacheDir(),
         // The package name NESTS its scope (`@canonical/design-system`), so
         // the written path matches what the docsite backend reads; only the
         // ref segment flattens its `/`.
         sanitizePackageName(ref.pkg),
-        sanitize(useCommit ? (options.pinned as string) : ref.ref),
+        sanitize(ref.ref),
       );
       let resolved: string;
       try {
-        if (useCommit) {
-          // Frozen + pinned: the target is an exact commit. If the cache is
-          // already checked out at it, there is NOTHING to do — skip the
-          // fetch/checkout entirely (zero network). Otherwise fall through to
-          // fetch-and-checkout that commit.
-          const pinned = options.pinned as string;
-          if (existsSync(dir) && headCommit(dir) === pinned) {
-            resolved = pinned;
-          } else {
-            checkoutCommit(ref.url, pinned, dir);
-            resolved = pinned;
-          }
-        } else if (existsSync(dir)) {
+        if (existsSync(dir)) {
           // Cached branch/tag: CHECK FIRST, don't fetch blindly. `ls-remote`
           // asks the remote where the ref points WITHOUT downloading objects;
           // if the local checkout is already there, skip the full
           // fetch+checkout. Only when the remote has moved (or ls-remote is
-          // unavailable — remoteHead returns undefined) do we do the network
-          // fetch. This makes `sources update` idempotent and cheap when the
-          // cache is already current — the "don't clone blindly" fix.
+          // unavailable — `remoteHead` returns undefined, which includes a ref
+          // that is already a commit SHA) do we do the network fetch. This
+          // makes `sources update` idempotent and cheap when the cache is
+          // already current — the "don't clone blindly" fix.
           const local = headCommit(dir);
           const remote = remoteHead(ref.url, ref.ref);
           resolved =
@@ -395,28 +410,18 @@ export async function resolvePackage(
         }
       } catch (error) {
         // A git clone/fetch/checkout failed — an unreachable remote, a moved or
-        // deleted ref, an auth/credential problem, or (under --frozen) a pinned
-        // commit that is gone. Name the package + ref with git's own reason so
-        // it reads as a fixable data/reproducibility error, not INTERNAL_ERROR.
-        throw useCommit
-          ? PragmaError.configError(
-              `Cannot reproduce "${ref.pkg}" under --frozen: commit ${options.pinned} could not be checked out from ${redactUrl(ref.url)}. ${errorDetail(error)}`,
-              {
-                recovery: {
-                  message:
-                    "The pinned commit may have been force-pushed away or the remote is unreachable. Restore access to it, or re-run `pragma sources update` without --frozen to re-pin.",
-                },
-              },
-            )
-          : PragmaError.configError(
-              `Cannot resolve "${ref.pkg}" from ${redactUrl(ref.url)}#${ref.ref}: ${errorDetail(error)}`,
-              {
-                recovery: {
-                  message:
-                    "Check the git URL and ref, your network, and your git credentials, then re-run the update.",
-                },
-              },
-            );
+        // deleted ref, an auth/credential problem, or a pinned SHA that has been
+        // force-pushed away. Name the package + ref with git's own reason so it
+        // reads as a fixable data error, not INTERNAL_ERROR.
+        throw PragmaError.configError(
+          `Cannot resolve "${ref.pkg}" from ${redactUrl(ref.url)}#${ref.ref}: ${errorDetail(error)}`,
+          {
+            recovery: {
+              message:
+                "Check the git URL and ref, your network, and your git credentials, then re-run the update.",
+            },
+          },
+        );
       }
       return {
         name: ref.pkg,
@@ -424,6 +429,7 @@ export async function resolvePackage(
         resolved,
         root: dir,
         sources: readTtlSources(dir, ref.pkg),
+        stories: readStorySources(dir, ref.pkg),
       };
     }
   }

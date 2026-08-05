@@ -63,7 +63,7 @@ export interface McpDetection {
  * @returns The pragma {@link McpServerConfig}.
  */
 export function pragmaMcpEntry(cwd: string): McpServerConfig {
-  return { command: "pragma", args: ["mcp"], cwd };
+  return { command: MCP_SERVER_NAME, args: ["mcp"], cwd };
 }
 
 /**
@@ -228,7 +228,7 @@ export function composeMcp(
           : "→";
     tasks.push(
       info(
-        `[${group.scope}] pragma MCP server ${verb} ${group.path} (${names})`,
+        `[${group.scope}] ${MCP_SERVER_NAME} MCP server ${verb} ${group.path} (${names})`,
       ),
     );
   }

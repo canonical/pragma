@@ -1,73 +1,107 @@
 /**
- * Doctor check: report how each configured semantic package resolves.
+ * Doctor check: report which pack answers this project's reads.
  *
- * ADAPTED for v2: the old local>git>bundled loader chain is retired — resolution
- * now flows through `sources update` into `pragma.lock.json` + the cached pack.
- * This check reads the lock (which packages resolved) and the storeless pack
- * index (the entity total), never booting the store. An absent lock with
- * configured packages is the "run `sources update`" case.
+ * It switches on the ONE boot decision ({@link resolveSources}) rather than
+ * re-deriving it from config, so doctor can never call an install healthy that
+ * every read would fail. That is the whole point of the check: a project that
+ * configured its own packs and never built them reports `fail` with the update
+ * remedy — not a pass listing the distribution's packs it is not reading.
+ * Storeless throughout: the pointer, the manifest, and the entity index are
+ * read off disk, never through a store session.
+ *
+ * It also names every read story that pack carries but cannot use. Those are
+ * DROPPED at dispatch rather than thrown (a third-party story must never break
+ * a command), so doctor is where the user finds out — and it goes through the
+ * same `validateStories` the dispatch path uses, so the two can never disagree.
  */
 
+import { BIN_NAME } from "../../../constants.js";
 import {
   entityTotal,
   readPackIndex,
 } from "../../../kernel/completion/entitySource.js";
-import type { PackageEntry } from "../../../kernel/config/types.js";
-import { readLock } from "../../../kernel/runtime/lock.js";
+import { validateStories } from "../../../kernel/packs/collect.js";
+import { embeddedManifest } from "../../../kernel/runtime/graphpack/embedded.js";
+import { readManifest } from "../../../kernel/runtime/graphpack/manifest.js";
+import { activeStories } from "../../../kernel/runtime/graphpack/stories.js";
+import type { SourcesDecision } from "../../../kernel/runtime/resolveSources.js";
+import { resolveSources } from "../../../kernel/runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { CheckItem, CheckResult } from "../types.js";
 
-const entryName = (entry: PackageEntry): string =>
-  typeof entry === "string" ? entry : entry.name;
+/**
+ * The stories the answering pack carries but cannot use, as check items.
+ *
+ * The registry is reached through a RUNTIME dynamic import (as
+ * `collectColophon` does) so the static `capabilities/index → doctorModule →
+ * checkPackageRefs → capabilities/index` cycle can never form.
+ *
+ * @param decision - The boot decision the check already resolved.
+ * @returns One failing item per ignored story, in declaration order.
+ * @note Impure — reads the answering pack's `stories.json`.
+ */
+async function ignoredStoryItems(
+  decision: SourcesDecision,
+): Promise<CheckItem[]> {
+  const { capabilities } = await import("../../index.js");
+  const { problems } = validateStories(activeStories(decision), capabilities);
+  return problems.map((problem) => ({
+    label: problem.source,
+    detail: problem.message,
+    status: "fail" as const,
+  }));
+}
+
+/** ` · N story/ies ignored` for a headline, or nothing when all are usable. */
+function ignoredSuffix(items: readonly CheckItem[]): string {
+  if (items.length === 0) return "";
+  return ` · ${items.length} ${items.length === 1 ? "story" : "stories"} ignored`;
+}
 
 /**
- * Report package resolution status against the lock and the entity total.
+ * Report which pack answers reads, its provenance, and its entity total.
  *
  * @param rt - The per-invocation runtime.
- * @returns A CheckResult with a per-package breakdown.
- * @note Impure — reads config, the lock, and the pack index from disk.
+ * @returns A CheckResult naming the answering pack, or the failure to build one.
+ * @note Impure — reads config, the active-pack pointer, and the pack index.
  */
 export async function checkPackageRefs(
   rt: PragmaRuntime,
 ): Promise<CheckResult> {
-  const entries = (await rt.loadConfig()).config.packages ?? [];
-  const lock = readLock(rt.cwd);
-  const index = readPackIndex(rt.cwd);
-  const totalEntities = index ? entityTotal(index) : 0;
+  const decision = resolveSources(await rt.loadConfig(), rt.cwd);
+  // The display says "packs" (config declarations); the file/function keep
+  // "Package" (npm/git resolution vocabulary).
+  const name = "pack refs";
 
-  if (entries.length === 0) {
+  if (decision.kind === "unavailable") {
     return {
-      name: "package refs",
-      status: "pass",
-      detail: `no packages configured — the embedded pack answers reads (${totalEntities.toLocaleString()} entities)`,
+      name,
+      status: "fail",
+      detail: decision.reason,
+      remedy: `${BIN_NAME} sources update`,
     };
   }
 
-  const items: CheckItem[] = [];
-  let unresolved = 0;
-  for (const entry of entries) {
-    const name = entryName(entry);
-    const packEntry = lock?.packs.find((pack) => pack.name === name);
-    if (packEntry) {
-      items.push({
-        label: name,
-        status: "pass",
-        detail: `resolved ${packEntry.resolved}`,
-      });
-    } else {
-      items.push({ label: name, status: "fail", detail: "not in the lock" });
-      unresolved += 1;
-    }
+  const index = readPackIndex(decision);
+  const entities = (index ? entityTotal(index) : 0).toLocaleString();
+  // The pack DOES answer reads, so the check itself passes; the ignored stories
+  // are failing sub-items under it. (A `warn` status would ripple through the
+  // renderer and the DoctorData counts to buy an icon.)
+  const items = await ignoredStoryItems(decision);
+  const suffix = ignoredSuffix(items);
+  if (decision.kind === "embedded") {
+    return {
+      name,
+      status: "pass",
+      detail: `embedded snapshot @ ${embeddedManifest().sourceRef} — ${entities} entities${suffix} · \`${BIN_NAME} sources update\` to build from the configured packs`,
+      ...(items.length > 0 ? { items } : {}),
+    };
   }
-
-  const ok = lock !== undefined && unresolved === 0;
+  const manifest = readManifest(decision.dir);
   return {
-    name: "package refs",
-    status: ok ? "pass" : "fail",
-    detail: ok
-      ? `${entries.length} package(s) resolved · ${totalEntities.toLocaleString()} entities`
-      : `${unresolved} of ${entries.length} package(s) not resolved`,
-    items,
-    ...(ok ? {} : { remedy: "pragma sources update" }),
+    name,
+    status: "pass",
+    detail: `${manifest?.sourceRef ?? decision.contentHash.slice(0, 12)} — ${entities} entities, built ${manifest?.createdAt ?? "?"}${suffix}`,
+    ...(items.length > 0 ? { items } : {}),
   };
 }

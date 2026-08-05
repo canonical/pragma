@@ -96,6 +96,10 @@ describe("perf budgets (PROTECTED)", () => {
     // __store-probe boots the embedded pack from its n-quads cache and queries
     // it — the full store-backed verb cost in the compiled binary. The first
     // spawn materializes the pack; warmups absorb it, then it is a cache hit.
+    // Note that with 9 kept samples a nearest-rank p95 IS the maximum (see
+    // BUDGETS.md's p95-stabilization section) — deliberately kept, because the
+    // honest statistic here is the one that catches real cost, and the ceiling
+    // is sized with a 1.25× margin over a projected p95 to absorb it.
     const result = measureCommand(BINARY, ["__store-probe"], {
       runs: 12,
       warmups: 3,

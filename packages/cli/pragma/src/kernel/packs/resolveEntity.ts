@@ -13,6 +13,7 @@
  */
 
 import { PragmaError } from "../error/PragmaError.js";
+import { cliRecovery } from "../error/recovery.js";
 import { suggestNames } from "../project/cli/suggestNames.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { activeExpands } from "./disclosure.js";
@@ -62,11 +63,9 @@ export async function resolveLookup(
 ): Promise<LookupOutput> {
   if (queries.length === 0) {
     throw PragmaError.invalidInput("names", "(empty)", {
-      recovery: {
-        message: `List available ${noun} entries.`,
-        cli: `pragma ${noun} list`,
-        mcp: { tool: `${noun}_list` },
-      },
+      recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
+        tool: `${noun}_list`,
+      }),
     });
   }
 
@@ -161,11 +160,9 @@ async function lookupOne(
     const candidates = await listEntityNames(rt, lookup, source);
     throw PragmaError.notFound(noun, query, {
       suggestions: suggestNames(query, candidates),
-      recovery: {
-        message: `List available ${noun} entries.`,
-        cli: `pragma ${noun} list`,
-        mcp: { tool: `${noun}_list` },
-      },
+      recovery: cliRecovery(`${noun} list`, `List available ${noun} entries.`, {
+        tool: `${noun}_list`,
+      }),
     });
   }
 
@@ -205,7 +202,7 @@ function buildEntityQuery(
     throw PragmaError.invalidInput("name", query, {
       recovery: {
         message:
-          "Use an absolute IRI (https://…), a prefixed name (ds:thing), or a plain entity name.",
+          "Use an absolute IRI (https://…), a prefixed name (prefix:local), or a plain entity name.",
       },
     });
   }

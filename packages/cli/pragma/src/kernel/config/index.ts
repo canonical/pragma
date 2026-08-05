@@ -3,17 +3,16 @@
  *
  * `schema.ts` (zod) is intentionally not re-exported here: it is imported
  * directly and lazily by the readers, keeping this barrel — and any storeless
- * consumer — off the zod fast path.
+ * consumer — off the zod fast path. `defaults` is likewise not re-exported:
+ * it statically imports the distribution config and the validating schema.
  */
 
-export { default as defaults } from "./defaults.js";
 export { evaluateProjectConfig } from "./evaluateProjectConfig.js";
 export { findProjectConfig } from "./findProjectConfig.js";
 export { ensureFirstRun, firstRunTask } from "./firstRun.js";
 export type { GlobalConfigRead } from "./globalConfig.js";
 export { readGlobalConfig } from "./globalConfig.js";
 export {
-  cacheDir,
   configCacheDir,
   configDir,
   globalConfigPath,
@@ -26,8 +25,8 @@ export type {
   ConfigLayers,
   ConfigOrigin,
   ConfigOrigins,
-  PackageDeclaration,
-  PackageEntry,
+  PackDeclaration,
+  PackSource,
   PragmaConfig,
   RawConfig,
 } from "./types.js";

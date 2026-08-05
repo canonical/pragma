@@ -2,10 +2,10 @@
  * Plain `(noun, verb)` uniqueness across compiled verbs.
  *
  * Replaces the old reserved-verb / derive-reserved machinery: every verb the
- * projectors see — authored, bundled-pack, or dynamic-pack — must own a distinct
- * `(noun, verb)` key. Precedence (config > package > bundled) is resolved by
- * NOUN before this runs, so a surviving collision here is a real conflict (a
- * dynamic pack claiming an authored noun's verb), reported with both sources.
+ * projectors see — authored, distribution-declared, or dynamic — must own a
+ * distinct `(noun, verb)` key. Precedence (config > package > distribution) is
+ * resolved by NOUN before this runs, so a surviving collision here is a real
+ * conflict, reported with both sources.
  */
 
 import type { VerbSpec } from "../spec/types.js";

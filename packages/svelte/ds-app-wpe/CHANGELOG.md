@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+
+### Features
+
+* **svelte-wpe:** Add KeyboardKey component ([#878](https://github.com/canonical/pragma/issues/878)) ([464939b](https://github.com/canonical/pragma/commit/464939b321618b3f15ace224c955d3cd6343c6ea))
+* **svelte-wpe:** add Spinner subcomponent ([#886](https://github.com/canonical/pragma/issues/886)) ([4da56e0](https://github.com/canonical/pragma/commit/4da56e0bed25f52a0c0642905597a22bfa3131e1))
+
+
+
+
+
 # [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-wpe

@@ -1,12 +1,17 @@
 /**
  * Build the MCP server from the grammar.
  *
- * Constructs an {@link McpServer} under the stable `pragma` identity (matching
- * the CLI bin, so existing agent wiring resolves it), then registers every
- * exposed verb as a tool and each module's optional `mcpResources` surface (the
- * graph resource browser, wired below via `module.mcpResources?.register`). One
- * runtime is booted for the server's lifetime and shared by every tool; the
- * store stays lazy, booting only when a resource read needs it.
+ * Constructs an {@link McpServer} whose wire identity PROJECTS from the
+ * distribution: `serverInfo.name` is the declared distribution name (the same
+ * projection that names the CLI bin, so existing agent wiring resolves it) and
+ * `serverInfo.version` the package version — a fork's server introduces itself
+ * under the fork's own name with no code change. The covenant records the rule
+ * (`surface.v2.json` `mcpSurface.serverInfo`) and `identity.test.ts` pins it on
+ * the wire from a fork's config. Then registers every exposed verb as a tool
+ * and each module's optional `mcpResources` surface (the graph resource
+ * browser, wired below via `module.mcpResources?.register`). One runtime is
+ * booted for the server's lifetime and shared by every tool; the store stays
+ * lazy, booting only when a resource read needs it.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";

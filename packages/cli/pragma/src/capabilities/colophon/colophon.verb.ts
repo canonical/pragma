@@ -7,6 +7,7 @@
  * `infoVerb` / `doctorVerb` / `capabilitiesVerb`.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
 import { colophonFormatters } from "./colophon.render.js";
@@ -14,14 +15,17 @@ import type { ColophonData } from "./types.js";
 
 const colophonVerb: VerbSpec<Record<string, unknown>, ColophonData> = {
   path: ["colophon"],
-  summary: "Narrate how pragma and the active domain are made.",
-  doc: "Storeless — a colophon for the toolchain. Prints pragma's own story (the effect monad, one-grammar-many-projections, the render/LLM-output model, storeless modularity, and the domain-as-data pack model) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.",
+  summary: `Narrate how ${BIN_NAME} and the active domain are made.`,
+  doc: `Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's \`colophon\`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.`,
   params: [],
   output: { formatters: colophonFormatters },
   examples: [
-    { cmd: "pragma colophon", note: "the toolchain + active domain story" },
     {
-      cmd: "pragma colophon --format llm",
+      cmd: `${BIN_NAME} colophon`,
+      note: "the toolchain + active domain story",
+    },
+    {
+      cmd: `${BIN_NAME} colophon --format llm`,
       note: "condensed Markdown for agents",
     },
   ],

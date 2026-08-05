@@ -1,6 +1,6 @@
 {
   "name": "@canonical/react-hooks",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "type": "module",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -43,8 +43,8 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@canonical/ds-types": "^0.32.0",
-    "@canonical/utils": "^0.32.0",
+    "@canonical/ds-types": "^0.33.0",
+    "@canonical/utils": "^0.33.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
@@ -52,8 +52,8 @@
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.22.0",
     "@canonical/typescript-config": "^0.22.0",
-    "@canonical/typescript-config-react": "^0.32.0",
-    "@canonical/vitest-config-react": "^0.32.0",
+    "@canonical/typescript-config-react": "^0.33.0",
+    "@canonical/vitest-config-react": "^0.33.0",
     "@canonical/webarchitect": "^0.22.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

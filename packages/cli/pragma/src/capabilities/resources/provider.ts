@@ -3,9 +3,11 @@
  *
  * Listing and autocomplete are STORELESS: they read the enriched `index.json`
  * (readPackIndex) off disk, so the resource surface costs nothing until an agent
- * reads one. A read is STORE-BACKED through the SHARED {@link readEntity} — the
- * same reader `graph inspect` uses — so a resource read and a `graph inspect` of
- * the same URI return identical content (the mirror contract).
+ * reads one. They read it for the pack the BOOT DECISION names, so the listing
+ * can never advertise entities whose reads then fail STORE_UNAVAILABLE. A read
+ * is STORE-BACKED through the SHARED {@link readEntity} — the same reader
+ * `graph inspect` uses — so a resource read and a `graph inspect` of the same
+ * URI return identical content (the mirror contract).
  *
  * Degradation (Risk4): on a missing or legacy (pre-v2) index the listing returns
  * a single "run `pragma sources update`" hint — never a live re-index of the
@@ -16,12 +18,14 @@
  * the `--help`/`__complete` fast path.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { readPackIndex } from "../../kernel/completion/entitySource.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { mcpErrorFrom } from "../../kernel/project/mcp/mcpError.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
 import type { McpResourceProvider } from "../../kernel/spec/types.js";
 
 /** Max autocomplete suggestions returned for a partial URI. */
@@ -32,13 +36,25 @@ const CLASS_PRIORITY = 0.9;
 /** MCP annotation priority for an individual (ABox) entry. */
 const INDIVIDUAL_PRIORITY = 0.3;
 
-/** The `pragma:` URI scheme + the single reserved-expansion template variable. */
+/**
+ * The `pragma:` URI scheme + the single reserved-expansion template variable.
+ *
+ * A LITERAL, and it must stay one until the wire identifiers move together.
+ * `surface/surface.v2.json` freezes `pragma:{+uri}` as protocol identity, and
+ * `buildResourceList` mints `pragma:<prefixed>` for every entry it lists —
+ * three writings of one decision. Deriving only this one made a fork advertise
+ * `recipes:{+uri}` over a list of 653 `pragma:` URIs: every resource the server
+ * offered became unreadable, and the readable form was never advertised.
+ * `resources.test.ts` pins the pair through {@link resourceProvider}'s declared
+ * surface; `identity.test.ts` masks this template out of its leak scan for the
+ * same reason.
+ */
 const URI_TEMPLATE = "pragma:{+uri}";
 
 const TEMPLATE_DESCRIPTION =
   "Knowledge-graph entities from the local pack. Read any entry by its prefixed " +
   "URI (e.g. pragma:ds:button); autocomplete matches URI or label substrings. " +
-  "Content mirrors `pragma graph inspect <uri>`.";
+  `Content mirrors \`${BIN_NAME} graph inspect <uri>\`.`;
 
 /** Agent-navigability annotations mirrored onto a listed resource. */
 export interface ResourceAnnotations {
@@ -80,8 +96,7 @@ export function buildResourceList(
       {
         uri: "pragma:sources",
         name: "Store not indexed",
-        description:
-          "No enriched entity index. Run `pragma sources update` to build it.",
+        description: `No enriched entity index. Run \`${BIN_NAME} sources update\` to build it.`,
         mimeType: "application/json",
       },
     ];
@@ -197,14 +212,18 @@ export const resourceProvider: McpResourceProvider = {
     const { McpError, ErrorCode } = await import(
       "@modelcontextprotocol/sdk/types.js"
     );
+    // The index of the pack the boot decision names — `undefined` when the
+    // store is unavailable, which `buildResourceList` renders as the recovery
+    // entry rather than a catalogue of unreadable URIs.
+    const activeIndex = async (): Promise<PackIndex | undefined> =>
+      readPackIndex(resolveSources(await runtime.loadConfig(), runtime.cwd));
+
     const template = new ResourceTemplate(URI_TEMPLATE, {
-      list: async () => ({
-        resources: buildResourceList(readPackIndex(runtime.cwd)),
-      }),
+      list: async () => ({ resources: buildResourceList(await activeIndex()) }),
       complete: {
         uri: async (value: string) =>
           rankUriCompletions(
-            readPackIndex(runtime.cwd)?.entities ?? [],
+            (await activeIndex())?.entities ?? [],
             value,
             COMPLETION_LIMIT,
           ),

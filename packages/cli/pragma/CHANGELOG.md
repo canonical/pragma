@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+
+### Features
+
+* **cli:** pragma setup detects already-present config (idempotent, state-aware) ([#883](https://github.com/canonical/pragma/issues/883)) ([55f0afb](https://github.com/canonical/pragma/commit/55f0afb1bc08e96590584a1b5e03e2e3279ca110))
+
+
+
+
+
 # [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
 
 **Note:** Version bump only for package @canonical/pragma-cli
@@ -20,11 +31,24 @@ The v2 CLI reshapes the command surface. Migrate as follows:
 
 | v1 | v2 | Notes |
 | --- | --- | --- |
+| `packages:` in a config | `packs:` | The config field was renamed. A global or project config that still declares `packages:` throws `CONFIG_ERROR` at startup — every command, `doctor` and `sources update` included — with a message naming the rename. Rename the key; the entry shape is unchanged. |
+| `detail:` as any string | `detail: summary \| standard \| detailed` | The `detail` config field is validated as the closed enum it documents, exactly like `channel`. A layer declaring any other value (a typo, the v1 `digest`) throws `CONFIG_ERROR` at load naming the file and the three levels — it no longer passes validation, gets reported by `config show` as in force, and silently renders at `standard`. |
+| `completion.caseSensitive` | — | The field is removed: it was accepted by the validator and read by nothing — completion matching is declared per parameter by the capability grammar, never configured. A layer still setting it throws `CONFIG_ERROR` at load naming the removed field (detected before the schema's unknown-key stripping could hide it); delete the key. `completion.minChars` and `completion.families` are unchanged. |
+| `generators:` in a config | — | The field is removed from the config schema, from `pragma.conf.ts`, from `config show`, and from the public type barrel (`GeneratorSource`). It was validated, layered, documented and read by nothing: `sources update` never consumed it and the `create` verbs resolve their generators statically — a compiled binary can only run generators it was linked with — so declaring it changed only what `config show` printed. A layer still declaring it throws `CONFIG_ERROR` at load naming the removed field; delete it. Declared generators may return as a working feature in a later program. |
 | `pragma data …` | `pragma sources …` | The `data` noun is renamed `sources`. Build the store with `pragma sources update`; inspect it with `pragma sources status`. |
-| `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package, builds the store, and writes `pragma.lock.json` in one step. |
+| `pragma update-refs` | `pragma sources update` | The standalone refs-update command is removed. `sources update` resolves every configured package and builds the store in one step. |
+| `pragma.lock.json` | — | The project lock is removed. Which pack answers a project's reads is recorded by a one-line pointer in the cache (`$XDG_CACHE_HOME/pragma/projects/`), because the pack it names is machine-local and was never committable. Run `pragma sources update` once, then delete the orphan `pragma.lock.json` from your repo — nothing reads it. |
+| `pragma sources update --frozen` | a SHA in the source ref | `--frozen` reproduced a lock; with no lock there is nothing to reproduce. Pin by putting the full 40-character commit SHA in the ref (`git+https://…#<sha>`), which every update then resolves to exactly. |
 | the `llm` tool | `pragma capabilities` + MCP handshake instructions | The `llm` orientation tool is retired. Agents are oriented by the MCP handshake `instructions` sent on `initialize` and by the `capabilities` tool/verb, both derived from the live grammar. |
 | `pragma tokens …` / `tokens_*` tools | `pragma token …` / `token_*` tools | The token noun and its tools are singular now: `token list`, `token lookup`, `token sample`, `token add-config`. |
 | `--format text` | `--format plain` | The default text format is renamed `plain`. Output modes are `--format plain`, `--format json`, and the `--llm` condensed-Markdown flag (auto-on when piped) — there is no `llm` format value. |
+| a four-file pack | a five-file pack | A built pack now also carries `stories.json` — the read stories its packages ship. A pack built by an earlier build lacks it and is treated as incomplete, so reads report `STORE_UNAVAILABLE` ("the built pack is incomplete — an older or torn build") until you run `pragma sources update` once. That update re-resolves every configured pack, so it needs the network and your git credentials, not just the local cache. |
+| `config show`'s story bodies | `pragma capabilities` | `config show --format json` no longer carries declared story bodies (`config.packs[].stories`, `config.stories`) — they are SPARQL, and MCP returns that payload verbatim. Pack names, sources and per-field provenance are unchanged; use `pragma capabilities` to see the verbs a story produces. |
+| a story's `emptyRecovery.cli` | the same command WITHOUT the binary name | A read story (in your config, or in a package's `stories/*.json`) declares `cli: "sources update"`, not `cli: "pragma sources update"` — the CONSUMING distribution's binary name is prepended when the hint is rendered, so one story is portable across distributions. The old prefixed form is now rejected rather than rendered as `pragma pragma sources update`: in your config that is a fatal `CONFIG_ERROR` naming the change, and a package's `stories/*.json` carrying it is dropped and named under `doctor`'s `pack refs`, like any other invalid package story. A hint carrying some other distribution's name cannot be detected, and renders doubled. |
+| `config show`'s identity rows | `pragma --help` / `pragma colophon` | `name`, `help` and `issuesUrl` are read from the distribution config at module load, and `colophon` from the same file at `colophon` render time — none of the four is merged through the layers — so `config show` no longer prints them, and `config show --format json` drops them from `data.config` and `data.origins`. A global or project layer declaring one is still accepted by the validator and, as before, has no effect; it is now silent instead of being reported with a `[project]` marker nothing honours. |
+| `colophon:` as a string | `colophon: { markdown, summary? }` | The toolchain colophon is declared content now, not code: the `colophon` verb renders whatever the distribution config declares (full narrative + optional condensed `--format llm` form), titled with the distribution's name, and the hand-written narrative module is deleted. The old one-line string form fails validation — move the text into `markdown`. The section's JSON `kind: "pragma"` discriminant is frozen for wire compatibility and does not track the name. |
+| an MCP client assuming the server is named `pragma` | read `serverInfo` | The MCP server's wire identity is a projection, recorded in the covenant (`mcpSurface.serverInfo`): `serverInfo.name` is the distribution's declared name and `serverInfo.version` the package version, so a fork's server introduces itself under its own name. Peers must read `serverInfo` rather than assume `pragma`. The `pragma:{+uri}` resource template, the `pragma:<uri>` URIs it mints, and the `pragma/box`/`pragma/instanceCount` `_meta` keys stay frozen protocol identity every distribution serves unchanged — clients persist resource URIs, so the scheme never follows a fork's name. |
+| `surface.v2.json`'s `configFiles.lock` | `configFiles.configCache` | The key named the project-lock file that v2 removed; it always described the evaluated-project-config cache. The value is unchanged. `surface/surface.v2.json` has no consumer outside the CLI package. |
 
 See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and [docs/reference/index.md](./docs/reference/index.md) for the full command and tool surface.
 
@@ -32,6 +56,15 @@ See [docs/getting-started.md](./docs/getting-started.md) for the v2 workflow and
 ### Features
 
 * **cli:** add `pragma colophon` — a self-describing, pack-extensible toolchain colophon (storeless self-verb + MCP tool + a pack-grammar `colophon` markdown field), rendered plain/llm/json
+* **cli:** the toolchain colophon is content the distribution declares — `pragma.conf.ts` carries `colophon: { markdown, summary }` and the kernel renders whatever is declared, so a fork tells its own story by editing its config. The last hand-written narrative (`pragmaColophon.ts`) is deleted along with the copy-guard exemption that covered it: every capability source is now scanned.
+* **cli:** the distribution declares its five read nouns (`block`, `token`, `modifier`, `standard`, `tier`) as data in `pragma.conf.ts` instead of code in `src/`, compiled at module load through the same compiler a third-party story goes through. `packs[].stories` is a working config field with the distribution as its first consumer.
+* **cli:** a package can ship `stories/*.json`; `sources update` carries them into the pack and they become working commands in any project that declares that package. A package story may only ADD a noun the CLI does not have: one that is malformed, schema-invalid, or names a noun the CLI already ships is ignored — named on stderr and under `doctor`'s `pack refs` — never fatal.
+
+### Bug Fixes
+
+* **cli:** accept `sample.fixedCount` in the pack grammar validator — a documented field used by three bundled stories that `sampleSchema` (`.strict()`) omitted, so any config- or package-declared story using it died with a fatal `CONFIG_ERROR` at startup.
+* **cli:** the pack grammar rejects a definition the compiler cannot build — an extra `verbs[].verb` repeating `list`/`lookup`/`sample`, or a `filters[].param` declared twice. Both were schema-valid and both threw before the command tree existed, so a package shipping one made EVERY command fail, `pragma doctor` and `pragma sources update` included.
+* **cli:** `pragma capabilities` reports the effective modules, so it lists config- and package-declared nouns. The MCP server already registered its tools from that set, so the catalog and `tools/list` could disagree.
 
 # [0.31.0](https://github.com/canonical/pragma/compare/v0.30.0...v0.31.0) (2026-07-17)
 

@@ -10,6 +10,7 @@
  */
 
 import { PragmaError } from "../error/PragmaError.js";
+import { cliRecovery } from "../error/recovery.js";
 import type { PragmaRuntime } from "../runtime/types.js";
 import { resolvePackDetail } from "./disclosure.js";
 import type { SampleOutput } from "./renderPack.js";
@@ -88,11 +89,11 @@ export function makeLookupRun(
           code: first.code as PragmaError["code"],
           message: first.message,
           suggestions: first.suggestions ? [...first.suggestions] : undefined,
-          recovery: {
-            message: `List available ${noun} entries.`,
-            cli: `pragma ${noun} list`,
-            mcp: { tool: `${noun}_list` },
-          },
+          recovery: cliRecovery(
+            `${noun} list`,
+            `List available ${noun} entries.`,
+            { tool: `${noun}_list` },
+          ),
         });
       }
     }
@@ -119,11 +120,11 @@ export function makeSampleRun(
     if (names.length === 0) {
       throw PragmaError.emptyResults(noun, {
         message: `No ${noun} entries to sample.`,
-        recovery: {
-          message: `List available ${noun} entries.`,
-          cli: `pragma ${noun} list`,
-          mcp: { tool: `${noun}_list` },
-        },
+        recovery: cliRecovery(
+          `${noun} list`,
+          `List available ${noun} entries.`,
+          { tool: `${noun}_list` },
+        ),
       });
     }
     const selected = pickRandom(names, count);

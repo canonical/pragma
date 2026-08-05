@@ -6,32 +6,79 @@
  * path, which are storeless and config-free. Validates the raw shape a global
  * JSON file or an evaluated `pragma.config.ts` declares; unknown keys are
  * stripped for forward compatibility, and only present keys survive so layer
- * merging keeps honest per-field provenance.
+ * merging keeps honest per-field provenance. Legacy shapes are NOT left to the
+ * unknown-key stripping: each is detected before validation and rejected with
+ * a loud CONFIG_ERROR naming the file and the fix, so an old config fails
+ * telling the user exactly what to change instead of silently ignoring the
+ * field. Three today: the `packages` key (renamed to `packs`), and the removed
+ * `completion.caseSensitive` and `generators` fields (each validated and read
+ * by nothing).
  */
 
 import { z } from "zod";
 import { PragmaError } from "../error/PragmaError.js";
-import { CHANNELS, type RawConfig } from "./types.js";
+import { CHANNELS, DETAIL_LEVELS, type RawConfig } from "./types.js";
 
-const packageEntrySchema = z.union([
+const packDeclarationSchema = z.union([
   z.string().min(1),
-  z.object({ name: z.string().min(1), source: z.string().optional() }),
+  z.object({
+    name: z.string().min(1),
+    source: z.string().optional(),
+    // Opaque here: the pack grammar is validated by `parsePackDefinition` at
+    // dispatch, not by the config layer. Without this key the object arm would
+    // STRIP declared stories silently (unknown keys are dropped for forward
+    // compatibility), so a pack's stories would vanish with no error.
+    stories: z.array(z.unknown()).optional(),
+  }),
 ]);
 
 const completionSchema = z.object({
   minChars: z.number().int().min(0).optional(),
-  caseSensitive: z.boolean().optional(),
   families: z.record(z.string(), z.boolean()).optional(),
 });
 
-const rawConfigSchema = z.object({
+/**
+ * The `completion` object a raw layer declares, when it declares one — read
+ * WITHOUT validation, for the removed-field detection that must run before
+ * the schema's unknown-key stripping could hide the key.
+ */
+function declaredCompletion(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null) return null;
+  const { completion } = value as { completion?: unknown };
+  return typeof completion === "object" && completion !== null
+    ? (completion as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * The validator every config layer passes through. EXPORTED for
+ * `schema.test.ts`, which compares its field set and each field's optionality
+ * against the generated `docs/reference/config.md` — the two are produced
+ * independently (the page from `keyof RawConfig`, this from hand-written zod)
+ * and `parseRawConfig`'s `as RawConfig` cast means `tsc` cannot catch them
+ * drifting apart.
+ */
+export const rawConfigSchema = z.object({
+  name: z.string().min(1).optional(),
+  help: z.string().min(1).optional(),
+  // Declared toolchain content: the `colophon` verb renders whatever the
+  // distribution declares here (markdown body + optional condensed summary).
+  colophon: z
+    .object({
+      markdown: z.string().min(1),
+      summary: z.string().min(1).optional(),
+    })
+    .optional(),
+  issuesUrl: z.string().url().optional(),
   tier: z.string().optional(),
   channel: z.enum(CHANNELS).optional(),
-  detail: z.string().optional(),
-  packages: z.array(packageEntrySchema).optional(),
+  // Closed over the documented ladder, like `channel`: a level the renderer
+  // would silently degrade to `standard` is a config error naming the file and
+  // the three valid values, not a value `config show` reports as honoured.
+  detail: z.enum(DETAIL_LEVELS).optional(),
+  packs: z.array(packDeclarationSchema).optional(),
   stories: z.array(z.unknown()).optional(),
   prefixes: z.record(z.string(), z.string()).optional(),
-  prompts: z.record(z.string(), z.unknown()).optional(),
   completion: completionSchema.optional(),
 });
 
@@ -41,9 +88,49 @@ const rawConfigSchema = z.object({
  * @param value - The parsed JSON or evaluated module default.
  * @param source - The file path, used in error messages.
  * @returns The validated layer values (only the keys actually present).
- * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape.
+ * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
+ *   value declares the legacy `packages` key (renamed to `packs`), or when it
+ *   still sets the removed `generators` or `completion.caseSensitive` fields.
  */
 export function parseRawConfig(value: unknown, source: string): RawConfig {
+  // Rename detection must precede validation: unknown keys are stripped, so a
+  // legacy `packages` field would otherwise vanish silently.
+  if (typeof value === "object" && value !== null && "packages" in value) {
+    throw PragmaError.configError(
+      `Invalid config in ${source}: the "packages" field was renamed to "packs". The entry shape is unchanged.`,
+      {
+        recovery: {
+          message: `In ${source}, rename "packages:" to "packs".`,
+        },
+      },
+    );
+  }
+  // Removed-field detection, before validation for the same reason: each field
+  // was accepted and read by NOTHING, so a config still setting one gets a
+  // loud error naming the removed field, not silence. `generators` was ruled
+  // dead (L-OPEN-1): `resolveSources` never read it and the `create` verbs
+  // resolve their generators statically — declaring it only changed what
+  // `config show` printed.
+  if (typeof value === "object" && value !== null && "generators" in value) {
+    throw PragmaError.configError(
+      `Invalid config in ${source}: the "generators" field was removed — it was read by nothing. The create verbs resolve their generators statically.`,
+      {
+        recovery: {
+          message: `In ${source}, delete the "generators" field.`,
+        },
+      },
+    );
+  }
+  if ("caseSensitive" in (declaredCompletion(value) ?? {})) {
+    throw PragmaError.configError(
+      `Invalid config in ${source}: the "completion.caseSensitive" field was removed — it was read by nothing. Completion matching is declared by the grammar, not configured.`,
+      {
+        recovery: {
+          message: `In ${source}, delete "caseSensitive" from "completion".`,
+        },
+      },
+    );
+  }
   const result = rawConfigSchema.safeParse(value ?? {});
   if (!result.success) {
     const issue = result.error.issues[0];
