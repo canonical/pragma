@@ -242,9 +242,10 @@ export interface CapabilityModule {
    * so a story in the user's own CONFIG for the same noun REPLACES it. Authored
    * modules (config, ontology, doctor, …) carry no story and can never be
    * replaced; neither can any shipped noun be replaced by a PACKAGE story (see
-   * `kernel/packs/collect.validateStories`). Set where a story is compiled
-   * (`capabilities/distribution.ts` and the three composite nouns), read once,
-   * by `kernel/packs/collect.assembleEffectiveModules`.
+   * `kernel/packs/collect.validateStories`). Set where a story is compiled —
+   * `capabilities/distribution.ts` for the distribution's own, and
+   * `kernel/packs/collect.ts` for a config- or package-declared one — and read
+   * once, by `kernel/packs/collect.assembleEffectiveModules`.
    */
   readonly story?: true;
   readonly boot?: (rt: PragmaRuntime) => void;

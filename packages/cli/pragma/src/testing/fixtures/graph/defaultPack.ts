@@ -29,8 +29,12 @@
  *
  * The vocabulary is the live `ds:` design-system namespace (same as
  * `blockGraph.ts`/`canonical.ts`), so `block list`, `ontology list/show`, and
- * `graph query` all run against real terms — the hand-written `block list` verb
- * hard-codes `ds:Component`/`ds:name`/`ds:tier`/`ds:release`.
+ * `graph query` all run against real terms — the declared `block` story's
+ * SELECT names `ds:Component`, `ds:name` and `ds:tier` literally in
+ * `pragma.conf.ts`, so a fixture that renamed them would return zero rows
+ * rather than fail. `ds:release` is retained as graph data no shipped read
+ * filters on: it is what the channel narrowing used, and the ontology counts
+ * below include it.
  *
  * Stable anchors this fixture guarantees (pinned by the journey suite):
  *  - Exactly 4 blocks in the graph: Button (`ds:Component`, global), Card
