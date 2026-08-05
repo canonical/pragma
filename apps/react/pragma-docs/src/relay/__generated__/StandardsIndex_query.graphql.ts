@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2730ad8556148d138e7ae714e7212d3c>>
+ * @generated SignedSource<<c8b507452816f0fe98d5ec071c0c7245>>
  * @lightSyntaxTransform
  */
 
@@ -10,25 +10,26 @@
 import { ReaderFragment } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type StandardsIndex_query$data = {
-  readonly codeStandards: {
-    readonly edges: ReadonlyArray<{
-      readonly node: {
-        readonly _meta: {
-          readonly curie: string;
-        };
-        readonly categories: {
-          readonly edges: ReadonlyArray<{
-            readonly node: {
-              readonly slug: string | null | undefined;
+  readonly ontologyClass: {
+    readonly instances: {
+      readonly edges: ReadonlyArray<{
+        readonly node: {
+          readonly _meta: {
+            readonly curie: string;
+            readonly title: string;
+            readonly type: {
+              readonly _meta: {
+                readonly title: string;
+              };
               readonly uri: string;
             };
-          }>;
+          };
+          readonly uri: string;
         };
-        readonly name: string | null | undefined;
-        readonly uri: string;
-      };
-    }>;
-  };
+      }>;
+    };
+    readonly uri: string;
+  } | null | undefined;
   readonly " $fragmentType": "StandardsIndex_query";
 };
 export type StandardsIndex_query$key = {
@@ -40,7 +41,8 @@ import StandardsIndexPaginationQuery_graphql from './StandardsIndexPaginationQue
 
 const node: ReaderFragment = (function(){
 var v0 = [
-  "codeStandards"
+  "ontologyClass",
+  "instances"
 ],
 v1 = {
   "alias": null,
@@ -48,9 +50,21 @@ v1 = {
   "kind": "ScalarField",
   "name": "uri",
   "storageKey": null
+},
+v2 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "title",
+  "storageKey": null
 };
 return {
   "argumentDefinitions": [
+    {
+      "defaultValue": null,
+      "kind": "LocalArgument",
+      "name": "classUri"
+    },
     {
       "defaultValue": null,
       "kind": "LocalArgument",
@@ -88,91 +102,80 @@ return {
   "name": "StandardsIndex_query",
   "selections": [
     {
-      "alias": "codeStandards",
-      "args": null,
-      "concreteType": "CodeStandardConnection",
+      "alias": null,
+      "args": [
+        {
+          "kind": "Variable",
+          "name": "uri",
+          "variableName": "classUri"
+        }
+      ],
+      "concreteType": "OntologyClass",
       "kind": "LinkedField",
-      "name": "__StandardsIndex_codeStandards_connection",
+      "name": "ontologyClass",
       "plural": false,
       "selections": [
+        (v1/*:: as any*/),
         {
-          "alias": null,
+          "alias": "instances",
           "args": null,
-          "concreteType": "CodeStandardEdge",
+          "concreteType": "NodeConnection",
           "kind": "LinkedField",
-          "name": "edges",
-          "plural": true,
+          "name": "__StandardsIndex_instances_connection",
+          "plural": false,
           "selections": [
             {
               "alias": null,
               "args": null,
-              "concreteType": "CodeStandard",
+              "concreteType": "NodeEdge",
               "kind": "LinkedField",
-              "name": "node",
-              "plural": false,
+              "name": "edges",
+              "plural": true,
               "selections": [
-                (v1/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
-                  "concreteType": "EntityMeta",
+                  "concreteType": null,
                   "kind": "LinkedField",
-                  "name": "_meta",
+                  "name": "node",
                   "plural": false,
                   "selections": [
+                    (v1/*:: as any*/),
                     {
                       "alias": null,
                       "args": null,
-                      "kind": "ScalarField",
-                      "name": "curie",
-                      "storageKey": null
-                    }
-                  ],
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "name",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": [
-                    {
-                      "kind": "Literal",
-                      "name": "first",
-                      "value": 1
-                    }
-                  ],
-                  "concreteType": "CategoryConnection",
-                  "kind": "LinkedField",
-                  "name": "categories",
-                  "plural": false,
-                  "selections": [
-                    {
-                      "alias": null,
-                      "args": null,
-                      "concreteType": "CategoryEdge",
+                      "concreteType": "EntityMeta",
                       "kind": "LinkedField",
-                      "name": "edges",
-                      "plural": true,
+                      "name": "_meta",
+                      "plural": false,
                       "selections": [
                         {
                           "alias": null,
                           "args": null,
-                          "concreteType": "Category",
+                          "kind": "ScalarField",
+                          "name": "curie",
+                          "storageKey": null
+                        },
+                        (v2/*:: as any*/),
+                        {
+                          "alias": null,
+                          "args": null,
+                          "concreteType": "OntologyClass",
                           "kind": "LinkedField",
-                          "name": "node",
+                          "name": "type",
                           "plural": false,
                           "selections": [
                             (v1/*:: as any*/),
                             {
                               "alias": null,
                               "args": null,
-                              "kind": "ScalarField",
-                              "name": "slug",
+                              "concreteType": "EntityMeta",
+                              "kind": "LinkedField",
+                              "name": "_meta",
+                              "plural": false,
+                              "selections": [
+                                (v2/*:: as any*/)
+                              ],
                               "storageKey": null
                             }
                           ],
@@ -180,15 +183,22 @@ return {
                         }
                       ],
                       "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
+                      "name": "__typename",
+                      "storageKey": null
                     }
                   ],
-                  "storageKey": "categories(first:1)"
+                  "storageKey": null
                 },
                 {
                   "alias": null,
                   "args": null,
                   "kind": "ScalarField",
-                  "name": "__typename",
+                  "name": "cursor",
                   "storageKey": null
                 }
               ],
@@ -197,33 +207,26 @@ return {
             {
               "alias": null,
               "args": null,
-              "kind": "ScalarField",
-              "name": "cursor",
-              "storageKey": null
-            }
-          ],
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "concreteType": "PageInfo",
-          "kind": "LinkedField",
-          "name": "pageInfo",
-          "plural": false,
-          "selections": [
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "endCursor",
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "hasNextPage",
+              "concreteType": "PageInfo",
+              "kind": "LinkedField",
+              "name": "pageInfo",
+              "plural": false,
+              "selections": [
+                {
+                  "alias": null,
+                  "args": null,
+                  "kind": "ScalarField",
+                  "name": "endCursor",
+                  "storageKey": null
+                },
+                {
+                  "alias": null,
+                  "args": null,
+                  "kind": "ScalarField",
+                  "name": "hasNextPage",
+                  "storageKey": null
+                }
+              ],
               "storageKey": null
             }
           ],
@@ -238,6 +241,6 @@ return {
 };
 })();
 
-(node as any).hash = "a3dabca19f7eb49a87a6689bdd0cc79c";
+(node as any).hash = "494d460b165999637376e6e2aaf2d99a";
 
 export default node;

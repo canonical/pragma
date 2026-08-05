@@ -25,8 +25,10 @@ describe("StandardReadingPage SSR", () => {
       standardReadingPageAt(LINK_COMPONENT_URI, standardEntityRecords, fetchFn),
     );
     expect(html).toContain('data-view="standard-reading"');
+    // The title is `_meta.title`, total, and for a standard with no
+    // asserted name that is the IRI's local name.
     expect(html).toContain(
-      `<h1 id="standard-reading-title">${LINK_COMPONENT_URI}</h1>`,
+      '<h1 id="standard-reading-title">react.component.link_component</h1>',
     );
     expect(html).toContain('aria-label="Breadcrumb"');
     expect(html).toContain('data-slot="reading-canvas"');

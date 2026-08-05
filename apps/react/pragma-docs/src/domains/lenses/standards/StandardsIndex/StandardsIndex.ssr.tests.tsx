@@ -1,7 +1,9 @@
 /**
  * SSR posture: the composed index layout renders to static markup from a
- * warm store — secondary nav, category sections, and the pagination
- * affordance all present without client JS.
+ * warm store — the group section and the pagination affordance both
+ * present without client JS. No secondary nav is asserted: the fixture is
+ * a single group (the shipped reality for `cs:CodeStandard`), and the nav
+ * renders only when there is more than one.
  */
 
 import { renderToString } from "react-dom/server";
@@ -15,14 +17,14 @@ const createFetchSpy = () =>
     FetchFunction;
 
 describe("StandardsIndex SSR", () => {
-  it("renders secondary nav, category groups, and Load more", () => {
+  it("renders the group section and Load more", () => {
     const fetchFn = createFetchSpy();
     const html = renderToString(
       standardsIndexPage(standardsIndexRecords, fetchFn),
     );
-    expect(html).toContain('data-region="secondary-nav"');
-    expect(html).toContain('id="standards-category-code"');
-    expect(html).toContain('id="standards-category-styling"');
+    expect(html).toContain('data-region="canvas"');
+    expect(html).toContain('id="standards-group-codestandard"');
+    expect(html).not.toContain('data-region="secondary-nav"');
     expect(html).toContain("Load more");
     expect(fetchFn).not.toHaveBeenCalled();
   });

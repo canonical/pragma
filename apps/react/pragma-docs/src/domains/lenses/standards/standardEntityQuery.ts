@@ -12,13 +12,29 @@
  * component (`StandardReadingPage.tsx`) as relay-compiler's source of
  * truth.
  *
- * URI shape, verified live: unlike the ontology surface (full IRIs, the
- * definitions lens's `uris.ts` codec), the cs: surface speaks PREFIXED
- * URIs natively — `codeStandards` returns `cs:code.array.safe_access`
- * style URIs and `codeStandard(uri:)` accepts them — so no codec rides
- * this lens; the route param IS the graph's address.
+ * URI SHAPE — THE ONE USER-VISIBLE COST OF DESPECIALISATION. The route
+ * param used to be the compact form: `codeStandard(uri:)` accepted
+ * `cs:react.component.props`, so `/standards/cs%3Areact.component.props`
+ * was the graph's address spelled straight into the URL. The contract has
+ * no `codeStandard` field, and its one entity lookup — `node(id:)` — takes
+ * the ABSOLUTE IRI and nothing else (ke-graphql returns null for anything
+ * failing `isAbsoluteIri`; the reference provider keys its index on the
+ * absolute IRI; `EntityMeta.curie`'s own contract docstring says the curie
+ * "is not accepted by `node(id:)`"). So the route param is now
+ * `http%3A%2F%2Fpragma.canonical.com%2Fcodestandards%23react.component.props`.
+ *
+ * Keeping the curie in the URL and expanding it client-side via `toFullUri`
+ * + `Query.ontologies` was considered and rejected: it needs the namespace
+ * inventory SYNCHRONOUSLY, on both server and client, before routing —
+ * `RouteQueryEntry.variables` is a synchronous pure function the SSR
+ * prepare step calls directly. That means a namespace-inventory bootstrap,
+ * its SSR serialisation and its client hydration path: a second source of
+ * truth about namespaces. It is strictly additive later (only this builder
+ * changes), so if compact addresses are wanted back, that bootstrap is the
+ * shape of the work.
  */
 
+import { GRAPH_BINDINGS } from "#lib/graphBindings/index.js";
 import type { StandardEntityQuery$variables } from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import standardEntityQueryNode from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import type { RouteQueryEntry } from "#relay/routeQuery.js";
@@ -28,13 +44,17 @@ export { standardEntityQueryNode };
 
 /**
  * The reading page's variables from the matched route params. `uri`
- * arrives percent-decoded from the router codec; `String()` asserts the
- * shape at the one boundary where params are `unknown`-typed records.
+ * arrives percent-decoded from the router codec and is the entity's
+ * ABSOLUTE IRI; `String()` asserts the shape at the one boundary where
+ * params are `unknown`-typed records. `classUri` is the app's committed
+ * binding — the page cannot tell a standard from a component without it,
+ * because `node(id:)` will happily return either.
  */
 export const standardEntityVariables = (
   params: Readonly<Record<string, unknown>>,
 ): StandardEntityQuery$variables => ({
   uri: String(params.uri),
+  classUri: GRAPH_BINDINGS.standards.classUri,
 });
 
 /**

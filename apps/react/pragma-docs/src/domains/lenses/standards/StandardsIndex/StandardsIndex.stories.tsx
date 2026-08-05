@@ -5,7 +5,7 @@ import { useLazyLoadQuery } from "react-relay";
 import type { StandardsIndexQuery } from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import standardsIndexQueryNode from "#relay/__generated__/StandardsIndexQuery.graphql.js";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
-import { STANDARDS_PAGE_SIZE } from "../standardsIndexQuery.js";
+import { standardsIndexVariables } from "../standardsIndexQuery.js";
 import StandardsIndex from "./StandardsIndex.js";
 
 /** Name-compatible bare route so the list's links resolve without
@@ -21,10 +21,10 @@ const bareRoutes = {
  * index, produced the way production produces it.
  */
 const IndexFromQuery = (): ReactElement => {
-  const data = useLazyLoadQuery<StandardsIndexQuery>(standardsIndexQueryNode, {
-    count: STANDARDS_PAGE_SIZE,
-    cursor: null,
-  });
+  const data = useLazyLoadQuery<StandardsIndexQuery>(
+    standardsIndexQueryNode,
+    standardsIndexVariables(),
+  );
   return <StandardsIndex query={data} />;
 };
 
@@ -47,11 +47,16 @@ export const Default: Story = {
   parameters: {
     relay: {
       mockResolvers: {
-        CodeStandard: () => ({
-          uri: "cs:code.array.safe_access",
-          name: null,
+        // The index now enumerates a class's instances, so the mocks are
+        // the TBox shape: a bound class, and nodes that describe
+        // themselves through `_meta`.
+        OntologyClass: () => ({
+          uri: "http://pragma.canonical.com/codestandards#CodeStandard",
         }),
-        Category: () => ({ slug: "code" }),
+        EntityMeta: () => ({
+          curie: "cs:code.array.safe_access",
+          title: "code.array.safe_access",
+        }),
         PageInfo: () => ({ hasNextPage: false }),
       },
     },

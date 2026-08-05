@@ -5,10 +5,15 @@ import { useLazyLoadQuery } from "react-relay";
 import type { StandardEntityQuery } from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import standardEntityQueryNode from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
+import { standardEntityVariables } from "../standardEntityQuery.js";
 import StandardArticle from "./StandardArticle.js";
 
-/** Name-compatible bare route so the extends links resolve without
- * mounting the app's real pages. */
+/** The absolute IRI the story addresses — `node(id:)` takes nothing else. */
+const STANDARD_IRI =
+  "http://pragma.canonical.com/codestandards#code.array.safe_access";
+
+/** Name-compatible bare route so the breadcrumb resolves without mounting
+ * the app's real pages. */
 const bareRoutes = {
   standardEntity: route({ url: "/standards/:uri", component: () => null }),
 } as const;
@@ -20,11 +25,12 @@ const bareRoutes = {
  * it.
  */
 const ArticleFromQuery = (): ReactElement => {
-  const data = useLazyLoadQuery<StandardEntityQuery>(standardEntityQueryNode, {
-    uri: "cs:code.array.safe_access",
-  });
-  if (!data.codeStandard) return <p>No standard.</p>;
-  return <StandardArticle standard={data.codeStandard} />;
+  const data = useLazyLoadQuery<StandardEntityQuery>(
+    standardEntityQueryNode,
+    standardEntityVariables({ uri: STANDARD_IRI }),
+  );
+  if (!data.node) return <p>No standard.</p>;
+  return <StandardArticle standard={data.node} />;
 };
 
 const meta: Meta<typeof StandardArticle> = {
@@ -46,13 +52,12 @@ export const Default: Story = {
   parameters: {
     relay: {
       mockResolvers: {
-        CodeStandard: () => ({
-          uri: "cs:code.array.safe_access",
-          name: null,
-          description:
+        EntityMeta: () => ({
+          curie: "cs:code.array.safe_access",
+          title: "code.array.safe_access",
+          definition:
             "Use `.at(index)` instead of bracket notation for array element access.\n\nBracket notation (`arr[i]`) returns `T` in TypeScript even though the index may be out of bounds — the `.at(index)` form makes the fallibility visible.",
         }),
-        Category: () => ({ slug: "code" }),
       },
     },
   },

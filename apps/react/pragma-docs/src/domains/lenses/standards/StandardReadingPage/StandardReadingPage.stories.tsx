@@ -3,8 +3,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { withRouter } from "../../../../../.storybook/decorators/index.js";
 import StandardReadingPage from "./StandardReadingPage.js";
 
-/** Name-compatible bare routes so the breadcrumb and the article's
- * extends links resolve without mounting the app's real pages. */
+/** The absolute IRI the story addresses — `node(id:)` takes nothing else. */
+const STANDARD_IRI =
+  "http://pragma.canonical.com/codestandards#code.array.safe_access";
+
+/** Name-compatible bare routes so the breadcrumb resolves without
+ * mounting the app's real pages. */
 const bareRoutes = {
   standards: route({ url: "/standards", component: () => null }),
   standardEntity: route({ url: "/standards/:uri", component: () => null }),
@@ -24,13 +28,18 @@ const meta: Meta<typeof StandardReadingPage> = {
   parameters: {
     relay: {
       mockResolvers: {
-        CodeStandard: () => ({
-          uri: "cs:code.array.safe_access",
-          name: null,
-          description:
+        // One `OntologyClass` mock serves BOTH `boundClass` and the node's
+        // `_meta.type`, so the class guard sees matching IRIs and the
+        // article renders — which is exactly the production condition.
+        OntologyClass: () => ({
+          uri: "http://pragma.canonical.com/codestandards#CodeStandard",
+        }),
+        EntityMeta: () => ({
+          curie: "cs:code.array.safe_access",
+          title: "code.array.safe_access",
+          definition:
             "Use `.at(index)` instead of bracket notation for array element access.\n\nBracket notation returns `T` even though the index may be out of bounds.",
         }),
-        Category: () => ({ slug: "code" }),
       },
     },
   },
@@ -42,19 +51,21 @@ type Story = StoryObj<typeof StandardReadingPage>;
 /** The reading column over a mocked standard. */
 export const Default: Story = {
   args: {
-    params: { uri: "cs:code.array.safe_access" },
+    params: { uri: STANDARD_IRI },
   },
 };
 
 /** The R4 in-canvas not-found: a null lookup renders an honest alert. */
 export const NotFound: Story = {
   args: {
-    params: { uri: "cs:no.such.standard" },
+    params: {
+      uri: "http://pragma.canonical.com/codestandards#no.such.standard",
+    },
   },
   parameters: {
     relay: {
       mockResolvers: {
-        Query: () => ({ codeStandard: null }),
+        Query: () => ({ node: null }),
       },
     },
   },

@@ -7,6 +7,7 @@ import ErrorBoundary from "#lib/ErrorBoundary/index.js";
 import type { StandardEntityQuery } from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import standardEntityQueryNode from "#relay/__generated__/StandardEntityQuery.graphql.js";
 import { StandardArticle } from "../StandardArticle/index.js";
+import { standardEntityVariables } from "../standardEntityQuery.js";
 import type { StandardReadingPageProps } from "./types.js";
 import "./styles.css";
 
@@ -15,19 +16,35 @@ import "./styles.css";
  * this tag to (re)generate the artifact imported above; the hook consumes
  * the generated node because this module sits on the server bricks' native
  * import chain (routes → here), where an evaluated tag throws at module
- * scope. Never invoked. `name`/`uri`/`_meta.curie` ride at the root
+ * scope. Never invoked. `uri`/`_meta.{curie,title,type}` ride at the root
  * selection beside the masked fragment spread: the page itself needs them
- * for the head title and the not-found line, and fragment data is
- * invisible to it by design. The title's URI fallback is the COMPACT form
- * (`_meta.curie`) — a browser tab is an identity line like any other.
+ * for the head title, the not-found line and the class guard, and fragment
+ * data is invisible to it by design.
+ *
+ * `boundClass` IS LOAD-BEARING, NOT DECORATION. `codeStandard(uri:)`
+ * returned null for anything that was not a standard, and the route leaned
+ * on that. `node(id:)` returns ANY node, so without a guard
+ * `/standards/<a component IRI>` would render a standards page for a
+ * component. The comparison below is between two absolute IRIs BOTH
+ * produced by the same server — no client-side prefix logic, so nothing
+ * can drift.
  */
 const standardEntityQuerySource = (): unknown => graphql`
-  query StandardEntityQuery($uri: String!) {
-    codeStandard(uri: $uri) {
-      name
+  query StandardEntityQuery($uri: ID!, $classUri: String!) {
+    boundClass: ontologyClass(uri: $classUri) {
+      uri
+      subclasses {
+        uri
+      }
+    }
+    node(id: $uri) {
       uri
       _meta {
         curie
+        title
+        type {
+          uri
+        }
       }
       ...StandardArticle_standard
     }
@@ -39,25 +56,38 @@ const componentCssClassName = "ds standard-reading";
 
 /**
  * The data-bearing interior: ONE `useLazyLoadQuery` per page (the P-2/P-5
- * register), the article fragment fans out below. A null `codeStandard`
- * renders the in-canvas not-found branch — the R4 precedent: unknown URIs
- * are a 200 with an honest alert, never an HTTP 404, because the URI
- * space is the graph's, not the router's.
+ * register), the article fragment fans out below. A node that is absent —
+ * or that is not a standard — renders the in-canvas not-found branch, the
+ * R4 precedent: unknown URIs are a 200 with an honest alert, never an HTTP
+ * 404, because the URI space is the graph's, not the router's.
+ *
+ * ONE LEVEL of `subclasses` is admitted, matching what `instances` already
+ * returns on both known providers (metro's `Stop` counts Stations AND
+ * Interchanges). A deeper hierarchy would need transitivity, and saying so
+ * here is better than pretending the guard already has it.
  */
 const ReadingContent = ({
   uri,
 }: {
   readonly uri: string;
 }): React.ReactElement => {
-  const data = useLazyLoadQuery<StandardEntityQuery>(standardEntityQueryNode, {
-    uri,
-  });
-  const standard = data.codeStandard;
+  const data = useLazyLoadQuery<StandardEntityQuery>(
+    standardEntityQueryNode,
+    standardEntityVariables({ uri }),
+  );
+  const bound = data.boundClass;
+  const node = data.node;
+  const permitted = new Set(
+    bound === null || bound === undefined
+      ? []
+      : [bound.uri, ...bound.subclasses.map((subclass) => subclass.uri)],
+  );
+  const standard = node && permitted.has(node._meta.type.uri) ? node : null;
   // Titles are client-only: the head hook writes `document.title` in an
   // effect (this app's SSR path emits no `<title>` — the P-5 register).
   useHead(
     {
-      title: `${standard ? (standard.name ?? standard._meta.curie) : "Standard not found"} — Pragma docs`,
+      title: `${standard ? standard._meta.title : "Standard not found"} — Pragma docs`,
     },
     [standard],
   );

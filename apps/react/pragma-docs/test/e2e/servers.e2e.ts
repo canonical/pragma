@@ -461,83 +461,98 @@ describe("server matrix (2×3) serves correctly", () => {
             expect(definitionsHtml).toMatch(/href="\/definitions\/anatomy%3A/);
 
             // 5e. Standards block (P-5): the reading lens SSRs from the
-            //     live graph. The index carries the category-grouped
-            //     lists and D31-addressed reading links in the raw HTML
-            //     plus the serialised store.
+            //     live graph — now through the TBox (`ontologyClass(uri:)
+            //     .instances`) rather than a `codeStandards` root field.
+            //     THIS BLOCK COULD NOT BE RUN WHEN IT WAS REWRITTEN: the
+            //     `code-standards` reference package is absent from the
+            //     despecialisation environment, so the graph cannot be
+            //     booted with the `cs:` vocabulary at all. It is written
+            //     to be drift-proof rather than to be re-pinned, and CI is
+            //     where it is first executed.
             const standardsIndex = await fetch(`${server.base}/standards`);
             expect(standardsIndex.status).toBe(200);
             const standardsIndexHtml = await standardsIndex.text();
-            expect(standardsIndexHtml).toContain(
-              'id="standards-category-code"',
+            //     At least one group section, addressed by its CLASS.
+            expect(standardsIndexHtml).toMatch(
+              /<section[^>]*id="standards-group-/,
             );
-            //     The D31 href check: a live standard's index link IS the
-            //     chip address (percent-encoded prefixed URI).
-            expect(standardsIndexHtml).toContain(
-              'href="/standards/cs%3Acode.array.safe_access"',
+            //     The D31 href check: a live standard's index link is the
+            //     percent-encoded ABSOLUTE IRI — the only address
+            //     `node(id:)` accepts.
+            expect(standardsIndexHtml).toMatch(
+              /href="\/standards\/http%3A%2F%2Fpragma\.canonical\.com%2Fcodestandards%23code\.array\.safe_access"/,
             );
             expect(standardsIndexHtml).toContain("__INITIAL_DATA__");
             expect(standardsIndexHtml).toContain('"records"');
 
             //     Silent-rot closure, drift-proof by design (never pin
-            //     graph counts — the 111→108 lesson): the jump-link rail
-            //     lists exactly one anchor per category section, both
-            //     derived from THIS response, so a partial render of
-            //     either surface breaks the equality. Floors catch the
-            //     both-rot-to-zero case (0 === 0), and sections stay
-            //     strictly below standard links — a category exists only
-            //     because standards fill it.
-            const categoryJumpLinkCount = (
-              standardsIndexHtml.match(/href="#standards-category-/g) ?? []
+            //     graph counts — the 111→108 lesson). Grouping is now by
+            //     the instance's own CLASS, and `cs:CodeStandard` may well
+            //     have no subclasses, so the honest invariant is: the
+            //     jump-link rail lists one anchor per group section when
+            //     there is more than one group, and NO rail at all when
+            //     there is exactly one (a one-item secondary nav is
+            //     noise). Sections stay strictly below standard links — a
+            //     group exists only because standards fill it.
+            const groupJumpLinkCount = (
+              standardsIndexHtml.match(/href="#standards-group-/g) ?? []
             ).length;
-            const categorySectionCount = (
-              standardsIndexHtml.match(
-                /<section[^>]*id="standards-category-/g,
-              ) ?? []
+            const groupSectionCount = (
+              standardsIndexHtml.match(/<section[^>]*id="standards-group-/g) ??
+              []
             ).length;
             const standardLinkCount = (
-              standardsIndexHtml.match(/href="\/standards\/cs%3A/g) ?? []
+              standardsIndexHtml.match(
+                /href="\/standards\/http%3A%2F%2Fpragma/g,
+              ) ?? []
             ).length;
-            expect(categoryJumpLinkCount).toBe(categorySectionCount);
-            expect(categorySectionCount).toBeGreaterThan(5);
+            expect(groupJumpLinkCount).toBe(
+              groupSectionCount > 1 ? groupSectionCount : 0,
+            );
+            expect(groupSectionCount).toBeGreaterThan(0);
             expect(standardLinkCount).toBeGreaterThan(50);
-            expect(categorySectionCount).toBeLessThan(standardLinkCount);
+            expect(groupSectionCount).toBeLessThan(standardLinkCount);
 
-            //     A real reading page: the prose tripwire for the field
-            //     the unit fixture freezes (the description text SSRs
-            //     verbatim — an upstream rename rots loudly here), the
-            //     layout.reading anchor, and the extends cross-link.
+            //     A real reading page: the prose tripwire for the text the
+            //     unit fixture freezes (it SSRs verbatim — an upstream
+            //     rename rots loudly here) and the layout.reading anchor.
+            //     The prose now arrives through `_meta.definition` rather
+            //     than `CodeStandard.description`, which is the one thing
+            //     in this block that a live boot must confirm: the
+            //     compiler's local-name fallback tier says `description`
+            //     lands there, and if it does not, the fix is a
+            //     `graphql:definitionFrom` annotation upstream.
             const standardReading = await fetch(
-              `${server.base}/standards/cs%3Areact.component.link_component`,
+              `${server.base}/standards/${encodeURIComponent(
+                "http://pragma.canonical.com/codestandards#react.component.link_component",
+              )}`,
             );
             expect(standardReading.status).toBe(200);
             const standardReadingHtml = await standardReading.text();
             expect(standardReadingHtml).toContain("LinkComponentProps");
             expect(standardReadingHtml).toContain('data-slot="reading-canvas"');
-            expect(standardReadingHtml).toContain(
-              'href="/standards/cs%3Areact.component.props"',
-            );
             expect(standardReadingHtml).toContain("__INITIAL_DATA__");
             expect(standardReadingHtml).toContain('"records"');
 
             //     Three more silent-rot closures (the AV-334 round), all
             //     on HTML already fetched above:
-            //     (a) the name-over-uri FALLBACK. 127 of 131 live
-            //     standards carry no display name, so the index renders
-            //     the prefixed URI AS the link text. Were `name` to start
-            //     resolving upstream (or the fallback to be dropped), the
-            //     href assertions above would all still pass while the
-            //     visible text changed silently. This pins the text form.
+            //     (a) the COMPACT identity. The link text is `_meta.title`
+            //     and the href is the absolute IRI, so without this the
+            //     reader could lose the `cs:` form entirely while every
+            //     href assertion still passed.
             expect(standardsIndexHtml).toContain(">cs:code.array.safe_access<");
-            //     (b) the reading page's category line — the article's
-            //     one piece of graph metadata outside the prose. React
-            //     splits the text node, hence the comment marker.
-            expect(standardReadingHtml).toContain("category: <!-- -->react");
+            //     (b) the reading page's class line — the article's one
+            //     piece of graph metadata outside the prose, and what
+            //     replaced the category line when `categories` turned out
+            //     to be untraversable through the contract. React splits
+            //     the text node, hence the comment marker.
+            expect(standardReadingHtml).toContain("class: <!-- -->");
             //     (c) the pagination affordance. The live graph carries
-            //     131 standards against the schema's hard 100-item cap, so
+            //     131 standards against this app's 100-item page size, so
             //     `hasNextPage` is true and the button MUST render. If the
-            //     graph ever drops below the cap the button vanishes and
-            //     R1's load-bearing claim quietly stops being true — this
-            //     makes that a failure, not a shrug.
+            //     graph ever drops below the page size the button vanishes
+            //     and R1's load-bearing claim quietly stops being true —
+            //     this makes that a failure, not a shrug.
             expect(standardsIndexHtml).toContain("Load more");
 
             // 5f. Home block (AV-350): the lobby SSRs from the live
@@ -570,9 +585,8 @@ describe("server matrix (2×3) serves correctly", () => {
             //     Projection 2 — the doors' honest counts. THE
             //     load-bearing assertion of the whole block: the
             //     standards figure is read off `instanceCount`, and the
-            //     codeStandards connection caps at 100 per page, so a
-            //     figure ABOVE the cap could not have come from counting
-            //     edges. Were a future edit to swap the source to a
+            //     entity connections cap at 100 per page, so a figure
+            //     ABOVE the cap could not have come from counting edges. Were a future edit to swap the source to a
             //     connection count, the number would silently collapse
             //     to at most 100 and this snaps. The floor is the cap
             //     itself — never the live total.

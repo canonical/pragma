@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<867d904e8c18b0233d038ea512cdb2e5>>
+ * @generated SignedSource<<335fd3c232f6b730cf38c23b4b1786d6>>
  * @lightSyntaxTransform
  */
 
@@ -12,28 +12,15 @@ import { FragmentRefs } from "relay-runtime";
 export type StandardArticle_standard$data = {
   readonly _meta: {
     readonly curie: string;
-  };
-  readonly categories: {
-    readonly edges: ReadonlyArray<{
-      readonly node: {
-        readonly slug: string | null | undefined;
-        readonly uri: string;
+    readonly definition: string | null | undefined;
+    readonly title: string;
+    readonly type: {
+      readonly _meta: {
+        readonly title: string;
       };
-    }>;
+      readonly uri: string;
+    };
   };
-  readonly description: string | null | undefined;
-  readonly extends: {
-    readonly edges: ReadonlyArray<{
-      readonly node: {
-        readonly _meta: {
-          readonly curie: string;
-        };
-        readonly name: string | null | undefined;
-        readonly uri: string;
-      };
-    }>;
-  };
-  readonly name: string | null | undefined;
   readonly uri: string;
   readonly " $fragmentType": "StandardArticle_standard";
 };
@@ -53,35 +40,10 @@ var v0 = {
 v1 = {
   "alias": null,
   "args": null,
-  "concreteType": "EntityMeta",
-  "kind": "LinkedField",
-  "name": "_meta",
-  "plural": false,
-  "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "curie",
-      "storageKey": null
-    }
-  ],
-  "storageKey": null
-},
-v2 = {
-  "alias": null,
-  "args": null,
   "kind": "ScalarField",
-  "name": "name",
+  "name": "title",
   "storageKey": null
-},
-v3 = [
-  {
-    "kind": "Literal",
-    "name": "first",
-    "value": 8
-  }
-];
+};
 return {
   "argumentDefinitions": [],
   "kind": "Fragment",
@@ -89,98 +51,62 @@ return {
   "name": "StandardArticle_standard",
   "selections": [
     (v0/*:: as any*/),
-    (v1/*:: as any*/),
-    (v2/*:: as any*/),
     {
       "alias": null,
       "args": null,
-      "kind": "ScalarField",
-      "name": "description",
+      "concreteType": "EntityMeta",
+      "kind": "LinkedField",
+      "name": "_meta",
+      "plural": false,
+      "selections": [
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "curie",
+          "storageKey": null
+        },
+        (v1/*:: as any*/),
+        {
+          "alias": null,
+          "args": null,
+          "kind": "ScalarField",
+          "name": "definition",
+          "storageKey": null
+        },
+        {
+          "alias": null,
+          "args": null,
+          "concreteType": "OntologyClass",
+          "kind": "LinkedField",
+          "name": "type",
+          "plural": false,
+          "selections": [
+            (v0/*:: as any*/),
+            {
+              "alias": null,
+              "args": null,
+              "concreteType": "EntityMeta",
+              "kind": "LinkedField",
+              "name": "_meta",
+              "plural": false,
+              "selections": [
+                (v1/*:: as any*/)
+              ],
+              "storageKey": null
+            }
+          ],
+          "storageKey": null
+        }
+      ],
       "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": (v3/*:: as any*/),
-      "concreteType": "CategoryConnection",
-      "kind": "LinkedField",
-      "name": "categories",
-      "plural": false,
-      "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "concreteType": "CategoryEdge",
-          "kind": "LinkedField",
-          "name": "edges",
-          "plural": true,
-          "selections": [
-            {
-              "alias": null,
-              "args": null,
-              "concreteType": "Category",
-              "kind": "LinkedField",
-              "name": "node",
-              "plural": false,
-              "selections": [
-                (v0/*:: as any*/),
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "slug",
-                  "storageKey": null
-                }
-              ],
-              "storageKey": null
-            }
-          ],
-          "storageKey": null
-        }
-      ],
-      "storageKey": "categories(first:8)"
-    },
-    {
-      "alias": null,
-      "args": (v3/*:: as any*/),
-      "concreteType": "CodeStandardConnection",
-      "kind": "LinkedField",
-      "name": "extends",
-      "plural": false,
-      "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "concreteType": "CodeStandardEdge",
-          "kind": "LinkedField",
-          "name": "edges",
-          "plural": true,
-          "selections": [
-            {
-              "alias": null,
-              "args": null,
-              "concreteType": "CodeStandard",
-              "kind": "LinkedField",
-              "name": "node",
-              "plural": false,
-              "selections": [
-                (v0/*:: as any*/),
-                (v1/*:: as any*/),
-                (v2/*:: as any*/)
-              ],
-              "storageKey": null
-            }
-          ],
-          "storageKey": null
-        }
-      ],
-      "storageKey": "extends(first:8)"
     }
   ],
-  "type": "CodeStandard",
-  "abstractKey": null
+  "type": "Node",
+  "abstractKey": "__isNode"
 };
 })();
 
-(node as any).hash = "3d2d43bfcd88ed80595c5a33d8893a10";
+(node as any).hash = "f577597d5856ed2bd6fb462d24f1df4f";
 
 export default node;

@@ -12,8 +12,9 @@ import { standardsIndexRouteEntry } from "./standardsIndexQuery.js";
 /**
  * The lens's mode-strip context tenant: the breadcrumb trail. `Standards`
  * on the index, `Standards / <uri>` on a reading page — the reading crumb
- * is the `:uri` route param (the prefixed URI, which the cs: surface speaks
- * natively), URL-derived, so the strip reads no query.
+ * is the `:uri` route param (now the entity's ABSOLUTE IRI, which is the
+ * only thing `node(id:)` accepts), URL-derived, so the strip reads no
+ * query.
  */
 const StandardsContext = makeLensContext({
   lensLabel: "Standards",
@@ -22,12 +23,13 @@ const StandardsContext = makeLensContext({
 });
 
 /**
- * The Standards lens routes (P-5): the category-grouped index
- * (`/standards`, the lens key the Rail links to) and the reading page
- * (`/standards/:uri`, percent-encoded prefixed URI, e.g.
- * `/standards/cs%3Acode.array.safe_access` — the D31 address
- * `resolveChipHref` derives for `standard` mentions, pinned round-trip in
- * `routeQueries.tests.ts`). Each data-bearing route builds its
+ * The Standards lens routes (P-5): the grouped index (`/standards`, the
+ * lens key the Rail links to) and the reading page (`/standards/:uri`,
+ * percent-encoded ABSOLUTE IRI, e.g.
+ * `/standards/http%3A%2F%2Fpragma.canonical.com%2Fcodestandards%23code.array.safe_access`
+ * — the D31 address `resolveChipHref` derives for `standard` mentions,
+ * pinned round-trip in `routeQueries.tests.ts`). Each data-bearing route
+ * builds its
  * `RouteQueryEntry` ONCE (in its query module) and parks it twice per the
  * P-2/P-5 handshake:
  *

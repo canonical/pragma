@@ -29,6 +29,7 @@ import "#domains/lenses/definitions/__fixtures__/stubReactFlowGlobals.js";
 import journeysExplorerRecords from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecords.js";
 import journeysExplorerRecordsJob from "#domains/lenses/journeys/__fixtures__/journeysExplorerRecordsJob.js";
 import standardEntityRecords from "#domains/lenses/standards/__fixtures__/standardEntityRecords.js";
+import { LINK_COMPONENT_URI } from "#domains/lenses/standards/__fixtures__/standardsPageHarness.js";
 import lobbyRecords from "#domains/marketing/__fixtures__/lobbyRecords.js";
 import componentProbeRecords from "#domains/playground/__fixtures__/componentProbeRecords.js";
 import { createEnvironment } from "#relay/environment.js";
@@ -95,17 +96,20 @@ const SEEDED_PAGES = [
     liveText: "UI Block",
   },
   // Standards block (P-5): the reading page — the server HTML carries
-  // the article's identity h1 (URI-as-title: this live standard has no
-  // display name) and hydrating over it must stay mismatch-silent and
-  // network-silent like every other seeded page.
+  // the article's identity h1 (`_meta.title`, which for a standard with no
+  // asserted name is the IRI's local name) and hydrating over it must stay
+  // mismatch-silent and network-silent like every other seeded page. The
+  // URL is the ABSOLUTE IRI percent-encoded: `node(id:)` accepts nothing
+  // else, and this pin is where the two halves of that address — the
+  // server's variables and the client's — have to agree byte for byte.
   {
     name: "standard reading",
-    url: "/standards/cs%3Areact.component.link_component",
+    url: `/standards/${encodeURIComponent(LINK_COMPONENT_URI)}`,
     records: standardEntityRecords,
     serverMarker:
-      '<h1 id="standard-reading-title">cs:react.component.link_component</h1>',
+      '<h1 id="standard-reading-title">react.component.link_component</h1>',
     liveSelector: "#standard-reading-title",
-    liveText: "cs:react.component.link_component",
+    liveText: "react.component.link_component",
   },
   // Journeys job block (AV-351 / RULING 1 + 2): the view is EPHEMERAL, not
   // URL-derived, so the job page — like the index — defaults to the TABLE.
