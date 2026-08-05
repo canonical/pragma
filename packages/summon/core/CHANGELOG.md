@@ -5,6 +5,16 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 # Unreleased
 
+### BREAKING CHANGES
+
+* **format:** `buildReplayCommand`, `getLanguageHint`, `getLlmActionLabel` and
+  `getLlmEffectPath` are no longer exported from the package root or from
+  `format/`. They are private helpers of `formatLlmMarkdown`/`formatLlmJson`;
+  the only path that ever reached them from outside this package was a
+  re-export shim in the CLI framework package, which has been folded away, so
+  they have no consumer. No replacement is offered — call
+  `formatLlmMarkdown`/`formatLlmJson`.
+
 ### Features
 
 * **spec:** the generator definition ships as a versioned domain spec —

@@ -82,7 +82,6 @@ export {
 // =============================================================================
 
 export {
-  buildReplayCommand,
   formatContentPreview,
   formatEffectLine,
   formatEffectWithContent,
@@ -92,9 +91,6 @@ export {
   getActionColor,
   getActionLabel,
   getEffectPayload,
-  getLanguageHint,
-  getLlmActionLabel,
-  getLlmEffectPath,
   isVisibleEffect,
 } from "./format/index.js";
 export type { RunGeneratorTaskOptions } from "./run/index.js";
