@@ -12,6 +12,7 @@
 import { assertSafeToken } from "../model.js";
 import type {
   CompletionModel,
+  CompletionSource,
   FlagEntry,
   NounEntry,
   VerbEntry,
@@ -131,4 +132,84 @@ export function valueFlagNames(
 /** Whether a view has any flag of its own to name (beyond the globals). */
 export function hasOwnFlags(view: VerbView): boolean {
   return view.verb.flags.length > 0 || view.verb.mutates;
+}
+
+/**
+ * The bin name reduced to a shell-safe identifier body.
+ *
+ * The three templates each spelled this regex out, prefixed differently:
+ * bash and zsh want `_<name>`, fish wants `__<name>` (its convention for a
+ * helper that must not collide with a user function). Only the SANITISER was
+ * duplicated; the prefix is a real per-shell difference, so it stays visible at
+ * each call site instead of becoming a parameter that hides it.
+ *
+ * @param binName - The distribution's bin name.
+ * @returns The name with every character outside `[A-Za-z0-9_]` replaced by `_`.
+ */
+export function sanitizeBinName(binName: string): string {
+  return binName.replace(/[^A-Za-z0-9_]/g, "_");
+}
+
+/**
+ * Wrap a set of case arms in a `case … in … esac` block, or nothing when there
+ * are no arms.
+ *
+ * POSIX `case` syntax, so bash and zsh had byte-identical copies of it. fish
+ * has no `case` outside `switch` and never had one.
+ *
+ * @param subject - The already-quoted subject expression.
+ * @param arms - The rendered arms, each already indented.
+ * @param indent - The indent for the `case`/`esac` lines themselves.
+ * @returns The block's lines, or `[]` when `arms` is empty.
+ */
+export function caseBlock(
+  subject: string,
+  arms: readonly string[],
+  indent: string,
+): string[] {
+  if (arms.length === 0) return [];
+  return [`${indent}case ${subject} in`, ...arms, `${indent}esac`];
+}
+
+/**
+ * Render one verb view's positional-completion arm, or nothing when no
+ * positional of that verb has a completable source.
+ *
+ * bash and zsh had byte-identical bodies for this, differing only in the
+ * diagnostic label passed to {@link wordList} and in what `sourceAction`
+ * returns — the latter being real shell syntax (`compgen -W` vs `compadd`), so
+ * it is injected rather than branched on. The SHAPE of the arm is the thing
+ * both shells must agree about, and now they cannot disagree by accident.
+ *
+ * @param model - The completion model.
+ * @param view - The (noun, verb) view to render.
+ * @param fn - The script's function-name base.
+ * @param sourceAction - The shell's action for a value source, or undefined.
+ * @param label - The shell's `wordList` diagnostic label for its value flags.
+ * @returns The arm's lines joined, or undefined when there is nothing to offer.
+ */
+export function positionalArm(
+  model: CompletionModel,
+  view: VerbView,
+  fn: string,
+  sourceAction: (source: CompletionSource, fn: string) => string | undefined,
+  label: string,
+): string | undefined {
+  const slots: string[] = [];
+  view.verb.positionals.forEach((positional, index) => {
+    const action = sourceAction(positional.source, fn);
+    if (action === undefined) return;
+    const last = index === view.verb.positionals.length - 1;
+    const pattern = positional.variadic && last ? "*" : String(index);
+    slots.push(`        ${pattern}) ${action} ;;`);
+  });
+  if (slots.length === 0) return undefined;
+  return [
+    `    ${view.key})`,
+    `      ${fn}_pos ${view.skipWords} "${wordList(valueFlagNames(model, view), label)}"`,
+    '      case "$POS" in',
+    ...slots,
+    "      esac",
+    "      ;;",
+  ].join("\n");
 }

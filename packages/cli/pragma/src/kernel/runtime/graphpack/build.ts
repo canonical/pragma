@@ -33,6 +33,7 @@ import { packDir, packsCacheDir } from "../paths.js";
 import { buildIndex } from "./buildIndex.js";
 import { contentHash, hashSources } from "./hash.js";
 import { packIsComplete, readManifest } from "./manifest.js";
+import { countTriples } from "./read.js";
 import {
   DATA_FILE,
   INDEX_FILE,
@@ -183,20 +184,4 @@ export async function buildPack(
   } finally {
     if (existsSync(temp)) rmSync(temp, { recursive: true, force: true });
   }
-}
-
-/**
- * Count a store's triples (a cheap aggregate over the union graph).
- *
- * @param store - The booted store.
- * @returns The number of triples.
- * @note Impure — runs a COUNT query against the store.
- */
-async function countTriples(
-  store: Awaited<ReturnType<typeof createStore>>,
-): Promise<number> {
-  const result = (await store.query(
-    "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,
-  )) as import("@canonical/ke").SelectResult;
-  return Number(result.bindings.at(0)?.n ?? 0);
 }

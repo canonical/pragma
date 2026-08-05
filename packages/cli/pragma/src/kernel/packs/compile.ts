@@ -19,6 +19,7 @@ import type { PragmaRuntime } from "../runtime/types.js";
 import { asVerb } from "../spec/asVerb.js";
 import type { DisclosureSpec, ParamSpec, VerbSpec } from "../spec/types.js";
 import {
+  capitalize,
   listFormatters,
   lookupFormatters,
   type SampleOutput,
@@ -309,8 +310,4 @@ function projectSearch(search: PackSearch | undefined): ParamSpec[] {
 /** Quote a filter example value when it is not a bare word. */
 function quoteExample(value: string): string {
   return /^[\w.-]+$/.test(value) ? value : JSON.stringify(value);
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }

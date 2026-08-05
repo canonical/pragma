@@ -7,8 +7,8 @@
  * body — so it stays on the fast `--help` path.
  */
 
-import { kebabCase } from "../../spec/emitSurface.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import { flagToken, positionalToken } from "../../spec/emitSurface.js";
+import type { VerbSpec } from "../../spec/types.js";
 import {
   helpColumns,
   helpDim,
@@ -27,22 +27,6 @@ import {
  */
 function stripToolCallExample(doc: string): string {
   return doc.replace(/\s*Example:\s+[a-z][a-z0-9_]*\s*\{[^{}]*\}\.?\s*$/, "");
-}
-
-/** The positional usage token for a param (`<name>` / `[name]`, `...` variadic). */
-function positionalToken(param: ParamSpec): string {
-  const variadic = param.kind === "string[]" ? "..." : "";
-  return param.required
-    ? `<${param.name}${variadic}>`
-    : `[${param.name}${variadic}]`;
-}
-
-/** The flag display for a non-positional param (`--kebab` or `--kebab <value>`). */
-function flagDisplay(param: ParamSpec): string {
-  const flag = `--${kebabCase(param.name)}`;
-  if (param.kind === "boolean") return flag;
-  if (param.kind === "string[]") return `${flag} <values...>`;
-  return `${flag} <value>`;
 }
 
 /**
@@ -76,7 +60,7 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
     lines.push(
       "",
       helpHeading("Flags"),
-      ...helpColumns(flags.map((flag) => [flagDisplay(flag), flag.doc])),
+      ...helpColumns(flags.map((flag) => [flagToken(flag), flag.doc])),
     );
   }
 

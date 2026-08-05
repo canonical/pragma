@@ -161,12 +161,47 @@ export const FIXED_SURFACE = {
   },
 } as const;
 
-/** Format a positional param as its usage token (`<name>` required, `[name]` optional). */
-function positionalToken(param: ParamSpec): string {
+/**
+ * Format a positional param as its usage token (`<name>` required, `[name]`
+ * optional, `...` variadic).
+ *
+ * THE ONE HOME for this rule, and for {@link flagToken} beside it. Both bodies
+ * existed three and two times over — here, in `project/cli/verbHelp.ts` and in
+ * `project/cli/buildProgram.ts`, the last pair under two different names
+ * (`flagSpec`/`flagDisplay`) for byte-identical code. They are here rather than
+ * in either caller because this is where the shape they render is DEFINED: the
+ * emitted surface is what the covenant freezes, so a token the emitter writes
+ * and the help renders must be one rule or the two can disagree about a
+ * published argument shape. Both callers already imported {@link kebabCase}
+ * from this module, so consolidating adds no edge to either fast-path graph.
+ *
+ * @param param - The positional param to render.
+ * @returns Its usage token.
+ */
+export function positionalToken(param: ParamSpec): string {
   const variadic = param.kind === "string[]" ? "..." : "";
   return param.required
     ? `<${param.name}${variadic}>`
     : `[${param.name}${variadic}]`;
+}
+
+/**
+ * Format a non-positional param as its flag token (`--kebab`, `--kebab <value>`,
+ * `--kebab <values...>`).
+ *
+ * Serves both readings that used to have their own copy: Commander's option
+ * spec string and the help block's flag column. They were never allowed to
+ * differ — a flag Commander accepts and help does not print is a flag a user
+ * cannot find — so one name says so.
+ *
+ * @param param - The non-positional param to render.
+ * @returns Its flag token.
+ */
+export function flagToken(param: ParamSpec): string {
+  const flag = `--${kebabCase(param.name)}`;
+  if (param.kind === "boolean") return flag;
+  if (param.kind === "string[]") return `${flag} <values...>`;
+  return `${flag} <value>`;
 }
 
 /** Project one verb into its surface entry, omitting default/falsy fields. */

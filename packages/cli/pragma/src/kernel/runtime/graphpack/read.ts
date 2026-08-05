@@ -103,8 +103,23 @@ export async function readPack(dir: string): Promise<StoreSession> {
   };
 }
 
-/** Count the booted store's triples (a cheap aggregate over the union graph). */
-async function countTriples(store: StoreSession["store"]): Promise<number> {
+/**
+ * Count a store's triples — a cheap aggregate over the union graph.
+ *
+ * The one home for the query. `build.ts` carried a byte-identical body against
+ * `Awaited<ReturnType<typeof createStore>>`, which is the same value this
+ * signature names through `StoreSession`; the two counts feed the same
+ * `entityCount` field on the same manifest, so a divergence in the query would
+ * have made a pack's recorded count disagree with the count its own reader
+ * reports.
+ *
+ * @param store - The booted store.
+ * @returns The number of triples.
+ * @note Impure — runs a COUNT query against the store.
+ */
+export async function countTriples(
+  store: StoreSession["store"],
+): Promise<number> {
   const result = (await store.query(
     "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }" as never,
   )) as import("@canonical/ke").SelectResult;

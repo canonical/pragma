@@ -5,15 +5,10 @@
  * user sees which layer won; default values carry no marker.
  */
 
-import type { ConfigOrigin } from "../../kernel/config/types.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
+import { originMarker } from "../shared/originMarker.js";
 import type { ConfigShowData } from "./types.js";
-
-/** A `[layer]` marker for values a config file supplied (blank for defaults). */
-function originMarker(origin: ConfigOrigin): string {
-  return origin === "default" ? "" : ` [${origin}]`;
-}
 
 /** Summarize a list of named entries as a comma-separated set of names. */
 function entryNames(entries: readonly (string | { name: string })[]): string {

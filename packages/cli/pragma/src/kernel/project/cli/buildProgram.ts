@@ -13,8 +13,12 @@
 import { Command, Option } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
-import { kebabCase } from "../../spec/emitSurface.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import {
+  flagToken,
+  kebabCase,
+  positionalToken,
+} from "../../spec/emitSurface.js";
+import type { VerbSpec } from "../../spec/types.js";
 import { dispatch } from "./dispatch.js";
 import { formatRootHelp } from "./rootHelp.js";
 import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
@@ -31,22 +35,6 @@ interface BuildProgramOptions {
   readonly version?: string;
 }
 
-/** The positional usage token for a param (`<name>` / `[name]`, variadic `...`). */
-function positionalToken(param: ParamSpec): string {
-  const variadic = param.kind === "string[]" ? "..." : "";
-  return param.required
-    ? `<${param.name}${variadic}>`
-    : `[${param.name}${variadic}]`;
-}
-
-/** The Commander flag spec for a non-positional param. */
-function flagSpec(param: ParamSpec): string {
-  const flag = `--${kebabCase(param.name)}`;
-  if (param.kind === "boolean") return flag;
-  if (param.kind === "string[]") return `${flag} <values...>`;
-  return `${flag} <value>`;
-}
-
 /** Install designed help for a command, suppressing Commander's auto-help. */
 function useDesignedHelp(command: Command, text: () => string): void {
   command.configureHelp({ formatHelp: () => "" });
@@ -59,7 +47,7 @@ function useDesignedHelp(command: Command, text: () => string): void {
 function registerParams(command: Command, verb: VerbSpec): void {
   for (const param of verb.params) {
     if (param.positional) continue;
-    const spec = flagSpec(param);
+    const spec = flagToken(param);
     if (param.kind === "enum") {
       const option = new Option(spec, param.doc).choices([...param.values]);
       if (param.default !== undefined) option.default(param.default);

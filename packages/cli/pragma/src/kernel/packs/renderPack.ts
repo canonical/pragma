@@ -193,6 +193,15 @@ function scalar(
   return typeof value === "string" ? value : undefined;
 }
 
-function capitalize(value: string): string {
+/**
+ * Upper-case a string's first character.
+ *
+ * The one home for the rule. `compile.ts` carried a byte-identical copy, and it
+ * already imports from this module, so a shared definition costs no new edge.
+ *
+ * @param value - The string to capitalize.
+ * @returns The string with its first character upper-cased.
+ */
+export function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }

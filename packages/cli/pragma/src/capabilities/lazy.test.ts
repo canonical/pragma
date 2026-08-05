@@ -232,6 +232,18 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
         for (const match of source.matchAll(
           /^import\b[\s\S]*?from\s+["']([^"']+)["']/gm,
         )) {
+          // BLIND SPOT, measured rather than assumed, and stated because a
+          // guard that overclaims is worse than none: this matches the
+          // SPECIFIER TEXT, so it sees `../../kernel/config/types.js` from a
+          // capability and does NOT see `../config/types.js` from a module
+          // under `src/kernel/`. Proved by relocating
+          // `shared/originMarker.ts` into `kernel/render/`: the pinned set
+          // below lost two entries and gained nothing, while the edge itself
+          // was unchanged. So this bounds the CAPABILITY side of the boundary,
+          // which is where the fast path's config edges have all arrived so
+          // far, and a kernel-internal one would need a resolved-path walk to
+          // catch. Moving an edge to where this cannot see it is a weakening
+          // even when the suite goes green.
           if (!match[1]?.includes("kernel/config/")) continue;
           found.add(rel);
           if (EXEMPT.has(rel)) continue;
@@ -248,11 +260,13 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     expect([...found].sort()).toEqual(
       [
         "src/capabilities/config/fields.ts",
-        "src/capabilities/config/show.render.ts",
         "src/capabilities/config/types.ts",
         "src/capabilities/create/constants.ts",
-        "src/capabilities/info/info.render.ts",
         "src/capabilities/info/types.ts",
+        // `config/show.render.ts` and `info/info.render.ts` each named
+        // `ConfigOrigin` for one copy of the same three-line `[layer]` marker.
+        // The copies are one function now, so two entries became this one.
+        "src/capabilities/shared/originMarker.ts",
         "src/capabilities/shared/registry.ts",
         "src/constants.ts",
         "pragma.conf.ts",

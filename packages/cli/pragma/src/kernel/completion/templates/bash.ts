@@ -15,22 +15,18 @@
 
 import type { CompletionModel, CompletionSource } from "../types.js";
 import {
+  caseBlock,
   globalFlagNames,
   globalValueFlags,
   hasOwnFlags,
   nounNames,
   offeredFlagNames,
+  positionalArm,
   rootFlagNames,
-  type VerbView,
-  valueFlagNames,
+  sanitizeBinName,
   verbViews,
   wordList,
 } from "./shared.js";
-
-/** A shell-safe function-name base for the bin (`pragma` -> `_pragma`). */
-function fnBase(binName: string): string {
-  return `_${binName.replace(/[^A-Za-z0-9_]/g, "_")}`;
-}
 
 /** The bash action completing a value source, or undefined for `none`. */
 function sourceAction(
@@ -99,41 +95,6 @@ function verbArms(model: CompletionModel): string[] {
     );
 }
 
-/** The positional case arm for one view, or undefined when it offers nothing. */
-function positionalArm(
-  model: CompletionModel,
-  view: VerbView,
-  fn: string,
-): string | undefined {
-  const slots: string[] = [];
-  view.verb.positionals.forEach((positional, index) => {
-    const action = sourceAction(positional.source, fn);
-    if (action === undefined) return;
-    const last = index === view.verb.positionals.length - 1;
-    const pattern = positional.variadic && last ? "*" : String(index);
-    slots.push(`        ${pattern}) ${action} ;;`);
-  });
-  if (slots.length === 0) return undefined;
-  return [
-    `    ${view.key})`,
-    `      ${fn}_pos ${view.skipWords} "${wordList(valueFlagNames(model, view), "bash value flags")}"`,
-    '      case "$POS" in',
-    ...slots,
-    "      esac",
-    "      ;;",
-  ].join("\n");
-}
-
-/** Wrap case arms in a `case` statement, or nothing when there are no arms. */
-function caseBlock(
-  subject: string,
-  arms: readonly string[],
-  indent: string,
-): string[] {
-  if (arms.length === 0) return [];
-  return [`${indent}case ${subject} in`, ...arms, `${indent}esac`];
-}
-
 /**
  * Render the bash completion script.
  *
@@ -147,9 +108,15 @@ export function bashScript(
   binName: string,
   minChars: number,
 ): string {
-  const fn = fnBase(binName);
+  const fn = `_${sanitizeBinName(binName)}`;
   const positionalArms = verbViews(model).flatMap((view) => {
-    const arm = positionalArm(model, view, fn);
+    const arm = positionalArm(
+      model,
+      view,
+      fn,
+      sourceAction,
+      "bash value flags",
+    );
     return arm === undefined ? [] : [arm];
   });
   const globalValueSkips = globalValueFlags(model)

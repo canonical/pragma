@@ -18,12 +18,13 @@
  */
 
 import type { CompletionModel, FlagEntry, VerbEntry } from "../types.js";
-import { globalValueFlags, nounNames, verbViews, wordList } from "./shared.js";
-
-/** A shell-safe function-name base for the bin (`pragma` -> `__pragma`). */
-function fnBase(binName: string): string {
-  return `__${binName.replace(/[^A-Za-z0-9_]/g, "_")}`;
-}
+import {
+  globalValueFlags,
+  nounNames,
+  sanitizeBinName,
+  verbViews,
+  wordList,
+} from "./shared.js";
 
 /** AND a `minChars` guard into a name rule's condition (or start one). */
 function requireMinChars(
@@ -150,7 +151,7 @@ export function fishScript(
   binName: string,
   minChars: number,
 ): string {
-  const fn = fnBase(binName);
+  const fn = `__${sanitizeBinName(binName)}`;
   const globalValueSkips = wordList(
     globalValueFlags(model).map((flag) => flag.flag),
     "fish global value flags",
