@@ -32,7 +32,7 @@ function configRows(data: ConfigShowData): readonly ConfigRow[] {
   return [
     [
       "tier",
-      config.tier ?? "(none — all tiers visible)",
+      config.tier ?? "(none)",
       originMarker(origins.tier),
     ],
     ["channel", config.channel, originMarker(origins.channel)],
@@ -92,7 +92,7 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
-      `- **Tier:** ${config.tier ?? "none (all tiers)"}${originMarker(origins.tier)}`,
+      `- **Tier:** ${config.tier ?? "none"}${originMarker(origins.tier)}`,
       `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
       `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
       `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,

@@ -91,7 +91,7 @@ describe("renderConfigShowPlain", () => {
 
     const out = renderConfigShowPlain(bare, styleFor(false));
 
-    expect(out).toContain("tier: (none — all tiers visible)");
+    expect(out).toContain("tier: (none)");
     expect(out).toContain("packs: (none)");
     expect(out).toContain("generators: (none)");
     expect(out).toContain("project config: (not found)");
