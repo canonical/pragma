@@ -1,7 +1,6 @@
 import { route } from "@canonical/router-core";
 import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
-import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
-import type { StripSlotsEntry } from "#lib/Shell/types.js";
+import { shellStripFacet } from "#lib/Shell/stripFacet.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
 import GuidePage from "./GuidePage.js";
@@ -48,9 +47,7 @@ const routes = {
     },
     meta: {
       [ROUTE_QUERY_META_KEY]: lobbyRouteEntry,
-      [SHELL_STRIP_META_KEY]: {
-        Context: HomeContext,
-      } satisfies StripSlotsEntry,
+      ...shellStripFacet.of({ Context: HomeContext }),
     },
   }),
   guide: route({

@@ -1,7 +1,6 @@
 import { route } from "@canonical/router-core";
 import { makeLensContext } from "#lib/LensBreadcrumbs/index.js";
-import { SHELL_STRIP_META_KEY } from "#lib/Shell/constants.js";
-import type { StripSlotsEntry } from "#lib/Shell/types.js";
+import { shellStripFacet } from "#lib/Shell/stripFacet.js";
 import { ROUTE_QUERY_META_KEY } from "#relay/routeQuery.js";
 import { warmRouteQuery } from "#relay/warmRouteQuery.js";
 import { ComponentEntityPage } from "./ComponentEntityPage/index.js";
@@ -50,9 +49,7 @@ const routes = {
     },
     meta: {
       [ROUTE_QUERY_META_KEY]: componentsCatalogRouteEntry,
-      [SHELL_STRIP_META_KEY]: {
-        Context: ComponentsContext,
-      } satisfies StripSlotsEntry,
+      ...shellStripFacet.of({ Context: ComponentsContext }),
     },
   }),
   componentEntity: route({
@@ -63,9 +60,7 @@ const routes = {
     },
     meta: {
       [ROUTE_QUERY_META_KEY]: componentEntityRouteEntry,
-      [SHELL_STRIP_META_KEY]: {
-        Context: ComponentsContext,
-      } satisfies StripSlotsEntry,
+      ...shellStripFacet.of({ Context: ComponentsContext }),
     },
   }),
 } as const;
