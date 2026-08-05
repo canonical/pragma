@@ -1,5 +1,5 @@
 {
-  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
+  "$comment": "FROZEN designed surface (covenant) for pragma v2. Each PR emits only the entries it has built and asserts emitted ⊆ covenant (see kernel/spec/surfaceConformance.ts). PR7 is the surface-completion PR: it emits ALL tools (emitted == covenant); PR9 extended this to 39 tools (added config_set, 38→39) and extends mcpSurface with the non-tool surfaces — resources (the pragma:{+uri} template), prompts (the native prompts/* capability), and instructions (the handshake orientation); PR10 extended it to 40 tools (added the colophon self-verb + its tool, 39→40); AV-228 B1 blesses `ontology_lookup` (the ratified by-name read name) and keeps `ontology_show` as a deprecated alias, 40→41; AV-228 B3 RETIRES the per-field setters `config_tier`/`config_channel`/`config_detail` in favour of `config_set <key> <value>`, 41→38; AV-228 B8 unifies ALL `create application` include-flags on the `--with-X` convention (`--ssr`/`--router`/`--forms`/`--relay` → `--with-ssr`/`--with-router`/`--with-forms`/`--with-relay`; tool count unchanged). L-PR6 (PRA-107 ruling, PROJECT FROM CONFIG) records the WIRE IDENTITY rule as mcpSurface.serverInfo: serverInfo PROJECTS from the distribution — name is the declared distribution name, version the package version — so a fork's server introduces itself under its own name (surface.test.ts pins the covenant text, identity.test.ts pins the wire from a fork's config); the resource template pragma:{+uri}, the pragma:<uri> URIs it mints, and the pragma/box / pragma/instanceCount _meta keys stay FROZEN protocol identity every distribution serves unchanged — clients persist resource URIs, and the measured half-derivation (template renamed, minting sites literal) made all 653 of a fork's resources unreadable; tool count unchanged. Prompt NAMES are graph data, guarded by the prompt tests, not frozen here. The fixed sections mirror FIXED_SURFACE in kernel/spec/emitSurface.ts verbatim.",
   "nouns": {
     "block": {
       "verbs": [
@@ -292,7 +292,11 @@
     ],
     "resources": ["pragma:{+uri}"],
     "prompts": true,
-    "instructions": true
+    "instructions": true,
+    "serverInfo": {
+      "name": "<the declared distribution name>",
+      "version": "<the package version>"
+    }
   },
   "bins": {
     "pragma": "pragma v2 CLI and MCP server host (stdio)"

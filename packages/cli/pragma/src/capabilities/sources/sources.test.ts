@@ -74,7 +74,6 @@ function runtimeFor(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
       channel: "default",
       detail: "default",
       packs: "project",
-      generators: "default",
       stories: "default",
       prefixes: "default",
     },

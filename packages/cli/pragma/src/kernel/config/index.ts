@@ -25,7 +25,6 @@ export type {
   ConfigLayers,
   ConfigOrigin,
   ConfigOrigins,
-  GeneratorSource,
   PackDeclaration,
   PackSource,
   PragmaConfig,

@@ -379,7 +379,7 @@ function renderNonToolSurface(modules: readonly CapabilityModule[]): string {
   const bullets: string[] = [];
   if (resources.length > 0) {
     bullets.push(
-      `- **Resources**: ${resources.map((r) => `\`${r}\``).join(", ")} — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).`,
+      `- **Resources**: ${resources.map((r) => `\`${r}\``).join(", ")} — entity reads addressed by URI (listing and autocomplete are storeless over the pack index). The template — its scheme and the \`_meta\` taxonomy keys its entries carry — is frozen protocol identity, served unchanged by every distribution: clients persist resource URIs, so the scheme never follows a fork's name.`,
     );
   }
   if (prompts) {
@@ -401,7 +401,7 @@ function renderToolsPage(
   const tools = verbs.filter((verb) => verb.capability.mcp.expose);
   const blocks = [
     "# MCP tool reference",
-    `Every tool the ${BIN_NAME} MCP server exposes, plus its non-tool surface. Generated from the live capability grammar — do not edit by hand.`,
+    `Every tool the ${BIN_NAME} MCP server exposes, plus its non-tool surface. Generated from the live capability grammar — do not edit by hand. The server's \`serverInfo\` is a projection, not a constant: it introduces itself on the wire under the distribution's declared name at the package version, so a client should read \`serverInfo\` rather than assume a name.`,
     "Mutating tools are plan-first: called without `confirm: true` they return the plan they WOULD apply; called with `confirm: true` they execute. A mutating tool also accepts an optional absolute `cwd`.",
   ];
   for (const verb of tools) {
@@ -476,9 +476,9 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake.",
   },
   colophon: {
-    type: "string (optional)",
+    type: "object (optional)",
     notes:
-      "Distribution-only — see below. Accepted by the validator and read by NOTHING today: `colophon` renders a built-in narrative plus each pack's own `colophon`. Declaring it changes nothing.",
+      "Distribution-only — see below. The toolchain's own story, rendered first by the `colophon` verb and titled with the distribution's name: `{ markdown, summary? }`, both Markdown bodies with no leading H1 (`summary` is the condensed `--format llm` form). Declared content, not code — a fork edits it to tell its own story.",
   },
   issuesUrl: {
     type: "URL string (optional)",
@@ -496,19 +496,14 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
       "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
   },
   detail: {
-    type: "string (optional)",
+    type: "`summary` | `standard` | `detailed` (optional)",
     notes:
-      "Default progressive-disclosure level: `summary`, `standard` or `detailed`. The validator takes any string and an unrecognized one falls back to `standard` — `config show` still reports it as declared. Set it with `config set detail <level>`, which rejects anything else.",
+      "Default progressive-disclosure level. A closed enum, like `channel`: any other value fails at load with a `CONFIG_ERROR` naming the file and the three levels. Set it with `config set detail <level>`.",
   },
   packs: {
     type: "array (optional)",
     notes:
       "Semantic pack sources built by `sources update`. Each entry is a bare npm name or `{ name, source, stories? }`; `stories` are read stories the pack supplies, in the pack grammar.",
-  },
-  generators: {
-    type: "array (optional)",
-    notes:
-      "Scaffold generator refs (`{ name, source }`). NOTHING reads `source` today: the `create` verbs resolve their generators statically. Declaring it changes only what `config show` prints.",
   },
   stories: {
     type: "array (optional)",
@@ -523,7 +518,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   completion: {
     type: "object (optional)",
     notes:
-      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. `caseSensitive` is accepted by the validator and read by nothing. It is the one field `config show` carries with NO origin at all.",
+      "Completion policy read when `setup completions` emits a script: `minChars` and a per-noun `families` opt-out. It is the one field `config show` carries with NO origin at all.",
   },
 };
 
@@ -539,7 +534,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
  * `capabilities/config/show.render.test.ts` derives the same list from the real
  * formatter and fails if this page and that renderer disagree.
  */
-const REPORTED_FIELDS = ["tier", "channel", "detail", "packs", "generators"];
+const REPORTED_FIELDS = ["tier", "channel", "detail", "packs"];
 
 /** Render the layered-configuration reference: the layers, then the fields. */
 function renderConfigPage(): string {
@@ -564,11 +559,15 @@ function renderConfigPage(): string {
     "The `Type` column is prose; the field set and each field's optionality are checked against the validator.",
     rows.join("\n"),
     "## Distribution-only fields",
-    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read by nothing at all. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
+    `\`name\`, \`help\` and \`issuesUrl\` are read from the distribution config when the program loads, because the surfaces that need them — \`--help\`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. \`colophon\` is read from the same file at render time: the \`colophon\` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by \`config show\`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's \`vocabulary\` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes \`name\` in.`,
     "## What `config show` reports",
     `\`${BIN_NAME} config show\` prints ${REPORTED_FIELDS.map((field) => `\`${field}\``).join(", ")} — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: \`prefixes\` and \`completion\` appear only in the \`--format json\` payload, \`prefixes\` with an origin and \`completion\` with none; \`stories\` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; \`--format json\` returns the resolved config and the origin map whole.`,
     "## Renamed: `packages` → `packs`",
     "The `packages` field was renamed to `packs`. A layer that still declares `packages:` fails loudly: the rename is detected before the schema's unknown-key stripping could hide it, and the error names it. Rename the key — the entry shape is unchanged.",
+    "## Removed: `generators`",
+    "The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.",
+    "## Removed: `completion.caseSensitive`",
+    "The `completion.caseSensitive` field was removed: it was accepted by the validator and read by nothing — completion matching is declared per parameter by the capability grammar, never configured. A layer that still sets it fails loudly at load with an error naming the removed field; delete the key. `completion.minChars` and `completion.families` are unchanged.",
     "## Reading and writing",
     `\`${BIN_NAME} config show\` prints the resolved config and each field's layer. \`${BIN_NAME} config set <key> <value>\` writes to the **global** layer only — project configs are authored by hand. Both are documented in the [command reference](./commands.md).`,
   ]);

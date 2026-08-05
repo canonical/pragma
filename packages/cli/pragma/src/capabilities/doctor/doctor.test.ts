@@ -80,7 +80,6 @@ const defaultLayers: ConfigLayers = {
     channel: "default",
     detail: "default",
     packs: "default",
-    generators: "default",
     stories: "default",
     prefixes: "default",
   },

@@ -33,7 +33,6 @@ function layersWith(packsOrigin: "default" | "project"): ConfigLayers {
       channel: "default",
       detail: "default",
       packs: packsOrigin,
-      generators: "default",
       stories: "default",
       prefixes: "default",
     },

@@ -56,7 +56,6 @@ function layers(stories: unknown[]): ConfigLayers {
       channel: "default",
       detail: "default",
       packs: "default",
-      generators: "default",
       stories: stories.length > 0 ? "project" : "default",
       prefixes: "default",
     },

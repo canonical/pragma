@@ -1,6 +1,6 @@
 /**
- * The pragma distribution config — identity, default packs, the read stories
- * those packs supply, and generators.
+ * The pragma distribution config — identity, default packs, and the read
+ * stories those packs supply.
  *
  * Consumed three times: statically imported by `src/kernel/config/defaults.ts`
  * as the lowest config layer (compiled into the binary — no fs), by
@@ -470,7 +470,71 @@ const codeStandardsStories: readonly PackDefinition[] = [
 export default {
   name: "pragma",
   help: "Explore the design system",
-  colophon: "Made by the Canonical Webteam — https://canonical.com.",
+  // The toolchain's own colophon — CONTENT this distribution declares, not
+  // machinery: `pragma colophon` renders whatever stands here as its first
+  // section, titled with the distribution's name, before any active pack's
+  // domain colophon. A fork tells its own story by editing this declaration.
+  // `markdown` is the full narrative; `summary` is the condensed `--format llm`
+  // form. Both are BODIES with no leading H1 (the renderer supplies the
+  // heading), grounded in this tree's real architecture.
+  colophon: {
+    markdown: `pragma is a **domain-based toolchain**: one CLI and one MCP server projected
+from a single grammar, serving a knowledge-graph domain that reads as data.
+
+## The effect monad
+
+Reads are plain \`async\` functions; a mutation instead *describes* its effects
+as a \`Task\` (\`@canonical/task\`) that is interpreted — under the real node
+interpreter, a \`--dry-run\` planner, or an \`--undo\` reverser. Describe-then-
+interpret means dry-run and undo come for free, and the dispatcher tells the two
+worlds apart on one bit: \`capability.mutates\`.
+
+## One grammar, many projections
+
+Every capability is a \`VerbSpec\` — a noun, its params, its effect profile, its
+formatters. The CLI commands, the MCP tools, shell completion, and the
+surface/docs are all *projections* of that one shape, so they cannot drift. The
+projected surface is frozen in a covenant (\`surface/surface.v2.json\`): a single
+source of truth a test asserts the live grammar still emits, tool for tool.
+
+## LLM-optimized output
+
+Each verb renders three ways — \`plain\` for a terminal, \`json\` for the machine
+envelope, and \`llm\` for condensed Markdown. \`--format llm\` (or a non-interactive
+stdout) selects the agent form: the same data, shaped for a model to read. This
+colophon is itself a showcase of that render model.
+
+## Modular, storeless by construction
+
+Capabilities ship as **modules** — named bundles of verbs with optional
+boot / resource / prompt hooks. A verb declares whether it \`needsStore\`, and
+the dispatcher boots the triple store *only* for those; a storeless verb
+(\`info\`, \`config\`, \`capabilities\`, \`colophon\`) never pays for the graph.
+
+## Scaffolding
+
+\`pragma create\` scaffolds components, packages, and applications through the
+\`@canonical/summon-*\` generators, reusing summon's rich Ink wizard when it runs
+interactively.
+
+## The domain reads as data
+
+A domain is a **pack**: a declarative \`PackDefinition\` (its list / lookup
+queries) compiled into verbs, backed by a content-addressed graphpack that
+\`sources update\` builds once. Swap the pack and the same pragma serves a
+different domain — including the domain colophon printed below this one.
+
+Made by the Canonical Webteam — https://canonical.com.`,
+    summary: `pragma is a domain-based toolchain: one CLI + MCP server projected from a single \`VerbSpec\` grammar.
+
+- **Effect monad** (\`@canonical/task\`): reads are async; a mutation returns an interpreted \`Task\`, so \`--dry-run\` and \`--undo\` are free. The dispatcher branches on \`capability.mutates\`.
+- **One grammar, many projections**: CLI, MCP tools, completion, and docs all project one \`VerbSpec\`; the emitted surface is frozen in a covenant so the projections never drift.
+- **LLM-optimized output**: every verb renders \`plain\` / \`json\` / \`llm\`; \`--format llm\` (or a piped stdout) emits condensed Markdown for agents.
+- **Modular + storeless**: capability modules; the triple store boots only for \`needsStore\` verbs.
+- **Domain as data**: a pack is a declarative \`PackDefinition\` compiled to verbs over a content-addressed graph built by \`sources update\`.
+
+Made by the Canonical Webteam — https://canonical.com.`,
+  },
   issuesUrl: "https://github.com/canonical/pragma/issues",
   packs: [
     {
@@ -506,20 +570,6 @@ export default {
     ds: "https://ds.canonical.com/",
     cs: "http://pragma.canonical.com/codestandards#",
   },
-  generators: [
-    {
-      name: "@canonical/summon-component",
-      source: "npm:@canonical/summon-component@^0.33.0",
-    },
-    {
-      name: "@canonical/summon-package",
-      source: "npm:@canonical/summon-package@^0.33.0",
-    },
-    {
-      name: "@canonical/summon-application",
-      source: "npm:@canonical/summon-application@^0.33.0",
-    },
-  ],
   channel: "normal",
   detail: "standard",
 } satisfies RawConfig;

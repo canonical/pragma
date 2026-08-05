@@ -6,11 +6,13 @@
  * embeds (`scripts/build.ts`). Prose is NOT derived: the verb summaries below
  * `createVerbs` and `capabilities/hints.ts` still name the frameworks by hand.
  *
- * DECLARED vs BOUND. `pragma.conf.ts` declares which generator PACKAGES the
- * distribution ships (`generators: [{ name, source }]`); this binds each `create`
- * noun to the generator-map key it runs, and — for the one generator whose
- * templates the binary carries — to the package `scripts/build.ts` harvests them
- * from. Nothing reads `generators[].source`. The binding is hand-written because
+ * This table is the SINGLE authoring point for which generator packages the
+ * distribution ships: it binds each `create` noun to the generator-map key it
+ * runs, and — for the one generator whose templates the binary carries — to
+ * the package `scripts/build.ts` harvests them from. (A parallel `generators`
+ * CONFIG field once declared the same packages; it was validated, layered and
+ * read by nothing, and was removed under the L-OPEN-1 ruling — the config
+ * validator now rejects it loudly.) The binding is hand-written because
  * neither half can be discovered:
  *  - surfacing a noun also needs a hand-written prompt mirror, path param and
  *    examples in `create.verb.ts`, so the surface is a deliberate SUBSET —
@@ -31,8 +33,8 @@
 export const CREATE_GENERATORS = {
   component: {
     /**
-     * The declaring package, as named in `pragma.conf.ts` `generators`:
-     * `scripts/build.ts` harvests its `.ejs` for the binary.
+     * The declaring package: `scripts/build.ts` harvests its `.ejs` for the
+     * binary.
      */
     name: "@canonical/summon-component",
     /** `--framework <f>` runs `component/<f>`; the FIRST is the enum default. */

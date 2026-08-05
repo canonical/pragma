@@ -16,7 +16,7 @@ import type { ColophonData } from "./types.js";
 const colophonVerb: VerbSpec<Record<string, unknown>, ColophonData> = {
   path: ["colophon"],
   summary: `Narrate how ${BIN_NAME} and the active domain are made.`,
-  doc: `Storeless — a colophon for the toolchain. Prints ${BIN_NAME}'s own story (the effect monad, one-grammar-many-projections, the render/LLM-output model, storeless modularity, and the domain-as-data pack model) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.`,
+  doc: `Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's \`colophon\`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.`,
   params: [],
   output: { formatters: colophonFormatters },
   examples: [

@@ -13,6 +13,18 @@ export const CHANNELS = ["normal", "experimental", "prerelease"] as const;
 /** A release channel name. */
 export type Channel = (typeof CHANNELS)[number];
 
+/**
+ * Progressive-disclosure levels, least to most detail. Declared HERE, beside
+ * {@link CHANNELS}, because the config validator closes `detail` over this set
+ * and this module is the one config module the storeless fast path may reach
+ * (`completion/safety.test.ts` positive-lists it; `capabilities/lazy.test.ts`
+ * pins it inert). `src/constants.ts` re-exports it for every other reader.
+ */
+export const DETAIL_LEVELS = ["summary", "standard", "detailed"] as const;
+
+/** A progressive-disclosure level. */
+export type DetailLevel = (typeof DETAIL_LEVELS)[number];
+
 /** The object form of a pack source declaration. */
 export interface PackSource {
   readonly name: string;
@@ -30,10 +42,17 @@ export interface PackSource {
 /** A `packs` entry: a bare npm name or a `{ name, source }` declaration. */
 export type PackDeclaration = string | PackSource;
 
-/** A `generators` entry: a scaffold generator's npm/git/file source ref. */
-export interface GeneratorSource {
-  readonly name: string;
-  readonly source: string;
+/**
+ * The toolchain colophon the distribution declares — CONTENT, not machinery.
+ * The `colophon` verb renders whatever is declared here as its first section,
+ * titled with the distribution's name; a fork tells its own story by editing
+ * its config. Both strings are Markdown BODIES with no leading H1 (the
+ * renderer supplies the heading). `summary` is the condensed `--format llm`
+ * form; omitted, the full `markdown` serves both.
+ */
+export interface ColophonDeclaration {
+  readonly markdown: string;
+  readonly summary?: string;
 }
 
 /**
@@ -45,8 +64,6 @@ export interface GeneratorSource {
 export interface CompletionConfig {
   /** Minimum typed chars before the shell execs `__complete` (default 2). */
   readonly minChars?: number;
-  /** Match case-sensitively (default false — loose match, canonical emit). */
-  readonly caseSensitive?: boolean;
   /** Per-family opt-out: a noun mapped to `false` drops its name completion. */
   readonly families?: Readonly<Record<string, boolean>>;
 }
@@ -54,11 +71,12 @@ export interface CompletionConfig {
 /**
  * The effective, resolved configuration. `channel` always has a value.
  *
- * IDENTITY IS NOT HERE. `name`, `help`, `colophon` and `issuesUrl` are read
- * from `pragma.conf.ts` by `src/constants.ts` at module load, because the
- * surfaces that need them — `--help`, `__complete`, the MCP handshake,
- * first-run onboarding — all run before or without the config layer. They stay
- * in {@link RawConfig} (the distribution config is `satisfies RawConfig`), but
+ * IDENTITY IS NOT HERE. `name`, `help` and `issuesUrl` are read from
+ * `pragma.conf.ts` by `src/constants.ts` at module load, because the surfaces
+ * that need them — `--help`, `__complete`, the MCP handshake, first-run
+ * onboarding — all run before or without the config layer; `colophon` is read
+ * from the same file at render time by the `colophon` verb. They stay in
+ * {@link RawConfig} (the distribution config is `satisfies RawConfig`), but
  * merging them into the effective config only bought `config show` a
  * `[project]` marker the kernel does not honour.
  */
@@ -68,11 +86,9 @@ export interface PragmaConfig {
   /** Release channel controlling component visibility. */
   readonly channel: Channel;
   /** Default progressive-disclosure level. */
-  readonly detail?: string;
+  readonly detail?: DetailLevel;
   /** Semantic pack sources; replaces (does not merge) across layers. */
   readonly packs?: readonly PackDeclaration[];
-  /** Scaffold generator sources; replaces (does not merge) across layers. */
-  readonly generators?: readonly GeneratorSource[];
   /** Declarative read stories, compiled at DISPATCH (opaque here). */
   readonly stories?: readonly unknown[];
   /**
@@ -101,13 +117,12 @@ export interface PragmaConfig {
 export interface RawConfig {
   readonly name?: string;
   readonly help?: string;
-  readonly colophon?: string;
+  readonly colophon?: ColophonDeclaration;
   readonly issuesUrl?: string;
   readonly tier?: string;
   readonly channel?: Channel;
-  readonly detail?: string;
+  readonly detail?: DetailLevel;
   readonly packs?: readonly PackDeclaration[];
-  readonly generators?: readonly GeneratorSource[];
   readonly stories?: readonly unknown[];
   readonly prefixes?: Readonly<Record<string, string>>;
   readonly completion?: CompletionConfig;
@@ -122,7 +137,6 @@ export interface ConfigOrigins {
   readonly channel: ConfigOrigin;
   readonly detail: ConfigOrigin;
   readonly packs: ConfigOrigin;
-  readonly generators: ConfigOrigin;
   readonly stories: ConfigOrigin;
   readonly prefixes: ConfigOrigin;
 }

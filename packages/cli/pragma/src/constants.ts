@@ -10,18 +10,24 @@
  * type. It reaches no zod schema, no fs, no evaluator. `capabilities/lazy.test.ts`
  * pins that boundary, and `src/identity.test.ts` proves the projection.
  *
- * Also holds the stable cross-cutting enums (output formats, detail levels).
+ * Also holds the stable cross-cutting enums: output formats here, and the
+ * detail levels re-exported from `kernel/config/types.ts`, where the config
+ * validator closes the `detail` field over them.
  */
 
 import pkg from "../package.json" with { type: "json" };
 import identity from "../pragma.conf.js";
+import { DETAIL_LEVELS, type DetailLevel } from "./kernel/config/types.js";
 
 /** CLI binary name — the distribution's `name`. */
 const BIN_NAME = identity.name;
 
 /**
  * MCP server identity — the same name as the CLI bin, so agents already pointed
- * at the server resolve it unchanged.
+ * at the server resolve it unchanged. Also the `serverInfo.name` the server
+ * introduces itself with on the wire (paired with {@link VERSION} by
+ * `buildServer`), so a peer reads the distribution's declared name, never a
+ * hardcoded one.
  */
 const MCP_SERVER_NAME = identity.name;
 
@@ -60,12 +66,6 @@ const OUTPUT_FORMATS = ["plain", "llm", "json"] as const;
 
 /** A selected output format. `--format text` is normalised to `plain`. */
 type OutputFormat = (typeof OUTPUT_FORMATS)[number];
-
-/** Progressive-disclosure levels, least to most detail. */
-const DETAIL_LEVELS = ["summary", "standard", "detailed"] as const;
-
-/** A progressive-disclosure level. */
-type DetailLevel = (typeof DETAIL_LEVELS)[number];
 
 /** Default detail level when neither flag, config, nor spec pins one. */
 const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";

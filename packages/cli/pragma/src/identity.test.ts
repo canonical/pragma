@@ -11,10 +11,12 @@ vi.mock("../pragma.conf.js", () => ({
   default: {
     name: "recipes",
     help: "Explore the recipe graph",
-    colophon: "Made by the kitchen.",
+    colophon: {
+      markdown: "Made by the kitchen, one dish at a time.",
+      summary: "Kitchen-made.",
+    },
     issuesUrl: "https://example.invalid/recipes/issues",
     packs: [],
-    generators: [],
     prefixes: { rcp: "https://example.invalid/recipes/" },
     channel: "normal",
     detail: "standard",
@@ -167,6 +169,37 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     expect(greeting).toContain("`recipes.config.ts`");
   });
 
+  it("narrates the colophon the fork declares, titled with the fork's name", async () => {
+    // The toolchain colophon is DECLARED content (`pragma.conf.ts#colophon`),
+    // not authored code: the collector must render the fork's declaration
+    // under the fork's own name. With no packs declared, the fork's whole
+    // colophon is its own story. `kind: "pragma"` is asserted AS the literal:
+    // it is the frozen JSON discriminant every distribution serves (wire
+    // compatibility, like the resource scheme), deliberately NOT derived.
+    process.env.XDG_CONFIG_HOME = mkdtempSync(join(tmpdir(), "identity-"));
+    const { collectColophon } = await import(
+      "./capabilities/colophon/collectColophon.js"
+    );
+    const { bootRuntime } = await import("./kernel/runtime/boot.js");
+
+    const runtime = bootRuntime(
+      { llm: false, autoLlm: false, format: "plain", verbose: false },
+      mkdtempSync(join(tmpdir(), "identity-colophon-")),
+    );
+    const { sections } = await collectColophon(runtime);
+
+    expect(sections).toHaveLength(1);
+    const own = sections[0];
+    expect(own?.kind).toBe("pragma");
+    expect(own?.title).toBe("recipes");
+    expect(own?.markdown).toBe("Made by the kitchen, one dish at a time.");
+    expect(own?.summary).toBe("Kitchen-made.");
+    expect(own?.source).toBe("built-in");
+    for (const text of [own?.title, own?.markdown, own?.summary]) {
+      expect(text).not.toMatch(THIS_DISTRIBUTION);
+    }
+  });
+
   it("owns its own on-disk skills namespace", async () => {
     // Config, state and cache were namespaced by the bin name; the SKILLS roots
     // were not. Two distributions installed side by side therefore shared one
@@ -184,6 +217,24 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     for (const root of skillRoots("/work")) {
       expect(root).not.toMatch(THIS_DISTRIBUTION);
     }
+  });
+
+  it("introduces its MCP server on the wire under the fork's name", async () => {
+    // The wire half of the identity rule the covenant records
+    // (mcpSurface.serverInfo): serverInfo PROJECTS — name from the declared
+    // distribution, version from the package. Asserted through a real
+    // initialize handshake (in-memory transport), not on the constant, so a
+    // hardcoded serverInfo in buildServer would fail here even while
+    // MCP_SERVER_NAME projects correctly.
+    const { projectMcp } = await import("./testing/helpers/projectMcp.js");
+    const { VERSION } = await import("./constants.js");
+
+    const mcp = await projectMcp([]);
+    const wire = mcp.serverInfo();
+    await mcp.cleanup();
+
+    expect(wire).toEqual({ name: "recipes", version: VERSION });
+    expect(wire?.name).not.toMatch(THIS_DISTRIBUTION);
   });
 
   it("registers an MCP server entry the fork's own binary answers to", async () => {

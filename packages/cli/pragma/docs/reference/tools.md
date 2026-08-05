@@ -1,6 +1,6 @@
 # MCP tool reference
 
-Every tool the pragma MCP server exposes, plus its non-tool surface. Generated from the live capability grammar — do not edit by hand.
+Every tool the pragma MCP server exposes, plus its non-tool surface. Generated from the live capability grammar — do not edit by hand. The server's `serverInfo` is a projection, not a constant: it introduces itself on the wire under the distribution's declared name at the package version, so a client should read `serverInfo` rather than assume a name.
 
 Mutating tools are plan-first: called without `confirm: true` they return the plan they WOULD apply; called with `confirm: true` they execute. A mutating tool also accepts an optional absolute `cwd`.
 
@@ -51,7 +51,7 @@ _No input parameters._
 
 ### colophon
 
-Storeless — a colophon for the toolchain. Prints pragma's own story (the effect monad, one-grammar-many-projections, the render/LLM-output model, storeless modularity, and the domain-as-data pack model) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's `colophon`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 Read-only.
 
@@ -474,6 +474,6 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ## Non-tool surface
 
-- **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index).
+- **Resources**: `pragma:{+uri}` — entity reads addressed by URI (listing and autocomplete are storeless over the pack index). The template — its scheme and the `_meta` taxonomy keys its entries carry — is frozen protocol identity, served unchanged by every distribution: clients persist resource URIs, so the scheme never follows a fork's name.
 - **Prompts**: the workflow prompt templates the active graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. A graph declaring none leaves both views empty.
 - **Instructions**: the server always sends handshake instructions describing the conventions and the discovery sequence.
