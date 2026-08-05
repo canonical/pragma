@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { type RenderStyle, styleFor } from "../../kernel/render/style.js";
 import { emitReference } from "../../kernel/spec/emitReference.js";
 import { capabilities } from "../index.js";
+import { infoFormatters } from "../info/info.render.js";
+import type { InfoData } from "../info/types.js";
 import { configShowFormatters, renderConfigShowPlain } from "./show.render.js";
 import type { ConfigShowData } from "./types.js";
 
@@ -31,6 +33,37 @@ const DATA: ConfigShowData = {
   projectConfigPath: "/repo/pragma.config.ts",
   projectExists: true,
   globalExists: true,
+};
+
+/** The same config with every optional field unset. */
+const BARE: ConfigShowData = {
+  config: { channel: "normal" },
+  origins: {
+    tier: "default",
+    channel: "default",
+    detail: "default",
+    packs: "default",
+    generators: "default",
+    stories: "default",
+    prefixes: "default",
+  },
+  globalConfigPath: "/home/u/.config/pragma/config.json",
+  projectExists: false,
+  globalExists: false,
+};
+
+/** The same unset state as `info` reports it. */
+const BARE_INFO: InfoData = {
+  version: "0.0.0",
+  installSource: "npm",
+  updateSkipped: true,
+  config: {
+    channel: BARE.config.channel,
+    origins: BARE.origins,
+    globalConfigPath: BARE.globalConfigPath,
+    projectExists: false,
+    globalExists: false,
+  },
 };
 
 /** A sentinel styler — enabled, each color wrapped in a visible tag. */
@@ -73,23 +106,7 @@ describe("renderConfigShowPlain", () => {
   });
 
   it("renders absent optional fields as (none)", () => {
-    const bare: ConfigShowData = {
-      config: { channel: "normal" },
-      origins: {
-        tier: "default",
-        channel: "default",
-        detail: "default",
-        packs: "default",
-        generators: "default",
-        stories: "default",
-        prefixes: "default",
-      },
-      globalConfigPath: "/home/u/.config/pragma/config.json",
-      projectExists: false,
-      globalExists: false,
-    };
-
-    const out = renderConfigShowPlain(bare, styleFor(false));
+    const out = renderConfigShowPlain(BARE, styleFor(false));
 
     expect(out).toContain("tier: (none)");
     expect(out).toContain("packs: (none)");
@@ -105,6 +122,25 @@ describe("configShowFormatters.llm", () => {
     expect(out).toContain("- **Tier:** apps/lxd [project]");
     expect(out).toContain("- **Packs:** @canonical/ds [global]");
     expect(out).toContain("- **Generators:** @canonical/summon-component");
+  });
+
+  it("spells an unset tier as every projection of both config verbs does", () => {
+    // `config show` and `info` are the two verbs that report the resolved
+    // config, each in a plain and an llm projection. A script or agent keyed on
+    // one token for "unset" must not meet a second, and this llm renderer was
+    // the one that printed a bare `none` while its own plain form, and both of
+    // `info`'s, printed `(none)`. All four are pinned in one place because the
+    // defect is the disagreement, not any single spelling.
+    const projections = [
+      renderConfigShowPlain(BARE, styleFor(false)),
+      configShowFormatters.llm(BARE),
+      infoFormatters.plain(BARE_INFO),
+      infoFormatters.llm(BARE_INFO),
+    ];
+    for (const out of projections) {
+      expect(out).toMatch(/[Tt]ier:\*{0,2} \(none\)/);
+      expect(out).not.toMatch(/[Tt]ier:\*{0,2} none/);
+    }
   });
 
   it("reports no identity row, in either form", () => {
