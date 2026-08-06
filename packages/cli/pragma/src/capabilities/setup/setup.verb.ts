@@ -75,7 +75,6 @@ function resolveScope(params: Record<string, unknown>): ScopeSelection {
 const SELF_CAPABILITY = {
   needsStore: false,
   mutates: true,
-  interactive: true,
   destructive: false,
   mcp: {
     expose: true as const,
@@ -91,7 +90,6 @@ const SELF_CAPABILITY = {
 const SUB_CAPABILITY = {
   needsStore: false,
   mutates: true,
-  interactive: true,
   destructive: false,
   mcp: {
     expose: false as const,

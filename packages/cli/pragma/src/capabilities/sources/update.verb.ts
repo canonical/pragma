@@ -2,10 +2,12 @@
  * The `sources update` verb — resolve the configured packs, build the store,
  * and point the project at it.
  *
- * A mutation (`mutates: true`) that needs the network (`needsNetwork: true`)
- * but NOT the pre-booted store (`needsStore: false`): update is what *creates*
- * the store, so the dispatcher must not try to boot it first (a cold boot would
- * throw STORE_UNAVAILABLE). `run` returns a `Promise<Task<R>>` — the union's
+ * A mutation (`mutates: true`) that reaches the network but NOT the pre-booted
+ * store (`needsStore: false`). The network need is a property of the run body,
+ * not of the grammar: `needsNetwork` was a declared field that no dispatcher,
+ * projector or renderer ever read, and it is gone. `needsStore` is real — update
+ * is what *creates* the store, so the dispatcher must not try to boot it first
+ * (a cold boot would throw STORE_UNAVAILABLE). `run` returns a `Promise<Task<R>>` — the union's
  * third arm — which the dispatcher awaits: for a real execution it resolves and
  * builds before handing back the pointer-writing Task; for a preview
  * (`runtime.mutation.preview`) it stays network-free and hands back a

@@ -427,7 +427,10 @@ async function runCreate(
 }
 
 /**
- * The shared capability: storeless, mutating, interactive, MCP-exposed.
+ * The shared capability: storeless, mutating, MCP-exposed. Every word here is a
+ * field of `Capability`; create's interactivity is NOT, because the grammar has
+ * no term for it — the prompt strategy is picked at dispatch from
+ * `runtime.exec`, never declared on the spec.
  *
  * `destructive: false` is load-bearing (D4): create only WRITES NEW files, so it
  * is explicitly non-destructive. Without it `annotationsFor` emits no
@@ -438,7 +441,6 @@ const CREATE_CAPABILITY = {
   needsStore: false,
   mutates: true,
   destructive: false,
-  interactive: true,
   mcp: {
     expose: true as const,
     annotations: { readOnlyHint: false, openWorldHint: false },

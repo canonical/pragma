@@ -265,7 +265,6 @@ async function producePragmaConformance(): Promise<Map<string, string>> {
       needsStore: false,
       mutates: true,
       destructive: false,
-      interactive: true,
       mcp: { expose: false, reason: "a test fixture, never a shipped verb" },
     },
     run: (_params, rt) => {
