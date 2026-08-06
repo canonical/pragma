@@ -563,6 +563,7 @@ Made by the Canonical Webteam — https://canonical.com.`,
           keyPrefix: "component",
           axis: "framework",
           summary: "Scaffold a React, Svelte, or Lit component.",
+          useWhen: "Scaffolding a new component (React, Svelte, or Lit)",
           noDefault: ["componentPath"],
           examples: [
             {
@@ -584,6 +585,8 @@ Made by the Canonical Webteam — https://canonical.com.`,
         package: {
           key: "package",
           summary: "Scaffold a new npm package for the monorepo.",
+          useWhen:
+            "Scaffolding a new npm package with proper monorepo configuration",
           optIn: ["runInstall"],
           examples: [
             { cmd: "create package --name @canonical/my-lib --type library" },
@@ -602,6 +605,8 @@ Made by the Canonical Webteam — https://canonical.com.`,
         application: {
           key: "application/react",
           summary: "Scaffold a full React application with SSR and routing.",
+          useWhen:
+            "Scaffolding a new React application with SSR, routing, and optional Relay",
           optIn: ["runInstall"],
           withPrefixed: ["ssr", "router", "forms", "relay"],
           examples: [

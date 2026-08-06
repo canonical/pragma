@@ -117,6 +117,7 @@ function deriveNounSurface(
     keyPrefix?: string;
     axis?: string;
     summary: string;
+    useWhen: string;
     examples?: readonly { cmd: string; note?: string }[];
     optIn?: readonly string[];
     withPrefixed?: readonly string[];
@@ -167,6 +168,7 @@ function deriveNounSurface(
       ? { axis, axisValues, keyPrefix }
       : {}),
     summary: declared.summary,
+    useWhen: declared.useWhen,
     examples: declared.examples ?? [],
     prompts,
     ...(pathParam !== undefined ? { pathParam } : {}),

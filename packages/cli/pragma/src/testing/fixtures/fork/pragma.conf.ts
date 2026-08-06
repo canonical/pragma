@@ -30,6 +30,7 @@ export default {
         monorepo: {
           key: "monorepo",
           summary: "Scaffold a Bun + Lerna monorepo with CI and release flow.",
+          useWhen: "Starting a new repository — monorepo shell, CI, release",
           // Both confirms default TRUE upstream, and the CLI grammar has no
           // `--no-` form, so a non-interactive `--yes` run could never turn them
           // off — and both reach outside the scaffold (`git init`, `bun

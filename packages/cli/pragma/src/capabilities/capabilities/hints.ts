@@ -13,7 +13,32 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
+import { CREATE_SURFACE } from "../create/surface.generated.js";
 import type { ToolHint } from "./types.js";
+
+/**
+ * The `create_*` hints, DERIVED from the declared create surface.
+ *
+ * The three that used to sit in the table below were the last hand-written
+ * per-noun entry in the create surface, and they were a trap for a fork: this
+ * table is keyed by LIVE tool name and `capabilities.test.ts` fails a live tool
+ * with no hint, so a fork adding a `create` noun to `pragma.conf.ts` inherited a
+ * red test it did not write. Now the declaration carries `useWhen` beside
+ * `summary`, and a declared noun arrives with its hint.
+ *
+ * `category` is not declared: every `create` verb mutates by construction, and
+ * the drift guard already cross-checks category against the verb's real
+ * `mutates` flag, so deriving it is checked rather than asserted.
+ *
+ * A DATA import — `surface.generated.ts` has no imports of its own — so this
+ * costs the `--help` and `__complete` fast paths nothing.
+ */
+const CREATE_HINTS: Record<string, ToolHint> = Object.fromEntries(
+  Object.entries(CREATE_SURFACE).map(([noun, surface]) => [
+    `create_${noun}`,
+    { category: "write", use_when: surface.useWhen },
+  ]),
+);
 
 /**
  * Behavioural hints keyed by the LIVE tool name (`emitSurface` naming rule:
@@ -175,20 +200,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     use_when:
       "Setting any config field by name — tier, channel, or detail (e.g. `config set tier apps/lxd`)",
   },
-  create_component: {
-    category: "write",
-    use_when: "Scaffolding a new component (React, Svelte, or Lit)",
-  },
-  create_package: {
-    category: "write",
-    use_when:
-      "Scaffolding a new npm package with proper monorepo configuration",
-  },
-  create_application: {
-    category: "write",
-    use_when:
-      "Scaffolding a new React application with SSR, routing, and optional Relay",
-  },
+  ...CREATE_HINTS,
   setup: {
     category: "write",
     use_when: `Installing ${BIN_NAME}'s shell completions, MCP config, skills, and LSP into the environment`,

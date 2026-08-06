@@ -85,6 +85,15 @@ export interface GeneratorNoun {
   readonly keyPrefix?: string;
   readonly axis?: string;
   readonly summary: string;
+  /**
+   * The MCP catalog's `use_when` behavioural hint — CONTENT, like `summary`,
+   * and addressed to a different reader: `summary` tells a human what the verb
+   * does, `useWhen` tells an agent when to reach for it. Declared rather than
+   * hand-written in `capabilities/hints.ts`, because that table is keyed per
+   * tool and `capabilities.test.ts` fails a live tool that has none — so a fork
+   * adding a `create` noun would otherwise add a red test with it.
+   */
+  readonly useWhen: string;
   readonly examples?: readonly {
     readonly cmd: string;
     readonly note?: string;

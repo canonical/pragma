@@ -42,7 +42,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { assertDeclaredGenerators } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
@@ -332,18 +332,26 @@ const FORK_ALIASED = new Set([
  * A `Bun.build` plugin resolving the three generated create modules to the
  * fork's copies.
  *
- * Scoped by BASENAME and by importing directory: only a `*.generated.js`
- * specifier that is one of {@link FORK_ALIASED} and is imported from the create
- * capability is redirected, so `runtime/graphpack/embedded/pack.generated.ts` —
- * a different generated module entirely, and one a fork does not replace here —
- * resolves normally.
+ * Scoped by BASENAME ALONE, and that scope is the CORRECTION TO A MEASURED BUG.
+ * The first version also required the IMPORTER to sit in
+ * `src/capabilities/create/`, on the reasoning that the create surface is read
+ * only from there. It is not: `capabilities/hints.ts` imports
+ * `../create/surface.generated.js` to derive the MCP `use_when` hints, so a fork
+ * build silently handed that one importer the SHIPPED surface. The fork binary
+ * built, type-checked, ran — and reported its own `create_monorepo` as
+ * `category: "read"` with "(no hint authored — see capabilities/hints.ts)",
+ * against a noun that mutates. A HALF-aliased module graph is worse than none,
+ * because nothing fails.
+ *
+ * Safe at that scope because the three basenames are unique in this tree: the
+ * only other generated modules are `pack.generated.ts`,
+ * `pack.index.generated.ts` and `pack.stories.generated.ts` under
+ * `runtime/graphpack/embedded/`, which a fork does not replace here and which no
+ * filter over these three names can reach.
  *
  * @returns The plugin.
  */
 function aliasGeneratedModules(): import("bun").BunPlugin {
-  const createDir = fileURLToPath(
-    new URL("../src/capabilities/create/", scriptsUrl),
-  );
   return {
     name: "fork-generated-create-surface",
     setup(build) {
@@ -351,8 +359,6 @@ function aliasGeneratedModules(): import("bun").BunPlugin {
         const basename = args.path.slice(args.path.lastIndexOf("/") + 1);
         const asSource = basename.replace(/\.js$/, ".ts");
         if (!FORK_ALIASED.has(asSource)) return undefined;
-        if (relative(createDir, dirname(args.importer)) !== "")
-          return undefined;
         return { path: join(TARGET.generatedDir, asSource) };
       });
     },

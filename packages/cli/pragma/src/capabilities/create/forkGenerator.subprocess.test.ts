@@ -41,7 +41,6 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cliDir = resolve(here, "../../..");
-const forkConfDir = join(cliDir, "src/testing/fixtures/fork");
 const forkBin = join(cliDir, "dist/pragma-fork");
 const shippedBin = join(cliDir, "dist/pragma");
 
@@ -142,6 +141,31 @@ describe("a fork declares its own create surface (PROTECTED)", () => {
     });
     expect(listsNoun(help, FORK_NOUN), "shipped must not carry it").toBe(false);
     for (const noun of SHIPPED_NOUNS) expect(listsNoun(help, noun)).toBe(true);
+  }, 60_000);
+
+  it("the fork's noun reaches the MCP catalog with its DECLARED hint", () => {
+    // This case exists because the bug it pins actually shipped for one build.
+    // `capabilities/hints.ts` derives the `create_*` hints from the surface
+    // module, and it imports it from OUTSIDE `capabilities/create/` — so a fork
+    // alias scoped by importing directory handed that one importer the SHIPPED
+    // surface. The fork binary built, type-checked and ran while reporting its
+    // own mutating noun as `category: "read"` with "(no hint authored)". A
+    // half-aliased module graph fails nothing, so it has to be asserted.
+    const raw = execFileSync(forkBin, ["capabilities", "--format", "json"], {
+      encoding: "utf-8",
+    });
+    const found = [
+      ...raw.matchAll(/\{[^{}]*"name":"create_[a-z]+"[^{}]*\}/g),
+    ].map((match) => JSON.parse(match.at(0) ?? "{}") as Record<string, string>);
+    expect(found.map((tool) => tool.name)).toEqual([`create_${FORK_NOUN}`]);
+    // `category` is DERIVED (every create verb mutates) and cross-checked
+    // against the verb's real `mutates` flag by the catalog's own drift guard.
+    expect(found.at(0)?.category).toBe("write");
+    // `use_when` is DECLARED, and the fixture's wording appears nowhere in this
+    // distribution's conf — so reading it back is evidence the fork's
+    // declaration reached the binary, not the shipped one.
+    expect(found.at(0)?.use_when).toContain("monorepo shell");
+    expect(raw).not.toContain("no hint authored");
   }, 60_000);
 
   for (const format of FORMATS) {

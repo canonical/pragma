@@ -231,7 +231,7 @@ describe("legacy config shapes — loud rename/removal errors", () => {
     // project declaring it must be accepted (not an error) and must not reach
     // the effective config — the identity-field precedent exactly.
     const dir = projectWith(
-      'export default { generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0", nouns: { gen: { key: "gen", summary: "Scaffold a thing." } } }] };',
+      'export default { generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0", nouns: { gen: { key: "gen", summary: "Scaffold a thing.", useWhen: "Scaffolding a thing" } } }] };',
     );
     const layer = await evaluateProjectConfig(join(dir, "pragma.config.ts"));
     expect(layer).toHaveProperty("generators");
@@ -243,7 +243,7 @@ describe("legacy config shapes — loud rename/removal errors", () => {
   it("a global JSON declaring `generators` is accepted the same way", () => {
     freshXdg();
     writeGlobal(
-      '{"generators": [{"name": "@acme/gen", "source": "npm:@acme/gen@^1.0.0", "nouns": {"gen": {"key": "gen", "summary": "Scaffold a thing."}}}]}',
+      '{"generators": [{"name": "@acme/gen", "source": "npm:@acme/gen@^1.0.0", "nouns": {"gen": {"key": "gen", "summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
     );
     expect(readGlobalConfig().values).toHaveProperty("generators");
   });
@@ -251,7 +251,7 @@ describe("legacy config shapes — loud rename/removal errors", () => {
   it("a `generators` noun declaring neither a key nor an axis is a CONFIG_ERROR", () => {
     freshXdg();
     writeGlobal(
-      '{"generators": [{"name": "@acme/gen", "source": "npm:@acme/gen@^1.0.0", "nouns": {"gen": {"summary": "Scaffold a thing."}}}]}',
+      '{"generators": [{"name": "@acme/gen", "source": "npm:@acme/gen@^1.0.0", "nouns": {"gen": {"summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
     );
     expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|generators|key/);
   });

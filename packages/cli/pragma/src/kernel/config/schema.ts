@@ -46,6 +46,7 @@ const generatorNounSchema = z
     keyPrefix: z.string().min(1).optional(),
     axis: z.string().min(1).optional(),
     summary: z.string().min(1),
+    useWhen: z.string().min(1),
     examples: z
       .array(z.object({ cmd: z.string().min(1), note: z.string().optional() }))
       .optional(),

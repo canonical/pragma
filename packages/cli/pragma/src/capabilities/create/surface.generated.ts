@@ -17,6 +17,7 @@ export const CREATE_SURFACE = {
     ],
     "keyPrefix": "component",
     "summary": "Scaffold a React, Svelte, or Lit component.",
+    "useWhen": "Scaffolding a new component (React, Svelte, or Lit)",
     "examples": [
       {
         "cmd": "create component src/components/Button --framework react",
@@ -65,6 +66,7 @@ export const CREATE_SURFACE = {
     "package": "@canonical/summon-package",
     "key": "package",
     "summary": "Scaffold a new npm package for the monorepo.",
+    "useWhen": "Scaffolding a new npm package with proper monorepo configuration",
     "examples": [
       {
         "cmd": "create package --name @canonical/my-lib --type library"
@@ -147,6 +149,7 @@ export const CREATE_SURFACE = {
     "package": "@canonical/summon-application",
     "key": "application/react",
     "summary": "Scaffold a full React application with SSR and routing.",
+    "useWhen": "Scaffolding a new React application with SSR, routing, and optional Relay",
     "examples": [
       {
         "cmd": "create application my-app"
