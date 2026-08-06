@@ -115,8 +115,9 @@ Creates:
 
 ```
 packages/my-lib/
-├── package.json      # type: module, main: dist/esm/index.js
-├── tsconfig.json     # extends workspace config, outDir: dist
+├── package.json         # type: module, main: dist/esm/index.js
+├── tsconfig.json        # extends workspace config
+├── tsconfig.build.json  # emit: dist/esm (JS) + dist/types (declarations)
 ├── biome.json
 ├── README.md
 └── src/
@@ -131,14 +132,21 @@ Example package.json:
   "version": "0.1.0",
   "type": "module",
   "main": "dist/esm/index.js",
-  "types": "dist/esm/index.d.ts",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
   "license": "LGPL-3.0",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "check": "biome check .",
     "check:fix": "biome check --write ."
   },
-  "files": ["dist", "README.md"]
+  "files": ["dist"]
 }
 ```
 

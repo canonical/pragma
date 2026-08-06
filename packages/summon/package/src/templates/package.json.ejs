@@ -9,8 +9,15 @@
 <% } else if (type === 'css') { -%>
   "module": "src/index.css",
 <% } else { -%>
+  "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
 <% } -%>
 <% if (withCli && type !== 'css') { -%>
   "bin": {
@@ -74,11 +81,11 @@
 <% if (type !== 'css') { -%>
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^<%= monorepoVersion || '0.1.0' %>",
+    "@canonical/biome-config": "^<%= canonicalVersion %>",
 <% if (withReact) { -%>
-    "@canonical/typescript-config-react": "^<%= monorepoVersion || '0.1.0' %>",
+    "@canonical/typescript-config-react": "^<%= canonicalVersion %>",
 <% } else { -%>
-    "@canonical/typescript-config": "^<%= monorepoVersion || '0.1.0' %>",
+    "@canonical/typescript-config": "^<%= canonicalVersion %>",
 <% } -%>
 <% if (withStorybook) { -%>
     "@chromatic-com/storybook": "^5.0.0",
@@ -96,7 +103,7 @@
   },
   "dependencies": {
 <% if (withStorybook) { -%>
-    "@canonical/storybook-config": "^<%= monorepoVersion || '0.1.0' %>",
+    "@canonical/storybook-config": "^<%= canonicalVersion %>",
 <% } -%>
 <% if (withReact) { -%>
     "react": "^19.0.0",
@@ -106,7 +113,7 @@
 <% } else { -%>
   "devDependencies": {
     "@biomejs/biome": "2.4.6",
-    "@canonical/biome-config": "^<%= monorepoVersion || '0.1.0' %>"
+    "@canonical/biome-config": "^<%= canonicalVersion %>"
   }
 <% } -%>
 }
