@@ -15,10 +15,20 @@
  * (cs:code.constants.file / cs:code.types.file) — the same split
  * `kernel/packs/storyOrigin.ts` records for the story-origin constructor. There
  * is no erasability constraint here as there is next door: `manifest.ts` value-
- * imports all five, so they were never erasable and moving them is neutral for
- * every fast-path graph. Confirmed after the move: `capabilities/lazy.test.ts`
- * and `kernel/completion/safety.test.ts` pass with every exact enumeration
- * byte-identical.
+ * imports all five, so they were never erasable.
+ *
+ * The move is neutral for COST and NOT for GRAPH SIZE, and the two are worth
+ * keeping apart because three docblocks in this tree quote graph size as their
+ * unit. Cost: this file has ZERO import statements, so a fast path that reaches
+ * it evaluates five string literals and pulls nothing new — `manifest.ts`
+ * already value-imported all five. Size: it is a new node, and it arrives on
+ * both fast-path graphs that reach `manifest.ts` — `capabilities/index.ts`
+ * gained it, and `kernel/completion/complete.ts` went 22 files to 23 with this
+ * file as the single addition. Update the counts in
+ * `kernel/completion/safety.test.ts` and `kernel/config/schema.ts` if this file
+ * moves again. Confirmed after the move: `capabilities/lazy.test.ts` and
+ * `kernel/completion/safety.test.ts` pass with every exact ENUMERATION
+ * byte-identical — those pin file lists, not sizes.
  */
 
 /** The n-quads store dump — ke boots it via `createStore({ cache })`. */

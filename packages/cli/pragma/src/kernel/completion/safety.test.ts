@@ -345,23 +345,34 @@ describe("storeless guarantee (PROTECTED)", () => {
    * `capabilities/meta/complete.verb.ts` was a `hidden: true` spec `bin.ts`
    * intercepted before `buildProgram` ever ran. Both are gone.
    *
+   * THE INVARIANT, which is what this paragraph is for: every file the two
+   * deleted roots reached is still reached, modulo renames. The counts below
+   * are evidence for it, not the claim itself — they move whenever any file in
+   * the graph is split or renamed, and they have already moved once inside this
+   * lane, so re-measure before trusting them.
+   *
    * Measured with a byte-identical copy of `staticImportGraph` run over the
-   * lane base and over this tree: the OLD four roots walked 29 files, the NEW
-   * five walk 28, and the set difference is exact in both directions — the
-   * only files that left coverage are `completion/index.ts` and
-   * `capabilities/meta/complete.verb.ts` (the two deleted roots themselves),
-   * and the only file added is `bin.ts`. So no third file stopped being
-   * walked. The two deleted roots reached 27 distinct files other than
-   * themselves (the barrel's graph minus itself is 27, the meta verb's is 8,
-   * 7 shared), and all 27 are still walked.
+   * lane base and over this tree: the OLD four roots walked 29 files and the
+   * NEW five walk 29. Three files left the graph and three arrived. LEFT:
+   * `kernel/completion/index.ts` and `capabilities/meta/complete.verb.ts` (the
+   * two deleted roots themselves), plus `capabilities/skill/discover.ts`, which
+   * left by RENAME — it is `kernel/skills/discover.ts` now and is still walked.
+   * ARRIVED: `bin.ts`, `kernel/skills/discover.ts` (the same file under its new
+   * path) and `kernel/runtime/graphpack/constants.ts` (split out of that
+   * directory's `types.ts`; import-free, so it adds a node and no cost). The
+   * two deleted roots reached 27 distinct files other than themselves (the
+   * barrel's graph minus itself is 27, the meta verb's is 8, 7 shared); 26 are
+   * still walked under the same path and the 27th is the renamed one, so no
+   * file stopped being covered.
    *
    * `entitySource` and `model` are ALREADY subsumed: `complete` + `emitScripts`
-   * alone union to the same 27, so those two roots constrain nothing beyond
+   * alone union to 28 of the 29, so those two roots constrain nothing beyond
    * what the first two do and are named for legibility — a reader looking for
    * "is the entity source storeless?" finds it as a root. `bin.ts` is the one
-   * root that adds a file, and it adds exactly itself. So this is not MORE
-   * coverage; it is the identical file set reached through roots that each
-   * name a path a reader would look for.
+   * root that adds a file, and it adds exactly itself (five-minus-two is
+   * `{bin.ts}` and two-minus-five is empty). So this is not MORE coverage; it
+   * is the identical file set reached through roots that each name a path a
+   * reader would look for.
    *
    * `staticImportGraph` returns an EMPTY set for a path that does not exist,
    * which is why a deleted entry must be replaced rather than removed: a stale

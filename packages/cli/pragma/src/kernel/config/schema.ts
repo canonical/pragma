@@ -41,7 +41,7 @@
  * That sentence was wrong for one round and the correction is the point: the
  * empty set was held over `capabilities/index.ts` ALONE — 129 files — while the
  * two surfaces it named are different graphs (`buildProgram.ts` walks 27 files,
- * 16 of them not on the capabilities/index graph; `completion/complete.ts` 22,
+ * 16 of them not on the capabilities/index graph; `completion/complete.ts` 23,
  * 6 not) guarded by named-module checks listing 2 of these 5 seams and 1 of
  * them. A guard that overclaims is worse than none, so the guards were widened
  * to match the claim rather than the claim narrowed.
