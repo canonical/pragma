@@ -3,7 +3,18 @@
   "description": "Package generator for Summon - scaffold new npm packages with proper configuration",
   "version": "0.33.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -21,7 +32,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts src dist/esm",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
@@ -36,6 +47,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.9",
     "@canonical/biome-config": "^0.33.0",
+    "@canonical/summon-core": "^0.33.0",
+    "@canonical/task": "^0.33.0",
     "@canonical/typescript-config": "^0.33.0",
     "@canonical/webarchitect": "^0.33.0",
     "@types/bun": "^1.3.10",

@@ -3,7 +3,18 @@
   "description": "Monorepo generator for Summon - scaffold new Bun + Lerna monorepos with CI, release, and shared config",
   "version": "0.33.0",
   "type": "module",
-  "main": "src/index.ts",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "author": {
     "email": "webteam@canonical.com",
     "name": "Canonical Webteam"
@@ -21,7 +32,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "echo 'No build needed - runs directly from TypeScript'",
+    "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts src dist/esm",
     "build:all": "bun run build",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
