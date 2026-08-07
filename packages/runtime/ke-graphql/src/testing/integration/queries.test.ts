@@ -248,6 +248,47 @@ describe("ds-realistic resolution", () => {
     expect(result.data?.entity).toEqual({ __typename: "Component" });
   });
 
+  it("resolves a PUNNED IRI ABox-first — the ordering, not just the fallthrough", async () => {
+    // The test above queries two DISJOINT ids: exactly one branch can answer
+    // each, so branch ORDER is unobservable and a TBox-first mutant passes.
+    // OWL 2 punning makes one IRI answerable by BOTH branches, which is the
+    // only input that can falsify "ABox first, TBox second — strictly
+    // additive": ex:Widget is a class AND an individual of ex:Category.
+    const compiled = await setup(`
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Category a owl:Class ; rdfs:label "Category" .
+ex:Widget a owl:Class , ex:Category ; rdfs:label "Widget" .
+ex:code a owl:DatatypeProperty ; rdfs:domain ex:Category ; rdfs:range xsd:string .
+
+ex:Widget ex:code "W-1" .
+ex:w1 a ex:Widget .
+ex:c1 a ex:Category .
+`);
+    const result = await run(
+      compiled,
+      `{
+        punned: node(id: "http://example.org/Widget") {
+          __typename
+          ... on Category { code }
+          ... on OntologyClass { instanceCount }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    // The ABox branch answers first: the entity shape wins, carrying the
+    // ontology's own field. Hoisting the TBox lookup above the loader would
+    // return __typename "OntologyClass" with instanceCount instead — the
+    // regression this pins, and the one every disjoint-id test misses.
+    expect(result.data?.punned).toEqual({
+      __typename: "Category",
+      code: "W-1",
+    });
+  });
+
   it("a junk singular-lookup argument cannot poison sibling lookups in the same tick", async () => {
     // Both lookups resolve in one tick, so they share one loader batch. The
     // colon-free argument expands to nothing and must resolve to null WITHOUT

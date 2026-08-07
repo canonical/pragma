@@ -1781,6 +1781,37 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     // config only — the existing path is untouched
     expect(fields?.get("c")?.nonNull).toBe(true);
   });
+
+  it("keeps the nonNull merge an OR: an explicit false does not veto the config", () => {
+    // The one case that tells an OR apart from `annotation ?? config`. Both
+    // sources only ever PROMOTE, so no A005 contradiction is expressible
+    // here: a field the consumer lists stays non-null even when the ontology
+    // says false, and the same annotation alone leaves the field nullable.
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [
+        datatypeProp("listed", { domains: [uri("Widget")] }),
+        datatypeProp("unlisted", { domains: [uri("Widget")] }),
+      ],
+      graphqlAnnotations: [
+        [uri("listed"), GRAPHQL_TERMS.nonNull, "false", "literal"],
+        [uri("unlisted"), GRAPHQL_TERMS.nonNull, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir, {
+      nonNullOverrides: { Widget: ["listed"] },
+    });
+    const fields = output.types.get("Widget")?.fields;
+    // annotation false OR config listing → non-null (`??` would give false)
+    expect(fields?.get("listed")?.nonNull).toBe(true);
+    expect(fields?.get("listed")?.nullable).toBe(false);
+    // annotation false alone → the heuristic nullable default stands
+    expect(fields?.get("unlisted")?.nonNull).toBe(false);
+    expect(fields?.get("unlisted")?.nullable).toBe(true);
+    // ...and promotion-only means the disagreement is not a shadow (A005).
+    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
+  });
 });
 
 describe("map — mode explicit corners", () => {

@@ -696,6 +696,31 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(output.classes.get(uri("Embed"))?.embeddable).toBe(true);
   });
 
+  it("lets graphql:embeddable false override a heuristic-true class", () => {
+    // Only the promoting direction was pinned. The overriding direction is
+    // the one that matters: blank-node-only instances make the heuristic say
+    // embeddable, and the ontology overrules it — the class keeps `uri` and
+    // its root queries instead of collapsing to an embedded shape.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Blank"), superclasses: [] },
+        { uri: uri("Control"), superclasses: [] },
+      ],
+      instanceStats: new Map([
+        [uri("Blank"), { total: 2, named: 0 }],
+        [uri("Control"), { total: 2, named: 0 }],
+      ]),
+      graphqlAnnotations: [
+        [uri("Blank"), GRAPHQL_TERMS.embeddable, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(output.classes.get(uri("Blank"))?.embeddable).toBe(false);
+    // The unannotated twin proves the heuristic really did say true.
+    expect(output.classes.get(uri("Control"))?.embeddable).toBe(true);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
   it("keeps config ahead of the annotation for abstract/embeddable (A005 names the shadow)", () => {
     const extraction = makeExtraction({
       classes: [{ uri: uri("Thing"), superclasses: [] }],
