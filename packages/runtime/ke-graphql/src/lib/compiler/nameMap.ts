@@ -68,17 +68,26 @@ export const stripVerbPrefix = (name: string): string => {
 };
 
 /**
- * Make a string a legal GraphQL name: [_a-zA-Z][_a-zA-Z0-9]*.
+ * Make a string a legal GraphQL name: [_a-zA-Z][_a-zA-Z0-9]*, excluding the
+ * introspection-reserved "__" prefix.
  * Invalid characters (dots, dashes, unicode) become underscores; a leading
- * digit gets an underscore prefix; an empty result becomes "_". Callers emit
- * a diagnostic when the result differs from the input.
+ * digit gets an underscore prefix; an empty result becomes "_"; a leading
+ * underscore RUN collapses to one, because `__typename` is lexically legal
+ * and only `validateSchema` rejects it. Callers emit a diagnostic when the
+ * result differs from the input.
  */
 export const sanitizeGraphQLName = (name: string): string => {
   const cleaned = name.replace(/[^_a-zA-Z0-9]/g, "_");
   if (cleaned.length === 0) {
     return "_";
   }
-  return /^[_a-zA-Z]/.test(cleaned) ? cleaned : `_${cleaned}`;
+  const legal = /^[_a-zA-Z]/.test(cleaned) ? cleaned : `_${cleaned}`;
+  // GraphQL reserves the leading "__" for introspection. Such a name is
+  // lexically legal, so type construction succeeds and `validateSchema`
+  // rejects it later with a C003 that names neither the term nor its IRI —
+  // the leading underscore run collapses to one so the caller's M002 reports
+  // the rename against the source that asked for it.
+  return legal.replace(/^__+/, "_");
 };
 
 /**

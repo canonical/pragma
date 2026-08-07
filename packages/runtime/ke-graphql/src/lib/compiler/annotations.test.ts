@@ -133,6 +133,53 @@ describe("annotations — A001 conflicts (never tiebroken)", () => {
     expect(output.classes.get(uri("Thing"))?.name).toBeUndefined();
   });
 
+  it("treats agreeing xsd:boolean lexicals as one assertion, not a conflict", () => {
+    // xsd:boolean has four lexicals for two values, and extraction dedupes on
+    // the raw lexical — so `true` and "1" arrive as two rows for one fact.
+    // R-9 scopes A001 to sources that DISAGREE; there is nothing to pick here.
+    const { output, diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.nonNull, "1", "literal"],
+      [uri("name"), GRAPHQL_TERMS.nonNull, "true", "literal"],
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(output.properties.get(uri("name"))?.nonNull).toBe(true);
+  });
+
+  it("treats agreeing false lexicals as one assertion", () => {
+    const { output, diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.singular, "0", "literal"],
+      [uri("name"), GRAPHQL_TERMS.singular, "false", "literal"],
+    ]);
+    expect(diagnostics).toEqual([]);
+    expect(output.properties.get(uri("name"))?.singular).toBe(false);
+  });
+
+  it("still refuses boolean lexicals that genuinely disagree", () => {
+    const { output, diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.singular, "0", "literal"],
+      [uri("name"), GRAPHQL_TERMS.singular, "true", "literal"],
+    ]);
+    const a001 = diagnostics.find((d) => d.code === "A001");
+    expect(a001?.severity).toBe("error");
+    expect(a001?.message).toContain('"0"');
+    expect(a001?.message).toContain('"true"');
+    expect(output.properties.get(uri("name"))?.singular).toBeUndefined();
+  });
+
+  it("does not merge an IRI onto an agreeing boolean lexical", () => {
+    // Normalization is scoped to LITERAL rows: an IRI whose string happens to
+    // read "true" is a value-kind error (A003 via A001's report), never a
+    // second spelling of the boolean.
+    const { diagnostics } = resolve([
+      [uri("name"), GRAPHQL_TERMS.singular, "true", "iri"],
+      [uri("name"), GRAPHQL_TERMS.singular, "true", "literal"],
+    ]);
+    const a001 = diagnostics.find((d) => d.code === "A001");
+    expect(a001?.severity).toBe("error");
+    expect(a001?.message).toContain("<true>");
+    expect(a001?.message).toContain('"true"');
+  });
+
   it("renders an IRI-vs-literal conflict with both spellings", () => {
     const { diagnostics } = resolve([
       [uri("Thing"), GRAPHQL_TERMS.titleFrom, uri("a"), "iri"],
@@ -321,6 +368,20 @@ describe("annotations — A003 values", () => {
     const a003 = diagnostics.find((d) => d.code === "A003");
     expect(a003?.message).toContain("needs a string literal");
     expect(output.prefixes.size).toBe(0);
+  });
+
+  it("rejects an empty graphql:prefix instead of binding it", () => {
+    // "" is falsy: binding it would key NamespaceInfo (and every node's
+    // `namespace`) on the empty string, which `??` cannot tell from unset.
+    // The namespace must fall back to its registered/synthetic prefix.
+    const { output, diagnostics } = resolve([
+      [NS, GRAPHQL_TERMS.prefix, "", "literal"],
+    ]);
+    const a003 = diagnostics.find((d) => d.code === "A003");
+    expect(a003?.severity).toBe("error");
+    expect(a003?.source).toBe(NS);
+    expect(a003?.message).toContain("empty string");
+    expect(output.prefixes.has(NS)).toBe(false);
   });
 });
 

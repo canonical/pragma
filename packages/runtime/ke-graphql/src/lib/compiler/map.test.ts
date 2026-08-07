@@ -1637,6 +1637,36 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     expect(output.types.get("My_Item")?.fields.has("bad_name")).toBe(true);
   });
 
+  it("renames an annotated name claiming the introspection-reserved prefix", () => {
+    // "__typename"/"__Widget" are LEXICALLY legal, so without the reserved
+    // check they construct fine and die in validateSchema as a C003 naming
+    // neither graphql:name nor the OWL IRI. M002 must catch them here.
+    const ir = buildIR({
+      classes: [{ uri: uri("Widget"), superclasses: [] }],
+      instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
+      properties: [datatypeProp("note", { domains: [uri("Widget")] })],
+      graphqlAnnotations: [
+        [uri("Widget"), GRAPHQL_TERMS.name, "__Widget", "literal"],
+        [uri("note"), GRAPHQL_TERMS.name, "__typename", "literal"],
+      ],
+    });
+    const { output, diagnostics } = map(ir);
+    const m002 = diagnostics.filter((d) => d.code === "M002");
+    expect(m002).toHaveLength(2);
+    // Both diagnostics name the source that asked for the illegal name.
+    expect(
+      m002.some(
+        (d) =>
+          d.message.includes('graphql:name "__typename"') &&
+          d.source === uri("note"),
+      ),
+    ).toBe(true);
+    expect(m002.some((d) => d.source === uri("Widget"))).toBe(true);
+    // ...and the emitted names carry no reserved prefix.
+    expect(output.types.has("_Widget")).toBe(true);
+    expect(output.types.get("_Widget")?.fields.has("_typename")).toBe(true);
+  });
+
   it("promotes graphql:nonNull and OR-merges it with the config list", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Widget"), superclasses: [] }],

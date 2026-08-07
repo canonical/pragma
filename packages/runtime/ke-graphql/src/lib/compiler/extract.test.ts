@@ -423,6 +423,38 @@ ex:Thing a owl:Class .
     expect(e001Sources).not.toContain("https://dup.test/ontology#");
   });
 
+  it("treats an empty graphql:prefix as no declaration at all", async () => {
+    // "" is falsy: taking it would discard the REGISTERED prefix and then
+    // trip the synthetic fallback, so Pass 1 skips it entirely and the
+    // namespace resolves exactly as if the assertion were absent. Pass 2
+    // reports the malformed value (A003).
+    const { output, diagnostics } = await extractTtl(`
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+@prefix ex: <http://example.org/> .
+
+ex:Thing a owl:Class .
+<http://example.org/> graphql:prefix "" .
+
+<https://bare.test/Widget> a owl:Class .
+<https://bare.test/> graphql:prefix "" .
+`);
+    // registered prefix kept, not replaced by ""
+    expect(output.namespaces.get(EX)).toBe("ex");
+    // unregistered namespace still gets its synthetic prefix + the warning
+    expect(output.namespaces.get("https://bare.test/")?.startsWith("ns")).toBe(
+      true,
+    );
+    expect([...output.namespaces.values()]).not.toContain("");
+    expect(
+      diagnostics.some(
+        (d) =>
+          d.source === "https://bare.test/" &&
+          d.message.includes("no registered prefix"),
+      ),
+    ).toBe(true);
+  });
+
   it("dedupes identical assertions and drops rows without a stable identity", async () => {
     const query = router([
       [

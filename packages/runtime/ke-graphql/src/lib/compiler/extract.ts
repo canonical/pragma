@@ -339,7 +339,12 @@ export default async function extract(
   const declaredPrefixes = new Map<string, string>();
   const conflictedPrefixes = new Set<string>();
   for (const [target, term, value, kind] of graphqlAnnotations) {
-    if (term !== GRAPHQL_TERMS.prefix || kind !== "literal") {
+    // An EMPTY declaration is not a declaration: "" would both discard the
+    // registered prefix and then trip the `!prefix` synthetic fallback below,
+    // so it is skipped here and the namespace resolves exactly as if the
+    // assertion were absent. Pass 2 reports it (A003) — the two passes tell
+    // one story about the malformed value.
+    if (term !== GRAPHQL_TERMS.prefix || kind !== "literal" || value === "") {
       continue;
     }
     const ns = [target, `${target}#`, `${target}/`].find((candidate) =>
