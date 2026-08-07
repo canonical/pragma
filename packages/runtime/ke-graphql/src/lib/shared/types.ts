@@ -255,7 +255,15 @@ export interface NamespaceInfo {
 /** A class in the typed ontology IR (Pass 2 output). */
 export interface ClassNode {
   uri: string;
+  /** Display label, TOTAL: the asserted rdfs:label, else the IRI local name. */
   label: string;
+  /**
+   * The ASSERTED rdfs:label alone — absent when the ontology asserts none, so
+   * `label`'s local-name fallback stays recoverable. R-6 scopes `_meta.label`
+   * to what a curator wrote; `_meta.title` is the total alternative, which is
+   * why one is nullable and the other is not.
+   */
+  assertedLabel?: string;
   definition?: string;
   /** Namespace prefix ('ds', 'cs', 'anatomy', …). */
   namespace: string;

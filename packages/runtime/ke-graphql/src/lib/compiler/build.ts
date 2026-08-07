@@ -204,6 +204,7 @@ export default function build(
     classes.set(raw.uri, {
       uri: raw.uri,
       label: raw.label ?? getLocalName(raw.uri),
+      assertedLabel: raw.label,
       definition: raw.definition,
       namespace: getPrefix(raw.uri),
       superclasses: raw.superclasses,

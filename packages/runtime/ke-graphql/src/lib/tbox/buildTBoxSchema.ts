@@ -111,12 +111,14 @@ interface DescriptiveChains {
 }
 
 /**
- * The chains used when a parent's typename is not a concrete mapped type.
- * `EntityValue.typename` can carry an INTERFACE name (resolveEmbeddedTypename
+ * The chains used when a parent's typename resolves to no compiled class at
+ * all — the reserved TBox typenames ("OntologyClass") and the defensive
+ * arms. Every name that DOES resolve, concrete type or interface, gets its
+ * own chain below: an interface name is reachable (resolveEmbeddedTypename
  * maps a blank node's rdf:type through the global name map, which also holds
- * abstract classes), and mapped.types is keyed by concrete types only. The
- * canonical tier is still exactly right there; only the class-specific
- * local-name tier is unknowable.
+ * abstract classes), and its owlUri is knowable, so dropping the annotated
+ * head there would silently break "annotate a root class to cover its tree"
+ * for exactly the values that need it most.
  */
 const FALLBACK_CHAINS: DescriptiveChains = {
   title: LABEL_UNIVERSAL,
@@ -189,8 +191,18 @@ export default function buildTBoxSchema(
     chain: readonly string[],
   ): readonly string[] => (head ? [...new Set([head, ...chain])] : chain);
 
+  // Interfaces are chained alongside concrete types: an embedded blank node
+  // typed only as an abstract class carries that INTERFACE name on its
+  // EntityValue, and the embedded path applies no abstractness filter (only
+  // the named-entity loader does). Its declared field type is concrete, so
+  // graphql-js never runs resolveType to catch it — the value is served, and
+  // without a chain of its own it would lose the tree's annotated heads while
+  // `_meta.type` on the same parent happily resolved the class.
   const chainsByType = new Map<string, DescriptiveChains>();
-  for (const type of mapped.types.values()) {
+  for (const type of [
+    ...mapped.types.values(),
+    ...mapped.interfaces.values(),
+  ]) {
     const label = headed(
       selectAnnotatedSource(type.owlUri, ir, "labelFrom"),
       selectDescriptivePredicates(
@@ -265,7 +277,14 @@ export default function buildTBoxSchema(
   const tboxMetaParents = new WeakSet<EntityValue>();
   const classNodeEntityValue = (node: ClassNode): EntityValue => {
     const triples: TripleSet = new Map();
-    triples.set(RDFS_LABEL, [{ kind: "literal", value: node.label }]);
+    // ASSERTED label only, exactly like the definition line below. ClassNode
+    // .label carries a local-name fallback for display; minting it as a
+    // triple would report every unlabelled class as curator-labelled and
+    // collapse the label/title distinction the nullability exists to draw.
+    // `title` stays total — it falls through to the IRI local name itself.
+    if (node.assertedLabel !== undefined) {
+      triples.set(RDFS_LABEL, [{ kind: "literal", value: node.assertedLabel }]);
+    }
     if (node.definition !== undefined) {
       triples.set(SKOS_DEFINITION, [
         { kind: "literal", value: node.definition },
