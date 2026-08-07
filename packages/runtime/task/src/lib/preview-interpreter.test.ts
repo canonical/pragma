@@ -326,6 +326,33 @@ describe("runPreview — the write overlay", () => {
     ).rejects.toMatchObject({ taskError: { code: "FILE_NOT_FOUND" } });
   });
 
+  it("copyDirectory of a REAL file source copies the file, not a directory", async () => {
+    // `fs.cp` copies a file source as a file whether or not the plan wrote it.
+    // Modelling a real file as a planned DIRECTORY made the read below fail
+    // where the run succeeds — the one case the planned-file branch missed.
+    const root = tempRoot();
+    writeFileSync(join(root, "on-disk.txt"), "from disk");
+    const task = gen(function* () {
+      yield* $(
+        copyDirectory(join(root, "on-disk.txt"), join(root, "copy.txt")),
+      );
+      return yield* $(readFile(join(root, "copy.txt")));
+    });
+    expect((await runPreview(task)).value).toBe("from disk");
+  });
+
+  it("copyDirectory of a PLANNED directory source stays a directory", async () => {
+    // The plan's own directory is not on disk, so it must not be re-read to
+    // classify it — the source-kind question is already answered.
+    const root = tempRoot();
+    const task = gen(function* () {
+      yield* $(mkdir(join(root, "planned")));
+      yield* $(copyDirectory(join(root, "planned"), join(root, "dst")));
+      return yield* $(exists(join(root, "dst")));
+    });
+    expect((await runPreview(task)).value).toBe(true);
+  });
+
   it("a planned delete tombstones the file for reads and exists", async () => {
     const root = tempRoot();
     const target = join(root, "victim.txt");

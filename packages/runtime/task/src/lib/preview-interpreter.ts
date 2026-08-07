@@ -57,8 +57,10 @@
  *
  * Known modelling limits, beyond Exec (all documented deliberately —
  * each is a read-only approximation, never a write):
- * - `CopyDirectory` records the destination directory but does not enumerate
- *   the copied children into the overlay.
+ * - `CopyDirectory` of a DIRECTORY records the destination directory but does
+ *   not enumerate the copied children into the overlay. A FILE source — one
+ *   the plan wrote or one already on disk — is copied as a file, because that
+ *   is what `fs.cp` does with it.
  * - `DeleteDirectory { onlyIfEmpty: true }` is recorded with no overlay
  *   change: the real effect only removes a directory the task itself emptied,
  *   and silently skips every other case.
@@ -257,6 +259,23 @@ export const runPreview = async <A>(
     }
   };
 
+  /**
+   * The authored path's disk content when it is a readable FILE, `undefined`
+   * otherwise. Unlike {@link readCurrent} a failed read is an ANSWER, not a
+   * failure: the caller is asking which of file-or-directory the path is, has
+   * no stat effect to ask with, and treats "not provably a file" as a
+   * directory — the same degradation a previewed `Symlink` makes of an
+   * unreadable target. Nothing here can fail a preview that would otherwise
+   * succeed: the answer only decides which KIND is recorded in the overlay.
+   */
+  const readIfFile = async (authored: string): Promise<string | undefined> => {
+    try {
+      return (await real({ _tag: "ReadFile", path: authored })) as string;
+    } catch {
+      return undefined;
+    }
+  };
+
   // Resolve one leaf effect against the overlay + the real filesystem. The
   // structural Parallel/Race tags are excluded by type: resolvePreview has
   // already routed them, so this switch is exhaustive over the leaves.
@@ -335,14 +354,28 @@ export const runPreview = async <A>(
 
       case "CopyDirectory": {
         const sourceKey = key(effect.source);
-        const asFile = overlay.files.get(sourceKey);
-        if (asFile !== undefined) {
+        const planned = overlay.files.get(sourceKey);
+        if (planned !== undefined) {
           // `fs.cp` copies a file source as a file.
-          overlay.putFile(key(effect.dest), asFile);
+          overlay.putFile(key(effect.dest), planned);
           return undefined;
         }
         if (!(await previewExists(effect.source))) {
           throw enoent("lstat", sourceKey);
+        }
+        // The source is not a planned file, so it is whatever is on disk — and
+        // `fs.cp` copies a FILE source as a file, not as a directory. With no
+        // stat effect to ask, reading is how the two are told apart: a read
+        // that fails is the answer "not a file". Calling a real file a planned
+        // directory would make a later `ReadFile(dest)` in the same plan fail
+        // where the run succeeds. A directory the PLAN made is known already,
+        // and is not re-read against a disk that does not have it yet.
+        if (!overlay.dirs.has(sourceKey)) {
+          const onDisk = await readIfFile(effect.source);
+          if (onDisk !== undefined) {
+            overlay.putFile(key(effect.dest), onDisk);
+            return undefined;
+          }
         }
         overlay.putDir(key(effect.dest));
         return undefined;
