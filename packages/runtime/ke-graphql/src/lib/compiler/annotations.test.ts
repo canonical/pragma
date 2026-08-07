@@ -1,9 +1,10 @@
 // =============================================================================
 // Annotation resolution unit tests: the A-band taxonomy (A001 conflicts,
 // A002 targets, A003 values, A004 recognition/applicability, A005 config
-// shadowing), the prefix path (namespace re-keying, injectivity), and the
-// overlay application of every v1 term. Crafted RawExtractions, rows in the
-// (target, term, kind, value) order the extractor guarantees.
+// shadowing), the prefix path (namespace re-keying, value validation), and
+// the overlay application of every v1 term. Crafted RawExtractions, rows in
+// the (target, term, kind, value) order the extractor guarantees. The
+// effective-map injectivity guard lives in build.ts and is tested there.
 // =============================================================================
 
 import { describe, expect, it } from "vitest";
@@ -224,37 +225,6 @@ describe("annotations — A001 conflicts (never tiebroken)", () => {
     );
     expect(diagnostics).toEqual([]);
     expect(output.prefixes.get("http://hash.test/v#")).toBe("vv");
-  });
-
-  it("refuses a non-injective effective prefix map, naming the claimants", () => {
-    // A declaration colliding with a registered prefix: both namespaces end
-    // up under "ex" in the effective map (Pass 1 folded the annotation).
-    const { diagnostics } = resolve(
-      [["http://second.test/", GRAPHQL_TERMS.prefix, "ex", "literal"]],
-      {
-        classes: [
-          { uri: uri("Thing"), superclasses: [] },
-          { uri: "http://second.test/Thing", superclasses: [] },
-          { uri: "http://third.test/Thing", superclasses: [] },
-          { uri: "http://fourth.test/Thing", superclasses: [] },
-        ],
-        properties: [],
-        // Prefix insertion order (aa, zz, ex) exercises both directions of
-        // the deterministic report ordering.
-        namespaces: new Map([
-          ["http://fourth.test/", "aa"],
-          ["http://third.test/", "zz"],
-          [NS, "ex"],
-          ["http://second.test/", "ex"],
-        ]),
-      },
-    );
-    const a001 = diagnostics.filter((d) => d.code === "A001");
-    expect(a001).toHaveLength(1);
-    expect(a001[0]?.source).toBe("ex");
-    expect(a001[0]?.message).toContain(NS);
-    expect(a001[0]?.message).toContain("http://second.test/");
-    expect(a001[0]?.message).toContain("injective");
   });
 });
 

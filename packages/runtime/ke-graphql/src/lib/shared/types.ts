@@ -47,6 +47,7 @@ export type DiagnosticCode =
   | "B002" // property references unknown class in domain
   | "B003" // property references unknown class/datatype in range
   | "B004" // inverse property references unknown property
+  | "B005" // two namespaces claim one prefix with no declaration in play
   // Validation
   | "V001" // blank-node-only class (embeddable)
   | "V002" // property has no rdfs:domain (domainless)

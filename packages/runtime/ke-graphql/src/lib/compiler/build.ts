@@ -123,17 +123,68 @@ export default function build(
   diagnostics.push(...resolved.diagnostics);
   const overlay = resolved.output;
 
-  // The overlay's validated prefixes are the leading source of truth; Pass 1
-  // already folded declarations into extraction.namespaces, so the two agree
-  // whenever both speak — this keeps one resolved authority on the IR path.
-  const getPrefix = (uri: string): string => {
-    const ns = getNamespace(uri);
-    return overlay.prefixes.get(ns) ?? extraction.namespaces.get(ns) ?? "";
-  };
+  // ── the effective namespace → prefix map ──
+  // Pass 1 resolves registered > synthetic ONLY; a graphql:prefix declaration
+  // binds here, where the mode is known. Under mode "auto" the overlay is
+  // empty by construction, so prefixes resolve exactly as they would if the
+  // ontology carried no annotation at all — which is what that mode promises.
+  // One authority for every prefix reader below: node namespaces, the
+  // prefixed-key mapping table, the injectivity guard, and NamespaceInfo.
+  const effectiveNamespaces = new Map(extraction.namespaces);
+  for (const [ns, prefix] of overlay.prefixes) {
+    effectiveNamespaces.set(ns, prefix);
+  }
+
+  const getPrefix = (uri: string): string =>
+    effectiveNamespaces.get(getNamespace(uri)) ?? "";
+
+  // ── prefix injectivity ──
+  // NamespaceInfo is keyed by prefix, so a collision silently last-write-wins
+  // and drops a namespace whole. The report turns on the CAUSE. A bound
+  // declaration colliding with anything is an annotation conflict the
+  // ontology itself can fix: A001, fatal, per the no-arbitrary-tiebreak rule.
+  // A collision among registered and serial synthetic prefixes needs no
+  // annotation at all — registering the prefix "ns" is enough — so calling it
+  // an ANNOTATION conflict would send an operator hunting for graphql:
+  // assertions that do not exist, and refusing the compile would reject input
+  // that compiled before the vocabulary landed. That case is B005: a warning
+  // naming the registration remedy.
+  const namespacesByPrefix = new Map<string, string[]>();
+  for (const [ns, prefix] of effectiveNamespaces) {
+    const list = namespacesByPrefix.get(prefix) ?? [];
+    list.push(ns);
+    namespacesByPrefix.set(prefix, list);
+  }
+  for (const [prefix, nsList] of [...namespacesByPrefix].sort(([a], [b]) =>
+    a < b ? -1 : 1,
+  )) {
+    if (nsList.length < 2) {
+      continue;
+    }
+    const claimants = [...nsList].sort().join(", ");
+    const shared = `prefix "${prefix}" is claimed by ${nsList.length} namespaces (${claimants}) — the namespace→prefix map must be injective`;
+    diagnostics.push(
+      nsList.some((ns) => overlay.prefixes.has(ns))
+        ? {
+            severity: "error",
+            code: "A001",
+            message: `${shared}; declare distinct graphql:prefix values`,
+            source: prefix,
+            phase: PHASE,
+          }
+        : {
+            severity: "warning",
+            code: "B005",
+            message: `${shared}; register a distinct prefix for each in StoreConfig.prefixes`,
+            source: prefix,
+            phase: PHASE,
+          },
+    );
+  }
 
   // Custom mappings may be keyed by prefixed name (ds:tier) or full IRI.
   const prefixedToFull = new Map<string, string>();
-  for (const [ns, prefix] of extraction.namespaces) {
+  for (const [ns, prefix] of effectiveNamespaces) {
     prefixedToFull.set(prefix, ns);
   }
   const findMapping = (uri: string) => {

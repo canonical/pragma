@@ -339,7 +339,7 @@ graphql:Term a owl:Class ; rdfs:label "Term" .
     expect(diagnostics).toEqual([]);
   });
 
-  it("resolves graphql:prefix subjects to namespaces and suppresses the synthetic-prefix warning", async () => {
+  it("resolves graphql:prefix subjects without binding them, and suppresses the synthetic-prefix warning", async () => {
     const { output, diagnostics } = await extractTtl(
       `
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -359,14 +359,23 @@ graphql:Term a owl:Class ; rdfs:label "Term" .
 `,
       {},
     );
-    expect(output.namespaces.get("https://direct.test/")).toBe("dir");
-    expect(output.namespaces.get("https://hash.test/ontology#")).toBe("hsh");
-    expect(output.namespaces.get("https://slash.test/v/")).toBe("slh");
-    // Every namespace resolved through a declaration — no E001 warnings.
+    // Extraction is mode-independent, so the DECLARATION does not bind here:
+    // every namespace gets its placeholder synthetic and Pass 2 binds the
+    // declared value where the projection mode is known.
+    for (const ns of [
+      "https://direct.test/",
+      "https://hash.test/ontology#",
+      "https://slash.test/v/",
+    ]) {
+      expect(output.namespaces.get(ns)?.startsWith("ns")).toBe(true);
+    }
+    expect([...output.namespaces.values()]).not.toContain("dir");
+    // ...but each subject spelling still RESOLVED, which is what silences the
+    // synthetic-prefix warning: none of these namespaces lacks an answer.
     expect(diagnostics).toEqual([]);
   });
 
-  it("outranks the registered prefix map (annotation > registered > synthetic)", async () => {
+  it("keeps the registered prefix — a declaration outranks it only once the mode is known", async () => {
     const { output } = await extractTtl(`
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix graphql: <${GRAPHQL}> .
@@ -375,9 +384,11 @@ graphql:Term a owl:Class ; rdfs:label "Term" .
 ex:Thing a owl:Class .
 <http://example.org/> graphql:prefix "exx" .
 `);
-    // PREFIXES registers http://example.org/ as "ex"; the ontology's own
-    // declaration wins.
-    expect(output.namespaces.get(EX)).toBe("exx");
+    // PREFIXES registers http://example.org/ as "ex". The ontology's own
+    // declaration outranks it, but binding it HERE would bake one mode's
+    // answer into an artifact that must serve all three — so Pass 1 reports
+    // the registered prefix and Pass 2 applies "exx" (see build.test.ts).
+    expect(output.namespaces.get(EX)).toBe("ex");
   });
 
   it("applies no tiebreak: conflicting or non-literal declarations fall back, agreeing duplicates apply", async () => {
@@ -409,7 +420,11 @@ ex:Thing a owl:Class .
 `,
       {},
     );
-    expect(output.namespaces.get("https://dup.test/ontology#")).toBe("dup");
+    // The agreeing pair resolved, so no warning names it — but the value
+    // itself binds in Pass 2, not here.
+    expect(
+      output.namespaces.get("https://dup.test/ontology#")?.startsWith("ns"),
+    ).toBe(true);
     const conf = output.namespaces.get("https://conf.test/");
     const iri = output.namespaces.get("https://iri.test/");
     expect(conf?.startsWith("ns")).toBe(true);

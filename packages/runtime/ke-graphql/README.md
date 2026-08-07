@@ -268,7 +268,7 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 |---|---|---|
 | `E001` | extraction/SPARQL failure | query failed, unregistered namespace (synthetic prefix assigned), blank nodes nested deeper than the loader's closure |
 | `A001–A008` | `graphql:` annotation resolution + projection modes | conflicting values, never tiebroken (`A001`, error), foreign/unknown target (`A002`, error), malformed value (`A003`, error), unrecognized term or inapplicable target ignored (`A004`), config shadows an annotation — config wins (`A005`), `mode: "auto"` ignoring present annotations (`A006`, info), the `mode: "explicit"` dropped-class aggregate (`A007`, info), field omitted for an unexposed range class (`A008`) |
-| `B001–B004` | build references | `subClassOf` cycle, unknown domain/range/inverse |
+| `B001–B005` | build references | `subClassOf` cycle, unknown domain/range/inverse, two namespaces claiming one prefix with no declaration in play (`B005`) |
 | `V001–V016` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`), abstract mapping with direct instances (`V015`), concrete supertype flattening (`V016`) |
 | `M001–M006` | naming | duplicate type or field name, later claimant dropped (`M001`, error), illegal class local name sanitized (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`), property claims a structural field name and is dropped (`M005`, error), one union name minted with different member sets (`M006`, error) |
 | `X002–X003` | union emission | named / synthesized union created |

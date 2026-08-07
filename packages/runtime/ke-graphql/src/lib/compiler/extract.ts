@@ -332,10 +332,15 @@ export default async function extract(
   // graphql:prefix declarations, resolved to discovered namespaces: the
   // subject IRI itself when it IS a namespace, else subject + '#', else
   // subject + '/' (an ontology subject <…/ontology> declaring for
-  // <…/ontology#>). The annotation outranks the registered map and
-  // suppresses the synthetic-prefix warning. A namespace with two DISTINCT
-  // declared prefixes resolves nothing here — no arbitrary tiebreak; Pass 2
-  // refuses that compile (A001). Unresolvable subjects are Pass 2's A002.
+  // <…/ontology#>). Resolved here but NOT bound here: extraction is
+  // mode-independent (the artifact must serve any projection mode at rebuild
+  // time), and a declaration must not take effect under mode "auto", which
+  // promises the annotations are never consulted. Pass 2 validates them and
+  // binds them where the mode is known; all this map does below is tell the
+  // synthetic-prefix warning apart from a namespace that HAS an answer
+  // waiting. A namespace with two DISTINCT declared prefixes resolves
+  // nothing here — no arbitrary tiebreak; Pass 2 refuses that compile
+  // (A001). Unresolvable subjects are Pass 2's A002.
   const declaredPrefixes = new Map<string, string>();
   const conflictedPrefixes = new Set<string>();
   for (const [target, term, value, kind] of graphqlAnnotations) {
@@ -364,16 +369,23 @@ export default async function extract(
   }
   let anonymous = 0;
   for (const ns of discovered) {
-    let prefix = declaredPrefixes.get(ns) ?? uriToPrefix.get(ns);
+    let prefix = uriToPrefix.get(ns);
     if (!prefix) {
       prefix = `ns${anonymous++ || ""}`;
-      diagnostics.push({
-        severity: "warning",
-        code: "E001",
-        message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
-        source: ns,
-        phase: PHASE,
-      });
+      // A DECLARED namespace is not one without an answer: Pass 2 binds the
+      // declaration over this placeholder in every mode that consults the
+      // overlay, so warning here would name a synthetic nobody uses. Under
+      // mode "auto" the placeholder IS the answer, and A006 is what says the
+      // assertions went unconsulted.
+      if (!declaredPrefixes.has(ns)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "E001",
+          message: `namespace ${ns} has no registered prefix — assigned synthetic "${prefix}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
+          source: ns,
+          phase: PHASE,
+        });
+      }
     }
     namespaces.set(ns, prefix);
   }

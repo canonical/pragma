@@ -398,33 +398,6 @@ export default function resolveGraphqlAnnotations(
     }
   }
 
-  // ── prefix injectivity (A001) ──
-  // The EFFECTIVE ns→prefix map (Pass 1 already resolved annotation >
-  // registered > synthetic into extraction.namespaces) must stay injective:
-  // Pass 2 keys NamespaceInfo by prefix, where a collision would silently
-  // last-write-win. Without annotations a collision is not constructible
-  // (a registered prefix map is a Record, synthetic prefixes are serial),
-  // so this fires only when a declaration collides with something.
-  const namespacesByPrefix = new Map<string, string[]>();
-  for (const [ns, prefix] of extraction.namespaces) {
-    const list = namespacesByPrefix.get(prefix) ?? [];
-    list.push(ns);
-    namespacesByPrefix.set(prefix, list);
-  }
-  for (const [prefix, nsList] of [...namespacesByPrefix].sort(([a], [b]) =>
-    a < b ? -1 : 1,
-  )) {
-    if (nsList.length > 1) {
-      diagnostics.push({
-        severity: "error",
-        code: "A001",
-        message: `prefix "${prefix}" is claimed by ${nsList.length} namespaces (${[...nsList].sort().join(", ")}) — the namespace→prefix map must be injective; declare distinct graphql:prefix values`,
-        source: prefix,
-        phase: PHASE,
-      });
-    }
-  }
-
   // ── consumer-config shadowing (A005) ──
   // The R-9 asymmetry, deliberately: the consumer's config is the only
   // workspace-local layer ke has (no per-source provenance), so a config key
