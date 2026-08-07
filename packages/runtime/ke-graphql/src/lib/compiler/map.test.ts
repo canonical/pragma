@@ -1372,6 +1372,96 @@ describe("map — cardinality and interface coverage", () => {
     );
   });
 
+  it("keeps graphql:singular ahead of a per-class SHACL shape", () => {
+    // The documented precedence is config > annotation > owl > SHACL > kind.
+    // A per-class shape saying maxCount 1 must NOT invert the annotation that
+    // says this property is a list — while `required` (minCount, an axis with
+    // no explicit tier) stays the shape's to decide.
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Spec"), superclasses: [] },
+        { uri: uri("Hop"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("root"),
+          kind: "object",
+          domains: [uri("Spec")],
+          ranges: [uri("Hop")],
+        },
+      ],
+      shaclConstraints: [
+        {
+          targetClass: uri("Spec"),
+          property: uri("root"),
+          minCount: 1,
+          maxCount: 1,
+        },
+      ],
+      graphqlAnnotations: [
+        [uri("root"), GRAPHQL_TERMS.singular, "false", "literal"],
+      ],
+      instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir);
+    const field = output.types.get("Spec")?.fields.get("roots");
+    // list, not the shape's singular
+    expect(field?.resolverTemplate).toBe("object-list");
+    expect(field?.list).toBe(true);
+    expect(output.types.get("Spec")?.fields.has("root")).toBe(false);
+    // minCount 1 still reaches the field from the same shape
+    expect(field?.shaclRequired).toBe(true);
+  });
+
+  it("keeps a config singular ahead of a per-class SHACL shape", () => {
+    const ir = buildIR(
+      {
+        classes: [{ uri: uri("Spec"), superclasses: [] }],
+        properties: [
+          {
+            uri: uri("tag"),
+            kind: "datatype",
+            domains: [uri("Spec")],
+            ranges: [`${XSD}string`],
+          },
+        ],
+        shaclConstraints: [
+          { targetClass: uri("Spec"), property: uri("tag"), maxCount: 1 },
+        ],
+        instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
+      },
+      { [uri("tag")]: { singular: false } },
+    );
+    const { output } = map(ir);
+    expect(output.types.get("Spec")?.fields.get("tags")?.resolverTemplate).toBe(
+      "datatype-list",
+    );
+  });
+
+  it("lets a per-class SHACL shape decide when no explicit tier spoke", () => {
+    // The complement of the two tests above: with no config and no
+    // annotation, the shape still outranks the heuristic default.
+    const ir = buildIR({
+      classes: [{ uri: uri("Spec"), superclasses: [] }],
+      properties: [
+        {
+          uri: uri("part"),
+          kind: "object",
+          domains: [uri("Spec")],
+          ranges: [uri("Spec")],
+        },
+      ],
+      shaclConstraints: [
+        { targetClass: uri("Spec"), property: uri("part"), maxCount: 1 },
+      ],
+      instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
+    });
+    const { output } = map(ir);
+    expect(output.types.get("Spec")?.fields.get("part")?.resolverTemplate).toBe(
+      "object-singular",
+    );
+  });
+
   it("omits a field whose SHACL maxCount is 0 (V010)", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Item"), superclasses: [] }],

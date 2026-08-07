@@ -367,9 +367,15 @@ export default function build(
     // default to SINGULAR (multi-valued literals are the exception in RDF
     // practice); only object properties default to list.
     const mapping = findMapping(raw.uri);
+    // The two EXPLICIT tiers are recorded as such: a per-class SHACL shape is
+    // free to override the heuristics below them, but not a value the
+    // consumer's config or the ontology's own vocabulary stated outright —
+    // otherwise the precedence above holds for a property's default and
+    // silently inverts on every class that happens to carry a shape.
+    const explicitSingular =
+      mapping?.singular ?? overlay.properties.get(raw.uri)?.singular;
     const functional =
-      mapping?.singular ??
-      overlay.properties.get(raw.uri)?.singular ??
+      explicitSingular ??
       (extraction.functionals.has(raw.uri) ||
         shaclSingularAnywhere ||
         raw.kind !== "object");
@@ -383,6 +389,7 @@ export default function build(
       domains: raw.domains,
       range: resolveRange(raw.uri, raw.ranges),
       functional,
+      explicitSingular,
       classCardinality,
       isAnnotation: raw.kind === "annotation",
       annotations: extraction.annotations.get(raw.uri) ?? new Map(),

@@ -332,7 +332,14 @@ const isEmbeddedRange = (state: MapperState, property: PropertyNode): boolean =>
   property.range.kind === "class" &&
   (state.ir.classes.get(property.range.uri)?.embeddable ?? false);
 
-/** Cardinality of a property on a specific class (per-class SHACL first). */
+/**
+ * Cardinality of a property on a specific class: per-class SHACL first, EXCEPT
+ * on the singular axis, where an explicit tier (custom mapping or
+ * graphql:singular) outranks the shape — that is the documented precedence
+ * config > annotation > owl > SHACL > kind, which a per-class shape would
+ * otherwise invert. `required` and `omit` have no explicit tier, so they stay
+ * the shape's to decide.
+ */
 const isSingularOn = (
   property: PropertyNode,
   classUri: string,
@@ -341,7 +348,10 @@ const isSingularOn = (
   for (const uri of [classUri, ...ancestors]) {
     const spec = property.classCardinality.get(uri);
     if (spec) {
-      return spec;
+      return {
+        ...spec,
+        singular: property.explicitSingular ?? spec.singular,
+      };
     }
   }
   return { singular: property.functional, required: false, omit: false };

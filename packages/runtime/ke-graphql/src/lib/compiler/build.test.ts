@@ -749,6 +749,59 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(diagnostics.filter((d) => d.code === "A005")).toHaveLength(1);
   });
 
+  it("keeps graphql:singular ahead of owl:FunctionalProperty", () => {
+    // The tier boundary directly beneath the annotation: owl says functional
+    // (singular), the ontology's own vocabulary says list. The annotation is
+    // the higher tier, so the property is a list — and it is recorded as an
+    // EXPLICIT decision, which is what outranks a per-class shape downstream.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Thing"), superclasses: [] },
+        { uri: uri("Other"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("rel"),
+          kind: "object",
+          domains: [uri("Thing")],
+          ranges: [uri("Other")],
+        },
+      ],
+      functionals: new Set([uri("rel")]),
+      graphqlAnnotations: [
+        [uri("rel"), GRAPHQL_TERMS.singular, "false", "literal"],
+      ],
+    });
+    const { output, diagnostics } = build(extraction);
+    expect(output.properties.get(uri("rel"))?.functional).toBe(false);
+    expect(output.properties.get(uri("rel"))?.explicitSingular).toBe(false);
+    expect(diagnostics.filter((d) => d.code === "A001")).toEqual([]);
+  });
+
+  it("lets owl:FunctionalProperty decide when no explicit tier spoke", () => {
+    // The complement: with no config and no annotation, `functional` still
+    // comes from the heuristics and carries NO explicit marker, so per-class
+    // SHACL remains free to override it.
+    const extraction = makeExtraction({
+      classes: [
+        { uri: uri("Thing"), superclasses: [] },
+        { uri: uri("Other"), superclasses: [] },
+      ],
+      properties: [
+        {
+          uri: uri("rel"),
+          kind: "object",
+          domains: [uri("Thing")],
+          ranges: [uri("Other")],
+        },
+      ],
+      functionals: new Set([uri("rel")]),
+    });
+    const { output } = build(extraction);
+    expect(output.properties.get(uri("rel"))?.functional).toBe(true);
+    expect(output.properties.get(uri("rel"))?.explicitSingular).toBeUndefined();
+  });
+
   it("joins graphql:inverse pairs with owl:inverseOf declared-pair semantics", () => {
     const extraction = makeExtraction({
       classes: [

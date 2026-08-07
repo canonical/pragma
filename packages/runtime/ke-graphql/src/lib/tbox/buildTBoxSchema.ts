@@ -338,13 +338,22 @@ export default function buildTBoxSchema(
     },
   });
 
-  /** Per-class cardinality, consulting the class then its ancestors. */
+  /**
+   * Per-class cardinality, consulting the class then its ancestors. Mirrors
+   * the mapper's isSingularOn exactly, including the explicit-tier rule: a
+   * custom mapping or graphql:singular outranks a per-class shape on the
+   * SINGULAR axis, so the browsable TBox reports the same cardinality the
+   * emitted ABox field carries. `required` stays the shape's.
+   */
   const resolveCardinality = (property: PropertyNode, classUri: string) => {
     const node = ir.classes.get(classUri);
     for (const uri of [classUri, ...(node?.ancestors ?? [])]) {
       const spec = property.classCardinality.get(uri);
       if (spec) {
-        return spec;
+        return {
+          ...spec,
+          singular: property.explicitSingular ?? spec.singular,
+        };
       }
     }
     return { singular: property.functional, required: false, omit: false };

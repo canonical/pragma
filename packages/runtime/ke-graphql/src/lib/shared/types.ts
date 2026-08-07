@@ -331,10 +331,22 @@ export interface PropertyNode {
   range: RangeSpec;
   /**
    * Default cardinality. True = singular. Resolved by precedence:
-   * custom mapping > owl:FunctionalProperty > owl:cardinality > SHACL
-   * maxCount 1 > kind default (datatype → singular, object → list).
+   * custom mapping > graphql:singular > owl:FunctionalProperty >
+   * owl:cardinality > SHACL maxCount 1 > kind default (datatype → singular,
+   * object → list).
    */
   functional: boolean;
+  /**
+   * `functional` restated ONLY when an explicit tier decided it — a custom
+   * mapping or `graphql:singular`. Absent means the heuristics did (owl,
+   * SHACL, kind), which is what per-class SHACL is allowed to override.
+   * Consumers resolving a property's cardinality ON A CLASS consult this
+   * before the per-class SHACL spec's `singular`, so the two top tiers of
+   * the documented precedence are not silently outranked by a shape. It
+   * governs the SINGULAR axis alone: `required` and `omit` have no explicit
+   * tier and stay per-class SHACL's to decide.
+   */
+  explicitSingular?: boolean;
   /** Per-class cardinality overrides (SHACL). Key: class URI. */
   classCardinality: ReadonlyMap<string, CardinalitySpec>;
   /** Inverse property URI when declared via owl:inverseOf. */

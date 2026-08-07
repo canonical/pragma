@@ -288,6 +288,51 @@ describe("Ontology and lookups", () => {
     expect(root?.inherited).toBe(false);
   });
 
+  it("reports graphql:singular over a per-class shape, matching the emitted field", async () => {
+    // The browsable TBox and the emitted ABox field must agree: the shape
+    // says maxCount 1, the ontology's own vocabulary says list, and the
+    // annotation is the higher tier. `required` has no explicit tier, so
+    // the shape's minCount still answers.
+    const compiled = await setup(`
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix graphql: <${GRAPHQL}> .
+
+ex:Spec a owl:Class . ex:Hop a owl:Class .
+ex:root a owl:ObjectProperty ; rdfs:domain ex:Spec ; rdfs:range ex:Hop ;
+  graphql:singular false .
+
+ex:SpecShape a sh:NodeShape ; sh:targetClass ex:Spec ;
+  sh:property [ sh:path ex:root ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+ex:s1 a ex:Spec . ex:h1 a ex:Hop .
+`);
+    const result = await run(
+      compiled,
+      `{
+        ontologyClass(uri: "http://example.org/Spec") {
+          properties { property { label } required singular }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const properties = (result.data?.ontologyClass as Record<string, unknown>)
+      .properties as Array<{
+      property: { label: string };
+      required: boolean;
+      singular: boolean;
+    }>;
+    const root = properties.find((p) => p.property.label === "root");
+    expect(root?.singular).toBe(false);
+    expect(root?.required).toBe(true);
+    // ...and the emitted ABox field is the list the TBox just reported.
+    expect(compiled.result.mapped.types.get("Spec")?.fields.has("roots")).toBe(
+      true,
+    );
+  });
+
   it("returns annotation metadata through OntologyProperty", async () => {
     const compiled = await setup(DS_REALISTIC_TTL);
     const result = await run(
