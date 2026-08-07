@@ -32,9 +32,9 @@
 #     .completionGuidance. Annotation-derived, provider-specific — extensions,
 #     not base.
 #
-# EntityMeta IS in the contract even though `_meta` appears only on Node here:
-# the compiler puts `_meta: EntityMeta!` on every generated type, so no
-# provider can omit the type.
+# EntityMeta IS in the contract: `Node` selects it through `_meta`, and the
+# compiler puts `_meta: EntityMeta!` on every generated type, so no provider
+# can omit the type.
 #
 # A provider satisfies this contract when its schema is a SUPERSET of it --
 # see satisfiesContract(). Extra types, extra fields and extra optional
@@ -57,9 +57,9 @@ interface Node {
 """
 Self-describing TBox access attached to every Node, plus the generic
 descriptive fields a lens renders without knowing the concrete type. `title`
-is total (the provider computes a fallback chain ending at the IRI); `label`,
-`comment`, and `definition` are asserted-only and null when nothing is
-asserted.
+is total: the provider computes a fallback chain whose tail is the IRI LOCAL
+NAME, never the full IRI (`…#Film` answers "Film"). `label`, `comment`, and
+`definition` are asserted-only and null when nothing is asserted.
 
 `curie` is the DISPLAY form of `uri`, and it lives here rather than beside
 `uri` on `Node` for the reason every derived value does: `uri` is asserted

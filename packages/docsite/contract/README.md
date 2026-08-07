@@ -30,8 +30,9 @@ interface Node {
 }
 ```
 
-`EntityMeta.title` is **total** (the provider computes a fallback chain ending
-at the IRI); `label`, `comment`, and `definition` are asserted-only and
+`EntityMeta.title` is **total**: the provider computes a fallback chain whose
+tail is the IRI **local name**, never the full IRI (`…#Film` answers
+`"Film"`). `label`, `comment`, and `definition` are asserted-only and
 nullable. `OntologyClass` implements `Node`, so classes resolve through
 `node(id:)` and ride `NodeConnection`s like any other entity;
 `OntologyProperty` deliberately does not (identity, but no `_meta` — an
