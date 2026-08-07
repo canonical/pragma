@@ -75,11 +75,16 @@ the correct content type.
 ```
 src/
 ├── client/         Client entry (hydration)
-├── server/         Server entry, compiled renderer, dev servers, sitemap
+├── server/         Server entry, compiled renderer, dev servers, sitemap, and
+│                   `graph.ts` — TRANSPORT ONLY. The graph is not assembled
+│                   here; it comes from @canonical/prism-pragma-provider.
 ├── domains/        Feature domains (each owns its routes and pages).
 │                   `domains/lenses/` is the CORE lens set — every operation
 │                   under it must execute against any provider implementing
 │                   @canonical/prism-contract, and a gate enforces that.
+│                   `domains/playground/` carries one pragma-specific probe
+│                   URI (`probeQuery.ts`); it is neither a lens nor a
+│                   declared add-on, so no gate scans it.
 ├── addons/         pragma-SPECIFIC add-ons: views that read pragma's own
 │                   ontology and make no provider-neutrality claim, so they
 │                   are not core lenses. Wired by hand in routes.tsx until a
@@ -108,9 +113,14 @@ layer: `ComponentsCatalogPage` fetches a page of entities with
 spreads it.
 
 **The app needs a graph, and it runs as its own process.** `bun run graph`
-(`src/server/graph.ts`) compiles pragma's knowledge graph into an executable
-GraphQL schema and serves it at `http://127.0.0.1:5175/graphql` — nothing
-else, no HTML. Every `dev*` / `preview*` script starts one for you via the
+(`src/server/graph.ts`) starts the pragma provider
+([`@canonical/prism-pragma-provider`](../../../packages/docsite/pragma-provider))
+and serves its compiled schema at `http://127.0.0.1:5175/graphql` — nothing
+else, no HTML. **The app assembles no provider of its own**: the ref-package
+list, the ontology exclusions, the custom field mapping and the compiler
+options all live in that package, and this app depends on no knowledge engine
+(no `@canonical/ke`, no `@canonical/ke-graphql`). `graph.ts` is transport plus
+one factory call. Every `dev*` / `preview*` script starts one for you via the
 launcher (`src/server/withGraph.ts`), so in normal use you never run it by
 hand. `createEnvironment` (`src/relay/environment.ts`) posts every operation
 there; the address is decided in exactly one place
@@ -119,9 +129,15 @@ that variable also tells the launcher an endpoint already exists, so it starts
 no graph of its own — which is how you point the app at a shared or remote
 one.
 
-**Prerequisite:** the graph compiles from the pragma CLI's refs cache, so
-`~/.cache/pragma/refs/@canonical` must be populated (`pragma sources update`,
-or point `PRAGMA_REFS_DIR` at a cache) before any server script serves data.
+**Prerequisite:** the *default* provider compiles from the pragma CLI's refs
+cache, so `~/.cache/pragma/refs/@canonical` must be populated (`pragma sources
+update`, or point `PRAGMA_REFS_DIR` at a cache) before any server script serves
+data. See
+[the provider's README](../../../packages/docsite/pragma-provider/README.md)
+for the source layout it expects. This is a prerequisite of *that provider*,
+not of this app: any provider implementing `@canonical/prism-contract` can take
+its place — see [`packages/docsite/graph-example`](../../../packages/docsite/graph-example)
+and set `VITE_GRAPHQL_URL`.
 
 **Generated artifacts are committed.** The Vite plugin runs with
 `codegen: false`, so `src/relay/__generated__/` is not rebuilt on the fly:

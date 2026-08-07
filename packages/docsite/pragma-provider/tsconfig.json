@@ -1,0 +1,9 @@
+{
+  "extends": "@canonical/typescript-config",
+  "compilerOptions": {
+    "types": ["node", "bun"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts", "demo/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
+}
