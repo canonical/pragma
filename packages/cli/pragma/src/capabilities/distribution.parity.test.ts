@@ -14,6 +14,7 @@ import { compilePack } from "../kernel/packs/compile.js";
 import type { LookupOutput } from "../kernel/packs/resolveEntity.js";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
 import type { PackRow } from "../kernel/packs/types.js";
+import { distributionSource } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
 import type { PragmaRuntime } from "../kernel/runtime/types.js";
@@ -77,7 +78,11 @@ cs:code.function.purity a cs:CodeStandard ;
 `;
 
 const verbs = () =>
-  compilePack(standardPack, "pragma.conf.ts", DEFAULT_PREFIX_MAP);
+  compilePack(
+    standardPack,
+    distributionSource("pragma.conf.ts"),
+    DEFAULT_PREFIX_MAP,
+  );
 const verb = (label: string) =>
   verbs().find((v) => verbKey(v.path) === `standard ${label}`) as VerbSpec;
 

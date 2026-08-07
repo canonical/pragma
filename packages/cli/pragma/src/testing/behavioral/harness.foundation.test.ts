@@ -68,7 +68,11 @@ describe("foreign-namespace generic-pack proof (compiler is DS-agnostic)", () =>
     try {
       const recipeModule: CapabilityModule = {
         name: "recipe",
-        verbs: compilePack(recipePack, "test:recipe", RECIPE_PREFIXES),
+        verbs: compilePack(
+          recipePack,
+          { label: "test:recipe", origin: "package" },
+          RECIPE_PREFIXES,
+        ),
       };
       expect(recipeModule.verbs.map((v) => verbKey(v.path)).sort()).toEqual([
         "recipe list",
