@@ -34,6 +34,7 @@ const templates = {
   packageJson: path.join(templatesDir, "package.json.ejs"),
   tsconfig: path.join(templatesDir, "tsconfig.json.ejs"),
   tsconfigReact: path.join(templatesDir, "tsconfig-react.json.ejs"),
+  tsconfigBuild: path.join(templatesDir, "tsconfig.build.json.ejs"),
   biome: path.join(templatesDir, "biome.json.ejs"),
   indexTs: path.join(templatesDir, "index.ts.ejs"),
   indexCss: path.join(templatesDir, "index.css.ejs"),
@@ -211,6 +212,16 @@ The generator auto-detects:
           template({
             source: templates.tsconfig,
             dest: path.join(packageDir, "tsconfig.json"),
+            vars: ctx,
+          }),
+        ),
+
+        // Create tsconfig.build.json (only for types that emit to dist/)
+        when(
+          ctx.needsBuild,
+          template({
+            source: templates.tsconfigBuild,
+            dest: path.join(packageDir, "tsconfig.build.json"),
             vars: ctx,
           }),
         ),
