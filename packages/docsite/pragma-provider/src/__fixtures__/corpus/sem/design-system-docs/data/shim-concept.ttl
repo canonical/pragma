@@ -1,0 +1,17 @@
+# THE EXCLUDED SOURCE, at its real path
+# (`design-system-docs/data/shim-concept.ttl` — the literal EXCLUDED_SOURCES
+# entry).
+#
+# `ds:embodiesConcept` with `rdfs:domain ds:Entity` smears the property and its
+# inverse onto EVERY subclass of `ds:Entity` the moment both roots compile
+# together. In pragma's real corpus that is all fourteen `ds:` types; here it is
+# `ds:Component`. `collectTtlSources` must drop this file.
+
+@prefix ds: <https://design.example.org/ontology#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ds:Concept a owl:Class .
+ds:embodiesConcept a owl:ObjectProperty ;
+    rdfs:domain ds:Entity ;
+    rdfs:range ds:Concept .

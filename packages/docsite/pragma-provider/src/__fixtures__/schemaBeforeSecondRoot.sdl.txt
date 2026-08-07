@@ -1,3 +1,45 @@
+# ==========================================================================
+# The schema at `aea674000`, from the refs cache alone — the first root only.
+# 90 top-level definitions. It carries no trace of the second root's surface
+# namespace — an absence the additivity test asserts by substring, so nothing
+# added to this comment block may spell that namespace out.
+#
+# THESE CAPTURES PREDATE THE CONVERGED BASE. Measured at pragma 4d228c8
+# against @canonical/prism-contract: 12 violations, and the identical set in
+# both files — Node._meta absent; Node.uri is String! not ID!; no
+# EntityMeta.curie / .title / .label / .comment / .definition; OntologyClass
+# neither carries _meta nor implements Node; no ClassProperty.name;
+# OntologyProperty.uri kind change. They still declare
+# `interface Node { id: ID!  uri: String! }` and contain no `curie` at all.
+# The live committed apps/react/pragma-docs/src/relay/schema.graphql, by
+# contrast, satisfies the contract with ZERO violations.
+#
+# THEY ARE KEPT ANYWAY, AND THE TEST THEY BACK IS STILL MEANINGFUL. The
+# property asserted by ../testing/sourceAdditivity.test.ts is ADDITIVITY OF
+# THE SECOND SOURCE ROOT — every pre-merge type keeps every field — and that
+# is a property of the SOURCE SET, orthogonal to the structural head. The type
+# inventory has not drifted: schemaWithSecondRoot.sdl.txt carries 183
+# top-level definitions, exactly the count of the live committed schema.
+# Both sides of the comparison are equally stale, so the property still holds
+# and still means something.
+#
+# THEY CANNOT BE REGENERATED HERE. Regeneration needs the full three-package
+# refs cache; the design-system corpus is not obtainable in the authoring
+# environment, and a capture taken from a PARTIAL cache is worse than a stale
+# one because it looks current. Regenerate only on a machine with
+# `pragma sources update` completed AND the semantics tree present — once with
+# both roots, once without — and say so in the commit that does. A fresh
+# capture will not carry these comment lines; re-add them or delete them
+# deliberately, do not lose the measurement by accident.
+#
+# THE GAP THIS LEAVES IS CLOSED BY ../testing/integration/committedSdl.test.ts,
+# which measures the CURRENT emission against the contract on every run.
+#
+# (Lines beginning `#` are GraphQL comments, added by hand when these files
+# moved out of the docsite app. Everything below this block is the capture.)
+#
+# ==========================================================================
+
 """
 Directs the executor to defer this fragment when the `if` argument is true or undefined.
 """

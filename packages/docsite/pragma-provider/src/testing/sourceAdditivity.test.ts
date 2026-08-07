@@ -3,6 +3,41 @@
 /**
  * The SECOND ROOT's additivity claim, pinned against the emitted SDL.
  *
+ * ---------------------------------------------------------------------------
+ * MOVED HERE FROM THE DOCSITE APP (`src/server/graphqlSources.tests.ts`), with
+ * its assertions unchanged and its filename changed from `.tests.ts` to
+ * `.test.ts` — the app collects the plural form, every package in this repo
+ * collects the singular, and a file keeping the wrong one is collected by
+ * NOTHING and passes by not existing. It belongs here because what it measures
+ * is the PROVIDER's source set, not anything the app does with the result.
+ *
+ * 🔴 ITS TWO FIXTURES ARE STALE, AND KNOWINGLY SO. Measured at pragma
+ * `4d228c8` against `@canonical/prism-contract`: **12 violations each,
+ * identical set** — `Node._meta` absent, `Node.uri` is `String!` not `ID!`, no
+ * `EntityMeta.curie`/`title`/`label`/`comment`/`definition`, `OntologyClass`
+ * neither carries `_meta` nor implements `Node`, no `ClassProperty.name`,
+ * `OntologyProperty.uri` kind change. They predate the converged base.
+ *
+ * The header comment on each fixture carries the full measurement. The short
+ * version of why they are still here:
+ *
+ *   - The property this suite asserts is ADDITIVITY OF THE SECOND ROOT, which
+ *     is a property of the SOURCE SET and orthogonal to the structural head.
+ *     Both sides of the comparison are equally stale, so it still holds.
+ *   - The type inventory has NOT drifted: `schemaWithSecondRoot.sdl.txt`
+ *     carries 183 top-level definitions, exactly the count of the live
+ *     committed `schema.graphql`.
+ *   - They cannot be regenerated in the authoring environment (no refs cache),
+ *     and a capture taken from a partial cache is worse than a stale one
+ *     because it looks current.
+ *
+ * The one claim below that is now FALSE is "the schema with BOTH roots
+ * compiled — what the journeys lens reads": it is what the journeys lens read
+ * two convergences ago. The gap that leaves is closed by
+ * `integration/committedSdl.test.ts`, which measures the CURRENT emission
+ * against the contract on every run.
+ * ---------------------------------------------------------------------------
+ *
  * The docsite graph now compiles from two roots: the pragma CLI's refs
  * cache (design-system, code-standards, anatomy-dsl) and the semantics
  * working tree (surface, design-system-docs — the demand model the
@@ -53,18 +88,25 @@ import { describe, expect, it } from "vitest";
  * backend once with the semantics tree present, once without), and say so
  * in the commit that does.
  *
- * They carry a `.sdl.txt` extension on purpose. `vite-plugin-relay-lite`
- * compiles every Relay-tagged document in the project as an OPERATION, and
- * a schema definition is not one — under the compiler's own extension these
- * fixtures fail the transform before any test in this file runs.
+ * They carry a `.sdl.txt` extension on purpose. In the docsite app,
+ * `vite-plugin-relay-lite` compiles every Relay-tagged document in the project
+ * as an OPERATION, and a schema definition is not one — under the compiler's
+ * own extension these fixtures failed the transform before any test could run.
+ * That plugin does not exist in this package and `.graphql` would now be
+ * legal, but the name is kept: it makes the move a pure rename under
+ * `git log --follow`, and the constraint is worth remembering the next time
+ * someone captures a schema into an app.
  */
 const readFixture = (name: string): string =>
   readFileSync(
-    fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)),
+    fileURLToPath(new URL(`../__fixtures__/${name}`, import.meta.url)),
     "utf-8",
   );
 
-/** The schema with BOTH roots compiled — what the journeys lens reads. */
+/**
+ * The schema with BOTH roots compiled — what the journeys lens read at the
+ * time of capture. See this file's header: that time is two convergences ago.
+ */
 const SDL = readFixture("schemaWithSecondRoot.sdl.txt");
 
 /** The schema at `aea674000`, from the refs cache alone. */

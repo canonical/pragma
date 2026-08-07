@@ -1,0 +1,7 @@
+# DOT-PREFIXED: an experimental-channel artifact, not a graph source. The
+# collector must never read this file. If it ever does, `ds:leaked` appears in
+# the collected set and `collectTtlSources.test.ts` goes red.
+
+@prefix ds: <https://design.example.org/ontology#> .
+
+ds:leaked a ds:Component ; ds:tier "channel" .
