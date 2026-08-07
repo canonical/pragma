@@ -271,9 +271,10 @@ const PropertyTable = ({
  * `ontologies { prefix namespace }` — no new variable, no new round trip.
  *
  * The displayed name is `_meta.title`, which is TOTAL by construction (the
- * provider computes a fallback chain ending at the IRI). There is no
- * `?? curie` branch because there is no case that reaches it — a fallback
- * on a total field is unreachable code wearing defence's clothes.
+ * provider computes a fallback chain whose tail is the IRI local name,
+ * never the full IRI). There is no `?? curie` branch because there is no
+ * case that reaches it — a fallback on a total field is unreachable code
+ * wearing defence's clothes.
  *
  * Every reader-facing string here is `_meta.curie`, NOT `uri`. Under the
  * converged base `uri` is the absolute IRI, and this lens is the one place
