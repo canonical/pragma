@@ -175,13 +175,15 @@ lib:Book     graphql:name "Publication" ;         # verbatim type name
 lib:authored graphql:name "works" .               # verbatim field name — never pluralized/prefixed
 lib:hasPublisher graphql:singular true .          # cardinality without owl/SHACL markers
 lib:title    graphql:nonNull true ;               # promote to String!
-             graphql:searchable true .            # search-index membership (consumed by the search feature)
+             graphql:searchable true .            # search-index membership (IR capture only — see below)
 lib:cites    graphql:inverse lib:citedBy .        # declared pair, same semantics as owl:inverseOf
 lib:Annotation graphql:embeddable true .          # force embedded shape
-<https://lib.example/> graphql:prefix "lib" .     # namespace prefix, ahead of the registered map
+<https://example.org/library/> graphql:prefix "lib" .  # namespace prefix, ahead of the registered map
 ```
 
-The class-side terms are `name`, `abstract`, `embeddable`, `expose`, and the four descriptive sources `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom` (nearest ancestor wins — annotate a root class to cover its tree); the property-side terms are `name`, `singular`, `nonNull`, `inverse`, `searchable`; `prefix` targets the namespace or ontology subject. Validation is loud and never tiebreaks: conflicting values are a fatal `A001`, foreign targets (`rdfs:label`, an absent vocabulary, a typo) a fatal `A002`, malformed values a fatal `A003`; an unrecognized local name or inapplicable target is ignored with `A004`. Under `mode: "auto"` the annotations are deliberately not consulted (`A006`) — the escape hatch that compiles even a broken annotation set.
+> **The namespace IRI above is provisional.** It is a placeholder pending confirmation against the published vocabulary it has to agree with — cross-provider convergence depends on the two matching. Everything is keyed to one constant (`GRAPHQL` in `shared/constants.ts`), so settling it is a one-line swap here; assertions written against the old IRI stop being captured at that point, silently, because the extraction probe matches on the namespace. Treat annotations you publish today as re-targetable.
+
+The class-side terms are `name`, `abstract`, `embeddable`, `expose`, and the four descriptive sources `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom` (nearest ancestor wins — annotate a root class to cover its tree); the property-side terms are `name`, `singular`, `nonNull`, `inverse`, `searchable`; `prefix` targets the namespace or ontology subject. `searchable` is **IR capture only** in this release: it is validated and carried on `OntologyIR.graphql`, and no schema surface reads it — no root field, no connection, no `OntologyProperty` field — so the emitted SDL is byte-identical with or without it. Annotate for it if you are modelling ahead; expect no behavior from it yet. Validation is loud and never tiebreaks: conflicting values are a fatal `A001`, foreign targets (`rdfs:label`, an absent vocabulary, a typo) a fatal `A002`, malformed values a fatal `A003`; an unrecognized local name or inapplicable target is ignored with `A004`. Under `mode: "auto"` the annotations are deliberately not consulted (`A006`) — the escape hatch that compiles even a broken annotation set.
 
 ## Custom mappings (config — deprecated)
 

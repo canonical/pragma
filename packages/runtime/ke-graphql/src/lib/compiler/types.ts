@@ -203,9 +203,11 @@ export interface SchemaPluginOptions {
    * Opt-in instance-level standard-vocabulary fields.
    * Per GraphQL type name: predicate URI → field name.
    *
-   * @deprecated Superseded by the `graphql:*From` annotations — declare the
-   * source predicate on the ontology term instead of naming it per schema
-   * type here. Kept working (and now collision-correct) until they land.
+   * @deprecated Superseded by the `graphql:titleFrom`/`labelFrom`/
+   * `commentFrom`/`definitionFrom` annotations, which have landed — declare
+   * the source predicate on the ontology term instead of naming it per
+   * schema type here, and every consumer of that ontology resolves it
+   * identically. Kept working, and collision-correct, for the migration.
    */
   standardVocabFields?: Record<string, Record<string, string>>;
   /** Resolver-time warnings (coercion failures). Default: console.warn, deduplicated. */
