@@ -37,9 +37,13 @@
  * by design — so the page renders its SUSPENSE FALLBACK, not an error.
  *
  * Records-present-plus-content-absent is exactly that divergence. So each
- * data-bearing route asserts BOTH that `__INITIAL_DATA__.relay.records`
- * carries metro data AND that the rendered HTML carries it. Content present
- * proves both registries agreed; nothing can paper over a miss by refetching.
+ * data-bearing route asserts BOTH that `__INITIAL_DATA__.relay.records` holds
+ * records the METRO PROVIDER MINTED — keyed by its absolute IRIs, a form the
+ * app never sends, so no request can forge them — AND that the rendered HTML
+ * carries metro data. Content present proves both registries agreed; nothing
+ * can paper over a miss by refetching. See {@link storeEvidence}, which keeps
+ * the weaker variable-echo check as a separate, separately-named answer rather
+ * than letting it stand in for proof that data arrived.
  *
  * Kept out of the default `test` run by the `*.e2e.ts` name. Run it with
  * `bun run test:proof`.
@@ -112,6 +116,15 @@ const FOREIGN_MARKERS = [
   'href="/components/',
 ];
 
+/**
+ * The metro graph's IRI namespace — the form only the PROVIDER emits.
+ *
+ * The app addresses metro entities by their prefixed CURIE (`metro:Station`),
+ * so this absolute form never appears in an outbound variable. That asymmetry
+ * is what makes it usable as proof-of-response in {@link storeEvidence}.
+ */
+const METRO_IRI_PREFIX = "https://metro.example/";
+
 /** The frame every page must paint, whatever provider fills the canvas. */
 function expectPortableFrame(html: string): void {
   expect(html).toContain('data-region="primary-nav"');
@@ -145,9 +158,42 @@ function initialRelayRecords(html: string): Record<string, unknown> {
   return records as Record<string, unknown>;
 }
 
-/** Does the warmed store hold anything from the metro graph at all? */
-function storeMentionsMetro(records: Record<string, unknown>): boolean {
-  return JSON.stringify(records).includes("metro:");
+/**
+ * What the warmed store proves about the metro graph — two answers, because
+ * they witness two DIFFERENT things and only one of them is forgeable.
+ *
+ * `askedForMetro` — Relay formats ROOT storage keys from the operation's own
+ * arguments, so a hit here reads `ontologyClass(uri:"metro:Station")`. That
+ * argument came from `GRAPH_BINDINGS.standards.classUri` inside the BUN-NATIVE
+ * prepare step, which is the one registry nothing else in this file can see:
+ * if `server.bun.ts`'s copy of `#lib/graphBindings` resolved `pragma` while
+ * the Vite SSR copy resolved `metro`, this reads `cs:CodeStandard` and goes
+ * red. It is the cross-registry detector.
+ *
+ * It cannot, however, tell a warmed store from one whose every field came back
+ * null — the normalizer writes the key either way, so the request alone
+ * satisfies it. Hence:
+ *
+ * `holdsMetroRecords` — record IDs are `uri`, the ABSOLUTE IRI (R-2), and the
+ * app only ever SENDS the prefixed form. So an `https://metro.example/` key
+ * can only have been minted by the provider's response. No request can forge
+ * it, and no null-filled store contains one.
+ *
+ * Assert both wherever the operation carries a bound class; a route whose
+ * variables mention no class can only assert the second.
+ */
+function storeEvidence(records: Record<string, unknown>): {
+  askedForMetro: boolean;
+  holdsMetroRecords: boolean;
+} {
+  return {
+    askedForMetro: JSON.stringify(records["client:root"] ?? {}).includes(
+      "metro:",
+    ),
+    holdsMetroRecords: Object.keys(records).some((key) =>
+      key.startsWith(METRO_IRI_PREFIX),
+    ),
+  };
 }
 
 /** Poll until the provider's hit counter shows `count` of `source`. */
@@ -292,9 +338,12 @@ describe("the core lenses render against a provider that has never heard of prag
         expect(definitionsHtml).not.toContain("is-selected");
         //    The cross-registry pair: metro records in the store AND metro
         //    data in the HTML the reader receives.
-        expect(storeMentionsMetro(initialRelayRecords(definitionsHtml))).toBe(
-          true,
-        );
+        //    This route's operation sends no bound class, so there is no
+        //    variable echo to read — identity is the whole of the store-side
+        //    evidence here, and it is the strong half anyway.
+        expect(
+          storeEvidence(initialRelayRecords(definitionsHtml)).holdsMetroRecords,
+        ).toBe(true);
         expect(definitionsHtml).toContain("metro:");
         expectNoPragmaVocabulary("/definitions", definitionsHtml);
 
@@ -304,7 +353,13 @@ describe("the core lenses render against a provider that has never heard of prag
         expect(term.status).toBe(200);
         const termHtml = await term.text();
         expectPortableFrame(termHtml);
-        expect(storeMentionsMetro(initialRelayRecords(termHtml))).toBe(true);
+        expect(storeEvidence(initialRelayRecords(termHtml))).toEqual({
+          //    `uri: "metro:Station"` reaches the root storage key only if the
+          //    router percent-DECODED the `:term` param — nothing else on this
+          //    route pins that.
+          askedForMetro: true,
+          holdsMetroRecords: true,
+        });
 
         //    The well draws exactly one node per class the rail lists, so the
         //    two counts must agree — both derived from THIS response, never
@@ -381,9 +436,10 @@ describe("the core lenses render against a provider that has never heard of prag
         //    `useLazyLoadQuery` missed, and the page would serve
         //    `Loading the standards…` with a full record map underneath.
         //    Records AND content, therefore, or neither proves anything.
-        expect(
-          storeMentionsMetro(initialRelayRecords(standardsIndexHtml)),
-        ).toBe(true);
+        expect(storeEvidence(initialRelayRecords(standardsIndexHtml))).toEqual({
+          askedForMetro: true,
+          holdsMetroRecords: true,
+        });
         expect(standardsIndexHtml).not.toContain("No standards in the graph");
 
         //    Grouping is by the instance's own CLASS. `metro:Station` has 14
@@ -437,9 +493,9 @@ describe("the core lenses render against a provider that has never heard of prag
         expect(standardReading.status).toBe(200);
         const standardReadingHtml = await standardReading.text();
         expectPortableFrame(standardReadingHtml);
-        expect(
-          storeMentionsMetro(initialRelayRecords(standardReadingHtml)),
-        ).toBe(true);
+        expect(storeEvidence(initialRelayRecords(standardReadingHtml))).toEqual(
+          { askedForMetro: true, holdsMetroRecords: true },
+        );
         //    The other half of the cross-registry pair, and the sharpest one
         //    on this route: before the seam, the prepare step already warmed
         //    the store with `metro:northgate` and the page STILL said "No
