@@ -129,11 +129,11 @@ function readCopy(source: string): string[] {
  * drops, for the one rule that is ABOUT specifiers.
  *
  * Read through the scanner rather than over raw text, for the same reason
- * {@link readCopy} is: a docblock that RECORDS a measurement may legitimately
- * quote a package name — `declaredGenerators.ts` quotes a real
- * `Cannot find module '…'` failure and a `source` format example — and a
- * raw-text rule would have to choose between losing those docblocks and
- * reporting them forever.
+ * {@link readCopy} is: this tree records what it MEASURED, and a measurement
+ * may quote a package name verbatim (`Cannot find module '@canonical/…' from
+ * '/$bunfs/root/…'` is why the codegen exists). A raw-text rule would have to
+ * choose between losing every such docblock and reporting it forever, so the
+ * rule below is about what the code SAYS, not about what its prose recalls.
  *
  * @param source - The file's text.
  * @returns The authored string literals, specifiers included.

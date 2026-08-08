@@ -84,7 +84,6 @@ const generatorNounSchema = z
 
 const generatorDeclarationSchema = z.object({
   name: z.string().min(1),
-  source: z.string().min(1),
   nouns: z.record(z.string().min(1), generatorNounSchema),
 });
 

@@ -109,13 +109,15 @@ export interface GeneratorNoun {
  *
  * `name` is the specifier `scripts/build.ts` writes into the generated static
  * import — `bun build --compile` bundles only LITERAL specifiers, and the build
- * writes them. `source` names the range the distribution installs; the build
- * asserts it matches this package's own `dependencies` entry, because the
- * dependency — not the declaration — is what actually links in.
+ * writes them. It is also the whole identity of the package here: the build
+ * asserts the name is a key of the distribution's own `dependencies`, because
+ * the dependency — not the declaration — is what installs and links. There is
+ * deliberately no `source` field restating that dependency's range; a
+ * declaration that repeats `package.json` earns nothing and can only disagree
+ * with it.
  */
 export interface GeneratorDeclaration {
   readonly name: string;
-  readonly source: string;
   readonly nouns: Readonly<Record<string, GeneratorNoun>>;
 }
 

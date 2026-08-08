@@ -44,11 +44,11 @@ import {
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { assertDeclaredGenerators } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { parseRawConfig } from "../src/kernel/config/schema.js";
 import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
+import { assertDeclaredGenerators } from "./declaredGenerators.js";
 import {
   DEFAULT_GENERATED_DIR,
   GENERATORS_MODULE,

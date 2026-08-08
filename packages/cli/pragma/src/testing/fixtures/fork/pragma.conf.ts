@@ -25,7 +25,6 @@ export default {
   generators: [
     {
       name: "@canonical/summon-monorepo",
-      source: "npm:@canonical/summon-monorepo@^0.33.0",
       nouns: {
         monorepo: {
           key: "monorepo",

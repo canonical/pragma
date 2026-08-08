@@ -551,7 +551,6 @@ Made by the Canonical Webteam — https://canonical.com.`,
   generators: [
     {
       name: "@canonical/summon-component",
-      source: "npm:@canonical/summon-component@^0.33.0",
       nouns: {
         // A FRAMEWORK AXIS: the package's `component/react`, `component/svelte`
         // and `component/lit` generators collapse into one verb plus a
@@ -580,7 +579,6 @@ Made by the Canonical Webteam — https://canonical.com.`,
     },
     {
       name: "@canonical/summon-package",
-      source: "npm:@canonical/summon-package@^0.33.0",
       nouns: {
         package: {
           key: "package",
@@ -597,7 +595,6 @@ Made by the Canonical Webteam — https://canonical.com.`,
     },
     {
       name: "@canonical/summon-application",
-      source: "npm:@canonical/summon-application@^0.33.0",
       nouns: {
         // The package also ships `domain`, `route` and `wrapper`; `create`
         // exposes one of its four generators. Surfacing a noun is a
