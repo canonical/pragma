@@ -46,6 +46,7 @@ import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { assertDeclaredGenerators } from "../src/capabilities/create/declaredGenerators.js";
 import { capabilities } from "../src/capabilities/index.js";
+import { parseRawConfig } from "../src/kernel/config/schema.js";
 import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 import {
@@ -121,30 +122,39 @@ function readBuildTarget(argv: readonly string[]): BuildTarget {
 const TARGET = readBuildTarget(process.argv.slice(2));
 
 /**
- * The target distribution's `generators`, asserted against ITS OWN
- * `package.json#dependencies` on EVERY build, so a declaration naming a package
- * the binary would not link fails here rather than at a user's `create`.
+ * The target distribution's `generators`, VALIDATED and then asserted against
+ * ITS OWN `package.json#dependencies` on EVERY build, so a declaration naming a
+ * package the binary would not link fails here rather than at a user's `create`.
  *
+ * `parseRawConfig` runs FIRST, and it is the fix to a measured gap: the noun
+ * grammar's `key` XOR `keyPrefix`+`axis` rule lives in `kernel/config/schema.ts`
+ * and reached the SHIPPED conf only, through `kernel/config/defaults.ts`. A
+ * fork's conf is never a config layer — it is a build parameter — so its
+ * declaration was validated at no point in its life, and a noun declaring
+ * neither form surfaced as `…'s generator "undefined/…", which that package does
+ * not export`: a message about a missing generator rather than about the config
+ * that is wrong, which is exactly what the schema's docblock says it prevents.
+ *
+ * @param dir - The target distribution's directory.
  * @returns The declared generator packages, in declaration order.
  * @note Impure — imports the target's config and reads its package manifest.
  */
-async function readDeclaredGenerators(): Promise<
-  readonly GeneratorDeclaration[]
-> {
+async function readDeclaredGenerators(
+  dir: string,
+): Promise<readonly GeneratorDeclaration[]> {
+  const confPath = join(dir, "pragma.conf.ts");
   const conf = (
-    (await import(pathToFileURL(join(TARGET.dir, "pragma.conf.ts")).href)) as {
-      default: { generators?: readonly GeneratorDeclaration[] };
-    }
+    (await import(pathToFileURL(confPath).href)) as { default: unknown }
   ).default;
-  const declared = conf.generators ?? [];
+  const declared = parseRawConfig(conf, confPath).generators ?? [];
   const manifest = JSON.parse(
-    readFileSync(join(TARGET.dir, "package.json"), "utf-8"),
+    readFileSync(join(dir, "package.json"), "utf-8"),
   ) as { dependencies?: Record<string, string> };
   assertDeclaredGenerators(declared, manifest.dependencies ?? {});
   return declared;
 }
 
-const DECLARED = await readDeclaredGenerators();
+const DECLARED = await readDeclaredGenerators(TARGET.dir);
 
 /**
  * Every directory named `templates` under a package's `src/`, deepest paths

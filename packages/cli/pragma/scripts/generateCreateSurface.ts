@@ -133,8 +133,17 @@ function deriveNounSurface(
       : Object.keys(map)
           .filter((key) => key.startsWith(`${keyPrefix}/`))
           .map((key) => key.slice(keyPrefix.length + 1));
-  const key =
-    declared.key ?? `${keyPrefix}/${axisValues.at(0) ?? "<no-axis-values>"}`;
+  // No `??` sentinel: an axis that resolved to nothing is a declaration fault,
+  // and a synthesised key would report it as "the package does not export
+  // `undefined/<no-axis-values>`" — a message about the package rather than
+  // about the conf. The validator rejects a noun declaring neither form; this
+  // covers the one it cannot see, a `keyPrefix` no map key sits under.
+  if (declared.key === undefined && axisValues.length === 0) {
+    throw new Error(
+      `pragma.conf.ts declares \`create ${noun}\` with keyPrefix "${keyPrefix}", and "${packageName}" exports no generator under "${keyPrefix}/". It exports: ${Object.keys(map).sort().join(", ")}.`,
+    );
+  }
+  const key = declared.key ?? `${keyPrefix}/${axisValues.at(0)}`;
   const generator = map[key];
   if (generator === undefined) {
     throw new Error(
@@ -150,8 +159,14 @@ function deriveNounSurface(
     aliases[`with${bare.charAt(0).toUpperCase()}${bare.slice(1)}`] = bare;
   }
 
+  // The axis prompt is dropped because the CLI replaces it with an enum FLAG
+  // built from the map keys. Gated on `keyPrefix`, belt-and-braces behind the
+  // validator: an `axis` that produced no enum must not still delete the prompt
+  // it names — that is a required param vanishing from the surface with nothing
+  // red.
+  const dropped = keyPrefix === undefined ? undefined : axis;
   const prompts = generator.prompts
-    .filter((prompt) => prompt.name !== axis)
+    .filter((prompt) => prompt.name !== dropped)
     .map(reducePrompt);
 
   const pathParam = prompts.find(

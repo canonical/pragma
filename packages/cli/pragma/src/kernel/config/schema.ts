@@ -38,7 +38,17 @@ const packDeclarationSchema = z.union([
  * `keyPrefix`+`axis` is checked here rather than left to the build: a
  * declaration naming neither would otherwise reach codegen and fail there with
  * a message about a missing generator rather than about the config that is
- * wrong.
+ * wrong. `scripts/build.ts` runs this validator over the target's declaration
+ * — a fork's included — before it reads a single field, so that is true for
+ * every distribution and not only the shipped one.
+ *
+ * EXCLUSIVE OVER ALL THREE FIELDS, which the first version was not: it compared
+ * `key !== undefined` against `keyPrefix && axis`, so `{key, axis}` read as
+ * `true !== false` and was ACCEPTED. Downstream, `deriveNounSurface` drops the
+ * prompt an `axis` names — so an ignored `axis` silently DELETED a required
+ * positional from the generated surface, with no enum flag to replace it and
+ * nothing red. Measured: `{key: "package", axis: "name"}` parsed, and the
+ * emitted `create package` lost its `name` param entirely.
  */
 const generatorNounSchema = z
   .object({
@@ -55,12 +65,20 @@ const generatorNounSchema = z
     noDefault: z.array(z.string().min(1)).optional(),
   })
   .refine(
-    (noun) =>
-      (noun.key !== undefined) !==
-      (noun.keyPrefix !== undefined && noun.axis !== undefined),
+    (noun) => {
+      const byKey =
+        noun.key !== undefined &&
+        noun.keyPrefix === undefined &&
+        noun.axis === undefined;
+      const byAxis =
+        noun.key === undefined &&
+        noun.keyPrefix !== undefined &&
+        noun.axis !== undefined;
+      return byKey || byAxis;
+    },
     {
       message:
-        'a generator noun declares either "key", or both "keyPrefix" and "axis" — not neither and not both',
+        'a generator noun declares either "key" ALONE, or both "keyPrefix" and "axis" and no "key" — no mixture of the two forms, and never neither',
     },
   );
 

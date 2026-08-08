@@ -256,6 +256,28 @@ describe("legacy config shapes — loud rename/removal errors", () => {
     expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|generators|key/);
   });
 
+  it("a `generators` noun MIXING a key with an axis is a CONFIG_ERROR", () => {
+    freshXdg();
+    // The first refinement compared `key !== undefined` against
+    // `keyPrefix && axis`, so this read as `true !== false` and was ACCEPTED
+    // while its own message said "not both". The build then dropped the prompt
+    // the ignored `axis` names: `{key: "package", axis: "name"}` emitted a
+    // `create package` surface with no `name` param at all — a required
+    // positional deleted, with no enum flag to replace it and nothing red.
+    writeGlobal(
+      '{"generators": [{"name": "@acme/gen", "source": "npm:@acme/gen@^1.0.0", "nouns": {"gen": {"key": "gen", "axis": "name", "summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
+    );
+    expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|mixture/);
+  });
+
+  it("a `generators` noun mixing a key with a keyPrefix is a CONFIG_ERROR", () => {
+    freshXdg();
+    writeGlobal(
+      '{"generators": [{"name": "@acme/gen", "source": "npm:@acme/gen@^1.0.0", "nouns": {"gen": {"key": "gen", "keyPrefix": "gen", "summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
+    );
+    expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|mixture/);
+  });
+
   it("a removed `completion.caseSensitive` throws CONFIG_ERROR naming the field", async () => {
     freshXdg();
     // The field was validated and read by NOTHING. Removing it silently would
