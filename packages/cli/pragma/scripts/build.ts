@@ -67,10 +67,23 @@ const MANIFEST_MODULE = "templates.embedded.generated.ts";
  *
  * THE CONF IS A PARAMETER OF THE BUILD, NOT AN IMPORT OF IT. That is the whole
  * thesis stated in the one script that can state it: `--fork <dir>` builds the
- * distribution declared by `<dir>/pragma.conf.ts` against `<dir>/package.json`,
- * writes ITS generated modules into `<dir>`, and aliases the three of them at
- * bundle time. `src/capabilities/create/forkGenerator.subprocess.test.ts` uses
- * it to prove a fork adds a `create` noun by editing one file.
+ * distribution declared by `<dir>/pragma.conf.ts`, checks that declaration
+ * against `<dir>/package.json`, writes ITS generated modules into `<dir>`, and
+ * aliases the three of them at bundle time.
+ * `src/capabilities/create/forkGenerator.subprocess.test.ts` uses it to prove a
+ * fork adds a `create` noun by editing one file.
+ *
+ * WHAT `--fork` IS NOT: a general out-of-tree build facility. RESOLUTION stays
+ * with THIS package — the codegen imports each declared package by name from
+ * `scripts/`, the template harvest reads `../node_modules/<name>/src`, and the
+ * bundler resolves the generated module's bare specifiers from `<dir>`. So
+ * `<dir>` must sit inside this package's resolution scope; measured, an
+ * otherwise-identical fork at an external path completed codegen and harvest
+ * and then failed to bundle with `Could not resolve: "@canonical/summon-…"`.
+ * The manifest that is CHECKED is therefore not always the manifest that
+ * GOVERNS linking, and the in-repo fixture is the case where they differ: it
+ * declares its generator under `dependencies` while this package carries it as
+ * a `devDependency`, which is what actually links.
  */
 interface BuildTarget {
   /** Directory holding `pragma.conf.ts` and `package.json`. */
