@@ -43,10 +43,16 @@ const compiledBin = join(cliNextDir, "dist/pragma");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 
 // The binary is provisioned by `testing/perf/globalSetup.ts`, which rebuilds it
-// whenever it is missing or older than `src/**`, `scripts/**`, `pragma.conf.ts`
-// or `package.json` — so these tests exercise the current bundle + embedded
-// manifest without a second `beforeAll` writing `dist/pragma` in place while
-// another worker's test is spawning it.
+// whenever it is missing or older than anything it is built FROM — this
+// package's own sources AND every workspace package the bundler links, the
+// declared generator packages among them, read from the declaration. That
+// second half is what makes these tests mean anything: with only this package
+// watched, touching `@canonical/summon-package`'s generator left the binary
+// unbuilt and this PROTECTED guard went green against a binary predating the
+// summon source it exists to prove. The exact input set and the measurements
+// behind it are stated once, in `globalSetup.ts`'s docblock; restating it here
+// is how it went stale. One provisioner, so no `beforeAll` writes `dist/pragma`
+// in place while another worker's test is spawning it.
 
 /** Run one `create …` invocation in its own cwd and snapshot what it wrote. */
 function runCreate(

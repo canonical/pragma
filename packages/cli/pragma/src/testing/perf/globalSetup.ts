@@ -50,13 +50,34 @@ import { fileURLToPath } from "node:url";
 import conf from "../../../pragma.conf.js";
 
 /**
- * Packages the binary links whatever the declaration says: summon-core is the
- * generation layer and the embedded-file registry every generator reads
- * through, and `@canonical/task` is the effect interpreter every mutation runs
- * on. Not a distribution fact — this CLI depends on both regardless of which
- * generators it ships.
+ * Packages the binary links whatever the declaration says. Not a distribution
+ * fact — this CLI depends on every one of them regardless of which generators
+ * it ships, and each is a WORKSPACE SIBLING (`node_modules/@canonical/<name>`
+ * is a symlink into `packages/`), so each is editable and each can invalidate
+ * the binary between two test runs.
+ *
+ * THE LIST IS EVERY LINKED SIBLING, and that completeness is the correction.
+ * It started as summon-core (the generation layer and embedded-file registry)
+ * plus `@canonical/task` (the effect interpreter every mutation runs on), which
+ * left three more out — and one of the guards this file provisions,
+ * `kernel/completion/safety.test.ts`, is a claim about `@canonical/ke`'s
+ * laziness specifically. Measured that all five reach the binary by grepping
+ * `dist/pragma` for string literals unique to each package's `dist/esm`: ke 5
+ * of 6 sampled literals present, ke-graphql 8 of 17, harnesses 2 of 4 —
+ * including `writeMcpConfigTargets: at least one target is required`, which
+ * exists nowhere else in this tree. Then, on a freshly built binary with
+ * `harnesses/dist/esm/index.js` touched: `fresh` was `true` with the old two
+ * (no rebuild — the guards would have run against the stale binary) and `false`
+ * with all five. Cost: 32 ms to evaluate BOTH input sets end to end, so the
+ * three additions are a rounding error against the ten trees already walked.
  */
-const INFRASTRUCTURE = ["@canonical/summon-core", "@canonical/task"];
+const INFRASTRUCTURE = [
+  "@canonical/summon-core",
+  "@canonical/task",
+  "@canonical/ke",
+  "@canonical/ke-graphql",
+  "@canonical/harnesses",
+];
 
 /**
  * The two trees a linked package can contribute to the binary: its sources (the
