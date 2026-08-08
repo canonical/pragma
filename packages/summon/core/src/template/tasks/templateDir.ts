@@ -20,6 +20,25 @@ const minimatch = (filepath: string, pattern: string): boolean => {
 
 /**
  * Render a directory of templates to a destination.
+ *
+ * SOURCE RUNS ONLY, and this is the one template read in this package that a
+ * compiled host cannot serve. It globs `options.source` off the real filesystem
+ * and passes each file to `template({ source })` with no `content:`, so
+ * summon-core falls through to `readFile(options.source)` — which in a
+ * `bun build --compile` binary is an ENOENT under `/$bunfs`, thrown AFTER the
+ * composed `mkdir` has already created the destination directory. Measured: the
+ * glob itself throws first (`new Bun.Glob("**\/*").scan({ cwd })` on a path the
+ * binary does not carry), so the failure is loud rather than silent.
+ *
+ * The generators this workspace ships do not use it; every one of them routes
+ * its reads through `@canonical/summon-core/embedded` (see `loadEmbeddedSync`),
+ * and a CLI that embeds a declared generator's templates asserts exactly that
+ * at build time. A generator reaching for this helper instead reintroduces the
+ * compiled-binary bug the registry exists to close.
+ *
+ * @experimental Compiled-binary hosts are not supported. Use `loadEmbeddedSync`
+ *   plus per-file `template({ source, content })` if the generator must run from
+ *   one.
  */
 export default function templateDir(options: TemplateDirOptions): Task<void> {
   const engine = options.engine ?? ejsEngine;

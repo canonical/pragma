@@ -47,7 +47,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseRawConfig } from "../src/kernel/config/schema.js";
 import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
-import { assertDeclaredGenerators } from "./declaredGenerators.js";
+import {
+  assertDeclaredGenerators,
+  assertReadsEmbeddedRegistry,
+} from "./declaredGenerators.js";
 import {
   DEFAULT_GENERATED_DIR,
   GENERATORS_MODULE,
@@ -237,10 +240,37 @@ function collectDeclaredTemplateRoots(
   declared: readonly GeneratorDeclaration[],
 ): readonly TemplateRoot[] {
   return declared.flatMap(({ name }) =>
-    collectTemplateRoots(
-      fileURLToPath(new URL(`../node_modules/${name}/src`, scriptsUrl)),
-    ).map((root) => ({ name, root })),
+    collectTemplateRoots(declaredSrcDir(name)).map((root) => ({ name, root })),
   );
+}
+
+/**
+ * A declared package's linked source tree.
+ *
+ * @param name - The declared package name.
+ * @returns The absolute path to its `src`, through this package's node_modules.
+ */
+function declaredSrcDir(name: string): string {
+  return fileURLToPath(new URL(`../node_modules/${name}/src`, scriptsUrl));
+}
+
+/**
+ * Assert every package the harvest took templates from reads them back through
+ * the embedded registry.
+ *
+ * Scoped to the packages with roots because those are the ones with something
+ * to read: {@link assertReadsEmbeddedRegistry} carries the argument.
+ *
+ * @param roots - Every declared package's template roots.
+ * @throws Error naming a package whose sources never reach for the registry.
+ * @note Impure — reads each such package's source tree.
+ */
+function assertHarvestedPackagesReadEmbedded(
+  roots: readonly TemplateRoot[],
+): void {
+  for (const name of new Set(roots.map((entry) => entry.name))) {
+    assertReadsEmbeddedRegistry(name, declaredSrcDir(name));
+  }
 }
 
 /**
@@ -454,8 +484,10 @@ if (import.meta.main) {
     `Generated the create surface for ${nouns.join(", ")} → ${GENERATORS_MODULE} + ${SURFACE_MODULE}`,
   );
 
+  const roots = collectDeclaredTemplateRoots(DECLARED);
+  assertHarvestedPackagesReadEmbedded(roots);
   const embedded = generateTemplateManifest(
-    collectDeclaredTemplateRoots(DECLARED),
+    roots,
     join(TARGET.generatedDir, MANIFEST_MODULE),
   );
   console.log(`Embedded ${embedded} generator templates → ${MANIFEST_MODULE}`);

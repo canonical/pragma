@@ -183,12 +183,16 @@ export function isModuleNotFound(cause: unknown): boolean {
  * cannot leave this import pointing at a package it no longer ships. In a source
  * run the disk read wins and the manifest is inert.
  *
- * Every declared generator reads through the registry, so there is nothing left
- * to gate: all three `create` nouns run from the shipped binary, each proved
- * byte-for-byte against a source run in `compiledCreate.subprocess.test.ts`. A
- * resolution failure — the bundling regression {@link isModuleNotFound}
- * detects — is turned into a readable refusal rather than an internal-bug
- * report.
+ * There is nothing left for this module to GATE, and that is a claim the BUILD
+ * makes rather than one asserted here: `scripts/declaredGenerators.ts
+ * #assertReadsEmbeddedRegistry` refuses to embed a declared package's templates
+ * unless that package reaches for this registry, so "reads through the registry"
+ * is a precondition of shipping rather than a per-noun bit. Every declared
+ * `create` noun therefore runs from the shipped binary, and each of this
+ * distribution's is proved byte-for-byte against a source run in
+ * `compiledCreate.subprocess.test.ts`. A resolution failure — the bundling
+ * regression {@link isModuleNotFound} detects — is turned into a readable
+ * refusal rather than an internal-bug report.
  */
 async function loadCreateRuntime() {
   try {

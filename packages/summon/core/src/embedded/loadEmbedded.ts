@@ -17,9 +17,20 @@
  * ZERO IMPORTS BEYOND `node:fs`, deliberately and permanently: the host imports
  * this module on a path that must not load the generation layer.
  *
+ * THE INVARIANT A GENERATOR OWES ITS HOST. Every read must reach this registry
+ * and be passed on as `template({ source, content })`; a call that gives only
+ * `source` falls through to `readFile`, which from a compiled binary is ENOENT
+ * under `/$bunfs` after `mkdir` has already written a half-made tree. The one
+ * helper in this package that does NOT satisfy it is `templateDir`, marked
+ * `@experimental` and source-run-only for that reason. A CLI embedding a
+ * declared generator's templates asserts the package reaches for this module at
+ * build time, which is where a fork meets the rule.
+ *
  * The manifest key is PACKAGE-SCOPED (`@canonical/summon-component/react
- * /types.ts.ejs`). The package scope is what lets four generator packages share
- * one manifest; the path tail is what keeps `react/types.ts.ejs` and
+ * /types.ts.ejs`). The package scope is what lets several generator packages
+ * share one manifest — four of them in this workspace embed under it, and the
+ * shipped CLI's manifest carries three; the path tail is what keeps
+ * `react/types.ts.ejs` and
  * `svelte/types.ts.ejs` distinct, which is the historic wrong-framework
  * collision (`types.ts.ejs`, `index.ts.ejs`, `styles.css.ejs` and
  * `stories.ts.ejs` exist under all three component frameworks).
