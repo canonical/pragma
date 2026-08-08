@@ -20,16 +20,7 @@ import type { GeneratorDefinition } from "@canonical/summon-core";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { GENERATOR_MODULES } from "./generators.generated.js";
 import { CREATE_SURFACE } from "./surface.generated.js";
-import type { CreateKind } from "./types.js";
-
-/** A noun's surface entry, widened past the generated literal types. */
-interface NounSurface {
-  readonly package: string;
-  readonly key: string;
-  readonly axis?: string;
-  readonly axisValues?: readonly string[];
-  readonly keyPrefix?: string;
-}
+import type { CreateKind, NounSurface } from "./types.js";
 
 /**
  * Pick the generator for a `create <kind>` run.

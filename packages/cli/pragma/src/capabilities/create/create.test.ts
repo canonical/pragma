@@ -33,7 +33,7 @@ import {
 } from "./create.verb.js";
 import { createModule } from "./index.js";
 import { CREATE_SURFACE } from "./surface.generated.js";
-import type { CreateKind } from "./types.js";
+import type { CreateKind, NounSurface } from "./types.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -329,10 +329,9 @@ describe("derived create surface (PROTECTED)", () => {
     // `package` has no positional — it writes into a subdirectory derived from
     // `--name`, which `cwdJail.test.ts` covers separately.
     const derived = Object.fromEntries(
-      Object.entries(CREATE_SURFACE).map(([kind, noun]) => [
-        kind,
-        (noun as { pathParam?: string }).pathParam,
-      ]),
+      Object.entries(CREATE_SURFACE).map(
+        ([kind, noun]: [string, NounSurface]) => [kind, noun.pathParam],
+      ),
     );
     expect(derived).toEqual({
       component: "componentPath",
@@ -342,14 +341,14 @@ describe("derived create surface (PROTECTED)", () => {
   });
 
   it("the axis collapses the declared package's real generator keys", () => {
-    const component = CREATE_SURFACE.component as {
-      axis: string;
-      axisValues: readonly string[];
-      keyPrefix: string;
-    };
+    const component: NounSurface = CREATE_SURFACE.component;
     expect(component.axis).toBe("framework");
     expect(component.keyPrefix).toBe("component");
-    expect([...component.axisValues]).toEqual(["react", "svelte", "lit"]);
+    expect([...(component.axisValues ?? [])]).toEqual([
+      "react",
+      "svelte",
+      "lit",
+    ]);
   });
 
   it("the CLI-grammar overlays are applied, and only where declared", () => {
@@ -441,12 +440,7 @@ describe("declared generator bindings (PROTECTED)", () => {
     const nouns = Object.keys(CREATE_SURFACE) as CreateKind[];
     expect(nouns.length).toBeGreaterThan(0);
     for (const kind of nouns) {
-      const noun = CREATE_SURFACE[kind] as {
-        key: string;
-        axis?: string;
-        axisValues?: readonly string[];
-        keyPrefix?: string;
-      };
+      const noun: NounSurface = CREATE_SURFACE[kind];
       if (noun.axis !== undefined && noun.axisValues !== undefined) {
         for (const value of noun.axisValues) {
           expect(pickGenerator(kind, { [noun.axis]: value }).meta.name).toBe(

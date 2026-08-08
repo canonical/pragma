@@ -22,6 +22,11 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
+  AxisSurface,
+  NounSurface,
+  SerializedPrompt,
+} from "../src/capabilities/create/types.js";
+import type {
   GeneratorDeclaration,
   GeneratorNoun,
 } from "../src/kernel/config/types.js";
@@ -84,19 +89,19 @@ export function writeWhenChanged(path: string, body: string): boolean {
  * @param prompt - A live generator prompt.
  * @returns Its serialisable mirror.
  */
-function reducePrompt(
-  prompt: Record<string, unknown>,
-): Record<string, unknown> {
-  const out: Record<string, unknown> = {
-    name: prompt.name,
-    type: prompt.type,
-    message: prompt.message,
+function reducePrompt(prompt: Record<string, unknown>): SerializedPrompt {
+  // Key order is the EMITTED order, and the surface module is byte-pinned.
+  return {
+    name: String(prompt.name),
+    type: prompt.type as SerializedPrompt["type"],
+    message: String(prompt.message),
+    ...(prompt.default !== undefined ? { default: prompt.default } : {}),
+    ...(prompt.positional === true ? { positional: true } : {}),
+    ...(prompt.choices !== undefined
+      ? { choices: prompt.choices as SerializedPrompt["choices"] }
+      : {}),
+    ...(prompt.when !== undefined ? { conditional: true } : {}),
   };
-  if (prompt.default !== undefined) out.default = prompt.default;
-  if (prompt.positional === true) out.positional = true;
-  if (prompt.choices !== undefined) out.choices = prompt.choices;
-  if (prompt.when !== undefined) out.conditional = true;
-  return out;
 }
 
 /**
@@ -121,11 +126,11 @@ function reducePrompt(
 function selectPathParam(
   noun: string,
   declared: string | undefined,
-  prompts: ReadonlyArray<Record<string, unknown>>,
+  prompts: readonly SerializedPrompt[],
 ): string | undefined {
   const positional = prompts
     .filter((prompt) => prompt.positional === true && prompt.type === "text")
-    .map((prompt) => String(prompt.name));
+    .map((prompt) => prompt.name);
   if (declared !== undefined && !positional.includes(declared)) {
     throw new Error(
       `pragma.conf.ts declares \`create ${noun}\` with pathParam "${declared}", which is not one of its positional text prompts (${positional.join(", ") || "it has none"}).`,
@@ -228,9 +233,9 @@ function assertDeclaredPromptNames(
   noun: string,
   declared: GeneratorNoun,
   axis: string | undefined,
-  prompts: ReadonlyArray<Record<string, unknown>>,
+  prompts: readonly SerializedPrompt[],
 ): void {
-  const names = new Set(prompts.map((prompt) => String(prompt.name)));
+  const names = new Set(prompts.map((prompt) => prompt.name));
   const fields: ReadonlyArray<readonly [string, readonly string[]]> = [
     ["optIn", declared.optIn ?? []],
     ["withPrefixed", declared.withPrefixed ?? []],
@@ -310,7 +315,7 @@ function deriveNounSurface(
   declared: GeneratorNoun,
   packageName: string,
   map: Readonly<Record<string, GeneratorLike>>,
-): Record<string, unknown> {
+): NounSurface {
   const { keyPrefix, axis } = declared;
   const axisValues = collectAxisValues(keyPrefix, map);
   const key = resolveGeneratorKey(noun, declared, packageName, axisValues, map);
@@ -333,7 +338,7 @@ function deriveNounSurface(
   // with nothing red. The schema rejects that input today; deriving both from
   // one value is what makes the safety a fact rather than a comment.
   const axisDoc = axis === undefined ? undefined : declaredDocs[axis];
-  const axisTriple =
+  const axisTriple: AxisSurface | undefined =
     axis !== undefined && keyPrefix !== undefined && axisDoc !== undefined
       ? { axis, axisValues, axisDoc, keyPrefix }
       : undefined;
@@ -389,7 +394,7 @@ export async function generateCreateSurface(
   declared: readonly GeneratorDeclaration[],
   outDir: string = DEFAULT_GENERATED_DIR,
 ): Promise<string[]> {
-  const surface: Record<string, unknown> = {};
+  const surface: Record<string, NounSurface> = {};
   const importLines: string[] = [];
   const mapEntries: string[] = [];
 

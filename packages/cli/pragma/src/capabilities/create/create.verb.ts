@@ -29,7 +29,7 @@ import { createFormatters } from "./create.render.js";
 import { promptToParam } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
 import { CREATE_SURFACE } from "./surface.generated.js";
-import type { CreateKind, SerializedPrompt } from "./types.js";
+import type { CreateKind, NounSurface } from "./types.js";
 
 // =============================================================================
 // The static surface — DERIVED, not mirrored
@@ -83,16 +83,7 @@ export function toGeneratorAnswers(
  * @returns Its params, in surface order.
  */
 function buildParams(kind: CreateKind): ParamSpec[] {
-  const noun = CREATE_SURFACE[kind] as {
-    prompts: readonly SerializedPrompt[];
-    aliases: Readonly<Record<string, string>>;
-    optIn: readonly string[];
-    noDefault: readonly string[];
-    docs: Readonly<Record<string, string>>;
-    axis?: string;
-    axisValues?: readonly string[];
-    axisDoc?: string;
-  };
+  const noun: NounSurface = CREATE_SURFACE[kind];
   const toGeneratorName: Record<string, string> = {};
   for (const [flag, bare] of Object.entries(noun.aliases)) {
     toGeneratorName[bare] = flag;
@@ -139,9 +130,9 @@ function buildParams(kind: CreateKind): ParamSpec[] {
 
 /** The path param each noun jails, derived by the build (SEC-2). */
 const PATH_PARAM: Record<CreateKind, string | undefined> = Object.fromEntries(
-  Object.entries(CREATE_SURFACE).map(([kind, noun]) => [
+  Object.entries(CREATE_SURFACE).map(([kind, noun]: [string, NounSurface]) => [
     kind,
-    (noun as { pathParam?: string }).pathParam,
+    noun.pathParam,
   ]),
 ) as Record<CreateKind, string | undefined>;
 
