@@ -138,16 +138,96 @@ function selectPathParam(
 }
 
 /**
- * Derive one noun's surface entry from its declaration and the live generator.
+ * The enum values a declared framework axis offers: every map key under
+ * `<keyPrefix>/`, in MAP ORDER, with the prefix stripped.
+ *
+ * Map order is load-bearing — the first value is the enum's default — and it is
+ * the declaring package's order, not this build's, so a package reordering its
+ * generators moves the default and the reference bytes say so.
+ *
+ * @param keyPrefix - The declared prefix, or `undefined` for a `key` noun.
+ * @param map - The package's live `generators` map.
+ * @returns The axis values, empty when there is no prefix.
+ */
+function collectAxisValues(
+  keyPrefix: string | undefined,
+  map: Readonly<Record<string, GeneratorLike>>,
+): string[] {
+  if (keyPrefix === undefined) return [];
+  return Object.keys(map)
+    .filter((key) => key.startsWith(`${keyPrefix}/`))
+    .map((key) => key.slice(keyPrefix.length + 1));
+}
+
+/**
+ * Resolve the generator-map key a noun runs.
+ *
+ * A declared `key` is it; otherwise the axis form takes the FIRST value under
+ * the prefix, which is also the enum's default. No `??` sentinel on the way: an
+ * axis that resolved to nothing is a declaration fault, and a synthesised key
+ * would report it as "the package does not export `undefined/<no-axis-values>`"
+ * — a message about the package rather than about the conf. The validator
+ * rejects a noun declaring neither form; the throw here covers the one it cannot
+ * see, a `keyPrefix` no map key sits under.
+ *
+ * @param noun - The declared noun name, for the message.
+ * @param declared - Its declaration.
+ * @param packageName - The declaring package, for the message.
+ * @param axisValues - The values collected under the declared prefix.
+ * @param map - The package's live `generators` map, for the message.
+ * @returns The map key.
+ * @throws Error naming the noun when the prefix covers no generator.
+ */
+function resolveGeneratorKey(
+  noun: string,
+  declared: GeneratorNoun,
+  packageName: string,
+  axisValues: readonly string[],
+  map: Readonly<Record<string, GeneratorLike>>,
+): string {
+  if (declared.key !== undefined) return declared.key;
+  if (axisValues.length === 0) {
+    throw new Error(
+      `pragma.conf.ts declares \`create ${noun}\` with keyPrefix "${declared.keyPrefix}", and "${packageName}" exports no generator under "${declared.keyPrefix}/". It exports: ${Object.keys(map).sort().join(", ")}.`,
+    );
+  }
+  return `${declared.keyPrefix}/${axisValues.at(0)}`;
+}
+
+/**
+ * Build the `--with-X` include-flag alias map from the declared bare names.
+ *
+ * ONE seam for the whole convention: the generator keeps its bare prompt names
+ * (and with them its templates and byte-equality goldens), the CLI exposes
+ * `--with-ssr`.
+ *
+ * @param withPrefixed - The declared bare prompt names.
+ * @returns CLI param name → generator prompt name.
+ */
+function buildWithPrefixedAliases(
+  withPrefixed: readonly string[] | undefined,
+): Record<string, string> {
+  const aliases: Record<string, string> = {};
+  for (const bare of withPrefixed ?? []) {
+    aliases[`with${bare.charAt(0).toUpperCase()}${bare.slice(1)}`] = bare;
+  }
+  return aliases;
+}
+
+/**
+ * Derive one noun's surface entry: resolve, reduce, and ASSEMBLE.
+ *
+ * The steps that can each be wrong on their own have their own names —
+ * {@link collectAxisValues}, {@link resolveGeneratorKey},
+ * {@link buildWithPrefixedAliases}, {@link reducePrompt} and, above all,
+ * {@link selectPathParam}, which decides which argument `assertInsideWorkspace`
+ * jails and is the one step whose silent failure is a SECURITY failure. What is
+ * left here is the assembly.
  *
  * The framework axis is the only branch: `keyPrefix` + `axis` collapses every
- * map key under `<keyPrefix>/` into one verb plus an enum flag, values in MAP
- * ORDER with the first as the default, and the prompt mirror is taken from the
- * first — which is what the hand-written mirror did, by hand, for react.
- *
- * The PATH PARAM is SEC-2 critical — see {@link selectPathParam}, which either
- * names the argument `assertInsideWorkspace` jails or throws. A noun with no
- * positional at all is jailed by its own name-derived subdirectory instead.
+ * map key under `<keyPrefix>/` into one verb plus an enum flag, and the prompt
+ * mirror is taken from the first — which is what the hand-written mirror did,
+ * by hand, for react.
  *
  * `docs` rides through as declared: help text the build cannot derive from a
  * prompt's `message`, plus the `axis` flag's own doc, which mirrors no prompt.
@@ -169,23 +249,8 @@ function deriveNounSurface(
   map: Readonly<Record<string, GeneratorLike>>,
 ): Record<string, unknown> {
   const { keyPrefix, axis } = declared;
-  const axisValues =
-    keyPrefix === undefined
-      ? []
-      : Object.keys(map)
-          .filter((key) => key.startsWith(`${keyPrefix}/`))
-          .map((key) => key.slice(keyPrefix.length + 1));
-  // No `??` sentinel: an axis that resolved to nothing is a declaration fault,
-  // and a synthesised key would report it as "the package does not export
-  // `undefined/<no-axis-values>`" — a message about the package rather than
-  // about the conf. The validator rejects a noun declaring neither form; this
-  // covers the one it cannot see, a `keyPrefix` no map key sits under.
-  if (declared.key === undefined && axisValues.length === 0) {
-    throw new Error(
-      `pragma.conf.ts declares \`create ${noun}\` with keyPrefix "${keyPrefix}", and "${packageName}" exports no generator under "${keyPrefix}/". It exports: ${Object.keys(map).sort().join(", ")}.`,
-    );
-  }
-  const key = declared.key ?? `${keyPrefix}/${axisValues.at(0)}`;
+  const axisValues = collectAxisValues(keyPrefix, map);
+  const key = resolveGeneratorKey(noun, declared, packageName, axisValues, map);
   const generator = map[key];
   if (generator === undefined) {
     throw new Error(
@@ -193,13 +258,7 @@ function deriveNounSurface(
     );
   }
 
-  // The CLI's `--with-X` include-flag convention, applied at ONE seam: the
-  // generator keeps its bare prompt names (and with them its templates and
-  // byte-equality goldens), the CLI exposes `--with-ssr`.
-  const aliases: Record<string, string> = {};
-  for (const bare of declared.withPrefixed ?? []) {
-    aliases[`with${bare.charAt(0).toUpperCase()}${bare.slice(1)}`] = bare;
-  }
+  const aliases = buildWithPrefixedAliases(declared.withPrefixed);
 
   // The axis prompt is dropped because the CLI replaces it with an enum FLAG
   // built from the map keys. Gated on `keyPrefix`, belt-and-braces behind the
