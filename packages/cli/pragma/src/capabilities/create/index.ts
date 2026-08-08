@@ -1,5 +1,6 @@
 /**
- * The `create` capability barrel — component / package / application scaffolds.
+ * The `create` capability barrel — ONE VERB PER DECLARED NOUN, whatever a
+ * distribution declares. The noun set is content: a fork's barrel holds its own.
  *
  * Importing this pulls only the verb specs (static params + formatters); every
  * generator load and the summon-core runtime stay behind each verb's lazy

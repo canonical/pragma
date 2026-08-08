@@ -514,12 +514,14 @@ describe("capability commands (PROTECTED)", () => {
     // this keeps it from coming back.
     //
     // SCOPED TO WHAT THE DISTRIBUTION DECLARES, not to `@canonical/` at large.
-    // Measured: a blanket scope rule would report 75 occurrences across 33
-    // capability sources, dominated by this CLI's own infrastructure
-    // (`@canonical/task` ×34, `@canonical/harnesses` ×23, `@canonical/ke` ×7) —
-    // a guard nobody could keep green. Scoped to `conf.generators[].name` ∪
-    // `conf.packs[].name` it reported THREE, every one of them removed by the
-    // slice that added this rule.
+    // Measured on THIS tree, through this file's own scanner, generated modules
+    // exempt: a blanket `@canonical/` rule reports 57 literal-level occurrences
+    // across 28 capability sources, dominated by this CLI's own infrastructure
+    // (`@canonical/task` ×25, `@canonical/harnesses` ×13,
+    // `@canonical/summon-core` ×9, `@canonical/ke` ×5) — a guard nobody could
+    // keep green. Scoped to `conf.generators[].name` ∪ `conf.packs[].name` it
+    // reports ZERO, having reported three before the slice that added it removed
+    // them.
     //
     // `*.generated.ts` is exempt, with the measurement: the embedded manifest
     // carries the text of 108 scaffold files, ~100 of whose lines are

@@ -69,12 +69,23 @@ const MANIFEST_MODULE = "templates.embedded.generated.ts";
  * generated modules land, and what binary it produces.
  *
  * THE CONF IS A PARAMETER OF THE BUILD, NOT AN IMPORT OF IT. That is the whole
- * thesis stated in the one script that can state it: `--fork <dir>` builds the
- * distribution declared by `<dir>/pragma.conf.ts`, checks that declaration
- * against `<dir>/package.json`, writes ITS generated modules into `<dir>`, and
- * aliases the three of them at bundle time.
+ * thesis stated in the one script that can state it: `--fork <dir>` builds THIS
+ * distribution's binary with `<dir>`'s CREATE SURFACE substituted — it reads the
+ * `generators` declaration in `<dir>/pragma.conf.ts`, checks it against
+ * `<dir>/package.json`, writes ITS generated modules into `<dir>`, and aliases
+ * the three of them at bundle time.
  * `src/capabilities/create/forkGenerator.subprocess.test.ts` uses it to prove a
  * fork adds a `create` noun by editing one file.
+ *
+ * THE CREATE SURFACE, AND NOTHING ELSE. Identity, help, colophon, packs,
+ * prefixes and vocabulary still come from THIS package's `pragma.conf.ts`,
+ * because `src/bin.ts` pulls it statically through `kernel/config/defaults.ts`,
+ * `constants.ts`, `render/prefixes.ts` and `kernel/vocabulary.ts`, and this
+ * plugin does not touch that edge. Measured on the fixture, which declares no
+ * identity at all: `./dist/pragma-fork --help` prints this distribution's own
+ * front door and `config show` reports this distribution's three packs, while
+ * `create --help` lists only the fork's `monorepo`. That asymmetry is precisely
+ * what makes the fixture a test of the CREATE SEAM alone.
  *
  * WHAT `--fork` IS NOT: a general out-of-tree build facility. RESOLUTION stays
  * with THIS package — the codegen imports each declared package by name from

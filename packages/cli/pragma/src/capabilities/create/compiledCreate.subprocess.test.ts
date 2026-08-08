@@ -14,8 +14,10 @@
  *      `styles.css.ejs` / `stories.ts.ejs` exist in react/, svelte/ AND lit/, so
  *      a basename-matching fallback could emit the WRONG framework's file in the
  *      binary. A wrong file would differ from the source run → red here. The
- *      package scope is what keeps four generator packages' identically-named
- *      files (`package.json.ejs` is in three of them) apart in ONE manifest.
+ *      package scope is what keeps several packages' identically-named files
+ *      apart in ONE manifest: this distribution's carries THREE package scopes,
+ *      two of which hold a `package.json.ejs` (`summon-package`,
+ *      `summon-application`), and the fork fixture's carries one.
  *
  * Every shipped `create` noun is covered. There is no longer a refusal to pin:
  * the source-run-only gate is gone because the generators it gated now read

@@ -14,9 +14,13 @@
  * code, this file could not add a noun; the specifiers `bun build --compile`
  * needs would have to be hand-written next to the ones it replaces.
  *
- * Deliberately MINIMAL: no identity, no packs, no prefixes. A fork that changes
- * only its generators changes only its generators — everything else keeps the
- * kernel's defaults, which is what makes this a test of the create seam alone.
+ * Deliberately MINIMAL: no identity, no packs, no prefixes — and nothing here
+ * would be read if there were. `--fork` substitutes the three generated CREATE
+ * modules and nothing else, so the fork binary keeps the SHIPPED distribution's
+ * identity, help, colophon, packs and prefixes: `./dist/pragma-fork --help`
+ * prints `pragma — Explore the design system` and its `config show` reports this
+ * distribution's packs, while its `create` knows only `monorepo`. That is what
+ * makes this a test of the create seam alone.
  */
 
 import type { RawConfig } from "../../../kernel/config/types.js";

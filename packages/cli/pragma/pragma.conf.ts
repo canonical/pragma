@@ -544,6 +544,15 @@ Made by the Canonical Webteam — https://canonical.com.`,
   // drops a generator package by editing this block and rebuilding; nothing in
   // `src/capabilities/create/` names a generator package at all.
   //
+  // ONE PRECONDITION BEYOND THE DECLARATION, because the manifest is harvested
+  // from SOURCE at build time: a declared package must be linked into this
+  // package's `node_modules` and must expose its `src/**/templates` tree. A
+  // registry install does not satisfy that — `@canonical/summon-component` and
+  // `@canonical/summon-application` publish `files: ["dist"]`, so the two
+  // packages this very block declares would fail the harvest if resolved from a
+  // tarball. Vendor a generator package as a workspace sibling. The failure is
+  // loud: a build-time ENOENT naming the path it looked for.
+  //
   // `summary` and `examples` are CONTENT: a generator's `meta.description`
   // addresses `summon`, and its `meta.examples` are `summon …` invocations.
   // `cmd` omits the binary name — the verb builder composes it from `BIN_NAME`,
