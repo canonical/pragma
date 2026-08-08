@@ -263,7 +263,7 @@ function collectDeclaredTemplateRoots(
 }
 
 /**
- * A declared package's linked source tree.
+ * Resolve a declared package's linked source tree.
  *
  * @param name - The declared package name.
  * @returns The absolute path to its `src`, through this package's node_modules.
@@ -326,18 +326,6 @@ function collectTemplateFiles(dir: string): string[] {
 }
 
 /**
- * Inline every template and verbatim asset of the bindings that read through
- * the embedded registry into the generated manifest module. Deterministic (sorted keys,
- * `JSON.stringify` values) so re-running produces byte-identical output — no
- * working-tree churn.
- *
- * @param roots - Every declared package's template roots.
- * @param outPath - The manifest module to write.
- * @returns The number of files embedded.
- * @note Impure — reads every declared package's template roots and writes the
- *   manifest module.
- */
-/**
  * Read a template as text, refusing anything that is not valid UTF-8.
  *
  * The manifest carries STRINGS, and the interpreter writes them back with
@@ -368,6 +356,18 @@ function readTemplateText(file: string): string {
   return text;
 }
 
+/**
+ * Inline every template and verbatim asset of the bindings that read through
+ * the embedded registry into the generated manifest module. Deterministic
+ * (sorted keys, `JSON.stringify` values) so re-running produces byte-identical
+ * output — no working-tree churn.
+ *
+ * @param roots - Every declared package's template roots.
+ * @param outPath - The manifest module to write.
+ * @returns The number of files embedded.
+ * @note Impure — reads every declared package's template roots and writes the
+ *   manifest module.
+ */
 function generateTemplateManifest(
   roots: readonly TemplateRoot[],
   outPath: string,
