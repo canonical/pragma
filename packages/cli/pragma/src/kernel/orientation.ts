@@ -23,8 +23,9 @@
  * composed from the distribution's declared identity (`system`) or generic
  * machinery talk about tools and stores. The tool names that DO appear are
  * either derived from the live surface (the `*_sample` list) or kernel-owned
- * verbs; see the stage-4 note for the ones that are neither, which the owner
- * has not yet ruled on.
+ * verbs — except stage 4's, which are two authored domain nouns this guard's
+ * rule does not reach. See the stage-4 note on {@link buildDiscoverySequence}
+ * for what they are, why the guard is silent, and why the owner has not ruled.
  */
 
 import { BIN_NAME, PROGRAM_DESCRIPTION } from "../constants.js";
@@ -66,6 +67,30 @@ export const CONVENTIONS = {
  * store-state pre-check so a cold agent is never sent into `*_sample` (or any
  * store read) blind — every store read fails STORE_UNAVAILABLE until
  * `sources_update` has built the store.
+ *
+ * THE STAGE-4 NOTE, which the module docblock points here for. Stages 1 and 2
+ * name kernel-owned tools (`capabilities`, `sources_status`) and stage 3 is
+ * DERIVED from the live surface, so all three stay true in a fork. Stage 4 is
+ * the exception: its purpose string hardcodes `block_list` and
+ * `standard_lookup`, which are two of THIS distribution's domain nouns, written
+ * by hand. They came here verbatim with the `catalog.ts` fold that moved
+ * `CONVENTIONS` and this function into `kernel/` to kill the
+ * kernel→capabilities back-edge — the strings were not edited, but they crossed
+ * into the tree whose whole premise is that it names no domain, and they ship
+ * in the MCP handshake every session, so a fork inherits them.
+ *
+ * `kernel/copy.test.ts` does not fire on them, and that is its rule working as
+ * written rather than a hole: it matches the distribution's `name` as a word,
+ * the phrase "design system", and declared namespace IRIs. A tool name built
+ * from a domain noun is none of the three. Recording it here so the guard's
+ * silence is a known gap and not a reader's false comfort.
+ *
+ * NOT FIXED HERE BECAUSE IT IS NOT THIS LANE'S CALL. The owner has these
+ * literals on the open-decisions list, and the two repairs — derive stage 4
+ * from the surface the way stage 3 already is, or leave stage 4 behind in
+ * `catalog.ts` and have `instructions.ts` read stages 1-3 from here — differ in
+ * what an agent is told, not just in where a string lives. Whichever is chosen,
+ * this note is the place that says the literals were known about.
  *
  * @param tools - The live sorted tool names from the emitted surface.
  * @returns The four discovery stages, with stage 3 derived from `tools`.
