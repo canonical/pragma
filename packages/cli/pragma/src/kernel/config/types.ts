@@ -84,6 +84,28 @@ export interface GeneratorNoun {
   readonly key?: string;
   readonly keyPrefix?: string;
   readonly axis?: string;
+  /**
+   * The `axis` flag's own help text — declared beside the axis, and required
+   * with it: the schema enforces plain CO-PRESENCE, the same shape as the
+   * `key` XOR `keyPrefix`+`axis` rule next to it.
+   *
+   * ITS OWN FIELD, and that is a correction. It was declared inside {@link docs}
+   * under the axis name, which made ONE map hold two vocabularies — generator
+   * prompt names, plus one CLI-invented flag name — and every consumer paid for
+   * the merge: a schema refine reaching into `docs`, an `axis` parameter and an
+   * exclusion in the codegen's prompt-name assertion, and a filter putting the
+   * axis key back out before emission. Three special cases for one string that
+   * the surface already emitted as a separate `axisDoc` field. `docs` now means
+   * exactly one thing, so any future field mirroring prompt names inherits the
+   * plain rule rather than the exception.
+   *
+   * The string itself is CONTENT because the alternative was a literal: the doc
+   * used to be `"Component framework."` inside `create.verb.ts`, applied to
+   * whatever axis a fork declared — so an ACME fork's `--flavour` was documented
+   * in `--help`, `docs/reference/` and its MCP schema as Canonical's component
+   * framework.
+   */
+  readonly axisDoc?: string;
   readonly summary: string;
   /**
    * The MCP catalog's `use_when` behavioural hint — CONTENT, like `summary`,
@@ -103,19 +125,15 @@ export interface GeneratorNoun {
   readonly noDefault?: readonly string[];
   /**
    * Help text overriding what the build derives from a prompt's `message`,
-   * keyed by GENERATOR PROMPT NAME (and by the `axis` name, which is the CLI's
-   * own invention and has no prompt).
+   * keyed by GENERATOR PROMPT NAME — every key, with no exception. The axis
+   * flag has no prompt and declares its doc as {@link axisDoc} instead.
    *
    * CONTENT, and the last create-surface string that was not. A wizard question
    * usually reads as help once `declarativeDoc` strips its `?`/`:`, but not
    * always: `summon-component` asks `Component path:` where `--help` and the
    * MCP arg schema want the naming rule the old hand-written mirror carried
-   * ("its final segment is the PascalCase component name"). And the `axis`
-   * flag's doc used to be the literal `"Component framework."` inside
-   * `create.verb.ts` — applied to whatever axis a fork declared, so an ACME
-   * fork's `--flavour` was documented in `--help`, `docs/reference/` and its
-   * MCP schema as Canonical's component framework. Declaring an axis therefore
-   * REQUIRES its doc; the schema rejects a noun that omits it.
+   * ("its final segment is the PascalCase component name"). A key matching no
+   * prompt is a build error, like every other declared name that mirrors one.
    */
   readonly docs?: Readonly<Record<string, string>>;
   /**

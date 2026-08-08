@@ -235,10 +235,12 @@ function resolveGeneratorKey(
  * The same argument {@link selectPathParam} throws on, applied to the fields it
  * does not cover: a declared field must never quietly stop doing anything.
  *
+ * All four are checked WHOLE. `docs` used to be checked minus the axis key,
+ * because one map carried both prompt help and the axis flag's own doc; the
+ * axis declares that as `axisDoc` now, so there is no exception left to state.
+ *
  * @param noun - The declared noun name, for the message.
  * @param declared - Its declaration.
- * @param axis - The declared axis name, which mirrors no prompt and is
- *   therefore the one legal `docs` key that is not a prompt.
  * @param prompts - The noun's serialised prompt mirrors, axis already dropped.
  * @throws Error naming the noun, the field, the bad name and the prompts that
  *   exist.
@@ -246,7 +248,6 @@ function resolveGeneratorKey(
 function assertDeclaredPromptNames(
   noun: string,
   declared: GeneratorNoun,
-  axis: string | undefined,
   prompts: readonly SerializedPrompt[],
 ): void {
   const names = new Set(prompts.map((prompt) => prompt.name));
@@ -254,9 +255,7 @@ function assertDeclaredPromptNames(
     ["optIn", declared.optIn ?? []],
     ["withPrefixed", declared.withPrefixed ?? []],
     ["noDefault", declared.noDefault ?? []],
-    // The axis key is the CLI's own flag, not a prompt, so it is allowed here
-    // and nowhere else.
-    ["docs", Object.keys(declared.docs ?? {}).filter((key) => key !== axis)],
+    ["docs", Object.keys(declared.docs ?? {})],
   ];
   for (const [field, declaredNames] of fields) {
     const unknown = declaredNames.filter((name) => !names.has(name));
@@ -307,12 +306,15 @@ function buildWithPrefixedAliases(
  * mirror is taken from the first — which is what the hand-written mirror did,
  * by hand, for react.
  *
- * `docs` carries the PROMPT overrides — help text the build cannot derive from
- * a prompt's `message`. The axis flag's own doc, which mirrors no prompt, is
- * declared in the same map and emitted as `axisDoc` instead, so the surface
- * states it once. The axis triple (`axis`/`axisValues`/`axisDoc`) is written
- * together or not at all, so `create.verb.ts` reads the doc off the same guard
- * that reads the values.
+ * `docs` carries the PROMPT overrides and nothing else — help text the build
+ * cannot derive from a prompt's `message` — so it is copied through whole. The
+ * axis flag's own doc mirrors no prompt and is declared as `axisDoc`, beside
+ * the axis it documents; it used to be declared inside `docs` under the axis
+ * name, which cost this function a lookup and a re-filter, the prompt-name
+ * assertion an exception, and the schema a reach into another map, all to carry
+ * one string the surface already emitted separately. The axis triple
+ * (`axis`/`axisValues`/`axisDoc`) is written together or not at all, so
+ * `create.verb.ts` reads the doc off the same guard that reads the values.
  *
  * @param noun - The declared noun name.
  * @param declared - Its declaration.
@@ -327,7 +329,7 @@ function deriveNounSurface(
   packageName: string,
   map: Readonly<Record<string, GeneratorLike>>,
 ): NounSurface {
-  const { keyPrefix, axis } = declared;
+  const { keyPrefix, axis, axisDoc } = declared;
   const axisValues = collectAxisValues(keyPrefix, map);
   const key = resolveGeneratorKey(noun, declared, packageName, axisValues, map);
   const generator = map[key];
@@ -339,7 +341,6 @@ function deriveNounSurface(
 
   const aliases = buildWithPrefixedAliases(declared.withPrefixed);
 
-  const declaredDocs = declared.docs ?? {};
   // ONE VALUE DECIDES THE WHOLE AXIS. The triple is what `create.verb.ts` reads
   // to build the enum flag, so it is also what says whether the axis EXISTS —
   // and everything downstream is derived from it rather than re-testing its
@@ -348,7 +349,6 @@ function deriveNounSurface(
   // deleted the prompt it named: a required param vanishing from the surface
   // with nothing red. The schema rejects that input today; deriving both from
   // one value is what makes the safety a fact rather than a comment.
-  const axisDoc = axis === undefined ? undefined : declaredDocs[axis];
   const axisTriple: AxisSurface | undefined =
     axis !== undefined && keyPrefix !== undefined && axisDoc !== undefined
       ? { axis, axisValues, axisDoc, keyPrefix }
@@ -360,15 +360,8 @@ function deriveNounSurface(
     .filter((prompt) => prompt.name !== axisTriple?.axis)
     .map((prompt) => reducePrompt(noun, prompt));
 
-  assertDeclaredPromptNames(noun, declared, axis, prompts);
+  assertDeclaredPromptNames(noun, declared, prompts);
 
-  // `axisDoc` is the axis flag's doc; carrying the same string again under
-  // `docs[axis]` would put one fact in a byte-pinned artifact twice, where an
-  // edit to either copy leaves the surface disagreeing with itself and nothing
-  // red. `docs` is the PROMPT overrides, and the axis is not a prompt.
-  const docs = Object.fromEntries(
-    Object.entries(declaredDocs).filter(([key_]) => key_ !== axisTriple?.axis),
-  );
   const pathParam = selectPathParam(noun, declared.pathParam, prompts);
 
   return {
@@ -379,7 +372,7 @@ function deriveNounSurface(
     useWhen: declared.useWhen,
     examples: declared.examples ?? [],
     prompts,
-    docs,
+    docs: declared.docs ?? {},
     ...(pathParam !== undefined ? { pathParam } : {}),
     aliases,
     optIn: declared.optIn ?? [],

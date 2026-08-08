@@ -597,8 +597,8 @@ Made by the Canonical Webteam — https://canonical.com.`,
           // `componentPath`'s question (`Component path:`) is the right thing
           // to ASK and the wrong thing to show in `--help` and an MCP arg
           // schema, where the naming rule is what a reader needs.
+          axisDoc: "Component framework.",
           docs: {
-            framework: "Component framework.",
             componentPath:
               "Component path (its final segment is the PascalCase component name).",
           },

@@ -55,6 +55,7 @@ const generatorNounSchema = z
     key: z.string().min(1).optional(),
     keyPrefix: z.string().min(1).optional(),
     axis: z.string().min(1).optional(),
+    axisDoc: z.string().min(1).optional(),
     summary: z.string().min(1),
     useWhen: z.string().min(1),
     examples: z
@@ -87,11 +88,15 @@ const generatorNounSchema = z
   // derives its help text. It used to be the literal "Component framework." in
   // `create.verb.ts`, applied to every fork's axis whatever it was. Requiring
   // the doc beside the axis is what keeps that string out of capability code.
+  // A plain CO-PRESENCE rule, the same shape as the form refine above, because
+  // `axisDoc` is its own field: it used to live inside `docs` under the axis
+  // name, which cost this refine a reach into another map and cost the codegen
+  // two more exceptions downstream.
   .refine(
-    (noun) => noun.axis === undefined || noun.docs?.[noun.axis] !== undefined,
+    (noun) => (noun.axis === undefined) === (noun.axisDoc === undefined),
     {
       message:
-        'a generator noun declaring "axis" also declares its help text under "docs" at the axis name — nothing derives it',
+        'a generator noun declares "axis" and "axisDoc" together or neither — the axis flag mirrors no prompt, so nothing derives its help text',
     },
   );
 
