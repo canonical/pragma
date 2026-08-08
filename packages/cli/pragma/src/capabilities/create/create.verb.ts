@@ -29,11 +29,7 @@ import { createFormatters } from "./create.render.js";
 import { promptToParam } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
 import { CREATE_SURFACE } from "./surface.generated.js";
-import type {
-  CreateKind,
-  NounSurface,
-  SerializedPrompt,
-} from "./types.js";
+import type { CreateKind, NounSurface, SerializedPrompt } from "./types.js";
 
 // =============================================================================
 // The static surface — DERIVED, not mirrored

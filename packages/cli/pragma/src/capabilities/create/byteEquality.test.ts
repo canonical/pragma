@@ -15,11 +15,11 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
 import { createVerbs } from "./create.verb.js";
 import type { CreateKind } from "./types.js";
 
@@ -30,7 +30,6 @@ const FLAGS: GlobalFlags = {
   verbose: false,
 };
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-golden-"));
-
 
 /** Producer (1): the full pragma kernel path — dispatcher runs the create verb. */
 async function producePragma(

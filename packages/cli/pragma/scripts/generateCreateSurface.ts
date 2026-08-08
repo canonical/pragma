@@ -229,10 +229,7 @@ function assertDeclaredPromptNames(
     ["noDefault", declared.noDefault ?? []],
     // The axis key is the CLI's own flag, not a prompt, so it is allowed here
     // and nowhere else.
-    [
-      "docs",
-      Object.keys(declared.docs ?? {}).filter((key) => key !== axis),
-    ],
+    ["docs", Object.keys(declared.docs ?? {}).filter((key) => key !== axis)],
   ];
   for (const [field, declaredNames] of fields) {
     const unknown = declaredNames.filter((name) => !names.has(name));

@@ -74,7 +74,6 @@ function listsNoun(help: string, noun: string): boolean {
   return new RegExp(`^\\s+${noun}\\s{2,}\\S`, "m").test(help);
 }
 
-
 beforeAll(() => {
   // Build the fork binary from the fork's declaration. `--fork` makes the conf a
   // PARAMETER of the build rather than an import of it: the generated modules

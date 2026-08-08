@@ -49,16 +49,16 @@ import { parseRawConfig } from "../src/kernel/config/schema.js";
 import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 import {
-  assertDeclaredGenerators,
-  assertReadsEmbeddedRegistry,
-} from "./declaredGenerators.js";
-import {
   DEFAULT_GENERATED_DIR,
   GENERATED_MODULES,
   GENERATORS_MODULE,
   MANIFEST_MODULE,
   SURFACE_MODULE,
 } from "./constants.js";
+import {
+  assertDeclaredGenerators,
+  assertReadsEmbeddedRegistry,
+} from "./declaredGenerators.js";
 import {
   generateCreateSurface,
   writeWhenChanged,
@@ -189,7 +189,8 @@ async function readDeclaredGenerators(
   const conf = (
     (await import(pathToFileURL(confPath).href)) as { default: unknown }
   ).default;
-  const declared = parseRawConfig(conf, confPath, "distribution").generators ?? [];
+  const declared =
+    parseRawConfig(conf, confPath, "distribution").generators ?? [];
   const manifest = JSON.parse(
     readFileSync(join(dir, "package.json"), "utf-8"),
   ) as { dependencies?: Record<string, string> };
@@ -548,7 +549,9 @@ if (import.meta.main) {
     // only when it runs.
     splitting: true,
     plugins:
-      TARGET.kind === "fork" ? [aliasGeneratedModules(TARGET.generatedDir)] : [],
+      TARGET.kind === "fork"
+        ? [aliasGeneratedModules(TARGET.generatedDir)]
+        : [],
     compile: {
       target: "bun-linux-x64",
       outfile: TARGET.outfile,

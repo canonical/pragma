@@ -48,7 +48,6 @@ const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 // manifest without a second `beforeAll` writing `dist/pragma` in place while
 // another worker's test is spawning it.
 
-
 /** Run one `create …` invocation in its own cwd and snapshot what it wrote. */
 function runCreate(
   bin: string,

@@ -26,7 +26,6 @@ const summonCore = join(repoRoot, "packages/summon/core/dist/esm/index.js");
 const pickGen = join(here, "pickGenerator.ts");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-xbin-"));
 
-
 describe("cross-binary byte-equality (PROTECTED)", () => {
   it("pragma bin create ≡ summon-core execute across two processes", () => {
     // (1) The real pragma bin, run in its own process.
