@@ -82,8 +82,10 @@ function buildParams(kind: CreateKind): ParamSpec[] {
     aliases: Readonly<Record<string, string>>;
     optIn: readonly string[];
     noDefault: readonly string[];
+    docs: Readonly<Record<string, string>>;
     axis?: string;
     axisValues?: readonly string[];
+    axisDoc?: string;
   };
   const toGeneratorName: Record<string, string> = {};
   for (const [flag, bare] of Object.entries(noun.aliases)) {
@@ -100,15 +102,28 @@ function buildParams(kind: CreateKind): ParamSpec[] {
     } as PromptDefinition;
     const param = promptToParam(named) as Record<string, unknown>;
     if (noun.noDefault.includes(prompt.name)) delete param.default;
+    // Declared help text WINS over the doc derived from the wizard question.
+    // A question usually reads as help once `declarativeDoc` strips its `?`/`:`
+    // — but `Component path:` does not carry the naming rule `--help` and the
+    // MCP arg schema need, and rewording the message would move the interactive
+    // prompt. So the override is content, keyed by the generator's prompt name.
+    const declaredDoc = noun.docs[prompt.name];
+    if (declaredDoc !== undefined) param.doc = declaredDoc;
     return param as unknown as ParamSpec;
   });
 
-  const { axis, axisValues } = noun;
-  if (axis === undefined || axisValues === undefined) return params;
+  // The axis triple is written together by the build or not at all, so one
+  // guard covers all three — and the flag's DOC is declared beside its values,
+  // never a literal here: this module must not know what any distribution's
+  // axis is about.
+  const { axis, axisValues, axisDoc } = noun;
+  if (axis === undefined || axisValues === undefined || axisDoc === undefined) {
+    return params;
+  }
   const enumParam: ParamSpec = {
     kind: "enum",
     name: axis,
-    doc: "Component framework.",
+    doc: axisDoc,
     values: axisValues,
     // The FIRST declared value, so the default is always inside the enum.
     default: axisValues.at(0),

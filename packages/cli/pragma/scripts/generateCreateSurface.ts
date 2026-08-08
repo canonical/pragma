@@ -16,7 +16,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
+import type {
+  GeneratorDeclaration,
+  GeneratorNoun,
+} from "../src/kernel/config/types.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
 
@@ -89,6 +92,49 @@ function reducePrompt(
 }
 
 /**
+ * Choose the positional argument `assertInsideWorkspace` jails (SEC-2), and
+ * refuse to leave one unjailed by accident.
+ *
+ * The declaration wins; otherwise a positional `text` prompt whose name ends in
+ * `path` or `dir` is it. That heuristic fits the shipped generators and nothing
+ * binds a fork to it, so ANY positional text prompt the choice does not cover
+ * throws here. The failure mode this replaces is silence: `create.verb.ts`
+ * jails only `if (pathParam)`, so a derivation yielding `undefined` DELETED the
+ * jail rather than failing, and the guard on it was a literal map of the three
+ * shipped nouns — blind by construction to every fork.
+ *
+ * @param noun - The declared noun name, for the message.
+ * @param declared - The declared `pathParam`, when there is one.
+ * @param prompts - The noun's serialised prompt mirrors.
+ * @returns The param to jail, or `undefined` when the noun has no positional.
+ * @throws Error when a positional text prompt would go unjailed, or when the
+ *   declared `pathParam` is not one of the noun's positional text prompts.
+ */
+function selectPathParam(
+  noun: string,
+  declared: string | undefined,
+  prompts: ReadonlyArray<Record<string, unknown>>,
+): string | undefined {
+  const positional = prompts
+    .filter((prompt) => prompt.positional === true && prompt.type === "text")
+    .map((prompt) => String(prompt.name));
+  if (declared !== undefined && !positional.includes(declared)) {
+    throw new Error(
+      `pragma.conf.ts declares \`create ${noun}\` with pathParam "${declared}", which is not one of its positional text prompts (${positional.join(", ") || "it has none"}).`,
+    );
+  }
+  const chosen =
+    declared ?? positional.find((name) => /(path|dir)$/i.test(name));
+  const unjailed = positional.filter((name) => name !== chosen);
+  if (unjailed.length > 0) {
+    throw new Error(
+      `\`create ${noun}\` has positional text prompt(s) ${unjailed.map((name) => `"${name}"`).join(", ")} that the workspace jail would not cover. Name the one to jail as \`pathParam\` in pragma.conf.ts — an unjailed positional path is SEC-2, and a silent \`undefined\` deletes the jail rather than failing.`,
+    );
+  }
+  return chosen;
+}
+
+/**
  * Derive one noun's surface entry from its declaration and the live generator.
  *
  * The framework axis is the only branch: `keyPrefix` + `axis` collapses every
@@ -96,12 +142,15 @@ function reducePrompt(
  * ORDER with the first as the default, and the prompt mirror is taken from the
  * first — which is what the hand-written mirror did, by hand, for react.
  *
- * The PATH PARAM is derived here and it is SEC-2 critical: it decides which
- * argument `assertInsideWorkspace` jails. A positional text prompt whose name
- * ends in `path` or `dir` is it; a noun with none is jailed by its own
- * name-derived subdirectory instead. `create.test.ts` pins the derived map
- * against a literal expectation, because a derivation that silently yielded
- * `undefined` would DELETE the jail rather than fail.
+ * The PATH PARAM is SEC-2 critical — see {@link selectPathParam}, which either
+ * names the argument `assertInsideWorkspace` jails or throws. A noun with no
+ * positional at all is jailed by its own name-derived subdirectory instead.
+ *
+ * `docs` rides through as declared: help text the build cannot derive from a
+ * prompt's `message`, plus the `axis` flag's own doc, which mirrors no prompt.
+ * The axis triple (`axis`/`axisValues`/`axisDoc`) is written together or not at
+ * all, so `create.verb.ts` can read the doc off the same guard that reads the
+ * values.
  *
  * @param noun - The declared noun name.
  * @param declared - Its declaration.
@@ -112,17 +161,7 @@ function reducePrompt(
  */
 function deriveNounSurface(
   noun: string,
-  declared: {
-    key?: string;
-    keyPrefix?: string;
-    axis?: string;
-    summary: string;
-    useWhen: string;
-    examples?: readonly { cmd: string; note?: string }[];
-    optIn?: readonly string[];
-    withPrefixed?: readonly string[];
-    noDefault?: readonly string[];
-  },
+  declared: GeneratorNoun,
   packageName: string,
   map: Readonly<Record<string, GeneratorLike>>,
 ): Record<string, unknown> {
@@ -169,23 +208,21 @@ function deriveNounSurface(
     .filter((prompt) => prompt.name !== dropped)
     .map(reducePrompt);
 
-  const pathParam = prompts.find(
-    (prompt) =>
-      prompt.positional === true &&
-      prompt.type === "text" &&
-      /(path|dir)$/i.test(String(prompt.name)),
-  )?.name;
+  const docs = declared.docs ?? {};
+  const axisDoc = axis === undefined ? undefined : docs[axis];
+  const pathParam = selectPathParam(noun, declared.pathParam, prompts);
 
   return {
     package: packageName,
     key,
-    ...(axis !== undefined && keyPrefix !== undefined
-      ? { axis, axisValues, keyPrefix }
+    ...(axis !== undefined && keyPrefix !== undefined && axisDoc !== undefined
+      ? { axis, axisValues, axisDoc, keyPrefix }
       : {}),
     summary: declared.summary,
     useWhen: declared.useWhen,
     examples: declared.examples ?? [],
     prompts,
+    docs,
     ...(pathParam !== undefined ? { pathParam } : {}),
     aliases,
     optIn: declared.optIn ?? [],

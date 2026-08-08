@@ -114,7 +114,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `framework` | enum(react, svelte, lit) | no | Component framework. (one of: react, svelte, lit) (default: react) |
-| `componentPath` | string | no | Component path. |
+| `componentPath` | string | no | Component path (its final segment is the PascalCase component name). |
 | `withStyles` | boolean | no | Include styles. (default: true) |
 | `withStories` | boolean | no | Include Storybook stories. (default: true) |
 | `withSsrTests` | boolean | no | Include SSR tests. (default: true) |

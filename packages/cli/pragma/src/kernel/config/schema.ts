@@ -63,6 +63,8 @@ const generatorNounSchema = z
     optIn: z.array(z.string().min(1)).optional(),
     withPrefixed: z.array(z.string().min(1)).optional(),
     noDefault: z.array(z.string().min(1)).optional(),
+    docs: z.record(z.string().min(1), z.string().min(1)).optional(),
+    pathParam: z.string().min(1).optional(),
   })
   .refine(
     (noun) => {
@@ -79,6 +81,17 @@ const generatorNounSchema = z
     {
       message:
         'a generator noun declares either "key" ALONE, or both "keyPrefix" and "axis" and no "key" — no mixture of the two forms, and never neither',
+    },
+  )
+  // The axis flag is the CLI's own invention — it mirrors no prompt, so nothing
+  // derives its help text. It used to be the literal "Component framework." in
+  // `create.verb.ts`, applied to every fork's axis whatever it was. Requiring
+  // the doc beside the axis is what keeps that string out of capability code.
+  .refine(
+    (noun) => noun.axis === undefined || noun.docs?.[noun.axis] !== undefined,
+    {
+      message:
+        'a generator noun declaring "axis" also declares its help text under "docs" at the axis name — nothing derives it',
     },
   );
 

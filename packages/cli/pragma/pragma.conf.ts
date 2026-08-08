@@ -564,6 +564,16 @@ Made by the Canonical Webteam — https://canonical.com.`,
           summary: "Scaffold a React, Svelte, or Lit component.",
           useWhen: "Scaffolding a new component (React, Svelte, or Lit)",
           noDefault: ["componentPath"],
+          // `framework` is the axis, which mirrors no prompt, so nothing
+          // derives its doc — the declaration is the only place it can live.
+          // `componentPath`'s question (`Component path:`) is the right thing
+          // to ASK and the wrong thing to show in `--help` and an MCP arg
+          // schema, where the naming rule is what a reader needs.
+          docs: {
+            framework: "Component framework.",
+            componentPath:
+              "Component path (its final segment is the PascalCase component name).",
+          },
           examples: [
             {
               cmd: "create component src/components/Button --framework react",

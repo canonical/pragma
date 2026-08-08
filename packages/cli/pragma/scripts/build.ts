@@ -44,7 +44,6 @@ import {
 } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { capabilities } from "../src/capabilities/index.js";
 import { parseRawConfig } from "../src/kernel/config/schema.js";
 import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
@@ -297,10 +296,20 @@ const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
  * emitter no longer produces (a removed noun's page) is pruned, so the tree
  * self-heals instead of leaning on the drift-guard to catch the orphan.
  *
+ * ASYNC because the capability grammar is imported HERE and not at module load.
+ * `capabilities/create/create.verb.ts` reads `surface.generated.ts`, which the
+ * codegen above writes — so a static import would bind the PREVIOUS surface
+ * before the build had a chance to replace it. Measured: adding a field the
+ * verb builder reads made the build itself crash on the stale module it was
+ * about to overwrite, and the only way out was to run the codegen by hand
+ * first. The reference emitter must read what this build just generated.
+ *
  * @returns The number of pages actually written (changed).
- * @note Impure — reads, writes, and prunes the `docs/reference` tree.
+ * @note Impure — imports the live grammar, reads, writes, and prunes the
+ *   `docs/reference` tree.
  */
-function writeReferenceDocs(): number {
+async function writeReferenceDocs(): Promise<number> {
+  const { capabilities } = await import("../src/capabilities/index.js");
   mkdirSync(REFERENCE_DIR, { recursive: true });
   const emitted = emitReference(capabilities);
   let written = 0;
@@ -389,7 +398,7 @@ if (import.meta.main) {
   console.log(`Embedded ${embedded} generator templates → ${MANIFEST_MODULE}`);
 
   if (TARGET.reference) {
-    const changedDocs = writeReferenceDocs();
+    const changedDocs = await writeReferenceDocs();
     console.log(
       `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
     );

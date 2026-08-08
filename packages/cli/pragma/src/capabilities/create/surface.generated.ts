@@ -15,6 +15,7 @@ export const CREATE_SURFACE = {
       "svelte",
       "lit"
     ],
+    "axisDoc": "Component framework.",
     "keyPrefix": "component",
     "summary": "Scaffold a React, Svelte, or Lit component.",
     "useWhen": "Scaffolding a new component (React, Svelte, or Lit)",
@@ -55,6 +56,10 @@ export const CREATE_SURFACE = {
         "default": true
       }
     ],
+    "docs": {
+      "framework": "Component framework.",
+      "componentPath": "Component path (its final segment is the PascalCase component name)."
+    },
     "pathParam": "componentPath",
     "aliases": {},
     "optIn": [],
@@ -139,6 +144,7 @@ export const CREATE_SURFACE = {
         "default": true
       }
     ],
+    "docs": {},
     "aliases": {},
     "optIn": [
       "runInstall"
@@ -197,6 +203,7 @@ export const CREATE_SURFACE = {
         "default": true
       }
     ],
+    "docs": {},
     "pathParam": "appPath",
     "aliases": {
       "withSsr": "ssr",

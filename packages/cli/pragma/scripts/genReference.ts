@@ -10,5 +10,5 @@
 
 import { writeReferenceDocs } from "./build.js";
 
-const changed = writeReferenceDocs();
+const changed = await writeReferenceDocs();
 console.log(`Wrote ${changed} changed reference page(s) → docs/reference/`);

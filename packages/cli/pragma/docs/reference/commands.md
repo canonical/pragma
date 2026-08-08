@@ -221,7 +221,7 @@ pragma create component [componentPath] [options]
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[componentPath]` | no | Component path. |
+| `[componentPath]` | no | Component path (its final segment is the PascalCase component name). |
 
 **Flags**
 

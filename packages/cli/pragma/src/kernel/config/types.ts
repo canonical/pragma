@@ -101,6 +101,37 @@ export interface GeneratorNoun {
   readonly optIn?: readonly string[];
   readonly withPrefixed?: readonly string[];
   readonly noDefault?: readonly string[];
+  /**
+   * Help text overriding what the build derives from a prompt's `message`,
+   * keyed by GENERATOR PROMPT NAME (and by the `axis` name, which is the CLI's
+   * own invention and has no prompt).
+   *
+   * CONTENT, and the last create-surface string that was not. A wizard question
+   * usually reads as help once `declarativeDoc` strips its `?`/`:`, but not
+   * always: `summon-component` asks `Component path:` where `--help` and the
+   * MCP arg schema want the naming rule the old hand-written mirror carried
+   * ("its final segment is the PascalCase component name"). And the `axis`
+   * flag's doc used to be the literal `"Component framework."` inside
+   * `create.verb.ts` — applied to whatever axis a fork declared, so an ACME
+   * fork's `--flavour` was documented in `--help`, `docs/reference/` and its
+   * MCP schema as Canonical's component framework. Declaring an axis therefore
+   * REQUIRES its doc; the schema rejects a noun that omits it.
+   */
+  readonly docs?: Readonly<Record<string, string>>;
+  /**
+   * The positional argument `assertInsideWorkspace` jails (SEC-2), when the
+   * build cannot derive it.
+   *
+   * The derivation is a NAME HEURISTIC — a positional `text` prompt whose name
+   * ends in `path` or `dir` — and its only failure mode is silence: yielding
+   * `undefined` DELETES the jail rather than failing, because `create.verb.ts`
+   * jails only `if (pathParam)`. That heuristic fits the shipped generators and
+   * no fork is bound by it, so a noun whose positional path prompt is called
+   * `target` or `into` names it here. A positional text prompt that neither the
+   * heuristic nor this field selects is a BUILD ERROR: an unjailed positional
+   * must never be a silent absence.
+   */
+  readonly pathParam?: string;
 }
 
 /**

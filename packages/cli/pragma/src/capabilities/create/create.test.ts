@@ -320,10 +320,13 @@ describe("derived create surface (PROTECTED)", () => {
   });
 
   it("the derived path param is exactly the argument each noun jails (SEC-2)", () => {
-    // A LITERAL expectation, because a derivation that silently yielded
-    // `undefined` would DELETE the workspace jail for that noun rather than
-    // fail. `package` has no positional path — it writes into a subdirectory
-    // derived from `--name`, which `cwdJail.test.ts` covers separately.
+    // A LITERAL expectation for THIS distribution's three nouns, against a
+    // build that now refuses to leave a positional unjailed at all: a
+    // positional text prompt the heuristic did not select and the declaration
+    // did not name (`pathParam`) is a codegen error, so `undefined` here can
+    // only mean "no positional", never "the jail was silently dropped".
+    // `package` has no positional — it writes into a subdirectory derived from
+    // `--name`, which `cwdJail.test.ts` covers separately.
     const derived = Object.fromEntries(
       Object.entries(CREATE_SURFACE).map(([kind, noun]) => [
         kind,
