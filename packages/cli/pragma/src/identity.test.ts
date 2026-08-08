@@ -254,8 +254,8 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
         mkdtempSync(join(tmpdir(), "identity-cwd-")),
       ),
     );
-    expect(data.sections[0]?.kind).toBe("distribution");
-    expect(data.sections[0]?.title).toBe("recipes");
+    expect(data.sections.at(0)?.kind).toBe("distribution");
+    expect(data.sections.at(0)?.title).toBe("recipes");
 
     for (const format of ["plain", "llm", "json"] as const) {
       const rendered = colophonFormatters[format](data);

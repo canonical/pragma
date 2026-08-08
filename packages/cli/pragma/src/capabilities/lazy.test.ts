@@ -244,10 +244,12 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
           // far, and a kernel-internal one would need a resolved-path walk to
           // catch. Moving an edge to where this cannot see it is a weakening
           // even when the suite goes green.
-          if (!match[1]?.includes("kernel/config/")) continue;
+          if (!match.at(1)?.includes("kernel/config/")) continue;
           found.add(rel);
           if (EXEMPT.has(rel)) continue;
-          expect(match[0], `${rel} → ${match[1]}`).toMatch(/^import\s+type\b/);
+          expect(match.at(0), `${rel} → ${match.at(1)}`).toMatch(
+            /^import\s+type\b/,
+          );
         }
       }
     }

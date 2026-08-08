@@ -199,7 +199,7 @@ describe("colophon — formatter modes", () => {
     );
     const envelope = JSON.parse(outcome.stdout as string);
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as ColophonData).sections[0]?.kind).toBe(
+    expect((envelope.data as ColophonData).sections.at(0)?.kind).toBe(
       "distribution",
     );
   });
@@ -229,7 +229,7 @@ describe("colophon — MCP parity", () => {
       openWorldHint: false,
     });
     expect(envelope.ok).toBe(true);
-    expect((envelope.data as ColophonData).sections[0]?.kind).toBe(
+    expect((envelope.data as ColophonData).sections.at(0)?.kind).toBe(
       "distribution",
     );
   });
