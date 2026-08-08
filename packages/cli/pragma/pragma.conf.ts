@@ -551,7 +551,26 @@ Made by the Canonical Webteam — https://canonical.com.`,
   // `@canonical/summon-application` publish `files: ["dist"]`, so the two
   // packages this very block declares would fail the harvest if resolved from a
   // tarball. Vendor a generator package as a workspace sibling. The failure is
-  // loud: a build-time ENOENT naming the path it looked for.
+  // loud in BOTH of its forms, and only one of them used to be: no `src` at all
+  // throws a build-time ENOENT naming the path, and a `templates` tree that
+  // exists somewhere the harvest does not read (the registry keys off the last
+  // `/templates/` and needs no `src`) is refused by
+  // `scripts/declaredGenerators.ts#assertHarvestMatchesSources`, which used to
+  // silently embed nothing for it.
+  //
+  // TWO EDITS THIS BLOCK DOES NOT COVER, for a SOURCE fork changing its noun
+  // set — the in-repo `--fork` fixture needs neither, because it owns no
+  // covenant and runs no suite:
+  //  - `package.json#dependencies`, which is what installs and links (checked
+  //    by `assertDeclaredGenerators`, and recorded at `scripts/build.ts`);
+  //  - `surface/surface.v2.json` and the tool count pinned in
+  //    `src/capabilities/surface.test.ts`. The covenant is FROZEN and names
+  //    this distribution's three `create` verbs literally, so adding, dropping
+  //    or renaming a noun turns the PROTECTED conformance red until the
+  //    covenant records it. Measured: splicing one extra noun into the emitted
+  //    surface fails `assertConforms` with `emitted verb "create monorepo" is
+  //    not in the covenant`, and declaring only that noun fails the same way
+  //    plus the count.
   //
   // `summary` and `examples` are CONTENT: a generator's `meta.description`
   // addresses `summon`, and its `meta.examples` are `summon …` invocations.

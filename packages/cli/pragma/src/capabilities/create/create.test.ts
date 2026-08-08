@@ -501,7 +501,7 @@ describe("declared generator bindings (PROTECTED)", () => {
     expect(values).toContain(framework?.default);
   });
 
-  it("embeds every key under a declared package's scope, and no other", async () => {
+  it("embeds every key under a declared package's scope, and every scope has keys", async () => {
     const { TEMPLATES } = await import("./templates.embedded.generated.js");
     const keys = Object.keys(TEMPLATES);
     // The manifest is package-scoped, so an entry outside every declared
@@ -512,6 +512,15 @@ describe("declared generator bindings (PROTECTED)", () => {
     expect(scopes.length).toBeGreaterThan(0);
     expect(
       keys.filter((key) => !scopes.some((scope) => key.startsWith(scope))),
+    ).toEqual([]);
+    // AND THE CONVERSE QUANTIFIER, which was the one missing: a declared
+    // package the harvest found NO templates under contributed zero keys and
+    // nothing said so, because every downstream step iterates the roots. That
+    // package's `create` noun then reproduces this slice's original failure from
+    // the binary — ENOENT under /$bunfs after `mkdir`. The build refuses it now
+    // (`assertHarvestMatchesSources`); this pins the result the build produced.
+    expect(
+      scopes.filter((scope) => !keys.some((key) => key.startsWith(scope))),
     ).toEqual([]);
   });
 

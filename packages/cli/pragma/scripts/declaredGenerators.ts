@@ -19,7 +19,7 @@
  *
  * TWO CHECKS LIVE HERE, and they answer two different questions a declaration
  * can be wrong about: {@link assertDeclaredGenerators} asks whether the package
- * LINKS, and {@link assertReadsEmbeddedRegistry} asks whether it RUNS from a
+ * LINKS, and {@link assertHarvestMatchesSources} asks whether it RUNS from a
  * binary once it has. The second is the claim the deleted `readsEmbeddedTemplates`
  * bit used to make per noun, restated where a fork's package meets it.
  *
@@ -85,34 +85,56 @@ export function assertDeclaredGenerators(
 }
 
 /**
- * Whether any TypeScript source under a directory mentions a specifier.
+ * Whether a package's SHIPPING TypeScript sources IMPORT a specifier.
  *
  * TEXTUAL on purpose: this runs over a package the build did not write and may
  * not be able to import without evaluating its generation layer, so reading is
- * the only cheap check available.
+ * the only cheap check available. But textual is not the same as loose, and the
+ * first version was both: a raw `includes` over every `.ts`, which a COMMENT or
+ * a TEST FILE satisfied. Measured on that version — a src tree whose only `.ts`
+ * was the line `// We used to read templates via @canonical/summon-core/embedded
+ * but now we do not.` PASSED, and so did a tree whose only `.ts` was a
+ * `*.test.ts` importing the registry. A guard a package's prose can satisfy is
+ * the inert `generators` field one indirection out.
+ *
+ * Three narrowings, each closing one of those:
+ *  - `.test.ts` is skipped — a test importing the registry says nothing about
+ *    what the SHIPPED generator does at run time;
+ *  - `import type … ;` is stripped before matching, because a type import is
+ *    erased and reads nothing;
+ *  - the match is an IMPORT POSITION (`from "…"`, `import "…"`,
+ *    `import("…")`), not any occurrence of the string.
  *
  * @param dir - The directory to walk.
  * @param specifier - The module specifier to look for.
- * @returns Whether some `.ts` beneath it contains the specifier.
+ * @returns Whether some shipping `.ts` beneath it imports the specifier.
  * @note Impure — reads the declared package's source tree.
  */
-function referencesSpecifier(dir: string, specifier: string): boolean {
+function importsSpecifier(dir: string, specifier: string): boolean {
+  const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const atImport = new RegExp(
+    `(?:\\bfrom|\\bimport)\\s*\\(?\\s*["']${escaped}["']`,
+  );
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (referencesSpecifier(path, specifier)) return true;
-    } else if (
-      entry.name.endsWith(".ts") &&
-      readFileSync(path, "utf-8").includes(specifier)
-    ) {
-      return true;
+      if (importsSpecifier(path, specifier)) return true;
+      continue;
     }
+    if (!entry.name.endsWith(".ts") || entry.name.endsWith(".test.ts")) {
+      continue;
+    }
+    const source = readFileSync(path, "utf-8").replace(
+      /\bimport\s+type\b[^;]*;/g,
+      "",
+    );
+    if (atImport.test(source)) return true;
   }
   return false;
 }
 
 /**
- * Assert a declared package that SHIPS TEMPLATES reads them through the shared
+ * Assert a declared package's TEMPLATE TREE and its SOURCES agree about the
  * embedded registry.
  *
  * THE THIRD CLAIM, and the one that closes what the deleted gate used to hold
@@ -125,24 +147,47 @@ function referencesSpecifier(dir: string, specifier: string): boolean {
  * half-made tree on disk — the exact failure this slice exists to close, behind
  * a green build, a green `check` and a green test run.
  *
+ * BOTH DIRECTIONS, because a fork can get this wrong either way round and only
+ * one of them used to be caught:
+ *  - HARVESTED BUT NOT READING is the original case above;
+ *  - READING BUT NOT HARVESTED is the LAYOUT mistake, and it was silent.
+ *    `collectTemplateRoots` walks the package's `src` and throws ENOENT only
+ *    when `src` itself is absent — a package whose `templates` tree sits at the
+ *    package ROOT contributed zero roots, and every downstream step then
+ *    no-opped for it (nothing to assert, no empty root to refuse, a smaller
+ *    manifest). Measured: `collectTemplateRoots` over summon-core's and
+ *    `@canonical/task`'s `src` returns `0 template root(s)` without throwing.
+ *    The registry's own `deriveEmbeddedKey` keys off the LAST `/templates/`
+ *    with no `src` requirement, so such a package runs perfectly from a source
+ *    checkout and reproduces this slice's original bug from the binary.
+ *
  * WHAT IT PROVES AND WHAT IT DOES NOT. It proves the package reaches for the
- * registry at all; it cannot prove every read routes through it (that is a
- * per-call-site fact, and the compiled-binary byte-equality guards are what
- * cover the nouns this distribution ships). It is deliberately scoped to
- * packages the harvest found templates under: a generator that writes only
- * computed content has nothing to embed and nothing to route.
+ * registry and that the harvest found the tree it will ask for; it cannot prove
+ * every read routes through it (that is a per-call-site fact, and the
+ * compiled-binary byte-equality guards are what cover the nouns this
+ * distribution ships). A generator package that writes only computed content
+ * stays legal: it imports no registry and harvests no roots, and both sides
+ * agree.
  *
  * @param name - The declared package, for the message.
  * @param srcDir - Its linked source tree.
- * @throws Error naming the package and the binding pattern that satisfies it.
+ * @param harvested - Whether the harvest found template roots under `srcDir`.
+ * @throws Error naming the package and the edit that reconciles the two.
  * @note Impure — reads the declared package's source tree.
  */
-export function assertReadsEmbeddedRegistry(
+export function assertHarvestMatchesSources(
   name: string,
   srcDir: string,
+  harvested: boolean,
 ): void {
-  if (referencesSpecifier(srcDir, EMBEDDED_ENTRY)) return;
+  const reads = importsSpecifier(srcDir, EMBEDDED_ENTRY);
+  if (reads === harvested) return;
+  if (harvested) {
+    throw new Error(
+      `pragma.conf.ts declares generator "${name}", whose templates this build embedded, but no shipping source of it imports "${EMBEDDED_ENTRY}". A generator that reads a template off disk works from a source run and dies from the compiled binary with ENOENT under /$bunfs — after \`mkdir\` has already written a half-made tree. Route every read through the registry: a \`shared/loadTemplate.ts\` binding \`loadEmbeddedSync\` to the package name, and \`template({ source, content: loadTemplateSync(source) })\` at every call site.`,
+    );
+  }
   throw new Error(
-    `pragma.conf.ts declares generator "${name}", whose templates this build embedded, but nothing in its sources references "${EMBEDDED_ENTRY}". A generator that reads a template off disk works from a source run and dies from the compiled binary with ENOENT under /$bunfs — after \`mkdir\` has already written a half-made tree. Route every read through the registry: a \`shared/loadTemplate.ts\` binding \`loadEmbeddedSync\` to the package name, and \`template({ source, content: loadTemplateSync(source) })\` at every call site.`,
+    `pragma.conf.ts declares generator "${name}", whose sources import "${EMBEDDED_ENTRY}" — so it serves its templates from the registry — but the harvest found no \`templates\` directory under ${srcDir}. The registry derives a key from the path after the LAST \`/templates/\` and requires no \`src\` segment, so a tree kept at the package root runs from a source checkout and embeds NOTHING: the compiled binary dies with ENOENT under /$bunfs after \`mkdir\` has written a half-made tree. Move the templates under \`src\`, which is where the harvest reads.`,
   );
 }

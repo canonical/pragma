@@ -57,7 +57,7 @@ import {
 } from "./constants.js";
 import {
   assertDeclaredGenerators,
-  assertReadsEmbeddedRegistry,
+  assertHarvestMatchesSources,
 } from "./declaredGenerators.js";
 import {
   generateCreateSurface,
@@ -255,7 +255,10 @@ function collectDeclaredTemplateRoots(
   declared: readonly GeneratorDeclaration[],
 ): readonly TemplateRoot[] {
   return declared.flatMap(({ name }) =>
-    collectTemplateRoots(declaredSrcDir(name)).map((root) => ({ name, root })),
+    collectTemplateRoots(resolveDeclaredSrcDir(name)).map((root) => ({
+      name,
+      root,
+    })),
   );
 }
 
@@ -265,26 +268,35 @@ function collectDeclaredTemplateRoots(
  * @param name - The declared package name.
  * @returns The absolute path to its `src`, through this package's node_modules.
  */
-function declaredSrcDir(name: string): string {
+function resolveDeclaredSrcDir(name: string): string {
   return fileURLToPath(new URL(`../node_modules/${name}/src`, scriptsUrl));
 }
 
 /**
- * Assert every package the harvest took templates from reads them back through
- * the embedded registry.
+ * Assert each DECLARED package's template tree and its sources agree about the
+ * embedded registry.
  *
- * Scoped to the packages with roots because those are the ones with something
- * to read: {@link assertReadsEmbeddedRegistry} carries the argument.
+ * Over every declaration, not only the harvested ones, and that scope is the
+ * correction: scoping to packages with roots made the harvest's own blind spot
+ * unreachable, because a package the walk found nothing for was exactly the one
+ * it skipped. {@link assertHarvestMatchesSources} carries both directions.
  *
+ * @param declared - The declared generator packages.
  * @param roots - Every declared package's template roots.
- * @throws Error naming a package whose sources never reach for the registry.
- * @note Impure — reads each such package's source tree.
+ * @throws Error naming a package whose sources and template tree disagree.
+ * @note Impure — reads each declared package's source tree.
  */
-function assertHarvestedPackagesReadEmbedded(
+function assertDeclaredPackagesServeTemplates(
+  declared: readonly GeneratorDeclaration[],
   roots: readonly TemplateRoot[],
 ): void {
-  for (const name of new Set(roots.map((entry) => entry.name))) {
-    assertReadsEmbeddedRegistry(name, declaredSrcDir(name));
+  const harvested = new Set(roots.map((entry) => entry.name));
+  for (const { name } of declared) {
+    assertHarvestMatchesSources(
+      name,
+      resolveDeclaredSrcDir(name),
+      harvested.has(name),
+    );
   }
 }
 
@@ -524,7 +536,7 @@ if (import.meta.main) {
   );
 
   const roots = collectDeclaredTemplateRoots(DECLARED);
-  assertHarvestedPackagesReadEmbedded(roots);
+  assertDeclaredPackagesServeTemplates(DECLARED, roots);
   const embedded = generateTemplateManifest(
     roots,
     join(TARGET.generatedDir, MANIFEST_MODULE),
