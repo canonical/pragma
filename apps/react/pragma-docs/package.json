@@ -13,6 +13,7 @@
   },
   "scripts": {
     "graph": "bun src/server/graph.ts",
+    "graphql:sdl": "bun src/server/emitSdl.ts",
     "dev": "bun src/server/withGraph.ts vite",
     "dev:express": "bun src/server/withGraph.ts node --import tsx --import ./src/server/nodeCssNoop.ts src/server/server.express.ts",
     "dev:bun": "bun src/server/withGraph.ts bun src/server/server.bun.ts",
