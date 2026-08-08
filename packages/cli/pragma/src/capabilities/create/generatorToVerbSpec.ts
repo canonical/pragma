@@ -44,7 +44,7 @@ const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);
  * which owes the reader a naming rule — is answered by the declaration's
  * per-param `docs`, which `create.verb.ts` applies over this.
  */
-export function declarativeDoc(message: string): string {
+function declarativeDoc(message: string): string {
   const trimmed = message
     .trim()
     .replace(/\s*[?:]+$/, "")
@@ -107,11 +107,4 @@ export function promptToParam(prompt: PromptDefinition): ParamSpec {
         ...(looksLikePath(prompt.name) ? { complete: { kind: "files" } } : {}),
       };
   }
-}
-
-/** Map a generator's whole prompt list to grammar params, in order. */
-export function generatorToParams(
-  prompts: readonly PromptDefinition[],
-): ParamSpec[] {
-  return prompts.map(promptToParam);
 }

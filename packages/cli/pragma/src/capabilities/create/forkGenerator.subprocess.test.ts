@@ -33,11 +33,12 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
+import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const cliDir = resolve(here, "../../..");
@@ -73,21 +74,6 @@ function listsNoun(help: string, noun: string): boolean {
   return new RegExp(`^\\s+${noun}\\s{2,}\\S`, "m").test(help);
 }
 
-/** Read a directory tree into a sorted map of relative path → contents. */
-function snapshot(dir: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const walk = (d: string, base: string): void => {
-    for (const entry of readdirSync(d, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    )) {
-      const rel = base ? `${base}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(join(d, entry.name), rel);
-      else out.set(rel, readFileSync(join(d, entry.name), "utf-8"));
-    }
-  };
-  walk(dir, "");
-  return out;
-}
 
 beforeAll(() => {
   // Build the fork binary from the fork's declaration. `--fork` makes the conf a
@@ -156,7 +142,15 @@ describe("a fork declares its own create surface (PROTECTED)", () => {
     });
     const found = [
       ...raw.matchAll(/\{[^{}]*"name":"create_[a-z]+"[^{}]*\}/g),
-    ].map((match) => JSON.parse(match.at(0) ?? "{}") as Record<string, string>);
+    ].map((match) => {
+      // Index 0 of a `matchAll` element is the whole match BY CONSTRUCTION, so
+      // this is a structural guarantee and not an external boundary: an
+      // assertion, never a `?? "{}"`, which would turn an impossible parse miss
+      // into an empty tool object flowing silently into the expectations below.
+      const whole = match.at(0);
+      expect(whole).toBeTypeOf("string");
+      return JSON.parse(whole as string) as Record<string, string>;
+    });
     expect(found.map((tool) => tool.name)).toEqual([`create_${FORK_NOUN}`]);
     // `category` is DERIVED (every create verb mutates) and cross-checked
     // against the verb's real `mutates` flag by the catalog's own drift guard.
@@ -190,7 +184,7 @@ describe("a fork declares its own create surface (PROTECTED)", () => {
       // files.
       expect(`${run.stdout}${run.stderr}`).not.toContain("ENOENT");
 
-      const wrote = snapshot(cwd);
+      const wrote = snapshotTree(cwd);
       expect(wrote.size).toBeGreaterThan(0);
       // Rendered, not copied: the scaffold's `package.json` carries the answer
       // the run supplied, which no embedded template can contain.

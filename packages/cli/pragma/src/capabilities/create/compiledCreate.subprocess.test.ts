@@ -27,11 +27,12 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
@@ -46,21 +47,6 @@ const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 // manifest without a second `beforeAll` writing `dist/pragma` in place while
 // another worker's test is spawning it.
 
-/** Read a directory tree into a sorted map of relative path → contents. */
-function snapshot(dir: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const walk = (d: string, base: string): void => {
-    for (const entry of readdirSync(d, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    )) {
-      const rel = base ? `${base}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(join(d, entry.name), rel);
-      else out.set(rel, readFileSync(join(d, entry.name), "utf-8"));
-    }
-  };
-  walk(dir, "");
-  return out;
-}
 
 /** Run one `create …` invocation in its own cwd and snapshot what it wrote. */
 function runCreate(
@@ -70,7 +56,7 @@ function runCreate(
 ): Map<string, string> {
   const dir = freshCwd();
   execFileSync(bin, [...prefix, ...args, "--yes"], { cwd: dir, stdio: "pipe" });
-  return snapshot(dir);
+  return snapshotTree(dir);
 }
 
 /**

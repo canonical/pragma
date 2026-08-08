@@ -12,11 +12,12 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
@@ -25,18 +26,6 @@ const summonCore = join(repoRoot, "packages/summon/core/dist/esm/index.js");
 const pickGen = join(here, "pickGenerator.ts");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-xbin-"));
 
-function snapshot(dir: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const walk = (d: string, base: string): void => {
-    for (const entry of readdirSync(d, { withFileTypes: true })) {
-      const rel = base ? `${base}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(join(d, entry.name), rel);
-      else out.set(rel, readFileSync(join(d, entry.name), "utf-8"));
-    }
-  };
-  walk(dir, "");
-  return out;
-}
 
 describe("cross-binary byte-equality (PROTECTED)", () => {
   it("pragma bin create ≡ summon-core execute across two processes", () => {
@@ -77,8 +66,8 @@ await runGeneratorTask(execute(gen, { prompt: autoPrompt(answers), params: answe
     );
     execFileSync("bun", [script, summonDir], { stdio: "pipe" });
 
-    const a = snapshot(pragmaDir);
-    const b = snapshot(summonDir);
+    const a = snapshotTree(pragmaDir);
+    const b = snapshotTree(summonDir);
     expect(a.size).toBeGreaterThan(0);
     expect([...a.keys()].sort()).toEqual([...b.keys()].sort());
     for (const [path, content] of a) {

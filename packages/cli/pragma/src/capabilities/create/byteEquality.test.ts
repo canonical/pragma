@@ -11,10 +11,11 @@
  * application. A cross-binary subprocess guard lives in byteEquality.subprocess.test.ts.
  */
 
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
@@ -30,21 +31,6 @@ const FLAGS: GlobalFlags = {
 };
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-golden-"));
 
-/** Read a directory tree into a sorted map of relative path → contents. */
-function snapshot(dir: string): Map<string, string> {
-  const out = new Map<string, string>();
-  const walk = (d: string, base: string): void => {
-    for (const entry of readdirSync(d, { withFileTypes: true }).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    )) {
-      const rel = base ? `${base}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) walk(join(d, entry.name), rel);
-      else out.set(rel, readFileSync(join(d, entry.name), "utf-8"));
-    }
-  };
-  walk(dir, "");
-  return out;
-}
 
 /** Producer (1): the full pragma kernel path — dispatcher runs the create verb. */
 async function producePragma(
@@ -65,7 +51,7 @@ async function producePragma(
   } finally {
     process.chdir(prev);
   }
-  return snapshot(dir);
+  return snapshotTree(dir);
 }
 
 /** Producer (2): summon-core execute + autoPrompt + the shared stamp core. */
@@ -93,7 +79,7 @@ async function produceSummon(
       onLog: () => {},
     },
   );
-  return snapshot(dir);
+  return snapshotTree(dir);
 }
 
 /** One golden case: the create-verb params, and the equivalent summon answers. */

@@ -106,22 +106,24 @@ interface BuildTarget {
   readonly generatedDir: string;
   /** The compiled binary's path. */
   readonly outfile: string;
-  /** Whether to regenerate the committed `docs/reference/` tree. */
-  readonly reference: boolean;
   /**
-   * Whether this is a FORK build, so the bundler aliases the three generated
-   * create modules to the ones written beside the fork's declaration.
+   * Which distribution is being built — the ONE discriminant, read at both
+   * sites that branch on it: `"shipped"` regenerates the committed
+   * `docs/reference/` tree, `"fork"` installs the plugin that aliases the three
+   * generated create modules to the ones written beside the fork's declaration.
    *
-   * ITS OWN FIELD, and that is a correction. The alias plugin used to be
+   * ONE FIELD, and that is a correction twice over. The alias plugin was first
    * selected by `TARGET.reference ? [] : [aliasGeneratedModules()]` — a
-   * documentation flag deciding a linking policy, coincident today only because
-   * the `--fork` branch happens to set both. The next reason to skip the docs (a
-   * faster shipped build) would have switched fork aliasing on for the shipped
-   * distribution, and this plugin's own docblock records that a mis-scoped
-   * alias produced a binary that built, type-checked and ran while serving one
-   * importer the wrong surface.
+   * documentation flag deciding a linking policy, which the next reason to skip
+   * the docs (a faster shipped build) would have turned into fork aliasing for
+   * the shipped distribution; this plugin's own docblock records that a
+   * mis-scoped alias produced a binary that built, type-checked and ran while
+   * serving one importer the wrong surface. Splitting it into two booleans fixed
+   * the coupling and left the two fields exact inverses at every construction,
+   * so the bug was still expressible. A discriminant cannot be set to a
+   * contradiction at all.
    */
-  readonly forked: boolean;
+  readonly kind: "shipped" | "fork";
 }
 
 /**
@@ -144,8 +146,7 @@ function readBuildTarget(argv: readonly string[]): BuildTarget {
       dir: packageDir,
       generatedDir: DEFAULT_GENERATED_DIR,
       outfile: outfileArg ?? "dist/pragma",
-      reference: true,
-      forked: false,
+      kind: "shipped",
     };
   }
   const forkArg = argv.at(forkAt + 1);
@@ -157,8 +158,7 @@ function readBuildTarget(argv: readonly string[]): BuildTarget {
     outfile: outfileArg ?? join(dir, "pragma"),
     // A fork's reference tree is its own; regenerating THIS package's committed
     // `docs/reference/` from a fork's surface would corrupt the distribution.
-    reference: false,
-    forked: true,
+    kind: "fork",
   };
 }
 
@@ -503,7 +503,7 @@ if (import.meta.main) {
   );
   console.log(`Embedded ${embedded} generator templates → ${MANIFEST_MODULE}`);
 
-  if (TARGET.reference) {
+  if (TARGET.kind === "shipped") {
     const changedDocs = await writeReferenceDocs();
     console.log(
       `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
@@ -520,7 +520,8 @@ if (import.meta.main) {
     // it, the fast paths stay at/under their budgets while `create` loads summon
     // only when it runs.
     splitting: true,
-    plugins: TARGET.forked ? [aliasGeneratedModules(TARGET.generatedDir)] : [],
+    plugins:
+      TARGET.kind === "fork" ? [aliasGeneratedModules(TARGET.generatedDir)] : [],
     compile: {
       target: "bun-linux-x64",
       outfile: TARGET.outfile,

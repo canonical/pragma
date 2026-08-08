@@ -10,18 +10,19 @@
  * exactly one generator package.
  */
 
+import type { EmbeddedFile } from "@canonical/summon-core/embedded";
 import { loadEmbeddedSync } from "@canonical/summon-core/embedded";
 
 /** This package's manifest scope — the key prefix its templates embed under. */
 const PACKAGE_NAME = "@canonical/summon-component";
 
-/** A loaded template: its source path (for diagnostics) and its content. */
-export interface LoadedTemplate {
-  /** Original source path (for diagnostics and dry-run display). */
-  readonly source: string;
-  /** Template content string. */
-  readonly content: string;
-}
+/**
+ * The registry's own file type, re-exported rather than re-declared: this
+ * binding returns what `loadEmbeddedSync` returns, unmodified, so a hand-copied
+ * twin could only ever go stale — a field added to `EmbeddedFile` would silently
+ * fail to reach this package's consumers.
+ */
+export type { EmbeddedFile };
 
 /**
  * Load a component template from disk, or from the injected embedded manifest
@@ -34,6 +35,6 @@ export interface LoadedTemplate {
  * @throws When the template is neither on disk nor in the embedded manifest.
  * @note Impure — reads the filesystem and the injected registry.
  */
-export function loadTemplateSync(source: string): LoadedTemplate {
+export function loadTemplateSync(source: string): EmbeddedFile {
   return loadEmbeddedSync(PACKAGE_NAME, source);
 }
