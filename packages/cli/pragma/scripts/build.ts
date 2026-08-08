@@ -189,7 +189,7 @@ async function readDeclaredGenerators(
   const conf = (
     (await import(pathToFileURL(confPath).href)) as { default: unknown }
   ).default;
-  const declared = parseRawConfig(conf, confPath).generators ?? [];
+  const declared = parseRawConfig(conf, confPath, "distribution").generators ?? [];
   const manifest = JSON.parse(
     readFileSync(join(dir, "package.json"), "utf-8"),
   ) as { dependencies?: Record<string, string> };

@@ -112,7 +112,7 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
       },
     );
   }
-  const config = parseRawConfig(module.default, path);
+  const config = parseRawConfig(module.default, path, "layer");
   writeCache(cachePath, config);
   return config;
 }

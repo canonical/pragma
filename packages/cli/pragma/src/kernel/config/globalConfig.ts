@@ -90,5 +90,5 @@ export function readGlobalConfig(): GlobalConfigRead {
     return { values: {}, exists: true, path };
   }
 
-  return { values: parseRawConfig(parsed, path), exists: true, path };
+  return { values: parseRawConfig(parsed, path, "layer"), exists: true, path };
 }

@@ -119,7 +119,10 @@ function declaredCompletion(value: unknown): Record<string, unknown> | null {
 }
 
 /**
- * The validator every config layer passes through. EXPORTED for
+ * The DISTRIBUTION validator — every field, `generators` included, checked to
+ * the depth the build reads it at. A user layer passes through
+ * {@link layerConfigSchema} instead, which differs in that one field alone.
+ * EXPORTED for
  * `schema.test.ts`, which compares its field set and each field's optionality
  * against the generated `docs/reference/config.md` — the two are produced
  * independently (the page from `keyof RawConfig`, this from hand-written zod)
@@ -152,16 +155,48 @@ export const rawConfigSchema = z.object({
 });
 
 /**
+ * The LAYER validator: {@link rawConfigSchema} with `generators` accepted
+ * SHALLOWLY.
+ *
+ * `generators` is distribution-only and read at BUILD time, and the reference
+ * says so in the words "a layer declaring it is accepted and ignored" — the
+ * same contract the four identity fields carry. Those are bare strings and
+ * cannot fail; `generators` was the first ignored field with a validator deep
+ * enough to REFUSE a whole config over a block the binary would then discard.
+ * Measured: a project config declaring one noun without `useWhen` was rejected
+ * with `at generators.0.nouns.widget.useWhen: Required`, naming a rule that
+ * governs a build the user is not running. Shallow here makes the documented
+ * contract true; the build's own `parseRawConfig` call is where the deep rules
+ * apply, and it is the only place they can change anything.
+ */
+const layerConfigSchema = rawConfigSchema.extend({
+  generators: z.array(z.unknown()).optional(),
+});
+
+/**
+ * Which config the value IS: the distribution's own `pragma.conf.ts` (a
+ * parameter of the build, and of `defaults.ts`) or a user's global/project
+ * layer. It selects how far `generators` is validated, and nothing else.
+ */
+export type ConfigScope = "distribution" | "layer";
+
+/**
  * Validate a raw config value into a {@link RawConfig}.
  *
  * @param value - The parsed JSON or evaluated module default.
  * @param source - The file path, used in error messages.
+ * @param scope - Whether this is the distribution config or a user layer. No
+ *   default: the two callers of each kind should say which they are.
  * @returns The validated layer values (only the keys actually present).
  * @throws PragmaError with code `CONFIG_ERROR` on an invalid shape, when the
  *   value declares the legacy `packages` key (renamed to `packs`), or when it
  *   still sets the removed `completion.caseSensitive` field.
  */
-export function parseRawConfig(value: unknown, source: string): RawConfig {
+export function parseRawConfig(
+  value: unknown,
+  source: string,
+  scope: ConfigScope,
+): RawConfig {
   // Rename detection must precede validation: unknown keys are stripped, so a
   // legacy `packages` field would otherwise vanish silently.
   if (typeof value === "object" && value !== null && "packages" in value) {
@@ -187,7 +222,8 @@ export function parseRawConfig(value: unknown, source: string): RawConfig {
       },
     );
   }
-  const result = rawConfigSchema.safeParse(value ?? {});
+  const schema = scope === "distribution" ? rawConfigSchema : layerConfigSchema;
+  const result = schema.safeParse(value ?? {});
   if (!result.success) {
     const issue = result.error.issues[0];
     const path = issue?.path.join(".") ?? "<root>";

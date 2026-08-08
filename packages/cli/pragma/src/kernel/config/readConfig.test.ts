@@ -16,6 +16,7 @@ import { findProjectConfig } from "./findProjectConfig.js";
 import { readGlobalConfig } from "./globalConfig.js";
 import { configCacheDir, globalConfigPath } from "./paths.js";
 import { readConfig } from "./readConfig.js";
+import { parseRawConfig } from "./schema.js";
 import { writeConfigField } from "./writeConfigField.js";
 
 const originalConfigHome = process.env.XDG_CONFIG_HOME;
@@ -248,34 +249,59 @@ describe("legacy config shapes — loud rename/removal errors", () => {
     expect(readGlobalConfig().values).toHaveProperty("generators");
   });
 
-  it("a `generators` noun declaring neither a key nor an axis is a CONFIG_ERROR", () => {
+  it("a MALFORMED `generators` in a layer is ignored, not refused", () => {
     freshXdg();
+    // ACCEPTED AND IGNORED means accepted. `generators` is the first
+    // distribution-only field with a validator deep enough to REFUSE a whole
+    // config, and it was doing so over a block the layer then discarded: a
+    // project declaring one noun without `useWhen` failed to load at all, with
+    // an error naming a rule that governs a build the user is not running. The
+    // four identity fields are bare strings and cannot fail; this one must not
+    // either. Where the noun grammar DOES bite is the case below.
     writeGlobal(
-      '{"generators": [{"name": "@acme/gen", "nouns": {"gen": {"summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
+      '{"generators": [{"name": "@acme/gen", "nouns": {"gen": {"summary": "Scaffold a thing."}}}]}',
     );
-    expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|generators|key/);
+    expect(readGlobalConfig().values).toHaveProperty("generators");
   });
 
-  it("a `generators` noun MIXING a key with an axis is a CONFIG_ERROR", () => {
-    freshXdg();
-    // The first refinement compared `key !== undefined` against
+  it("the noun grammar is enforced where it acts — on the DISTRIBUTION config", () => {
+    // The build reads `pragma.conf.ts` through this same validator (see
+    // `scripts/build.ts#readDeclaredGenerators`), and that is the only parse
+    // whose outcome changes anything: it decides the literal import specifiers
+    // and the whole `create` surface. So the refinements are asserted at that
+    // scope, not through a layer that discards the field.
+    const noun = (extra: string): unknown =>
+      JSON.parse(
+        `{"generators": [{"name": "@acme/gen", "nouns": {"gen": {${extra}"summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}`,
+      );
+    // Neither form: nothing names the generator the noun would run.
+    expect(() =>
+      parseRawConfig(noun(""), "pragma.conf.ts", "distribution"),
+    ).toThrow(/key|keyPrefix/);
+    // A MIXTURE. The first refinement compared `key !== undefined` against
     // `keyPrefix && axis`, so this read as `true !== false` and was ACCEPTED
     // while its own message said "not both". The build then dropped the prompt
     // the ignored `axis` names: `{key: "package", axis: "name"}` emitted a
     // `create package` surface with no `name` param at all — a required
     // positional deleted, with no enum flag to replace it and nothing red.
-    writeGlobal(
-      '{"generators": [{"name": "@acme/gen", "nouns": {"gen": {"key": "gen", "axis": "name", "summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
-    );
-    expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|mixture/);
-  });
-
-  it("a `generators` noun mixing a key with a keyPrefix is a CONFIG_ERROR", () => {
-    freshXdg();
-    writeGlobal(
-      '{"generators": [{"name": "@acme/gen", "nouns": {"gen": {"key": "gen", "keyPrefix": "gen", "summary": "Scaffold a thing.", "useWhen": "Scaffolding a thing"}}}]}',
-    );
-    expect(() => readGlobalConfig()).toThrow(/CONFIG_ERROR|mixture/);
+    expect(() =>
+      parseRawConfig(
+        noun('"key": "gen", "axis": "name", '),
+        "pragma.conf.ts",
+        "distribution",
+      ),
+    ).toThrow(/mixture/);
+    expect(() =>
+      parseRawConfig(
+        noun('"key": "gen", "keyPrefix": "gen", '),
+        "pragma.conf.ts",
+        "distribution",
+      ),
+    ).toThrow(/mixture/);
+    // And the well-formed declaration this distribution actually ships passes.
+    expect(() =>
+      parseRawConfig(noun('"key": "gen", '), "pragma.conf.ts", "distribution"),
+    ).not.toThrow();
   });
 
   it("a removed `completion.caseSensitive` throws CONFIG_ERROR naming the field", async () => {

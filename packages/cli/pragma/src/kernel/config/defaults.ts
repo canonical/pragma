@@ -14,4 +14,4 @@
 import rawConfig from "../../../pragma.conf.js";
 import { parseRawConfig } from "./schema.js";
 
-export default parseRawConfig(rawConfig, "pragma.conf.ts");
+export default parseRawConfig(rawConfig, "pragma.conf.ts", "distribution");
