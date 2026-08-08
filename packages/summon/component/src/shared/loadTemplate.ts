@@ -37,16 +37,3 @@ export interface LoadedTemplate {
 export function loadTemplateSync(source: string): LoadedTemplate {
   return loadEmbeddedSync(PACKAGE_NAME, source);
 }
-
-/**
- * Async wrapper over {@link loadTemplateSync}, kept for callers that await a
- * template load. The body is fully synchronous.
- *
- * @param source - Absolute path to the template file.
- * @returns Loaded template with path and content.
- */
-export default async function loadTemplate(
-  source: string,
-): Promise<LoadedTemplate> {
-  return loadTemplateSync(source);
-}

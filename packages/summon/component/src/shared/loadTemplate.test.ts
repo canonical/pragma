@@ -2,7 +2,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setEmbeddedFiles } from "@canonical/summon-core/embedded";
 import { afterEach, describe, expect, it } from "vitest";
-import loadTemplate from "./loadTemplate.js";
+import { loadTemplateSync } from "./loadTemplate.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const templatesDir = path.join(here, "..", "templates");
@@ -13,50 +13,48 @@ afterEach(() => {
   setEmbeddedFiles({});
 });
 
-describe("loadTemplate", () => {
-  it("reads a real template from disk", async () => {
-    const result = await loadTemplate(
+describe("loadTemplateSync", () => {
+  it("reads a real template from disk", () => {
+    const result = loadTemplateSync(
       path.join(templatesDir, "react", "types.ts.ejs"),
     );
     expect(result.content).toContain("Props");
   });
 
-  it("binds the embedded lookup to THIS package's scope", async () => {
+  it("binds the embedded lookup to THIS package's scope", () => {
     // The scope is the fact this module owns. An entry embedded under another
     // package's name must NOT serve a component template — that is the failure
     // a fork hit when the manifest and the loader disagreed on the prefix.
     setEmbeddedFiles({ "@canonical/summon-package/react/types.ts.ejs": "NO" });
-    await expect(loadTemplate(inBinary("react/types.ts.ejs"))).rejects.toThrow(
+    expect(() => loadTemplateSync(inBinary("react/types.ts.ejs"))).toThrow(
       /@canonical\/summon-component\/react\/types\.ts\.ejs/,
     );
 
     setEmbeddedFiles({
       "@canonical/summon-component/react/types.ts.ejs": "YES",
     });
-    expect((await loadTemplate(inBinary("react/types.ts.ejs"))).content).toBe(
+    expect(loadTemplateSync(inBinary("react/types.ts.ejs")).content).toBe(
       "YES",
     );
   });
 
-  it("keeps same-named templates of different frameworks apart", async () => {
+  it("keeps same-named templates of different frameworks apart", () => {
     setEmbeddedFiles({
       "@canonical/summon-component/react/types.ts.ejs": "REACT",
       "@canonical/summon-component/svelte/types.ts.ejs": "SVELTE",
       "@canonical/summon-component/lit/types.ts.ejs": "LIT",
     });
-    expect((await loadTemplate(inBinary("react/types.ts.ejs"))).content).toBe(
+    expect(loadTemplateSync(inBinary("react/types.ts.ejs")).content).toBe(
       "REACT",
     );
-    expect((await loadTemplate(inBinary("svelte/types.ts.ejs"))).content).toBe(
+    expect(loadTemplateSync(inBinary("svelte/types.ts.ejs")).content).toBe(
       "SVELTE",
     );
-    expect((await loadTemplate(inBinary("lit/types.ts.ejs"))).content).toBe(
-      "LIT",
-    );
+    expect(loadTemplateSync(inBinary("lit/types.ts.ejs")).content).toBe("LIT");
   });
 
-  it("throws — never returns empty — when nothing serves the path", async () => {
-    await expect(loadTemplate(inBinary("react/absent.ejs"))).rejects.toThrow(
+  it("throws — never returns empty — when nothing serves the path", () => {
+    expect(() => loadTemplateSync(inBinary("react/absent.ejs"))).toThrow(
       /Embedded file not found/,
     );
   });
