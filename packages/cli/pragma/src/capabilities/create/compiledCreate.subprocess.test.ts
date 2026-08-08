@@ -33,6 +33,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { snapshotTree } from "../../testing/helpers/snapshotTree.js";
+import { CREATE_SURFACE } from "./surface.generated.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
@@ -116,6 +117,23 @@ const CASES: ReadonlyArray<{ name: string; args: readonly string[] }> = [
 ];
 
 describe("compiled pragma create (PROTECTED)", () => {
+  it("every DECLARED noun has a case", () => {
+    // The case list is hand-written — the arguments a noun needs cannot be
+    // derived from its surface — so its COVERAGE is what has to be checked
+    // against the declaration. Without this a fork adding a noun (or this
+    // distribution declaring a fourth) gets a green compiled-binary guard that
+    // never spawns it, which is the shape of the hole `readsEmbeddedTemplates`
+    // used to leave: a noun that only fails in the binary, with nothing red.
+    // Break-it: deleting BOTH `application` cases turns this red at
+    // `expected [ 'component', 'package' ] to deeply equal [ 'application',
+    // 'component', 'package' ]`. (Deleting one does not, and should not — the
+    // rule is about nouns covered, not cases written.)
+    const declared = Object.keys(CREATE_SURFACE);
+    expect(declared.length).toBeGreaterThan(0);
+    const covered = new Set(CASES.map(({ args }) => args.at(1)));
+    expect([...covered].sort()).toEqual(declared.sort());
+  });
+
   for (const { name, args } of CASES) {
     it(`${name}: compiled binary ≡ source run, byte-for-byte`, () => {
       // (1) The real standalone binary — every file read comes from the
