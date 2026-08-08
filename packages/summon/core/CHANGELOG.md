@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+### Features
+
+* **summon-core:** a package-scoped embedded-file registry, exported from the new `@canonical/summon-core/embedded` subpath. `setEmbeddedFiles` lets a compiled host inject a manifest, `loadEmbeddedSync` reads disk first and the manifest second, and `deriveEmbeddedKey` is the single key rule both a build's harvest and the run-time lookup apply — so the two agree by construction. The entry point imports nothing but `node:fs`, so injecting a manifest never evaluates the generation layer (and with it React).
+
+* **summon-core:** `template()` accepts `content:`, so a caller that has already loaded a template passes it in rather than having summon-core `readFile` a path. That is what lets a generator run from a `bun build --compile` binary, whose virtual filesystem carries no template files.
+
+
+### Bug Fixes
+
+* **summon-core:** `templateDir` is documented `@experimental` and source-run-only. It globs its source off the real filesystem and passes no `content:`, so a generator built on it dies from a compiled binary — the one read in this package that the registry does not cover.
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon-core

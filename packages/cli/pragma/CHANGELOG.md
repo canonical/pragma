@@ -13,10 +13,6 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 * **cli:** the distribution config is a PARAMETER of the build, not an import of it. `scripts/build.ts --fork <dir> [--outfile <path>]` compiles this distribution's binary with the CREATE SURFACE declared by `<dir>/pragma.conf.ts` substituted — checked against `<dir>/package.json`, written beside it as three generated modules and aliased at bundle time. Identity, packs and prefixes still come from this package's own conf, which `src/bin.ts` imports statically. That is what makes the create surface's despecialization checkable rather than asserted: `forkGenerator.subprocess.test.ts` builds a fork declaring one generator package this distribution does not ship, and proves the fork binary runs `create monorepo` while the shipped binary has never heard of it.
 
-### BREAKING CHANGES
-
-* **summon-component:** the `./embedded` subpath export is removed. The embedded-file registry lives in `@canonical/summon-core/embedded`; hosts inject through its `setEmbeddedFiles`.
-
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 

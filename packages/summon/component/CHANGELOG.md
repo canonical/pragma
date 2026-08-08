@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+### BREAKING CHANGES
+
+* **summon-component:** the `./embedded` subpath export is removed. The embedded-file registry lives in `@canonical/summon-core/embedded`, so a host injects its manifest through infrastructure rather than through one declared generator package — a CLI that swapped its generator package used to keep an injection point naming the package it no longer shipped.
+
+
+### Features
+
+* **summon-component:** every template read routes through the shared registry. `shared/loadTemplate.ts` is a binding of `loadEmbeddedSync` to this package's manifest scope and has one synchronous export returning summon-core's own `EmbeddedFile`; the local `LoadedTemplate` twin is gone.
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon-component

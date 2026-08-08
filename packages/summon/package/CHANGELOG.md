@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# Unreleased
+
+### Bug Fixes
+
+* **summon-package:** every template read routes through `@canonical/summon-core/embedded`, so `create package` works from a compiled host. It used to call `template({ source })` with no `content:`, which fell through to `readFile` and died with `ENOENT … /$bunfs/templates/package.json.ejs` — after `mkdir` had already left a half-made package on disk.
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon-package
