@@ -160,6 +160,8 @@ const LOOKUP_CAPABILITY = {
  * @param params - The coerced param bag (`prefix`, `properties`, `fullUris`, `class`).
  * @param rt - The runtime (store + disclosure precedence).
  * @returns The namespace's classes (and, per disclosure, properties) payload.
+ * @note Impure — opens the store session and issues the class and property
+ *   queries, so it reads live state rather than only its params.
  */
 async function runLookup(
   params: Record<string, unknown>,

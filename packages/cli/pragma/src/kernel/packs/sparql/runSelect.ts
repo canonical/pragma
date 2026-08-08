@@ -56,6 +56,11 @@ function isUnseededStoreError(error: unknown): boolean {
  *   does not bind. That is a declaration error, so it is CONFIG_ERROR naming
  *   the story, with NO `sources update` hint — rebuilding cannot bind a prefix
  *   nothing declares.
+ *
+ * @note Impure — issues a SPARQL query against the live store through the query
+ *   facade. {@link runSelect} below carries the same note for the same reason;
+ *   the two are annotated together so the file does not read as if one of them
+ *   were pure.
  */
 async function queryOrRemap(
   rt: Pick<PragmaRuntime, "query">,
