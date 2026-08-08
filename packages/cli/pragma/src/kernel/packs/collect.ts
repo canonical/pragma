@@ -76,8 +76,8 @@ interface ValidatedStories {
  * capability's name and not necessarily any noun it registers: `mcp`,
  * `__complete` and `__store-probe` are answered by `bin.ts` at `argv[0]`
  * before the command tree is built, and none of the three was ever a module
- * name. What WAS reserved was `meta` — a capability that owned `hidden` specs
- * for two of them and was itself a phantom, reachable from nothing. So a pack
+ * name. What WAS reserved was `meta` — a capability that owned unreachable
+ * specs for two of them and was itself a phantom, reachable from nothing. So a pack
  * declaring noun `mcp` parsed, compiled, registered, and was then unreachable
  * forever: the bin returns before dispatch and the noun answers nothing. It
  * failed silently and in the direction of a working-looking install.

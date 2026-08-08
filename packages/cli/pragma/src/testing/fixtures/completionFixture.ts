@@ -3,7 +3,7 @@
  * test-only, never listed in `src/capabilities/index.ts`): an entity
  * positional, an enum positional, enum/files/boolean/none flags, a variadic
  * `string[]` positional, a repeatable `string[]` flag, a mutating verb, a
- * self-verb-only noun, a mixed self-verb + sub-verb noun, and a hidden verb.
+ * self-verb-only noun, and a mixed self-verb + sub-verb noun.
  *
  * Snapshots and the protected parse/resolve tests pin against THIS module,
  * not the live capabilities, so live noun renames never churn them.
@@ -125,17 +125,6 @@ const blockRemove: VerbSpec = {
   run: () => succeed({ removed: true }),
 };
 
-/** `block probe` — hidden; must never appear in completions. */
-const blockProbe: VerbSpec = {
-  path: ["block", "probe"],
-  summary: "Internal probe.",
-  hidden: true,
-  params: [],
-  output: { formatters: passthrough },
-  capability: read,
-  run: async () => "ok",
-};
-
 /** `standard [query]` — self-verb on a noun that ALSO has a sub-verb. */
 const standardSelf: VerbSpec = {
   path: ["standard"],
@@ -193,7 +182,6 @@ export const completionFixture: CapabilityModule = {
     blockList,
     blockDiff,
     blockRemove,
-    blockProbe,
     standardSelf,
     standardList,
     statusSelf,

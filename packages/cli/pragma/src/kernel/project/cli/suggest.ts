@@ -21,8 +21,8 @@ export interface UnknownCommand {
 /**
  * Build the noun → verb-labels map from the registered verbs.
  *
- * Hidden verbs are excluded. A self-verb (path length 1, e.g. `["info"]`)
- * contributes an entry with no sub-verbs.
+ * A self-verb (path length 1, e.g. `["info"]`) contributes an entry with no
+ * sub-verbs.
  *
  * @param verbs - All registered verbs.
  * @returns A map from noun to its verb labels (empty for self-verbs).
@@ -30,7 +30,6 @@ export interface UnknownCommand {
 export function nounVerbMap(verbs: readonly VerbSpec[]): Map<string, string[]> {
   const map = new Map<string, string[]>();
   for (const verb of verbs) {
-    if (verb.hidden) continue;
     const [noun, sub] = verb.path;
     const labels = map.get(noun) ?? [];
     if (sub) labels.push(sub);

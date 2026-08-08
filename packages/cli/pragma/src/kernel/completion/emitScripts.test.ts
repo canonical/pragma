@@ -58,12 +58,6 @@ describe("emitScripts — static tier contract", () => {
     expect(scripts.fish).toContain(`-n "__pragma_at ''" -l version`);
   });
 
-  it("hidden verbs never reach a script", () => {
-    for (const shell of ["bash", "zsh", "fish"] as const) {
-      expect(scripts[shell]).not.toContain("probe");
-    }
-  });
-
   it("documents the shell floors in the headers", () => {
     expect(scripts.bash).toContain("bash >= 4");
     expect(scripts.zsh).toContain("zsh >= 5");

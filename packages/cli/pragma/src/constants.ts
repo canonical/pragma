@@ -111,7 +111,7 @@ const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
  * dispatches never.
  *
  * Reservation was keyed on capability MODULE NAME, which meant the phantom
- * module `meta` was reserved (it owned `hidden` specs for two of these) while
+ * module `meta` was reserved (it owned unreachable specs for two of these) while
  * the three tokens that actually short-circuit dispatch were not. Deleting
  * `meta` removed even that accidental cover, so the real tokens are named.
  *

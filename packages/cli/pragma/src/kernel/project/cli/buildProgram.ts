@@ -141,7 +141,7 @@ function attachVerb(
  * @param subVerbs - The noun's sub-verbs (`path.length > 1`).
  * @param programName - The binary name shown in help.
  * @param globalFlags - Global flags closed over by every action.
- * @param live - All non-hidden verbs, for noun-level help.
+ * @param allVerbs - All registered verbs, for noun-level help.
  */
 function attachNounGroup(
   program: Command,
@@ -150,11 +150,11 @@ function attachNounGroup(
   subVerbs: readonly VerbSpec[],
   programName: string,
   globalFlags: GlobalFlags,
-  live: readonly VerbSpec[],
+  allVerbs: readonly VerbSpec[],
 ): void {
   const parent = program.command(noun);
   parent.enablePositionalOptions();
-  useDesignedHelp(parent, () => formatNounHelp(programName, noun, live));
+  useDesignedHelp(parent, () => formatNounHelp(programName, noun, allVerbs));
 
   if (selfVerb) {
     // A mixed noun (self-verb + sub-verbs) MUST have no positional on its
@@ -217,7 +217,7 @@ function attachNounGroup(
 /**
  * Build the Commander program for a set of verbs.
  *
- * @param verbs - The verbs to project (hidden verbs are excluded).
+ * @param verbs - The verbs to project.
  * @param options - Global flags and program metadata.
  * @returns The configured program, ready for `parseAsync`.
  */
@@ -228,19 +228,17 @@ export function buildProgram(
   const programName = options.programName ?? BIN_NAME;
   const description = options.description ?? PROGRAM_DESCRIPTION;
   const version = options.version ?? VERSION;
-  const live = verbs.filter((verb) => !verb.hidden);
-
   const program = new Command();
   program.name(programName).description(description);
   program.version(version, "-v, --version");
   program.enablePositionalOptions();
   program.exitOverride();
   useDesignedHelp(program, () =>
-    formatRootHelp(programName, description, live),
+    formatRootHelp(programName, description, verbs),
   );
 
   const groups = new Map<string, VerbSpec[]>();
-  for (const verb of live) {
+  for (const verb of verbs) {
     const noun = verb.path[0];
     const bucket = groups.get(noun) ?? [];
     bucket.push(verb);
@@ -270,7 +268,7 @@ export function buildProgram(
       subVerbs,
       programName,
       options.globalFlags,
-      live,
+      verbs,
     );
   }
 

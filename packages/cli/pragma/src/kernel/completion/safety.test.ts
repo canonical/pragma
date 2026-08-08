@@ -342,8 +342,8 @@ describe("storeless guarantee (PROTECTED)", () => {
    *
    * `completion/index.ts` (a barrel with one importer that took 3 of its 26
    * names) was the WIDEST root here at 28 files, and
-   * `capabilities/meta/complete.verb.ts` was a `hidden: true` spec `bin.ts`
-   * intercepted before `buildProgram` ever ran. Both are gone.
+   * `capabilities/meta/complete.verb.ts` was a spec `bin.ts` intercepted at
+   * argv[0], before `buildProgram` ever ran. Both are gone.
    *
    * THE INVARIANT, which is what this paragraph is for: every file the two
    * deleted roots reached is still reached, modulo renames. The counts below

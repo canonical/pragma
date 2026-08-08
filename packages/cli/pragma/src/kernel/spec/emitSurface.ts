@@ -231,7 +231,7 @@ export function emitVerb(verb: VerbSpec): EmittedVerb {
 /**
  * Emit the full surface document for a set of capability modules.
  *
- * @param modules - The capability modules to project (hidden verbs excluded).
+ * @param modules - The capability modules to project.
  * @returns The surface document: live nouns + sorted tools + fixed sections.
  */
 export function emitSurface(
@@ -244,7 +244,6 @@ export function emitSurface(
 
   for (const module of modules) {
     for (const verb of module.verbs) {
-      if (verb.hidden) continue;
       const noun = verb.path[0];
       const bucket = nouns[noun] ?? { verbs: [] };
       nouns[noun] = bucket;

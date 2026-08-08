@@ -42,7 +42,7 @@ describe("buildCompletionModel — structure", () => {
     ]);
   });
 
-  it("excludes hidden verbs", () => {
+  it("carries every sub-verb the fixture noun declares", () => {
     const block = findNoun(model, "block");
     expect(block?.verbs.map((v) => v.label)).toEqual([
       "diff",
@@ -382,10 +382,8 @@ function expectAgreement(
 }
 
 describe("projection agreement with emitSurface (PROTECTED)", () => {
-  it("the fixture model matches the fixture surface (hidden excluded)", () => {
+  it("the fixture model matches the fixture surface", () => {
     expectAgreement([completionFixture], model);
-    const emitted = emitSurface([completionFixture]);
-    expect(JSON.stringify(emitted)).not.toContain("probe");
   });
 
   it("the live model matches the live surface", () => {

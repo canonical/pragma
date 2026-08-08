@@ -36,9 +36,9 @@ describe("emitReference", () => {
 
   describe("index.md", () => {
     it("reports counts derived from the live grammar", () => {
-      // gizmo + ping = 2 nouns; local/scan/tidy/wipe/ping = 5 commands (hidden
-      // dropped); scan/tidy/wipe/ping = 4 tools (local withheld); 1 resource
-      // template (the module's `mcpResources` surface).
+      // gizmo + ping = 2 nouns; local/scan/tidy/wipe/ping = 5 commands;
+      // scan/tidy/wipe/ping = 4 tools (local withheld); 1 resource template
+      // (the module's `mcpResources` surface).
       expect(index).toContain("**2** command nouns");
       expect(index).toContain("**5** CLI commands");
       expect(index).toContain("**4** MCP tools");
@@ -53,13 +53,12 @@ describe("emitReference", () => {
   });
 
   describe("commands.md", () => {
-    it("groups verbs under noun headings, sorted, hidden excluded", () => {
+    it("groups verbs under noun headings, sorted", () => {
       expect(commands).toContain("## gizmo");
       expect(commands).toContain("## ping");
       expect(commands.indexOf("## gizmo")).toBeLessThan(
         commands.indexOf("## ping"),
       );
-      expect(commands).not.toContain("hidden");
     });
 
     it("renders a read verb's usage, args, flags, attributes, and examples", () => {

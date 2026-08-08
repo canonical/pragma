@@ -49,6 +49,7 @@ describe("surface conformance (PROTECTED)", () => {
               needsStore: true,
               mcp: "widget_make",
             },
+            { v: "internal", mcp: false },
           ],
         },
       },

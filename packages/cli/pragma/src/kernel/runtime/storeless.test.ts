@@ -66,8 +66,8 @@ describe("storeless guarantee — the store never boots for storeless verbs (PRO
 
   // There was a `__complete does not construct the store` case here. It
   // dispatched `capabilities/meta/complete.verb.ts` through `executeVerb` — a
-  // `hidden` spec `bin.ts` answers at argv[0] before the command tree exists,
-  // so that dispatch never happens in production. Both halves of what it
+  // spec for a token `bin.ts` answers at argv[0], before the command tree
+  // exists, so that dispatch never happens in production. Both halves of what it
   // claimed survive it, and both are stronger: the DISPATCHER not booting for
   // a `needsStore: false` verb is the three cases above, and the real
   // `__complete` path's storelessness is `completion/safety.test.ts`'s "an

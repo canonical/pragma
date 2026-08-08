@@ -2,11 +2,10 @@
  * Serve the MCP projector over stdio.
  *
  * `bin.ts` answers `mcp` at argv[0] (D9) and calls this — the ONE caller: build
- * the server from the capabilities and connect it to a stdio transport. There
- * was a second, a `hidden: true` `mcp` meta verb, and it could never reach
- * here: the bin intercepted the token before `buildProgram` ran, and
- * `buildProgram` filters hidden verbs so the spec was never registered either.
- * It has been deleted. Kept separate from {@link buildServer} so tests can
+ * the server from the capabilities and connect it to a stdio transport. A
+ * second, an `mcp` meta verb under `capabilities/meta/`, could never reach here
+ * — the bin intercepts the token before the command tree is built — and has
+ * been deleted. Kept separate from {@link buildServer} so tests can
  * build a server without touching stdio — that, not a second caller, is what
  * the split buys.
  */

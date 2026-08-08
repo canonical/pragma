@@ -138,11 +138,9 @@ async function main(): Promise<void> {
   //    static capabilities — the front door never reads config or stories.
   if (!args.some((arg) => !arg.startsWith("-"))) {
     const { formatRootHelp } = await import("./kernel/project/cli/rootHelp.js");
-    const live = capabilities
-      .flatMap((module) => [...module.verbs])
-      .filter((verb) => !verb.hidden);
+    const verbs = capabilities.flatMap((module) => [...module.verbs]);
     process.stdout.write(
-      `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live)}\n`,
+      `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, verbs)}\n`,
     );
     return;
   }

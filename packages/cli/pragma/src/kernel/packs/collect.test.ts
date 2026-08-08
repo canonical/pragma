@@ -278,7 +278,7 @@ describe("validateStories — package stories NEVER throw (PROTECTED)", () => {
     // The reservation reads `module.name`, and none of the three tokens
     // `bin.ts` answers at argv[0] has ever been one. What made that look
     // covered was the phantom `meta` capability, whose NAME was reserved
-    // because it was a module, while the tokens it held `hidden` specs for
+    // because it was a module, while the tokens it held unreachable specs for
     // were not. Deleting `meta` removed the coincidence.
     //
     // MEASURED while writing this, and it narrows the defect: only `mcp` was

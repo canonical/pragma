@@ -30,7 +30,12 @@ describe("runComplete — the __complete pipeline", () => {
     ]);
   });
 
-  it("hidden verbs never complete", async () => {
+  it("a bin fast-path token completes to nothing", async () => {
+    // `__complete` and `__store-probe` are answered by `bin.ts` at argv[0] and
+    // have no spec anywhere, so there is nothing for the model to offer. This
+    // used to be spelled "hidden verbs never complete" and driven by a
+    // `hidden: true` spec under `capabilities/meta/`; the spec is gone and so
+    // is the grammar field, and the token is still not a completion.
     const matches = await runComplete(["__com"], capabilities);
     expect(matches).toEqual([]);
   });

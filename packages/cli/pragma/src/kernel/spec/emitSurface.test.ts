@@ -29,10 +29,12 @@ describe("naming rules", () => {
 describe("emitSurface", () => {
   const surface = emitSurface([fixtureModule]);
 
-  it("excludes hidden verbs", () => {
-    const labels = surface.nouns.widget?.verbs.map((v) => v.v);
-    expect(labels).toEqual(["list", "make"]);
-    expect(labels).not.toContain("internal");
+  it("emits every verb the module declares, MCP-withheld included", () => {
+    expect(surface.nouns.widget?.verbs.map((v) => v.v)).toEqual([
+      "list",
+      "make",
+      "internal",
+    ]);
   });
 
   it("emits a bare read verb with only v + mcp", () => {
@@ -52,7 +54,7 @@ describe("emitSurface", () => {
     });
   });
 
-  it("collects exposed tools, sorted, excluding hidden", () => {
+  it("collects exposed tools, sorted", () => {
     expect(surface.mcpSurface.tools).toEqual(["widget_list", "widget_make"]);
   });
 

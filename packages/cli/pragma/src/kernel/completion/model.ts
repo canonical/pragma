@@ -187,14 +187,12 @@ function bareSelfVerb(label: string): VerbEntry {
 /**
  * Derive the completion model from the capability modules.
  *
- * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
  * The bin-served `mcp` entry is injected so `pragma mc<Tab>` completes it,
  * matching the root help — and the injection is the MECHANISM, not a fallback
  * awaiting a real spec. `bin.ts` answers `mcp` at argv[0] before the command
- * tree is built, so a non-hidden `mcp` spec would be unreachable; a
- * `hidden: true` one existed and reached nothing, because this and its twin in
- * `project/cli/rootHelp.ts` are what actually put `mcp` in completions and in
- * help. That spec is deleted; these two literals are unchanged.
+ * tree is built, so no spec for it could ever be reached, whatever it declared.
+ * This literal and its twin in `project/cli/rootHelp.ts` are what actually put
+ * `mcp` in completions and in help.
  *
  * @param modules - The capability modules.
  * @returns The completion model, nouns and verbs sorted.
@@ -219,7 +217,6 @@ export function buildCompletionModel(
 
   for (const module of modules) {
     for (const verb of module.verbs) {
-      if (verb.hidden) continue;
       const noun = verb.path[0];
       assertSafeToken(noun, `noun "${noun}"`);
       const bucket = bucketFor(noun);

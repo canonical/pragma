@@ -6,9 +6,9 @@ import { suggestNames } from "./suggestNames.js";
 const verbs = [...fixtureModule.verbs];
 
 describe("nounVerbMap", () => {
-  it("maps nouns to their non-hidden verb labels", () => {
+  it("maps nouns to their verb labels", () => {
     const map = nounVerbMap(verbs);
-    expect(map.get("widget")).toEqual(["list", "make"]);
+    expect(map.get("widget")).toEqual(["list", "make", "internal"]);
     expect([...map.keys()]).toEqual(["widget"]);
   });
 });
@@ -26,7 +26,7 @@ describe("resolveUnknownCommand", () => {
   it("flags an unknown verb against its noun's verbs", () => {
     expect(resolveUnknownCommand(["widget", "lst"], map)).toEqual({
       token: "lst",
-      candidates: ["list", "make"],
+      candidates: ["list", "make", "internal"],
     });
   });
 

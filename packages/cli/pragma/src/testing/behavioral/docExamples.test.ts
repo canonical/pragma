@@ -55,10 +55,10 @@ const commands = HAND_WRITTEN_DOCS.flatMap((doc) =>
   extractPragmaCommands(readDoc(doc)),
 );
 
-/** Every non-hidden verb, flattened from the live catalog. */
-const allVerbs: VerbSpec[] = capabilities
-  .flatMap((module) => [...module.verbs])
-  .filter((verb) => !verb.hidden);
+/** Every verb, flattened from the live catalog. */
+const allVerbs: VerbSpec[] = capabilities.flatMap((module) => [
+  ...module.verbs,
+]);
 const nouns = nounVerbMap(allVerbs);
 
 /** `"noun verb"` (or `"noun"` for a self-verb) → the runnable spec. */

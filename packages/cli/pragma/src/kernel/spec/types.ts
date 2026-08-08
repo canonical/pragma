@@ -187,7 +187,6 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
   readonly capability: Capability;
   readonly run: (p: P, rt: PragmaRuntime) => Promise<R> | Task<R>;
   readonly errors?: readonly ErrorSpec[];
-  readonly hidden?: boolean;
 }
 
 /**

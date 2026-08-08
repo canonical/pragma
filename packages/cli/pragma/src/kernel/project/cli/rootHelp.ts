@@ -100,26 +100,22 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
         // The one noun with no verb to speak for it, so its summary is a
-        // literal rather than derived. That was ALREADY the working mechanism
-        // when a `hidden: true` `mcp` spec still existed under
-        // `capabilities/meta/`: `buildProgram` filters hidden verbs before
-        // registering, `emitSurface` and `emitReference` filter them too, and
-        // `bin.ts` answers `mcp` at argv[0] before any of them run. The spec
-        // reached nothing, and this literal — with its twin in
-        // `completion/model.ts` — is what actually put `mcp` in help and in
-        // completions. The spec has since been deleted; this line is unchanged
-        // because it was never the fallback, it was the mechanism.
+        // literal rather than derived. `bin.ts` answers `mcp` at argv[0],
+        // before the command tree is built, so no spec for the noun could ever
+        // have been reached. One such spec did exist, under
+        // `capabilities/meta/`, and reached nothing; this literal — with its
+        // twin in `completion/model.ts` — is what actually puts `mcp` in help
+        // and in completions, and always was.
         { noun: "mcp", summary: "Start the MCP server over stdio" },
       ],
     },
   ];
 }
 
-/** All distinct, non-hidden top-level nouns present in the registered verbs. */
+/** All distinct top-level nouns present in the registered verbs. */
 function nounsFrom(verbs: readonly VerbSpec[]): Set<string> {
   const nouns = new Set<string>();
   for (const verb of verbs) {
-    if (verb.hidden) continue;
     nouns.add(verb.path[0]);
   }
   return nouns;
@@ -132,7 +128,7 @@ function nounsFrom(verbs: readonly VerbSpec[]): Set<string> {
  * column reads as one voice with the kernel's own fragments.
  */
 function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
-  const first = verbs.find((v) => v.path[0] === noun && !v.hidden);
+  const first = verbs.find((v) => v.path[0] === noun);
   return (first?.summary ?? `${noun} commands`).replace(/\.$/, "");
 }
 

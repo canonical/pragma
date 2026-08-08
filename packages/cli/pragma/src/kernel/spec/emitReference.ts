@@ -74,16 +74,13 @@ function escapeCell(text: string): string {
   return text.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }
 
-/** Flatten every non-hidden verb, sorted by noun ascending then verb-label ascending. */
+/** Flatten every verb, sorted by noun ascending then verb-label ascending. */
 function collectDocVerbs(
   modules: readonly CapabilityModule[],
 ): readonly VerbSpec[] {
   const verbs: VerbSpec[] = [];
   for (const module of modules) {
-    for (const verb of module.verbs) {
-      if (verb.hidden) continue;
-      verbs.push(verb);
-    }
+    verbs.push(...module.verbs);
   }
   return verbs.sort(compareDocVerbs);
 }
@@ -629,7 +626,7 @@ function renderIndexPage(
  * Pure and deterministic: the same catalog always yields byte-identical pages
  * (stable sort, declared param order, no version or timestamps).
  *
- * @param modules - The capability modules to project (hidden verbs excluded).
+ * @param modules - The capability modules to project.
  * @returns A map of `docs/reference/`-relative path → Markdown content, each
  *   ending in exactly one trailing newline.
  */

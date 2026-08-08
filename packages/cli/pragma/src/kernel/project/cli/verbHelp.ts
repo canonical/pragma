@@ -106,9 +106,7 @@ export function formatNounHelp(
   noun: string,
   verbs: readonly VerbSpec[],
 ): string {
-  const nounVerbs = verbs.filter(
-    (v) => v.path[0] === noun && v.path[1] && !v.hidden,
-  );
+  const nounVerbs = verbs.filter((v) => v.path[0] === noun && v.path[1]);
   if (nounVerbs.length === 0) return `No commands found for "${noun}".`;
 
   const lines: string[] = [

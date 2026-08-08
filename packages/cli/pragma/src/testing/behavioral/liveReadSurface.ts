@@ -3,8 +3,8 @@
  *
  * Every B-tier test in this directory drives its assertions over THIS —
  * never a noun list copied from the plan. It cross-references
- * `emitSurface(capabilities)` (the authoritative "what's live, what's hidden,
- * what's MCP-exposed" projection) against the raw `capabilities` array (for
+ * `emitSurface(capabilities)` (the authoritative "what's live, what's
+ * MCP-exposed" projection) against the raw `capabilities` array (for
  * the runnable `VerbSpec`), so the derived lists below automatically grow as
  * PR5/6/7 add nouns — nothing here names a specific noun.
  */
@@ -14,7 +14,7 @@ import { verbKey } from "../../kernel/packs/uniqueness.js";
 import { emitSurface } from "../../kernel/spec/emitSurface.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 
-/** One live, non-hidden verb: its emitted facts plus the runnable spec. */
+/** One live verb: its emitted facts plus the runnable spec. */
 export interface LiveVerb {
   readonly noun: string;
   /** The verb label (`emitSurface`'s `v` — the noun itself for a self-verb). */
@@ -30,7 +30,6 @@ function buildLiveVerbs(): readonly LiveVerb[] {
   const specByKey = new Map<string, VerbSpec>();
   for (const module of capabilities) {
     for (const verb of module.verbs) {
-      if (verb.hidden) continue;
       specByKey.set(verbKey(verb.path), verb);
     }
   }
@@ -55,7 +54,7 @@ function buildLiveVerbs(): readonly LiveVerb[] {
   return live;
 }
 
-/** Every live, non-hidden verb across the whole capability catalog. */
+/** Every live verb across the whole capability catalog. */
 export const liveVerbs: readonly LiveVerb[] = buildLiveVerbs();
 
 /**

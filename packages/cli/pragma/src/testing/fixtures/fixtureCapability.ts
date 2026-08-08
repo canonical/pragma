@@ -1,8 +1,8 @@
 /**
  * A synthetic capability module used only by tests (D8 — never listed in
  * `src/capabilities/index.ts`). It exercises every emit path: a read verb, a
- * mutating verb with a positional + a camelCase flag, and a hidden verb the
- * emitter must drop.
+ * mutating verb with a positional + a camelCase flag, and a verb the CLI
+ * registers but MCP withholds.
  */
 
 import { tmpdir } from "node:os";
@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { $, gen, succeed, writeFile } from "@canonical/task";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
 
-/** A synthetic module: noun `widget`, three verbs (one hidden). */
+/** A synthetic module: noun `widget`, three verbs (one withheld from MCP). */
 export const fixtureModule: CapabilityModule = {
   name: "fixture",
   verbs: [
@@ -73,7 +73,6 @@ export const fixtureModule: CapabilityModule = {
     {
       path: ["widget", "internal"],
       summary: "Internal probe.",
-      hidden: true,
       params: [],
       output: {
         formatters: {
@@ -183,7 +182,7 @@ export const fixtureEffectsModule: CapabilityModule = {
  * as a flag (including a repeatable `string[]` flag), an OPTIONAL variadic
  * positional, a destructive mutation AND a non-destructive one (the two
  * `formatToolAnnotations` mutation branches), a visible MCP-withheld verb, a
- * self-verb, a hidden verb the emitter must drop, and — so `renderNonToolSurface`
+ * self-verb, and — so `renderNonToolSurface`
  * renders both its optional bullets — an `mcpResources` template surface and an
  * `mcpPrompts` native-prompt surface. The `register` hooks are no-ops: the
  * reference emitter reads only `mcpResources.surface.templates` and the presence
@@ -305,19 +304,6 @@ export const fixtureReferenceModule: CapabilityModule = {
         },
       },
       run: async () => ({ pong: true }),
-    },
-    {
-      path: ["gizmo", "hidden"],
-      summary: "Hidden gizmo probe.",
-      hidden: true,
-      params: [],
-      output: { formatters: passthroughFormatters },
-      capability: {
-        needsStore: false,
-        mutates: false,
-        mcp: { expose: false, reason: "internal probe" },
-      },
-      run: async () => ({ ok: true }),
     },
   ],
   // A non-tool MCP surface, so `renderNonToolSurface` emits its Resources bullet.
