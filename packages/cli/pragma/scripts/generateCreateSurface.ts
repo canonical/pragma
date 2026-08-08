@@ -45,18 +45,21 @@ type GeneratorLike = {
 };
 
 /**
- * Write a module only when its bytes differ.
+ * Write a generated module only when its bytes differ.
  *
- * The generated modules are deterministic, so a rebuild is a working-tree
- * no-op — and no rewrite races a concurrent import (the compiled-binary smoke
- * test rebuilds while sibling create tests run).
+ * ONE determinism policy for all three generated modules, stated once: they are
+ * deterministic, so a rebuild is a working-tree no-op — and no rewrite races a
+ * concurrent import (the compiled-binary smoke test rebuilds while sibling
+ * create tests run). Exported because `scripts/build.ts` writes the third
+ * module, the embedded template manifest, under the same rule; it had its own
+ * copy, and the next generated module would have had to pick one.
  *
  * @param path - The module path.
  * @param body - Its full contents.
  * @returns Whether it was written.
  * @note Impure — writes the filesystem.
  */
-function writeWhenChanged(path: string, body: string): boolean {
+export function writeWhenChanged(path: string, body: string): boolean {
   if (existsSync(path) && readFileSync(path, "utf-8") === body) return false;
   writeFileSync(path, body);
   return true;

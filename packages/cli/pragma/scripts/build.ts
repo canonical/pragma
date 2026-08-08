@@ -53,6 +53,7 @@ import {
   GENERATORS_MODULE,
   generateCreateSurface,
   SURFACE_MODULE,
+  writeWhenChanged,
 } from "./generateCreateSurface.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
@@ -80,6 +81,20 @@ interface BuildTarget {
   readonly outfile: string;
   /** Whether to regenerate the committed `docs/reference/` tree. */
   readonly reference: boolean;
+  /**
+   * Whether this is a FORK build, so the bundler aliases the three generated
+   * create modules to the ones written beside the fork's declaration.
+   *
+   * ITS OWN FIELD, and that is a correction. The alias plugin used to be
+   * selected by `TARGET.reference ? [] : [aliasGeneratedModules()]` — a
+   * documentation flag deciding a linking policy, coincident today only because
+   * the `--fork` branch happens to set both. The next reason to skip the docs (a
+   * faster shipped build) would have switched fork aliasing on for the shipped
+   * distribution, and this plugin's own docblock records that a mis-scoped
+   * alias produced a binary that built, type-checked and ran while serving one
+   * importer the wrong surface.
+   */
+  readonly forked: boolean;
 }
 
 /**
@@ -103,6 +118,7 @@ function readBuildTarget(argv: readonly string[]): BuildTarget {
       generatedDir: DEFAULT_GENERATED_DIR,
       outfile: outfileArg ?? "dist/pragma",
       reference: true,
+      forked: false,
     };
   }
   const forkArg = argv.at(forkAt + 1);
@@ -115,10 +131,9 @@ function readBuildTarget(argv: readonly string[]): BuildTarget {
     // A fork's reference tree is its own; regenerating THIS package's committed
     // `docs/reference/` from a fork's surface would corrupt the distribution.
     reference: false,
+    forked: true,
   };
 }
-
-const TARGET = readBuildTarget(process.argv.slice(2));
 
 /**
  * The target distribution's `generators`, VALIDATED and then asserted against
@@ -153,8 +168,6 @@ async function readDeclaredGenerators(
   return declared;
 }
 
-const DECLARED = await readDeclaredGenerators(TARGET.dir);
-
 /**
  * Every directory named `templates` under a package's `src/`, deepest paths
  * included. DISCOVERED rather than assumed: `@canonical/summon-component` and
@@ -180,6 +193,14 @@ function collectTemplateRoots(dir: string): string[] {
   return out;
 }
 
+/** A declared package and one of its template roots. */
+interface TemplateRoot {
+  /** The declaring package, which scopes every key harvested from `root`. */
+  readonly name: string;
+  /** Absolute path to a directory named `templates`. */
+  readonly root: string;
+}
+
 /**
  * Every declared package's template roots.
  *
@@ -194,15 +215,20 @@ function collectTemplateRoots(dir: string): string[] {
  * `@canonical/summon-core/embedded`'s `deriveEmbeddedKey` applies to a file's
  * runtime source path, so harvest and lookup agree by construction. The package
  * scope is what lets several generator packages share ONE manifest.
+ *
+ * @param declared - The declared generator packages.
+ * @returns Every root, paired with the package that declares it.
+ * @note Impure — walks each declared package's linked source tree.
  */
-const TEMPLATE_ROOTS: ReadonlyArray<{ name: string; root: string }> =
-  DECLARED.flatMap(({ name }) =>
+function collectDeclaredTemplateRoots(
+  declared: readonly GeneratorDeclaration[],
+): readonly TemplateRoot[] {
+  return declared.flatMap(({ name }) =>
     collectTemplateRoots(
       fileURLToPath(new URL(`../node_modules/${name}/src`, scriptsUrl)),
     ).map((root) => ({ name, root })),
   );
-
-const MANIFEST_OUT = join(TARGET.generatedDir, MANIFEST_MODULE);
+}
 
 /**
  * Recursively collect EVERY file path under a directory.
@@ -235,11 +261,18 @@ function collectTemplateFiles(dir: string): string[] {
  * `JSON.stringify` values) so re-running produces byte-identical output — no
  * working-tree churn.
  *
+ * @param roots - Every declared package's template roots.
+ * @param outPath - The manifest module to write.
  * @returns The number of files embedded.
+ * @note Impure — reads every declared package's template roots and writes the
+ *   manifest module.
  */
-function generateTemplateManifest(): number {
+function generateTemplateManifest(
+  roots: readonly TemplateRoot[],
+  outPath: string,
+): number {
   const entries: Record<string, string> = {};
-  for (const { name, root } of TEMPLATE_ROOTS) {
+  for (const { name, root } of roots) {
     const files = collectTemplateFiles(root);
     // Fail loud PER ROOT rather than ship a manifest missing a binding's
     // files: the binary's `create <id>` would otherwise die with "Embedded file
@@ -253,6 +286,19 @@ function generateTemplateManifest(): number {
     }
     for (const file of files) {
       const rel = relative(root, file).split(/[\\/]/).join("/");
+      // HARVEST AND LOOKUP MUST AGREE, and for one shape they would not:
+      // `relative(root, file)` KEEPS an inner directory named `templates`,
+      // while `deriveEmbeddedKey` slices after the LAST `/templates/` and drops
+      // it. `<root>/templates/x.ejs` harvests as `<pkg>/templates/x.ejs` and is
+      // looked up as `<pkg>/x.ejs` — a miss that only ever shows in a COMPILED
+      // binary ("Embedded file not found"), with a clean source run, which is
+      // the exact failure class this manifest exists to eliminate. No such file
+      // exists today; making it a build error keeps it that way.
+      if (rel.split("/").includes("templates")) {
+        throw new Error(
+          `Template ${file} sits under a nested \`templates\` directory inside ${root}. Its harvest key (${name}/${rel}) and the key \`@canonical/summon-core/embedded\` derives at run time disagree, so the compiled binary would report it missing. Rename the directory.`,
+        );
+      }
       entries[`${name}/${rel}`] = readFileSync(file, "utf-8");
     }
   }
@@ -273,15 +319,7 @@ export const TEMPLATES: Record<string, string> = {
 ${body}
 };
 `;
-  // Write only when changed: the output is deterministic, so a rebuild is a
-  // no-op — no working-tree churn, and no rewrite racing a concurrent import
-  // (the compiled-binary smoke test rebuilds while sibling create tests run).
-  if (
-    !existsSync(MANIFEST_OUT) ||
-    readFileSync(MANIFEST_OUT, "utf-8") !== module
-  ) {
-    writeFileSync(MANIFEST_OUT, module);
-  }
+  writeWhenChanged(outPath, module);
   return Object.keys(entries).length;
 }
 
@@ -368,9 +406,10 @@ const FORK_ALIASED = new Set([
  * `runtime/graphpack/embedded/`, which a fork does not replace here and which no
  * filter over these three names can reach.
  *
+ * @param generatedDir - Where the fork's generated modules were written.
  * @returns The plugin.
  */
-function aliasGeneratedModules(): import("bun").BunPlugin {
+function aliasGeneratedModules(generatedDir: string): import("bun").BunPlugin {
   return {
     name: "fork-generated-create-surface",
     setup(build) {
@@ -378,15 +417,23 @@ function aliasGeneratedModules(): import("bun").BunPlugin {
         const basename = args.path.slice(args.path.lastIndexOf("/") + 1);
         const asSource = basename.replace(/\.js$/, ".ts");
         if (!FORK_ALIASED.has(asSource)) return undefined;
-        return { path: join(TARGET.generatedDir, asSource) };
+        return { path: join(generatedDir, asSource) };
       });
     },
   };
 }
 
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
-// `genReference` script) runs codegen and compiles the binary.
+// `genReference` script) reads the target, runs codegen and compiles the
+// binary. EVERYTHING below is inside this block on purpose: reading argv,
+// importing the target's conf, asserting its dependencies and walking three
+// node_modules trees for template roots are all side effects of BUILDING, and
+// as module-level consts they ran on a bare `import` of this file — so
+// `genReference`, which wants one exported function, dynamic-imported a conf
+// and could be diverted by a stray `--fork` in its own argv.
 if (import.meta.main) {
+  const TARGET = readBuildTarget(process.argv.slice(2));
+  const DECLARED = await readDeclaredGenerators(TARGET.dir);
   mkdirSync(TARGET.generatedDir, { recursive: true });
 
   const nouns = await generateCreateSurface(DECLARED, TARGET.generatedDir);
@@ -394,7 +441,10 @@ if (import.meta.main) {
     `Generated the create surface for ${nouns.join(", ")} → ${GENERATORS_MODULE} + ${SURFACE_MODULE}`,
   );
 
-  const embedded = generateTemplateManifest();
+  const embedded = generateTemplateManifest(
+    collectDeclaredTemplateRoots(DECLARED),
+    join(TARGET.generatedDir, MANIFEST_MODULE),
+  );
   console.log(`Embedded ${embedded} generator templates → ${MANIFEST_MODULE}`);
 
   if (TARGET.reference) {
@@ -414,7 +464,7 @@ if (import.meta.main) {
     // it, the fast paths stay at/under their budgets while `create` loads summon
     // only when it runs.
     splitting: true,
-    plugins: TARGET.reference ? [] : [aliasGeneratedModules()],
+    plugins: TARGET.forked ? [aliasGeneratedModules(TARGET.generatedDir)] : [],
     compile: {
       target: "bun-linux-x64",
       outfile: TARGET.outfile,
