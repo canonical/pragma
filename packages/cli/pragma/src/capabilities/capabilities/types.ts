@@ -18,6 +18,18 @@ export type ToolCategory = "read" | "write" | "orientation" | "diagnostic";
  *
  * It carried `category` too until that was found to be derivable — see
  * `hints.ts` and `catalog.ts#CATEGORY_BY_KERNEL_TOOL`.
+ *
+ * A ONE-FIELD BOX, KEPT ON PURPOSE. `Record<string, string>` would delete this
+ * interface, 36 pairs of braces and 36 `use_when:` keys with every authored
+ * string byte-identical, and on a lane whose bar is removal that is the obvious
+ * move. It is declined because the field's FATE is an open owner decision, and
+ * the collapse loses in both directions it could go: if `use_when` is ruled
+ * derivable or dropped, `TOOL_HINTS` goes with it and the collapse was churn on
+ * the way to a deletion; if it gains a companion authored field, the collapse
+ * has to be undone first. `category` leaving this interface (20ec187) is the
+ * evidence that the shape does move. It pays only in the branch where the table
+ * stays exactly as it is forever, which is the one branch nobody has ruled for.
+ * Collapse it once the ruling is in.
  */
 export interface ToolHint {
   readonly use_when: string;
