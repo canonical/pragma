@@ -57,7 +57,6 @@ export const CREATE_SURFACE = {
       }
     ],
     "docs": {
-      "framework": "Component framework.",
       "componentPath": "Component path (its final segment is the PascalCase component name)."
     },
     "pathParam": "componentPath",

@@ -68,10 +68,16 @@ export function pickGenerator(
     axisValues !== undefined &&
     keyPrefix !== undefined
   ) {
-    const value = String(params[axis] ?? axisValues.at(0));
-    const generator = map[`${keyPrefix}/${value}`];
+    // No axis value given → `key`, which the build resolved from the SAME first
+    // map key the enum defaults to, and proved the package exports. Reading the
+    // recorded default rather than re-deriving it is what keeps `key` a fact
+    // every noun's surface states and something READS, on both branches.
+    const chosen = params[axis];
+    const mapKey =
+      chosen === undefined ? noun.key : `${keyPrefix}/${String(chosen)}`;
+    const generator = map[mapKey];
     if (!generator) {
-      throw PragmaError.invalidInput(axis, value, {
+      throw PragmaError.invalidInput(axis, String(chosen), {
         validOptions: [...axisValues],
       });
     }

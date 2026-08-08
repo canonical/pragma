@@ -291,11 +291,12 @@ function buildWithPrefixedAliases(
  * mirror is taken from the first — which is what the hand-written mirror did,
  * by hand, for react.
  *
- * `docs` rides through as declared: help text the build cannot derive from a
- * prompt's `message`, plus the `axis` flag's own doc, which mirrors no prompt.
- * The axis triple (`axis`/`axisValues`/`axisDoc`) is written together or not at
- * all, so `create.verb.ts` can read the doc off the same guard that reads the
- * values.
+ * `docs` carries the PROMPT overrides — help text the build cannot derive from
+ * a prompt's `message`. The axis flag's own doc, which mirrors no prompt, is
+ * declared in the same map and emitted as `axisDoc` instead, so the surface
+ * states it once. The axis triple (`axis`/`axisValues`/`axisDoc`) is written
+ * together or not at all, so `create.verb.ts` reads the doc off the same guard
+ * that reads the values.
  *
  * @param noun - The declared noun name.
  * @param declared - Its declaration.
@@ -322,28 +323,42 @@ function deriveNounSurface(
 
   const aliases = buildWithPrefixedAliases(declared.withPrefixed);
 
+  const declaredDocs = declared.docs ?? {};
+  // ONE VALUE DECIDES THE WHOLE AXIS. The triple is what `create.verb.ts` reads
+  // to build the enum flag, so it is also what says whether the axis EXISTS —
+  // and everything downstream is derived from it rather than re-testing its
+  // parts. The previous form gated the prompt drop on `keyPrefix` alone while
+  // gating the triple on all three, so an `axis` that produced no enum still
+  // deleted the prompt it named: a required param vanishing from the surface
+  // with nothing red. The schema rejects that input today; deriving both from
+  // one value is what makes the safety a fact rather than a comment.
+  const axisDoc = axis === undefined ? undefined : declaredDocs[axis];
+  const axisTriple =
+    axis !== undefined && keyPrefix !== undefined && axisDoc !== undefined
+      ? { axis, axisValues, axisDoc, keyPrefix }
+      : undefined;
+
   // The axis prompt is dropped because the CLI replaces it with an enum FLAG
-  // built from the map keys. Gated on `keyPrefix`, belt-and-braces behind the
-  // validator: an `axis` that produced no enum must not still delete the prompt
-  // it names — that is a required param vanishing from the surface with nothing
-  // red.
-  const dropped = keyPrefix === undefined ? undefined : axis;
+  // built from the map keys.
   const prompts = generator.prompts
-    .filter((prompt) => prompt.name !== dropped)
+    .filter((prompt) => prompt.name !== axisTriple?.axis)
     .map(reducePrompt);
 
   assertDeclaredPromptNames(noun, declared, axis, prompts);
 
-  const docs = declared.docs ?? {};
-  const axisDoc = axis === undefined ? undefined : docs[axis];
+  // `axisDoc` is the axis flag's doc; carrying the same string again under
+  // `docs[axis]` would put one fact in a byte-pinned artifact twice, where an
+  // edit to either copy leaves the surface disagreeing with itself and nothing
+  // red. `docs` is the PROMPT overrides, and the axis is not a prompt.
+  const docs = Object.fromEntries(
+    Object.entries(declaredDocs).filter(([key_]) => key_ !== axisTriple?.axis),
+  );
   const pathParam = selectPathParam(noun, declared.pathParam, prompts);
 
   return {
     package: packageName,
     key,
-    ...(axis !== undefined && keyPrefix !== undefined && axisDoc !== undefined
-      ? { axis, axisValues, axisDoc, keyPrefix }
-      : {}),
+    ...(axisTriple ?? {}),
     summary: declared.summary,
     useWhen: declared.useWhen,
     examples: declared.examples ?? [],
