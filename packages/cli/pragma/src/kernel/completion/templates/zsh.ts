@@ -14,13 +14,13 @@
 
 import type { CompletionModel, CompletionSource } from "../types.js";
 import {
-  caseBlock,
+  wrapInCaseBlock,
   globalFlagNames,
   globalValueFlags,
   hasOwnFlags,
   nounNames,
   offeredFlagNames,
-  positionalArm,
+  renderPositionalArm,
   rootFlagNames,
   sanitizeBinName,
   verbViews,
@@ -107,7 +107,7 @@ export function zshScript(
 ): string {
   const fn = `_${sanitizeBinName(binName)}`;
   const positionalArms = verbViews(model).flatMap((view) => {
-    const arm = positionalArm(model, view, fn, sourceAction, "zsh value flags");
+    const arm = renderPositionalArm(model, view, fn, sourceAction, "zsh value flags");
     return arm === undefined ? [] : [arm];
   });
   const globalValueSkips = globalValueFlags(model)
@@ -120,7 +120,7 @@ export function zshScript(
           "",
           "  # verbs",
           '  if [[ -z "$verb" ]]; then',
-          ...caseBlock('"$noun"', verbArms(model), "    "),
+          ...wrapInCaseBlock('"$noun"', verbArms(model), "    "),
           "  fi",
         ];
 
@@ -176,12 +176,12 @@ export function zshScript(
     "  done",
     "",
     "  # flag values (verb-scoped, then global)",
-    ...caseBlock('"$noun/$verb/$prev"', flagValueArms(model, fn), "  "),
-    ...caseBlock('"$prev"', globalValueArms(model, fn), "  "),
+    ...wrapInCaseBlock('"$noun/$verb/$prev"', flagValueArms(model, fn), "  "),
+    ...wrapInCaseBlock('"$prev"', globalValueArms(model, fn), "  "),
     "",
     "  # flag names",
     '  if [[ "$cur" == -* ]]; then',
-    ...caseBlock('"$noun/$verb"', flagNameArms(model), "    "),
+    ...wrapInCaseBlock('"$noun/$verb"', flagNameArms(model), "    "),
     '    if [[ -z "$noun" ]]; then',
     `      compadd -- ${wordList(rootFlagNames(model), "zsh root flags")}`,
     "    else",
@@ -198,7 +198,7 @@ export function zshScript(
     ...verbSection,
     "",
     "  # positionals",
-    ...caseBlock('"$noun/$verb"', positionalArms, "  "),
+    ...wrapInCaseBlock('"$noun/$verb"', positionalArms, "  "),
     "}",
     `${fn} "$@"`,
     "",

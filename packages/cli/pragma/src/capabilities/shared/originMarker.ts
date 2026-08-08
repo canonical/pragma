@@ -33,6 +33,6 @@ import type { ConfigOrigin } from "../../kernel/config/types.js";
  * @param origin - The layer the resolved value came from.
  * @returns ` [global]`/` [project]`, or "" for a built-in default.
  */
-export function originMarker(origin: ConfigOrigin): string {
+export function renderOriginMarker(origin: ConfigOrigin): string {
   return origin === "default" ? "" : ` [${origin}]`;
 }

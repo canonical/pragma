@@ -7,7 +7,7 @@
 
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
-import { originMarker } from "../shared/originMarker.js";
+import { renderOriginMarker } from "../shared/originMarker.js";
 import type { ConfigShowData } from "./types.js";
 
 /** Summarize a list of named entries as a comma-separated set of names. */
@@ -25,14 +25,14 @@ type ConfigRow = readonly [label: string, value: string, marker: string];
 function configRows(data: ConfigShowData): readonly ConfigRow[] {
   const { config, origins } = data;
   return [
-    ["tier", config.tier ?? "(none)", originMarker(origins.tier)],
-    ["channel", config.channel, originMarker(origins.channel)],
-    ["detail", config.detail ?? "standard", originMarker(origins.detail)],
-    ["packs", entryNames(config.packs ?? []), originMarker(origins.packs)],
+    ["tier", config.tier ?? "(none)", renderOriginMarker(origins.tier)],
+    ["channel", config.channel, renderOriginMarker(origins.channel)],
+    ["detail", config.detail ?? "standard", renderOriginMarker(origins.detail)],
+    ["packs", entryNames(config.packs ?? []), renderOriginMarker(origins.packs)],
     [
       "generators",
       entryNames(config.generators ?? []),
-      originMarker(origins.generators),
+      renderOriginMarker(origins.generators),
     ],
     [
       "global config",
@@ -83,11 +83,11 @@ export const configShowFormatters: Formatters<ConfigShowData> = {
     const lines = [
       "## Configuration",
       "",
-      `- **Tier:** ${config.tier ?? "(none)"}${originMarker(origins.tier)}`,
-      `- **Channel:** ${config.channel}${originMarker(origins.channel)}`,
-      `- **Detail:** ${config.detail ?? "standard"}${originMarker(origins.detail)}`,
-      `- **Packs:** ${entryNames(config.packs ?? [])}${originMarker(origins.packs)}`,
-      `- **Generators:** ${entryNames(config.generators ?? [])}${originMarker(origins.generators)}`,
+      `- **Tier:** ${config.tier ?? "(none)"}${renderOriginMarker(origins.tier)}`,
+      `- **Channel:** ${config.channel}${renderOriginMarker(origins.channel)}`,
+      `- **Detail:** ${config.detail ?? "standard"}${renderOriginMarker(origins.detail)}`,
+      `- **Packs:** ${entryNames(config.packs ?? [])}${renderOriginMarker(origins.packs)}`,
+      `- **Generators:** ${entryNames(config.generators ?? [])}${renderOriginMarker(origins.generators)}`,
       `- **Global config:** \`${data.globalConfigPath}\``,
     ];
     if (data.projectConfigPath) {

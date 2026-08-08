@@ -4,7 +4,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import type { Formatters } from "../../kernel/spec/types.js";
-import { originMarker } from "../shared/originMarker.js";
+import { renderOriginMarker } from "../shared/originMarker.js";
 import type { InfoData } from "./types.js";
 
 export const infoFormatters: Formatters<InfoData> = {
@@ -13,9 +13,9 @@ export const infoFormatters: Formatters<InfoData> = {
     const lines = [
       `${BIN_NAME} v${data.version}`,
       `  Installed via: ${data.installSource}`,
-      `  tier: ${config.tier ?? "(none)"}${originMarker(config.origins.tier)}`,
-      `  channel: ${config.channel}${originMarker(config.origins.channel)}`,
-      `  detail: ${config.detail ?? "standard"}${originMarker(config.origins.detail)}`,
+      `  tier: ${config.tier ?? "(none)"}${renderOriginMarker(config.origins.tier)}`,
+      `  channel: ${config.channel}${renderOriginMarker(config.origins.channel)}`,
+      `  detail: ${config.detail ?? "standard"}${renderOriginMarker(config.origins.detail)}`,
     ];
     if (data.entities !== undefined) {
       lines.push(`  entities: ${data.entities.toLocaleString()}`);
@@ -43,9 +43,9 @@ export const infoFormatters: Formatters<InfoData> = {
     const lines = [
       `# ${BIN_NAME} v${data.version}`,
       `- Installed via: ${data.installSource}`,
-      `- Tier: ${config.tier ?? "(none)"}${originMarker(config.origins.tier)}`,
-      `- Channel: ${config.channel}${originMarker(config.origins.channel)}`,
-      `- Detail: ${config.detail ?? "standard"}${originMarker(config.origins.detail)}`,
+      `- Tier: ${config.tier ?? "(none)"}${renderOriginMarker(config.origins.tier)}`,
+      `- Channel: ${config.channel}${renderOriginMarker(config.origins.channel)}`,
+      `- Detail: ${config.detail ?? "standard"}${renderOriginMarker(config.origins.detail)}`,
       `- Global config: ${config.globalConfigPath}`,
     ];
     if (config.projectConfigPath) {

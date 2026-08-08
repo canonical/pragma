@@ -165,7 +165,7 @@ export const FIXED_SURFACE = {
  * Format a positional param as its usage token (`<name>` required, `[name]`
  * optional, `...` variadic).
  *
- * THE ONE HOME for this rule, and for {@link flagToken} beside it. Both bodies
+ * THE ONE HOME for this rule, and for {@link formatFlagToken} beside it. Both bodies
  * existed three and two times over — here, in `project/cli/verbHelp.ts` and in
  * `project/cli/buildProgram.ts`, the last pair under two different names
  * (`flagSpec`/`flagDisplay`) for byte-identical code. They are here rather than
@@ -178,7 +178,7 @@ export const FIXED_SURFACE = {
  * @param param - The positional param to render.
  * @returns Its usage token.
  */
-export function positionalToken(param: ParamSpec): string {
+export function formatPositionalToken(param: ParamSpec): string {
   const variadic = param.kind === "string[]" ? "..." : "";
   return param.required
     ? `<${param.name}${variadic}>`
@@ -197,7 +197,7 @@ export function positionalToken(param: ParamSpec): string {
  * @param param - The non-positional param to render.
  * @returns Its flag token.
  */
-export function flagToken(param: ParamSpec): string {
+export function formatFlagToken(param: ParamSpec): string {
   const flag = `--${kebabCase(param.name)}`;
   if (param.kind === "boolean") return flag;
   if (param.kind === "string[]") return `${flag} <values...>`;
@@ -218,7 +218,7 @@ export function emitVerb(verb: VerbSpec): EmittedVerb {
     mcp?: string | false;
   } = { v: verbLabel(verb.path) };
 
-  if (positionals.length > 0) entry.args = positionals.map(positionalToken);
+  if (positionals.length > 0) entry.args = positionals.map(formatPositionalToken);
   if (flags.length > 0)
     entry.flags = flags.map((p) => `--${kebabCase(p.name)}`);
   if (verb.capability.mutates) entry.mutates = true;

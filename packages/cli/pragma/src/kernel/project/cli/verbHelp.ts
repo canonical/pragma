@@ -7,7 +7,7 @@
  * body — so it stays on the fast `--help` path.
  */
 
-import { flagToken, positionalToken } from "../../spec/emitSurface.js";
+import { formatFlagToken, formatPositionalToken } from "../../spec/emitSurface.js";
 import type { VerbSpec } from "../../spec/types.js";
 import {
   helpColumns,
@@ -43,7 +43,7 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
   const positionals = verb.params.filter((p) => p.positional);
   const flags = verb.params.filter((p) => !p.positional);
 
-  const positionalStr = positionals.map(positionalToken).join(" ");
+  const positionalStr = positionals.map(formatPositionalToken).join(" ");
   const usageSuffix = positionalStr ? ` ${positionalStr}` : "";
   const lines: string[] = [
     helpUsage(`${programName} ${commandPath}${usageSuffix} [flags]`),
@@ -60,7 +60,7 @@ export function formatVerbHelp(programName: string, verb: VerbSpec): string {
     lines.push(
       "",
       helpHeading("Flags"),
-      ...helpColumns(flags.map((flag) => [flagToken(flag), flag.doc])),
+      ...helpColumns(flags.map((flag) => [formatFlagToken(flag), flag.doc])),
     );
   }
 

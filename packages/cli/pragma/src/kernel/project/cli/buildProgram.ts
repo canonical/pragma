@@ -14,9 +14,9 @@ import { Command, Option } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import {
-  flagToken,
+  formatFlagToken,
   kebabCase,
-  positionalToken,
+  formatPositionalToken,
 } from "../../spec/emitSurface.js";
 import type { VerbSpec } from "../../spec/types.js";
 import { dispatch } from "./dispatch.js";
@@ -47,7 +47,7 @@ function useDesignedHelp(command: Command, text: () => string): void {
 function registerParams(command: Command, verb: VerbSpec): void {
   for (const param of verb.params) {
     if (param.positional) continue;
-    const spec = flagToken(param);
+    const spec = formatFlagToken(param);
     if (param.kind === "enum") {
       const option = new Option(spec, param.doc).choices([...param.values]);
       if (param.default !== undefined) option.default(param.default);
@@ -109,7 +109,7 @@ function attachVerb(
   globalFlags: GlobalFlags,
 ): void {
   const positionals = verb.params.filter((p) => p.positional);
-  const suffix = positionals.map(positionalToken).join(" ");
+  const suffix = positionals.map(formatPositionalToken).join(" ");
   const fullName = suffix ? `${name} ${suffix}` : name;
 
   const command = parent.command(fullName).description(verb.summary);

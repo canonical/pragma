@@ -115,7 +115,7 @@ export function offeredFlagNames(
  * Every value-taking flag in scope for a view (verb + globals) — the flags
  * whose values a positional-index scan must skip.
  *
- * Module-private: `positionalArm` below is the only caller, and it is the shell-
+ * Module-private: `renderPositionalArm` below is the only caller, and it is the shell-
  * independent step the three templates share. It was exported when `bash.ts` and
  * `zsh.ts` each ran their own copy of that scan.
  */
@@ -164,7 +164,7 @@ export function sanitizeBinName(binName: string): string {
  * @param indent - The indent for the `case`/`esac` lines themselves.
  * @returns The block's lines, or `[]` when `arms` is empty.
  */
-export function caseBlock(
+export function wrapInCaseBlock(
   subject: string,
   arms: readonly string[],
   indent: string,
@@ -190,7 +190,7 @@ export function caseBlock(
  * @param label - The shell's `wordList` diagnostic label for its value flags.
  * @returns The arm's lines joined, or undefined when there is nothing to offer.
  */
-export function positionalArm(
+export function renderPositionalArm(
   model: CompletionModel,
   view: VerbView,
   fn: string,

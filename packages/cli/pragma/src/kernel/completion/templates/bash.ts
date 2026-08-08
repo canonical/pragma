@@ -15,13 +15,13 @@
 
 import type { CompletionModel, CompletionSource } from "../types.js";
 import {
-  caseBlock,
+  wrapInCaseBlock,
   globalFlagNames,
   globalValueFlags,
   hasOwnFlags,
   nounNames,
   offeredFlagNames,
-  positionalArm,
+  renderPositionalArm,
   rootFlagNames,
   sanitizeBinName,
   verbViews,
@@ -110,7 +110,7 @@ export function bashScript(
 ): string {
   const fn = `_${sanitizeBinName(binName)}`;
   const positionalArms = verbViews(model).flatMap((view) => {
-    const arm = positionalArm(
+    const arm = renderPositionalArm(
       model,
       view,
       fn,
@@ -130,7 +130,7 @@ export function bashScript(
           "",
           "  # verbs",
           '  if [ -z "$verb" ]; then',
-          ...caseBlock('"$noun"', verbArms(model), "    "),
+          ...wrapInCaseBlock('"$noun"', verbArms(model), "    "),
           "  fi",
         ];
 
@@ -185,12 +185,12 @@ export function bashScript(
     "  done",
     "",
     "  # flag values (verb-scoped, then global)",
-    ...caseBlock('"$noun/$verb/$prev"', flagValueArms(model, fn), "  "),
-    ...caseBlock('"$prev"', globalValueArms(model, fn), "  "),
+    ...wrapInCaseBlock('"$noun/$verb/$prev"', flagValueArms(model, fn), "  "),
+    ...wrapInCaseBlock('"$prev"', globalValueArms(model, fn), "  "),
     "",
     "  # flag names",
     '  if [[ "$cur" == -* ]]; then',
-    ...caseBlock('"$noun/$verb"', flagNameArms(model), "    "),
+    ...wrapInCaseBlock('"$noun/$verb"', flagNameArms(model), "    "),
     '    if [ -z "$noun" ]; then',
     `      COMPREPLY=($(compgen -W "${wordList(rootFlagNames(model), "bash root flags")}" -- "$cur"))`,
     "    else",
@@ -207,7 +207,7 @@ export function bashScript(
     ...verbSection,
     "",
     "  # positionals",
-    ...caseBlock('"$noun/$verb"', positionalArms, "  "),
+    ...wrapInCaseBlock('"$noun/$verb"', positionalArms, "  "),
     "}",
     `complete -F ${fn} ${binName}`,
     "",
