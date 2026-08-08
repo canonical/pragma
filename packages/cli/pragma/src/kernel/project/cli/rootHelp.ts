@@ -51,7 +51,10 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
         // ships exactly one the shipped binary has never heard of. A summary
         // listing this distribution's three read as the front door's own fact
         // and was wrong for every fork the moment one existed.
-        { noun: "create", summary: "Scaffold new code from a declared generator" },
+        {
+          noun: "create",
+          summary: "Scaffold new code from a declared generator",
+        },
       ],
     },
     {
