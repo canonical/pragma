@@ -35,6 +35,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:proof": "vitest run --config vitest.e2e.config.ts metro.e2e",
     "storybook": "storybook dev -p 6010 --no-open --host 0.0.0.0"
   },
   "dependencies": {
@@ -85,5 +86,10 @@
     "vite": "^8.0.1",
     "vite-plugin-relay-lite": "^0.12.0",
     "vitest": "^4.0.18"
+  },
+  "nx": {
+    "implicitDependencies": [
+      "@canonical/prism-graph-example"
+    ]
   }
 }
