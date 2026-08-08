@@ -42,8 +42,9 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { deriveEmbeddedKey } from "@canonical/summon-core/embedded";
 import { parseRawConfig } from "../src/kernel/config/schema.js";
 import type { GeneratorDeclaration } from "../src/kernel/config/types.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
@@ -53,16 +54,17 @@ import {
 } from "./declaredGenerators.js";
 import {
   DEFAULT_GENERATED_DIR,
+  GENERATED_MODULES,
   GENERATORS_MODULE,
-  generateCreateSurface,
+  MANIFEST_MODULE,
   SURFACE_MODULE,
+} from "./constants.js";
+import {
+  generateCreateSurface,
   writeWhenChanged,
 } from "./generateCreateSurface.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
-
-/** The manifest module's basename, shared with the bundler's fork alias. */
-const MANIFEST_MODULE = "templates.embedded.generated.ts";
 
 /**
  * A distribution this build compiles: where its declaration lives, where its
@@ -238,10 +240,11 @@ interface TemplateRoot {
  * not npm resolution: the published tarballs ship `dist` only, so only a
  * checkout satisfies it.
  *
- * Keys are `<package>/<path-relative-to-root>` — the same rule
- * `@canonical/summon-core/embedded`'s `deriveEmbeddedKey` applies to a file's
- * runtime source path, so harvest and lookup agree by construction. The package
- * scope is what lets several generator packages share ONE manifest.
+ * Keys come from `@canonical/summon-core/embedded`'s own `deriveEmbeddedKey`,
+ * the same function the registry applies to a file's runtime source path — so
+ * harvest and lookup agree by construction rather than by two hand-written
+ * rules that happen to match. The package scope is what lets several generator
+ * packages share ONE manifest.
  *
  * @param declared - The declared generator packages.
  * @returns Every root, paired with the package that declares it.
@@ -321,6 +324,37 @@ function collectTemplateFiles(dir: string): string[] {
  * @note Impure — reads every declared package's template roots and writes the
  *   manifest module.
  */
+/**
+ * Read a template as text, refusing anything that is not valid UTF-8.
+ *
+ * The manifest carries STRINGS, and the interpreter writes them back with
+ * `writeFile(dest, content, "utf-8")`. A binary asset (an icon, a PNG) survives
+ * a source run — that takes the `copyFile` branch and is byte-exact — and is
+ * silently corrupted by the compiled binary, which serves it through the
+ * manifest. Measured on a 33-byte PNG header round-tripped through exactly that
+ * pair: 33 bytes in, 35 out. Loud at build time, in the same register as the key
+ * collision beside it, because the alternative is a corrupt file in a user's
+ * scaffold with nothing red anywhere.
+ *
+ * No declared generator ships a non-UTF-8 template today (checked: all 108
+ * harvested files decode), which is exactly why this is cheap to keep true.
+ *
+ * @param file - The template path.
+ * @returns Its contents as text.
+ * @throws Error naming the file when its bytes are not valid UTF-8.
+ * @note Impure — reads the filesystem.
+ */
+function readTemplateText(file: string): string {
+  const bytes = readFileSync(file);
+  const text = bytes.toString("utf-8");
+  if (!Buffer.from(text, "utf-8").equals(bytes)) {
+    throw new Error(
+      `Template ${file} is not valid UTF-8. The embedded manifest carries TEXT only, so the compiled binary would write back a corrupted copy while a source run copies the bytes intact. Keep binary assets out of a harvested \`templates\` tree.`,
+    );
+  }
+  return text;
+}
+
 function generateTemplateManifest(
   roots: readonly TemplateRoot[],
   outPath: string,
@@ -339,21 +373,28 @@ function generateTemplateManifest(
       );
     }
     for (const file of files) {
-      const rel = relative(root, file).split(/[\\/]/).join("/");
-      // HARVEST AND LOOKUP MUST AGREE, and for one shape they would not:
-      // `relative(root, file)` KEEPS an inner directory named `templates`,
-      // while `deriveEmbeddedKey` slices after the LAST `/templates/` and drops
-      // it. `<root>/templates/x.ejs` harvests as `<pkg>/templates/x.ejs` and is
-      // looked up as `<pkg>/x.ejs` — a miss that only ever shows in a COMPILED
-      // binary ("Embedded file not found"), with a clean source run, which is
-      // the exact failure class this manifest exists to eliminate. No such file
-      // exists today; making it a build error keeps it that way.
-      if (rel.split("/").includes("templates")) {
+      // HARVEST AND LOOKUP AGREE BY CONSTRUCTION, because they are now the same
+      // function: `deriveEmbeddedKey` is what the registry applies to whatever
+      // absolute path a generator computes at run time, so applying it here
+      // removes the second, hand-written rule this build used to carry. That
+      // rule (`relative(root, file)`) KEPT an inner directory named `templates`
+      // where the registry slices after the LAST `/templates/` and drops it — a
+      // disagreement that only ever showed in a COMPILED binary ("Embedded file
+      // not found"), with a clean source run, and needed a third piece of code
+      // to detect. What remains undecidable is a COLLISION: two harvested files
+      // the one rule maps onto one key. That is still a build error.
+      const key = deriveEmbeddedKey(name, file);
+      if (key === undefined) {
         throw new Error(
-          `Template ${file} sits under a nested \`templates\` directory inside ${root}. Its harvest key (${name}/${rel}) and the key \`@canonical/summon-core/embedded\` derives at run time disagree, so the compiled binary would report it missing. Rename the directory.`,
+          `Template ${file} is not under a \`templates\` directory, so \`@canonical/summon-core/embedded\` can derive no key for it. The harvest root was ${root}.`,
         );
       }
-      entries[`${name}/${rel}`] = readFileSync(file, "utf-8");
+      if (entries[key] !== undefined) {
+        throw new Error(
+          `Templates in ${name} collide on the embedded key "${key}" (${file} is the second). The registry keys off the path after the last \`/templates/\`, so a nested \`templates\` directory can map two files onto one key — the compiled binary would serve one of them for both. Rename the directory.`,
+        );
+      }
+      entries[key] = readTemplateText(file);
     }
   }
 
@@ -426,20 +467,6 @@ async function writeReferenceDocs(): Promise<number> {
 export { writeReferenceDocs };
 
 /**
- * The three generated modules a fork build substitutes, by basename.
- *
- * `src/capabilities/create/` imports them relatively (`./surface.generated.js`),
- * so the bundler's resolver is the one seam where a fork's copies can take their
- * place — the capability sources themselves stay untouched, which is the point:
- * a fork edits `pragma.conf.ts`, never code.
- */
-const FORK_ALIASED = new Set([
-  GENERATORS_MODULE,
-  SURFACE_MODULE,
-  MANIFEST_MODULE,
-]);
-
-/**
  * A `Bun.build` plugin resolving the three generated create modules to the
  * fork's copies.
  *
@@ -470,7 +497,7 @@ function aliasGeneratedModules(generatedDir: string): import("bun").BunPlugin {
       build.onResolve({ filter: /\.generated\.js$/ }, (args) => {
         const basename = args.path.slice(args.path.lastIndexOf("/") + 1);
         const asSource = basename.replace(/\.js$/, ".ts");
-        if (!FORK_ALIASED.has(asSource)) return undefined;
+        if (!GENERATED_MODULES.has(asSource)) return undefined;
         return { path: join(generatedDir, asSource) };
       });
     },

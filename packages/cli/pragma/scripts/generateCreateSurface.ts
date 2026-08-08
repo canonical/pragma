@@ -20,7 +20,6 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type {
   AxisSurface,
   NounSurface,
@@ -30,23 +29,11 @@ import type {
   GeneratorDeclaration,
   GeneratorNoun,
 } from "../src/kernel/config/types.js";
-
-const scriptsUrl = new URL(".", import.meta.url);
-
-/**
- * Where the shipped distribution's generated modules land — the DEFAULT, not a
- * constant. A fork build passes its own directory, which is what makes the
- * declaration a parameter of the build rather than an import of it.
- */
-export const DEFAULT_GENERATED_DIR = fileURLToPath(
-  new URL("../src/capabilities/create/", scriptsUrl),
-);
-
-/** The value module's basename, shared with the bundler's fork alias. */
-export const GENERATORS_MODULE = "generators.generated.ts";
-
-/** The data module's basename, shared with the bundler's fork alias. */
-export const SURFACE_MODULE = "surface.generated.ts";
+import {
+  DEFAULT_GENERATED_DIR,
+  GENERATORS_MODULE,
+  SURFACE_MODULE,
+} from "./constants.js";
 
 /** The shape a generator package exposes: its `generators` map. */
 type GeneratorLike = {
