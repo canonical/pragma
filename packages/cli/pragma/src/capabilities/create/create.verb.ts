@@ -29,7 +29,11 @@ import { createFormatters } from "./create.render.js";
 import { promptToParam } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
 import { CREATE_SURFACE } from "./surface.generated.js";
-import type { CreateKind, NounSurface } from "./types.js";
+import type {
+  CreateKind,
+  NounSurface,
+  SerializedPrompt,
+} from "./types.js";
 
 // =============================================================================
 // The static surface — DERIVED, not mirrored
@@ -62,62 +66,106 @@ export function toGeneratorAnswers(
 }
 
 /**
- * Build one noun's params from its derived surface.
+ * Invert a noun's alias map: generator prompt name → CLI param name.
  *
- * Three CLI-grammar overlays sit on top of the generator's own prompts, each
- * DECLARED in `pragma.conf.ts` rather than assumed here:
+ * The surface stores it the other way round (`withSsr` → `ssr`) because that is
+ * the direction {@link toGeneratorAnswers} needs at run time, when a param bag
+ * comes back from the CLI or MCP. Building params walks the other way.
+ *
+ * @param aliases - The declared alias map, CLI name → prompt name.
+ * @returns Prompt name → CLI name.
+ */
+function invertAliases(
+  aliases: Readonly<Record<string, string>>,
+): Record<string, string> {
+  const inverted: Record<string, string> = {};
+  for (const [flag, bare] of Object.entries(aliases)) inverted[bare] = flag;
+  return inverted;
+}
+
+/**
+ * Apply the CLI-grammar overlays that belong to the PROMPT, before conversion.
+ *
+ * Each is DECLARED in `pragma.conf.ts` rather than assumed here:
  *  - `withPrefixed` renames a prompt onto the `--with-X` include-flag
- *    convention;
+ *    convention, so the generator keeps its bare names (and with them its
+ *    templates and byte-equality goldens);
  *  - `optIn` forces a confirm to `default: false`, because the grammar has no
- *    `--no-` form and a default-true boolean could never be turned off;
+ *    `--no-` form and a default-true boolean could never be turned off.
+ *
+ * The `conditional` → `when` shim is not an overlay but a re-hydration: `when`
+ * is a FUNCTION and cannot cross into a data module, and `promptToParam` reads
+ * it for truthiness only (`required = default === undefined && !when`).
+ *
+ * @param prompt - The serialised prompt from the surface.
+ * @param noun - Its noun's surface entry.
+ * @param toCliName - The inverted alias map.
+ * @returns The prompt as `promptToParam` should see it.
+ */
+function applyPromptOverlays(
+  prompt: SerializedPrompt,
+  noun: NounSurface,
+  toCliName: Readonly<Record<string, string>>,
+): PromptDefinition {
+  return {
+    ...prompt,
+    name: toCliName[prompt.name] ?? prompt.name,
+    ...(noun.optIn.includes(prompt.name) ? { default: false } : {}),
+    ...(prompt.conditional === true ? { when: () => true } : {}),
+  } as PromptDefinition;
+}
+
+/**
+ * Apply the overlays that belong to the PARAM, after conversion.
+ *
  *  - `noDefault` drops a ParamSpec default so the SELECTED axis value's own
  *    prompt default applies instead (react and svelte/lit differ on
- *    `componentPath`). The param stays optional: `required` was already
- *    computed from the generator's real default, before it was dropped.
+ *    `componentPath`). The param stays optional: `required` was computed from
+ *    the generator's real default, before it was dropped.
+ *  - `docs` WINS over the doc derived from the wizard question. A question
+ *    usually reads as help once `declarativeDoc` strips its `?`/`:` — but
+ *    `Component path:` does not carry the naming rule `--help` and the MCP arg
+ *    schema need, and rewording the message would move the interactive prompt.
+ *    So the override is content, keyed by the GENERATOR's prompt name.
  *
- * A declared axis prepends its enum, whose values are the generator keys the
- * package actually ships and whose default is the first — so `--help` can never
- * advertise a default outside the enum.
+ * Both are keyed by the prompt's own name, not the aliased CLI name, which is
+ * why this runs against the original prompt rather than the converted param.
  *
- * @param kind - The create noun.
- * @returns Its params, in surface order.
+ * @param param - The converted param.
+ * @param prompt - The prompt it came from.
+ * @param noun - Its noun's surface entry.
+ * @returns The param with the declared overrides applied.
  */
-function buildParams(kind: CreateKind): ParamSpec[] {
-  const noun: NounSurface = CREATE_SURFACE[kind];
-  const toGeneratorName: Record<string, string> = {};
-  for (const [flag, bare] of Object.entries(noun.aliases)) {
-    toGeneratorName[bare] = flag;
-  }
+function applyParamOverrides(
+  param: ParamSpec,
+  prompt: SerializedPrompt,
+  noun: NounSurface,
+): ParamSpec {
+  const fields = param as Record<string, unknown>;
+  if (noun.noDefault.includes(prompt.name)) delete fields.default;
+  const declaredDoc = noun.docs[prompt.name];
+  if (declaredDoc !== undefined) fields.doc = declaredDoc;
+  return fields as unknown as ParamSpec;
+}
 
-  const params = noun.prompts.map((prompt) => {
-    const named = {
-      ...prompt,
-      name: toGeneratorName[prompt.name] ?? prompt.name,
-      ...(noun.optIn.includes(prompt.name) ? { default: false } : {}),
-      // `promptToParam` reads `when` for truthiness only.
-      ...(prompt.conditional === true ? { when: () => true } : {}),
-    } as PromptDefinition;
-    const param = promptToParam(named) as Record<string, unknown>;
-    if (noun.noDefault.includes(prompt.name)) delete param.default;
-    // Declared help text WINS over the doc derived from the wizard question.
-    // A question usually reads as help once `declarativeDoc` strips its `?`/`:`
-    // — but `Component path:` does not carry the naming rule `--help` and the
-    // MCP arg schema need, and rewording the message would move the interactive
-    // prompt. So the override is content, keyed by the generator's prompt name.
-    const declaredDoc = noun.docs[prompt.name];
-    if (declaredDoc !== undefined) param.doc = declaredDoc;
-    return param as unknown as ParamSpec;
-  });
-
-  // The axis triple is written together by the build or not at all, so one
-  // guard covers all three — and the flag's DOC is declared beside its values,
-  // never a literal here: this module must not know what any distribution's
-  // axis is about.
+/**
+ * The enum param a declared framework axis contributes, when there is one.
+ *
+ * The axis triple is written together by the build or not at all, so ONE guard
+ * covers all three — and the flag's DOC is declared beside its values, never a
+ * literal here: this module must not know what any distribution's axis is about.
+ * Its values are the generator keys the package actually ships and its default
+ * is the first, so `--help` can never advertise a default outside the enum.
+ *
+ * @param noun - The noun's surface entry.
+ * @returns The enum param, or `undefined` when the noun declares no axis.
+ */
+function buildAxisParam(noun: NounSurface): ParamSpec | undefined {
   const { axis, axisValues, axisDoc } = noun;
   if (axis === undefined || axisValues === undefined || axisDoc === undefined) {
-    return params;
+    return undefined;
   }
-  const enumParam: ParamSpec = {
+  return {
     kind: "enum",
     name: axis,
     doc: axisDoc,
@@ -125,7 +173,34 @@ function buildParams(kind: CreateKind): ParamSpec[] {
     // The FIRST declared value, so the default is always inside the enum.
     default: axisValues.at(0),
   };
-  return [enumParam, ...params];
+}
+
+/**
+ * Build one noun's params from its derived surface: convert, overlay, ASSEMBLE.
+ *
+ * Each overlay that can be separately wrong has its own name —
+ * {@link invertAliases}, {@link applyPromptOverlays},
+ * {@link applyParamOverrides} and {@link buildAxisParam}. They are the four
+ * things a fork TUNES (`withPrefixed`, `optIn`, `noDefault`, `docs`, plus the
+ * axis), so a fork debugging why its `--with-x` flag did not appear has a named
+ * unit to read. This is the mirror image of `scripts/generateCreateSurface.ts`
+ * #deriveNounSurface, and it is factored the same way.
+ *
+ * @param kind - The create noun.
+ * @returns Its params, axis first when declared, then in surface order.
+ */
+function buildParams(kind: CreateKind): ParamSpec[] {
+  const noun: NounSurface = CREATE_SURFACE[kind];
+  const toCliName = invertAliases(noun.aliases);
+  const params = noun.prompts.map((prompt) =>
+    applyParamOverrides(
+      promptToParam(applyPromptOverlays(prompt, noun, toCliName)),
+      prompt,
+      noun,
+    ),
+  );
+  const axisParam = buildAxisParam(noun);
+  return axisParam === undefined ? params : [axisParam, ...params];
 }
 
 /** The path param each noun jails, derived by the build (SEC-2). */
