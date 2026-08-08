@@ -44,8 +44,9 @@ const FLAGS: GlobalFlags = {
 const YES: MutationFlags = { dryRun: false, undo: false, yes: true };
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-create-"));
 
-/** Run a create verb inside `dir` (relative generator paths resolve there). */
-async function runIn(
+/** Run one noun's create verb inside `dir` (relative paths resolve there). */
+async function runNoun(
+  kind: CreateKind,
   dir: string,
   params: Record<string, unknown>,
   mutation: MutationFlags = YES,
@@ -54,7 +55,7 @@ async function runIn(
   process.chdir(dir);
   try {
     return await executeVerb(
-      createVerbs.component,
+      createVerbs[kind],
       params,
       mutation,
       bootRuntime(FLAGS, dir),
@@ -63,6 +64,13 @@ async function runIn(
     process.chdir(prev);
   }
 }
+
+/** {@link runNoun} for `component`, the noun most cases below exercise. */
+const runIn = async (
+  dir: string,
+  params: Record<string, unknown>,
+  mutation: MutationFlags = YES,
+) => runNoun("component", dir, params, mutation);
 
 const walk = (dir: string, base = ""): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -141,32 +149,74 @@ describe("create — real generation + stamp", () => {
 });
 
 describe("SEC-2 path jail (PROTECTED)", () => {
+  // EVERY NOUN THAT DECLARES A JAILED ARGUMENT, not just `component`. The
+  // argument `assertInsideWorkspace` covers is DERIVED per noun now
+  // (`selectPathParam` → `NounSurface.pathParam` → `create.verb.ts`), so the
+  // derivation is the thing that can regress — and a guard feeding one noun is
+  // blind to it for every other, this distribution's `application` included. The
+  // sibling case below pins the derived VALUE against a literal; this is what
+  // makes that pin load-bearing by proving the value is USED. Read from the
+  // surface, so a fork's jailed noun is covered with no edit here. `package`
+  // declares no positional (it writes into a subdirectory derived from `--name`,
+  // which `cwdJail.test.ts` covers separately) and drops out by construction.
+  const jailed = Object.entries(CREATE_SURFACE).flatMap(
+    ([kind, noun]: [string, NounSurface]) =>
+      noun.pathParam === undefined
+        ? []
+        : [{ kind: kind as CreateKind, noun, pathParam: noun.pathParam }],
+  );
+
+  /**
+   * The smallest answer bag that reaches the jail: the path, plus the axis flag
+   * when the noun declares one. Every other prompt has a default, and the jail
+   * throws before any of them is read.
+   */
+  const answersFor = (
+    noun: NounSurface,
+    pathParam: string,
+    value: string,
+  ): Record<string, unknown> => ({
+    ...(noun.axis !== undefined ? { [noun.axis]: noun.axisValues?.at(0) } : {}),
+    [pathParam]: value,
+  });
+
+  it("covers every noun the build derived a path param for", () => {
+    // Non-empty first: every `for` below is vacuous over an empty list, which is
+    // exactly how a derivation returning `undefined` for all of them would look.
+    expect(jailed.map(({ kind }) => kind)).toEqual([
+      "component",
+      "application",
+    ]);
+  });
+
   const cases: Array<[string, string]> = [
     ["a .. escape", "../evil/Widget"],
     ["an absolute path", "/tmp/evil/Widget"],
   ];
-  for (const [label, value] of cases) {
-    it(`rejects ${label} with a PragmaError before any effect`, async () => {
-      const dir = freshCwd();
-      // The jail throws in `run`, before any effect; the projector maps it to an
-      // exit code, but exercised directly here `executeVerb` propagates it.
+  for (const { kind, noun, pathParam } of jailed) {
+    for (const [label, value] of cases) {
+      it(`rejects ${label} in ${kind}'s ${pathParam} before any effect`, async () => {
+        const dir = freshCwd();
+        // The jail throws in `run`, before any effect; the projector maps it to
+        // an exit code, but exercised directly here `executeVerb` propagates it.
+        await expect(
+          runNoun(kind, dir, answersFor(noun, pathParam, value)),
+        ).rejects.toBeInstanceOf(PragmaError);
+        expect(walk(dir)).toEqual([]);
+      });
+    }
+
+    it(`rejects a symlink out of the workspace in ${kind}'s ${pathParam} (realpath)`, async () => {
+      const root = freshCwd();
+      const outside = freshCwd();
+      // A symlink `link` inside the workspace pointing OUT of it.
+      symlinkSync(outside, join(root, "link"));
       await expect(
-        runIn(dir, { framework: "react", componentPath: value }),
+        runNoun(kind, root, answersFor(noun, pathParam, "link/Widget")),
       ).rejects.toBeInstanceOf(PragmaError);
-      expect(walk(dir)).toEqual([]);
+      expect(existsSync(join(outside, "Widget"))).toBe(false);
     });
   }
-
-  it("rejects a symlink that escapes the workspace (realpath)", async () => {
-    const root = freshCwd();
-    const outside = freshCwd();
-    // A symlink `link` inside the workspace pointing OUT of it.
-    symlinkSync(outside, join(root, "link"));
-    await expect(
-      runIn(root, { framework: "react", componentPath: "link/Widget" }),
-    ).rejects.toBeInstanceOf(PragmaError);
-    expect(existsSync(join(outside, "Widget"))).toBe(false);
-  });
 
   it("accepts an in-workspace path", async () => {
     const dir = freshCwd();
@@ -213,6 +263,23 @@ describe("lazy-React discipline (PROTECTED)", () => {
     // below pins.
     expect(
       [...graph].some((f) => f.endsWith("create/generators.generated.ts")),
+    ).toBe(false);
+    // THE THIRD GENERATED MODULE, held to the third discipline. The embedded
+    // template manifest is dynamic-only — `create.verb.ts` imports it inside
+    // `loadCreateRuntime`, and two docblocks say so — but that was prose alone
+    // while its neighbour got a pin. Measured on a scratch copy: adding a static
+    // `import { TEMPLATES }` to `create.verb.ts` left every guard green (28
+    // tests passed), where the same edit pointing at `generators.generated.ts`
+    // goes red. The cost of the unguarded state today is small — the manifest
+    // grew 8.9x in this slice (17 637 → 156 522 bytes) for +0.4 MB peak RSS on
+    // `--help` and +1.4 MB on `__complete`, with wall clock inside the noise —
+    // but it is the ONE generated module whose size the declaration does not
+    // bound, so a fork harvesting a large generator package pays it on every
+    // invocation.
+    expect(
+      [...graph].some((f) =>
+        f.endsWith("create/templates.embedded.generated.ts"),
+      ),
     ).toBe(false);
     // DERIVED from the declaration, not spelled by hand: the forbidden set is
     // exactly the generator packages THIS distribution declares, plus the
