@@ -291,11 +291,13 @@ describe("derived create surface (PROTECTED)", () => {
     // the binary would then link a package the distribution never declared.
     //
     // A regenerate-and-compare staleness guard was tried here and DELETED as
-    // vacuous: `testing/perf/globalSetup.ts` rebuilds `dist/pragma` whenever
-    // anything under `src/`, `scripts/`, `pragma.conf.ts` or `package.json` is
-    // newer, and that build regenerates these modules — so by the time any test
-    // body runs, the committed bytes on disk are always fresh and the guard
-    // could not fail. Measured: hand-editing a prompt default and an import
+    // vacuous: `testing/perf/globalSetup.ts` rebuilds `dist/pragma` before any
+    // test body runs whenever the binary is older than anything it is built
+    // from — these modules live under `src/`, and that build regenerates them —
+    // so the committed bytes on disk are always fresh by the time a guard could
+    // read them. (The full input set is `globalSetup.ts`'s `INPUTS`, which is
+    // derived from the declaration; restating it here is how two stale copies
+    // of it got written.) Measured: hand-editing a prompt default and an import
     // specifier both passed. What keeps the committed bytes honest is the
     // `git status` after a gate run, and the covenant conformance below.
     const source = readFileSync(
@@ -308,6 +310,24 @@ describe("derived create surface (PROTECTED)", () => {
     expect(specifiers.length).toBeGreaterThan(0);
     expect(specifiers.sort()).toEqual(
       conf.generators.map((generator) => generator.name).sort(),
+    );
+  });
+
+  it("the surface carries every declared noun — no declaration is shadowed", () => {
+    // The surface is ONE FLAT MAP over MANY declarations, so a noun declared by
+    // two packages could only be a deletion: the second assignment replaces the
+    // first while `generators.generated.ts` still imports the losing package.
+    // The codegen refuses that (naming both packages); this pins the RESULT, so
+    // the count can never quietly fall short of what was declared. Derived, so a
+    // fork combining its own `component` package with an upstream one is covered
+    // here too.
+    const declaredNouns = conf.generators.flatMap((generator) =>
+      Object.keys(generator.nouns),
+    );
+    expect(declaredNouns.length).toBeGreaterThan(0);
+    expect(new Set(declaredNouns).size).toBe(declaredNouns.length);
+    expect(Object.keys(CREATE_SURFACE).sort()).toEqual(
+      [...declaredNouns].sort(),
     );
   });
 

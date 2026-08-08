@@ -63,6 +63,13 @@ export function writeWhenChanged(path: string, body: string): boolean {
 }
 
 /**
+ * The prompt kinds a surface entry can carry — the closed union
+ * `SerializedPrompt["type"]` states, spelled once as values so the codegen can
+ * CHECK a third-party prompt against it rather than assert its way past.
+ */
+const PROMPT_TYPES = ["text", "confirm", "select", "multiselect"] as const;
+
+/**
  * Reduce a live `PromptDefinition` to the JSON-serialisable subset the grammar
  * adapter reads.
  *
@@ -73,14 +80,34 @@ export function writeWhenChanged(path: string, body: string): boolean {
  * generator, where it still is. `group` is dropped: the CLI grammar has no
  * notion of prompt groups.
  *
+ * `type` is CHECKED, not cast, and it is the one field of an imported prompt
+ * that has to be: {@link GeneratorLike} types a declared package's prompts as
+ * `Record<string, unknown>` on purpose (the build must not require a fork's
+ * package to match summon-core's types), so the value arrives unknown from a
+ * module this repo did not write. Asserting it into the union instead wrote the
+ * bogus string straight into the byte-pinned surface, where `promptToParam`'s
+ * `default:` arm degraded it to a plain `--flag` string — and a `--fork` build
+ * runs no `tsc`, so a fork got the degraded flag with a green build.
+ *
+ * @param noun - The declaring noun, for the message.
  * @param prompt - A live generator prompt.
  * @returns Its serialisable mirror.
+ * @throws Error naming the noun, the prompt and the kinds a surface can carry.
  */
-function reducePrompt(prompt: Record<string, unknown>): SerializedPrompt {
+function reducePrompt(
+  noun: string,
+  prompt: Record<string, unknown>,
+): SerializedPrompt {
+  const type = PROMPT_TYPES.find((known) => known === prompt.type);
+  if (type === undefined) {
+    throw new Error(
+      `\`create ${noun}\` has a prompt "${String(prompt.name)}" of type "${String(prompt.type)}", which the create surface cannot carry. A surface prompt is one of: ${PROMPT_TYPES.join(", ")}.`,
+    );
+  }
   // Key order is the EMITTED order, and the surface module is byte-pinned.
   return {
     name: String(prompt.name),
-    type: prompt.type as SerializedPrompt["type"],
+    type,
     message: String(prompt.message),
     ...(prompt.default !== undefined ? { default: prompt.default } : {}),
     ...(prompt.positional === true ? { positional: true } : {}),
@@ -331,7 +358,7 @@ function deriveNounSurface(
   // built from the map keys.
   const prompts = generator.prompts
     .filter((prompt) => prompt.name !== axisTriple?.axis)
-    .map(reducePrompt);
+    .map((prompt) => reducePrompt(noun, prompt));
 
   assertDeclaredPromptNames(noun, declared, axis, prompts);
 
@@ -400,6 +427,21 @@ export async function generateCreateSurface(
       );
     }
     for (const [noun, declaredNoun] of Object.entries(declaration.nouns)) {
+      // TWO PACKAGES CANNOT SHARE A NOUN. `nouns` is an object per declaration,
+      // so a key collides only ACROSS declarations — and the surface is one flat
+      // map, so the second assignment would delete the first noun's whole verb
+      // while `generators.generated.ts` still imported the losing package. That
+      // is the fault this codegen refuses on everywhere else (an unjailed
+      // positional, a prompt name matching nothing, a colliding embedded key),
+      // in its worst form: a VERB disappearing rather than a field. Unreachable
+      // from this distribution's three distinct nouns; reachable the moment a
+      // fork declares its own `component` package beside an upstream one.
+      const incumbent = surface[noun];
+      if (incumbent !== undefined) {
+        throw new Error(
+          `pragma.conf.ts declares \`create ${noun}\` twice: "${incumbent.package}" and "${declaration.name}" both expose it. One would silently replace the other in the generated surface while both packages stayed linked into the binary. Rename one noun.`,
+        );
+      }
       surface[noun] = deriveNounSurface(
         noun,
         declaredNoun,
