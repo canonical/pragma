@@ -39,7 +39,6 @@
     "build": "bun run scripts/build.ts",
     "bundle": "bun run scripts/bundle.ts",
     "gen:reference": "bun run scripts/genReference.ts",
-    "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect tool-ts",
     "check:fix": "bun run check:biome:fix && bun run check:ts",

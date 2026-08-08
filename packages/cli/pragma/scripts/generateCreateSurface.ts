@@ -35,9 +35,20 @@ import {
   SURFACE_MODULE,
 } from "./constants.js";
 
-/** The shape a generator package exposes: its `generators` map. */
+/**
+ * What the codegen READS off a declared package's generator: its prompts, and
+ * nothing else. The map's KEYS carry everything else this build needs (the axis
+ * values, the resolved key), and the noun's identity comes entirely from
+ * `pragma.conf.ts`.
+ *
+ * Reduced to that on purpose. It also declared `meta: { name: string }`, which
+ * nothing here read and which constrained nothing either — the map arrives
+ * through an `as` cast on a dynamic import, so a package without it type-checked
+ * and ran identically. A field in the type that describes what a fork's package
+ * owes the build, which the build never asks for, is the inert declaration this
+ * slice exists to stop shipping.
+ */
 type GeneratorLike = {
-  meta: { name: string };
   prompts: ReadonlyArray<Record<string, unknown>>;
 };
 

@@ -60,9 +60,17 @@ export function pickGenerator(
     keyPrefix !== undefined
   ) {
     // No axis value given → `key`, which the build resolved from the SAME first
-    // map key the enum defaults to, and proved the package exports. Reading the
-    // recorded default rather than re-deriving it is what keeps `key` a fact
-    // every noun's surface states and something READS, on both branches.
+    // map key the enum defaults to, and proved the package exports.
+    //
+    // A DEFENSIVE BACKSTOP, not a live path, and the difference is worth
+    // stating because the comment here used to claim the opposite — that this
+    // read is what keeps `key` a fact something READS on both branches. It is
+    // not: both projections materialize the axis param's declared default
+    // before dispatch (`dispatch.ts` copies `param.default` into the bag,
+    // `registerVerb.ts` puts it on the zod field), and `framework` is not
+    // aliased, so `params[axis]` is always present when this runs from either
+    // surface. `key` earns itself on the branch below, where `map[noun.key]` is
+    // the only lookup; here it covers a direct unit call and nothing else.
     const chosen = params[axis];
     const mapKey =
       chosen === undefined ? noun.key : `${keyPrefix}/${String(chosen)}`;

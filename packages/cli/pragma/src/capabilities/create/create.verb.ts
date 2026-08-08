@@ -127,17 +127,26 @@ function applyPromptOverlays(
  * Both are keyed by the prompt's own name, not the aliased CLI name, which is
  * why this runs against the original prompt rather than the converted param.
  *
+ * COPYING, not in-place. The first form cast `param` to a record and mutated
+ * it, so the name (`apply…`), the signature (param in, param out) and the
+ * `@returns` all read as a pure transform over a function that edited its
+ * caller's object. No live bug — {@link buildParams} passes a freshly built
+ * `promptToParam(...)` result inline — but a caller that reused a ParamSpec, or
+ * memoized `promptToParam`, would have corrupted the shared one silently. The
+ * copy also makes the widening at the end honest: it converts a record this
+ * function owns, not a round trip through the caller's.
+ *
  * @param param - The converted param.
  * @param prompt - The prompt it came from.
  * @param noun - Its noun's surface entry.
- * @returns The param with the declared overrides applied.
+ * @returns A COPY of the param with the declared overrides applied.
  */
 function applyParamOverrides(
   param: ParamSpec,
   prompt: SerializedPrompt,
   noun: NounSurface,
 ): ParamSpec {
-  const fields = param as Record<string, unknown>;
+  const fields: Record<string, unknown> = { ...param };
   if (noun.noDefault.includes(prompt.name)) delete fields.default;
   const declaredDoc = noun.docs[prompt.name];
   if (declaredDoc !== undefined) fields.doc = declaredDoc;

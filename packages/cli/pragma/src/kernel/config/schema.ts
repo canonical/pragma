@@ -182,8 +182,13 @@ const layerConfigSchema = rawConfigSchema.extend({
  * Which config the value IS: the distribution's own `pragma.conf.ts` (a
  * parameter of the build, and of `defaults.ts`) or a user's global/project
  * layer. It selects how far `generators` is validated, and nothing else.
+ *
+ * LOCAL. It annotates {@link parseRawConfig}'s parameter and has no other
+ * reader: all six call sites pass the literal inline. Exporting it would grow
+ * this module's public surface by a name nobody imports, and invite the next
+ * reader to hold a `ConfigScope`-typed variable somewhere.
  */
-export type ConfigScope = "distribution" | "layer";
+type ConfigScope = "distribution" | "layer";
 
 /**
  * Validate a raw config value into a {@link RawConfig}.
