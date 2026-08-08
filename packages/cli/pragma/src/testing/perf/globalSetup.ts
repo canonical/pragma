@@ -25,6 +25,22 @@
  * predating the summon source they exist to prove. The declared packages are
  * watched here for exactly that reason, and they are READ FROM THE DECLARATION
  * so a fork's own generator package invalidates the binary for free.
+ *
+ * `src` IS NOT ENOUGH, AND THAT IS THE SECOND CORRECTION. What `Bun.build`
+ * consumes is each package's RESOLVED ENTRY, and this workspace publishes two
+ * ways: `@canonical/summon-package` and `@canonical/summon-monorepo` resolve to
+ * `src/index.ts`, while `@canonical/summon-core`, `@canonical/summon-component`,
+ * `@canonical/summon-application` and `@canonical/task` resolve to
+ * `dist/esm/index.js`. Measured on the four that publish `dist`: editing the
+ * live string in `component/dist/esm/react/generator.js` and rebuilding put it
+ * IN the binary (`grep -c` → 1), while touching that same `dist` left
+ * `fresh = true`; and editing the corresponding `src` rebuilt a binary that did
+ * NOT contain the change. So a `src`-only watch was wrong in both directions at
+ * once — it missed the input that is bundled and rebuilt on one that is not.
+ * Both trees are watched: `src` is what the TEMPLATE HARVEST reads, `dist` is
+ * what the BUNDLER reads, and a package that has only one of them contributes 0
+ * from the other. Measured cost of adding `dist` on this box: 6.7 ms → 12.4 ms
+ * of `stat` walk, once per suite.
  */
 
 import { spawnSync } from "node:child_process";
@@ -43,6 +59,14 @@ import conf from "../../../pragma.conf.js";
 const INFRASTRUCTURE = ["@canonical/summon-core", "@canonical/task"];
 
 /**
+ * The two trees a linked package can contribute to the binary: its sources (the
+ * template harvest reads `src/**` /templates) and its build output (what the
+ * bundler resolves, for a package that publishes `dist`). A package missing
+ * either returns 0 from `newestMtime`, so naming both is free.
+ */
+const LINKED_TREES = ["src", "dist"];
+
+/**
  * Everything the compiled binary is built FROM, relative to the package root.
  *
  * The workspace links `node_modules/<name>` to the sibling package directory,
@@ -56,7 +80,9 @@ const INPUTS = [
   ...[
     ...conf.generators.map((generator) => generator.name),
     ...INFRASTRUCTURE,
-  ].map((name) => join("node_modules", name, "src")),
+  ].flatMap((name) =>
+    LINKED_TREES.map((tree) => join("node_modules", name, tree)),
+  ),
 ];
 
 /**
