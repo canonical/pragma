@@ -15,10 +15,12 @@
  * input a wizard would. A `when` condition is honoured by `collectAnswers` at
  * prompt time. `generate` is reached through the verb's `run` → `execute`.
  *
- * This adapter runs over STATIC prompt mirrors (see `create.verb.ts`), never the
- * live generators — importing a generator runs a top-level `await loadTemplate`,
- * which must stay behind `create`'s lazy dispatch (R9). A parity test loads the
- * real generators and asserts the mirrors match.
+ * This adapter runs over the BUILD-DERIVED prompt mirrors in
+ * `surface.generated.ts`, never the live generators — importing a generator
+ * pulls summon-core, which must stay behind `create`'s lazy dispatch (R9). That
+ * is also why this module imports only a TYPE from summon-core: it is on the
+ * `--help` and `__complete` fast paths, and the mirrors it reads are data the
+ * build wrote from the live generators, so there is nothing to keep in sync.
  */
 
 import type { PromptDefinition } from "@canonical/summon-core";
@@ -33,10 +35,14 @@ const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);
  * A prompt `message` is a wizard QUESTION (`Include styles?`, `Package name:`),
  * but a {@link ParamSpec.doc} is help text shown in CLI `--help` and the MCP
  * arg schema, where every other param reads as a declarative statement. We
- * DERIVE the doc rather than editing the mirrors' `message` — the generator
- * parity test couples `message` to the live generators, so the question must
- * stay verbatim for the interactive wizard while the flag/MCP doc reads well.
- * Strip the trailing `?`/`:` and end with a period.
+ * DERIVE the doc rather than rewording the `message`, because the message is
+ * the WIZARD'S QUESTION: the build carries it through codegen from the live
+ * generator, and the interactive run asks it verbatim, so rewording it would
+ * move what a user is asked. Strip the trailing `?`/`:` and end with a period.
+ *
+ * A question that does not read as help even after that — `Component path:`,
+ * which owes the reader a naming rule — is answered by the declaration's
+ * per-param `docs`, which `create.verb.ts` applies over this.
  */
 export function declarativeDoc(message: string): string {
   const trimmed = message

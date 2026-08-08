@@ -9,7 +9,11 @@
  * `use_when` strings for the surviving tools are ported verbatim from the old
  * shell's `domains/llm/data/toolCatalog.ts`; the net-new v2 tools (config_set,
  * graph_query, setup, upgrade, doctor, capabilities, prompt_*, token_add-config,
- * sources_*, tier_lookup, create_*) are authored here.
+ * sources_*, tier_lookup) are authored here.
+ *
+ * The `create_*` hints are NOT: they are DERIVED from the declared create
+ * surface (see {@link CREATE_HINTS} below), so a fork's noun arrives with its
+ * hint and nothing here needs an entry for it.
  */
 
 import { BIN_NAME } from "../../constants.js";

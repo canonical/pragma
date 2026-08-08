@@ -3,12 +3,17 @@
  * declaration and the live generators it names, and write the two modules the
  * capability consumes.
  *
- * A SEPARATE module from `scripts/build.ts` on purpose. `create.test.ts` calls
- * this to regenerate into place and assert the committed bytes did not move —
- * the same drift-guard shape `docs/reference` uses. Importing `build.ts` for
- * that would run its `import.meta.main` block, which compiles a 106 MB binary
- * as a side effect of a unit test AND regenerates before the test can read the
- * committed bytes, making the guard pass no matter what. Measured: it did.
+ * A SEPARATE module from `scripts/build.ts` on purpose: `build.ts` runs codegen
+ * and COMPILES under `import.meta.main`, so the codegen is factored out here to
+ * be importable and runnable without producing a 106 MB binary as a side effect.
+ *
+ * The regenerate-and-compare staleness guard this split was first written for
+ * is GONE, and the next reader should not re-add it: `testing/perf/globalSetup
+ * .ts` rebuilds `dist/pragma` before any test body runs, and that build
+ * regenerates these modules — so the committed bytes on disk are always fresh
+ * by the time a guard could read them. Measured (see `create.test.ts`): hand-
+ * editing a prompt default and an import specifier both passed. What keeps the
+ * committed bytes honest is the `git status` after a gate run.
  *
  * @note Impure — imports the declared packages and writes two modules.
  */

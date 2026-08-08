@@ -51,7 +51,7 @@ pragma is extended along two independent planes:
 pragma create component src/components/Button --framework react
 ```
 
-— produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency. The binary carries the **component** generator's templates, so `pragma create component` runs from a clean install; `pragma create package` and `pragma create application` read their templates from disk and so refuse from the binary with `UNSUPPORTED` — run those from a source checkout, or use the `summon` CLI.
+— produce output byte-identical to summon's own generators. summon is not a runtime dependency. Which generator packages pragma links in, and which `create` nouns they expose, is declared in `pragma.conf.ts` — this distribution declares `component`, `package` and `application`. The binary carries every declared generator's templates and verbatim assets inlined, served through `@canonical/summon-core/embedded`, so **every** `create` verb runs from a clean install with no source checkout.
 
 ## MCP
 

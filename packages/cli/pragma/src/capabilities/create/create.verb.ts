@@ -1,16 +1,22 @@
 /**
- * The `create` verbs — `component` / `package` / `application` (path capped at
- * two segments; the declared component frameworks collapse to one verb + a
- * `--framework` enum). Each is a mutating, interactive, storeless verb.
+ * The `create` verbs — ONE PER DECLARED NOUN, whatever a distribution declares.
+ * Each is a mutating, interactive, storeless verb. A noun declaring a framework
+ * axis collapses several generators into one verb plus an enum flag.
  *
  * LAZY DISPATCH (R9 + lazy-React): the params are STATIC — built by the
- * generator→grammar adapter over static prompt MIRRORS, never the live
- * generators (importing a generator pulls summon-core, and with it React). The
- * `run` body lazily `import()`s `pickGenerator` + summon-core, so `buildProgram`
- * / `--help` / `__complete` / reads never load summon-core or the generators —
- * and `create --yes` never loads React (the Ink UI is dynamic-only, and only the
- * TTY branch even asks for it). A parity test loads the real generators and
- * asserts the mirrors still match.
+ * generator→grammar adapter over `surface.generated.ts`, the ZERO-IMPORT data
+ * module `scripts/build.ts` derives from `pragma.conf.ts` AND the live
+ * generators it names. So the mirrors ARE the live generators, resolved at build
+ * time rather than copied by hand: there is no hand-written mirror to drift, and
+ * no parity test to keep one honest. The `run` body lazily `import()`s
+ * `pickGenerator` + summon-core, so `buildProgram` / `--help` / `__complete` /
+ * reads never load summon-core or the generators — and `create --yes` never
+ * loads React (the Ink UI is dynamic-only, and only the TTY branch even asks
+ * for it).
+ *
+ * What checks the derivation is outside it: the literal pins in
+ * `create.test.ts` (the path-param map, the noun set, the import specifiers
+ * read as source text) and the frozen covenant's per-verb conformance.
  */
 
 import type { GeneratorResult, PromptDefinition } from "@canonical/summon-core";

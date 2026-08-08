@@ -6,7 +6,14 @@
  * written by `scripts/build.ts` from `pragma.conf.ts`'s `generators`
  * declaration. `bun build --compile` bundles only literal specifiers — the
  * BUILD writes them, so the declaration decides which modules are linked after
- * all. Nothing in this directory names a generator package.
+ * all.
+ *
+ * No AUTHORED LITERAL in this directory names a generator package —
+ * `kernel/copy.test.ts` pins exactly that, over the names `pragma.conf.ts`
+ * declares, with the generated modules exempt because they are where the build
+ * is SUPPOSED to write them. The rule reads literals, not comments, so a
+ * docblock recording a measurement may still quote one; that is the scope, and
+ * this file claims no more than it.
  */
 
 import type { GeneratorDefinition } from "@canonical/summon-core";

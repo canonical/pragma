@@ -1,8 +1,9 @@
 /**
  * `create` behaviour: real generation + stamp, the SEC-2 path jail, the
- * lazy-React discipline, and the generator→grammar adapter parity guard.
+ * lazy-React discipline, and the pins on the BUILD-DERIVED create surface.
  * The MCP plan-first/confirm parity lives in create.mcp.test.ts; the
- * byte-equality goldens in byteEquality.test.ts.
+ * byte-equality goldens in byteEquality.test.ts; the fork proof in
+ * forkGenerator.subprocess.test.ts.
  */
 
 import {
@@ -276,12 +277,12 @@ describe("derived create surface (PROTECTED)", () => {
   const dir = dirname(fileURLToPath(import.meta.url));
 
   // The surface is GENERATED from `pragma.conf.ts` + the live generators, so
-  // there is no hand-written mirror left to drift. What can still go wrong is
-  // (a) the committed module going stale against the generators, and (b) a
-  // derivation quietly producing the wrong thing. (a) is a regenerate-and-
-  // compare guard; (b) is pinned against literals and, for the flag set, against
-  // the FROZEN COVENANT — a check the derivation cannot satisfy by agreeing
-  // with itself.
+  // there is no hand-written mirror left to drift. What can still go wrong is a
+  // derivation quietly producing the wrong thing, and every check below pins it
+  // against something OUTSIDE itself: the declaration read as source text, a
+  // literal expectation, the live generator maps, the embedded manifest, and —
+  // for the flag set — the FROZEN COVENANT. Staleness of the committed bytes is
+  // NOT checkable from in here; see the note on the first case.
 
   it("the generated value module imports exactly the declared packages", () => {
     // Read as SOURCE TEXT and compared to the DECLARATION — input against
@@ -399,7 +400,7 @@ describe("derived create surface (PROTECTED)", () => {
   });
 });
 
-describe("compiled-binary create gate (M4)", () => {
+describe("bundling backstop — an unresolvable generator module (PROTECTED)", () => {
   it("detects a module-resolution failure but not a genuine runtime error", () => {
     // bun --compile's unresolved-specifier error (the shipped-binary case).
     expect(
@@ -425,9 +426,11 @@ describe("compiled-binary create gate (M4)", () => {
 });
 
 describe("declared generator bindings (PROTECTED)", () => {
-  // CREATE_GENERATORS is the one place the create surface's generator facts are
-  // written down. What is checkable against something outside itself — the live
-  // generator maps and the embedded manifest — is checked here.
+  // The create surface's generator facts are written down in `pragma.conf.ts`
+  // and reach code only through the build-written `generators.generated.ts` /
+  // `surface.generated.ts`. What is checkable against something OUTSIDE those
+  // modules — the live generator maps and the embedded manifest — is checked
+  // here.
 
   it("every declared noun resolves to the generator it names", async () => {
     const { pickGenerator } = await import("./pickGenerator.js");
@@ -499,13 +502,13 @@ describe("declared generator bindings (PROTECTED)", () => {
   });
 
   it("create surfaces exactly the three declared nouns", () => {
-    // A LITERAL surface pin, deliberately not derived from CREATE_GENERATORS:
-    // surfacing a noun also needs a hand-written prompt mirror, path param and
-    // examples in create.verb.ts, so the surface is a deliberate SUBSET of what
-    // the declared packages ship (`@canonical/summon-application` also ships
-    // `domain`, `route` and `wrapper`). Pinning OUR three nouns rather than any
-    // third-party package's generator list keeps an upstream release from
-    // turning this red.
+    // A LITERAL surface pin, and literal is the point: the surface is a
+    // deliberate SUBSET of what the declared packages ship (the application
+    // package also ships `domain`, `route` and `wrapper`). The DECLARATION
+    // decides which of them this distribution exposes, not the package — so an
+    // upstream release adding a generator must not silently widen this
+    // distribution's surface, and deriving the expectation from the same
+    // declaration the build reads would agree with itself by construction.
     expect(createModule.verbs.map((v) => v.path[1])).toEqual([
       "component",
       "package",

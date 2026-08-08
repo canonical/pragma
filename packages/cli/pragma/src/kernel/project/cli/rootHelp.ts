@@ -46,7 +46,12 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
     {
       title: "Generate code",
       nouns: [
-        { noun: "create", summary: "Scaffold components, packages, and apps" },
+        // The kernel curates the ROW, never the surface behind it: which nouns
+        // `create` has is `pragma.conf.ts`'s to decide, and the fork fixture
+        // ships exactly one the shipped binary has never heard of. A summary
+        // listing this distribution's three read as the front door's own fact
+        // and was wrong for every fork the moment one existed.
+        { noun: "create", summary: "Scaffold new code from a declared generator" },
       ],
     },
     {

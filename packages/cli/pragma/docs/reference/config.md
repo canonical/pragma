@@ -37,7 +37,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## What `config show` reports
 
-`pragma config show` prints `tier`, `channel`, `detail`, `packs` — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: `prefixes` and `completion` appear only in the `--format json` payload, `prefixes` with an origin and `completion` with none; `stories` carries an origin whose value the payload leaves out; and the four distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; `--format json` returns the resolved config and the origin map whole.
+`pragma config show` prints `tier`, `channel`, `detail`, `packs` — those and only those — each with the layer that supplied it. The rest resolve without being reported that way: `prefixes` and `completion` appear only in the `--format json` payload, `prefixes` with an origin and `completion` with none; `stories` carries an origin whose value the payload leaves out; and the five distribution-only fields above carry neither. The plain and llm forms print those rows and nothing else; `--format json` returns the resolved config and the origin map whole.
 
 ## Renamed: `packages` → `packs`
 
