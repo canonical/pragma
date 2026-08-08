@@ -119,10 +119,7 @@ export function offeredFlagNames(
  * independent step the three templates share. It was exported when `bash.ts` and
  * `zsh.ts` each ran their own copy of that scan.
  */
-function valueFlagNames(
-  model: CompletionModel,
-  view: VerbView,
-): string[] {
+function valueFlagNames(model: CompletionModel, view: VerbView): string[] {
   return [
     ...view.verb.flags
       .filter((flag) => flag.takesValue)

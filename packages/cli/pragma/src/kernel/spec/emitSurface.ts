@@ -218,7 +218,8 @@ export function emitVerb(verb: VerbSpec): EmittedVerb {
     mcp?: string | false;
   } = { v: verbLabel(verb.path) };
 
-  if (positionals.length > 0) entry.args = positionals.map(formatPositionalToken);
+  if (positionals.length > 0)
+    entry.args = positionals.map(formatPositionalToken);
   if (flags.length > 0)
     entry.flags = flags.map((p) => `--${kebabCase(p.name)}`);
   if (verb.capability.mutates) entry.mutates = true;

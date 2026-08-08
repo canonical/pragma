@@ -15,8 +15,8 @@ import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import {
   formatFlagToken,
-  kebabCase,
   formatPositionalToken,
+  kebabCase,
 } from "../../spec/emitSurface.js";
 import type { VerbSpec } from "../../spec/types.js";
 import { dispatch } from "./dispatch.js";

@@ -15,7 +15,6 @@
 
 import type { CompletionModel, CompletionSource } from "../types.js";
 import {
-  wrapInCaseBlock,
   globalFlagNames,
   globalValueFlags,
   hasOwnFlags,
@@ -26,6 +25,7 @@ import {
   sanitizeBinName,
   verbViews,
   wordList,
+  wrapInCaseBlock,
 } from "./shared.js";
 
 /** The bash action completing a value source, or undefined for `none`. */

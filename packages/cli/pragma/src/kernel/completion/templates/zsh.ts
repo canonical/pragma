@@ -14,7 +14,6 @@
 
 import type { CompletionModel, CompletionSource } from "../types.js";
 import {
-  wrapInCaseBlock,
   globalFlagNames,
   globalValueFlags,
   hasOwnFlags,
@@ -25,6 +24,7 @@ import {
   sanitizeBinName,
   verbViews,
   wordList,
+  wrapInCaseBlock,
 } from "./shared.js";
 
 /** The zsh action completing a value source, or undefined for `none`. */
@@ -107,7 +107,13 @@ export function zshScript(
 ): string {
   const fn = `_${sanitizeBinName(binName)}`;
   const positionalArms = verbViews(model).flatMap((view) => {
-    const arm = renderPositionalArm(model, view, fn, sourceAction, "zsh value flags");
+    const arm = renderPositionalArm(
+      model,
+      view,
+      fn,
+      sourceAction,
+      "zsh value flags",
+    );
     return arm === undefined ? [] : [arm];
   });
   const globalValueSkips = globalValueFlags(model)

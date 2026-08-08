@@ -7,7 +7,10 @@
  * body — so it stays on the fast `--help` path.
  */
 
-import { formatFlagToken, formatPositionalToken } from "../../spec/emitSurface.js";
+import {
+  formatFlagToken,
+  formatPositionalToken,
+} from "../../spec/emitSurface.js";
 import type { VerbSpec } from "../../spec/types.js";
 import {
   helpColumns,

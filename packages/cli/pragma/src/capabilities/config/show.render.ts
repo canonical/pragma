@@ -28,7 +28,11 @@ function configRows(data: ConfigShowData): readonly ConfigRow[] {
     ["tier", config.tier ?? "(none)", renderOriginMarker(origins.tier)],
     ["channel", config.channel, renderOriginMarker(origins.channel)],
     ["detail", config.detail ?? "standard", renderOriginMarker(origins.detail)],
-    ["packs", entryNames(config.packs ?? []), renderOriginMarker(origins.packs)],
+    [
+      "packs",
+      entryNames(config.packs ?? []),
+      renderOriginMarker(origins.packs),
+    ],
     [
       "generators",
       entryNames(config.generators ?? []),
