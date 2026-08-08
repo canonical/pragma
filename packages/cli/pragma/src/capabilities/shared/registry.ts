@@ -27,7 +27,7 @@ const DIST_TAG_MAP: Record<Channel, string> = {
 };
 
 /** Timeout in milliseconds for npm registry HTTP requests. */
-export const REGISTRY_TIMEOUT_MS = 3_000;
+const REGISTRY_TIMEOUT_MS = 3_000;
 
 /** Result of checking the npm registry for the latest package version. */
 export interface RegistryCheckResult {

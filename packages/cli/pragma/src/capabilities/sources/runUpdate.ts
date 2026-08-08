@@ -376,7 +376,7 @@ function resolveProgress(ref: PackageRef): string {
  * @param inputs - The labelled sources handed to the build.
  * @returns A classified {@link PragmaError} (never INTERNAL_ERROR for bad data).
  */
-export async function classifySourceBuildError(
+async function classifySourceBuildError(
   error: unknown,
   inputs: readonly { readonly path: string; readonly content: string }[],
 ): Promise<PragmaError> {

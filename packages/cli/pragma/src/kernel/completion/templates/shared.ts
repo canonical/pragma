@@ -18,8 +18,6 @@ import type {
   VerbEntry,
 } from "../types.js";
 
-export { assertSafeToken } from "../model.js";
-
 /** One (noun, verb) pair a script addresses — self-verbs have key `noun/`. */
 export interface VerbView {
   /** The noun token. */
@@ -116,8 +114,12 @@ export function offeredFlagNames(
 /**
  * Every value-taking flag in scope for a view (verb + globals) — the flags
  * whose values a positional-index scan must skip.
+ *
+ * Module-private: `positionalArm` below is the only caller, and it is the shell-
+ * independent step the three templates share. It was exported when `bash.ts` and
+ * `zsh.ts` each ran their own copy of that scan.
  */
-export function valueFlagNames(
+function valueFlagNames(
   model: CompletionModel,
   view: VerbView,
 ): string[] {

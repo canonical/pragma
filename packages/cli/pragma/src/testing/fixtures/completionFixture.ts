@@ -195,7 +195,7 @@ export const completionFixture: CapabilityModule = {
  * shape ⟷ reader agreement is proven live, against a freshly built index, by
  * `kernel/runtime/graphpack/completionSeam.test.ts`.
  */
-export const fixtureIndex = {
+const fixtureIndex = {
   version: 1,
   entities: {
     "ds:Block": {
