@@ -144,17 +144,21 @@ describe("Rail", () => {
     });
   });
 
-  it("leaves digits alone while typing in an editable target", () => {
+  it("leaves digits alone while typing in an editable target", async () => {
     const { router, view } = renderRail("/");
     const input = document.createElement("input");
     view.container.appendChild(input);
     fireEvent.keyDown(input, { key: "2" });
+    // Give a queued navigation a beat to (wrongly) land before asserting.
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(router.getState().location.pathname).toBe("/");
   });
 
-  it("leaves modifier chords alone", () => {
+  it("leaves modifier chords alone", async () => {
     const { router } = renderRail("/");
     fireEvent.keyDown(document, { key: "2", ctrlKey: true });
+    // Give a queued navigation a beat to (wrongly) land before asserting.
+    await new Promise((resolve) => setTimeout(resolve, 20));
     expect(router.getState().location.pathname).toBe("/");
   });
 
