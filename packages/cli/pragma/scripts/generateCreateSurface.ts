@@ -200,6 +200,58 @@ function resolveGeneratorKey(
 }
 
 /**
+ * Assert every declared name that MIRRORS A PROMPT names one that exists.
+ *
+ * Four of a noun's fields carry generator prompt names — `optIn`,
+ * `withPrefixed`, `noDefault` and the keys of `docs` — and `create.verb.ts`
+ * applies all four by exact match (`includes`, or a lookup). So a misspelled
+ * name is not a smaller effect: it is NO effect, accepted by the validator,
+ * accepted by the codegen, and written verbatim into a surface where it does
+ * nothing forever. Measured on a fork declaring `optIn: ["initGitt",
+ * "runInstal"]`: the build printed success and the binary's `create monorepo
+ * --yes` planned `git init` and `bun install` — the two effects reaching outside
+ * the scaffold that `optIn` exists to switch off, and which the CLI grammar has
+ * no `--no-` form to switch off any other way.
+ *
+ * The same argument {@link selectPathParam} throws on, applied to the fields it
+ * does not cover: a declared field must never quietly stop doing anything.
+ *
+ * @param noun - The declared noun name, for the message.
+ * @param declared - Its declaration.
+ * @param axis - The declared axis name, which mirrors no prompt and is
+ *   therefore the one legal `docs` key that is not a prompt.
+ * @param prompts - The noun's serialised prompt mirrors, axis already dropped.
+ * @throws Error naming the noun, the field, the bad name and the prompts that
+ *   exist.
+ */
+function assertDeclaredPromptNames(
+  noun: string,
+  declared: GeneratorNoun,
+  axis: string | undefined,
+  prompts: ReadonlyArray<Record<string, unknown>>,
+): void {
+  const names = new Set(prompts.map((prompt) => String(prompt.name)));
+  const fields: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ["optIn", declared.optIn ?? []],
+    ["withPrefixed", declared.withPrefixed ?? []],
+    ["noDefault", declared.noDefault ?? []],
+    // The axis key is the CLI's own flag, not a prompt, so it is allowed here
+    // and nowhere else.
+    [
+      "docs",
+      Object.keys(declared.docs ?? {}).filter((key) => key !== axis),
+    ],
+  ];
+  for (const [field, declaredNames] of fields) {
+    const unknown = declaredNames.filter((name) => !names.has(name));
+    if (unknown.length === 0) continue;
+    throw new Error(
+      `pragma.conf.ts declares \`create ${noun}\` with ${field} ${unknown.map((name) => `"${name}"`).join(", ")}, which ${unknown.length === 1 ? "is not a prompt" : "are not prompts"} of the generator it runs. A name matching no prompt is applied by exact match and therefore does nothing at all. Its prompts are: ${[...names].join(", ") || "it has none"}.`,
+    );
+  }
+}
+
+/**
  * Build the `--with-X` include-flag alias map from the declared bare names.
  *
  * ONE seam for the whole convention: the generator keeps its bare prompt names
@@ -224,10 +276,15 @@ function buildWithPrefixedAliases(
  *
  * The steps that can each be wrong on their own have their own names —
  * {@link collectAxisValues}, {@link resolveGeneratorKey},
- * {@link buildWithPrefixedAliases}, {@link reducePrompt} and, above all,
- * {@link selectPathParam}, which decides which argument `assertInsideWorkspace`
- * jails and is the one step whose silent failure is a SECURITY failure. What is
- * left here is the assembly.
+ * {@link buildWithPrefixedAliases}, {@link reducePrompt},
+ * {@link assertDeclaredPromptNames} and, above all, {@link selectPathParam},
+ * which decides which argument `assertInsideWorkspace` jails and is the one step
+ * whose silent failure is a SECURITY failure. What is left here is the assembly.
+ *
+ * TWO REFUSALS, not one, and they divide the declaration between them: the
+ * live generator decides whether a declared KEY exists, and the live prompts
+ * decide whether a declared prompt NAME exists. Between them no field of a noun
+ * can be wrong and silent.
  *
  * The framework axis is the only branch: `keyPrefix` + `axis` collapses every
  * map key under `<keyPrefix>/` into one verb plus an enum flag, and the prompt
@@ -274,6 +331,8 @@ function deriveNounSurface(
   const prompts = generator.prompts
     .filter((prompt) => prompt.name !== dropped)
     .map(reducePrompt);
+
+  assertDeclaredPromptNames(noun, declared, axis, prompts);
 
   const docs = declared.docs ?? {};
   const axisDoc = axis === undefined ? undefined : docs[axis];
