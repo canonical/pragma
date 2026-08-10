@@ -1,4 +1,9 @@
 :root {
+  --ds-typography-text-primary:
+    var(--typography-text-primary-font-weight)
+    var(--typography-text-primary-font-size) /
+    var(--typography-text-primary-line-height)
+    var(--typography-text-primary-font-family);
   --ds-typography-text-secondary:
     var(--typography-text-secondary-font-weight)
     var(--typography-text-secondary-font-size) /
@@ -14,9 +19,15 @@
     var(--typography-text-primary-bold-font-size) /
     var(--typography-text-primary-bold-line-height)
     var(--typography-text-primary-bold-font-family);
+  --ds-typography-heading-4:
+    var(--typography-heading-4-font-weight)
+    var(--typography-heading-4-font-size) /
+    var(--typography-heading-4-line-height)
+    var(--typography-heading-4-font-family);
   --ds-typography-heading-5:
     var(--typography-heading-5-font-weight)
     var(--typography-heading-5-font-size) /
     var(--typography-heading-5-line-height)
     var(--typography-heading-5-font-family);
+
 }
