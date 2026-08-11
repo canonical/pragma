@@ -5,7 +5,7 @@
   flex-direction: column;
   gap: var(--dimension-200);
 
-  background-color: var(--surface-color-background, var(--color-background));
+  background-color: var(--color-background);
   padding-block: var(--dimension-300);
   padding-inline: var(--dimension-300);
 }
