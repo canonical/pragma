@@ -69,5 +69,6 @@
 
   &.base {
     --lp-color-border-context: transparent;
+    --lp-color-background-context: transparent;
   }
 }

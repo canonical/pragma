@@ -3,8 +3,8 @@
   align-items: start;
   text-wrap: balance;
 
-  font: var(--lp-typography-h4);
-  color: var(--lp-color-text-default);
+  font: var(--ds-typography-heading-4);
+  color: var(--color-text);
 
   > .ds.dialog-content-close-button {
     margin-inline-start: auto;

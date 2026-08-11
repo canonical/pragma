@@ -3,9 +3,9 @@
 .ds.dialog-content {
   display: flex;
   flex-direction: column;
-  gap: var(--lp-dimension-spacing-block-m);
+  gap: var(--dimension-200);
 
-  background-color: var(--lp-color-background-default);
-  padding-block: var(--lp-dimension-spacing-block-l);
-  padding-inline: var(--lp-dimension-spacing-inline-l);
+  background-color: var(--color-background);
+  padding-block: var(--dimension-300);
+  padding-inline: var(--dimension-300);
 }
