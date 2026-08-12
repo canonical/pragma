@@ -3,7 +3,7 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
-  font: var(--lp-typography-paragraph-xs-strong);
+  font: var(--ds-typography-text-tertiary-bold);
 
   &:not(:last-child)::after {
     /* Line spanning to the next element */
@@ -22,10 +22,10 @@
     grid-column: 1 / -1;
     justify-self: start;
     display: flex;
-    padding-block: var(--lp-dimension-spacing-block-xs);
-    padding-inline: var(--lp-dimension-spacing-inline-m);
-    border-block: var(--lp-dimension-stroke-thickness-default) solid
-      var(--lp-color-border-default);
+    padding-block: var(--dimension-100);
+    padding-inline: var(--dimension-200);
+    border-block: var(--dimension-stroke-thickness-medium) solid
+      var(--color-border);
   }
 
   &:first-child {
