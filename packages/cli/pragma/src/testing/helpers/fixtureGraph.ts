@@ -1,6 +1,6 @@
 /**
  * Test helper: boot a store-backed {@link PragmaRuntime} at a REAL `cwd` whose
- * `pragma.lock.json` points at a built fixture pack.
+ * active-pack pointer names a built fixture pack.
  *
  * This is distinct from (and complements) `packRuntime.ts#buildFixtureRuntime`:
  * that helper hands back an in-process runtime wired to a custom `LazyStore`,
@@ -8,13 +8,17 @@
  * generalizes the `runtimeFor` + `buildUpdateTask` pattern proven in
  * `capabilities/sources/sources.test.ts`: it writes an actual
  * `pragma.config.ts` + package directory, runs the REAL `sources update` Task
- * (resolve → build → lock), and returns a `cwd`. Because the lock is a real
- * file, EVERY independent runtime construction that resolves config from that
+ * (resolve → build → point), and returns a `cwd`. Because the pointer is a
+ * real file, EVERY independent runtime construction that resolves config from that
  * `cwd` — `bootRuntime(flags, cwd)` (CLI dispatch), `projectMcp(modules, cwd)`
  * (MCP), and `runCli(args, { cwd })` (spawn) — boots the SAME cached pack. That
  * is the property PR4's cross-surface parity tests need and PR3's single-surface
  * parity tests did not: proof that CLI-json and MCP-json agree over a graph
  * built the same way `sources update` builds one for a real project.
+ *
+ * A fixture package may also ship `stories/*.json` (the `stories` option), which
+ * `sources update` carries into the built pack — that is the package tier a
+ * third-party noun arrives through.
  *
  * Hermetic: the pack cache lives under the isolated `$XDG_CACHE_HOME`
  * `setupXdgIsolation` installs; `dispose()` removes the temp directories (the
@@ -30,7 +34,7 @@ import { buildUpdateTask } from "../../capabilities/sources/runUpdate.js";
 import { VERSION } from "../../constants.js";
 import type {
   ConfigLayers,
-  PackageEntry,
+  PackDeclaration,
   PragmaConfig,
 } from "../../kernel/config/types.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -52,34 +56,39 @@ export interface FixtureGraphOptions {
   readonly ttl: string;
   /**
    * Config fields to bake into the written `pragma.config.ts`, e.g.
-   * `{ tier: "apps/lxd", channel: "prerelease" }`. `packages` is always set by
+   * `{ tier: "apps/lxd", channel: "prerelease" }`. `packs` is always set by
    * this helper (to the fixture package) — do not override it here.
    */
-  readonly config?: Omit<Partial<PragmaConfig>, "packages">;
+  readonly config?: Omit<Partial<PragmaConfig>, "packs">;
+  /**
+   * `stories/*.json` the fixture PACKAGE ships, as raw text keyed by file name
+   * — deliberately raw, so a test can ship malformed or schema-invalid content
+   * and assert that it is dropped rather than fatal.
+   */
+  readonly stories?: Readonly<Record<string, string>>;
 }
 
 /** A booted fixture runtime plus its `cwd` (usable by any surface) and disposal. */
 export interface FixtureGraph {
   /** A REAL `bootRuntime` at {@link cwd} — the same one CLI dispatch uses. */
   readonly runtime: PragmaRuntime;
-  /** The project directory whose `pragma.lock.json`/`pragma.config.ts` were written. */
+  /** The project directory whose `pragma.config.ts` + active-pack pointer were written. */
   readonly cwd: string;
   /** Remove the temp directories and dispose the store session, if booted. */
   dispose(): Promise<void>;
 }
 
 /** A synthetic runtime with an IN-MEMORY config — used only to drive the build Task. */
-function builderRuntime(cwd: string, packages: PackageEntry[]): PragmaRuntime {
+function builderRuntime(cwd: string, packs: PackDeclaration[]): PragmaRuntime {
   const layers: ConfigLayers = {
-    config: { channel: "normal", packages },
+    config: { channel: "normal", packs },
     origins: {
       tier: "default",
       channel: "default",
       detail: "default",
-      packages: "project",
+      packs: "project",
       stories: "default",
       prefixes: "default",
-      prompts: "default",
     },
     global: { path: "/nonexistent", exists: false },
     project: { exists: false },
@@ -102,8 +111,9 @@ function configField(key: string, value: unknown): string {
 }
 
 /**
- * Build a store-backed runtime whose `cwd` carries a real lock file — the ONE
- * shared store-backed fixture path for cross-surface (CLI/MCP/spawn) tests.
+ * Build a store-backed runtime whose `cwd` is pointed at a real built pack —
+ * the ONE shared store-backed fixture path for cross-surface (CLI/MCP/spawn)
+ * tests.
  *
  * @param options - The fixture graph TTL and any config overrides.
  * @returns The runtime, its cwd, and a disposer.
@@ -116,11 +126,18 @@ export async function bootFixtureRuntime(
   const pkgDir = mkdtempSync(join(tmpdir(), "pragma-fixture-pkg-"));
   mkdirSync(join(pkgDir, "definitions"), { recursive: true });
   writeFileSync(join(pkgDir, "definitions", "fixture.ttl"), options.ttl);
+  const stories = Object.entries(options.stories ?? {});
+  if (stories.length > 0) {
+    mkdirSync(join(pkgDir, "stories"), { recursive: true });
+    for (const [file, content] of stories) {
+      writeFileSync(join(pkgDir, "stories", file), content);
+    }
+  }
 
-  const packages: PackageEntry[] = [
+  const packs: PackDeclaration[] = [
     { name: "fixture", source: `file://${pkgDir}` },
   ];
-  const fields = [configField("packages", packages)];
+  const fields = [configField("packs", packs)];
   for (const [key, value] of Object.entries(options.config ?? {})) {
     fields.push(configField(key, value));
   }
@@ -129,7 +146,7 @@ export async function bootFixtureRuntime(
     `export default {\n${fields.join("\n")}\n};\n`,
   );
 
-  await runTask(await buildUpdateTask(builderRuntime(cwd, packages), false));
+  await runTask(await buildUpdateTask(builderRuntime(cwd, packs)));
 
   const runtime = bootRuntime(FIXTURE_FLAGS, cwd);
 

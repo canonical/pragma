@@ -14,6 +14,7 @@ import {
   type Manifest,
   manifestSchema,
   SCHEMA_FILE,
+  STORIES_FILE,
 } from "./types.js";
 
 /**
@@ -34,17 +35,22 @@ export function readManifest(dir: string): Manifest | undefined {
 }
 
 /** Whether a pack directory holds a complete pack: a valid manifest AND every
- * non-empty query artifact — the `data.nq` dump, the extracted `schema.json`,
- * and the entity `index.json`. The manifest alone is not enough: an intact
- * manifest beside a missing/truncated `data.nq` boots EMPTY (a silent, then
- * permanent, loss), and a torn or evicted `schema.json`/`index.json` (manifest +
- * dump intact) would be REUSED by `buildPack` and then fail at BOOT as an
- * internal error. Requiring all three present + non-empty makes `buildPack`
- * rebuild a torn pack and makes the boot decision surface STORE_UNAVAILABLE
- * (the ordinary "not built" recovery) instead of a "please report this" crash. */
+ * non-empty content artifact — the `data.nq` dump, the extracted `schema.json`,
+ * the entity `index.json`, and the carried `stories.json`. The manifest alone is
+ * not enough: an intact manifest beside a missing/truncated `data.nq` boots
+ * EMPTY (a silent, then permanent, loss), and a torn or evicted
+ * `schema.json`/`index.json` (manifest + dump intact) would be REUSED by
+ * `buildPack` and then fail at BOOT as an internal error. `stories.json` is
+ * gated for the same reason and unconditionally: it is written even when empty
+ * (as `[]`, which is non-empty text), so a pack directory lacking it is one
+ * whose content hash covers stories the directory does not hold — reusing it
+ * would silently drop every package-declared noun. Requiring all four present +
+ * non-empty makes `buildPack` rebuild a torn pack and makes the boot decision
+ * surface STORE_UNAVAILABLE (the ordinary "not built" recovery) instead of a
+ * "please report this" crash. */
 export function packIsComplete(dir: string): boolean {
   if (readManifest(dir) === undefined) return false;
-  for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE]) {
+  for (const file of [DATA_FILE, SCHEMA_FILE, INDEX_FILE, STORIES_FILE]) {
     try {
       if (statSync(join(dir, file)).size <= 0) return false;
     } catch {

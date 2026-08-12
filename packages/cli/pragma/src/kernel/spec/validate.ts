@@ -17,8 +17,9 @@ const fn = z.custom<(...args: unknown[]) => unknown>(
 );
 
 const completionSourceRefSchema = z.object({
-  from: z.enum(["index", "skills", "tiers", "prompts", "prefixes"]),
+  from: z.enum(["index", "skills", "prefixes"]),
   type: z.string().optional(),
+  field: z.enum(["name", "label", "altNames"]).optional(),
 });
 
 const paramCompleteSchema = z.union([

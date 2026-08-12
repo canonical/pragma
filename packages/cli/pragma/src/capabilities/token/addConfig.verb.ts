@@ -7,6 +7,7 @@
  */
 
 import type { Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import { addConfigFormatters } from "./addConfig.render.js";
@@ -15,12 +16,15 @@ import type { AddConfigResult } from "./runAddConfig.js";
 const addConfigVerb: VerbSpec<Record<string, unknown>, AddConfigResult> = {
   path: ["token", "add-config"],
   summary: "Generate a tokens.config.mjs for the terrazzo token pipeline.",
-  doc: "Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packages. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.",
+  doc: "Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.",
   params: [],
   output: { formatters: addConfigFormatters },
   examples: [
-    { cmd: "pragma token add-config --dry-run", note: "preview the write" },
-    { cmd: "pragma token add-config --yes", note: "write the config" },
+    {
+      cmd: `${BIN_NAME} token add-config --dry-run`,
+      note: "preview the write",
+    },
+    { cmd: `${BIN_NAME} token add-config --yes`, note: "write the config" },
   ],
   capability: {
     needsStore: true,

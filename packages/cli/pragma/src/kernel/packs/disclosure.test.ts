@@ -72,7 +72,10 @@ const lookupVerb = () =>
 
 async function lookupAt(
   detail?: "summary" | "standard" | "detailed",
-  config?: { configDetail: string; detailOrigin: "global" | "project" },
+  config?: {
+    configDetail: "summary" | "standard" | "detailed";
+    detailOrigin: "global" | "project";
+  },
 ): Promise<Record<string, unknown>> {
   const { rt } = await buildFixtureRuntime({
     ttl: TTL,

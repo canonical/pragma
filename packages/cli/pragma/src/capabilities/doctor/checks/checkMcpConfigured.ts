@@ -1,11 +1,12 @@
 import type { DetectedHarness } from "@canonical/harnesses";
 import { detectHarnesses, readMcpConfig } from "@canonical/harnesses";
 import { runTask } from "@canonical/task/node";
+import { BIN_NAME, MCP_SERVER_NAME } from "../../../constants.js";
 import type { CheckResult } from "../types.js";
 import { deriveBand } from "./deriveBand.js";
 
 /**
- * Check that at least one AI harness has pragma configured as an MCP server. The
+ * Check that at least one AI harness has this CLI configured as an MCP server. The
  * result's band is derived from the harnesses actually found (Windsurf ⇒ global,
  * Cursor ⇒ project), not the check name — so a global-scope harness is not
  * mislabeled PROJECT.
@@ -23,7 +24,7 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
       name: "MCP configured",
       status: "fail",
       detail: "harness detection failed",
-      remedy: "pragma setup mcp",
+      remedy: `${BIN_NAME} setup mcp`,
     };
   }
 
@@ -32,7 +33,7 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
       name: "MCP configured",
       status: "fail",
       detail: "no AI harnesses detected",
-      remedy: "pragma setup mcp",
+      remedy: `${BIN_NAME} setup mcp`,
     };
   }
 
@@ -41,7 +42,7 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
     if (!d.configExists) continue;
     try {
       const servers = await runTask(readMcpConfig(d.harness, cwd));
-      if ("pragma" in servers) configured.push(d);
+      if (MCP_SERVER_NAME in servers) configured.push(d);
     } catch {
       // Config unreadable — skip.
     }
@@ -60,8 +61,8 @@ export async function checkMcpConfigured(cwd: string): Promise<CheckResult> {
   return {
     name: "MCP configured",
     status: "fail",
-    detail: `detected ${names} but pragma not configured`,
-    remedy: "pragma setup mcp",
+    detail: `detected ${names} but ${MCP_SERVER_NAME} not configured`,
+    remedy: `${BIN_NAME} setup mcp`,
     band: deriveBand(detected),
   };
 }

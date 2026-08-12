@@ -25,14 +25,14 @@ import {
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { ParamSpec } from "../../kernel/spec/types.js";
+import { CREATE_GENERATORS } from "./constants.js";
 import {
-  createApplicationVerb,
-  createComponentVerb,
-  createPackageVerb,
+  createVerbs,
   INCLUDE_FLAG_ALIASES,
   isModuleNotFound,
 } from "./create.verb.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
+import { createModule } from "./index.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -53,7 +53,7 @@ async function runIn(
   process.chdir(dir);
   try {
     return await executeVerb(
-      createComponentVerb,
+      createVerbs.component,
       params,
       mutation,
       bootRuntime(FLAGS, dir),
@@ -131,7 +131,7 @@ describe("create — real generation + stamp", () => {
     // framework param to exercise pickGenerator's own guard too.
     const runtime = bootRuntime(FLAGS, dir);
     await expect(
-      createComponentVerb.run({ framework: "vue" }, {
+      createVerbs.component.run({ framework: "vue" }, {
         ...runtime,
         interaction: { isTTY: false, transport: "cli", yes: true },
       } as never),
@@ -217,9 +217,19 @@ describe("lazy-React discipline (PROTECTED)", () => {
       "@canonical/summon-component",
       "@canonical/summon-package",
       "@canonical/summon-application",
+      // The generators pull summon-core, and summon-core is what costs the
+      // fast paths (+43 MB RSS once it loads). Dropping the `type` from one of
+      // the four `import type … from "@canonical/summon-core"` lines in this
+      // directory is a one-word regression nothing else catches.
+      "@canonical/summon-core",
     ];
     for (const file of graph) {
-      const src = readFileSync(file, "utf-8");
+      // Type-only imports are erased before runtime, so they load nothing —
+      // strip them before asking what the file actually pulls in.
+      const src = readFileSync(file, "utf-8").replace(
+        /\bimport\s+type\b[^;]*;/g,
+        "",
+      );
       for (const pkg of forbidden) {
         const esc = pkg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         expect(
@@ -285,7 +295,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
       (generators as Record<string, { prompts: unknown[] }>)["component/react"]
         .prompts as never,
     );
-    const verb = createComponentVerb.params;
+    const verb = createVerbs.component.params;
 
     // The verb SYNTHESIZES a `framework` enum (the 3 framework generators
     // collapse to one verb): react|svelte|lit, with NO default — pragma
@@ -331,7 +341,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
         .prompts as never,
     );
     // The package verb's grammar IS generatorToParams(PACKAGE_MIRROR).
-    expect(behavioural(createPackageVerb.params)).toEqual(
+    expect(behavioural(createVerbs.package.params)).toEqual(
       behavioural(applyRunInstallOverride(real)),
     );
 
@@ -339,7 +349,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     const realRunInstall = real.find((p) => p.name === "runInstall") as
       | Record<string, unknown>
       | undefined;
-    const mirrorRunInstall = createPackageVerb.params.find(
+    const mirrorRunInstall = createVerbs.package.params.find(
       (p) => p.name === "runInstall",
     ) as Record<string, unknown> | undefined;
     expect(realRunInstall?.default).toBe(true);
@@ -378,14 +388,14 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     // generator's `ssr`/`router`/`forms`.
     expect(
       behavioural(
-        toGeneratorNames("application", createApplicationVerb.params),
+        toGeneratorNames("application", createVerbs.application.params),
       ),
     ).toEqual(behavioural(applyRunInstallOverride(real)));
 
     // Guard the B8 rename itself: ALL application include-flags ARE on the
     // `--with-X` convention (params `withSsr`/`withRouter`/`withForms`/
     // `withRelay`), not the bare `ssr`/`router`/`forms`/`relay` booleans.
-    const names = createApplicationVerb.params.map((p) => p.name);
+    const names = createVerbs.application.params.map((p) => p.name);
     expect(names).toContain("withSsr");
     expect(names).toContain("withRouter");
     expect(names).toContain("withForms");
@@ -396,7 +406,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
     const realRunInstall = real.find((p) => p.name === "runInstall") as
       | Record<string, unknown>
       | undefined;
-    const mirrorRunInstall = createApplicationVerb.params.find(
+    const mirrorRunInstall = createVerbs.application.params.find(
       (p) => p.name === "runInstall",
     ) as Record<string, unknown> | undefined;
     expect(realRunInstall?.default).toBe(true);
@@ -404,7 +414,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
 
     // appPath is the positional entry point (its default carries across).
     expect(
-      createApplicationVerb.params.find((p) => p.name === "appPath"),
+      createVerbs.application.params.find((p) => p.name === "appPath"),
     ).toMatchObject({ kind: "string", positional: true, default: "my-app" });
   });
 });
@@ -431,5 +441,103 @@ describe("compiled-binary create gate (M4)", () => {
     ).toBe(false);
     expect(isModuleNotFound(null)).toBe(false);
     expect(isModuleNotFound("nope")).toBe(false);
+  });
+});
+
+describe("declared generator bindings (PROTECTED)", () => {
+  // CREATE_GENERATORS is the one place the create surface's generator facts are
+  // written down. What is checkable against something outside itself — the live
+  // generator maps and the embedded manifest — is checked here.
+
+  it("every binding resolves to the generator it names", async () => {
+    const { pickGenerator } = await import("./pickGenerator.js");
+    // `meta.name` is the generator's OWN identity, so a swapped `key` or a
+    // framework the map does not carry turns this red — which `toBeDefined()`
+    // on a non-nullable return could not.
+    for (const framework of CREATE_GENERATORS.component.frameworks) {
+      expect(pickGenerator("component", { framework }).meta.name).toBe(
+        `component/${framework}`,
+      );
+    }
+    expect(pickGenerator("package", {}).meta.name).toBe("package");
+    expect(pickGenerator("application", {}).meta.name).toBe(
+      "application/react",
+    );
+  });
+
+  it("exactly the two source-run-only verbs publish the availability caveat", () => {
+    // A LITERAL list, for the same reason `compiledCreate.subprocess.test.ts`
+    // uses one: the caveat is DERIVED from `readsEmbeddedTemplates`, so an
+    // assertion derived from the same bit would agree with itself no matter
+    // which way the bit was flipped. These two are the nouns that test proves
+    // refuse on a real compiled binary, so this is what the reference is held
+    // to — and flipping the bit turns this red, along with the reference
+    // drift-guard, in the same run.
+    const caveated = createModule.verbs
+      .filter((verb) => verb.summary.includes("Source-run only."))
+      .map((verb) => verb.path.at(1));
+    expect(caveated).toEqual(["package", "application"]);
+    for (const verb of createModule.verbs) {
+      const kind = verb.path.at(1);
+      const gated = caveated.includes(kind);
+      // The `doc` is what `tools.md` and the MCP tool description render, so
+      // the explanation has to travel with the marker, and it quotes the
+      // command it is about — a copy-paste between bindings is then visible.
+      expect(verb.doc?.includes("UNSUPPORTED") ?? false, kind).toBe(gated);
+      if (gated) {
+        expect(verb.doc).toContain(`create ${kind}`);
+        // And it still says what the verb MAKES. `doc ?? summary` means a doc
+        // REPLACES the summary on the MCP surface, so a caveat alone left an
+        // agent no statement anywhere of what `create_package` scaffolds.
+        expect(verb.doc).toContain(
+          verb.summary.replace(" Source-run only.", ""),
+        );
+      }
+    }
+  });
+
+  it("the framework enum offers exactly the declared frameworks, with no default", () => {
+    const framework = createVerbs.component.params.find(
+      (p) => p.name === "framework",
+    );
+    // An empty `values` would reject every framework while `--help` still
+    // advertised the positional — the hazard this names. (That every value
+    // resolves to a generator is the test above.)
+    expect(framework?.kind).toBe("enum");
+    const values = (framework as { values: readonly string[] }).values;
+    expect(values.length).toBeGreaterThan(0);
+    expect(values).toEqual([...CREATE_GENERATORS.component.frameworks]);
+    // And NO default. `create component` mirrors `summon component`, where the
+    // framework is a required POSITIONAL selector; a default is exactly what
+    // made an omitted framework silently scaffold React. `pickGenerator.test.ts`
+    // pins the refusal, this pins the declaration it comes from — together they
+    // keep the enum derived from `CREATE_GENERATORS` AND undefaulted.
+    expect(framework).not.toHaveProperty("default");
+  });
+
+  it("embeds only the templates the component loader can key", async () => {
+    const { TEMPLATES } = await import("./templates.embedded.generated.js");
+    const keys = Object.keys(TEMPLATES);
+    // summon-component's `qualifiedKey()` prefixes EVERY lookup with
+    // `component/`, so any other entry ships dead weight the binary can never
+    // read — and a binding embedded without a manifest-reading generator would
+    // put one here. Non-empty first: `.every()` over an empty list is vacuous.
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys.filter((k) => !k.startsWith("component/"))).toEqual([]);
+  });
+
+  it("create surfaces exactly the three declared nouns", () => {
+    // A LITERAL surface pin, deliberately not derived from CREATE_GENERATORS:
+    // surfacing a noun also needs a hand-written prompt mirror, path param and
+    // examples in create.verb.ts, so the surface is a deliberate SUBSET of what
+    // the declared packages ship (`@canonical/summon-application` also ships
+    // `domain`, `route` and `wrapper`). Pinning OUR three nouns rather than any
+    // third-party package's generator list keeps an upstream release from
+    // turning this red.
+    expect(createModule.verbs.map((v) => v.path[1])).toEqual([
+      "component",
+      "package",
+      "application",
+    ]);
   });
 });

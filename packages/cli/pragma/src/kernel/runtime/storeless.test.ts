@@ -58,7 +58,7 @@ describe("storeless guarantee — the store never boots for storeless verbs (PRO
     expect(runtime.store.booted).toBe(false);
   });
 
-  it("sources status does not construct the store (reports a cold store)", async () => {
+  it("sources status does not construct the store", async () => {
     const runtime = bootRuntime(FLAGS, freshCwd());
     const outcome = await executeVerb(sourcesStatusVerb, {}, NO_MUT, runtime);
     expect(outcome.exitCode).toBe(0);

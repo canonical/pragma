@@ -12,12 +12,11 @@
  * and one silently-empty list. Centralizing the construction here is what keeps
  * those surfaces from drifting apart.
  *
- * It reaches only {@link resolveSources} (a lock + config probe — no store, no
- * ke), so a caller on the storeless fast path can pre-check availability without
- * ever booting the store.
+ * It reaches only {@link resolveSources} (a pointer + config probe — no store,
+ * no ke), so a caller on the storeless fast path can pre-check availability
+ * without ever booting the store.
  */
 
-import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import type { ConfigLayers } from "../config/types.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
@@ -28,14 +27,15 @@ import { resolveSources } from "./resolveSources.js";
  * single `pragma sources update` recovery that also names the `sources_update`
  * tool an agent calls (then retries — PR9's C1 cold-store retry succeeds).
  *
- * @param reason - The boot decision's reason (e.g. "the locked pack is missing").
+ * @param reason - The boot decision's reason (e.g. "the built pack is missing
+ *   from the cache").
  * @returns The structured STORE_UNAVAILABLE error.
  */
 export function storeUnavailable(reason: string): PragmaError {
   return PragmaError.storeUnavailable(`${reason}.`, {
     recovery: cliRecovery(
-      `${RECOVERY_CLI_PREFIX}sources update`,
-      "Build the local store from the configured packages.",
+      "sources update",
+      "Build the local store from the configured packs.",
       { tool: "sources_update" },
     ),
   });
@@ -43,7 +43,8 @@ export function storeUnavailable(reason: string): PragmaError {
 
 /**
  * The STORE_UNAVAILABLE error to surface when the store cannot boot from the
- * current config/lock, or `undefined` when a store read may proceed. STORELESS —
+ * current config and active-pack pointer, or `undefined` when a store read may
+ * proceed. STORELESS —
  * probes the decision table only, never constructs the store.
  *
  * @param layers - The resolved config layers.

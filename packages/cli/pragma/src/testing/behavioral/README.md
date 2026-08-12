@@ -71,7 +71,7 @@ import { CANONICAL_TTL, CANONICAL_CONFIG } from "../fixtures/graph/canonical.js"
 
 const fixture = await bootFixtureRuntime({ ttl: CANONICAL_TTL, config: CANONICAL_CONFIG });
 try {
-  // fixture.cwd carries a REAL pragma.lock.json — bootRuntime(flags, fixture.cwd),
+  // fixture.cwd is pointed at a REAL built pack — bootRuntime(flags, fixture.cwd),
   // executeVerb(...), projectMcp(modules, fixture.cwd), and (if you must)
   // runCli(args, { cwd: fixture.cwd }) all resolve the SAME cached pack.
 } finally {
@@ -80,7 +80,7 @@ try {
 ```
 
 Use `packRuntime.ts#buildFixtureRuntime` (PR3's helper) instead when you only
-need ONE surface (a direct `verb.run()` call) — it's cheaper (no lock file).
+need ONE surface (a direct `verb.run()` call) — it's cheaper (no real build).
 Reach for `bootFixtureRuntime` specifically when you need CLI and MCP (or a
 spawn) to agree on the same store.
 

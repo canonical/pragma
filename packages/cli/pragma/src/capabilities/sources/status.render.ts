@@ -2,14 +2,20 @@
  * Formatters for `pragma sources status` — plain, llm, json.
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 import type { SourcesStatusData } from "./types.js";
 
-const STALENESS_MARK: Record<string, string> = {
-  "up-to-date": "ok",
-  "config-drift": "config drift",
-  uncached: "not built",
+/**
+ * The headline for each boot decision. The `embedded` case names the update
+ * explicitly: the distribution's snapshot answers reads, but it is a snapshot,
+ * so reporting it as "up to date" would be a lie.
+ */
+const STORE_HEADLINE: Record<SourcesStatusData["store"], string> = {
+  built: "ready",
+  embedded: `embedded snapshot (run \`${BIN_NAME} sources update\` to build from the configured packs)`,
+  unavailable: `not built (run \`${BIN_NAME} sources update\`)`,
 };
 
 /**
@@ -18,22 +24,19 @@ const STALENESS_MARK: Record<string, string> = {
  * @param data - The resolved sources-status payload.
  * @param style - TTY styling; defaults to the process style. On a color-capable
  *   terminal the `Sources:` heading is bold, source names align into a column,
- *   and each staleness marker is tinted (green up-to-date, else yellow); off a
- *   TTY the styler is inert, so the output is byte-identical to the plain form.
+ *   and each configured ref is dimmed; off a TTY the styler is inert, so the
+ *   output is byte-identical to the plain form.
  * @returns The formatted status block.
  */
 export function renderSourcesStatusPlain(
   data: SourcesStatusData,
   style: RenderStyle = defaultStyle(),
 ): string {
-  const lines = [
-    data.lockPresent
-      ? `Store: ${data.cached ? "ready" : "locked but not cached"}`
-      : "Store: no lock (run `pragma sources update`)",
-  ];
-  if (data.cached) {
+  const lines = [`Store: ${STORE_HEADLINE[data.store]}`];
+  if (data.contentHash !== null) {
     lines.push(
-      `  pack: ${data.contentHash?.slice(0, 12)} — ${data.entityCount ?? "?"} entities, built ${data.builtAt ?? "?"}`,
+      `  pack: ${data.contentHash.slice(0, 12)} — ${data.entityCount ?? "?"} entities, built ${data.builtAt ?? "?"}`,
+      `  from: ${data.sourceRef ?? "?"}`,
     );
   }
   lines.push("", style.enabled ? style.bold("Sources:") : "Sources:");
@@ -44,17 +47,10 @@ export function renderSourcesStatusPlain(
     ? Math.max(0, ...data.sources.map((source) => source.name.length))
     : 0;
   for (const source of data.sources) {
-    const mark = STALENESS_MARK[source.staleness] ?? source.staleness;
-    const resolved = source.resolved
-      ? ` @ ${source.resolved.slice(0, 12)}`
-      : "";
-    if (!style.enabled) {
-      lines.push(`  ${source.name} [${mark}]${resolved}`);
-      continue;
-    }
-    const tint = source.staleness === "up-to-date" ? style.green : style.yellow;
     lines.push(
-      `  ${source.name.padEnd(nameWidth)}  ${tint(`[${mark}]`)}${style.dim(resolved)}`,
+      style.enabled
+        ? `  ${source.name.padEnd(nameWidth)}  ${style.dim(source.ref)}`
+        : `  ${source.name}  ${source.ref}`,
     );
   }
   return lines.join("\n");
@@ -66,13 +62,12 @@ export const statusFormatters: Formatters<SourcesStatusData> = {
   },
 
   llm(data) {
-    const lines = [
-      `# sources`,
-      `- Store: ${data.lockPresent ? (data.cached ? "ready" : "locked, not cached") : "no lock"}`,
-      ...(data.cached ? [`- Entities: ${data.entityCount ?? "?"}`] : []),
-    ];
+    const lines = [`# sources`, `- Store: ${data.store}`];
+    if (data.sourceRef !== null) lines.push(`- From: ${data.sourceRef}`);
+    if (data.entityCount !== null)
+      lines.push(`- Entities: ${data.entityCount}`);
     for (const source of data.sources) {
-      lines.push(`- ${source.name}: ${source.staleness}`);
+      lines.push(`- ${source.name}: ${source.ref}`);
     }
     return lines.join("\n");
   },

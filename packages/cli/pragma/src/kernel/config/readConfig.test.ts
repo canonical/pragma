@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { runTask } from "@canonical/task/node";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BIN_NAME, PROGRAM_DESCRIPTION } from "../../constants.js";
 import { evaluateProjectConfig } from "./evaluateProjectConfig.js";
 import { findProjectConfig } from "./findProjectConfig.js";
 import { readGlobalConfig } from "./globalConfig.js";
@@ -58,13 +59,13 @@ describe("readConfig — layering + provenance", () => {
     expect(config.tier).toBe("core");
     expect(config.channel).toBe("experimental");
     expect(config.detail).toBe("detailed");
-    expect(config.packages).toHaveLength(3); // from defaults
+    expect(config.packs).toHaveLength(3); // from defaults
 
     expect(origins).toMatchObject({
       tier: "project",
       channel: "global",
       detail: "project", // project wins over global
-      packages: "default",
+      packs: "default",
     });
     expect(project.exists).toBe(true);
     expect(global.exists).toBe(true);
@@ -81,14 +82,43 @@ describe("readConfig — layering + provenance", () => {
     expect(project.exists).toBe(false);
   });
 
-  it("replaces packages wholesale from the project layer", async () => {
+  it("replaces packs wholesale from the project layer", async () => {
     freshXdg();
-    const dir = projectWith('export default { packages: ["@acme/only"] };');
+    const dir = projectWith('export default { packs: ["@acme/only"] };');
 
     const { config, origins } = await readConfig(dir);
 
-    expect(config.packages).toEqual(["@acme/only"]);
-    expect(origins.packages).toBe("project");
+    expect(config.packs).toEqual(["@acme/only"]);
+    expect(origins.packs).toBe("project");
+  });
+
+  it("accepts a layer's identity fields and gives them NO effect", async () => {
+    // Identity is read from `pragma.conf.ts` by `src/constants.ts` at module
+    // load, so a layer declaring it can only ever be silent. The validator
+    // still accepts the keys (the distribution config shares the schema), and
+    // the merged config now carries neither the value nor a provenance for it
+    // — which is what `config show` used to report and did not honour.
+    freshXdg();
+    writeGlobal('{"help":"Global help"}');
+    const dir = projectWith(
+      'export default { name: "acme", colophon: { markdown: "By Acme." }, issuesUrl: "https://acme.test/issues", tier: "core" };',
+    );
+
+    const { config, origins } = await readConfig(dir);
+
+    expect(config).not.toHaveProperty("name");
+    expect(config).not.toHaveProperty("help");
+    expect(config).not.toHaveProperty("colophon");
+    expect(config).not.toHaveProperty("issuesUrl");
+    expect(origins).not.toHaveProperty("name");
+    // The positive control, from the SAME project file: a layerable field
+    // declared beside them IS merged and reported, so the assertions above
+    // cannot pass by the project layer having failed to load at all.
+    expect(config.tier).toBe("core");
+    expect(origins.tier).toBe("project");
+    // And the projected identity is unmoved by any of it.
+    expect(BIN_NAME).toBe("pragma");
+    expect(PROGRAM_DESCRIPTION).not.toBe("Global help");
   });
 
   it("merges the completion policy into the effective config", async () => {
@@ -102,6 +132,212 @@ describe("readConfig — layering + provenance", () => {
     expect(config.completion).toEqual({
       minChars: 3,
       families: { skill: false },
+    });
+  });
+});
+
+describe("`detail` — a closed enum at load", () => {
+  it("a project config declaring an unknown level throws CONFIG_ERROR naming the file and the three levels", async () => {
+    freshXdg();
+    // Before the enum, `detail: "banana"` passed validation, was reported as
+    // `[project]` by `config show`, and silently rendered at `standard`.
+    const dir = projectWith('export default { detail: "banana" };');
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(path);
+    expect(message).toContain("detail");
+    for (const level of ["summary", "standard", "detailed"]) {
+      expect(message).toContain(level);
+    }
+  });
+
+  it("a global JSON declaring an unknown level throws the same loud error", () => {
+    freshXdg();
+    writeGlobal('{"detail": "digest"}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(globalConfigPath());
+    for (const level of ["summary", "standard", "detailed"]) {
+      expect(message).toContain(level);
+    }
+  });
+});
+
+describe("legacy config shapes — loud rename/removal errors", () => {
+  it("a project config declaring `packages` throws CONFIG_ERROR naming the rename", async () => {
+    freshXdg();
+    // Unknown keys are stripped by the schema, so the legacy key must be
+    // DETECTED — a silent ignore would boot the default packs while the user
+    // believes their own list is in force.
+    const dir = projectWith('export default { packages: ["@acme/only"] };');
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain(
+      `Invalid config in ${path}: the "packages" field was renamed to "packs". The entry shape is unchanged.`,
+    );
+    // The recovery carries the path; the message drops the instruction.
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).toBe(`In ${path}, rename "packages:" to "packs".`);
+  });
+
+  it("a legacy global JSON declaring `packages` throws the same rename error", () => {
+    freshXdg();
+    writeGlobal('{"packages": []}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain(
+      'the "packages" field was renamed to "packs". The entry shape is unchanged.',
+    );
+  });
+
+  it("a removed `generators` field throws CONFIG_ERROR naming the field", async () => {
+    freshXdg();
+    // Ruled dead (L-OPEN-1): `resolveSources` never read it, `create` resolves
+    // its generators statically, and its only consumers were the merge and
+    // `config show`'s name display. A config still declaring it must fail
+    // naming the file — the schema's unknown-key stripping would otherwise
+    // swallow the deletion in silence.
+    const dir = projectWith(
+      'export default { generators: [{ name: "@acme/gen", source: "npm:@acme/gen@^1.0.0" }] };',
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(path);
+    expect(message).toContain('"generators"');
+    expect(message).toContain("removed");
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).toBe(`In ${path}, delete the "generators" field.`);
+  });
+
+  it("a global JSON still declaring generators throws the same removal error", () => {
+    freshXdg();
+    writeGlobal('{"generators": []}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain('"generators"');
+  });
+
+  it("a removed `completion.caseSensitive` throws CONFIG_ERROR naming the field", async () => {
+    freshXdg();
+    // The field was validated and read by NOTHING. Removing it silently would
+    // leave a config author believing case-sensitivity is in force; the schema
+    // strips unknown keys, so the removal must be DETECTED before validation.
+    const dir = projectWith(
+      "export default { completion: { minChars: 3, caseSensitive: true } };",
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    let caught: unknown;
+    try {
+      await evaluateProjectConfig(path);
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    const message = (caught as { message: string }).message;
+    expect(message).toContain(path);
+    expect(message).toContain('"completion.caseSensitive"');
+    expect(message).toContain("removed");
+    expect(
+      (caught as { recovery?: { message: string } }).recovery?.message,
+    ).toBe(`In ${path}, delete "caseSensitive" from "completion".`);
+  });
+
+  it("a global JSON still setting completion.caseSensitive throws the same removal error", () => {
+    freshXdg();
+    writeGlobal('{"completion": {"caseSensitive": false}}');
+
+    let caught: unknown;
+    try {
+      readGlobalConfig();
+    } catch (error) {
+      caught = error;
+    }
+
+    expect(caught).toMatchObject({ code: "CONFIG_ERROR" });
+    expect((caught as { message: string }).message).toContain(
+      '"completion.caseSensitive"',
+    );
+  });
+
+  it("a TOP-LEVEL `caseSensitive` key is an ordinary unknown key, not the removed field", async () => {
+    freshXdg();
+    // The detection reads exactly `completion.caseSensitive` — a stray
+    // top-level key keeps the forward-compatible unknown-key stripping.
+    const dir = projectWith(
+      "export default { caseSensitive: true, tier: 'core' };",
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    await expect(evaluateProjectConfig(path)).resolves.toEqual({
+      tier: "core",
+    });
+  });
+
+  it("a `packages` key NESTED under another field does NOT trip the detection", async () => {
+    freshXdg();
+    // The rename detection is deliberately SHALLOW (top-level keys only): a
+    // `packages` key inside `prefixes` is a namespace prefix named `packages`,
+    // not the legacy field. Pin that against a future "helpful" deep check,
+    // which would false-positive here.
+    const dir = projectWith(
+      'export default { prefixes: { packages: "https://example.com/packages/" } };',
+    );
+    const path = join(dir, "pragma.config.ts");
+
+    await expect(evaluateProjectConfig(path)).resolves.toEqual({
+      prefixes: { packages: "https://example.com/packages/" },
     });
   });
 });

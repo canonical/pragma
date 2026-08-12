@@ -9,6 +9,7 @@
  * input in the query — the tier is config, the channel a closed enum).
  */
 
+import { BIN_NAME } from "../../constants.js";
 import { runSelect } from "../../kernel/packs/sparql/runSelect.js";
 import type {
   ColumnDef,
@@ -66,8 +67,7 @@ const listOptions: RenderListOptions<BlockRow> = {
   // hint offers the escape hatches (a cold store fails earlier with
   // STORE_UNAVAILABLE, so reaching here means the store is built).
   emptyMessage: "No blocks found under the current tier and channel.",
-  emptyHint:
-    "Use --all-tiers to ignore the tier filter, or run `pragma sources update` if the store is empty.",
+  emptyHint: `Use --all-tiers to ignore the tier filter, or run \`${BIN_NAME} sources update\` if the store is empty.`,
 };
 
 const listFormatters: Formatters<BlockRow[]> = {
@@ -127,9 +127,9 @@ const listVerb: VerbSpec<Record<string, unknown>, BlockRow[]> = {
   ],
   output: { formatters: listFormatters },
   examples: [
-    { cmd: "pragma block list" },
-    { cmd: "pragma block list --all-tiers" },
-    { cmd: "pragma block list --format llm" },
+    { cmd: `${BIN_NAME} block list` },
+    { cmd: `${BIN_NAME} block list --all-tiers` },
+    { cmd: `${BIN_NAME} block list --format llm` },
   ],
   capability: {
     needsStore: true,

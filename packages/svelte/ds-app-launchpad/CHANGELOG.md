@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
+
+
+### Bug Fixes
+
+* **svelte-ds-app-launchpad:** suppress "upgrade to modal" close event ([#887](https://github.com/canonical/pragma/issues/887)) ([92df40e](https://github.com/canonical/pragma/commit/92df40e5aa8ecdb52576c9df7da637669a05d5c4))
+
+
+### Features
+
+* **DescriptionList:** migrate to design tokens ([#888](https://github.com/canonical/pragma/issues/888)) ([24fe66c](https://github.com/canonical/pragma/commit/24fe66cb0b4b72fb2b34d048b7434d3fdc7803b2))
+* **UserAvatar:** migrate to design tokens ([#892](https://github.com/canonical/pragma/issues/892)) ([446fc46](https://github.com/canonical/pragma/commit/446fc466a05eaa4ca257e842fc145d8a69817b6a))
+
+
+
+
+
 # [0.32.0](https://github.com/canonical/pragma/compare/v0.31.0...v0.32.0) (2026-07-20)
 
 **Note:** Version bump only for package @canonical/svelte-ds-app-launchpad

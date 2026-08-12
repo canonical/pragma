@@ -5,9 +5,9 @@
  * single-typed 6-entity fixture, never the PRODUCT against a cold, real,
  * multi-typed pack. This file drives the REAL path end to end over the vendored
  * {@link DEFAULT_PACK_TTL} default pack — `sources update` (resolve → build →
- * lock, via `bootFixtureRuntime`) → boot → `graph query` → `block list` /
+ * point, via `bootFixtureRuntime`) → boot → `graph query` → `block list` /
  * `ontology list` (populated AND empty) → the error paths (malformed `.ttl`,
- * corrupt `schema.json`, a missing pinned commit).
+ * a torn `schema.json`, a corrupt `schema.json`).
  *
  * It also pins, in-process, the real-data shapes the clean fixture masked — the
  * `entityTotal` double-count (A1), the untiered block that `block list` drops
@@ -17,7 +17,6 @@
  * use" becomes "CI catches it".
  */
 
-import { execFileSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
@@ -27,7 +26,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runTask } from "@canonical/task/node";
 import { afterAll, describe, expect, it } from "vitest";
 import { blockModule } from "../../capabilities/block/index.js";
 import { graphQueryVerb } from "../../capabilities/graph/query.verb.js";
@@ -35,23 +33,19 @@ import {
   ontologyListVerb,
   ontologyShowVerb,
 } from "../../capabilities/ontology/verbs.js";
-import { buildUpdateTask } from "../../capabilities/sources/runUpdate.js";
 import { updateVerb } from "../../capabilities/sources/update.verb.js";
-import { VERSION } from "../../constants.js";
 import {
   entityTotal,
   readPackIndex,
 } from "../../kernel/completion/entitySource.js";
-import type { ConfigLayers, PackageEntry } from "../../kernel/config/types.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
-import { createQueryFacade } from "../../kernel/runtime/facade.js";
+import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { SCHEMA_FILE } from "../../kernel/runtime/graphpack/types.js";
-import { readLock } from "../../kernel/runtime/lock.js";
-import { packDir } from "../../kernel/runtime/paths.js";
-import { createLazyStore } from "../../kernel/runtime/store.js";
-import type { GlobalFlags, PragmaRuntime } from "../../kernel/runtime/types.js";
+import { packDir, readActivePack } from "../../kernel/runtime/paths.js";
+import { resolveSources } from "../../kernel/runtime/resolveSources.js";
+import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
 import {
   DEFAULT_PACK_ALL_VISIBLE_CONFIG,
@@ -99,6 +93,15 @@ afterAll(async () => {
   await Promise.all(fixtures.map((fixture) => fixture.dispose()));
 });
 
+/** The index of the pack a fixture's boot decision names — what `info` reads. */
+async function activeIndex(
+  fixture: FixtureGraph,
+): Promise<PackIndex | undefined> {
+  return readPackIndex(
+    resolveSources(await fixture.runtime.loadConfig(), fixture.cwd),
+  );
+}
+
 /** The `--format json` envelope a read verb renders. */
 interface Envelope {
   readonly ok: boolean;
@@ -132,11 +135,9 @@ async function blockListNames(
 }
 
 describe("default-pack journey — sources update, build, boot (E1)", () => {
-  it("bootFixtureRuntime runs the real resolve/build/lock and writes a content-addressed lock", async () => {
+  it("bootFixtureRuntime runs the real resolve/build and points the project at the pack", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const lock = readLock(fixture.cwd);
-    expect(lock?.contentHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(lock?.packs).toHaveLength(1);
+    expect(readActivePack(fixture.cwd)).toMatch(/^[0-9a-f]{64}$/);
     // The booted store answers a read against the freshly built pack.
     const ask = await fixture.runtime.query.sparql(
       "ASK { ds:button a ds:Component }",
@@ -145,17 +146,17 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
   });
 
   it("drives the literal `sources update` verb over a cold project, then boots a read", async () => {
-    // A cold file-package project with NO lock yet — the real CLI command path.
+    // A cold file-package project with nothing built yet — the real CLI path.
     const pkg = mkdtempSync(join(tmpdir(), "e1-pkg-"));
     mkdirSync(join(pkg, "definitions"), { recursive: true });
     writeFileSync(join(pkg, "definitions", "pack.ttl"), DEFAULT_PACK_TTL);
     const cwd = mkdtempSync(join(tmpdir(), "e1-proj-"));
     writeFileSync(
       join(cwd, "pragma.config.ts"),
-      `export default { packages: [{ name: "default", source: "file://${pkg}" }] };\n`,
+      `export default { packs: [{ name: "default", source: "file://${pkg}" }] };\n`,
     );
     try {
-      // `sources update` is a real mutation — resolve, build, write the lock.
+      // `sources update` is a real mutation — resolve, build, point the project.
       const outcome = await executeVerb(
         updateVerb,
         {},
@@ -163,8 +164,8 @@ describe("default-pack journey — sources update, build, boot (E1)", () => {
         bootRuntime(JSON_FLAGS, cwd),
       );
       expect(outcome.exitCode).toBe(0);
-      expect(readLock(cwd)?.contentHash).toMatch(/^[0-9a-f]{64}$/);
-      // A SEPARATE, fresh runtime boots the just-built pack from the lock. No
+      expect(readActivePack(cwd)).toMatch(/^[0-9a-f]{64}$/);
+      // A SEPARATE, fresh runtime boots the just-built pack from the pointer. No
       // channel is configured, so the default `normal` channel hides the
       // beta-gated Beta Badge. Assert the two global blocks are present while
       // staying TOLERANT of the untiered Orphan Widget: whether it appears under
@@ -347,9 +348,9 @@ describe("default-pack journey — error paths (E1)", () => {
 
   it("a torn (emptied) schema.json boots to STORE_UNAVAILABLE with the update recovery", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const lock = readLock(fixture.cwd);
+    const active = readActivePack(fixture.cwd) ?? "";
     // Simulate a torn/evicted extraction: truncate schema.json in the pack cache.
-    truncateSync(join(packDir(lock?.contentHash ?? ""), SCHEMA_FILE), 0);
+    truncateSync(join(packDir(active), SCHEMA_FILE), 0);
     // A brand-new runtime (fresh store memo) boots against the now-incomplete pack.
     let caught: unknown;
     try {
@@ -366,69 +367,12 @@ describe("default-pack journey — error paths (E1)", () => {
     expect((caught as PragmaError).code).toBe("STORE_UNAVAILABLE");
     expect((caught as PragmaError).recovery?.cli).toBe("pragma sources update");
   });
-
-  it("a --frozen update whose pinned commit is gone fails with a named CONFIG_ERROR", async () => {
-    const runGit = (repo: string, args: string[]): string =>
-      execFileSync("git", args, {
-        cwd: repo,
-        stdio: "pipe",
-        env: {
-          ...process.env,
-          GIT_AUTHOR_NAME: "t",
-          GIT_AUTHOR_EMAIL: "t@t",
-          GIT_COMMITTER_NAME: "t",
-          GIT_COMMITTER_EMAIL: "t@t",
-        },
-      }).toString();
-
-    const repo = mkdtempSync(join(tmpdir(), "e1-repo-"));
-    const cwd = mkdtempSync(join(tmpdir(), "e1-frozen-"));
-    try {
-      runGit(repo, ["init", "-b", "main"]);
-      mkdirSync(join(repo, "definitions"), { recursive: true });
-      writeFileSync(join(repo, "definitions", "pack.ttl"), NO_BLOCKS_TTL);
-      runGit(repo, ["add", "-A"]);
-      runGit(repo, ["commit", "-m", "one"]);
-
-      const runtime = gitRuntimeFor(cwd, [
-        { name: "pkg-git", source: `git+file://${repo}#main` },
-      ]);
-      // First update locks the current commit SHA.
-      await runTask(await buildUpdateTask(runtime, false));
-      expect(readLock(cwd)?.packs.at(0)?.resolved).toMatch(/^[0-9a-f]{40}$/);
-
-      // Orphan the pinned commit: amend main, then expire the reflog + prune so
-      // the previously-locked SHA is unreachable.
-      writeFileSync(
-        join(repo, "definitions", "pack.ttl"),
-        `${NO_BLOCKS_TTL}\nds:extra a owl:Class .\n`,
-      );
-      runGit(repo, ["add", "-A"]);
-      runGit(repo, ["commit", "--amend", "-m", "amended"]);
-      runGit(repo, ["reflog", "expire", "--expire=now", "--all"]);
-      runGit(repo, ["gc", "--prune=now"]);
-
-      // A --frozen update must re-resolve the pinned (now-missing) SHA and refuse.
-      let caught: unknown;
-      try {
-        await runTask(await buildUpdateTask(runtime, true));
-      } catch (error) {
-        caught = error;
-      }
-      expect(caught).toBeInstanceOf(PragmaError);
-      expect((caught as PragmaError).code).toBe("CONFIG_ERROR");
-      expect((caught as PragmaError).message).toContain("pkg-git");
-    } finally {
-      rmSync(repo, { recursive: true, force: true });
-      rmSync(cwd, { recursive: true, force: true });
-    }
-  });
 });
 
 describe("default-pack journey — real-data shapes the clean fixture masked (E1, hand-off to lanes A)", () => {
   it("every block is co-typed owl:NamedIndividual and indexed as an individual (abox)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const index = readPackIndex(fixture.cwd);
+    const index = await activeIndex(fixture);
     // The vendored pack indexes 17 distinct entities (5 classes + 4 properties +
     // 2 tiers + 2 channels + 4 blocks).
     expect(index?.entities).toHaveLength(17);
@@ -460,7 +404,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     // whichever the store yields first (no `@en` preference). E3 (live oxigraph)
     // is where that ordering is confirmed against the real pack; here we only
     // assert the tag is stripped and the value is one of the two declared forms.
-    const label = readPackIndex(fixture.cwd)?.entities.find(
+    const label = (await activeIndex(fixture))?.entities.find(
       (entity) => entity.name === "ds:button",
     )?.label;
     expect(label).not.toMatch(/@(en|fr)/);
@@ -472,7 +416,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
 
   it("A1: info's entity total must not exceed the distinct entity count (owl:NamedIndividual double-count)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const index = readPackIndex(fixture.cwd);
+    const index = await activeIndex(fixture);
     // `entityTotal` (the figure `info`/`doctor` report) once SUMMED per-type
     // instance counts, double-counting each entity per asserted rdf:type (each
     // block under owl:NamedIndividual AND its domain class; ds:tier/ds:release
@@ -511,11 +455,8 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
   // to expect a STORE_UNAVAILABLE PragmaError then.
   it("corrupt (non-empty, invalid) schema.json currently surfaces an UNCLASSIFIED error (known gap)", async () => {
     const fixture = await boot(DEFAULT_PACK_TTL, DEFAULT_PACK_CONFIG);
-    const lock = readLock(fixture.cwd);
-    writeFileSync(
-      join(packDir(lock?.contentHash ?? ""), SCHEMA_FILE),
-      "{ not valid json ]",
-    );
+    const active = readActivePack(fixture.cwd) ?? "";
+    writeFileSync(join(packDir(active), SCHEMA_FILE), "{ not valid json ]");
     let caught: unknown;
     try {
       await executeVerb(
@@ -533,39 +474,3 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
     expect(caught).not.toBeInstanceOf(PragmaError);
   });
 });
-
-/**
- * A synthetic runtime whose config is a fixed package list — drives the
- * git-source build Task without a config file (mirrors sources.test.ts).
- *
- * @param cwd - The project directory the lock is written to.
- * @param packages - The configured package entries.
- * @returns A runtime wired to a lazy store over `cwd`.
- * @note Impure — constructs a store handle over the working directory.
- */
-function gitRuntimeFor(cwd: string, packages: PackageEntry[]): PragmaRuntime {
-  const layers: ConfigLayers = {
-    config: { channel: "normal", packages },
-    origins: {
-      tier: "default",
-      channel: "default",
-      detail: "default",
-      packages: "project",
-      stories: "default",
-      prefixes: "default",
-      prompts: "default",
-    },
-    global: { path: "/nonexistent", exists: false },
-    project: { exists: false },
-  };
-  const loadConfig = async (): Promise<ConfigLayers> => layers;
-  const store = createLazyStore({ cwd, loadConfig });
-  return {
-    cwd,
-    version: VERSION,
-    globalFlags: JSON_FLAGS,
-    loadConfig,
-    store,
-    query: createQueryFacade(store),
-  };
-}
