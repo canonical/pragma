@@ -19,6 +19,16 @@
     var(--typography-text-primary-bold-font-size) /
     var(--typography-text-primary-bold-line-height)
     var(--typography-text-primary-bold-font-family);
+  --ds-typography-text-tertiary:
+    var(--typography-text-tertiary-font-weight)
+    var(--typography-text-tertiary-font-size) /
+    var(--typography-text-tertiary-line-height)
+    var(--typography-text-tertiary-font-family);
+  --ds-typography-text-tertiary-bold:
+    var(--typography-text-tertiary-bold-font-weight)
+    var(--typography-text-tertiary-bold-font-size) /
+    var(--typography-text-tertiary-bold-line-height)
+    var(--typography-text-tertiary-bold-font-family);
   --ds-typography-heading-4:
     var(--typography-heading-4-font-weight)
     var(--typography-heading-4-font-size) /

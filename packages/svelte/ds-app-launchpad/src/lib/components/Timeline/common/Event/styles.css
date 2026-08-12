@@ -1,6 +1,7 @@
 .ds.timeline-event {
-  --typography-line-height-timeline-event-title-row: var(
-    --lp-typography-line-height-s
+  --typography-line-height-timeline-event-title-row: calc(
+    var(--typography-text-secondary-line-height) *
+    var(--typography-text-secondary-font-size)
   );
 
   grid-column: 1 / -1;
@@ -13,15 +14,15 @@
   }
 
   &.marker-small {
-    --marker-size: var(--lp-dimension-size-s);
+    --marker-size: var(--dimension-250);
   }
 
   &.marker-large {
-    --marker-size: var(--lp-dimension-size-l);
+    --marker-size: var(--dimension-400);
   }
 
   &.marker-empty {
-    --marker-size: var(--lp-dimension-size-xxxs);
+    --marker-size: var(--dimension-100);
   }
 
   --marker-title-row-alignment-difference: 0px;
@@ -82,9 +83,17 @@
 
     width: var(--marker-size);
     height: var(--marker-size);
-    border: var(--lp-dimension-stroke-thickness-default) solid
-      var(--lp-color-border-default);
-    background-color: var(--lp-color-background-alt);
+    border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+    /* TODO: Figma uses --color-background-layer2 */
+    /* I read it as "one level above the surface" and foreground-input is exactly this */
+    /* However, marker is not input. But -layer2 looks like internal token */
+    /* that we're not supposed to use directly */
+    /* We might need to have a token --surface-color-foreground */
+    /* https://chat.canonical.com/canonical/pl/m3hcwry1i3frtgifu6kw6nbnoa*/
+    background-color: var(
+      --surface-color-foreground-input,
+      var(--color-foreground-input)
+    );
 
     margin-block-start: var(--marker-alignment-adjustment);
 
@@ -108,7 +117,7 @@
       );
 
       &:not(:only-child) {
-        margin-block-end: var(--lp-dimension-spacing-block-xs);
+        margin-block-end: var(--dimension-100);
       }
     }
   }

@@ -1,9 +1,9 @@
 .ds.timeline-hidden-events-link {
-  font: var(--lp-typography-paragraph-xs);
+  font: var(--ds-typography-text-tertiary);
 }
 
 .ds.timeline-hidden-events-link-separator {
-  font: var(--lp-typography-paragraph-xs);
-  color: var(--lp-color-text-muted);
-  margin-inline: var(--lp-dimension-spacing-inline-xs);
+  font: var(--ds-typography-text-tertiary);
+  color: var(--color-text-muted);
+  margin-inline: var(--dimension-100);
 }
