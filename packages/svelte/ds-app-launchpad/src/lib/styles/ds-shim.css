@@ -1,4 +1,8 @@
 :root {
+  --ds-color-foreground-tooltip: light-dark(
+    var(--color-palette-gray-930),
+    var(--color-palette-gray-40)
+  );
   --ds-typography-text-primary:
     var(--typography-text-primary-font-weight)
     var(--typography-text-primary-font-size) /
