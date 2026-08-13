@@ -3,7 +3,9 @@
   --section-padding-bottom-spacing-shallow: var(--dimension-300);
   --section-padding-bottom-spacing-default: var(--dimension-400);
   --section-padding-bottom-spacing-deep: var(--dimension-800);
-  --section-padding-bottom-spacing-hero: var(--dimension-400);
+  --section-padding-bottom-spacing-hero: var(
+    --section-padding-bottom-spacing-default
+  );
   --section-padding-top-spacing-default: 0px;
   --section-padding-top-bordered-default: 0px;
   --section-padding-top-bordered-true: calc(
