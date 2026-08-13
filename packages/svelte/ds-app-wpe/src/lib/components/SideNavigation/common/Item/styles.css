@@ -1,0 +1,139 @@
+/*
+ * SideNavigation.Item — a navigation row (link, expandable disclosure, or a
+ * plain/disabled label), and, one level deep, its own subitems.
+ *
+ * Shares --sidenav-row-columns / --sidenav-start with the Header and the
+ * group header (see the root styles.css) so the leading icon column always
+ * lines up with the logo, whatever the row.
+ */
+:root {
+  --side-navigation-item-color-text: var(--color-text);
+  --side-navigation-item-color-text-disabled: var(--color-text-disabled);
+  --side-navigation-item-color-icon: var(--color-icon);
+  --side-navigation-item-color-icon-disabled: var(--color-icon-disabled);
+  --side-navigation-item-color-background-hover: var(
+    --color-foreground-ghost-layer2-hover
+  );
+  --side-navigation-item-color-background-active: var(
+    --color-foreground-ghost-layer2-active
+  );
+  --side-navigation-item-color-background-current: var(
+    --color-foreground-ghost-layer2-active
+  );
+}
+
+.ds.side-navigation-item {
+  list-style: none;
+
+  & > .row {
+    display: grid;
+    grid-template-columns: var(--sidenav-row-columns);
+    align-items: center;
+    gap: var(--dimension-100);
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    /* Row spacing is padding, not a gap on .list/.sublist (which stays 0):
+       the spec calls for "no space between navigation items", and every
+       comparable compact list row in this repo (ContextualMenu.Item, Tabs)
+       follows the same pattern — items sit flush, spaced apart pull by their
+       own block padding. dimension-100 (vs. dimension-050 elsewhere) is
+       deliberately roomier — those are dense popover/tab rows; a side rail
+       reads better with more breathing room. */
+    padding-block: var(--dimension-100);
+    /* Reset: <button> rows have UA default padding here, <a>/<span> don't —
+       without this, expandable items sit right of plain ones. */
+    padding-inline-start: 0;
+    padding-inline-end: var(--dimension-100);
+    border: none;
+    border-radius: var(--dimension-radius-medium);
+    background: none;
+    color: var(--side-navigation-item-color-text);
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  & > button.row {
+    appearance: none;
+  }
+
+  &:not([data-disabled]) > .row:hover {
+    background-color: var(--side-navigation-item-color-background-hover);
+  }
+
+  &:not([data-disabled]) > .row:active {
+    background-color: var(--side-navigation-item-color-background-active);
+  }
+
+  & > .row:focus-visible {
+    outline: var(--dimension-stroke-thickness-large) solid
+      var(--color-focusRing, currentColor);
+    outline-offset: calc(-1 * var(--dimension-stroke-thickness-large));
+  }
+
+  & > a.row[aria-current="page"] {
+    background-color: var(--side-navigation-item-color-background-current);
+    font-weight: var(--typography-text-primary-bold-font-weight);
+  }
+
+  & .start {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--side-navigation-item-color-icon);
+  }
+
+  & .label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & .end {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  & .caret {
+    inline-size: var(--dimension-200);
+    block-size: var(--dimension-200);
+    color: var(--side-navigation-item-color-icon);
+    transition: transform var(--motion-duration-fast)
+      var(--motion-easing-standard);
+  }
+
+  /* Higher-specificity overrides, kept after the base rules they override. */
+
+  &[data-disabled] > .row {
+    color: var(--side-navigation-item-color-text-disabled);
+    cursor: not-allowed;
+
+    & .start {
+      color: var(--side-navigation-item-color-icon-disabled);
+    }
+  }
+
+  & > button[aria-expanded="true"] .caret {
+    transform: rotate(180deg);
+  }
+
+  /* Subitems: one level deep. Not indented — the spec gives every navigation
+     item the same left spacing regardless of depth, using group spacing/
+     dividers, not indentation, to set nested items apart. */
+  & > .sublist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds.side-navigation-item .caret {
+    transition: none;
+  }
+}

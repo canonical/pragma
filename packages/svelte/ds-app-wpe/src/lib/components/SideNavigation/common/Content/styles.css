@@ -1,0 +1,11 @@
+/*
+ * SideNavigation.Content — grows to fill the space between Header and
+ * Footer, and scrolls independently when its items overflow.
+ */
+.ds.content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-block: var(--dimension-100);
+}

@@ -1,0 +1,9 @@
+/*
+ * SideNavigation.Footer — pinned to the bottom (Header/Content/Footer are a
+ * column flex in the root styles.css; Footer takes its natural height).
+ * Tree structure (.group/.header/.list) is owned by NavTree's own styles.
+ */
+.ds.footer {
+  flex: 0 0 auto;
+  padding-block-end: var(--dimension-100);
+}

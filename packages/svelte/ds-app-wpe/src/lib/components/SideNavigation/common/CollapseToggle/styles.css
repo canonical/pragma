@@ -1,0 +1,44 @@
+.ds.side-navigation-collapse-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--dimension-300);
+  block-size: var(--dimension-300);
+  padding: 0;
+  border: none;
+  border-radius: var(--dimension-radius-medium);
+  background: none;
+  color: var(--color-icon);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-foreground-ghost-layer2-hover);
+  }
+
+  &:active {
+    background-color: var(--color-foreground-ghost-layer2-active);
+  }
+
+  &:focus-visible {
+    outline: var(--dimension-stroke-thickness-large) solid
+      var(--color-focusRing, currentColor);
+    outline-offset: 1px;
+  }
+
+  & > .chevron {
+    inline-size: var(--dimension-200);
+    block-size: var(--dimension-200);
+    transition: transform var(--motion-duration-fast)
+      var(--motion-easing-standard);
+  }
+
+  &[aria-expanded="false"] > .chevron {
+    transform: rotate(180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds.side-navigation-collapse-toggle > .chevron {
+    transition: none;
+  }
+}

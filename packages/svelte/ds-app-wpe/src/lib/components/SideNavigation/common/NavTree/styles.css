@@ -1,0 +1,39 @@
+/*
+ * SideNavigation NavTree — the rendered tree structure (groups → header +
+ * item list). Shared by Content and Footer so neither re-declares it.
+ */
+.ds.nav-tree {
+  display: flex;
+  flex-direction: column;
+
+  & > .group {
+    display: flex;
+    flex-direction: column;
+
+    /* Every group after the first gets a top divider and extra breathing
+       room, per the spec ("each navigation item group has a line at the top
+       except the first"). */
+    &:not(:first-child) {
+      margin-block-start: var(--dimension-200);
+      padding-block-start: var(--dimension-100);
+      border-block-start: var(--dimension-stroke-thickness-medium) solid
+        var(--color-border-muted);
+    }
+
+    & > .header {
+      display: block;
+      padding-block: var(--dimension-050);
+      padding-inline-start: calc(var(--sidenav-start) + var(--dimension-100));
+      color: var(--color-text-muted, var(--color-text));
+      font-weight: var(--typography-text-primary-bold-font-weight);
+    }
+
+    & > .list {
+      display: flex;
+      flex-direction: column;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+  }
+}

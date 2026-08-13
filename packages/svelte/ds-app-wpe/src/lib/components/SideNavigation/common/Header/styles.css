@@ -1,0 +1,36 @@
+/*
+ * SideNavigation.Header — shares the row template with Item so the brand
+ * lines up with the item icons below.
+ */
+.ds.side-navigation-header {
+  display: grid;
+  grid-template-columns: var(--sidenav-row-columns);
+  align-items: center;
+  gap: var(--dimension-100);
+  padding-block: var(--dimension-100);
+
+  & > .brand {
+    /* Starts flush with the item icon column (column 1), like the item
+       icons/collapse toggle, but is allowed to grow into column 2 — the
+       label column — so a brand that pairs a mark with its own wordmark
+       (see the stories' Canonical logo) has room to show it when expanded.
+       A narrow, icon-only brand just doesn't reach that far; it's sized by
+       its own content (min-width: max-content), not stretched to fill it. */
+    grid-column: 1 / 3;
+    display: flex;
+    align-items: center;
+    min-width: max-content;
+  }
+
+  & > .title {
+    grid-column: 2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & > .ds.side-navigation-collapse-toggle {
+    grid-column: 3;
+  }
+}

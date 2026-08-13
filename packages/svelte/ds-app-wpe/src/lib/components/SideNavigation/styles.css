@@ -1,0 +1,65 @@
+/*
+ * SideNavigation — a full-height rail (Header / Content / Footer, stacked),
+ * meant to sit in ApplicationLayout's navigation slot, which owns its own
+ * inline size and gives it `min-block-size: 0` so Content can scroll
+ * internally.
+ *
+ * --sidenav-start / --sidenav-row-columns are the shared row template
+ * ([icon column] [label] [end]) that the Header, group headers, and every
+ * Item share, so the logo lines up with the item icons down the rail.
+ */
+.ds.side-navigation {
+  --sidenav-start: var(--dimension-300);
+  --sidenav-row-columns: var(--sidenav-start) 1fr auto;
+
+  /* 240px expanded, per the spec ("240px on all breakpoints above small"). */
+  --side-navigation-width-expanded: 15rem;
+  --side-navigation-width-collapsed: calc(
+    var(--sidenav-start) +
+    var(--dimension-100) *
+    2
+  );
+
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  inline-size: var(--side-navigation-width-expanded);
+  max-inline-size: var(--side-navigation-width-expanded);
+  overflow: hidden;
+  padding-inline: var(--dimension-100);
+  background-color: var(--color-background-layer2);
+
+  transition:
+    inline-size var(--motion-duration-medium) var(--motion-easing-standard),
+    max-inline-size var(--motion-duration-medium) var(--motion-easing-standard);
+}
+
+.ds.side-navigation.collapsed {
+  inline-size: var(--side-navigation-width-collapsed);
+  max-inline-size: var(--side-navigation-width-collapsed);
+}
+
+/* Collapsed: only the icon rail remains — the Header's optional title text
+   and the Footer's labels/end slots fade out, leaving icons only (the
+   Content region itself is unmounted entirely while collapsed — see the
+   spec's rationale: an icon-less item, an open context switcher, or an
+   expanded item all have undefined behaviour at icon-rail width). */
+.ds.side-navigation.collapsed .side-navigation-header > .title {
+  display: none;
+}
+
+.ds.side-navigation.collapsed .footer .label,
+.ds.side-navigation.collapsed .footer .end {
+  display: none;
+}
+
+.ds.side-navigation .brand {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds.side-navigation {
+    transition: none;
+  }
+}
