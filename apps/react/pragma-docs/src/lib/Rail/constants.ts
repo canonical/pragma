@@ -1,6 +1,16 @@
-/** A lens entry in the primary rail: a named route, its label, and the
- * single-key hint the keyboard grammar assigns it (A.06 §9: digits switch
- * lenses). The hint is both displayed (`kbd`) and wired (`useLensShortcuts`). */
+/**
+ * A lens entry in the primary rail: a named route and its label.
+ *
+ * NO DIGIT. The single-key hint (A.06 §9: digits switch lenses) used to
+ * live here as a `"1" | … | "6"` union; it is now allocated by the ROUTE
+ * THAT OWNS THE DESTINATION (`#lib/routeShortcut`) and collected off the
+ * route table. This table keeps the ORDER and the LABEL, and nothing else.
+ *
+ * The move closed a real hole: a union rejects an INVALID digit but is
+ * silent about a DUPLICATE one, so two entries claiming `"3"` compiled,
+ * resolved first-wins at runtime and rendered twice. A duplicate is now a
+ * test failure (`collectShortcuts.tests.ts`), not a coin toss.
+ */
 export interface LensEntry {
   readonly to:
     | "home"
@@ -10,7 +20,6 @@ export interface LensEntry {
     | "journeys"
     | "guides";
   readonly label: string;
-  readonly hint: "1" | "2" | "3" | "4" | "5" | "6";
 }
 
 /**
@@ -35,12 +44,19 @@ export interface LensEntry {
  * demand model will drop the add-on and its rail entry together — which is
  * what the eventual plugin mechanism is for, and is why this entry is the
  * one place the rail knows about it.
+ *
+ * THE ORDER STAYS DECLARED HERE, and must not be derived from the
+ * collector. `appRoutes`' key order happens to filter down to exactly this
+ * sequence today, which makes deriving it tempting and wrong: it would
+ * couple the rail's visual order to a destructuring order in `routes.tsx`,
+ * and it inverts the rule — the owner ruled the ORDER, and the digits
+ * follow from it, not the reverse.
  */
 export const LENS_ENTRIES: readonly LensEntry[] = [
-  { to: "home", label: "Home", hint: "1" },
-  { to: "components", label: "Components", hint: "2" },
-  { to: "definitions", label: "Definitions", hint: "3" },
-  { to: "standards", label: "Standards", hint: "4" },
-  { to: "journeys", label: "Journeys", hint: "5" },
-  { to: "guides", label: "Guides", hint: "6" },
+  { to: "home", label: "Home" },
+  { to: "components", label: "Components" },
+  { to: "definitions", label: "Definitions" },
+  { to: "standards", label: "Standards" },
+  { to: "journeys", label: "Journeys" },
+  { to: "guides", label: "Guides" },
 ] as const;
