@@ -1,28 +1,35 @@
 <script lang="ts">
   import { getItemId, NavigationActionType } from "@canonical/utils";
   import { tick } from "svelte";
+  import type { Action } from "svelte/action";
+  import { getNavTreeContext } from "../NavTree/context.js";
   import Item from "./Item.svelte";
   import type { ItemProps } from "./types.js";
   import "./styles.css";
 
   const componentCssClassName = "ds side-navigation-item";
 
-  let { item, currentUrl, expandedIds, tree }: ItemProps = $props();
+  let { item }: ItemProps = $props();
+
+  const { tree, expandedIds, currentUrl } = getNavTreeContext();
 
   const id = $derived(getItemId(item));
   const hasChildren = $derived((item.items?.length ?? 0) > 0);
   const isExpanded = $derived(expandedIds.has(id));
   const isCurrent = $derived(
-    !item.disabled && currentUrl !== undefined && item.url === currentUrl,
+    !item.disabled && currentUrl() !== undefined && item.url === currentUrl(),
   );
 
-  let rowEl: HTMLElement | undefined = $state();
-  $effect(() => {
-    const el = rowEl;
-    if (!el) return;
-    tree.register(item, el);
-    return () => tree.register(item, null);
-  });
+  // Registers this row as `item`'s focusable element with the owning tree
+  // (so arrow-key navigation can `.focus()` it), and unregisters on destroy.
+  const registerRow: Action<HTMLElement> = (node) => {
+    tree.register(item, node);
+    return {
+      destroy() {
+        tree.register(item, null);
+      },
+    };
+  };
 
   // Mouse click only ever toggles — moving focus to the first child on expand
   // is a keyboard-only courtesy (see expandAndFocusFirstChild), matching the
@@ -113,7 +120,7 @@
     data-disabled={item.disabled || undefined}
   >
     <button
-      bind:this={rowEl}
+      use:registerRow
       type="button"
       class="row"
       disabled={item.disabled}
@@ -142,7 +149,7 @@
     {#if isExpanded}
       <ul class="sublist">
         {#each item.items ?? [] as child (getItemId(child))}
-          <Item item={child} {currentUrl} {expandedIds} {tree} />
+          <Item item={child} />
         {/each}
       </ul>
     {/if}
@@ -150,7 +157,7 @@
 {:else if item.url && !item.disabled}
   <li class={[componentCssClassName, item.class]}>
     <a
-      bind:this={rowEl}
+      use:registerRow
       class="row"
       href={item.url}
       aria-current={isCurrent ? "page" : undefined}
