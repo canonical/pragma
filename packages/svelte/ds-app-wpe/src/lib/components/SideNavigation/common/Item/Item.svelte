@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getItemId, NavigationActionType } from "@canonical/utils";
   import { tick } from "svelte";
-  import type { Action } from "svelte/action";
+  import type { Attachment } from "svelte/attachments";
   import { getNavTreeContext } from "../NavTree/context.js";
   import Item from "./Item.svelte";
   import type { ItemProps } from "./types.js";
@@ -11,24 +11,26 @@
 
   let { item }: ItemProps = $props();
 
-  const { tree, expandedIds, currentUrl } = getNavTreeContext();
+  // `tree`/`expandedIds` are stable objects, safe to destructure. `currentUrl`
+  // is a getter (see NavTreeContext) — read as `context.currentUrl` below,
+  // never destructured, so it keeps tracking NavTree's own prop.
+  const context = getNavTreeContext();
+  const { tree, expandedIds } = context;
 
   const id = $derived(getItemId(item));
   const hasChildren = $derived((item.items?.length ?? 0) > 0);
   const isExpanded = $derived(expandedIds.has(id));
   const isCurrent = $derived(
-    !item.disabled && currentUrl() !== undefined && item.url === currentUrl(),
+    !item.disabled &&
+      context.currentUrl !== undefined &&
+      item.url === context.currentUrl,
   );
 
   // Registers this row as `item`'s focusable element with the owning tree
-  // (so arrow-key navigation can `.focus()` it), and unregisters on destroy.
-  const registerRow: Action<HTMLElement> = (node) => {
+  // (so arrow-key navigation can `.focus()` it), and unregisters on cleanup.
+  const registerRowAttachment: Attachment<HTMLElement> = (node) => {
     tree.register(item, node);
-    return {
-      destroy() {
-        tree.register(item, null);
-      },
-    };
+    return () => tree.register(item, null);
   };
 
   // Mouse click only ever toggles — moving focus to the first child on expand
@@ -120,7 +122,7 @@
     data-disabled={item.disabled || undefined}
   >
     <button
-      use:registerRow
+      {@attach registerRowAttachment}
       type="button"
       class="row"
       disabled={item.disabled}
@@ -157,7 +159,7 @@
 {:else if item.url && !item.disabled}
   <li class={[componentCssClassName, item.class]}>
     <a
-      use:registerRow
+      {@attach registerRowAttachment}
       class="row"
       href={item.url}
       aria-current={isCurrent ? "page" : undefined}

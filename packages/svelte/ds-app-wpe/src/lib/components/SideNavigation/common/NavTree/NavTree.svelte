@@ -9,7 +9,7 @@
 
   let { root, currentUrl }: NavTreeProps = $props();
 
-  const tree = useNavTree({ root: () => root });
+  const tree = useNavTree({ getRoot: () => root });
   const groups = $derived(tree.annotatedRoot.items ?? []);
 
   // Ids of expanded (disclosed) items, shared by every Item in this tree.
@@ -17,8 +17,16 @@
 
   // Shared with every Item beneath this tree via context — see
   // `common/NavTree/context.ts` — instead of threading tree/expandedIds/
-  // currentUrl through each level of Item's own recursion.
-  setNavTreeContext({ tree, expandedIds, currentUrl: () => currentUrl });
+  // currentUrl through each level of Item's own recursion. `currentUrl` is a
+  // native getter (not a plain field) so it keeps tracking this component's
+  // own `currentUrl` prop as it changes.
+  setNavTreeContext({
+    tree,
+    expandedIds,
+    get currentUrl() {
+      return currentUrl;
+    },
+  });
 
   // Reveal the active item: whenever currentUrl resolves to an item, open its
   // expandable ancestors. Only ever ADDS ids, so it never re-collapses a

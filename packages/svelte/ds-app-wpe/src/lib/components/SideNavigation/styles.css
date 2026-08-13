@@ -14,10 +14,19 @@
 
   /* 240px expanded, per the spec ("240px on all breakpoints above small"). */
   --side-navigation-width-expanded: 15rem;
+  /*
+   * Collapsed width must fit TWO icon-slots side by side, not one: Header
+   * keeps both its brand icon (column 1) and its collapse toggle (column 3,
+   * its own --sidenav-start-wide slot) visible while collapsed — only the
+   * title text between them disappears. A width budgeted for a single
+   * icon-slot leaves the toggle's column with nowhere to go; it overflows
+   * past the rail's edge and gets clipped by `overflow: hidden` below,
+   * invisible and unclickable even though it's still in the DOM.
+   */
   --side-navigation-width-collapsed: calc(
-    var(--sidenav-start) +
+    var(--sidenav-start) * 2 +
     var(--dimension-100) *
-    2
+    4
   );
 
   box-sizing: border-box;

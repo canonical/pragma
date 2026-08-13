@@ -23,7 +23,7 @@ const blankState: Omit<
 
 export interface UseNavTreeOptions {
   /** Reactive getter for the root item — its direct children render as groups. */
-  root: () => NavItem;
+  getRoot: () => NavItem;
 }
 
 /**
@@ -43,7 +43,7 @@ export interface UseNavTreeOptions {
  * explicitly expand a group, do that.
  */
 export function useNavTree(options: UseNavTreeOptions) {
-  const annotatedRoot = $derived(annotateTree<NavItem>(options.root()));
+  const annotatedRoot = $derived(annotateTree<NavItem>(options.getRoot()));
   const index = $derived(prepareIndex<NavItem>(annotatedRoot));
   const reducer = $derived(
     createNavigationReducer<NavItem>(index, {

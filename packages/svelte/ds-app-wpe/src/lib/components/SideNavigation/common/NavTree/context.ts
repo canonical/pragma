@@ -7,8 +7,13 @@ export interface NavTreeContext {
   expandedIds: SvelteSet<string>;
   /** The owning region's keyboard/focus controller. */
   tree: NavTreeController;
-  /** Reactive getter for the current location, used to mark the matching item. */
-  currentUrl: () => string | undefined;
+  /**
+   * The current location, used to mark the matching item. Set as a native
+   * getter (see `NavTree.svelte`) so it stays live as the source prop
+   * changes — read it as `context.currentUrl` at the point of use; assigning
+   * it to a local via destructuring would freeze today's value instead.
+   */
+  readonly currentUrl: string | undefined;
 }
 
 const contextKey = Symbol("nav-tree");
