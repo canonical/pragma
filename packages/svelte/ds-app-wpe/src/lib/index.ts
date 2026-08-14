@@ -6,6 +6,7 @@
  * This package provides Svelte UI components for the Workplace V2 application.
  */
 
+export * from "./_work_in_progress/index.js";
 export * from "./components/index.js";
 export * from "./group/index.js";
 export * from "./subcomponent/index.js";
