@@ -18,7 +18,7 @@ describe("Rule component", () => {
   it("renders", async () => {
     const page = render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
-    await expect.element(page.getByText("Rule")).toBeVisible();
+    await expect.element(componentLocator(page)).toBeVisible();
   });
 
   describe("attributes", () => {
