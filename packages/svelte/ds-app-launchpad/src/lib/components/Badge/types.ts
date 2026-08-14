@@ -5,7 +5,7 @@ import type { ModifierFamily } from "../../modifier-families/index.js";
 
 export interface BadgeProps
   extends Omit<SvelteHTMLElements["span"], "children">,
-    ModifierFamily<"severity"> {
+    ModifierFamily<"criticality"> {
   /**
    * The non-negative integer value displayed within the badge. Negative values will be clamped to 0. Floats will be rounded.
    */
