@@ -50,7 +50,7 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "svelte-check --tsconfig ./tsconfig.json",
     "check:webarchitect": "webarchitect package-svelte -v",
-    "test": "vitest --run --project=ssr",
+    "test": "vitest --run",
     "test:watch": "vitest",
     "test:server": "vitest --run --project=server",
     "test:client": "vitest --run --project=client",
