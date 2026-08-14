@@ -44,3 +44,31 @@
     var(--typography-heading-5-line-height)
     var(--typography-heading-5-font-family);
 }
+
+/* The criticality modifier exposes every colour channel except the solid fill,
+ * so a component painting a solid criticality surface has nothing to read.
+ * Upstream fix: https://github.com/canonical/design-tokens/pull/104
+ * Delete this block once it lands and the design-tokens pin is bumped. */
+@layer ds.modifiers {
+  .success {
+    --modifier-color-foreground-primary: var(
+      --color-foreground-primary-success
+    );
+  }
+
+  .error {
+    --modifier-color-foreground-primary: var(--color-foreground-primary-error);
+  }
+
+  .warning {
+    --modifier-color-foreground-primary: var(
+      --color-foreground-primary-warning
+    );
+  }
+
+  .information {
+    --modifier-color-foreground-primary: var(
+      --color-foreground-primary-information
+    );
+  }
+}
