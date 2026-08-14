@@ -52,6 +52,7 @@
     "@storybook/addon-vitest": "^10.3.1",
     "@storybook/react-vite": "^10.3.1",
     "@storybook/svelte-vite": "^10.3.1",
+    "@storybook/sveltekit": "^10.3.1",
     "@storybook/web-components-vite": "^10.3.1"
   },
   "devDependencies": {
