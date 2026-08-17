@@ -1,4 +1,5 @@
 :root {
+  --ds-transition-duration-fast: 165ms;
   --ds-color-foreground-tooltip: light-dark(
     var(--color-palette-gray-930),
     var(--color-palette-gray-40)
@@ -70,5 +71,11 @@
     --modifier-color-foreground-primary: var(
       --color-foreground-primary-information
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ds-transition-duration-fast: 0ms;
   }
 }
