@@ -175,10 +175,10 @@
       "name": "@canonical/storybook-config",
       "version": "0.33.0",
       "dependencies": {
-        "@canonical/ds-assets": "^0.32.0",
-        "@canonical/storybook-addon-shell-theme": "^0.32.0",
-        "@canonical/storybook-addon-utils": "^0.32.0",
-        "@canonical/styles-debug": "^0.32.0",
+        "@canonical/ds-assets": "^0.33.0",
+        "@canonical/storybook-addon-shell-theme": "^0.33.0",
+        "@canonical/storybook-addon-utils": "^0.33.0",
+        "@canonical/styles-debug": "^0.33.0",
         "@chromatic-com/storybook": "^5.0.1",
         "@storybook/addon-a11y": "^10.3.1",
         "@storybook/addon-docs": "^10.3.1",
@@ -186,12 +186,13 @@
         "@storybook/addon-vitest": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
         "@storybook/svelte-vite": "^10.3.1",
+        "@storybook/sveltekit": "^10.3.1",
         "@storybook/web-components-vite": "^10.3.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config-react": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config-react": "^0.33.0",
         "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
@@ -233,11 +234,11 @@
       "name": "@canonical/typescript-config-react",
       "version": "0.33.0",
       "dependencies": {
-        "@canonical/typescript-config": "^0.32.0",
+        "@canonical/typescript-config": "^0.33.0",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
@@ -264,8 +265,8 @@
       "version": "0.33.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config": "^0.33.0",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
         "vite": "^8.0.1",
@@ -370,9 +371,9 @@
       "version": "0.33.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config": "^0.32.0",
-        "@canonical/webarchitect": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config": "^0.33.0",
+        "@canonical/webarchitect": "^0.33.0",
         "@types/jsdom": "^28.0.0",
         "@types/node": "^24.12.0",
         "jsdom": "^28.1.0",
@@ -825,17 +826,17 @@
       "name": "@canonical/router-react",
       "version": "0.33.0",
       "dependencies": {
-        "@canonical/react-ssr": "^0.32.0",
-        "@canonical/router-core": "^0.32.0",
+        "@canonical/react-ssr": "^0.33.0",
+        "@canonical/router-core": "^0.33.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config-react": "^0.32.0",
-        "@canonical/vitest-config-react": "^0.32.0",
-        "@canonical/webarchitect": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config-react": "^0.33.0",
+        "@canonical/vitest-config-react": "^0.33.0",
+        "@canonical/webarchitect": "^0.33.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
         "@types/node": "^24.12.0",
@@ -857,17 +858,17 @@
         "serve-bun": "./dist/esm/bin/serve-bun.js",
       },
       "dependencies": {
-        "@canonical/utils": "^0.32.0",
+        "@canonical/utils": "^0.33.0",
         "htmlparser2": "^10.1.0",
         "react": "^19.2.4",
         "react-dom": "^19.2.4",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config-react": "^0.32.0",
-        "@canonical/vitest-config-react": "^0.32.0",
-        "@canonical/webarchitect": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config-react": "^0.33.0",
+        "@canonical/vitest-config-react": "^0.33.0",
+        "@canonical/webarchitect": "^0.33.0",
         "@types/express": "^5.0.6",
         "@types/node": "^24.12.0",
         "@types/react": "^19.2.14",
@@ -1045,8 +1046,8 @@
       "version": "0.33.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/webarchitect": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/webarchitect": "^0.33.0",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
         "vitest": "^4.0.18",
@@ -1071,9 +1072,9 @@
       "version": "0.33.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config": "^0.32.0",
-        "@canonical/webarchitect": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config": "^0.33.0",
+        "@canonical/webarchitect": "^0.33.0",
         "copyfiles": "^2.4.1",
         "storybook": "^10.3.1",
         "typescript": "^5.9.3",
@@ -1179,16 +1180,16 @@
       "name": "@canonical/storybook-addon-utils",
       "version": "0.33.0",
       "dependencies": {
-        "@canonical/styles-debug": "^0.32.0",
+        "@canonical/styles-debug": "^0.33.0",
         "@storybook/icons": "^2.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/router-core": "^0.32.0",
-        "@canonical/router-react": "^0.32.0",
-        "@canonical/styles": "^0.32.0",
-        "@canonical/typescript-config-react": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/router-core": "^0.33.0",
+        "@canonical/router-react": "^0.33.0",
+        "@canonical/styles": "^0.33.0",
+        "@canonical/typescript-config-react": "^0.33.0",
         "@storybook/addon-docs": "^10.3.1",
         "@storybook/react-vite": "^10.3.1",
         "@testing-library/jest-dom": "^6.9.1",
@@ -1249,7 +1250,7 @@
       "version": "0.33.0",
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
       },
       "peerDependencies": {
         "@canonical/design-tokens": "0.8.1",
@@ -1263,12 +1264,12 @@
       "version": "0.33.0",
       "dependencies": {
         "@canonical/design-tokens": "0.8.1",
-        "@canonical/styles-typography": "^0.32.0",
+        "@canonical/styles-typography": "^0.33.0",
         "normalize.css": "^8.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
       },
       "peerDependencies": {
         "@canonical/ds-assets": ">=0.18.0",
@@ -1289,8 +1290,8 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.4.9",
-        "@canonical/biome-config": "^0.32.0",
-        "@canonical/typescript-config": "^0.32.0",
+        "@canonical/biome-config": "^0.33.0",
+        "@canonical/typescript-config": "^0.33.0",
         "@types/bun": "^1.3.10",
         "@types/node": "^24.12.0",
         "typescript": "^5.9.3",
@@ -2467,6 +2468,8 @@
     "@storybook/svelte": ["@storybook/svelte@10.3.0", "", { "dependencies": { "ts-dedent": "^2.0.0", "type-fest": "~2.19" }, "peerDependencies": { "storybook": "^10.3.0", "svelte": "^5.0.0" } }, "sha512-FxUO40O8oYk1o1fpINP5dDp5+UW+wFI7PtJ/kNUOGmhA18s3XiPI5rB1+40kPWDAl8oY9v44CixRxEzwfP50MQ=="],
 
     "@storybook/svelte-vite": ["@storybook/svelte-vite@10.3.1", "", { "dependencies": { "@storybook/builder-vite": "10.3.1", "@storybook/svelte": "10.3.1", "magic-string": "^0.30.0", "svelte2tsx": "^0.7.44", "typescript": "^4.9.4 || ^5.0.0" }, "peerDependencies": { "@sveltejs/vite-plugin-svelte": "^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0", "storybook": "^10.3.1", "svelte": "^5.0.0", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-vt9zxJJFGjo9ONX4aC8L1lcXsWVFhDMfGcChMXi65/FsNISr1Z2ewIihb4r+PkJlXs4o/It4uOOUHSIYngYqjg=="],
+
+    "@storybook/sveltekit": ["@storybook/sveltekit@10.5.8", "", { "dependencies": { "@storybook/builder-vite": "10.5.8", "@storybook/svelte": "10.5.8", "@storybook/svelte-vite": "10.5.8" }, "peerDependencies": { "storybook": "^10.5.8", "svelte": "^5.0.0", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-vjeIQlfzaYI3w9oqeDRKtFd0HWPbYvIlhhVRX5SR0pWJn7a08KAmgRJIrbwf0g95njWKLf1u76OoH37yhjOMsA=="],
 
     "@storybook/web-components": ["@storybook/web-components@10.3.1", "", { "dependencies": { "@storybook/global": "^5.0.0", "tiny-invariant": "^1.3.1", "ts-dedent": "^2.0.0" }, "peerDependencies": { "lit": "^2.0.0 || ^3.0.0", "storybook": "^10.3.1" } }, "sha512-z6RA305EkFS/zru1tQFHFslh48QtYYi+moa/POgdvxwtexNe8hH8bXouPm56TE35eSxmzDXm1JHxL3lHeqTzXQ=="],
 
@@ -4780,6 +4783,12 @@
 
     "@storybook/svelte-vite/@storybook/svelte": ["@storybook/svelte@10.3.1", "", { "dependencies": { "ts-dedent": "^2.0.0", "type-fest": "~2.19" }, "peerDependencies": { "storybook": "^10.3.1", "svelte": "^5.0.0" } }, "sha512-jDrOazSSwEiWDTKq3yTjVsbahk87JTiZZIdS7LuPK7PqsHFJOodu+ixF8xwG95X3GzbOL4FDqt5JCbeKpAn9/A=="],
 
+    "@storybook/sveltekit/@storybook/builder-vite": ["@storybook/builder-vite@10.5.8", "", { "dependencies": { "@storybook/csf-plugin": "10.5.8", "ts-dedent": "^2.0.0" }, "peerDependencies": { "storybook": "^10.5.8", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-UeRnn7yT55WmBlHNOQzLrvN7vsHEvVgIukhKDO+4cMbGXN87wZkbxhx6NstpuXRH8OxGqwKS0SZNVp+SC1ftLQ=="],
+
+    "@storybook/sveltekit/@storybook/svelte": ["@storybook/svelte@10.5.8", "", { "dependencies": { "ts-dedent": "^2.0.0", "type-fest": "^5.6.0" }, "peerDependencies": { "storybook": "^10.5.8", "svelte": "^5.0.0" } }, "sha512-bos9R5e4eIN9IDETnkOQD5wVnqdHkzEnYY1QO3El9Qw+r0QREBu0wyq43763OEOQF0mI2rzT/kuCYleBmrYaLA=="],
+
+    "@storybook/sveltekit/@storybook/svelte-vite": ["@storybook/svelte-vite@10.5.8", "", { "dependencies": { "@storybook/builder-vite": "10.5.8", "@storybook/svelte": "10.5.8", "magic-string": "^0.30.0", "svelte2tsx": "^0.7.55", "typescript": "^4.9.4 || ^5.0.0" }, "peerDependencies": { "@sveltejs/vite-plugin-svelte": "^2.0.0 || ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0", "storybook": "^10.5.8", "svelte": "^5.0.0", "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0" } }, "sha512-fWM3GGtk5iAJqMj7CUcYvUn0NxE3aSvz2DlAz+LGVKrIolWscmt/71lPsCobIDl45+CNdc8G7qFNEODAd/IKVA=="],
+
     "@sveltejs/package/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
 
     "@testing-library/dom/aria-query": ["aria-query@5.3.0", "", { "dependencies": { "dequal": "^2.0.3" } }, "sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A=="],
@@ -5321,6 +5330,12 @@
     "@sigstore/sign/make-fetch-happen/ssri": ["ssri@13.0.1", "", { "dependencies": { "minipass": "^7.0.3" } }, "sha512-QUiRf1+u9wPTL/76GTYlKttDEBWV1ga9ZXW8BG6kfdeyyM8LGPix9gROyg9V2+P0xNyF3X2Go526xKFdMZrHSQ=="],
 
     "@storybook/svelte-vite/@storybook/svelte/type-fest": ["type-fest@2.19.0", "", {}, "sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA=="],
+
+    "@storybook/sveltekit/@storybook/builder-vite/@storybook/csf-plugin": ["@storybook/csf-plugin@10.5.8", "", { "dependencies": { "unplugin": "^2.3.5" }, "peerDependencies": { "esbuild": "*", "rollup": "*", "storybook": "^10.5.8", "vite": "*", "webpack": "*" }, "optionalPeers": ["esbuild", "rollup", "vite", "webpack"] }, "sha512-/FHiMyOWWEXfwK/lM0WxmkP9GLzbSJJuzGtfeuNWSOVDnvAMbjavitxfHb5wSbWKIQo0XYC1EJ2Y7x91XNYP4w=="],
+
+    "@storybook/sveltekit/@storybook/svelte/type-fest": ["type-fest@5.8.0", "", { "dependencies": { "tagged-tag": "^1.0.0" } }, "sha512-YGYEVz3Fm5iy/AybuA0oyNFq7H4CgQNfRp/qfe8nurE1kuCeNm3/vfm9X4Mtl+qLyaKJUh5xrFZwogr41SMjYA=="],
+
+    "@storybook/sveltekit/@storybook/svelte-vite/svelte2tsx": ["svelte2tsx@0.7.61", "", { "dependencies": { "dedent-js": "^1.0.1", "scule": "^1.3.0" }, "peerDependencies": { "svelte": "^3.55 || ^4.0.0-next.0 || ^4.0 || ^5.0.0-next.0", "typescript": "^4.9.4 || ^5.0.0 || ^6.0.0" } }, "sha512-EpQ/+UHITBULeUojx/LLD3uTYasZXcX1BrqlrzfLUnT9vdUhaOWK59a3ryWcFU8L0sY1SP+gRhJ2Beiis98+qw=="],
 
     "@tufjs/models/minimatch/brace-expansion": ["brace-expansion@5.0.4", "", { "dependencies": { "balanced-match": "^4.0.2" } }, "sha512-h+DEnpVvxmfVefa4jFbCf5HdH5YMDXRsmKflpf1pILZWRFlTbJpxeU55nJl4Smt5HQaGzg1o6RHFPJaOqnmBDg=="],
 
