@@ -9,8 +9,7 @@
 
   const {
     class: className,
-    density,
-    severity,
+    criticality,
     readonly,
     lead,
     value,
@@ -31,7 +30,7 @@
 
 <svelte:element
   this={rootElement}
-  class={[componentCssClassName, className, density, severity, { readonly }]}
+  class={[componentCssClassName, className, criticality, { readonly }]}
   type={rootElement === "button" ? "button" : undefined}
   {onclick}
   {...rest}
@@ -73,13 +72,12 @@
 ```svelte
 <Chip value="Value"/>
 <Chip lead="Lead" value="Value" />
-<Chip lead="Lead" value="Value" severity="caution" />
+<Chip lead="Lead" value="Value" criticality="warning" />
 <Chip
   lead="Lead"
   value="Value"
   readonly
-  density="dense"
-  severity="caution"
+  criticality="warning"
 />
 ```
 -->
