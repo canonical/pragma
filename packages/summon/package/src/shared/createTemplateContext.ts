@@ -1,8 +1,8 @@
-import pkg from "../../package.json" with { type: "json" };
 import getEntryPoints from "./config/getEntryPoints.js";
 import getLicense from "./config/getLicense.js";
 import getRuleset from "./config/getRuleset.js";
 import getPackageShortName from "./getPackageShortName.js";
+import { packageVersion } from "./packageVersion.js";
 import type { MonorepoInfo, PackageAnswers, TemplateContext } from "./types.js";
 
 /**
@@ -28,7 +28,7 @@ export default function createTemplateContext(
     types: entryPoints.types,
     files: entryPoints.files,
     needsBuild: entryPoints.needsBuild,
-    canonicalVersion: pkg.version,
+    canonicalVersion: packageVersion(),
     ruleset: getRuleset(answers.type, answers.withReact),
     withReact: answers.withReact,
     withStorybook: answers.withStorybook,
