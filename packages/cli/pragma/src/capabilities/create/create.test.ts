@@ -101,6 +101,45 @@ describe("create — real generation + stamp", () => {
     expect(walk(dir)).toEqual([]); // nothing written
   });
 
+  it("--dry-run reports the bytes the real run writes (post-stamp)", async () => {
+    // The mock previewer never called `onEffectStart`, so summon's stamping
+    // transform did not run and every planned byte count under-reported the
+    // written file by the stamp's length. The honest previewer runs it.
+    const params = {
+      framework: "react",
+      componentPath: "src/components/Widget",
+      withStyles: true,
+      withStories: false,
+      withSsrTests: false,
+    };
+    const previewDir = freshCwd();
+    const preview = await runIn(previewDir, params, {
+      dryRun: true,
+      undo: false,
+      yes: false,
+    });
+    expect(preview.exitCode).toBe(0);
+    expect(walk(previewDir)).toEqual([]);
+
+    const planned = new Map<string, number>();
+    for (const line of (preview.stdout ?? "").split("\n")) {
+      const match = /^ {2}- Write file: (.+) \((\d+) bytes\)$/.exec(line);
+      if (match) planned.set(match[1] as string, Number(match[2]));
+    }
+    expect(planned.size).toBeGreaterThan(0);
+
+    const realDir = freshCwd();
+    expect((await runIn(realDir, params)).exitCode).toBe(0);
+    for (const [relative, bytes] of planned) {
+      expect({
+        file: relative,
+        bytes: readFileSync(join(realDir, relative), "utf-8").length,
+      }).toEqual({ file: relative, bytes });
+    }
+    // Same set of files, not just the same counts for the ones checked.
+    expect(walk(realDir).sort()).toEqual([...planned.keys()].sort());
+  });
+
   it("--undo reverses a run", async () => {
     const dir = freshCwd();
     await runIn(dir, {

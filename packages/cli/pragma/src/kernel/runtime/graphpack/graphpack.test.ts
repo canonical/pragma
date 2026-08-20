@@ -13,8 +13,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildPack } from "./build.js";
 import { embeddedManifest, materializeEmbeddedPack } from "./embedded.js";
 import { contentHash } from "./hash.js";
-import { packIsComplete } from "./manifest.js";
+import { packIsComplete, validateManifest } from "./manifest.js";
 import { readPack } from "./read.js";
+import { manifestSchema } from "./schemas.js";
 import { activeStories } from "./stories.js";
 import type { PackIndex } from "./types.js";
 import {
@@ -196,6 +197,44 @@ describe("graphpack carried stories (PROTECTED)", () => {
     expect(packIsComplete(dir)).toBe(false);
   });
 
+  it("a non-array stories.json is incomplete, and rebuilds instead of silently losing nouns", async () => {
+    // Size alone let a non-empty but non-ARRAY `stories.json` pass, so
+    // `buildPack` reused the directory and every package-declared noun vanished
+    // while `sources update` reported success. The shape gate turns that into an
+    // ordinary torn pack: refused, then rebuilt.
+    const inputs = [{ path: "a.ttl", content: TTL }];
+    const { dir } = await build(inputs, [STORY]);
+    expect(packIsComplete(dir)).toBe(true);
+
+    for (const corrupt of [
+      '{"noun":"recipe"}',
+      '"a string"',
+      "null",
+      "7",
+      "{",
+    ]) {
+      writeFileSync(join(dir, STORIES_FILE), corrupt);
+      expect(packIsComplete(dir), corrupt).toBe(false);
+    }
+
+    // …and the rebuild is a REBUILD, not a reuse of the corrupt directory: the
+    // stories come back, so the nouns come back.
+    const rebuilt = await build(inputs, [STORY]);
+    expect(rebuilt.reused).toBe(false);
+    expect(packIsComplete(rebuilt.dir)).toBe(true);
+    expect(
+      JSON.parse(readFileSync(join(rebuilt.dir, STORIES_FILE), "utf-8")),
+    ).toEqual([{ source: STORY.path, content: STORY.content }]);
+  });
+
+  it("an EMPTY stories array stays complete — it is the ordinary no-stories pack", async () => {
+    // The gate is shape, not emptiness: `[]` is what a pack with no package
+    // stories legitimately carries, and refusing it would refuse most packs.
+    const { dir } = await build([{ path: "a.ttl", content: TTL }]);
+    expect(readFileSync(join(dir, STORIES_FILE), "utf-8")).toBe("[]");
+    expect(packIsComplete(dir)).toBe(true);
+  });
+
   it("reads only records shaped { source, content } from a pack directory", async () => {
     // `stories.json` lives in a user-writable cache. An element that is not a
     // record used to be cast straight through and reported as
@@ -257,6 +296,55 @@ describe("graphpack manifest — persisted counts (A9/A10)", () => {
     // TTL declares two individuals (ex:Button, ex:Card) → two abox subjects.
     expect(manifest.entityCount).toBe(2);
   });
+});
+
+describe("the manifest hand validator agrees with the schema (PROTECTED)", () => {
+  // `readManifest` is on the storeless fast path, so it validates structurally
+  // instead of importing zod. `manifestSchema` stays the executable spec: this
+  // pins the two to accept EXACTLY the same payloads, in both directions, so a
+  // rule changed in one and not the other fails here rather than at a read.
+  const VALID = {
+    name: "pack",
+    version: "1.0.0",
+    sourceRef: "git+https://example.invalid#main",
+    contentHash: "abc123",
+    prefixes: { ex: "https://example.invalid#" },
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  const cases: Array<[string, unknown]> = [
+    ["the minimal valid manifest", VALID],
+    ["with both optional counts", { ...VALID, tripleCount: 3, entityCount: 2 }],
+    ["with only tripleCount", { ...VALID, tripleCount: 0 }],
+    ["with only entityCount", { ...VALID, entityCount: 0 }],
+    ["with empty prefixes", { ...VALID, prefixes: {} }],
+    ["with an unknown key", { ...VALID, extra: "ignored" }],
+    ["a missing required field", { ...VALID, name: undefined }],
+    ["a required field of the wrong type", { ...VALID, version: 2 }],
+    ["a non-string sourceRef", { ...VALID, sourceRef: null }],
+    ["a non-string contentHash", { ...VALID, contentHash: 7 }],
+    ["a non-string createdAt", { ...VALID, createdAt: 0 }],
+    ["prefixes as an array", { ...VALID, prefixes: [] }],
+    ["prefixes holding a non-string", { ...VALID, prefixes: { ex: 1 } }],
+    ["prefixes as null", { ...VALID, prefixes: null }],
+    ["a non-number tripleCount", { ...VALID, tripleCount: "3" }],
+    ["a non-number entityCount", { ...VALID, entityCount: "2" }],
+    ["a JSON array", [VALID]],
+    ["a JSON string", "manifest"],
+    ["null", null],
+    ["a number", 4],
+  ];
+
+  for (const [label, payload] of cases) {
+    it(`accepts/rejects ${label} exactly as manifestSchema does`, () => {
+      const bySchema = manifestSchema.safeParse(payload);
+      const byHand = validateManifest(payload);
+      expect(byHand !== undefined, label).toBe(bySchema.success);
+      // Agreement on the VALUE too, which is where strip semantics live: an
+      // unknown key must be dropped by both, not carried by one.
+      if (bySchema.success) expect(byHand).toEqual(bySchema.data);
+    });
+  }
 });
 
 describe("graphpack read — truncated data cache (A9)", () => {

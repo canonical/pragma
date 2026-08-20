@@ -51,7 +51,9 @@ describe("base entry (@canonical/task)", () => {
 
   it("never resolves the node-touching interpreter modules", () => {
     const machinery = [...closure.visited].filter((file) =>
-      /(?:^|\/)(?:interpreter|undo-interpreter)\.ts$/.test(file),
+      /(?:^|\/)(?:interpreter|undo-interpreter|preview-interpreter)\.ts$/.test(
+        file,
+      ),
     );
     expect(machinery).toEqual([]);
   });

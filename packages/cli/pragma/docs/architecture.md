@@ -32,14 +32,16 @@ Stories from a project's config, or from a `stories/*.json` a package ships, mer
 
 Two thin frontends turn the grammar into runnable surfaces:
 
-- **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node / dry-run / undo interpreters) and renders the outcome.
+- **CLI** — `buildProgram` wires the grammar into a Commander program; `dispatch` runs the resolved verb across the effect seam (a read is plain async; a mutation returns a `Task` interpreted under the node / preview / undo interpreters) and renders the outcome.
 - **MCP** — `buildServer` registers every exposed verb via `registerVerb`, installs the resource and prompt surfaces, and attaches the handshake instructions.
 
 Both frontends resolve configuration through the same **config seam** — the three-layer resolver described in [config-model.md](./config-model.md) — so the CLI and the MCP server always agree on the active tier, channel, and package sources.
 
 ## The effect seam
 
-Mutations never touch the filesystem directly. A mutating `run` returns a `Task` — a description of its effects — which the frontend interprets. The CLI interprets it under `--dry-run` (describe only), `--undo` (reverse), or real execution; the MCP handler interprets it as a plan unless `confirm: true`. One Task description, several interpreters — the reason `--dry-run` and MCP's plan-first preview share exactly one code path.
+Mutations never touch the filesystem directly. A mutating `run` returns a `Task` — a description of its effects — which the frontend interprets. The CLI interprets it under `--dry-run` (preview), `--undo` (reverse), or real execution; the MCP handler interprets it as a plan unless `confirm: true`. One Task description, several interpreters — the reason `--dry-run` and MCP's plan-first preview share exactly one code path.
+
+A preview is `@canonical/task/node`'s `runPreview`, and it is **honest**: reads (`ReadFile`, `Exists`, `Glob`) hit the real filesystem through a virtual write overlay, so a step sees what the step before it planned; writes are recorded and never executed, so the disk is untouched. A preview therefore fails exactly where and how the run would fail — a mutation whose first template read is missing exits nonzero under `--dry-run` and returns an error from MCP plan-first, instead of printing a confident plan and exiting 0. Two limits are deliberate and permanent: `Exec` is never spawned (a preview that runs commands is not a preview), so a task whose success depends on a command's real output can preview cleaner than it runs; and prompts auto-answer with their defaults, so a preview never blocks on input.
 
 ## Further reading
 

@@ -16,6 +16,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compilePack } from "../kernel/packs/compile.js";
 import type { PackDefinition } from "../kernel/packs/types.js";
+import { distributionSource } from "../kernel/packs/types.js";
 import { verbKey } from "../kernel/packs/uniqueness.js";
 import { executeVerb } from "../kernel/project/cli/dispatch.js";
 import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
@@ -70,9 +71,11 @@ afterAll(async () => {
 });
 
 const listVerb = (pack: PackDefinition): VerbSpec =>
-  compilePack(pack, "pragma.conf.ts", DEFAULT_PREFIX_MAP).find(
-    (v) => verbKey(v.path) === `${pack.noun} list`,
-  ) as VerbSpec;
+  compilePack(
+    pack,
+    distributionSource("pragma.conf.ts"),
+    DEFAULT_PREFIX_MAP,
+  ).find((v) => verbKey(v.path) === `${pack.noun} list`) as VerbSpec;
 
 /**
  * Every declared story's list verb, with the hint expected in its empty message:

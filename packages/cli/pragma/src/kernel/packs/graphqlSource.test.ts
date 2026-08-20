@@ -17,6 +17,7 @@ import { buildLookupDocument } from "./graphql/buildLookupDocument.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackLookup } from "./types.js";
+import { distributionSource } from "./types.js";
 import { verbKey } from "./uniqueness.js";
 
 const DS = "https://ds.canonical.com/";
@@ -292,9 +293,11 @@ describe("GraphQL lookup end to end + shape parity with SPARQL (PROTECTED)", () 
   });
 
   const lookupVia = (definition: PackDefinition, name: string) => {
-    const verb = compilePack(definition, "t", BLOCK_PREFIXES).find(
-      (v) => verbKey(v.path) === `${definition.noun} lookup`,
-    );
+    const verb = compilePack(
+      definition,
+      distributionSource("t"),
+      BLOCK_PREFIXES,
+    ).find((v) => verbKey(v.path) === `${definition.noun} lookup`);
     if (!verb) throw new Error("no lookup verb");
     return verb.run({ name: [name] }, rt) as Promise<LookupOutput>;
   };

@@ -32,6 +32,7 @@
 import { readPackIndex } from "../../../completion/entitySource.js";
 import { runSelect } from "../../../packs/sparql/runSelect.js";
 import type { PackRow } from "../../../packs/types.js";
+import { distributionSource } from "../../../packs/types.js";
 import type { SourcesDecision } from "../../../runtime/resolveSources.js";
 import type { PragmaRuntime } from "../../../runtime/types.js";
 import { VOCABULARY } from "../../../vocabulary.js";
@@ -168,7 +169,9 @@ function foldPromptRows(rows: readonly PackRow[]): PromptEntry[] {
  * @note Impure — boots the store through `runSelect`.
  */
 export async function readPrompts(rt: PragmaRuntime): Promise<PromptEntry[]> {
-  return foldPromptRows(await runSelect(rt, promptQuery(), "prompt"));
+  return foldPromptRows(
+    await runSelect(rt, promptQuery(), distributionSource("prompt")),
+  );
 }
 
 /**
@@ -186,5 +189,7 @@ export async function readPrompt(
   rt: PragmaRuntime,
   name: string,
 ): Promise<PromptEntry | undefined> {
-  return foldPromptRows(await runSelect(rt, promptQuery(name), "prompt")).at(0);
+  return foldPromptRows(
+    await runSelect(rt, promptQuery(name), distributionSource("prompt")),
+  ).at(0);
 }

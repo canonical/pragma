@@ -339,3 +339,34 @@ export interface PackEntry {
   readonly source: string;
   readonly definition: PackDefinition;
 }
+
+/**
+ * Which layer declared a story. The label alone cannot answer this — a label is
+ * free text for a human — and the difference changes what a failure MEANS.
+ *
+ * A generated query that names a prefix the graph does not bind is, from a
+ * `distribution` story, almost always an unbuilt store: the distribution's own
+ * stories and its packs ship together, so the terms exist as soon as anything is
+ * built. From a `config` or `package` story it is the opposite: the author named
+ * a prefix nothing binds, and no amount of building will conjure it. One is
+ * STORE_UNAVAILABLE with a `sources update` recovery, the other a CONFIG_ERROR
+ * naming the story — and telling them apart needs this at the failure site.
+ */
+export type StoryOrigin = "distribution" | "config" | "package";
+
+/**
+ * A story's provenance, threaded from where it was declared down to the query
+ * that runs on its behalf.
+ */
+export interface StorySource {
+  /** Human-readable location, used verbatim in diagnostics. */
+  readonly label: string;
+  /** The layer that declared it. */
+  readonly origin: StoryOrigin;
+}
+
+/** A story the distribution itself declares (`pragma.conf.ts` and its kin). */
+export const distributionSource = (label: string): StorySource => ({
+  label,
+  origin: "distribution",
+});

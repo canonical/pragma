@@ -558,29 +558,21 @@ describe.skipIf(!hasShell("fish"))(
       expect(reply).toEqual(answersFor("ds:global.component.but"));
     });
 
-    it("answers `--<TAB>` with the flag names, but DOES exec where bash and zsh do not", () => {
-      // The sixth `STRUCTURE` row, which the table above cannot hold because
-      // fish behaves differently here — measured, not assumed. bash and zsh
-      // route a flag-name context through one exclusive `case` arm and exec
-      // nothing; fish evaluates EVERY `complete` rule matching the position, so
-      // the positional's `-a "(pragma __complete -- …)"` fires alongside the
-      // flag-name rules whenever the token clears `minChars` — and `--` is two
-      // characters. The candidates are right either way; the cost is a process
-      // spawn on a purely structural TAB. `emitScripts.ts`'s "structure execs
-      // nothing" is therefore a bash/zsh claim, not a fish one.
+    it("answers `--<TAB>` with the flag names, execing nothing (as bash and zsh do)", () => {
+      // The sixth `STRUCTURE` row, kept apart because it is where fish USED to
+      // differ — measured, not assumed. fish evaluates EVERY `complete` rule
+      // matching a position, not one exclusive `case` arm, so the positional's
+      // `-a "(pragma __complete -- …)"` fired alongside the flag-name rules the
+      // moment the token cleared `minChars` — and `--` is two characters. That
+      // cost a process spawn per TAB on a flag name, and put whatever the
+      // delegate answered for a `--` partial into the user's candidate list.
+      // The name-source positional rule now ANDs `__pragma_notflag`, so fish
+      // holds `emitScripts.ts`'s "structure execs nothing" claim like the other
+      // two families.
       const { reply, calls } = driveFish(live.fish, "pragma block lookup --");
-      expect(calls).toEqual([["__complete", "--", "block", "lookup", "--"]]);
-      // And the exec's answer is OFFERED alongside the flags, so the cost is
-      // not only the spawn: whatever `__complete` returns for a `--` partial
-      // lands in the user's candidate list. (It returns nothing today.)
+      expect(calls).toEqual([]);
       expect(reply.sort()).toEqual(
-        [
-          "--detail",
-          "--format",
-          "--help",
-          "--verbose",
-          ...answersFor("--"),
-        ].sort(),
+        ["--detail", "--format", "--help", "--verbose"].sort(),
       );
     });
 

@@ -33,6 +33,13 @@ export interface InkPromptOptions {
    * way (an external abort tears the render down).
    */
   readonly onCancel?: () => void;
+  /**
+   * The write root the run resolves relative effect paths against — pass the
+   * same value the interpreter will receive. The confirm gate's preview reads
+   * that tree, so the pane's plan is the plan the run produces. Omitted falls
+   * back to the process cwd, matching a run given no `cwd` of its own.
+   */
+  readonly cwd?: string;
 }
 
 /**
@@ -68,9 +75,9 @@ interface MountedSession {
  * dynamically imports the React UI), so picking this strategy on a fast path
  * that never prompts costs nothing and loads no React.
  *
- * @param generator - The generator being run (the session dry-runs it to build
- *   the confirm gate's preview).
- * @param options - The abort signal.
+ * @param generator - The generator being run (the session previews it to build
+ *   the confirm gate's plan).
+ * @param options - The abort signal, cancel callback, and preview write root.
  * @returns The {@link InkSession} the `create` verb wires into `runtime.exec`.
  */
 export default function inkPrompt(

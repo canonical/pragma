@@ -1,8 +1,21 @@
 /**
- * Dry-Run Interpreter
+ * Dry-Run Interpreter — the node-free MOCK.
  *
- * This module provides interpreters for testing and previewing tasks
- * without actually executing their effects.
+ * This module provides interpreters for TESTING tasks without executing (or
+ * even inspecting) their effects: every effect is answered with a mock —
+ * `ReadFile` returns a placeholder string, `Exists` is unconditionally true,
+ * `Glob` is empty, `Exec` succeeds — so a task can be walked on any runtime,
+ * with no filesystem at all. That is the right tool for unit tests and for
+ * bundling into node-free targets, and it is deliberately NOT a prediction of
+ * what a real run does: a task whose real execution fails on its first read
+ * still "succeeds" here, and `onEffectStart` is never invoked (so effect-
+ * mutating callbacks like summon's stamping transform do not run).
+ *
+ * For a user-facing preview — `--dry-run`, plan-first — use `runPreview` from
+ * `@canonical/task/node`: reads are real (through a write overlay), writes are
+ * recorded but never executed, and a preview fails exactly where and how the
+ * run would fail. This module keeps its mock semantics on purpose; test
+ * suites across the workspace (and external consumers) depend on them.
  */
 
 import driveSync from "./driveSync.js";

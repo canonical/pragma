@@ -110,7 +110,11 @@ export const stableEvalCases: readonly EvalCase[] = [
       try {
         const widgetModule: CapabilityModule = {
           name: "widget",
-          verbs: compilePack(WIDGET_PACK, "test:widget", WIDGET_PREFIXES),
+          verbs: compilePack(
+            WIDGET_PACK,
+            { label: "test:widget", origin: "package" },
+            WIDGET_PREFIXES,
+          ),
         };
         const mcp = await projectMcp([widgetModule], fixture.cwd);
         try {

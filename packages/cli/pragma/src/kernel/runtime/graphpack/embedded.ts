@@ -40,12 +40,12 @@ import { dataNq, manifestJson, schemaJson } from "./embedded/pack.generated.js";
 import { indexJson } from "./embedded/pack.index.generated.js";
 import { storiesJson } from "./embedded/pack.stories.generated.js";
 import { packIsComplete } from "./manifest.js";
+import { manifestSchema } from "./schemas.js";
 import {
   DATA_FILE,
   INDEX_FILE,
   MANIFEST_FILE,
   type Manifest,
-  manifestSchema,
   SCHEMA_FILE,
   STORIES_FILE,
 } from "./types.js";

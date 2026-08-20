@@ -15,6 +15,7 @@ import { compilePack } from "./compile.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackRow } from "./types.js";
+import { distributionSource } from "./types.js";
 import { assertUniqueVerbs, verbKey } from "./uniqueness.js";
 
 const PREFIXES = {
@@ -108,14 +109,18 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
       fixed,
     );
     // …and the compiler honours it: no `[count]` positional on the sample verb.
-    const sample = compilePack(fixed, "t", PREFIXES).find(
+    const sample = compilePack(fixed, distributionSource("t"), PREFIXES).find(
       (v) => verbKey(v.path) === "widget sample",
     );
     expect(sample?.params).toEqual([]);
   });
 
   it("projects list, lookup, and sample verbs with unique keys", () => {
-    const verbs = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
+    const verbs = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    );
     expect(verbs.map((v) => verbKey(v.path))).toEqual([
       "widget list",
       "widget lookup",
@@ -125,7 +130,11 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
   });
 
   it("projects list filters as params (enum) + a search flag", () => {
-    const [list] = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
+    const [list] = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    );
     expect(list?.params.map((p) => p.name)).toEqual(["kind", "search"]);
     const kind = list?.params.find((p) => p.name === "kind");
     expect(kind?.kind).toBe("enum");
@@ -134,7 +143,11 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
   });
 
   it("projects the lookup as a variadic name-completing positional + disclosure", () => {
-    const verbs = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES);
+    const verbs = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    );
     const lookup = verbs.find((v) => verbKey(v.path) === "widget lookup");
     const name = lookup?.params.at(0);
     expect(name?.kind).toBe("string[]");
@@ -154,7 +167,7 @@ describe("pack compiler — round-trip + shape (PROTECTED, storeless)", () => {
       PackDefinition["lookup"]
     >;
     const nameParam = (def: PackDefinition) =>
-      compilePack(def, "bundled:widget", PREFIXES)
+      compilePack(def, distributionSource("bundled:widget"), PREFIXES)
         .find((v) => verbKey(v.path) === "widget lookup")
         ?.params.at(0);
 
@@ -266,7 +279,11 @@ describe("the grammar rejects what the compiler cannot build (PROTECTED)", () =>
       },
       "pkg/stories/widget.json",
     );
-    const verbs = compilePack(definition, "pkg/stories/widget.json", PREFIXES);
+    const verbs = compilePack(
+      definition,
+      { label: "pkg/stories/widget.json", origin: "package" },
+      PREFIXES,
+    );
     expect(verbs.map((v) => verbKey(v.path))).toEqual([
       "widget list",
       "widget categories",
@@ -315,9 +332,11 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
   });
 
   const run = <R>(verbLabel: string, params: Record<string, unknown>) => {
-    const verb = compilePack(WIDGET_PACK, "bundled:widget", PREFIXES).find(
-      (v) => verbKey(v.path) === `widget ${verbLabel}`,
-    );
+    const verb = compilePack(
+      WIDGET_PACK,
+      distributionSource("bundled:widget"),
+      PREFIXES,
+    ).find((v) => verbKey(v.path) === `widget ${verbLabel}`);
     if (!verb) throw new Error(`no widget ${verbLabel}`);
     return verb.run(params, rt) as Promise<R>;
   };

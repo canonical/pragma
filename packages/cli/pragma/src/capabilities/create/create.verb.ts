@@ -383,7 +383,13 @@ async function runCreate(
     // `onCancel` (H2): an in-Ink Ctrl-C during execution aborts the run so the
     // interpreter stops writing — raw mode swallows the SIGINT, so the wizard
     // drives the abort. Shared with setup by construction.
-    const session = summon.inkPrompt(generator, { signal, onCancel: abort });
+    // `cwd` also reaches the wizard: its confirm-gate preview reads the same
+    // jail-checked write root the interpreter resolves effect paths against.
+    const session = summon.inkPrompt(generator, {
+      signal,
+      onCancel: abort,
+      cwd: rt.cwd,
+    });
     // Thread the per-call write root: the interpreter resolves the generator's
     // relative output paths against `rt.cwd` — the SAME dir the SEC-2 jail
     // validated above — so the write can never escape the checked directory.
