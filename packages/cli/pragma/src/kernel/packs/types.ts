@@ -316,8 +316,8 @@ export interface PackDefinition {
   /** MCP tool description (defaults to the CLI description). */
   readonly toolDescription?: string;
   /**
-   * The list story. Optional so a pack can serve only the lookup verb of a noun
-   * whose list stays hand-written (e.g. `block`). At least one of `list`/`lookup`
+   * The list story. Optional so a pack can serve a noun that is addressable but
+   * not enumerable — a lookup with no list. At least one of `list`/`lookup`
    * must be declared.
    */
   readonly list?: PackList;

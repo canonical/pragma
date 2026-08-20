@@ -12,17 +12,31 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { compilePack } from "../kernel/packs/compile.js";
 import { parsePackDefinition } from "../kernel/packs/schema.js";
+import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
+import type { VerbSpec } from "../kernel/spec/types.js";
 import { VOCABULARY } from "../kernel/vocabulary.js";
-import { declaredStories } from "./distribution.js";
+import { declaredStories, storyModules } from "./distribution.js";
 import { capabilities } from "./index.js";
-import { TIER_TYPE } from "./tier/constants.js";
+
+/** A verb's DECLARED shape — everything but the closures a compile mints fresh. */
+function declaredShape(verb: VerbSpec): Record<string, unknown> {
+  return {
+    path: verb.path.join(" "),
+    summary: verb.summary,
+    doc: verb.doc,
+    params: verb.params,
+    capability: verb.capability,
+    examples: verb.examples,
+  };
+}
 
 describe("the distribution's declared stories (PROTECTED)", () => {
   it("declares exactly the five domain nouns", () => {
-    // The composites (`block`, `token`, `tier`) read their story by name and
-    // fall back to no verbs if it is missing, so a renamed or dropped noun must
-    // fail HERE rather than silently shrink a command.
+    // Every domain noun is now nothing BUT its story (L-OPEN-9), so a renamed
+    // or dropped noun deletes a whole command rather than shrinking one — it
+    // must fail HERE.
     expect([...declaredStories.keys()].sort()).toEqual([
       "block",
       "modifier",
@@ -52,16 +66,55 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     }
   });
 
-  it("the tier story names the same class and property the tier code reads", () => {
-    // `tier list` is declared data and `tier lookup` is hand-written code, so
-    // the two can now disagree about what a tier IS and what addresses it —
-    // the coupling where a candidate completes and then fails to resolve.
-    // While the query lived in `capabilities/tier/pack.ts` it interpolated
-    // these two symbols and could not drift; the declaration spells them
-    // literally, because `pragma.conf.ts` is inert data and imports nothing.
-    // This is what replaces that guarantee.
-    const query = declaredStories.get("tier")?.list?.query ?? "";
-    expect(query).toContain(`a ${TIER_TYPE}`);
+  it("ZERO hand-written data commands: a registered noun IS its compiled story", () => {
+    // The machine form of L-OPEN-9's end state — "a fork defines its entire
+    // read surface in pragma.conf.ts". Prose can go stale; this cannot. Every
+    // declared noun's REGISTERED module (what the CLI, the MCP server and the
+    // generated reference all project) must be verb-for-verb what recompiling
+    // its story alone produces. Re-introducing a composite — an authored module
+    // that prepends or appends a hand-written verb beside the story, which is
+    // exactly how `block`, `token` and `tier` used to be built — fails here,
+    // whatever the docblocks say.
+    for (const [noun, story] of declaredStories) {
+      const registered = capabilities.find((entry) => entry.name === noun);
+      const compiled = compilePack(story, "pragma.conf.ts", DEFAULT_PREFIX_MAP);
+      // Two halves, because a spec carries closures a fresh compile cannot
+      // reproduce by identity. (1) SHAPE: recompiling the story alone must
+      // yield the same verbs, declared the same way — an extra verb or an extra
+      // flag beside the story fails here.
+      expect(
+        registered?.verbs.map(declaredShape),
+        `"${noun}" registers verbs its story does not declare`,
+      ).toEqual(compiled.map(declaredShape));
+      // (2) IDENTITY: each registered verb must BE the compiled story's verb
+      // object, not a look-alike. A composite module — the `[...story.verbs,
+      // handWrittenVerb]` shape `block`, `token` and `tier` used to be built
+      // with — constructs new objects, so it cannot pass this even if its
+      // shapes happen to match.
+      const fromStory = storyModules.get(noun)?.verbs ?? [];
+      expect(registered?.verbs.length).toBe(fromStory.length);
+      registered?.verbs.forEach((verb, index) => {
+        expect(verb, `"${noun}" verb ${index} is not the story's`).toBe(
+          fromStory[index],
+        );
+      });
+    }
+  });
+
+  it("the tier story is internally coherent, and coherent with the vocabulary", () => {
+    // Both tier verbs are declared data now (L-OPEN-9), so the noun can no
+    // longer disagree with ITSELF in code — but the list query spells its
+    // class and property literally (`pragma.conf.ts` is inert data and imports
+    // nothing) while the lookup declares them as fields, and the vocabulary
+    // declares the addressing property once more for the index builder. This
+    // holds all three to one class and one property, so a candidate that
+    // completes still resolves and the index projects the names the lookup
+    // matches.
+    const story = declaredStories.get("tier");
+    const query = story?.list?.query ?? "";
+    expect(story?.lookup?.type).toBe("ds:Tier");
+    expect(query).toContain(`a ${story?.lookup?.type}`);
+    expect(story?.lookup?.by).toBe(VOCABULARY.altName);
     expect(query).toContain(`${VOCABULARY.altName} ?name`);
   });
 });

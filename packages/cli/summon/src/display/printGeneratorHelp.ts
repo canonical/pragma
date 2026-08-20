@@ -6,8 +6,10 @@
  * @note Impure — writes to stdout, loads generators via dynamic import.
  */
 
-import { formatGeneratorLlmHelp } from "@canonical/cli-core";
-import type { GeneratorNode } from "@canonical/summon-core";
+import {
+  formatLlmHelp as formatGeneratorLlmHelp,
+  type GeneratorNode,
+} from "@canonical/summon-core";
 import { toKebabCase } from "@canonical/utils";
 import chalk from "chalk";
 import { loadGenerator } from "../discovery/index.js";

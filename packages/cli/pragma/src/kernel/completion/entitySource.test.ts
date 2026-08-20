@@ -38,14 +38,15 @@ function projectWithIndex(index: unknown): string {
  * A crafted index exercising the index / prefixes sources. Deliberately in a
  * NEUTRAL namespace: the reader knows no entity families any more, so a test
  * proving it reads `label` or `altNames` must not need this distribution's
- * vocabulary to say so.
+ * vocabulary to say so. Since L-OPEN-9 no live verb declares the `altNames`
+ * field (the tier lookup completes entity names like every declared lookup),
+ * so this crafted index is where the field's read contract is held.
  *
  * Real-vocabulary coverage lives in two places, and neither is here: the
  * PROTECTED contract describe below reads the shipped index for plain entity
  * NAMES, and `safety.test.ts`'s "every declared name source resolves without
  * constructing the store" drives the live grammar over the shipped index for
- * the `altNames` field (`tier lookup ap` → `Apps/Juju`, carried only by the
- * declared alt-name property) and for `prefixes`.
+ * entity names (`tier lookup ap` → `ds:apps`) and for `prefixes`.
  */
 const CRAFTED_INDEX = {
   version: 2,

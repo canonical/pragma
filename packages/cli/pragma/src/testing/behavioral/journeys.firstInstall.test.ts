@@ -17,13 +17,10 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { blockModule } from "../../capabilities/block/index.js";
 import { storyModules } from "../../capabilities/distribution.js";
 import { checkPackageRefs } from "../../capabilities/doctor/checks/checkPackageRefs.js";
 import { promptListVerb } from "../../capabilities/prompt/verbs.js";
 import { collectStatus } from "../../capabilities/sources/collectStatus.js";
-import { tierModule } from "../../capabilities/tier/index.js";
-import { tokenModule } from "../../capabilities/token/index.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
@@ -38,9 +35,21 @@ const JSON_FLAGS: GlobalFlags = {
 };
 const NO_MUTATION = { dryRun: false, undo: false, yes: false };
 
+const blockModule = storyModules.get("block");
+if (!blockModule) {
+  throw new Error('pragma.conf.ts declares no story for "block"');
+}
 const standardModule = storyModules.get("standard");
 if (!standardModule) {
   throw new Error('pragma.conf.ts declares no story for "standard"');
+}
+const tierModule = storyModules.get("tier");
+if (!tierModule) {
+  throw new Error('pragma.conf.ts declares no story for "tier"');
+}
+const tokenModule = storyModules.get("token");
+if (!tokenModule) {
+  throw new Error('pragma.conf.ts declares no story for "token"');
 }
 
 const verbOf = (module: CapabilityModule, path: string): VerbSpec =>

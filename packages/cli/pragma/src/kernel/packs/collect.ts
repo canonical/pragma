@@ -63,13 +63,11 @@ interface ValidatedStories {
  * is reported, through this same channel.
  *
  * A package story may only introduce a NOUN THE CLI DOES NOT HAVE. Every static
- * noun is reserved — not just the authored ones: `block`, `token` and `tier` are
- * COMPOSITES whose module carries a hand-written verb alongside its story
- * (`block list`, `token add-config`, `tier lookup`), and the merge replaces a
- * noun wholesale, so letting a package claim one would silently delete a
- * mutation and a covenant-frozen verb from a user who only declared a
- * dependency. Overriding a shipped noun stays a CONFIG decision — that file is
- * the user's own.
+ * noun is reserved — the kernel's own AND the ones the distribution declares as
+ * stories — because the merge replaces a noun WHOLESALE: a package claiming
+ * `block` would swap this distribution's design-system reads for its own in a
+ * project that did nothing but declare a dependency. Overriding a shipped noun
+ * stays a CONFIG decision — that file is the user's own.
  *
  * @param records - The raw story records the answering pack carries.
  * @param staticModules - The static capabilities, to detect a story claiming a

@@ -8,19 +8,13 @@ Global flags apply to every command: `--format <plain|llm|json>` (auto-detected 
 
 ### pragma block list
 
-List blocks visible under the current tier and channel.
+List all design system blocks.
 
-List design system blocks visible under the active tier chain and channel. Optionally list across every tier, ignoring the tier filter.
+List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.
 
 ```
-pragma block list [options]
+pragma block list
 ```
-
-**Flags**
-
-| Flag | Value | Description |
-| --- | --- | --- |
-| `--all-tiers` | — | Show blocks from all tiers, ignoring the tier filter. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `block_list` tool.
@@ -29,7 +23,6 @@ pragma block list [options]
 
 ```bash
 pragma block list
-pragma block list --all-tiers
 pragma block list --format llm
 ```
 
@@ -881,19 +874,19 @@ pragma tier list --format llm
 
 ### pragma tier lookup
 
-Show one tier by name, with the blocks scoped to it.
+Show tiers by name, with the blocks scoped to each.
 
-Look up a single tier by its name (e.g. apps/lxd) and list the blocks scoped directly to it.
+Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.
 
 ```
-pragma tier lookup <name>
+pragma tier lookup <name...>
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `<name>` | yes | The tier name (e.g. apps/lxd). |
+| `<name...>` | yes | Tier names, prefixed names/IRIs, or glob patterns. |
 
 - Store: reads the local store (`pragma sources update` builds it).
 - MCP: exposed as the `tier_lookup` tool.
@@ -901,31 +894,10 @@ pragma tier lookup <name>
 **Examples**
 
 ```bash
-pragma tier lookup apps/lxd
+pragma tier lookup <name>
 ```
 
 ## token
-
-### pragma token add-config
-
-Generate a tokens.config.mjs for the terrazzo token pipeline.
-
-Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
-
-```
-pragma token add-config
-```
-
-- Store: reads the local store (`pragma sources update` builds it).
-- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
-- MCP: exposed as the `token_add-config` tool.
-
-**Examples**
-
-```bash
-pragma token add-config --dry-run  # preview the write
-pragma token add-config --yes  # write the config
-```
 
 ### pragma token list
 

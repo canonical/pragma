@@ -488,12 +488,12 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   tier: {
     type: "string (optional)",
     notes:
-      "Active tier path; absent means no tier filter. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
+      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
   },
   channel: {
     type: "`normal` | `experimental` | `prerelease` (optional)",
     notes:
-      "Release channel controlling entity visibility. Defaults to `normal`. Set it with `config set channel <name>`.",
+      "Selects the npm dist-tag `upgrade` and `info` check the registry with. It no longer scopes graph reads — no read filters by channel. Defaults to `normal`. Set it with `config set channel <name>`.",
   },
   detail: {
     type: "`summary` | `standard` | `detailed` (optional)",

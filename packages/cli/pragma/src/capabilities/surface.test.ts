@@ -44,15 +44,15 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     expect(emitted.nouns.__complete).toBeUndefined();
   });
 
-  it("emits the read nouns/verbs the packs add (block list hand-written, sample only where declared)", () => {
+  it("emits the read nouns/verbs the packs add (sample only where declared)", () => {
     expect(emitted.nouns.standard?.verbs.map((v) => v.v)).toEqual([
       "list",
       "categories",
       "lookup",
       "sample",
     ]);
-    // PR7 completes the surface: tier gains a bespoke single-name lookup;
-    // block/modifier/token gain no-argument samples (fixedCount).
+    // PR7 completed the surface; block/modifier/token carry no-argument
+    // samples (fixedCount), tier declares no sample.
     expect(emitted.nouns.tier?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
@@ -62,16 +62,18 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       "lookup",
       "sample",
     ]);
+    // `token` is purely declarative since L-OPEN-9 removed `add-config`: the
+    // three read verbs its story compiles, and no mutation.
     expect(emitted.nouns.token?.verbs.map((v) => v.v)).toEqual([
       "list",
       "lookup",
       "sample",
-      "add-config",
     ]);
+    // block list is the story's compiled, unfiltered list (L-OPEN-9): no
+    // flags — the `--all-tiers` escape died with the hand-written filtering.
     expect(emitted.nouns.block?.verbs).toEqual([
       {
         v: "list",
-        flags: ["--all-tiers"],
         needsStore: true,
         mcp: "block_list",
       },
@@ -83,11 +85,11 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       },
       { v: "sample", needsStore: true, mcp: "block_sample" },
     ]);
-    // The bespoke tier lookup emits the SINGLE-name positional the covenant
-    // freezes (a pack lookup would emit the variadic `<name...>`).
+    // The tier lookup is the story's compiled lookup (L-OPEN-9), so it emits
+    // the variadic `<name...>` positional every pack lookup emits.
     expect(emitted.nouns.tier?.verbs).toContainEqual({
       v: "lookup",
-      args: ["<name>"],
+      args: ["<name...>"],
       needsStore: true,
       mcp: "tier_lookup",
     });
@@ -211,14 +213,14 @@ describe("surface COMPLETE — emitted == covenant (PROTECTED)", () => {
   // The CLOSING direction: assertConforms already proves emitted ⊆ covenant;
   // this proves covenant ⊆ emitted, so together the tool sets are EQUAL — the
   // surface-complete milestone. After PR7, every covenant tool is realized.
-  it("emits every covenant tool (all 38) — set equality with the covenant", () => {
+  it("emits every covenant tool (all 37) — set equality with the covenant", () => {
     const emittedTools = new Set(emitted.mcpSurface.tools);
     const missing = golden.mcpSurface.tools.filter((t) => !emittedTools.has(t));
     expect(missing).toEqual([]);
     expect([...emitted.mcpSurface.tools].sort()).toEqual(
       [...golden.mcpSurface.tools].sort(),
     );
-    expect(emitted.mcpSurface.tools).toHaveLength(38);
+    expect(emitted.mcpSurface.tools).toHaveLength(37);
   });
 
   // The covenant edit: the non-tool MCP surface is frozen too.

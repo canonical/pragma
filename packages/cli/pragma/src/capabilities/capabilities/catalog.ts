@@ -30,8 +30,10 @@ import type {
  * `capabilities` tool and the MCP handshake read, so the two cannot contradict
  * each other. `system` projects the distribution's identity rather than naming
  * a domain — the live tool catalog the same handshake carries already says
- * which nouns exist. `model`/`querying` are verbatim from the old shell (the
- * tier-channel / SPARQL model is still accurate for v2); `mutations` is new in
+ * which nouns exist. `querying` is verbatim from the old shell (the SPARQL
+ * model is still accurate for v2); `model` stopped claiming reads are
+ * tier/channel-SCOPED when the hand-written filtering was removed (L-OPEN-9)
+ * — the hierarchy is graph data now, not a query gate; `mutations` is new in
  * v2, surfacing the plan-first/confirm gate.
  */
 export const CONVENTIONS = {
@@ -41,7 +43,7 @@ export const CONVENTIONS = {
   // otherwise reads "recipe graph.. A CLI and MCP server…".
   system: `${BIN_NAME} — ${PROGRAM_DESCRIPTION} (a CLI and MCP server over a knowledge graph).`,
   model:
-    "Data is scoped by tier (hierarchical, e.g. global > apps > apps/lxd) and channel (normal, experimental, prerelease). Set these via config_set (e.g. config_set tier apps/lxd, config_set channel experimental).",
+    "The graph models a tier hierarchy (e.g. global > apps > apps/lxd) and release channels (normal, experimental, prerelease) as DATA on each entity. Reads are unscoped — every list shows everything; filter by inspecting an entity's tier/release fields or with graph_query.",
   querying:
     "All queries run against an RDF triple store. Prefixed IRIs (e.g. prefix:name) identify entities. Use ontology_list to discover the active namespaces.",
   mutations:

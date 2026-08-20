@@ -6,15 +6,13 @@ Mutating tools are plan-first: called without `confirm: true` they return the pl
 
 ### block_list
 
-List design system blocks visible under the active tier chain and channel. Optionally list across every tier, ignoring the tier filter.
+List all design system blocks with their type, tier, and modifier families. Use when browsing which blocks exist. Example: block_list {}.
 
 Read-only.
 
 **Input**
 
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `allTiers` | boolean | no | Show blocks from all tiers, ignoring the tier filter. |
+_No input parameters._
 
 ### block_lookup
 
@@ -404,7 +402,7 @@ _No input parameters._
 
 ### tier_lookup
 
-Look up a single tier by its name (e.g. apps/lxd) and list the blocks scoped directly to it.
+Get one or more tiers by name, with the blocks scoped directly to each. Use when you need which blocks a specific tier carries. Example: tier_lookup { names: ["apps/lxd"] }.
 
 Read-only.
 
@@ -412,20 +410,7 @@ Read-only.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `name` | string | yes | The tier name (e.g. apps/lxd). |
-
-### token_add-config
-
-Writes a terrazzo `defineConfig` at the project root, sourcing token JSON from the configured design-system packs. Store-backed so it reports how many tokens the active graph holds. Plan-first: returns the write plan until you confirm.
-
-Mutation — plan-first (set `confirm: true` to apply).
-
-**Input**
-
-| Parameter | Type | Required | Description |
-| --- | --- | --- | --- |
-| `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |
-| `cwd` | string | no | Absolute project directory to write into; defaults to the server's working directory. |
+| `name` | string[] | yes | Tier names, prefixed names/IRIs, or glob patterns. |
 
 ### token_list
 

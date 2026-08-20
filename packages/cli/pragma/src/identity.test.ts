@@ -289,7 +289,7 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // hardcoded term still passes every other test in this suite: the fixtures
     // on both sides would simply agree. So capture what the readers EMIT.
     const { DEFAULT_PREFIX_MAP } = await import("./kernel/render/prefixes.js");
-    const { runTierLookup } = await import("./capabilities/tier/runLookup.js");
+    const { VOCABULARY } = await import("./kernel/vocabulary.js");
     const { readPrompts } = await import(
       "./kernel/project/mcp/prompts/source.js"
     );
@@ -302,13 +302,17 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       "http://www.w3.org/2000/01/rdf-schema#",
     );
 
-    // The tier noun's LIST query is no longer code: it is a story the
-    // distribution declares, so a fork writes its own terms into it directly
-    // and there is nothing here for a hardcoded term to hide in.
-    // `distribution.test.ts` holds this distribution's declaration to the same
-    // class and property the tier code below reads.
-    //
-    // The two generated reads, captured off a stub facade.
+    // The tier noun is no longer code AT ALL (L-OPEN-9): both its verbs are a
+    // story the distribution declares, so a fork writes its own terms into the
+    // declaration directly and there is nothing left in the kernel for a
+    // hardcoded tier term to hide in. `distribution.test.ts` holds this
+    // distribution's declaration coherent with the vocabulary. What the KERNEL
+    // still reads domain terms with is the vocabulary projection (the index
+    // builder interpolates `VOCABULARY.altName`) and the prompts reader —
+    // captured below.
+    expect(VOCABULARY.altName).toBe("rcp:name");
+
+    // The generated prompt read, captured off a stub facade.
     const queries: string[] = [];
     const recorder = {
       query: {
@@ -319,13 +323,9 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
       },
     } as never;
 
-    await expect(runTierLookup(recorder, "Starters")).rejects.toMatchObject({
-      code: "ENTITY_NOT_FOUND",
-    });
     await expect(readPrompts(recorder)).resolves.toEqual([]);
 
     const emitted = queries.join("\n");
-    expect(emitted).toContain("rcp:name");
     expect(emitted).toContain("rcp:Prompt");
     expect(emitted).toContain("rcp:promptBody");
     expect(emitted).not.toMatch(THIS_DISTRIBUTION);

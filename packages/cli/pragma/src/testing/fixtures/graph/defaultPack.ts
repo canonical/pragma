@@ -19,17 +19,18 @@
  *  2. Two+ domain classes (`ds:Component` and `ds:Pattern`) so a read that keys
  *     off the primary domain type is exercised across more than one class.
  *  3. An UNTIERED block (`ds:orphanWidget` — a `ds:Component` with a `ds:name`
- *     but NO `ds:tier`). `block list`'s SELECT inner-joins `?c ds:tier ?t`, so an
- *     untiered block is silently dropped from every listing (A2), even though
- *     `graph query` finds it — the fixture pins both halves of that divergence.
+ *     but NO `ds:tier`). `block list`'s SELECT once inner-joined `?c ds:tier ?t`,
+ *     silently dropping an untiered block from every listing (A2) even though
+ *     `graph query` found it; the declared story's OPTIONAL tier join is what
+ *     the fixture now holds honest.
  *  4. A multilingual `rdfs:label "Button"@en, "Bouton"@fr` — two same-predicate
  *     labels whose winner in the single-valued index is store-order-arbitrary
  *     (A7), a shape a bare-string fixture can never produce.
  *
  * The vocabulary is the live `ds:` design-system namespace (same as
  * `blockGraph.ts`/`canonical.ts`), so `block list`, `ontology list/show`, and
- * `graph query` all run against real terms — the hand-written `block list` verb
- * hard-codes `ds:Component`/`ds:name`/`ds:tier`/`ds:release`.
+ * `graph query` all run against real terms — the `block` story's declared SELECT
+ * names `ds:Component`/`ds:Pattern`/`ds:name`/`ds:tier` directly.
  *
  * Stable anchors this fixture guarantees (pinned by the journey suite):
  *  - Exactly 4 blocks in the graph: Button (`ds:Component`, global), Card

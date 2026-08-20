@@ -78,13 +78,19 @@ export const PARITY_GAPS: readonly ParityGapEntry[] = [
     id: "generic-renderers-not-bespoke-templates",
     area: "render",
     description:
-      "Every noun's plain/llm output — including the one hand-written verb, `block list` — renders through the SAME generic list/lookup renderer (`kernel/render/renderers.ts`), driven by declarative column/field/section metadata. There are no per-noun hand-authored render templates left to keep in parity.",
+      "Every noun's plain/llm output renders through the SAME generic list/lookup renderer (`kernel/render/renderers.ts`), driven by declarative column/field/section metadata. There are no per-noun hand-authored render templates left to keep in parity (the last hand-written verb, `block list`, became declared content in L-OPEN-9).",
   },
   {
     id: "block-lookup-not-tier-scoped",
     area: "block",
     description:
-      "`block lookup` resolves by `ds:name` GLOBALLY, with no tier or channel filtering — only the hand-written `block list` is tier/channel-aware (PR3 Risk5, `capabilities/block/tierChain.ts`). A same-named block declared at two tiers cannot be disambiguated by `block lookup` alone (the old shell's tier-scoped lookup disambiguation has no v2 equivalent).",
+      "`block lookup` resolves by `ds:name` GLOBALLY, with no tier or channel filtering. A same-named block declared at two tiers cannot be disambiguated by plain name (the old shell's tier-scoped lookup disambiguation has no v2 equivalent) — address it by prefixed IRI instead. Since L-OPEN-9 NOTHING is tier/channel-aware: the hand-written, tier-chain-filtered `block list` was removed with its `tierChain.ts`.",
+  },
+  {
+    id: "block-list-unfiltered",
+    area: "block",
+    description:
+      "L-OPEN-9 (owner-signed): `block list` is the block story's compiled, UNFILTERED list — it shows every block, including experimental/alpha ones, for everyone, until filtering returns in declared form. The old tier-chain inheritance, channel visibility, and `--all-tiers` escape were hand-written filtering the pack grammar has no term for, and the ruling removed them rather than growing the grammar to keep them. `config.tier` consequently scopes nothing (reported by `config show`/`info` only); `config.channel` keeps only its npm dist-tag role for `upgrade`/`info`.",
   },
   {
     id: "graph-query-deferred",

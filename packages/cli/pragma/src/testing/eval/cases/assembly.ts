@@ -171,15 +171,22 @@ export const assemblyEvalCases: readonly EvalCase[] = [
     },
   },
   {
-    id: "prompt-tokens-config-maps-to-token-add-config",
+    id: "prompt-tokens-config-maps-to-nothing",
     kind: "prompt",
     input:
-      '"Generate a terrazzo tokens config" should map to `token_add-config`.',
+      '"Generate a terrazzo tokens config" maps to NO tool — `token_add-config` was removed in L-OPEN-9, and the token noun is read-only.',
     async expect({ mcp }) {
-      assertIntentTool(
-        await mcp.listTools(),
-        "token_add-config",
-        /token|terrazzo/i,
+      // The inverse of an intent-mapping case, and the point of the ruling: an
+      // agent asked to write a tokens config finds nothing in the catalog that
+      // claims to do it, rather than a verb the declared grammar cannot express.
+      const tools = await mcp.listTools();
+      assert.ok(
+        !tools.some(
+          (tool) =>
+            tool.name === "token_add-config" ||
+            /terrazzo|tokens\.config/i.test(String(tool.description ?? "")),
+        ),
+        "no tool may still offer to write a tokens config",
       );
     },
   },

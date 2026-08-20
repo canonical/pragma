@@ -322,13 +322,14 @@ describe("storeless guarantee (PROTECTED)", () => {
       runComplete(["ontology", "show", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
-    // index + `field: "altNames"`: a real alt name of a real tier comes back
-    // from the embedded index. `Apps/Juju` is carried ONLY by the declared
-    // alt-name property — it is neither an entity name nor a label — so this
-    // fails if the field ever stops being read.
+    // index (derived, no field): the tier lookup is a declared pack lookup
+    // (L-OPEN-9), so its candidates are the index's entity NAMES for the
+    // declared type — prefixed IRIs, like every other declared lookup's
+    // (D9-A). `ds:apps` is a real `ds:Tier` subject in the embedded index,
+    // and the lookup resolves a prefixed-IRI candidate directly.
     await expect(
       runComplete(["tier", "lookup", "ap"], capabilities, env),
-    ).resolves.toContain("Apps/Juju");
+    ).resolves.toContain("ds:apps");
 
     // skills (no skills root here) and prompt labels (this graph carries no
     // prompt entities) have nothing to offer, and the honest storeless answer
