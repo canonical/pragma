@@ -181,7 +181,7 @@ pragma create application react [app-path] [options]
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[appPath]` | no | Application directory name. (default: my-app) |
+| `[app-path]` | no | Application directory name. (default: my-app) |
 
 **Flags**
 
@@ -217,7 +217,7 @@ pragma create component <framework> [component-path] [options]
 | Argument | Required | Description |
 | --- | --- | --- |
 | `<framework>` | yes | Component framework — the tree segment (`create component <framework>`). (one of: react, svelte, lit) |
-| `[componentPath]` | no | Component path. |
+| `[component-path]` | no | Component path. |
 
 **Flags**
 

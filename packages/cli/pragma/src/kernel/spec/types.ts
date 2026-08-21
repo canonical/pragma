@@ -282,6 +282,13 @@ export interface ReferenceCliSyntax {
    * default `--<kebab-name>` derivation.
    */
   readonly flagTokens: Readonly<Record<string, string>>;
+  /**
+   * The registered positional token per binding-level param name (e.g.
+   * `componentPath` → `[component-path]`) — the SAME token the usage line
+   * carries, so the Arguments table never contradicts its own synopsis. A
+   * param absent here renders with the default `<name>`/`[name]` derivation.
+   */
+  readonly positionalTokens?: Readonly<Record<string, string>>;
 }
 
 /** What the program hands a module mounting its own subtree. */

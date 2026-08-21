@@ -45,6 +45,13 @@ describe("reference docs drift-guard — emitReference == committed (PROTECTED)"
     expect(chapter).toContain(
       "pragma create component <framework> [component-path] [options]",
     );
+    // The Arguments tables print the SAME registered token their synopses
+    // carry — never the binding-level camelCase name (that spelling belongs
+    // to the MCP schemas in tools.md).
+    expect(chapter).toContain("| `[app-path]` |");
+    expect(chapter).toContain("| `[component-path]` |");
+    expect(chapter).not.toContain("`[appPath]`");
+    expect(chapter).not.toContain("`[componentPath]`");
     // Default-true confirms document ONLY the spelling the mount registers…
     for (const token of [
       "| `--no-with-styles` |",

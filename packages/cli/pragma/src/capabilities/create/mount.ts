@@ -238,10 +238,11 @@ function unionPrompts(paths: readonly string[]): ProjectedPrompt[] {
  * the generated reference prints): the usage line carries the real tree
  * segment (`create application react …`, `<framework>` for the multi-leaf
  * binding — its values live in the Args table) and the registered kebab
- * positional; each flag token is the one the mount actually registers (a
- * default-true confirm registers ONLY its `--no-` form), derived from the
- * same `buildOptionInfo` the mount and completion use. Exported for the
- * reference pins.
+ * positional, which is also handed over as the per-param positional token so
+ * the Arguments table prints the SAME spelling; each flag token is the one
+ * the mount actually registers (a default-true confirm registers ONLY its
+ * `--no-` form), derived from the same `buildOptionInfo` the mount and
+ * completion use. Exported for the reference pins.
  */
 export function referenceSyntax(
   verbPath: VerbSpec["path"],
@@ -257,7 +258,12 @@ export function referenceSyntax(
   else if (first.includes("/")) tokens.push(first.split("/")[1] as string);
   const prompts = unionPrompts(paths);
   const positional = prompts.find((prompt) => prompt.positional === true);
-  if (positional) tokens.push(`[${toKebabCase(positional.name)}]`);
+  const positionalTokens: Record<string, string> = {};
+  if (positional) {
+    const token = `[${toKebabCase(positional.name)}]`;
+    tokens.push(token);
+    positionalTokens[positional.name] = token;
+  }
   tokens.push("[options]");
 
   const flagTokens: Record<string, string> = {};
@@ -265,7 +271,7 @@ export function referenceSyntax(
     if (prompt.positional === true) continue;
     flagTokens[prompt.name] = promptFlag(prompt).flag;
   }
-  return { usage: tokens.join(" "), flagTokens };
+  return { usage: tokens.join(" "), flagTokens, positionalTokens };
 }
 
 /** Mount the generator tree onto the `create` parent command. */

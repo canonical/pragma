@@ -166,16 +166,25 @@ function formatUsage(verb: VerbSpec): string {
   return segments.join(" ");
 }
 
-/** The Args table for a verb's positionals, or `""` when it has none. */
-function formatArgsTable(params: readonly ParamSpec[]): string {
+/**
+ * The Args table for a verb's positionals, or `""` when it has none. A
+ * mounted verb's {@link ReferenceCliSyntax.positionalTokens} supplies the
+ * REGISTERED token per param — the one its usage line prints — so the
+ * Argument column and the synopsis agree on the same spelling; without one,
+ * the token derives from the param name.
+ */
+function formatArgsTable(
+  params: readonly ParamSpec[],
+  positionalTokens?: Readonly<Record<string, string>>,
+): string {
   const positionals = params.filter((p) => p.positional);
   if (positionals.length === 0) return "";
   const rows = ["| Argument | Required | Description |", "| --- | --- | --- |"];
   for (const param of positionals) {
     const required = param.required ? "yes" : "no";
-    rows.push(
-      `| \`${formatPositionalToken(param)}\` | ${required} | ${describeParam(param)} |`,
-    );
+    const token =
+      positionalTokens?.[param.name] ?? formatPositionalToken(param);
+    rows.push(`| \`${token}\` | ${required} | ${describeParam(param)} |`);
   }
   return `**Arguments**\n\n${rows.join("\n")}`;
 }
@@ -252,7 +261,7 @@ function renderCommandSection(
     verb.summary,
     verb.doc ?? "",
     `\`\`\`\n${syntax ? `${BIN_NAME} ${syntax.usage}` : formatUsage(verb)}\n\`\`\``,
-    formatArgsTable(verb.params),
+    formatArgsTable(verb.params, syntax?.positionalTokens),
     formatFlagsTable(verb.params, syntax?.flagTokens),
     formatVerbAttributes(verb),
     formatExamples(verb.examples),
