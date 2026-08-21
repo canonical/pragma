@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { emitReference } from "../kernel/spec/emitReference.js";
@@ -28,5 +28,23 @@ describe("reference docs drift-guard — emitReference == committed (PROTECTED)"
       .filter((name) => name.endsWith(".md"))
       .sort();
     expect(committed).toEqual([...emitted.keys()].sort());
+  });
+
+  it("the create chapter points at the parity contract, and the link resolves", () => {
+    const commands = readCommitted("commands.md");
+    const start = commands.indexOf("\n## create\n");
+    expect(start).toBeGreaterThan(-1);
+    const chapter = commands.slice(start, commands.indexOf("\n### ", start));
+    // Pragma's docs point, never copy — the pinned pointer.
+    expect(chapter).toContain("summon/core/docs/parity-contract.md");
+    // The relative target resolves from the page — what lychee --offline
+    // checks on every PR.
+    const link = chapter.match(/\]\(([^)]*parity-contract\.md)\)/)?.[1];
+    expect(link).toBeDefined();
+    expect(
+      existsSync(
+        fileURLToPath(new URL(`../../docs/reference/${link}`, import.meta.url)),
+      ),
+    ).toBe(true);
   });
 });
