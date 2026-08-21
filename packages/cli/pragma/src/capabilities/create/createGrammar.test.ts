@@ -7,7 +7,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -205,6 +205,57 @@ describe("the mounted create grammar (subprocess)", () => {
       "Refusing to scaffold in a non-interactive run without complete input.",
     );
     expect(envelope.error.message).toContain("Missing: --component-path");
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("the refusal envelopes under an explicit --format llm — the condensed D3 error form", () => {
+    const { status, stderr, cwd } = run([
+      "create",
+      "component",
+      "react",
+      "--format",
+      "llm",
+    ]);
+    expect(status).toBe(2);
+    // The same `## Error: <code>` framing every other pragma error carries in
+    // llm form, with the shared refusal line riding beneath it.
+    expect(stderr).toContain("## Error: INVALID_INPUT");
+    expect(stderr).toContain(
+      "Refusing to scaffold in a non-interactive run without complete input.",
+    );
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("a DEFAULT piped refusal is the bare shared line — no envelope; auto-LLM never reframes it", () => {
+    // Full-stderr byte-equality needs a quiet stream: seed the global config
+    // so the one-time first-run note (stderr by design) does not fire.
+    const configHome = mkdtempSync(join(tmpdir(), "pragma-grammar-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+    const cwd = freshCwd();
+    const result = spawnSync(
+      "bun",
+      [pragmaBin, "create", "component", "react"],
+      {
+        cwd,
+        encoding: "utf-8",
+        input: "",
+        env: {
+          ...process.env,
+          XDG_CONFIG_HOME: configHome,
+          XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma-grammar-state-")),
+          XDG_CACHE_HOME: mkdtempSync(join(tmpdir(), "pragma-grammar-cache-")),
+        },
+      },
+    );
+    expect(result.status).toBe(2);
+    // Byte-equality of the WHOLE stream with the shared message (contract §3):
+    // the parity surface summon writes verbatim, with no framing line above it.
+    expect(result.stderr).toBe(
+      "Refusing to scaffold in a non-interactive run without complete input. " +
+        "Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. " +
+        "Missing: --component-path, --with-styles, --with-stories, --with-ssr-tests.\n",
+    );
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 

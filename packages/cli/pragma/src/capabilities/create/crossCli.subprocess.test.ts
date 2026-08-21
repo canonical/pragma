@@ -24,7 +24,7 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -247,9 +247,11 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   }
 
   // The refusal cell (row 6) is shared byte for byte: a bare non-TTY leaf
-  // refuses in BOTH bins with the same message and exit 2. Comparing only the
-  // refusal line normalizes away any host framing around it (there is none
-  // today — the message itself names no bin).
+  // refuses in BOTH bins with the same message and exit 2. Host framing
+  // exists ONLY under pragma's explicitly requested `--format json`/`--format
+  // llm` — never requested here — so picking the refusal line is a
+  // convenience, not a normalization; the full-stderr cell below pins the
+  // stronger byte fact for the default piped mode.
   const refusalLine = (stderr: string): string | undefined =>
     stderr.split("\n").find((line) => line.startsWith("Refusing to scaffold"));
 
@@ -276,4 +278,29 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       expect(pragmaRefusal).toBe(refusalLine(summon.stderr ?? ""));
     }, 60_000);
   }
+
+  it("component/react: the DEFAULT piped refusal matches on FULL stderr — no envelope on either side", () => {
+    // The whole stream, not a picked line: with the refusal line as the only
+    // bytes either bin writes, a framing line appearing on EITHER side breaks
+    // this cell. Pragma's one-time first-run note (stderr by design) is kept
+    // off by seeding the global config it would otherwise create.
+    const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+    const pragma = spawnSync(compiledBin, ["create", "component", "react"], {
+      cwd: freshCwd("crosscli-refuse-"),
+      encoding: "utf-8",
+      input: "",
+      env: { ...process.env, XDG_CONFIG_HOME: configHome },
+    });
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, "component", "react"],
+      { cwd: freshCwd("crosscli-refuse-"), encoding: "utf-8", input: "" },
+    );
+    expect(pragma.status).toBe(2);
+    expect(summon.status).toBe(2);
+    expect(pragma.stderr.startsWith("Refusing to scaffold")).toBe(true);
+    expect(pragma.stderr).toBe(summon.stderr);
+  }, 60_000);
 });

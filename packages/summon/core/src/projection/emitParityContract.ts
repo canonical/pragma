@@ -247,7 +247,13 @@ All 32 rows, enumerated from the code:
 ${interactionTable()}
 
 - **\`refuse\`** writes the shared message verbatim to stderr and exits 2 in
-  BOTH hosts. The template, emitted from \`refusalMessage\`:
+  BOTH hosts — a default piped refusal is byte-identical across them, full
+  stderr. Only an EXPLICITLY requested machine format reframes it: pragma's
+  root \`--format json\`/\`--format llm\` render the same message through its
+  error envelope (a host output concern outside the parity surface; summon's
+  \`--format json\`/\`--llm\` imply \`--yes\`, so a summon refusal is always
+  the bare line). Implicit auto-detection of an output mode never reframes a
+  refusal. The template, emitted from \`refusalMessage\`:
 
   > ${refusalBase}
 

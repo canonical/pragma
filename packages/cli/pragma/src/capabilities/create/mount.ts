@@ -184,17 +184,21 @@ export function resolveCreateMode(
 }
 
 /**
- * Write the refusal and set exit 2. The PLAIN bytes are the cross-CLI parity
- * surface — the shared message verbatim, no envelope prefix (the summon bin
- * writes the identical line) — while `--format json` and `--llm` render the
- * same message through pragma's D3 error envelope (`INVALID_INPUT`), exactly
- * as `runCreate`'s own refusal path does through `renderError`.
+ * Write the refusal and set exit 2. The refusal is the cross-CLI parity
+ * surface (contract §3): its default bytes are the shared message verbatim,
+ * no envelope prefix — the summon bin's full stderr, byte for byte — and
+ * ONLY an explicitly requested machine format reframes it: `--format json`
+ * emits the D3 `{ ok:false, error }` envelope, `--format llm` the condensed
+ * Markdown error form, both as `INVALID_INPUT` through the same renderers
+ * every other pragma error uses. Implicit auto-LLM detection (a piped run
+ * without `--format`) is deliberately excluded — an inferred output mode
+ * must never break refusal byte-parity with summon.
  */
 function writeRefusal(
   message: string,
   flags: import("../../kernel/runtime/types.js").GlobalFlags,
 ): void {
-  if (flags.format === "json" || flags.llm) {
+  if (flags.format === "json" || flags.format === "llm") {
     const error = new PragmaError({ code: "INVALID_INPUT", message });
     const rendered =
       flags.format === "json" ? renderErrorJson(error) : renderErrorLlm(error);
