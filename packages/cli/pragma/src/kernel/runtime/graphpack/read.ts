@@ -12,6 +12,12 @@
  * fast path.
  */
 
+// Side-effect import — MUST precede the `@canonical/ke` import below so the
+// oxigraph WASM is embedded / its `readFileSync` patched before ke's
+// `createStore` (→ `loadOxigraph`) runs. `read.ts` is the single funnel every
+// store-boot path reaches (normal load and the __store-probe), and it is only
+// dynamic-imported on store boot, so this keeps the storeless hot paths clean.
+import "../wasmEmbed.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createStore } from "@canonical/ke";
