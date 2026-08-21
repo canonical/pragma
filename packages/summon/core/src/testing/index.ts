@@ -17,6 +17,7 @@ export {
   CONFORMANCE_FIXTURES,
   diffTrees,
   fixture,
+  flagizeAnswers,
   formatTreeDiff,
   isIdentical,
   produceReference,

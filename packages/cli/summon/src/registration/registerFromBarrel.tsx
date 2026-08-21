@@ -72,6 +72,10 @@ function registerStandardFlags(cmd: Command): void {
 /** Summon's standard-flag rows for the grouped-help Global Options block. */
 const STANDARD_FLAG_HELP: HostFlags = [
   { flags: "-d, --dry-run", description: "Preview without writing files" },
+  // `--undo` was registered but MISSING from the grouped help's hard-coded
+  // block for as long as the block existed; the parity set (prompt-derived ∪
+  // --dry-run/--undo/--yes) makes the omission a test failure, so it is fixed.
+  { flags: "--undo", description: "Reverse a previously executed generator" },
   { flags: "-y, --yes", description: "Skip confirmation prompts and preview" },
   { flags: "-v, --verbose", description: "Show debug output" },
   { flags: "--show-files", description: "Show file contents in dry-run" },
