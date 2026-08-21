@@ -12,11 +12,8 @@
  * {@link execute} so both interactive and non-interactive paths share it.
  */
 
+import toKebabCase from "../projection/kebab.js";
 import type PromptDefinition from "../types/PromptDefinition.js";
-
-/** Convert a camelCase prompt name to its kebab-case CLI flag form. */
-const toKebab = (name: string): string =>
-  name.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 
 /**
  * Find the first answer that violates its prompt's constraints.
@@ -41,14 +38,14 @@ export default function validateAnswers(
       !prompt.choices.some((choice) => choice.value === value)
     ) {
       const valid = prompt.choices.map((choice) => choice.value).join(", ");
-      return `Invalid --${toKebab(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
+      return `Invalid --${toKebabCase(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
     }
 
     if (prompt.validate) {
       const verdict = prompt.validate(value);
       if (verdict !== true) {
         const detail = typeof verdict === "string" ? verdict : "invalid value";
-        return `Invalid --${toKebab(prompt.name)}: ${detail}`;
+        return `Invalid --${toKebabCase(prompt.name)}: ${detail}`;
       }
     }
   }

@@ -12,14 +12,11 @@
  */
 
 import { TaskExecutionError } from "@canonical/task";
+import toKebabCase from "../projection/kebab.js";
 import type { PromptEffect, PromptHandler } from "./types.js";
 
 /** The task-error code raised when a required answer is neither provided nor defaulted. */
 export const MISSING_REQUIRED_ANSWER = "MISSING_REQUIRED_ANSWER";
-
-/** Convert a camelCase answer key to its kebab-case CLI flag form. */
-const toKebab = (name: string): string =>
-  name.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 
 /**
  * Build the structured error for a required, unprovided answer.
@@ -35,7 +32,7 @@ export function missingRequiredError(
   const { name, message } = effect.question;
   return new TaskExecutionError({
     code: MISSING_REQUIRED_ANSWER,
-    message: `Missing required ${noun} --${toKebab(name)} (${message}). Provide it non-interactively, or run interactively to be prompted.`,
+    message: `Missing required ${noun} --${toKebabCase(name)} (${message}). Provide it non-interactively, or run interactively to be prompted.`,
     context: { answer: name },
   });
 }

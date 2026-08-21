@@ -1,28 +1,11 @@
-import type { GeneratorDefinition } from "@canonical/summon-core";
-
 /**
- * A flattened representation of a command to register.
- * Separates command discovery from registration.
+ * Registration shapes — re-exported from the summon-core projection, their
+ * home since the command surface became a shared derivation
+ * (`@canonical/summon-core/projection`). Kept so existing imports of this
+ * module keep working.
  */
-export interface CommandEntry {
-  /** Path segments to this command (e.g., ["component", "react"]) */
-  path: string[];
-  /** The generator definition if this is a runnable command */
-  generator?: GeneratorDefinition;
-  /** Description for namespace-only commands */
-  description?: string;
-}
 
-/**
- * Option metadata built from a prompt definition for Commander.
- */
-export interface OptionInfo {
-  flags: string;
-  description: string;
-  defaultValue?: string;
-  group?: string;
-  /** The original camelCase prompt name */
-  promptName: string;
-  /** The kebab-case flag name (without --) */
-  kebabName: string;
-}
+export type {
+  CommandEntry,
+  OptionInfo,
+} from "@canonical/summon-core/projection";
