@@ -275,8 +275,11 @@ carries no template files — guaranteed by one seam in
 
 - **One key scheme**, reader and writer co-located: a template's key is
   \`<prefix>/<path after the last "templates/" segment>\` (\`qualifiedKey\`).
-  The writer (\`buildEmbeddedManifest\`) walks each declared root — every file,
-  dotfiles included, UTF-8 validated, a zero-file root is a build failure. The
+  The writer (\`buildEmbeddedManifest\`) derives every key through
+  \`qualifiedKey\` itself — whatever it embeds, the reader can address, by
+  construction. It walks each declared root — every file, dotfiles included,
+  UTF-8 validated; a zero-file root, a file outside any \`templates/\`
+  segment, and two files folding onto one key are each a BUILD failure. The
   host injects the manifest (\`setEmbeddedTemplates\`) and the generator
   packages' versions (\`setEmbeddedPackageVersions\`) before loading
   generators.

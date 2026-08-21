@@ -1,21 +1,26 @@
 /**
  * The WRITER half of the embedded-template seam: walk each declared root and
  * emit the manifest the {@link import("./store.js").loadTemplateSync} reader
- * resolves against — one key scheme ({@link qualifiedKey}'s contract), both
- * halves in one package, so a host build step keeps only host duties
- * (write-when-changed, module header).
+ * resolves against. Every key is derived THROUGH {@link qualifiedKey} — the
+ * reader's own function — so whatever the writer embeds, the reader can
+ * address by construction; both halves live in one package, and a host build
+ * step keeps only host duties (write-when-changed, module header).
  *
  * EVERY file under a root is carried — not just `.ejs`, dotfiles included —
- * because generators also scaffold raw assets verbatim. Two fail-loud gates
- * run per root: a root with zero files throws naming the prefix and dir (a
+ * because generators also scaffold raw assets verbatim. Four fail-loud gates
+ * guard the build: a root with zero files throws naming the prefix and dir (a
  * missing workspace link must fail the build, not ship a manifest a run dies
- * on), and every file must survive a UTF-8 round trip (binary assets are
+ * on); every file must survive a UTF-8 round trip (binary assets are
  * unsupported by the string manifest and must fail at build time, not corrupt
- * silently at run time).
+ * silently at run time); a file the reader could never key (no `templates/`
+ * segment in its path) throws naming the file; and two files folding onto one
+ * key (nested `templates/` directories) throw rather than silently shadowing
+ * each other.
  */
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, sep } from "node:path";
+import qualifiedKey from "./keyScheme.js";
 
 /** One declared root: the command-path prefix and the templates directory. */
 export interface EmbeddedRoot {
@@ -41,7 +46,9 @@ function collectFiles(dir: string): string[] {
  *
  * @param roots - The declared roots (prefix + templates dir).
  * @returns Qualified key → content, keys sorted (deterministic output).
- * @throws When a root holds zero files, or a file is not UTF-8 text.
+ * @throws When a root holds zero files, a file is not UTF-8 text, a file's
+ *   path carries no `templates/` segment (un-keyable by the reader), or two
+ *   files derive the same key.
  */
 export default function buildEmbeddedManifest(
   roots: readonly EmbeddedRoot[],
@@ -62,8 +69,20 @@ export default function buildEmbeddedManifest(
           `Template ${file} is not valid UTF-8 text — binary assets are unsupported by the string manifest.`,
         );
       }
-      const rel = relative(dir, file).split(sep).join("/");
-      entries[`${prefix}/${rel}`] = content;
+      // THE key derivation — qualifiedKey, the reader's function, so a key
+      // the reader cannot re-derive can never be written.
+      const key = qualifiedKey(prefix, file.split(sep).join("/"));
+      if (key === undefined) {
+        throw new Error(
+          `Template ${file} has no "templates/" segment in its path — the reader (qualifiedKey) could never address it, so embedding it would strand it.`,
+        );
+      }
+      if (entries[key] !== undefined) {
+        throw new Error(
+          `Embedded-template key collision: ${file} derives "${key}", which is already taken — a nested "templates/" directory folds onto the key of the outer tree; rename one of them.`,
+        );
+      }
+      entries[key] = content;
     }
   }
 

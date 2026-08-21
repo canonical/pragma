@@ -525,6 +525,29 @@ describe("declared generator bindings (PROTECTED)", () => {
     ).toEqual([]);
   });
 
+  it("every committed manifest entry is READER-DERIVABLE from the declared trees", async () => {
+    // The prefix check above cannot see a key the reader would derive
+    // DIFFERENTLY (e.g. a nested templates/ dir folding onto another key, or
+    // a stale committed manifest). Re-deriving the whole manifest through the
+    // seam's own writer — which keys via qualifiedKey, the reader's function
+    // — and requiring deep equality makes "embedded but unreachable" and
+    // "committed but stale" both test failures.
+    const { TEMPLATES } = await import("./templates.embedded.generated.js");
+    const { buildEmbeddedManifest } = await import("@canonical/summon-core");
+    const roots = Object.values(CREATE_GENERATORS).flatMap((binding) =>
+      binding.templateRoots.map((root) => ({
+        prefix: root.prefix,
+        dir: fileURLToPath(
+          new URL(
+            `../../../node_modules/${binding.name}/${root.relDir}`,
+            import.meta.url,
+          ),
+        ),
+      })),
+    );
+    expect(TEMPLATES).toEqual(buildEmbeddedManifest(roots));
+  });
+
   it("create surfaces exactly the three declared nouns", () => {
     // A LITERAL surface pin, deliberately not derived from CREATE_GENERATORS:
     // surfacing a noun also needs a hand-written prompt mirror, path param and

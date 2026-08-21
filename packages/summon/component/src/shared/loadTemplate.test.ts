@@ -3,18 +3,16 @@
  * is the core loader under the `component/` prefix, sharing the core store.
  * The seam's own behavior (disk-first, qualified-key fallback, collision
  * safety, hard miss) is tested in summon-core; what is pinned HERE is the
- * binding — the prefix, and that the re-exported `setEmbeddedTemplates`
- * feeds the same store the loader reads.
+ * binding — the prefix, and that the store a host fills through summon-core's
+ * `setEmbeddedTemplates` is the one this loader reads.
  */
 
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { setEmbeddedTemplates } from "@canonical/summon-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import loadTemplate, {
-  loadTemplateSync,
-  setEmbeddedTemplates,
-} from "./loadTemplate.js";
+import loadTemplate, { loadTemplateSync } from "./loadTemplate.js";
 
 describe("loadTemplate (component binding)", () => {
   let dir: string;

@@ -2,21 +2,20 @@
  * The component-bound view of summon-core's embedded-template seam.
  *
  * The loader logic — disk-first read, directory-qualified embedded fallback,
- * hard error naming the key — lives in `@canonical/summon-core` now (one key
+ * hard error naming the key — lives in `@canonical/summon-core` (one key
  * scheme for reader and writer, serving every generator package). This module
- * binds it to this package's `component` command-path prefix and keeps the
- * `./embedded` subpath's exports (`setEmbeddedTemplates`, `loadTemplateSync`)
- * alive for the host that injects the manifest.
+ * is only the PREFIX BINDING over that seam: it fixes this package's
+ * `component` command-path prefix, which is all the generators need. The host
+ * that carries templates injects its manifest through summon-core's own
+ * `setEmbeddedTemplates` — nothing here re-exports the store.
  */
 
 import {
   loadTemplateSync as coreLoadTemplateSync,
   type LoadedTemplate,
-  setEmbeddedTemplates,
 } from "@canonical/summon-core";
 
 export type { LoadedTemplate };
-export { setEmbeddedTemplates };
 
 /**
  * Load a component template (disk-first, embedded fallback under the

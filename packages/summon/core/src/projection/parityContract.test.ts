@@ -1,9 +1,16 @@
+/**
+ * PROTECTED — the parity-contract byte-drift guard (PLAN §K). The committed
+ * `docs/parity-contract.md` is the normative source the PROTECTED cross-CLI
+ * matrix executes against; this test holds it byte-identical to the emitter,
+ * so behavior without doc and doc without behavior are both build failures.
+ */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import emitParityContract from "./emitParityContract.js";
 
-describe("parity contract drift-guard — emitted == committed", () => {
+describe("parity contract drift-guard — emitted == committed (PROTECTED)", () => {
   it("docs/parity-contract.md is byte-identical to the emitter's output", () => {
     const committed = readFileSync(
       fileURLToPath(new URL("../../docs/parity-contract.md", import.meta.url)),

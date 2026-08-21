@@ -17,7 +17,11 @@ describe("qualifiedKey", () => {
     ).toBe("application/react/src/lib/index.ts.ejs");
   });
 
-  it("uses the LAST templates/ segment when several appear", () => {
+  it("uses the LAST templates/ segment when several appear — for BOTH halves", () => {
+    // This is the ONE scheme: the writer (buildEmbeddedManifest) derives its
+    // keys through this very function, so `x/file.ejs` is what gets embedded
+    // AND what the reader looks up — pinned end-to-end in
+    // buildEmbeddedManifest.test.ts ("nested templates/ dir … unified").
     expect(qualifiedKey("x", "/a/templates/nested/templates/file.ejs")).toBe(
       "x/file.ejs",
     );

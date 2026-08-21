@@ -21,7 +21,7 @@ describe("buildEmbeddedManifest", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it("walks every file — not just .ejs, dotfiles included — keyed prefix/rel", () => {
+  it("walks every file — not just .ejs, dotfiles included — keyed by qualifiedKey", () => {
     const root = join(dir, "templates");
     write(join(root, "react", "types.ts.ejs"), "TYPES");
     write(join(root, "shared", "styles.css.ejs"), "STYLES");
@@ -54,6 +54,35 @@ describe("buildEmbeddedManifest", () => {
     );
     expect(readerKey).toBe("application/react/src/lib/index.ts.ejs");
     expect(manifest[readerKey as string]).toBe("LIB");
+  });
+
+  it("a nested templates/ dir keys by the LAST segment — unified with the reader", () => {
+    // A scaffolded app that itself ships templates: the file lives under a
+    // SECOND templates/ dir. The reader slices after the LAST segment, so the
+    // writer must too — a relative()-derived key here would be unreachable.
+    const root = join(dir, "templates");
+    const nested = join(root, "nested", "templates", "file.ejs");
+    write(nested, "NESTED");
+    const manifest = buildEmbeddedManifest([{ prefix: "x", dir: root }]);
+    expect(manifest).toEqual({ "x/file.ejs": "NESTED" });
+    expect(qualifiedKey("x", nested)).toBe("x/file.ejs");
+  });
+
+  it("throws on a key collision instead of silently shadowing an entry", () => {
+    const root = join(dir, "templates");
+    write(join(root, "file.ejs"), "OUTER");
+    write(join(root, "nested", "templates", "file.ejs"), "INNER");
+    expect(() => buildEmbeddedManifest([{ prefix: "x", dir: root }])).toThrow(
+      /key collision: .*file\.ejs derives "x\/file\.ejs"/,
+    );
+  });
+
+  it("throws on a file the reader could never key (no templates/ segment)", () => {
+    const root = join(dir, "assets");
+    write(join(root, "stray.ejs"), "STRAY");
+    expect(() =>
+      buildEmbeddedManifest([{ prefix: "component", dir: root }]),
+    ).toThrow(/stray\.ejs has no "templates\/" segment/);
   });
 
   it("merges several roots into one manifest", () => {
