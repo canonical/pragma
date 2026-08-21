@@ -248,8 +248,10 @@ ${interactionTable()}
 
 - **\`refuse\`** writes the shared message verbatim to stderr and exits 2 in
   BOTH hosts — a default piped refusal is byte-identical across them, full
-  stderr. Only an EXPLICITLY requested machine format reframes it: pragma's
-  root \`--format json\`/\`--format llm\` render the same message through its
+  stderr (modulo pragma's one-time first-run config note: host onboarding
+  written before dispatch on a fresh install, outside this surface). Only an
+  EXPLICITLY requested machine format reframes it: pragma's root
+  \`--format json\`/\`--format llm\` render the same message through its
   error envelope (a host output concern outside the parity surface; summon's
   \`--format json\`/\`--llm\` imply \`--yes\`, so a summon refusal is always
   the bare line). Implicit auto-detection of an output mode never reframes a
