@@ -190,7 +190,7 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
       const mutationRuntime: PragmaRuntime = {
         ...runtime,
         cwd: effectiveCwd,
-        mutation: { preview },
+        mutation: { preview, undo: false },
         interaction,
       };
       const task = await Promise.resolve(

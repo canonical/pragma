@@ -14,13 +14,21 @@
  */
 
 import type { Command } from "commander";
+import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 import buildOptionInfo from "./buildOptionInfo.js";
 import { configureGroupedHelp } from "./groupedHelp.js";
 import toKebabCase from "./kebab.js";
-import type { CommandEntry, HostFlags, PromptLike } from "./types.js";
+import type {
+  CommandEntry,
+  HostFlags,
+  PromptLike,
+  SurfaceGenerator,
+} from "./types.js";
 
 /** The host seam: what a binary contributes to each registered command. */
-export interface GeneratorCliHost {
+export interface GeneratorCliHost<
+  G extends SurfaceGenerator = GeneratorDefinition,
+> {
   /** The host's standard per-generator flags. */
   readonly standardFlags: {
     /** Register the host's standard flags on a leaf command. */
@@ -33,13 +41,13 @@ export interface GeneratorCliHost {
    * one was given, Commander's parsed options, and the command itself.
    */
   readonly action: (
-    entry: CommandEntry,
+    entry: CommandEntry<G>,
     positionalValue: string | undefined,
     options: Record<string, unknown>,
     cmd: Command,
   ) => Promise<void>;
   /** Optional hook run on every namespace (non-runnable) command created. */
-  readonly onNamespace?: (cmd: Command, entry: CommandEntry) => void;
+  readonly onNamespace?: (cmd: Command, entry: CommandEntry<G>) => void;
 }
 
 /** Add prompt-based options to a Commander command. */
@@ -62,8 +70,9 @@ function addPromptOptions(cmd: Command, prompts: readonly PromptLike[]): void {
  * positional — that names the intended sibling, while `MyComponent` is what
  * overflowed. First matching operand wins; a child segment beats a sibling.
  *
- * @param binName - The root program name.
- * @param entryPath - The invoked leaf's path segments.
+ * @param commandChain - The invoked command's full name chain, root (bin
+ *   name) first — host-agnostic, so a mounted subtree suggests its real
+ *   invocation (`pragma create component svelte`, not a truncated one).
  * @param stray - The first unexpected operand.
  * @param operands - Every operand the command received (bound + excess).
  * @param siblings - The leaf's sibling segments (other children of its parent).
@@ -71,8 +80,7 @@ function addPromptOptions(cmd: Command, prompts: readonly PromptLike[]): void {
  * @returns The full error text (one or two lines, no trailing newline).
  */
 export function excessArgumentMessage(
-  binName: string,
-  entryPath: readonly string[],
+  commandChain: readonly string[],
   stray: string,
   operands: readonly string[],
   siblings: ReadonlySet<string>,
@@ -81,26 +89,30 @@ export function excessArgumentMessage(
   const error = `error: unexpected argument "${stray}"`;
   for (const operand of operands) {
     if (children.has(operand)) {
-      return `${error}\nDid you mean '${[binName, ...entryPath, operand].join(" ")}'?`;
+      return `${error}\nDid you mean '${[...commandChain, operand].join(" ")}'?`;
     }
     if (siblings.has(operand)) {
-      return `${error}\nDid you mean '${[binName, ...entryPath.slice(0, -1), operand].join(" ")}'?`;
+      return `${error}\nDid you mean '${[...commandChain.slice(0, -1), operand].join(" ")}'?`;
     }
   }
   return error;
 }
 
-/** The root program's name (for suggestions), walking up from a leaf. */
-function rootName(cmd: Command): string {
-  let root = cmd;
-  while (root.parent) root = root.parent;
-  return root.name();
+/** The command's full name chain (root/bin name first, leaf last). */
+function commandChain(cmd: Command): string[] {
+  const chain: string[] = [];
+  let current: Command | null = cmd;
+  while (current) {
+    chain.unshift(current.name());
+    current = current.parent;
+  }
+  return chain;
 }
 
 /** The sibling and child segment sets of one barrel entry. */
 function segmentNeighbours(
-  entry: CommandEntry,
-  barrel: readonly CommandEntry[],
+  entry: CommandEntry<SurfaceGenerator>,
+  barrel: readonly CommandEntry<SurfaceGenerator>[],
 ): { siblings: Set<string>; children: Set<string> } {
   const siblings = new Set<string>();
   const children = new Set<string>();
@@ -161,11 +173,11 @@ export function splitGeneratorActionArgs(
  * @param positionalPrompt - The generator's positional prompt, when the
  *   command spec declared one.
  */
-function configureGeneratorCommand(
+function configureGeneratorCommand<G extends SurfaceGenerator>(
   cmd: Command,
-  entry: CommandEntry,
-  barrel: readonly CommandEntry[],
-  host: GeneratorCliHost,
+  entry: CommandEntry<G>,
+  barrel: readonly CommandEntry<G>[],
+  host: GeneratorCliHost<G>,
   positionalPrompt?: PromptLike,
 ): void {
   const generator = entry.generator;
@@ -189,8 +201,7 @@ function configureGeneratorCommand(
     if (cmd.args.length > declaredPositionals) {
       const stray = cmd.args[declaredPositionals] as string;
       const message = excessArgumentMessage(
-        rootName(cmd),
-        entry.path,
+        commandChain(cmd),
         stray,
         cmd.args,
         siblings,
@@ -216,10 +227,10 @@ function configureGeneratorCommand(
  * @param host - The host seam (standard flags, action, namespace hook).
  * @note Impure — mutates the Commander program.
  */
-export default function registerGeneratorCommands(
+export default function registerGeneratorCommands<G extends SurfaceGenerator>(
   rootCmd: Command,
-  barrel: readonly CommandEntry[],
-  host: GeneratorCliHost,
+  barrel: readonly CommandEntry<G>[],
+  host: GeneratorCliHost<G>,
 ): void {
   const commandMap = new Map<string, Command>();
   commandMap.set("", rootCmd);

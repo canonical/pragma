@@ -242,7 +242,7 @@ export async function executeVerb(
     };
     const mutationRuntime: PragmaRuntime = {
       ...runtime,
-      mutation: { preview: mutation.dryRun },
+      mutation: { preview: mutation.dryRun, undo: mutation.undo },
       interaction,
       // Progress seam (U7): a long mutation's eager resolve/build runs before its
       // Task is returned, so `onLog` can't reach it — stream stage lines straight
@@ -309,30 +309,29 @@ export async function executeVerb(
 }
 
 /**
- * Dispatch a matched verb: coerce, run, and perform the output I/O.
+ * Run a verb whose params are already prepared, then perform the output I/O —
+ * the shared tail of {@link dispatch} and of a mounted subtree's own
+ * dispatcher, which extracts its params by its own rules but reuses every
+ * piece of the kernel machinery from here down: dry-run/undo/real-run
+ * interpretation, error rendering, exit codes, SIGINT.
  *
- * @param verb - The matched verb spec.
- * @param positionals - Positional args from Commander.
- * @param opts - Commander's parsed option values (incl. mutation flags).
+ * @param verb - The verb spec to run.
+ * @param getParams - Produces the coerced param bag (may throw a usage error;
+ *   it is rendered exactly like a run error).
+ * @param mutation - The mutation flags.
  * @param globalFlags - The parsed global flags.
  * @note Impure — writes stdout/stderr and sets `process.exitCode`.
  */
-export async function dispatch(
+async function runPrepared(
   verb: VerbSpec,
-  positionals: readonly string[],
-  opts: Record<string, unknown>,
+  getParams: () => Record<string, unknown>,
+  mutation: MutationFlags,
   globalFlags: GlobalFlags,
 ): Promise<void> {
   const runtime = bootRuntime(globalFlags);
   let outcome: DispatchOutcome;
   try {
-    const params = extractParams(verb.params, positionals, opts);
-    const mutation: MutationFlags = {
-      dryRun: opts.dryRun === true,
-      undo: opts.undo === true,
-      yes: opts.yes === true,
-    };
-    outcome = await executeVerb(verb, params, mutation, runtime);
+    outcome = await executeVerb(verb, getParams(), mutation, runtime);
   } catch (error) {
     // Two clean, non-bug outcomes print the same "Cancelled." line but exit
     // differently — both set DIRECTLY here, out-of-band from `mapExitCode`'s
@@ -353,4 +352,54 @@ export async function dispatch(
   if (outcome.stdout) writeStdout(outcome.stdout);
   if (outcome.stderr) process.stderr.write(outcome.stderr);
   if (outcome.exitCode !== 0) process.exitCode = outcome.exitCode;
+}
+
+/**
+ * Dispatch a matched verb: coerce, run, and perform the output I/O.
+ *
+ * @param verb - The matched verb spec.
+ * @param positionals - Positional args from Commander.
+ * @param opts - Commander's parsed option values (incl. mutation flags).
+ * @param globalFlags - The parsed global flags.
+ * @note Impure — writes stdout/stderr and sets `process.exitCode`.
+ */
+export async function dispatch(
+  verb: VerbSpec,
+  positionals: readonly string[],
+  opts: Record<string, unknown>,
+  globalFlags: GlobalFlags,
+): Promise<void> {
+  const mutation: MutationFlags = {
+    dryRun: opts.dryRun === true,
+    undo: opts.undo === true,
+    yes: opts.yes === true,
+  };
+  await runPrepared(
+    verb,
+    () => extractParams(verb.params, positionals, opts),
+    mutation,
+    globalFlags,
+  );
+}
+
+/**
+ * Dispatch a verb whose params were ALREADY extracted by the caller — the
+ * seam a mounted subtree drives: its leaf specs carry no Commander defaults
+ * (explicit stays distinguishable from default), so the mount extracts the
+ * explicit answers itself and hands them here, reusing the whole kernel tail
+ * (interpreters, rendering, exit codes, SIGINT) byte-for-byte.
+ *
+ * @param verb - The (possibly synthesized) verb spec to run.
+ * @param params - The prepared param bag.
+ * @param mutation - The mutation flags.
+ * @param globalFlags - The parsed global flags.
+ * @note Impure — writes stdout/stderr and sets `process.exitCode`.
+ */
+export async function dispatchPrepared(
+  verb: VerbSpec,
+  params: Record<string, unknown>,
+  mutation: MutationFlags,
+  globalFlags: GlobalFlags,
+): Promise<void> {
+  await runPrepared(verb, () => params, mutation, globalFlags);
 }

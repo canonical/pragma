@@ -68,9 +68,8 @@ function createComponent(
       ...args,
       "create",
       "component",
-      "src/components/Widget",
-      "--framework",
       framework,
+      "src/components/Widget",
       "--yes",
     ],
     { cwd: dir, stdio: "pipe" },
@@ -111,8 +110,8 @@ describe("compiled pragma create component (PROTECTED)", () => {
  * run is byte-identical to a source run of the same invocation, and non-empty.
  *
  * A `--dry-run` would NOT prove this (it can exit 0 without reading every
- * template); these are real runs. `runInstall` stays off (the mirror default)
- * so the runs are offline and the trees deterministic.
+ * template); these are real runs. `--no-run-install` keeps them offline and
+ * the trees deterministic (the generators default install ON now).
  */
 describe("compiled pragma create package/application ≡ source run (PROTECTED)", () => {
   // A LITERAL case list, deliberately not derived from `create`'s own
@@ -130,12 +129,20 @@ describe("compiled pragma create package/application ≡ source run (PROTECTED)"
         "library",
         "--description",
         "A library.",
+        "--no-run-install",
         "--yes",
       ],
     },
     {
       kind: "application",
-      args: ["create", "application", "my-app", "--yes"],
+      args: [
+        "create",
+        "application",
+        "react",
+        "my-app",
+        "--no-run-install",
+        "--yes",
+      ],
     },
   ];
 

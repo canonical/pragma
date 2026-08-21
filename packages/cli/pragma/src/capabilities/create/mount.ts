@@ -1,0 +1,389 @@
+/**
+ * The `create` CLI mount: the summon generator TREE, mounted under the
+ * `create` noun through the SAME registration path the summon bin uses
+ * (`registerGeneratorCommands` from `@canonical/summon-core/projection`), fed
+ * by the build-time projection (`createSurface.generated.ts`) — so `pragma
+ * create component react [component-path]` and `summon component react
+ * [component-path]` are one grammar, derived once.
+ *
+ * The mount owns everything beneath the noun: tree segments as subcommands,
+ * prompt-derived flags (a default-true confirm registers only its `--no-`
+ * form), grouped help, the excess-positional guard, and the leaf action —
+ * which extracts the EXPLICIT answers, makes the ONE interaction decision
+ * (refusing before the create runtime ever loads), and hands the kernel's
+ * `dispatchPrepared` a synthesized per-leaf VerbSpec so dry-run/undo/real-run
+ * rendering, exit codes, SIGINT and the SEC-2 jail reuse the existing
+ * machinery byte-for-byte.
+ *
+ * Fast-path discipline: this module imports only the projection (UI-free,
+ * graph-guarded), the generated surface data, and kernel spec/dispatch
+ * modules — never summon-core's barrel or a generator.
+ */
+
+import type { GeneratorResult } from "@canonical/summon-core";
+import {
+  buildOptionInfo,
+  type CommandEntry,
+  decideInteraction,
+  explicitAnswersComplete,
+  extractAnswers,
+  type GeneratorCliHost,
+  type HostFlags,
+  missingExplicitFlags,
+  type ProjectedPrompt,
+  refusalMessage,
+  registerGeneratorCommands,
+} from "@canonical/summon-core/projection";
+import type { Task } from "@canonical/task";
+import { type Command, CommanderError } from "commander";
+import { BIN_NAME } from "../../constants.js";
+import { dispatchPrepared } from "../../kernel/project/cli/dispatch.js";
+import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
+import type {
+  CliMountHost,
+  CliProjection,
+  CompletionChildFlag,
+  CompletionChildSpec,
+  VerbSpec,
+} from "../../kernel/spec/types.js";
+import { CREATE_GENERATORS } from "./constants.js";
+import { createFormatters } from "./create.render.js";
+import { CREATE_CAPABILITY, runCreate } from "./create.verb.js";
+import { CREATE_SURFACE } from "./createSurface.generated.js";
+import type { CreateKind } from "./types.js";
+
+/** A projected runnable entry: the surface data plus its command path. */
+interface SurfaceEntry {
+  readonly commandPath: string;
+  readonly meta: { readonly description: string };
+  readonly prompts: readonly ProjectedPrompt[];
+}
+
+/** The mount's standard-flag rows for the grouped-help Global Options block. */
+const MOUNT_FLAG_HELP: HostFlags = [
+  { flags: "--dry-run", description: "Preview effects without applying them" },
+  { flags: "--undo", description: "Reverse a previous run of this command" },
+  { flags: "--yes", description: "Apply without an interactive confirmation" },
+  { flags: "-h, --help", description: "display help for command" },
+];
+
+/** The declared tree, flattened to registration entries (parents first). */
+function surfaceBarrel(): CommandEntry<SurfaceEntry>[] {
+  const entries: CommandEntry<SurfaceEntry>[] = [];
+  const namespaces = new Set<string>();
+  for (const binding of Object.values(CREATE_GENERATORS)) {
+    for (const commandPath of binding.paths) {
+      const segments = commandPath.split("/");
+      if (segments.length > 1) namespaces.add(segments[0] as string);
+    }
+  }
+  for (const namespace of namespaces) {
+    entries.push({ path: [namespace], description: `${namespace} generators` });
+  }
+  for (const binding of Object.values(CREATE_GENERATORS)) {
+    for (const commandPath of binding.paths) {
+      const surface = CREATE_SURFACE[commandPath];
+      if (!surface) {
+        throw new Error(
+          `createSurface.generated.ts carries no entry for "${commandPath}" — rerun the build`,
+        );
+      }
+      entries.push({
+        path: commandPath.split("/"),
+        generator: {
+          commandPath,
+          meta: { description: surface.description },
+          prompts: surface.prompts,
+        },
+      });
+    }
+  }
+  return entries.sort((a, b) => a.path.length - b.path.length);
+}
+
+/** The create noun that declares a command path. */
+function kindOf(commandPath: string): CreateKind {
+  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
+    if ((binding.paths as readonly string[]).includes(commandPath)) {
+      return kind as CreateKind;
+    }
+  }
+  throw new Error(`undeclared command path ${commandPath}`);
+}
+
+/**
+ * Synthesize the per-leaf VerbSpec `dispatchPrepared` runs: params are EMPTY
+ * (the mount already extracted the explicit answers — leaf commands carry no
+ * Commander defaults, so explicit stays distinguishable from default), and
+ * `run` is `runCreate` over the full command path.
+ */
+export function leafVerb(commandPath: string): VerbSpec {
+  const surface = CREATE_SURFACE[commandPath];
+  return {
+    path: ["create", kindOf(commandPath)],
+    summary: surface?.description ?? commandPath,
+    params: [],
+    output: { formatters: createFormatters },
+    capability: CREATE_CAPABILITY,
+    run: (params, rt) =>
+      runCreate(commandPath, params, rt) as unknown as Task<GeneratorResult>,
+  } as VerbSpec;
+}
+
+/**
+ * The explicit answers of one leaf invocation: flag-extracted (explicit-only,
+ * confirm equality-vs-default) plus the positional when given. Exported for
+ * the grammar tests — this is the exact bag the wizard is seeded with.
+ */
+export function explicitLeafAnswers(
+  prompts: readonly ProjectedPrompt[],
+  positionalValue: string | undefined,
+  options: Record<string, unknown>,
+): Record<string, unknown> {
+  const explicit = extractAnswers(options, prompts);
+  const positionalPrompt = prompts.find((prompt) => prompt.positional);
+  if (positionalPrompt && positionalValue !== undefined) {
+    explicit[positionalPrompt.name] = positionalValue;
+  }
+  return explicit;
+}
+
+/** Build the mount (the module-level CLI projection hook). */
+export function createCliProjection(): CliProjection {
+  return {
+    mount,
+    completionChildren,
+    referenceIntro: REFERENCE_INTRO,
+  };
+}
+
+/** Mount the generator tree onto the `create` parent command. */
+function mount(parent: Command, host: CliMountHost): void {
+  // The parent's own face: the topic tree (paths + descriptions), on bare
+  // `create` AND on `create --help` alike, exit 0.
+  parent.configureHelp({ formatHelp: () => "" });
+  parent.addHelpText("beforeAll", (ctx) =>
+    ctx.command === parent ? `${topicTree(host.programName)}\n` : "",
+  );
+  parent.allowExcessArguments(true);
+  parent.action(async () => {
+    const stray = parent.args[0];
+    if (stray !== undefined) {
+      // An unrecognized topic keeps the bin's "Did you mean?" flow (the bin
+      // re-derives the token from argv; this message is cosmetic).
+      throw new CommanderError(
+        2,
+        "commander.unknownCommand",
+        `error: unknown command '${stray}'`,
+      );
+    }
+    process.stdout.write(`${topicTree(host.programName)}\n`);
+  });
+
+  const cliHost: GeneratorCliHost<SurfaceEntry> = {
+    standardFlags: {
+      register: (cmd) => {
+        // Reset the designed-help suppression a Commander child inherits from
+        // the root program; grouped help re-configures the leaves right after.
+        cmd.configureHelp({});
+        cmd
+          .option("--dry-run", "Preview effects without applying them")
+          .option("--undo", "Reverse a previous run of this command")
+          .option("--yes", "Apply without an interactive confirmation");
+      },
+      help: MOUNT_FLAG_HELP,
+    },
+    action: async (entry, positionalValue, options) => {
+      const generator = entry.generator as SurfaceEntry;
+      const explicit = explicitLeafAnswers(
+        generator.prompts,
+        positionalValue,
+        options,
+      );
+      const mutation = {
+        dryRun: options.dryRun === true,
+        undo: options.undo === true,
+        yes: options.yes === true,
+      };
+      // The ONE interaction decision — made BEFORE the create runtime loads,
+      // so a refusal never touches summon-core. (`runCreate` re-derives the
+      // same mode from the same inputs to pick its prompt strategy.)
+      const { mode } = decideInteraction({
+        ...mutation,
+        isTTY: process.stdin.isTTY === true && process.stderr.isTTY === true,
+        explicitComplete: explicitAnswersComplete(generator.prompts, explicit),
+      });
+      if (mode === "refuse") {
+        process.stderr.write(
+          `${refusalMessage(missingExplicitFlags(generator.prompts, explicit))}\n`,
+        );
+        process.exitCode = 2;
+        return;
+      }
+      await dispatchPrepared(
+        leafVerb(generator.commandPath),
+        explicit,
+        mutation,
+        host.globalFlags,
+      );
+    },
+    onNamespace: (cmd) => {
+      cmd.configureHelp({});
+      cmd.allowExcessArguments(true);
+      cmd.action(async () => {
+        const stray = cmd.args[0];
+        if (stray !== undefined) {
+          // Unknown segment beneath a namespace: name it, suggest a child.
+          process.stderr.write(`error: unknown command '${stray}'\n`);
+          const labels = cmd.commands.map((child) => child.name());
+          const [suggestion] = suggestNames(stray, labels);
+          if (suggestion) {
+            process.stderr.write(
+              `Did you mean '${host.programName} create ${cmd.name()} ${suggestion}'?\n`,
+            );
+          }
+          process.exitCode = 2;
+          return;
+        }
+        // Bare namespace mirrors summon: Commander help on stderr, exit 1.
+        process.stderr.write(cmd.helpInformation());
+        throw new CommanderError(1, "commander.help", "(outputHelp)");
+      });
+    },
+  };
+
+  registerGeneratorCommands(parent, surfaceBarrel(), cliHost);
+}
+
+/** The pragma-styled topic tree (paths + descriptions from the manifest). */
+export function topicTree(programName: string): string {
+  const lines: string[] = [
+    "Scaffold from the summon generator tree.",
+    "",
+    `Usage: ${programName} create <path...> [options]`,
+    "",
+    "Available generators:",
+  ];
+  const printed = new Set<string>();
+  for (const binding of Object.values(CREATE_GENERATORS)) {
+    for (const commandPath of binding.paths) {
+      const segments = commandPath.split("/");
+      const surface = CREATE_SURFACE[commandPath];
+      if (segments.length === 1) {
+        lines.push(
+          `  ${(segments[0] as string).padEnd(20)}${surface?.description ?? ""}`,
+        );
+        continue;
+      }
+      const namespace = segments[0] as string;
+      if (!printed.has(namespace)) {
+        printed.add(namespace);
+        lines.push(`  ${namespace}`);
+      }
+      lines.push(
+        `    ${(segments[1] as string).padEnd(18)}${surface?.description ?? ""}`,
+      );
+    }
+  }
+  lines.push(
+    "",
+    `Run \`${programName} create <path...> --help\` for a generator's flags.`,
+    `The tree mirrors the summon CLI: \`${programName} create <path...>\` ≡ \`summon <path...>\`.`,
+  );
+  return lines.join("\n");
+}
+
+/** One leaf's completion node, derived from its projected prompts. */
+function leafChild(label: string, commandPath: string): CompletionChildSpec {
+  const surface = CREATE_SURFACE[commandPath];
+  const prompts = surface?.prompts ?? [];
+  return {
+    label,
+    flags: prompts
+      .filter((prompt) => prompt.positional !== true)
+      .map(promptFlag),
+    positionals: prompts
+      .filter((prompt) => prompt.positional === true)
+      .map((prompt) => ({
+        name: prompt.name,
+        required: false,
+        files: /(path|dir)$/i.test(prompt.name),
+      })),
+  };
+}
+
+/** A prompt's completion flag: the REGISTERED token (`--no-` for default-true). */
+function promptFlag(prompt: ProjectedPrompt): CompletionChildFlag {
+  const info = buildOptionInfo(prompt);
+  const token = info.flags.split(" ")[0] as string;
+  return {
+    flag: token,
+    takesValue: info.flags.includes("<"),
+    ...(prompt.type === "select" && prompt.choices && prompt.choices.length > 0
+      ? { values: prompt.choices.map((choice) => choice.value) }
+      : {}),
+  };
+}
+
+/** Dedupe flags by token, first-seen order (the namespace union). */
+function unionFlags(
+  children: readonly CompletionChildSpec[],
+): CompletionChildFlag[] {
+  const seen = new Set<string>();
+  const union: CompletionChildFlag[] = [];
+  for (const child of children) {
+    for (const flag of child.flags) {
+      if (seen.has(flag.flag)) continue;
+      seen.add(flag.flag);
+      union.push(flag);
+    }
+  }
+  return union;
+}
+
+/**
+ * The completion surface per verb label: leaves carry their prompt-derived
+ * flags in their REGISTERED spelling; a namespace node offers its segment
+ * values at position 0, the shared leaf positional after it, the union of
+ * leaf flags, and the leaf children for the dynamic tier's precise walk.
+ */
+function completionChildren(): Readonly<Record<string, CompletionChildSpec>> {
+  const record: Record<string, CompletionChildSpec> = {};
+  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
+    const paths = binding.paths as readonly string[];
+    const first = paths[0] as string;
+    if (paths.length === 1 && !first.includes("/")) {
+      record[kind] = leafChild(kind, first);
+      continue;
+    }
+    const children = paths.map((commandPath) =>
+      leafChild(commandPath.split("/")[1] as string, commandPath),
+    );
+    // The shared tail: every declared leaf carries the same positional shape.
+    const tail = children[0]?.positionals ?? [];
+    record[kind] = {
+      label: kind,
+      flags: unionFlags(children),
+      positionals: [
+        {
+          name: "framework",
+          required: true,
+          values: children.map((child) => child.label),
+        },
+        ...tail,
+      ],
+      children,
+    };
+  }
+  return record;
+}
+
+/** The generated-reference intro under the `create` heading (the pointer). */
+const REFERENCE_INTRO =
+  "The `create` surface is a PROJECTION of the summon generator tree: " +
+  `\`${BIN_NAME} create <path...>\` ≡ \`summon <path...>\` over the declared bindings — ` +
+  "same grammar, same flags, same wizard, byte-identical trees. Tree segments are " +
+  "subcommands (`create component react|svelte|lit`, `create application react`), and " +
+  "every flag derives from the generators' own prompts (a default-on confirm registers " +
+  "only its `--no-` form). The normative contract lives at " +
+  "[packages/summon/core/docs/parity-contract.md](../../../../summon/core/docs/parity-contract.md).";

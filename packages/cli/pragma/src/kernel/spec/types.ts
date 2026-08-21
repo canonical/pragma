@@ -224,6 +224,77 @@ export interface McpPromptProvider {
   ) => Promise<void> | void;
 }
 
+/** A flag a mounted subcommand offers to completion (full `--token`). */
+export interface CompletionChildFlag {
+  /** The full flag token (`--no-with-styles`). */
+  readonly flag: string;
+  /** Whether the flag consumes a value. */
+  readonly takesValue: boolean;
+  /** Closed value set for the flag's value, when one exists. */
+  readonly values?: readonly string[];
+}
+
+/** A positional slot a mounted subcommand offers to completion. */
+export interface CompletionChildPositional {
+  /** The slot name (diagnostics only). */
+  readonly name: string;
+  /** Whether the positional is required. */
+  readonly required: boolean;
+  /** Closed value set (e.g. tree segments), when one exists. */
+  readonly values?: readonly string[];
+  /** True when the slot completes file paths natively. */
+  readonly files?: boolean;
+}
+
+/**
+ * The completion surface of one MOUNTED command node: its flags, its
+ * positional slots, and any deeper segment children — static data (it must
+ * pass the completion safety allowlist), never live module state.
+ */
+export interface CompletionChildSpec {
+  /** The command token at this node. */
+  readonly label: string;
+  /** Flags offered at this node. */
+  readonly flags: readonly CompletionChildFlag[];
+  /** Positional slots at this node, in order. */
+  readonly positionals: readonly CompletionChildPositional[];
+  /** Deeper segment children (each with its own flags/positionals/children). */
+  readonly children?: readonly CompletionChildSpec[];
+}
+
+/** What the program hands a module mounting its own subtree. */
+export interface CliMountHost {
+  /** Global flags for this invocation (closed over by mounted actions). */
+  readonly globalFlags: import("../runtime/types.js").GlobalFlags;
+  /** The binary name (for messages the mounted tree prints). */
+  readonly programName: string;
+}
+
+/**
+ * A module-level CLI projection hook (precedented by `mcpResources`/
+ * `mcpPrompts`/`colophon` — module metadata, NOT a `VerbSpec` field, zero
+ * covenant impact): the module MOUNTS its noun's subtree onto the Commander
+ * parent itself, instead of the generic per-verb attachment. The module's
+ * verbs remain the binding-level grammar (surface, MCP, reference,
+ * completion labels); the mount owns everything beneath the noun.
+ */
+export interface CliProjection {
+  /** Populate this module's noun parent with its subcommands. */
+  readonly mount: (
+    parent: import("commander").Command,
+    host: CliMountHost,
+  ) => void;
+  /**
+   * The completion surface of the mounted tree, keyed by verb label —
+   * static data the completion model attaches as segment children.
+   */
+  readonly completionChildren: () => Readonly<
+    Record<string, CompletionChildSpec>
+  >;
+  /** Markdown inserted under the noun's heading in the generated reference. */
+  readonly referenceIntro?: string;
+}
+
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */
 export interface CapabilityModule {
   readonly name: string;
@@ -250,4 +321,6 @@ export interface CapabilityModule {
   readonly mcpResources?: McpResourceProvider;
   /** An optional MCP prompt surface (NOT a VerbSpec field — a module hook). */
   readonly mcpPrompts?: McpPromptProvider;
+  /** An optional CLI mount for the module's noun (NOT a VerbSpec field). */
+  readonly cliProjection?: CliProjection;
 }

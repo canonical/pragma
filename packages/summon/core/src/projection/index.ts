@@ -53,4 +53,5 @@ export type {
   ProjectedPrompt,
   PromptLike,
   SurfaceCommand,
+  SurfaceGenerator,
 } from "./types.js";

@@ -249,8 +249,16 @@ function renderCommandSection(verb: VerbSpec): string {
   return blocks.filter((block) => block.length > 0).join("\n\n");
 }
 
-/** Render the CLI command reference, grouped by noun. */
-function renderCommandsPage(verbs: readonly VerbSpec[]): string {
+/**
+ * Render the CLI command reference, grouped by noun. A noun whose module
+ * declares a `cliProjection.referenceIntro` gets that Markdown inserted
+ * directly under its heading (a generic module field — the kernel renders,
+ * the module authors).
+ */
+function renderCommandsPage(
+  verbs: readonly VerbSpec[],
+  nounIntros: ReadonlyMap<string, string>,
+): string {
   const blocks = [
     "# CLI command reference",
     `Every \`${BIN_NAME}\` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.`,
@@ -262,10 +270,27 @@ function renderCommandsPage(verbs: readonly VerbSpec[]): string {
     if (noun !== currentNoun) {
       currentNoun = noun;
       blocks.push(`## ${noun}`);
+      const intro = nounIntros.get(noun);
+      if (intro) blocks.push(intro);
     }
     blocks.push(renderCommandSection(verb));
   }
   return assemblePage(blocks);
+}
+
+/** Collect each noun's declared reference intro from its module's mount. */
+function collectNounIntros(
+  modules: readonly CapabilityModule[],
+): Map<string, string> {
+  const intros = new Map<string, string>();
+  for (const module of modules) {
+    const intro = module.cliProjection?.referenceIntro;
+    if (!intro) continue;
+    for (const verb of module.verbs) {
+      intros.set(verb.path[0], intro);
+    }
+  }
+  return intros;
 }
 
 /** One MCP tool input row: name, projected type, requiredness, description. */
@@ -616,7 +641,7 @@ export function emitReference(
   const verbs = collectDocVerbs(modules);
   return new Map<string, string>([
     ["index.md", renderIndexPage(verbs, modules)],
-    ["commands.md", renderCommandsPage(verbs)],
+    ["commands.md", renderCommandsPage(verbs, collectNounIntros(modules))],
     ["tools.md", renderToolsPage(verbs, modules)],
     ["errors.md", renderErrorsPage()],
     ["config.md", renderConfigPage()],

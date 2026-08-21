@@ -155,11 +155,23 @@ async function main(): Promise<void> {
   }
   const verbs = modules.flatMap((module) => [...module.verbs]);
 
+  // Module-owned noun mounts (CapabilityModule.cliProjection), keyed by the
+  // module's noun. A module's verbs all share their noun, so the module name
+  // is that noun for every module that declares a mount.
+  const mounts = new Map(
+    modules.flatMap((module) =>
+      module.cliProjection
+        ? [[module.name, module.cliProjection] as const]
+        : [],
+    ),
+  );
+
   const program = buildProgram(verbs, {
     globalFlags,
     programName: BIN_NAME,
     description: PROGRAM_DESCRIPTION,
     version: VERSION,
+    mounts,
   });
   // Silence Commander's default stderr writer on EVERY command, not just the
   // root — otherwise a bad subcommand/option prints Commander's raw `error: …`
@@ -224,10 +236,51 @@ async function handleProgramError(
   if (error instanceof CommanderError) {
     if (
       error.code === "commander.helpDisplayed" ||
-      error.code === "commander.version" ||
-      error.code === "commander.help"
+      error.code === "commander.version"
     ) {
       process.exitCode = 0;
+      return;
+    }
+    if (error.code === "commander.help") {
+      // Respect the help error's OWN exit code: `help({ error: true })` — a
+      // bare namespace with children, help written to stderr — carries 1;
+      // a stdout help carries 0.
+      process.exitCode = error.exitCode;
+      return;
+    }
+
+    // A parse failure whose argv still speaks a retired module grammar gets
+    // that module's designed migration error (the module authors the text;
+    // the kernel only routes). Currently: `create … --framework` (R1).
+    const { stripGlobalFlags } = await import(
+      "./kernel/project/cli/globalFlags.js"
+    );
+    const strippedArgs = stripGlobalFlags(argv);
+    const strippedPositionals = strippedArgs.filter(
+      (arg) => !arg.startsWith("-"),
+    );
+    if (
+      strippedPositionals[0] === "create" &&
+      strippedArgs.some(
+        (arg) => arg === "--framework" || arg.startsWith("--framework="),
+      )
+    ) {
+      const { FRAMEWORK_FLAG_ERROR } = await import(
+        "./capabilities/create/messages.js"
+      );
+      if (jsonMode) {
+        const [{ PragmaError }, { renderErrorJson }] = await Promise.all([
+          import("./kernel/error/PragmaError.js"),
+          import("./kernel/error/renderError.js"),
+        ]);
+        const message = FRAMEWORK_FLAG_ERROR.replace(/^error:\s*/i, "");
+        process.stderr.write(
+          `${renderErrorJson(new PragmaError({ code: "INVALID_INPUT", message }))}\n`,
+        );
+      } else {
+        process.stderr.write(`${FRAMEWORK_FLAG_ERROR}\n`);
+      }
+      process.exitCode = 2;
       return;
     }
     if (error.code === "commander.unknownCommand") {

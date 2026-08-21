@@ -350,6 +350,22 @@ function expectAgreement(
     .filter((noun) => noun !== "mcp" || surfaceNouns.includes("mcp"));
   expect(modelNouns).toEqual(surfaceNouns);
 
+  // A module-owned mount REPLACES its verbs' completion surface with the
+  // flags/positionals the mounted tree actually registers, so agreement for
+  // those verbs is asserted against the module's declared projection data —
+  // not the covenant-facing surface flags (which record binding param names).
+  const mountedByNoun = new Map<
+    string,
+    Readonly<Record<string, import("../spec/types.js").CompletionChildSpec>>
+  >();
+  for (const module of modules) {
+    if (!module.cliProjection) continue;
+    const children = module.cliProjection.completionChildren();
+    for (const verb of module.verbs) {
+      mountedByNoun.set(verb.path[0], children);
+    }
+  }
+
   for (const noun of surfaceNouns) {
     const nounEntry = findNoun(completionModel, noun);
     expect(nounEntry).toBeDefined();
@@ -362,6 +378,7 @@ function expectAgreement(
     ].sort();
     expect(modelLabels).toEqual(surfaceVerbs.map((v) => v.v).sort());
 
+    const mounted = mountedByNoun.get(noun);
     for (const surfaceVerb of surfaceVerbs) {
       const modelVerb: VerbEntry | undefined =
         nounEntry.selfVerb?.label === surfaceVerb.v
@@ -369,6 +386,21 @@ function expectAgreement(
           : nounEntry.verbs.find((v) => v.label === surfaceVerb.v);
       expect(modelVerb).toBeDefined();
       if (!modelVerb) continue;
+
+      const mountedSpec = mounted?.[surfaceVerb.v];
+      if (mountedSpec) {
+        expect(modelVerb.flags.map((f) => f.flag)).toEqual(
+          mountedSpec.flags.map((f) => f.flag),
+        );
+        expect(modelVerb.positionals.map((p) => p.name)).toEqual(
+          mountedSpec.positionals.map((p) => p.name),
+        );
+        expect((modelVerb.children ?? []).map((c) => c.label)).toEqual(
+          (mountedSpec.children ?? []).map((c) => c.label),
+        );
+        expect(modelVerb.mutates).toBe(surfaceVerb.mutates === true);
+        continue;
+      }
 
       expect(modelVerb.flags.map((f) => f.flag)).toEqual(
         surfaceVerb.flags ?? [],

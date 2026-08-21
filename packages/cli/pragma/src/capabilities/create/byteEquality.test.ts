@@ -164,16 +164,14 @@ const cases: Case[] = [
     fixture: "application",
     kind: "application",
     framework: "",
-    // The pragma path receives the CLI `--with-X` params (AV-228 B8); the shared
-    // fixture carries the generator's bare prompt names. runCreate's boundary
-    // remap (`withSsr` -> `ssr`, ...) makes both produce the identical tree —
-    // which is exactly what this case exists to prove.
+    // The prompt names ARE the param names now (the B8 alias seam is gone):
+    // the pragma path takes the generator's own `ssr`/`router`/`forms`/`relay`.
     params: {
       appPath: "my-app",
-      withSsr: true,
-      withRouter: true,
-      withForms: true,
-      withRelay: false,
+      ssr: true,
+      router: true,
+      forms: true,
+      relay: false,
       runInstall: false,
     },
   },

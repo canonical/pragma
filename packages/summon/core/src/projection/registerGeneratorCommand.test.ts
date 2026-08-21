@@ -358,8 +358,7 @@ describe("excessArgumentMessage", () => {
   it("names the stray; no suggestion when no operand is a segment", () => {
     expect(
       excessArgumentMessage(
-        "bin",
-        ["component", "react"],
+        ["bin", "component", "react"],
         "X",
         ["X"],
         new Set(["svelte"]),
@@ -373,8 +372,7 @@ describe("excessArgumentMessage", () => {
     const children = new Set(["svelte"]);
     expect(
       excessArgumentMessage(
-        "bin",
-        ["component", "react"],
+        ["bin", "component", "react"],
         "svelte",
         ["svelte"],
         siblings,
@@ -382,6 +380,20 @@ describe("excessArgumentMessage", () => {
       ),
     ).toBe(
       "error: unexpected argument \"svelte\"\nDid you mean 'bin component react svelte'?",
+    );
+  });
+
+  it("a mounted chain keeps its full invocation in the suggestion", () => {
+    expect(
+      excessArgumentMessage(
+        ["pragma", "create", "component", "react"],
+        "X",
+        ["svelte", "X"],
+        new Set(["svelte", "lit"]),
+        new Set(),
+      ),
+    ).toBe(
+      "error: unexpected argument \"X\"\nDid you mean 'pragma create component svelte'?",
     );
   });
 });

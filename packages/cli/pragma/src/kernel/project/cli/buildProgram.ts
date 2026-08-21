@@ -15,7 +15,7 @@ import { Command, Option } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import { kebabCase } from "../../spec/emitSurface.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { CliProjection, ParamSpec, VerbSpec } from "../../spec/types.js";
 import { dispatch } from "./dispatch.js";
 import { formatRootHelp } from "./rootHelp.js";
 import { formatNounHelp, formatVerbHelp } from "./verbHelp.js";
@@ -30,6 +30,13 @@ export interface BuildProgramOptions {
   readonly description?: string;
   /** Version string for `--version`. */
   readonly version?: string;
+  /**
+   * Module-owned noun mounts (see `CapabilityModule.cliProjection`), keyed by
+   * noun. A mounted noun's parent command is created here exactly once and
+   * handed to the module's `mount` — the module owns everything beneath it;
+   * its verbs stay the binding-level grammar for help/surface/completion.
+   */
+  readonly mounts?: ReadonlyMap<string, CliProjection>;
 }
 
 /** The positional usage token for a param (`<name>` / `[name]`, variadic `...`). */
@@ -263,6 +270,16 @@ export function buildProgram(
   for (const [noun, bucket] of groups) {
     const selfVerbs = bucket.filter((v) => v.path.length === 1);
     const subVerbs = bucket.filter((v) => v.path.length > 1);
+
+    // A module-owned mount replaces the generic per-verb attachment for its
+    // noun: create the parent once, hand it over, move on.
+    const mounted = options.mounts?.get(noun);
+    if (mounted) {
+      const parent = program.command(noun);
+      parent.enablePositionalOptions();
+      mounted.mount(parent, { globalFlags: options.globalFlags, programName });
+      continue;
+    }
 
     // Pure self-verb noun(s) — attach each leaf directly to the root, as before.
     if (subVerbs.length === 0) {

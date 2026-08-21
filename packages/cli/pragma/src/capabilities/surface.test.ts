@@ -137,6 +137,50 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     ]);
   });
 
+  it("emits the L-CIS create noun — projected grammar, deep-equal to the covenant", () => {
+    // The create surface DERIVES from the generators' prompts (L-CIS): the
+    // framework tree segment is a required positional enum, component's flags
+    // are the framework union (incl. the svelte-only --use-ts-stories), and
+    // application carries the generator's bare prompt names. Pin the three
+    // entries verbatim so a prompt edit that moves the covenant is SEEN.
+    expect(emitted.nouns.create?.verbs).toEqual([
+      {
+        v: "component",
+        args: ["<framework>", "[componentPath]"],
+        flags: [
+          "--with-styles",
+          "--with-stories",
+          "--with-ssr-tests",
+          "--use-ts-stories",
+        ],
+        mutates: true,
+        mcp: "create_component",
+      },
+      {
+        v: "package",
+        flags: [
+          "--name",
+          "--type",
+          "--description",
+          "--with-react",
+          "--with-storybook",
+          "--with-cli",
+          "--with-pr-template",
+          "--run-install",
+        ],
+        mutates: true,
+        mcp: "create_package",
+      },
+      {
+        v: "application",
+        args: ["[appPath]"],
+        flags: ["--ssr", "--router", "--forms", "--relay", "--run-install"],
+        mutates: true,
+        mcp: "create_application",
+      },
+    ]);
+  });
+
   it("emits the PR6 effect/diagnostic self-verbs (doctor, upgrade)", () => {
     // doctor is a storeless read self-verb — no args, no flags, no needsStore.
     expect(emitted.nouns.doctor?.verbs).toEqual([

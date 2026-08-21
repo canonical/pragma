@@ -66,14 +66,32 @@ export interface SurfaceCommand {
 }
 
 /**
+ * What the registration path actually READS of a runnable entry: a
+ * description and the prompt list. A live {@link GeneratorDefinition}
+ * satisfies it; so does a build-time {@link SurfaceCommand}-shaped stand-in —
+ * which is how a host can mount the projected tree without loading a single
+ * generator.
+ */
+export interface SurfaceGenerator {
+  readonly meta: { readonly description: string };
+  readonly prompts: readonly PromptLike[];
+}
+
+/**
  * A flattened representation of a command to register.
  * Separates command discovery from registration.
+ *
+ * Generic over the runnable payload: the summon bin carries live
+ * {@link GeneratorDefinition}s (the default), a build-time host carries
+ * projected {@link SurfaceGenerator}s.
  */
-export interface CommandEntry {
+export interface CommandEntry<
+  G extends SurfaceGenerator = GeneratorDefinition,
+> {
   /** Path segments to this command (e.g., ["component", "react"]) */
   path: string[];
   /** The generator definition if this is a runnable command */
-  generator?: GeneratorDefinition;
+  generator?: G;
   /** Description for namespace-only commands */
   description?: string;
 }
