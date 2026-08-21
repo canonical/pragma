@@ -20,7 +20,10 @@ export default function createStampOnEffectStart(
   next?: (effect: Effect) => void,
 ): (effect: Effect) => void {
   return (effect) => {
-    if (effect._tag === "WriteFile") {
+    // A verbatim write is a CARRIED COPY (see `rawFile`): its bytes must land
+    // exactly as loaded, so the stamp skips it — a stamped copy would differ
+    // from the CopyFile it replaced and corrupt carried artifacts.
+    if (effect._tag === "WriteFile" && effect.verbatim !== true) {
       (effect as { content: string }).content = applyStamp(
         effect.path,
         effect.content,

@@ -41,7 +41,18 @@ describe("application/react generator", () => {
       }),
     );
 
-    // template() produces WriteFile, copyFile() produces CopyFile
+    // template() produces WriteFile; carried assets are VERBATIM WriteFiles
+    // (rawFile — the copy-analog a compiled binary can perform). No CopyFile
+    // remains: the generator never reads template files at effect time.
+    expect(result.effects.some((e) => e._tag === "CopyFile")).toBe(false);
+    const gitignore = result.effects.find(
+      (e) =>
+        e._tag === "WriteFile" &&
+        (e as { path: string }).path === "my-app/.gitignore",
+    ) as { verbatim?: boolean; content: string } | undefined;
+    expect(gitignore?.verbatim).toBe(true);
+    expect(gitignore?.content).toContain("node_modules");
+
     const filePaths = result.effects
       .filter((e) => e._tag === "WriteFile" || e._tag === "CopyFile")
       .map(

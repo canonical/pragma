@@ -105,19 +105,29 @@ export { runGeneratorTask } from "./run/index.js";
 // =============================================================================
 
 export type {
+  EmbeddedRoot,
+  LoadedTemplate,
+  RawFileOptions,
   TemplateDirOptions,
   TemplateOptions,
   TemplatingEngine,
 } from "./template/index.js";
 export {
+  buildEmbeddedManifest,
   ejsEngine,
   generateStamp,
   generatorComment,
   getCommentStyle,
+  hasEmbeddedTemplates,
+  loadTemplate,
+  loadTemplateSync,
   prependStamp,
+  qualifiedKey,
+  rawFile,
   renderFile,
   renderString,
   renderStringAsync,
+  setEmbeddedTemplates,
   template,
   templateDir,
   templateHelpers,

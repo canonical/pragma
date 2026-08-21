@@ -4,9 +4,14 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { template, withHelpers } from "@canonical/summon-core";
 import {
-  copyFile,
+  type LoadedTemplate,
+  loadTemplateSync,
+  rawFile,
+  template,
+  withHelpers,
+} from "@canonical/summon-core";
+import {
   exec,
   exists,
   flatMap,
@@ -81,6 +86,21 @@ const templatesDir = path.join(__dirname, "templates");
 /** Resolve a path inside the templates directory. */
 const src = (templatePath: string) => path.join(templatesDir, templatePath);
 
+/**
+ * Per-path memoized template load through the embedded seam — disk-first
+ * (source runs), embedded fallback keyed `application/react/<path>` (a
+ * compiled binary). Loaded on first `generate()`, never at module eval.
+ */
+const templateCache = new Map<string, LoadedTemplate>();
+function load(templatePath: string): LoadedTemplate {
+  let loaded = templateCache.get(templatePath);
+  if (!loaded) {
+    loaded = loadTemplateSync("application/react", src(templatePath));
+    templateCache.set(templatePath, loaded);
+  }
+  return loaded;
+}
+
 export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   meta: {
     name: "application/react",
@@ -143,7 +163,12 @@ Requires both --ssr and --router flags.`,
     }
 
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
-    const copy = (filePath: string) => copyFile(src(filePath), dest(filePath));
+    const copy = (filePath: string) =>
+      rawFile({
+        source: src(filePath),
+        content: load(filePath).content,
+        dest: dest(filePath),
+      });
 
     // Whether the app lands inside a bun workspace decides who owns dependency
     // patching: bun resolves `patchedDependencies` paths from the WORKSPACE
@@ -206,16 +231,19 @@ Requires both --ssr and --router flags.`,
         // EJS templates (files needing interpolation)
         template({
           source: src("package.json.ejs"),
+          content: load("package.json.ejs").content,
           dest: dest("package.json"),
           vars,
         }),
         template({
           source: src("README.md.ejs"),
+          content: load("README.md.ejs").content,
           dest: dest("README.md"),
           vars,
         }),
         template({
           source: src("biome.json.ejs"),
+          content: load("biome.json.ejs").content,
           dest: dest("biome.json"),
           vars,
         }),
@@ -224,12 +252,14 @@ Requires both --ssr and --router flags.`,
         // tsconfig (EJS — #relay path alias only when --relay)
         template({
           source: src("tsconfig.json.ejs"),
+          content: load("tsconfig.json.ejs").content,
           dest: dest("tsconfig.json"),
           vars,
         }),
         // vite config (EJS — vite-plugin-relay-lite only when --relay)
         template({
           source: src("vite.config.ts.ejs"),
+          content: load("vite.config.ts.ejs").content,
           dest: dest("vite.config.ts"),
           vars,
         }),
@@ -237,6 +267,7 @@ Requires both --ssr and --router flags.`,
         // vitest setup (EJS — relay-test-utils' jest→vi alias only when --relay)
         template({
           source: src("vitest.setup.ts.ejs"),
+          content: load("vitest.setup.ts.ejs").content,
           dest: dest("vitest.setup.ts"),
           vars,
         }),
@@ -246,13 +277,18 @@ Requires both --ssr and --router flags.`,
         // index.html (EJS — <title> uses the app name)
         template({
           source: src("index.html.ejs"),
+          content: load("index.html.ejs").content,
           dest: dest("index.html"),
           vars,
         }),
         // The template is stored as `gitignore` (no leading dot): npm strips a
         // literal `.gitignore` from published tarballs, so we ship it dotless and
         // restore the dot at write time.
-        copyFile(src("gitignore"), dest(".gitignore")),
+        rawFile({
+          source: src("gitignore"),
+          content: load("gitignore").content,
+          dest: dest(".gitignore"),
+        }),
         // The app's browser floor, read by vite.config.ts to derive Lightning
         // CSS targets. Unlike `.gitignore` above, npm does not strip
         // `.browserslistrc` from tarballs, so the template keeps its dot.
@@ -266,6 +302,7 @@ Requires both --ssr and --router flags.`,
         // styles (EJS — form stylesheet imported only when --forms)
         template({
           source: src("src/styles/index.css.ejs"),
+          content: load("src/styles/index.css.ejs").content,
           dest: dest("src/styles/index.css"),
           vars,
         }),
@@ -274,6 +311,7 @@ Requires both --ssr and --router flags.`,
         // Client (EJS — RelayEnvironmentProvider only when --relay)
         template({
           source: src("src/client/entry.tsx.ejs"),
+          content: load("src/client/entry.tsx.ejs").content,
           dest: dest("src/client/entry.tsx"),
           vars,
         }),
@@ -283,6 +321,7 @@ Requires both --ssr and --router flags.`,
         // Server entry (EJS — a per-request RelayEnvironmentProvider only when --relay)
         template({
           source: src("src/server/entry.tsx.ejs"),
+          content: load("src/server/entry.tsx.ejs").content,
           dest: dest("src/server/entry.tsx"),
           vars,
         }),
@@ -298,6 +337,7 @@ Requires both --ssr and --router flags.`,
         // entry only when --relay)
         template({
           source: src("src/sitemap/getSitemapItems.ts.ejs"),
+          content: load("src/sitemap/getSitemapItems.ts.ejs").content,
           dest: dest("src/sitemap/getSitemapItems.ts"),
           vars,
         }),
@@ -396,6 +436,7 @@ Requires both --ssr and --router flags.`,
         // Routes (EJS — conditionally includes contact + catalog domains)
         template({
           source: src("src/routes.tsx.ejs"),
+          content: load("src/routes.tsx.ejs").content,
           dest: dest("src/routes.tsx"),
           vars,
         }),
@@ -404,6 +445,7 @@ Requires both --ssr and --router flags.`,
         // link only when --relay)
         template({
           source: src("src/lib/Navigation/Navigation.tsx.ejs"),
+          content: load("src/lib/Navigation/Navigation.tsx.ejs").content,
           dest: dest("src/lib/Navigation/Navigation.tsx"),
           vars,
         }),
@@ -436,6 +478,7 @@ Requires both --ssr and --router flags.`,
         // Lib barrel (EJS — ClientOnly export only when --relay)
         template({
           source: src("src/lib/index.ts.ejs"),
+          content: load("src/lib/index.ts.ejs").content,
           dest: dest("src/lib/index.ts"),
           vars,
         }),
@@ -447,6 +490,7 @@ Requires both --ssr and --router flags.`,
         // main config (EJS — the relay mocking addon only when --relay)
         template({
           source: src(".storybook/main.ts.ejs"),
+          content: load(".storybook/main.ts.ejs").content,
           dest: dest(".storybook/main.ts"),
           vars,
         }),

@@ -1,4 +1,18 @@
 export { default as ejsEngine } from "./ejsEngine.js";
+export type {
+  EmbeddedRoot,
+  LoadedTemplate,
+  RawFileOptions,
+} from "./embedded/index.js";
+export {
+  buildEmbeddedManifest,
+  hasEmbeddedTemplates,
+  loadTemplate,
+  loadTemplateSync,
+  qualifiedKey,
+  rawFile,
+  setEmbeddedTemplates,
+} from "./embedded/index.js";
 export { default as generateStamp } from "./generateStamp.js";
 export { default as generatorComment } from "./generatorComment.js";
 export { default as getCommentStyle } from "./getCommentStyle.js";
