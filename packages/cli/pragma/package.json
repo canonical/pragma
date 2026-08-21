@@ -70,7 +70,7 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.5.10",
     "@canonical/anatomy-dsl": "^0.2.2",
     "@canonical/biome-config": "^0.34.0",
     "@canonical/typescript-config": "^0.34.0",

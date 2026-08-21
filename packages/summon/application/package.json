@@ -42,7 +42,7 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.5.10",
     "@canonical/biome-config": "^0.34.0",
     "@canonical/webarchitect": "^0.34.0",
     "@types/node": "^24.12.0",
