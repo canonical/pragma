@@ -114,19 +114,19 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
   - Routing with @canonical/router-core
   - Head management with @canonical/react-head
   - Two domains (marketing + account) with pages
-  - Contact domain with form components (when --forms is enabled)
+  - Contact domain with form components (on by default; --no-forms omits it)
   - Relay (GraphQL) data layer with a local mock schema, catalog example
     domain, and Storybook mocking (when --relay is enabled)
   - Navigation, ThemeSelector, ExampleComponent
   - Storybook with router decorator
   - Biome + TypeScript configuration
 
-Requires both --ssr and --router flags.`,
+SSR and the router are always on; --no-ssr/--no-router are unsupported.`,
     examples: [
-      "summon application/react my-app",
-      "summon application/react --forms my-app",
-      "summon application/react --relay my-app",
-      "summon application/react --ssr --router --forms --relay my-app",
+      "summon application react my-app",
+      "summon application react --no-forms my-app",
+      "summon application react --relay my-app",
+      "summon application react --relay --no-run-install my-app",
     ],
   },
 
