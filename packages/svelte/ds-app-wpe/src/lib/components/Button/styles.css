@@ -1,0 +1,256 @@
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  /* Channel fallbacks used when no importance modifier is applied. Primary is
+     the default hierarchy, so a bare `<button class="ds button">` reads as the
+     filled primary look: the primary foreground fills the background and the
+     label takes the on-fill contrast colour. */
+  --button-color-background: var(
+    --modifier-color-foreground-primary,
+    var(--color-foreground-primary)
+  );
+  --button-color-background-hover: var(--color-foreground-primary-hover);
+  --button-color-background-active: var(--color-foreground-primary-active);
+  --button-color-background-disabled: var(--color-foreground-primary-disabled);
+  /* Neutral text is the normal text colour. The filled default reads as
+     contrast on the fill because `.primary` (the default importance, applied by
+     the component) overrides text/icon to the on-fill contrast tokens; ghost
+     importances keep this normal colour, so they stay visible. */
+  --button-color-text: var(--color-text);
+  --button-color-border: var(--color-border-highlighted, var(--color-border));
+
+  /* Inline padding (Figma):
+     - end (right): always dimension-200 (16px) — the label always sits 16px
+       from the trailing edge.
+     - start (left): dimension-200 (16px) with no icon; dimension-100 (8px) when
+       an icon leads (the icon then sits closer to the edge), with a
+       dimension-100 (8px) gap between the icon and the label. */
+  --button-padding-inline-end: var(--dimension-200);
+  --button-padding-inline-start: var(--dimension-200);
+  --button-gap: var(--dimension-100);
+  --button-border-width: var(--dimension-stroke-thickness-medium);
+  /* Label weight — the button label is medium, not the `.p` body weight. */
+  --button-font-weight: var(--typography-weight-medium);
+  /* Label size — the button label is the text-secondary tier (14px), not the
+     `.p` text-primary tier (16px). The line-height snaps up to the baseline
+     grid exactly as the typography mapper does, so the box stays 32px tall
+     (24px line + 8px of baseline nudges) around 14px text. */
+  --button-font-size: var(--typography-text-secondary-font-size);
+  --button-line-height: round(
+    up,
+    calc(
+      var(--button-font-size) *
+      var(--typography-text-secondary-line-height)
+    ),
+    var(--baseline-height)
+  );
+}
+
+/* ==========================================================================
+   Button Component Styles
+   ========================================================================== */
+
+/*
+  The button reads the modifier CHANNEL generically — it is not aware of any
+  particular importance/anticipation class or combination:
+
+    --modifier-surface   which foreground fills the background (importance:
+                         filled for primary, ghost for secondary/tertiary).
+    --modifier-outline   1 when a border shows, 0 when it does not (importance).
+    --modifier-color-*   the colour itself (anticipation/emphasis): text, icon,
+                         border. `.primary` overrides text/icon with the on-fill
+                         contrast tokens.
+
+  Interaction states read the per-state surface/text/border channels supplied
+  by the states shim (`--modifier-surface-{hover,active,disabled}`,
+  `--modifier-color-text-disabled`, `--modifier-color-border-disabled`), which
+  resolve to the explicit state tokens and recolour per anticipation.
+*/
+
+.ds.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--button-gap);
+  cursor: pointer;
+
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-surface, var(--button-color-background));
+  /* The outline flag (0/1) toggles the border's COLOUR, not its width: the
+     border is ALWAYS present at the nominal width (transparent when hidden), so
+     a bordered and a borderless importance share byte-identical geometry and
+     the density seat below subtracts one constant. */
+  border-color: color-mix(
+    in srgb,
+    var(--modifier-color-border, var(--button-color-border))
+      calc(var(--modifier-outline, 0) * 100%),
+    transparent
+  );
+  border-style: solid;
+  border-width: var(--button-border-width);
+
+  --font-size: var(--button-font-size);
+  --line-height: var(--button-line-height);
+  font-weight: var(--button-font-weight);
+  padding-inline: var(--button-padding-inline-start)
+    var(--button-padding-inline-end);
+
+  text-align: center;
+  text-decoration: none;
+
+  /* Fast colour transition on state change (hover/active/disabled). */
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-easing-standard),
+    color var(--motion-duration-fast) var(--motion-easing-standard),
+    border-color var(--motion-duration-fast) var(--motion-easing-standard);
+
+  /* A leading icon tightens the start padding to dimension-100; the gap
+     between the icon and label is already dimension-100. */
+  &:has(> .icon) {
+    --button-padding-inline-start: var(--dimension-100);
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(
+      --modifier-surface-hover,
+      var(--button-color-background-hover)
+    );
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(
+      --modifier-surface-active,
+      var(--button-color-background-active)
+    );
+  }
+
+  /* Keyboard focus ring — recolours per anticipation via the modifier channel. */
+  &:focus-visible {
+    outline: var(--focus-outline-width, 2px) solid
+      var(--modifier-color-focusRing, var(--color-focusRing, currentColor));
+    outline-offset: var(--focus-outline-offset, 2px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: var(--modifier-color-text-disabled, var(--color-text-disabled));
+    background-color: var(
+      --modifier-surface-disabled,
+      var(--button-color-background-disabled)
+    );
+    border-color: var(
+      --modifier-color-border-disabled,
+      var(--color-border-highlighted-disabled)
+    );
+  }
+}
+
+/* ==========================================================================
+   Icon Slot
+   ========================================================================== */
+
+.ds.button > .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--icon-size, 1em);
+  height: var(--icon-size, 1em);
+
+  color: var(--modifier-color-icon, var(--modifier-color-text, currentColor));
+}
+
+.ds.button:disabled > .icon {
+  color: var(--modifier-color-icon-disabled, var(--color-icon-disabled));
+}
+
+/* ==========================================================================
+   Loading State
+   ========================================================================== */
+
+/* Loading replaces the label with a Spinner but keeps the button's width: the
+   icon and label stay in the DOM (hidden, so their box still reserves space)
+   and the Spinner is overlaid centred on top. A loading button is disabled (so
+   it can't be re-triggered), but it must not *read* as disabled — it is
+   working, not unavailable — so it keeps the enabled surface colours. */
+.ds.button.loading {
+  color: var(--modifier-color-text, var(--button-color-text));
+  background-color: var(--modifier-surface, var(--button-color-background));
+  border-color: var(--modifier-color-border, var(--button-color-border));
+
+  & > .icon,
+  & > .label {
+    visibility: hidden;
+  }
+
+  & > .loading-spinner {
+    position: absolute;
+    inset: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ==========================================================================
+   Link Variant
+   ========================================================================== */
+
+.ds.button.link {
+  background-color: transparent;
+  border-color: transparent;
+  border-width: 0;
+  padding-inline: 0;
+  color: var(--color-text-link, currentColor);
+  text-decoration: underline;
+  text-underline-offset: var(--tmp-dimension-underline-offset-link, 0.075em);
+
+  &:hover:not(:disabled) {
+    background-color: transparent;
+    border-color: transparent;
+    text-decoration-thickness: var(
+      --tmp-dimension-decoration-thickness-link,
+      1px
+    );
+  }
+
+  &:active:not(:disabled) {
+    background-color: transparent;
+    border-color: transparent;
+  }
+}
+
+/* ── Density seat (apps 32 / sites 36, dense 24 / 28) — intrinsic ────────────
+ * The button consumes the SHARED control seat from @canonical/styles
+ * (modifiers.density.css): the label's own line box (cell − 2 baselines) is
+ * the button interior, `--control-seat-before` puts its baseline on the
+ * density target, `--control-seat-after` closes the box to EXACTLY the
+ * density cell. The height is INTRINSIC — no block-size: border + pads +
+ * line-height add up to the cell, and both outer edges land on grid lines.
+ *
+ * `:is()` on the density scope (0,1,0) so `:is(...) .ds.button` (0,2,0) beats
+ * the button's own `.ds.button { align-items: center }` (0,1,0). */
+:is(.comfortable, .dense, .app, .site, .docs) .ds.button {
+  --seat-before: round(
+    nearest,
+    max(0px, calc(var(--control-seat-basis) - var(--button-border-width, 0px))),
+    0.25px
+  );
+  --seat-after: max(
+    0px,
+    calc(
+      var(--density-line-height-effective) -
+      var(--control-seat-line) -
+      var(--seat-before) -
+      2 *
+      var(--button-border-width, 0px)
+    )
+  );
+
+  box-sizing: border-box;
+  block-size: auto;
+  align-items: flex-start;
+  justify-content: flex-start;
+  line-height: var(--control-seat-line);
+  padding-block: var(--seat-before) var(--seat-after);
+}
