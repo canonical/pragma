@@ -8,8 +8,16 @@
  * (type-only imports are erased at runtime and are exempt).
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -40,16 +48,61 @@ function runtimeSpecifiers(file: string): string[] {
   return specifiers;
 }
 
+/**
+ * Resolve a relative specifier to its source file — `.ts`, `.tsx`, and the
+ * `/index.ts(x)` directory forms. A specifier resolving to NONE of them is a
+ * hard failure, never a silent skip: an early-return here once made every
+ * `.tsx` module (React/Ink — the exact modules this guard exists to forbid)
+ * invisible to the graph.
+ */
+function resolveRelative(fromDir: string, spec: string): string {
+  const base = resolve(fromDir, spec.replace(/\.js$/, ""));
+  const candidates = [
+    `${base}.ts`,
+    `${base}.tsx`,
+    resolve(base, "index.ts"),
+    resolve(base, "index.tsx"),
+  ];
+  const found = candidates.find((candidate) => existsSync(candidate));
+  if (found === undefined) {
+    throw new Error(
+      `unresolvable relative specifier "${spec}" from ${fromDir} — a module the guard cannot resolve is a module it cannot check`,
+    );
+  }
+  return found;
+}
+
 /** Walk the static runtime import graph from an entry file. */
 function runtimeGraph(entry: string, seen = new Set<string>()): Set<string> {
-  if (seen.has(entry) || !existsSync(entry)) return seen;
+  if (seen.has(entry)) return seen;
   seen.add(entry);
   for (const spec of runtimeSpecifiers(entry)) {
     if (!spec.startsWith(".")) continue;
-    runtimeGraph(resolve(dirname(entry), spec.replace(/\.js$/, ".ts")), seen);
+    runtimeGraph(resolveRelative(dirname(entry), spec), seen);
   }
   return seen;
 }
+
+describe("the graph's resolver — .tsx visible, unresolvable fatal", () => {
+  it("sees .ts, .tsx and index modules, and throws on a specifier resolving to none", () => {
+    const dir = mkdtempSync(join(tmpdir(), "lazy-graph-probe-"));
+    try {
+      writeFileSync(join(dir, "ui.tsx"), "export const x = 1;\n");
+      mkdirSync(join(dir, "nested"));
+      writeFileSync(join(dir, "nested", "index.ts"), "export {};\n");
+      // A React/Ink module is .tsx — the guard must SEE it, not skip it.
+      expect(resolveRelative(dir, "./ui.js")).toBe(join(dir, "ui.tsx"));
+      expect(resolveRelative(dir, "./nested")).toBe(
+        join(dir, "nested", "index.ts"),
+      );
+      expect(() => resolveRelative(dir, "./ghost.js")).toThrow(
+        /unresolvable relative specifier/,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("projection import graph (PROTECTED)", () => {
   const graph = runtimeGraph(resolve(here, "index.ts"));

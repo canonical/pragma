@@ -425,6 +425,63 @@ describe("projection agreement with emitSurface (PROTECTED)", () => {
   });
 });
 
+describe("mounted create completion — literal candidate pins (PROTECTED)", () => {
+  // The mounted-tree branch of the agreement describe compares the model to
+  // completionChildren() — the same call the model was BUILT from, so it can
+  // never catch that surface going wrong (a garbage projection satisfies
+  // it). These pins are the INDEPENDENT source: literal candidate sets
+  // through the real resolver, shellDrive noun-tier style — the segment
+  // descent (parse.ts children walk) and a leaf's registered flags.
+
+  it("segment tier: `create component <TAB>` offers exactly the framework segments", async () => {
+    const { runComplete } = await import("./complete.js");
+    expect(
+      await runComplete(["create", "component", ""], capabilities),
+    ).toEqual(["lit", "react", "svelte"]);
+    expect(
+      await runComplete(["create", "application", ""], capabilities),
+    ).toEqual(["react"]);
+  });
+
+  it("leaf flag tier: `create component react --<TAB>` offers the REGISTERED flags", async () => {
+    const { runComplete } = await import("./complete.js");
+    // The leaf's prompt-derived flags in their registered spelling (--no-
+    // forms for default-true confirms), the mutation trio, and the root
+    // globals — as literals, so dropping the framework positional's values
+    // or the leaf child's flag filter goes red instead of silently green.
+    expect(
+      await runComplete(["create", "component", "react", "--"], capabilities),
+    ).toEqual([
+      "--detail",
+      "--dry-run",
+      "--format",
+      "--help",
+      "--no-with-ssr-tests",
+      "--no-with-stories",
+      "--no-with-styles",
+      "--undo",
+      "--verbose",
+      "--yes",
+    ]);
+    // Svelte's leaf carries its own extra flag — per-leaf, not unioned.
+    expect(
+      await runComplete(["create", "component", "svelte", "--"], capabilities),
+    ).toEqual([
+      "--detail",
+      "--dry-run",
+      "--format",
+      "--help",
+      "--no-with-ssr-tests",
+      "--no-with-stories",
+      "--no-with-styles",
+      "--undo",
+      "--use-ts-stories",
+      "--verbose",
+      "--yes",
+    ]);
+  });
+});
+
 /** Regression pin: ParamSpec.complete stays optional on every param kind. */
 it("accepts params without a complete field", () => {
   const params: ParamSpec[] = [

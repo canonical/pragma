@@ -24,7 +24,7 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -138,7 +138,7 @@ function flagTokens(help: string): string[] {
  */
 function generatorSections(help: string): string {
   const lines = help.split("\n");
-  const globalAt = lines.findIndex((line) => line === "Global Options:");
+  const globalAt = lines.indexOf("Global Options:");
   if (globalAt === -1) return help;
   let at = globalAt + 1;
   // Skip the host block: indented rows until the next blank line.

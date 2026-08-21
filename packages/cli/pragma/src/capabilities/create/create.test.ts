@@ -101,6 +101,36 @@ describe("create — real generation + stamp", () => {
     expect(walk(dir)).toEqual([]); // nothing written
   });
 
+  it("application --dry-run renders carried assets as WRITES — no Copy rows (§L item 6)", async () => {
+    // copy()→rawFile() reclassified ~62 carried assets from CopyFile to
+    // verbatim WriteFile, changing every dry-run/--llm/json plan row from
+    // `Copy file: <src> → <dest>` to `Write file: <dest> (N bytes)`. That is
+    // a DELIBERATE observable change (PLAN §L); this literal pin keeps both
+    // an accidental reversion and a silent re-rendering visible.
+    const dir = freshCwd();
+    const prev = process.cwd();
+    process.chdir(dir);
+    let outcome: Awaited<ReturnType<typeof executeVerb>>;
+    try {
+      outcome = await executeVerb(
+        createVerbs.application,
+        { appPath: "my-app", runInstall: false },
+        { dryRun: true, undo: false, yes: false },
+        bootRuntime(FLAGS, dir),
+      );
+    } finally {
+      process.chdir(prev);
+    }
+    expect(outcome.exitCode).toBe(0);
+    // A known carried (formerly copied) asset plans as a write…
+    expect(outcome.stdout).toMatch(
+      /- Write file: my-app\/\.storybook\/preview\.ts \(\d+ bytes\)/,
+    );
+    // …and no plan row renders as a copy anywhere.
+    expect(outcome.stdout).not.toContain("Copy file:");
+    expect(walk(dir)).toEqual([]); // still a dry run
+  }, 60_000);
+
   it("--dry-run reports the bytes the real run writes (post-stamp)", async () => {
     // The mock previewer never called `onEffectStart`, so summon's stamping
     // transform did not run and every planned byte count under-reported the
