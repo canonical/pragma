@@ -27,6 +27,38 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   this package: those concerns live inside the pragma kernel's command grammar,
   whose extraction into a shared package is tracked separately.
 
+* **One interaction model — non-interactive runs without complete input now
+  REFUSE (exit 2).** Summon adopts the shared interaction decision it now
+  shares verbatim with `pragma create` (normative contract:
+  `packages/summon/core/docs/parity-contract.md`, §3). Three behaviors that
+  previously fell through to mounting the Ink UI are now loud, scriptable
+  failures:
+
+  - **Non-TTY refusal**: a piped/CI run of a generator without `--yes`,
+    `--dry-run`, `--undo`, or a complete set of answer flags exits **2** with
+    `Refusing to scaffold in a non-interactive run without complete input.
+    Pass --yes to accept defaults, --dry-run to preview, or provide every
+    answer as a flag. Missing: --…` (previously: an Ink render attempt against
+    a pipe). A CI invocation like `summon component react | tee log` must now
+    pass `--yes` (accept defaults), `--dry-run` (preview only), or every
+    remaining flag.
+  - **Excess positionals** exit **2** with `error: unexpected argument "X"`
+    (plus a did-you-mean when the stray matches a tree segment); they were
+    previously commander's generic "too many arguments" or silently absorbed.
+  - **Invalid batch input**: `--dry-run`/`--undo`/`--yes` runs error loudly
+    (exit **2**) on a missing required answer or a value failing its prompt's
+    own `validate` — the message echoes the value
+    (`Invalid --component-path "not-pascal": …`) — instead of silently
+    falling through to the interactive UI.
+
+  Also in this line of work, on a TTY: `--dry-run` renders the batch plan and
+  `--undo` runs batch undo (neither mounts the interactive preview any more,
+  and `--dry-run` now takes precedence over `--undo`); a run with PARTIAL
+  answer flags asks exactly the missing prompts instead of silently
+  defaulting the rest; and the long-missing `--undo` row appears in every
+  generator's `--help`. Generated trees are byte-identical throughout —
+  `--yes` runs are untouched.
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon

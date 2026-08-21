@@ -522,11 +522,22 @@ This outputs complete file contents with line numbers:
 │    ... (truncated after 50 lines)
 ```
 
-### Current Limitation: TTY Requirement
+### Non-TTY Runs Refuse Without Complete Input
 
-Summon's interactive UI (built with Ink) requires a TTY for keyboard input. When running in non-TTY environments (CI, LLM coding assistants like Claude Code):
+The interactive UI (built with Ink) needs a TTY; without one, summon never
+tries to mount it. A non-TTY run (CI, a pipe, an LLM coding assistant)
+without `--yes`, `--dry-run`, `--undo`, or a complete set of answer flags
+**refuses with exit 2**:
 
-**Workaround**: Ensure all prompt values are provided via flags. With `--yes` and all values specified, the interactive UI is minimally invoked.
+```
+Refusing to scaffold in a non-interactive run without complete input. Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. Missing: --component-path, ...
+```
+
+The recovery is in the message: pass `--yes` to accept defaults, `--dry-run`
+to preview without writing, or provide every remaining answer as a flag (a
+fully-explicit non-TTY run executes without `--yes`). The full decision
+table — all 32 input combinations, shared verbatim with `pragma create` — is
+normative in [the parity contract](./parity-contract.md), §3.
 
 **Alternative**: For complex component generation that integrates with design system ontologies, consider using the `component-from-ontology` skill in `/skills/component-from-ontology/SKILL.md`, which provides LLM-guided generation without TTY requirements.
 
