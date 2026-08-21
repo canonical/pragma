@@ -20,14 +20,21 @@ import {
   formatLlmMarkdown,
   type GeneratorDefinition,
   isVisibleEffect,
+  missingRequiredError,
+  type PromptEffect,
   type StampConfig,
+  validateAnswers,
 } from "@canonical/summon-core";
 import {
   applyDefaults,
+  decideInteraction,
+  explicitAnswersComplete,
   extractAnswers,
   type GeneratorCliHost,
   type HostFlags,
   hasAllRequiredAnswers,
+  missingExplicitFlags,
+  refusalMessage,
   registerGeneratorCommands,
 } from "@canonical/summon-core/projection";
 import { dryRun } from "@canonical/task";
@@ -216,16 +223,26 @@ async function runGeneratorAction(
     cliAnswers[positionalPrompt.name] = positionalValue;
   }
 
-  // Apply defaults for checking if we have all required answers
+  // Apply defaults once — the batch and run modes consume these.
   const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
 
-  // Determine execution mode
-  const hasAllAnswers = hasAllRequiredAnswers(
-    generator.prompts,
-    answersWithDefaults,
-  );
-  const isTTY = process.stdin.isTTY === true;
-  const skipPrompts = actualOptions.yes === true;
+  // The ONE interaction decision (R2), shared verbatim with pragma. Summon's
+  // TTY fact: stdin AND stdout are TTYs (the wizard renders to stdout).
+  const { mode } = decideInteraction({
+    dryRun: actualOptions.dryRun === true,
+    undo: actualOptions.undo === true,
+    yes: actualOptions.yes === true,
+    isTTY: process.stdin.isTTY === true && process.stdout.isTTY === true,
+    explicitComplete: explicitAnswersComplete(generator.prompts, cliAnswers),
+  });
+
+  if (mode === "refuse") {
+    process.stderr.write(
+      `${refusalMessage(missingExplicitFlags(generator.prompts, cliAnswers))}\n`,
+    );
+    process.exitCode = 2;
+    return;
+  }
 
   // Build stamp config if stamps are enabled (default: enabled)
   const stampEnabled = actualOptions.generatedStamp !== false;
@@ -233,38 +250,92 @@ async function runGeneratorAction(
     ? createGeneratorStamp(generator)
     : undefined;
 
-  // Undo mode (non-interactive batch)
-  if (hasAllAnswers && actualOptions.undo && !isTTY) {
-    await runBatchUndo(generator, answersWithDefaults);
+  // The batch modes run regardless of TTY, on defaults — but never on a
+  // missing or invalid answer: they error loudly (exit 2) where the previous
+  // decision block silently fell through to Ink.
+  if (mode === "batch-undo" || mode === "batch-dry-run") {
+    if (!failLoudBatchInput(generator, answersWithDefaults)) return;
+    if (mode === "batch-undo") {
+      await runBatchUndo(generator, answersWithDefaults);
+    } else {
+      runBatchDryRun(generator, answersWithDefaults, actualOptions);
+    }
     return;
   }
 
-  if (hasAllAnswers && actualOptions.dryRun && !isTTY) {
-    // Batch dry-run mode (non-interactive)
-    runBatchDryRun(generator, answersWithDefaults, actualOptions);
-  } else {
-    // Interactive mode
-    const shouldSkipPrompts = skipPrompts || Object.keys(cliAnswers).length > 0;
-    const passedAnswers = shouldSkipPrompts ? answersWithDefaults : undefined;
-
-    const shouldShowPreview = skipPrompts
-      ? false
-      : (actualOptions.preview as boolean);
-
+  if (mode === "run") {
+    // A fully-determined run: defaults applied, no wizard, no preview gate
+    // (the confirm auto-resolves).
     const { waitUntilExit } = render(
       <App
         generator={generator}
-        preview={shouldShowPreview}
-        dryRunOnly={actualOptions.dryRun as boolean}
-        undo={actualOptions.undo as boolean}
+        preview={false}
+        dryRunOnly={false}
+        undo={false}
         verbose={actualOptions.verbose as boolean}
-        answers={passedAnswers}
+        answers={answersWithDefaults}
         stamp={stamp}
       />,
     );
-
     await waitUntilExit();
+    return;
   }
+
+  // mode === "wizard": ask exactly pendingPrompts(prompts, explicit) — the
+  // provided answers are pre-seeded and shown in the completed table.
+  const { waitUntilExit } = render(
+    <App
+      generator={generator}
+      preview={actualOptions.preview as boolean}
+      dryRunOnly={false}
+      undo={false}
+      verbose={actualOptions.verbose as boolean}
+      answers={cliAnswers}
+      askMissing
+      stamp={stamp}
+    />,
+  );
+  await waitUntilExit();
+}
+
+/**
+ * Fail loudly (stderr + exit 2) when a batch mode's answer set is unusable: a
+ * required answer has no value even after defaults, or a provided answer fails
+ * its prompt's own constraint. Returns true when the batch may proceed.
+ */
+function failLoudBatchInput(
+  generator: GeneratorDefinition,
+  answersWithDefaults: Record<string, unknown>,
+): boolean {
+  if (!hasAllRequiredAnswers(generator.prompts, answersWithDefaults)) {
+    const missing = generator.prompts.find(
+      (prompt) =>
+        !prompt.when &&
+        prompt.default === undefined &&
+        !(prompt.name in answersWithDefaults),
+    );
+    /* v8 ignore next -- hasAllRequiredAnswers false implies a missing prompt. */
+    if (missing) {
+      const effect = {
+        _tag: "Prompt",
+        question: {
+          type: "text",
+          name: missing.name,
+          message: missing.message,
+        },
+      } as PromptEffect;
+      process.stderr.write(`${missingRequiredError(effect, "flag").message}\n`);
+    }
+    process.exitCode = 2;
+    return false;
+  }
+  const invalid = validateAnswers(generator.prompts, answersWithDefaults);
+  if (invalid !== null) {
+    process.stderr.write(`${invalid}\n`);
+    process.exitCode = 2;
+    return false;
+  }
+  return true;
 }
 
 /** The summon host handed to the shared registration path. */

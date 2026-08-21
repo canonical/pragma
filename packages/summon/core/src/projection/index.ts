@@ -22,6 +22,16 @@ export {
 export type { BuildCommandBarrelOptions } from "./buildCommandBarrel.js";
 export { default as buildCommandBarrel } from "./buildCommandBarrel.js";
 export { default as buildOptionInfo } from "./buildOptionInfo.js";
+export type {
+  InteractionDecision,
+  InteractionInput,
+  InteractionMode,
+} from "./decideInteraction.js";
+export {
+  decideInteraction,
+  missingExplicitFlags,
+  refusalMessage,
+} from "./decideInteraction.js";
 export { default as extractAnswers } from "./extractAnswers.js";
 export {
   buildOptionGroups,
@@ -33,6 +43,7 @@ export { default as projectGenerator } from "./projectGenerator.js";
 export type { GeneratorCliHost } from "./registerGeneratorCommand.js";
 export {
   default as registerGeneratorCommands,
+  excessArgumentMessage,
   splitGeneratorActionArgs,
 } from "./registerGeneratorCommand.js";
 export type {

@@ -51,6 +51,75 @@ function addPromptOptions(cmd: Command, prompts: readonly PromptLike[]): void {
 }
 
 /**
+ * The designed excess-positional error. Commander's default is a generic "too
+ * many arguments"; the wrapper owns this message in BOTH CLIs: the stray is
+ * named, and when it matches a sibling or child tree segment the corrected
+ * command is suggested (`summon component react svelte …` almost certainly
+ * meant `summon component svelte …`).
+ *
+ * The suggestion scans EVERY operand, not just the excess ones: in
+ * `summon component react svelte MyComponent` it is `svelte` — bound as the
+ * positional — that names the intended sibling, while `MyComponent` is what
+ * overflowed. First matching operand wins; a child segment beats a sibling.
+ *
+ * @param binName - The root program name.
+ * @param entryPath - The invoked leaf's path segments.
+ * @param stray - The first unexpected operand.
+ * @param operands - Every operand the command received (bound + excess).
+ * @param siblings - The leaf's sibling segments (other children of its parent).
+ * @param children - The leaf's own child segments (runnable-namespace case).
+ * @returns The full error text (one or two lines, no trailing newline).
+ */
+export function excessArgumentMessage(
+  binName: string,
+  entryPath: readonly string[],
+  stray: string,
+  operands: readonly string[],
+  siblings: ReadonlySet<string>,
+  children: ReadonlySet<string>,
+): string {
+  const error = `error: unexpected argument "${stray}"`;
+  for (const operand of operands) {
+    if (children.has(operand)) {
+      return `${error}\nDid you mean '${[binName, ...entryPath, operand].join(" ")}'?`;
+    }
+    if (siblings.has(operand)) {
+      return `${error}\nDid you mean '${[binName, ...entryPath.slice(0, -1), operand].join(" ")}'?`;
+    }
+  }
+  return error;
+}
+
+/** The root program's name (for suggestions), walking up from a leaf. */
+function rootName(cmd: Command): string {
+  let root = cmd;
+  while (root.parent) root = root.parent;
+  return root.name();
+}
+
+/** The sibling and child segment sets of one barrel entry. */
+function segmentNeighbours(
+  entry: CommandEntry,
+  barrel: readonly CommandEntry[],
+): { siblings: Set<string>; children: Set<string> } {
+  const siblings = new Set<string>();
+  const children = new Set<string>();
+  const parent = entry.path.slice(0, -1).join("/");
+  const self = entry.path.join("/");
+  for (const other of barrel) {
+    const otherParent = other.path.slice(0, -1).join("/");
+    const last = other.path[other.path.length - 1] as string;
+    if (otherParent === parent && other.path.join("/") !== self) {
+      siblings.add(last);
+    }
+    if (otherParent === self) {
+      children.add(last);
+    }
+  }
+  return { siblings, children };
+}
+
+/**
  * Normalize Commander's action calling convention: the positional value is the
  * first argument only when the command spec declared one, and it counts only
  * when actually given (a non-empty string).
@@ -78,8 +147,16 @@ export function splitGeneratorActionArgs(
 /**
  * Configure a command with generator options and action.
  *
+ * The leaf opts into Commander's excess-argument tolerance and the action
+ * wrapper OWNS the overflow instead: a stray operand beyond the declared
+ * positional errors with the designed `unexpected argument` message (stderr,
+ * exit 2) and never reaches the host action — in both CLIs. This is what
+ * kills the silent-positional-drop class (`summon component react MyComponent
+ * Extra` used to bind nothing and say nothing).
+ *
  * @param cmd - The command to configure.
  * @param entry - The barrel entry (carries the generator).
+ * @param barrel - The whole barrel (for sibling/child suggestions).
  * @param host - The host seam.
  * @param positionalPrompt - The generator's positional prompt, when the
  *   command spec declared one.
@@ -87,6 +164,7 @@ export function splitGeneratorActionArgs(
 function configureGeneratorCommand(
   cmd: Command,
   entry: CommandEntry,
+  barrel: readonly CommandEntry[],
   host: GeneratorCliHost,
   positionalPrompt?: PromptLike,
 ): void {
@@ -100,8 +178,28 @@ function configureGeneratorCommand(
   // Configure grouped help display
   configureGroupedHelp(cmd, generator.prompts, host.standardFlags.help);
 
-  // Add action: normalize Commander's calling convention, then hand off.
+  // The wrapper owns excess operands (designed message, not Commander's).
+  cmd.allowExcessArguments(true);
+  const declaredPositionals = positionalPrompt ? 1 : 0;
+  const { siblings, children } = segmentNeighbours(entry, barrel);
+
+  // Add action: guard excess operands, normalize Commander's calling
+  // convention, then hand off.
   cmd.action(async (...actionArgs: unknown[]) => {
+    if (cmd.args.length > declaredPositionals) {
+      const stray = cmd.args[declaredPositionals] as string;
+      const message = excessArgumentMessage(
+        rootName(cmd),
+        entry.path,
+        stray,
+        cmd.args,
+        siblings,
+        children,
+      );
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 2;
+      return;
+    }
     const { positionalValue, options } = splitGeneratorActionArgs(
       actionArgs,
       positionalPrompt !== undefined,
@@ -135,7 +233,7 @@ export default function registerGeneratorCommands(
     const existingCmd = commandMap.get(currentPath);
     if (existingCmd) {
       if (entry.generator) {
-        configureGeneratorCommand(existingCmd, entry, host);
+        configureGeneratorCommand(existingCmd, entry, barrel, host);
       }
       continue;
     }
@@ -162,7 +260,7 @@ export default function registerGeneratorCommands(
         cmd.usage(`[${positionalName}] [options]`);
       }
 
-      configureGeneratorCommand(cmd, entry, host, positionalPrompt);
+      configureGeneratorCommand(cmd, entry, barrel, host, positionalPrompt);
       commandMap.set(currentPath, cmd);
     } else {
       const cmd = parentCmd

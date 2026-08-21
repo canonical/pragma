@@ -789,6 +789,13 @@ export interface AppProps {
   verbose?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
   answers?: Record<string, unknown>;
+  /**
+   * Wizard mode over a PARTIAL answer set: `answers` are the explicitly
+   * provided ones — never re-asked, shown as completed — and the wizard asks
+   * exactly the pending prompts (empty set ⇒ straight to preview/confirm).
+   * Without this flag, provided `answers` skip prompting entirely (a run).
+   */
+  askMissing?: boolean;
   /** Stamp configuration for generated files (undefined = no stamps) */
   stamp?: StampConfig;
 }
@@ -800,11 +807,14 @@ export const App = ({
   undo = false,
   verbose = false,
   answers: prefilledAnswers,
+  askMissing = false,
   stamp,
 }: AppProps) => {
   const { exit } = useApp();
   const [state, setState] = useState<AppState>(
-    prefilledAnswers ? { phase: "loading" } : { phase: "prompting" },
+    prefilledAnswers && !askMissing
+      ? { phase: "loading" }
+      : { phase: "prompting" },
   );
   const [answers, setAnswers] = useState<Record<string, unknown>>(
     prefilledAnswers ?? {},
@@ -901,12 +911,12 @@ export const App = ({
     [answers],
   );
 
-  // Handle pre-filled answers
+  // Handle pre-filled answers (run mode only — askMissing starts prompting)
   useEffect(() => {
-    if (prefilledAnswers && state.phase === "loading") {
+    if (prefilledAnswers && !askMissing && state.phase === "loading") {
       handlePromptsComplete(prefilledAnswers);
     }
-  }, [prefilledAnswers, state.phase, handlePromptsComplete]);
+  }, [prefilledAnswers, askMissing, state.phase, handlePromptsComplete]);
 
   // Handle going back from confirmation to prompting
   const handleGoBack = useCallback(() => {
@@ -955,6 +965,7 @@ export const App = ({
           onComplete={handlePromptsComplete}
           onCancel={handleCancel}
           initialAnswers={answers}
+          provided={askMissing ? prefilledAnswers : undefined}
         />
       )}
 

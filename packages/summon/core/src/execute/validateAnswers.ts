@@ -45,7 +45,9 @@ export default function validateAnswers(
       const verdict = prompt.validate(value);
       if (verdict !== true) {
         const detail = typeof verdict === "string" ? verdict : "invalid value";
-        return `Invalid --${toKebabCase(prompt.name)}: ${detail}`;
+        // Echo the offending value, exactly as the select branch above does —
+        // `Invalid --component-path "react": …` names what was rejected.
+        return `Invalid --${toKebabCase(prompt.name)} "${String(value)}": ${detail}`;
       }
     }
   }

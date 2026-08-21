@@ -1,8 +1,9 @@
 import { pure, task } from "@canonical/task";
 import { Command } from "commander";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 import registerGeneratorCommands, {
+  excessArgumentMessage,
   type GeneratorCliHost,
   splitGeneratorActionArgs,
 } from "./registerGeneratorCommand.js";
@@ -268,5 +269,119 @@ describe("splitGeneratorActionArgs", () => {
       positionalValue: "v",
       options: {},
     });
+  });
+});
+
+describe("the excess-positional guard", () => {
+  afterEach(() => {
+    process.exitCode = 0;
+  });
+
+  /** Register a two-framework tree and return (program, stderr spy, calls). */
+  function makeTree() {
+    const program = makeProgram();
+    const { host, calls } = makeHost();
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    registerGeneratorCommands(
+      program,
+      [
+        { path: ["component"], description: "component generators" },
+        {
+          path: ["component", "react"],
+          generator: makeGenerator("component/react", { positional: true }),
+        },
+        {
+          path: ["component", "svelte"],
+          generator: makeGenerator("component/svelte", { positional: true }),
+        },
+        {
+          path: ["dual"],
+          generator: makeGenerator("dual", { positional: true }),
+        },
+        { path: ["dual", "sub"], generator: makeGenerator("dual/sub") },
+      ],
+      host,
+    );
+    return { program, stderr, calls };
+  }
+
+  it("errors on a stray operand with the designed message, exit 2, action skipped", async () => {
+    const { program, stderr, calls } = makeTree();
+    await program.parseAsync(["component", "react", "MyComponent", "Extra"], {
+      from: "user",
+    });
+    expect(stderr).toHaveBeenCalledWith('error: unexpected argument "Extra"\n');
+    expect(process.exitCode).toBe(2);
+    expect(calls).toEqual([]);
+    stderr.mockRestore();
+  });
+
+  it("suggests the sibling segment when any operand matches one", async () => {
+    const { program, stderr } = makeTree();
+    // `svelte` binds as the positional, `X` overflows — the suggestion still
+    // names the sibling the user almost certainly meant.
+    await program.parseAsync(["component", "react", "svelte", "X"], {
+      from: "user",
+    });
+    expect(stderr).toHaveBeenCalledWith(
+      "error: unexpected argument \"X\"\nDid you mean 'bin component svelte'?\n",
+    );
+    stderr.mockRestore();
+  });
+
+  it("suggests the child segment on a runnable namespace", async () => {
+    const { program, stderr } = makeTree();
+    // `dual` declares one positional; commander routes `dual sub` to the sub
+    // command, so reach the excess path with a filled positional + stray `sub`.
+    await program.parseAsync(["dual", "value", "sub"], { from: "user" });
+    expect(stderr).toHaveBeenCalledWith(
+      "error: unexpected argument \"sub\"\nDid you mean 'bin dual sub'?\n",
+    );
+    stderr.mockRestore();
+  });
+
+  it("a full positional plus flags is not excess", async () => {
+    const { program, stderr, calls } = makeTree();
+    await program.parseAsync(
+      ["component", "react", "MyComponent", "--no-with-styles"],
+      { from: "user" },
+    );
+    expect(calls).toHaveLength(1);
+    expect(stderr).not.toHaveBeenCalled();
+    stderr.mockRestore();
+  });
+});
+
+describe("excessArgumentMessage", () => {
+  it("names the stray; no suggestion when no operand is a segment", () => {
+    expect(
+      excessArgumentMessage(
+        "bin",
+        ["component", "react"],
+        "X",
+        ["X"],
+        new Set(["svelte"]),
+        new Set(),
+      ),
+    ).toBe('error: unexpected argument "X"');
+  });
+
+  it("a child match beats a sibling match", () => {
+    const siblings = new Set(["svelte"]);
+    const children = new Set(["svelte"]);
+    expect(
+      excessArgumentMessage(
+        "bin",
+        ["component", "react"],
+        "svelte",
+        ["svelte"],
+        siblings,
+        children,
+      ),
+    ).toBe(
+      "error: unexpected argument \"svelte\"\nDid you mean 'bin component react svelte'?",
+    );
   });
 });
