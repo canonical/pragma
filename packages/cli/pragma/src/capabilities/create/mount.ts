@@ -33,6 +33,7 @@ import {
   type ProjectedPrompt,
   refusalMessage,
   registerGeneratorCommands,
+  toKebabCase,
 } from "@canonical/summon-core/projection";
 import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
@@ -44,6 +45,7 @@ import type {
   CliProjection,
   CompletionChildFlag,
   CompletionChildSpec,
+  ReferenceCliSyntax,
   VerbSpec,
 } from "../../kernel/spec/types.js";
 import { CREATE_GENERATORS } from "./constants.js";
@@ -154,7 +156,57 @@ export function createCliProjection(): CliProjection {
     mount,
     completionChildren,
     referenceIntro: REFERENCE_INTRO,
+    referenceSyntax,
   };
+}
+
+/** The leaves' prompts, unioned by first-seen name (the binding param order). */
+function unionPrompts(paths: readonly string[]): ProjectedPrompt[] {
+  const seen = new Set<string>();
+  const union: ProjectedPrompt[] = [];
+  for (const commandPath of paths) {
+    for (const prompt of CREATE_SURFACE[commandPath]?.prompts ?? []) {
+      if (seen.has(prompt.name)) continue;
+      seen.add(prompt.name);
+      union.push(prompt);
+    }
+  }
+  return union;
+}
+
+/**
+ * The REGISTERED reference syntax for one binding verb (the mounted spelling
+ * the generated reference prints): the usage line carries the real tree
+ * segment (`create application react …`, `<framework>` for the multi-leaf
+ * binding — its values live in the Args table) and the registered kebab
+ * positional; each flag token is the one the mount actually registers (a
+ * default-true confirm registers ONLY its `--no-` form), derived from the
+ * same `buildOptionInfo` the mount and completion use. Exported for the
+ * reference pins.
+ */
+export function referenceSyntax(
+  verbPath: VerbSpec["path"],
+): ReferenceCliSyntax | undefined {
+  const kind = verbPath[1] as CreateKind | undefined;
+  const binding = kind ? CREATE_GENERATORS[kind] : undefined;
+  if (verbPath[0] !== "create" || !binding) return undefined;
+  const paths = binding.paths as readonly string[];
+  const first = paths[0] as string;
+
+  const tokens: string[] = ["create", kind as string];
+  if (paths.length > 1) tokens.push("<framework>");
+  else if (first.includes("/")) tokens.push(first.split("/")[1] as string);
+  const prompts = unionPrompts(paths);
+  const positional = prompts.find((prompt) => prompt.positional === true);
+  if (positional) tokens.push(`[${toKebabCase(positional.name)}]`);
+  tokens.push("[options]");
+
+  const flagTokens: Record<string, string> = {};
+  for (const prompt of prompts) {
+    if (prompt.positional === true) continue;
+    flagTokens[prompt.name] = promptFlag(prompt).flag;
+  }
+  return { usage: tokens.join(" "), flagTokens };
 }
 
 /** Mount the generator tree onto the `create` parent command. */

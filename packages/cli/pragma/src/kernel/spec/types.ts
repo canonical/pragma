@@ -262,6 +262,28 @@ export interface CompletionChildSpec {
   readonly children?: readonly CompletionChildSpec[];
 }
 
+/**
+ * The REGISTERED CLI spelling of one mounted verb's reference section. A
+ * mounted tree may register a different surface than the binding-level params
+ * suggest (tree segments as subcommands, a default-true boolean registered
+ * only as its `--no-` form), and the reference must print what the CLI
+ * actually accepts — the module supplies it, the kernel renders it.
+ */
+export interface ReferenceCliSyntax {
+  /**
+   * The usage line after the bin name (e.g.
+   * `create application react [app-path] [options]`) — real tree segments,
+   * the registered positional token.
+   */
+  readonly usage: string;
+  /**
+   * The registered flag token per binding-level param name (e.g.
+   * `withStyles` → `--no-with-styles`). A param absent here renders with the
+   * default `--<kebab-name>` derivation.
+   */
+  readonly flagTokens: Readonly<Record<string, string>>;
+}
+
 /** What the program hands a module mounting its own subtree. */
 export interface CliMountHost {
   /** Global flags for this invocation (closed over by mounted actions). */
@@ -293,6 +315,16 @@ export interface CliProjection {
   >;
   /** Markdown inserted under the noun's heading in the generated reference. */
   readonly referenceIntro?: string;
+  /**
+   * The registered CLI syntax for one of the noun's binding verbs — the
+   * MOUNTED spelling the reference must print (usage line with tree
+   * segments, flag tokens the CLI actually registers) instead of deriving
+   * tokens from binding-level param names the mounted tree may not register.
+   * Return `undefined` to keep the default rendering for that verb.
+   */
+  readonly referenceSyntax?: (
+    verbPath: VerbSpec["path"],
+  ) => ReferenceCliSyntax | undefined;
 }
 
 /** A capability module: a named bundle of verbs with optional boot/resources/prompts hooks. */

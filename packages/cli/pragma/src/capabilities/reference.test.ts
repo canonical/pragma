@@ -30,6 +30,50 @@ describe("reference docs drift-guard — emitReference == committed (PROTECTED)"
     expect(committed).toEqual([...emitted.keys()].sort());
   });
 
+  it("the create chapter prints the REGISTERED grammar — segments and --no- forms, never rejected spellings", () => {
+    const commands = readCommitted("commands.md");
+    const start = commands.indexOf("\n## create\n");
+    expect(start).toBeGreaterThan(-1);
+    const end = commands.indexOf("\n## ", start + 1);
+    const chapter = commands.slice(start, end === -1 ? undefined : end);
+    // The single-leaf application binding's synopsis carries its required
+    // tree segment and the registered positional token — copying it must not
+    // exit 2 with the operand parsed as an unknown subcommand.
+    expect(chapter).toContain(
+      "pragma create application react [app-path] [options]",
+    );
+    expect(chapter).toContain(
+      "pragma create component <framework> [component-path] [options]",
+    );
+    // Default-true confirms document ONLY the spelling the mount registers…
+    for (const token of [
+      "| `--no-with-styles` |",
+      "| `--no-with-stories` |",
+      "| `--no-with-ssr-tests` |",
+      "| `--no-ssr` |",
+      "| `--no-router` |",
+      "| `--no-forms` |",
+      "| `--no-run-install` |",
+    ]) {
+      expect(chapter).toContain(token);
+    }
+    // …the rejected positive tokens appear in no flag cell…
+    for (const token of [
+      "| `--with-styles` |",
+      "| `--with-stories` |",
+      "| `--with-ssr-tests` |",
+      "| `--ssr` |",
+      "| `--router` |",
+      "| `--forms` |",
+      "| `--run-install` |",
+    ]) {
+      expect(chapter).not.toContain(token);
+    }
+    // …and default-false confirms keep their registered positive form.
+    expect(chapter).toContain("| `--relay` |");
+    expect(chapter).toContain("| `--use-ts-stories` |");
+  });
+
   it("the create chapter points at the parity contract, and the link resolves", () => {
     const commands = readCommitted("commands.md");
     const start = commands.indexOf("\n## create\n");

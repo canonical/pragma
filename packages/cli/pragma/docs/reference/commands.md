@@ -174,7 +174,7 @@ The `create` surface is a PROJECTION of the summon generator tree: `pragma creat
 Scaffold a full React application with SSR and routing.
 
 ```
-pragma create application [appPath] [options]
+pragma create application react [app-path] [options]
 ```
 
 **Arguments**
@@ -187,11 +187,11 @@ pragma create application [appPath] [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--ssr` | — | Include SSR. (default: true) |
-| `--router` | — | Include router. (default: true) |
-| `--forms` | — | Include form components. (default: true) |
+| `--no-ssr` | — | Include SSR. (default: true) |
+| `--no-router` | — | Include router. (default: true) |
+| `--no-forms` | — | Include form components. (default: true) |
 | `--relay` | — | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
-| `--run-install` | — | Install dependencies now. (default: true) |
+| `--no-run-install` | — | Install dependencies now. (default: true) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -209,7 +209,7 @@ pragma create application react my-app --relay
 Scaffold a React, Svelte, or Lit component.
 
 ```
-pragma create component <framework> [componentPath] [options]
+pragma create component <framework> [component-path] [options]
 ```
 
 **Arguments**
@@ -223,9 +223,9 @@ pragma create component <framework> [componentPath] [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--with-styles` | — | Include styles. (default: true) |
-| `--with-stories` | — | Include Storybook stories. (default: true) |
-| `--with-ssr-tests` | — | Include SSR tests. (frameworks: react, svelte) (default: true) |
+| `--no-with-styles` | — | Include styles. (default: true) |
+| `--no-with-stories` | — | Include Storybook stories. (default: true) |
+| `--no-with-ssr-tests` | — | Include SSR tests. (frameworks: react, svelte) (default: true) |
 | `--use-ts-stories` | — | Use TypeScript stories format? (otherwise Svelte CSF). (frameworks: svelte) (default: false) |
 
 - Store: storeless.
@@ -258,7 +258,7 @@ pragma create package [options]
 | `--with-storybook` | — | Include Storybook setup. (default: false) |
 | `--with-cli` | — | Include CLI binary entry point. (default: false) |
 | `--with-pr-template` | — | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
-| `--run-install` | — | Run package manager install after creation. (default: true) |
+| `--no-run-install` | — | Run package manager install after creation. (default: true) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
