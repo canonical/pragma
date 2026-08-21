@@ -19,8 +19,8 @@ describe("<%= name %> SSR", () => {
 			}).not.toThrow();
 		});
 
-		it("renders", () => {
-			const page = render(Component, { props: { ...baseProps } });
+		it("renders", async () => {
+			const page = await render(Component, { props: { ...baseProps } });
 			expect(componentLocator(page)).toBeInstanceOf(page.window.HTMLDivElement);
 		});
 	});
@@ -29,15 +29,15 @@ describe("<%= name %> SSR", () => {
 		it.each([
 			["id", "test-id"],
 			["aria-label", "test-aria-label"],
-		])("applies %s", (attribute, expected) => {
-			const page = render(Component, {
+		])("applies %s", async (attribute, expected) => {
+			const page = await render(Component, {
 				props: { ...baseProps, [attribute]: expected },
 			});
 			expect(componentLocator(page).getAttribute(attribute)).toBe(expected);
 		});
 
-		it("applies classes", () => {
-			const page = render(Component, {
+		it("applies classes", async () => {
+			const page = await render(Component, {
 				props: { class: "test-class", ...baseProps },
 			});
 			expect(componentLocator(page).classList).toContain("test-class");
@@ -46,8 +46,8 @@ describe("<%= name %> SSR", () => {
 			expect(componentLocator(page).classList).toContain("<%= kebabName %>");<% } %>
 		});
 
-		it("applies style", () => {
-			const page = render(Component, {
+		it("applies style", async () => {
+			const page = await render(Component, {
 				props: { style: "color: orange;", ...baseProps },
 			});
 			expect(componentLocator(page).style.color).toBe("orange");
