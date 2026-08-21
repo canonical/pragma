@@ -23,6 +23,7 @@ const packageRoot = resolve(here, "../..");
 const repoRoot = resolve(packageRoot, "../..");
 const summonBin = join(packageRoot, "src/bin.tsx");
 const taskDist = join(repoRoot, "runtime/task/dist/esm/index.js");
+const coreDist = join(repoRoot, "summon/core/dist/esm/index.js");
 
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "summon-inter-"));
 
@@ -49,6 +50,27 @@ export default {
   ],
   generate: (answers) =>
     writeFile(answers.outPath, "# " + answers.title + " (" + answers.kind + ")\\n"),
+};
+`,
+  );
+  // A generator with a CROSS-answer guard raised as summon-core's typed
+  // invalid answer — the shape application/react's ssr+router guard uses.
+  mkdirSync(join(dir, "guarded"));
+  writeFileSync(
+    join(dir, "guarded", "index.js"),
+    `import { writeFile } from ${JSON.stringify(`file://${taskDist}`)};
+import { invalidAnswersError } from ${JSON.stringify(`file://${coreDist}`)};
+export default {
+  meta: { name: "guarded", displayName: "guarded", description: "A guarded fixture", version: "0.0.1" },
+  prompts: [
+    { name: "ok", type: "confirm", message: "OK?", default: true },
+  ],
+  generate: (answers) => {
+    if (answers.ok !== true) {
+      throw invalidAnswersError("OK is required — drop --no-ok.");
+    }
+    return writeFile("ok.txt", "ok\\n");
+  },
 };
 `,
   );
@@ -216,6 +238,18 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     );
     expect(status).toBe(2);
     expect(stderr).toContain('Invalid --out-path "bad": path must not be bad');
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("a generator-raised typed invalid answer fails the batch the same way — bare message, exit 2, no stack", () => {
+    const cwd = freshCwd();
+    const { status, stderr } = run(
+      ["--generators", fixtureDir, "guarded", "--no-ok", "--dry-run"],
+      cwd,
+    );
+    expect(status).toBe(2);
+    // The WHOLE stream is the message — validateAnswers' own convention.
+    expect(stderr).toBe("OK is required — drop --no-ok.\n");
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 });

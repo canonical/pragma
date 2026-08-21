@@ -49,6 +49,8 @@ export {
   execute,
   GENERATOR_CANCELLED,
   GENERATOR_INVALID_ANSWER,
+  invalidAnswersError,
+  isInvalidAnswersError,
   validateAnswers,
 } from "./execute/index.js";
 

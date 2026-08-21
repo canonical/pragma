@@ -49,7 +49,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     (exit **2**) on a missing required answer or a value failing its prompt's
     own `validate` — the message echoes the value
     (`Invalid --component-path "not-pascal": …`) — instead of silently
-    falling through to the interactive UI.
+    falling through to the interactive UI. A generator-raised cross-answer
+    constraint fails the same way — application/react's guard is now `SSR and
+    the router are required — drop --no-ssr/--no-router; standalone SPA mode
+    is not supported.` as a bare stderr line, exit **2** in the batch modes
+    (previously an uncaught throw with a stack, exit 1), and the wizard shows
+    it as a clean error instead of crashing.
 
   Also in this line of work, on a TTY: `--dry-run` renders the batch plan and
   `--undo` runs batch undo (neither mounts the interactive preview any more,

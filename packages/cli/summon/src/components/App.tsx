@@ -6,7 +6,9 @@
 
 import {
   formatContentPreview,
+  GENERATOR_INVALID_ANSWER,
   type GeneratorDefinition,
+  isInvalidAnswersError,
   type PromptDefinition,
   type StampConfig,
 } from "@canonical/summon-core";
@@ -831,8 +833,23 @@ export const App = ({
     (promptAnswers: Record<string, unknown>) => {
       setAnswers(promptAnswers);
 
-      // Generate the task
-      const task = generator.generate(promptAnswers);
+      // Generate the task. A generator-raised typed invalid answer (a
+      // cross-answer constraint its `generate` enforces, e.g.
+      // application/react's ssr+router guard) renders as the App's clean
+      // error phase — message + code, no stack; any other throw is a
+      // generator bug and keeps crashing loudly.
+      let task: Task<void>;
+      try {
+        task = generator.generate(promptAnswers);
+      } catch (error) {
+        if (!isInvalidAnswersError(error)) throw error;
+        setState({
+          phase: "error",
+          error: { code: GENERATOR_INVALID_ANSWER, message: error.message },
+          answers: promptAnswers,
+        });
+        return;
+      }
 
       // Undo mode: run undo directly
       if (undo) {

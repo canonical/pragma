@@ -391,34 +391,51 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("custom-app/src/client/entry.tsx");
   });
 
-  it("throws when --ssr is false", () => {
-    expect(() =>
-      dryRun(
-        generators["application/react"].generate({
-          appPath: "my-app",
-          ssr: false,
-          router: true,
-          forms: false,
-          relay: false,
-          runInstall: false,
-        }),
-      ),
-    ).toThrow();
+  // The guard is a TYPED invalid answer (GENERATOR_INVALID_ANSWER), so both
+  // hosts route it down their invalid-input pathway instead of a stack, and
+  // its message names only REGISTERED spellings (--no-ssr/--no-router).
+  const GUARD_MESSAGE =
+    "SSR and the router are required — drop --no-ssr/--no-router; " +
+    "standalone SPA mode is not supported.";
+
+  it("throws the typed invalid answer when ssr is off", () => {
+    let thrown: unknown;
+    try {
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: false,
+        router: true,
+        forms: false,
+        relay: false,
+        runInstall: false,
+      });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toMatchObject({
+      code: "GENERATOR_INVALID_ANSWER",
+      message: GUARD_MESSAGE,
+    });
   });
 
-  it("throws when --router is false", () => {
-    expect(() =>
-      dryRun(
-        generators["application/react"].generate({
-          appPath: "my-app",
-          ssr: true,
-          router: false,
-          forms: false,
-          relay: false,
-          runInstall: false,
-        }),
-      ),
-    ).toThrow();
+  it("throws the typed invalid answer when the router is off", () => {
+    let thrown: unknown;
+    try {
+      generators["application/react"].generate({
+        appPath: "my-app",
+        ssr: true,
+        router: false,
+        forms: false,
+        relay: false,
+        runInstall: false,
+      });
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toMatchObject({
+      code: "GENERATOR_INVALID_ANSWER",
+      message: GUARD_MESSAGE,
+    });
   });
 });
 

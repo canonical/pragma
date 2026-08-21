@@ -5,6 +5,7 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import {
+  invalidAnswersError,
   type LoadedTemplate,
   loadTemplateSync,
   rawFile,
@@ -132,10 +133,16 @@ Requires both --ssr and --router flags.`,
   prompts,
 
   generate: (answers) => {
+    // A CROSS-answer constraint (no single prompt's `validate` sees both):
+    // raised as the typed invalid answer so each host routes it down its
+    // invalid-input pathway — INVALID_INPUT/exit 2 in pragma, the bare
+    // message in the summon bin — naming only REGISTERED spellings (ssr and
+    // router default to true; the only flags that can violate this are
+    // `--no-ssr`/`--no-router`).
     if (!answers.ssr || !answers.router) {
-      throw new Error(
-        "The application/react generator requires both --ssr and --router. " +
-          "Standalone SPA mode is not supported.",
+      throw invalidAnswersError(
+        "SSR and the router are required — drop --no-ssr/--no-router; " +
+          "standalone SPA mode is not supported.",
       );
     }
 

@@ -19,6 +19,7 @@ import {
   formatLlmJson,
   formatLlmMarkdown,
   type GeneratorDefinition,
+  isInvalidAnswersError,
   isVisibleEffect,
   missingRequiredError,
   type PromptEffect,
@@ -258,10 +259,21 @@ async function runGeneratorAction(
   // decision block silently fell through to Ink.
   if (mode === "batch-undo" || mode === "batch-dry-run") {
     if (!failLoudBatchInput(generator, answersWithDefaults)) return;
-    if (mode === "batch-undo") {
-      await runBatchUndo(generator, answersWithDefaults);
-    } else {
-      runBatchDryRun(generator, answersWithDefaults, actualOptions);
+    try {
+      if (mode === "batch-undo") {
+        await runBatchUndo(generator, answersWithDefaults);
+      } else {
+        runBatchDryRun(generator, answersWithDefaults, actualOptions);
+      }
+    } catch (error) {
+      // A generator-raised typed invalid answer (a cross-answer constraint
+      // its `generate` enforces, e.g. application/react's ssr+router guard)
+      // fails exactly like `validateAnswers` above: the bare message on
+      // stderr, exit 2 — never an uncaught stack. Anything else is a
+      // generator bug and stays loud.
+      if (!isInvalidAnswersError(error)) throw error;
+      process.stderr.write(`${error.message}\n`);
+      process.exitCode = 2;
     }
     return;
   }
