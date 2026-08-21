@@ -103,8 +103,8 @@ describe("promptToParam — the type × default × positional × conditional mat
         type: "confirm",
         message: "Include Relay?",
         default: false,
-      }).default,
-    ).toBe(false);
+      }),
+    ).toMatchObject({ kind: "boolean", default: false });
   });
 
   it("select → enum over the choice values, default stringified", () => {

@@ -113,7 +113,9 @@ describe("create — real generation + stamp", () => {
     let outcome: Awaited<ReturnType<typeof executeVerb>>;
     try {
       outcome = await executeVerb(
-        createVerbs.application,
+        // The same honest variance cast every VerbSpec<…, R> consumer makes
+        // (executeVerb takes the unknown-result shape).
+        createVerbs.application as unknown as Parameters<typeof executeVerb>[0],
         { appPath: "my-app", runInstall: false },
         { dryRun: true, undo: false, yes: false },
         bootRuntime(FLAGS, dir),
