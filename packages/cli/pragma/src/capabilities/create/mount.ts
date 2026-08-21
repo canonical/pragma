@@ -242,9 +242,11 @@ function unionPrompts(paths: readonly string[]): ProjectedPrompt[] {
  * the Arguments table prints the SAME spelling; each flag token is the one
  * the mount actually registers (a default-true confirm registers ONLY its
  * `--no-` form), derived from the same `buildOptionInfo` the mount and
- * completion use. Exported for the reference pins.
+ * completion use. Reached only through {@link createCliProjection} — the
+ * kernel's reference emitter is its one consumer; the reference pins read
+ * the committed pages it produced.
  */
-export function referenceSyntax(
+function referenceSyntax(
   verbPath: VerbSpec["path"],
 ): ReferenceCliSyntax | undefined {
   const kind = verbPath[1] as CreateKind | undefined;
