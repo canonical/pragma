@@ -19,7 +19,7 @@ import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
-import { CREATE_GENERATORS } from "./constants.js";
+import { COMPONENT_FRAMEWORKS, CREATE_GENERATORS } from "./constants.js";
 import { createFormatters } from "./create.render.js";
 import { generatorToParams } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
@@ -34,9 +34,9 @@ const FRAMEWORK_PARAM: ParamSpec = {
   kind: "enum",
   name: "framework",
   doc: "Component framework.",
-  values: CREATE_GENERATORS.component.frameworks,
+  values: COMPONENT_FRAMEWORKS,
   // The FIRST declared framework, so the default is always inside the enum.
-  default: CREATE_GENERATORS.component.frameworks[0],
+  default: COMPONENT_FRAMEWORKS[0],
 };
 
 /**
@@ -238,19 +238,6 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
 // =============================================================================
 
 /**
- * The standalone `bun build --compile` binary resolves every bundled module
- * under the virtual `/$bunfs` filesystem — a marker absent from any source or
- * `bun`-run module URL. Only a generator that routes its template reads through
- * the embedded manifest can run there
- * (`CREATE_GENERATORS[kind].readsEmbeddedTemplates`);
- * the others call `template({ source })`, which falls through to
- * `readFile(source)` and dies with `ENOENT … /$bunfs/…` after `mkdir` has
- * already run, leaving partially-created files behind.
- * `compiledCreate.subprocess.test.ts` pins the refusal AND the empty cwd.
- */
-const IS_COMPILED_BINARY = import.meta.url.includes("/$bunfs/");
-
-/**
  * True when a dynamic import failed because the module could not be RESOLVED.
  * summon-core + the generators are now bundled into the binary, so this should
  * not arise; {@link loadCreateRuntime} keeps it as a defensive backstop that
@@ -280,39 +267,25 @@ export function isModuleNotFound(cause: unknown): boolean {
  * `--compile` bundler includes them — they stay behind this lazy boundary, so
  * the fast paths and `create --yes` still load neither summon-core nor React).
  *
- * The manifest is injected BEFORE `pickGenerator` — the component loader
- * consults it when its disk read fails (the compiled binary), and the generators
- * load their templates on first `generate()`. It is imported from
- * summon-component's `loadTemplate` submodule so this does not evaluate the
- * generator index first. In a source run the disk read wins and the manifest is
- * inert.
- *
- * A binding whose generator does not read through that manifest is gated to a
- * source run here ({@link IS_COMPILED_BINARY}). A stale resolution failure is a
- * defensive backstop {@link isModuleNotFound} turns into the same clean gate.
+ * The manifest is injected BEFORE `pickGenerator` — summon-core's ONE
+ * embedded store serves every declared generator package (all three route
+ * reads through `loadTemplateSync`), and the generators load their templates
+ * on first `generate()`. In a source run the disk read wins and the manifest
+ * is inert. A stale resolution failure is a defensive backstop
+ * {@link isModuleNotFound} turns into a clean refusal.
  */
-async function loadCreateRuntime(kind: CreateKind) {
-  if (IS_COMPILED_BINARY && !CREATE_GENERATORS[kind].readsEmbeddedTemplates) {
-    throw new PragmaError({
-      code: "UNSUPPORTED",
-      message: `\`create ${kind}\` is not available in the compiled ${BIN_NAME} binary — ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`,
-      recovery: {
-        message: `Run \`create ${kind}\` from a source checkout, or use \`summon\`.`,
-      },
-    });
-  }
+async function loadCreateRuntime() {
   try {
-    // Inject the embedded manifest before the generators evaluate.
-    const [{ setEmbeddedTemplates }, { TEMPLATES }] = await Promise.all([
-      import("@canonical/summon-component/embedded"),
+    // Inject the embedded manifest (templates + build-time package versions)
+    // before any generator loads a template or resolves its own version.
+    const [summon, { PACKAGE_VERSIONS, TEMPLATES }] = await Promise.all([
+      import("@canonical/summon-core"),
       import("./templates.embedded.generated.js"),
     ]);
-    setEmbeddedTemplates(TEMPLATES);
+    summon.setEmbeddedTemplates(TEMPLATES);
+    summon.setEmbeddedPackageVersions(PACKAGE_VERSIONS);
 
-    const [pick, summon] = await Promise.all([
-      import("./pickGenerator.js"),
-      import("@canonical/summon-core"),
-    ]);
+    const pick = await import("./pickGenerator.js");
     return { pickGenerator: pick.pickGenerator, summon };
   } catch (cause) {
     if (isModuleNotFound(cause)) {
@@ -346,17 +319,31 @@ async function runCreate(
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
   // Lazy: importing these pulls summon-core (and with it React) — kept off every
-  // non-create path. Now STATIC dynamic imports so `--compile` bundles them; the
-  // embedded `.ejs` manifest is injected here. A binding that does not read
-  // through it stays a source-run feature in the binary.
-  const { pickGenerator, summon } = await loadCreateRuntime(kind);
+  // non-create path. STATIC dynamic imports so `--compile` bundles them; the
+  // embedded template manifest (every declared root) is injected here.
+  const { pickGenerator, summon } = await loadCreateRuntime();
 
   // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
   // (AV-228 B8) once, at this seam; every summon interaction below reads the
   // generator-facing `answers` bag so the generator prompt names stay stable.
   const answers = toGeneratorAnswers(kind, params);
 
-  const generator = pickGenerator(kind, answers);
+  // Map this surface's kind(+framework) onto the declared COMMAND PATH —
+  // `pickGenerator` is a straight path lookup now, exactly as summon keys its
+  // tree. An unknown framework is rejected here, where the user input is.
+  let commandPath: string;
+  if (kind === "component") {
+    const framework = String(answers.framework ?? COMPONENT_FRAMEWORKS[0]);
+    if (!COMPONENT_FRAMEWORKS.includes(framework)) {
+      throw PragmaError.invalidInput("framework", framework, {
+        validOptions: [...COMPONENT_FRAMEWORKS],
+      });
+    }
+    commandPath = `component/${framework}`;
+  } else {
+    commandPath = CREATE_GENERATORS[kind].paths[0];
+  }
+  const generator = pickGenerator(commandPath);
 
   // SEC-2: reject a path escaping the workspace BEFORE any effect runs.
   const pathParam = PATH_PARAM[kind];
@@ -449,50 +436,9 @@ const CREATE_CAPABILITY = {
 };
 
 /**
- * Why a binding is source-run only — the ONE authoring of it, shared by the
- * documentation below and by {@link loadCreateRuntime}'s `UNSUPPORTED` refusal,
- * so what the reference promises and what the binary does cannot disagree.
- */
-const SOURCE_ONLY_REASON =
-  "its generator reads templates from disk, which the binary does not carry";
-
-/**
- * The published caveat for a binding the compiled binary cannot run. DERIVED
- * from `CREATE_GENERATORS[kind].readsEmbeddedTemplates` — flipping that bit
- * moves the caveat, `docs/reference/*.md`, and `create.test.ts`'s binding
- * assertion together.
- *
- * It LEADS WITH THE PURPOSE, because `tools.md` and the MCP tool description
- * both render `doc ?? summary` — so a caveat alone REPLACED the only sentence
- * saying what the tool makes, and an agent enumerating tools could not learn
- * that `create_package` scaffolds a package. The tool works from a source
- * checkout; describing nothing but its refusal made a live tool
- * undiscoverable. The repeated sentence in `commands.md`'s section is the
- * cheaper of the two costs.
- *
- * It names no CLI flag (`mcp/toolDescriptions.test.ts` forbids one, and an
- * agent has no flags): the plan-only refusal is stated in the terms BOTH
- * surfaces share.
- *
- * @param kind - The create binding.
- * @param summary - The verb's own one-liner, which the `doc` replaces on MCP.
- * @returns The `doc` for a source-run-only binding, or `undefined`.
- */
-function buildAvailabilityDoc(
-  kind: CreateKind,
-  summary: string,
-): string | undefined {
-  if (CREATE_GENERATORS[kind].readsEmbeddedTemplates) return undefined;
-  return `${summary} From the compiled ${BIN_NAME} binary, \`create ${kind}\` refuses with \`UNSUPPORTED\` and writes nothing. Asking it only to PLAN refuses too — the gate runs while the plan is built — so a successful plan is never evidence it would run. The cause is that ${SOURCE_ONLY_REASON}. Run it from a source checkout, or use the \`summon\` CLI.`;
-}
-
-/**
  * Build a create verb. `run` presents `Promise<Task<R>>` through the `Task<R>`
  * arm by an honest cast at this one site (mirroring `sources update`): a literal
  * `Promise<Task<R>>` arm in the union would poison async read-verb inference.
- *
- * A binding the compiled binary cannot run says so in its `summary` (which is
- * what `--help` and the noun listing show) and explains itself in its `doc`.
  */
 function createVerb(
   kind: CreateKind,
@@ -500,11 +446,9 @@ function createVerb(
   params: ParamSpec[],
   examples: VerbSpec["examples"],
 ): VerbSpec<Record<string, unknown>, GeneratorResult> {
-  const doc = buildAvailabilityDoc(kind, summary);
   return {
     path: ["create", kind],
-    summary: doc ? `${summary} Source-run only.` : summary,
-    ...(doc ? { doc } : {}),
+    summary,
     params,
     output: { formatters: createFormatters },
     examples,

@@ -2,9 +2,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, describe, expect, it } from "vitest";
+import { setEmbeddedPackageVersions } from "@canonical/summon-core";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import pkg from "../../package.json" with { type: "json" };
-import { findOwnVersion, packageVersion } from "./packageVersion.js";
+import {
+  findOwnVersion,
+  packageVersion,
+  resolveOwnVersion,
+} from "./packageVersion.js";
 
 const roots: string[] = [];
 afterAll(() => {
@@ -49,5 +54,34 @@ describe("packageVersion", () => {
       JSON.stringify({ name: "@canonical/summon-package" }),
     );
     expect(() => findOwnVersion(root)).toThrow(/no package\.json naming/);
+  });
+});
+
+describe("resolveOwnVersion (the compiled-binary fallback)", () => {
+  afterEach(() => {
+    setEmbeddedPackageVersions({});
+  });
+
+  it("prefers the disk walk when a manifest is reachable", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "own-version-disk-"));
+    writeFileSync(
+      path.join(dir, "package.json"),
+      JSON.stringify({ name: "@canonical/summon-package", version: "7.7.7" }),
+    );
+    setEmbeddedPackageVersions({ "@canonical/summon-package": "9.9.9" });
+    expect(resolveOwnVersion(dir)).toBe("7.7.7");
+  });
+
+  it("falls back to the host-injected version when the walk exhausts (/$bunfs)", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "own-version-embedded-"));
+    setEmbeddedPackageVersions({ "@canonical/summon-package": "9.9.9" });
+    expect(resolveOwnVersion(dir)).toBe("9.9.9");
+  });
+
+  it("still throws the walk's error when nothing was injected", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "own-version-none-"));
+    expect(() => resolveOwnVersion(dir)).toThrow(
+      /no package\.json naming @canonical\/summon-package/,
+    );
   });
 });

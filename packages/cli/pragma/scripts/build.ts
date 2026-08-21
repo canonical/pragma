@@ -4,20 +4,20 @@
  * Two steps: (1) codegen the embedded template manifest, then (2) compile the
  * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
  *
- * COMPILED `create` (PR7, resolved) — `create component` runs from the shipped
- * binary. `create.verb.ts` reaches summon-core + the generators through STATIC
- * dynamic imports (behind its lazy boundary), so bun's `--compile` bundler
- * includes them. The generators load their `.ejs` templates from disk
- * (`import.meta`-relative), which do not exist in a standalone binary, so this
- * script inlines the reachable generator templates into `create/templates`
- * `.embedded.generated.ts` — the same inline-strings-survive-`--compile`
- * technique as `graphpack/embedded/pack.generated.ts` — keyed by
- * directory-qualified path (`component/react/types.ts.ejs`). The component
- * loader consults that manifest when its disk read fails, keyed by the qualified
- * path so react/svelte/lit never collide. A compiled-binary smoke test
- * (create/compiledCreate.subprocess.test.ts) proves the three frameworks are
- * byte-identical to a source run, and pins the refusal for the nouns that stay a
- * source-run feature.
+ * COMPILED `create` — every binding runs from the shipped binary.
+ * `create.verb.ts` reaches summon-core + the generators through STATIC dynamic
+ * imports (behind its lazy boundary), so bun's `--compile` bundler includes
+ * them. The generators load their templates from disk
+ * (`import.meta`-relative), which does not exist in a standalone binary, so
+ * this script inlines EVERY declared root's template tree into
+ * `create/templates.embedded.generated.ts` — the same
+ * inline-strings-survive-`--compile` technique as
+ * `graphpack/embedded/pack.generated.ts` — keyed by summon-core's qualified
+ * scheme (`component/react/types.ts.ejs`, `package/tsconfig.json.ejs`,
+ * `application/react/src/lib/index.ts.ejs`), so sibling basenames never
+ * collide and one manifest serves all three packages. The compiled-binary
+ * smoke test (create/compiledCreate.subprocess.test.ts) proves each binding
+ * byte-identical to a source run.
  */
 
 import {
@@ -28,8 +28,9 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildEmbeddedManifest } from "@canonical/summon-core";
 import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
@@ -37,39 +38,28 @@ import { emitReference } from "../src/kernel/spec/emitReference.js";
 const scriptsUrl = new URL(".", import.meta.url);
 
 /**
- * The generators whose `.ejs` the binary must carry: exactly the bindings
- * `create.verb.ts` lets run from the compiled binary
- * (`readsEmbeddedTemplates`). Keys are `<id>/<path-relative-to-root>`, matching
- * the qualified key the component loader derives from a template's source path.
+ * EVERY declared template root — the binary carries all of them, so every
+ * `create` binding runs from the compiled binary. Prefixes and relative dirs
+ * come from {@link CREATE_GENERATORS}; the walking, keying (one scheme with
+ * the reader), and the per-root/UTF-8 fail-louds are summon-core's
+ * `buildEmbeddedManifest` — this script keeps only host duties
+ * (write-when-changed + the generated-module header).
  *
- * The root is the declared package's `src/templates` — the source of truth,
- * identical to that package's dist copy — reached through this package's own
- * `node_modules`, which bun links to the sibling workspace directory. That is a
- * MONOREPO BUILD path, not npm resolution: the published tarballs ship `dist`
- * only (`"files": ["dist"]`), so only a checkout satisfies it. The binding's
- * `name` is the single declared fact it consumes.
- *
- * `summon-package` / `summon-application` are excluded deliberately: their
- * generators call `template({ source })`, so a compiled binary can never read an
- * embedded template for them, and `qualifiedKey()` in summon-component prefixes
- * every lookup with `component/` — their entries were unreachable by
- * construction (26 of the 46 previously embedded).
+ * Each root is the declared package's source templates dir — the source of
+ * truth, identical to that package's dist copy — reached through this
+ * package's own `node_modules`, which bun links to the sibling workspace
+ * directory. That is a MONOREPO BUILD path, not npm resolution: the published
+ * tarballs ship `dist` only (`"files": ["dist"]`), so only a checkout
+ * satisfies it.
  */
-const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> =
-  Object.entries(CREATE_GENERATORS).flatMap(([id, binding]) =>
-    binding.readsEmbeddedTemplates
-      ? [
-          {
-            id,
-            root: fileURLToPath(
-              new URL(
-                `../node_modules/${binding.name}/src/templates`,
-                scriptsUrl,
-              ),
-            ),
-          },
-        ]
-      : [],
+const TEMPLATE_ROOTS: ReadonlyArray<{ prefix: string; dir: string }> =
+  Object.values(CREATE_GENERATORS).flatMap((binding) =>
+    binding.templateRoots.map((root) => ({
+      prefix: root.prefix,
+      dir: fileURLToPath(
+        new URL(`../node_modules/${binding.name}/${root.relDir}`, scriptsUrl),
+      ),
+    })),
   );
 
 const MANIFEST_OUT = fileURLToPath(
@@ -79,59 +69,58 @@ const MANIFEST_OUT = fileURLToPath(
   ),
 );
 
-/** Recursively collect every `.ejs` file path under a directory. */
-function collectEjs(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...collectEjs(full));
-    else if (entry.name.endsWith(".ejs")) out.push(full);
-  }
-  return out;
-}
-
 /**
- * Inline the `.ejs` templates of every binding that reads through the embedded
- * manifest into the generated manifest module. Deterministic (sorted keys,
- * `JSON.stringify` values) so re-running produces byte-identical output — no
- * working-tree churn.
+ * Inline every declared root's template tree into the generated manifest
+ * module. Deterministic (summon-core sorts the keys; `JSON.stringify` values)
+ * so re-running produces byte-identical output — no working-tree churn.
  *
- * @returns The number of templates embedded.
+ * @returns The embedded manifest (for counting/reporting).
  */
-function generateTemplateManifest(): number {
-  const entries: Record<string, string> = {};
-  for (const { id, root } of TEMPLATE_ROOTS) {
-    const files = collectEjs(root);
-    // Fail loud PER ROOT rather than ship a manifest missing a binding's
-    // templates: the binary's `create <id>` would otherwise die with "Template
-    // not found" at run time. A missing or renamed root throws ENOENT out of
-    // `collectEjs` first, naming the path; this covers the root that exists and
-    // holds nothing. (Checking the total instead would be vacuous the moment a
-    // second binding embeds.)
-    if (files.length === 0) {
-      throw new Error(
-        `No .ejs templates under ${root} for \`create ${id}\` — is the workspace linked?`,
-      );
-    }
-    for (const file of files) {
-      const rel = relative(root, file).split(/[\\/]/).join("/");
-      entries[`${id}/${rel}`] = readFileSync(file, "utf-8");
-    }
-  }
+function generateTemplateManifest(): Record<string, string> {
+  const entries = buildEmbeddedManifest(TEMPLATE_ROOTS);
 
   const body = Object.keys(entries)
-    .sort()
     .map((key) => `  ${JSON.stringify(key)}: ${JSON.stringify(entries[key])},`)
     .join("\n");
 
+  // Each declared generator package's version, captured at build time from
+  // the same manifest a source run's disk walk finds. The binary injects it
+  // (setEmbeddedPackageVersions) so a generator resolving its OWN version —
+  // summon-package's fixed-version-train dependency ranges — gets the value
+  // the walk cannot reach under /$bunfs.
+  const versions = Object.fromEntries(
+    Object.values(CREATE_GENERATORS).map((binding) => {
+      const manifestPath = fileURLToPath(
+        new URL(`../node_modules/${binding.name}/package.json`, scriptsUrl),
+      );
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+        version?: string;
+      };
+      if (!manifest.version) {
+        throw new Error(`no version in ${manifestPath}`);
+      }
+      return [binding.name, manifest.version];
+    }),
+  );
+  const versionsBody = Object.keys(versions)
+    .sort()
+    .map((key) => `  ${JSON.stringify(key)}: ${JSON.stringify(versions[key])},`)
+    .join("\n");
+
   const module = `// AUTO-GENERATED by scripts/build.ts — do not edit by hand.
-// Regenerate: \`bun run scripts/build.ts\`. Inlines the .ejs templates of the
-// generators that read through this manifest (\`create component\`) as strings, so
-// \`pragma create component\` works from the standalone --compile binary (the .ejs
-// files are absent from the binary's virtual filesystem).
-/** Directory-qualified template path → file contents. */
+// Regenerate: \`bun run scripts/build.ts\`. Inlines every declared generator
+// root's template tree (component, package, application — all files, not just
+// .ejs) as strings, so every \`pragma create\` binding works from the
+// standalone --compile binary (the template files are absent from the binary's
+// virtual filesystem). Keys follow summon-core's qualified-key scheme.
+/** Qualified template key (\`<prefix>/<path>\`) → file contents. */
 export const TEMPLATES: Record<string, string> = {
 ${body}
+};
+
+/** Declared generator package → version, captured at build time. */
+export const PACKAGE_VERSIONS: Record<string, string> = {
+${versionsBody}
 };
 `;
   // Write only when changed: the output is deterministic, so a rebuild is a
@@ -143,7 +132,7 @@ ${body}
   ) {
     writeFileSync(MANIFEST_OUT, module);
   }
-  return Object.keys(entries).length;
+  return entries;
 }
 
 /** The committed reference tree the generator writes back. */
@@ -187,9 +176,16 @@ export { writeReferenceDocs };
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
-  const embedded = generateTemplateManifest();
+  const manifest = generateTemplateManifest();
+  const perRoot = TEMPLATE_ROOTS.map(
+    ({ prefix }) =>
+      `${prefix}: ${
+        Object.keys(manifest).filter((key) => key.startsWith(`${prefix}/`))
+          .length
+      }`,
+  ).join(", ");
   console.log(
-    `Embedded ${embedded} generator templates → templates.embedded.generated.ts`,
+    `Embedded ${Object.keys(manifest).length} generator templates (${perRoot}) → templates.embedded.generated.ts`,
   );
 
   const changedDocs = writeReferenceDocs();

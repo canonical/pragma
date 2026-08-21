@@ -6,11 +6,13 @@ export type {
 } from "./embedded/index.js";
 export {
   buildEmbeddedManifest,
+  embeddedPackageVersion,
   hasEmbeddedTemplates,
   loadTemplate,
   loadTemplateSync,
   qualifiedKey,
   rawFile,
+  setEmbeddedPackageVersions,
   setEmbeddedTemplates,
 } from "./embedded/index.js";
 export { default as generateStamp } from "./generateStamp.js";

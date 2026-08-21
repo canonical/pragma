@@ -3,9 +3,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  embeddedPackageVersion,
   hasEmbeddedTemplates,
   loadTemplate,
   loadTemplateSync,
+  setEmbeddedPackageVersions,
   setEmbeddedTemplates,
 } from "./store.js";
 
@@ -118,6 +120,15 @@ describe("the embedded-template store", () => {
     expect(() => loadTemplateSync("component", missing)).toThrow(
       /no embedded template for this path/,
     );
+  });
+
+  it("host-injected package versions round-trip and reset", () => {
+    expect(embeddedPackageVersion("@canonical/summon-package")).toBeUndefined();
+    setEmbeddedPackageVersions({ "@canonical/summon-package": "0.33.0" });
+    expect(embeddedPackageVersion("@canonical/summon-package")).toBe("0.33.0");
+    expect(embeddedPackageVersion("@canonical/other")).toBeUndefined();
+    setEmbeddedPackageVersions({});
+    expect(embeddedPackageVersion("@canonical/summon-package")).toBeUndefined();
   });
 
   it("the async wrapper resolves the same result", async () => {

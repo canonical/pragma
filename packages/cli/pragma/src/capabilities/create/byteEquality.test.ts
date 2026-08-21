@@ -82,8 +82,16 @@ async function produceSummon(
   answers: Readonly<Record<string, unknown>>,
 ): Promise<TreeSnapshot> {
   const { pickGenerator } = await import("./pickGenerator.js");
+  // pickGenerator is keyed by FULL COMMAND PATH now; this surface still
+  // thinks in kind+framework, so map first (exactly as runCreate does).
+  const commandPath =
+    kind === "component"
+      ? `component/${framework}`
+      : kind === "package"
+        ? "package"
+        : "application/react";
   return produceReference({
-    generator: pickGenerator(kind, { framework }),
+    generator: pickGenerator(commandPath),
     answers,
   });
 }

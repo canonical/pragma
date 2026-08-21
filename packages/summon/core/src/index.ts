@@ -115,6 +115,7 @@ export type {
 export {
   buildEmbeddedManifest,
   ejsEngine,
+  embeddedPackageVersion,
   generateStamp,
   generatorComment,
   getCommentStyle,
@@ -127,6 +128,7 @@ export {
   renderFile,
   renderString,
   renderStringAsync,
+  setEmbeddedPackageVersions,
   setEmbeddedTemplates,
   template,
   templateDir,

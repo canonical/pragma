@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
+import { embeddedPackageVersion } from "@canonical/summon-core";
 import { PACKAGE_NAME } from "./packageName.js";
 
 /**
@@ -55,13 +56,34 @@ export function findOwnVersion(from: string): string {
  * alike, with no build-layout coupling to re-break.
  *
  * Lazy and cached deliberately: nothing is read at module load, so importing
- * this module (or bundling it into a compiled binary whose `create package`
- * path is gated off) performs no IO and cannot throw at startup.
+ * this module performs no IO and cannot throw at startup.
+ *
+ * A `bun build --compile` host is the one layout the walk cannot serve: no
+ * `package.json` exists anywhere under the binary's virtual `/$bunfs`
+ * filesystem. Such a host captures this package's version at BUILD time —
+ * from the very manifest the walk would find — and injects it through
+ * summon-core's embedded store (`setEmbeddedPackageVersions`), so a compiled
+ * run resolves the same value a source run walks to. The walk stays primary:
+ * on disk it can never be stale.
  *
  * @note Impure on first call — reads the filesystem, then caches.
  */
 let cached: string | undefined;
 export function packageVersion(): string {
-  cached ??= findOwnVersion(path.dirname(fileURLToPath(import.meta.url)));
+  cached ??= resolveOwnVersion(path.dirname(fileURLToPath(import.meta.url)));
   return cached;
+}
+
+/**
+ * Disk walk first; the host-injected embedded version as the compiled-binary
+ * fallback. Exported for tests; production callers use {@link packageVersion}.
+ */
+export function resolveOwnVersion(from: string): string {
+  try {
+    return findOwnVersion(from);
+  } catch (error) {
+    const embedded = embeddedPackageVersion(PACKAGE_NAME);
+    if (embedded !== undefined) return embedded;
+    throw error;
+  }
 }

@@ -9,8 +9,10 @@ export type { RawFileOptions } from "./rawFile.js";
 export { default as rawFile } from "./rawFile.js";
 export type { LoadedTemplate } from "./store.js";
 export {
+  embeddedPackageVersion,
   hasEmbeddedTemplates,
   loadTemplate,
   loadTemplateSync,
+  setEmbeddedPackageVersions,
   setEmbeddedTemplates,
 } from "./store.js";

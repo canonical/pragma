@@ -100,48 +100,69 @@ describe("compiled pragma create component (PROTECTED)", () => {
 });
 
 /**
- * PROTECTED — the compiled-binary `create` gate.
+ * PROTECTED — the compiled binary GENERATES every binding (the PRA-14 gate's
+ * strongest replacement).
  *
- * `create component` runs from the binary (the describe above proves it byte for
- * byte) because summon-component routes every template read through
- * `loadTemplateSync` and passes `content:` into `template()`. `create package` /
- * `create application` do NOT: they call `template({ source })`, summon-core
- * falls through to `readFile(options.source)`, and the run dies with `ENOENT …
- * /$bunfs/templates/package.json.ejs` AFTER `mkdir` has already run — a
- * half-made package left on the user's disk. Measured against a real
- * `dist/pragma` with the gate lifted, for both nouns.
+ * `create package` / `create application` used to refuse in the compiled
+ * binary: their generators read templates from disk, which the binary does not
+ * carry. Every generator now routes reads through summon-core's embedded seam
+ * and the build embeds every declared root, so the gate is superseded by the
+ * strongest form of the claim it guarded: for BOTH nouns, a compiled-binary
+ * run is byte-identical to a source run of the same invocation, and non-empty.
  *
- * A `--dry-run` does NOT test this: it exits 0 without reading a template and
- * merely PRINTS `Read file: /$bunfs/templates/package.json.ejs` as a planned
- * effect. That false positive is why the gate has to be pinned by a real run.
- *
- * The `readdirSync(dir)` assertion is the load-bearing one: it fails with the
- * real symptom if the gate is ever lifted without fixing the generators.
+ * A `--dry-run` would NOT prove this (it can exit 0 without reading every
+ * template); these are real runs. `runInstall` stays off (the mirror default)
+ * so the runs are offline and the trees deterministic.
  */
-describe("compiled pragma create gate (PROTECTED)", () => {
-  // A LITERAL noun list, deliberately not derived from `create`'s own
-  // declaration: changing the gate's input must turn this red rather than
-  // silently drop the case.
-  for (const kind of ["package", "application"] as const) {
-    it(`refuses \`create ${kind}\` and leaves the cwd untouched`, () => {
-      const dir = freshCwd();
-      const result = spawnSync(compiledBin, ["create", kind, "--yes"], {
-        cwd: dir,
+describe("compiled pragma create package/application ≡ source run (PROTECTED)", () => {
+  // A LITERAL case list, deliberately not derived from `create`'s own
+  // declaration: changing the surface must turn this red rather than silently
+  // drop a case. Flags mirror the shared conformance fixtures.
+  const cases: ReadonlyArray<{ kind: string; args: readonly string[] }> = [
+    {
+      kind: "package",
+      args: [
+        "create",
+        "package",
+        "--name",
+        "@canonical/my-lib",
+        "--type",
+        "library",
+        "--description",
+        "A library.",
+        "--yes",
+      ],
+    },
+    {
+      kind: "application",
+      args: ["create", "application", "my-app", "--yes"],
+    },
+  ];
+
+  for (const { kind, args } of cases) {
+    it(`create ${kind}: compiled binary ≡ source run, byte-for-byte`, () => {
+      // (1) The real standalone binary — templates come from the embedded manifest.
+      const compiledDir = freshCwd();
+      execFileSync(compiledBin, [...args], { cwd: compiledDir, stdio: "pipe" });
+      const compiled = snapshot(compiledDir);
+
+      // (2) A source run — templates come from disk. The reference output.
+      const sourceDir = freshCwd();
+      execFileSync("bun", [pragmaBin, ...args], {
+        cwd: sourceDir,
         stdio: "pipe",
-        encoding: "utf-8",
       });
-      const output = `${result.stdout ?? ""}${result.stderr ?? ""}`;
-      // 1, not merely non-zero: UNSUPPORTED is a runtime refusal, which
-      // `kernel/error/constants.ts` maps to the generic runtime exit.
-      expect(result.status).toBe(1);
-      expect(output).toContain("not available in the compiled pragma binary");
-      // The clean refusal, not the crash it exists to prevent.
-      expect(output).not.toMatch(/ENOENT/);
-      expect(output).not.toMatch(/Internal error/);
-      // And nothing half-made on disk: the generator's `mkdir` effects run
-      // BEFORE its first template read, so a lifted gate leaves a stub tree.
-      expect(readdirSync(dir)).toEqual([]);
-    }, 30_000);
+      const source = snapshot(sourceDir);
+
+      // Wrote something (fails loudly if either run refuses or crashes).
+      expect(compiled.size).toBeGreaterThan(0);
+      // Same file set …
+      expect([...compiled.keys()].sort()).toEqual([...source.keys()].sort());
+      // … and byte-identical contents.
+      for (const [path, content] of compiled) {
+        expect(source.get(path), `content of ${path}`).toBe(content);
+      }
+    }, 120_000);
   }
 });
 

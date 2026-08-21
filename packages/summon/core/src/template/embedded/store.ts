@@ -56,6 +56,38 @@ export function hasEmbeddedTemplates(): boolean {
 }
 
 /**
+ * Host-injected package versions (package name → version) — the compiled
+ * binary's answer to a generator resolving its OWN version. A source or
+ * installed run walks the disk for its `package.json` (layout-proof, never
+ * stale); a `bun build --compile` binary has no `package.json` anywhere under
+ * `/$bunfs`, so the host captures each declared generator package's version
+ * at BUILD time — from the same manifest the disk walk would find — and
+ * injects it here alongside the template manifest.
+ */
+let embeddedPackageVersions: Readonly<Record<string, string>> = {};
+
+/**
+ * Inject the embedded package-version map (compiled-binary host duty).
+ *
+ * @param versions - Package name → version, captured at build time.
+ */
+export function setEmbeddedPackageVersions(
+  versions: Readonly<Record<string, string>>,
+): void {
+  embeddedPackageVersions = versions;
+}
+
+/**
+ * The host-injected version for a package, when one was injected.
+ *
+ * @param name - The package name (e.g. `@canonical/summon-package`).
+ * @returns The injected version, or `undefined` outside a compiled host.
+ */
+export function embeddedPackageVersion(name: string): string | undefined {
+  return embeddedPackageVersions[name];
+}
+
+/**
  * Load a template from disk, or — when the disk read fails (a compiled
  * binary) — from the injected manifest. SYNCHRONOUS.
  *
