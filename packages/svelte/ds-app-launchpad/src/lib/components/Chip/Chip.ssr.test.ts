@@ -85,6 +85,13 @@ describe("Chip SSR", () => {
       expect(componentLocator(page).classList.contains("readonly")).toBe(true);
       expect(page.queryByRole("button")).toBeNull();
     });
+
+    it("applies the criticality class", () => {
+      const page = render(Component, {
+        props: { ...baseProps, criticality: "warning" },
+      });
+      expect(componentLocator(page).classList).toContain("warning");
+    });
   });
 });
 
