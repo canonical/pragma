@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Bug Fixes
+
+* **summon-package:** library template emits a buildable, discoverable package ([#912](https://github.com/canonical/pragma/issues/912)) ([0d9bdbb](https://github.com/canonical/pragma/commit/0d9bdbbafd744db2ba2bf82bc9e95d616e0be1b7))
+* **summon-package:** read the own version through a layout-proof walk, not a JSON self-import ([#921](https://github.com/canonical/pragma/issues/921)) ([07f50f4](https://github.com/canonical/pragma/commit/07f50f4db96d57564bc186b0ae0059748e63c0f1)), closes [#913](https://github.com/canonical/pragma/issues/913)
+* **summon:** compile summon-monorepo and summon-package to JavaScript ([#913](https://github.com/canonical/pragma/issues/913)) ([8a46245](https://github.com/canonical/pragma/commit/8a462450fffead7f0cd0c9b7126101832779b3ec))
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/summon-package

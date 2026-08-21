@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Features
+
+* **chromatic:** Optimize Chromatic Usage ([#891](https://github.com/canonical/pragma/issues/891)) ([7f6fe7c](https://github.com/canonical/pragma/commit/7f6fe7c45f75bd4e6532de57ff2732031883108d))
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 **Note:** Version bump only for package @canonical/renovate-config

@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Features
+
+* **svelte-wpe:** add Rule component ([#931](https://github.com/canonical/pragma/issues/931)) ([376f223](https://github.com/canonical/pragma/commit/376f2239a545ed21ee12045dcd6b0ee6b21202a6))
+* **svelte-wpe:** add Section component ([#889](https://github.com/canonical/pragma/issues/889)) ([fccd535](https://github.com/canonical/pragma/commit/fccd5350a95950edce5fbfdddf99918540ed513a))
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 
