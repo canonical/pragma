@@ -41,11 +41,13 @@ export const readFile = (path: string): Task<string> =>
 /**
  * Write content to a file.
  * Default undo: delete the file.
+ * `verbatim: true` marks a carried copy — content transforms on the effect
+ * seam (e.g. generated-file stamping) skip it, so the bytes land unchanged.
  */
 export const writeFile = (
   path: string,
   content: string,
-  opts?: UndoOptions,
+  opts?: UndoOptions & { verbatim?: boolean },
 ): Task<void> => effect(writeFileEffect(path, content, opts));
 
 /**
