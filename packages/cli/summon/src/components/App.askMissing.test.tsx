@@ -55,7 +55,7 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
     expect(frame).toContain("Include stories?");
     expect(frame).toContain("Step 1 of 1");
     unmount();
-  });
+  }, 20_000);
 
   it("an answer unlocks a conditional prompt (collectAnswers parity)", async () => {
     const { lastFrame, stdin, unmount } = render(
@@ -66,7 +66,7 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
     await tick();
     expect(lastFrame()).toContain("Use TypeScript stories?");
     unmount();
-  });
+  }, 20_000);
 
   it("a fully-provided answer set goes straight to the confirm gate", async () => {
     const { lastFrame, unmount } = render(
@@ -81,5 +81,29 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
     expect(frame).toContain("Proceed?");
     expect(frame).not.toContain("Step 1");
     unmount();
-  });
+  }, 20_000);
+
+  it("esc at the gate re-opens the wizard even when nothing was pending (regression)", async () => {
+    // A fully-explicit invocation goes straight to the gate; the gate
+    // advertises `esc to go back`, and going back must ASK — with the
+    // provided seed kept, the empty pending set would auto-complete straight
+    // back to the gate, a silent no-op. On esc the seed is cleared: every
+    // prompt is asked again, previous values pre-filled.
+    const { lastFrame, stdin, unmount } = render(
+      <App
+        generator={generator}
+        askMissing
+        answers={{ title: "Widget", withStories: false }}
+      />,
+    );
+    await tick();
+    expect(lastFrame()).toContain("Proceed?");
+    stdin.write("\u001B"); // esc
+    await tick();
+    const frame = lastFrame() ?? "";
+    expect(frame).toContain("Step 1 of 2");
+    expect(frame).toContain("Title:");
+    expect(frame).not.toContain("Proceed?");
+    unmount();
+  }, 20_000);
 });

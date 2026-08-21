@@ -820,6 +820,12 @@ export const App = ({
     prefilledAnswers ?? {},
   );
   const [showFiles, setShowFiles] = useState(false);
+  // Set once the user navigates BACK from the confirm gate: the re-entered
+  // wizard asks EVERY prompt again (previous values pre-filled) instead of
+  // seeding `provided` — with a fully-explicit invocation the pending set is
+  // empty, so a kept seed would auto-complete straight back to the gate and
+  // make the advertised `esc to go back` a no-op.
+  const [reasking, setReasking] = useState(false);
 
   const handlePromptsComplete = useCallback(
     (promptAnswers: Record<string, unknown>) => {
@@ -918,9 +924,13 @@ export const App = ({
     }
   }, [prefilledAnswers, askMissing, state.phase, handlePromptsComplete]);
 
-  // Handle going back from confirmation to prompting
+  // Handle going back from confirmation to prompting. Clearing the provided
+  // seed (via `reasking`) is what keeps esc meaningful when the wizard had
+  // nothing left to ask — the flag-given answers are exactly what the user
+  // may want to change.
   const handleGoBack = useCallback(() => {
     setShowFiles(false);
+    setReasking(true);
     setState({ phase: "prompting" });
   }, []);
 
@@ -965,7 +975,7 @@ export const App = ({
           onComplete={handlePromptsComplete}
           onCancel={handleCancel}
           initialAnswers={answers}
-          provided={askMissing ? prefilledAnswers : undefined}
+          provided={askMissing && !reasking ? prefilledAnswers : undefined}
         />
       )}
 

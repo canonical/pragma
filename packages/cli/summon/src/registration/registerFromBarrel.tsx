@@ -27,8 +27,6 @@ import {
 } from "@canonical/summon-core";
 import {
   applyDefaults,
-  decideInteraction,
-  explicitAnswersComplete,
   extractAnswers,
   type GeneratorCliHost,
   type HostFlags,
@@ -43,6 +41,7 @@ import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
 import { App } from "../components/App.js";
+import { resolveSummonMode, summonIsTTY } from "./resolveMode.js";
 import type { CommandEntry } from "./types.js";
 
 // =============================================================================
@@ -230,15 +229,15 @@ async function runGeneratorAction(
   // Apply defaults once — the batch and run modes consume these.
   const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
 
-  // The ONE interaction decision (R2), shared verbatim with pragma. Summon's
-  // TTY fact: stdin AND stdout are TTYs (the wizard renders to stdout).
-  const { mode } = decideInteraction({
-    dryRun: actualOptions.dryRun === true,
-    undo: actualOptions.undo === true,
-    yes: actualOptions.yes === true,
-    isTTY: process.stdin.isTTY === true && process.stdout.isTTY === true,
-    explicitComplete: explicitAnswersComplete(generator.prompts, cliAnswers),
-  });
+  // The ONE interaction decision (R2), shared verbatim with pragma, resolved
+  // through the testable seam (`resolveMode.ts`) with summon's TTY fact:
+  // stdin AND stdout are TTYs (the wizard renders to stdout).
+  const mode = resolveSummonMode(
+    generator.prompts,
+    actualOptions,
+    cliAnswers,
+    summonIsTTY(),
+  );
 
   if (mode === "refuse") {
     process.stderr.write(

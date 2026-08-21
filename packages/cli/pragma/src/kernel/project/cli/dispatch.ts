@@ -45,6 +45,18 @@ export interface MutationFlags {
 }
 
 /**
+ * THE CLI interactivity gate (H3): stdin AND stderr are TTYs. The Ink wizard
+ * renders to stderr and reads stdin, so `<verb> 2>/dev/null` must be
+ * non-interactive — gating on stdout would mount an invisible render that
+ * blocks on stdin. One exported fact: the kernel's interaction context and a
+ * mounted subtree's own decision both read it here, so the two callers can
+ * never disagree about what "a TTY" means.
+ */
+export function cliIsTTY(): boolean {
+  return process.stdin.isTTY === true && process.stderr.isTTY === true;
+}
+
+/**
  * Route a Task's log effects to stderr. The interpreter otherwise falls back to
  * `console.log` (stdout), which would corrupt the `--format json` / MCP stdio
  * data stream; diagnostics belong on stderr.
@@ -228,10 +240,8 @@ export async function executeVerb(
     // block on input. `--undo` stays handler-free and untouched by this seam.
     const controller = new AbortController();
     const interaction: InteractionRuntime = {
-      // Gate on STDERR (H3): the Ink wizard renders to stderr and reads stdin,
-      // so `<verb> 2>/dev/null` must be non-interactive — gating on stdout would
-      // mount an invisible render that blocks on stdin.
-      isTTY: process.stdin.isTTY === true && process.stderr.isTTY === true,
+      // The shared H3 gate (see cliIsTTY): stderr, never stdout.
+      isTTY: cliIsTTY(),
       transport: "cli",
       yes: mutation.yes,
       signal: controller.signal,

@@ -14,7 +14,12 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import { CREATE_SURFACE } from "./createSurface.generated.js";
-import { explicitLeafAnswers, leafVerb, topicTree } from "./mount.js";
+import {
+  explicitLeafAnswers,
+  leafVerb,
+  resolveCreateMode,
+  topicTree,
+} from "./mount.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(here, "../../..");
@@ -175,6 +180,34 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
+  it("the refusal envelopes under --format json (D3) — never raw prose on a machine stream", () => {
+    const { status, stderr, cwd } = run([
+      "create",
+      "component",
+      "react",
+      "--format",
+      "json",
+    ]);
+    expect(status).toBe(2);
+    // The one JSON line is the same {ok:false, error} envelope every other
+    // pragma error emits; the shared refusal text rides inside it.
+    const line = stderr
+      .split("\n")
+      .find((candidate) => candidate.startsWith("{"));
+    expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
+    const envelope = JSON.parse(line as string) as {
+      ok: boolean;
+      error: { code: string; message: string };
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("INVALID_INPUT");
+    expect(envelope.error.message).toContain(
+      "Refusing to scaffold in a non-interactive run without complete input.",
+    );
+    expect(envelope.error.message).toContain("Missing: --component-path");
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
   it("row 5 on the wire: a fully-explicit non-TTY leaf runs without --yes", () => {
     const { status, cwd } = run([
       "create",
@@ -232,6 +265,46 @@ describe("the refusal cell through dispatchPrepared (in-process)", () => {
     expect(written).toContain("Missing: --component-path");
     expect(process.exitCode).toBe(2);
   }, 60_000);
+});
+
+describe("the mount's mode resolution — TTY driven through the seam", () => {
+  // No suite can hand a subprocess a real TTY, so the §L rows that depend on
+  // isTTY: true are pinned HERE, through the exported resolver the action
+  // itself calls (with cliIsTTY()). The OLD decision block routed TTY
+  // dry-run/undo into Ink; these rows keep that from silently returning.
+  const prompts = CREATE_SURFACE["component/react"]?.prompts ?? [];
+  const flags = (dryRun: boolean, undo: boolean, yes: boolean) => ({
+    dryRun,
+    undo,
+    yes,
+  });
+
+  it("TTY --dry-run resolves batch-dry-run — never an interactive preview", () => {
+    expect(
+      resolveCreateMode(prompts, {}, flags(true, false, false), true),
+    ).toBe("batch-dry-run");
+  });
+
+  it("TTY --undo resolves batch-undo — never a prompting wizard", () => {
+    expect(
+      resolveCreateMode(prompts, {}, flags(false, true, false), true),
+    ).toBe("batch-undo");
+  });
+
+  it("TTY --dry-run outranks --undo (the shared precedence)", () => {
+    expect(resolveCreateMode(prompts, {}, flags(true, true, false), true)).toBe(
+      "batch-dry-run",
+    );
+  });
+
+  it("a bare TTY leaf resolves wizard; the same input without a TTY refuses", () => {
+    expect(
+      resolveCreateMode(prompts, {}, flags(false, false, false), true),
+    ).toBe("wizard");
+    expect(
+      resolveCreateMode(prompts, {}, flags(false, false, false), false),
+    ).toBe("refuse");
+  });
 });
 
 describe("the wizard's seed — explicit answers only", () => {

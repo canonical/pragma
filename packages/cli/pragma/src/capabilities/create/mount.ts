@@ -29,6 +29,7 @@ import {
   extractAnswers,
   type GeneratorCliHost,
   type HostFlags,
+  type InteractionMode,
   missingExplicitFlags,
   type ProjectedPrompt,
   refusalMessage,
@@ -38,7 +39,16 @@ import {
 import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
 import { BIN_NAME } from "../../constants.js";
-import { dispatchPrepared } from "../../kernel/project/cli/dispatch.js";
+import { PragmaError } from "../../kernel/error/PragmaError.js";
+import {
+  renderErrorJson,
+  renderErrorLlm,
+} from "../../kernel/error/renderError.js";
+import {
+  cliIsTTY,
+  dispatchPrepared,
+  type MutationFlags,
+} from "../../kernel/project/cli/dispatch.js";
 import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import type {
   CliMountHost,
@@ -148,6 +158,51 @@ export function explicitLeafAnswers(
     explicit[positionalPrompt.name] = positionalValue;
   }
   return explicit;
+}
+
+/**
+ * The mount's mode resolution — `decideInteraction` over the leaf's five
+ * inputs, with the TTY fact INJECTED so the resolution is testable with
+ * `tty: true` (no suite can drive a real TTY through a subprocess). The
+ * action calls it with {@link cliIsTTY} — the same exported H3 gate the
+ * kernel's interaction context reads — so the mount and `runCreate` can
+ * never disagree about interactivity.
+ */
+export function resolveCreateMode(
+  prompts: readonly ProjectedPrompt[],
+  explicit: Record<string, unknown>,
+  mutation: MutationFlags,
+  tty: boolean,
+): InteractionMode {
+  return decideInteraction({
+    dryRun: mutation.dryRun,
+    undo: mutation.undo,
+    yes: mutation.yes,
+    isTTY: tty,
+    explicitComplete: explicitAnswersComplete(prompts, explicit),
+  }).mode;
+}
+
+/**
+ * Write the refusal and set exit 2. The PLAIN bytes are the cross-CLI parity
+ * surface — the shared message verbatim, no envelope prefix (the summon bin
+ * writes the identical line) — while `--format json` and `--llm` render the
+ * same message through pragma's D3 error envelope (`INVALID_INPUT`), exactly
+ * as `runCreate`'s own refusal path does through `renderError`.
+ */
+function writeRefusal(
+  message: string,
+  flags: import("../../kernel/runtime/types.js").GlobalFlags,
+): void {
+  if (flags.format === "json" || flags.llm) {
+    const error = new PragmaError({ code: "INVALID_INPUT", message });
+    const rendered =
+      flags.format === "json" ? renderErrorJson(error) : renderErrorLlm(error);
+    process.stderr.write(`${rendered}\n`);
+  } else {
+    process.stderr.write(`${message}\n`);
+  }
+  process.exitCode = 2;
 }
 
 /** Build the mount (the module-level CLI projection hook). */
@@ -260,16 +315,17 @@ function mount(parent: Command, host: CliMountHost): void {
       // The ONE interaction decision — made BEFORE the create runtime loads,
       // so a refusal never touches summon-core. (`runCreate` re-derives the
       // same mode from the same inputs to pick its prompt strategy.)
-      const { mode } = decideInteraction({
-        ...mutation,
-        isTTY: process.stdin.isTTY === true && process.stderr.isTTY === true,
-        explicitComplete: explicitAnswersComplete(generator.prompts, explicit),
-      });
+      const mode = resolveCreateMode(
+        generator.prompts,
+        explicit,
+        mutation,
+        cliIsTTY(),
+      );
       if (mode === "refuse") {
-        process.stderr.write(
-          `${refusalMessage(missingExplicitFlags(generator.prompts, explicit))}\n`,
+        writeRefusal(
+          refusalMessage(missingExplicitFlags(generator.prompts, explicit)),
+          host.globalFlags,
         );
-        process.exitCode = 2;
         return;
       }
       await dispatchPrepared(

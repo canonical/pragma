@@ -8,7 +8,7 @@ import { PragmaError } from "../../error/PragmaError.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type { GlobalFlags } from "../../runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../spec/types.js";
-import { dispatch, executeVerb, extractParams } from "./dispatch.js";
+import { cliIsTTY, dispatch, executeVerb, extractParams } from "./dispatch.js";
 
 /** The read-then-write mutation the honest-preview guards drive. */
 const graft = fixturePreviewModule.verbs[0] as VerbSpec;
@@ -351,5 +351,24 @@ describe("executeVerb — interactivity gate (H3)", () => {
       bootRuntime(PLAIN),
     );
     expect(sink.isTTY).toBe(true);
+  });
+
+  it("cliIsTTY IS the stdin+stderr conjunction — the one gate both callers read", () => {
+    // The mount's create decision reads the same exported function this
+    // describe drives through executeVerb, so pinning the truth table here
+    // pins BOTH callers (nothing is left to keep two copies in step).
+    const cases: Array<[boolean, boolean, boolean, boolean]> = [
+      [true, true, false, true], // stdout is irrelevant…
+      [true, true, true, true],
+      [false, true, true, false], // …stdin is required…
+      [true, false, true, false], // …and so is stderr.
+      [false, false, false, false],
+    ];
+    for (const [stdin, stderr, stdout, expected] of cases) {
+      setTTY(process.stdin, stdin);
+      setTTY(process.stderr, stderr);
+      setTTY(process.stdout, stdout);
+      expect(cliIsTTY(), `stdin=${stdin} stderr=${stderr}`).toBe(expected);
+    }
   });
 });
