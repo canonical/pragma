@@ -245,4 +245,35 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       expect(generatorSections(pragmaHelp)).toBe(generatorSections(summonHelp));
     }, 60_000);
   }
+
+  // The refusal cell (row 6) is shared byte for byte: a bare non-TTY leaf
+  // refuses in BOTH bins with the same message and exit 2. Comparing only the
+  // refusal line normalizes away any host framing around it (there is none
+  // today — the message itself names no bin).
+  const refusalLine = (stderr: string): string | undefined =>
+    stderr.split("\n").find((line) => line.startsWith("Refusing to scaffold"));
+
+  for (const commandPath of Object.values(CREATE_GENERATORS).flatMap(
+    (binding) => binding.paths,
+  )) {
+    it(`${commandPath}: both bins refuse a bare non-TTY leaf with the same bytes, exit 2`, () => {
+      const path = commandPath.split("/");
+      const pragma = spawnSync(compiledBin, ["create", ...path], {
+        cwd: freshCwd("crosscli-refuse-"),
+        encoding: "utf-8",
+        input: "",
+      });
+      const summon = spawnSync(
+        "bun",
+        [summonBin, "--generators", generatorsDir, ...path],
+        { cwd: freshCwd("crosscli-refuse-"), encoding: "utf-8", input: "" },
+      );
+      expect(pragma.status).toBe(2);
+      expect(summon.status).toBe(2);
+      const pragmaRefusal = refusalLine(pragma.stderr ?? "");
+      expect(pragmaRefusal).toBeDefined();
+      expect(pragmaRefusal).toContain("Missing: --");
+      expect(pragmaRefusal).toBe(refusalLine(summon.stderr ?? ""));
+    }, 60_000);
+  }
 });

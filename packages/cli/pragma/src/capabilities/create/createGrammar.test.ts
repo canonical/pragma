@@ -190,6 +190,22 @@ describe("the mounted create grammar (subprocess)", () => {
       "Widget.tsx",
     );
   }, 60_000);
+
+  it("the invalid-value cell echoes the offending value, exit 2", () => {
+    const { status, stderr, cwd } = run([
+      "create",
+      "component",
+      "react",
+      "not-pascal",
+      "--yes",
+    ]);
+    expect(status).toBe(2);
+    expect(stderr).toContain(
+      'Invalid --component-path "not-pascal": ' +
+        "Component name must be in PascalCase",
+    );
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
 });
 
 describe("the refusal cell through dispatchPrepared (in-process)", () => {
