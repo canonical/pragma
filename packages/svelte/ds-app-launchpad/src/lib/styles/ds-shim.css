@@ -1,5 +1,7 @@
 :root {
   --ds-transition-duration-fast: 165ms;
+  --ds-transition-duration-slow: 500ms;
+  --ds-transition-timing-ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
   --ds-color-foreground-tooltip: light-dark(
     var(--color-palette-gray-930),
     var(--color-palette-gray-40)
@@ -77,5 +79,6 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --ds-transition-duration-fast: 0ms;
+    --ds-transition-duration-slow: 0ms;
   }
 }
