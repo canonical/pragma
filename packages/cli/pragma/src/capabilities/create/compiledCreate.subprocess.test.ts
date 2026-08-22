@@ -26,19 +26,14 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
-  realpathSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { blankCanonicalRanges } from "../../testing/helpers/blankCanonicalRanges.js";
-import {
-  newestMtime,
-  workspaceDepRoots,
-} from "../../testing/perf/globalSetup.js";
 import { PACKAGE_VERSIONS } from "./templates.embedded.generated.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -48,11 +43,13 @@ const pragmaBin = join(cliNextDir, "src/bin.ts");
 const compiledBin = join(cliNextDir, "dist/pragma");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-compiled-"));
 
-// The binary is provisioned by `testing/perf/globalSetup.ts`, which rebuilds it
-// whenever it is missing or older than `src/**`, `scripts/**`, `pragma.conf.ts`
-// or `package.json` — so these tests exercise the current bundle + embedded
-// manifest without a second `beforeAll` writing `dist/pragma` in place while
-// another worker's test is spawning it.
+// The binary AND every workspace dep dist this file executes are provisioned
+// by `testing/perf/globalSetup.ts`, once, in the main process, before any
+// worker starts (single-file runs included): stale dep dists rebuild first
+// (topo order), then `dist/pragma` — which bundles them — is rebuilt when it
+// is missing or older than its inputs. No `beforeAll` here builds anything:
+// an in-worker rebuild would overwrite dists that sibling workers of the
+// same parallel pass are importing and spawning.
 
 /** Read a directory tree into a sorted map of relative path → contents. */
 function snapshot(dir: string): Map<string, string> {
@@ -318,103 +315,6 @@ describe("compiled pragma create application, npm unreachable (PROTECTED)", () =
 const summonCliDir = join(repoRoot, "packages/cli/summon");
 const summonDistBin = join(summonCliDir, "dist/src/bin.js");
 
-/** What each gated package's dist is built from (a missing entry stats 0). */
-const DIST_INPUTS = [
-  "src",
-  "generators",
-  "package.json",
-  "tsconfig.build.json",
-];
-
-/**
- * The served entry artifact of one workspace package (`module` ?? `main`),
- * absolute — or undefined for a package that serves no compiled dist (no
- * `build` script, or an entry outside `dist/`, e.g. webarchitect's
- * source-served `src/index.ts`), which the gate skips.
- */
-function servedDistArtifact(root: string): string | undefined {
-  let manifest: {
-    module?: string;
-    main?: string;
-    scripts?: Record<string, string>;
-  };
-  try {
-    manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
-  } catch {
-    return undefined;
-  }
-  const entry = manifest.module ?? manifest.main;
-  if (!entry || !entry.startsWith("dist") || !manifest.scripts?.build) {
-    return undefined;
-  }
-  return join(root, entry);
-}
-
-/**
- * (Re)build every workspace dist the node-runtime cell below EXECUTES, when
- * stale: the dists this file spawns directly — the summon CLI's bin and the
- * summon-application dist the fixture re-exports — plus their transitively
- * linked workspace deps (summon-core, task, utils…), discovered by the perf
- * globalSetup's own `workspaceDepRoots` walk rather than a narrowed copy.
- * Each package is gated by the same honest mtime rule the globalSetup
- * applies to `dist/pragma`: its served entry artifact must be newer than its
- * `src`/`generators`/`package.json`/`tsconfig.build.json`. Dependencies
- * build before dependents (application's tsc reads core's `dist/types`).
- * Only this file spawns those dists, so a build here cannot race another
- * worker's spawn.
- *
- * Scope, stated honestly: the COMPILED side of the cell runs `dist/pragma`,
- * whose freshness — embedded dep dists included — is the globalSetup's
- * contract, and the globalSetup bundles whatever dep dists are on disk at
- * suite start. A dist this gate refreshes reaches the binary on the NEXT
- * suite start; within the same run the node side already executes the
- * current code, so a behavioral dist-level regression reddens the
- * node-vs-compiled comparison instead of both sides agreeing on stale code.
- */
-function buildSpawnedDistsIfStale(): void {
-  const spawnedRoots = [
-    summonCliDir,
-    join(repoRoot, "packages/summon/application"),
-  ].map((dir) => realpathSync(dir));
-  const all = new Set(spawnedRoots);
-  for (const root of spawnedRoots) {
-    for (const dep of workspaceDepRoots(root)) all.add(dep);
-  }
-  // Dependencies before dependents: a root is ready once none of ITS deps
-  // are still pending (the walk is acyclic; the find always succeeds).
-  const depsOf = new Map(
-    [...all].map((root) => [root, new Set(workspaceDepRoots(root))] as const),
-  );
-  const remaining = new Set(all);
-  const ordered: string[] = [];
-  while (remaining.size > 0) {
-    const next = [...remaining].find((root) =>
-      [...(depsOf.get(root) ?? [])].every((dep) => !remaining.has(dep)),
-    ) as string;
-    ordered.push(next);
-    remaining.delete(next);
-  }
-  for (const root of ordered) {
-    const artifact = servedDistArtifact(root);
-    if (!artifact) continue;
-    const built = newestMtime(artifact);
-    const fresh =
-      built > 0 &&
-      DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built);
-    if (fresh) continue;
-    const result = spawnSync("bun", ["run", "build"], {
-      cwd: root,
-      stdio: "pipe",
-      encoding: "utf-8",
-    });
-    if (result.status !== 0) {
-      throw new Error(
-        `failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
-      );
-    }
-  }
-}
-
 /**
  * A one-file barrel package the summon bin discovers via `--generators`,
  * serving the BUILT application generators (`dist/esm`, exactly what a
@@ -458,10 +358,6 @@ function writeApplicationFixture(): string {
  * pragma binary byte-for-byte.
  */
 describe("node-run summon bin create application, npm unreachable (PROTECTED)", () => {
-  beforeAll(() => {
-    buildSpawnedDistsIfStale();
-  }, 240_000);
-
   it("pins the release line exactly — never `latest` — and ≡ compiled pragma binary, byte-for-byte", () => {
     const env = { ...process.env, PATH: offlineBinDir() };
     const releaseLine = `^${PACKAGE_VERSIONS["@canonical/summon-application"]}`;

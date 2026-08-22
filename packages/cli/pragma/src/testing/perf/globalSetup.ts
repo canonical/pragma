@@ -32,10 +32,34 @@
  * hashing every input on every suite start costs more than the rebuild it
  * avoids. CI is fresh-checkout either way; this gate exists for developer
  * boxes that have built before.
+ *
+ * THE DEP DISTS THEMSELVES ARE GATED HERE TOO, FIRST. The suites do not only
+ * embed the workspace deps — they IMPORT and SPAWN their dists live
+ * (byteEquality runs against summon-core's `dist/esm`, crossCli's
+ * `--generators` fixture re-exports the summon generator dists, the offline
+ * cells spawn cli/summon's built bin, and every static
+ * `@canonical/summon-*`/`@canonical/task` import resolves through the deps'
+ * `exports` maps into `dist/…`). Rebuilding those dists from inside a test
+ * worker's `beforeAll` raced the sibling workers importing the same files in
+ * the same parallel pass (tsc/copy-templates overwrite in place, no clean),
+ * so the staleness gate lives HERE: this hook runs ONCE, in the main
+ * process, BEFORE any worker starts — for full runs and single-file
+ * `vitest run <file>` invocations alike, under both configs. Order matters:
+ * stale dep dists rebuild first (dependencies before dependents — a cycle
+ * throws loudly, naming its members, instead of hanging the topo loop), and
+ * only then is `dist/pragma` judged — a refreshed dep dist moves the mtimes
+ * the binary check watches, so the binary that bundles them is rebuilt in
+ * the same setup pass and every worker sees one consistent generation.
  */
 
 import { spawnSync } from "node:child_process";
-import { lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
+import {
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -55,15 +79,11 @@ const DEP_INPUTS = ["src", "dist", "package.json"];
  * A nested `node_modules` is never descended into (a dep's own deps are
  * enumerated as roots of their own by {@link workspaceDepRoots}).
  *
- * Exported (with {@link workspaceDepRoots}) for
- * `capabilities/create/compiledCreate.subprocess.test.ts`, whose dist gate
- * applies the same staleness rule to the summon dists it spawns.
- *
  * @param path - A file or directory.
  * @returns Epoch milliseconds of the newest entry beneath it.
  * @note Impure — stats the source tree.
  */
-export function newestMtime(path: string): number {
+function newestMtime(path: string): number {
   let stats: ReturnType<typeof statSync>;
   try {
     stats = statSync(path);
@@ -90,7 +110,7 @@ export function newestMtime(path: string): number {
  * @returns Absolute real paths of the linked workspace dependency roots.
  * @note Impure — reads `node_modules` link farms.
  */
-export function workspaceDepRoots(pkgRoot: string): string[] {
+function workspaceDepRoots(pkgRoot: string): string[] {
   const visited = new Set<string>([realpathSync(pkgRoot)]);
   const queue = [realpathSync(pkgRoot)];
   while (queue.length > 0) {
@@ -128,8 +148,99 @@ export function workspaceDepRoots(pkgRoot: string): string[] {
   return [...visited].filter((dir) => dir !== root);
 }
 
+/** What one dep's dist is built from (a missing entry stats 0). */
+const DIST_INPUTS = [
+  "src",
+  "generators",
+  "package.json",
+  "tsconfig.build.json",
+];
+
+/**
+ * The served entry artifact of one workspace package (`module` ?? `main`),
+ * absolute — or undefined for a package that serves no compiled dist (no
+ * `build` script, or an entry outside `dist/`, e.g. webarchitect's
+ * source-served `src/index.ts`), which the dep-dist gate skips.
+ */
+function servedDistArtifact(root: string): string | undefined {
+  let manifest: {
+    module?: string;
+    main?: string;
+    scripts?: Record<string, string>;
+  };
+  try {
+    manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
+  } catch {
+    return undefined;
+  }
+  const entry = manifest.module ?? manifest.main;
+  if (!entry?.startsWith("dist") || !manifest.scripts?.build) {
+    return undefined;
+  }
+  return join(root, entry);
+}
+
+/**
+ * Rebuild every STALE workspace dep dist, dependencies before dependents
+ * (summon-application's tsc reads summon-core's `dist/types`). Runs in the
+ * main process before any worker exists, so an in-place `tsc`/copy-templates
+ * rewrite can never race a worker importing or spawning the same files.
+ * Staleness is the binary gate's own honest mtime rule, per package: its
+ * served entry artifact must be newer than every {@link DIST_INPUTS} entry.
+ *
+ * @param pkgRoot - This package's root directory (the closure's seed).
+ * @note Impure — stats and rebuilds workspace dists.
+ */
+function buildStaleDepDists(pkgRoot: string): void {
+  const deps = workspaceDepRoots(pkgRoot);
+  // Dependencies before dependents: a root is ready once none of ITS deps
+  // are still pending. `workspaceDepRoots` follows devDependency links too,
+  // so a future dev-edge cycle is an ordinary event — it must throw with its
+  // members named, never spin the synchronous loop forever.
+  const depsOf = new Map(
+    deps.map((root) => [root, new Set(workspaceDepRoots(root))] as const),
+  );
+  const remaining = new Set(deps);
+  const ordered: string[] = [];
+  while (remaining.size > 0) {
+    const next = [...remaining].find((root) =>
+      [...(depsOf.get(root) ?? [])].every((dep) => !remaining.has(dep)),
+    );
+    if (next === undefined) {
+      throw new Error(
+        `perf globalSetup: dependency cycle among ${[...remaining].join(", ")}`,
+      );
+    }
+    ordered.push(next);
+    remaining.delete(next);
+  }
+  for (const root of ordered) {
+    const artifact = servedDistArtifact(root);
+    if (!artifact) continue;
+    const built = newestMtime(artifact);
+    const fresh =
+      built > 0 &&
+      DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built);
+    if (fresh) continue;
+    const result = spawnSync("bun", ["run", "build"], {
+      cwd: root,
+      stdio: "pipe",
+      encoding: "utf-8",
+    });
+    if (result.status !== 0) {
+      throw new Error(
+        `perf globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+      );
+    }
+  }
+}
+
 export default function setup(): void {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
+  // Stale dep dists rebuild FIRST: their fresh mtimes then mark dist/pragma
+  // (which bundles them) stale below, so one setup pass yields one
+  // consistent generation for every worker.
+  buildStaleDepDists(root);
   const built = newestMtime(join(root, "dist", "pragma"));
   const fresh =
     built > 0 &&
