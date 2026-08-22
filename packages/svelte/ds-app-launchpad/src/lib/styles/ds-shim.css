@@ -1,5 +1,6 @@
 :root {
   --ds-transition-duration-fast: 165ms;
+  --ds-transition-duration-sleepy: 1s;
   --ds-color-foreground-tooltip: light-dark(
     var(--color-palette-gray-930),
     var(--color-palette-gray-40)
@@ -19,6 +20,11 @@
     var(--typography-text-secondary-bold-font-size) /
     var(--typography-text-secondary-bold-line-height)
     var(--typography-text-secondary-bold-font-family);
+  --ds-typography-text-secondary-code:
+    var(--typography-text-secondary-code-font-weight)
+    var(--typography-text-secondary-code-font-size) /
+    var(--typography-text-secondary-code-line-height)
+    var(--typography-text-secondary-code-font-family);
   --ds-typography-text-primary-bold:
     var(--typography-text-primary-bold-font-weight)
     var(--typography-text-primary-bold-font-size) /
@@ -77,5 +83,6 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --ds-transition-duration-fast: 0ms;
+    --ds-transition-duration-sleepy: 0ms;
   }
 }
