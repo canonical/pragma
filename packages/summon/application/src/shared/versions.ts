@@ -48,12 +48,20 @@ const REPRESENTATIVE_PACKAGE = "@canonical/styles";
  * just an ancestor to walk past. Running out of parents yields `undefined`
  * (the callers degrade, so nothing throws).
  *
+ * A `/$bunfs`-anchored walk (a `bun build --compile` host) refuses to start:
+ * the parent chain LEAVES the virtual filesystem (`/$bunfs/root` → `/$bunfs`
+ * → `/`), and `/package.json` / `/node_modules/<name>/package.json` are REAL
+ * paths — measured: a root-level `node_modules` decoy made the shipped
+ * binary pin the decoy's version, bypassing the embedded store. Compiled
+ * hosts are served by the store; the walk yields `undefined` immediately.
+ *
  * @note Impure — reads the filesystem.
  */
 function findInstalledVersion(
   from: string,
   packageName: string,
 ): string | undefined {
+  if (from.startsWith("/$bunfs")) return undefined;
   const versionAt = (manifestPath: string): string | undefined => {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
@@ -91,26 +99,29 @@ function findInstalledVersion(
  * a `"./package.json"` subpath in its exports map, so the subpath require
  * throws ERR_PACKAGE_PATH_NOT_EXPORTED under plain Node — the summon bin's
  * shipped runtime — and only the walk keeps BOTH shipped products on the
- * tree tier. A `bun build --compile` host is the one layout the walk cannot
- * serve — no `package.json` exists anywhere under the binary's virtual
- * `/$bunfs` filesystem — so such a host captures the declared generator
- * packages' versions at BUILD time (from the very manifests the walk would
- * read) and injects them through summon-core's embedded store
- * (`setEmbeddedPackageVersions`). A compiled run then resolves the same
- * value a source run reads, and {@link fallbackRange} keeps pinning the
- * release line instead of degrading to `latest`. Same precedence contract
- * as summon-package's `resolveOwnVersion` — walk first, embedded store
- * second — with `"unknown"` in place of its terminal throw. Exported for
- * tests.
+ * tree tier. A `bun build --compile` host is the one layout the walk refuses
+ * to serve: no `package.json` exists inside the binary's virtual `/$bunfs`
+ * filesystem, and walking PAST it would probe the real filesystem root — so
+ * {@link findInstalledVersion} yields `undefined` from a `/$bunfs` anchor,
+ * and such a host captures the declared generator packages' versions at
+ * BUILD time (from the very manifests the walk would read) and injects them
+ * through summon-core's embedded store (`setEmbeddedPackageVersions`). A
+ * compiled run then resolves the same value a source run reads, and
+ * {@link fallbackRange} keeps pinning the release line instead of degrading
+ * to `latest`. Same precedence contract as summon-package's
+ * `resolveOwnVersion` — walk first, embedded store second — with
+ * `"unknown"` in place of its terminal throw. Exported for tests; `anchor`
+ * is injectable so the `/$bunfs` refusal is pinnable without a compiled
+ * host.
  *
  * @note Impure — reads the installed tree.
  */
-export function readVersion(packageName: string): string {
+export function readVersion(
+  packageName: string,
+  anchor: string = path.dirname(fileURLToPath(import.meta.url)),
+): string {
   return (
-    findInstalledVersion(
-      path.dirname(fileURLToPath(import.meta.url)),
-      packageName,
-    ) ??
+    findInstalledVersion(anchor, packageName) ??
     embeddedPackageVersion(packageName) ??
     "unknown"
   );

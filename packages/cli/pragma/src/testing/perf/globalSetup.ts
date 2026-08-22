@@ -55,11 +55,15 @@ const DEP_INPUTS = ["src", "dist", "package.json"];
  * A nested `node_modules` is never descended into (a dep's own deps are
  * enumerated as roots of their own by {@link workspaceDepRoots}).
  *
+ * Exported (with {@link workspaceDepRoots}) for
+ * `capabilities/create/compiledCreate.subprocess.test.ts`, whose dist gate
+ * applies the same staleness rule to the summon dists it spawns.
+ *
  * @param path - A file or directory.
  * @returns Epoch milliseconds of the newest entry beneath it.
  * @note Impure — stats the source tree.
  */
-function newestMtime(path: string): number {
+export function newestMtime(path: string): number {
   let stats: ReturnType<typeof statSync>;
   try {
     stats = statSync(path);
@@ -86,7 +90,7 @@ function newestMtime(path: string): number {
  * @returns Absolute real paths of the linked workspace dependency roots.
  * @note Impure — reads `node_modules` link farms.
  */
-function workspaceDepRoots(pkgRoot: string): string[] {
+export function workspaceDepRoots(pkgRoot: string): string[] {
   const visited = new Set<string>([realpathSync(pkgRoot)]);
   const queue = [realpathSync(pkgRoot)];
   while (queue.length > 0) {

@@ -36,6 +36,7 @@ import { executeVerb } from "../../kernel/project/cli/dispatch.js";
 import { bootRuntime } from "../../kernel/runtime/boot.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import type { VerbSpec } from "../../kernel/spec/types.js";
+import { blankCanonicalRanges } from "../../testing/helpers/blankCanonicalRanges.js";
 import { createVerbs } from "./create.verb.js";
 import type { CreateKind } from "./types.js";
 
@@ -192,12 +193,20 @@ describe("byte-equality goldens — pragma create \u2261 the conformance referen
         (entry) => entry.name === testCase.fixture,
       );
       if (!shared) throw new Error(`no fixture "${testCase.fixture}"`);
-      const pragma = await producePragma(testCase.kind, testCase.params);
-      const reference = await produceSummon(
+      let pragma = await producePragma(testCase.kind, testCase.params);
+      let reference = await produceSummon(
         testCase.kind,
         testCase.framework,
         shared.answers,
       );
+      // Two independent `npm view` resolutions feed the application tree
+      // (one per producer); blank the @canonical/* ranges identically so an
+      // asymmetric registry outcome cannot red this template-surface cell —
+      // range truth lives in the offline subprocess cells.
+      if (testCase.kind === "application") {
+        pragma = blankCanonicalRanges(pragma);
+        reference = blankCanonicalRanges(reference);
+      }
       expect(pragma.size).toBeGreaterThan(0);
       const diff = diffTrees(pragma, reference);
       expect(

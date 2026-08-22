@@ -26,7 +26,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
-  statSync,
+  realpathSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -34,6 +34,11 @@ import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
+import { blankCanonicalRanges } from "../../testing/helpers/blankCanonicalRanges.js";
+import {
+  newestMtime,
+  workspaceDepRoots,
+} from "../../testing/perf/globalSetup.js";
 import { PACKAGE_VERSIONS } from "./templates.embedded.generated.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -156,32 +161,12 @@ describe("compiled pragma create package/application ≡ source run (PROTECTED)"
     },
   ];
 
-  /**
-   * Blank the @canonical/* dependency ranges inside a scaffolded
-   * `my-app/package.json` — identically on both sides — before the byte
-   * comparison. The application generator resolves its range through each
-   * host's OWN `npm view` call (no timeout, no shared cache), so an
-   * asymmetric registry outcome (one side reaches npm, the other does not)
-   * would turn `^0.34.0` vs `^0.33.0` across every range into a red that
-   * says nothing about the code. This NETWORKED case proves the TEMPLATE
-   * surface; the range assertions belong to the offline cases below, where
-   * the outcome is forced.
-   */
-  const blankCanonicalRanges = (tree: Map<string, string>): void => {
-    const manifest = tree.get("my-app/package.json");
-    if (manifest === undefined) return;
-    tree.set(
-      "my-app/package.json",
-      manifest.replaceAll(/("@canonical\/[^"]+": )"[^"]+"/g, '$1"<range>"'),
-    );
-  };
-
   for (const { kind, args } of cases) {
     it(`create ${kind}: compiled binary ≡ source run, byte-for-byte`, () => {
       // (1) The real standalone binary — templates come from the embedded manifest.
       const compiledDir = freshCwd();
       execFileSync(compiledBin, [...args], { cwd: compiledDir, stdio: "pipe" });
-      const compiled = snapshot(compiledDir);
+      let compiled = snapshot(compiledDir);
 
       // (2) A source run — templates come from disk. The reference output.
       const sourceDir = freshCwd();
@@ -189,11 +174,14 @@ describe("compiled pragma create package/application ≡ source run (PROTECTED)"
         cwd: sourceDir,
         stdio: "pipe",
       });
-      const source = snapshot(sourceDir);
+      let source = snapshot(sourceDir);
 
+      // This NETWORKED case proves the TEMPLATE surface: the ranges each
+      // side's own `npm view` resolved are blanked identically (see the
+      // helper) and asserted by the offline cases, where they are forced.
       if (kind === "application") {
-        blankCanonicalRanges(compiled);
-        blankCanonicalRanges(source);
+        compiled = blankCanonicalRanges(compiled);
+        source = blankCanonicalRanges(source);
       }
 
       // Wrote something (fails loudly if either run refuses or crashes).
@@ -330,51 +318,100 @@ describe("compiled pragma create application, npm unreachable (PROTECTED)", () =
 const summonCliDir = join(repoRoot, "packages/cli/summon");
 const summonDistBin = join(summonCliDir, "dist/src/bin.js");
 
+/** What each gated package's dist is built from (a missing entry stats 0). */
+const DIST_INPUTS = [
+  "src",
+  "generators",
+  "package.json",
+  "tsconfig.build.json",
+];
+
 /**
- * The newest modification time under `path`, or 0 when it does not exist —
- * the staleness probe `testing/perf/globalSetup.ts` uses for `dist/pragma`,
- * mirrored here for the summon CLI's dist. `node_modules` is never descended
- * into.
+ * The served entry artifact of one workspace package (`module` ?? `main`),
+ * absolute — or undefined for a package that serves no compiled dist (no
+ * `build` script, or an entry outside `dist/`, e.g. webarchitect's
+ * source-served `src/index.ts`), which the gate skips.
  */
-function newestMtime(path: string): number {
-  let stats: ReturnType<typeof statSync>;
+function servedDistArtifact(root: string): string | undefined {
+  let manifest: {
+    module?: string;
+    main?: string;
+    scripts?: Record<string, string>;
+  };
   try {
-    stats = statSync(path);
+    manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
   } catch {
-    return 0;
+    return undefined;
   }
-  if (!stats.isDirectory()) return stats.mtimeMs;
-  let newest = stats.mtimeMs;
-  for (const entry of readdirSync(path)) {
-    if (entry === "node_modules") continue;
-    newest = Math.max(newest, newestMtime(join(path, entry)));
+  const entry = manifest.module ?? manifest.main;
+  if (!entry || !entry.startsWith("dist") || !manifest.scripts?.build) {
+    return undefined;
   }
-  return newest;
+  return join(root, entry);
 }
 
 /**
- * (Re)build the summon CLI's `dist` when it is missing or older than what it
- * is built from — the same honest staleness rule the perf globalSetup applies
- * to `dist/pragma`, so the node-runtime cell below always spawns the CURRENT
- * bin instead of whatever bin happened to be on disk. Only this file spawns
- * that dist, so a build here cannot race another worker's spawn of it.
+ * (Re)build every workspace dist the node-runtime cell below EXECUTES, when
+ * stale: the dists this file spawns directly — the summon CLI's bin and the
+ * summon-application dist the fixture re-exports — plus their transitively
+ * linked workspace deps (summon-core, task, utils…), discovered by the perf
+ * globalSetup's own `workspaceDepRoots` walk rather than a narrowed copy.
+ * Each package is gated by the same honest mtime rule the globalSetup
+ * applies to `dist/pragma`: its served entry artifact must be newer than its
+ * `src`/`generators`/`package.json`/`tsconfig.build.json`. Dependencies
+ * build before dependents (application's tsc reads core's `dist/types`).
+ * Only this file spawns those dists, so a build here cannot race another
+ * worker's spawn.
+ *
+ * Scope, stated honestly: the COMPILED side of the cell runs `dist/pragma`,
+ * whose freshness — embedded dep dists included — is the globalSetup's
+ * contract, and the globalSetup bundles whatever dep dists are on disk at
+ * suite start. A dist this gate refreshes reaches the binary on the NEXT
+ * suite start; within the same run the node side already executes the
+ * current code, so a behavioral dist-level regression reddens the
+ * node-vs-compiled comparison instead of both sides agreeing on stale code.
  */
-function buildSummonDistIfStale(): void {
-  const built = newestMtime(summonDistBin);
-  const inputs = ["src", "generators", "package.json", "tsconfig.build.json"];
-  const fresh =
-    built > 0 &&
-    inputs.every((input) => newestMtime(join(summonCliDir, input)) < built);
-  if (fresh) return;
-  const result = spawnSync("bun", ["run", "build"], {
-    cwd: summonCliDir,
-    stdio: "pipe",
-    encoding: "utf-8",
-  });
-  if (result.status !== 0) {
-    throw new Error(
-      `failed to build the summon CLI dist:\n${result.stdout}${result.stderr}`,
-    );
+function buildSpawnedDistsIfStale(): void {
+  const spawnedRoots = [
+    summonCliDir,
+    join(repoRoot, "packages/summon/application"),
+  ].map((dir) => realpathSync(dir));
+  const all = new Set(spawnedRoots);
+  for (const root of spawnedRoots) {
+    for (const dep of workspaceDepRoots(root)) all.add(dep);
+  }
+  // Dependencies before dependents: a root is ready once none of ITS deps
+  // are still pending (the walk is acyclic; the find always succeeds).
+  const depsOf = new Map(
+    [...all].map((root) => [root, new Set(workspaceDepRoots(root))] as const),
+  );
+  const remaining = new Set(all);
+  const ordered: string[] = [];
+  while (remaining.size > 0) {
+    const next = [...remaining].find((root) =>
+      [...(depsOf.get(root) ?? [])].every((dep) => !remaining.has(dep)),
+    ) as string;
+    ordered.push(next);
+    remaining.delete(next);
+  }
+  for (const root of ordered) {
+    const artifact = servedDistArtifact(root);
+    if (!artifact) continue;
+    const built = newestMtime(artifact);
+    const fresh =
+      built > 0 &&
+      DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built);
+    if (fresh) continue;
+    const result = spawnSync("bun", ["run", "build"], {
+      cwd: root,
+      stdio: "pipe",
+      encoding: "utf-8",
+    });
+    if (result.status !== 0) {
+      throw new Error(
+        `failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+      );
+    }
   }
 }
 
@@ -422,8 +459,8 @@ function writeApplicationFixture(): string {
  */
 describe("node-run summon bin create application, npm unreachable (PROTECTED)", () => {
   beforeAll(() => {
-    buildSummonDistIfStale();
-  }, 120_000);
+    buildSpawnedDistsIfStale();
+  }, 240_000);
 
   it("pins the release line exactly — never `latest` — and ≡ compiled pragma binary, byte-for-byte", () => {
     const env = { ...process.env, PATH: offlineBinDir() };
