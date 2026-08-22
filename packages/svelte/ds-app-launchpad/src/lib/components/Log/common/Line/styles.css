@@ -3,17 +3,17 @@
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: subgrid;
-  font: var(--lp-typography-code-s);
-  color: var(--lp-color-text-default);
+  font: var(--ds-typography-text-secondary-code);
+  color: var(--color-text);
 
-  --log-line-background-color: var(--lp-color-background-alt);
-  --log-line-target-highlight-color: var(--lp-color-background-active);
+  --log-line-background-color: var(--color-foreground-secondary);
+  --log-line-target-highlight-color: var(--active--color-foreground-secondary);
   --log-line-target-highlight-time: 5s;
 
   > td,
   > th {
-    padding-block: var(--lp-dimension-spacing-block-xxxs);
-    font-weight: var(--lp-typography-weight-regular);
+    padding-block: var(--dimension-025);
+    font-weight: var(--typography-weight-regular);
     background-color: var(--log-line-background-color);
   }
 
@@ -23,7 +23,7 @@
       animation:
         target-highlight-hold var(--log-line-target-highlight-time) step-end
         forwards,
-        target-highlight-fade var(--lp-transition-duration-sleepy) ease-out
+        target-highlight-fade var(--ds-transition-duration-sleepy) ease-out
         var(--log-line-target-highlight-time) forwards;
     }
   }
@@ -31,18 +31,18 @@
   > .line-number {
     grid-column: line-number;
     text-align: right;
-    color: var(--lp-color-text-muted);
+    color: var(--color-text-muted);
     position: sticky;
     left: 0;
     padding-inline-start: var(--log-padding-inline);
-    padding-inline-end: var(--lp-dimension-spacing-inline-s);
+    padding-inline-end: var(--dimension-150);
   }
 
   > .timestamp {
     grid-column: timestamp;
     white-space: nowrap;
 
-    padding-inline-end: var(--lp-dimension-spacing-inline-m);
+    padding-inline-end: var(--dimension-200);
   }
 
   > .content {
