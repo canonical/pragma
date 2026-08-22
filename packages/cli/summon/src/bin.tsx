@@ -217,8 +217,11 @@ const main = async () => {
       return;
     }
     if (error.code === "commander.help") {
-      // Respect the help error's OWN exit code: a bare namespace writes its
-      // help to stderr and carries 1; a stdout help carries 0.
+      // Respect the help error's OWN exit code. Live cases: the ROOT invoked
+      // with options but no command (help on stderr, carries 1) and the
+      // implicit `help` command (stdout help, carries 0). A bare NAMESPACE
+      // never raises this — the projection's namespace action writes that
+      // help and sets exit 1 itself.
       process.exitCode = error.exitCode;
       return;
     }

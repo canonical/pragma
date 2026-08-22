@@ -11,8 +11,10 @@
  *  - the run arm's exit codes: an execution failure renders in the App and
  *    exits 1 (parity-contract §3 — never exit 0 on a rendered failure);
  *  - the exit classification's INFORMATIONAL branches: `--help`/`--version`
- *    exit 0 and a bare namespace prints its help on stderr with exit 1 —
- *    the branches a blanket exit-2 refactor would silently break;
+ *    exit 0, the root invoked with options but no command carries the help
+ *    error's own exit 1, the implicit `help` command exits 0 — the branches
+ *    a blanket exit-2 refactor would silently break — and the projection's
+ *    bare-namespace arm (help on stderr, exit 1, the `help [command]` row);
  *  - the designed excess-positional error (exit 2).
  */
 
@@ -328,10 +330,16 @@ describe("the run arm's exit codes — a rendered failure never exits 0", () => 
 });
 
 describe("the exit classification's informational branches", () => {
-  // Only the usage branch (exit 2) had a pin; these three cells pin the
-  // OTHER branches of bin.tsx's exitOverride catch, so a refactor that
-  // collapses the classification to a blanket exit 2 turns red instead of
-  // shipping `--help`→2 to every script that gates on it.
+  // Only the usage branch (exit 2) had a pin. `--help`/`--version` pin the
+  // 0-branches of bin.tsx's exitOverride catch; the `commander.help` branch
+  // (the one that preserves the error's OWN exit code) is reached by the
+  // ROOT invoked with options but no command (help on stderr, exit 1) and
+  // by the implicit `help` command (stdout help, exit 0) — pinned here so a
+  // refactor that collapses the classification to a blanket exit 2 turns
+  // red. The bare NAMESPACE never reaches the catch: the projection's
+  // namespace action writes the help and sets exit 1 itself, so its cell
+  // pins the projection — plus the `help [command]` row that ONLY summon's
+  // helpCommand(true) host hook keeps alive.
   it("`--help` exits 0 with the usage on stdout", () => {
     const { status, stdout, stderr } = run(["--help"], freshCwd());
     expect(status).toBe(0);
@@ -345,10 +353,37 @@ describe("the exit classification's informational branches", () => {
     expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
   }, 60_000);
 
-  it("a bare namespace prints its help on STDERR and exits 1", () => {
+  it("the root with options but no command prints the root help on STDERR, exit 1", () => {
+    // The one argv shape that still raises `commander.help` at exit 1: the
+    // root has subcommands and no action handler, so Commander helps loudly.
+    const { status, stdout, stderr } = run(
+      ["--generators", fixtureDir],
+      freshCwd(),
+    );
+    expect(status).toBe(1);
+    expect(stderr).toContain("Usage: summon");
+    expect(stdout).toBe("");
+  }, 60_000);
+
+  it("the implicit `help` command exits 0 with the root usage on stdout", () => {
+    const { status, stdout } = run(["help"], freshCwd());
+    expect(status).toBe(0);
+    expect(stdout).toContain("Usage: summon");
+  }, 60_000);
+
+  it("`<namespace> help` exits 0 with the namespace usage on stdout — the helpCommand(true) hook", () => {
+    const { status, stdout } = run(["example", "help"], freshCwd());
+    expect(status).toBe(0);
+    expect(stdout).toContain("Usage: summon example");
+  }, 60_000);
+
+  it("a bare namespace prints its help on STDERR and exits 1 — the projection's arm, with the help row", () => {
     const { status, stdout, stderr } = run(["example"], freshCwd());
     expect(status).toBe(1);
     expect(stderr).toContain("Usage:");
+    // The row exists ONLY because summon's host declares helpCommand(true) —
+    // the projection's namespace action suppresses Commander's implicit one.
+    expect(stderr).toContain("help [command]");
     expect(stdout).toBe("");
   }, 60_000);
 });
