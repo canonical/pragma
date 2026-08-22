@@ -115,6 +115,7 @@ export type {
   TemplatingEngine,
 } from "./template/index.js";
 export {
+  BUNFS_PREFIX,
   buildEmbeddedManifest,
   ejsEngine,
   embeddedPackageVersion,

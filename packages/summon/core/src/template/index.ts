@@ -5,6 +5,7 @@ export type {
   RawFileOptions,
 } from "./embedded/index.js";
 export {
+  BUNFS_PREFIX,
   buildEmbeddedManifest,
   embeddedPackageVersion,
   hasEmbeddedTemplates,

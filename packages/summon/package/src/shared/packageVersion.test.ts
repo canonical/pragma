@@ -3,13 +3,43 @@ import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setEmbeddedPackageVersions } from "@canonical/summon-core";
-import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import pkg from "../../package.json" with { type: "json" };
 import {
   findOwnVersion,
   packageVersion,
   resolveOwnVersion,
 } from "./packageVersion.js";
+
+/**
+ * A pass-through `node:fs` mock the `/$bunfs` case flips on: while
+ * `interceptReads` is set, every `readFileSync` in this file's module graph
+ * records its path and serves a DECOY manifest naming THIS package —
+ * simulating the hijacked host where the walk's real-filesystem probes
+ * resolve (`/$bunfs/root` → `/$bunfs` → `/`, all REAL paths once the chain
+ * leaves the virtual filesystem). Off (the default), reads pass through
+ * untouched for every other case.
+ */
+const fsControl = vi.hoisted(() => ({
+  interceptReads: false,
+  reads: [] as unknown[],
+}));
+vi.mock("node:fs", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...actual,
+    readFileSync: ((...args: Parameters<typeof actual.readFileSync>) => {
+      if (fsControl.interceptReads) {
+        fsControl.reads.push(args[0]);
+        return JSON.stringify({
+          name: "@canonical/summon-package",
+          version: "7.7.7",
+        });
+      }
+      return actual.readFileSync(...args);
+    }) as typeof actual.readFileSync,
+  };
+});
 
 const roots: string[] = [];
 afterAll(() => {
@@ -72,10 +102,23 @@ describe("resolveOwnVersion (the compiled-binary fallback)", () => {
     expect(resolveOwnVersion(dir)).toBe("7.7.7");
   });
 
-  it("falls back to the host-injected version when the walk exhausts (/$bunfs)", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "own-version-embedded-"));
-    setEmbeddedPackageVersions({ "@canonical/summon-package": "9.9.9" });
-    expect(resolveOwnVersion(dir)).toBe("9.9.9");
+  it("refuses to walk from a /$bunfs anchor — no real-filesystem probe, the store serves the compiled host", () => {
+    // The walk's parent chain from `/$bunfs/root` LEAVES the virtual
+    // filesystem (`/$bunfs` → `/`), where `/package.json` is a REAL path a
+    // host-level decoy could serve (measured hijack: a transient root-level
+    // decoy re-pinned the shipped binary's `create package` ranges). The fs
+    // mock simulates that hijacked host — every probe would resolve the
+    // decoy — so the guard must throw WITHOUT reading anything and the
+    // injected build-time version must win.
+    fsControl.reads.length = 0;
+    fsControl.interceptReads = true;
+    try {
+      setEmbeddedPackageVersions({ "@canonical/summon-package": "1.1.1" });
+      expect(resolveOwnVersion("/$bunfs/root")).toBe("1.1.1");
+      expect(fsControl.reads).toEqual([]);
+    } finally {
+      fsControl.interceptReads = false;
+    }
   });
 
   it("still throws the walk's error when nothing was injected", () => {

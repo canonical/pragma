@@ -9,6 +9,7 @@ export type { RawFileOptions } from "./rawFile.js";
 export { default as rawFile } from "./rawFile.js";
 export type { LoadedTemplate } from "./store.js";
 export {
+  BUNFS_PREFIX,
   embeddedPackageVersion,
   hasEmbeddedTemplates,
   loadTemplate,

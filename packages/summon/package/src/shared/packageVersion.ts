@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { embeddedPackageVersion } from "@canonical/summon-core";
+import { BUNFS_PREFIX, embeddedPackageVersion } from "@canonical/summon-core";
 import { PACKAGE_NAME } from "./packageName.js";
 
 /**
@@ -12,11 +12,24 @@ import { PACKAGE_NAME } from "./packageName.js";
  * A manifest that is unreadable, is not JSON, names another package, or
  * carries no version is not a failure — it is an ancestor directory that
  * happens to have a `package.json` (the workspace root, say), so the walk
- * continues. Only running out of parents throws.
+ * continues. Only running out of parents — or a refused anchor — throws.
+ *
+ * A `/$bunfs`-anchored walk (a `bun build --compile` host) refuses to start:
+ * the parent chain LEAVES the virtual filesystem (`/$bunfs/root` → `/$bunfs`
+ * → `/`), and `/package.json` is a REAL path — measured: a root-level decoy
+ * naming this package made the shipped binary pin the decoy's version into
+ * every `create package` manifest, bypassing the embedded store. Compiled
+ * hosts are served by the store (see {@link resolveOwnVersion}); the walk
+ * throws immediately, reading nothing.
  *
  * @note Impure — reads the filesystem.
  */
 export function findOwnVersion(from: string): string {
+  if (from.startsWith(BUNFS_PREFIX)) {
+    throw new Error(
+      `packageVersion: no package.json naming ${PACKAGE_NAME} above ${from}`,
+    );
+  }
   let dir = from;
   for (;;) {
     try {
@@ -58,13 +71,15 @@ export function findOwnVersion(from: string): string {
  * Lazy and cached deliberately: nothing is read at module load, so importing
  * this module performs no IO and cannot throw at startup.
  *
- * A `bun build --compile` host is the one layout the walk cannot serve: no
- * `package.json` exists anywhere under the binary's virtual `/$bunfs`
- * filesystem. Such a host captures this package's version at BUILD time —
- * from the very manifest the walk would find — and injects it through
- * summon-core's embedded store (`setEmbeddedPackageVersions`), so a compiled
- * run resolves the same value a source run walks to. The walk stays primary:
- * on disk it can never be stale.
+ * A `bun build --compile` host is the one layout the walk REFUSES to serve:
+ * no `package.json` exists inside the binary's virtual `/$bunfs` filesystem,
+ * and walking PAST it would probe the real filesystem root — so
+ * {@link findOwnVersion} throws immediately from a `/$bunfs` anchor. Such a
+ * host captures this package's version at BUILD time — from the very
+ * manifest the walk would find — and injects it through summon-core's
+ * embedded store (`setEmbeddedPackageVersions`), so a compiled run resolves
+ * the same value a source run walks to. The walk stays primary: on disk it
+ * can never be stale.
  *
  * @note Impure on first call — reads the filesystem, then caches.
  */

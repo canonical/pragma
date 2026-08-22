@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { embeddedPackageVersion } from "@canonical/summon-core";
+import { BUNFS_PREFIX, embeddedPackageVersion } from "@canonical/summon-core";
 import type { ExecResult, Task } from "@canonical/task";
 import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
 
@@ -61,7 +61,7 @@ function findInstalledVersion(
   from: string,
   packageName: string,
 ): string | undefined {
-  if (from.startsWith("/$bunfs")) return undefined;
+  if (from.startsWith(BUNFS_PREFIX)) return undefined;
   const versionAt = (manifestPath: string): string | undefined => {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {

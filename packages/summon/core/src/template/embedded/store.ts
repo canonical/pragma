@@ -18,6 +18,23 @@
 import { readFileSync } from "node:fs";
 import qualifiedKey from "./keyScheme.js";
 
+/**
+ * The virtual-filesystem prefix a `bun build --compile` binary serves its
+ * bundled modules from: `import.meta.url` inside such a host resolves under
+ * `file:///$bunfs/…`, so a module-anchored path starts with this prefix.
+ *
+ * The ONE spelling of that fact: both version walks (summon-application's
+ * `findInstalledVersion`, summon-package's `findOwnVersion`) refuse to walk
+ * from an anchor under this prefix — the parent chain LEAVES the virtual
+ * filesystem into the REAL `/`, where a host-level manifest could hijack the
+ * resolution — and are served by {@link embeddedPackageVersion} instead. The
+ * prefix itself is pinned against a real compiled probe
+ * (cli/pragma's `bunfsPrefix.subprocess.test.ts`), so a bun release that
+ * changes the virtual prefix reddens the suite instead of silently disarming
+ * every guard that tests it.
+ */
+export const BUNFS_PREFIX = "/$bunfs";
+
 /** A loaded template: its source id (for diagnostics) and its content. */
 export interface LoadedTemplate {
   /** Original source path (for diagnostics and dry-run display). */
