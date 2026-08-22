@@ -138,9 +138,14 @@ All 32 rows, enumerated from the code:
   re-asked; a conditional prompt surfaces only when its controller's answered
   value unlocks it.
 - **`run`** applies defaults over the explicit answers and executes without
-  prompting. The batch modes fail loudly (exit 2) on a missing required answer
-  or an invalid value — the invalid-value message echoes the offending value
-  (`Invalid --<flag> "<value>": <detail>`).
+  prompting. An EXPLICIT answer that fails its prompt's own constraint fails
+  loudly (exit 2) in every non-MCP mode — batch, run, and wizard alike,
+  validated before the mode decision, so no UI renders and nothing is
+  written — with a message echoing the offending value
+  (`Invalid --<flag> "<value>": <detail>`). The batch modes additionally
+  fail loudly (exit 2) on a required answer that is missing even after
+  defaults, and re-check the defaults-applied set (an invalid generator
+  default fails the same way).
 
 ## 4. The template-seam guarantee
 

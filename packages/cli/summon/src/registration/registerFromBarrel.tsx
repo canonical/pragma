@@ -230,6 +230,13 @@ async function runGeneratorAction(
   // Apply defaults once — the batch and run modes consume these.
   const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
 
+  // An invalid EXPLICIT answer refuses BEFORE the mode decision — run and
+  // wizard arms included, exactly where pragma validates (parity-contract
+  // §3). Previously only the batch arms checked, so `--yes` scaffolded a
+  // tree carrying the invalid value. The batch arms re-check the
+  // defaults-applied set below (an invalid generator DEFAULT stays loud).
+  if (!failLoudInvalidAnswers(generator, cliAnswers)) return;
+
   // The ONE interaction decision (R2), shared verbatim with pragma, resolved
   // through the testable seam (`resolveMode.ts`) with summon's TTY fact:
   // stdin AND stdout are TTYs (the wizard renders to stdout).
@@ -314,6 +321,24 @@ async function runGeneratorAction(
 }
 
 /**
+ * Fail loudly (stderr + exit 2) when an answer in `answers` fails its
+ * prompt's own constraint. The ONE invalid-answer rendering: the action runs
+ * it over the EXPLICIT answers before the mode decision (so run and wizard
+ * refuse exactly as pragma does), and {@link failLoudBatchInput} runs it
+ * again over the defaults-applied set. Returns true when the answers pass.
+ */
+function failLoudInvalidAnswers(
+  generator: GeneratorDefinition,
+  answers: Record<string, unknown>,
+): boolean {
+  const invalid = validateAnswers(generator.prompts, answers);
+  if (invalid === null) return true;
+  process.stderr.write(`${invalid}\n`);
+  process.exitCode = 2;
+  return false;
+}
+
+/**
  * Fail loudly (stderr + exit 2) when a batch mode's answer set is unusable: a
  * required answer has no value even after defaults, or a provided answer fails
  * its prompt's own constraint. Returns true when the batch may proceed.
@@ -344,13 +369,7 @@ function failLoudBatchInput(
     process.exitCode = 2;
     return false;
   }
-  const invalid = validateAnswers(generator.prompts, answersWithDefaults);
-  if (invalid !== null) {
-    process.stderr.write(`${invalid}\n`);
-    process.exitCode = 2;
-    return false;
-  }
-  return true;
+  return failLoudInvalidAnswers(generator, answersWithDefaults);
 }
 
 /** The summon host handed to the shared registration path. */

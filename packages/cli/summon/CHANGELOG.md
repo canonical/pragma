@@ -45,14 +45,20 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   - **Excess positionals** exit **2** with `error: unexpected argument "X"`
     (plus a did-you-mean when the stray matches a tree segment); they were
     previously commander's generic "too many arguments" or silently absorbed.
-  - **Invalid batch input**: `--dry-run`/`--undo`/`--yes` runs error loudly
-    (exit **2**) on a missing required answer or a value failing its prompt's
-    own `validate` — the message echoes the value
-    (`Invalid --component-path "not-pascal": …`) — instead of silently
-    falling through to the interactive UI. A generator-raised cross-answer
-    constraint fails the same way — application/react's guard is now `SSR and
-    the router are required — drop --no-ssr/--no-router; standalone SPA mode
-    is not supported.` as a bare stderr line, exit **2** in the batch modes
+  - **Invalid input**: an explicitly provided answer failing its prompt's own
+    constraint (a `validate` rejection, or a value outside a select's
+    choices) errors loudly (exit **2**) in EVERY mode — the message echoes
+    the value (`Invalid --component-path "not-pascal": …`). Batch runs
+    (`--dry-run`/`--undo`) previously fell through to the interactive UI;
+    `--yes` runs and partial-flag wizards previously accepted the invalid
+    value and scaffolded a tree carrying it (e.g. `--name "Bad Name!"` wrote
+    `./Bad Name!/` with the broken name in its package.json) — all four now
+    refuse before any UI, exactly where `pragma create` validates. The batch
+    modes additionally error (exit **2**) on a required answer that is
+    missing even after defaults. A generator-raised cross-answer constraint
+    fails the same way — application/react's guard is now `SSR and the
+    router are required — drop --no-ssr/--no-router; standalone SPA mode is
+    not supported.` as a bare stderr line, exit **2** in the batch modes
     (previously an uncaught throw with a stack, exit 1), and the wizard shows
     it as a clean error instead of crashing.
 

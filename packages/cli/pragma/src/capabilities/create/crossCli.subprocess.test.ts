@@ -322,6 +322,53 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     expect(readdirSync(summonCwd)).toEqual([]);
   }, 60_000);
 
+  // The same refusal for an invalid EXPLICIT answer under `--yes` (run mode):
+  // validation runs BEFORE the interaction decision in both hosts
+  // (parity-contract §3), so neither may scaffold a tree carrying the invalid
+  // value. Before the hoist, summon validated only in the batch arms —
+  // `--dry-run` refused while a plain `--yes` run scaffolded `./Bad Name!/`
+  // with the broken name in its package.json.
+  const invalidValueLine = (stderr: string): string | undefined =>
+    stderr.split("\n").find((line) => line.startsWith("Invalid --"));
+
+  it("package: an invalid explicit --name under --yes refuses in both bins with the same line, exit 2, nothing written", () => {
+    const args = [
+      "package",
+      "--name",
+      "Bad Name!",
+      "--type",
+      "library",
+      "--description",
+      "A library.",
+      "--no-run-install",
+      "--yes",
+    ];
+    const pragmaCwd = freshCwd("crosscli-invalid-");
+    const pragma = spawnSync(compiledBin, ["create", ...args], {
+      cwd: pragmaCwd,
+      encoding: "utf-8",
+      input: "",
+    });
+    expect(pragma.status).toBe(2);
+    expect(pragma.stderr).toContain("INVALID_INPUT");
+    const pragmaInvalid = invalidValueLine(pragma.stderr ?? "");
+    expect(pragmaInvalid).toBeDefined();
+    expect(pragmaInvalid).toContain('Invalid --name "Bad Name!"');
+    expect(readdirSync(pragmaCwd)).toEqual([]);
+
+    const summonCwd = freshCwd("crosscli-invalid-");
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, ...args],
+      { cwd: summonCwd, encoding: "utf-8", input: "" },
+    );
+    expect(summon.status).toBe(2);
+    // The bare shared line is summon's WHOLE stderr — byte-stable with the
+    // batch arms' wording, and byte-agreeing with pragma's core message.
+    expect(summon.stderr).toBe(`${pragmaInvalid}\n`);
+    expect(readdirSync(summonCwd)).toEqual([]);
+  }, 60_000);
+
   it("component/react: the DEFAULT piped refusal matches on FULL stderr — no envelope on either side", () => {
     // The whole stream, not a picked line: with the refusal line as the only
     // bytes either bin writes, a framing line appearing on EITHER side breaks
