@@ -8,6 +8,8 @@
  *  - row 5: a fully-explicit non-TTY invocation runs without `--yes`;
  *  - row 1/2: `--dry-run`/`--undo` are batch renders, dry-run taking
  *    precedence, and a missing/invalid batch answer errors loudly (exit 2);
+ *  - the run arm's exit codes: an execution failure renders in the App and
+ *    exits 1 (parity-contract §3 — never exit 0 on a rendered failure);
  *  - the designed excess-positional error (exit 2).
  */
 
@@ -251,6 +253,32 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     // The WHOLE stream is the message — validateAnswers' own convention.
     expect(stderr).toBe("OK is required — drop --no-ok.\n");
     expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+});
+
+describe("the run arm's exit codes — a rendered failure never exits 0", () => {
+  it("a generator execution failure in the run arm exits 1, error rendered in the App", () => {
+    const cwd = freshCwd();
+    // `made.txt` pre-created as a DIRECTORY: gadget's writeFile fails
+    // mid-execution (EISDIR), the App renders the failure on stdout, and
+    // the exit code must carry pragma's runtime class (mapExitCode → 1) —
+    // before round 7 every App-rendered failure exited 0.
+    mkdirSync(join(cwd, "made.txt"));
+    const { status, stdout } = run(
+      [
+        "--generators",
+        fixtureDir,
+        "gadget",
+        "--title=T",
+        "--kind=a",
+        "--out-path=made.txt",
+        "--yes",
+      ],
+      cwd,
+    );
+    expect(status).toBe(1);
+    expect(stdout).toContain("✗ Error:");
+    expect(stdout).toContain("Code: EXECUTION_ERROR");
   }, 60_000);
 });
 

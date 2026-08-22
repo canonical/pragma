@@ -64,8 +64,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     fails the same way — application/react's guard is now `SSR and the
     router are required — drop --no-ssr/--no-router; standalone SPA mode is
     not supported.` as a bare stderr line, exit **2** in the batch modes
-    (previously an uncaught throw with a stack, exit 1), and the wizard shows
-    it as a clean error instead of crashing.
+    (previously an uncaught throw with a stack, exit 1). The run and wizard
+    arms show it as the App's clean error instead of crashing — and now
+    carry the same exit codes instead of exiting 0 with the failure
+    rendered: exit **2** for the typed guard, exit **1** for any other
+    execution failure the App reports (a mid-run write error, say). The
+    App's rendering itself is unchanged; only the exit code moved.
 
   Also in this line of work, on a TTY: `--dry-run` renders the batch plan and
   `--undo` runs batch undo (neither mounts the interactive preview any more,

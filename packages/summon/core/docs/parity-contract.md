@@ -157,7 +157,14 @@ All 32 rows, enumerated from the code:
   outside a select's choices. The batch modes additionally
   fail loudly (exit 2) on a required answer that is missing even after
   defaults, and re-check the defaults-applied set (an invalid generator
-  default fails the same way).
+  default fails the same way). A failure raised PAST that gate keeps the
+  same classes in every arm: a generator-raised typed invalid answer (a
+  cross-answer constraint its own `generate` enforces) exits 2, and any
+  other execution failure exits 1 — in the batch arms as a bare stderr
+  line, in the run and wizard arms rendered by the host's UI (summon's Ink
+  App reports on stdout; pragma's error rendering writes stderr). The
+  stream and its framing are host presentation; the exit code is parity
+  surface — a rendered failure never exits 0.
 
 ## 4. The template-seam guarantee
 

@@ -12,7 +12,7 @@ import {
 } from "@canonical/summon-core";
 import { pure, task } from "@canonical/task";
 import { render } from "ink-testing-library";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App.js";
 
 const guarded: GeneratorDefinition = {
@@ -34,7 +34,13 @@ const guarded: GeneratorDefinition = {
 const tick = () => new Promise((resolve) => setTimeout(resolve, 25));
 
 describe("App — a typed invalid answer is the clean error phase, not a crash", () => {
-  it("renders the message and its code on the run path", async () => {
+  // The error phase sets process.exitCode; never leak it across cases (or
+  // into the worker's own exit).
+  afterEach(() => {
+    process.exitCode = undefined;
+  });
+
+  it("renders the message and its code on the run path, exit code 2", async () => {
     const { lastFrame, unmount } = render(
       <App generator={guarded} preview={false} answers={{ ok: false }} />,
     );
@@ -44,6 +50,9 @@ describe("App — a typed invalid answer is the clean error phase, not a crash",
     expect(frame).toContain("Code: GENERATOR_INVALID_ANSWER");
     // The error phase, not the raw throw: no stack frames in the frame.
     expect(frame).not.toContain("at generate");
+    // The usage class of parity-contract §3: a typed invalid answer exits 2
+    // in the run/wizard arms too — rendered in the App, never exit 0.
+    expect(process.exitCode).toBe(2);
     unmount();
   }, 20_000);
 });

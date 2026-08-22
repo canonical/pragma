@@ -941,6 +941,18 @@ export const App = ({
     }
   }, [prefilledAnswers, askMissing, state.phase, handlePromptsComplete]);
 
+  // The error phase owns the process exit code (parity-contract §3): a
+  // rendered failure must not exit 0 — pragma routes the same failures
+  // through mapExitCode (usage → 2, everything else → 1). The typed invalid
+  // answer (a generator's cross-answer guard) is the usage class; every
+  // other rendered failure — execution, dry-run, undo — is a runtime
+  // failure. Only the exit code is owned here: the rendering above it stays
+  // host UI, and a deliberate cancel (n at the confirm gate) keeps exit 0.
+  useEffect(() => {
+    if (state.phase !== "error") return;
+    process.exitCode = state.error.code === GENERATOR_INVALID_ANSWER ? 2 : 1;
+  }, [state]);
+
   // Handle going back from confirmation to prompting. Clearing the provided
   // seed (via `reasking`) is what keeps esc meaningful when the wizard had
   // nothing left to ask — the flag-given answers are exactly what the user
