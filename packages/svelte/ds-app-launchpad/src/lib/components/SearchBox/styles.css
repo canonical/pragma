@@ -1,6 +1,6 @@
 .ds.search-box {
-  --dimension-width-search-box-button: var(--lp-dimension-size-l);
-  --dimension-gap-search-box: var(--lp-dimension-spacing-inline-xs);
+  --dimension-width-search-box-button: var(--dimension-400);
+  --dimension-gap-search-box: var(--dimension-100);
 
   display: grid;
   grid-template-areas: "main";
