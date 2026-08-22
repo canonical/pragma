@@ -304,11 +304,12 @@ ${interactionTable()}
   default fails the same way). A failure raised PAST that gate keeps the
   same classes in every arm: a generator-raised typed invalid answer (a
   cross-answer constraint its own \`generate\` enforces) exits 2, and any
-  other execution failure exits 1 — in the batch arms as a bare stderr
-  line, in the run and wizard arms rendered by the host's UI (summon's Ink
-  App reports on stdout; pragma's error rendering writes stderr). The
-  stream and its framing are host presentation; the exit code is parity
-  surface — a rendered failure never exits 0.
+  other failure — an ordinary \`Error\` thrown by \`generate\` included,
+  not only a failed effect — exits 1: in the batch arms as a bare stderr
+  line (never a stack), in the run and wizard arms rendered by the host's
+  UI (summon's Ink App reports on stdout; pragma's error rendering writes
+  stderr). The stream and its framing are host presentation; the exit code
+  is parity surface — a rendered failure never exits 0.
 
 ## 4. The template-seam guarantee
 

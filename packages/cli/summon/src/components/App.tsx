@@ -829,27 +829,43 @@ export const App = ({
   // make the advertised `esc to go back` a no-op.
   const [reasking, setReasking] = useState(false);
 
+  // Generate the task, entering the error phase on ANY throw — §3's exit
+  // contract: a rendered failure never exits 0. A generator-raised typed
+  // invalid answer (a cross-answer constraint its `generate` enforces, e.g.
+  // application/react's ssr+router guard) is the usage class
+  // (GENERATOR_INVALID_ANSWER → the effect's exit 2); any OTHER throw is a
+  // generator bug rendered as GENERATE_ERROR — the run/wizard sibling of the
+  // batch arms' bare stderr line — carrying the runtime class (exit 1).
+  // Re-throwing it (the old behavior) reached Ink's error boundary, which
+  // renders a crash box but sets NO exit code: `summon … --yes` under bun
+  // exited 0 on a failed run.
+  const generateTask = useCallback(
+    (promptAnswers: Record<string, unknown>): Task<void> | undefined => {
+      try {
+        return generator.generate(promptAnswers);
+      } catch (error) {
+        setState({
+          phase: "error",
+          error: isInvalidAnswersError(error)
+            ? { code: GENERATOR_INVALID_ANSWER, message: error.message }
+            : {
+                code: "GENERATE_ERROR",
+                message: error instanceof Error ? error.message : String(error),
+              },
+          answers: promptAnswers,
+        });
+        return undefined;
+      }
+    },
+    [generator],
+  );
+
   const handlePromptsComplete = useCallback(
     (promptAnswers: Record<string, unknown>) => {
       setAnswers(promptAnswers);
 
-      // Generate the task. A generator-raised typed invalid answer (a
-      // cross-answer constraint its `generate` enforces, e.g.
-      // application/react's ssr+router guard) renders as the App's clean
-      // error phase — message + code, no stack; any other throw is a
-      // generator bug and keeps crashing loudly.
-      let task: Task<void>;
-      try {
-        task = generator.generate(promptAnswers);
-      } catch (error) {
-        if (!isInvalidAnswersError(error)) throw error;
-        setState({
-          phase: "error",
-          error: { code: GENERATOR_INVALID_ANSWER, message: error.message },
-          answers: promptAnswers,
-        });
-        return;
-      }
+      const task = generateTask(promptAnswers);
+      if (task === undefined) return;
 
       // Undo mode: run undo directly
       if (undo) {
@@ -908,13 +924,17 @@ export const App = ({
         setState({ phase: "executing", task });
       }
     },
-    [generator, preview, dryRunOnly, undo],
+    [generateTask, preview, dryRunOnly, undo],
   );
 
   const handleConfirm = useCallback(() => {
-    const task = generator.generate(answers);
+    // The same catch as the preview's generate: a re-generate at the confirm
+    // gate normally re-runs what already succeeded, but a stateful generator
+    // throwing HERE must land in the error phase too, not in Ink's boundary.
+    const task = generateTask(answers);
+    if (task === undefined) return;
     setState({ phase: "executing", task });
-  }, [generator, answers]);
+  }, [generateTask, answers]);
 
   const handleCancel = useCallback(() => {
     exit();

@@ -58,6 +58,19 @@ export default {
 };
 `,
   );
+  // A generator whose `generate` throws a PLAIN Error — the non-typed class
+  // (application/react's name-derivation throw is the shipped shape). §3:
+  // any execution failure past the validation gate exits 1 in every arm.
+  mkdirSync(join(dir, "explosive"));
+  writeFileSync(
+    join(dir, "explosive", "index.js"),
+    `export default {
+  meta: { name: "explosive", displayName: "explosive", description: "A throwing fixture", version: "0.0.1" },
+  prompts: [],
+  generate: () => { throw new Error("fixture generate exploded"); },
+};
+`,
+  );
   // A generator with a CROSS-answer guard raised as summon-core's typed
   // invalid answer — the shape application/react's ssr+router guard uses.
   mkdirSync(join(dir, "guarded"));
@@ -257,6 +270,19 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(stderr).toBe("OK is required — drop --no-ok.\n");
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
+
+  it("a plain Error from generate() fails the batch as a bare line, exit 1, no stack", () => {
+    const cwd = freshCwd();
+    const { status, stderr } = run(
+      ["--generators", fixtureDir, "explosive", "--dry-run"],
+      cwd,
+    );
+    expect(status).toBe(1);
+    // The WHOLE stream is the bare message line — never the un-awaited
+    // action's unhandled-rejection stack (a 1.2 KB source frame pre-fix).
+    expect(stderr).toBe("fixture generate exploded\n");
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
 });
 
 describe("the run arm's exit codes — a rendered failure never exits 0", () => {
@@ -282,6 +308,22 @@ describe("the run arm's exit codes — a rendered failure never exits 0", () => 
     expect(status).toBe(1);
     expect(stdout).toContain("✗ Error:");
     expect(stdout).toContain("Code: EXECUTION_ERROR");
+  }, 60_000);
+
+  it("a plain Error from generate() in the run arm enters the error phase — exit 1, nothing written", () => {
+    const cwd = freshCwd();
+    // Pre-fix, the App's catch re-threw the non-typed generate() throw into
+    // Ink's error boundary: a source-frame crash box on stdout and EXIT 0 —
+    // the silent-success class §3 forbids ("a rendered failure never exits
+    // 0"). Now it is the App's own error phase with the runtime class.
+    const { status, stdout } = run(
+      ["--generators", fixtureDir, "explosive", "--yes"],
+      cwd,
+    );
+    expect(status).toBe(1);
+    expect(stdout).toContain("✗ Error: fixture generate exploded");
+    expect(stdout).toContain("Code: GENERATE_ERROR");
+    expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 });
 

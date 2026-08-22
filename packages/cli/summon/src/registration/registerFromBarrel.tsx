@@ -278,11 +278,21 @@ async function runGeneratorAction(
       // A generator-raised typed invalid answer (a cross-answer constraint
       // its `generate` enforces, e.g. application/react's ssr+router guard)
       // fails exactly like `validateAnswers` above: the bare message on
-      // stderr, exit 2 — never an uncaught stack. Anything else is a
-      // generator bug and stays loud.
-      if (!isInvalidAnswersError(error)) throw error;
-      process.stderr.write(`${error.message}\n`);
-      process.exitCode = 2;
+      // stderr, exit 2. Any OTHER throw is a generator bug — still the bare
+      // message line, with the runtime class (exit 1), per §3's batch
+      // clause. Re-throwing (the old behavior) escaped the un-awaited async
+      // action as an unhandled rejection: a 1.2 KB source-frame stack
+      // instead of a line, and an exit code owned by the runtime, not the
+      // classification.
+      if (isInvalidAnswersError(error)) {
+        process.stderr.write(`${error.message}\n`);
+        process.exitCode = 2;
+      } else {
+        process.stderr.write(
+          `${error instanceof Error ? error.message : String(error)}\n`,
+        );
+        process.exitCode = 1;
+      }
     }
     return;
   }
