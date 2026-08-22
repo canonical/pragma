@@ -156,6 +156,26 @@ describe("compiled pragma create package/application ≡ source run (PROTECTED)"
     },
   ];
 
+  /**
+   * Blank the @canonical/* dependency ranges inside a scaffolded
+   * `my-app/package.json` — identically on both sides — before the byte
+   * comparison. The application generator resolves its range through each
+   * host's OWN `npm view` call (no timeout, no shared cache), so an
+   * asymmetric registry outcome (one side reaches npm, the other does not)
+   * would turn `^0.34.0` vs `^0.33.0` across every range into a red that
+   * says nothing about the code. This NETWORKED case proves the TEMPLATE
+   * surface; the range assertions belong to the offline cases below, where
+   * the outcome is forced.
+   */
+  const blankCanonicalRanges = (tree: Map<string, string>): void => {
+    const manifest = tree.get("my-app/package.json");
+    if (manifest === undefined) return;
+    tree.set(
+      "my-app/package.json",
+      manifest.replaceAll(/("@canonical\/[^"]+": )"[^"]+"/g, '$1"<range>"'),
+    );
+  };
+
   for (const { kind, args } of cases) {
     it(`create ${kind}: compiled binary ≡ source run, byte-for-byte`, () => {
       // (1) The real standalone binary — templates come from the embedded manifest.
@@ -170,6 +190,11 @@ describe("compiled pragma create package/application ≡ source run (PROTECTED)"
         stdio: "pipe",
       });
       const source = snapshot(sourceDir);
+
+      if (kind === "application") {
+        blankCanonicalRanges(compiled);
+        blankCanonicalRanges(source);
+      }
 
       // Wrote something (fails loudly if either run refuses or crashes).
       expect(compiled.size).toBeGreaterThan(0);
@@ -224,12 +249,19 @@ function offlineBinDir(): string {
  * `readVersion` now falls back to the host-injected embedded store (the same
  * seam summon-package already used), so this case spawns both hosts with npm
  * unreachable and pins the invariant the networked case above cannot: the
- * fallback range is the release line, never `latest`, and offline compiled ≡
- * offline source byte-for-byte.
+ * fallback range is the release line EXACTLY, never `latest`, and offline
+ * compiled ≡ offline source byte-for-byte. Each side must also emit the
+ * fallback's own stderr line — the proof npm was actually unreachable, since
+ * a networked leak would resolve a `^`-shaped range too and quietly turn
+ * this case into a duplicate of the networked one.
  */
 describe("compiled pragma create application, npm unreachable (PROTECTED)", () => {
-  it("pins ^-ranges for @canonical/* deps — never `latest` — and ≡ source run, byte-for-byte", () => {
+  it("pins the release line exactly — never `latest` — and ≡ source run, byte-for-byte", () => {
     const env = { ...process.env, PATH: offlineBinDir() };
+    const releaseLine = `^${PACKAGE_VERSIONS["@canonical/summon-application"]}`;
+    const fallbackLine =
+      `Could not reach npm for the latest @canonical/* version; ` +
+      `pinning ${releaseLine} (from the installed generator).`;
     const args = [
       "create",
       "application",
@@ -241,25 +273,34 @@ describe("compiled pragma create application, npm unreachable (PROTECTED)", () =
 
     // (1) The real standalone binary — versions come from the embedded store.
     const compiledDir = freshCwd();
-    execFileSync(compiledBin, [...args], {
+    const compiledRun = spawnSync(compiledBin, [...args], {
       cwd: compiledDir,
       stdio: "pipe",
+      encoding: "utf-8",
       env,
+      input: "",
     });
+    expect(compiledRun.status, compiledRun.stderr).toBe(0);
+    expect(compiledRun.stderr).toContain(fallbackLine);
     const compiled = snapshot(compiledDir);
 
     // (2) A source run under the SAME offline PATH — versions come from the
     // installed tree. Spawned via the symlink so both children share one env.
     const sourceDir = freshCwd();
-    execFileSync(join(env.PATH, "bun"), [pragmaBin, ...args], {
+    const sourceRun = spawnSync(join(env.PATH, "bun"), [pragmaBin, ...args], {
       cwd: sourceDir,
       stdio: "pipe",
+      encoding: "utf-8",
       env,
+      input: "",
     });
+    expect(sourceRun.status, sourceRun.stderr).toBe(0);
+    expect(sourceRun.stderr).toContain(fallbackLine);
     const source = snapshot(sourceDir);
 
-    // The manifest pins the generator's release line for every @canonical
-    // dependency — a caret range, never the floating `latest` tag.
+    // The manifest pins the generator's release line EXACTLY for every
+    // @canonical dependency — `latest` and a network-resolved newer range
+    // both fail here.
     const manifest = JSON.parse(
       compiled.get("my-app/package.json") ?? "{}",
     ) as {
@@ -272,8 +313,7 @@ describe("compiled pragma create application, npm unreachable (PROTECTED)", () =
     }).filter(([name]) => name.startsWith("@canonical/"));
     expect(canonicalDeps.length).toBeGreaterThan(0);
     for (const [name, range] of canonicalDeps) {
-      expect(range, `range of ${name}`).not.toBe("latest");
-      expect(range, `range of ${name}`).toMatch(/^\^\d+\.\d+\.\d+/);
+      expect(range, `range of ${name}`).toBe(releaseLine);
     }
 
     // Wrote something (fails loudly if either run refuses or crashes).
