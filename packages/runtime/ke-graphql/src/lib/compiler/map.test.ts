@@ -30,6 +30,7 @@ const makeExtraction = (
   functionals: new Set(),
   datatypes: [],
   namespaces: new Map([[NS, "ex"]]),
+  deferredSyntheticNamespaces: [],
   shaclConstraints: [],
   unions: [],
   instanceStats: new Map(),

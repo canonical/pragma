@@ -423,6 +423,9 @@ ex:i1 a ex:Item . ex:n1 a ex:Named .
         named: ontologyClass(uri: "http://example.org/Named") {
           _meta { label title }
         }
+        meta: ontologyClass(uri: "owl:Class") {
+          _meta { label title }
+        }
       }`,
     );
     expect(result.errors).toBeUndefined();
@@ -434,6 +437,13 @@ ex:i1 a ex:Item . ex:n1 a ex:Named .
     // An asserted label still answers on both.
     expect(result.data?.named).toEqual({
       _meta: { label: "Curated", title: "Curated" },
+    });
+    // The meta-class is on the ASSERTED side of that line: "Class" is the
+    // rdfs:label the owl: namespace document publishes, not a local-name
+    // fallback the compiler invented, so `_meta.label` must answer it — the
+    // same standing its equally synthetic `_meta.definition` already has.
+    expect(result.data?.meta).toEqual({
+      _meta: { label: "Class", title: "Class" },
     });
   });
 
@@ -1114,11 +1124,14 @@ const buildSyntheticSchema = (): GraphQLSchema => {
           triples: new Map(),
         }),
       },
-      // EntityMeta whose typename is an INTERFACE, not a concrete type — the
-      // shape resolveEmbeddedTypename (resolver/templates.ts) produces when a
-      // blank node's rdf:type maps to an abstract class. mapped.types is keyed
-      // by concrete types only, so the precomputed chain map misses and the
-      // canonical-tier fallback has to answer.
+      // EntityMeta carrying the shape resolveEmbeddedTypename
+      // (resolver/templates.ts) produces for a blank node whose rdf:type maps
+      // to an abstract class: an interface name rather than a concrete type
+      // name. A MAPPED interface gets its own chain like any concrete type —
+      // its owlUri is knowable, so the annotated heads apply. This synthetic
+      // MappedIR registers "AbstractThing" under neither `types` nor
+      // `interfaces`, so no chain exists for it at all and the canonical-tier
+      // fallback is what answers.
       interfaceMeta: {
         type: tbox.entityMeta,
         resolve: () => ({

@@ -46,6 +46,7 @@ const makeExtraction = (
   functionals: new Set(),
   datatypes: [],
   namespaces: new Map([[NS, "ex"]]),
+  deferredSyntheticNamespaces: [],
   shaclConstraints: [],
   unions: [],
   instanceStats: new Map(),
@@ -435,6 +436,43 @@ describe("annotations — A005 config shadowing (config wins)", () => {
       { [uri("Thing")]: { abstract: false, embeddable: false } },
     );
     expect(codes(diagnostics).filter((c) => c === "A005")).toHaveLength(2);
+  });
+
+  it("resolves a prefixed key through the DECLARED prefix, not Pass 1's", () => {
+    // The namespace is registered "ex" and declares graphql:prefix "exx".
+    // Every consumption site resolves prefixed config keys through the
+    // effective map, where the declaration has already replaced "ex" — so
+    // "exx:Thing" is the key that WINS downstream, and the report that says
+    // a config key won has to be keyed the same way or it is not a report
+    // about what happened.
+    const { diagnostics } = resolve(
+      [
+        [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
+        [uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"],
+      ],
+      {},
+      { "exx:Thing": { graphqlName: "Configured" } },
+    );
+    const a005 = diagnostics.filter((d) => d.code === "A005");
+    expect(a005).toHaveLength(1);
+    expect(a005[0]?.source).toBe(uri("Thing"));
+    expect(a005[0]?.message).toContain('"Configured"');
+    expect(a005[0]?.message).toContain('"Annotated"');
+  });
+
+  it("stays silent for a key written with the prefix the declaration replaced", () => {
+    // The mirror of the case above: "ex:Thing" resolves to nothing once the
+    // declaration binds, so the config never applies — and a shadow warning
+    // would send an operator to delete a key that changed nothing.
+    const { diagnostics } = resolve(
+      [
+        [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
+        [uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"],
+      ],
+      {},
+      { "ex:Thing": { graphqlName: "Configured" } },
+    );
+    expect(codes(diagnostics)).not.toContain("A005");
   });
 
   it("stays silent when config and annotation agree, or when either side is absent", () => {

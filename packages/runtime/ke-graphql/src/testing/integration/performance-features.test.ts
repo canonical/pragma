@@ -99,6 +99,28 @@ describe("extraction artifact (DMMF-style boot)", () => {
     );
   });
 
+  it("defaults the deferred synthetic-prefix list for an older artifact", async () => {
+    const store = await boot(`${MINIMAL_TTL}
+<http://unreg.test/Widget> a <http://www.w3.org/2002/07/owl#Class> .
+<http://unreg.test/> <${GRAPHQL_TERMS.prefix}> "unr" .
+`);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    // Guard against a vacuous pass: the fixture must actually defer one.
+    expect(live.extraction.deferredSyntheticNamespaces).toEqual([
+      "http://unreg.test/",
+    ]);
+    const artifact = JSON.parse(serializeExtraction(live.extraction, "0"));
+    expect(deserializeExtraction(artifact).extraction).toEqual(live.extraction);
+    // An artifact serialized before the deferral existed has no field at all
+    // — [] is the state it was built under, and it must still boot.
+    delete artifact.deferredSyntheticNamespaces;
+    const { extraction } = deserializeExtraction(artifact);
+    expect(extraction.deferredSyntheticNamespaces).toEqual([]);
+    expect(
+      compileFromExtraction(artifact).schema.getType("Thing"),
+    ).toBeDefined();
+  });
+
   it("defaults graphqlAnnotations to [] for a pre-vocabulary artifact", async () => {
     const store = await boot(MINIMAL_TTL);
     const live = await compile(createStoreQueryFn(store), PREFIXES);

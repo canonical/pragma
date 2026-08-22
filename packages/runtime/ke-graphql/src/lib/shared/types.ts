@@ -207,6 +207,17 @@ export interface RawExtraction {
   datatypes: RawDatatype[];
   /** namespace URI → prefix. */
   namespaces: Map<string, string>;
+  /**
+   * Namespaces that got a serial synthetic prefix (nothing registered) AND
+   * carry a resolvable `graphql:prefix` declaration — the one case where the
+   * synthetic-prefix warning (E001) cannot be decided during extraction.
+   * Whether the declaration replaces the synthetic is a MODE question, and
+   * extraction is mode-independent by construction (one artifact serves every
+   * projection mode). Pass 2 knows the mode: it raises the deferred warning
+   * for every namespace its bound overlay leaves on the synthetic — under
+   * mode "auto" that is all of them — and stays silent for the rest.
+   */
+  deferredSyntheticNamespaces: readonly string[];
   shaclConstraints: RawShaclConstraint[];
   unions: RawUnion[];
 

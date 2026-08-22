@@ -29,7 +29,7 @@ import {
 } from "../shared/index.js";
 import resolveGraphqlAnnotations from "./annotations.js";
 import { DEFAULT_MODE } from "./constants.js";
-import getNamespace from "./getNamespace.js";
+import effectivePrefixes from "./effectivePrefixes.js";
 import isStandardVocab from "./isStandardVocab.js";
 import type { CustomMappings, ProjectionMode } from "./types.js";
 
@@ -128,15 +128,37 @@ export default function build(
   // binds here, where the mode is known. Under mode "auto" the overlay is
   // empty by construction, so prefixes resolve exactly as they would if the
   // ontology carried no annotation at all — which is what that mode promises.
-  // One authority for every prefix reader below: node namespaces, the
-  // prefixed-key mapping table, the injectivity guard, and NamespaceInfo.
-  const effectiveNamespaces = new Map(extraction.namespaces);
-  for (const [ns, prefix] of overlay.prefixes) {
-    effectiveNamespaces.set(ns, prefix);
-  }
+  // The fold and the prefixed-key lookup come from one shared authority
+  // (effectivePrefixes) that annotations.ts's A005 report also uses, so the
+  // site that APPLIES a config key and the site that REPORTS it as shadowing
+  // an annotation can never disagree about which key applies.
+  const {
+    namespaces: effectiveNamespaces,
+    prefixOf: getPrefix,
+    findMapping,
+  } = effectivePrefixes(extraction.namespaces, overlay.prefixes, mappings);
 
-  const getPrefix = (uri: string): string =>
-    effectiveNamespaces.get(getNamespace(uri)) ?? "";
+  // ── deferred synthetic-prefix warnings (E001) ──
+  // Pass 1 warns for every namespace it puts on a serial synthetic, EXCEPT
+  // those whose graphql:prefix declaration might still answer — a question
+  // only the mode settles, which is why it deferred them to here. Settle it:
+  // a declaration the overlay bound replaced the synthetic and there is
+  // nothing to report; one that did not bind — mode "auto" consults no
+  // annotation, and a refused declaration (A001/A002/A003) binds nothing
+  // either — leaves the namespace on the synthetic every consumer then sees,
+  // which is precisely the state E001 exists to name.
+  for (const ns of extraction.deferredSyntheticNamespaces) {
+    if (overlay.prefixes.has(ns)) {
+      continue;
+    }
+    diagnostics.push({
+      severity: "warning",
+      code: "E001",
+      message: `namespace ${ns} has no registered prefix — assigned synthetic "${getPrefix(ns)}", and its graphql:prefix declaration does not bind under mode "${mode}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
+      source: ns,
+      phase: PHASE,
+    });
+  }
 
   // ── prefix injectivity ──
   // NamespaceInfo is keyed by prefix, so a collision silently last-write-wins
@@ -181,20 +203,6 @@ export default function build(
           },
     );
   }
-
-  // Custom mappings may be keyed by prefixed name (ds:tier) or full IRI.
-  const prefixedToFull = new Map<string, string>();
-  for (const [ns, prefix] of effectiveNamespaces) {
-    prefixedToFull.set(prefix, ns);
-  }
-  const findMapping = (uri: string) => {
-    const direct = mappings[uri];
-    if (direct) {
-      return direct;
-    }
-    const prefix = getPrefix(uri);
-    return prefix ? mappings[`${prefix}:${getLocalName(uri)}`] : undefined;
-  };
 
   // ── 1. class map ──
   const classes = new Map<string, ClassNode>();

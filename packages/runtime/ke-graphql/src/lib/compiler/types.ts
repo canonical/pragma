@@ -51,6 +51,14 @@ export interface SerializedExtraction {
    * gain an annotation the artifact has not seen.
    */
   graphqlAnnotations?: RawExtraction["graphqlAnnotations"];
+  /**
+   * Namespaces whose synthetic-prefix warning Pass 1 deferred to Pass 2 (see
+   * `RawExtraction.deferredSyntheticNamespaces`). Optional for the same
+   * reason as the field above: artifacts serialized before the deferral
+   * existed lack it, and [] is the state they were built under — no
+   * declaration could have deferred anything for them.
+   */
+  deferredSyntheticNamespaces?: RawExtraction["deferredSyntheticNamespaces"];
 }
 
 // ---------------------------------------------------------------------------

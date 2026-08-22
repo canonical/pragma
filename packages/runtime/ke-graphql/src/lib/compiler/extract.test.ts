@@ -339,7 +339,7 @@ graphql:Term a owl:Class ; rdfs:label "Term" .
     expect(diagnostics).toEqual([]);
   });
 
-  it("resolves graphql:prefix subjects without binding them, and suppresses the synthetic-prefix warning", async () => {
+  it("resolves graphql:prefix subjects without binding them, and DEFERS the synthetic-prefix warning", async () => {
     const { output, diagnostics } = await extractTtl(
       `
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -370,9 +370,20 @@ graphql:Term a owl:Class ; rdfs:label "Term" .
       expect(output.namespaces.get(ns)?.startsWith("ns")).toBe(true);
     }
     expect([...output.namespaces.values()]).not.toContain("dir");
-    // ...but each subject spelling still RESOLVED, which is what silences the
-    // synthetic-prefix warning: none of these namespaces lacks an answer.
+    // ...but each subject spelling still RESOLVED, which is what DEFERS the
+    // synthetic-prefix warning rather than emitting it here: whether the
+    // answer these namespaces have waiting actually replaces the placeholder
+    // is a mode question, and this pass has no mode. Pass 2 settles it (see
+    // build.test.ts) — silence here is a promise to decide there, never a
+    // decision that there is nothing to report.
     expect(diagnostics).toEqual([]);
+    // Sorted for the assertion: the list follows namespace DISCOVERY order,
+    // which is the store's to decide.
+    expect([...output.deferredSyntheticNamespaces].sort()).toEqual([
+      "https://direct.test/",
+      "https://hash.test/ontology#",
+      "https://slash.test/v/",
+    ]);
   });
 
   it("keeps the registered prefix — a declaration outranks it only once the mode is known", async () => {

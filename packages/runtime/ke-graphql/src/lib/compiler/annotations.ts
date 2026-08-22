@@ -29,9 +29,10 @@ import {
   type PassResult,
   type RawExtraction,
 } from "../shared/index.js";
+import effectivePrefixes from "./effectivePrefixes.js";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
-import type { CustomMapping, CustomMappings } from "./types.js";
+import type { CustomMappings } from "./types.js";
 
 // The overlay is resolved at the head of the build pass, so its diagnostics
 // carry the build phase — the A band is the annotation-resolution letter.
@@ -404,11 +405,20 @@ export default function resolveGraphqlAnnotations(
   // shadowing an annotation with a DIFFERENT value is the draft-locally
   // workflow — a warning naming both values and the migration, never an
   // error. Same-value duplication is harmless and silent.
-  const findMapping = (uri: string): CustomMapping | undefined =>
-    mappings[uri] ??
-    mappings[
-      `${extraction.namespaces.get(getNamespace(uri))}:${getLocalName(uri)}`
-    ];
+  //
+  // A prefixed config key is resolved through the EFFECTIVE prefix map — the
+  // same fold, from the same authority, that Pass 2 uses to apply the key
+  // (build.ts folds this very `prefixes` map over the same Pass 1 map). A
+  // shadow report is a claim about what the config did; resolving the key
+  // against Pass 1's map alone made that claim false in both directions the
+  // moment a namespace carried a graphql:prefix declaration — silence for a
+  // key written with the declared prefix, which wins downstream, and a shadow
+  // report for a key written with the superseded one, which no longer applies.
+  const { findMapping } = effectivePrefixes(
+    extraction.namespaces,
+    prefixes,
+    mappings,
+  );
   const shadow = (
     uri: string,
     term: string,
