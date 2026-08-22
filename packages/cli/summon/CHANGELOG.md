@@ -55,8 +55,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     and a bare namespace still prints its help on stderr with exit 1.
   - **Invalid input**: an explicitly provided answer failing its prompt's own
     constraint (a `validate` rejection, or a value outside a select's
-    choices) errors loudly (exit **2**) in EVERY mode — the message echoes
-    the value (`Invalid --component-path "not-pascal": …`). Batch runs
+    choices) errors loudly (exit **2**) in every mode that reaches the
+    generator — batch, run, and wizard; an incomplete non-interactive run
+    REFUSES first, before validating — with a message echoing the value
+    (`Invalid --component-path "not-pascal": …`). Batch runs
     (`--dry-run`/`--undo`) previously fell through to the interactive UI;
     `--yes` runs and partial-flag wizards previously accepted the invalid
     value and scaffolded a tree carrying it (e.g. `--name "Bad Name!"` wrote
