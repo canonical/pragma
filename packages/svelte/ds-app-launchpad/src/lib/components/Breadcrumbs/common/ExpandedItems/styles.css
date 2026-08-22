@@ -24,7 +24,7 @@
       + li::before {
         /* Show separator before all the segments that follow a non-collapsed segment. This in practice applies only when there is no collapsed section */
         content: "/" / "";
-        margin-inline: var(--lp-dimension-spacing-inline-xxs);
+        margin-inline: var(--dimension-050);
       }
     }
 
