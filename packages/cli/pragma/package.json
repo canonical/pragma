@@ -37,6 +37,7 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "build:all": "bun run build",
     "bundle": "bun run scripts/bundle.ts",
     "gen:reference": "bun run scripts/genReference.ts",
     "build:compile": "bun build --compile --minify --target=bun-linux-x64 src/bin.ts --outfile dist/pragma",

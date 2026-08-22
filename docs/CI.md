@@ -66,7 +66,7 @@ CI uses `actions/cache` in the `setup-env` composite action to persist three thi
 - **`~/.bun/install/cache/`** — Bun's global download cache. Speeds up `bun install` even when `node_modules` misses.
 - **`.nx/cache/`** — Nx's local computation cache. Allows Nx to skip rebuilding or re-checking packages whose inputs haven't changed, even on fresh CI runners.
 
-The `setup-env` action is responsible only for toolchain setup (Node, Bun), cache restoration, and dependency installation. It does not build, check, or test. In CI, `bun install` runs with `--ignore-scripts` to prevent the `prepare` lifecycle hook from triggering a full monorepo build. Workflows that need a build invoke it explicitly (e.g. `lerna run build:all` in `pr.yml`) or rely on Nx's transitive `dependsOn` configuration (e.g. `test` depends on `^build`).
+The `setup-env` action is responsible for toolchain setup (Node, Bun), cache restoration, dependency installation, and the build: its final step runs the `build-command` input, which defaults to `bunx lerna run build:all` and which workflows can override (`pr.yml` passes an `nx affected -t build:all` command so PRs only build what changed). It does not check or test. In CI, `bun install` runs with `--ignore-scripts` to prevent the `prepare` lifecycle hook from triggering an implicit monorepo build — the build happens only as that explicit final step.
 
 Locally, `bun install` still triggers the `prepare` hook and builds the workspace automatically. This divergence is intentional: local development prioritises convenience, while CI prioritises explicit, cacheable steps.
 
@@ -97,11 +97,13 @@ The tag workflow creates releases. It runs manually from GitHub Actions and only
 
 The workflow accepts a release type input with five options: `experimental`, `alpha`, `beta`, `rc`, and `stable`. This determines how versions are bumped. Pre-release types append an identifier and increment a pre-release number (e.g., `0.11.0` → `0.12.0-beta.0` → `0.12.0-beta.1`). The stable type graduates the current pre-release to a stable version (e.g., `0.12.0-rc.0` → `0.12.0`).
 
-The workflow has three jobs:
+The workflow has five jobs:
 
-1. **build** runs checks and tests to verify the release candidate
-2. **version** bumps version numbers, generates changelogs, commits, and creates a git tag
-3. **publish** checks out the tagged commit, builds all packages, and publishes them to npm via OIDC trusted publishing (`id-token: write`; no `NODE_AUTH_TOKEN`)
+1. **build** installs dependencies and builds all packages (`lerna run build:all`, which includes compiling the `pragma` CLI binary) to verify the release candidate builds
+2. **check** runs code quality checks
+3. **test** runs the full test suite, including the browser suites
+4. **version** bumps version numbers, generates changelogs, commits, and creates a git tag
+5. **publish** checks out the tagged commit, builds all packages again from the tag (the same `build:all`, so the published `@canonical/pragma-cli` ships a binary compiled from the released source), and publishes them to npm via OIDC trusted publishing (`id-token: write`; no `NODE_AUTH_TOKEN`). Two verification steps follow the publish: a smoke test installs the just-published `@canonical/pragma-cli` from the registry (retrying while the registry propagates) and asserts that `pragma --version` reports the released version and `pragma doctor` exits 0, and a status check prints the `bun run publish:status` table and fails the workflow if any public package is missing its released version on the registry or lacks a provenance attestation
 
 The version job uses Lerna's conventional commit analysis to determine version bumps. A `feat:` commit triggers a minor bump, a `fix:` commit triggers a patch bump, and a `BREAKING CHANGE:` footer triggers a major bump.
 

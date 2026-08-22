@@ -24,6 +24,9 @@
     "url": "https://github.com/canonical/pragma"
   },
   "license": "GPL-3.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && bun ../../../scripts/copy-templates.ts src dist/esm",
     "build:all": "bun run build",

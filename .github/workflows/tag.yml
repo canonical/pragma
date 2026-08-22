@@ -146,4 +146,72 @@ jobs:
             DIST_TAG="latest"
           fi
           echo "Publishing $VERSION to dist-tag '$DIST_TAG'"
+          echo "DIST_TAG=$DIST_TAG" >> "$GITHUB_ENV"
           lerna publish --yes --no-private --dist-tag "$DIST_TAG" from-package
+
+      - name: Smoke the published CLI
+        # `lerna publish` exiting 0 proves the tarballs uploaded — not that the
+        # compiled `pragma` binary inside @canonical/pragma-cli was built from
+        # this tag and actually runs. Install the just-published version from
+        # the registry in a fresh directory and exercise it, retrying while the
+        # registry propagates. `doctor` is the functional probe because it
+        # exits 0 outside a project (store-dependent verbs exit 3 there).
+        env:
+          VERSION: ${{ needs.version.outputs.VERSION }}
+        run: |
+          echo "Smoking @canonical/pragma-cli@$VERSION (published to dist-tag '$DIST_TAG')"
+          cd "$(mktemp -d)"
+          for attempt in 1 2 3 4 5; do
+            if REPORTED="$(npm exec --yes "@canonical/pragma-cli@$VERSION" -- --version)"; then
+              break
+            fi
+            REPORTED=""
+            if [[ "$attempt" -eq 5 ]]; then
+              echo "Error: could not install and run @canonical/pragma-cli@$VERSION from the registry after $attempt attempts."
+              exit 1
+            fi
+            echo "Registry has not served @canonical/pragma-cli@$VERSION yet (attempt $attempt/5); retrying in 15s..."
+            sleep 15
+          done
+          if [[ "$REPORTED" != "$VERSION" ]]; then
+            echo "Error: the published binary reports version '$REPORTED', expected '$VERSION' — the publish shipped a stale or unbuilt dist/pragma."
+            exit 1
+          fi
+          npm exec --yes "@canonical/pragma-cli@$VERSION" -- doctor
+          echo "Smoke passed: @canonical/pragma-cli@$VERSION runs from the registry and 'pragma doctor' exits 0."
+
+      - name: Publish status & provenance
+        # `bun run publish:status` prints the workspace-vs-registry table but
+        # cannot gate a release: it always exits 0, and it compares against the
+        # registry's `latest` dist-tag, which pre-releases deliberately never
+        # move. Gate directly instead: every public package must serve its
+        # local (just-released) version from the registry, carrying a
+        # provenance attestation — the public proof that OIDC trusted
+        # publishing was in effect.
+        run: |
+          bun run publish:status
+          bun run --silent lerna list --no-private --json \
+            | jq -r '.[] | "\(.name) \(.version)"' > /tmp/public-packages.txt
+          if [[ ! -s /tmp/public-packages.txt ]]; then
+            echo "Error: could not list the public packages — an empty list can only mean the listing failed, not that there is nothing to verify."
+            exit 1
+          fi
+          STATUS=0
+          while read -r name version; do
+            got="$(npm view "$name@$version" version --prefer-online 2>/dev/null || true)"
+            if [[ "$got" != "$version" ]]; then
+              echo "FAIL: $name@$version is not on the registry (npm view reports '${got:-nothing}')."
+              STATUS=1
+              continue
+            fi
+            prov="$(npm view "$name@$version" dist.attestations.provenance.predicateType --prefer-online 2>/dev/null || true)"
+            if [[ -z "$prov" ]]; then
+              echo "FAIL: $name@$version is on the registry but has no provenance attestation."
+              STATUS=1
+            fi
+          done < /tmp/public-packages.txt
+          if [[ "$STATUS" -ne 0 ]]; then
+            echo "Error: the registry does not match the released workspace (see FAIL lines above)."
+            exit 1
+          fi
+          echo "All $(wc -l < /tmp/public-packages.txt) public packages serve their released version with provenance."
