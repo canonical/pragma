@@ -213,7 +213,10 @@ The whole surface derives from \`GeneratorDefinition.prompts\` through
 - **The one positional.** The prompt marked \`positional: true\` is the leaf's
   single optional positional \`[<kebab-name>]\`, accepted equivalently in flag
   form. Excess positionals are an error (\`unexpected argument\`, exit 2, with
-  a did-you-mean when the stray names a sibling or child command).
+  a did-you-mean when the stray names a sibling or child command). An unknown
+  option is the same class of usage error — Commander's own
+  \`error: unknown option '--x'\` line, exit 2 in BOTH hosts (as is every
+  other parse failure: unknown command, missing option argument).
 - **Prompts become flags** via \`buildOptionInfo\` — the emitted shapes:
 
 ${flagTable()}

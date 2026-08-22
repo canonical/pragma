@@ -427,4 +427,33 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     expect(readdirSync(pragmaCwd)).toEqual([]);
     expect(readdirSync(summonCwd)).toEqual([]);
   }, 60_000);
+
+  // The last unaligned member of Commander's usage-error trio: the shared
+  // excess-positional path and the bare-namespace help already agree; an
+  // unknown option exited 2 in pragma (its bin maps every parse failure)
+  // but 1 in summon (no exitOverride — Commander's own code stood).
+  it("component/react: an unknown option exits 2 in BOTH bins with the same error line", () => {
+    // Seed pragma's global config (as the full-stderr cells do) so its
+    // one-time first-run note does not precede the error line.
+    const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+    const args = ["component", "react", "src/components/Foo", "--bogus"];
+    const pragma = spawnSync(compiledBin, ["create", ...args], {
+      cwd: freshCwd("crosscli-unknown-"),
+      encoding: "utf-8",
+      input: "",
+      env: { ...process.env, XDG_CONFIG_HOME: configHome },
+    });
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, ...args],
+      { cwd: freshCwd("crosscli-unknown-"), encoding: "utf-8", input: "" },
+    );
+    expect(pragma.status).toBe(2);
+    expect(summon.status).toBe(2);
+    const line = "error: unknown option '--bogus'";
+    expect(pragma.stderr.split("\n")[0]).toBe(line);
+    expect(summon.stderr.split("\n")[0]).toBe(line);
+  }, 60_000);
 });
