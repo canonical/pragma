@@ -48,8 +48,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     Every other Commander parse failure — an unknown option, an unknown
     command, a missing option argument — now also exits **2** (aligned with
     `pragma`; commander's own exit **1** previously stood). The error text is
-    unchanged; `--help`/`--version` keep exit 0, and a bare namespace still
-    prints its help on stderr with exit 1.
+    unchanged — except an unknown segment beneath a namespace
+    (`summon component reakt`), whose suggestion is now the shared
+    `Did you mean 'summon component react'?` form both CLIs emit (previously
+    commander's `(Did you mean react?)`); `--help`/`--version` keep exit 0,
+    and a bare namespace still prints its help on stderr with exit 1.
   - **Invalid input**: an explicitly provided answer failing its prompt's own
     constraint (a `validate` rejection, or a value outside a select's
     choices) errors loudly (exit **2**) in EVERY mode — the message echoes

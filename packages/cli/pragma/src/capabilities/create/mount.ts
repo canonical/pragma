@@ -49,7 +49,6 @@ import {
   dispatchPrepared,
   type MutationFlags,
 } from "../../kernel/project/cli/dispatch.js";
-import { suggestNames } from "../../kernel/project/cli/suggestNames.js";
 import type {
   CliMountHost,
   CliProjection,
@@ -348,27 +347,11 @@ function mount(parent: Command, host: CliMountHost): void {
       );
     },
     onNamespace: (cmd) => {
+      // Reset the designed-help suppression a Commander child inherits from
+      // the root program. The namespace BEHAVIOR (the shared did-you-mean on
+      // a stray segment, help-on-stderr exit 1 when bare) is the
+      // projection's, not the mount's — both hosts emit the same lines.
       cmd.configureHelp({});
-      cmd.allowExcessArguments(true);
-      cmd.action(async () => {
-        const stray = cmd.args[0];
-        if (stray !== undefined) {
-          // Unknown segment beneath a namespace: name it, suggest a child.
-          process.stderr.write(`error: unknown command '${stray}'\n`);
-          const labels = cmd.commands.map((child) => child.name());
-          const [suggestion] = suggestNames(stray, labels);
-          if (suggestion) {
-            process.stderr.write(
-              `Did you mean '${host.programName} create ${cmd.name()} ${suggestion}'?\n`,
-            );
-          }
-          process.exitCode = 2;
-          return;
-        }
-        // Bare namespace mirrors summon: Commander help on stderr, exit 1.
-        process.stderr.write(cmd.helpInformation());
-        throw new CommanderError(1, "commander.help", "(outputHelp)");
-      });
     },
   };
 

@@ -6,6 +6,7 @@ import registerGeneratorCommands, {
   excessArgumentMessage,
   type GeneratorCliHost,
   splitGeneratorActionArgs,
+  unknownSegmentMessage,
 } from "./registerGeneratorCommand.js";
 import type { CommandEntry } from "./types.js";
 
@@ -351,6 +352,115 @@ describe("the excess-positional guard", () => {
     expect(calls).toHaveLength(1);
     expect(stderr).not.toHaveBeenCalled();
     stderr.mockRestore();
+  });
+});
+
+describe("the namespace command — shared stray and bare behavior", () => {
+  afterEach(() => {
+    process.exitCode = 0;
+  });
+
+  /** Register a three-leaf namespace and return (program, stderr spy, calls). */
+  function makeNamespaceTree() {
+    const program = makeProgram();
+    const { host, calls } = makeHost();
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    registerGeneratorCommands(
+      program,
+      [
+        { path: ["component"], description: "component generators" },
+        {
+          path: ["component", "react"],
+          generator: makeGenerator("component/react", { positional: true }),
+        },
+        {
+          path: ["component", "svelte"],
+          generator: makeGenerator("component/svelte", { positional: true }),
+        },
+        {
+          path: ["component", "lit"],
+          generator: makeGenerator("component/lit", { positional: true }),
+        },
+      ],
+      host,
+    );
+    return { program, stderr, calls };
+  }
+
+  it("an unknown segment errors with the shared did-you-mean, exit 2, no dispatch", async () => {
+    const { program, stderr, calls } = makeNamespaceTree();
+    await program.parseAsync(["component", "reakt"], { from: "user" });
+    expect(stderr).toHaveBeenCalledWith(
+      "error: unknown command 'reakt'\nDid you mean 'bin component react'?\n",
+    );
+    expect(process.exitCode).toBe(2);
+    expect(calls).toEqual([]);
+    stderr.mockRestore();
+  });
+
+  it("an unmatchable segment gets the bare error line only", async () => {
+    const { program, stderr } = makeNamespaceTree();
+    await program.parseAsync(["component", "vue"], { from: "user" });
+    expect(stderr).toHaveBeenCalledWith("error: unknown command 'vue'\n");
+    expect(process.exitCode).toBe(2);
+    stderr.mockRestore();
+  });
+
+  it("a bare namespace prints its OWN help on stderr, exit 1", async () => {
+    const { program, stderr } = makeNamespaceTree();
+    await program.parseAsync(["component"], { from: "user" });
+    const written = stderr.mock.calls.map((call) => String(call[0])).join("");
+    expect(written).toContain("Usage: bin component");
+    expect(process.exitCode).toBe(1);
+    stderr.mockRestore();
+  });
+
+  it("a known segment still dispatches to the child, not the namespace action", async () => {
+    const { program, stderr, calls } = makeNamespaceTree();
+    await program.parseAsync(["component", "react", "lib/X"], { from: "user" });
+    expect(calls).toHaveLength(1);
+    expect(stderr).not.toHaveBeenCalled();
+    stderr.mockRestore();
+  });
+});
+
+describe("unknownSegmentMessage", () => {
+  const chain = ["bin", "component"] as const;
+  const children = ["react", "svelte", "lit"] as const;
+
+  it("suggests the closest child segment (substitution)", () => {
+    expect(unknownSegmentMessage(chain, "reakt", children)).toBe(
+      "error: unknown command 'reakt'\nDid you mean 'bin component react'?",
+    );
+  });
+
+  it("a transposed typo resolves (raect → react)", () => {
+    expect(unknownSegmentMessage(chain, "raect", children)).toBe(
+      "error: unknown command 'raect'\nDid you mean 'bin component react'?",
+    );
+  });
+
+  it("a prefix match wins outright", () => {
+    expect(unknownSegmentMessage(chain, "rea", children)).toBe(
+      "error: unknown command 'rea'\nDid you mean 'bin component react'?",
+    );
+  });
+
+  it("a closer candidate replaces an earlier in-threshold match", () => {
+    expect(unknownSegmentMessage(chain, "reakt", ["reacts", "react"])).toBe(
+      "error: unknown command 'reakt'\nDid you mean 'bin component react'?",
+    );
+  });
+
+  it("names the stray alone when nothing is close, or the token is empty", () => {
+    expect(unknownSegmentMessage(chain, "vue", children)).toBe(
+      "error: unknown command 'vue'",
+    );
+    expect(unknownSegmentMessage(chain, "", children)).toBe(
+      "error: unknown command ''",
+    );
   });
 });
 

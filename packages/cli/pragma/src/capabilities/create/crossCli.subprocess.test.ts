@@ -541,4 +541,37 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     expect(pragma.stderr.split("\n")[0]).toBe(line);
     expect(summon.stderr.split("\n")[0]).toBe(line);
   }, 60_000);
+
+  // The unknown NAMESPACE segment is ONE grammar in both hosts: the shared
+  // `Did you mean '<chain> <segment>'?` form the excess-positional path
+  // already uses, owned by the projection — pragma's mount no longer
+  // re-implements the line and summon no longer falls to Commander's
+  // `(Did you mean react?)`. Full stderr per host: only the chain differs,
+  // naming each host's real invocation.
+  it("component reakt: the unknown-segment error carries the SHARED did-you-mean in both bins, exit 2", () => {
+    const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+    const pragma = spawnSync(compiledBin, ["create", "component", "reakt"], {
+      cwd: freshCwd("crosscli-unknown-"),
+      encoding: "utf-8",
+      input: "",
+      env: { ...process.env, XDG_CONFIG_HOME: configHome },
+    });
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, "component", "reakt"],
+      { cwd: freshCwd("crosscli-unknown-"), encoding: "utf-8", input: "" },
+    );
+    expect(pragma.status).toBe(2);
+    expect(summon.status).toBe(2);
+    expect(pragma.stderr).toBe(
+      "error: unknown command 'reakt'\n" +
+        "Did you mean 'pragma create component react'?\n",
+    );
+    expect(summon.stderr).toBe(
+      "error: unknown command 'reakt'\n" +
+        "Did you mean 'summon component react'?\n",
+    );
+  }, 60_000);
 });

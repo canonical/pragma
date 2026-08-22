@@ -214,9 +214,13 @@ The whole surface derives from \`GeneratorDefinition.prompts\` through
   single optional positional \`[<kebab-name>]\`, accepted equivalently in flag
   form. Excess positionals are an error (\`unexpected argument\`, exit 2, with
   a did-you-mean when the stray names a sibling or child command). An unknown
+  segment beneath a namespace errors the same way in BOTH hosts —
+  \`error: unknown command '<stray>'\`, exit 2, with the shared
+  \`Did you mean '<chain> <segment>'?\` suggestion when a child segment is
+  close (the chain names each host's real invocation). An unknown
   option is the same class of usage error — Commander's own
   \`error: unknown option '--x'\` line, exit 2 in BOTH hosts (as is every
-  other parse failure: unknown command, missing option argument).
+  other parse failure: missing option argument included).
 - **Prompts become flags** via \`buildOptionInfo\` — the emitted shapes:
 
 ${flagTable()}

@@ -98,6 +98,88 @@ export function excessArgumentMessage(
   return error;
 }
 
+/**
+ * Damerau-Levenshtein distance (insert / delete / substitute / adjacent
+ * transposition) over a flat row-major matrix — `d[i * width + j]` is the
+ * distance between `a`'s first `i` chars and `b`'s first `j` chars.
+ */
+function editDistance(a: string, b: string): number {
+  const width = b.length + 1;
+  const d: number[] = Array.from({ length: (a.length + 1) * width }, () => 0);
+  for (let i = 0; i <= a.length; i += 1) d[i * width] = i;
+  for (let j = 0; j <= b.length; j += 1) d[j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let value = Math.min(
+        (d[(i - 1) * width + j] as number) + 1,
+        (d[i * width + j - 1] as number) + 1,
+        (d[(i - 1) * width + j - 1] as number) + cost,
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        value = Math.min(value, (d[(i - 2) * width + j - 2] as number) + cost);
+      }
+      d[i * width + j] = value;
+    }
+  }
+  return d[a.length * width + b.length] as number;
+}
+
+/**
+ * The closest segment to a mistyped token: a prefix match wins outright,
+ * then the lowest normalized Damerau-Levenshtein distance at or under 0.4 —
+ * the ranking pragma's bin-level suggester applies, so one typo gets one
+ * suggestion quality at every tier. Case-insensitive; `undefined` when
+ * nothing is close (or the token is empty).
+ */
+function closestSegment(
+  query: string,
+  candidates: readonly string[],
+): string | undefined {
+  if (query === "") return undefined;
+  const queryLower = query.toLowerCase();
+  let best: { name: string; score: number } | undefined;
+  for (const candidate of candidates) {
+    const candidateLower = candidate.toLowerCase();
+    const score = candidateLower.startsWith(queryLower)
+      ? 0
+      : editDistance(queryLower, candidateLower) /
+        Math.max(queryLower.length, candidateLower.length);
+    if (score <= 0.4 && (best === undefined || score < best.score)) {
+      best = { name: candidate, score };
+    }
+  }
+  return best?.name;
+}
+
+/**
+ * The designed unknown-segment error beneath a namespace. Commander's own
+ * handling is host-divergent by construction — pragma's namespaces carry an
+ * action, so its `unknownCommand` never fires and the mount used to
+ * re-implement the line, while summon got commander's `(Did you mean x?)` —
+ * so the wrapper owns this message in BOTH CLIs, in the same
+ * `Did you mean '<chain> <segment>'?` shape the excess-positional path
+ * already uses, suggesting the closest child segment.
+ *
+ * @param commandChain - The invoked namespace's full name chain, root (bin
+ *   name) first — host-agnostic, so a mounted subtree suggests its real
+ *   invocation (`pragma create component react`, not a truncated one).
+ * @param stray - The unrecognized segment.
+ * @param children - The namespace's child segments.
+ * @returns The full error text (one or two lines, no trailing newline).
+ */
+export function unknownSegmentMessage(
+  commandChain: readonly string[],
+  stray: string,
+  children: readonly string[],
+): string {
+  const error = `error: unknown command '${stray}'`;
+  const suggestion = closestSegment(stray, children);
+  return suggestion === undefined
+    ? error
+    : `${error}\nDid you mean '${[...commandChain, suggestion].join(" ")}'?`;
+}
+
 /** The command's full name chain (root/bin name first, leaf last). */
 function commandChain(cmd: Command): string[] {
   const chain: string[] = [];
@@ -220,6 +302,35 @@ function configureGeneratorCommand<G extends SurfaceGenerator>(
 }
 
 /**
+ * Configure a namespace (non-runnable) command: the wrapper owns the unknown
+ * child segment (the shared did-you-mean, exit 2) and the bare invocation
+ * (the namespace's own help on stderr, exit 1 — both hosts' established
+ * shape). Excess tolerance makes Commander route an unrecognized first
+ * operand to this action instead of its host-divergent `unknownCommand`
+ * path; a KNOWN segment still dispatches to the child before the action is
+ * consulted, and a runnable entry registered at the same path replaces this
+ * action with the leaf's own.
+ */
+function configureNamespaceCommand(cmd: Command): void {
+  cmd.allowExcessArguments(true);
+  cmd.action(() => {
+    const stray = cmd.args[0];
+    if (stray !== undefined) {
+      const children = cmd.commands.map((child) => child.name());
+      process.stderr.write(
+        `${unknownSegmentMessage(commandChain(cmd), stray, children)}\n`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+    // Bare namespace: its own help on stderr, exit 1 — written directly
+    // (never through Commander's writers, which a host may silence).
+    process.stderr.write(cmd.helpInformation());
+    process.exitCode = 1;
+  });
+}
+
+/**
  * Register all commands from a command barrel onto a Commander program.
  *
  * @param rootCmd - The program (or parent command) to register onto.
@@ -278,6 +389,7 @@ export default function registerGeneratorCommands<G extends SurfaceGenerator>(
         .command(name)
         .description(entry.description ?? `${name} commands`);
 
+      configureNamespaceCommand(cmd);
       host.onNamespace?.(cmd, entry);
       commandMap.set(currentPath, cmd);
     }

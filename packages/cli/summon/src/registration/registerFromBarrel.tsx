@@ -386,6 +386,14 @@ const summonHost: GeneratorCliHost = {
   },
   action: (entry, positionalValue, options) =>
     runGeneratorAction(entry, positionalValue, options),
+  // Summon's host spelling (parity-contract §2): Commander's implicit
+  // `help` subcommand stays available on namespaces (`summon component
+  // help`, the `help [command]` row in the namespace help page). The
+  // projection's namespace action would otherwise suppress Commander's
+  // implicit default — and pragma deliberately does not declare it.
+  onNamespace: (cmd) => {
+    cmd.helpCommand(true);
+  },
 };
 
 // =============================================================================
