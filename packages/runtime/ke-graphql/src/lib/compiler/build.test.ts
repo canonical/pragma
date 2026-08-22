@@ -1005,6 +1005,37 @@ describe("build — effective prefix injectivity", () => {
       diagnostics.filter((d) => d.code === "A001" || d.code === "B005"),
     ).toEqual([]);
   });
+
+  it('guards under mode "auto", which resolves no overlay at all', () => {
+    // The guard's reach is the reason it lives here rather than beside the
+    // annotation resolver: a collision among REGISTERED prefixes needs no
+    // annotation to construct, so the mode that consults no annotation is
+    // exactly the one that must still report it. Zero annotations, mode
+    // "auto", two namespaces registered under one prefix — B005 or the
+    // namespace map silently loses a namespace with nobody told.
+    const { diagnostics } = build(
+      makeExtraction({
+        classes: [
+          { uri: "http://a.test/Thing", superclasses: [] },
+          { uri: "http://b.test/Thing", superclasses: [] },
+        ],
+        namespaces: new Map([
+          ["http://a.test/", "ns"],
+          ["http://b.test/", "ns"],
+        ]),
+        graphqlAnnotations: [],
+      }),
+      {},
+      "auto",
+    );
+    const b005 = diagnostics.filter((d) => d.code === "B005");
+    expect(b005).toHaveLength(1);
+    expect(b005[0]?.source).toBe("ns");
+    expect(b005[0]?.message).toContain("http://a.test/");
+    expect(b005[0]?.message).toContain("http://b.test/");
+    // No annotation is present, so nothing else has anything to say.
+    expect(diagnostics.map((d) => d.code)).toEqual(["B005"]);
+  });
 });
 
 describe("build — the deferred synthetic-prefix warning (E001)", () => {
