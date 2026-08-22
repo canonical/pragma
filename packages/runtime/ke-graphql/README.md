@@ -167,7 +167,7 @@ About `authoreds` — that's the pluralizer being mechanically right and ergonom
 The primary transport for projection intent is the ontology itself. Thirteen annotation terms — declared on the class or property they describe and captured by the extractor from any loaded source — bind the same knobs the config once carried, so every consumer of an ontology resolves it identically:
 
 ```turtle
-@prefix graphql: <http://pragma.canonical.com/graphql#> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 
 lib:Book     graphql:name "Publication" ;         # verbatim type name
              graphql:expose true ;                # allowlist member under mode: "explicit"

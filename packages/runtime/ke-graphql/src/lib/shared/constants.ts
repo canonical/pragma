@@ -35,12 +35,14 @@ export const SH = "http://www.w3.org/ns/shacl#";
  * (names, cardinality, exposure, descriptive sources) on the ontology terms
  * themselves instead of in per-consumer config.
  *
- * PLACEHOLDER IRI (PRA-96 O-1): the value must match the companion's
- * published vocabulary or cross-provider convergence fails — confirm it
- * against that vocabulary package before release. Everything is keyed to
- * this single constant, so the swap is one line.
+ * RATIFIED IRI (PRA-96 O-1, 2026-08-22): the owner confirmed this value;
+ * a later revision remains possible and would be a breaking change for any
+ * published ontology already carrying annotations under it — such a
+ * revision must be coordinated as a re-release of those ontologies.
+ * Everything is keyed to this single constant, so the swap itself is one
+ * line here plus the README example.
  */
-export const GRAPHQL = "http://pragma.canonical.com/graphql#";
+export const GRAPHQL = "https://pragma.canonical.com/graphql#";
 
 /**
  * The thirteen `graphql:` vocabulary terms this compiler binds (v1).
