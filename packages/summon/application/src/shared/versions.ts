@@ -1,4 +1,6 @@
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { embeddedPackageVersion } from "@canonical/summon-core";
 import type { ExecResult, Task } from "@canonical/task";
 import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
@@ -26,8 +28,6 @@ import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
  *    fresh as the generator binary in use.
  */
 
-const require = createRequire(import.meta.url);
-
 /**
  * A representative workspace package whose `latest` dist-tag tracks the shared
  * lerna release line. Any of the co-released packages would do; styles is a
@@ -36,31 +36,82 @@ const require = createRequire(import.meta.url);
 const REPRESENTATIVE_PACKAGE = "@canonical/styles";
 
 /**
+ * Walk up from `from` until a manifest IS `packageName`'s, and return its
+ * `version` — either an ancestor `package.json` whose `name` matches (the
+ * generator's own package, found from `src/` and `dist/esm/` alike) or an
+ * ancestor `node_modules/<packageName>/package.json` (an installed
+ * dependency, probed directly the way module resolution walks directories —
+ * no `exports` gate applies to a filesystem read, so an
+ * exports-encapsulated manifest resolves the same under node and bun).
+ * Mirrors summon-package's `findOwnVersion` in shape; a manifest that is
+ * unreadable, is not JSON, names another package, or carries no version is
+ * just an ancestor to walk past. Running out of parents yields `undefined`
+ * (the callers degrade, so nothing throws).
+ *
+ * @note Impure — reads the filesystem.
+ */
+function findInstalledVersion(
+  from: string,
+  packageName: string,
+): string | undefined {
+  const versionAt = (manifestPath: string): string | undefined => {
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+        name?: string;
+        version?: string;
+      };
+      if (manifest.name === packageName && manifest.version) {
+        return manifest.version;
+      }
+    } catch {
+      // No readable manifest at this path — keep walking.
+    }
+    return undefined;
+  };
+  let dir = from;
+  for (;;) {
+    const found =
+      versionAt(path.join(dir, "package.json")) ??
+      versionAt(path.join(dir, "node_modules", packageName, "package.json"));
+    if (found !== undefined) return found;
+    const parent = path.dirname(dir);
+    if (parent === dir) return undefined;
+    dir = parent;
+  }
+}
+
+/**
  * Read a package's version — the installed tree first, then the host-injected
  * embedded store, then `"unknown"`.
  *
- * The installed tree stays primary: on disk it can never be stale. A
- * `bun build --compile` host is the one layout it cannot serve — no
- * `package.json` exists anywhere under the binary's virtual `/$bunfs`
- * filesystem — so such a host captures the declared generator packages'
- * versions at BUILD time (from the very manifests the require would read) and
- * injects them through summon-core's embedded store
- * (`setEmbeddedPackageVersions`). A compiled run then resolves the same value
- * a source run reads, and {@link fallbackRange} keeps pinning the release
- * line instead of degrading to `latest`. Same precedence contract as
- * summon-package's `resolveOwnVersion`. Exported for tests.
+ * The installed tree stays primary: on disk it can never be stale. The tree
+ * tier is the {@link findInstalledVersion} WALK, not a
+ * `require("<pkg>/package.json")`: every @canonical/* manifest exports only
+ * `"."`, so the subpath require throws under plain Node — the summon bin's
+ * shipped runtime — and only the walk keeps BOTH shipped products on the
+ * tree tier. A `bun build --compile` host is the one layout the walk cannot
+ * serve — no `package.json` exists anywhere under the binary's virtual
+ * `/$bunfs` filesystem — so such a host captures the declared generator
+ * packages' versions at BUILD time (from the very manifests the walk would
+ * read) and injects them through summon-core's embedded store
+ * (`setEmbeddedPackageVersions`). A compiled run then resolves the same
+ * value a source run reads, and {@link fallbackRange} keeps pinning the
+ * release line instead of degrading to `latest`. Same precedence contract
+ * as summon-package's `resolveOwnVersion` — walk first, embedded store
+ * second — with `"unknown"` in place of its terminal throw. Exported for
+ * tests.
  *
  * @note Impure — reads the installed tree.
  */
 export function readVersion(packageName: string): string {
-  try {
-    const pkg = require(`${packageName}/package.json`) as { version?: string };
-    if (pkg.version) return pkg.version;
-  } catch {
-    // Not resolvable from the installed tree (`/$bunfs`, or an
-    // exports-encapsulated manifest) — fall through to the embedded store.
-  }
-  return embeddedPackageVersion(packageName) ?? "unknown";
+  return (
+    findInstalledVersion(
+      path.dirname(fileURLToPath(import.meta.url)),
+      packageName,
+    ) ??
+    embeddedPackageVersion(packageName) ??
+    "unknown"
+  );
 }
 
 /**

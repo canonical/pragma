@@ -1,42 +1,55 @@
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { setEmbeddedPackageVersions } from "@canonical/summon-core";
 import { afterEach, describe, expect, it } from "vitest";
 import { readVersion } from "./versions.js";
 
 /**
- * The same resolver `readVersion` uses, anchored to this test file (a sibling
- * of versions.ts, so both resolve through the identical node_modules chain) —
- * the tree-side expectations come from here rather than hardcoded literals.
+ * The workspace manifest, read by PATH (a sibling walk of the one the module
+ * performs) — the tree-side expectation comes from here rather than a
+ * hardcoded literal. Deliberately not a `require("…/package.json")`: the
+ * production manifests export only `"."`, so the subpath require throws under
+ * plain Node — the very divergence the walk exists to close.
  */
-const require = createRequire(import.meta.url);
+const here = dirname(fileURLToPath(import.meta.url));
+const manifestVersion = (manifestPath: string): string =>
+  (JSON.parse(readFileSync(manifestPath, "utf-8")) as { version: string })
+    .version;
 
 /**
  * The precedence contract, mirrored from summon-package's `resolveOwnVersion`:
  * the installed tree first, the host-injected embedded store second,
- * `"unknown"` last. `readVersion`'s require is anchored inside the module, so
- * the cases steer it with real names — a package that is genuinely installed
- * for the tree side, and a name no tree can resolve for the embedded side
- * (the same miss a compiled binary's `/$bunfs` layout produces for every
- * name).
+ * `"unknown"` last. The cases pin the PRODUCTION names — the walk reads
+ * manifests off disk with no `exports` gate, so the pins hold under node and
+ * bun alike (the old require-subpath tier resolved these names only under
+ * bun, which is how the shipped node runtime silently lost the tree tier).
  */
 describe("readVersion (the compiled-binary fallback)", () => {
   afterEach(() => {
     setEmbeddedPackageVersions({});
   });
 
-  it("prefers the installed tree when require can resolve the manifest", () => {
-    // A direct dependency whose manifest is require-resolvable under node AND
-    // bun (no `exports` encapsulation) — the tree value to expect.
-    const installed = (
-      require("typescript/package.json") as { version: string }
-    ).version;
+  it("resolves the generator's OWN name from the tree — a decoy injection must not shadow it", () => {
+    // The workspace manifest two levels above this file — what the walk's
+    // ancestor-package.json probe must find from src/ and dist/esm/ alike.
+    const installed = manifestVersion(resolve(here, "../../package.json"));
     expect(installed).not.toBe("9.9.9");
-    // A decoy injection must not shadow the tree — require stays primary.
-    setEmbeddedPackageVersions({ typescript: "9.9.9" });
-    expect(readVersion("typescript")).toBe(installed);
+    setEmbeddedPackageVersions({ "@canonical/summon-application": "9.9.9" });
+    expect(readVersion("@canonical/summon-application")).toBe(installed);
   });
 
-  it("falls back to the host-injected version when require cannot resolve (/$bunfs)", () => {
+  it("resolves an installed DEPENDENCY from the tree via the node_modules probe — injection still must not shadow", () => {
+    setEmbeddedPackageVersions({ "@canonical/summon-core": "9.9.9" });
+    const version = readVersion("@canonical/summon-core");
+    // Layout-agnostic on purpose (the link may live at any ancestor's
+    // node_modules): the pin is that the TREE answered — a real semver that
+    // is neither the decoy nor the terminal degradation.
+    expect(version).toMatch(/^\d+\.\d+\.\d+/);
+    expect(version).not.toBe("9.9.9");
+  });
+
+  it("falls back to the host-injected version when the walk finds no manifest (/$bunfs)", () => {
     setEmbeddedPackageVersions({ "@canonical/summon-nonexistent": "9.9.9" });
     expect(readVersion("@canonical/summon-nonexistent")).toBe("9.9.9");
   });

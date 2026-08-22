@@ -26,12 +26,15 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  statSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { PACKAGE_VERSIONS } from "./templates.embedded.generated.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
@@ -196,14 +199,15 @@ function findOnPath(name: string): string {
 }
 
 /**
- * A minimal PATH for offline runs: one fresh directory holding ONLY a `bun`
- * symlink, so `npm` is unresolvable no matter where the host installed it
- * (some layouts co-locate npm with bun, which a "drop npm's directory"
- * subtraction would silently miss).
+ * A minimal PATH for offline runs: one fresh directory holding ONLY `bun` and
+ * `node` symlinks, so `npm` is unresolvable no matter where the host installed
+ * it (some layouts co-locate npm with bun or node, which a "drop npm's
+ * directory" subtraction would silently miss).
  */
 function offlineBinDir(): string {
   const dir = mkdtempSync(join(tmpdir(), "pragma-offline-bin-"));
   symlinkSync(findOnPath("bun"), join(dir, "bun"));
+  symlinkSync(findOnPath("node"), join(dir, "node"));
   return dir;
 }
 
@@ -279,6 +283,174 @@ describe("compiled pragma create application, npm unreachable (PROTECTED)", () =
     // … and byte-identical contents — offline is not a second dialect.
     for (const [path, content] of compiled) {
       expect(source.get(path), `content of ${path}`).toBe(content);
+    }
+  }, 120_000);
+});
+
+const summonCliDir = join(repoRoot, "packages/cli/summon");
+const summonDistBin = join(summonCliDir, "dist/src/bin.js");
+
+/**
+ * The newest modification time under `path`, or 0 when it does not exist —
+ * the staleness probe `testing/perf/globalSetup.ts` uses for `dist/pragma`,
+ * mirrored here for the summon CLI's dist. `node_modules` is never descended
+ * into.
+ */
+function newestMtime(path: string): number {
+  let stats: ReturnType<typeof statSync>;
+  try {
+    stats = statSync(path);
+  } catch {
+    return 0;
+  }
+  if (!stats.isDirectory()) return stats.mtimeMs;
+  let newest = stats.mtimeMs;
+  for (const entry of readdirSync(path)) {
+    if (entry === "node_modules") continue;
+    newest = Math.max(newest, newestMtime(join(path, entry)));
+  }
+  return newest;
+}
+
+/**
+ * (Re)build the summon CLI's `dist` when it is missing or older than what it
+ * is built from — the same honest staleness rule the perf globalSetup applies
+ * to `dist/pragma`, so the node-runtime cell below always spawns the CURRENT
+ * bin instead of whatever bin happened to be on disk. Only this file spawns
+ * that dist, so a build here cannot race another worker's spawn of it.
+ */
+function buildSummonDistIfStale(): void {
+  const built = newestMtime(summonDistBin);
+  const inputs = ["src", "generators", "package.json", "tsconfig.build.json"];
+  const fresh =
+    built > 0 &&
+    inputs.every((input) => newestMtime(join(summonCliDir, input)) < built);
+  if (fresh) return;
+  const result = spawnSync("bun", ["run", "build"], {
+    cwd: summonCliDir,
+    stdio: "pipe",
+    encoding: "utf-8",
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `failed to build the summon CLI dist:\n${result.stdout}${result.stderr}`,
+    );
+  }
+}
+
+/**
+ * A one-file barrel package the summon bin discovers via `--generators`,
+ * serving the BUILT application generators (`dist/esm`, exactly what a
+ * published install serves) — the crossCli suite's fixture, narrowed to the
+ * one generator this cell spawns. `type: module` keeps the import lexing
+ * independent of node's syntax detection.
+ */
+function writeApplicationFixture(): string {
+  const dir = mkdtempSync(join(tmpdir(), "pragma-offline-generators-"));
+  writeFileSync(
+    join(dir, "package.json"),
+    JSON.stringify({
+      name: "summon-offline-fixture",
+      type: "module",
+      main: "index.js",
+    }),
+  );
+  const dist = join(repoRoot, "packages/summon/application/dist/esm/index.js");
+  writeFileSync(
+    join(dir, "index.js"),
+    `export { generators } from ${JSON.stringify(`file://${dist}`)};\n`,
+  );
+  return dir;
+}
+
+/**
+ * PROTECTED — the SHIPPED summon runtime, offline (round-5 F1).
+ *
+ * The summon CLI ships `#!/usr/bin/env node` with `bin: dist/src/bin.js` —
+ * its production runtime is plain NODE, yet every other summon spawn in the
+ * suite is `bun`. Under node, the old tree tier
+ * (`require("<pkg>/package.json")`) threw ERR_PACKAGE_PATH_NOT_EXPORTED for
+ * every @canonical/* manifest (each exports only `"."`), so an offline
+ * node-run summon pinned every @canonical/* range to the floating `latest`
+ * while every bun host pinned `^<version>` — the two shipped products
+ * diverged on the exact trees the parity contract promises byte-identical.
+ * `readVersion` now WALKS manifests off disk (no `exports` gate), and this
+ * cell is the only guard that can see it: the built summon bin under `node`,
+ * npm unreachable, must pin the release line exactly and match the compiled
+ * pragma binary byte-for-byte.
+ */
+describe("node-run summon bin create application, npm unreachable (PROTECTED)", () => {
+  beforeAll(() => {
+    buildSummonDistIfStale();
+  }, 120_000);
+
+  it("pins the release line exactly — never `latest` — and ≡ compiled pragma binary, byte-for-byte", () => {
+    const env = { ...process.env, PATH: offlineBinDir() };
+    const releaseLine = `^${PACKAGE_VERSIONS["@canonical/summon-application"]}`;
+
+    // (1) The shipped runtime: plain node running the BUILT summon bin, the
+    // generators served from their built dist through `--generators`.
+    const summonDir = freshCwd();
+    const summonRun = spawnSync(
+      join(env.PATH, "node"),
+      [
+        summonDistBin,
+        "--generators",
+        writeApplicationFixture(),
+        "application",
+        "react",
+        "my-app",
+        "--no-run-install",
+        "--yes",
+      ],
+      { cwd: summonDir, stdio: "pipe", encoding: "utf-8", env, input: "" },
+    );
+    expect(summonRun.status, summonRun.stderr).toBe(0);
+    // The fallback's own line proves npm was actually UNREACHABLE — without
+    // it, a networked leak (node ships next to npm in most layouts) would
+    // resolve the same `^`-shape and pass silently. Ink logs to stdout and
+    // wraps at the render width, so the pin is the line's head.
+    expect(summonRun.stdout).toContain(
+      "Could not reach npm for the latest @canonical/* version;",
+    );
+
+    // (2) The compiled pragma binary under the SAME offline PATH.
+    const compiledDir = freshCwd();
+    const compiledRun = spawnSync(
+      compiledBin,
+      ["create", "application", "react", "my-app", "--no-run-install", "--yes"],
+      { cwd: compiledDir, stdio: "pipe", encoding: "utf-8", env, input: "" },
+    );
+    expect(compiledRun.status, compiledRun.stderr).toBe(0);
+    expect(compiledRun.stderr).toContain(
+      `Could not reach npm for the latest @canonical/* version; ` +
+        `pinning ${releaseLine} (from the installed generator).`,
+    );
+
+    // The node-run manifest pins the release line EXACTLY for every
+    // @canonical dependency — `latest` (the shipped-runtime regression) and a
+    // network-resolved newer range would both fail here.
+    const summon = snapshot(summonDir);
+    const manifest = JSON.parse(summon.get("my-app/package.json") ?? "{}") as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const canonicalDeps = Object.entries({
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+    }).filter(([name]) => name.startsWith("@canonical/"));
+    expect(canonicalDeps.length).toBeGreaterThan(0);
+    for (const [name, range] of canonicalDeps) {
+      expect(range, `range of ${name}`).toBe(releaseLine);
+    }
+
+    // Wrote something, same file set, byte-identical contents — the shipped
+    // node runtime is not a second dialect of the compiled binary.
+    const compiled = snapshot(compiledDir);
+    expect(summon.size).toBeGreaterThan(0);
+    expect([...summon.keys()].sort()).toEqual([...compiled.keys()].sort());
+    for (const [path, content] of summon) {
+      expect(compiled.get(path), `content of ${path}`).toBe(content);
     }
   }, 120_000);
 });
