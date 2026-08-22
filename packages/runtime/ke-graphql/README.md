@@ -167,7 +167,7 @@ About `authoreds` — that's the pluralizer being mechanically right and ergonom
 The primary transport for projection intent is the ontology itself. Thirteen annotation terms — declared on the class or property they describe and captured by the extractor from any loaded source — bind the same knobs the config once carried, so every consumer of an ontology resolves it identically:
 
 ```turtle
-@prefix graphql: <http://pragma.canonical.com/graphql#> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 
 lib:Book     graphql:name "Publication" ;         # verbatim type name
              graphql:expose true ;                # allowlist member under mode: "explicit"
@@ -175,13 +175,15 @@ lib:Book     graphql:name "Publication" ;         # verbatim type name
 lib:authored graphql:name "works" .               # verbatim field name — never pluralized/prefixed
 lib:hasPublisher graphql:singular true .          # cardinality without owl/SHACL markers
 lib:title    graphql:nonNull true ;               # promote to String!
-             graphql:searchable true .            # search-index membership (consumed by the search feature)
+             graphql:searchable true .            # search-index membership (IR capture only — see below)
 lib:cites    graphql:inverse lib:citedBy .        # declared pair, same semantics as owl:inverseOf
 lib:Annotation graphql:embeddable true .          # force embedded shape
-<https://lib.example/> graphql:prefix "lib" .     # namespace prefix, ahead of the registered map
+<https://example.org/library/> graphql:prefix "lib" .  # namespace prefix, ahead of the registered map
 ```
 
-The class-side terms are `name`, `abstract`, `embeddable`, `expose`, and the four descriptive sources `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom` (nearest ancestor wins — annotate a root class to cover its tree); the property-side terms are `name`, `singular`, `nonNull`, `inverse`, `searchable`; `prefix` targets the namespace or ontology subject. Validation is loud and never tiebreaks: conflicting values are a fatal `A001`, foreign targets (`rdfs:label`, an absent vocabulary, a typo) a fatal `A002`, malformed values a fatal `A003`; an unrecognized local name or inapplicable target is ignored with `A004`. Under `mode: "auto"` the annotations are deliberately not consulted (`A006`) — the escape hatch that compiles even a broken annotation set.
+> **The namespace IRI above is ratified** (O-1 closed, 2026-08-22). Cross-provider convergence depends on every producer and consumer using exactly this value, keyed to one constant (`GRAPHQL` in `shared/constants.ts`). A future revision remains possible but is a breaking change, not a swap: the extraction probe matches on the namespace, so assertions under any other IRI — including the earlier `http://` placeholder this value replaced — are silently not captured (no diagnostic; `A004` only diagnoses rows already inside the namespace). If you annotated against the placeholder form, re-target those assertions to the IRI above. Any later revision must ship as a coordinated re-release of every published ontology carrying annotations.
+
+The class-side terms are `name`, `abstract`, `embeddable`, `expose`, and the four descriptive sources `titleFrom`/`labelFrom`/`commentFrom`/`definitionFrom` (nearest ancestor wins — annotate a root class to cover its tree); the property-side terms are `name`, `singular`, `nonNull`, `inverse`, `searchable`; `prefix` targets the namespace or ontology subject. `searchable` is **IR capture only** in this release: it is validated and carried on `OntologyIR.graphql`, and no schema surface reads it — no root field, no connection, no `OntologyProperty` field — so the emitted SDL is byte-identical with or without it. Annotate for it if you are modelling ahead; expect no behavior from it yet. Validation is loud and never tiebreaks: conflicting values are a fatal `A001`, foreign targets (`rdfs:label`, an absent vocabulary, a typo) a fatal `A002`, malformed values a fatal `A003`; an unrecognized local name or inapplicable target is ignored with `A004`. Under `mode: "auto"` the annotations are deliberately not consulted (`A006`) — the escape hatch that compiles even a broken annotation set.
 
 ## Custom mappings (config — deprecated)
 
@@ -268,7 +270,7 @@ The compiler collects problems instead of aborting on the first one (the `tsc` m
 |---|---|---|
 | `E001` | extraction/SPARQL failure | query failed, unregistered namespace (synthetic prefix assigned), blank nodes nested deeper than the loader's closure |
 | `A001–A008` | `graphql:` annotation resolution + projection modes | conflicting values, never tiebroken (`A001`, error), foreign/unknown target (`A002`, error), malformed value (`A003`, error), unrecognized term or inapplicable target ignored (`A004`), config shadows an annotation — config wins (`A005`), `mode: "auto"` ignoring present annotations (`A006`, info), the `mode: "explicit"` dropped-class aggregate (`A007`, info), field omitted for an unexposed range class (`A008`) |
-| `B001–B004` | build references | `subClassOf` cycle, unknown domain/range/inverse |
+| `B001–B005` | build references | `subClassOf` cycle, unknown domain/range/inverse, two namespaces claiming one prefix with no declaration in play (`B005`) |
 | `V001–V016` | data/ontology validation | blank-node-only class (`V001`), domainless property (`V002`), boolean-as-string (`V006`), SHACL `sh:maxCount 0` omission (`V010`), undeclared ABox predicate (`V014`), abstract mapping with direct instances (`V015`), concrete supertype flattening (`V016`) |
 | `M001–M006` | naming | duplicate type or field name, later claimant dropped (`M001`, error), illegal class local name sanitized (`M002`), unknown mapping (`M003`), auto-resolved type collision (`M004`), property claims a structural field name and is dropped (`M005`, error), one union name minted with different member sets (`M006`, error) |
 | `X002–X003` | union emission | named / synthesized union created |

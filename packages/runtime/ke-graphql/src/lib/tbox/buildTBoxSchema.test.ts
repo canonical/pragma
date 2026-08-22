@@ -288,6 +288,51 @@ describe("Ontology and lookups", () => {
     expect(root?.inherited).toBe(false);
   });
 
+  it("reports graphql:singular over a per-class shape, matching the emitted field", async () => {
+    // The browsable TBox and the emitted ABox field must agree: the shape
+    // says maxCount 1, the ontology's own vocabulary says list, and the
+    // annotation is the higher tier. `required` has no explicit tier, so
+    // the shape's minCount still answers.
+    const compiled = await setup(`
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix graphql: <${GRAPHQL}> .
+
+ex:Spec a owl:Class . ex:Hop a owl:Class .
+ex:root a owl:ObjectProperty ; rdfs:domain ex:Spec ; rdfs:range ex:Hop ;
+  graphql:singular false .
+
+ex:SpecShape a sh:NodeShape ; sh:targetClass ex:Spec ;
+  sh:property [ sh:path ex:root ; sh:minCount 1 ; sh:maxCount 1 ] .
+
+ex:s1 a ex:Spec . ex:h1 a ex:Hop .
+`);
+    const result = await run(
+      compiled,
+      `{
+        ontologyClass(uri: "http://example.org/Spec") {
+          properties { property { label } required singular }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const properties = (result.data?.ontologyClass as Record<string, unknown>)
+      .properties as Array<{
+      property: { label: string };
+      required: boolean;
+      singular: boolean;
+    }>;
+    const root = properties.find((p) => p.property.label === "root");
+    expect(root?.singular).toBe(false);
+    expect(root?.required).toBe(true);
+    // ...and the emitted ABox field is the list the TBox just reported.
+    expect(compiled.result.mapped.types.get("Spec")?.fields.has("roots")).toBe(
+      true,
+    );
+  });
+
   it("returns annotation metadata through OntologyProperty", async () => {
     const compiled = await setup(DS_REALISTIC_TTL);
     const result = await run(
@@ -352,6 +397,54 @@ describe("OntologyClass as a Node", () => {
     // field() miss are the honest answers, not errors.
     expect(cls._meta.fields).toEqual([]);
     expect(cls._meta.field).toBeNull();
+  });
+
+  it("reports _meta.label null for a class with no asserted rdfs:label", async () => {
+    // R-6 scopes `label` to what a curator asserted — that is why it is
+    // nullable while `title` is not. ClassNode.label carries a local-name
+    // fallback for display; minting it as a triple reported every unlabelled
+    // class as labelled and collapsed the distinction.
+    const compiled = await setup(`
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Item a owl:Class .
+ex:Named a owl:Class ; rdfs:label "Curated" .
+ex:i1 a ex:Item . ex:n1 a ex:Named .
+`);
+    const result = await run(
+      compiled,
+      `{
+        bare: ontologyClass(uri: "http://example.org/Item") {
+          label
+          _meta { label title }
+        }
+        named: ontologyClass(uri: "http://example.org/Named") {
+          _meta { label title }
+        }
+        meta: ontologyClass(uri: "owl:Class") {
+          _meta { label title }
+        }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const bare = result.data?.bare as Record<string, unknown>;
+    // The display field keeps its total local-name fallback...
+    expect(bare.label).toBe("Item");
+    // ...while _meta tells the truth: nothing was asserted.
+    expect(bare._meta).toEqual({ label: null, title: "Item" });
+    // An asserted label still answers on both.
+    expect(result.data?.named).toEqual({
+      _meta: { label: "Curated", title: "Curated" },
+    });
+    // The meta-class is on the ASSERTED side of that line: "Class" is the
+    // rdfs:label the owl: namespace document publishes, not a local-name
+    // fallback the compiler invented, so `_meta.label` must answer it — the
+    // same standing its equally synthetic `_meta.definition` already has.
+    expect(result.data?.meta).toEqual({
+      _meta: { label: "Class", title: "Class" },
+    });
   });
 
   it("round-trips the meta-class through ontologyClass, by IRI and prefixed form", async () => {
@@ -502,6 +595,68 @@ ex:s1 a ex:Sub ;
     expect(meta.title).toBe("SH");
     // ...while Sub's own labelFrom beats the asserted rdfs:label.
     expect(meta.label).toBe("SN");
+  });
+
+  // An embedded blank node typed ONLY as an abstract class carries that
+  // INTERFACE name on its EntityValue: the embedded path applies no
+  // abstractness filter (only the named-entity loader does), and the field's
+  // declared type is the concrete one, so graphql-js never runs resolveType
+  // to reject it. The value is served — and must resolve through the
+  // abstract class's own annotated heads, not the canonical fallback.
+  const ABSTRACT_EMBEDDED_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix graphql: <${GRAPHQL}> .
+
+ex:Agent a owl:Class ; rdfs:label "Agent" ;
+  graphql:abstract true ;
+  graphql:titleFrom ex:heading ;
+  graphql:labelFrom ex:heading .
+ex:Person a owl:Class ; rdfs:label "Person" ; rdfs:subClassOf ex:Agent .
+
+ex:Doc a owl:Class ; rdfs:label "Doc" .
+ex:contact a owl:ObjectProperty ; rdfs:domain ex:Doc ; rdfs:range ex:Person .
+ex:heading a owl:DatatypeProperty ; rdfs:domain ex:Agent ; rdfs:range xsd:string .
+
+# blank-node-only instances make Person embeddable
+ex:d1 a ex:Doc ; ex:contact [ a ex:Person ; ex:heading "Grace Hopper" ; rdfs:label "person record" ] .
+# typed ONLY as the abstract class → the EntityValue carries the interface name
+ex:d2 a ex:Doc ; ex:contact [ a ex:Agent ; ex:heading "Ada Lovelace" ; rdfs:label "contact record" ] .
+`;
+
+  it("applies the annotated head for an interface-typed embedded value", async () => {
+    const compiled = await setup(ABSTRACT_EMBEDDED_TTL);
+    const result = await run(
+      compiled,
+      `{
+        concrete: doc(uri: "ex:d1") { contacts { _meta { title label } } }
+        abstract: doc(uri: "ex:d2") { contacts { _meta { title label type { uri } } } }
+      }`,
+    );
+    expect(result.errors).toBeUndefined();
+    const concrete = (
+      result.data?.concrete as {
+        contacts: Array<{ _meta: Record<string, unknown> }>;
+      }
+    ).contacts[0]?._meta as Record<string, unknown>;
+    // The concrete arm: Person inherits Agent's heads (nearest ancestor wins).
+    expect(concrete.title).toBe("Grace Hopper");
+    expect(concrete.label).toBe("Grace Hopper");
+
+    const abstract = (
+      result.data?.abstract as {
+        contacts: Array<{ _meta: Record<string, unknown> }>;
+      }
+    ).contacts[0]?._meta as Record<string, unknown>;
+    // The interface arm: the SAME heads apply. Before, this fell to the
+    // canonical tier and answered the asserted rdfs:label "contact record",
+    // silently dropping the annotation the identical triples honour one
+    // field over — while `_meta.type` proved the class was known all along.
+    expect(abstract.title).toBe("Ada Lovelace");
+    expect(abstract.label).toBe("Ada Lovelace");
+    expect(abstract.type).toEqual({ uri: "http://example.org/Agent" });
   });
 });
 
@@ -969,11 +1124,14 @@ const buildSyntheticSchema = (): GraphQLSchema => {
           triples: new Map(),
         }),
       },
-      // EntityMeta whose typename is an INTERFACE, not a concrete type — the
-      // shape resolveEmbeddedTypename (resolver/templates.ts) produces when a
-      // blank node's rdf:type maps to an abstract class. mapped.types is keyed
-      // by concrete types only, so the precomputed chain map misses and the
-      // canonical-tier fallback has to answer.
+      // EntityMeta carrying the shape resolveEmbeddedTypename
+      // (resolver/templates.ts) produces for a blank node whose rdf:type maps
+      // to an abstract class: an interface name rather than a concrete type
+      // name. A MAPPED interface gets its own chain like any concrete type —
+      // its owlUri is knowable, so the annotated heads apply. This synthetic
+      // MappedIR registers "AbstractThing" under neither `types` nor
+      // `interfaces`, so no chain exists for it at all and the canonical-tier
+      // fallback is what answers.
       interfaceMeta: {
         type: tbox.entityMeta,
         resolve: () => ({
@@ -1104,7 +1262,7 @@ describe("TBox defensive branches (synthetic parents)", () => {
     expect(cp.singular).toBe(false);
   });
 
-  it("falls back to the canonical predicate tier for an interface typename", async () => {
+  it("falls back to the canonical predicate tier for an unmapped typename", async () => {
     const schema = buildSyntheticSchema();
     const result = await graphql({
       schema,
@@ -1113,8 +1271,10 @@ describe("TBox defensive branches (synthetic parents)", () => {
     });
     expect(result.errors).toBeUndefined();
     const meta = result.data?.interfaceMeta as Record<string, unknown>;
-    // The class-specific local-name tier is unknowable for an interface, but
-    // rdfs:label is still exactly right — no throw, no "", no non-null `!`.
+    // This synthetic MappedIR registers the name under neither `types` nor
+    // `interfaces`, so no chain exists for it at all (a mapped interface DOES
+    // get its own chain). The canonical tier is still exactly right for a
+    // name that resolves to no compiled class — no throw, no "", no `!`.
     expect(meta.label).toBe("From rdfs:label");
     expect(meta.title).toBe("From rdfs:label");
     // rdfs:comment is unasserted and the fallback chain has nothing else.

@@ -34,6 +34,13 @@ export const OWL_CLASS_PREFIXED = "owl:Class";
 export const OWL_CLASS_NODE: ClassNode = Object.freeze({
   uri: OWL_CLASS,
   label: "Class",
+  // ASSERTED, not a local-name fallback: "Class" is the rdfs:label the owl:
+  // namespace document itself publishes (see the header). `_meta.label` is
+  // minted only from `assertedLabel` — it is scoped to what a curator wrote —
+  // so the meta-class must carry it here or it would report itself as an
+  // unlabelled IRI stub while `_meta.definition`, prose of identical
+  // provenance, still answered.
+  assertedLabel: "Class",
   definition: "The class of OWL classes.",
   namespace: "owl",
   superclasses: [],

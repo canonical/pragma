@@ -159,8 +159,9 @@ const StandardsIndex = ({
               {(groups.get(classUri)?.nodes ?? []).map((node) => (
                 <li key={node.uri}>
                   {/* Link text is `_meta.title`, which is TOTAL — the
-                      provider computes a fallback chain ending at the IRI,
-                      so there is no `??` arm here and no fabricated title.
+                      provider computes a fallback chain whose tail is the
+                      IRI local name, never the full IRI, so there is no
+                      `??` arm here and no fabricated title.
                       The ADDRESS is `uri`, the absolute IRI, because
                       `node(id:)` accepts nothing else. */}
                   <Link params={{ uri: node.uri }} to="standardEntity">

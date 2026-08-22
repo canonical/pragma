@@ -68,8 +68,8 @@ const splitProseBlocks = (text: string): string[] =>
  * one), so inline backticks and `*emphasis*` marks in the source text
  * show verbatim. Honest over pretty until a sanctioned renderer lands.
  * The title is `_meta.title`, which is TOTAL: the provider computes a
- * fallback chain ending at the IRI, so there is no `??` arm and never a
- * fabricated title-case. `_meta.curie` carries the compact identity for
+ * fallback chain whose tail is the IRI local name, never the full IRI, so
+ * there is no `??` arm and never a fabricated title-case. `_meta.curie` carries the compact identity for
  * the reader while `uri` stays the absolute IRI Relay keys on — and, now,
  * the address `node(id:)` accepts.
  */
