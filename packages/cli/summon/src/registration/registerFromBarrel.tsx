@@ -230,13 +230,6 @@ async function runGeneratorAction(
   // Apply defaults once — the batch and run modes consume these.
   const answersWithDefaults = applyDefaults(generator.prompts, cliAnswers);
 
-  // An invalid EXPLICIT answer refuses BEFORE the mode decision — run and
-  // wizard arms included, exactly where pragma validates (parity-contract
-  // §3). Previously only the batch arms checked, so `--yes` scaffolded a
-  // tree carrying the invalid value. The batch arms re-check the
-  // defaults-applied set below (an invalid generator DEFAULT stays loud).
-  if (!failLoudInvalidAnswers(generator, cliAnswers)) return;
-
   // The ONE interaction decision (R2), shared verbatim with pragma, resolved
   // through the testable seam (`resolveMode.ts`) with summon's TTY fact:
   // stdin AND stdout are TTYs (the wizard renders to stdout).
@@ -254,6 +247,15 @@ async function runGeneratorAction(
     process.exitCode = 2;
     return;
   }
+
+  // An invalid EXPLICIT answer fails loudly before any UI or write — run and
+  // wizard arms included (previously only the batch arms checked, so `--yes`
+  // scaffolded a tree carrying the invalid value) — but AFTER the refuse
+  // arm: pragma's mount decides (and refuses) before its create runtime
+  // loads, so refuse must win over invalid input in BOTH hosts
+  // (parity-contract §3). The batch arms re-check the defaults-applied set
+  // below (an invalid generator DEFAULT stays loud).
+  if (!failLoudInvalidAnswers(generator, cliAnswers)) return;
 
   // Build stamp config if stamps are enabled (default: enabled)
   const stampEnabled = actualOptions.generatedStamp !== false;
@@ -323,9 +325,10 @@ async function runGeneratorAction(
 /**
  * Fail loudly (stderr + exit 2) when an answer in `answers` fails its
  * prompt's own constraint. The ONE invalid-answer rendering: the action runs
- * it over the EXPLICIT answers before the mode decision (so run and wizard
- * refuse exactly as pragma does), and {@link failLoudBatchInput} runs it
- * again over the defaults-applied set. Returns true when the answers pass.
+ * it over the EXPLICIT answers downstream of the refuse arm (refuse wins,
+ * exactly as pragma's mount refuses before its runtime validates) and
+ * before any other arm runs, and {@link failLoudBatchInput} runs it again
+ * over the defaults-applied set. Returns true when the answers pass.
  */
 function failLoudInvalidAnswers(
   generator: GeneratorDefinition,

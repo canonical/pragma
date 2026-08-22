@@ -140,7 +140,9 @@ All 32 rows, enumerated from the code:
 - **`run`** applies defaults over the explicit answers and executes without
   prompting. An EXPLICIT answer that fails its prompt's own constraint fails
   loudly (exit 2) in every non-MCP mode — batch, run, and wizard alike,
-  validated before the mode decision, so no UI renders and nothing is
+  validated downstream of the refuse decision (an incomplete non-TTY run
+  REFUSES first: pragma's mount refuses before its create runtime loads, and
+  summon mirrors that order) and before any UI renders or anything is
   written — with a message echoing the offending value
   (`Invalid --<flag> "<value>": <detail>`). The batch modes additionally
   fail loudly (exit 2) on a required answer that is missing even after

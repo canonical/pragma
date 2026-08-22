@@ -323,11 +323,11 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   }, 60_000);
 
   // The same refusal for an invalid EXPLICIT answer under `--yes` (run mode):
-  // validation runs BEFORE the interaction decision in both hosts
-  // (parity-contract §3), so neither may scaffold a tree carrying the invalid
-  // value. Before the hoist, summon validated only in the batch arms —
-  // `--dry-run` refused while a plain `--yes` run scaffolded `./Bad Name!/`
-  // with the broken name in its package.json.
+  // validation runs before any UI or write in both hosts — downstream of the
+  // refuse decision (parity-contract §3) — so neither may scaffold a tree
+  // carrying the invalid value. Before the hoist, summon validated only in
+  // the batch arms — `--dry-run` refused while a plain `--yes` run scaffolded
+  // `./Bad Name!/` with the broken name in its package.json.
   const invalidValueLine = (stderr: string): string | undefined =>
     stderr.split("\n").find((line) => line.startsWith("Invalid --"));
 
@@ -392,5 +392,39 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     expect(summon.status).toBe(2);
     expect(pragma.stderr.startsWith("Refusing to scaffold")).toBe(true);
     expect(pragma.stderr).toBe(summon.stderr);
+  }, 60_000);
+
+  // The refuse row WINS over invalid input: an invalid explicit answer with
+  // an INCOMPLETE answer set, non-TTY, no mode flag, must refuse — not
+  // validate first. Pragma's mount decides (and refuses) before the create
+  // runtime loads, so it CANNOT validate first; summon mirrors that order.
+  // Full stderr, both classes of invalid value provided, nothing written.
+  it("component/react: an invalid explicit answer with INCOMPLETE input refuses — full stderr byte-identical, exit 2", () => {
+    const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+    // `not-pascal` fails componentPath's own `validate`; the three confirm
+    // answers are missing, so the run is incomplete — the refuse row.
+    const args = ["component", "react", "not-pascal"];
+    const pragmaCwd = freshCwd("crosscli-refuse-");
+    const pragma = spawnSync(compiledBin, ["create", ...args], {
+      cwd: pragmaCwd,
+      encoding: "utf-8",
+      input: "",
+      env: { ...process.env, XDG_CONFIG_HOME: configHome },
+    });
+    const summonCwd = freshCwd("crosscli-refuse-");
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, ...args],
+      { cwd: summonCwd, encoding: "utf-8", input: "" },
+    );
+    expect(pragma.status).toBe(2);
+    expect(summon.status).toBe(2);
+    expect(pragma.stderr.startsWith("Refusing to scaffold")).toBe(true);
+    expect(pragma.stderr).not.toContain("Invalid --");
+    expect(pragma.stderr).toBe(summon.stderr);
+    expect(readdirSync(pragmaCwd)).toEqual([]);
+    expect(readdirSync(summonCwd)).toEqual([]);
   }, 60_000);
 });
