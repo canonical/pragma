@@ -6,28 +6,27 @@
   flex-shrink: 0;
   outline-offset: 1px;
 
-  width: var(--lp-dimension-size-xs);
-  height: var(--lp-dimension-size-xs);
-  border: var(--lp-dimension-stroke-thickness-default) solid
-    var(--lp-color-border-high-contrast);
-  background-color: var(--lp-color-background-default);
+  width: var(--dimension-200);
+  height: var(--dimension-200);
+  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+  background-color: var(--color-foreground-checkbox-unselected);
   transition:
-    background-color var(--lp-transition-duration-brisk)
-    var(--lp-transition-timing-ease-out),
-    border-color var(--lp-transition-duration-brisk)
-    var(--lp-transition-timing-ease-out);
+    background-color var(--ds-transition-duration-brisk)
+    var(--ds-transition-timing-ease-out),
+    border-color var(--ds-transition-duration-brisk)
+    var(--ds-transition-timing-ease-out);
 
   &::after {
     content: "";
     position: absolute;
-    inset: calc(var(--lp-dimension-size-xs) * 0.1);
+    inset: calc(var(--dimension-200) * 0.1);
     display: none;
-    background-color: var(--lp-color-background-default);
+    background-color: var(--color-foreground-checkbox-checkmark);
   }
 
   &:checked {
-    background-color: var(--lp-color-text-link-default);
-    border-color: var(--lp-color-text-link-default);
+    background-color: var(--color-foreground-checkbox-selected);
+    border-color: var(--color-foreground-checkbox-selected);
 
     &::after {
       display: block;
@@ -44,16 +43,27 @@
 
   &:disabled {
     cursor: not-allowed;
-    opacity: var(--lp-opacity-muted);
+    background-color: var(--color-foreground-checkbox-unselected-disabled);
+    border-color: var(--disabled--color-border);
+
+    &:checked,
+    &:indeterminate {
+      background-color: var(--color-foreground-checkbox-selected-disabled);
+      border-color: var(--color-foreground-checkbox-selected-disabled);
+    }
+
+    &::after {
+      background-color: var(--color-foreground-checkbox-checkmark-disabled);
+    }
   }
 
   &:hover:not(:disabled):not(:checked):not(:indeterminate) {
-    background-color: var(--lp-color-background-hover);
+    background-color: var(--color-foreground-checkbox-unselected-hover);
   }
 
   &:indeterminate {
-    background-color: var(--lp-color-text-link-default);
-    border-color: var(--lp-color-text-link-default);
+    background-color: var(--color-foreground-checkbox-selected);
+    border-color: var(--color-foreground-checkbox-selected);
 
     &::after {
       display: block;

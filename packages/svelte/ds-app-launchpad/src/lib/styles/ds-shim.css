@@ -1,5 +1,6 @@
 :root {
   --ds-transition-duration-fast: 165ms;
+  --ds-transition-duration-brisk: 333ms;
   --ds-transition-duration-snap: 100ms;
   --ds-transition-duration-sleepy: 1s;
   --ds-transition-timing-ease-in: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -100,6 +101,7 @@
 @media (prefers-reduced-motion: reduce) {
   :root {
     --ds-transition-duration-fast: 0ms;
+    --ds-transition-duration-brisk: 0ms;
     --ds-transition-duration-snap: 0ms;
     --ds-transition-duration-slow: 0ms;
     --ds-transition-duration-sleepy: 0ms;
