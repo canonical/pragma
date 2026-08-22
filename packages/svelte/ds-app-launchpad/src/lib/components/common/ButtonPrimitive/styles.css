@@ -1,15 +1,14 @@
 .ds.button-primitive {
   --border-style-button: solid;
-  --color-background-button-active: var(--lp-color-background-neutral-active);
-  --color-background-button-hover: var(--lp-color-background-neutral-hover);
+  --color-background-button-active: var(--color-foreground-ghost-active);
+  --color-background-button-hover: var(--color-foreground-ghost-hover);
   --color-background-button: transparent;
   --color-border-button-active: var(--color-border-button);
   --color-border-button-hover: var(--color-border-button);
   --color-border-button: transparent;
-  --color-text-button: var(--lp-color-text-default);
-  --dimension-border-width-button: var(--lp-dimension-stroke-thickness-default);
-  --opacity-button-disabled: var(--lp-opacity-muted);
-  --typography-button: var(--lp-typography-paragraph-default);
+  --color-text-button: var(--color-text);
+  --dimension-border-width-button: var(--dimension-stroke-thickness-medium);
+  --typography-button: var(--ds-typography-text-primary);
 
   cursor: pointer;
   display: inline-block;
@@ -20,12 +19,12 @@
     var(--color-border-button);
   font: var(--typography-button);
   color: var(--color-text-button);
-  padding-inline: var(--lp-dimension-spacing-inline-s);
-  padding-block: var(--lp-dimension-spacing-block-xxs);
+  padding-inline: var(--dimension-150);
+  padding-block: var(--dimension-050);
 
-  transition-duration: var(--lp-transition-duration-snap);
+  transition-duration: var(--ds-transition-duration-snap);
   transition-property: background-color, border-color;
-  transition-timing-function: var(--lp-transition-timing-ease-in);
+  transition-timing-function: var(--ds-transition-timing-ease-in);
 
   &:not(:disabled):not([aria-disabled="true"]) {
     &:hover {
@@ -42,6 +41,7 @@
   &:disabled,
   &[aria-disabled="true"] {
     cursor: not-allowed;
-    opacity: var(--opacity-button-disabled);
+    color: var(--disabled--color-text);
+    border-color: var(--disabled--color-border);
   }
 }
