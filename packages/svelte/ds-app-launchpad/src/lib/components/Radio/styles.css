@@ -6,37 +6,41 @@
   flex-shrink: 0;
   outline-offset: 1px;
 
-  width: var(--lp-dimension-size-xs);
-  height: var(--lp-dimension-size-xs);
-  border-radius: var(--lp-dimension-radius-full);
-  border: var(--lp-dimension-stroke-thickness-default) solid
-    var(--lp-color-border-high-contrast);
-  background-color: var(--lp-color-background-default);
-  transition: background-color var(--lp-transition-duration-brisk)
-    var(--lp-transition-timing-ease-out);
+  width: var(--dimension-200);
+  height: var(--dimension-200);
+  border-radius: var(--dimension-radius-full);
+  border: var(--dimension-stroke-thickness-medium) solid var(--color-border);
+  background-color: var(--color-foreground-radio-unselected);
+  transition: background-color var(--ds-transition-duration-brisk)
+    var(--ds-transition-timing-ease-out);
 
   &::after {
     content: "";
     position: absolute;
-    inset: calc(var(--lp-dimension-stroke-thickness-default) * -1);
-    border-radius: var(--lp-dimension-radius-full);
-    border: calc(var(--lp-dimension-size-xs) * 0.3125) solid transparent;
-    transition: border-color var(--lp-transition-duration-brisk)
-      var(--lp-transition-timing-ease-out);
+    inset: calc(var(--dimension-stroke-thickness-medium) * -1);
+    border-radius: var(--dimension-radius-full);
+    border: calc(var(--dimension-200) * 0.3125) solid transparent;
+    transition: border-color var(--ds-transition-duration-brisk)
+      var(--ds-transition-timing-ease-out);
   }
 
   &:disabled {
     cursor: not-allowed;
-    opacity: var(--lp-opacity-muted);
+    background-color: var(--color-foreground-radio-unselected-disabled);
+    border-color: var(--disabled--color-border);
+
+    &:checked::after {
+      border-color: var(--color-foreground-radio-selected-disabled);
+    }
   }
 
   &:hover:not(:disabled) {
-    background-color: var(--lp-color-background-hover);
+    background-color: var(--color-foreground-radio-unselected-hover);
   }
 
   &:checked {
     &::after {
-      border-color: var(--lp-color-text-link-default);
+      border-color: var(--color-foreground-radio-selected);
     }
   }
 }
