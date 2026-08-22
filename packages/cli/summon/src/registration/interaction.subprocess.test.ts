@@ -10,6 +10,9 @@
  *    precedence, and a missing/invalid batch answer errors loudly (exit 2);
  *  - the run arm's exit codes: an execution failure renders in the App and
  *    exits 1 (parity-contract §3 — never exit 0 on a rendered failure);
+ *  - the exit classification's INFORMATIONAL branches: `--help`/`--version`
+ *    exit 0 and a bare namespace prints its help on stderr with exit 1 —
+ *    the branches a blanket exit-2 refactor would silently break;
  *  - the designed excess-positional error (exit 2).
  */
 
@@ -279,6 +282,32 @@ describe("the run arm's exit codes — a rendered failure never exits 0", () => 
     expect(status).toBe(1);
     expect(stdout).toContain("✗ Error:");
     expect(stdout).toContain("Code: EXECUTION_ERROR");
+  }, 60_000);
+});
+
+describe("the exit classification's informational branches", () => {
+  // Only the usage branch (exit 2) had a pin; these three cells pin the
+  // OTHER branches of bin.tsx's exitOverride catch, so a refactor that
+  // collapses the classification to a blanket exit 2 turns red instead of
+  // shipping `--help`→2 to every script that gates on it.
+  it("`--help` exits 0 with the usage on stdout", () => {
+    const { status, stdout, stderr } = run(["--help"], freshCwd());
+    expect(status).toBe(0);
+    expect(stdout).toContain("Usage:");
+    expect(stderr).toBe("");
+  }, 60_000);
+
+  it("`--version` exits 0", () => {
+    const { status, stdout } = run(["--version"], freshCwd());
+    expect(status).toBe(0);
+    expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+  }, 60_000);
+
+  it("a bare namespace prints its help on STDERR and exits 1", () => {
+    const { status, stdout, stderr } = run(["example"], freshCwd());
+    expect(status).toBe(1);
+    expect(stderr).toContain("Usage:");
+    expect(stdout).toBe("");
   }, 60_000);
 });
 

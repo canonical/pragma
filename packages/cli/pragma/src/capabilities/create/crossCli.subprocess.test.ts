@@ -107,8 +107,16 @@ function produceSummonBin(args: readonly string[]): TreeSnapshot {
   return snapshotTree(cwd);
 }
 
-/** Spawn either bin for `--help` (never throws). */
-function helpOf(bin: "pragma" | "summon", path: readonly string[]): string {
+/**
+ * Spawn either bin for `--help` (never throws). Returns the combined text
+ * AND the exit status: a help page that stopped exiting 0 is a break the
+ * text comparison alone cannot see (a blanket exit-2 classification keeps
+ * the bytes identical).
+ */
+function helpOf(
+  bin: "pragma" | "summon",
+  path: readonly string[],
+): { text: string; status: number | null } {
   const cwd = freshCwd("crosscli-help-");
   const result =
     bin === "pragma"
@@ -122,7 +130,10 @@ function helpOf(bin: "pragma" | "summon", path: readonly string[]): string {
           [summonBin, "--generators", generatorsDir, ...path, "--help"],
           { cwd, encoding: "utf-8", input: "" },
         );
-  return `${result.stdout ?? ""}${result.stderr ?? ""}`;
+  return {
+    text: `${result.stdout ?? ""}${result.stderr ?? ""}`,
+    status: result.status,
+  };
 }
 
 /** Every `--flag` token of a help page (dedup, sorted). */
@@ -230,8 +241,13 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     it(`${fixture.name}: help/flag parity over the parity set + byte-equal generator sections`, async () => {
       const commandPath = commandPathOf(fixture.generator);
       const path = commandPath.split("/");
-      const pragmaHelp = helpOf("pragma", path);
-      const summonHelp = helpOf("summon", path);
+      const { text: pragmaHelp, status: pragmaStatus } = helpOf("pragma", path);
+      const { text: summonHelp, status: summonStatus } = helpOf("summon", path);
+
+      // An informational exit stays 0 on BOTH bins — the classification
+      // branch nothing else in this suite observes.
+      expect(pragmaStatus).toBe(0);
+      expect(summonStatus).toBe(0);
 
       const parity = await paritySet(commandPath);
 
@@ -450,35 +466,52 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   // an INCOMPLETE answer set, non-TTY, no mode flag, must refuse — not
   // validate first. Pragma's mount decides (and refuses) before the create
   // runtime loads, so it CANNOT validate first; summon mirrors that order.
-  // Full stderr, both classes of invalid value provided, nothing written.
-  it("component/react: an invalid explicit answer with INCOMPLETE input refuses — full stderr byte-identical, exit 2", () => {
-    const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
-    mkdirSync(join(configHome, "pragma"));
-    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+  // One vector per invalid-value class (validateAnswers has exactly two):
+  // component/react drives a `validate` rejection (that leaf has no select),
+  // package drives a value outside a select's choices. Full stderr, nothing
+  // written, in both.
+  const refuseRowVectors: ReadonlyArray<{
+    name: string;
+    args: readonly string[];
+  }> = [
     // `not-pascal` fails componentPath's own `validate`; the three confirm
     // answers are missing, so the run is incomplete — the refuse row.
-    const args = ["component", "react", "not-pascal"];
-    const pragmaCwd = freshCwd("crosscli-refuse-");
-    const pragma = spawnSync(compiledBin, ["create", ...args], {
-      cwd: pragmaCwd,
-      encoding: "utf-8",
-      input: "",
-      env: { ...process.env, XDG_CONFIG_HOME: configHome },
-    });
-    const summonCwd = freshCwd("crosscli-refuse-");
-    const summon = spawnSync(
-      "bun",
-      [summonBin, "--generators", generatorsDir, ...args],
-      { cwd: summonCwd, encoding: "utf-8", input: "" },
-    );
-    expect(pragma.status).toBe(2);
-    expect(summon.status).toBe(2);
-    expect(pragma.stderr.startsWith("Refusing to scaffold")).toBe(true);
-    expect(pragma.stderr).not.toContain("Invalid --");
-    expect(pragma.stderr).toBe(summon.stderr);
-    expect(readdirSync(pragmaCwd)).toEqual([]);
-    expect(readdirSync(summonCwd)).toEqual([]);
-  }, 60_000);
+    {
+      name: "component/react (validate class)",
+      args: ["component", "react", "not-pascal"],
+    },
+    // `bogus` sits outside packageType's choices; name/description are
+    // missing, so the run is incomplete — the refuse row wins here too.
+    { name: "package (select class)", args: ["package", "--type", "bogus"] },
+  ];
+
+  for (const vector of refuseRowVectors) {
+    it(`${vector.name}: an invalid explicit answer with INCOMPLETE input refuses — full stderr byte-identical, exit 2`, () => {
+      const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
+      mkdirSync(join(configHome, "pragma"));
+      writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+      const pragmaCwd = freshCwd("crosscli-refuse-");
+      const pragma = spawnSync(compiledBin, ["create", ...vector.args], {
+        cwd: pragmaCwd,
+        encoding: "utf-8",
+        input: "",
+        env: { ...process.env, XDG_CONFIG_HOME: configHome },
+      });
+      const summonCwd = freshCwd("crosscli-refuse-");
+      const summon = spawnSync(
+        "bun",
+        [summonBin, "--generators", generatorsDir, ...vector.args],
+        { cwd: summonCwd, encoding: "utf-8", input: "" },
+      );
+      expect(pragma.status).toBe(2);
+      expect(summon.status).toBe(2);
+      expect(pragma.stderr.startsWith("Refusing to scaffold")).toBe(true);
+      expect(pragma.stderr).not.toContain("Invalid --");
+      expect(pragma.stderr).toBe(summon.stderr);
+      expect(readdirSync(pragmaCwd)).toEqual([]);
+      expect(readdirSync(summonCwd)).toEqual([]);
+    }, 60_000);
+  }
 
   // The last unaligned member of Commander's usage-error trio: the shared
   // excess-positional path and the bare-namespace help already agree; an
