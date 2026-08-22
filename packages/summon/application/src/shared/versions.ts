@@ -86,8 +86,10 @@ function findInstalledVersion(
  *
  * The installed tree stays primary: on disk it can never be stale. The tree
  * tier is the {@link findInstalledVersion} WALK, not a
- * `require("<pkg>/package.json")`: every @canonical/* manifest exports only
- * `"."`, so the subpath require throws under plain Node — the summon bin's
+ * `require("<pkg>/package.json")`: neither `@canonical/summon-core` nor
+ * `@canonical/summon-application` — the names this module resolves — exposes
+ * a `"./package.json"` subpath in its exports map, so the subpath require
+ * throws ERR_PACKAGE_PATH_NOT_EXPORTED under plain Node — the summon bin's
  * shipped runtime — and only the walk keeps BOTH shipped products on the
  * tree tier. A `bun build --compile` host is the one layout the walk cannot
  * serve — no `package.json` exists anywhere under the binary's virtual

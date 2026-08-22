@@ -72,8 +72,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   and `--dry-run` now takes precedence over `--undo`); a run with PARTIAL
   answer flags asks exactly the missing prompts instead of silently
   defaulting the rest; and the long-missing `--undo` row appears in every
-  generator's `--help`. Generated trees are byte-identical throughout —
-  `--yes` runs are untouched.
+  generator's `--help`. Generated trees are byte-identical throughout; a
+  `--yes` run with VALID answers is untouched (an invalid explicit answer
+  now refuses — see *Invalid input* above).
 
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 

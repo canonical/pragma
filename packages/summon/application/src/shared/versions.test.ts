@@ -8,9 +8,10 @@ import { readVersion } from "./versions.js";
 /**
  * The workspace manifest, read by PATH (a sibling walk of the one the module
  * performs) — the tree-side expectation comes from here rather than a
- * hardcoded literal. Deliberately not a `require("…/package.json")`: the
- * production manifests export only `"."`, so the subpath require throws under
- * plain Node — the very divergence the walk exists to close.
+ * hardcoded literal. Deliberately not a `require("…/package.json")`: neither
+ * production manifest this module resolves exposes a `"./package.json"`
+ * subpath in its exports map, so the subpath require throws under plain
+ * Node — the very divergence the walk exists to close.
  */
 const here = dirname(fileURLToPath(import.meta.url));
 const manifestVersion = (manifestPath: string): string =>

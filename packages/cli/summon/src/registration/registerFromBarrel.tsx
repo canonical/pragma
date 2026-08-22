@@ -306,7 +306,10 @@ async function runGeneratorAction(
   }
 
   // mode === "wizard": ask exactly pendingPrompts(prompts, explicit) — the
-  // provided answers are pre-seeded and shown in the completed table.
+  // contract's shared fact. Summon's PRESENTATION (host prose, not parity
+  // surface): the provided answers are pre-seeded and shown in the completed
+  // table, the step total counts only the pending prompts, and esc at the
+  // confirm gate goes BACK instead of cancelling.
   const { waitUntilExit } = render(
     <App
       generator={generator}

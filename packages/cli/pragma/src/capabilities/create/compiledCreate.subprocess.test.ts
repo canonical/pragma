@@ -410,7 +410,8 @@ function writeApplicationFixture(): string {
  * its production runtime is plain NODE, yet every other summon spawn in the
  * suite is `bun`. Under node, the old tree tier
  * (`require("<pkg>/package.json")`) threw ERR_PACKAGE_PATH_NOT_EXPORTED for
- * every @canonical/* manifest (each exports only `"."`), so an offline
+ * the manifests it resolves (neither summon-core nor summon-application
+ * exposes a `"./package.json"` exports subpath), so an offline
  * node-run summon pinned every @canonical/* range to the floating `latest`
  * while every bun host pinned `^<version>` — the two shipped products
  * diverged on the exact trees the parity contract promises byte-identical.
