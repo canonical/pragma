@@ -1,4 +1,5 @@
 import { createRequire } from "node:module";
+import { embeddedPackageVersion } from "@canonical/summon-core";
 import type { ExecResult, Task } from "@canonical/task";
 import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
 
@@ -34,20 +35,41 @@ const require = createRequire(import.meta.url);
  */
 const REPRESENTATIVE_PACKAGE = "@canonical/styles";
 
-/** Read a package's version from the installed tree (offline fallback). */
-function readVersion(packageName: string): string {
+/**
+ * Read a package's version — the installed tree first, then the host-injected
+ * embedded store, then `"unknown"`.
+ *
+ * The installed tree stays primary: on disk it can never be stale. A
+ * `bun build --compile` host is the one layout it cannot serve — no
+ * `package.json` exists anywhere under the binary's virtual `/$bunfs`
+ * filesystem — so such a host captures the declared generator packages'
+ * versions at BUILD time (from the very manifests the require would read) and
+ * injects them through summon-core's embedded store
+ * (`setEmbeddedPackageVersions`). A compiled run then resolves the same value
+ * a source run reads, and {@link fallbackRange} keeps pinning the release
+ * line instead of degrading to `latest`. Same precedence contract as
+ * summon-package's `resolveOwnVersion`. Exported for tests.
+ *
+ * @note Impure — reads the installed tree.
+ */
+export function readVersion(packageName: string): string {
   try {
-    const pkg = require(`${packageName}/package.json`);
-    return pkg.version ?? "unknown";
+    const pkg = require(`${packageName}/package.json`) as { version?: string };
+    if (pkg.version) return pkg.version;
   } catch {
-    return "unknown";
+    // Not resolvable from the installed tree (`/$bunfs`, or an
+    // exports-encapsulated manifest) — fall through to the embedded store.
   }
+  return embeddedPackageVersion(packageName) ?? "unknown";
 }
 
 /**
  * The generator's own release-line version, used as the offline fallback range.
  * summon-application is published in lockstep with the workspace packages an app
- * depends on, so `^<own version>` is a safe, non-stale default.
+ * depends on, so `^<own version>` is a safe, non-stale default. Resolved via
+ * {@link readVersion}, so a compiled binary pins the host-injected build-time
+ * version; `latest` remains only the last resort when neither the installed
+ * tree nor a host injection knows the version.
  */
 function fallbackRange(): string {
   const own = readVersion("@canonical/summon-application");

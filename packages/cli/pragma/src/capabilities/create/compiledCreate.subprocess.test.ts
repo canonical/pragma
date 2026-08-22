@@ -20,9 +20,16 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import {
+  accessSync,
+  constants,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  symlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
@@ -171,6 +178,109 @@ describe("compiled pragma create package/application ≡ source run (PROTECTED)"
       }
     }, 120_000);
   }
+});
+
+/** Resolve an executable by name on THIS process's PATH (absolute path). */
+function findOnPath(name: string): string {
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    if (!dir) continue;
+    const candidate = join(dir, name);
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch {
+      // Not here — keep scanning.
+    }
+  }
+  throw new Error(`${name} not found on PATH`);
+}
+
+/**
+ * A minimal PATH for offline runs: one fresh directory holding ONLY a `bun`
+ * symlink, so `npm` is unresolvable no matter where the host installed it
+ * (some layouts co-locate npm with bun, which a "drop npm's directory"
+ * subtraction would silently miss).
+ */
+function offlineBinDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "pragma-offline-bin-"));
+  symlinkSync(findOnPath("bun"), join(dir, "bun"));
+  return dir;
+}
+
+/**
+ * PROTECTED — the OFFLINE version pin (round-4 F1).
+ *
+ * `create application` resolves the @canonical/* range via `npm view`, with
+ * "the installed generator's own version" as the offline fallback. In the
+ * compiled binary the generator's `package.json` does not exist under
+ * `/$bunfs`, so before the fix the fallback degraded to the floating tag
+ * `latest` — an offline (or registry-timeout) run of the SHIPPED binary
+ * scaffolded every @canonical dependency of a lockstep release line onto
+ * `latest`, while a source run of the same invocation pinned `^<version>`.
+ * `readVersion` now falls back to the host-injected embedded store (the same
+ * seam summon-package already used), so this case spawns both hosts with npm
+ * unreachable and pins the invariant the networked case above cannot: the
+ * fallback range is the release line, never `latest`, and offline compiled ≡
+ * offline source byte-for-byte.
+ */
+describe("compiled pragma create application, npm unreachable (PROTECTED)", () => {
+  it("pins ^-ranges for @canonical/* deps — never `latest` — and ≡ source run, byte-for-byte", () => {
+    const env = { ...process.env, PATH: offlineBinDir() };
+    const args = [
+      "create",
+      "application",
+      "react",
+      "my-app",
+      "--no-run-install",
+      "--yes",
+    ] as const;
+
+    // (1) The real standalone binary — versions come from the embedded store.
+    const compiledDir = freshCwd();
+    execFileSync(compiledBin, [...args], {
+      cwd: compiledDir,
+      stdio: "pipe",
+      env,
+    });
+    const compiled = snapshot(compiledDir);
+
+    // (2) A source run under the SAME offline PATH — versions come from the
+    // installed tree. Spawned via the symlink so both children share one env.
+    const sourceDir = freshCwd();
+    execFileSync(join(env.PATH, "bun"), [pragmaBin, ...args], {
+      cwd: sourceDir,
+      stdio: "pipe",
+      env,
+    });
+    const source = snapshot(sourceDir);
+
+    // The manifest pins the generator's release line for every @canonical
+    // dependency — a caret range, never the floating `latest` tag.
+    const manifest = JSON.parse(
+      compiled.get("my-app/package.json") ?? "{}",
+    ) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const canonicalDeps = Object.entries({
+      ...manifest.dependencies,
+      ...manifest.devDependencies,
+    }).filter(([name]) => name.startsWith("@canonical/"));
+    expect(canonicalDeps.length).toBeGreaterThan(0);
+    for (const [name, range] of canonicalDeps) {
+      expect(range, `range of ${name}`).not.toBe("latest");
+      expect(range, `range of ${name}`).toMatch(/^\^\d+\.\d+\.\d+/);
+    }
+
+    // Wrote something (fails loudly if either run refuses or crashes).
+    expect(compiled.size).toBeGreaterThan(0);
+    // Same file set …
+    expect([...compiled.keys()].sort()).toEqual([...source.keys()].sort());
+    // … and byte-identical contents — offline is not a second dialect.
+    for (const [path, content] of compiled) {
+      expect(source.get(path), `content of ${path}`).toBe(content);
+    }
+  }, 120_000);
 });
 
 /**
