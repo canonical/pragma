@@ -143,14 +143,17 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
     // The create surface DERIVES from the generators' prompts (L-CIS): the
     // framework tree segment is a required positional enum, component's flags
     // are the framework union (incl. the svelte-only --use-ts-stories), and
-    // every flag token is the REGISTERED spelling (L-CIS-2) — a default-true
-    // confirm registers ONLY its `--no-<kebab>` form, so the covenant names
-    // `--no-with-styles`, never a `--with-styles` the CLI rejects. Pin the
-    // three entries verbatim so a prompt edit that moves the covenant is SEEN.
+    // every flag AND positional token is the REGISTERED spelling (L-CIS-2) —
+    // a default-true confirm registers ONLY its `--no-<kebab>` form, and the
+    // args carry the kebab positional the usage line prints, so the covenant
+    // names `--no-with-styles` and `[component-path]`, never a
+    // `--with-styles` the CLI rejects or a `[componentPath]` its help never
+    // prints. Pin the three entries verbatim so a prompt edit that moves the
+    // covenant is SEEN.
     expect(emitted.nouns.create?.verbs).toEqual([
       {
         v: "component",
-        args: ["<framework>", "[componentPath]"],
+        args: ["<framework>", "[component-path]"],
         flags: [
           "--no-with-styles",
           "--no-with-stories",
@@ -177,7 +180,7 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       },
       {
         v: "application",
-        args: ["[appPath]"],
+        args: ["[app-path]"],
         // ssr/router are GONE: always-on facts, not prompts — the pair had no
         // reachable explicit form (only `--no-` spellings the generator's own
         // guard rejected), so the projection no longer carries them.

@@ -163,10 +163,17 @@ function positionalToken(param: ParamSpec): string {
  * sound for kernel-registered verbs where B9 ADDS the `--no-` negation
  * beside the positive form; false for a mounted noun, where kebab-casing
  * wrote seven covenant tokens the CLI rejects (`--with-styles`, `--ssr`, …).
+ *
+ * `positionalTokens` is the same seam's registered POSITIONAL spelling per
+ * param name (`componentPath` → `[component-path]` — the token the usage
+ * line and the Args tables print), preferred for `args` exactly as
+ * `flagTokens` is for `flags`; a param absent there keeps the kernel
+ * `<name>`/`[name]` derivation.
  */
 export function emitVerb(
   verb: VerbSpec,
   flagTokens?: Readonly<Record<string, string>>,
+  positionalTokens?: Readonly<Record<string, string>>,
 ): EmittedVerb {
   const positionals = verb.params.filter((p) => p.positional);
   const flags = verb.params.filter((p) => !p.positional);
@@ -180,7 +187,10 @@ export function emitVerb(
     mcp?: string | false;
   } = { v: verbLabel(verb.path) };
 
-  if (positionals.length > 0) entry.args = positionals.map(positionalToken);
+  if (positionals.length > 0)
+    entry.args = positionals.map(
+      (p) => positionalTokens?.[p.name] ?? positionalToken(p),
+    );
   if (flags.length > 0)
     entry.flags = flags.map(
       (p) => flagTokens?.[p.name] ?? `--${kebabCase(p.name)}`,
@@ -212,14 +222,13 @@ export function emitSurface(
       const noun = verb.path[0];
       const bucket = nouns[noun] ?? { verbs: [] };
       nouns[noun] = bucket;
-      // A mounted verb's covenant flags are its REGISTERED spellings, from
-      // the module's own syntax seam (see emitVerb) — the covenant must name
-      // tokens the CLI parses, not kebab-cased param names it rejects.
+      // A mounted verb's covenant flags AND args are its REGISTERED
+      // spellings, from the module's own syntax seam (see emitVerb) — the
+      // covenant must name tokens the CLI parses (`--no-with-styles`,
+      // `[component-path]`), not camelCase param names its help never prints.
+      const syntax = module.cliProjection?.referenceSyntax?.(verb.path);
       bucket.verbs.push(
-        emitVerb(
-          verb,
-          module.cliProjection?.referenceSyntax?.(verb.path)?.flagTokens,
-        ),
+        emitVerb(verb, syntax?.flagTokens, syntax?.positionalTokens),
       );
       if (verb.capability.mcp.expose) tools.push(toolName(verb.path));
     }
