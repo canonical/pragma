@@ -235,9 +235,7 @@ describe("SEC-2 path jail (PROTECTED)", () => {
         name: "PragmaError",
         code: "INVALID_INPUT",
         // The validator's line — flag spelling, value echo, detail —
-        message: expect.stringContaining(
-          `Invalid --component-path "${value}"`,
-        ),
+        message: expect.stringContaining(`Invalid --component-path "${value}"`),
         // — carrying the covenant `recovery` field the jail's own throws
         // set: one logical class (a path escaping the workspace), one
         // field set, whichever tier refuses.

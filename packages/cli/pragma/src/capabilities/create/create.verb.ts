@@ -16,8 +16,8 @@
  * or the generators — and `create --yes` never loads React.
  */
 
-import type { GeneratorResult } from "@canonical/summon-core";
 import { isAbsolute } from "node:path";
+import type { GeneratorResult } from "@canonical/summon-core";
 import {
   decideInteraction,
   explicitAnswersComplete,
