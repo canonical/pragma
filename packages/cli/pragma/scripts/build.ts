@@ -13,21 +13,26 @@
  * on the SAME generation. A GATE's build sets PRAGMA_BUILD_SKIP_DOCS=1 and
  * writes NONE of the three committed artifacts: the two generated modules
  * (createSurface.generated.ts, templates.embedded.generated.ts) run in
- * CHECK mode — a stale committed module FAILS the build loudly, naming
+ * CHECK mode (`scripts/codegen.ts` — importable so the seam is pinned by
+ * unit cells) — a stale committed module FAILS the build loudly, naming
  * itself and `bun run build` as the repair — and the docs step writes
  * nothing, so every drift guard (create.test.ts's two PROTECTED cells,
  * reference.test.ts) compares the bytes git actually holds and can fail on
- * a stale committed tree. A workspace version bump legitimately stales the
- * manifest's PACKAGE_VERSIONS block; that gate failure is truthful — the
- * committed module must be regenerated (and committed) after a bump.
+ * a stale committed tree. ONE scoped tolerance: a workspace version bump
+ * legitimately stales the manifest's PACKAGE_VERSIONS block and no release
+ * step rebuilds this package, so a versions-only difference does NOT
+ * redden the gate — it logs a NOTICE and stays green; the block is guarded
+ * by write mode and repaired by the next developer `bun run build` (the
+ * pre-existing status quo), while TEMPLATES or surface staleness still
+ * fails.
  *
  * COMPILED `create` — every binding runs from the shipped binary.
  * `create.verb.ts` reaches summon-core + the generators through STATIC dynamic
  * imports (behind its lazy boundary), so bun's `--compile` bundler includes
  * them. The generators load their templates from disk
  * (`import.meta`-relative), which does not exist in a standalone binary, so
- * this script inlines EVERY declared root's template tree into
- * `create/templates.embedded.generated.ts` — the same
+ * this build inlines (via `scripts/codegen.ts`) EVERY declared root's
+ * template tree into `create/templates.embedded.generated.ts` — the same
  * inline-strings-survive-`--compile` technique as
  * `graphpack/embedded/pack.generated.ts` — keyed by summon-core's qualified
  * scheme (`component/react/types.ts.ejs`, `package/tsconfig.json.ejs`,
@@ -48,212 +53,15 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { generators as applicationGenerators } from "@canonical/summon-application";
-import { generators as componentGenerators } from "@canonical/summon-component";
-import { buildEmbeddedManifest } from "@canonical/summon-core";
-import { projectGenerator } from "@canonical/summon-core/projection";
-import { generators as packageGenerators } from "@canonical/summon-package";
-import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
+import {
+  generateCreateSurface,
+  generateTemplateManifest,
+  TEMPLATE_ROOTS,
+} from "./codegen.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
-
-/**
- * EVERY declared template root — the binary carries all of them, so every
- * `create` binding runs from the compiled binary. Prefixes and relative dirs
- * come from {@link CREATE_GENERATORS}; the walking, keying (one scheme with
- * the reader), and the per-root/UTF-8 fail-louds are summon-core's
- * `buildEmbeddedManifest` — this script keeps only host duties
- * (write-when-changed + the generated-module header).
- *
- * Each root is the declared package's source templates dir — the source of
- * truth, identical to that package's dist copy — reached through this
- * package's own `node_modules`, which bun links to the sibling workspace
- * directory. That is a MONOREPO BUILD path, not npm resolution: the published
- * tarballs ship `dist` only (`"files": ["dist"]`), so only a checkout
- * satisfies it.
- */
-const TEMPLATE_ROOTS: ReadonlyArray<{ prefix: string; dir: string }> =
-  Object.values(CREATE_GENERATORS).flatMap((binding) =>
-    binding.templateRoots.map((root) => ({
-      prefix: root.prefix,
-      dir: fileURLToPath(
-        new URL(`../node_modules/${binding.name}/${root.relDir}`, scriptsUrl),
-      ),
-    })),
-  );
-
-const SURFACE_OUT = fileURLToPath(
-  new URL("../src/capabilities/create/createSurface.generated.ts", scriptsUrl),
-);
-
-/**
- * Project every declared generator binding onto its serializable surface and
- * write `createSurface.generated.ts` — the static data the create surface's
- * params, CLI mount, completion, and MCP schemas all derive from, so the fast
- * path never imports a generator. Deterministic (sorted keys, JSON values);
- * write-only-when-changed. The projection-fidelity test in `create.test.ts`
- * loads the LIVE generators and fails when this file drifts.
- *
- * @param check - A GATE's build (PRAGMA_BUILD_SKIP_DOCS=1): COMPARE only.
- *   A changed module means the COMMITTED file is stale, so fail loudly
- *   naming it — never write — leaving the bytes git holds for the
- *   PROTECTED projection-fidelity guard to read.
- * @returns The number of projected command paths, and whether the file was
- *   REWRITTEN — the caller's signal that this process's own `capabilities`
- *   import is now one generation behind and the docs step must re-read the
- *   surface from a fresh process (see the header).
- */
-function generateCreateSurface(check: boolean): {
-  surfaced: number;
-  changed: boolean;
-} {
-  const maps: Record<string, Record<string, unknown>> = {
-    component: componentGenerators as never,
-    package: packageGenerators as never,
-    application: applicationGenerators as never,
-  };
-  const entries: Record<string, unknown> = {};
-  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
-    for (const commandPath of binding.paths) {
-      const generator = maps[kind]?.[commandPath];
-      if (!generator) {
-        throw new Error(
-          `no generator exported for declared path ${commandPath}`,
-        );
-      }
-      entries[commandPath] = projectGenerator(
-        commandPath.split("/"),
-        generator as never,
-      );
-    }
-  }
-
-  const body = Object.keys(entries)
-    .sort()
-    .map(
-      (key) =>
-        `  ${JSON.stringify(key)}: ${JSON.stringify(entries[key], null, 2)
-          .split("\n")
-          .join("\n  ")},`,
-    )
-    .join("\n");
-
-  const module = `// AUTO-GENERATED by scripts/build.ts — do not edit by hand.
-// Regenerate: \`bun run scripts/build.ts\`. The serializable projection of
-// every declared generator binding (\`projectGenerator\` over the live
-// generators, captured at build time): the create surface's params, the CLI
-// mount, completion, and the MCP schemas all derive from THIS data, so the
-// \`--help\`/\`__complete\` fast path never imports a generator. The
-// projection-fidelity test in create.test.ts loads the LIVE generators and
-// fails when this file drifts; rerunning the build fixes it.
-
-import type { SurfaceCommand } from "@canonical/summon-core/projection";
-
-/** Declared command path → its projected command surface. */
-export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
-${body}
-};
-`;
-  const changed =
-    !existsSync(SURFACE_OUT) || readFileSync(SURFACE_OUT, "utf-8") !== module;
-  if (changed) {
-    if (check) {
-      throw new Error(
-        "src/capabilities/create/createSurface.generated.ts is STALE — the " +
-          "committed projection no longer matches the live generators. Run " +
-          "`bun run build` in packages/cli/pragma and commit the result.",
-      );
-    }
-    writeFileSync(SURFACE_OUT, module);
-  }
-  return { surfaced: Object.keys(entries).length, changed };
-}
-
-const MANIFEST_OUT = fileURLToPath(
-  new URL(
-    "../src/capabilities/create/templates.embedded.generated.ts",
-    scriptsUrl,
-  ),
-);
-
-/**
- * Inline every declared root's template tree into the generated manifest
- * module. Deterministic (summon-core sorts the keys; `JSON.stringify` values)
- * so re-running produces byte-identical output — no working-tree churn.
- *
- * @param check - A GATE's build (PRAGMA_BUILD_SKIP_DOCS=1): COMPARE only.
- *   A changed module means the COMMITTED file is stale, so fail loudly
- *   naming it — never write — leaving the bytes git holds for the
- *   PROTECTED reader-derivability guard to read.
- * @returns The embedded manifest (for counting/reporting).
- */
-function generateTemplateManifest(check: boolean): Record<string, string> {
-  const entries = buildEmbeddedManifest(TEMPLATE_ROOTS);
-
-  const body = Object.keys(entries)
-    .map((key) => `  ${JSON.stringify(key)}: ${JSON.stringify(entries[key])},`)
-    .join("\n");
-
-  // Each declared generator package's version, captured at build time from
-  // the same manifest a source run's disk walk finds. The binary injects it
-  // (setEmbeddedPackageVersions) so a generator resolving its OWN version —
-  // summon-package's fixed-version-train dependency ranges — gets the value
-  // the walk cannot reach under /$bunfs.
-  const versions = Object.fromEntries(
-    Object.values(CREATE_GENERATORS).map((binding) => {
-      const manifestPath = fileURLToPath(
-        new URL(`../node_modules/${binding.name}/package.json`, scriptsUrl),
-      );
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
-        version?: string;
-      };
-      if (!manifest.version) {
-        throw new Error(`no version in ${manifestPath}`);
-      }
-      return [binding.name, manifest.version];
-    }),
-  );
-  const versionsBody = Object.keys(versions)
-    .sort()
-    .map((key) => `  ${JSON.stringify(key)}: ${JSON.stringify(versions[key])},`)
-    .join("\n");
-
-  const module = `// AUTO-GENERATED by scripts/build.ts — do not edit by hand.
-// Regenerate: \`bun run scripts/build.ts\`. Inlines every declared generator
-// root's template tree (component, package, application — all files, not just
-// .ejs) as strings, so every \`pragma create\` binding works from the
-// standalone --compile binary (the template files are absent from the binary's
-// virtual filesystem). Keys follow summon-core's qualified-key scheme.
-/** Qualified template key (\`<prefix>/<path>\`) → file contents. */
-export const TEMPLATES: Record<string, string> = {
-${body}
-};
-
-/** Declared generator package → version, captured at build time. */
-export const PACKAGE_VERSIONS: Record<string, string> = {
-${versionsBody}
-};
-`;
-  // Write only when changed: the output is deterministic, so a rebuild is a
-  // no-op — no working-tree churn, and no rewrite racing a concurrent import
-  // (the compiled-binary smoke test rebuilds while sibling create tests run).
-  const changed =
-    !existsSync(MANIFEST_OUT) || readFileSync(MANIFEST_OUT, "utf-8") !== module;
-  if (changed) {
-    if (check) {
-      throw new Error(
-        "src/capabilities/create/templates.embedded.generated.ts is STALE — " +
-          "the committed manifest no longer matches the declared template " +
-          "roots (or a workspace version bump moved PACKAGE_VERSIONS). Run " +
-          "`bun run build` in packages/cli/pragma and commit the result.",
-      );
-    }
-    writeFileSync(MANIFEST_OUT, module);
-  }
-  return entries;
-}
 
 /** The committed reference tree the generator writes back. */
 const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
@@ -297,15 +105,18 @@ export { writeReferenceDocs };
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
   // A GATE's build: check every committed artifact, write none (the header's
-  // property) — codegen fails loudly on a stale module, docs are skipped.
+  // property) — codegen fails loudly on a stale module (versions-only
+  // manifest staleness logs a notice instead), docs are skipped.
   const check = process.env.PRAGMA_BUILD_SKIP_DOCS === "1";
 
-  const { surfaced, changed: surfaceChanged } = generateCreateSurface(check);
+  const { surfaced, changed: surfaceChanged } = generateCreateSurface({
+    check,
+  });
   console.log(
     `Projected ${surfaced} generator binding(s) → createSurface.generated.ts`,
   );
 
-  const manifest = generateTemplateManifest(check);
+  const manifest = generateTemplateManifest({ check });
   const perRoot = TEMPLATE_ROOTS.map(
     ({ prefix }) =>
       `${prefix}: ${
