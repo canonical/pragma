@@ -56,6 +56,11 @@ package-lock.json
 _site/
 *.*.map
 dist/
+# cross-process dist-build lock (the test gates' globalSetup): lives at each
+# package root — OUTSIDE the ignored dist/ — and crash residue must never be
+# committable (a committed lock blocks every clone's every run for the full
+# 120s timeout before failing)
+.dist-build.lock
 storybook-static/
 coverage/
 .vite/

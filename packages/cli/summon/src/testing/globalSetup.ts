@@ -74,7 +74,13 @@ function sleepSync(ms: number): void {
  * `DEP_INPUTS` watches on EVERY entry, so a fully fresh tree re-judged
  * `dist/pragma` stale and rebuilt the binary on every vitest invocation
  * (measured); the root's own mtime, by contrast, is watched by nothing —
- * only its named children are. One root serves ONE dist artifact, so
+ * only its named children are. The file must also stay UNTRACKED: the
+ * root-level home sits outside the ignored `dist/`, so `.dist-build.lock`
+ * has its own root `.gitignore` rule — a committed lock (crash residue
+ * swept into a `git add -A`) would block every clone's every run for the
+ * full timeout, with a "delete the file" remedy git keeps undoing. The
+ * next relocation must keep BOTH properties: outside every watched tree,
+ * and inside an ignore rule. One root serves ONE dist artifact, so
  * root-scoped is artifact-scoped, and both sibling gates compute the
  * same path for the same root — contention still meets contention.
  * Freshness is decided ONLY under the lock: callers enter
@@ -225,7 +231,9 @@ function workspaceDepRoots(pkgRoot: string): string[] {
  * What one dep's dist is built from (a missing entry stats 0). Every
  * `tsconfig.build.json` here is a thin override extending the package's own
  * `tsconfig.json`, which supplies the compiler options that shape the emit —
- * so both are watched. RESIDUAL, accepted: the shared
+ * so both are watched. The repo-root template copier is a build input too —
+ * see {@link TEMPLATE_COPIER}, statted separately because no
+ * `join(root, input)` path can reach it. RESIDUAL, accepted: the shared
  * `@canonical/typescript-config` base those extend is NOT watched — the
  * packages reach it inconsistently (most via their own `node_modules` link,
  * summon-application by relative path), so no one entry covers it; an edit
@@ -238,6 +246,21 @@ const DIST_INPUTS = [
   "tsconfig.build.json",
   "tsconfig.json",
 ];
+
+/**
+ * The repo-root template copier — the SECOND build step of four gated dists
+ * (`bun ../../../scripts/copy-templates.ts` in summon-component/-package/
+ * -application and cli/summon): a ROOT-OWNED build input (the r12-F4 class,
+ * one directory up) that {@link DIST_INPUTS}' root-relative paths can never
+ * reach, so an edit to the copier's glob or filter left every dist judged
+ * FRESH and the suites green against copies the OLD copier produced. It is
+ * statted as one absolute constant, UNCONDITIONALLY for every dep root (a
+ * cheap single stat; roots whose build never runs it just carry a harmless
+ * extra input).
+ */
+const TEMPLATE_COPIER = fileURLToPath(
+  new URL("../../../../../scripts/copy-templates.ts", import.meta.url),
+);
 
 /**
  * The served entry artifact of one workspace package (`module` ?? `main`),
@@ -403,6 +426,7 @@ function buildStaleDepDists(pkgRoot: string): void {
       const built = newestMtime(artifact);
       return (
         built > 0 &&
+        newestMtime(TEMPLATE_COPIER) < built &&
         DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built)
       );
     };
