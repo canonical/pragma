@@ -8,11 +8,12 @@
  * PRAGMA_BUILD_SKIP_DOCS; the gate spawn beside this file setting it) whose
  * silent loss every suite survived green. The cells drive the EXPORTED
  * generators with an injected `out` in a tmpdir — no spawn, no build, no
- * repo write; the third pins the seam's one ruled TOLERANCE: a difference
+ * repo write; the third pins the seam's one ruled EXCEPTION: a difference
  * confined to the manifest's PACKAGE_VERSIONS block (a workspace version
- * bump's expected residue, which no release step rebuilds) must NOT fail
- * check mode — it logs a notice and is repaired by the next developer
- * `bun run build`.
+ * bump's expected residue, which no release step rebuilds — and the block
+ * the PROTECTED offline cells pin the release line from) must not fail
+ * check mode — it is REPAIRED in place with a notice, the three-line diff
+ * left for the developer to commit.
  */
 
 import {
@@ -102,7 +103,8 @@ describe("the committed-codegen CHECK seam (scripts/codegen.ts)", () => {
     expect(readFileSync(manifestOut, "utf-8")).toBe(templatesStaled);
 
     // …and a stale versions block must NOT mask it: both halves stale is
-    // still the TEMPLATES failure, not the cell-below tolerance.
+    // still the TEMPLATES failure — never the cell-below repair, which
+    // must not partially "fix" a manifest whose templates drifted.
     const versionsAt = templatesStaled.indexOf("export const PACKAGE_VERSIONS");
     expect(versionsAt).toBeGreaterThan(0);
     const bothStaled =
@@ -115,12 +117,14 @@ describe("the committed-codegen CHECK seam (scripts/codegen.ts)", () => {
     expect(readFileSync(manifestOut, "utf-8")).toBe(bothStaled);
   });
 
-  it("versions-only manifest staleness does NOT throw in check mode — a workspace bump must not redden the gate", () => {
+  it("versions-only manifest staleness is REPAIRED in check mode — fresh versions written, notice logged, no throw", () => {
     // Stage exactly a bump's residue: the first version value inside the
     // PACKAGE_VERSIONS block gains a digit; every byte of the TEMPLATES
-    // half stays as committed. Check mode logs the notice, throws nothing,
-    // and writes nothing — the staleness survives for the next developer
-    // `bun run build` (write mode) to repair.
+    // half stays as committed. Check mode must NOT throw — it writes the
+    // assembled module back (the repair: the file again equals the
+    // computed render, so the gate's binary, the PROTECTED offline cells,
+    // and the live workspace manifests agree) and logs the notice naming
+    // the three-line diff as the developer's to commit.
     const committed = readFileSync(manifestOut, "utf-8");
     const versionsAt = committed.indexOf("export const PACKAGE_VERSIONS");
     expect(versionsAt).toBeGreaterThan(0);
@@ -133,9 +137,12 @@ describe("the committed-codegen CHECK seam (scripts/codegen.ts)", () => {
     expect(() =>
       generateTemplateManifest({ check: true, out: manifestOut }),
     ).not.toThrow();
-    expect(log.mock.calls.flat().join("\n")).toContain(
-      "stale PACKAGE_VERSIONS block",
-    );
-    expect(readFileSync(manifestOut, "utf-8")).toBe(staled);
+    // The write happened and repaired the block: the file no longer holds
+    // the staled residue — it equals the computed module, which on this
+    // healthy tree is byte-identical to the committed bytes.
+    expect(readFileSync(manifestOut, "utf-8")).toBe(committed);
+    const logged = log.mock.calls.flat().join("\n");
+    expect(logged).toContain("stale PACKAGE_VERSIONS block");
+    expect(logged).toContain("yours to commit");
   });
 });

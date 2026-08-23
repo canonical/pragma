@@ -1,8 +1,12 @@
 /**
  * Build script for the `pragma` compiled binary.
  *
- * Two steps: (1) codegen the embedded template manifest, then (2) compile the
- * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
+ * Four steps: (1) codegen the create surface
+ * (`createSurface.generated.ts`), (2) codegen the embedded template
+ * manifest (`templates.embedded.generated.ts`), (3) emit the reference
+ * docs (`docs/reference/`), then (4) compile the CLI entry (`src/bin.ts`)
+ * into a standalone executable with `Bun.build` — the first three write
+ * the three committed artifacts the drift guards read.
  *
  * ONE PASS IS SELF-CONSISTENT: the reference docs render the surface this
  * pass just produced. `capabilities` is imported at process start, so when
@@ -11,20 +15,23 @@
  * module) instead of this process's stale copy — a single `bun run build`
  * after a generator-surface edit leaves dist, surface, and docs/reference/
  * on the SAME generation. A GATE's build sets PRAGMA_BUILD_SKIP_DOCS=1 and
- * writes NONE of the three committed artifacts: the two generated modules
+ * rewrites NONE of the three committed artifacts its drift guards read
+ * (one scoped exception below): the two generated modules
  * (createSurface.generated.ts, templates.embedded.generated.ts) run in
  * CHECK mode (`scripts/codegen.ts` — importable so the seam is pinned by
  * unit cells) — a stale committed module FAILS the build loudly, naming
  * itself and `bun run build` as the repair — and the docs step writes
  * nothing, so every drift guard (create.test.ts's two PROTECTED cells,
  * reference.test.ts) compares the bytes git actually holds and can fail on
- * a stale committed tree. ONE scoped tolerance: a workspace version bump
- * legitimately stales the manifest's PACKAGE_VERSIONS block and no release
- * step rebuilds this package, so a versions-only difference does NOT
- * redden the gate — it logs a NOTICE and stays green; the block is guarded
- * by write mode and repaired by the next developer `bun run build` (the
- * pre-existing status quo), while TEMPLATES or surface staleness still
- * fails.
+ * a stale committed tree. THE exception: a workspace version bump
+ * legitimately stales the manifest's PACKAGE_VERSIONS block — no release
+ * step rebuilds this package, NO drift guard compares that block as
+ * bytes, and the PROTECTED offline cells pin the release line FROM it
+ * against the live workspace manifests — so check mode REPAIRS a
+ * versions-only difference (writes the assembled module; a NOTICE names
+ * the three-line diff as the developer's to commit), keeping the gate,
+ * the binary it builds, and the suite agreeing after a bump, while
+ * TEMPLATES or surface staleness still fails writing nothing.
  *
  * COMPILED `create` — every binding runs from the shipped binary.
  * `create.verb.ts` reaches summon-core + the generators through STATIC dynamic
@@ -104,9 +111,11 @@ export { writeReferenceDocs };
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
-  // A GATE's build: check every committed artifact, write none (the header's
-  // property) — codegen fails loudly on a stale module (versions-only
-  // manifest staleness logs a notice instead), docs are skipped.
+  // A GATE's build: check every committed artifact (the header's property)
+  // — codegen fails loudly on a stale module (versions-only manifest
+  // staleness is instead REPAIRED with a notice, the header's one scoped
+  // exception), docs are skipped. Surface before manifest: a stale surface
+  // throws here before any repair can happen.
   const check = process.env.PRAGMA_BUILD_SKIP_DOCS === "1";
 
   const { surfaced, changed: surfaceChanged } = generateCreateSurface({

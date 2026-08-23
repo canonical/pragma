@@ -13,16 +13,25 @@
  * tmpdir while `bun run build` keeps writing the committed modules.
  *
  * CHECK MODE (`{ check: true }` — a gate's build, PRAGMA_BUILD_SKIP_DOCS=1
- * in build.ts): COMPARE only, never write. A stale committed
+ * in build.ts): COMPARE, never silently repair. A stale committed
  * `createSurface.generated.ts` (full bytes) or a stale TEMPLATES half of
  * `templates.embedded.generated.ts` FAILS loudly, naming the module and
- * `bun run build` as the repair. The manifest's PACKAGE_VERSIONS block is
- * deliberately OUTSIDE the check: a workspace version bump rewrites exactly
- * those lines, no release step rebuilds this package, so a versions-only
- * difference logs a NOTICE and stays green — the block is guarded by write
- * mode and repaired by the next developer `bun run build` (the pre-existing
- * status quo), while a difference touching the TEMPLATES half still fails
- * even when the versions block is stale too.
+ * `bun run build` as the repair. ONE scoped exception, the manifest's
+ * PACKAGE_VERSIONS block: a workspace version bump rewrites exactly those
+ * lines, no release step rebuilds this package, NO drift guard compares
+ * the block as bytes — and the compiled binary plus the two PROTECTED
+ * offline cells (compiledCreate.subprocess.test.ts) pin the release line
+ * FROM it against the live workspace manifests, so tolerating it stale
+ * would green the gate and then redden those cells two files from the
+ * cause, with the freshly built binary scaffolding the PREVIOUS release
+ * line. A versions-only difference is therefore REPAIRED: check mode
+ * writes the assembled module (fresh versions into the committed file,
+ * restoring binary/cells/disk-walk agreement) and logs a NOTICE that the
+ * three-line diff is the developer's to commit. The repair never fires
+ * when the TEMPLATES half or frame differs — that still throws naming
+ * TEMPLATES, writing nothing, even when the versions block is stale too —
+ * and build.ts checks the surface FIRST, so a stale surface fails the
+ * build before any repair.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -189,15 +198,18 @@ const MANIFEST_TAIL = `};
  * so re-running produces byte-identical output — no working-tree churn.
  *
  * @param options - `check`: a GATE's build (PRAGMA_BUILD_SKIP_DOCS=1) —
- *   COMPARE only, never write. The comparison is SPLIT at the module's one
- *   seam: a committed file whose TEMPLATES half (or fixed frame) differs is
- *   stale in the class the PROTECTED reader-derivability guard exists for,
- *   so fail loudly naming the module; a difference confined to the
- *   PACKAGE_VERSIONS block — the expected residue of a workspace version
- *   bump, which no release step rebuilds — logs a NOTICE and stays green
- *   (write mode repairs it on the next developer build). `out`: the module
- *   path (defaults to the committed module; injectable for the seam's unit
- *   cells).
+ *   compare, never silently repair. The comparison is SPLIT at the
+ *   module's one seam: a committed file whose TEMPLATES half (or fixed
+ *   frame) differs is stale in the class the PROTECTED reader-derivability
+ *   guard exists for, so fail loudly naming the module and write nothing;
+ *   a difference confined to the PACKAGE_VERSIONS block — the expected
+ *   residue of a workspace version bump, which no release step rebuilds,
+ *   and the block the PROTECTED offline cells pin the release line from —
+ *   is REPAIRED in place (the assembled module is written) with a NOTICE
+ *   naming the three-line diff as the developer's to commit, so the gate's
+ *   binary and the suite agree with the live manifests instead of failing
+ *   two files from the cause. `out`: the module path (defaults to the
+ *   committed module; injectable for the seam's unit cells).
  * @returns The embedded manifest (for counting/reporting).
  */
 export function generateTemplateManifest({
@@ -264,10 +276,19 @@ export function generateTemplateManifest({
             "and commit the result.",
         );
       }
+      // REPAIR, not tolerate: the compiled binary embeds this block, and
+      // the PROTECTED offline cells (compiledCreate.subprocess.test.ts)
+      // pin the release line from it against the live workspace manifests
+      // — leaving it stale would green this gate and then fail those cells
+      // two files away, with the just-built binary scaffolding the
+      // PREVIOUS release line. Writing the assembled module restores real
+      // agreement; the residue is the same three-line diff a developer
+      // build would produce, left staged for the developer to commit.
+      writeFileSync(out, module);
       console.log(
-        "NOTICE: templates.embedded.generated.ts carries a stale " +
+        "NOTICE: regenerated templates.embedded.generated.ts's stale " +
           "PACKAGE_VERSIONS block (expected after a workspace version " +
-          "bump) — repaired by the next `bun run build`.",
+          "bump) — the three-line diff is yours to commit.",
       );
     } else {
       writeFileSync(out, module);
