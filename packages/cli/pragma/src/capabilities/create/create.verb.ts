@@ -269,10 +269,12 @@ export async function runCreate(
   const invalid = summon.validateAnswers(generator.prompts, answers);
   if (invalid !== null) {
     // A rejection of the JAILED path param's escape classes (absolute /
-    // `..` — the two the round-9 reorder moved off the jail) keeps the
-    // covenant `recovery` field the jail's own throws carry: one logical
-    // class (an output path escaping the workspace), one field set. The
-    // message stays the validator's — the shared cross-host line. A
+    // `..` — the two the round-9 reorder moved off the jail) attaches ONE
+    // workspace hint to BOTH classes — the jail's `..`-branch message —
+    // deliberately NOT reproducing the jail's per-branch hints (its
+    // absolute branch says "Use a path relative to the current
+    // directory."; those stay the jail's own, pinned in pathJail.test.ts).
+    // The message stays the validator's — the shared cross-host line. A
     // non-escape rejection of the same param (e.g. casing) never carried
     // recovery and still does not.
     const escaped =

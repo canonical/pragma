@@ -43,7 +43,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     pass `--yes` (accept defaults), `--dry-run` (preview only), or every
     remaining flag.
   - **Excess positionals** exit **2** with `error: unexpected argument "X"`
-    (plus a did-you-mean when the stray matches a tree segment); they were
+    naming the first excess operand (plus a did-you-mean when ANY operand of
+    the invocation — a bound positional included, not only the excess ones —
+    names a sibling or child segment: `summon component react svelte MyThing`
+    suggests `summon component svelte` off the bound `svelte`); they were
     previously commander's generic "too many arguments" or silently absorbed.
     Every other Commander parse failure — an unknown option, an unknown
     command, a missing option argument — now also exits **2** (aligned with

@@ -45,8 +45,13 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   one schema must span leaves, §5).
 - **The one positional.** The prompt marked `positional: true` is the leaf's
   single optional positional `[<kebab-name>]`, accepted equivalently in flag
-  form. Excess positionals are an error (`unexpected argument`, exit 2, with
-  a did-you-mean when the stray names a sibling or child command). An unknown
+  form. Excess positionals are an error (`unexpected argument`, exit 2,
+  naming the FIRST excess operand; a did-you-mean follows when ANY operand
+  of the invocation — a bound positional included, not only the excess ones
+  — names a sibling or child segment: in `component react svelte MyThing`
+  it is the bound `svelte` that earns
+  `Did you mean '… component svelte'?` while the named stray matches
+  nothing). An unknown
   segment beneath a namespace errors the same way in BOTH hosts —
   `error: unknown command '<stray>'`, exit 2, with the shared
   `Did you mean '<chain> <segment>'?` suggestion when a child segment is
@@ -57,8 +62,10 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   are the DEFAULT bytes in both hosts: pragma reframes each of them
   through its error envelope under an EXPLICITLY requested
   `--format json`/`--format llm` (a host output concern outside the
-  parity surface — summon never does: these are parse-time failures,
-  upstream of its leaf `--format` output flag), and implicit
+  parity surface — summon never does: its host declines the projection's
+  `writeUsageError` seam, so its usage errors keep the default bytes in
+  every format; its `--format` is a leaf OUTPUT flag, parsed fine on a
+  leaf and never consulted for a usage failure), and implicit
   auto-detection of an output mode never reframes them (as with
   `refuse`, §3).
 - **Prompts become flags** via `buildOptionInfo` — the emitted shapes:

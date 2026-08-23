@@ -236,9 +236,10 @@ describe("SEC-2 path jail (PROTECTED)", () => {
         code: "INVALID_INPUT",
         // The validator's line — flag spelling, value echo, detail —
         message: expect.stringContaining(`Invalid --component-path "${value}"`),
-        // — carrying the covenant `recovery` field the jail's own throws
-        // set: one logical class (a path escaping the workspace), one
-        // field set, whichever tier refuses.
+        // — carrying the validator tier's ONE workspace hint for both
+        // escape classes (the jail's `..`-branch message; the jail keeps
+        // its own per-branch hints — "Use a path relative to the current
+        // directory." on absolute — pinned in pathJail.test.ts).
         recovery: { message: "The path must stay inside the workspace." },
       });
       expect(walk(dir)).toEqual([]);
