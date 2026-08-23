@@ -263,8 +263,8 @@ ${flagTable()}
   to — is the prompt-derived flags ∪ the mutation trio
   \`--dry-run\`/\`--undo\`/\`--yes\`. Host extras (summon's
   \`--verbose\`/\`--show-files\`/\`--llm\`/\`--format\`/preview and stamp
-  toggles, and its bin-level
-  \`--setup-completion\`/\`--cleanup-completion\`) sit outside the parity
+  toggles, and its bin-level \`-g\`/\`--generators\`, \`--completion\`
+  and \`--setup-completion\`/\`--cleanup-completion\`) sit outside the parity
   flag set because neither host is required to declare the other's — not
   because they are inert: summon's \`--format json\`/\`SUMMON_LLM=1\`
   additionally imply \`--dry-run\` (a MODE change — such a run writes
@@ -277,26 +277,42 @@ ${flagTable()}
   \`summon component react src/components/B --setup-completion --yes\`
   exits 0 having written NOTHING to the target tree — and rewritten the
   invoking user's shell init file — where the same argv on pragma is
-  \`error: unknown option '--setup-completion'\`, exit 2. Tokens summon
-  accepts and pragma rejects loudly: three SHORT forms — \`-d\`
-  (\`--dry-run\`) and \`-y\` (\`--yes\`) alias two of the mutation trio,
-  \`-l\` aliases the \`--llm\` extra — so \`summon … -y\` writes a tree
-  where \`pragma create … -y\` is \`error: unknown option '-y'\`, exit 2,
-  nothing written; and \`--llm\` itself, whose LONG form does not port
+  \`error: unknown option '--setup-completion'\`, exit 2. That same
+  bin-level scan serves two more: \`-g\`/\`--generators\`, the discovery
+  flag §1 names — \`summon … --generators <dir> --yes\` writes the tree
+  from that directory's generators where
+  \`pragma create … --generators <dir> --yes\` is
+  \`error: unknown option '--generators'\`, exit 2, nothing written
+  (\`-g\` the same) — and \`--completion\`, which prints the completion
+  script and exits 0 having written nothing, where
+  \`pragma create … --completion\` is
+  \`error: unknown option '--completion'\`, exit 2. Beyond those, the
+  tokens summon accepts and pragma rejects loudly are four SHORT forms:
+  \`-d\` (\`--dry-run\`) and \`-y\` (\`--yes\`) alias two of the mutation
+  trio, \`-l\` aliases the \`--llm\` extra, and \`-V\` is Commander's
+  default \`--version\` spelling on summon's root — so \`summon … -y\`
+  writes a tree where \`pragma create … -y\` is
+  \`error: unknown option '-y'\`, exit 2,
+  nothing written, and \`summon … -V\` prints \`0.1.0\` and exits 0
+  having written nothing where \`pragma create … -V\` is
+  \`error: unknown option '-V'\`, exit 2, pragma's whole-argv scan
+  reading \`--version\`/\`-v\` only: the two hosts' version SHORT forms
+  are SWAPPED. And \`--llm\` itself, whose LONG form does not port
   either (unlike \`--verbose\`'s): summon's \`--llm\` implies
   \`--dry-run\` and exits 0 writing nothing, where
   \`pragma create … --llm\` is \`error: unknown option '--llm'\`,
-  exit 2. \`-v\` is a token COLLISION, not a spelling: summon reads its
-  \`--verbose\`, pragma's whole-argv global scan reads its \`--version\`
+  exit 2. \`-v\` is the swap's other half — a token COLLISION, not a
+  spelling: summon reads its \`--verbose\`, pragma's whole-argv global
+  scan reads its \`--version\`
   — so \`pragma create … -v\` prints the version and exits 0 having
   written nothing (the BARE long form \`--verbose\` ports; the short
   form collides, and the \`=\` form is pragma-only, below). The mirror
   direction — tokens pragma accepts and summon rejects loudly — is a
   CLASS: pragma's whole-argv scan swallows \`--detail\` (either
-  spelling — the space form's value is swallowed with it), any
-  \`--detail=<value>\`, and any \`--verbose=<value>\` before Commander
-  sees them, each inert on \`create\` (stdout, stderr, and generated
-  tree byte-identical to the run without the token) — so
+  spelling), any \`--detail=<value>\`, and any \`--verbose=<value>\`
+  before Commander sees them. The \`=\` forms and any
+  \`--verbose=<value>\` are INERT on \`create\` — stdout, stderr and
+  generated tree byte-identical to the run without the token (measured) — so
   \`pragma create component react src/components/B --detail=summary --yes\`
   writes a tree where
   \`summon component react src/components/B --detail=summary --yes\` is
@@ -304,7 +320,22 @@ ${flagTable()}
   and \`--verbose=false\` flips the same way (pragma writes the tree,
   NOT verbose, where summon is
   \`error: unknown option '--verbose=false'\`, exit 2, nothing written).
-  ONE value asymmetry runs the reverse way: pragma VALIDATES
+  The SPACE form \`--detail\` is not inert in general: it consumes
+  WHATEVER token follows it, so it is inert only when that token is a
+  level value (\`--detail summary\` measures byte-identical) and
+  otherwise silently removes a positional or a flag —
+  \`pragma create component react --detail src/components/B --yes\`
+  exits 0 having scaffolded into the DEFAULT
+  \`src/components/MyComponent\`, and
+  \`pragma create component react src/components/B --detail --yes\` eats
+  the \`--yes\`, turning a complete run into the shared refusal
+  (\`Missing: --no-with-styles, --no-with-stories, --no-with-ssr-tests.\`),
+  exit 2, nothing written — naming the missing ANSWERS, never the eaten
+  flag. \`--format\` swallows its successor the same way but VALIDATES
+  what it swallows, so it refuses loudly rather than silently:
+  \`--format src/components/B\` is
+  \`Error: Invalid format "src/components/B".\`, exit 2 — which is the
+  ONE value asymmetry running the reverse way: pragma VALIDATES
   \`--format\`'s value where summon's \`--format <type>\` accepts any —
   \`pragma create … --format bogus\` is \`Error: Invalid format "bogus".\`,
   exit 2, nothing written (\`--format=bogus\` and \`--format=\` fail the
