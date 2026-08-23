@@ -214,8 +214,14 @@ export interface RawExtraction {
    * projection mode). Pass 2 knows the mode: it raises the deferred warning
    * for every namespace its bound overlay leaves on the synthetic — under
    * mode "auto" that is all of them — and stays silent for the rest.
+   *
+   * OPTIONAL at this boundary: `RawExtraction` is an exported public type,
+   * and tooling constructs one. A required member would break every such
+   * consumer for a field only the compiler's own extraction pass fills in.
+   * Extraction always provides it; readers normalize a missing value to [],
+   * which is exactly the state an extraction without deferrals is in.
    */
-  deferredSyntheticNamespaces: readonly string[];
+  deferredSyntheticNamespaces?: readonly string[];
   shaclConstraints: RawShaclConstraint[];
   unions: RawUnion[];
 

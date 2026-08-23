@@ -140,7 +140,7 @@ export default function build(
   // annotation, and a refused declaration (A001/A002/A003) binds nothing
   // either — leaves the namespace on the synthetic every consumer then sees,
   // which is precisely the state E001 exists to name.
-  for (const ns of extraction.deferredSyntheticNamespaces) {
+  for (const ns of extraction.deferredSyntheticNamespaces ?? []) {
     if (overlay.prefixes.has(ns)) {
       continue;
     }

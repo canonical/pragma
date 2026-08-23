@@ -994,6 +994,23 @@ describe("build — effective prefix injectivity", () => {
   });
 });
 
+describe("build — a RawExtraction built by hand", () => {
+  it("treats an absent deferredSyntheticNamespaces as no deferrals", () => {
+    // RawExtraction is an exported public type and tooling constructs one.
+    // The deferral list is the compiler's own bookkeeping, so it is optional
+    // at that boundary and every reader normalizes a missing value to [] —
+    // the state an extraction with nothing deferred is in anyway.
+    const { deferredSyntheticNamespaces: _omitted, ...withoutField } =
+      makeExtraction({
+        classes: [{ uri: uri("Thing"), superclasses: [] }],
+        instanceStats: new Map([[uri("Thing"), { total: 1, named: 1 }]]),
+      });
+    const { output, diagnostics } = build(withoutField);
+    expect(diagnostics.filter((d) => d.code === "E001")).toEqual([]);
+    expect(output.classes.has(uri("Thing"))).toBe(true);
+  });
+});
+
 describe("build — the deferred synthetic-prefix warning (E001)", () => {
   // Pass 1 hands over the namespaces it put on a serial synthetic that carry
   // a graphql:prefix declaration; whether that declaration actually replaces
