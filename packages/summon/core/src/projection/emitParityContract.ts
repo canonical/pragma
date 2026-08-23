@@ -197,9 +197,9 @@ The invariant binds the DECLARED BINDING PATHS as each host mounts them —
 \`CREATE_GENERATORS\` declaration, and the same paths of the summon bin's
 discovered (or \`--generators\`-served) generator packages. Other generators
 a discovered package exports (\`domain\`/\`route\`/\`wrapper\`) and the summon
-builtin \`init\` are summon-only surface OUTSIDE this contract — reachable
-through summon discovery only, never mounted by pragma, and no rule below
-speaks for them. A host's root presentation (the \`create\` topic page,
+builtins (\`init\`, \`example/hello\`, \`example/webapp\`) are summon-only
+surface OUTSIDE this contract — reachable through summon discovery only,
+never mounted by pragma, and no rule below speaks for them. A host's root presentation (the \`create\` topic page,
 summon's root help) is host prose; every rule below binds the declared
 paths beneath it.
 
@@ -337,10 +337,10 @@ ${interactionTable()}
   workspace through a symlink (its host-level jail, behind the shared
   validators — summon relies on the validator tier). Known residue,
   disclosed and OUT of contract: the summon-only generators outside the
-  declared set (§1 — \`domain\`/\`route\`/\`wrapper\`, the builtin
-  \`init\`) take name/path prompts with no validator, and summon
-  scaffolds where they point, the invocation directory's outside
-  included. The batch modes additionally
+  declared set (§1 — \`domain\`/\`route\`/\`wrapper\`, the builtins
+  \`init\`, \`example/hello\`, \`example/webapp\`) take name/path
+  prompts with no validator, and summon scaffolds where they point,
+  the invocation directory's outside included. The batch modes additionally
   fail loudly (exit 2) on a required answer that is missing even after
   defaults, and re-check the defaults-applied set (an invalid generator
   default fails the same way). A failure raised PAST that gate keeps the
