@@ -73,8 +73,14 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     arms show it as the App's clean error instead of crashing — and now
     carry the same exit codes instead of exiting 0 with the failure
     rendered: exit **2** for the typed guard, exit **1** for any other
-    execution failure the App reports (a mid-run write error, say). The
-    App's rendering itself is unchanged; only the exit code moved.
+    failure the App reports (a mid-run write error, say). An ordinary
+    `Error` thrown by a generator's `generate` gets the same treatment in
+    every arm: the App's clean error phase (`GENERATE_ERROR`, exit **1**)
+    where it previously crashed into Ink's boundary — rendered on stdout
+    with a source frame and, under bun, exit **0** — and a bare stderr
+    line (exit **1**) in the batch modes, where it previously escaped as
+    an unhandled-rejection stack. For failures the App already reported,
+    the rendering is unchanged; only the exit code moved.
 
   Also in this line of work, on a TTY: `--dry-run` renders the batch plan and
   `--undo` runs batch undo (neither mounts the interactive preview any more,
