@@ -3,17 +3,19 @@
  * the mechanism behind two loop MAJORs: a gate's build must COMPARE the two
  * committed generated modules and fail on staleness instead of silently
  * repairing them before the PROTECTED drift guards (create.test.ts's
- * projection-fidelity and reader-derivability cells) read them. Before
- * these cells the whole seam was two unpinned lines (build.ts reading
- * PRAGMA_BUILD_SKIP_DOCS; the gate spawn beside this file setting it) whose
- * silent loss every suite survived green. The cells drive the EXPORTED
- * generators with an injected `out` in a tmpdir — no spawn, no build, no
- * repo write; the third pins the seam's one ruled EXCEPTION: a difference
- * confined to the manifest's PACKAGE_VERSIONS block (a workspace version
- * bump's expected residue, which no release step rebuilds — and the block
- * the PROTECTED offline cells pin the release line from) must not fail
- * check mode — it is REPAIRED in place with a notice, the three-line diff
- * left for the developer to commit.
+ * projection-fidelity and reader-derivability cells) read them. The seam
+ * is pinned END TO END. The generator cells drive the EXPORTED generators
+ * with an injected `out` in a tmpdir — no spawn, no build, no repo write;
+ * the third pins the seam's one ruled EXCEPTION: a difference confined to
+ * the manifest's PACKAGE_VERSIONS block (a workspace version bump's
+ * expected residue, which no release step rebuilds — and the block the
+ * PROTECTED offline cells pin the release line from) must not fail check
+ * mode — it is REPAIRED in place with a notice, the three-line diff left
+ * for the developer to commit. The wiring cells hold the seam's two
+ * once-unpinned lines — the gate spawn setting PRAGMA_BUILD_SKIP_DOCS
+ * (the exported GATE_BUILD_ENV it spreads) and build.ts reading it (the
+ * exported checkModeFromEnv) — whose silent loss every suite previously
+ * survived green.
  */
 
 import {
@@ -28,9 +30,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  checkModeFromEnv,
   generateCreateSurface,
   generateTemplateManifest,
 } from "../../../scripts/codegen.js";
+import { GATE_BUILD_ENV } from "./globalSetup.js";
 
 const SURFACE_COMMITTED = fileURLToPath(
   new URL(
@@ -63,14 +67,21 @@ describe("the committed-codegen CHECK seam (scripts/codegen.ts)", () => {
     vi.restoreAllMocks();
   });
 
-  it("check mode over the committed bytes: green, nothing written — the healthy-tree gate", () => {
+  it("check mode over the committed bytes: green, nothing written, ZERO notices — the healthy-tree gate", () => {
     // Seeded with the bytes git holds, check mode must compute NO change on
     // either module (this is also the healthy gate build's determinism: a
-    // fresh render equals the committed bytes) and must never write.
+    // fresh render equals the committed bytes), must never write — and must
+    // log NOTHING. The zero-notices half is what separates "byte-identical"
+    // from "tolerated": a drifted frame constant (say MANIFEST_MID losing
+    // its trailing newline) keeps startsWith/endsWith true, so every run
+    // would silently take the versions-repair arm on a perfectly healthy
+    // tree — the notice (and the repair's rewrite) is the only tell, and
+    // this cell reddens on either.
     const before = [
       readFileSync(surfaceOut, "utf-8"),
       readFileSync(manifestOut, "utf-8"),
     ];
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const surface = generateCreateSurface({ check: true, out: surfaceOut });
     expect(surface.changed).toBe(false);
     expect(surface.surfaced).toBeGreaterThan(0);
@@ -79,6 +90,7 @@ describe("the committed-codegen CHECK seam (scripts/codegen.ts)", () => {
       out: manifestOut,
     });
     expect(Object.keys(manifest).length).toBeGreaterThan(0);
+    expect(log).not.toHaveBeenCalled();
     expect(readFileSync(surfaceOut, "utf-8")).toBe(before[0]);
     expect(readFileSync(manifestOut, "utf-8")).toBe(before[1]);
   });
@@ -144,5 +156,29 @@ describe("the committed-codegen CHECK seam (scripts/codegen.ts)", () => {
     const logged = log.mock.calls.flat().join("\n");
     expect(logged).toContain("stale PACKAGE_VERSIONS block");
     expect(logged).toContain("yours to commit");
+  });
+});
+
+describe("the CHECK seam's wiring (GATE_BUILD_ENV → checkModeFromEnv)", () => {
+  it("checkModeFromEnv: exactly the documented flag value flips a build into the gate's check", () => {
+    // The READ side of the seam, pinned: build.ts consumes this one-liner
+    // over its process.env, so a build enters check mode exactly when the
+    // flag is the string "1" — and an ordinary developer env (no flag)
+    // stays in write mode, where `bun run build` repairs all three
+    // committed artifacts.
+    expect(checkModeFromEnv({ PRAGMA_BUILD_SKIP_DOCS: "1" })).toBe(true);
+    expect(checkModeFromEnv({})).toBe(false);
+  });
+
+  it("GATE_BUILD_ENV carries the check-mode flag — the gate spawn's env enters check mode", () => {
+    // The SET side of the seam, pinned against the read side: the exported
+    // constant IS the object the gate spawn spreads into its child env
+    // (perf/globalSetup.ts), and feeding it to checkModeFromEnv proves the
+    // two wiring lines meet — dropping the flag from the spawn, or
+    // renaming it on either side, reddens this cell instead of silently
+    // reverting gate builds to write mode (which would repair the stale
+    // committed tree every drift guard exists to catch).
+    expect(GATE_BUILD_ENV.PRAGMA_BUILD_SKIP_DOCS).toBe("1");
+    expect(checkModeFromEnv(GATE_BUILD_ENV)).toBe(true);
   });
 });

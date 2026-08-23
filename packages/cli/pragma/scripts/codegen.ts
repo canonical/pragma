@@ -46,6 +46,26 @@ import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";
 const scriptsUrl = new URL(".", import.meta.url);
 
 /**
+ * Whether an environment makes `scripts/build.ts` a GATE's build — CHECK
+ * mode for both generators below, docs skipped. ONE reader for the one
+ * flag: build.ts consumes this over its own `process.env`, and the seam
+ * cells in src/testing/perf/codegen.test.ts drive it together with the
+ * gate spawn's exported env (GATE_BUILD_ENV in perf/globalSetup.ts) — so
+ * neither of the seam's two wiring lines (the spawn setting the flag; the
+ * build reading it) can be dropped with every suite still green, which is
+ * exactly how the loop's silent-repair MAJORs would come back.
+ *
+ * @param env - The environment to judge (build.ts passes `process.env`;
+ *   injectable for the cells).
+ * @returns True exactly when PRAGMA_BUILD_SKIP_DOCS is the string "1".
+ */
+export function checkModeFromEnv(
+  env: Record<string, string | undefined>,
+): boolean {
+  return env.PRAGMA_BUILD_SKIP_DOCS === "1";
+}
+
+/**
  * EVERY declared template root — the binary carries all of them, so every
  * `create` binding runs from the compiled binary. Prefixes and relative dirs
  * come from {@link CREATE_GENERATORS}; the walking, keying (one scheme with

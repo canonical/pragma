@@ -332,6 +332,18 @@ if (!existsSync(TEMPLATE_COPIER)) {
 }
 
 /**
+ * The gate build's ONE env delta — the flag that flips `scripts/build.ts`
+ * into CHECK mode (read by `checkModeFromEnv` in scripts/codegen.ts).
+ * EXPORTED so the seam's wiring is pinned: this constant IS the object the
+ * gate spawn below spreads into its env, and a codegen.test.ts cell
+ * asserts it actually enters check mode — before it, this side of the
+ * seam was one unpinned line whose silent loss (an env-object refactor, a
+ * merge) reverted the gate to write mode, restoring the silent-repair
+ * MAJORs with every suite green.
+ */
+export const GATE_BUILD_ENV = { PRAGMA_BUILD_SKIP_DOCS: "1" } as const;
+
+/**
  * The served entry artifact of one workspace package (`module` ?? `main`),
  * absolute — or undefined for a package that serves no compiled dist (no
  * `build` script, or an entry outside `dist/`, e.g. webarchitect's
@@ -547,7 +559,7 @@ export default function setup(): void {
       // exist to catch. Every guard compares the bytes git actually holds.
       // This one spawn serves both gate configs (vitest.config.ts and
       // vitest.perf.config.ts register this globalSetup).
-      env: { ...process.env, PRAGMA_BUILD_SKIP_DOCS: "1" },
+      env: { ...process.env, ...GATE_BUILD_ENV },
     });
     if (result.error) {
       // The builder never STARTED: nothing was written, so the binary on

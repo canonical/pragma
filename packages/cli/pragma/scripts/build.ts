@@ -63,6 +63,7 @@ import { fileURLToPath } from "node:url";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 import {
+  checkModeFromEnv,
   generateCreateSurface,
   generateTemplateManifest,
   TEMPLATE_ROOTS,
@@ -115,8 +116,10 @@ if (import.meta.main) {
   // — codegen fails loudly on a stale module (versions-only manifest
   // staleness is instead REPAIRED with a notice, the header's one scoped
   // exception), docs are skipped. Surface before manifest: a stale surface
-  // throws here before any repair can happen.
-  const check = process.env.PRAGMA_BUILD_SKIP_DOCS === "1";
+  // throws here before any repair can happen. The flag read lives beside
+  // the generators it flips (checkModeFromEnv) so the wiring is pinned by
+  // the seam cells, not just this call site.
+  const check = checkModeFromEnv(process.env);
 
   const { surfaced, changed: surfaceChanged } = generateCreateSurface({
     check,
