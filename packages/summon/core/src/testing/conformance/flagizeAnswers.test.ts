@@ -93,4 +93,27 @@ describe("flagizeAnswers", () => {
       "--features=x,y",
     ]);
   });
+
+  // A confirm with NO declared default: buildOptionInfo registers only the
+  // positive `--<kebab>`, so `true` is expressible and `false` is NOT — the
+  // helper must fail loudly rather than hand the cross-CLI matrix a
+  // `--no-<kebab>` argv both binaries reject as an unknown option (the
+  // round-14 F3 class, previously masked because every shipped confirm
+  // declares a boolean default).
+  const defaultless: PromptLike[] = [
+    { name: "quiet", type: "confirm", message: "Quiet?" },
+  ];
+
+  it("a default-less confirm answered true takes its registered positive form", () => {
+    expect(flagizeAnswers(defaultless, { quiet: true })).toEqual(["--quiet"]);
+  });
+
+  it("a default-less confirm answered false THROWS naming the prompt — no unregistered spelling is ever emitted", () => {
+    expect(() => flagizeAnswers(defaultless, { quiet: false })).toThrow(
+      /confirm "quiet" answered false has no registered spelling/,
+    );
+    expect(() => flagizeAnswers(defaultless, { quiet: false })).toThrow(
+      /--quiet/,
+    );
+  });
 });
