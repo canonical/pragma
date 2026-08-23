@@ -111,7 +111,14 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   pragma's whole-argv global scan reads its `--version` — so
   `pragma create … -v` prints the version and exits 0 having written
   nothing (the long form `--verbose` ports; only the short form
-  collides). Commander's
+  collides). The mirror direction is ONE token wide: `--detail` is a
+  pragma-only covenant global (read by the same whole-argv scan as
+  `--format`/`--verbose`) that summon rejects loudly — so
+  `pragma create component react src/components/B --detail=summary --yes`
+  writes a tree where
+  `summon component react src/components/B --detail=summary --yes` is
+  `error: unknown option '--detail=summary'`, exit 2, nothing
+  written. Commander's
   implicit `help` subcommand is likewise a summon host spelling
   (`summon help component`, `summon component help`);
   `pragma create component help` errors as an unknown segment (and
