@@ -9,5 +9,14 @@
     "sourceMap": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    // The parity-contract EMITTER is repo tooling, not shipped API: no
+    // exports subpath reaches it and no barrel imports it, so compiling it
+    // into dist/ shipped ~19KB of dead weight in every install. Its two real
+    // consumers (scripts/genParityContract.ts, parityContract.test.ts)
+    // import it from src.
+    "src/projection/emitParityContract.ts"
+  ]
 }
