@@ -415,7 +415,7 @@ export interface GraphqlPropertyOverlay {
    * graphql:searchable — IR capture ONLY in this release: no schema surface
    * reads it (no search root field, no connection, no OntologyProperty
    * field), so the emitted SDL is byte-identical with or without the term.
-   * The search feature (PRA-91) consumes this flag when it builds its index.
+   * Captured for a future search index; no schema surface reads it yet.
    * Its recorded default, decided here so the boundary is explicit: an
    * ontology with ZERO graphql:searchable annotations indexes the
    * descriptive-chain sources (title/label/definition) — a silently empty

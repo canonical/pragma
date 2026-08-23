@@ -35,12 +35,11 @@ export const SH = "http://www.w3.org/ns/shacl#";
  * (names, cardinality, exposure, descriptive sources) on the ontology terms
  * themselves instead of in per-consumer config.
  *
- * RATIFIED IRI (PRA-96 O-1, 2026-08-22): the owner confirmed this value;
- * a later revision remains possible and would be a breaking change for any
- * published ontology already carrying annotations under it — such a
- * revision must be coordinated as a re-release of those ontologies.
- * Everything is keyed to this single constant, so the swap itself is one
- * line here plus the README example.
+ * Producers and consumers must agree on this exact IRI: the extraction
+ * probe matches terms by namespace prefix, and assertions under any other
+ * IRI are ignored without a diagnostic. Everything is keyed to this single
+ * constant; changing it is a breaking change for every published ontology
+ * carrying annotations.
  */
 export const GRAPHQL = "https://pragma.canonical.com/graphql#";
 
