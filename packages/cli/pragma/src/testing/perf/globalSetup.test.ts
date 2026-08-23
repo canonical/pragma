@@ -15,6 +15,8 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -51,7 +53,7 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
     // The destroy: a fresh-looking dist compiled from erroring sources
     // must read STALE to the contender's re-stat and every later run.
     expect(existsSync(artifact)).toBe(false);
-    expect(existsSync(`${artifact}.lock`)).toBe(false);
+    expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
   });
 
   it("a builder that never STARTED preserves the previous good artifact and names the spawn error", () => {
@@ -74,7 +76,7 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
     expect(readFileSync(artifact, "utf-8")).toBe(
       "// previous good generation\n",
     );
-    expect(existsSync(`${artifact}.lock`)).toBe(false);
+    expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
   });
 
   it("success leaves the artifact as built — no destroy, no lock residue", () => {
@@ -83,6 +85,34 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
       return { status: 0, stdout: "", stderr: "" };
     });
     expect(readFileSync(artifact, "utf-8")).toBe("// good generation\n");
-    expect(existsSync(`${artifact}.lock`)).toBe(false);
+    expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
+  });
+
+  it("a FRESH root's lock cycle never invokes the runner and never moves the artifact's parent-dir mtime chain", () => {
+    writeFileSync(artifact, "// previous good generation\n");
+    // Pin the watched dirs to a past instant: any directory mutation inside
+    // them — e.g. a lockfile created and unlinked beside the artifact, the
+    // round-14 regression that marked `dist/pragma` stale on EVERY run —
+    // moves them to NOW and fails the equality below. The lock must live at
+    // the ROOT, whose own mtime no freshness rule reads.
+    const watched = [join(root, "dist"), join(root, "dist", "esm")];
+    const past = new Date(Date.now() - 60_000);
+    for (const dir of watched) {
+      utimesSync(dir, past, past);
+    }
+    const before = watched.map((dir) => statSync(dir).mtimeMs);
+    let invoked = false;
+    buildDistOrDestroy(
+      root,
+      artifact,
+      () => true,
+      () => {
+        invoked = true;
+        return { status: 0, stdout: "", stderr: "" };
+      },
+    );
+    expect(invoked).toBe(false);
+    expect(watched.map((dir) => statSync(dir).mtimeMs)).toEqual(before);
+    expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
   });
 });

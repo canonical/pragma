@@ -56,16 +56,17 @@
  * dists from ITS process, nothing orders the two suites, and two
  * invocations of this package's own suites can overlap too — so every
  * root here (each per-root dep dist AND `dist/pragma`) ALWAYS enters
- * {@link buildUnderLock}, which takes an O_EXCL lockfile beside the
- * served artifact and judges freshness only UNDER it: a second process
- * finding the lock waits for release and RE-STATS instead of
- * double-building (two in-place `tsc` rewrites truncating one dist under
- * a live importer). A pre-lock freshness skip existed once and let a
- * contender bless another process's mid-flight emit (the entry lands
- * before `tsc` can fail — measured live), proceeding with no lock against
- * an artifact about to be destroyed; deleting it is what makes "one
- * consistent generation for every worker" true. A lock that never clears
- * fails loudly after a timeout instead of forever.
+ * {@link buildUnderLock}, which takes an O_EXCL lockfile at the root's
+ * top level — OUTSIDE every tree the freshness rules stat — and judges
+ * freshness only UNDER it: a second process finding the lock waits for
+ * release and RE-STATS instead of double-building (two in-place `tsc`
+ * rewrites truncating one dist under a live importer). A pre-lock
+ * freshness skip existed once and let a contender bless another
+ * process's mid-flight emit (the entry lands before `tsc` can fail —
+ * measured live), proceeding with no lock against an artifact about to
+ * be destroyed; deleting it is what makes "one consistent generation for
+ * every worker" true. A lock that never clears fails loudly after a
+ * timeout instead of forever.
  */
 
 import { spawnSync } from "node:child_process";
@@ -73,7 +74,6 @@ import {
   closeSync,
   existsSync,
   lstatSync,
-  mkdirSync,
   openSync,
   readdirSync,
   readFileSync,
@@ -82,7 +82,7 @@ import {
   statSync,
   writeSync,
 } from "node:fs";
-import { dirname, join, sep } from "node:path";
+import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -110,9 +110,17 @@ function sleepSync(ms: number): void {
 }
 
 /**
- * Serialize one artifact's rebuild across PROCESSES with an `O_EXCL`
- * lockfile beside the served artifact — the same lock path every gate that
- * serves this dist computes, so contention meets contention. Freshness is
+ * Serialize one root's rebuild across PROCESSES with an `O_EXCL` lockfile
+ * at `<root>/.dist-build.lock` — the root's top level, deliberately
+ * OUTSIDE every tree the freshness rules stat. The lock's own
+ * create/unlink is a directory mutation, and a lock kept beside the
+ * served artifact inside `dist/**` bumped a directory {@link DEP_INPUTS}
+ * watches on EVERY entry, so a fully fresh tree re-judged `dist/pragma`
+ * stale and rebuilt the binary on every vitest invocation (measured);
+ * the root's own mtime, by contrast, is watched by nothing — only its
+ * named children are. One root serves ONE dist artifact, so root-scoped
+ * is artifact-scoped, and both sibling gates compute the same path for
+ * the same root — contention still meets contention. Freshness is
  * decided ONLY under the lock: callers enter unconditionally, with no
  * pre-lock fast path — a stat taken outside the lock can land inside
  * another process's emit-to-exit window (`tsc` emits the entry before it
@@ -131,27 +139,29 @@ function sleepSync(ms: number): void {
  * still the previous good generation, stale by the same stats that sent
  * the holder in. A lockfile that never clears (a killed
  * builder) fails loudly after {@link LOCK_TIMEOUT_MS} naming the file,
- * rather than double-building or waiting forever.
+ * rather than double-building or waiting forever. RESIDUAL, accepted:
+ * since every entry takes the lock, crash residue blocks EVERY later run
+ * for the full timeout until the file is removed (pre-existing wait
+ * semantics — no stale-lock reclaim is attempted).
  *
  * TWIN: cli/summon's globalSetup (src/testing/globalSetup.ts) carries the
  * same helper — the two gates are deliberate SIBLINGS with no import edge
  * (importing from `@canonical/pragma-cli` there would close a dependency
  * cycle); keep the copies in step.
  *
- * @param artifact - The served dist artifact the lock guards.
+ * @param root - The package root the lock scopes (one served dist each).
  * @param isFresh - Re-stats the artifact against its inputs.
  * @param build - Rebuilds the artifact (throws loudly on failure).
- * @note Impure — creates and removes `<artifact>.lock`; blocks while waiting.
+ * @note Impure — creates and removes `<root>/.dist-build.lock`; blocks
+ *   while waiting.
  */
 function buildUnderLock(
-  artifact: string,
+  root: string,
   isFresh: () => boolean,
   build: () => void,
 ): void {
-  const lockPath = `${artifact}.lock`;
+  const lockPath = join(root, ".dist-build.lock");
   const deadline = Date.now() + LOCK_TIMEOUT_MS;
-  // A never-built package has no dist dir yet; the lock needs its parent.
-  mkdirSync(dirname(lockPath), { recursive: true });
   for (;;) {
     let fd: number;
     try {
@@ -344,8 +354,9 @@ function runBuild(root: string): BuildResult {
  *
  * TWIN: cli/summon's globalSetup carries the same function; keep in step.
  *
- * @param root - The workspace package being built.
- * @param artifact - Its served dist entry (the lock lives beside it).
+ * @param root - The workspace package being built (the lock lives at its
+ *   top level, outside the watched trees).
+ * @param artifact - Its served dist entry.
  * @param isFresh - Re-stats the artifact against its inputs (under the lock).
  * @param runner - The build runner ({@link runBuild}; injectable for tests).
  * @note Impure — takes the lock, builds, and may remove the artifact.
@@ -356,7 +367,7 @@ export function buildDistOrDestroy(
   isFresh: () => boolean,
   runner: BuildRunner = runBuild,
 ): void {
-  buildUnderLock(artifact, isFresh, () => {
+  buildUnderLock(root, isFresh, () => {
     const result = runner(root);
     if (result.error) {
       // The builder never STARTED (ENOENT/EACCES): nothing can have
@@ -450,9 +461,11 @@ export default function setup(): void {
   };
   // The binary rebuild is the same cross-process hazard as a dep dist (two
   // overlapping invocations of this package's suites), so it takes the
-  // same lock — and, like every root, enters it unconditionally: freshness
-  // is decided only UNDER it.
-  buildUnderLock(binary, isFresh, () => {
+  // same kind of lock — this package's own root-level
+  // `.dist-build.lock`, the uniform scheme every gated root uses — and,
+  // like every root, enters it unconditionally: freshness is decided
+  // only UNDER it.
+  buildUnderLock(root, isFresh, () => {
     const result = spawnSync("bun", ["run", "scripts/build.ts"], {
       cwd: root,
       stdio: "inherit",

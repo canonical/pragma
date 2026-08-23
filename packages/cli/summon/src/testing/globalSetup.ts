@@ -26,12 +26,13 @@
  * sibling gate rebuilds four of the same dists (task, ds-types, utils,
  * summon-core) from ITS process, and nothing orders the two suites — so
  * every root ALWAYS enters {@link buildUnderLock}, which takes an O_EXCL
- * lockfile beside the served artifact and judges freshness only UNDER it:
- * a second process finding the lock waits for release and RE-STATS
- * instead of double-building (two in-place `tsc` rewrites truncating one
- * dist under a live importer). A pre-lock freshness skip existed once and
- * let a contender bless another process's mid-flight emit (the entry
- * lands before `tsc` can fail — measured live), proceeding with no lock
+ * lockfile at the root's top level — OUTSIDE every tree the freshness
+ * rules stat — and judges freshness only UNDER it: a second process
+ * finding the lock waits for release and RE-STATS instead of
+ * double-building (two in-place `tsc` rewrites truncating one dist under
+ * a live importer). A pre-lock freshness skip existed once and let a
+ * contender bless another process's mid-flight emit (the entry lands
+ * before `tsc` can fail — measured live), proceeding with no lock
  * against an artifact about to be destroyed; deleting it is what makes
  * one consistent pre-worker generation true. A lock that never clears
  * fails loudly after a timeout instead of forever.
@@ -42,7 +43,6 @@ import {
   closeSync,
   existsSync,
   lstatSync,
-  mkdirSync,
   openSync,
   readdirSync,
   readFileSync,
@@ -51,7 +51,7 @@ import {
   statSync,
   writeSync,
 } from "node:fs";
-import { dirname, join, sep } from "node:path";
+import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** How long a contender waits on another process's build lock (ms). */
@@ -66,47 +66,58 @@ function sleepSync(ms: number): void {
 }
 
 /**
- * Serialize one artifact's rebuild across PROCESSES with an `O_EXCL`
- * lockfile beside the served artifact — the same lock path every gate that
- * serves this dist computes, so contention meets contention. Freshness is
- * decided ONLY under the lock: callers enter unconditionally, with no
- * pre-lock fast path — a stat taken outside the lock can land inside
- * another process's emit-to-exit window (`tsc` emits the entry before it
- * can fail) and bless a mid-flight artifact without waiting on anything.
- * The holder stats after acquiring and builds only if stale, so an
- * uncontended fresh root pays one open/unlink and nothing else; a
- * contender waits for release and then RE-STATS instead of building —
- * looping back to contend when the dist is still stale, which a FAILED
- * holder guarantees: a `build` callback whose build RAN and failed
- * destroys the served artifact before rethrowing, because a failed build
- * can still EMIT it (nothing sets `noEmitOnError`, so `tsc` writes output
- * and exits nonzero, and the two-step builds' first step writes the entry
- * before the second can fail) — mtime alone cannot tell a failed build
- * from a clean one — while a builder that never STARTED (a spawn error)
- * leaves the artifact alone: nothing was emitted, and the dist on disk is
- * still the previous good generation, stale by the same stats that sent
- * the holder in. A lockfile that never clears (a killed
- * builder) fails loudly after {@link LOCK_TIMEOUT_MS} naming the file,
- * rather than double-building or waiting forever.
+ * Serialize one root's rebuild across PROCESSES with an `O_EXCL` lockfile
+ * at `<root>/.dist-build.lock` — the root's top level, deliberately
+ * OUTSIDE every tree the freshness rules stat. The lock's own
+ * create/unlink is a directory mutation, and a lock kept beside the
+ * served artifact inside `dist/**` bumped a directory the sibling gate's
+ * `DEP_INPUTS` watches on EVERY entry, so a fully fresh tree re-judged
+ * `dist/pragma` stale and rebuilt the binary on every vitest invocation
+ * (measured); the root's own mtime, by contrast, is watched by nothing —
+ * only its named children are. One root serves ONE dist artifact, so
+ * root-scoped is artifact-scoped, and both sibling gates compute the
+ * same path for the same root — contention still meets contention.
+ * Freshness is decided ONLY under the lock: callers enter
+ * unconditionally, with no pre-lock fast path — a stat taken outside the
+ * lock can land inside another process's emit-to-exit window (`tsc`
+ * emits the entry before it can fail) and bless a mid-flight artifact
+ * without waiting on anything. The holder stats after acquiring and
+ * builds only if stale, so an uncontended fresh root pays one
+ * open/unlink and nothing else; a contender waits for release and then
+ * RE-STATS instead of building — looping back to contend when the dist
+ * is still stale, which a FAILED holder guarantees: a `build` callback
+ * whose build RAN and failed destroys the served artifact before
+ * rethrowing, because a failed build can still EMIT it (nothing sets
+ * `noEmitOnError`, so `tsc` writes output and exits nonzero, and the
+ * two-step builds' first step writes the entry before the second can
+ * fail) — mtime alone cannot tell a failed build from a clean one —
+ * while a builder that never STARTED (a spawn error) leaves the artifact
+ * alone: nothing was emitted, and the dist on disk is still the previous
+ * good generation, stale by the same stats that sent the holder in. A
+ * lockfile that never clears (a killed builder) fails loudly after
+ * {@link LOCK_TIMEOUT_MS} naming the file, rather than double-building
+ * or waiting forever. RESIDUAL, accepted: since every entry takes the
+ * lock, crash residue blocks EVERY later run for the full timeout until
+ * the file is removed (pre-existing wait semantics — no stale-lock
+ * reclaim is attempted).
  *
  * TWIN: cli/pragma's perf globalSetup carries the same helper — the two
  * gates are deliberate SIBLINGS with no import edge (see the file
  * docblock); keep the copies in step.
  *
- * @param artifact - The served dist artifact the lock guards.
+ * @param root - The package root the lock scopes (one served dist each).
  * @param isFresh - Re-stats the artifact against its inputs.
  * @param build - Rebuilds the artifact (throws loudly on failure).
- * @note Impure — creates and removes `<artifact>.lock`; blocks while waiting.
+ * @note Impure — creates and removes `<root>/.dist-build.lock`; blocks
+ *   while waiting.
  */
 function buildUnderLock(
-  artifact: string,
+  root: string,
   isFresh: () => boolean,
   build: () => void,
 ): void {
-  const lockPath = `${artifact}.lock`;
+  const lockPath = join(root, ".dist-build.lock");
   const deadline = Date.now() + LOCK_TIMEOUT_MS;
-  // A never-built package has no dist dir yet; the lock needs its parent.
-  mkdirSync(dirname(lockPath), { recursive: true });
   for (;;) {
     let fd: number;
     try {
@@ -292,8 +303,9 @@ function runBuild(root: string): BuildResult {
  * TWIN: cli/pragma's perf globalSetup carries the same function; keep in
  * step.
  *
- * @param root - The workspace package being built.
- * @param artifact - Its served dist entry (the lock lives beside it).
+ * @param root - The workspace package being built (the lock lives at its
+ *   top level, outside the watched trees).
+ * @param artifact - Its served dist entry.
  * @param isFresh - Re-stats the artifact against its inputs (under the lock).
  * @param runner - The build runner ({@link runBuild}; injectable for tests).
  * @note Impure — takes the lock, builds, and may remove the artifact.
@@ -304,7 +316,7 @@ export function buildDistOrDestroy(
   isFresh: () => boolean,
   runner: BuildRunner = runBuild,
 ): void {
-  buildUnderLock(artifact, isFresh, () => {
+  buildUnderLock(root, isFresh, () => {
     const result = runner(root);
     if (result.error) {
       // The builder never STARTED (ENOENT/EACCES): nothing can have
