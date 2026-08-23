@@ -57,20 +57,21 @@ describe("reference docs drift-guard — emitReference == committed (PROTECTED)"
       "| `--no-with-styles` |",
       "| `--no-with-stories` |",
       "| `--no-with-ssr-tests` |",
-      "| `--no-ssr` |",
-      "| `--no-router` |",
       "| `--no-forms` |",
       "| `--no-run-install` |",
     ]) {
       expect(chapter).toContain(token);
     }
-    // …the rejected positive tokens appear in no flag cell…
+    // …the rejected positive tokens appear in no flag cell — and the retired
+    // ssr/router pair (always-on facts, no longer prompts) in NO cell at all…
     for (const token of [
       "| `--with-styles` |",
       "| `--with-stories` |",
       "| `--with-ssr-tests` |",
       "| `--ssr` |",
+      "| `--no-ssr` |",
       "| `--router` |",
+      "| `--no-router` |",
       "| `--forms` |",
       "| `--run-install` |",
     ]) {

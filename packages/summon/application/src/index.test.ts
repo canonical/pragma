@@ -33,8 +33,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         relay: false,
         runInstall: false,
@@ -134,8 +132,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
         relay: true,
         runInstall: false,
@@ -162,8 +158,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
         relay: false,
         runInstall: false,
@@ -196,8 +190,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         relay: false,
         runInstall: false,
@@ -222,8 +214,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: false,
         relay: true,
         runInstall: false,
@@ -303,8 +293,6 @@ describe("application/react generator", () => {
       const result = dryRun(
         generators["application/react"].generate({
           appPath,
-          ssr: true,
-          router: true,
           forms: false,
           relay: true,
           runInstall: false,
@@ -335,8 +323,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "my-app",
-        ssr: true,
-        router: true,
         forms: true,
         relay: false,
         runInstall: false,
@@ -371,8 +357,6 @@ describe("application/react generator", () => {
     const result = dryRun(
       generators["application/react"].generate({
         appPath: "custom-app",
-        ssr: true,
-        router: true,
         forms: false,
         relay: false,
         runInstall: false,
@@ -391,51 +375,22 @@ describe("application/react generator", () => {
     expect(filePaths).toContain("custom-app/src/client/entry.tsx");
   });
 
-  // The guard is a TYPED invalid answer (GENERATOR_INVALID_ANSWER), so both
-  // hosts route it down their invalid-input pathway instead of a stack, and
-  // its message names only REGISTERED spellings (--no-ssr/--no-router).
-  const GUARD_MESSAGE =
-    "SSR and the router are required — drop --no-ssr/--no-router; " +
-    "standalone SPA mode is not supported.";
-
-  it("throws the typed invalid answer when ssr is off", () => {
-    let thrown: unknown;
-    try {
-      generators["application/react"].generate({
-        appPath: "my-app",
-        ssr: false,
-        router: true,
-        forms: false,
-        relay: false,
-        runInstall: false,
-      });
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({
-      code: "GENERATOR_INVALID_ANSWER",
-      message: GUARD_MESSAGE,
-    });
-  });
-
-  it("throws the typed invalid answer when the router is off", () => {
-    let thrown: unknown;
-    try {
-      generators["application/react"].generate({
-        appPath: "my-app",
-        ssr: true,
-        router: false,
-        forms: false,
-        relay: false,
-        runInstall: false,
-      });
-    } catch (error) {
-      thrown = error;
-    }
-    expect(thrown).toMatchObject({
-      code: "GENERATOR_INVALID_ANSWER",
-      message: GUARD_MESSAGE,
-    });
+  // SSR and the router are always on — NOT questions. The old prompts only
+  // ever accepted their default: a default-`true` confirm is explicit only as
+  // its negation, which the generator's cross-answer guard then rejected, so
+  // the leaf had no reachable all-flags completion (the refusal's own advice
+  // looped). Pin the corrected surface so the dead pair cannot quietly return.
+  it("asks exactly appPath/forms/relay/runInstall — ssr and the router are facts, not prompts", () => {
+    expect(generators["application/react"].prompts.map((p) => p.name)).toEqual([
+      "appPath",
+      "forms",
+      "relay",
+      "runInstall",
+    ]);
+    // The help still states the facts a migrating user needs.
+    expect(generators["application/react"].meta.help).toContain(
+      "SSR and the router are always on; --no-ssr/--no-router are unsupported.",
+    );
   });
 });
 

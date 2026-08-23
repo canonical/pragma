@@ -166,11 +166,10 @@ const cases: Case[] = [
     kind: "application",
     framework: "",
     // The prompt names ARE the param names now (the B8 alias seam is gone):
-    // the pragma path takes the generator's own `ssr`/`router`/`forms`/`relay`.
+    // the pragma path takes the generator's own `forms`/`relay` (ssr/router
+    // are always-on facts, no longer prompts).
     params: {
       appPath: "my-app",
-      ssr: true,
-      router: true,
       forms: true,
       relay: false,
       runInstall: false,

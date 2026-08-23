@@ -187,8 +187,6 @@ pragma create application react [app-path] [options]
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--no-ssr` | — | Include SSR. (default: true) |
-| `--no-router` | — | Include router. (default: true) |
 | `--no-forms` | — | Include form components. (default: true) |
 | `--relay` | — | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
 | `--no-run-install` | — | Install dependencies now. (default: true) |

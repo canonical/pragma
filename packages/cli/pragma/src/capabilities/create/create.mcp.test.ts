@@ -80,12 +80,15 @@ describe("create over MCP (PROTECTED)", () => {
       properties?: Record<string, unknown>;
     };
     const names = Object.keys(applicationSchema.properties ?? {});
-    // The B8 --with-X aliases are gone: prompt names ARE the arg names.
+    // The B8 --with-X aliases are gone: prompt names ARE the arg names — and
+    // ssr/router are gone WITH their prompts (always-on facts, not questions).
     expect(names).toEqual(
-      expect.arrayContaining(["appPath", "ssr", "router", "forms", "relay"]),
+      expect.arrayContaining(["appPath", "forms", "relay", "runInstall"]),
     );
     expect(names).not.toContain("withSsr");
     expect(names).not.toContain("withRelay");
+    expect(names).not.toContain("ssr");
+    expect(names).not.toContain("router");
   });
 
   it("plan-first: no confirm → a plan, no files written", async () => {

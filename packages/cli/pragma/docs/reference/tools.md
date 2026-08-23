@@ -93,8 +93,6 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `appPath` | string | no | Application directory name. (default: my-app) |
-| `ssr` | boolean | no | Include SSR. (default: true) |
-| `router` | boolean | no | Include router. (default: true) |
 | `forms` | boolean | no | Include form components. (default: true) |
 | `relay` | boolean | no | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
 | `runInstall` | boolean | no | Install dependencies now. (default: true) |

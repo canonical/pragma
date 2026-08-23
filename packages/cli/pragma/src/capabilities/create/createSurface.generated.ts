@@ -27,20 +27,6 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
         "group": "Application"
       },
       {
-        "name": "ssr",
-        "type": "confirm",
-        "message": "Include SSR?",
-        "default": true,
-        "group": "Application"
-      },
-      {
-        "name": "router",
-        "type": "confirm",
-        "message": "Include router?",
-        "default": true,
-        "group": "Application"
-      },
-      {
         "name": "forms",
         "type": "confirm",
         "message": "Include form components?",

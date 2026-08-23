@@ -74,14 +74,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     `--component-path`'s long-standing rule. The batch
     modes additionally error (exit **2**) on a required answer that is
     missing even after defaults. A generator-raised cross-answer constraint
-    fails the same way — application/react's guard is now `SSR and the
-    router are required — drop --no-ssr/--no-router; standalone SPA mode is
-    not supported.` as a bare stderr line, exit **2** in the batch modes
-    (previously an uncaught throw with a stack, exit 1). The run and wizard
+    (`invalidAnswersError` from `@canonical/summon-core`) fails the same
+    way — a bare stderr line, exit **2** in the batch modes (previously an
+    uncaught throw with a stack, exit 1); no shipped generator raises one
+    today (application/react's former ssr/router guard is gone with its
+    prompts — see the wizard note below). The run and wizard
     arms show it as the App's clean error instead of crashing — and now
     carry the same exit codes instead of exiting 0 with the failure
-    rendered: exit **2** for the typed guard, exit **1** for any other
-    failure the App reports (a mid-run write error, say). An ordinary
+    rendered: exit **2** for the typed cross-answer error, exit **1** for
+    any other failure the App reports (a mid-run write error, say). An ordinary
     `Error` thrown by a generator's `generate` gets the same treatment in
     every arm: the App's clean error phase (`GENERATE_ERROR`, exit **1**)
     where it previously crashed into Ink's boundary — rendered on stdout
@@ -102,6 +103,18 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   generator's `--help`. Generated trees are byte-identical throughout; a
   `--yes` run with VALID answers is untouched (an invalid explicit answer
   now refuses — see *Invalid input* above).
+
+* **`application/react` drops its `ssr` and `router` prompts — SSR and the
+  router are always on.** The scaffold has no SPA arm, so the two wizard
+  questions (`Include SSR?`, `Include router?`) only ever accepted their
+  default: answering "no" hit the generator's own guard. Worse, the pair made
+  the non-interactive refusal's advice unfollowable — a default-`true`
+  confirm can be provided explicitly only as its negation, which the guard
+  then rejected, so `summon application react` had no complete-flags path at
+  all. The wizard now asks four questions (directory, forms, relay, install);
+  `--no-ssr`/`--no-router` are unknown options (they previously only ever
+  produced the guard error); the guard itself is gone as dead code. Generated
+  trees are byte-identical — the pair never reached a template.
 
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 

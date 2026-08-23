@@ -174,7 +174,10 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
       {
         v: "application",
         args: ["[appPath]"],
-        flags: ["--ssr", "--router", "--forms", "--relay", "--run-install"],
+        // ssr/router are GONE: always-on facts, not prompts — the pair had no
+        // reachable explicit form (only `--no-` spellings the generator's own
+        // guard rejected), so the projection no longer carries them.
+        flags: ["--forms", "--relay", "--run-install"],
         mutates: true,
         mcp: "create_application",
       },

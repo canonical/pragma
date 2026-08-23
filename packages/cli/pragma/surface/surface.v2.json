@@ -170,7 +170,7 @@
         {
           "v": "application",
           "args": ["[appPath]"],
-          "flags": ["--ssr", "--router", "--forms", "--relay", "--run-install"],
+          "flags": ["--forms", "--relay", "--run-install"],
           "mutates": true,
           "mcp": "create_application"
         }

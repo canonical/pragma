@@ -5,7 +5,6 @@ import type {
   PromptDefinition,
 } from "@canonical/summon-core";
 import {
-  invalidAnswersError,
   type LoadedTemplate,
   loadTemplateSync,
   rawFile,
@@ -29,13 +28,18 @@ import validateAppPath from "./validateAppPath.js";
 
 export interface ApplicationReactAnswers {
   readonly appPath: string;
-  readonly ssr: boolean;
-  readonly router: boolean;
   readonly forms: boolean;
   readonly relay: boolean;
   readonly runInstall: boolean;
 }
 
+// SSR and the router are NOT prompts: they are always on (the scaffold has no
+// SPA arm — every template assumes both), so a question that only ever
+// accepted its default was two dead wizard steps and, worse, an unanswerable
+// refusal: a default-`true` confirm can be made explicit ONLY by negating it
+// (`--no-ssr`/`--no-router`), which the old cross-answer guard then rejected —
+// so `create application react` had no reachable all-flags completion. The
+// help text states the facts; the flags simply do not exist.
 const prompts: PromptDefinition[] = [
   {
     name: "appPath",
@@ -44,20 +48,6 @@ const prompts: PromptDefinition[] = [
     default: "my-app",
     validate: validateAppPath,
     positional: true,
-    group: "Application",
-  },
-  {
-    name: "ssr",
-    type: "confirm",
-    message: "Include SSR?",
-    default: true,
-    group: "Application",
-  },
-  {
-    name: "router",
-    type: "confirm",
-    message: "Include router?",
-    default: true,
     group: "Application",
   },
   {
@@ -135,19 +125,6 @@ SSR and the router are always on; --no-ssr/--no-router are unsupported.`,
   prompts,
 
   generate: (answers) => {
-    // A CROSS-answer constraint (no single prompt's `validate` sees both):
-    // raised as the typed invalid answer so each host routes it down its
-    // invalid-input pathway — INVALID_INPUT/exit 2 in pragma, the bare
-    // message in the summon bin — naming only REGISTERED spellings (ssr and
-    // router default to true; the only flags that can violate this are
-    // `--no-ssr`/`--no-router`).
-    if (!answers.ssr || !answers.router) {
-      throw invalidAnswersError(
-        "SSR and the router are required — drop --no-ssr/--no-router; " +
-          "standalone SPA mode is not supported.",
-      );
-    }
-
     // The app path is a directory path, not a route path — keep it as given
     // (absolute or relative), only trimming surrounding whitespace and any
     // trailing slash.

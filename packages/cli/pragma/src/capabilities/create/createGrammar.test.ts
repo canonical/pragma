@@ -603,40 +603,76 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("the refusal's own instruction WORKS: its Missing tokens supplied back (+ --dry-run) parse and preview, exit 0", () => {
-    // Take the message's advice VERBATIM: extract the tokens the bare
-    // refusal prints, supply each back (a value for the path flag; the
-    // `--no-` confirms are bare), add --dry-run, and the same leaf must
-    // preview cleanly. Pre-fix the list kebab-cased prompt NAMES —
-    // `--with-styles` and friends, which no host registers — so this
-    // exact round-trip was `error: unknown option`, exit 2.
+  // The refusal's own instruction WORKS — on EVERY declared leaf. Take the
+  // message's advice VERBATIM: extract the tokens the bare refusal prints,
+  // supply each back (a valid value where the registered form takes one, the
+  // `--no-` confirms bare), add --dry-run, and the same leaf must preview
+  // cleanly and write nothing. Round 14 proved the tokens PARSE; this closes
+  // the round trip: a leaf may not advertise a completion its own generator
+  // then rejects — `application/react` did exactly that (its Missing list
+  // named `--no-ssr, --no-router` and its guard refused precisely those two,
+  // a two-state loop with no all-flags exit) until the dead prompt pair was
+  // removed. Pre-round-14 the list kebab-cased prompt NAMES (`--with-styles`
+  // and friends, which no host registers), so the round-trip was `error:
+  // unknown option` — this cell reddens on either regression.
+  const REPLY_VALUES: Record<string, Record<string, string>> = {
+    "component/react": { "--component-path": "src/components/Replied" },
+    "component/svelte": { "--component-path": "src/lib/Replied" },
+    "component/lit": { "--component-path": "src/lib/Replied" },
+    package: {
+      "--name": "@canonical/replied-lib",
+      "--type": "library",
+      "--description": "A replied library.",
+    },
+    "application/react": { "--app-path": "replied-app" },
+  };
+  for (const [commandPath, surface] of Object.entries(CREATE_SURFACE)) {
+    it(`${commandPath}: the refusal's own instruction WORKS — its Missing tokens supplied back (+ --dry-run) preview, exit 0`, () => {
+      const path = commandPath.split("/");
+      const refusal = run(["create", ...path]);
+      expect(refusal.status).toBe(2);
+      const missing = /Missing: ([^\n]*)\./.exec(refusal.stderr);
+      expect(missing, `no Missing list in:\n${refusal.stderr}`).not.toBeNull();
+      const tokens = (missing as RegExpExecArray)[1]?.split(", ") ?? [];
+      // The live list IS the derivation — parsed off the wire, tied to the
+      // same authority the mount registers from (non-empty by declaration).
+      expect(tokens).toEqual(missingExplicitFlags(surface.prompts, {}));
+      expect(tokens.length).toBeGreaterThan(0);
+      // A token whose registered form takes a value gets a valid one from
+      // the table above — fail loudly on a leaf the table does not know.
+      const takesValue = new Map(
+        surface.prompts.map((prompt) => {
+          const info = buildOptionInfo(prompt);
+          return [info.flags.split(" ")[0], info.flags.includes(" ")] as const;
+        }),
+      );
+      const supplied = tokens.flatMap((token) => {
+        if (!takesValue.get(token)) return [token];
+        const value = REPLY_VALUES[commandPath]?.[token];
+        if (value === undefined) {
+          throw new Error(`no reply value for ${token} on ${commandPath}`);
+        }
+        return [token, value];
+      });
+      const replied = run(["create", ...path, ...supplied, "--dry-run"]);
+      expect(replied.stderr).not.toContain("unknown option");
+      expect(replied.status, replied.stderr).toBe(0);
+      expect(replied.stdout).toContain("Dry run");
+      expect(readdirSync(replied.cwd)).toEqual([]);
+    }, 60_000);
+  }
+  // The react list stays pinned at its exact bytes (the round-14 literal):
+  // the loop above ties every leaf to the derivation; this cell keeps one
+  // wire literal a derivation bug cannot move silently.
+  it("component/react's Missing list is the exact four registered tokens", () => {
     const refusal = run(["create", "component", "react"]);
-    expect(refusal.status).toBe(2);
     const missing = /Missing: ([^\n]*)\./.exec(refusal.stderr);
-    expect(missing, `no Missing list in:\n${refusal.stderr}`).not.toBeNull();
-    const tokens = (missing as RegExpExecArray)[1]?.split(", ") ?? [];
-    expect(tokens).toEqual([
+    expect((missing as RegExpExecArray)[1]?.split(", ")).toEqual([
       "--component-path",
       "--no-with-styles",
       "--no-with-stories",
       "--no-with-ssr-tests",
     ]);
-    const supplied = tokens.flatMap((token) =>
-      token === "--component-path"
-        ? [token, "src/components/Replied"]
-        : [token],
-    );
-    const replied = run([
-      "create",
-      "component",
-      "react",
-      ...supplied,
-      "--dry-run",
-    ]);
-    expect(replied.stderr).not.toContain("unknown option");
-    expect(replied.status).toBe(0);
-    expect(replied.stdout).toContain("Dry run");
-    expect(readdirSync(replied.cwd)).toEqual([]);
   }, 60_000);
 
   it("row 5 on the wire: a fully-explicit non-TTY leaf runs without --yes", () => {

@@ -549,11 +549,11 @@ describe("projection fidelity — the committed surface IS the live generators (
       "withPrTemplate",
       "runInstall",
     ]);
-    // The prompt names ARE the flag names: the B8 --with-X aliases are gone.
+    // The prompt names ARE the flag names: the B8 --with-X aliases are gone —
+    // and so are ssr/router, WITH their prompts (always-on facts whose only
+    // explicit spelling the generator's old guard rejected).
     expect(createVerbs.application.params.map((p) => p.name)).toEqual([
       "appPath",
-      "ssr",
-      "router",
       "forms",
       "relay",
       "runInstall",

@@ -335,17 +335,17 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     }, 60_000);
   }
 
-  // A generator's own CROSS-answer guard in the BATCH arm (--dry-run):
-  // application/react requires ssr+router and raises the typed
-  // GENERATOR_INVALID_ANSWER — pragma maps it to INVALID_INPUT (exit 2,
-  // enveloped like every other piped pragma error), the summon bin prints
-  // the bare line (exit 2, no stack), and BOTH name registered spellings.
-  // The run arm (--yes) is the cell below — same exit, host-rendered stream.
-  const GUARD_MESSAGE =
-    "SSR and the router are required — drop --no-ssr/--no-router; " +
-    "standalone SPA mode is not supported.";
-
-  it("application/react: the ssr+router guard is a typed invalid answer in both hosts, exit 2 (batch arm)", () => {
+  // The retired ssr/router pair: `application/react` no longer declares the
+  // two prompts (SSR and the router are always-on facts — the old guard
+  // rejected the ONLY explicit spelling the refusal could name, a closed
+  // loop), so `--no-ssr` is an unknown option — Commander's DEFAULT usage
+  // error, byte-identical in both hosts (contract §2), exit 2, nothing
+  // written. The typed GENERATOR_INVALID_ANSWER pathway the guard used to
+  // exercise stays covered per-host by fixture generators
+  // (kernel/error/fromTaskError.test.ts, cli/summon's
+  // App.invalidAnswer.test.tsx + interaction.subprocess.test.ts) — no
+  // shipped generator raises it today.
+  it("application/react: the retired --no-ssr is an unknown option with IDENTICAL bytes in both hosts, exit 2, nothing written", () => {
     const pragmaCwd = freshCwd("crosscli-guard-");
     const pragma = spawnSync(
       compiledBin,
@@ -353,10 +353,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       { cwd: pragmaCwd, encoding: "utf-8", input: "" },
     );
     expect(pragma.status).toBe(2);
-    expect(pragma.stderr).toContain("INVALID_INPUT");
-    expect(pragma.stderr).toContain(GUARD_MESSAGE);
-    expect(pragma.stderr).not.toContain("INTERNAL_ERROR");
-    expect(pragma.stderr).not.toContain("report this issue");
+    expect(pragma.stderr).toContain("error: unknown option '--no-ssr'");
     expect(readdirSync(pragmaCwd)).toEqual([]);
 
     const summonCwd = freshCwd("crosscli-guard-");
@@ -375,46 +372,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       { cwd: summonCwd, encoding: "utf-8", input: "" },
     );
     expect(summon.status).toBe(2);
-    expect(summon.stderr).toBe(`${GUARD_MESSAGE}\n`);
-    expect(readdirSync(summonCwd)).toEqual([]);
-  }, 60_000);
-
-  // The SAME guard in the RUN arm (--yes): the one failure class the arms
-  // used to split on — summon's App rendered the error and exited 0 while
-  // pragma exited 2. The exit code and the untouched cwd are the parity
-  // surface; the STREAMS are host presentation (summon's Ink App reports on
-  // stdout and wraps at the render width, pragma envelopes on stderr), so
-  // this cell asserts each stream's guard line per host and never
-  // byte-compares them.
-  it("application/react: the ssr+router guard under --yes exits 2 in BOTH hosts, nothing written", () => {
-    const pragmaCwd = freshCwd("crosscli-guard-");
-    const pragma = spawnSync(
-      compiledBin,
-      ["create", "application", "react", "my-app", "--no-ssr", "--yes"],
-      { cwd: pragmaCwd, encoding: "utf-8", input: "" },
-    );
-    expect(pragma.status).toBe(2);
-    expect(pragma.stderr).toContain(GUARD_MESSAGE);
-    expect(readdirSync(pragmaCwd)).toEqual([]);
-
-    const summonCwd = freshCwd("crosscli-guard-");
-    const summon = spawnSync(
-      "bun",
-      [
-        summonBin,
-        "--generators",
-        generatorsDir,
-        "application",
-        "react",
-        "my-app",
-        "--no-ssr",
-        "--yes",
-      ],
-      { cwd: summonCwd, encoding: "utf-8", input: "" },
-    );
-    expect(summon.status).toBe(2);
-    // The line's head only: Ink wraps the message at the render width.
-    expect(summon.stdout).toContain("SSR and the router are required");
+    expect(summon.stderr).toBe(pragma.stderr);
     expect(readdirSync(summonCwd)).toEqual([]);
   }, 60_000);
 
