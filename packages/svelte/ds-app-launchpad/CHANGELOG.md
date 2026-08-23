@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.34.0](https://github.com/canonical/pragma/compare/v0.33.0...v0.34.0) (2026-08-21)
+
+
+### Features
+
+* **DialogContent:** migrate to design tokens ([#920](https://github.com/canonical/pragma/issues/920)) ([73c610a](https://github.com/canonical/pragma/commit/73c610a7f77cb3e97b327150b8d5697cc271f568))
+* **Modal:** migrate to design tokens ([#929](https://github.com/canonical/pragma/issues/929)) ([e77556d](https://github.com/canonical/pragma/commit/e77556d6cf18adee74b39658b7fffd027cf39044))
+* **Timeline:** migrate to design tokens ([#922](https://github.com/canonical/pragma/issues/922)) ([e3cc213](https://github.com/canonical/pragma/commit/e3cc21396adfd705a4610368b75412ddab78971e))
+* **Tooltip:** migrate to design tokens ([#925](https://github.com/canonical/pragma/issues/925)) ([14cc02f](https://github.com/canonical/pragma/commit/14cc02fa6aa18ac4df50f49f68832bfda106c2a3))
+
+
+
+
+
 # [0.33.0](https://github.com/canonical/pragma/compare/v0.32.0...v0.33.0) (2026-07-24)
 
 

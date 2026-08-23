@@ -119,7 +119,7 @@ export const TEMPLATES: Record<string, string> = {
 
 /** Declared generator package → version, captured at build time. */
 export const PACKAGE_VERSIONS: Record<string, string> = {
-  "@canonical/summon-application": "0.33.0",
-  "@canonical/summon-component": "0.33.0",
-  "@canonical/summon-package": "0.33.0",
+  "@canonical/summon-application": "0.34.0",
+  "@canonical/summon-component": "0.34.0",
+  "@canonical/summon-package": "0.34.0",
 };
