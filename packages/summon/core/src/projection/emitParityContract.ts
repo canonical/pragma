@@ -225,7 +225,14 @@ The whole surface derives from \`GeneratorDefinition.prompts\` through
   close (the chain names each host's real invocation). An unknown
   option is the same class of usage error — Commander's own
   \`error: unknown option '--x'\` line, exit 2 in BOTH hosts (as is every
-  other parse failure: missing option argument included).
+  other parse failure: missing option argument included). These literals
+  are the DEFAULT bytes in both hosts: pragma reframes each of them
+  through its error envelope under an EXPLICITLY requested
+  \`--format json\`/\`--format llm\` (a host output concern outside the
+  parity surface — summon never does: these are parse-time failures,
+  upstream of its leaf \`--format\` output flag), and implicit
+  auto-detection of an output mode never reframes them (as with
+  \`refuse\`, §3).
 - **Prompts become flags** via \`buildOptionInfo\` — the emitted shapes:
 
 ${flagTable()}

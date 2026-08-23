@@ -63,7 +63,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     `--yes` runs and partial-flag wizards previously accepted the invalid
     value and scaffolded a tree carrying it (e.g. `--name "Bad Name!"` wrote
     `./Bad Name!/` with the broken name in its package.json) — all four now
-    refuse before any UI, exactly where `pragma create` validates. The batch
+    refuse before any UI, exactly where `pragma create` validates. One
+    prompt's VALUE SET also changed, not just when validation runs:
+    `application/react`'s `--app-path` now rejects an absolute path and any
+    `..` segment (previously ANY path was accepted and the tree was written
+    wherever it pointed — a sibling app via `../my-app` included), matching
+    `--component-path`'s long-standing rule. The batch
     modes additionally error (exit **2**) on a required answer that is
     missing even after defaults. A generator-raised cross-answer constraint
     fails the same way — application/react's guard is now `SSR and the
