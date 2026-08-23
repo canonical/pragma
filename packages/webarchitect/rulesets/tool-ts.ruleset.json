@@ -73,6 +73,10 @@
                 "type": "string",
                 "description": "Build command (can be no-op for TS-only packages)"
               },
+              "build:all": {
+                "type": "string",
+                "description": "Full artifact build — the command CI lanes fan out to"
+              },
               "test": {
                 "type": "string",
                 "description": "Test command (implementation flexible)"
@@ -81,7 +85,10 @@
                 "const": "tsc --noEmit"
               }
             },
-            "required": ["build", "test", "check:ts"]
+            "required": ["build", "test", "check:ts"],
+            "$comment": "if/then rather than 2020-12's dependentRequired: the validator is ajv's draft-07 class, which silently ignores unknown keywords",
+            "if": { "required": ["build"] },
+            "then": { "required": ["build:all"] }
           }
         },
         "required": [
