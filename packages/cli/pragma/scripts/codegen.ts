@@ -50,10 +50,13 @@ const scriptsUrl = new URL(".", import.meta.url);
  * mode for both generators below, docs skipped. ONE reader for the one
  * flag: build.ts consumes this over its own `process.env`, and the seam
  * cells in src/testing/perf/codegen.test.ts drive it together with the
- * gate spawn's exported env (GATE_BUILD_ENV in perf/globalSetup.ts) — so
- * neither of the seam's two wiring lines (the spawn setting the flag; the
- * build reading it) can be dropped with every suite still green, which is
- * exactly how the loop's silent-repair MAJORs would come back.
+ * gate spawn's exported env (GATE_BUILD_ENV in perf/globalSetup.ts), so
+ * the flag's VALUE and its READER cannot drift apart unnoticed. The two
+ * CALL SITES either half hangs off — the spawn's spread, and build.ts's
+ * `checkModeFromEnv(process.env)` — remain pinned by CONSTRUCTION only
+ * (no test executes scripts/build.ts), so severing one still reverts gate
+ * builds to write mode silently, which is exactly how the loop's
+ * silent-repair MAJORs would come back.
  *
  * @param env - The environment to judge (build.ts passes `process.env`;
  *   injectable for the cells).

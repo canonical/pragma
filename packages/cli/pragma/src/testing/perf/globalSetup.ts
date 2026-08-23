@@ -334,12 +334,14 @@ if (!existsSync(TEMPLATE_COPIER)) {
 /**
  * The gate build's ONE env delta — the flag that flips `scripts/build.ts`
  * into CHECK mode (read by `checkModeFromEnv` in scripts/codegen.ts).
- * EXPORTED so the seam's wiring is pinned: this constant IS the object the
+ * EXPORTED so the flag's VALUE is pinned: this constant IS the object the
  * gate spawn below spreads into its env, and a codegen.test.ts cell
- * asserts it actually enters check mode — before it, this side of the
- * seam was one unpinned line whose silent loss (an env-object refactor, a
- * merge) reverted the gate to write mode, restoring the silent-repair
- * MAJORs with every suite green.
+ * asserts that value actually enters check mode, so the value and its
+ * reader cannot drift apart unnoticed. The SPREAD at the spawn is a
+ * different matter: it is pinned by CONSTRUCTION, not by an assertion —
+ * an env-object refactor that drops `...GATE_BUILD_ENV` leaves every cell
+ * green while the gate silently reverts to write mode, restoring the
+ * silent-repair MAJORs.
  */
 export const GATE_BUILD_ENV = { PRAGMA_BUILD_SKIP_DOCS: "1" } as const;
 

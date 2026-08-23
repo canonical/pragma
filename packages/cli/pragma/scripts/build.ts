@@ -117,8 +117,10 @@ if (import.meta.main) {
   // staleness is instead REPAIRED with a notice, the header's one scoped
   // exception), docs are skipped. Surface before manifest: a stale surface
   // throws here before any repair can happen. The flag read lives beside
-  // the generators it flips (checkModeFromEnv) so the wiring is pinned by
-  // the seam cells, not just this call site.
+  // the generators it flips (checkModeFromEnv), so the seam cells pin the
+  // PREDICATE; this call site itself is pinned by construction — no test
+  // executes this script, so replacing the read with `false` reddens
+  // nothing.
   const check = checkModeFromEnv(process.env);
 
   const { surfaced, changed: surfaceChanged } = generateCreateSurface({

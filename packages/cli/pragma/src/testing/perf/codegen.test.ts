@@ -3,19 +3,24 @@
  * the mechanism behind two loop MAJORs: a gate's build must COMPARE the two
  * committed generated modules and fail on staleness instead of silently
  * repairing them before the PROTECTED drift guards (create.test.ts's
- * projection-fidelity and reader-derivability cells) read them. The seam
- * is pinned END TO END. The generator cells drive the EXPORTED generators
+ * projection-fidelity and reader-derivability cells) read them. The
+ * generator cells drive the EXPORTED generators
  * with an injected `out` in a tmpdir — no spawn, no build, no repo write;
  * the third pins the seam's one ruled EXCEPTION: a difference confined to
  * the manifest's PACKAGE_VERSIONS block (a workspace version bump's
  * expected residue, which no release step rebuilds — and the block the
  * PROTECTED offline cells pin the release line from) must not fail check
  * mode — it is REPAIRED in place with a notice, the three-line diff left
- * for the developer to commit. The wiring cells hold the seam's two
- * once-unpinned lines — the gate spawn setting PRAGMA_BUILD_SKIP_DOCS
- * (the exported GATE_BUILD_ENV it spreads) and build.ts reading it (the
- * exported checkModeFromEnv) — whose silent loss every suite previously
- * survived green.
+ * for the developer to commit. The wiring cells pin the two halves the
+ * seam is made of and the fact that they MEET: the flag's VALUE (the
+ * exported GATE_BUILD_ENV) and its READER (the exported
+ * checkModeFromEnv). They do NOT pin the two CALL SITES — the gate
+ * spawn's `...GATE_BUILD_ENV` spread (perf/globalSetup.ts) and
+ * build.ts's `checkModeFromEnv(process.env)` read — which stay pinned by
+ * CONSTRUCTION: scripts/build.ts is executed by no test at all, and
+ * dropping the spread leaves every cell here green. A refactor that
+ * severs either call site still reverts gate builds to write mode
+ * silently; only a VALUE or READER change reddens.
  */
 
 import {
@@ -163,21 +168,27 @@ describe("the CHECK seam's wiring (GATE_BUILD_ENV → checkModeFromEnv)", () => 
   it("checkModeFromEnv: exactly the documented flag value flips a build into the gate's check", () => {
     // The READ side of the seam, pinned: build.ts consumes this one-liner
     // over its process.env, so a build enters check mode exactly when the
-    // flag is the string "1" — and an ordinary developer env (no flag)
-    // stays in write mode, where `bun run build` repairs all three
-    // committed artifacts.
+    // flag is the string "1" — an ordinary developer env (no flag) and a
+    // flag EXPLICITLY set to any other value both stay in write mode,
+    // where `bun run build` repairs all three committed artifacts. The
+    // third case is what makes "exactly" true: a predicate that merely
+    // tested for the key's presence, or accepted "0" as well, would pass
+    // the first two.
     expect(checkModeFromEnv({ PRAGMA_BUILD_SKIP_DOCS: "1" })).toBe(true);
     expect(checkModeFromEnv({})).toBe(false);
+    expect(checkModeFromEnv({ PRAGMA_BUILD_SKIP_DOCS: "0" })).toBe(false);
   });
 
   it("GATE_BUILD_ENV carries the check-mode flag — the gate spawn's env enters check mode", () => {
     // The SET side of the seam, pinned against the read side: the exported
     // constant IS the object the gate spawn spreads into its child env
     // (perf/globalSetup.ts), and feeding it to checkModeFromEnv proves the
-    // two wiring lines meet — dropping the flag from the spawn, or
-    // renaming it on either side, reddens this cell instead of silently
-    // reverting gate builds to write mode (which would repair the stale
-    // committed tree every drift guard exists to catch).
+    // VALUE and the READER meet — changing the flag's value, or renaming
+    // the key on either side, reddens here. What this cell does NOT see is
+    // the spawn's `...GATE_BUILD_ENV` spread itself: dropping that leaves
+    // every cell in this file green while gate builds silently revert to
+    // write mode (repairing the stale committed tree every drift guard
+    // exists to catch), so the call site stays pinned by construction.
     expect(GATE_BUILD_ENV.PRAGMA_BUILD_SKIP_DOCS).toBe("1");
     expect(checkModeFromEnv(GATE_BUILD_ENV)).toBe(true);
   });

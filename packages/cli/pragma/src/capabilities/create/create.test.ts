@@ -680,7 +680,11 @@ describe("declared generator bindings (PROTECTED)", () => {
     // "committed but stale" both test failures. Staleness survives to be
     // seen: the gate's build runs the manifest codegen in CHECK mode
     // (PRAGMA_BUILD_SKIP_DOCS=1 in scripts/build.ts), failing rather than
-    // rewriting the committed module before workers start.
+    // rewriting the committed TEMPLATES half — the bytes this guard reads
+    // — before workers start. The ONE exception is the PACKAGE_VERSIONS
+    // block, which this guard does not read: a difference confined to it
+    // is the expected residue of a workspace version bump and is REPAIRED
+    // in place with a notice rather than thrown on (see scripts/codegen.ts).
     const { TEMPLATES } = await import("./templates.embedded.generated.js");
     const { buildEmbeddedManifest } = await import("@canonical/summon-core");
     const roots = Object.values(CREATE_GENERATORS).flatMap((binding) =>
