@@ -134,10 +134,10 @@ function sleepSync(ms: number): void {
  * can still EMIT it (nothing sets `noEmitOnError`, so `tsc` writes output
  * and exits nonzero, and the two-step builds' first step writes the entry
  * before the second can fail) — mtime alone cannot tell a failed build
- * from a clean one — while a builder that never STARTED (a spawn error)
- * leaves the artifact alone: nothing was emitted, and the dist on disk is
- * still the previous good generation, stale by the same stats that sent
- * the holder in. A lockfile that never clears (a killed
+ * from a clean one — while a spawn failure with NO child (`error` set
+ * and `signal == null`) leaves the artifact alone: no builder ever ran,
+ * nothing was emitted, and the dist on disk is still the previous good
+ * generation, stale by the same stats that sent the holder in. A lockfile that never clears (a killed
  * builder) fails loudly after {@link LOCK_TIMEOUT_MS} naming the file,
  * rather than double-building or waiting forever. RESIDUAL, accepted:
  * since every entry takes the lock, crash residue blocks EVERY later run
@@ -317,6 +317,14 @@ function servedDistArtifact(root: string): string | undefined {
 /** The slice of `spawnSync`'s result the build wrapper judges. */
 interface BuildResult {
   status: number | null | undefined;
+  /**
+   * The never-started/ran-then-killed discriminator: spawnSync's
+   * `NodeJS.Signals | null` — `null` when no child ever ran, a signal
+   * (e.g. `SIGTERM`) when spawnSync KILLED a running child itself
+   * (maxBuffer/timeout — `error` is set in BOTH cases). Bun may leave it
+   * `undefined` on a spawn failure; judged `== null` either way.
+   */
+  signal: NodeJS.Signals | null | undefined;
   stdout: string | null;
   stderr: string | null;
   error?: Error | undefined;
@@ -331,6 +339,10 @@ function runBuild(root: string): BuildResult {
     cwd: root,
     stdio: "pipe",
     encoding: "utf-8",
+    // Uncapped: at the 1 MiB default a diagnostic FLOOD had spawnSync
+    // kill a child that had already emitted (ENOBUFS), instead of the
+    // flood reaching the nonzero arm intact.
+    maxBuffer: Number.POSITIVE_INFINITY,
   });
 }
 
@@ -344,12 +356,17 @@ function runBuild(root: string): BuildResult {
  * (round 12), and unexported it was pinned by nothing — a dropped rmSync or
  * a restored destroy-on-spawn-error stayed green until a real CI build
  * failed. Three shapes:
- * - spawn error (`result.error` — the builder never STARTED): throw naming
- *   the error, artifact PRESERVED (nothing ran, so nothing was emitted; the
- *   dist on disk is the previous good generation).
- * - nonzero exit / signal kill: destroy the artifact (a failed build can
- *   still have EMITTED it — see {@link buildUnderLock}), then throw naming
- *   the root and both captured streams.
+ * - spawn failure with NO child (`result.error` with `signal == null` —
+ *   ENOENT/EACCES): throw naming the error, artifact PRESERVED (no child
+ *   ever ran, so nothing was emitted; the dist on disk is the previous
+ *   good generation). `error` ALONE does not mean this — spawnSync also
+ *   sets it when it KILLS a build that ran (maxBuffer/timeout), and
+ *   there `signal` carries the evidence.
+ * - nonzero exit / signal kill — spawnSync's own mid-run kills included
+ *   (`error` set WITH a signal: the child RAN and can have emitted
+ *   before dying): destroy the artifact (a failed build can still have
+ *   EMITTED it — see {@link buildUnderLock}), then throw naming the
+ *   root, the kill when there was one, and both captured streams.
  * - success: the artifact is left as built, the lock released.
  *
  * TWIN: cli/summon's globalSetup carries the same function; keep in step.
@@ -369,23 +386,30 @@ export function buildDistOrDestroy(
 ): void {
   buildUnderLock(root, isFresh, () => {
     const result = runner(root);
-    if (result.error) {
-      // The builder never STARTED (ENOENT/EACCES): nothing can have
-      // been emitted, so the artifact on disk is still the previous
-      // good generation — preserve it, and name the failure's only
-      // carrier (`status` is unset and both streams are null here).
+    if (result.error && result.signal == null) {
+      // A spawn failure with NO child (ENOENT/EACCES — no signal, and
+      // `status` unset): nothing can have been emitted, so the artifact
+      // on disk is still the previous good generation — preserve it,
+      // and name the failure's only carrier. `error` with a SIGNAL is
+      // the opposite case: spawnSync killed a build that RAN
+      // (maxBuffer/timeout) — that shape falls through to the destroy
+      // arm below.
       throw new Error(
         `perf globalSetup: failed to RUN the build for ${root}: ${result.error.message}`,
       );
     }
     if (result.status !== 0) {
-      // The build RAN and failed — it can still have EMITTED the
-      // artifact (see buildUnderLock's docblock): destroy the evidence
-      // so the contender's re-stat and every later run see STALE
-      // instead of a fresh-looking dist compiled from erroring sources.
+      // The build RAN and failed — a nonzero exit, or a kill after the
+      // child started — and it can still have EMITTED the artifact (see
+      // buildUnderLock's docblock): destroy the evidence so the
+      // contender's re-stat and every later run see STALE instead of a
+      // fresh-looking dist compiled from erroring sources.
       rmSync(artifact, { force: true });
+      const killed = result.error
+        ? ` (killed mid-run: ${result.error.message})`
+        : "";
       throw new Error(
-        `perf globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+        `perf globalSetup: failed to build ${root}'s dist:${killed}\n${result.stdout}${result.stderr}`,
       );
     }
   });

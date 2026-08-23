@@ -47,7 +47,7 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
         // tsc's failure shape: EMIT the served entry, then exit nonzero
         // (nothing sets noEmitOnError).
         writeFileSync(artifact, "// compiled from erroring sources\n");
-        return { status: 2, stdout: "out", stderr: "err" };
+        return { status: 2, signal: null, stdout: "out", stderr: "err" };
       }),
     ).toThrowError(`perf globalSetup: failed to build ${root}'s dist:\nouterr`);
     // The destroy: a fresh-looking dist compiled from erroring sources
@@ -60,9 +60,13 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
     writeFileSync(artifact, "// previous good generation\n");
     expect(() =>
       buildDistOrDestroy(root, artifact, stale, () => ({
-        // spawnSync's spawn-failure shape (ENOENT/EACCES): status unset,
-        // both streams null, the reason ONLY in `error`.
+        // spawnSync's spawn-failure shape with NO child (ENOENT/EACCES):
+        // status unset, signal null (no child was ever killed), both
+        // streams null, the reason ONLY in `error`. NOT the only
+        // `error`-carrying shape — spawnSync's own kills of a RUNNING
+        // child set `error` too, WITH a signal (the cell below).
         status: undefined,
+        signal: null,
         stdout: null,
         stderr: null,
         error: new Error("spawn bun ENOENT"),
@@ -70,19 +74,47 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
     ).toThrowError(
       `perf globalSetup: failed to RUN the build for ${root}: spawn bun ENOENT`,
     );
-    // Nothing ran, so nothing was emitted: the dist on disk is still the
-    // previous good generation — pre-fix this was destroyed and the
-    // message interpolated the null streams as `nullnull`.
+    // No child ever ran, so nothing was emitted: the dist on disk is
+    // still the previous good generation — pre-fix this was destroyed
+    // and the message interpolated the null streams as `nullnull`.
     expect(readFileSync(artifact, "utf-8")).toBe(
       "// previous good generation\n",
     );
     expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
   });
 
+  it("a build KILLED mid-run destroys what it emitted — `error` alone is not `never started`", () => {
+    expect(() =>
+      buildDistOrDestroy(root, artifact, stale, () => {
+        // spawnSync's OWN kill of a running child (ENOBUFS at a
+        // maxBuffer cap, or a timeout): the child RAN, emitted the
+        // entry, and was then SIGTERMed — `status` null, `signal` set,
+        // `error` set, a stream captured. Pre-fix the error-first
+        // branch read this as "never started" and PRESERVED the
+        // poisoned dist, which the next run's stats blessed FRESH: the
+        // round-12 false green, reintroduced.
+        writeFileSync(artifact, "// compiled from erroring sources\n");
+        return {
+          status: null,
+          signal: "SIGTERM",
+          stdout: "1 MiB of diagnostics…",
+          stderr: "",
+          error: new Error("spawnSync bun ENOBUFS"),
+        };
+      }),
+    ).toThrowError(
+      `perf globalSetup: failed to build ${root}'s dist: ` +
+        "(killed mid-run: spawnSync bun ENOBUFS)\n1 MiB of diagnostics…",
+    );
+    // The destroy: the poisoned emit must read STALE to every later run.
+    expect(existsSync(artifact)).toBe(false);
+    expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
+  });
+
   it("success leaves the artifact as built — no destroy, no lock residue", () => {
     buildDistOrDestroy(root, artifact, stale, () => {
       writeFileSync(artifact, "// good generation\n");
-      return { status: 0, stdout: "", stderr: "" };
+      return { status: 0, signal: null, stdout: "", stderr: "" };
     });
     expect(readFileSync(artifact, "utf-8")).toBe("// good generation\n");
     expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
@@ -108,7 +140,7 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
       () => true,
       () => {
         invoked = true;
-        return { status: 0, stdout: "", stderr: "" };
+        return { status: 0, signal: null, stdout: "", stderr: "" };
       },
     );
     expect(invoked).toBe(false);
