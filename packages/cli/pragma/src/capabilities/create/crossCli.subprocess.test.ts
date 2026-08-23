@@ -196,6 +196,28 @@ const SUMMON_EXTRAS = new Set([
 const PRAGMA_EXTRAS = new Set(["--dry-run", "--undo", "--yes", "--help"]);
 
 describe("cross-CLI conformance matrix (PROTECTED)", () => {
+  // The matrix is COMPLETE by declaration, not by convention: the two loops
+  // below iterate the shared fixture list (a literal in summon-core, whose
+  // own docblock says the ids are "conventional, not enforced"), so a SIXTH
+  // declared binding path would otherwise add zero byte-equality and
+  // help-parity cells, silently, while this describe's header claims "every
+  // declared generator binding". This cell closes the loop — and makes
+  // `commandPathOf`'s `paths[0]` narrowing explicit: the sort-equality holds
+  // only while every path of a multi-path binding is named by a fixture in
+  // full (a second `application/*` path with a bare-id fixture would redden
+  // here, which is the point).
+  it("every declared generator binding path is driven by a conformance fixture", () => {
+    expect(
+      [...CONFORMANCE_FIXTURES]
+        .map((fixture) => commandPathOf(fixture.generator))
+        .sort(),
+    ).toEqual(
+      Object.values(CREATE_GENERATORS)
+        .flatMap((binding) => binding.paths as readonly string[])
+        .sort(),
+    );
+  });
+
   for (const fixture of CONFORMANCE_FIXTURES) {
     it(`${fixture.name}: summon bin ≡ pragma compiled binary ≡ the reference`, async () => {
       const commandPath = commandPathOf(fixture.generator);
