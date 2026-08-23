@@ -47,7 +47,6 @@ export type {
 } from "./registerGeneratorCommand.js";
 export {
   default as registerGeneratorCommands,
-  excessArgumentMessage,
   splitGeneratorActionArgs,
 } from "./registerGeneratorCommand.js";
 export type {
