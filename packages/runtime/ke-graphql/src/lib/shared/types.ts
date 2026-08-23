@@ -309,7 +309,7 @@ export interface CardinalitySpec {
   singular: boolean;
   required: boolean;
   omit: boolean;
-  source: "owl:FunctionalProperty" | "owl:cardinality" | "shacl" | "custom";
+  source: "owl:FunctionalProperty" | "owl:cardinality" | "shacl";
 }
 
 /** Property flavor carried through from extraction into the IR. */

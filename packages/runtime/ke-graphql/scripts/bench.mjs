@@ -20,6 +20,7 @@ const ttl =
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 ds:Entity a owl:Class . ds:UIElement a owl:Class ; rdfs:subClassOf ds:Entity .
 ds:UIBlock a owl:Class ; rdfs:subClassOf ds:UIElement .
 ds:Component a owl:Class ; rdfs:subClassOf ds:UIBlock .
@@ -28,7 +29,8 @@ ds:Property a owl:Class ; rdfs:subClassOf ds:Entity .
 ds:name a owl:DatatypeProperty ; rdfs:domain ds:Entity ; rdfs:range xsd:string .
 ds:summary a owl:DatatypeProperty ; rdfs:domain ds:Entity ; rdfs:range xsd:string .
 ds:tier a owl:ObjectProperty , owl:FunctionalProperty ; rdfs:domain ds:UIBlock ; rdfs:range ds:Tier .
-ds:hasProperty a owl:ObjectProperty ; rdfs:domain ds:UIBlock ; rdfs:range ds:Property .
+ds:hasProperty a owl:ObjectProperty ; rdfs:domain ds:UIBlock ; rdfs:range ds:Property ;
+  graphql:name "properties" .
 ds:propertyType a owl:DatatypeProperty ; rdfs:domain ds:Property ; rdfs:range xsd:string .
 ds:optional a owl:DatatypeProperty , owl:FunctionalProperty ; rdfs:domain ds:Property ; rdfs:range xsd:boolean .
 ds:global a ds:Tier ; ds:name "global" .
@@ -47,7 +49,7 @@ const {
   compileFromExtraction,
   serializeExtraction,
   hashSources,
-  storeQueryFn,
+  createStoreQueryFn,
   executeLocal,
 } = await import("../dist/esm/index.js");
 t = mark("import modules", t);
@@ -59,14 +61,11 @@ const prefixes = { ds: "https://ds.canonical.com/" };
 const store = await createStore({ sources: [file], prefixes });
 t = mark(`createStore (WASM + ${N * 6 + 20} triples)`, t);
 
-const live = await compile(storeQueryFn(store), prefixes, {
-  mappings: { "ds:hasProperty": { graphqlName: "properties" } },
-});
+const live = await compile(createStoreQueryFn(store), prefixes);
 t = mark("compile() live (Pass 1 + 2-7 + validate)", t);
 
 const artifact = serializeExtraction(live.extraction, hashSources([ttl]));
 const result = compileFromExtraction(artifact, {
-  mappings: { "ds:hasProperty": { graphqlName: "properties" } },
   loaderCache: "process",
 });
 t = mark("compileFromExtraction (artifact boot)", t);
