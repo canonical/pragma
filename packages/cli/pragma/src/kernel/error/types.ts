@@ -18,8 +18,9 @@ type ErrorCode = (typeof ERROR_CODES)[number];
  * distribution's own bin name (`RECOVERY_CLI_PREFIX`) plus a grammar path (D5).
  * `cliRecovery` takes the path alone and prepends the prefix, so there is no
  * assertion to make; the one COMPUTED producer (the create mount) derives
- * the prefix from the program's own name and is pinned by test instead —
- * the routes are enumerated in the docblock on `error/recovery.ts`.
+ * the prefix from the program's own name, pinned by a test expectation
+ * COMPOSED from `RECOVERY_CLI_PREFIX` — the routes are enumerated in the
+ * docblock on `error/recovery.ts`.
  */
 interface Recovery {
   /** Human-readable recovery guidance. */

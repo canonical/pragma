@@ -18,8 +18,11 @@
  * {@link cliRecovery}, and the position rule is structurally blind to it (it
  * flags QUOTED literals containing the distribution's name, never a computed
  * expression) — so D5 holds there by derivation, and the derivation is pinned
- * where the value surfaces: `createGrammar.test.ts` asserts the emitted
- * `cli` starts with {@link RECOVERY_CLI_PREFIX} alongside its literal pin.
+ * where the value surfaces: `createGrammar.test.ts` COMPOSES its expected
+ * `cli` from {@link RECOVERY_CLI_PREFIX}, so a renamed root program reddens
+ * the cell naming the constant. (A separate `startsWith` assertion cannot
+ * pin it — behind an exact pin of the same value it has no reachable
+ * failing input.)
  *
  * `kernel/packs/schema.ts` holds a user-authored pack's `emptyRecovery.cli` to
  * the same shape from the other side — it must NOT carry a prefix, because the

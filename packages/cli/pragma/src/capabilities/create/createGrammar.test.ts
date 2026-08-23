@@ -247,18 +247,19 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(matchedEnvelope.error.code).toBe("INVALID_INPUT");
     expect(matchedEnvelope.error.message).toBe('unexpected argument "svelte"');
     expect(matchedEnvelope.error.suggestions).toBeUndefined();
-    expect(matchedEnvelope.error.recovery).toEqual({
-      message: "Run the corrected invocation.",
-      cli: "pragma create component svelte",
-    });
     // D5's third route, pinned as the INVARIANT and not only the output:
     // this cli is COMPUTED at the mount (chain[0] = the root program's
     // name), bypassing cliRecovery and invisible to copy.test.ts's
-    // quoted-literal position rule — so the derivation itself is asserted
-    // here: the emitted command must carry the distribution's own prefix.
-    expect(
-      matchedEnvelope.error.recovery?.cli?.startsWith(RECOVERY_CLI_PREFIX),
-    ).toBe(true);
+    // quoted-literal position rule — so the expectation is COMPOSED from
+    // the same constant the derivation must land on. A `startsWith` check
+    // behind an exact literal could never fail (the literal throws first
+    // on every divergence); composing the ONE expectation makes a
+    // root-program rename redden this cell naming RECOVERY_CLI_PREFIX,
+    // not a stale-looking literal a maintainer would just update.
+    expect(matchedEnvelope.error.recovery).toEqual({
+      message: "Run the corrected invocation.",
+      cli: `${RECOVERY_CLI_PREFIX}create component svelte`,
+    });
 
     // The stray≠suggestion shape — `react svelte X` binds `svelte` as the
     // positional and overflows `X` — carries the SAME correction while its
@@ -280,7 +281,7 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(crossedEnvelope.error.suggestions).toBeUndefined();
     expect(crossedEnvelope.error.recovery).toEqual({
       message: "Run the corrected invocation.",
-      cli: "pragma create component svelte",
+      cli: `${RECOVERY_CLI_PREFIX}create component svelte`,
     });
   }, 60_000);
 
