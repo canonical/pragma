@@ -7,6 +7,8 @@
  * Internal test data only: excluded from the build, never shipped in dist.
  */
 
+import { GRAPHQL } from "../lib/shared/index.js";
+
 export const PREFIXES = {
   ex: "http://example.org/",
   ds: "https://ds.canonical.com/",
@@ -303,4 +305,82 @@ ds:mod_importance_primary a ds:Modifier ;
 ds:react_button a ds:ImplementationObject ;
   ds:name "react button" ;
   ds:implementsBlock ds:global.component.button .
+`;
+
+/**
+ * The annotated fixture's UNANNOTATED half: classes, properties, and
+ * instances only. The mode matrix compiles this alongside ANNOTATED_TTL to
+ * prove `mode: "auto"` really consults nothing — the annotated document
+ * under auto must emit these exact bytes.
+ */
+export const ANNOTATED_BASE_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+
+ex:Media a owl:Class ; rdfs:label "Media" .
+ex:Book a owl:Class ; rdfs:subClassOf ex:Media ; rdfs:label "Book" ;
+  skos:definition "A published volume." .
+ex:Author a owl:Class ; rdfs:label "Author" .
+ex:Secret a owl:Class ; rdfs:label "Secret" .
+ex:Badge a owl:Class ; rdfs:label "Badge" .
+
+ex:heading a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+ex:shortName a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+ex:note a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+ex:blurb a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+ex:title a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+ex:tag a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
+ex:wrote a owl:ObjectProperty ; rdfs:domain ex:Author ; rdfs:range ex:Media .
+ex:writtenBy a owl:ObjectProperty ; rdfs:domain ex:Media ; rdfs:range ex:Author .
+ex:sealedIn a owl:ObjectProperty ; rdfs:domain ex:Media ; rdfs:range ex:Secret .
+ex:badge a owl:ObjectProperty ; rdfs:domain ex:Media ; rdfs:range ex:Badge .
+
+ex:b1 a ex:Book ;
+  rdfs:label "B1 label" ;
+  ex:heading "B1 heading" ;
+  ex:shortName "B1 short" ;
+  ex:note "B1 note" ;
+  ex:blurb "B1 blurb" ;
+  ex:title "The Title" ;
+  ex:tag "alpha" , "beta" ;
+  ex:writtenBy ex:a1 ;
+  ex:sealedIn ex:s1 ;
+  ex:badge ex:badge1 .
+ex:a1 a ex:Author ; rdfs:label "Ada" .
+ex:s1 a ex:Secret ; rdfs:label "S1" .
+ex:badge1 a ex:Badge ; rdfs:label "Gold" .
+`;
+
+/**
+ * Every v1 vocabulary term exercised once against MINIMAL-style classes —
+ * the mode matrix's annotated input. Load-bearing annotations (they change
+ * the annotated-mode emission): the Book rename, expose (three exposed, two
+ * outside the allowlist), nonNull, the forced list cardinality on ex:tag,
+ * the forced embeddable on ex:Badge (it has a NAMED instance — the
+ * heuristic would say non-embeddable), the graphql-declared inverse pair,
+ * and the four descriptive sources. Heuristic-coincident but exercised:
+ * graphql:abstract on Media (already abstract by detection), graphql:prefix
+ * "ex" (already registered), graphql:searchable (IR-only by design).
+ */
+export const ANNOTATED_TTL = `${ANNOTATED_BASE_TTL}
+@prefix graphql: <${GRAPHQL}> .
+
+<http://example.org/> graphql:prefix "ex" .
+
+ex:Media graphql:abstract true ; graphql:expose true .
+ex:Book graphql:name "Publication" ;
+  graphql:expose true ;
+  graphql:titleFrom ex:heading ;
+  graphql:labelFrom ex:shortName ;
+  graphql:commentFrom ex:note ;
+  graphql:definitionFrom ex:blurb .
+ex:Author graphql:expose true .
+ex:Badge graphql:embeddable true .
+
+ex:title graphql:nonNull true ; graphql:searchable true .
+ex:tag graphql:singular false .
+ex:wrote graphql:name "authored" ; graphql:inverse ex:writtenBy .
 `;

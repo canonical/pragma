@@ -190,7 +190,7 @@ export default function createGraphQLHandler(
     formatOne(
       // The `: error` arm is defensive — graphql-js execution and merge errors
       // are always GraphQLError instances, never pre-formatted objects.
-      /* v8 ignore next 3 */
+      /* v8 ignore next 3 -- unreachable: execution and incremental-merge errors arrive as GraphQLError instances, so nothing can drive the already-formatted arm; it stays because the parameter type is the GraphQLError | GraphQLFormattedError union and narrowing is what makes maskError type-safe */
       error instanceof GraphQLError
         ? maskError(error, shouldMaskErrors)
         : error,
@@ -330,7 +330,7 @@ export default function createGraphQLHandler(
             formatOne(
               // The `: { message }` arm is defensive — parse() only ever throws
               // GraphQLError, so a non-GraphQLError never reaches this catch.
-              /* v8 ignore next 3 */
+              /* v8 ignore next 3 -- unreachable: parse() is the only call in this try and it throws GraphQLError exclusively, so no request body can drive the String(error) arm; it stays because `catch` is typed `unknown` and a raw throw would escape as a 500 instead of a 400 */
               error instanceof GraphQLError
                 ? error.toJSON()
                 : { message: String(error) },

@@ -9,7 +9,7 @@ import type { QueryResult, SelectResult, Term } from "@canonical/ke";
 import { createTestStore } from "@canonical/ke/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { MINIMAL_TTL, PREFIXES } from "../../testing/index.js";
-import type { QueryFn } from "../shared/index.js";
+import { GRAPHQL, GRAPHQL_TERMS, type QueryFn } from "../shared/index.js";
 import extract from "./extract.js";
 import { createStoreQueryFn } from "./index.js";
 
@@ -274,6 +274,267 @@ describe("extract — namespace discovery", () => {
           d.message.includes("no registered prefix"),
       ),
     ).toBe(true);
+  });
+});
+
+describe("extract — graphql: vocabulary probe", () => {
+  let cleanup: (() => void) | undefined;
+  afterEach(() => {
+    cleanup?.();
+    cleanup = undefined;
+  });
+
+  const extractTtl = async (
+    ttl: string,
+    prefixes: Record<string, string> = PREFIXES,
+  ) => {
+    const store = await createTestStore({ ttl, prefixes });
+    cleanup = store.cleanup;
+    return extract(createStoreQueryFn(store.store), prefixes);
+  };
+
+  it("captures both value kinds — unknown local names included — sorted by (target, term, kind, value)", async () => {
+    const { output } = await extractTtl(`
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+@prefix ex: <http://example.org/> .
+
+ex:Thing a owl:Class ;
+  graphql:name "Item" ;
+  graphql:titleFrom ex:displayName ;
+  graphql:naem "typo" .
+`);
+    // The typo'd local name is captured, not filtered: Pass 2 owns the A004
+    // diagnosis, and extraction silently eating it would make the typo
+    // invisible. "naem" < "name" < "titleFrom" fixes the order.
+    expect(output.graphqlAnnotations).toEqual([
+      [`${EX}Thing`, `${GRAPHQL}naem`, "typo", "literal"],
+      [`${EX}Thing`, GRAPHQL_TERMS.name, "Item", "literal"],
+      [`${EX}Thing`, GRAPHQL_TERMS.titleFrom, `${EX}displayName`, "iri"],
+    ]);
+  });
+
+  it("keeps a loaded vocabulary-definition TTL inert", async () => {
+    // A consumer may load the vocabulary's own TTL alongside the ontology.
+    // The graphql: namespace is standard-vocabulary now: its declarations
+    // produce no classes, no properties, no namespace entry, and no
+    // diagnostics — and rdf:type/rdfs:label assertions are not vocabulary
+    // ASSERTIONS, so the probe captures nothing either.
+    const { output, diagnostics } = await extractTtl(
+      `
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix graphql: <${GRAPHQL}> .
+
+graphql:name a owl:AnnotationProperty ; rdfs:label "name" .
+graphql:Term a owl:Class ; rdfs:label "Term" .
+`,
+      {},
+    );
+    expect(output.classes).toEqual([]);
+    expect(output.properties).toEqual([]);
+    expect(output.namespaces.size).toBe(0);
+    expect(output.undeclaredPredicates.size).toBe(0);
+    expect(output.graphqlAnnotations).toEqual([]);
+    expect(diagnostics).toEqual([]);
+  });
+
+  it("resolves graphql:prefix subjects without binding them, and DEFERS the synthetic-prefix warning", async () => {
+    const { output, diagnostics } = await extractTtl(
+      `
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+
+# subject IS the namespace IRI
+<https://direct.test/Widget> a owl:Class .
+<https://direct.test/> graphql:prefix "dir" .
+
+# ontology subject; namespace is subject + '#'
+<https://hash.test/ontology#Gadget> a owl:Class .
+<https://hash.test/ontology> graphql:prefix "hsh" .
+
+# path subject; namespace is subject + '/'
+<https://slash.test/v/Item> a owl:Class .
+<https://slash.test/v> graphql:prefix "slh" .
+`,
+      {},
+    );
+    // Extraction is mode-independent, so the DECLARATION does not bind here:
+    // every namespace gets its placeholder synthetic and Pass 2 binds the
+    // declared value where the projection mode is known.
+    for (const ns of [
+      "https://direct.test/",
+      "https://hash.test/ontology#",
+      "https://slash.test/v/",
+    ]) {
+      expect(output.namespaces.get(ns)?.startsWith("ns")).toBe(true);
+    }
+    expect([...output.namespaces.values()]).not.toContain("dir");
+    // ...but each subject spelling still RESOLVED, which is what DEFERS the
+    // synthetic-prefix warning rather than emitting it here: whether the
+    // answer these namespaces have waiting actually replaces the placeholder
+    // is a mode question, and this pass has no mode. Pass 2 settles it (see
+    // build.test.ts) — silence here is a promise to decide there, never a
+    // decision that there is nothing to report.
+    expect(diagnostics).toEqual([]);
+    // Sorted for the assertion: the list follows namespace DISCOVERY order,
+    // which is the store's to decide.
+    expect([...output.deferredSyntheticNamespaces].sort()).toEqual([
+      "https://direct.test/",
+      "https://hash.test/ontology#",
+      "https://slash.test/v/",
+    ]);
+  });
+
+  it("keeps the registered prefix — a declaration outranks it only once the mode is known", async () => {
+    const { output } = await extractTtl(`
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+@prefix ex: <http://example.org/> .
+
+ex:Thing a owl:Class .
+<http://example.org/> graphql:prefix "exx" .
+`);
+    // PREFIXES registers http://example.org/ as "ex". The ontology's own
+    // declaration outranks it, but binding it HERE would bake one mode's
+    // answer into an artifact that must serve all three — so Pass 1 reports
+    // the registered prefix and Pass 2 applies "exx" (see build.test.ts).
+    expect(output.namespaces.get(EX)).toBe("ex");
+  });
+
+  it("applies no tiebreak: conflicting or non-literal declarations fall back, agreeing duplicates apply", async () => {
+    const { output, diagnostics } = await extractTtl(
+      `
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+
+# two DISTINCT prefixes for one namespace: neither is chosen here (Pass 2
+# refuses the compile with A001); the synthetic path warns as usual
+<https://conf.test/Widget> a owl:Class .
+<https://conf.test/> graphql:prefix "aa" .
+<https://conf.test/> graphql:prefix "bb" .
+
+# an IRI-valued prefix is not a usable declaration (A003 is Pass 2's) —
+# the namespace falls back to the synthetic path
+<https://iri.test/Widget> a owl:Class .
+<https://iri.test/> graphql:prefix <http://example.org/x> .
+
+# the same prefix declared via two subject spellings of ONE namespace
+# agrees with itself and applies
+<https://dup.test/ontology#Thing> a owl:Class .
+<https://dup.test/ontology> graphql:prefix "dup" .
+<https://dup.test/ontology#> graphql:prefix "dup" .
+
+# a subject resolving to no discovered namespace is ignored here (A002 is
+# Pass 2's)
+<https://nowhere.test/> graphql:prefix "no" .
+`,
+      {},
+    );
+    // The agreeing pair resolved, so no warning names it — but the value
+    // itself binds in Pass 2, not here.
+    expect(
+      output.namespaces.get("https://dup.test/ontology#")?.startsWith("ns"),
+    ).toBe(true);
+    const conf = output.namespaces.get("https://conf.test/");
+    const iri = output.namespaces.get("https://iri.test/");
+    expect(conf?.startsWith("ns")).toBe(true);
+    expect(iri?.startsWith("ns")).toBe(true);
+    expect([...output.namespaces.values()]).not.toContain("no");
+    const e001Sources = diagnostics
+      .filter((d) => d.message.includes("no registered prefix"))
+      .map((d) => d.source);
+    expect(e001Sources).toContain("https://conf.test/");
+    expect(e001Sources).toContain("https://iri.test/");
+    expect(e001Sources).not.toContain("https://dup.test/ontology#");
+  });
+
+  it("treats an empty graphql:prefix as no declaration at all", async () => {
+    // "" is falsy: taking it would discard the REGISTERED prefix and then
+    // trip the synthetic fallback, so Pass 1 skips it entirely and the
+    // namespace resolves exactly as if the assertion were absent. Pass 2
+    // reports the malformed value (A003).
+    const { output, diagnostics } = await extractTtl(`
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix graphql: <${GRAPHQL}> .
+@prefix ex: <http://example.org/> .
+
+ex:Thing a owl:Class .
+<http://example.org/> graphql:prefix "" .
+
+<https://bare.test/Widget> a owl:Class .
+<https://bare.test/> graphql:prefix "" .
+`);
+    // registered prefix kept, not replaced by ""
+    expect(output.namespaces.get(EX)).toBe("ex");
+    // unregistered namespace still gets its synthetic prefix + the warning
+    expect(output.namespaces.get("https://bare.test/")?.startsWith("ns")).toBe(
+      true,
+    );
+    expect([...output.namespaces.values()]).not.toContain("");
+    expect(
+      diagnostics.some(
+        (d) =>
+          d.source === "https://bare.test/" &&
+          d.message.includes("no registered prefix"),
+      ),
+    ).toBe(true);
+  });
+
+  it("dedupes identical assertions and drops rows without a stable identity", async () => {
+    const query = router([
+      [
+        "STRSTARTS",
+        select([
+          // reversed order proves the sort; the duplicate proves RDF set
+          // semantics (one fact, not a conflict)
+          {
+            target: named(`${EX}B`),
+            term: named(GRAPHQL_TERMS.name),
+            value: literal("Beta"),
+          },
+          {
+            target: named(`${EX}A`),
+            term: named(GRAPHQL_TERMS.name),
+            value: literal("Alpha"),
+          },
+          {
+            target: named(`${EX}A`),
+            term: named(GRAPHQL_TERMS.name),
+            value: literal("Alpha"),
+          },
+          {
+            target: named(`${EX}C`),
+            term: named(GRAPHQL_TERMS.titleFrom),
+            value: named(`${EX}x`),
+          },
+          // blank-node target: not annotatable
+          {
+            target: blank("_:t"),
+            term: named(GRAPHQL_TERMS.name),
+            value: literal("x"),
+          },
+          // blank-node value: no stable identity to serialize
+          {
+            target: named(`${EX}D`),
+            term: named(GRAPHQL_TERMS.inverse),
+            value: blank("_:v"),
+          },
+          // a non-IRI term cannot happen in SPARQL but the guard is uniform
+          {
+            target: named(`${EX}D`),
+            term: literal("not-a-term"),
+            value: literal("x"),
+          },
+        ]),
+      ],
+    ]);
+    const { output } = await extract(query, PREFIXES);
+    expect(output.graphqlAnnotations).toEqual([
+      [`${EX}A`, GRAPHQL_TERMS.name, "Alpha", "literal"],
+      [`${EX}B`, GRAPHQL_TERMS.name, "Beta", "literal"],
+      [`${EX}C`, GRAPHQL_TERMS.titleFrom, `${EX}x`, "iri"],
+    ]);
   });
 });
 

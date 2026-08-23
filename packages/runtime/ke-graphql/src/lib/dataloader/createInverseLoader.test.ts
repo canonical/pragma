@@ -1,18 +1,12 @@
 import type { QueryResult, Term } from "@canonical/ke";
 import { describe, expect, it, vi } from "vitest";
-import type { MappedIR, NamespaceInfo, QueryFn } from "../shared/index.js";
+import type { QueryFn } from "../shared/index.js";
 import createInverseLoader from "./createInverseLoader.js";
 
 const NS = "https://ds.canonical.com/";
 
-const namespaces = new Map<string, NamespaceInfo>([
-  ["ds", { prefix: "ds", uri: NS, classCount: 0, propertyCount: 0 }],
-]);
-
 const named = (value: string): Term => ({ termType: "NamedNode", value });
 const literal = (value: string): Term => ({ termType: "Literal", value });
-
-const mapped = { namespaces } as unknown as MappedIR;
 
 const select = (termBindings: Record<string, Term>[]): QueryResult =>
   ({
@@ -33,12 +27,12 @@ describe("createInverseLoader", () => {
       calls += 1;
       throw new Error("store down");
     });
-    const loader = createInverseLoader(query, mapped, new Map());
+    const loader = createInverseLoader(query, new Map());
 
-    await expect(loader.load(key(`${NS}of`, "ds:x"))).rejects.toThrow(
+    await expect(loader.load(key(`${NS}of`, `${NS}x`))).rejects.toThrow(
       "store down",
     );
-    await expect(loader.load(key(`${NS}of`, "ds:x"))).rejects.toThrow(
+    await expect(loader.load(key(`${NS}of`, `${NS}x`))).rejects.toThrow(
       "store down",
     );
     expect(calls).toBe(2);
@@ -72,32 +66,15 @@ describe("createInverseLoader", () => {
           subject: literal("nope"),
         },
       ]);
-    const loader = createInverseLoader(query, mapped);
-    // The prefixed object expands to the full IRI for byKey lookup.
-    expect(await loader.load(key(`${NS}of`, "ds:x"))).toEqual([`${NS}a`]);
+    const loader = createInverseLoader(query);
+    // Keys carry the absolute IRI already — nothing to expand.
+    expect(await loader.load(key(`${NS}of`, `${NS}x`))).toEqual([`${NS}a`]);
   });
 
   it("returns an empty list for a non-select result", async () => {
     // result.type !== "select" → byKey stays empty → the ?? [] fallback fires.
     const query: QueryFn = async () => ask();
-    const loader = createInverseLoader(query, mapped);
-    expect(await loader.load(key(`${NS}of`, "ds:x"))).toEqual([]);
-  });
-
-  it("falls back to the raw object when its prefix is unknown (toFull undefined)", async () => {
-    const query: QueryFn = vi.fn(async (q: string) => {
-      // toFull("zz:thing") is undefined for an unregistered prefix → ?? object
-      // keeps "zz:thing" as the SPARQL object.
-      expect(q).toContain("<zz:thing>");
-      return select([
-        {
-          property: named(`${NS}of`),
-          object: named("zz:thing"),
-          subject: named(`${NS}a`),
-        },
-      ]);
-    });
-    const loader = createInverseLoader(query, mapped);
-    expect(await loader.load(key(`${NS}of`, "zz:thing"))).toEqual([`${NS}a`]);
+    const loader = createInverseLoader(query);
+    expect(await loader.load(key(`${NS}of`, `${NS}x`))).toEqual([]);
   });
 });

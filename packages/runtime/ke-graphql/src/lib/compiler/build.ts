@@ -1,11 +1,14 @@
 // =============================================================================
 // Pass 2 — Build: RawExtraction → OntologyIR
 //
-// Pure. Constructs the typed class/property graph: transitive superclass
-// closure (with cycle detection), subclass inversion, abstract detection from
-// the Pass 1 instance stats, range resolution, SHACL cardinality (including
-// sh:or most-permissive merging), inverse pair symmetry, and property
-// inheritance.
+// Pure. Resolves the graphql: annotation overlay first (annotations.ts, the
+// A-band diagnostics), then constructs the typed class/property graph:
+// transitive superclass closure (with cycle detection), subclass inversion,
+// abstract detection from the Pass 1 instance stats, range resolution, SHACL
+// cardinality (including sh:or most-permissive merging), inverse pair
+// symmetry, and property inheritance. Every knob the overlay carries is read
+// as `config ?? overlay ?? heuristic` — the consumer's config survives,
+// deprecated, and wins per key (A005 names the shadowing).
 // =============================================================================
 
 import {
@@ -24,9 +27,11 @@ import {
   XSD,
   XSD_SCALARS,
 } from "../shared/index.js";
-import getNamespace from "./getNamespace.js";
+import resolveGraphqlAnnotations from "./annotations.js";
+import { DEFAULT_MODE } from "./constants.js";
+import effectivePrefixes from "./effectivePrefixes.js";
 import isStandardVocab from "./isStandardVocab.js";
-import type { CustomMappings } from "./types.js";
+import type { CustomMappings, ProjectionMode } from "./types.js";
 
 const PHASE = "build";
 
@@ -85,24 +90,119 @@ const mergeConstraints = (
 export default function build(
   extraction: RawExtraction,
   mappings: CustomMappings = {},
+  mode: ProjectionMode = DEFAULT_MODE,
 ): PassResult<OntologyIR> {
   const diagnostics: Diagnostic[] = [];
-  const getPrefix = (uri: string): string =>
-    extraction.namespaces.get(getNamespace(uri)) ?? "";
 
-  // Custom mappings may be keyed by prefixed name (ds:tier) or full IRI.
-  const prefixedToFull = new Map<string, string>();
-  for (const [ns, prefix] of extraction.namespaces) {
-    prefixedToFull.set(prefix, ns);
-  }
-  const findMapping = (uri: string) => {
-    const direct = mappings[uri];
-    if (direct) {
-      return direct;
+  // ── 0. resolve the graphql: annotation overlay (A-band diagnostics) ──
+  // Under mode "auto" the resolver DOES NOT RUN — that is the mode's
+  // escape-hatch value: an ontology with broken annotations must still
+  // compile here, so even A001/A002/A003 stay unraised. Only the honest
+  // A006 note fires when assertions are present but unconsulted.
+  const resolved =
+    mode === "auto"
+      ? {
+          output: {
+            classes: new Map(),
+            properties: new Map(),
+            prefixes: new Map(),
+          },
+          diagnostics:
+            extraction.graphqlAnnotations.length > 0
+              ? [
+                  {
+                    severity: "info" as const,
+                    code: "A006" as const,
+                    message: `mode "auto": ${extraction.graphqlAnnotations.length} graphql: annotation assertion(s) present but the overlay is not consulted — heuristics only; use mode "annotated" to bind them`,
+                    phase: PHASE,
+                  },
+                ]
+              : [],
+        }
+      : resolveGraphqlAnnotations(extraction, mappings);
+  diagnostics.push(...resolved.diagnostics);
+  const overlay = resolved.output;
+
+  // ── the effective namespace → prefix map ──
+  // Pass 1 resolves registered > synthetic ONLY; a graphql:prefix declaration
+  // binds here, where the mode is known. Under mode "auto" the overlay is
+  // empty by construction, so prefixes resolve exactly as they would if the
+  // ontology carried no annotation at all — which is what that mode promises.
+  // The fold and the prefixed-key lookup come from one shared authority
+  // (effectivePrefixes) that annotations.ts's A005 report also uses, so the
+  // site that APPLIES a config key and the site that REPORTS it as shadowing
+  // an annotation can never disagree about which key applies.
+  const {
+    namespaces: effectiveNamespaces,
+    prefixOf: getPrefix,
+    findMapping,
+  } = effectivePrefixes(extraction.namespaces, overlay.prefixes, mappings);
+
+  // ── deferred synthetic-prefix warnings (E001) ──
+  // Pass 1 warns for every namespace it puts on a serial synthetic, EXCEPT
+  // those whose graphql:prefix declaration might still answer — a question
+  // only the mode settles, which is why it deferred them to here. Settle it:
+  // a declaration the overlay bound replaced the synthetic and there is
+  // nothing to report; one that did not bind — mode "auto" consults no
+  // annotation, and a refused declaration (A001/A002/A003) binds nothing
+  // either — leaves the namespace on the synthetic every consumer then sees,
+  // which is precisely the state E001 exists to name.
+  for (const ns of extraction.deferredSyntheticNamespaces) {
+    if (overlay.prefixes.has(ns)) {
+      continue;
     }
-    const prefix = getPrefix(uri);
-    return prefix ? mappings[`${prefix}:${getLocalName(uri)}`] : undefined;
-  };
+    diagnostics.push({
+      severity: "warning",
+      code: "E001",
+      message: `namespace ${ns} has no registered prefix — assigned synthetic "${getPrefix(ns)}", and its graphql:prefix declaration does not bind under mode "${mode}". Register it in StoreConfig.prefixes: identity is the absolute IRI, but prefixes serve the singular lookup's prefixed-input convenience and display`,
+      source: ns,
+      phase: PHASE,
+    });
+  }
+
+  // ── prefix injectivity ──
+  // NamespaceInfo is keyed by prefix, so a collision silently last-write-wins
+  // and drops a namespace whole. The report turns on the CAUSE. A bound
+  // declaration colliding with anything is an annotation conflict the
+  // ontology itself can fix: A001, fatal, per the no-arbitrary-tiebreak rule.
+  // A collision among registered and serial synthetic prefixes needs no
+  // annotation at all — registering the prefix "ns" is enough — so calling it
+  // an ANNOTATION conflict would send an operator hunting for graphql:
+  // assertions that do not exist, and refusing the compile would reject input
+  // that compiled before the vocabulary landed. That case is B005: a warning
+  // naming the registration remedy.
+  const namespacesByPrefix = new Map<string, string[]>();
+  for (const [ns, prefix] of effectiveNamespaces) {
+    const list = namespacesByPrefix.get(prefix) ?? [];
+    list.push(ns);
+    namespacesByPrefix.set(prefix, list);
+  }
+  for (const [prefix, nsList] of [...namespacesByPrefix].sort(([a], [b]) =>
+    a < b ? -1 : 1,
+  )) {
+    if (nsList.length < 2) {
+      continue;
+    }
+    const claimants = [...nsList].sort().join(", ");
+    const shared = `prefix "${prefix}" is claimed by ${nsList.length} namespaces (${claimants}) — the namespace→prefix map must be injective`;
+    diagnostics.push(
+      nsList.some((ns) => overlay.prefixes.has(ns))
+        ? {
+            severity: "error",
+            code: "A001",
+            message: `${shared}; declare distinct graphql:prefix values`,
+            source: prefix,
+            phase: PHASE,
+          }
+        : {
+            severity: "warning",
+            code: "B005",
+            message: `${shared}; register a distinct prefix for each in StoreConfig.prefixes`,
+            source: prefix,
+            phase: PHASE,
+          },
+    );
+  }
 
   // ── 1. class map ──
   const classes = new Map<string, ClassNode>();
@@ -112,6 +212,7 @@ export default function build(
     classes.set(raw.uri, {
       uri: raw.uri,
       label: raw.label ?? getLocalName(raw.uri),
+      assertedLabel: raw.label,
       definition: raw.definition,
       namespace: getPrefix(raw.uri),
       superclasses: raw.superclasses,
@@ -210,15 +311,22 @@ export default function build(
   }
 
   // ── 4. abstract + embeddable detection from instance stats ──
+  // Tri-state per source: config > annotation > heuristic — an explicit
+  // `false` at either override level forces the heuristic off.
   for (const node of classes.values()) {
     const stats = extraction.instanceStats.get(node.uri);
     const subclasses = subclassesOf.get(node.uri) ?? [];
     const mapping = findMapping(node.uri);
+    const classOverlay = overlay.classes.get(node.uri);
     const isAbstract =
-      mapping?.abstract ?? ((stats?.total ?? 0) === 0 && subclasses.length > 0);
-    // Embeddable: instances exist and none are named, or forced by mapping.
+      mapping?.abstract ??
+      classOverlay?.abstract ??
+      ((stats?.total ?? 0) === 0 && subclasses.length > 0);
+    // Embeddable: instances exist and none are named, or forced by
+    // mapping/annotation.
     const embeddable =
       mapping?.embeddable ??
+      classOverlay?.embeddable ??
       (stats !== undefined && stats.total > 0 && stats.named === 0);
     /* v8 ignore next -- node.uri was populated with its ancestors in the prior closure pass and is still present in the map, so the empty-array fallback is unreachable */
     const ancestors = classes.get(node.uri)?.ancestors ?? [];
@@ -313,13 +421,21 @@ export default function build(
       });
     }
 
-    // Cardinality precedence: custom > owl:FunctionalProperty > owl:cardinality
-    // (not present in current ontologies) > SHACL maxCount 1 > kind default.
-    // Datatype properties default to SINGULAR (multi-valued literals are the
-    // exception in RDF practice); only object properties default to list.
+    // Cardinality precedence: custom > graphql:singular annotation >
+    // owl:FunctionalProperty > owl:cardinality (not present in current
+    // ontologies) > SHACL maxCount 1 > kind default. Datatype properties
+    // default to SINGULAR (multi-valued literals are the exception in RDF
+    // practice); only object properties default to list.
     const mapping = findMapping(raw.uri);
+    // The two EXPLICIT tiers are recorded as such: a per-class SHACL shape is
+    // free to override the heuristics below them, but not a value the
+    // consumer's config or the ontology's own vocabulary stated outright —
+    // otherwise the precedence above holds for a property's default and
+    // silently inverts on every class that happens to carry a shape.
+    const explicitSingular =
+      mapping?.singular ?? overlay.properties.get(raw.uri)?.singular;
     const functional =
-      mapping?.singular ??
+      explicitSingular ??
       (extraction.functionals.has(raw.uri) ||
         shaclSingularAnywhere ||
         raw.kind !== "object");
@@ -333,6 +449,7 @@ export default function build(
       domains: raw.domains,
       range: resolveRange(raw.uri, raw.ranges),
       functional,
+      explicitSingular,
       classCardinality,
       isAnnotation: raw.kind === "annotation",
       annotations: extraction.annotations.get(raw.uri) ?? new Map(),
@@ -340,7 +457,21 @@ export default function build(
   }
 
   // ── 6. inverse pairs with symmetry verification (V003 in Pass 3) ──
-  for (const { property, inverse } of extraction.inverses) {
+  // graphql:inverse declarations join the owl:inverseOf pairs with identical
+  // declared-pair semantics (dual-direction union at resolve time). They are
+  // appended AFTER the owl pairs, so an annotation refines the forward side
+  // when both speak; a value that is no declared property rides the same
+  // dangling path owl:inverseOf does (B004 in Pass 3, ignored at mapping).
+  const annotationInverses = [...overlay.properties].flatMap(
+    ([property, propertyOverlay]) =>
+      propertyOverlay.inverse !== undefined
+        ? [{ property, inverse: propertyOverlay.inverse }]
+        : [],
+  );
+  for (const { property, inverse } of [
+    ...extraction.inverses,
+    ...annotationInverses,
+  ]) {
     const forward = properties.get(property);
     if (forward) {
       properties.set(property, { ...forward, inverse });
@@ -396,24 +527,27 @@ export default function build(
   }
 
   // ── namespaces ──
+  // The overlay's validated prefix leads (same fold as getPrefix), so the
+  // NamespaceInfo keying and every node's `namespace` agree on one prefix.
   const namespaces = new Map<string, NamespaceInfo>();
   for (const [uri, prefix] of extraction.namespaces) {
     if (isStandardVocab(uri)) {
       continue;
     }
-    namespaces.set(prefix, {
-      prefix,
+    const effective = overlay.prefixes.get(uri) ?? prefix;
+    namespaces.set(effective, {
+      prefix: effective,
       uri,
-      classCount: [...classes.values()].filter((c) => c.namespace === prefix)
+      classCount: [...classes.values()].filter((c) => c.namespace === effective)
         .length,
       propertyCount: [...properties.values()].filter(
-        (p) => p.namespace === prefix,
+        (p) => p.namespace === effective,
       ).length,
     });
   }
 
   return {
-    output: { classes, properties, namespaces, extraction },
+    output: { classes, properties, namespaces, graphql: overlay, extraction },
     diagnostics,
   };
 }

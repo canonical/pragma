@@ -59,6 +59,7 @@ const buildIR = (
       functionals: new Set(),
       datatypes: [],
       namespaces: new Map(),
+      deferredSyntheticNamespaces: [],
       shaclConstraints: [],
       unions: [],
       instanceStats: new Map(),
@@ -66,6 +67,7 @@ const buildIR = (
       functionalViolations: new Set(),
       undeclaredPredicates: new Set(),
       annotations: new Map(),
+      graphqlAnnotations: [],
       deepBlankNesting: false,
     },
   }) as unknown as OntologyIR;

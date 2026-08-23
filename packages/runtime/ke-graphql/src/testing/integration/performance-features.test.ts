@@ -17,7 +17,8 @@ import {
   type SchemaPluginApi,
   serializeExtraction,
 } from "../../lib/compiler/index.js";
-import createSchemaPlugin from "../../lib/createSchemaPlugin.js";
+import { createSchemaPlugin } from "../../lib/index.js";
+import { GRAPHQL_TERMS } from "../../lib/shared/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../index.js";
 
 type Cleanup = () => void;
@@ -80,6 +81,58 @@ describe("extraction artifact (DMMF-style boot)", () => {
     expect(extraction.functionals).toEqual(live.extraction.functionals);
     expect(extraction.instanceStats).toEqual(live.extraction.instanceStats);
     expect(extraction.annotations).toEqual(live.extraction.annotations);
+  });
+
+  it("round-trips graphql: vocabulary assertions through the artifact", async () => {
+    const store = await boot(`${MINIMAL_TTL}
+<http://example.org/Thing> <${GRAPHQL_TERMS.name}> "Item" .
+<http://example.org/Thing> <${GRAPHQL_TERMS.titleFrom}> <http://example.org/name> .
+`);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    // Guard against a vacuous pass: the fixture must actually carry rows.
+    expect(live.extraction.graphqlAnnotations.length).toBeGreaterThan(0);
+    const { extraction } = deserializeExtraction(
+      serializeExtraction(live.extraction, "0"),
+    );
+    expect(extraction.graphqlAnnotations).toEqual(
+      live.extraction.graphqlAnnotations,
+    );
+  });
+
+  it("defaults the deferred synthetic-prefix list for an older artifact", async () => {
+    const store = await boot(`${MINIMAL_TTL}
+<http://unreg.test/Widget> a <http://www.w3.org/2002/07/owl#Class> .
+<http://unreg.test/> <${GRAPHQL_TERMS.prefix}> "unr" .
+`);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    // Guard against a vacuous pass: the fixture must actually defer one.
+    expect(live.extraction.deferredSyntheticNamespaces).toEqual([
+      "http://unreg.test/",
+    ]);
+    const artifact = JSON.parse(serializeExtraction(live.extraction, "0"));
+    expect(deserializeExtraction(artifact).extraction).toEqual(live.extraction);
+    // An artifact serialized before the deferral existed has no field at all
+    // — [] is the state it was built under, and it must still boot.
+    delete artifact.deferredSyntheticNamespaces;
+    const { extraction } = deserializeExtraction(artifact);
+    expect(extraction.deferredSyntheticNamespaces).toEqual([]);
+    expect(
+      compileFromExtraction(artifact).schema.getType("Thing"),
+    ).toBeDefined();
+  });
+
+  it("defaults graphqlAnnotations to [] for a pre-vocabulary artifact", async () => {
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const legacy = JSON.parse(serializeExtraction(live.extraction, "0"));
+    // An artifact serialized before the vocabulary landed has no field at
+    // all — it must still boot (version stays 1; sourcesHash protects the
+    // annotated-sources case by forcing a live recompile on mismatch).
+    delete legacy.graphqlAnnotations;
+    const { extraction } = deserializeExtraction(legacy);
+    expect(extraction.graphqlAnnotations).toEqual([]);
+    const rebuilt = compileFromExtraction(legacy);
+    expect(rebuilt.schema.getType("Thing")).toBeDefined();
   });
 
   it("rejects unknown artifact versions", () => {
@@ -238,7 +291,7 @@ describe("slice-before-hydrate listings", () => {
 
     const page1 = await graphql({
       schema: result.schema,
-      source: `{ tiers(first: 1) { edges { cursor node { id name } } pageInfo { hasNextPage endCursor } } }`,
+      source: `{ tiers(first: 1) { edges { cursor node { uri name } } pageInfo { hasNextPage endCursor } } }`,
       contextValue: result.createContext(store),
     });
     expect(page1.errors).toBeUndefined();

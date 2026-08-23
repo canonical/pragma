@@ -68,15 +68,40 @@ export const stripVerbPrefix = (name: string): string => {
 };
 
 /**
- * Make a string a legal GraphQL name: [_a-zA-Z][_a-zA-Z0-9]*.
+ * Make a string a legal GraphQL name: [_a-zA-Z][_a-zA-Z0-9]*, excluding the
+ * introspection-reserved "__" prefix.
  * Invalid characters (dots, dashes, unicode) become underscores; a leading
- * digit gets an underscore prefix; an empty result becomes "_". Callers emit
- * a diagnostic when the result differs from the input.
+ * digit gets an underscore prefix; an empty result becomes "_"; a leading
+ * underscore RUN collapses to one, because `__typename` is lexically legal
+ * and only `validateSchema` rejects it. Callers emit a diagnostic when the
+ * result differs from the input.
  */
 export const sanitizeGraphQLName = (name: string): string => {
   const cleaned = name.replace(/[^_a-zA-Z0-9]/g, "_");
   if (cleaned.length === 0) {
     return "_";
   }
-  return /^[_a-zA-Z]/.test(cleaned) ? cleaned : `_${cleaned}`;
+  const legal = /^[_a-zA-Z]/.test(cleaned) ? cleaned : `_${cleaned}`;
+  // GraphQL reserves the leading "__" for introspection. Such a name is
+  // lexically legal, so type construction succeeds and `validateSchema`
+  // rejects it later with a C003 that names neither the term nor its IRI —
+  // the leading underscore run collapses to one so the caller's M002 reports
+  // the rename against the source that asked for it.
+  return legal.replace(/^__+/, "_");
+};
+
+/**
+ * Make a Turtle namespace prefix a legal GraphQL name COMPONENT for
+ * composed names (`prefixing: "all"` field names, M004 type renames).
+ * A legal Turtle prefix may carry characters GraphQL forbids ('-', '.'):
+ * segments split on them are camel-joined (`ds-global` → `dsGlobal`) so the
+ * composed name stays legal AND readable, then sanitized for the residue
+ * camel-joining cannot fix (a digit-leading or empty prefix).
+ */
+export const sanitizePrefixComponent = (prefix: string): string => {
+  const segments = prefix.split(/[^_a-zA-Z0-9]+/).filter((s) => s.length > 0);
+  const joined = segments
+    .map((s, i) => (i === 0 ? s : s.charAt(0).toUpperCase() + s.slice(1)))
+    .join("");
+  return sanitizeGraphQLName(joined);
 };

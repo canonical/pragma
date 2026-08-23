@@ -39,10 +39,23 @@ import {
   type Diagnostic,
   type EntityValue,
   type PassResult,
+  STRUCTURAL_META,
+  STRUCTURAL_URI,
 } from "../shared/index.js";
 import { buildTBoxSchema } from "../tbox/index.js";
+import {
+  DEFAULT_MODE,
+  DEFAULT_PREFIXING,
+  DEFAULT_PROVIDER,
+  DEFAULT_REVISION,
+  GRAPHQL_SCHEMA_SPEC,
+} from "./constants.js";
 import type { FieldPlan, SchemaPlan, TypeRef } from "./emit.js";
-import type { SchemaExtensionsInput } from "./types.js";
+import type {
+  FieldPrefixing,
+  ProjectionMode,
+  SchemaExtensionsInput,
+} from "./types.js";
 
 const PHASE = "compose";
 
@@ -64,7 +77,45 @@ export interface ComposeOptions {
    * artifact was produced; the SDL is a build artifact, not a runtime need).
    */
   skipValidation?: boolean;
+  /** Projection mode, stamped into the SDL provenance header. */
+  mode?: ProjectionMode;
+  /** Provider identity, stamped into the SDL provenance header. */
+  provider?: string;
+  /** Source revision, stamped into the SDL provenance header. */
+  revision?: string;
+  /** Field-name prefixing policy, stamped into the SDL provenance header. */
+  prefixing?: FieldPrefixing;
 }
+
+/**
+ * Build the provenance header prepended to the printed SDL. Pure.
+ *
+ * A banner line, then one `# key: value` line per provenance fact, in the
+ * key set and order the schema contract fixes (graphql-schema-spec 1):
+ * graphql-schema-spec, provider, mode, validated-store, revision — then
+ * extra keys after the required block. Independent providers of the same
+ * contract emit the same block, so two canonical SDLs diff line-for-line.
+ *
+ * `validated-store` is constant `false`: this compiler never promotes a
+ * field to non-null from store validation — only the explicit
+ * `nonNullOverrides` list widens nullability.
+ *
+ * `prefixing` is stamped because the same ontology under a different
+ * prefixing policy yields different field names — an SDL that omits it
+ * cannot be conformance-checked against its source ontology.
+ */
+const buildProvenanceHeader = (options: ComposeOptions): string =>
+  [
+    "# ke-graphql · canonical SDL",
+    `# graphql-schema-spec: ${GRAPHQL_SCHEMA_SPEC}`,
+    `# provider: ${options.provider ?? DEFAULT_PROVIDER}`,
+    `# mode: ${options.mode ?? DEFAULT_MODE}`,
+    "# validated-store: false",
+    `# revision: ${options.revision ?? DEFAULT_REVISION}`,
+    `# prefixing: ${options.prefixing ?? DEFAULT_PREFIXING}`,
+    "",
+    "",
+  ].join("\n");
 
 /** Composition output: the schema (null on C003 failure) and its SDL. */
 export interface ComposedSchema {
@@ -85,14 +136,31 @@ export default function compose(
   const diagnostics: Diagnostic[] = [];
 
   // ── shared structural types ──
+  // The TBox branch is identity-based: tbox.isClassNode answers true only for
+  // this build's own ClassNode instances (plus the owl:Class meta-node), so a
+  // class arriving through a Node position — node(id:) with a class IRI, an
+  // edge of the meta-class's instances connection — resolves to OntologyClass
+  // while every ABox EntityValue keeps resolving through its typename.
+  // (`tbox` is declared below; the closure only runs at execution time.)
   const resolveTypename = (value: unknown): string | undefined =>
-    (value as EntityValue | undefined)?.typename;
+    tbox.isClassNode(value)
+      ? "OntologyClass"
+      : (value as EntityValue | undefined)?.typename;
 
   const nodeInterface: GraphQLInterfaceType = new GraphQLInterfaceType({
     name: "Node",
+    // No resolvers: an interface's field resolvers never execute — graphql-js
+    // dispatches on the runtime object type, whose own plan carries them. The
+    // fields exist here so a selection through Query.node(id:) or
+    // OntologyClass.instances (a NodeConnection) is legal.
+    //
+    // Exactly two members. Everything descriptive moved behind `_meta`, so the
+    // interface is identity plus self-description and nothing else — the
+    // forward reference to `tbox` is safe because the thunk runs after
+    // construction (the same pattern findNamedType uses below).
     fields: () => ({
-      id: { type: new GraphQLNonNull(GraphQLID) },
-      uri: { type: new GraphQLNonNull(GraphQLString) },
+      [STRUCTURAL_URI]: { type: new GraphQLNonNull(GraphQLID) },
+      [STRUCTURAL_META]: { type: new GraphQLNonNull(tbox.entityMeta) },
     }),
     resolveType: resolveTypename,
   });
@@ -322,6 +390,20 @@ export default function compose(
         ...tbox.queryFields,
       };
       for (const [name, fieldPlan] of plan.queryFields) {
+        // The TBox root fields (ontologies/ontology/ontologyClass/
+        // ontologyProperty) are part of the schema contract: a generated
+        // root field landing on one of them gets the SAME C002 error+drop
+        // treatment as a consumer extension would — the TBox field is kept,
+        // never silently overwritten.
+        if (fields[name]) {
+          diagnostics.push({
+            severity: "error",
+            code: "C002",
+            message: `generated root field Query.${name} conflicts with a TBox root field — the generated field is DROPPED. To keep it, rename the class (mappings: { "<iri>": { graphqlName: "…" } })`,
+            phase: PHASE,
+          });
+          continue;
+        }
         fields[name] = buildFieldConfig(fieldPlan) as GraphQLFieldConfig<
           unknown,
           CompilerContext
@@ -383,7 +465,7 @@ export default function compose(
       if (validationErrors.length > 0) {
         schema = null;
       } else {
-        sdl = printSchema(schema);
+        sdl = buildProvenanceHeader(options) + printSchema(schema);
       }
     } else if (options.extensions) {
       // Skipping full validation (the artifact-boot fast path) must still honor
@@ -400,7 +482,7 @@ export default function compose(
     // validateSchema, and printSchema; all throw Error instances, so the
     // non-Error else fallback below cannot be reached in practice.
     let message: string;
-    /* v8 ignore else */
+    /* v8 ignore else -- unreachable: every throw site inside this try (graphql-js type construction, validateSchema, printSchema) throws an Error instance, so no fixture can drive the String(error) arm; it stays because `catch` is typed `unknown` and dropping it would mean asserting a type the language does not guarantee */
     if (error instanceof Error) {
       message = error.message;
     } else {

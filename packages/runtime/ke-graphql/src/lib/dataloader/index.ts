@@ -1,7 +1,8 @@
 /**
  * The batched data-loading domain: the three per-request DataLoaders
- * (entity, class listing, reverse assertions) and the prefixed-URI ↔ full
- * IRI conversions they key on.
+ * (entity, class listing, reverse assertions), all keyed on absolute IRIs,
+ * plus the prefixed-URI ↔ full-IRI conversions kept for the edges (see
+ * ./uris.ts).
  *
  * @module dataloader
  */

@@ -15,7 +15,6 @@ export default defineConfig({
         "**/types.ts",
         "**/constants.ts",
         "src/testing/**",
-        "src/http/graphiqlHtml.ts",
       ],
       thresholds: {
         statements: 100,
