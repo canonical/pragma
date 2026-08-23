@@ -64,8 +64,12 @@ interface ErrorPayload {
    * in the default prose did-you-mean rendering, not in this field. An
    * excess positional is NOT a fuzzy match — its matched operand may be
    * the very token its message calls unexpected, or one the message never
-   * names — so that producer omits this field entirely and ships the
-   * runnable corrected command as `recovery.cli` instead.
+   * names — so that producer omits this field entirely and instead ships
+   * the runnable corrected command as `recovery.cli` WHEN an operand
+   * names a sibling or child segment resolving to a declared runnable
+   * leaf (the prose did-you-mean condition, narrowed to runnable — a
+   * matched namespace keeps the prose hint but ships no recovery); with
+   * no runnable match the envelope carries neither optional field.
    */
   readonly suggestions?: readonly string[];
   readonly recovery?: Recovery;

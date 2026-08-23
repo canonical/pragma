@@ -363,12 +363,23 @@ function mount(parent: Command, host: CliMountHost): void {
     // ErrorPayload.suggestions — matching bin.ts's own UNKNOWN_VERB tier).
     // An excess positional's match is NOT substitutable — it may BE the
     // stray the message calls unexpected, or an operand the message never
-    // names — so that kind OMITS `suggestions` and carries the runnable
-    // correction in the covenant's `recovery.cli` instead:
+    // names — so that kind OMITS `suggestions` and instead carries the
+    // correction in the covenant's `recovery.cli`:
     // `[...detail.chain, suggestion].join(" ")`, byte-for-byte the command
     // the default prose did-you-mean line names (`chain[0]` is the mounted
     // program's own name, so the D5 prefix invariant holds by derivation,
-    // never by literal).
+    // never by literal) — and ONLY when that command is a DECLARED
+    // RUNNABLE LEAF. The projection's candidate set is structural
+    // (`segmentNeighbours` has no runnable filter), and from the `package`
+    // leaf the only matchable siblings are the `component`/`application`
+    // NAMESPACES — whose "corrected invocation" exits 1 with a help page
+    // in every format (§2's non-reframed bare namespace) and can never
+    // scaffold — so the covenant's run-to-recover field must not name
+    // one. The gate is one surface lookup: `chain` is
+    // `[<bin>, "create", ...segments]`, so everything past the mount
+    // point joined with the suggestion is the CREATE_SURFACE key. A
+    // namespace match ships NO recovery; the default prose did-you-mean
+    // keeps the navigation hint either way.
     writeUsageError: (message, kind, detail) => {
       const suggested = detail.suggestion;
       const error = new PragmaError({
@@ -377,7 +388,10 @@ function mount(parent: Command, host: CliMountHost): void {
         ...(kind === "unknown-segment" && suggested !== undefined
           ? { suggestions: [suggested] }
           : {}),
-        ...(kind === "excess-positional" && suggested !== undefined
+        ...(kind === "excess-positional" &&
+        suggested !== undefined &&
+        CREATE_SURFACE[[...detail.chain.slice(2), suggested].join("/")] !==
+          undefined
           ? {
               recovery: {
                 message: "Run the corrected invocation.",

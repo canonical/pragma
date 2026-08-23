@@ -298,6 +298,54 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(stderr).not.toContain("Did you mean");
   }, 60_000);
 
+  it("a NAMESPACE match ships no recovery — `package`'s only siblings cannot scaffold, so the covenant's run-to-recover field never names one", () => {
+    // The one declared leaf whose siblings are namespaces: from `package`,
+    // a matched operand can only be `component`/`application` — and a bare
+    // namespace exits 1 with a help page in every format (§2), so a
+    // recovery.cli naming it told an agent to "run" a command that cannot
+    // scaffold (pre-gate this envelope carried
+    // cli: "pragma create component"; measured red before the fix). The
+    // mount's runnability gate (CREATE_SURFACE lookup) drops the recovery;
+    // like the no-match arm, the envelope then carries NEITHER optional
+    // field.
+    const { status, stderr, cwd } = run([
+      "create",
+      "package",
+      "component",
+      "--format",
+      "json",
+    ]);
+    expect(status).toBe(2);
+    const line = stderr
+      .split("\n")
+      .find((candidate) => candidate.startsWith("{"));
+    expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
+    const envelope = JSON.parse(line as string) as {
+      ok: boolean;
+      error: {
+        code: string;
+        message: string;
+        suggestions?: string[];
+        recovery?: unknown;
+      };
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("INVALID_INPUT");
+    expect(envelope.error.message).toBe('unexpected argument "component"');
+    expect(envelope.error.suggestions).toBeUndefined();
+    expect(envelope.error.recovery).toBeUndefined();
+    expect(readdirSync(cwd)).toEqual([]);
+
+    // The DEFAULT prose keeps the navigation hint unchanged: an
+    // interrogative did-you-mean pointing at the namespace is fine — the
+    // delta was only ever the machine-format imperative.
+    const prose = run(["create", "package", "component"]);
+    expect(prose.status).toBe(2);
+    expect(prose.stderr).toContain('error: unexpected argument "component"');
+    expect(prose.stderr).toContain("Did you mean 'pragma create component'?");
+    expect(readdirSync(prose.cwd)).toEqual([]);
+  }, 60_000);
+
   it("bin-tier usage errors envelope under --format llm too — the unknown option and the --framework migration error", () => {
     // Before the hoist the machine-format decision existed as four copies
     // under TWO gates: bin.ts's two sites enveloped on json ONLY, so under
