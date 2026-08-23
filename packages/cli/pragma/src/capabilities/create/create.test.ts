@@ -44,16 +44,12 @@ async function runIn(
   dir: string,
   params: Record<string, unknown>,
   mutation: MutationFlags = YES,
+  verb = createVerbs.component,
 ) {
   const prev = process.cwd();
   process.chdir(dir);
   try {
-    return await executeVerb(
-      createVerbs.component,
-      params,
-      mutation,
-      bootRuntime(FLAGS, dir),
-    );
+    return await executeVerb(verb, params, mutation, bootRuntime(FLAGS, dir));
   } finally {
     process.chdir(prev);
   }
@@ -228,8 +224,11 @@ describe("SEC-2 path jail (PROTECTED)", () => {
   for (const [label, value] of cases) {
     it(`rejects ${label} with a PragmaError before any effect`, async () => {
       const dir = freshCwd();
-      // The jail throws in `run`, before any effect; the projector maps it to an
-      // exit code, but exercised directly here `executeVerb` propagates it.
+      // Since the round-9 reorder the shared VALIDATOR (`validateAnswers`,
+      // running before the jail) refuses these two classes first — the same
+      // line in both hosts; the jail below stays the backstop. The jail's
+      // OWN tier is driven by the symlink cells here (the one class the
+      // value-only validator cannot see) and by pathJail.test.ts directly.
       await expect(
         runIn(dir, { framework: "react", componentPath: value }),
       ).rejects.toBeInstanceOf(PragmaError);
@@ -237,15 +236,39 @@ describe("SEC-2 path jail (PROTECTED)", () => {
     });
   }
 
-  it("rejects a symlink that escapes the workspace (realpath)", async () => {
+  it("rejects a symlink that escapes the workspace — the JAIL tier (realpath)", async () => {
     const root = freshCwd();
     const outside = freshCwd();
-    // A symlink `link` inside the workspace pointing OUT of it.
+    // A symlink `link` inside the workspace pointing OUT of it: relative, no
+    // `..`, PascalCase basename — the validator passes it, so the jail's own
+    // spelling and covenant `recovery` field prove which tier refused.
     symlinkSync(outside, join(root, "link"));
     await expect(
       runIn(root, { framework: "react", componentPath: "link/Widget" }),
-    ).rejects.toBeInstanceOf(PragmaError);
+    ).rejects.toMatchObject({
+      name: "PragmaError",
+      code: "INVALID_INPUT",
+      message: 'Invalid componentPath "link/Widget".',
+      recovery: { message: "The path resolves outside the workspace." },
+    });
     expect(existsSync(join(outside, "Widget"))).toBe(false);
+  });
+
+  it("application/react: a symlink escape lands in the jail — PATH_PARAM.application is pinned", async () => {
+    const root = freshCwd();
+    const outside = freshCwd();
+    symlinkSync(outside, join(root, "link"));
+    // `link/app` passes `validateAppPath` (relative, no `..`); only the
+    // jail's realpath check — bound to `appPath` via PATH_PARAM — refuses.
+    await expect(
+      runIn(root, { appPath: "link/app" }, YES, createVerbs.application),
+    ).rejects.toMatchObject({
+      name: "PragmaError",
+      code: "INVALID_INPUT",
+      message: 'Invalid appPath "link/app".',
+      recovery: { message: "The path resolves outside the workspace." },
+    });
+    expect(walk(outside)).toEqual([]);
   });
 
   it("accepts an in-workspace path", async () => {

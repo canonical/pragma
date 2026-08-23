@@ -214,7 +214,8 @@ function kindOf(commandPath: string): CreateKind {
 
 /**
  * Build the `create` Task for one invocation of a declared COMMAND PATH: pick
- * the generator, jail its output path, pre-validate the provided answers,
+ * the generator, pre-validate the provided answers (the shared validator
+ * tier), jail its output path (the host backstop, after validation),
  * decide the interaction mode (the ONE shared decision — same function, same
  * inputs as the summon bin), and return `execute` wired to the strategy the
  * mode names.
