@@ -286,7 +286,9 @@ describe("the mounted create grammar (subprocess)", () => {
     // global scan makes the same token print the VERSION and scaffold
     // nothing — no unknown-option error, unlike -d/-y/-l. §2 documents the
     // collision; this cell keeps the divergence deliberate, not accidental
-    // (pragma's global -v is covenant-frozen surface, out of CIS scope).
+    // (pragma's global -v/--version is HOST surface owned by bin.ts's
+    // pre-dispatch scan — deliberately out of CIS scope; the covenant
+    // freezes neither token).
     const { status, stdout, stderr, cwd } = run([
       "create",
       "component",

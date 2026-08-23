@@ -205,7 +205,12 @@ The whole surface derives from \`GeneratorDefinition.prompts\` through
 
 - **Tree segments are subcommands.** A command path (\`component/react\`)
   mounts segment by segment; interior segments are namespaces that list their
-  children; a bare namespace prints its own help on stderr and exits 1; a leaf
+  children; a bare namespace prints its own help on stderr and exits 1 — and
+  despite that exit code it is NOT reframed under pragma's explicit
+  \`--format json\`/\`--format llm\`: it is a help page (byte-identical in
+  every format), not an error message, and pragma's kernel never reframes a
+  bare noun's usage page either (summon's \`--format\` is a leaf flag,
+  unregistered on a namespace); a leaf
   is a generator command. A binding may declare several leaf paths
   (\`component/react|svelte|lit\`); each leaf projects ITS OWN generator's
   prompts — no cross-leaf merging on the CLI (the union rule exists only where
@@ -251,7 +256,8 @@ ${flagTable()}
   collides). Commander's
   implicit \`help\` subcommand is likewise a summon host spelling
   (\`summon help component\`, \`summon component help\`);
-  \`pragma create help component\` errors as an unknown segment.
+  \`pragma create component help\` errors as an unknown segment (and
+  \`pragma create help component\` errors at the host's topic tier).
 
 ## 3. The interaction decision
 
@@ -315,11 +321,12 @@ ${interactionTable()}
   same classes in every arm: a generator-raised typed invalid answer (a
   cross-answer constraint its own \`generate\` enforces) exits 2, and any
   other failure — an ordinary \`Error\` thrown by \`generate\` included,
-  not only a failed effect — exits 1: in the batch arms as a bare stderr
-  line (never a stack), in the run and wizard arms rendered by the host's
-  UI (summon's Ink App reports on stdout; pragma's error rendering writes
-  stderr). The stream and its framing are host presentation; the exit code
-  is parity surface — a rendered failure never exits 0.
+  not only a failed effect — exits 1: in the batch arms as a stderr
+  line, never a stack (summon writes the bare message; pragma renders it
+  through its error envelope), in the run and wizard arms rendered by the
+  host's UI (summon's Ink App reports on stdout; pragma's error rendering
+  writes stderr). The stream and its framing are host presentation; the
+  exit code is parity surface — a rendered failure never exits 0.
 
 ## 4. The template-seam guarantee
 
