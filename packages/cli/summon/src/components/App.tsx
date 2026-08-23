@@ -839,10 +839,33 @@ export const App = ({
   // Re-throwing it (the old behavior) reached Ink's error boundary, which
   // renders a crash box but sets NO exit code: `summon … --yes` under bun
   // exited 0 on a failed run.
+  //
+  // The SUCCESS path is validated too: `undefined` is this helper's
+  // "already handled, stop" sentinel, so a `generate()` that RETURNS
+  // undefined/null (a plain-JS generator that forgot its `return` — the
+  // `--generators` extension point is untyped) must not be forwarded as
+  // that sentinel — no state would be set, no exit code owned, and the
+  // App would sit in phase limbo with `waitUntilExit` pending FOREVER.
+  // It is the same generator-bug class as a throw: GENERATE_ERROR, named.
   const generateTask = useCallback(
     (promptAnswers: Record<string, unknown>): Task<void> | undefined => {
       try {
-        return generator.generate(promptAnswers);
+        // The wider type is honest: `--generators` loads unchecked JS, so
+        // the declared `Task<void>` is a promise the author may break.
+        const task: Task<void> | undefined | null =
+          generator.generate(promptAnswers);
+        if (task === undefined || task === null) {
+          setState({
+            phase: "error",
+            error: {
+              code: "GENERATE_ERROR",
+              message: `${generator.meta.name}'s generate returned no task`,
+            },
+            answers: promptAnswers,
+          });
+          return undefined;
+        }
+        return task;
       } catch (error) {
         setState({
           phase: "error",

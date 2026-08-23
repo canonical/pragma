@@ -73,6 +73,22 @@ export default {
 };
 `,
   );
+  // A generator whose `generate` RETURNS nothing (the author forgot the
+  // `return` — plain-JS generators are unchecked) — the success-path twin of
+  // `explosive`: pre-validation the run arm HUNG forever (the App's
+  // `undefined` sentinel means "handled", so no state was set and
+  // `waitUntilExit` never resolved) and the batch arms threw the
+  // interpreter's incidental TypeError instead of a named line.
+  mkdirSync(join(dir, "silent"));
+  writeFileSync(
+    join(dir, "silent", "index.js"),
+    `export default {
+  meta: { name: "silent", displayName: "silent", description: "A fixture that forgets its return", version: "0.0.1" },
+  prompts: [],
+  generate: () => { /* author forgot the return */ },
+};
+`,
+  );
   // A generator with a CROSS-answer guard raised as summon-core's typed
   // invalid answer — the shape application/react's ssr+router guard uses.
   mkdirSync(join(dir, "guarded"));
@@ -99,15 +115,22 @@ export default {
 
 const fixtureDir = writeFixtureGenerators();
 
-/** Spawn the real bin non-interactively; never throws on nonzero exit. */
+/**
+ * Spawn the real bin non-interactively; never throws on nonzero exit. An
+ * optional spawn-level timeout (status `null` when it fires) exists for the
+ * cells whose PRE-FIX failure mode was a hang — a sync spawn cannot be
+ * interrupted by vitest's own test timeout.
+ */
 function run(
   args: readonly string[],
   cwd: string,
+  timeoutMs?: number,
 ): { status: number | null; stdout: string; stderr: string } {
   const result = spawnSync("bun", [summonBin, ...args], {
     cwd,
     encoding: "utf-8",
     input: "",
+    ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
   });
   return {
     status: result.status,
@@ -285,6 +308,20 @@ describe("rows 1–2 — batch dry-run/undo, dry-run precedence, loud failures",
     expect(stderr).toBe("fixture generate exploded\n");
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
+
+  it("a generate() returning no task fails the batch with the NAMED line, exit 1", () => {
+    const cwd = freshCwd();
+    const { status, stderr } = run(
+      ["--generators", fixtureDir, "silent", "--dry-run"],
+      cwd,
+    );
+    expect(status).toBe(1);
+    // The named generator-bug line, whole stream — pre-fix this was the
+    // interpreter's incidental TypeError
+    // (`undefined is not an object (evaluating 'cur._tag')`).
+    expect(stderr).toBe("silent's generate returned no task\n");
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
 });
 
 describe("the run arm's exit codes — a rendered failure never exits 0", () => {
@@ -324,6 +361,26 @@ describe("the run arm's exit codes — a rendered failure never exits 0", () => 
     );
     expect(status).toBe(1);
     expect(stdout).toContain("✗ Error: fixture generate exploded");
+    expect(stdout).toContain("Code: GENERATE_ERROR");
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("a generate() returning no task enters the error phase in the run arm — exit 1, never a hang", () => {
+    const cwd = freshCwd();
+    // Pre-fix this HUNG forever: `generateTask` returned generate()'s own
+    // undefined, its call sites read that as "error already reported", no
+    // state was set and `waitUntilExit` never resolved — a spinner until
+    // the CI timeout, stderr empty, no exit code (measured: timeout-kill,
+    // exit 124). The success path is now validated: the named
+    // generator-bug line with the runtime class, like every other
+    // generate() failure.
+    const { status, stdout } = run(
+      ["--generators", fixtureDir, "silent", "--yes"],
+      cwd,
+      30_000, // a regression hangs; the spawn timeout turns that into status null
+    );
+    expect(status).toBe(1);
+    expect(stdout).toContain("✗ Error: silent's generate returned no task");
     expect(stdout).toContain("Code: GENERATE_ERROR");
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);

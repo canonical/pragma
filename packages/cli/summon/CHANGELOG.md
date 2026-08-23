@@ -79,8 +79,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
     where it previously crashed into Ink's boundary — rendered on stdout
     with a source frame and, under bun, exit **0** — and a bare stderr
     line (exit **1**) in the batch modes, where it previously escaped as
-    an unhandled-rejection stack. For failures the App already reported,
-    the rendering is unchanged; only the exit code moved.
+    an unhandled-rejection stack. A `generate()` that RETURNS no task (a
+    plain-JS generator that forgot its `return`) is classified the same
+    way — the named line `<generator>'s generate returned no task`, exit
+    **1** in every arm — instead of the interpreter's incidental
+    TypeError. For failures the App already reported, the rendering is
+    unchanged; only the exit code moved.
 
   Also in this line of work, on a TTY: `--dry-run` renders the batch plan and
   `--undo` runs batch undo (neither mounts the interactive preview any more,

@@ -36,7 +36,7 @@ import {
   refusalMessage,
   registerGeneratorCommands,
 } from "@canonical/summon-core/projection";
-import { dryRun } from "@canonical/task";
+import { dryRun, type Task } from "@canonical/task";
 import { runUndo } from "@canonical/task/node";
 import chalk from "chalk";
 import type { Command } from "commander";
@@ -99,12 +99,33 @@ const STANDARD_FLAG_HELP: HostFlags = [
 // The summon action
 // =============================================================================
 
+/**
+ * Generate the batch task, validating the SUCCESS path: `--generators` loads
+ * unchecked JS, so a `generate()` that forgot its `return` hands back
+ * undefined — named here as the same generator-bug class a throwing
+ * `generate` is (the action's catch renders the bare line, exit 1), instead
+ * of the interpreter's incidental TypeError
+ * (`undefined is not an object (evaluating 'cur._tag')`). The App's
+ * `generateTask` holds the run/wizard arms to the same message.
+ */
+function generateBatchTask(
+  generator: GeneratorDefinition,
+  answersWithDefaults: Record<string, unknown>,
+): Task<void> {
+  const task: Task<void> | undefined | null =
+    generator.generate(answersWithDefaults);
+  if (task === undefined || task === null) {
+    throw new Error(`${generator.meta.name}'s generate returned no task`);
+  }
+  return task;
+}
+
 /** Run the batch (non-interactive) undo path. */
 async function runBatchUndo(
   generator: GeneratorDefinition,
   answersWithDefaults: Record<string, unknown>,
 ): Promise<void> {
-  const task = generator.generate(answersWithDefaults);
+  const task = generateBatchTask(generator, answersWithDefaults);
   try {
     const result = await runUndo(task);
     if (result.undoCount === 0) {
@@ -130,7 +151,7 @@ function runBatchDryRun(
   const verbose = actualOptions.verbose === true;
   const showFiles = actualOptions.showFiles === true;
 
-  const task = generator.generate(answersWithDefaults);
+  const task = generateBatchTask(generator, answersWithDefaults);
   const result = dryRun(task);
 
   if (actualOptions.llm === true) {
