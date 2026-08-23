@@ -69,7 +69,7 @@ Any error-severity diagnostic refuses the compile: a schema minus silently dropp
 serializeExtraction(extraction: RawExtraction, sourcesHash: string): string
 deserializeExtraction(artifact: string | SerializedExtraction): { extraction: RawExtraction; sourcesHash: string }
 ```
-Codec for the boot artifact. `deserializeExtraction` throws if `version !== ARTIFACT_VERSION`. The `graphqlAnnotations` field is optional on the wire: a pre-vocabulary artifact deserializes it as `[]` and still boots (the version stays 1 — `sourcesHash` already forces a live recompile the moment the sources gain an annotation the artifact has not seen).
+Codec for the boot artifact. `deserializeExtraction` throws if `version !== ARTIFACT_VERSION`. `graphqlAnnotations` and `deferredSyntheticNamespaces` are optional on the wire and deserialize to `[]`; those defaults normalize a shape, they do not migrate one. The version stays **1** across the vocabulary landing: the serialized namespace map carries registered and synthetic prefixes only — `graphql:prefix` binds in Pass 2 and is never folded into it — so an existing artifact's map means what a map written today means; and an ontology that gains an annotation changes `sourcesHash`, which forces a live recompile rather than an artifact boot.
 
 ### `hashSources(contents)`
 ```ts
@@ -78,7 +78,7 @@ hashSources(contents: Iterable<string>): string
 FNV-1a fingerprint of the loaded TTL sources — the freshness key for `compileFromExtraction`.
 
 ### `ARTIFACT_VERSION`
-The artifact format version (a number); bump invalidates old artifacts.
+The artifact format version (a number); a bump invalidates old artifacts. It rises for a change in what the serialized values MEAN, not only for a change in their shape.
 
 ---
 

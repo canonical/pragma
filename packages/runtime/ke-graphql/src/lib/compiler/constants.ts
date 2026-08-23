@@ -70,7 +70,23 @@ export const XSD_PATTERN = `${XSD}pattern`;
 
 /**
  * Extraction artifact format version. Bumped on any breaking change to the
- * serialized shape; deserialization rejects mismatched artifacts.
+ * serialized shape OR to what the serialized values MEAN; deserialization
+ * rejects mismatched artifacts, because no read-path default can repair a
+ * value that deserializes cleanly and means something else.
+ *
+ * Still 1 across the vocabulary landing, deliberately. The two ways an
+ * existing artifact could have gone stale are both already closed:
+ *
+ * - The namespace map is written by Pass 1, which resolves registered and
+ *   synthetic prefixes ONLY. A `graphql:prefix` declaration binds in Pass 2,
+ *   where the projection mode is known, and is never folded into the
+ *   serialized map — so a v1 map means exactly what a map written today
+ *   means. (Were binding ever moved back into Pass 1, the serialized map
+ *   would change meaning and this constant would have to rise.)
+ * - `graphqlAnnotations` is optional on the wire and reads back as `[]`. An
+ *   ontology that GAINS an annotation changes its source text, which changes
+ *   `sourcesHash`, which forces a live recompile — so an artifact can never
+ *   quietly serve an annotated ontology as though it were unannotated.
  */
 export const ARTIFACT_VERSION = 1;
 

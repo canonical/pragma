@@ -100,9 +100,10 @@ export const deserializeExtraction = (
       functionals: new Set(parsed.functionals),
       datatypes: parsed.datatypes,
       namespaces: new Map(parsed.namespaces),
-      // Artifacts serialized before the deferral existed lack the field, and
-      // [] is exactly the state they were built under — Pass 2 then raises
-      // nothing, which is what those artifacts already do today.
+      // Optional on the wire, matching the public RawExtraction contract:
+      // absent means nothing was deferred. The version gate above is what
+      // keeps a genuinely stale artifact out — this default normalizes, it
+      // does not migrate.
       deferredSyntheticNamespaces: parsed.deferredSyntheticNamespaces ?? [],
       shaclConstraints: parsed.shaclConstraints,
       unions: parsed.unions,
