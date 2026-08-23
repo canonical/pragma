@@ -181,7 +181,7 @@ async function main(): Promise<void> {
   try {
     await program.parseAsync(args, { from: "user" });
   } catch (error) {
-    await handleProgramError(error, argv, globalFlags.format === "json", verbs);
+    await handleProgramError(error, argv, globalFlags.format, verbs);
   }
 }
 
@@ -228,7 +228,7 @@ function silenceCommanderErrors(command: Command): void {
 async function handleProgramError(
   error: unknown,
   argv: readonly string[],
-  jsonMode: boolean,
+  format: import("./constants.js").OutputFormat,
   verbs: import("./kernel/spec/types.js").VerbSpec[],
 ): Promise<void> {
   const { CommanderError } = await import("commander");
@@ -265,21 +265,25 @@ async function handleProgramError(
         (arg) => arg === "--framework" || arg.startsWith("--framework="),
       )
     ) {
-      const { FRAMEWORK_FLAG_ERROR } = await import(
-        "./capabilities/create/messages.js"
+      const [
+        { FRAMEWORK_FLAG_ERROR },
+        { PragmaError },
+        { renderErrorForFormat },
+      ] = await Promise.all([
+        import("./capabilities/create/messages.js"),
+        import("./kernel/error/PragmaError.js"),
+        import("./kernel/error/renderError.js"),
+      ]);
+      // Explicit --format json/llm envelope (the kernel's one gate+renderer
+      // decision); plain keeps the designed raw line.
+      const rendered = renderErrorForFormat(
+        new PragmaError({
+          code: "INVALID_INPUT",
+          message: FRAMEWORK_FLAG_ERROR.replace(/^error:\s*/i, ""),
+        }),
+        format,
       );
-      if (jsonMode) {
-        const [{ PragmaError }, { renderErrorJson }] = await Promise.all([
-          import("./kernel/error/PragmaError.js"),
-          import("./kernel/error/renderError.js"),
-        ]);
-        const message = FRAMEWORK_FLAG_ERROR.replace(/^error:\s*/i, "");
-        process.stderr.write(
-          `${renderErrorJson(new PragmaError({ code: "INVALID_INPUT", message }))}\n`,
-        );
-      } else {
-        process.stderr.write(`${FRAMEWORK_FLAG_ERROR}\n`);
-      }
+      process.stderr.write(`${rendered ?? FRAMEWORK_FLAG_ERROR}\n`);
       process.exitCode = 2;
       return;
     }
@@ -314,7 +318,7 @@ async function handleProgramError(
           suggestions,
         });
         process.stderr.write(
-          `${jsonMode ? renderErrorJson(unknownError) : renderErrorPlain(unknownError)}\n`,
+          `${format === "json" ? renderErrorJson(unknownError) : renderErrorPlain(unknownError)}\n`,
         );
       }
       process.exitCode = 2;
@@ -322,19 +326,22 @@ async function handleProgramError(
     }
 
     // Other usage errors (missing argument, unknown option, bad choice). Under
-    // --format json these route through the same error envelope agents parse.
-    if (jsonMode) {
-      const [{ PragmaError }, { renderErrorJson }] = await Promise.all([
-        import("./kernel/error/PragmaError.js"),
-        import("./kernel/error/renderError.js"),
-      ]);
-      const message = error.message.replace(/^error:\s*/i, "");
-      process.stderr.write(
-        `${renderErrorJson(new PragmaError({ code: "INVALID_INPUT", message }))}\n`,
-      );
-    } else {
-      process.stderr.write(`${error.message}\n`);
-    }
+    // an explicit --format json/llm these route through the same error
+    // envelope agents parse (the kernel's one gate+renderer decision — the
+    // llm half used to split this one taxonomy class: an excess positional
+    // enveloped while an unknown option stayed raw prose).
+    const [{ PragmaError }, { renderErrorForFormat }] = await Promise.all([
+      import("./kernel/error/PragmaError.js"),
+      import("./kernel/error/renderError.js"),
+    ]);
+    const rendered = renderErrorForFormat(
+      new PragmaError({
+        code: "INVALID_INPUT",
+        message: error.message.replace(/^error:\s*/i, ""),
+      }),
+      format,
+    );
+    process.stderr.write(`${rendered ?? error.message}\n`);
     process.exitCode = 2;
     return;
   }
@@ -355,7 +362,7 @@ async function handleProgramError(
           error instanceof Error ? error.message : String(error),
         );
   process.stderr.write(
-    `${jsonMode ? renderErrorJson(pragmaError) : renderErrorPlain(pragmaError)}\n`,
+    `${format === "json" ? renderErrorJson(pragmaError) : renderErrorPlain(pragmaError)}\n`,
   );
   process.exitCode = mapExitCode(pragmaError.code);
 }

@@ -40,10 +40,7 @@ import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
 import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
-import {
-  renderErrorJson,
-  renderErrorLlm,
-} from "../../kernel/error/renderError.js";
+import { renderErrorForFormat } from "../../kernel/error/renderError.js";
 import {
   cliIsTTY,
   dispatchPrepared,
@@ -186,25 +183,23 @@ export function resolveCreateMode(
  * Write the refusal and set exit 2. The refusal is the cross-CLI parity
  * surface (contract §3): its default bytes are the shared message verbatim,
  * no envelope prefix — the summon bin's full stderr, byte for byte — and
- * ONLY an explicitly requested machine format reframes it: `--format json`
- * emits the D3 `{ ok:false, error }` envelope, `--format llm` the condensed
- * Markdown error form, both as `INVALID_INPUT` through the same renderers
- * every other pragma error uses. Implicit auto-LLM detection (a piped run
- * without `--format`) is deliberately excluded — an inferred output mode
- * must never break refusal byte-parity with summon.
+ * ONLY an explicitly requested machine format reframes it, through the
+ * kernel's ONE gate+renderer decision (`renderErrorForFormat`): `--format
+ * json` emits the D3 `{ ok:false, error }` envelope, `--format llm` the
+ * condensed Markdown error form, both as `INVALID_INPUT` through the same
+ * renderers every other pragma error uses. Implicit auto-LLM detection (a
+ * piped run without `--format`) is excluded by the helper's construction —
+ * an inferred output mode must never break refusal byte-parity with summon.
  */
 function writeRefusal(
   message: string,
   flags: import("../../kernel/runtime/types.js").GlobalFlags,
 ): void {
-  if (flags.format === "json" || flags.format === "llm") {
-    const error = new PragmaError({ code: "INVALID_INPUT", message });
-    const rendered =
-      flags.format === "json" ? renderErrorJson(error) : renderErrorLlm(error);
-    process.stderr.write(`${rendered}\n`);
-  } else {
-    process.stderr.write(`${message}\n`);
-  }
+  const rendered = renderErrorForFormat(
+    new PragmaError({ code: "INVALID_INPUT", message }),
+    flags.format,
+  );
+  process.stderr.write(`${rendered ?? message}\n`);
   process.exitCode = 2;
 }
 
@@ -354,19 +349,18 @@ function mount(parent: Command, host: CliMountHost): void {
       cmd.configureHelp({});
     },
     // The projection's two usage errors (unknown segment, excess positional)
-    // reframe ONLY under an explicitly requested machine format —
-    // `writeRefusal`'s exact condition, autoLlm excluded, so the default
-    // piped bytes stay the cross-CLI parity surface — through the same
-    // renderers every other pragma error uses. Codes mirror bin.ts's
-    // classification of Commander parse failures: unknown command →
-    // UNKNOWN_VERB, every other usage error → INVALID_INPUT. The envelope
-    // `message` is SINGLE-LINE (the prefix-stripped first line of the
-    // projection's rendering) and the did-you-mean rides in the covenant's
-    // `suggestions` field as the corrected invocation — exactly how bin.ts's
-    // own UNKNOWN_VERB tier serializes, so one code has one shape.
+    // reframe ONLY under an explicitly requested machine format — the
+    // kernel's ONE gate+renderer decision (`renderErrorForFormat`, shared
+    // with `writeRefusal` and bin.ts's usage-error sites), autoLlm excluded
+    // by its construction, so the default piped bytes stay the cross-CLI
+    // parity surface. Codes mirror bin.ts's classification of Commander
+    // parse failures: unknown command → UNKNOWN_VERB, every other usage
+    // error → INVALID_INPUT. The envelope `message` is SINGLE-LINE (the
+    // prefix-stripped first line of the projection's rendering) and the
+    // did-you-mean rides in the covenant's `suggestions` field as the
+    // corrected invocation — exactly how bin.ts's own UNKNOWN_VERB tier
+    // serializes, so one code has one shape.
     writeUsageError: (message, kind, detail) => {
-      const { format } = host.globalFlags;
-      if (format !== "json" && format !== "llm") return false;
       const suggested =
         detail?.suggestion === undefined
           ? undefined
@@ -376,9 +370,9 @@ function mount(parent: Command, host: CliMountHost): void {
         message: (message.split("\n")[0] as string).replace(/^error:\s*/i, ""),
         ...(suggested === undefined ? {} : { suggestions: [suggested] }),
       });
-      process.stderr.write(
-        `${format === "json" ? renderErrorJson(error) : renderErrorLlm(error)}\n`,
-      );
+      const rendered = renderErrorForFormat(error, host.globalFlags.format);
+      if (rendered === undefined) return false;
+      process.stderr.write(`${rendered}\n`);
       return true;
     },
   };

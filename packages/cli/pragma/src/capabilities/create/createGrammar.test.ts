@@ -211,6 +211,31 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
+  it("bin-tier usage errors envelope under --format llm too — one gate for the whole class (kernel-wide)", () => {
+    // Before the hoist the machine-format decision existed as four copies
+    // under TWO gates: bin.ts's two sites enveloped on json ONLY, so under
+    // --format llm an excess positional enveloped while an unknown option
+    // and the --framework migration error stayed raw prose — one taxonomy
+    // class, split. All four sites now share renderErrorForFormat.
+    const bogus = run(["create", "package", "--bogus", "--format", "llm"]);
+    expect(bogus.status).toBe(2);
+    expect(bogus.stderr).toContain("## Error: INVALID_INPUT");
+    expect(bogus.stderr).toContain("unknown option '--bogus'");
+
+    const framework = run([
+      "create",
+      "component",
+      "src/components/X",
+      "--framework",
+      "react",
+      "--format",
+      "llm",
+    ]);
+    expect(framework.status).toBe(2);
+    expect(framework.stderr).toContain("## Error: INVALID_INPUT");
+    expect(framework.stderr).toContain("the framework is now a path segment");
+  }, 60_000);
+
   it("the unknown-segment error under --format llm carries the condensed framing with a Suggestions line", () => {
     const { status, stderr } = run([
       "create",

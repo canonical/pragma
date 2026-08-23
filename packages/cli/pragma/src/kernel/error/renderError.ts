@@ -7,6 +7,7 @@
  * whichever transport they use.
  */
 
+import type { OutputFormat } from "../../constants.js";
 import type { PragmaError } from "./PragmaError.js";
 import { serializeError } from "./serialize.js";
 
@@ -98,4 +99,37 @@ function renderErrorJson(error: PragmaError): string {
   return JSON.stringify({ ok: false, error: serializeError(error) });
 }
 
-export { renderErrorJson, renderErrorLlm, renderErrorPlain };
+/**
+ * Render an error for an EXPLICITLY requested machine format, or decline.
+ *
+ * The ONE machine-format envelope decision for the usage-error surfaces: an
+ * explicit `--format json` renders the failure envelope, an explicit
+ * `--format llm` the condensed Markdown form, and anything else returns
+ * `undefined` so the caller keeps its raw default bytes. Auto-detected llm is
+ * excluded by construction — `parseGlobalFlags` leaves `format` at `"plain"`
+ * under auto-detection and records `autoLlm` separately — so an inferred
+ * output mode can never move the default (cross-CLI parity) bytes. Hoisted so
+ * the gate and the renderer pick exist ONCE instead of drifting per call
+ * site (they had already split: two sites gated on json only, two on
+ * json|llm, and `--format llm` enveloped one member of the usage-error class
+ * while its siblings stayed raw).
+ *
+ * @param error - The structured error to render.
+ * @param format - The parsed global `--format` value.
+ * @returns The rendered string for `json`/`llm`; `undefined` for `plain`.
+ */
+function renderErrorForFormat(
+  error: PragmaError,
+  format: OutputFormat,
+): string | undefined {
+  if (format === "json") return renderErrorJson(error);
+  if (format === "llm") return renderErrorLlm(error);
+  return undefined;
+}
+
+export {
+  renderErrorForFormat,
+  renderErrorJson,
+  renderErrorLlm,
+  renderErrorPlain,
+};
