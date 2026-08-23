@@ -3,9 +3,10 @@
 // byte-for-byte in __fixtures__/<name>.sdl.txt.
 //
 // This is the cross-version pin the other suites do not provide: the
-// determinism test proves one build agrees with itself, the header test pins
-// seven lines, gate G-1 checks contract subsumption — none of them compare
-// against a PRE-CHANGE emission. These goldens do. Any commit that moves a
+// determinism test proves one build agrees with itself and the header test
+// pins seven lines — neither compares against a PRE-CHANGE emission. These
+// goldens do. Conformance of the emission to a declared contract is not
+// checked here; that lives with the contract package. Any commit that moves a
 // single byte of the default emission fails here and must justify itself by
 // regenerating the goldens in the same change — silently shifting emitted
 // names, order, or descriptions is not a thing that can happen.
@@ -41,7 +42,7 @@ afterEach(() => {
   cleanups = [];
 });
 
-/** The same eight-fixture corpus gate G-1 runs over. */
+/** The eight-fixture contract corpus. */
 const FIXTURES: Record<string, string> = {
   minimal: MINIMAL_TTL,
   inheritance: INHERITANCE_TTL,

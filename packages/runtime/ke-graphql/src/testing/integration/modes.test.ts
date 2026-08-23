@@ -82,7 +82,7 @@ describe("mode matrix — unannotated input", () => {
     expect(bodyOf(auto.result.sdl)).toBe(bodyOf(annotated.result.sdl));
   });
 
-  it("explicit: the zero-type schema — TBox + node survive, A007 lists every class, contract satisfied", async () => {
+  it("explicit: the zero-type schema — TBox + node survive, A007 lists every class", async () => {
     const { result } = await compileFixture(MINIMAL_TTL, { mode: "explicit" });
     expect([...result.mapped.types.keys()]).toEqual([]);
     expect([...result.mapped.interfaces.keys()]).toEqual([]);

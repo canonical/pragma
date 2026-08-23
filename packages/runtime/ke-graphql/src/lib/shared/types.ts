@@ -62,7 +62,7 @@ export type DiagnosticCode =
   | "V012" // SHACL sh:in enum constraint — mapped to String
   | "V013" // property declares multiple rdfs:domain classes
   | "V014" // ABox predicate not declared in any loaded TBox
-  | "V015" // class forced abstract by mapping but has direct instances
+  | "V015" // class forced abstract by graphql:abstract but has direct instances
   | "V016" // concrete class with subclasses — polymorphic returns flattened
   // Mapping
   | "M001" // name collision after GraphQL name mapping
@@ -288,13 +288,14 @@ export interface ClassNode {
   ancestors: readonly string[];
   /** Direct subclasses. */
   subclasses: readonly string[];
-  /** No direct instances + has subclasses (or custom override). */
+  /** No direct instances + has subclasses, or forced by `graphql:abstract`. */
   isAbstract: boolean;
   /**
    * Instances are exclusively blank nodes (from Pass 1 instanceStats) or
-   * forced via custom mapping. Embeddable types implement no Node interface
-   * and have no `uri` or root queries — but they DO carry `_meta`, because
-   * self-description is a fact about the class, not about identity.
+   * forced via `graphql:embeddable`. Embeddable types implement no Node
+   * interface and have no `uri` or root queries — but they DO carry
+   * `_meta`, because self-description is a fact about the class, not about
+   * identity.
    */
   embeddable: boolean;
   /** Properties whose rdfs:domain is this class. */
@@ -355,18 +356,17 @@ export interface PropertyNode {
   range: RangeSpec;
   /**
    * Default cardinality. True = singular. Resolved by precedence:
-   * custom mapping > graphql:singular > owl:FunctionalProperty >
-   * owl:cardinality > SHACL maxCount 1 > kind default (datatype → singular,
-   * object → list).
+   * graphql:singular > owl:FunctionalProperty > owl:cardinality >
+   * SHACL maxCount 1 > kind default (datatype → singular, object → list).
    */
   functional: boolean;
   /**
-   * `functional` restated ONLY when an explicit tier decided it — a custom
-   * mapping or `graphql:singular`. Absent means the heuristics did (owl,
-   * SHACL, kind), which is what per-class SHACL is allowed to override.
+   * `functional` restated ONLY when the explicit tier decided it —
+   * `graphql:singular`. Absent means the heuristics did (owl, SHACL, kind),
+   * which is what per-class SHACL is allowed to override.
    * Consumers resolving a property's cardinality ON A CLASS consult this
-   * before the per-class SHACL spec's `singular`, so the two top tiers of
-   * the documented precedence are not silently outranked by a shape. It
+   * before the per-class SHACL spec's `singular`, so the top tier of
+   * the documented precedence is not silently outranked by a shape. It
    * governs the SINGULAR axis alone: `required` and `omit` have no explicit
    * tier and stay per-class SHACL's to decide.
    */
@@ -409,7 +409,7 @@ export interface GraphqlClassOverlay {
 export interface GraphqlPropertyOverlay {
   /** graphql:name — verbatim GraphQL field name (never pluralized/prefixed). */
   name?: string;
-  /** graphql:singular — cardinality: config > annotation > functional > SHACL > kind. */
+  /** graphql:singular — cardinality: annotation > functional > SHACL > kind. */
   singular?: boolean;
   /** graphql:nonNull — the ontology's own non-null promotion. */
   nonNull?: boolean;
@@ -431,7 +431,7 @@ export interface GraphqlPropertyOverlay {
 
 /**
  * The resolved `graphql:` annotation overlay: one validated source of truth
- * for every consumption site (`config ?? overlay ?? heuristic`). Produced at
+ * for every consumption site (`overlay ?? heuristic`). Produced at
  * the head of Pass 2 from RawExtraction.graphqlAnnotations and carried on
  * the IR so Passes 3–7 and the TBox never re-derive it.
  */

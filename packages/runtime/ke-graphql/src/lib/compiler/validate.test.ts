@@ -193,7 +193,7 @@ describe("validate class diagnostics", () => {
       ],
     ]);
     const ir = buildIR(new Map(), classes);
-    // A custom mapping can force isAbstract while the data still has instances
+    // graphql:abstract can force isAbstract while the data still has instances
     // (the automatic heuristic only marks zero-instance classes abstract).
     (
       ir.extraction.instanceStats as Map<

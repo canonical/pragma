@@ -43,9 +43,10 @@ export default function validate(ir: OntologyIR): PassResult<OntologyIR> {
         source: node.uri,
       });
     }
-    // V015 — class forced abstract (by mapping) yet has direct instances.
-    // Those instances' only asserted type is now an interface, so they cannot
-    // resolve and are filtered at runtime — the data contradicts the mapping.
+    // V015 — class forced abstract (by graphql:abstract) yet has direct
+    // instances. Those instances' only asserted type is now an interface, so
+    // they cannot resolve and are filtered at runtime — the data contradicts
+    // the annotation.
     // (The automatic abstract heuristic can't trigger this: it only marks a
     // class abstract when it has zero instances.)
     const abstractStats = ir.extraction.instanceStats.get(node.uri);

@@ -1,9 +1,11 @@
 // =============================================================================
 // Pass 4 — Map unit tests. Drives the name-resolution corners (sanitization,
 // reserved collisions, unresolvable collisions), the field-type arms (class,
-// union with abstract-member expansion, unknown), field-name collisions,
-// synthetic inverse fields, standard-vocab fields, and union emission — none of
-// which the fixture pipeline exercises.
+// union with abstract-member expansion, unknown), field-name collisions
+// (structural M005, duplicate M001), union-name occupancy (M006), the
+// prefixing: "all" mode, resolver-template selection, per-class cardinality,
+// interfaces, graphql: annotation binding, and the mode "explicit" corners —
+// none of which the fixture pipeline exercises.
 // =============================================================================
 
 import { describe, expect, it } from "vitest";
@@ -1127,7 +1129,7 @@ describe("map — cardinality and interface coverage", () => {
   });
 
   it("keeps graphql:singular ahead of a per-class SHACL shape", () => {
-    // The documented precedence is config > annotation > owl > SHACL > kind.
+    // The documented precedence is annotation > owl > SHACL > kind.
     // A per-class shape saying maxCount 1 must NOT invert the annotation that
     // says this property is a list — while `required` (minCount, an axis with
     // no explicit tier) stays the shape's to decide.

@@ -313,9 +313,12 @@ export default function buildTBoxSchema(
   //
   // Interfaces are indexed alongside types: an abstract class is browsable as
   // an OntologyClass and its properties are real fields on the emitted
-  // interface. Keyed by MappedField.owlUri, not propertyUri, so a synthetic
-  // inverse field (owlUri "<uri>#inverse", propertyUri the FORWARD property)
-  // cannot answer for the forward property it merely points at.
+  // interface. The key is the URI of the property that OWNS the field: Pass 4
+  // has a single addField call, and it sets owlUri and propertyUri to the same
+  // property URI, so the lookup below by cp.propertyUri hits exactly the field
+  // that property projects on that class. A declared inverse pair does not
+  // blur that — each side is its own property with its own URI, projecting one
+  // field on its own domain class, so neither side can answer for its partner.
   const fieldNamesByClass = new Map<string, ReadonlyMap<string, string>>();
   for (const container of [
     ...mapped.types.values(),
@@ -358,10 +361,10 @@ export default function buildTBoxSchema(
 
   /**
    * Per-class cardinality, consulting the class then its ancestors. Mirrors
-   * the mapper's isSingularOn exactly, including the explicit-tier rule: a
-   * custom mapping or graphql:singular outranks a per-class shape on the
-   * SINGULAR axis, so the browsable TBox reports the same cardinality the
-   * emitted ABox field carries. `required` stays the shape's.
+   * the mapper's isSingularOn exactly, including the explicit-tier rule:
+   * graphql:singular outranks a per-class shape on the SINGULAR axis, so the
+   * browsable TBox reports the same cardinality the emitted ABox field
+   * carries. `required` stays the shape's.
    */
   const resolveCardinality = (property: PropertyNode, classUri: string) => {
     const node = ir.classes.get(classUri);

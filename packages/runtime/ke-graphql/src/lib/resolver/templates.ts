@@ -167,9 +167,9 @@ export const createObjectListResolver = (field: MappedField): Resolver => {
 };
 
 /**
- * Create a Template 4 resolver (inverse fields — declared pairs and
- * synthetic inverses): union of forward triples and reverse assertions,
- * deduplicated by URI (an owl:inverseOf pair may be asserted in either
+ * Create a Template 4 resolver (inverse fields — declared pairs only, via
+ * owl:inverseOf or graphql:inverse): union of forward triples and reverse
+ * assertions, deduplicated by URI (a declared pair may be asserted in either
  * direction; each side resolves the union of both), as a Relay connection.
  */
 export const createInverseResolver = (

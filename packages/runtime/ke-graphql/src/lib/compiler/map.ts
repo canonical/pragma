@@ -307,11 +307,10 @@ const isEmbeddedRange = (state: MapperState, property: PropertyNode): boolean =>
 
 /**
  * Cardinality of a property on a specific class: per-class SHACL first, EXCEPT
- * on the singular axis, where an explicit tier (custom mapping or
- * graphql:singular) outranks the shape — that is the documented precedence
- * config > annotation > owl > SHACL > kind, which a per-class shape would
- * otherwise invert. `required` and `omit` have no explicit tier, so they stay
- * the shape's to decide.
+ * on the singular axis, where the explicit tier (`graphql:singular`) outranks
+ * the shape — that is the documented precedence annotation > owl > SHACL >
+ * kind, which a per-class shape would otherwise invert. `required` and `omit`
+ * have no explicit tier, so they stay the shape's to decide.
  */
 const isSingularOn = (
   property: PropertyNode,
