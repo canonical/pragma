@@ -102,6 +102,25 @@ describe("resolveOwnVersion (the compiled-binary fallback)", () => {
     expect(resolveOwnVersion(dir)).toBe("7.7.7");
   });
 
+  it("positive control: the mock DOES intercept this module's walk — a plain anchor is served the decoy", () => {
+    // Without this cell, the /$bunfs assertions below are satisfiable by an
+    // INERT mock: `reads` is written only by the mock, and on a decoy-free
+    // host the unguarded walk exhausts into the same store answer — so a
+    // refactor moving the walk off `readFileSync` (openSync/readSync,
+    // node:fs/promises) would silently disarm the guard's only pin. With
+    // interception ON, a real tmpdir anchor must resolve the decoy AND
+    // record the probe, proving the mock reaches the walk it claims to.
+    const dir = mkdtempSync(path.join(tmpdir(), "own-version-control-"));
+    fsControl.reads.length = 0;
+    fsControl.interceptReads = true;
+    try {
+      expect(findOwnVersion(dir)).toBe("7.7.7");
+      expect(fsControl.reads.length).toBeGreaterThan(0);
+    } finally {
+      fsControl.interceptReads = false;
+    }
+  });
+
   it("refuses to walk from a /$bunfs anchor — no real-filesystem probe, the store serves the compiled host", () => {
     // The walk's parent chain from `/$bunfs/root` LEAVES the virtual
     // filesystem (`/$bunfs` → `/`), where `/package.json` is a REAL path a

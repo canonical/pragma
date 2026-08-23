@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setEmbeddedPackageVersions } from "@canonical/summon-core";
 import type { Effect, ExecResult } from "@canonical/task";
@@ -83,6 +84,27 @@ describe("readVersion (the compiled-binary fallback)", () => {
   it("falls back to the host-injected version when the walk finds no manifest (/$bunfs)", () => {
     setEmbeddedPackageVersions({ "@canonical/summon-nonexistent": "9.9.9" });
     expect(readVersion("@canonical/summon-nonexistent")).toBe("9.9.9");
+  });
+
+  it("positive control: the mock DOES intercept this module's walk — a plain anchor is served the decoy", () => {
+    // Without this cell, the /$bunfs assertions below are satisfiable by an
+    // INERT mock: `reads` is written only by the mock, and on a decoy-free
+    // host the unguarded walk exhausts into the same store answer — so a
+    // refactor moving the walk off `readFileSync` (openSync/readSync,
+    // node:fs/promises) would silently disarm the guard's only pin. With
+    // interception ON, a real tmpdir anchor must resolve the decoy AND
+    // record the probe, proving the mock reaches the walk it claims to.
+    const anchor = mkdtempSync(join(tmpdir(), "versions-control-"));
+    fsControl.reads.length = 0;
+    fsControl.interceptReads = true;
+    try {
+      expect(readVersion("@canonical/summon-application", anchor)).toBe(
+        "7.7.7",
+      );
+      expect(fsControl.reads.length).toBeGreaterThan(0);
+    } finally {
+      fsControl.interceptReads = false;
+    }
   });
 
   it("refuses to walk from a /$bunfs anchor — no real-filesystem probe, the store serves the compiled host", () => {
