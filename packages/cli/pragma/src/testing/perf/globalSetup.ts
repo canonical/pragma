@@ -101,8 +101,13 @@ function sleepSync(ms: number): void {
  * re-checks freshness UNDER the lock (a release between the caller's stat
  * and the acquire means the dist was just built) and builds only if still
  * stale; a contender waits for release and then RE-STATS instead of
- * building — looping back to contend only if the dist is somehow still
- * stale (the holder failed). A lockfile that never clears (a killed
+ * building — looping back to contend when the dist is still stale, which
+ * a FAILED holder guarantees: every `build` callback destroys the served
+ * artifact before rethrowing, because a failed build can still EMIT it
+ * (nothing sets `noEmitOnError`, so `tsc` writes output and exits
+ * nonzero, and the two-step builds' first step writes the entry before
+ * the second can fail) — mtime alone cannot tell a failed build from a
+ * clean one. A lockfile that never clears (a killed
  * builder) fails loudly after {@link LOCK_TIMEOUT_MS} naming the file,
  * rather than double-building or waiting forever.
  *
@@ -319,6 +324,11 @@ function buildStaleDepDists(pkgRoot: string): void {
         encoding: "utf-8",
       });
       if (result.status !== 0) {
+        // A failed build can still have EMITTED the artifact (see
+        // buildUnderLock's docblock) — destroy the evidence so the
+        // contender's re-stat and every later run see STALE instead of
+        // a fresh-looking dist compiled from erroring sources.
+        rmSync(artifact, { force: true });
         throw new Error(
           `perf globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
         );
@@ -355,6 +365,9 @@ export default function setup(): void {
       stdio: "inherit",
     });
     if (result.status !== 0) {
+      // Same failure-destroys-the-evidence rule as the dep dists: a
+      // partially written binary must read STALE, never fresh.
+      rmSync(binary, { force: true });
       throw new Error("perf globalSetup: failed to build dist/pragma");
     }
   });
