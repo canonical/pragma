@@ -151,8 +151,23 @@ function positionalToken(param: ParamSpec): string {
     : `[${param.name}${variadic}]`;
 }
 
-/** Project one verb into its surface entry, omitting default/falsy fields. */
-export function emitVerb(verb: VerbSpec): EmittedVerb {
+/**
+ * Project one verb into its surface entry, omitting default/falsy fields.
+ *
+ * `flagTokens` is a MOUNTED verb's registered spelling per param name — the
+ * same `ReferenceCliSyntax.flagTokens` seam the reference emitter consumes,
+ * supplied by the module's `cliProjection` and derived there from
+ * `buildOptionInfo` (the single flag-shape authority both binaries register
+ * from; a default-`true` confirm registers ONLY its `--no-<kebab>` form).
+ * Without it the token derives from the param name — the kernel convention,
+ * sound for kernel-registered verbs where B9 ADDS the `--no-` negation
+ * beside the positive form; false for a mounted noun, where kebab-casing
+ * wrote seven covenant tokens the CLI rejects (`--with-styles`, `--ssr`, …).
+ */
+export function emitVerb(
+  verb: VerbSpec,
+  flagTokens?: Readonly<Record<string, string>>,
+): EmittedVerb {
   const positionals = verb.params.filter((p) => p.positional);
   const flags = verb.params.filter((p) => !p.positional);
 
@@ -167,7 +182,9 @@ export function emitVerb(verb: VerbSpec): EmittedVerb {
 
   if (positionals.length > 0) entry.args = positionals.map(positionalToken);
   if (flags.length > 0)
-    entry.flags = flags.map((p) => `--${kebabCase(p.name)}`);
+    entry.flags = flags.map(
+      (p) => flagTokens?.[p.name] ?? `--${kebabCase(p.name)}`,
+    );
   if (verb.capability.mutates) entry.mutates = true;
   if (verb.capability.needsStore) entry.needsStore = true;
   entry.mcp = verb.capability.mcp.expose ? toolName(verb.path) : false;
@@ -195,7 +212,15 @@ export function emitSurface(
       const noun = verb.path[0];
       const bucket = nouns[noun] ?? { verbs: [] };
       nouns[noun] = bucket;
-      bucket.verbs.push(emitVerb(verb));
+      // A mounted verb's covenant flags are its REGISTERED spellings, from
+      // the module's own syntax seam (see emitVerb) — the covenant must name
+      // tokens the CLI parses, not kebab-cased param names it rejects.
+      bucket.verbs.push(
+        emitVerb(
+          verb,
+          module.cliProjection?.referenceSyntax?.(verb.path)?.flagTokens,
+        ),
+      );
       if (verb.capability.mcp.expose) tools.push(toolName(verb.path));
     }
     // Non-tool MCP surfaces (module hooks, NOT verbs): the resource template ids

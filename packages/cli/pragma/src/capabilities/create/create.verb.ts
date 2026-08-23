@@ -3,9 +3,13 @@
  * binding-level VerbSpecs (the MCP/covenant/reference grammar). Their params
  * DERIVE mechanically from the generators' own prompts, projected at build
  * time into `createSurface.generated.ts` — no hand mirrors, no flag aliases:
- * the prompt names ARE the flag names, and `component`'s params are the
- * FRAMEWORK UNION of its three declared leaves plus a required, positional
- * `framework` enum derived from the tree segments (L-CIS). The CLI mounts the
+ * the prompt names ARE the param/MCP-arg names, the FLAG tokens are
+ * `buildOptionInfo`'s registered forms (a default-true confirm registers
+ * ONLY `--no-<kebab>` — the covenant and the doc gate speak that vocabulary
+ * through the mount's registered-syntax seam, L-CIS-2), and `component`'s
+ * params are the FRAMEWORK UNION of its three declared leaves plus a
+ * required, positional `framework` enum derived from the tree segments
+ * (L-CIS). The CLI mounts the
  * generator TREE itself (`create component react [component-path]` — see
  * `mount.ts`); these specs are what MCP tools and the emitted surface read.
  *
