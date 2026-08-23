@@ -155,6 +155,29 @@ scaffolded boilerplates) **and** Bun-bundled published packages under `packages/
 the CLI at `packages/cli/pragma`). When unsure, check whether the package's build script
 runs `tsc` or a bundler.
 
+### CI changes — wire commands, don't hardcode steps
+
+Be **very conservative** about touching `.github/workflows/` and `.github/actions/`.
+CI is a thin shell: every lane discovers its work through the existing **command
+surface** — the per-package scripts that `bunx lerna run <script>` / `nx affected`
+fan out to (`build:all`, `check`, `test`) and named root scripts (`bun run <script>`).
+New CI needs are wired into that surface, not added to workflow YAML:
+
+- **A package needs an artifact built or checked in CI?** Extend that package's own
+  `build:all` / `check` / `test`; the generic fan-out picks it up with zero workflow
+  edits. Real case: CI installs with `--ignore-scripts`, so the `prepare` hook never
+  builds anything — the pragma CLI's compiled binary reaches the publish step only
+  because `packages/cli/pragma` defines `build:all`, not because any workflow names
+  the CLI.
+- **No shell scripting inside workflow YAML.** Logic belongs in repo-owned
+  TypeScript/Bun scripts (root `scripts/*.ts` or a package script) exposed as a named
+  command; a workflow step invokes it as a single `bun run <command>` line.
+- **Shared lanes stay package-agnostic.** A workflow step never names or
+  special-cases one package; per-package behaviour lives in that package's scripts
+  and is reached through the fan-out.
+- A genuinely new step, job, or workflow needs owner sign-off — prefer extending an
+  existing command over a new step, and a new step over a new job.
+
 ## PR mechanics
 
 - Branch from up-to-date `origin/main`; never push to `main` directly — **all changes
