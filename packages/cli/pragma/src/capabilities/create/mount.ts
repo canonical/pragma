@@ -236,9 +236,13 @@ function unionPrompts(paths: readonly string[]): ProjectedPrompt[] {
  * the Arguments table prints the SAME spelling; each flag token is the one
  * the mount actually registers (a default-true confirm registers ONLY its
  * `--no-` form), derived from the same `buildOptionInfo` the mount and
- * completion use. Reached only through {@link createCliProjection} — the
- * kernel's reference emitter is its one consumer; the reference pins read
- * the committed pages it produced.
+ * completion use. Reached only through {@link createCliProjection} — one
+ * seam, THREE consumers, all speaking registration: the kernel's reference
+ * emitter (the reference pins read the committed pages it produced),
+ * `emitSurface` (the covenant's mounted-noun flag + positional tokens,
+ * L-CIS-2), and the `docExamples` gate's valid-token vocabulary. A change
+ * of meaning here moves all three together — the covenant conformance and
+ * derivation-tie cells in surface.test.ts are the tripwire.
  */
 function referenceSyntax(
   verbPath: VerbSpec["path"],

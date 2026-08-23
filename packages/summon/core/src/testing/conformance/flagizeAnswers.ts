@@ -45,6 +45,10 @@ function sameAsDefault(value: unknown, defaultValue: unknown): boolean {
  * @param prompts - The command's prompts (live or projected).
  * @param answers - The answers to express.
  * @returns The argument vector.
+ * @throws If a confirm answered `false` declares no `default: true` — no
+ *   registered spelling exists for that answer (the module header's
+ *   PRECONDITION), so the matrix must fail loudly rather than hand both
+ *   binaries an argv they reject as an unknown option.
  */
 export function flagizeAnswers(
   prompts: readonly PromptLike[],

@@ -263,11 +263,15 @@ export interface CompletionChildSpec {
 }
 
 /**
- * The REGISTERED CLI spelling of one mounted verb's reference section. A
- * mounted tree may register a different surface than the binding-level params
- * suggest (tree segments as subcommands, a default-true boolean registered
- * only as its `--no-` form), and the reference must print what the CLI
- * actually accepts — the module supplies it, the kernel renders it.
+ * The REGISTERED CLI spelling of one mounted verb — the single syntax seam
+ * every kernel emitter and gate consumes: the reference emitter (usage line
+ * + Args/Flags tables), `emitSurface` (the covenant's mounted-noun flag and
+ * positional tokens, L-CIS-2), and the `docExamples` gate's valid-token
+ * vocabulary. A mounted tree may register a different surface than the
+ * binding-level params suggest (tree segments as subcommands, a
+ * default-true boolean registered only as its `--no-` form), and all three
+ * surfaces must print what the CLI actually accepts — the module supplies
+ * it, the kernel renders it.
  */
 export interface ReferenceCliSyntax {
   /**
