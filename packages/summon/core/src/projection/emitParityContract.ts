@@ -303,7 +303,12 @@ ${interactionTable()}
   written — with a message echoing the offending value:
   \`Invalid --<flag> "<value>": <detail>\` from a \`validate\` rejection,
   \`Invalid --<flag> "<value>". Valid values: <choices>.\` from a value
-  outside a select's choices. The batch modes additionally
+  outside a select's choices. A path-shaped prompt's own \`validate\`
+  rejects an absolute path and \`..\` traversal, so an output path that
+  would escape the invocation directory fails this SAME gate in both
+  hosts; pragma ADDITIONALLY refuses a path that RESOLVES outside the
+  workspace through a symlink (its host-level jail, behind the shared
+  validators — summon relies on the validator tier). The batch modes additionally
   fail loudly (exit 2) on a required answer that is missing even after
   defaults, and re-check the defaults-applied set (an invalid generator
   default fails the same way). A failure raised PAST that gate keeps the

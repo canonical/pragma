@@ -246,16 +246,22 @@ export async function runCreate(
   const answers: Record<string, unknown> = { ...params };
   delete answers.framework;
 
-  // SEC-2: reject a path escaping the workspace BEFORE any effect runs.
-  const pathParam = PATH_PARAM[kind];
-  if (pathParam) assertInsideWorkspace(pathParam, answers[pathParam], rt.cwd);
-
   // Reject a flag/arg-provided answer that fails its prompt's own constraint,
-  // with a clean INVALID_INPUT (execute re-validates as a backstop).
+  // with a clean INVALID_INPUT (execute re-validates as a backstop). Runs
+  // BEFORE the jail: the path prompts' own validators reject absolute/`..`
+  // escapes, so an escaping output path fails the SHARED validator line in
+  // both hosts (parity-contract §3) and the jail below stays the backstop
+  // its docblock claims.
   const invalid = summon.validateAnswers(generator.prompts, answers);
   if (invalid !== null) {
     throw new PragmaError({ code: "INVALID_INPUT", message: invalid });
   }
+
+  // SEC-2: reject a path escaping the workspace BEFORE any effect runs — the
+  // host-level backstop behind the validators, and the only tier that catches
+  // a symlink RESOLVING outside the workspace.
+  const pathParam = PATH_PARAM[kind];
+  if (pathParam) assertInsideWorkspace(pathParam, answers[pathParam], rt.cwd);
 
   // An ABSENT interaction context defaults to `yes: false` — nothing may
   // silently auto-apply just because a caller forgot to say how it is driven.

@@ -24,7 +24,13 @@
  */
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -434,6 +440,80 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     // The bare shared line is summon's WHOLE stderr — byte-stable with the
     // batch arms' wording, and byte-agreeing with pragma's core message.
     expect(summon.stderr).toBe(`${pragmaInvalid}\n`);
+    expect(readdirSync(summonCwd)).toEqual([]);
+  }, 60_000);
+
+  // An output path that ESCAPES the invocation cwd fails the SHARED
+  // prompt-validate gate in both hosts: `appPath`'s own `validate` (like
+  // `componentPath`'s) rejects `..` traversal and absolute paths, so the two
+  // bins agree on the validation line, exit 2, and write NOTHING — before
+  // the fix summon exited 0 and scaffolded 75 entries outside the workspace
+  // where pragma's SEC-2 jail refused. The jail is now the host-level
+  // backstop behind this shared tier; its symlink-resolution check stays
+  // pragma-only (parity-contract §3, a named follow-up — deliberately no
+  // cell pins that divergence).
+  it("application/react: a ../ escape fails the shared validator in both bins — exit 2, nothing written outside", () => {
+    const args = [
+      "application",
+      "react",
+      "../outside/app",
+      "--yes",
+      "--no-run-install",
+    ];
+    const pragmaBase = freshCwd("crosscli-escape-");
+    mkdirSync(join(pragmaBase, "inner"));
+    const pragma = spawnSync(compiledBin, ["create", ...args], {
+      cwd: join(pragmaBase, "inner"),
+      encoding: "utf-8",
+      input: "",
+    });
+    expect(pragma.status).toBe(2);
+    expect(pragma.stderr).toContain("INVALID_INPUT");
+    const pragmaInvalid = invalidValueLine(pragma.stderr ?? "");
+    expect(pragmaInvalid).toBeDefined();
+    expect(pragmaInvalid).toContain('Invalid --app-path "../outside/app"');
+    expect(readdirSync(pragmaBase)).toEqual(["inner"]);
+    expect(readdirSync(join(pragmaBase, "inner"))).toEqual([]);
+
+    const summonBase = freshCwd("crosscli-escape-");
+    mkdirSync(join(summonBase, "inner"));
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, ...args],
+      { cwd: join(summonBase, "inner"), encoding: "utf-8", input: "" },
+    );
+    expect(summon.status).toBe(2);
+    expect(summon.stderr).toBe(`${pragmaInvalid}\n`);
+    expect(readdirSync(summonBase)).toEqual(["inner"]);
+    expect(readdirSync(join(summonBase, "inner"))).toEqual([]);
+  }, 60_000);
+
+  it("application/react: an absolute path fails the shared validator in both bins — exit 2, target never created", () => {
+    const target = join(freshCwd("crosscli-escape-abs-"), "abs-app");
+    const args = ["application", "react", target, "--yes", "--no-run-install"];
+    const pragmaCwd = freshCwd("crosscli-escape-");
+    const pragma = spawnSync(compiledBin, ["create", ...args], {
+      cwd: pragmaCwd,
+      encoding: "utf-8",
+      input: "",
+    });
+    expect(pragma.status).toBe(2);
+    expect(pragma.stderr).toContain("INVALID_INPUT");
+    const pragmaInvalid = invalidValueLine(pragma.stderr ?? "");
+    expect(pragmaInvalid).toBeDefined();
+    expect(pragmaInvalid).toContain(`Invalid --app-path "${target}"`);
+    expect(existsSync(target)).toBe(false);
+    expect(readdirSync(pragmaCwd)).toEqual([]);
+
+    const summonCwd = freshCwd("crosscli-escape-");
+    const summon = spawnSync(
+      "bun",
+      [summonBin, "--generators", generatorsDir, ...args],
+      { cwd: summonCwd, encoding: "utf-8", input: "" },
+    );
+    expect(summon.status).toBe(2);
+    expect(summon.stderr).toBe(`${pragmaInvalid}\n`);
+    expect(existsSync(target)).toBe(false);
     expect(readdirSync(summonCwd)).toEqual([]);
   }, 60_000);
 

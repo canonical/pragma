@@ -25,6 +25,7 @@ import {
 import { pickPackageManager } from "../../shared/packageManager.js";
 import { resolvePragmaVersion } from "../../shared/versions.js";
 import { findEnclosingWorkspaceRoot } from "../../shared/workspace.js";
+import validateAppPath from "./validateAppPath.js";
 
 export interface ApplicationReactAnswers {
   readonly appPath: string;
@@ -41,6 +42,7 @@ const prompts: PromptDefinition[] = [
     type: "text",
     message: "Application directory name:",
     default: "my-app",
+    validate: validateAppPath,
     positional: true,
     group: "Application",
   },
