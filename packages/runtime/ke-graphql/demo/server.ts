@@ -51,18 +51,11 @@ const createActivityLogPlugin = (): Plugin =>
     },
   });
 
-// The mappings the README walks through: rename the mechanical plural on
-// the inverse side of hasAuthor/authored, mark hasPublisher singular (no
-// owl:FunctionalProperty in the data), and synthesize reverse fields —
-// Publisher.works and Book.adaptations — that the ontology never declares.
-const graphql = createSchemaPlugin({
-  mappings: {
-    "lib:authored": { graphqlName: "works" },
-    "lib:hasPublisher": { singular: true, inverse: { graphqlName: "works" } },
-    "lib:adaptationOf": { inverse: { graphqlName: "adaptations" } },
-  },
-  incremental: true,
-});
+// Projection intent rides the ontology, not this config: demo/graph.ttl
+// declares the field names (graphql:name), the publisher cardinality
+// (graphql:singular), and the reverse properties that give Publisher.works
+// and Work.adaptations their fields.
+const graphql = createSchemaPlugin({ incremental: true });
 
 // biome-ignore lint: Plugin generic variance requires explicit unknown
 const plugins: Plugin<any>[] = [createActivityLogPlugin(), graphql];

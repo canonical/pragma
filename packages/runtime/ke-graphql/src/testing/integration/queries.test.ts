@@ -64,15 +64,7 @@ const run = async (
   });
 
 describe("ds-realistic resolution", () => {
-  const options = {
-    mappings: {
-      "ds:hasModifierFamily": { graphqlName: "modifierFamilies" },
-      "ds:hasSubcomponent": { graphqlName: "subcomponents" },
-      "ds:hasProperty": { graphqlName: "properties" },
-      "ds:hasModifier": { graphqlName: "modifiers" },
-      "ds:implementsBlock": { inverse: { graphqlName: "implementations" } },
-    },
-  };
+  const options = {};
 
   it("resolves a component with scalars, objects, and embedded blanks", async () => {
     const compiled = await setup(DS_REALISTIC_TTL, options);
@@ -86,7 +78,6 @@ describe("ds-realistic resolution", () => {
           tier { name }
           properties { name propertyType optional }
           subcomponents(first: 10) { edges { node { name standalone parentComponent { name } } } }
-          implementations(first: 10) { edges { node { name } } }
         }
       }`,
     );
@@ -111,13 +102,6 @@ describe("ds-realistic resolution", () => {
     expect(
       (subcomponents.edges[0]?.node.parentComponent as { name: string }).name,
     ).toBe("Button");
-    // synthetic inverse: reverse assertions found via the inverse loader
-    const implementations = component.implementations as {
-      edges: Array<{ node: { name: string } }>;
-    };
-    expect(implementations.edges.map((e) => e.node.name)).toEqual([
-      "react button",
-    ]);
   });
 
   it("resolves node() by absolute IRI with the most specific type", async () => {

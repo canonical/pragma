@@ -69,11 +69,10 @@ interface ClassPropertyValue {
    * knows it. `EntityMeta.field(name:)` does — it found the row BY that name
    * — and carrying it makes `field(name: X) { name }` return X by
    * construction rather than by a reverse lookup that can disagree. It can:
-   * a synthetic inverse field (`mappings: { … inverse: { graphqlName } }`)
-   * carries the FORWARD property's URI, so reversing propertyUri → field name
-   * on the range class would answer with the forward field's name, or with
-   * nothing. Producers that only know (class, property) leave it undefined and
-   * the `name` resolver derives it.
+   * a row can carry a property URI whose reverse lookup on the range class
+   * would answer with a different field's name, or with nothing. Producers
+   * that only know (class, property) leave it undefined and the `name`
+   * resolver derives it.
    */
   graphqlName?: string;
 }

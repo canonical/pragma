@@ -148,7 +148,7 @@ export default function wireRelay(plan: SchemaPlan): PassResult<SchemaPlan> {
       diagnostics.push({
         severity: "error",
         code: "W001",
-        message: `root field Query.${field.name} is claimed by both ${holder} and ${claimant} — the later field is DROPPED. To keep both, rename the class (mappings: { "<iri>": { graphqlName: "…" } })`,
+        message: `root field Query.${field.name} is claimed by both ${holder} and ${claimant} — the later field is DROPPED. To keep both, rename the class with graphql:name "…" on its IRI`,
         source,
         phase: PHASE,
       });

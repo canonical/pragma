@@ -95,8 +95,7 @@ export const SKOS_DEFINITION = `${SKOS}definition`;
  *
  * The per-type override rides the ONTOLOGY, not the consuming config: the
  * `graphql:*From` annotations declare the source predicate on the term that
- * owns it, so every consumer of that ontology resolves identically (the
- * config-side `standardVocabFields` knob is deprecated in their favor). The
+ * owns it, so every consumer of that ontology resolves identically. The
  * override is purely additive — the contract's field NAMES do not change,
  * only the source predicate for a given type — and this table stays the
  * unannotated fallback.

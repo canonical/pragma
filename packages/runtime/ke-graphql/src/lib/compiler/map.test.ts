@@ -46,8 +46,8 @@ const makeExtraction = (
 /** Build a real OntologyIR from a crafted extraction. */
 const buildIR = (
   partial: Partial<RawExtraction>,
-  mappings: Parameters<typeof build>[1] = {},
-): OntologyIR => build(makeExtraction(partial), mappings).output;
+  mode: Parameters<typeof build>[1] = undefined,
+): OntologyIR => build(makeExtraction(partial), mode).output;
 
 /** A raw datatype property rooted at ex:Thing unless overridden. */
 const datatypeProp = (
@@ -147,13 +147,12 @@ describe("map — type name resolution", () => {
         [uri("A"), { total: 1, named: 1 }],
         [uri("B"), { total: 1, named: 1 }],
       ]),
+      graphqlAnnotations: [
+        [uri("A"), GRAPHQL_TERMS.name, "Dup", "literal"],
+        [uri("B"), GRAPHQL_TERMS.name, "Dup", "literal"],
+      ],
     });
-    const { output, diagnostics } = map(ir, {
-      mappings: {
-        "ex:A": { graphqlName: "Dup" },
-        "ex:B": { graphqlName: "Dup" },
-      },
-    });
+    const { output, diagnostics } = map(ir);
     const m001 = diagnostics.filter((d) => d.code === "M001");
     expect(m001).toHaveLength(1);
     const [diagnostic] = m001;
@@ -162,7 +161,7 @@ describe("map — type name resolution", () => {
     expect(diagnostic?.message).toContain(uri("A"));
     expect(diagnostic?.message).toContain(uri("B"));
     expect(diagnostic?.message).toContain("DROPPED");
-    expect(diagnostic?.message).toContain("graphqlName");
+    expect(diagnostic?.message).toContain("graphql:name");
     // The FIRST class keeps the name; the second is gone entirely — it does
     // not overwrite the first at types.set and never enters the name map.
     expect(output.types.get("Dup")?.owlUri).toBe(uri("A"));
@@ -170,24 +169,6 @@ describe("map — type name resolution", () => {
       false,
     );
     expect(output.nameMap.toOWL("Dup")).toBe(uri("A"));
-  });
-
-  it("DROPS a class custom-mapped onto a compiler-reserved type name", () => {
-    const ir = buildIR({
-      classes: [{ uri: uri("A"), superclasses: [] }],
-      instanceStats: new Map([[uri("A"), { total: 1, named: 1 }]]),
-    });
-    // A custom graphqlName skips the M004 auto-rename, so the reserved name
-    // collides directly — there is no first CLASS to blame, only the
-    // compiler's own name.
-    const { output, diagnostics } = map(ir, {
-      mappings: { "ex:A": { graphqlName: "Query" } },
-    });
-    const m001 = diagnostics.filter((d) => d.code === "M001");
-    expect(m001).toHaveLength(1);
-    expect(m001[0]?.message).toContain("compiler-reserved");
-    expect(m001[0]?.message).toContain(uri("A"));
-    expect(output.types.size).toBe(0);
   });
 });
 
@@ -598,7 +579,7 @@ describe("map — structural field collisions (M005)", () => {
     expect(diagnostic?.source).toBe(uri("uri"));
     expect(diagnostic?.message).toContain(uri("uri"));
     expect(diagnostic?.message).toContain("Doc.uri");
-    expect(diagnostic?.message).toContain("graphqlName");
+    expect(diagnostic?.message).toContain("graphql:name");
     expect(diagnostic?.message).toContain('prefixing: "all"');
     // Neither kept NOR renamed: the field is gone, and no silent `exUri`
     // survives to make the drop look like a rename.
@@ -661,27 +642,27 @@ describe("map — structural field collisions (M005)", () => {
     // membership, so the interface gets uri: ID! — and an ontology property
     // named `uri` must be M005-dropped, or it would shadow the injected
     // uri: ID! in the Pass 6 merge and crash validateSchema (C003).
-    const ir = buildIR(
-      {
-        classes: [
-          { uri: uri("Media"), superclasses: [] },
-          { uri: uri("Film"), superclasses: [uri("Media")] },
-        ],
-        properties: [
-          {
-            uri: uri("uri"),
-            kind: "datatype",
-            domains: [uri("Media")],
-            ranges: [`${XSD}string`],
-          },
-        ],
-        instanceStats: new Map([
-          [uri("Media"), { total: 2, named: 0 }], // blank-only → embeddable
-          [uri("Film"), { total: 1, named: 1 }], // named → NOT embeddable
-        ]),
-      },
-      { "ex:Media": { abstract: true } },
-    );
+    const ir = buildIR({
+      classes: [
+        { uri: uri("Media"), superclasses: [] },
+        { uri: uri("Film"), superclasses: [uri("Media")] },
+      ],
+      properties: [
+        {
+          uri: uri("uri"),
+          kind: "datatype",
+          domains: [uri("Media")],
+          ranges: [`${XSD}string`],
+        },
+      ],
+      instanceStats: new Map([
+        [uri("Media"), { total: 2, named: 0 }], // blank-only → embeddable
+        [uri("Film"), { total: 1, named: 1 }], // named → NOT embeddable
+      ]),
+      graphqlAnnotations: [
+        [uri("Media"), GRAPHQL_TERMS.abstract, "true", "literal"],
+      ],
+    });
     const { output, diagnostics } = map(ir);
     const m005 = diagnostics.filter((d) => d.code === "M005");
     // dropped from the interface AND from the inheriting concrete Film
@@ -749,13 +730,12 @@ describe("map — duplicate field collisions (M001)", () => {
         },
       ],
       instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("a"), GRAPHQL_TERMS.name, "dup", "literal"],
+        [uri("b"), GRAPHQL_TERMS.name, "dup", "literal"],
+      ],
     });
-    const { output, diagnostics } = map(ir, {
-      mappings: {
-        "ex:a": { graphqlName: "dup" },
-        "ex:b": { graphqlName: "dup" },
-      },
-    });
+    const { output, diagnostics } = map(ir);
     const m001 = diagnostics.filter((d) => d.code === "M001");
     expect(m001).toHaveLength(1);
     const [diagnostic] = m001;
@@ -763,7 +743,7 @@ describe("map — duplicate field collisions (M001)", () => {
     expect(diagnostic?.message).toContain(uri("a"));
     expect(diagnostic?.message).toContain(uri("b"));
     expect(diagnostic?.message).toContain("Doc.dup");
-    expect(diagnostic?.message).toContain("graphqlName");
+    expect(diagnostic?.message).toContain("graphql:name");
     expect(diagnostic?.message).toContain('prefixing: "all"');
     // The FIRST property keeps the name; the second is dropped, not renamed.
     const fields = output.types.get("Doc")?.fields;
@@ -849,7 +829,7 @@ describe('map — prefixing: "all"', () => {
   it("does NOT resolve a SAME-namespace field collision: M001 survives", () => {
     // ex:name and ex:hasName both strip to `name` and both take the `ex`
     // prefix, so prefixing renames them onto ONE name all over again. The
-    // remedy string must not promise otherwise — only a mappings rename
+    // remedy string must not promise otherwise — only a graphql:name rename
     // separates these two.
     const ir = buildIR({
       classes: [{ uri: uri("Doc"), superclasses: [] }],
@@ -884,7 +864,7 @@ describe('map — prefixing: "all"', () => {
     expect(fields?.size).toBe(1);
   });
 
-  it("never prefixes an explicit graphqlName", () => {
+  it("never prefixes a name fixed by graphql:name", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Doc"), superclasses: [] }],
       properties: [
@@ -896,11 +876,11 @@ describe('map — prefixing: "all"', () => {
         },
       ],
       instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
+      graphqlAnnotations: [
+        [uri("title"), GRAPHQL_TERMS.name, "heading", "literal"],
+      ],
     });
-    const { output } = map(ir, {
-      prefixing: "all",
-      mappings: { "ex:title": { graphqlName: "heading" } },
-    });
+    const { output } = map(ir, { prefixing: "all" });
     expect(output.types.get("Doc")?.fields.has("heading")).toBe(true);
   });
 
@@ -926,117 +906,6 @@ describe('map — prefixing: "all"', () => {
     const fields = output.types.get("Doc")?.fields;
     expect(fields?.has("dsGlobalTitle")).toBe(true);
     expect(fields?.has("ds-globalTitle")).toBe(false);
-  });
-});
-
-describe("map — synthetic inverse fields", () => {
-  it("adds a synthetic inverse field on the range type", () => {
-    const ir = buildIR({
-      classes: [
-        { uri: uri("Block"), superclasses: [] },
-        { uri: uri("Impl"), superclasses: [] },
-      ],
-      properties: [
-        {
-          uri: uri("implements"),
-          kind: "object",
-          domains: [uri("Impl")],
-          ranges: [uri("Block")],
-        },
-      ],
-      instanceStats: new Map([
-        [uri("Block"), { total: 1, named: 1 }],
-        [uri("Impl"), { total: 1, named: 1 }],
-      ]),
-    });
-    const { output } = map(ir, {
-      mappings: {
-        "ex:implements": { inverse: { graphqlName: "implementations" } },
-      },
-    });
-    const field = output.types.get("Block")?.fields.get("implementations");
-    expect(field?.resolverTemplate).toBe("inverse");
-    expect(field?.type).toEqual({ kind: "type", name: "Impl" });
-  });
-
-  it("falls back to Node when the synthetic inverse domain is unresolved", () => {
-    // Object property with a class range but NO domain — the synthetic field's
-    // type cannot resolve a domain type and falls back to Node.
-    const block: ClassNode = {
-      uri: uri("Block"),
-      label: "Block",
-      namespace: "ex",
-      superclasses: [],
-      ancestors: [],
-      subclasses: [],
-      isAbstract: false,
-      embeddable: false,
-      ownProperties: [],
-      allProperties: [],
-    };
-    const prop: PropertyNode = {
-      uri: uri("touches"),
-      label: "touches",
-      namespace: "ex",
-      kind: "object",
-      domains: [],
-      range: { kind: "class", uri: uri("Block") },
-      functional: false,
-      classCardinality: new Map(),
-      isAnnotation: false,
-      annotations: new Map(),
-    };
-    const ir: OntologyIR = {
-      classes: new Map([[block.uri, block]]),
-      properties: new Map([[prop.uri, prop]]),
-      namespaces: new Map([
-        ["ex", { prefix: "ex", uri: NS, classCount: 1, propertyCount: 1 }],
-      ]),
-      graphql: {
-        classes: new Map(),
-        properties: new Map(),
-        prefixes: new Map(),
-      },
-      extraction: makeExtraction(),
-    };
-    const { output } = map(ir, {
-      mappings: { "ex:touches": { inverse: { graphqlName: "touchedBy" } } },
-    });
-    const field = output.types.get("Block")?.fields.get("touchedBy");
-    expect(field?.type).toEqual({ kind: "type", name: "Node" });
-  });
-
-  it("does not synthesize an inverse for a declared owl:inverseOf pair", () => {
-    const ir = buildIR({
-      classes: [
-        { uri: uri("Parent"), superclasses: [] },
-        { uri: uri("Child"), superclasses: [] },
-      ],
-      properties: [
-        {
-          uri: uri("hasChild"),
-          kind: "object",
-          domains: [uri("Parent")],
-          ranges: [uri("Child")],
-        },
-        {
-          uri: uri("childOf"),
-          kind: "object",
-          domains: [uri("Child")],
-          ranges: [uri("Parent")],
-        },
-      ],
-      inverses: [{ property: uri("hasChild"), inverse: uri("childOf") }],
-      instanceStats: new Map([
-        [uri("Parent"), { total: 1, named: 1 }],
-        [uri("Child"), { total: 1, named: 1 }],
-      ]),
-    });
-    const { output } = map(ir, {
-      mappings: { "ex:hasChild": { inverse: { graphqlName: "kids" } } },
-    });
-    // The declared pair keeps its own forward field; no synthetic "kids".
-    expect(output.types.get("Child")?.fields.has("kids")).toBe(false);
   });
 });
 
@@ -1067,90 +936,6 @@ describe("map — resolver templates", () => {
     expect(output.types.get("Doc")?.fields.get("cover")?.resolverTemplate).toBe(
       "embedded-singular",
     );
-  });
-});
-
-describe("map — standard-vocab fields", () => {
-  it("adds opt-in instance-level standard-vocab fields", () => {
-    const ir = buildIR({
-      classes: [{ uri: uri("Doc"), superclasses: [] }],
-      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
-    });
-    const { output } = map(ir, {
-      standardVocabFields: {
-        Doc: { "http://www.w3.org/2000/01/rdf-schema#label": "rdfsLabel" },
-      },
-    });
-    const field = output.types.get("Doc")?.fields.get("rdfsLabel");
-    expect(field?.resolverTemplate).toBe("datatype");
-    expect(field?.type).toEqual({ kind: "scalar", name: "String" });
-  });
-
-  it("keeps a standard-vocab field named `label` — the README example is now true", () => {
-    // `label` moved behind _meta, so nothing reserves it any more: the
-    // documented mapping finally produces the documented field name.
-    const ir = buildIR({
-      classes: [{ uri: uri("Doc"), superclasses: [] }],
-      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
-    });
-    const { output, diagnostics } = map(ir, {
-      standardVocabFields: {
-        Doc: { "http://www.w3.org/2000/01/rdf-schema#label": "label" },
-      },
-    });
-    expect(diagnostics).toHaveLength(0);
-    expect(output.types.get("Doc")?.fields.has("label")).toBe(true);
-  });
-
-  it("DROPS a standard-vocab field claiming a structural name (M005)", () => {
-    const ir = buildIR({
-      classes: [{ uri: uri("Doc"), superclasses: [] }],
-      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
-    });
-    const { output, diagnostics } = map(ir, {
-      standardVocabFields: {
-        Doc: { "http://www.w3.org/2000/01/rdf-schema#seeAlso": "uri" },
-      },
-    });
-    expect(codes(diagnostics)).toContain("M005");
-    expect(output.types.get("Doc")?.fields.size).toBe(0);
-  });
-
-  it('prefixes a standard-vocab field under prefixing: "all", falling back to "x"', () => {
-    // The predicate is not a known ontology property, so the namespace lookup
-    // misses and the "x" fallback fires → "xLabel".
-    const ir = buildIR({
-      classes: [{ uri: uri("Doc"), superclasses: [] }],
-      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
-    });
-    const { output } = map(ir, {
-      prefixing: "all",
-      standardVocabFields: {
-        Doc: { "http://www.w3.org/2000/01/rdf-schema#label": "label" },
-      },
-    });
-    expect(output.types.get("Doc")?.fields.has("xLabel")).toBe(true);
-  });
-});
-
-describe("map — mappings on an unregistered namespace", () => {
-  it("returns no mapping when the class namespace prefix is empty", () => {
-    // The class lives in a namespace with no registered prefix → namespace "".
-    const FOREIGN = "http://foreign.test/";
-    const ir = buildIR(
-      {
-        classes: [{ uri: `${FOREIGN}Thing`, superclasses: [] }],
-        namespaces: new Map(),
-        instanceStats: new Map([[`${FOREIGN}Thing`, { total: 1, named: 1 }]]),
-      },
-      {},
-    );
-    // Supplying mappings forces findMapping past the direct lookup into the
-    // prefixed-key branch, where an empty namespace yields undefined.
-    const { output } = map(ir, {
-      mappings: { "ex:Unrelated": { graphqlName: "Nope" } },
-    });
-    expect(output.types.has("Thing")).toBe(true);
   });
 });
 
@@ -1309,39 +1094,7 @@ describe("map — interfaces", () => {
   });
 });
 
-describe("map — mapping resolution by namespace", () => {
-  it("resolves a custom mapping by prefixed property key", () => {
-    const ir = buildIR({
-      classes: [{ uri: uri("Doc"), superclasses: [] }],
-      properties: [
-        {
-          uri: uri("title"),
-          kind: "datatype",
-          domains: [uri("Doc")],
-          ranges: [`${XSD}string`],
-        },
-      ],
-      instanceStats: new Map([[uri("Doc"), { total: 1, named: 1 }]]),
-    });
-    const { output } = map(ir, {
-      mappings: { "ex:title": { graphqlName: "heading" } },
-    });
-    expect(output.types.get("Doc")?.fields.has("heading")).toBe(true);
-  });
-});
-
 describe("map — cardinality and interface coverage", () => {
-  it("resolves a custom mapping keyed by full IRI", () => {
-    const ir = buildIR({
-      classes: [{ uri: uri("Thing"), superclasses: [] }],
-      instanceStats: new Map([[uri("Thing"), { total: 1, named: 1 }]]),
-    });
-    const { output } = map(ir, {
-      mappings: { [uri("Thing")]: { graphqlName: "Renamed" } },
-    });
-    expect(output.types.has("Renamed")).toBe(true);
-  });
-
   it("reads a per-class cardinality spec when one is present", () => {
     const ir = buildIR({
       classes: [
@@ -1414,34 +1167,9 @@ describe("map — cardinality and interface coverage", () => {
     expect(field?.shaclRequired).toBe(true);
   });
 
-  it("keeps a config singular ahead of a per-class SHACL shape", () => {
-    const ir = buildIR(
-      {
-        classes: [{ uri: uri("Spec"), superclasses: [] }],
-        properties: [
-          {
-            uri: uri("tag"),
-            kind: "datatype",
-            domains: [uri("Spec")],
-            ranges: [`${XSD}string`],
-          },
-        ],
-        shaclConstraints: [
-          { targetClass: uri("Spec"), property: uri("tag"), maxCount: 1 },
-        ],
-        instanceStats: new Map([[uri("Spec"), { total: 1, named: 1 }]]),
-      },
-      { [uri("tag")]: { singular: false } },
-    );
-    const { output } = map(ir);
-    expect(output.types.get("Spec")?.fields.get("tags")?.resolverTemplate).toBe(
-      "datatype-list",
-    );
-  });
-
   it("lets a per-class SHACL shape decide when no explicit tier spoke", () => {
-    // The complement of the two tests above: with no config and no
-    // annotation, the shape still outranks the heuristic default.
+    // The complement of the test above: with no annotation, the shape still
+    // outranks the heuristic default.
     const ir = buildIR({
       classes: [{ uri: uri("Spec"), superclasses: [] }],
       properties: [
@@ -1640,25 +1368,6 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     expect(output.types.has("Widget")).toBe(false);
   });
 
-  it("keeps the config graphqlName ahead of graphql:name (A005 names the shadow)", () => {
-    const built = build(
-      makeExtraction({
-        classes: [{ uri: uri("Widget"), superclasses: [] }],
-        instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
-        graphqlAnnotations: [
-          [uri("Widget"), GRAPHQL_TERMS.name, "Annotated", "literal"],
-        ],
-      }),
-      { "ex:Widget": { graphqlName: "Configured" } },
-    );
-    expect(built.diagnostics.map((d) => d.code)).toContain("A005");
-    const { output } = map(built.output, {
-      mappings: { "ex:Widget": { graphqlName: "Configured" } },
-    });
-    expect(output.types.has("Configured")).toBe(true);
-    expect(output.types.has("Annotated")).toBe(false);
-  });
-
   it("treats an annotated name as custom on a reserved collision: M001 drop, never an M004 rename", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Widget"), superclasses: [] }],
@@ -1758,7 +1467,7 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
     expect(output.types.get("_Widget")?.fields.has("_typename")).toBe(true);
   });
 
-  it("promotes graphql:nonNull and OR-merges it with the config list", () => {
+  it("promotes graphql:nonNull, and only where it is asserted true", () => {
     const ir = buildIR({
       classes: [{ uri: uri("Widget"), superclasses: [] }],
       instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
@@ -1772,46 +1481,37 @@ describe("map — graphql: annotation binding (name, nonNull)", () => {
         [uri("b"), GRAPHQL_TERMS.nonNull, "true", "literal"],
       ],
     });
-    const { output } = map(ir, { nonNullOverrides: { Widget: ["b", "c"] } });
+    const { output } = map(ir);
     const fields = output.types.get("Widget")?.fields;
-    // annotation only
     expect(fields?.get("a")?.nonNull).toBe(true);
     expect(fields?.get("a")?.nullable).toBe(false);
-    // both sources agree — still simply non-null
     expect(fields?.get("b")?.nonNull).toBe(true);
-    // config only — the existing path is untouched
-    expect(fields?.get("c")?.nonNull).toBe(true);
+    // unannotated — the nullable default stands
+    expect(fields?.get("c")?.nonNull).toBe(false);
+    expect(fields?.get("c")?.nullable).toBe(true);
   });
 
-  it("keeps the nonNull merge an OR: an explicit false does not veto the config", () => {
-    // The one case that tells an OR apart from `annotation ?? config`. Both
-    // sources only ever PROMOTE, so no A005 contradiction is expressible
-    // here: a field the consumer lists stays non-null even when the ontology
-    // says false, and the same annotation alone leaves the field nullable.
+  it("leaves a field nullable when graphql:nonNull says false", () => {
+    // The annotation only ever PROMOTES: an explicit `false` is not a
+    // demotion request, it simply leaves the nullable default standing.
     const ir = buildIR({
       classes: [{ uri: uri("Widget"), superclasses: [] }],
       instanceStats: new Map([[uri("Widget"), { total: 1, named: 1 }]]),
       properties: [
-        datatypeProp("listed", { domains: [uri("Widget")] }),
-        datatypeProp("unlisted", { domains: [uri("Widget")] }),
+        datatypeProp("declaredFalse", { domains: [uri("Widget")] }),
+        datatypeProp("unannotated", { domains: [uri("Widget")] }),
       ],
       graphqlAnnotations: [
-        [uri("listed"), GRAPHQL_TERMS.nonNull, "false", "literal"],
-        [uri("unlisted"), GRAPHQL_TERMS.nonNull, "false", "literal"],
+        [uri("declaredFalse"), GRAPHQL_TERMS.nonNull, "false", "literal"],
       ],
     });
-    const { output, diagnostics } = map(ir, {
-      nonNullOverrides: { Widget: ["listed"] },
-    });
+    const { output } = map(ir);
     const fields = output.types.get("Widget")?.fields;
-    // annotation false OR config listing → non-null (`??` would give false)
-    expect(fields?.get("listed")?.nonNull).toBe(true);
-    expect(fields?.get("listed")?.nullable).toBe(false);
-    // annotation false alone → the heuristic nullable default stands
-    expect(fields?.get("unlisted")?.nonNull).toBe(false);
-    expect(fields?.get("unlisted")?.nullable).toBe(true);
-    // ...and promotion-only means the disagreement is not a shadow (A005).
-    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
+    expect(fields?.get("declaredFalse")?.nonNull).toBe(false);
+    expect(fields?.get("declaredFalse")?.nullable).toBe(true);
+    // an unannotated sibling is indistinguishable — false asserts nothing
+    expect(fields?.get("unannotated")?.nonNull).toBe(false);
+    expect(fields?.get("unannotated")?.nullable).toBe(true);
   });
 });
 

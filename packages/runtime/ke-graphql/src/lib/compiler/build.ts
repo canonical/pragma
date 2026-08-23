@@ -7,8 +7,7 @@
 // abstract detection from the Pass 1 instance stats, range resolution, SHACL
 // cardinality (including sh:or most-permissive merging), inverse pair
 // symmetry, and property inheritance. Every knob the overlay carries is read
-// as `config ?? overlay ?? heuristic` — the consumer's config survives,
-// deprecated, and wins per key (A005 names the shadowing).
+// as `overlay ?? heuristic`.
 // =============================================================================
 
 import {
@@ -31,7 +30,7 @@ import resolveGraphqlAnnotations from "./annotations.js";
 import { DEFAULT_MODE } from "./constants.js";
 import isStandardVocab from "./isStandardVocab.js";
 import resolveEffectivePrefixes from "./resolveEffectivePrefixes.js";
-import type { CustomMappings, ProjectionMode } from "./types.js";
+import type { ProjectionMode } from "./types.js";
 
 const PHASE = "build";
 
@@ -89,7 +88,6 @@ const mergeConstraints = (
  */
 export default function build(
   extraction: RawExtraction,
-  mappings: CustomMappings = {},
   mode: ProjectionMode = DEFAULT_MODE,
 ): PassResult<OntologyIR> {
   const diagnostics: Diagnostic[] = [];
@@ -119,7 +117,7 @@ export default function build(
                 ]
               : [],
         }
-      : resolveGraphqlAnnotations(extraction, mappings);
+      : resolveGraphqlAnnotations(extraction);
   diagnostics.push(...resolved.diagnostics);
   const overlay = resolved.output;
 
@@ -128,19 +126,10 @@ export default function build(
   // binds here, where the mode is known. Under mode "auto" the overlay is
   // empty by construction, so prefixes resolve exactly as they would if the
   // ontology carried no annotation at all — which is what that mode promises.
-  // The fold and the prefixed-key lookup come from one shared authority
-  // (resolveEffectivePrefixes) that annotations.ts's A005 report also uses, so
-  // the site that APPLIES a config key and the site that REPORTS it as shadowing
-  // an annotation can never disagree about which key applies.
-  const {
-    namespaces: effectiveNamespaces,
-    prefixOf: getPrefix,
-    findMapping,
-  } = resolveEffectivePrefixes(
-    extraction.namespaces,
-    overlay.prefixes,
-    mappings,
-  );
+  // The fold comes from one shared authority (resolveEffectivePrefixes), so
+  // every reader of a prefix sees the same map.
+  const { namespaces: effectiveNamespaces, prefixOf: getPrefix } =
+    resolveEffectivePrefixes(extraction.namespaces, overlay.prefixes);
 
   // ── deferred synthetic-prefix warnings (E001) ──
   // Pass 1 warns for every namespace it puts on a serial synthetic, EXCEPT
@@ -315,21 +304,17 @@ export default function build(
   }
 
   // ── 4. abstract + embeddable detection from instance stats ──
-  // Tri-state per source: config > annotation > heuristic — an explicit
-  // `false` at either override level forces the heuristic off.
+  // Two-tier per source: annotation > heuristic — an explicit `false` on the
+  // annotation forces the heuristic off.
   for (const node of classes.values()) {
     const stats = extraction.instanceStats.get(node.uri);
     const subclasses = subclassesOf.get(node.uri) ?? [];
-    const mapping = findMapping(node.uri);
     const classOverlay = overlay.classes.get(node.uri);
     const isAbstract =
-      mapping?.abstract ??
       classOverlay?.abstract ??
       ((stats?.total ?? 0) === 0 && subclasses.length > 0);
-    // Embeddable: instances exist and none are named, or forced by
-    // mapping/annotation.
+    // Embeddable: instances exist and none are named, or forced by annotation.
     const embeddable =
-      mapping?.embeddable ??
       classOverlay?.embeddable ??
       (stats !== undefined && stats.total > 0 && stats.named === 0);
     /* v8 ignore next -- node.uri was populated with its ancestors in the prior closure pass and is still present in the map, so the empty-array fallback is unreachable */
@@ -425,19 +410,18 @@ export default function build(
       });
     }
 
-    // Cardinality precedence: custom > graphql:singular annotation >
+    // Cardinality precedence: graphql:singular annotation >
     // owl:FunctionalProperty > owl:cardinality (not present in current
     // ontologies) > SHACL maxCount 1 > kind default. Datatype properties
     // default to SINGULAR (multi-valued literals are the exception in RDF
     // practice); only object properties default to list.
-    const mapping = findMapping(raw.uri);
-    // The two EXPLICIT tiers are recorded as such: a per-class SHACL shape is
-    // free to override the heuristics below them, but not a value the
-    // consumer's config or the ontology's own vocabulary stated outright —
-    // otherwise the precedence above holds for a property's default and
-    // silently inverts on every class that happens to carry a shape.
-    const explicitSingular =
-      mapping?.singular ?? overlay.properties.get(raw.uri)?.singular;
+    //
+    // The EXPLICIT tier is recorded as such: a per-class SHACL shape is free
+    // to override the heuristics below it, but not a value the ontology's own
+    // vocabulary stated outright — otherwise the precedence above holds for a
+    // property's default and silently inverts on every class that happens to
+    // carry a shape.
+    const explicitSingular = overlay.properties.get(raw.uri)?.singular;
     const functional =
       explicitSingular ??
       (extraction.functionals.has(raw.uri) ||

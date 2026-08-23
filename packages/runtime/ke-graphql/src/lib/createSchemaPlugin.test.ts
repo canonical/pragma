@@ -1,6 +1,6 @@
 // =============================================================================
 // Plugin integration: createSchemaPlugin via createStore, store.api,
-// sdlOutput writing, extensions (object + factory), standardVocabFields.
+// sdlOutput writing, and extensions (object + factory).
 // =============================================================================
 
 import {
@@ -29,21 +29,22 @@ import { type EntityValue, GRAPHQL } from "./shared/index.js";
 // A TTL whose compile emits diagnostics of every severity, plus at least one
 // sourceless diagnostic so both arms of the log line's `(source)` suffix are
 // taken: V006 (info, boolean property), V002 (warning, domainless property),
-// three custom mappings onto one field name (M001 error — fatal: any
+// three properties annotated onto one field name (M001 error — fatal: any
 // error-severity diagnostic refuses the compile), and a union range (X003
 // info, sourceless). The failure path still logs every diagnostic before the
 // boot dies.
 const DIAGNOSTIC_TTL = `
 @prefix ex: <http://example.org/> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 ex:Thing a owl:Class ; rdfs:label "Thing" .
 ex:Other a owl:Class ; rdfs:label "Other" .
 ex:active a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:boolean ; rdfs:label "active" .
-ex:foo a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "foo" .
-ex:bar a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "bar" .
-ex:baz a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "baz" .
+ex:foo a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "foo" ; graphql:name "dup" .
+ex:bar a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "bar" ; graphql:name "dup" .
+ex:baz a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ; rdfs:label "baz" ; graphql:name "dup" .
 ex:orphan a owl:DatatypeProperty ; rdfs:range xsd:string ; rdfs:label "orphan" .
 ex:ref a owl:ObjectProperty ; rdfs:domain ex:Thing ; rdfs:range [ owl:unionOf ( ex:Thing ex:Other ) ] ; rdfs:label "ref" .
 ex:w a ex:Thing ; ex:active "true" ; ex:foo "f" ; ex:bar "b" ; ex:baz "z" .
@@ -221,44 +222,6 @@ describe("createSchemaPlugin", () => {
     ).rejects.toThrow(/C001|composition failed/);
   });
 
-  it("generates instance-level standard-vocab fields", async () => {
-    const ttl = `${MINIMAL_TTL}
-      <http://example.org/widget> <http://www.w3.org/2000/01/rdf-schema#label> "The Widget"@en .
-    `;
-    const plugin = createSchemaPlugin({
-      standardVocabFields: {
-        Thing: { "http://www.w3.org/2000/01/rdf-schema#label": "label" },
-      },
-    });
-    const { store, cleanup } = await createTestStore({
-      ttl,
-      prefixes: PREFIXES,
-      plugins: [plugin],
-    });
-    cleanups.push(cleanup);
-    const api = store.api<SchemaPluginApi>("ke-graphql");
-    const result = await graphql({
-      schema: api?.schema as NonNullable<typeof api>["schema"],
-      source: `{ thing(uri: "ex:widget") { label name _meta { label } } }`,
-      contextValue: api?.createContext(store),
-    });
-    expect(result.errors).toBeUndefined();
-    const thing = result.data?.thing as {
-      label: string;
-      name: string;
-      _meta: { label: string };
-    };
-    // The opt-in now lands on the name it asked for: nothing reserves `label`
-    // any more, so the documented mapping produces the documented field.
-    expect(thing.label).toBe("The Widget");
-    // The generic chain's FIRST link is also rdfs:label, so _meta reports the
-    // same literal — the opt-in's value is neither lost nor renamed.
-    expect(thing._meta.label).toBe("The Widget");
-    // Provenance check: had the generic chain fallen through to its
-    // local-name tier (ex:name) it would read "Widget" instead.
-    expect(thing.name).toBe("Widget");
-  });
-
   it("logs every diagnostic to its severity channel, then fails the boot on the error", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -268,13 +231,7 @@ describe("createSchemaPlugin", () => {
       warn.mockRestore();
       info.mockRestore();
     });
-    const plugin = createSchemaPlugin({
-      mappings: {
-        "ex:foo": { graphqlName: "dup" },
-        "ex:bar": { graphqlName: "dup" },
-        "ex:baz": { graphqlName: "dup" },
-      },
-    });
+    const plugin = createSchemaPlugin();
     // The M001 error refuses the compile (any error-severity diagnostic is
     // fatal), so the boot rejects — but only AFTER the full diagnostic list
     // hit the console: dying loudly includes the non-fatal findings.

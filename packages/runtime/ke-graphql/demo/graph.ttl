@@ -3,6 +3,7 @@
 # with enough instances to exercise listings, pagination, interfaces,
 # embedded blank nodes, and inverse resolution.
 
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 @prefix lib: <https://example.org/library/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -23,19 +24,30 @@ lib:inPrint a owl:DatatypeProperty ; rdfs:domain lib:Book ; rdfs:range xsd:boole
 lib:runtimeMinutes a owl:DatatypeProperty ; rdfs:domain lib:Film ; rdfs:range xsd:integer .
 lib:hasAuthor a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Author ;
     owl:inverseOf lib:authored .
-lib:authored a owl:ObjectProperty ; rdfs:domain lib:Author ; rdfs:range lib:Work .
+# The mechanical plural of the inverse side reads badly ("authoreds"), so
+# the ontology names the field itself.
+lib:authored a owl:ObjectProperty ; rdfs:domain lib:Author ; rdfs:range lib:Work ;
+    graphql:name "works" .
 lib:name a owl:DatatypeProperty ; rdfs:domain lib:Author ; rdfs:range xsd:string .
 lib:hasReview a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Review .
 lib:rating a owl:DatatypeProperty ; rdfs:domain lib:Review ; rdfs:range xsd:integer .
 lib:comment a owl:DatatypeProperty ; rdfs:domain lib:Review ; rdfs:range xsd:string .
 lib:publishedYear a owl:DatatypeProperty ; rdfs:domain lib:Work ; rdfs:range xsd:integer .
 lib:publisherName a owl:DatatypeProperty ; rdfs:domain lib:Publisher ; rdfs:range xsd:string .
-lib:hasPublisher a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Publisher .
+# At most one publisher per work, but nothing in the data says so — the
+# ontology declares the cardinality, and its reverse side is a real property
+# so Publisher gets a `works` field.
+lib:hasPublisher a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Publisher ;
+    graphql:singular true .
+lib:publishedWorks a owl:ObjectProperty ; rdfs:domain lib:Publisher ; rdfs:range lib:Work ;
+    owl:inverseOf lib:hasPublisher ; graphql:name "works" .
 
-# Functional: at most one value — the compiler emits a singular field
-# (KG.17: custom mapping > owl:FunctionalProperty > owl:cardinality).
+# Functional: at most one value — the compiler emits a singular field.
+# Precedence: graphql:singular > owl:FunctionalProperty > SHACL maxCount.
 lib:adaptationOf a owl:ObjectProperty, owl:FunctionalProperty ;
     rdfs:domain lib:Film ; rdfs:range lib:Work .
+lib:adaptations a owl:ObjectProperty ; rdfs:domain lib:Work ; rdfs:range lib:Film ;
+    owl:inverseOf lib:adaptationOf .
 
 # --- Authors ----------------------------------------------------------------
 

@@ -64,15 +64,7 @@ const DEFERRED_QUERY = `
   }
 `;
 
-const dsOptions = {
-  incremental: true,
-  mappings: {
-    "ds:hasModifierFamily": { graphqlName: "modifierFamilies" },
-    "ds:hasSubcomponent": { graphqlName: "subcomponents" },
-    "ds:hasProperty": { graphqlName: "properties" },
-    "ds:hasModifier": { graphqlName: "modifiers" },
-  },
-};
+const dsOptions = { incremental: true };
 
 describe("executeLocal (in-process execution)", () => {
   it("executes plain documents to a single result", async () => {

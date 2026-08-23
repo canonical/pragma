@@ -156,14 +156,16 @@ describe("build — abstract and embeddable detection", () => {
     expect(output.classes.get(uri("Embed"))?.embeddable).toBe(true);
   });
 
-  it("honors custom abstract/embeddable mapping overrides", () => {
+  it("honors graphql:abstract and graphql:embeddable against the heuristic", () => {
     const extraction = makeExtraction({
       classes: [{ uri: uri("Thing"), superclasses: [] }],
       instanceStats: new Map([[uri("Thing"), { total: 3, named: 3 }]]),
+      graphqlAnnotations: [
+        [uri("Thing"), GRAPHQL_TERMS.abstract, "true", "literal"],
+        [uri("Thing"), GRAPHQL_TERMS.embeddable, "true", "literal"],
+      ],
     });
-    const { output } = build(extraction, {
-      "ex:Thing": { abstract: true, embeddable: true },
-    });
+    const { output } = build(extraction);
     expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
     expect(output.classes.get(uri("Thing"))?.embeddable).toBe(true);
   });
@@ -625,27 +627,6 @@ describe("build — namespaces", () => {
   });
 });
 
-describe("build — custom mapping resolution", () => {
-  it("resolves a mapping keyed by prefixed name", () => {
-    const extraction = makeExtraction({
-      classes: [{ uri: uri("Thing"), superclasses: [] }],
-      properties: [datatypeProp("p", { ranges: [`${XSD}string`] })],
-    });
-    const { output } = build(extraction, { "ex:p": { singular: false } });
-    // datatype properties default singular; the prefixed mapping flips it.
-    expect(output.properties.get(uri("p"))?.functional).toBe(false);
-  });
-
-  it("resolves a mapping keyed by full IRI", () => {
-    const extraction = makeExtraction({
-      classes: [{ uri: uri("Thing"), superclasses: [] }],
-      properties: [datatypeProp("p", { ranges: [`${XSD}string`] })],
-    });
-    const { output } = build(extraction, { [uri("p")]: { singular: false } });
-    expect(output.properties.get(uri("p"))?.functional).toBe(false);
-  });
-});
-
 describe("build — annotation properties", () => {
   it("routes annotation properties to the TBox, not class fields", () => {
     const extraction = makeExtraction({
@@ -722,26 +703,7 @@ describe("build — graphql: annotation overlay binding", () => {
     expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
 
-  it("keeps config ahead of the annotation for abstract/embeddable (A005 names the shadow)", () => {
-    const extraction = makeExtraction({
-      classes: [{ uri: uri("Thing"), superclasses: [] }],
-      instanceStats: new Map([[uri("Thing"), { total: 1, named: 1 }]]),
-      graphqlAnnotations: [
-        [uri("Thing"), GRAPHQL_TERMS.abstract, "true", "literal"],
-        [uri("Thing"), GRAPHQL_TERMS.embeddable, "true", "literal"],
-      ],
-    });
-    const { output, diagnostics } = build(extraction, {
-      "ex:Thing": { abstract: false, embeddable: false },
-    });
-    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(false);
-    expect(output.classes.get(uri("Thing"))?.embeddable).toBe(false);
-    expect(
-      diagnostics.filter((d) => d.code === "A005").map((d) => d.severity),
-    ).toEqual(["warning", "warning"]);
-  });
-
-  it("binds graphql:singular into the cardinality tier between config and owl/SHACL", () => {
+  it("binds graphql:singular into the cardinality tier above owl/SHACL", () => {
     const extraction = makeExtraction({
       classes: [
         { uri: uri("Thing"), superclasses: [] },
@@ -757,22 +719,16 @@ describe("build — graphql: annotation overlay binding", () => {
         },
         // datatype property defaults to singular — annotation makes it a list
         datatypeProp("tags"),
-        // config wins over a contradicting annotation
-        datatypeProp("cfg"),
       ],
       graphqlAnnotations: [
-        [uri("cfg"), GRAPHQL_TERMS.singular, "false", "literal"],
         [uri("rel"), GRAPHQL_TERMS.singular, "true", "literal"],
         [uri("tags"), GRAPHQL_TERMS.singular, "false", "literal"],
       ],
     });
-    const { output, diagnostics } = build(extraction, {
-      "ex:cfg": { singular: true },
-    });
+    const { output, diagnostics } = build(extraction);
     expect(output.properties.get(uri("rel"))?.functional).toBe(true);
     expect(output.properties.get(uri("tags"))?.functional).toBe(false);
-    expect(output.properties.get(uri("cfg"))?.functional).toBe(true);
-    expect(diagnostics.filter((d) => d.code === "A005")).toHaveLength(1);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
 
   it("keeps graphql:singular ahead of owl:FunctionalProperty", () => {
@@ -917,7 +873,7 @@ describe("build — graphql: annotation overlay binding", () => {
       namespaces: new Map([[NS, "ex"]]),
       graphqlAnnotations: [[NS, GRAPHQL_TERMS.prefix, "exx", "literal"]],
     });
-    const { output, diagnostics } = build(extraction, {}, "auto");
+    const { output, diagnostics } = build(extraction, "auto");
     expect(output.graphql.prefixes.size).toBe(0);
     expect(output.classes.get(uri("Thing"))?.namespace).toBe("ex");
     expect(output.namespaces.get("ex")?.uri).toBe(NS);
@@ -1043,7 +999,7 @@ describe("build — the deferred synthetic-prefix warning (E001)", () => {
   // a graphql:prefix declaration; whether that declaration actually replaces
   // the synthetic is a mode question, so Pass 1 defers and this pass decides.
   const deferred = (
-    mode: Parameters<typeof build>[2],
+    mode: Parameters<typeof build>[1],
     rows: RawExtraction["graphqlAnnotations"] = [
       ["http://other.test/", GRAPHQL_TERMS.prefix, "oth", "literal"],
     ],
@@ -1061,7 +1017,6 @@ describe("build — the deferred synthetic-prefix warning (E001)", () => {
         deferredSyntheticNamespaces: ["http://other.test/"],
         graphqlAnnotations: rows,
       }),
-      {},
       mode,
     );
 
@@ -1112,74 +1067,5 @@ describe("build — the deferred synthetic-prefix warning (E001)", () => {
     const e001 = diagnostics.filter((d) => d.code === "E001");
     expect(e001).toHaveLength(1);
     expect(e001[0]?.message).toContain('mode "annotated"');
-  });
-});
-
-describe("build — one prefix map for applying config keys and reporting them", () => {
-  // The namespace is registered "ex" and declares graphql:prefix "exx". The
-  // config key that APPLIES and the config key A005 reports as shadowing the
-  // annotation must be the same key — resolved through the same effective
-  // map — in every mode.
-  const shadowed = (
-    mappings: Parameters<typeof build>[1],
-    mode: Parameters<typeof build>[2] = undefined,
-  ) =>
-    build(
-      makeExtraction({
-        classes: [{ uri: uri("Thing"), superclasses: [] }],
-        namespaces: new Map([[NS, "ex"]]),
-        graphqlAnnotations: [
-          [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
-          [uri("Thing"), GRAPHQL_TERMS.abstract, "false", "literal"],
-        ],
-      }),
-      mappings,
-      mode,
-    );
-
-  it("applies a key written with the DECLARED prefix and reports it (A005)", () => {
-    const { output, diagnostics } = shadowed({
-      "exx:Thing": { abstract: true },
-    });
-    // `abstract: true` can only come from the config: the annotation says
-    // false and the heuristic (no instances, no subclasses) says false too.
-    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
-    const a005 = diagnostics.filter((d) => d.code === "A005");
-    expect(a005).toHaveLength(1);
-    expect(a005[0]?.message).toContain("graphql:abstract");
-    expect(a005[0]?.source).toBe(uri("Thing"));
-  });
-
-  it("neither applies nor reports a key written with the SUPERSEDED prefix", () => {
-    // "ex" is what Pass 1 resolved and what the declaration replaced. A
-    // shadow report here would send an operator to delete a config key that
-    // never applied.
-    const { output, diagnostics } = shadowed({
-      "ex:Thing": { abstract: true },
-    });
-    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(false);
-    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
-  });
-
-  it("keeps reporting absolute-IRI keys, which no declaration can move", () => {
-    const { output, diagnostics } = shadowed({
-      [uri("Thing")]: { abstract: true },
-    });
-    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
-    expect(diagnostics.filter((d) => d.code === "A005")).toHaveLength(1);
-  });
-
-  it('applies the Pass 1 prefix under "auto", where there is no shadow to report', () => {
-    // "auto" consults no annotation, so the declaration does not move the
-    // key: "ex:Thing" is what applies. Nothing is shadowed either — the
-    // annotation was never read — so A005 is silent and A006 is the note
-    // that says the assertions went unconsulted.
-    const { output, diagnostics } = shadowed(
-      { "ex:Thing": { abstract: true } },
-      "auto",
-    );
-    expect(output.classes.get(uri("Thing"))?.isAbstract).toBe(true);
-    expect(diagnostics.filter((d) => d.code === "A005")).toEqual([]);
-    expect(diagnostics.map((d) => d.code)).toContain("A006");
   });
 });

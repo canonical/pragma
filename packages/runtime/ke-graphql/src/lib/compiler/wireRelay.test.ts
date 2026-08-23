@@ -460,7 +460,7 @@ describe("wireRelay root query fields", () => {
     expect(w001[0]?.message).toContain("Query.lens");
     expect(w001[0]?.message).toContain("the Lens singular lookup");
     expect(w001[0]?.message).toContain("the Lens listing");
-    expect(w001[0]?.message).toContain("graphqlName");
+    expect(w001[0]?.message).toContain("graphql:name");
     expect(w001[0]?.source).toBe("http://example.org/Lens");
   });
 

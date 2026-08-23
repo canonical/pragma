@@ -1,7 +1,7 @@
 // =============================================================================
 // Annotation resolution unit tests: the A-band taxonomy (A001 conflicts,
-// A002 targets, A003 values, A004 recognition/applicability, A005 config
-// shadowing), the prefix path (namespace re-keying, value validation), and
+// A002 targets, A003 values, A004 recognition/applicability), the prefix
+// path (namespace re-keying, value validation), and
 // the overlay application of every v1 term. Crafted RawExtractions, rows in
 // the (target, term, kind, value) order the extractor guarantees. The
 // effective-map injectivity guard lives in build.ts and is tested there.
@@ -62,11 +62,9 @@ const makeExtraction = (
 const resolve = (
   rows: GraphqlAnnotationRow[],
   partial: Partial<RawExtraction> = {},
-  mappings: Parameters<typeof resolveGraphqlAnnotations>[1] = {},
 ) =>
   resolveGraphqlAnnotations(
     makeExtraction({ graphqlAnnotations: rows, ...partial }),
-    mappings,
   );
 
 const codes = (diagnostics: Diagnostic[]): string[] =>
@@ -395,104 +393,6 @@ describe("annotations — A004 recognition and applicability", () => {
     expect(a004?.message).toContain(
       "an exposed class emits its full field set",
     );
-  });
-});
-
-describe("annotations — A005 config shadowing (config wins)", () => {
-  it("warns when a full-IRI config key shadows an annotation with a different value", () => {
-    const { output, diagnostics } = resolve(
-      [[uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"]],
-      {},
-      { [uri("Thing")]: { graphqlName: "Configured" } },
-    );
-    const a005 = diagnostics.find((d) => d.code === "A005");
-    expect(a005?.severity).toBe("warning");
-    expect(a005?.message).toContain('"Configured"');
-    expect(a005?.message).toContain('"Annotated"');
-    expect(a005?.message).toContain("delete the config key");
-    // The overlay keeps the annotation value; precedence is applied at the
-    // consumption sites (config ?? overlay ?? heuristic).
-    expect(output.classes.get(uri("Thing"))?.name).toBe("Annotated");
-  });
-
-  it("warns through the prefixed config key form for properties", () => {
-    const { diagnostics } = resolve(
-      [[uri("name"), GRAPHQL_TERMS.singular, "false", "literal"]],
-      {},
-      { "ex:name": { singular: true } },
-    );
-    const a005 = diagnostics.find((d) => d.code === "A005");
-    expect(a005?.message).toContain("graphql:singular");
-    expect(a005?.source).toBe(uri("name"));
-  });
-
-  it("covers the boolean class knobs (abstract, embeddable)", () => {
-    const { diagnostics } = resolve(
-      [
-        [uri("Thing"), GRAPHQL_TERMS.abstract, "true", "literal"],
-        [uri("Thing"), GRAPHQL_TERMS.embeddable, "true", "literal"],
-      ],
-      {},
-      { [uri("Thing")]: { abstract: false, embeddable: false } },
-    );
-    expect(codes(diagnostics).filter((c) => c === "A005")).toHaveLength(2);
-  });
-
-  it("resolves a prefixed key through the DECLARED prefix, not Pass 1's", () => {
-    // The namespace is registered "ex" and declares graphql:prefix "exx".
-    // Every consumption site resolves prefixed config keys through the
-    // effective map, where the declaration has already replaced "ex" — so
-    // "exx:Thing" is the key that WINS downstream, and the report that says
-    // a config key won has to be keyed the same way or it is not a report
-    // about what happened.
-    const { diagnostics } = resolve(
-      [
-        [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
-        [uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"],
-      ],
-      {},
-      { "exx:Thing": { graphqlName: "Configured" } },
-    );
-    const a005 = diagnostics.filter((d) => d.code === "A005");
-    expect(a005).toHaveLength(1);
-    expect(a005[0]?.source).toBe(uri("Thing"));
-    expect(a005[0]?.message).toContain('"Configured"');
-    expect(a005[0]?.message).toContain('"Annotated"');
-  });
-
-  it("stays silent for a key written with the prefix the declaration replaced", () => {
-    // The mirror of the case above: "ex:Thing" resolves to nothing once the
-    // declaration binds, so the config never applies — and a shadow warning
-    // would send an operator to delete a key that changed nothing.
-    const { diagnostics } = resolve(
-      [
-        [NS, GRAPHQL_TERMS.prefix, "exx", "literal"],
-        [uri("Thing"), GRAPHQL_TERMS.name, "Annotated", "literal"],
-      ],
-      {},
-      { "ex:Thing": { graphqlName: "Configured" } },
-    );
-    expect(codes(diagnostics)).not.toContain("A005");
-  });
-
-  it("stays silent when config and annotation agree, or when either side is absent", () => {
-    const { diagnostics } = resolve(
-      [
-        [uri("Thing"), GRAPHQL_TERMS.name, "Same", "literal"],
-        [uri("name"), GRAPHQL_TERMS.name, "field", "literal"],
-      ],
-      {},
-      {
-        // agreeing values: no A005
-        [uri("Thing")]: { graphqlName: "Same" },
-        // config key present but a DIFFERENT knob than the annotation used:
-        // both directions absent on one side each — no A005
-        [uri("name")]: { singular: true },
-        // config for an unannotated term: no A005
-        [uri("Other")]: { graphqlName: "Nope" },
-      },
-    );
-    expect(codes(diagnostics)).not.toContain("A005");
   });
 });
 

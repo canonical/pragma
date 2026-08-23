@@ -73,7 +73,7 @@ export interface SchemaPluginExtra {
  *
  * @example
  * ```ts
- * const graphql = createSchemaPlugin({ mappings, extensions });
+ * const graphql = createSchemaPlugin({ extensions });
  * const store = await createStore({ sources, prefixes, plugins: [graphql] });
  * const { schema, createContext } = store.api<SchemaPluginApi>("ke-graphql")!;
  * ```

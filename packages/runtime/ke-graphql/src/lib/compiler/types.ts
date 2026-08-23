@@ -66,45 +66,6 @@ export interface SerializedExtraction {
 // ---------------------------------------------------------------------------
 
 /**
- * Per-URI override of the generated mapping (rename, cardinality, shape).
- *
- * @deprecated The `graphql:` vocabulary is the primary transport for these
- * knobs: declare `graphql:name` / `graphql:singular` / `graphql:abstract` /
- * `graphql:embeddable` on the ontology term itself so every consumer
- * resolves identically. Config keys keep working and WIN per key over an
- * annotation (A005 names the shadowing) — the draft-locally workflow — but
- * upstream the value and delete the key when it stabilizes. The synthetic
- * `inverse: { graphqlName }` form stays config-only (a synthesized field
- * has no IRI to annotate); the declared-pair form is `graphql:inverse`.
- */
-export interface CustomMapping {
-  graphqlName?: string;
-  singular?: boolean;
-  abstract?: boolean;
-  embeddable?: boolean;
-  /** Synthesize an inverse field on the property's range type. */
-  inverse?: { graphqlName: string };
-}
-
-/**
- * Custom mappings keyed by full IRI or prefixed name (e.g. "ds:tier").
- *
- * @deprecated See CustomMapping — the `graphql:` vocabulary carries these
- * knobs in the ontology; config survives as the workspace-local shadow.
- */
-export type CustomMappings = Record<string, CustomMapping>;
-
-/**
- * Per GraphQL type name: the field names promoted to non-null.
- *
- * @deprecated Declare `graphql:nonNull true` on the ontology property
- * instead. Both sources only ever promote, so the effective value is the
- * disjunction (no contradiction is expressible) and the config list keeps
- * working until removed.
- */
-export type NonNullOverrides = Record<string, string[]>;
-
-/**
  * How much of the ontology is projected into object types.
  *
  * - `"auto"` — pure heuristics: the `graphql:` annotation overlay is not
@@ -142,9 +103,9 @@ export type ProjectionMode =
  *
  * - `"none"` (default) — field names are the mapped OWL local names.
  * - `"all"` — EVERY generated field name is namespace-prefixed
- *   (`ex:uri` → `exUri`). An explicit `mappings[…].graphqlName` is never
- *   prefixed. This is the blanket remedy for an M001/M005 collision: it
- *   resolves the whole schema at once instead of one mapping per clash.
+ *   (`ex:uri` → `exUri`). A name fixed by `graphql:name` is never prefixed.
+ *   This is the blanket remedy for an M001/M005 collision: it resolves the
+ *   whole schema at once instead of one annotation per clash.
  */
 export type FieldPrefixing = "none" | "all";
 
@@ -171,12 +132,6 @@ export type SchemaExtensionsInput =
 
 /** Options accepted by the schema plugin and the compile entry points. */
 export interface SchemaPluginOptions {
-  /**
-   * @deprecated Prefer the `graphql:` annotations on the ontology terms
-   * (see CustomMapping). Kept working; a key shadowing an annotation with
-   * a different value wins with an A005 warning.
-   */
-  mappings?: CustomMappings;
   extensions?: SchemaExtensionsInput;
   /**
    * Wire the Relay conventions: Node membership, the injected uri + _meta
@@ -188,11 +143,6 @@ export interface SchemaPluginOptions {
   incremental?: boolean;
   /** File path for SDL output. */
   sdlOutput?: string;
-  /**
-   * @deprecated Prefer `graphql:nonNull` on the ontology property (see
-   * NonNullOverrides). Kept working; OR-merged with the annotations.
-   */
-  nonNullOverrides?: NonNullOverrides;
   /**
    * Projection mode — see ProjectionMode for the three behaviors.
    * Default: DEFAULT_MODE ("annotated").
@@ -207,17 +157,6 @@ export interface SchemaPluginOptions {
   provider?: string;
   /** Source revision stamped into the SDL provenance header. */
   revision?: string;
-  /**
-   * Opt-in instance-level standard-vocabulary fields.
-   * Per GraphQL type name: predicate URI → field name.
-   *
-   * @deprecated Superseded by the `graphql:titleFrom`/`labelFrom`/
-   * `commentFrom`/`definitionFrom` annotations, which have landed — declare
-   * the source predicate on the ontology term instead of naming it per
-   * schema type here, and every consumer of that ontology resolves it
-   * identically. Kept working, and collision-correct, for the migration.
-   */
-  standardVocabFields?: Record<string, Record<string, string>>;
   /** Resolver-time warnings (coercion failures). Default: console.warn, deduplicated. */
   onRuntimeWarning?: RuntimeWarningHandler;
   /**

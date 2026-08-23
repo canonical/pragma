@@ -285,17 +285,8 @@ describe("shacl fixture", () => {
 });
 
 describe("ds-realistic fixture", () => {
-  it("compiles the full hierarchy with synthetic inverses and overrides", async () => {
-    const result = await compileFixture(DS_REALISTIC_TTL, {
-      mappings: {
-        "ds:hasModifierFamily": { graphqlName: "modifierFamilies" },
-        "ds:hasSubcomponent": { graphqlName: "subcomponents" },
-        "ds:hasProperty": { graphqlName: "properties" },
-        "ds:hasModifier": { graphqlName: "modifiers" },
-        "ds:implementsBlock": { inverse: { graphqlName: "implementations" } },
-      },
-      nonNullOverrides: { Component: ["name"] },
-    });
+  it("compiles the full hierarchy with its interfaces and embeddables", async () => {
+    const result = await compileFixture(DS_REALISTIC_TTL);
     expect(result.schema).toBeDefined();
     const component = result.schema.getType("Component") as GraphQLObjectType;
     const fields = component.getFields();
@@ -306,19 +297,13 @@ describe("ds-realistic fixture", () => {
         .map((i) => i.name)
         .sort(),
     ).toEqual(["Entity", "Node", "UIBlock", "UIElement"]);
-    // non-null override
-    expect(String(fields.name?.type)).toBe("String!");
-    // custom-mapped names, connection-wrapped
+    // derived names, connection-wrapped
     expect(String(fields.modifierFamilies?.type)).toBe(
       "ModifierFamilyConnection!",
     );
     expect(String(fields.subcomponents?.type)).toBe("SubcomponentConnection!");
     // embedded blank-node list stays plain
     expect(String(fields.properties?.type)).toBe("[Property!]!");
-    // synthetic inverse on the range type's concrete descendants
-    expect(String(fields.implementations?.type)).toBe(
-      "ImplementationObjectConnection!",
-    );
     // ds:Property is embeddable: detected from blank-only instance stats
     const property = result.schema.getType("Property") as GraphQLObjectType;
     expect(property.getFields().uri).toBeUndefined();
@@ -364,19 +349,20 @@ describe("abstract-class structural guard follows the interface surface", () => 
     // pointing nowhere near the cause.
     const MEDIA_TTL = `
 @prefix ex: <http://example.org/> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ex:Media a owl:Class ; rdfs:label "Media" .
+ex:Media a owl:Class ; rdfs:label "Media" ; graphql:abstract true .
 ex:Film a owl:Class ; rdfs:subClassOf ex:Media ; rdfs:label "Film" .
 ex:uri a owl:DatatypeProperty ; rdfs:domain ex:Media ; rdfs:range xsd:string .
 [] a ex:Media .
 ex:f1 a ex:Film .
 `;
-    const thrown = await compileFixture(MEDIA_TTL, {
-      mappings: { "ex:Media": { abstract: true } },
-    }).catch((error: unknown) => error);
+    const thrown = await compileFixture(MEDIA_TTL).catch(
+      (error: unknown) => error,
+    );
     if (!(thrown instanceof CompilationError)) {
       throw new Error("expected a CompilationError");
     }
@@ -446,18 +432,8 @@ describe("determinism", () => {
     // same TTL, same prefixes, same options: the printed bytes must not move.
     // Anything order-sensitive (Map iteration, union member collection, root
     // field claiming, connection minting) would show up here as a churn diff.
-    const options = {
-      mappings: {
-        "ds:hasModifierFamily": { graphqlName: "modifierFamilies" },
-        "ds:hasSubcomponent": { graphqlName: "subcomponents" },
-        "ds:hasProperty": { graphqlName: "properties" },
-        "ds:hasModifier": { graphqlName: "modifiers" },
-        "ds:implementsBlock": { inverse: { graphqlName: "implementations" } },
-      },
-      nonNullOverrides: { Component: ["name"] },
-    };
-    const first = await compileFixture(DS_REALISTIC_TTL, options);
-    const second = await compileFixture(DS_REALISTIC_TTL, options);
+    const first = await compileFixture(DS_REALISTIC_TTL);
+    const second = await compileFixture(DS_REALISTIC_TTL);
     // Guard against a vacuous pass: "" === "" would satisfy the comparison.
     expect(first.sdl.length).toBeGreaterThan(0);
     expect(second.sdl).toBe(first.sdl);
@@ -591,28 +567,29 @@ describe("graphql: annotation fatality", () => {
 });
 
 describe("failure modes", () => {
-  it("M003 reports unknown custom mappings", async () => {
-    const result = await compileFixture(MINIMAL_TTL, {
-      mappings: { "ex:doesNotExist": { graphqlName: "nope" } },
-    });
-    expect(codes(result)).toContain("M003");
-  });
-
   it("refuses the compile on ANY error-severity diagnostic, carrying the full list", async () => {
-    // Two custom mappings collide on one field name: Pass 4 drops the second
-    // property with an M001 error. The pass-level drop is unchanged, but the
+    // Two properties annotated onto one field name: Pass 4 drops the second
+    // with an M001 error. The pass-level drop is unchanged, but the
     // compile-level gate refuses to hand out the schema — a schema minus a
     // silently dropped field must never be served, so the boot dies loudly.
-    const options = {
-      mappings: {
-        "ex:name": { graphqlName: "dup" },
-        "ex:count": { graphqlName: "dup" },
-      },
-    };
-    await expect(compileFixture(MINIMAL_TTL, options)).rejects.toThrow(
+    const COLLIDING_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Thing a owl:Class ; rdfs:label "Thing" .
+ex:name a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:string ;
+  graphql:name "dup" .
+ex:count a owl:DatatypeProperty ; rdfs:domain ex:Thing ; rdfs:range xsd:integer ;
+  graphql:name "dup" .
+ex:widget a ex:Thing ; ex:name "Widget" ; ex:count 42 .
+`;
+    await expect(compileFixture(COLLIDING_TTL)).rejects.toThrow(
       CompilationError,
     );
-    const thrown = await compileFixture(MINIMAL_TTL, options).catch(
+    const thrown = await compileFixture(COLLIDING_TTL).catch(
       (error: CompilationError) => error,
     );
     if (!(thrown instanceof CompilationError)) {

@@ -3,11 +3,9 @@
 // → GraphqlOverlay (+ the A-band diagnostics).
 //
 // Pure. Validates every captured `graphql:` assertion — target (A002), value
-// kind (A003), term recognition and applicability (A004), conflicts (A001,
-// never tiebroken per the no-arbitrary-tiebreak rule), and consumer-config
-// shadowing (A005, config wins — the deliberate draft-locally asymmetry) —
-// and produces one typed overlay that every consumption site reads as
-// `config ?? overlay ?? heuristic`.
+// kind (A003), term recognition and applicability (A004) and conflicts (A001,
+// never tiebroken per the no-arbitrary-tiebreak rule) — and produces one
+// typed overlay that every consumption site reads as `overlay ?? heuristic`.
 //
 // Self-annotation is enforced in its strongest CHECKABLE form: the A002
 // target rules reject standard-vocabulary targets, unknown namespaces, and
@@ -31,8 +29,6 @@ import {
 } from "../shared/index.js";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
-import resolveEffectivePrefixes from "./resolveEffectivePrefixes.js";
-import type { CustomMappings } from "./types.js";
 
 // The overlay is resolved at the head of the build pass, so its diagnostics
 // carry the build phase — the A band is the annotation-resolution letter.
@@ -97,11 +93,10 @@ const renderValue = ([, , value, kind]: GraphqlAnnotationRow): string =>
 
 /**
  * Resolve the captured `graphql:` vocabulary assertions into the typed
- * overlay, validating targets, value kinds, and conflicts (A001–A005). Pure.
+ * overlay, validating targets, value kinds, and conflicts (A001–A004). Pure.
  */
 export default function resolveGraphqlAnnotations(
   extraction: RawExtraction,
-  mappings: CustomMappings = {},
 ): PassResult<GraphqlOverlay> {
   const diagnostics: Diagnostic[] = [];
   const classes = new Map<string, GraphqlClassOverlay>();
@@ -397,65 +392,6 @@ export default function resolveGraphqlAnnotations(
       }
       prefixes.set(ns, value);
     }
-  }
-
-  // ── consumer-config shadowing (A005) ──
-  // The R-9 asymmetry, deliberately: the consumer's config is the only
-  // workspace-local layer ke has (no per-source provenance), so a config key
-  // shadowing an annotation with a DIFFERENT value is the draft-locally
-  // workflow — a warning naming both values and the migration, never an
-  // error. Same-value duplication is harmless and silent.
-  //
-  // A prefixed config key is resolved through the EFFECTIVE prefix map — the
-  // same fold, from the same authority, that Pass 2 uses to apply the key
-  // (build.ts folds this very `prefixes` map over the same Pass 1 map). A
-  // shadow report is a claim about what the config did; resolving the key
-  // against Pass 1's map alone made that claim false in both directions the
-  // moment a namespace carried a graphql:prefix declaration — silence for a
-  // key written with the declared prefix, which wins downstream, and a shadow
-  // report for a key written with the superseded one, which no longer applies.
-  const { findMapping } = resolveEffectivePrefixes(
-    extraction.namespaces,
-    prefixes,
-    mappings,
-  );
-  const shadow = (
-    uri: string,
-    term: string,
-    config: string | boolean | undefined,
-    annotation: string | boolean | undefined,
-  ): void => {
-    if (
-      config === undefined ||
-      annotation === undefined ||
-      config === annotation
-    ) {
-      return;
-    }
-    diagnostics.push({
-      severity: "warning",
-      code: "A005",
-      message: `consumer config shadows graphql:${term} on ${uri}: config ${JSON.stringify(config)} wins over the annotation ${JSON.stringify(annotation)} — upstream the value into the ontology and delete the config key`,
-      source: uri,
-      phase: PHASE,
-    });
-  };
-  for (const [uri, overlay] of classes) {
-    const mapping = findMapping(uri);
-    if (!mapping) {
-      continue;
-    }
-    shadow(uri, "name", mapping.graphqlName, overlay.name);
-    shadow(uri, "abstract", mapping.abstract, overlay.abstract);
-    shadow(uri, "embeddable", mapping.embeddable, overlay.embeddable);
-  }
-  for (const [uri, overlay] of properties) {
-    const mapping = findMapping(uri);
-    if (!mapping) {
-      continue;
-    }
-    shadow(uri, "name", mapping.graphqlName, overlay.name);
-    shadow(uri, "singular", mapping.singular, overlay.singular);
   }
 
   return { output: { classes, properties, prefixes }, diagnostics };

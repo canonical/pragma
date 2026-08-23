@@ -20,11 +20,13 @@ const PREFIXES = { ex: "http://example.org/" };
 // shape that can trip the forced-abstract crash.
 const HIERARCHY_TTL = `
 @prefix ex: <http://example.org/> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-ex:Animal a owl:Class ; rdfs:label "Animal" .
+# The ontology declares Animal abstract; the data below contradicts it.
+ex:Animal a owl:Class ; rdfs:label "Animal" ; graphql:abstract true .
 ex:Dog a owl:Class ; rdfs:subClassOf ex:Animal ; rdfs:label "Dog" .
 ex:name a owl:DatatypeProperty ; rdfs:domain ex:Animal ; rdfs:range xsd:string .
 
@@ -48,14 +50,12 @@ const compileHierarchy = async () => {
     prefixes: PREFIXES,
   });
   cleanups.push(cleanup);
-  const result = await compile(createStoreQueryFn(store), PREFIXES, {
-    mappings: { "http://example.org/Animal": { abstract: true } },
-  });
+  const result = await compile(createStoreQueryFn(store), PREFIXES);
   return { result, store };
 };
 
 describe("forced abstract with direct instances (C1 + V015)", () => {
-  it("warns (V015) when the data contradicts an abstract mapping", async () => {
+  it("warns (V015) when the data contradicts graphql:abstract", async () => {
     const { result } = await compileHierarchy();
     expect(result.diagnostics.some((d) => d.code === "V015")).toBe(true);
   });

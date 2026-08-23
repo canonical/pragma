@@ -1,11 +1,10 @@
 // =============================================================================
 // Pass 4 — Map: OntologyIR → MappedIR
 //
-// Pure. OWL names → GraphQL names (config + graphql:name overrides, has/is
-// stripping, case convention, pluralization, collision resolution), range →
-// field type specs, resolver template assignment, embeddable/interface
-// interaction, synthetic inverse fields, standard-vocab fields, non-null
-// promotion (config list OR graphql:nonNull).
+// Pure. OWL names → GraphQL names (graphql:name overrides, has/is stripping,
+// case convention, pluralization, collision resolution), range → field type
+// specs, resolver template assignment, embeddable/interface interaction, and
+// non-null promotion (graphql:nonNull).
 // =============================================================================
 
 import {
@@ -36,7 +35,7 @@ import {
   sanitizePrefixComponent,
   stripVerbPrefix,
 } from "./nameMap.js";
-import type { CustomMapping, SchemaPluginOptions } from "./types.js";
+import type { SchemaPluginOptions } from "./types.js";
 
 const PHASE = "map";
 
@@ -48,8 +47,7 @@ const PHASE = "map";
 // keeps the first POSITION but the last VALUE.
 
 /** The remedy that always works, whatever the collision: rename one side. */
-const RENAME_REMEDY =
-  'add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })';
+const RENAME_REMEDY = 'rename one side with graphql:name "…" on its IRI';
 
 /**
  * The M005 remedy set — named in the M005 message.
@@ -81,23 +79,6 @@ interface MapperState {
   typeNames: Map<string, string>; // class URI → resolved GraphQL type name
 }
 
-/** Find the custom mapping for a URI (full-IRI key first, prefixed key second). */
-const findMapping = (
-  state: MapperState,
-  uri: string,
-): CustomMapping | undefined => {
-  const direct = state.options.mappings?.[uri];
-  if (direct) {
-    return direct;
-  }
-  const ns =
-    state.ir.classes.get(uri)?.namespace ??
-    state.ir.properties.get(uri)?.namespace;
-  return ns
-    ? state.options.mappings?.[`${ns}:${getLocalName(uri)}`]
-    : undefined;
-};
-
 /** Resolve every class URI to its GraphQL type name with collision handling. */
 const resolveTypeNames = (state: MapperState): void => {
   const taken = new Set<string>(RESERVED_TYPE_NAMES);
@@ -114,12 +95,10 @@ const resolveTypeNames = (state: MapperState): void => {
       outsideAllowlist.push(node.uri);
       continue;
     }
-    // config ?? annotation, both with custom-name semantics: verbatim, never
-    // auto-prefixed on a reserved collision (M001 instead of M004), always
-    // M002-sanitized when illegal.
-    const custom =
-      findMapping(state, node.uri)?.graphqlName ??
-      state.ir.graphql.classes.get(node.uri)?.name;
+    // graphql:name has custom-name semantics: verbatim, never auto-prefixed
+    // on a reserved collision (M001 instead of M004), always M002-sanitized
+    // when illegal.
+    const custom = state.ir.graphql.classes.get(node.uri)?.name;
     let name = custom ?? getLocalName(node.uri);
     const sanitized = sanitizeGraphQLName(name);
     if (sanitized !== name) {
@@ -169,8 +148,8 @@ const resolveTypeNames = (state: MapperState): void => {
         severity: "error",
         code: "M001",
         message: first
-          ? `${first} and ${node.uri} both map to type ${name} — the second class is DROPPED (not registered). To keep both, add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })`
-          : `${node.uri} maps to the compiler-reserved type name ${name} — the class is DROPPED (not registered). To keep it, add a custom mapping (mappings: { "<iri>": { graphqlName: "…" } })`,
+          ? `${first} and ${node.uri} both map to type ${name} — the second class is DROPPED (not registered). To keep both, ${RENAME_REMEDY}`
+          : `${node.uri} maps to the compiler-reserved type name ${name} — the class is DROPPED (not registered). To keep it, ${RENAME_REMEDY}`,
         source: node.uri,
         phase: PHASE,
       });
@@ -197,8 +176,7 @@ const resolveTypeNames = (state: MapperState): void => {
  * `prefixing: "all"` every field carries its property's namespace prefix
  * (`ex:uri` → `exUri`). That always clears an M005 (structural names carry no
  * prefix) but clears an M001 only across namespaces — see
- * FIELD_COLLISION_REMEDIES. The `"x"` fallback covers a predicate that is not
- * a known ontology property (a standard-vocab field's predicate, typically).
+ * FIELD_COLLISION_REMEDIES.
  *
  * The composed result is kept legal by sanitizing the prefix component
  * BEFORE concatenation (the field part was already sanitized upstream): a
@@ -210,13 +188,12 @@ const resolveTypeNames = (state: MapperState): void => {
  */
 const applyPrefixing = (
   state: MapperState,
-  owlUri: string,
+  namespace: string,
   name: string,
 ): string => {
   if ((state.options.prefixing ?? DEFAULT_PREFIXING) !== "all") {
     return name;
   }
-  const namespace = state.ir.properties.get(owlUri)?.namespace ?? "x";
   const prefix = sanitizePrefixComponent(namespace);
   return `${prefix}${name.charAt(0).toUpperCase()}${name.slice(1)}`;
 };
@@ -227,14 +204,10 @@ const computeFieldName = (
   property: PropertyNode,
   isList: boolean,
 ): string => {
-  const custom = findMapping(state, property.uri)?.graphqlName;
-  if (custom) {
-    return custom; // an explicit graphqlName is authoritative — never prefixed
-  }
   const annotated = state.ir.graphql.properties.get(property.uri)?.name;
   if (annotated) {
-    // graphql:name is verbatim like a config graphqlName — never pluralized,
-    // never prefixed — but an illegal value is sanitized with the same M002
+    // graphql:name is authoritative and verbatim — never pluralized, never
+    // prefixed — but an illegal value is sanitized with the same M002
     // diagnose-and-fall-back the class path applies, so one ontology
     // compiles identically on every provider instead of dying at C003.
     const sanitized = sanitizeGraphQLName(annotated);
@@ -253,7 +226,7 @@ const computeFieldName = (
   if (isList) {
     name = pluralize(name);
   }
-  return applyPrefixing(state, property.uri, sanitizeGraphQLName(name));
+  return applyPrefixing(state, property.namespace, sanitizeGraphQLName(name));
 };
 
 /** Compute the GraphQL field type spec for a property's resolved range. */
@@ -442,12 +415,10 @@ const buildFields = (
     const embedded = isEmbeddedRange(state, property);
     const list = !singular;
     const name = computeFieldName(state, property, list);
-    // Effective non-null = the consumer's per-type list OR graphql:nonNull —
-    // both only ever promote, so the merge is a plain disjunction (no A005
-    // contradiction is expressible here).
+    // Non-null promotion is the ontology's to declare: graphql:nonNull only
+    // ever promotes, and SHACL sh:minCount is recorded but never auto-promoted.
     const nonNull =
-      (state.options.nonNullOverrides?.[typeName]?.includes(name) ?? false) ||
-      (state.ir.graphql.properties.get(property.uri)?.nonNull ?? false);
+      state.ir.graphql.properties.get(property.uri)?.nonNull ?? false;
     const fieldType = computeFieldType(state, property);
     // mode "explicit": a field whose range class is compiled but NOT exposed
     // is OMITTED with A008 — not String-fallbacked, which would leak entity
@@ -504,64 +475,6 @@ const buildFields = (
     });
   }
 
-  // Synthetic + declared inverse fields (Template 4).
-  for (const property of state.ir.properties.values()) {
-    if (property.kind !== "object" || property.range.kind !== "class") {
-      continue;
-    }
-    const rangeUri = property.range.uri;
-    const appliesHere =
-      rangeUri === node.uri || node.ancestors.includes(rangeUri);
-    if (!appliesHere) {
-      continue;
-    }
-    const synthetic = findMapping(state, property.uri)?.inverse;
-    const declared = property.inverse
-      ? state.ir.properties.get(property.inverse)
-      : undefined;
-    // Declared pairs: each side keeps its own forward field — the
-    // dual-direction union happens in the resolver, not via an extra field.
-    if (declared || !synthetic) {
-      continue;
-    }
-    const name = synthetic.graphqlName;
-    addField({
-      owlUri: `${property.uri}#inverse`,
-      graphqlName: name,
-      type: {
-        kind: "type",
-        name: state.typeNames.get(property.domains[0] ?? "") ?? "Node",
-      },
-      nullable: false,
-      list: true,
-      resolverTemplate: "inverse",
-      propertyUri: property.uri,
-      inverseOf: property.uri,
-      shaclRequired: false,
-      nonNull: true,
-    });
-  }
-
-  // Opt-in instance-level standard-vocab fields (deprecated — superseded by
-  // the graphql:*From annotations). They share the prefixing policy and the
-  // collision rules with every other field: no special case.
-  const vocabFields = state.options.standardVocabFields?.[typeName];
-  if (vocabFields) {
-    for (const [predicate, name] of Object.entries(vocabFields)) {
-      addField({
-        owlUri: predicate,
-        graphqlName: applyPrefixing(state, predicate, name),
-        type: { kind: "scalar", name: "String" },
-        nullable: true,
-        list: false,
-        resolverTemplate: "datatype",
-        propertyUri: predicate,
-        shaclRequired: false,
-        nonNull: false,
-      });
-    }
-  }
-
   return fields;
 };
 
@@ -582,23 +495,6 @@ export default function map(
     nameMap: new BidirectionalNameMap(),
     typeNames: new Map(),
   };
-
-  // Report custom mappings that reference nothing (M003).
-  for (const key of Object.keys(options.mappings ?? {})) {
-    const full = ir.classes.has(key) || ir.properties.has(key);
-    const prefixed = [...ir.classes.values(), ...ir.properties.values()].some(
-      (n) => `${n.namespace}:${getLocalName(n.uri)}` === key,
-    );
-    if (!full && !prefixed) {
-      diagnostics.push({
-        severity: "warning",
-        code: "M003",
-        message: `custom mapping ${key} references no known class or property`,
-        source: key,
-        phase: PHASE,
-      });
-    }
-  }
 
   resolveTypeNames(state);
 

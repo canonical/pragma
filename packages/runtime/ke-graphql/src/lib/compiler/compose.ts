@@ -97,8 +97,8 @@ export interface ComposeOptions {
  * contract emit the same block, so two canonical SDLs diff line-for-line.
  *
  * `validated-store` is constant `false`: this compiler never promotes a
- * field to non-null from store validation — only the explicit
- * `nonNullOverrides` list widens nullability.
+ * field to non-null from store validation — only an explicit
+ * `graphql:nonNull` declaration widens nullability.
  *
  * `prefixing` is stamped because the same ontology under a different
  * prefixing policy yields different field names — an SDL that omits it
@@ -399,7 +399,7 @@ export default function compose(
           diagnostics.push({
             severity: "error",
             code: "C002",
-            message: `generated root field Query.${name} conflicts with a TBox root field — the generated field is DROPPED. To keep it, rename the class (mappings: { "<iri>": { graphqlName: "…" } })`,
+            message: `generated root field Query.${name} conflicts with a TBox root field — the generated field is DROPPED. To keep it, rename the class with graphql:name "…" on its IRI`,
             phase: PHASE,
           });
           continue;

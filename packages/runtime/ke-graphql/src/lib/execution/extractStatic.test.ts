@@ -108,12 +108,6 @@ describe("extractStatic incremental drain-and-merge", () => {
     // IncrementalResults stream; extractStatic must drain and merge it.
     const { result, context } = await setup(DS_REALISTIC_TTL, {
       incremental: true,
-      mappings: {
-        "ds:hasModifierFamily": { graphqlName: "modifierFamilies" },
-        "ds:hasSubcomponent": { graphqlName: "subcomponents" },
-        "ds:hasProperty": { graphqlName: "properties" },
-        "ds:hasModifier": { graphqlName: "modifiers" },
-      },
     });
     const results = await extractStatic({
       schema: result.schema,

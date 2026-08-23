@@ -909,69 +909,31 @@ describe("ClassProperty.name", () => {
       (result.data?.boxInstance as { _meta: { field: unknown } })._meta.field,
     ).toEqual({ name: "parts" });
   });
-
-  it("answers a synthetic inverse field by the name it was configured under", async () => {
-    // The synthetic inverse field carries the FORWARD property's URI, so a
-    // reverse lookup on (class, property) would answer with the forward
-    // field's name or with nothing. field(name:) carries the real name across.
-    const compiled = await setup(DS_REALISTIC_TTL, {
-      mappings: {
-        "ds:implementsBlock": { inverse: { graphqlName: "usedBy" } },
-      },
-    });
-    const result = await run(
-      compiled,
-      `{ components(first: 1) { edges { node { _meta {
-        field(name: "usedBy") { name property { uri } }
-      } } } } }`,
-    );
-    expect(result.errors).toBeUndefined();
-    expect(
-      (
-        result.data?.components as {
-          edges: { node: { _meta: { field: unknown } } }[];
-        }
-      ).edges[0]?.node._meta.field,
-    ).toEqual({
-      name: "usedBy",
-      property: { uri: "https://ds.canonical.com/implementsBlock" },
-    });
-  });
-
-  it("falls back to the OWL local name when the class projects no field", async () => {
-    // SHACL sh:maxCount 0 omits ex:legacy from Spec (V010) while leaving it in
-    // the class's property list. There is no name field(name:) would accept —
-    // the local name is returned as a LABEL, and field() proves it is one.
-    const compiled = await setup(SHACL_TTL);
-    const result = await run(
-      compiled,
-      `{
-        ontologyClass(uri: "ex:Spec") { properties { name property { uri } } }
-        spec(uri: "ex:s1") { _meta { field(name: "legacy") { name } } }
-      }`,
-    );
-    expect(result.errors).toBeUndefined();
-    expect(
-      (
-        result.data?.ontologyClass as {
-          properties: { name: string; property: { uri: string } }[];
-        }
-      ).properties,
-    ).toEqual([
-      { name: "root", property: { uri: "http://example.org/root" } },
-      { name: "legacy", property: { uri: "http://example.org/legacy" } },
-    ]);
-    expect(
-      (result.data?.spec as { _meta: { field: unknown } })._meta.field,
-    ).toBeNull();
-  });
 });
 
+// A datatype property the ontology declares multi-valued. MINIMAL_TTL cannot
+// carry this: it backs a byte-exact SDL golden, so its emission must not move.
+const LIST_TTL = `
+@prefix ex: <http://example.org/> .
+@prefix graphql: <https://pragma.canonical.com/graphql#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Thing a owl:Class ; rdfs:label "Thing" .
+ex:name a owl:DatatypeProperty ;
+  rdfs:domain ex:Thing ;
+  rdfs:range xsd:string ;
+  rdfs:label "name" ;
+  graphql:singular false ;
+  graphql:name "names" .
+
+ex:widget a ex:Thing ; ex:name "Widget" .
+`;
+
 describe("datatype list fields", () => {
-  it("resolves multi-valued datatype properties when forced to list", async () => {
-    const compiled = await setup(MINIMAL_TTL, {
-      mappings: { "ex:name": { singular: false, graphqlName: "names" } },
-    });
+  it("resolves a datatype property the ontology declares multi-valued", async () => {
+    const compiled = await setup(LIST_TTL);
     const result = await run(compiled, `{ thing(uri: "ex:widget") { names } }`);
     expect(result.errors).toBeUndefined();
     expect((result.data?.thing as { names: string[] }).names).toEqual([

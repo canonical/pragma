@@ -23,7 +23,7 @@ import type DataLoader from "dataloader";
 // and returns its output plus diagnostics. At the end of the pipeline, any
 // error-severity diagnostic refuses the compile (CompilationError carrying
 // the full list); warnings and infos never do. Codes are stable and
-// append-only (X001 is retired and never reused).
+// append-only (X001, A005 and M003 are retired and never reused).
 // ---------------------------------------------------------------------------
 
 /** Severity of a compiler diagnostic; any error refuses the compile at the end of the pipeline. */
@@ -38,7 +38,6 @@ export type DiagnosticCode =
   | "A002" // graphql: annotation targets a foreign or unknown IRI
   | "A003" // malformed graphql: annotation value
   | "A004" // unrecognized graphql: term or inapplicable target kind — ignored
-  | "A005" // consumer config shadows a graphql: annotation — config wins
   | "A006" // mode "auto": annotations present but the overlay is not consulted
   | "A007" // mode "explicit": classes outside the expose allowlist not projected
   | "A008" // mode "explicit": field omitted — its range class is not exposed
@@ -68,7 +67,6 @@ export type DiagnosticCode =
   // Mapping
   | "M001" // name collision after GraphQL name mapping
   | "M002" // class local name is not a legal GraphQL name — sanitized
-  | "M003" // custom mapping references unknown property/class
   | "M004" // type name collision auto-resolved by namespace prefixing
   | "M005" // property claims a structural field name (uri/_meta)
   | "M006" // one union name minted with two different member sets
@@ -407,7 +405,7 @@ export interface GraphqlPropertyOverlay {
   name?: string;
   /** graphql:singular — cardinality: config > annotation > functional > SHACL > kind. */
   singular?: boolean;
-  /** graphql:nonNull — OR-merged with the NonNullOverrides config list. */
+  /** graphql:nonNull — the ontology's own non-null promotion. */
   nonNull?: boolean;
   /** graphql:inverse — declared-pair inverse (same semantics as owl:inverseOf). */
   inverse?: string;
@@ -483,7 +481,7 @@ export interface MappedField {
   inverseOf?: string;
   /** SHACL sh:minCount >= 1 — informational, not auto-promoted to non-null. */
   shaclRequired: boolean;
-  /** Consumer-promoted to non-null via the NonNullOverrides option. */
+  /** Promoted to non-null by a graphql:nonNull declaration. */
   nonNull: boolean;
 }
 

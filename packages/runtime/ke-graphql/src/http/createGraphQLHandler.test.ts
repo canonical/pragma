@@ -460,10 +460,7 @@ describe("incremental delivery over HTTP", () => {
     }
     fragment S on Component { summary }
   `;
-  const dsOptions = {
-    incremental: true,
-    mappings: { "ds:hasProperty": { graphqlName: "properties" } },
-  };
+  const dsOptions = { incremental: true };
 
   it("streams multipart/mixed when accepted", async () => {
     const { handler } = await setupHandler(DS_REALISTIC_TTL, dsOptions, {
