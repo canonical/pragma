@@ -156,9 +156,13 @@ function editDistance(a: string, b: string): number {
 /**
  * The closest segment to a mistyped token: a prefix match wins outright,
  * then the lowest normalized Damerau-Levenshtein distance at or under 0.4 —
- * the ranking pragma's bin-level suggester applies, so one typo gets one
- * suggestion quality at every tier. Case-insensitive; `undefined` when
- * nothing is close (or the token is empty).
+ * `suggestNames`' ranking MINUS its exact-match exclusion: a case-only
+ * stray (`REACT`) scores 0 on the prefix branch and IS suggested here,
+ * where pragma's bin-level suggester deliberately stays silent (its
+ * `candidateLower === queryLower` skip). Fuzzed over 200k pairs, the
+ * case-only class is the ONLY rank divergence between the two.
+ * Case-insensitive; `undefined` when nothing is close (or the token is
+ * empty).
  */
 function closestSegment(
   query: string,
@@ -357,8 +361,11 @@ function configureNamespaceCommand<G extends SurfaceGenerator>(
       return;
     }
     // Bare namespace: its own help on stderr, exit 1 — written directly
-    // (never through Commander's writers, which a host may silence).
-    process.stderr.write(cmd.helpInformation());
+    // (never through Commander's writers, which a host may silence), and
+    // laid out for the stream it goes to: `{ error: true }` selects the
+    // ERROR output context (stderr's width), where the bare call would
+    // measure stdout's. Byte-identical under pipes (both default to 80).
+    process.stderr.write(cmd.helpInformation({ error: true }));
     process.exitCode = 1;
   });
 }

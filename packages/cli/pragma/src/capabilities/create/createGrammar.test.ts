@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { VERSION } from "../../constants.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import { CREATE_SURFACE } from "./createSurface.generated.js";
 import {
@@ -241,6 +242,27 @@ describe("the mounted create grammar (subprocess)", () => {
     const excess = spawn(["create", "component", "react", "MyComponent", "X"]);
     expect(excess.status).toBe(2);
     expect(excess.stderr).toBe('error: unexpected argument "X"\n');
+  }, 60_000);
+
+  it("`-v` COLLIDES with pragma's global --version — the version prints, exit 0, nothing written (§2)", () => {
+    // summon's `-v` is `--verbose` (the run proceeds); pragma's whole-argv
+    // global scan makes the same token print the VERSION and scaffold
+    // nothing — no unknown-option error, unlike -d/-y/-l. §2 documents the
+    // collision; this cell keeps the divergence deliberate, not accidental
+    // (pragma's global -v is covenant-frozen surface, out of CIS scope).
+    const { status, stdout, stderr, cwd } = run([
+      "create",
+      "component",
+      "react",
+      "src/components/X",
+      "-v",
+      "--yes",
+    ]);
+    expect(status).toBe(0);
+    expect(stdout).toBe(`${VERSION}\n`);
+    // The scan exits before first-run onboarding: a clean stderr too.
+    expect(stderr).toBe("");
+    expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
   it("the confirm convention is summon's: --no-with-styles is accepted, --with-styles is not", () => {

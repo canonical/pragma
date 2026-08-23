@@ -480,6 +480,55 @@ describe("the namespace command — shared stray and bare behavior", () => {
     stderr.mockRestore();
   });
 
+  it("the bare-namespace help is laid out for STDERR's width, not stdout's", async () => {
+    // A 200-column stdout next to an 80-column stderr: the page written to
+    // stderr must wrap at stderr's width — `helpInformation({ error: true })`
+    // — where the bare call measured stdout's (110-column help into a piped
+    // stderr file on a wide terminal, the measured round-8 defect). 80, not
+    // less: commander skips wrapping when the description column (helpWidth
+    // minus the widest term) drops under its minWidthToWrap of 40.
+    const program = makeProgram();
+    const { host } = makeHost();
+    const base = makeGenerator("component/react", { positional: true });
+    const wide = {
+      ...base,
+      meta: {
+        ...base.meta,
+        description:
+          "A react component generator whose description is deliberately " +
+          "long enough to wrap at eighty columns while fitting two hundred.",
+      },
+    };
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    try {
+      registerGeneratorCommands(
+        program,
+        [
+          { path: ["component"], description: "component generators" },
+          { path: ["component", "react"], generator: wide },
+        ],
+        host,
+      );
+      const cmd = program.commands.find(
+        (child) => child.name() === "component",
+      ) as Command;
+      cmd.configureOutput({
+        ...cmd.configureOutput(),
+        getOutHelpWidth: () => 200,
+        getErrHelpWidth: () => 80,
+      });
+      await program.parseAsync(["component"], { from: "user" });
+      const written = stderr.mock.calls.map((call) => String(call[0])).join("");
+      expect(written).toBe(cmd.helpInformation({ error: true }));
+      expect(written).not.toBe(cmd.helpInformation());
+      expect(process.exitCode).toBe(1);
+    } finally {
+      stderr.mockRestore();
+    }
+  });
+
   it("a known segment still dispatches to the child, not the namespace action", async () => {
     const { program, stderr, calls } = makeNamespaceTree();
     await program.parseAsync(["component", "react", "lib/X"], { from: "user" });
@@ -545,6 +594,12 @@ describe("unknownSegmentMessage", () => {
   it("a prefix match wins outright", () => {
     expect(unknownSegmentMessage(chain, "rea", children)).toBe(
       "error: unknown command 'rea'\nDid you mean 'bin component react'?",
+    );
+  });
+
+  it("a case-only stray IS suggested — suggestNames' exact-match exclusion is deliberately dropped", () => {
+    expect(unknownSegmentMessage(chain, "REACT", children)).toBe(
+      "error: unknown command 'REACT'\nDid you mean 'bin component react'?",
     );
   });
 
