@@ -96,7 +96,7 @@ The component name is extracted from the path and must be PascalCase.
 For example, 'src/components/Button' creates a 'Button' component.`,
     examples: [
       "summon component react --component-path=src/components/Button",
-      "summon component react --component-path=src/components/Card --with-styles --with-stories",
+      "summon component react --component-path=src/components/Card --no-with-styles --no-with-stories",
       "summon component react --component-path=src/components/Modal --no-with-ssr-tests",
       "summon component react --component-path=src/components/Button --dry-run",
     ],

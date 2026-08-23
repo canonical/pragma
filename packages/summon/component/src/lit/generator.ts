@@ -11,7 +11,7 @@
  * @example
  * ```bash
  * summon component lit --component-path=src/lib/components/Button
- * summon component lit --component-path=src/lib/components/Card --with-styles --with-stories
+ * summon component lit --component-path=src/lib/components/Card --no-with-styles --no-with-stories
  * ```
  *
  * @module
@@ -120,7 +120,7 @@ For example, 'src/lib/components/Button' creates a 'Button' component
 with the custom element tag 'button'.`,
     examples: [
       "summon component lit --component-path=src/lib/components/Button",
-      "summon component lit --component-path=src/lib/components/Card --with-styles --with-stories",
+      "summon component lit --component-path=src/lib/components/Card --no-with-styles --no-with-stories",
       "summon component lit --component-path=src/lib/components/Modal --no-with-styles",
       "summon component lit --component-path=src/lib/components/Button --dry-run",
     ],

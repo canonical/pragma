@@ -14,8 +14,8 @@
  * @example
  * ```bash
  * summon component svelte --component-path=src/lib/components/Button
- * summon component svelte --component-path=src/lib/components/Card --with-stories
- * summon component svelte --component-path=src/lib/components/Modal --with-stories --use-ts-stories
+ * summon component svelte --component-path=src/lib/components/Card --no-with-stories
+ * summon component svelte --component-path=src/lib/components/Modal --use-ts-stories
  * ```
  *
  * @module
@@ -115,8 +115,8 @@ The component name is extracted from the path and must be PascalCase.
 For example, 'src/lib/components/Button' creates a 'Button' component.`,
     examples: [
       "summon component svelte --component-path=src/lib/components/Button",
-      "summon component svelte --component-path=src/lib/components/Card --with-styles --with-stories",
-      "summon component svelte --component-path=src/lib/components/Modal --with-stories --use-ts-stories",
+      "summon component svelte --component-path=src/lib/components/Card --no-with-styles --no-with-stories",
+      "summon component svelte --component-path=src/lib/components/Modal --use-ts-stories",
       "summon component svelte --component-path=src/lib/components/Button --dry-run",
     ],
   },

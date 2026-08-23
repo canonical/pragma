@@ -245,7 +245,11 @@ The whole surface derives from \`GeneratorDefinition.prompts\` through
   every format; its \`--format\` is a leaf OUTPUT flag, parsed fine on a
   leaf and never consulted for a usage failure), and implicit
   auto-detection of an output mode never reframes them (as with
-  \`refuse\`, §3).
+  \`refuse\`, §3). ONE token is the exception: for the single retired flag
+  \`--framework\` pragma substitutes its own line — the R1 migration hint
+  naming the tree-segment form (\`the framework is now a path segment: …\`),
+  host-owned bytes on every declared leaf — while summon, which never had
+  the flag, keeps Commander's default line.
 - **Prompts become flags** via \`buildOptionInfo\` — the emitted shapes:
 
 ${flagTable()}
