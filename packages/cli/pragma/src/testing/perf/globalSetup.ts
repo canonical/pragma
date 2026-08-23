@@ -535,10 +535,12 @@ export default function setup(): void {
     const result = spawnSync("bun", ["run", "scripts/build.ts"], {
       cwd: root,
       stdio: "inherit",
-      // The GATE's build writes NO reference docs: writeReferenceDocs would
-      // silently repair a stale committed docs/reference/ tree in this same
-      // vitest run, BEFORE reference.test.ts (the drift guard) reads it —
-      // the guard must compare the bytes git actually holds, and redden.
+      // The GATE's build writes NONE of the three committed artifacts: the
+      // two generated modules run in CHECK mode (a stale committed module
+      // FAILS this build, naming itself) and no reference docs are written —
+      // otherwise this same vitest run would silently repair what its drift
+      // guards (create.test.ts's PROTECTED cells; reference.test.ts) exist
+      // to catch. Every guard compares the bytes git actually holds.
       // This one spawn serves both gate configs (vitest.config.ts and
       // vitest.perf.config.ts register this globalSetup).
       env: { ...process.env, PRAGMA_BUILD_SKIP_DOCS: "1" },

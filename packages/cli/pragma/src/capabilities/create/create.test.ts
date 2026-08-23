@@ -405,7 +405,10 @@ describe("projection fidelity — the committed surface IS the live generators (
   // the MCP schemas derive from. This test loads the LIVE generators
   // (test-only — production paths never do) and asserts the committed
   // projection deep-equals them, so drift fails the build in the same run
-  // that regenerating (`bun run scripts/build.ts`) fixes.
+  // that regenerating (`bun run scripts/build.ts`) fixes. The bytes read
+  // here are the bytes git holds: the gate's own build runs this codegen in
+  // CHECK mode (PRAGMA_BUILD_SKIP_DOCS=1 in scripts/build.ts), failing on a
+  // stale committed module instead of rewriting it before workers start.
 
   it("every committed entry deep-equals projectGenerator over the live generator", async () => {
     const [{ projectGenerator }, { pickGenerator }] = await Promise.all([
@@ -674,7 +677,10 @@ describe("declared generator bindings (PROTECTED)", () => {
     // a stale committed manifest). Re-deriving the whole manifest through the
     // seam's own writer — which keys via qualifiedKey, the reader's function
     // — and requiring deep equality makes "embedded but unreachable" and
-    // "committed but stale" both test failures.
+    // "committed but stale" both test failures. Staleness survives to be
+    // seen: the gate's build runs the manifest codegen in CHECK mode
+    // (PRAGMA_BUILD_SKIP_DOCS=1 in scripts/build.ts), failing rather than
+    // rewriting the committed module before workers start.
     const { TEMPLATES } = await import("./templates.embedded.generated.js");
     const { buildEmbeddedManifest } = await import("@canonical/summon-core");
     const roots = Object.values(CREATE_GENERATORS).flatMap((binding) =>

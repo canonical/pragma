@@ -11,8 +11,15 @@
  * module) instead of this process's stale copy — a single `bun run build`
  * after a generator-surface edit leaves dist, surface, and docs/reference/
  * on the SAME generation. A GATE's build sets PRAGMA_BUILD_SKIP_DOCS=1 and
- * writes NO docs at all, so the drift guard (reference.test.ts) compares
- * the bytes git actually holds and can fail on a stale committed tree.
+ * writes NONE of the three committed artifacts: the two generated modules
+ * (createSurface.generated.ts, templates.embedded.generated.ts) run in
+ * CHECK mode — a stale committed module FAILS the build loudly, naming
+ * itself and `bun run build` as the repair — and the docs step writes
+ * nothing, so every drift guard (create.test.ts's two PROTECTED cells,
+ * reference.test.ts) compares the bytes git actually holds and can fail on
+ * a stale committed tree. A workspace version bump legitimately stales the
+ * manifest's PACKAGE_VERSIONS block; that gate failure is truthful — the
+ * committed module must be regenerated (and committed) after a bump.
  *
  * COMPILED `create` — every binding runs from the shipped binary.
  * `create.verb.ts` reaches summon-core + the generators through STATIC dynamic
@@ -89,12 +96,19 @@ const SURFACE_OUT = fileURLToPath(
  * write-only-when-changed. The projection-fidelity test in `create.test.ts`
  * loads the LIVE generators and fails when this file drifts.
  *
+ * @param check - A GATE's build (PRAGMA_BUILD_SKIP_DOCS=1): COMPARE only.
+ *   A changed module means the COMMITTED file is stale, so fail loudly
+ *   naming it — never write — leaving the bytes git holds for the
+ *   PROTECTED projection-fidelity guard to read.
  * @returns The number of projected command paths, and whether the file was
  *   REWRITTEN — the caller's signal that this process's own `capabilities`
  *   import is now one generation behind and the docs step must re-read the
  *   surface from a fresh process (see the header).
  */
-function generateCreateSurface(): { surfaced: number; changed: boolean } {
+function generateCreateSurface(check: boolean): {
+  surfaced: number;
+  changed: boolean;
+} {
   const maps: Record<string, Record<string, unknown>> = {
     component: componentGenerators as never,
     package: packageGenerators as never,
@@ -145,6 +159,13 @@ ${body}
   const changed =
     !existsSync(SURFACE_OUT) || readFileSync(SURFACE_OUT, "utf-8") !== module;
   if (changed) {
+    if (check) {
+      throw new Error(
+        "src/capabilities/create/createSurface.generated.ts is STALE — the " +
+          "committed projection no longer matches the live generators. Run " +
+          "`bun run build` in packages/cli/pragma and commit the result.",
+      );
+    }
     writeFileSync(SURFACE_OUT, module);
   }
   return { surfaced: Object.keys(entries).length, changed };
@@ -162,9 +183,13 @@ const MANIFEST_OUT = fileURLToPath(
  * module. Deterministic (summon-core sorts the keys; `JSON.stringify` values)
  * so re-running produces byte-identical output — no working-tree churn.
  *
+ * @param check - A GATE's build (PRAGMA_BUILD_SKIP_DOCS=1): COMPARE only.
+ *   A changed module means the COMMITTED file is stale, so fail loudly
+ *   naming it — never write — leaving the bytes git holds for the
+ *   PROTECTED reader-derivability guard to read.
  * @returns The embedded manifest (for counting/reporting).
  */
-function generateTemplateManifest(): Record<string, string> {
+function generateTemplateManifest(check: boolean): Record<string, string> {
   const entries = buildEmbeddedManifest(TEMPLATE_ROOTS);
 
   const body = Object.keys(entries)
@@ -214,10 +239,17 @@ ${versionsBody}
   // Write only when changed: the output is deterministic, so a rebuild is a
   // no-op — no working-tree churn, and no rewrite racing a concurrent import
   // (the compiled-binary smoke test rebuilds while sibling create tests run).
-  if (
-    !existsSync(MANIFEST_OUT) ||
-    readFileSync(MANIFEST_OUT, "utf-8") !== module
-  ) {
+  const changed =
+    !existsSync(MANIFEST_OUT) || readFileSync(MANIFEST_OUT, "utf-8") !== module;
+  if (changed) {
+    if (check) {
+      throw new Error(
+        "src/capabilities/create/templates.embedded.generated.ts is STALE — " +
+          "the committed manifest no longer matches the declared template " +
+          "roots (or a workspace version bump moved PACKAGE_VERSIONS). Run " +
+          "`bun run build` in packages/cli/pragma and commit the result.",
+      );
+    }
     writeFileSync(MANIFEST_OUT, module);
   }
   return entries;
@@ -264,12 +296,16 @@ export { writeReferenceDocs };
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
-  const { surfaced, changed: surfaceChanged } = generateCreateSurface();
+  // A GATE's build: check every committed artifact, write none (the header's
+  // property) — codegen fails loudly on a stale module, docs are skipped.
+  const check = process.env.PRAGMA_BUILD_SKIP_DOCS === "1";
+
+  const { surfaced, changed: surfaceChanged } = generateCreateSurface(check);
   console.log(
     `Projected ${surfaced} generator binding(s) → createSurface.generated.ts`,
   );
 
-  const manifest = generateTemplateManifest();
+  const manifest = generateTemplateManifest(check);
   const perRoot = TEMPLATE_ROOTS.map(
     ({ prefix }) =>
       `${prefix}: ${
@@ -281,12 +317,13 @@ if (import.meta.main) {
     `Embedded ${Object.keys(manifest).length} generator templates (${perRoot}) → templates.embedded.generated.ts`,
   );
 
-  if (process.env.PRAGMA_BUILD_SKIP_DOCS === "1") {
+  if (check) {
     // A GATE's build (both vitest configs' globalSetup): writing docs here
     // would silently REPAIR a stale committed tree in the same run, before
     // reference.test.ts — the drift guard — reads it. The guard must compare
     // the bytes git actually holds; `bun run build` / `gen:reference` stay
-    // the doc writers.
+    // the doc writers. (The codegen steps above enforce the same rule by
+    // FAILING on a stale committed module rather than skipping.)
     console.log("Skipped reference docs (PRAGMA_BUILD_SKIP_DOCS=1)");
   } else if (surfaceChanged) {
     // The surface changed under this process's feet: `capabilities`
