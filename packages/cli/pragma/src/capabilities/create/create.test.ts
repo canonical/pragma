@@ -245,6 +245,31 @@ describe("SEC-2 path jail (PROTECTED)", () => {
     });
   }
 
+  it("a NON-escape rejection of the jailed param stays recovery-FREE — the negative direction of the escape narrowing", async () => {
+    const dir = freshCwd();
+    // The other half of the two escape rows above: `isEscapeValue` keys the
+    // workspace hint on the VALUE class, so a casing complaint about the
+    // same param must carry NO recovery at all — answering "must be in
+    // PascalCase" with "The path must stay inside the workspace." would be
+    // affirmatively false guidance. Asserted on the thrown object directly:
+    // `toMatchObject` cannot pin a field's ABSENCE.
+    const caught: unknown = await runIn(dir, {
+      framework: "react",
+      componentPath: "not-pascal",
+    }).then(
+      () => undefined,
+      (cause: unknown) => cause,
+    );
+    expect(caught, "the casing rejection did not throw").toBeInstanceOf(
+      PragmaError,
+    );
+    const error = caught as PragmaError;
+    expect(error.code).toBe("INVALID_INPUT");
+    expect(error.message).toContain('Invalid --component-path "not-pascal"');
+    expect(error.recovery).toBeUndefined();
+    expect(walk(dir)).toEqual([]);
+  });
+
   it("rejects a symlink that escapes the workspace — the JAIL tier (realpath)", async () => {
     const root = freshCwd();
     const outside = freshCwd();
@@ -422,14 +447,21 @@ describe("projection fidelity — the committed surface IS the live generators (
           prompt.validate,
           `${commandPath}'s ${prompt.name} declares no validate — the shared escape tier is gone for it`,
         ).toBeDefined();
+        // PascalCase-SAFE vectors, asserted on the message CONTENT. The
+        // original "../x"/"/abs/x" were refused by component's CASING rule
+        // alone (basename "x"), so deleting both escape branches kept the
+        // three componentPath rows green (round-11 F1, proven live). "../X"
+        // and "/abs/X" pass every name rule, and the `..`/"absolute"
+        // substring pins WHICH rule refused — a rejection from another tier
+        // (or an accepting `true`) reddens the row either way.
         expect(
-          prompt.validate?.("../x"),
-          `${commandPath}'s ${prompt.name} accepts a \`..\` escape`,
-        ).not.toBe(true);
+          prompt.validate?.("../X"),
+          `${commandPath}'s ${prompt.name} does not refuse a \`..\` escape with the escape tier's message`,
+        ).toContain("..");
         expect(
-          prompt.validate?.("/abs/x"),
-          `${commandPath}'s ${prompt.name} accepts an absolute path`,
-        ).not.toBe(true);
+          prompt.validate?.("/abs/X"),
+          `${commandPath}'s ${prompt.name} does not refuse an absolute path with the escape tier's message`,
+        ).toContain("absolute");
       }
     }
     // The audited set, pinned: a NEW positional path prompt must join this
