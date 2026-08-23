@@ -32,9 +32,12 @@ export type UsageErrorKind = "unknown-segment" | "excess-positional";
 /**
  * The structured facts behind a projection usage error, handed to a host's
  * {@link GeneratorCliHost.writeUsageError} alongside the rendered message —
- * so a host reframing the error for a machine format can put the match in a
- * structured field (pragma's envelope `suggestions`) instead of re-parsing
- * the prose.
+ * so a host reframing the error for a machine format can serialize the
+ * match into a structured field chosen PER KIND instead of re-parsing the
+ * prose (pragma: the unknown-segment candidate in its envelope's
+ * `suggestions`, the excess-positional correction in `recovery.cli` — see
+ * the {@link UsageErrorDetail.suggestion} docblock for what the match
+ * means under each kind).
  */
 export interface UsageErrorDetail {
   /** The offending token: the stray operand / unknown segment. */

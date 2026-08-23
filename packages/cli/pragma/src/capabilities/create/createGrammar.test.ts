@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { VERSION } from "../../constants.js";
+import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
 import { CREATE_SURFACE } from "./createSurface.generated.js";
 import {
@@ -251,6 +251,14 @@ describe("the mounted create grammar (subprocess)", () => {
       message: "Run the corrected invocation.",
       cli: "pragma create component svelte",
     });
+    // D5's third route, pinned as the INVARIANT and not only the output:
+    // this cli is COMPUTED at the mount (chain[0] = the root program's
+    // name), bypassing cliRecovery and invisible to copy.test.ts's
+    // quoted-literal position rule — so the derivation itself is asserted
+    // here: the emitted command must carry the distribution's own prefix.
+    expect(
+      matchedEnvelope.error.recovery?.cli?.startsWith(RECOVERY_CLI_PREFIX),
+    ).toBe(true);
 
     // The stray≠suggestion shape — `react svelte X` binds `svelte` as the
     // positional and overflows `X` — carries the SAME correction while its

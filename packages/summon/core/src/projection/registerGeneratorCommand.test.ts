@@ -386,7 +386,9 @@ describe("the excess-positional guard", () => {
         message: 'error: unexpected argument "Extra"',
         kind: "excess-positional",
         // No segment matched: the detail carries the stray and the chain,
-        // no suggestion — a reframing host omits its suggestions field.
+        // no suggestion. (Which structured field a host would use for a
+        // match is PER KIND — pragma never puts this kind's match in
+        // `suggestions`; see the interface docblock.)
         detail: { stray: "Extra", chain: ["bin", "widget"] },
       },
     ]);
