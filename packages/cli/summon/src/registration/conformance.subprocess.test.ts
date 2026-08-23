@@ -11,9 +11,13 @@
  * This runs the real bin in its own PROCESS, exactly as a user does
  * (`summon example hello --name=… --yes`), and diffs its tree against
  * {@link produceReference} — the shared definition of the seam in
- * `@canonical/summon-core/testing`. Two generators are covered: `example/hello`
- * (templates, a conditional file, EJS helpers) and `init` (a nested output
- * path), the two the bin actually ships.
+ * `@canonical/summon-core/testing`. Three generators are covered —
+ * `example/hello` (templates, a conditional file, EJS helpers),
+ * `example/webapp` (a framework/styling matrix, a multiselect, parallel
+ * effects) and `init` (a nested output path) — the three builtin leaves
+ * the bin ships, and a declaration tie on the builtin dir keeps this
+ * matrix honest: a fourth shipped leaf reddens it here instead of
+ * arriving covered by nothing.
  *
  * Subprocess, not in-process, deliberately: the bin's write path goes through
  * Ink's `render`, and the risk being guarded is precisely that the front-end
@@ -22,7 +26,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -100,6 +104,30 @@ const cases: Case[] = [
     },
   },
   {
+    name: "example/webapp",
+    module: "../../generators/example/webapp/index.js",
+    args: [
+      "example",
+      "webapp",
+      "--name=conformance-web",
+      "--description=A conformance webapp.",
+      "--framework=react",
+      "--styling=tailwind",
+      "--features=router,state",
+      "--no-with-tests",
+    ],
+    answers: {
+      name: "conformance-web",
+      description: "A conformance webapp.",
+      framework: "react",
+      styling: "tailwind",
+      features: ["router", "state"],
+      withTests: false,
+      withDocs: true,
+      installDeps: false,
+    },
+  },
+  {
     name: "init",
     module: "../../generators/init/index.js",
     args: [
@@ -116,6 +144,33 @@ const cases: Case[] = [
 ];
 
 describe("byte-equality conformance — the summon bin ≡ the reference (PROTECTED)", () => {
+  it("the builtin dir ships EXACTLY the leaves this matrix covers — a fourth builtin must join it", () => {
+    // The declaration tie: enumerate the leaves the bin discovers (every
+    // dir under generators/ holding an index.ts — bin.tsx mounts whatever
+    // is there) and hold them to the covered set. The docblock once said
+    // "the two the bin actually ships" while three leaves shipped;
+    // example/webapp was covered by NOTHING and no suite could tell.
+    const builtinDir = join(packageRoot, "generators");
+    const leaves: string[] = [];
+    const walk = (dir: string, prefix: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const child = join(dir, entry.name);
+        const leafPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (existsSync(join(child, "index.ts"))) leaves.push(leafPath);
+        else walk(child, leafPath);
+      }
+    };
+    walk(builtinDir, "");
+    expect(leaves.sort()).toEqual(["example/hello", "example/webapp", "init"]);
+    // …and the covered set is those three (hello twice: ± the README).
+    expect([...new Set(cases.map((c) => c.module))].sort()).toEqual([
+      "../../generators/example/hello/index.js",
+      "../../generators/example/webapp/index.js",
+      "../../generators/init/index.js",
+    ]);
+  });
+
   for (const testCase of cases) {
     it(`${testCase.name}: the bin's tree matches the reference byte for byte`, async () => {
       const bin = produceBin(testCase.args);
