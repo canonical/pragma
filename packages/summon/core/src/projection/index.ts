@@ -40,7 +40,10 @@ export {
 } from "./groupedHelp.js";
 export { default as toKebabCase } from "./kebab.js";
 export { default as projectGenerator } from "./projectGenerator.js";
-export type { GeneratorCliHost } from "./registerGeneratorCommand.js";
+export type {
+  GeneratorCliHost,
+  UsageErrorKind,
+} from "./registerGeneratorCommand.js";
 export {
   default as registerGeneratorCommands,
   excessArgumentMessage,

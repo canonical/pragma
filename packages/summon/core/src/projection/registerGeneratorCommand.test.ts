@@ -353,6 +353,69 @@ describe("the excess-positional guard", () => {
     expect(stderr).not.toHaveBeenCalled();
     stderr.mockRestore();
   });
+
+  it("a host writeUsageError that claims the write replaces the default stderr line", async () => {
+    const program = makeProgram();
+    const { host } = makeHost();
+    const writes: Array<{ message: string; kind: string }> = [];
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    registerGeneratorCommands(
+      program,
+      [
+        {
+          path: ["widget"],
+          generator: makeGenerator("widget", { positional: true }),
+        },
+      ],
+      {
+        ...host,
+        writeUsageError: (message, kind) => {
+          writes.push({ message, kind });
+          return true;
+        },
+      },
+    );
+    await program.parseAsync(["widget", "MyComponent", "Extra"], {
+      from: "user",
+    });
+    expect(writes).toEqual([
+      {
+        message: 'error: unexpected argument "Extra"',
+        kind: "excess-positional",
+      },
+    ]);
+    // The claimed write suppresses the projection's default presentation;
+    // the exit code stays projection-owned.
+    expect(stderr).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(2);
+    stderr.mockRestore();
+  });
+
+  it("a host writeUsageError that declines leaves the default presentation", async () => {
+    const program = makeProgram();
+    const { host } = makeHost();
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    registerGeneratorCommands(
+      program,
+      [
+        {
+          path: ["widget"],
+          generator: makeGenerator("widget", { positional: true }),
+        },
+      ],
+      { ...host, writeUsageError: () => undefined },
+    );
+    await program.parseAsync(["widget", "MyComponent", "Extra"], {
+      from: "user",
+    });
+    expect(stderr).toHaveBeenCalledWith('error: unexpected argument "Extra"\n');
+    expect(process.exitCode).toBe(2);
+    stderr.mockRestore();
+  });
 });
 
 describe("the namespace command — shared stray and bare behavior", () => {
@@ -422,6 +485,43 @@ describe("the namespace command — shared stray and bare behavior", () => {
     await program.parseAsync(["component", "react", "lib/X"], { from: "user" });
     expect(calls).toHaveLength(1);
     expect(stderr).not.toHaveBeenCalled();
+    stderr.mockRestore();
+  });
+
+  it("the stray-segment message routes through a claiming host writeUsageError with its kind", async () => {
+    const program = makeProgram();
+    const { host } = makeHost();
+    const writes: Array<{ message: string; kind: string }> = [];
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    registerGeneratorCommands(
+      program,
+      [
+        { path: ["component"], description: "component generators" },
+        {
+          path: ["component", "react"],
+          generator: makeGenerator("component/react", { positional: true }),
+        },
+      ],
+      {
+        ...host,
+        writeUsageError: (message, kind) => {
+          writes.push({ message, kind });
+          return true;
+        },
+      },
+    );
+    await program.parseAsync(["component", "reakt"], { from: "user" });
+    expect(writes).toEqual([
+      {
+        message:
+          "error: unknown command 'reakt'\nDid you mean 'bin component react'?",
+        kind: "unknown-segment",
+      },
+    ]);
+    expect(stderr).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(2);
     stderr.mockRestore();
   });
 });

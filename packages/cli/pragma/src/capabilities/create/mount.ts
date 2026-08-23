@@ -353,6 +353,27 @@ function mount(parent: Command, host: CliMountHost): void {
       // projection's, not the mount's — both hosts emit the same lines.
       cmd.configureHelp({});
     },
+    // The projection's two usage errors (unknown segment, excess positional)
+    // reframe ONLY under an explicitly requested machine format —
+    // `writeRefusal`'s exact condition, autoLlm excluded, so the default
+    // piped bytes stay the cross-CLI parity surface — through the same
+    // renderers every other pragma error uses. Codes mirror bin.ts's
+    // classification of Commander parse failures: unknown command →
+    // UNKNOWN_VERB, every other usage error → INVALID_INPUT; like bin.ts's
+    // envelope path, the message drops its `error: ` prefix (the
+    // did-you-mean line rides inside it).
+    writeUsageError: (message, kind) => {
+      const { format } = host.globalFlags;
+      if (format !== "json" && format !== "llm") return false;
+      const error = new PragmaError({
+        code: kind === "unknown-segment" ? "UNKNOWN_VERB" : "INVALID_INPUT",
+        message: message.replace(/^error:\s*/i, ""),
+      });
+      process.stderr.write(
+        `${format === "json" ? renderErrorJson(error) : renderErrorLlm(error)}\n`,
+      );
+      return true;
+    },
   };
 
   registerGeneratorCommands(parent, surfaceBarrel(), cliHost);

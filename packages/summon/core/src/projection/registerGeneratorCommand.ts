@@ -5,7 +5,8 @@
  * [kebab-positional]`), the prompt-derived options, the grouped help, the
  * usage line, and the namespace parents. The HOST owns everything host-shaped
  * — its standard flags, its action body, and (optionally) its namespace
- * behavior — injected through {@link GeneratorCliHost}.
+ * behavior and its usage-error presentation — injected through
+ * {@link GeneratorCliHost}.
  *
  * Moved from the summon bin's `registerFromBarrel`, which is now a thin host
  * over this.
@@ -24,6 +25,9 @@ import type {
   PromptLike,
   SurfaceGenerator,
 } from "./types.js";
+
+/** The projection's two designed usage-error classes (the writer's tag). */
+export type UsageErrorKind = "unknown-segment" | "excess-positional";
 
 /** The host seam: what a binary contributes to each registered command. */
 export interface GeneratorCliHost<
@@ -48,6 +52,30 @@ export interface GeneratorCliHost<
   ) => Promise<void>;
   /** Optional hook run on every namespace (non-runnable) command created. */
   readonly onNamespace?: (cmd: Command, entry: CommandEntry<G>) => void;
+  /**
+   * Optional writer for the projection's two USAGE errors — the designed
+   * excess-positional and unknown-segment messages. Return `true` to claim
+   * the write (a host reframing the message for an explicitly requested
+   * machine format — pragma routes both through the same error envelope
+   * every other `create` failure emits under `--format json`/`--format
+   * llm`); any other return leaves the default presentation, the message
+   * verbatim on stderr — the cross-CLI parity bytes. The projection owns
+   * the exit code (2) either way.
+   */
+  readonly writeUsageError?: (
+    message: string,
+    kind: UsageErrorKind,
+  ) => boolean | void;
+}
+
+/** Write one of the projection's usage errors, host writer first. */
+function writeUsageError<G extends SurfaceGenerator>(
+  host: GeneratorCliHost<G>,
+  message: string,
+  kind: UsageErrorKind,
+): void {
+  if (host.writeUsageError?.(message, kind) === true) return;
+  process.stderr.write(`${message}\n`);
 }
 
 /** Add prompt-based options to a Commander command. */
@@ -289,7 +317,7 @@ function configureGeneratorCommand<G extends SurfaceGenerator>(
         siblings,
         children,
       );
-      process.stderr.write(`${message}\n`);
+      writeUsageError(host, message, "excess-positional");
       process.exitCode = 2;
       return;
     }
@@ -311,14 +339,19 @@ function configureGeneratorCommand<G extends SurfaceGenerator>(
  * consulted, and a runnable entry registered at the same path replaces this
  * action with the leaf's own.
  */
-function configureNamespaceCommand(cmd: Command): void {
+function configureNamespaceCommand<G extends SurfaceGenerator>(
+  cmd: Command,
+  host: GeneratorCliHost<G>,
+): void {
   cmd.allowExcessArguments(true);
   cmd.action(() => {
     const stray = cmd.args[0];
     if (stray !== undefined) {
       const children = cmd.commands.map((child) => child.name());
-      process.stderr.write(
-        `${unknownSegmentMessage(commandChain(cmd), stray, children)}\n`,
+      writeUsageError(
+        host,
+        unknownSegmentMessage(commandChain(cmd), stray, children),
+        "unknown-segment",
       );
       process.exitCode = 2;
       return;
@@ -389,7 +422,7 @@ export default function registerGeneratorCommands<G extends SurfaceGenerator>(
         .command(name)
         .description(entry.description ?? `${name} commands`);
 
-      configureNamespaceCommand(cmd);
+      configureNamespaceCommand(cmd, host);
       host.onNamespace?.(cmd, entry);
       commandMap.set(currentPath, cmd);
     }

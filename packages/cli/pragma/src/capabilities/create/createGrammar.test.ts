@@ -144,6 +144,105 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(stderr).toContain("error: unknown command 'vue'");
   }, 60_000);
 
+  // The projection's two usage errors were the LAST create failure class
+  // still writing raw prose under an explicit machine format (round-1 M5
+  // closed the refusal; unknown option/verb already enveloped). The host
+  // writer reframes them under writeRefusal's exact condition — explicit
+  // `--format json`/`--format llm` only — with bin.ts's code taxonomy:
+  // unknown command → UNKNOWN_VERB, excess/usage → INVALID_INPUT.
+  it("the unknown-segment error envelopes under --format json — UNKNOWN_VERB, like the bin's own tier", () => {
+    const { status, stderr, cwd } = run([
+      "create",
+      "component",
+      "reakt",
+      "--format",
+      "json",
+    ]);
+    expect(status).toBe(2);
+    const line = stderr
+      .split("\n")
+      .find((candidate) => candidate.startsWith("{"));
+    expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
+    const envelope = JSON.parse(line as string) as {
+      ok: boolean;
+      error: { code: string; message: string };
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("UNKNOWN_VERB");
+    expect(envelope.error.message).toContain("unknown command 'reakt'");
+    expect(envelope.error.message).toContain(
+      "Did you mean 'pragma create component react'?",
+    );
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("the excess-positional error envelopes under --format json — INVALID_INPUT, never raw prose", () => {
+    const { status, stderr, cwd } = run([
+      "create",
+      "component",
+      "react",
+      "MyComponent",
+      "Extra",
+      "--format",
+      "json",
+    ]);
+    expect(status).toBe(2);
+    const line = stderr
+      .split("\n")
+      .find((candidate) => candidate.startsWith("{"));
+    expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
+    const envelope = JSON.parse(line as string) as {
+      ok: boolean;
+      error: { code: string; message: string };
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("INVALID_INPUT");
+    expect(envelope.error.message).toContain('unexpected argument "Extra"');
+    expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("the unknown-segment error under --format llm carries the condensed error framing", () => {
+    const { status, stderr } = run([
+      "create",
+      "component",
+      "reakt",
+      "--format",
+      "llm",
+    ]);
+    expect(status).toBe(2);
+    expect(stderr).toContain("## Error: UNKNOWN_VERB");
+    expect(stderr).toContain("unknown command 'reakt'");
+  }, 60_000);
+
+  it("DEFAULT piped output for both projection usage errors stays the raw prose — full stderr, no envelope", () => {
+    // Full-stderr byte-equality needs a quiet stream: seed the global config
+    // so the one-time first-run note (stderr by design) does not fire.
+    const configHome = mkdtempSync(join(tmpdir(), "pragma-grammar-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
+    const spawn = (args: readonly string[]) =>
+      spawnSync("bun", [pragmaBin, ...args], {
+        cwd: freshCwd(),
+        encoding: "utf-8",
+        input: "",
+        env: {
+          ...process.env,
+          XDG_CONFIG_HOME: configHome,
+          XDG_STATE_HOME: mkdtempSync(join(tmpdir(), "pragma-grammar-state-")),
+          XDG_CACHE_HOME: mkdtempSync(join(tmpdir(), "pragma-grammar-cache-")),
+        },
+      });
+    const segment = spawn(["create", "component", "reakt"]);
+    expect(segment.status).toBe(2);
+    expect(segment.stderr).toBe(
+      "error: unknown command 'reakt'\n" +
+        "Did you mean 'pragma create component react'?\n",
+    );
+    const excess = spawn(["create", "component", "react", "MyComponent", "X"]);
+    expect(excess.status).toBe(2);
+    expect(excess.stderr).toBe('error: unexpected argument "X"\n');
+  }, 60_000);
+
   it("the confirm convention is summon's: --no-with-styles is accepted, --with-styles is not", () => {
     const accepted = run([
       "create",
