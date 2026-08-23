@@ -192,11 +192,16 @@ The ruling's §0, quoted:
 > generators are the single source; adjusting the summon generators to serve
 > this is in scope.
 
-The invariant holds over the declared bindings a host mounts: pragma's
-\`CREATE_GENERATORS\` declaration, the summon bin's discovered (or
-\`--generators\`-served) generator packages. A host's root presentation (the
-\`create\` topic page, summon's root help) is host prose; every rule below
-binds the tree beneath it.
+The invariant binds the DECLARED BINDING PATHS as each host mounts them —
+\`component/react|svelte|lit\`, \`package\`, \`application/react\`: pragma's
+\`CREATE_GENERATORS\` declaration, and the same paths of the summon bin's
+discovered (or \`--generators\`-served) generator packages. Other generators
+a discovered package exports (\`domain\`/\`route\`/\`wrapper\`) and the summon
+builtin \`init\` are summon-only surface OUTSIDE this contract — reachable
+through summon discovery only, never mounted by pragma, and no rule below
+speaks for them. A host's root presentation (the \`create\` topic page,
+summon's root help) is host prose; every rule below binds the declared
+paths beneath it.
 
 ## 2. Grammar derivation
 
@@ -323,12 +328,19 @@ ${interactionTable()}
   written — with a message echoing the offending value:
   \`Invalid --<flag> "<value>": <detail>\` from a \`validate\` rejection,
   \`Invalid --<flag> "<value>". Valid values: <choices>.\` from a value
-  outside a select's choices. A path-shaped prompt's own \`validate\`
-  rejects an absolute path and \`..\` traversal, so an output path that
-  would escape the invocation directory fails this SAME gate in both
-  hosts; pragma ADDITIONALLY refuses a path that RESOLVES outside the
+  outside a select's choices. The declared path prompts
+  (\`--component-path\` on the three component leaves, \`--app-path\`)
+  each carry a \`validate\` that rejects an absolute path and \`..\`
+  traversal, so an output path that would escape the invocation
+  directory fails this SAME gate in both hosts on every declared leaf;
+  pragma ADDITIONALLY refuses a path that RESOLVES outside the
   workspace through a symlink (its host-level jail, behind the shared
-  validators — summon relies on the validator tier). The batch modes additionally
+  validators — summon relies on the validator tier). Known residue,
+  disclosed and OUT of contract: the summon-only generators outside the
+  declared set (§1 — \`domain\`/\`route\`/\`wrapper\`, the builtin
+  \`init\`) take name/path prompts with no validator, and summon
+  scaffolds where they point, the invocation directory's outside
+  included. The batch modes additionally
   fail loudly (exit 2) on a required answer that is missing even after
   defaults, and re-check the defaults-applied set (an invalid generator
   default fails the same way). A failure raised PAST that gate keeps the
