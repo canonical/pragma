@@ -29,9 +29,9 @@ import {
   type PassResult,
   type RawExtraction,
 } from "../shared/index.js";
-import effectivePrefixes from "./effectivePrefixes.js";
 import getNamespace from "./getNamespace.js";
 import isStandardVocab from "./isStandardVocab.js";
+import resolveEffectivePrefixes from "./resolveEffectivePrefixes.js";
 import type { CustomMappings } from "./types.js";
 
 // The overlay is resolved at the head of the build pass, so its diagnostics
@@ -414,7 +414,7 @@ export default function resolveGraphqlAnnotations(
   // moment a namespace carried a graphql:prefix declaration — silence for a
   // key written with the declared prefix, which wins downstream, and a shadow
   // report for a key written with the superseded one, which no longer applies.
-  const { findMapping } = effectivePrefixes(
+  const { findMapping } = resolveEffectivePrefixes(
     extraction.namespaces,
     prefixes,
     mappings,

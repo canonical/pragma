@@ -29,8 +29,8 @@ import {
 } from "../shared/index.js";
 import resolveGraphqlAnnotations from "./annotations.js";
 import { DEFAULT_MODE } from "./constants.js";
-import effectivePrefixes from "./effectivePrefixes.js";
 import isStandardVocab from "./isStandardVocab.js";
+import resolveEffectivePrefixes from "./resolveEffectivePrefixes.js";
 import type { CustomMappings, ProjectionMode } from "./types.js";
 
 const PHASE = "build";
@@ -129,14 +129,18 @@ export default function build(
   // empty by construction, so prefixes resolve exactly as they would if the
   // ontology carried no annotation at all — which is what that mode promises.
   // The fold and the prefixed-key lookup come from one shared authority
-  // (effectivePrefixes) that annotations.ts's A005 report also uses, so the
-  // site that APPLIES a config key and the site that REPORTS it as shadowing
+  // (resolveEffectivePrefixes) that annotations.ts's A005 report also uses, so
+  // the site that APPLIES a config key and the site that REPORTS it as shadowing
   // an annotation can never disagree about which key applies.
   const {
     namespaces: effectiveNamespaces,
     prefixOf: getPrefix,
     findMapping,
-  } = effectivePrefixes(extraction.namespaces, overlay.prefixes, mappings);
+  } = resolveEffectivePrefixes(
+    extraction.namespaces,
+    overlay.prefixes,
+    mappings,
+  );
 
   // ── deferred synthetic-prefix warnings (E001) ──
   // Pass 1 warns for every namespace it puts on a serial synthetic, EXCEPT

@@ -43,7 +43,7 @@ export interface EffectivePrefixes {
  *   empty under mode "auto", which never consults annotations.
  * @param mappings The consumer's custom mappings, keyed by IRI or prefixed name.
  */
-export default function effectivePrefixes(
+export default function resolveEffectivePrefixes(
   extracted: ReadonlyMap<string, string>,
   declared: ReadonlyMap<string, string>,
   mappings: CustomMappings,
