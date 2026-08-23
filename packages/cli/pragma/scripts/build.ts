@@ -4,6 +4,16 @@
  * Two steps: (1) codegen the embedded template manifest, then (2) compile the
  * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
  *
+ * ONE PASS IS SELF-CONSISTENT: the reference docs render the surface this
+ * pass just produced. `capabilities` is imported at process start, so when
+ * codegen rewrites `createSurface.generated.ts`, the docs are emitted by a
+ * fresh `scripts/genReference.ts` child (which re-imports the rewritten
+ * module) instead of this process's stale copy — a single `bun run build`
+ * after a generator-surface edit leaves dist, surface, and docs/reference/
+ * on the SAME generation. A GATE's build sets PRAGMA_BUILD_SKIP_DOCS=1 and
+ * writes NO docs at all, so the drift guard (reference.test.ts) compares
+ * the bytes git actually holds and can fail on a stale committed tree.
+ *
  * COMPILED `create` — every binding runs from the shipped binary.
  * `create.verb.ts` reaches summon-core + the generators through STATIC dynamic
  * imports (behind its lazy boundary), so bun's `--compile` bundler includes
@@ -20,6 +30,7 @@
  * byte-identical to a source run.
  */
 
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -78,9 +89,12 @@ const SURFACE_OUT = fileURLToPath(
  * write-only-when-changed. The projection-fidelity test in `create.test.ts`
  * loads the LIVE generators and fails when this file drifts.
  *
- * @returns The number of projected command paths.
+ * @returns The number of projected command paths, and whether the file was
+ *   REWRITTEN — the caller's signal that this process's own `capabilities`
+ *   import is now one generation behind and the docs step must re-read the
+ *   surface from a fresh process (see the header).
  */
-function generateCreateSurface(): number {
+function generateCreateSurface(): { surfaced: number; changed: boolean } {
   const maps: Record<string, Record<string, unknown>> = {
     component: componentGenerators as never,
     package: packageGenerators as never,
@@ -128,13 +142,12 @@ export const CREATE_SURFACE: Readonly<Record<string, SurfaceCommand>> = {
 ${body}
 };
 `;
-  if (
-    !existsSync(SURFACE_OUT) ||
-    readFileSync(SURFACE_OUT, "utf-8") !== module
-  ) {
+  const changed =
+    !existsSync(SURFACE_OUT) || readFileSync(SURFACE_OUT, "utf-8") !== module;
+  if (changed) {
     writeFileSync(SURFACE_OUT, module);
   }
-  return Object.keys(entries).length;
+  return { surfaced: Object.keys(entries).length, changed };
 }
 
 const MANIFEST_OUT = fileURLToPath(
@@ -251,7 +264,7 @@ export { writeReferenceDocs };
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
 // `genReference` script) runs codegen and compiles the binary.
 if (import.meta.main) {
-  const surfaced = generateCreateSurface();
+  const { surfaced, changed: surfaceChanged } = generateCreateSurface();
   console.log(
     `Projected ${surfaced} generator binding(s) → createSurface.generated.ts`,
   );
@@ -268,10 +281,36 @@ if (import.meta.main) {
     `Embedded ${Object.keys(manifest).length} generator templates (${perRoot}) → templates.embedded.generated.ts`,
   );
 
-  const changedDocs = writeReferenceDocs();
-  console.log(
-    `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
-  );
+  if (process.env.PRAGMA_BUILD_SKIP_DOCS === "1") {
+    // A GATE's build (both vitest configs' globalSetup): writing docs here
+    // would silently REPAIR a stale committed tree in the same run, before
+    // reference.test.ts — the drift guard — reads it. The guard must compare
+    // the bytes git actually holds; `bun run build` / `gen:reference` stay
+    // the doc writers.
+    console.log("Skipped reference docs (PRAGMA_BUILD_SKIP_DOCS=1)");
+  } else if (surfaceChanged) {
+    // The surface changed under this process's feet: `capabilities`
+    // (imported at startup) still carries the PRE-regen projection, so an
+    // in-process emit would render the docs one generation behind — and a
+    // rerun would then "fix" them (the build-twice trap). A fresh child
+    // re-imports the rewritten module and emits the post-regen truth in
+    // this same pass.
+    const docs = spawnSync("bun", ["run", "scripts/genReference.ts"], {
+      cwd: fileURLToPath(new URL("..", scriptsUrl)),
+      stdio: "inherit",
+    });
+    if (docs.error || docs.status !== 0) {
+      console.error(
+        `Reference docs emit failed${docs.error ? `: ${docs.error.message}` : ""}`,
+      );
+      process.exit(1);
+    }
+  } else {
+    const changedDocs = writeReferenceDocs();
+    console.log(
+      `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
+    );
+  }
 
   const result = await Bun.build({
     entrypoints: ["src/bin.ts"],
