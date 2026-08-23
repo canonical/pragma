@@ -251,6 +251,83 @@ function servedDistArtifact(root: string): string | undefined {
   return join(root, entry);
 }
 
+/** The slice of `spawnSync`'s result the build wrapper judges. */
+interface BuildResult {
+  status: number | null | undefined;
+  stdout: string | null;
+  stderr: string | null;
+  error?: Error | undefined;
+}
+
+/** Runs one root's build and reports the spawn result. */
+type BuildRunner = (root: string) => BuildResult;
+
+/** The real runner: the package's own `bun run build`, streams captured. */
+function runBuild(root: string): BuildResult {
+  return spawnSync("bun", ["run", "build"], {
+    cwd: root,
+    stdio: "pipe",
+    encoding: "utf-8",
+  });
+}
+
+/**
+ * Build one root's served dist under the cross-process lock, destroying the
+ * artifact only when the build RAN and failed.
+ *
+ * The per-root build-or-destroy rule, extracted and EXPORTED so a unit cell
+ * can drive it with an injected runner (globalSetup.test.ts, beside this
+ * file): this wrapper is the loop's one confirmed false-green producer
+ * (round 12), and unexported it was pinned by nothing — a dropped rmSync or
+ * a restored destroy-on-spawn-error stayed green until a real CI build
+ * failed. Three shapes:
+ * - spawn error (`result.error` — the builder never STARTED): throw naming
+ *   the error, artifact PRESERVED (nothing ran, so nothing was emitted; the
+ *   dist on disk is the previous good generation).
+ * - nonzero exit / signal kill: destroy the artifact (a failed build can
+ *   still have EMITTED it — see {@link buildUnderLock}), then throw naming
+ *   the root and both captured streams.
+ * - success: the artifact is left as built, the lock released.
+ *
+ * TWIN: cli/pragma's perf globalSetup carries the same function; keep in
+ * step.
+ *
+ * @param root - The workspace package being built.
+ * @param artifact - Its served dist entry (the lock lives beside it).
+ * @param isFresh - Re-stats the artifact against its inputs (under the lock).
+ * @param runner - The build runner ({@link runBuild}; injectable for tests).
+ * @note Impure — takes the lock, builds, and may remove the artifact.
+ */
+export function buildDistOrDestroy(
+  root: string,
+  artifact: string,
+  isFresh: () => boolean,
+  runner: BuildRunner = runBuild,
+): void {
+  buildUnderLock(artifact, isFresh, () => {
+    const result = runner(root);
+    if (result.error) {
+      // The builder never STARTED (ENOENT/EACCES): nothing can have
+      // been emitted, so the artifact on disk is still the previous
+      // good generation — preserve it, and name the failure's only
+      // carrier (`status` is unset and both streams are null here).
+      throw new Error(
+        `summon globalSetup: failed to RUN the build for ${root}: ${result.error.message}`,
+      );
+    }
+    if (result.status !== 0) {
+      // The build RAN and failed — it can still have EMITTED the
+      // artifact (see buildUnderLock's docblock): destroy the evidence
+      // so the contender's re-stat and every later run see STALE
+      // instead of a fresh-looking dist compiled from erroring sources.
+      rmSync(artifact, { force: true });
+      throw new Error(
+        `summon globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+      );
+    }
+  });
+}
+
 /**
  * Rebuild every STALE workspace dep dist, dependencies before dependents.
  * Staleness is the honest per-package mtime rule: the served entry artifact
@@ -295,32 +372,7 @@ function buildStaleDepDists(pkgRoot: string): void {
     // No pre-lock isFresh() skip: freshness is decided UNDER the lock —
     // a fresh-looking artifact out here can be another process's
     // mid-flight emit (see buildUnderLock's docblock).
-    buildUnderLock(artifact, isFresh, () => {
-      const result = spawnSync("bun", ["run", "build"], {
-        cwd: root,
-        stdio: "pipe",
-        encoding: "utf-8",
-      });
-      if (result.error) {
-        // The builder never STARTED (ENOENT/EACCES): nothing can have
-        // been emitted, so the artifact on disk is still the previous
-        // good generation — preserve it, and name the failure's only
-        // carrier (`status` is unset and both streams are null here).
-        throw new Error(
-          `summon globalSetup: failed to RUN the build for ${root}: ${result.error.message}`,
-        );
-      }
-      if (result.status !== 0) {
-        // The build RAN and failed — it can still have EMITTED the
-        // artifact (see buildUnderLock's docblock): destroy the evidence
-        // so the contender's re-stat and every later run see STALE
-        // instead of a fresh-looking dist compiled from erroring sources.
-        rmSync(artifact, { force: true });
-        throw new Error(
-          `summon globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
-        );
-      }
-    });
+    buildDistOrDestroy(root, artifact, isFresh);
   }
 }
 
