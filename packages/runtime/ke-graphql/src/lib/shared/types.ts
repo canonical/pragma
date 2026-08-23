@@ -383,8 +383,8 @@ export interface PropertyNode {
 /**
  * Class-targeted `graphql:` overrides, resolved and validated. Absent fields
  * mean "unannotated — the heuristic decides"; `abstract`/`embeddable` are
- * tri-state exactly like the config knobs (an explicit `false` forces the
- * heuristic off).
+ * tri-state: `true` forces the flag on, an explicit `false` forces the
+ * heuristic off, absent leaves the heuristic to decide.
  */
 export interface GraphqlClassOverlay {
   /** graphql:name — verbatim GraphQL type name (never pluralized/prefixed). */

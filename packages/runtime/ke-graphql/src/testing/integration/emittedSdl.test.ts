@@ -5,8 +5,8 @@
 // This is the cross-version pin the other suites do not provide: the
 // determinism test proves one build agrees with itself and the header test
 // pins seven lines — neither compares against a PRE-CHANGE emission. These
-// goldens do. Conformance of the emission to a declared contract is not
-// checked here; that lives with the contract package. Any commit that moves a
+// goldens do. They pin bytes, not semantics — whether the emission satisfies
+// any externally declared schema contract is a consumer concern. Any commit that moves a
 // single byte of the default emission fails here and must justify itself by
 // regenerating the goldens in the same change — silently shifting emitted
 // names, order, or descriptions is not a thing that can happen.

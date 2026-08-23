@@ -761,9 +761,9 @@ describe("build — graphql: annotation overlay binding", () => {
   });
 
   it("lets owl:FunctionalProperty decide when no explicit tier spoke", () => {
-    // The complement: with no config and no annotation, `functional` still
-    // comes from the heuristics and carries NO explicit marker, so per-class
-    // SHACL remains free to override it.
+    // The complement: with no annotation, `functional` still comes from
+    // the heuristics and carries NO explicit marker, so per-class SHACL
+    // remains free to override it.
     const extraction = makeExtraction({
       classes: [
         { uri: uri("Thing"), superclasses: [] },
