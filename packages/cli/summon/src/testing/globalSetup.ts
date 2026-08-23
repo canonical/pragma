@@ -1,0 +1,198 @@
+/**
+ * Vitest global setup: rebuild every STALE workspace dependency dist before
+ * any worker starts.
+ *
+ * The subprocess suites spawn the REAL bin (`bun src/bin.tsx`), which
+ * resolves `@canonical/summon-core` and `@canonical/task` through their
+ * `exports` maps into `dist/esm/…` — and the interaction fixtures hard-code
+ * those same dist entry files — so a projection edit in summon-core's `src`
+ * is invisible to every spawned cell until that dist is rebuilt. Without
+ * this gate the two hosts of the parity PR could return opposite verdicts
+ * on one change: cli/pragma's suites rebuild their dep dists in their own
+ * globalSetup while this package's cells stayed green against the previous
+ * generation of the very file under edit.
+ *
+ * This is cli/pragma's gate (src/testing/perf/globalSetup.ts) minus its
+ * compiled-binary half — a faithful SIBLING rather than an import: pulling
+ * the shared helpers from `@canonical/pragma-cli` would point a dependency
+ * edge summon → pragma-cli, closing a cycle with pragma-cli's declared
+ * devDependency on this package. Same honest mtime staleness rule, same
+ * main-process-before-any-worker placement (a `beforeAll` inside a worker
+ * would race sibling workers importing the same in-place-rewritten files),
+ * same loud topo-cycle throw. Runs for full suites and single-file
+ * `vitest run <file>` invocations alike.
+ */
+
+import { spawnSync } from "node:child_process";
+import {
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
+import { join, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+
+/**
+ * The newest modification time under `path`, or 0 when it does not exist.
+ * A nested `node_modules` is never descended into (a dep's own deps are
+ * enumerated as roots of their own by {@link workspaceDepRoots}).
+ *
+ * @param path - A file or directory.
+ * @returns Epoch milliseconds of the newest entry beneath it.
+ * @note Impure — stats the source tree.
+ */
+function newestMtime(path: string): number {
+  let stats: ReturnType<typeof statSync>;
+  try {
+    stats = statSync(path);
+  } catch {
+    return 0;
+  }
+  if (!stats.isDirectory()) return stats.mtimeMs;
+  let newest = stats.mtimeMs;
+  for (const entry of readdirSync(path)) {
+    if (entry === "node_modules") continue;
+    newest = Math.max(newest, newestMtime(join(path, entry)));
+  }
+  return newest;
+}
+
+/**
+ * Every workspace package this one links, transitively: follow each
+ * `node_modules/<name>` symlink whose target lives OUTSIDE any
+ * `node_modules` store (what distinguishes a workspace link from a registry
+ * install), then repeat from the target's own `node_modules`. Cycles are
+ * cut by the visited set.
+ *
+ * @param pkgRoot - This package's root directory.
+ * @returns Absolute real paths of the linked workspace dependency roots.
+ * @note Impure — reads `node_modules` link farms.
+ */
+function workspaceDepRoots(pkgRoot: string): string[] {
+  const visited = new Set<string>([realpathSync(pkgRoot)]);
+  const queue = [realpathSync(pkgRoot)];
+  while (queue.length > 0) {
+    const dir = queue.pop() as string;
+    const nm = join(dir, "node_modules");
+    let entries: string[];
+    try {
+      entries = readdirSync(nm);
+    } catch {
+      continue;
+    }
+    const links = entries.flatMap((entry) => {
+      if (!entry.startsWith("@")) return [join(nm, entry)];
+      try {
+        return readdirSync(join(nm, entry)).map((e) => join(nm, entry, e));
+      } catch {
+        return [];
+      }
+    });
+    for (const link of links) {
+      let real: string;
+      try {
+        if (!lstatSync(link).isSymbolicLink()) continue;
+        real = realpathSync(link);
+      } catch {
+        continue;
+      }
+      if (real.split(sep).includes("node_modules")) continue;
+      if (visited.has(real)) continue;
+      visited.add(real);
+      queue.push(real);
+    }
+  }
+  const root = realpathSync(pkgRoot);
+  return [...visited].filter((dir) => dir !== root);
+}
+
+/** What one dep's dist is built from (a missing entry stats 0). */
+const DIST_INPUTS = [
+  "src",
+  "generators",
+  "package.json",
+  "tsconfig.build.json",
+];
+
+/**
+ * The served entry artifact of one workspace package (`module` ?? `main`),
+ * absolute — or undefined for a package that serves no compiled dist (no
+ * `build` script, or an entry outside `dist/`, e.g. a source-served
+ * config package), which the gate skips.
+ */
+function servedDistArtifact(root: string): string | undefined {
+  let manifest: {
+    module?: string;
+    main?: string;
+    scripts?: Record<string, string>;
+  };
+  try {
+    manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf-8"));
+  } catch {
+    return undefined;
+  }
+  const entry = manifest.module ?? manifest.main;
+  if (!entry?.startsWith("dist") || !manifest.scripts?.build) {
+    return undefined;
+  }
+  return join(root, entry);
+}
+
+/**
+ * Rebuild every STALE workspace dep dist, dependencies before dependents.
+ * Staleness is the honest per-package mtime rule: the served entry artifact
+ * must be newer than every {@link DIST_INPUTS} entry.
+ *
+ * @param pkgRoot - This package's root directory (the closure's seed).
+ * @note Impure — stats and rebuilds workspace dists.
+ */
+function buildStaleDepDists(pkgRoot: string): void {
+  const deps = workspaceDepRoots(pkgRoot);
+  // Dependencies before dependents. `workspaceDepRoots` follows
+  // devDependency links too, so a future dev-edge cycle is an ordinary
+  // event — it must throw with its members named, never spin the
+  // synchronous loop forever.
+  const depsOf = new Map(
+    deps.map((root) => [root, new Set(workspaceDepRoots(root))] as const),
+  );
+  const remaining = new Set(deps);
+  const ordered: string[] = [];
+  while (remaining.size > 0) {
+    const next = [...remaining].find((root) =>
+      [...(depsOf.get(root) ?? [])].every((dep) => !remaining.has(dep)),
+    );
+    if (next === undefined) {
+      throw new Error(
+        `summon globalSetup: dependency cycle among ${[...remaining].join(", ")}`,
+      );
+    }
+    ordered.push(next);
+    remaining.delete(next);
+  }
+  for (const root of ordered) {
+    const artifact = servedDistArtifact(root);
+    if (!artifact) continue;
+    const built = newestMtime(artifact);
+    const fresh =
+      built > 0 &&
+      DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built);
+    if (fresh) continue;
+    const result = spawnSync("bun", ["run", "build"], {
+      cwd: root,
+      stdio: "pipe",
+      encoding: "utf-8",
+    });
+    if (result.status !== 0) {
+      throw new Error(
+        `summon globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+      );
+    }
+  }
+}
+
+export default function setup(): void {
+  const root = fileURLToPath(new URL("../../", import.meta.url));
+  buildStaleDepDists(root);
+}
