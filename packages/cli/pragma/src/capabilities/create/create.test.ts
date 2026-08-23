@@ -231,7 +231,18 @@ describe("SEC-2 path jail (PROTECTED)", () => {
       // value-only validator cannot see) and by pathJail.test.ts directly.
       await expect(
         runIn(dir, { framework: "react", componentPath: value }),
-      ).rejects.toBeInstanceOf(PragmaError);
+      ).rejects.toMatchObject({
+        name: "PragmaError",
+        code: "INVALID_INPUT",
+        // The validator's line — flag spelling, value echo, detail —
+        message: expect.stringContaining(
+          `Invalid --component-path "${value}"`,
+        ),
+        // — carrying the covenant `recovery` field the jail's own throws
+        // set: one logical class (a path escaping the workspace), one
+        // field set, whichever tier refuses.
+        recovery: { message: "The path must stay inside the workspace." },
+      });
       expect(walk(dir)).toEqual([]);
     });
   }

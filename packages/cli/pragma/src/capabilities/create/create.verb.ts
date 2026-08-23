@@ -17,12 +17,14 @@
  */
 
 import type { GeneratorResult } from "@canonical/summon-core";
+import { isAbsolute } from "node:path";
 import {
   decideInteraction,
   explicitAnswersComplete,
   missingExplicitFlags,
   type ProjectedPrompt,
   refusalMessage,
+  toKebabCase,
 } from "@canonical/summon-core/projection";
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
@@ -132,6 +134,16 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
   package: undefined,
   application: "appPath",
 };
+
+/**
+ * The two value classes the shared prompt validators reject as workspace
+ * ESCAPES — absolute, and any `..` segment: exactly the jail's own
+ * non-symlink classes, which the round-9 reorder moved onto the validator
+ * tier. Used to keep the jail-tier `recovery` hint on those rejections.
+ */
+const isEscapeValue = (value: unknown): boolean =>
+  typeof value === "string" &&
+  (isAbsolute(value) || value.split(/[/\\]/).includes(".."));
 
 // =============================================================================
 // The lazy run — the one-line summon↔pragma seam per invocation
@@ -253,15 +265,32 @@ export async function runCreate(
   // escapes, so an escaping output path fails the SHARED validator line in
   // both hosts (parity-contract §3) and the jail below stays the backstop
   // its docblock claims.
+  const pathParam = PATH_PARAM[kind];
   const invalid = summon.validateAnswers(generator.prompts, answers);
   if (invalid !== null) {
-    throw new PragmaError({ code: "INVALID_INPUT", message: invalid });
+    // A rejection of the JAILED path param's escape classes (absolute /
+    // `..` — the two the round-9 reorder moved off the jail) keeps the
+    // covenant `recovery` field the jail's own throws carry: one logical
+    // class (an output path escaping the workspace), one field set. The
+    // message stays the validator's — the shared cross-host line. A
+    // non-escape rejection of the same param (e.g. casing) never carried
+    // recovery and still does not.
+    const escaped =
+      pathParam !== undefined &&
+      invalid.startsWith(`Invalid --${toKebabCase(pathParam)} `) &&
+      isEscapeValue(answers[pathParam]);
+    throw new PragmaError({
+      code: "INVALID_INPUT",
+      message: invalid,
+      ...(escaped
+        ? { recovery: { message: "The path must stay inside the workspace." } }
+        : {}),
+    });
   }
 
   // SEC-2: reject a path escaping the workspace BEFORE any effect runs — the
   // host-level backstop behind the validators, and the only tier that catches
   // a symlink RESOLVING outside the workspace.
-  const pathParam = PATH_PARAM[kind];
   if (pathParam) assertInsideWorkspace(pathParam, answers[pathParam], rt.cwd);
 
   // An ABSENT interaction context defaults to `yes: false` — nothing may
