@@ -346,11 +346,24 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   // App.invalidAnswer.test.tsx + interaction.subprocess.test.ts) — no
   // shipped generator raises it today.
   it("application/react: the retired --no-ssr is an unknown option with IDENTICAL bytes in both hosts, exit 2, nothing written", () => {
+    // Full-stderr compare, so — as in every sibling whole-buffer cell —
+    // pragma's one-time first-run note (stderr by design) is kept off by
+    // seeding the global config it would otherwise create; unseeded, the
+    // cell is green only while an EARLIER cell in this file has already
+    // spent the note (red under `-t` isolation).
+    const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
+    mkdirSync(join(configHome, "pragma"));
+    writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
     const pragmaCwd = freshCwd("crosscli-guard-");
     const pragma = spawnSync(
       compiledBin,
       ["create", "application", "react", "my-app", "--no-ssr", "--dry-run"],
-      { cwd: pragmaCwd, encoding: "utf-8", input: "" },
+      {
+        cwd: pragmaCwd,
+        encoding: "utf-8",
+        input: "",
+        env: { ...process.env, XDG_CONFIG_HOME: configHome },
+      },
     );
     expect(pragma.status).toBe(2);
     expect(pragma.stderr).toContain("error: unknown option '--no-ssr'");
