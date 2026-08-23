@@ -55,12 +55,17 @@
  * sibling gate (src/testing/globalSetup.ts) rebuilds four of the same dep
  * dists from ITS process, nothing orders the two suites, and two
  * invocations of this package's own suites can overlap too — so every
- * rebuild here (each per-root dep dist AND `dist/pragma`) also takes an
- * O_EXCL lockfile beside the served artifact ({@link buildUnderLock}): a
- * second process finding the lock waits for release and RE-STATS instead
- * of double-building (two in-place `tsc` rewrites truncating one dist
- * under a live importer), and a lock that never clears fails loudly after
- * a timeout instead of forever.
+ * root here (each per-root dep dist AND `dist/pragma`) ALWAYS enters
+ * {@link buildUnderLock}, which takes an O_EXCL lockfile beside the
+ * served artifact and judges freshness only UNDER it: a second process
+ * finding the lock waits for release and RE-STATS instead of
+ * double-building (two in-place `tsc` rewrites truncating one dist under
+ * a live importer). A pre-lock freshness skip existed once and let a
+ * contender bless another process's mid-flight emit (the entry lands
+ * before `tsc` can fail — measured live), proceeding with no lock against
+ * an artifact about to be destroyed; deleting it is what makes "one
+ * consistent generation for every worker" true. A lock that never clears
+ * fails loudly after a timeout instead of forever.
  */
 
 import { spawnSync } from "node:child_process";
@@ -107,17 +112,24 @@ function sleepSync(ms: number): void {
 /**
  * Serialize one artifact's rebuild across PROCESSES with an `O_EXCL`
  * lockfile beside the served artifact — the same lock path every gate that
- * serves this dist computes, so contention meets contention. The holder
- * re-checks freshness UNDER the lock (a release between the caller's stat
- * and the acquire means the dist was just built) and builds only if still
- * stale; a contender waits for release and then RE-STATS instead of
- * building — looping back to contend when the dist is still stale, which
- * a FAILED holder guarantees: every `build` callback destroys the served
- * artifact before rethrowing, because a failed build can still EMIT it
- * (nothing sets `noEmitOnError`, so `tsc` writes output and exits
- * nonzero, and the two-step builds' first step writes the entry before
- * the second can fail) — mtime alone cannot tell a failed build from a
- * clean one. A lockfile that never clears (a killed
+ * serves this dist computes, so contention meets contention. Freshness is
+ * decided ONLY under the lock: callers enter unconditionally, with no
+ * pre-lock fast path — a stat taken outside the lock can land inside
+ * another process's emit-to-exit window (`tsc` emits the entry before it
+ * can fail) and bless a mid-flight artifact without waiting on anything.
+ * The holder stats after acquiring and builds only if stale, so an
+ * uncontended fresh root pays one open/unlink and nothing else; a
+ * contender waits for release and then RE-STATS instead of building —
+ * looping back to contend when the dist is still stale, which a FAILED
+ * holder guarantees: a `build` callback whose build RAN and failed
+ * destroys the served artifact before rethrowing, because a failed build
+ * can still EMIT it (nothing sets `noEmitOnError`, so `tsc` writes output
+ * and exits nonzero, and the two-step builds' first step writes the entry
+ * before the second can fail) — mtime alone cannot tell a failed build
+ * from a clean one — while a builder that never STARTED (a spawn error)
+ * leaves the artifact alone: nothing was emitted, and the dist on disk is
+ * still the previous good generation, stale by the same stats that sent
+ * the holder in. A lockfile that never clears (a killed
  * builder) fails loudly after {@link LOCK_TIMEOUT_MS} naming the file,
  * rather than double-building or waiting forever.
  *
@@ -336,18 +348,29 @@ function buildStaleDepDists(pkgRoot: string): void {
         DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built)
       );
     };
-    if (isFresh()) continue;
+    // No pre-lock isFresh() skip: freshness is decided UNDER the lock —
+    // a fresh-looking artifact out here can be another process's
+    // mid-flight emit (see buildUnderLock's docblock).
     buildUnderLock(artifact, isFresh, () => {
       const result = spawnSync("bun", ["run", "build"], {
         cwd: root,
         stdio: "pipe",
         encoding: "utf-8",
       });
+      if (result.error) {
+        // The builder never STARTED (ENOENT/EACCES): nothing can have
+        // been emitted, so the artifact on disk is still the previous
+        // good generation — preserve it, and name the failure's only
+        // carrier (`status` is unset and both streams are null here).
+        throw new Error(
+          `perf globalSetup: failed to RUN the build for ${root}: ${result.error.message}`,
+        );
+      }
       if (result.status !== 0) {
-        // A failed build can still have EMITTED the artifact (see
-        // buildUnderLock's docblock) — destroy the evidence so the
-        // contender's re-stat and every later run see STALE instead of
-        // a fresh-looking dist compiled from erroring sources.
+        // The build RAN and failed — it can still have EMITTED the
+        // artifact (see buildUnderLock's docblock): destroy the evidence
+        // so the contender's re-stat and every later run see STALE
+        // instead of a fresh-looking dist compiled from erroring sources.
         rmSync(artifact, { force: true });
         throw new Error(
           `perf globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
@@ -374,19 +397,26 @@ export default function setup(): void {
       )
     );
   };
-  if (isFresh()) return;
-
   // The binary rebuild is the same cross-process hazard as a dep dist (two
   // overlapping invocations of this package's suites), so it takes the
-  // same lock.
+  // same lock — and, like every root, enters it unconditionally: freshness
+  // is decided only UNDER it.
   buildUnderLock(binary, isFresh, () => {
     const result = spawnSync("bun", ["run", "scripts/build.ts"], {
       cwd: root,
       stdio: "inherit",
     });
+    if (result.error) {
+      // The builder never STARTED: nothing was written, so the binary on
+      // disk is still the previous good generation — preserve it.
+      throw new Error(
+        `perf globalSetup: failed to RUN the build for dist/pragma: ${result.error.message}`,
+      );
+    }
     if (result.status !== 0) {
-      // Same failure-destroys-the-evidence rule as the dep dists: a
-      // partially written binary must read STALE, never fresh.
+      // The build RAN and failed — same failure-destroys-the-evidence
+      // rule as the dep dists: a partially written binary must read
+      // STALE, never fresh.
       rmSync(binary, { force: true });
       throw new Error("perf globalSetup: failed to build dist/pragma");
     }
