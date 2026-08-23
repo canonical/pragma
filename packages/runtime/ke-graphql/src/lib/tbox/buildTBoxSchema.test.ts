@@ -400,7 +400,7 @@ describe("OntologyClass as a Node", () => {
   });
 
   it("reports _meta.label null for a class with no asserted rdfs:label", async () => {
-    // R-6 scopes `label` to what a curator asserted — that is why it is
+    // `label` is scoped to what a curator asserted — that is why it is
     // nullable while `title` is not. ClassNode.label carries a local-name
     // fallback for display; minting it as a triple reported every unlabelled
     // class as labelled and collapsed the distinction.

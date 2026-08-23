@@ -274,7 +274,7 @@ export interface ClassNode {
   label: string;
   /**
    * The ASSERTED rdfs:label alone — absent when the ontology asserts none, so
-   * `label`'s local-name fallback stays recoverable. R-6 scopes `_meta.label`
+   * `label`'s local-name fallback stays recoverable. `_meta.label` is scoped
    * to what a curator wrote; `_meta.title` is the total alternative, which is
    * why one is nullable and the other is not.
    */

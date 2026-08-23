@@ -190,7 +190,7 @@ describe("blank nodes fixture", () => {
     const example = result.schema.getType("Example") as GraphQLObjectType;
     expect(example.getInterfaces()).toHaveLength(0);
     expect(example.getFields().uri).toBeUndefined();
-    // R9: an embeddable still carries _meta — self-description is a fact about
+    // An embeddable still carries _meta — self-description is a fact about
     // the class, not about identity.
     expect(String(example.getFields()._meta?.type)).toBe("EntityMeta!");
     const standard = result.schema.getType("Standard") as GraphQLObjectType;
@@ -201,7 +201,7 @@ describe("blank nodes fixture", () => {
   });
 });
 
-describe("zero-property embeddable (R9)", () => {
+describe("zero-property embeddable", () => {
   // ex:Marker is instantiated ONLY as a bare blank node with no properties of
   // its own: blank-only instances make it embeddable, and it declares nothing.
   // Before _meta was extended to embeddables this schema FAILED to build with

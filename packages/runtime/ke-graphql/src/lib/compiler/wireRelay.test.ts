@@ -234,9 +234,9 @@ describe("wireRelay Node membership", () => {
       nonNull: true,
     });
     expect(thing?.interfaces).toContain("Node");
-    // R9: the embeddable is no longer skipped — it gets _meta but never uri,
-    // which is the only thing standing between a zero-property embeddable and
-    // a C003 "must define one or more fields" failure.
+    // The embeddable is not skipped — it gets _meta but never uri, which is
+    // the only thing standing between a zero-property embeddable and a C003
+    // "must define one or more fields" failure.
     const emb = plan.types.get("Emb");
     expect([...(emb?.fields.keys() ?? [])]).toEqual(["_meta"]);
     expect(emb?.interfaces).not.toContain("Node");

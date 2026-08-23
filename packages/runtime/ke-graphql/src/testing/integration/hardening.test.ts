@@ -1,6 +1,6 @@
 // =============================================================================
 // Hardening behaviors that need a compiled schema end-to-end: the forced-
-// abstract-with-instances guard (correctness C1 + V015) and the SPARQL
+// abstract-with-instances guard (V015) and the SPARQL
 // injection guard reaching through node(id:) — now keyed on absolute IRIs
 // — to a null result.
 // =============================================================================
@@ -54,7 +54,7 @@ const compileHierarchy = async () => {
   return { result, store };
 };
 
-describe("forced abstract with direct instances (C1 + V015)", () => {
+describe("forced abstract with direct instances (V015)", () => {
   it("warns (V015) when the data contradicts graphql:abstract", async () => {
     const { result } = await compileHierarchy();
     expect(result.diagnostics.some((d) => d.code === "V015")).toBe(true);

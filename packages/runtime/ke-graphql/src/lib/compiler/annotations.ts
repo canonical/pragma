@@ -229,7 +229,7 @@ export default function resolveGraphqlAnnotations(
     // xsd:boolean has four lexicals for two values, so `true` and "1" are one
     // assertion twice, not two sources disagreeing — the same "agreeing
     // spellings are one declaration" rule the prefix path applies to subject
-    // spellings below. R-9 scopes A001 to genuine DISAGREEMENT.
+    // spellings below. A001 is scoped to genuine DISAGREEMENT.
     // Non-boolean terms and unparseable lexicals keep their kind-qualified
     // lexical identity, so nothing else is merged and the A003 arm still
     // sees the malformed value.

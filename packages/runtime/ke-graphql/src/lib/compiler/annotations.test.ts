@@ -1,8 +1,8 @@
 // =============================================================================
 // Annotation resolution unit tests: the A-band taxonomy (A001 conflicts,
-// A002 targets, A003 values, A004 recognition/applicability), the prefix
-// path (namespace re-keying, value validation), and
-// the overlay application of every v1 term. Crafted RawExtractions, rows in
+// A002 targets, A003 values, A004 recognition/applicability), the prefix path
+// (namespace re-keying, value validation), and the overlay application of
+// every v1 term. Crafted RawExtractions, rows in
 // the (target, term, kind, value) order the extractor guarantees. The
 // effective-map injectivity guard lives in build.ts and is tested there.
 // =============================================================================
@@ -136,7 +136,7 @@ describe("annotations — A001 conflicts (never tiebroken)", () => {
   it("treats agreeing xsd:boolean lexicals as one assertion, not a conflict", () => {
     // xsd:boolean has four lexicals for two values, and extraction dedupes on
     // the raw lexical — so `true` and "1" arrive as two rows for one fact.
-    // R-9 scopes A001 to sources that DISAGREE; there is nothing to pick here.
+    // A001 is scoped to sources that DISAGREE; there is nothing to pick here.
     const { output, diagnostics } = resolve([
       [uri("name"), GRAPHQL_TERMS.nonNull, "1", "literal"],
       [uri("name"), GRAPHQL_TERMS.nonNull, "true", "literal"],
