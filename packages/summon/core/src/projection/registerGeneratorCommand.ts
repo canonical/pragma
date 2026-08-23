@@ -85,12 +85,15 @@ export interface GeneratorCliHost<
    * is a REQUIRED `boolean` (not `boolean | void`): a writer that writes
    * and returns nothing would be indistinguishable from one declining,
    * and the projection would write the default line again — a silent
-   * double-write.
+   * double-write. `detail` is REQUIRED for the same honesty: both usage
+   * builders return it unconditionally on every branch, so an optional
+   * parameter would only buy every reframing host a narrowing it can
+   * never exercise (a shorter implementation is assignable regardless).
    */
   readonly writeUsageError?: (
     message: string,
     kind: UsageErrorKind,
-    detail?: UsageErrorDetail,
+    detail: UsageErrorDetail,
   ) => boolean;
 }
 

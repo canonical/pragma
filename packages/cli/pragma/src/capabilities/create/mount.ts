@@ -363,7 +363,7 @@ function mount(parent: Command, host: CliMountHost): void {
     // (`[...detail.chain, suggestion]`) lives only in the default prose
     // did-you-mean line, which the machine formats drop.
     writeUsageError: (message, kind, detail) => {
-      const suggested = detail?.suggestion;
+      const suggested = detail.suggestion;
       const error = new PragmaError({
         code: kind === "unknown-segment" ? "UNKNOWN_VERB" : "INVALID_INPUT",
         message: (message.split("\n")[0] as string).replace(/^error:\s*/i, ""),

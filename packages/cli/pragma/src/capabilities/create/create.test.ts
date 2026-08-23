@@ -402,6 +402,49 @@ describe("projection fidelity — the committed surface IS the live generators (
     }
   });
 
+  it("every declared positional path prompt validates `..`/absolute escapes — the claim in pathJail.ts and contract §3, enforced", async () => {
+    // pathJail.ts and §3 state as FACT that the prompts' own validators
+    // reject absolute/`..` uniformly across the declared path prompts — in
+    // BOTH hosts, upstream of pragma's jail. Summon has no jail at all, so
+    // a positional path prompt landing WITHOUT a validate silently reopens
+    // the round-9 escape (summon scaffolds outside the invocation cwd,
+    // exit 0) with every suite green. This cell ties the claim to the
+    // DECLARATION: every `positional: true` text prompt on the declared
+    // bindings' live generators must reject both escape classes.
+    const { pickGenerator } = await import("./pickGenerator.js");
+    const declaredPaths = Object.values(CREATE_GENERATORS).flatMap(
+      (binding) => binding.paths,
+    );
+    const audited: string[] = [];
+    for (const commandPath of declaredPaths) {
+      for (const prompt of pickGenerator(commandPath).prompts) {
+        if (prompt.positional !== true || prompt.type !== "text") continue;
+        audited.push(`${commandPath}:${prompt.name}`);
+        expect(
+          prompt.validate,
+          `${commandPath}'s ${prompt.name} declares no validate — the shared escape tier is gone for it`,
+        ).toBeDefined();
+        expect(
+          prompt.validate?.("../x"),
+          `${commandPath}'s ${prompt.name} accepts a \`..\` escape`,
+        ).not.toBe(true);
+        expect(
+          prompt.validate?.("/abs/x"),
+          `${commandPath}'s ${prompt.name} accepts an absolute path`,
+        ).not.toBe(true);
+      }
+    }
+    // The audited set, pinned: a NEW positional path prompt must join this
+    // list (and pass the vectors above) — deliberate, like the conformance
+    // matrix's declaration-completeness, so scope-shrink is visible too.
+    expect(audited.sort()).toEqual([
+      "application/react:appPath",
+      "component/lit:componentPath",
+      "component/react:componentPath",
+      "component/svelte:componentPath",
+    ]);
+  });
+
   it("component params are the FRAMEWORK UNION of the declared leaves", () => {
     const params = createVerbs.component.params;
     const names = params.map((p) => p.name);
