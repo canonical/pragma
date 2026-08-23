@@ -102,17 +102,24 @@ function renderErrorJson(error: PragmaError): string {
 /**
  * Render an error for an EXPLICITLY requested machine format, or decline.
  *
- * The ONE machine-format envelope decision for the usage-error surfaces: an
- * explicit `--format json` renders the failure envelope, an explicit
- * `--format llm` the condensed Markdown form, and anything else returns
- * `undefined` so the caller keeps its raw default bytes. Auto-detected llm is
- * excluded by construction — `parseGlobalFlags` leaves `format` at `"plain"`
- * under auto-detection and records `autoLlm` separately — so an inferred
- * output mode can never move the default (cross-CLI parity) bytes. Hoisted so
- * the gate and the renderer pick exist ONCE instead of drifting per call
- * site (they had already split: two sites gated on json only, two on
- * json|llm, and `--format llm` enveloped one member of the usage-error class
- * while its siblings stayed raw).
+ * The ONE machine-format envelope decision for the usage-error surfaces —
+ * `handleProgramError`'s Commander parse failures (the unknown-command arm
+ * included), the create mount's projection usage-error writer, and
+ * `writeRefusal`: an explicit `--format json` renders the failure envelope,
+ * an explicit `--format llm` the condensed Markdown form, and anything else
+ * returns `undefined` so the caller keeps its raw default bytes.
+ * Auto-detected llm is excluded by construction — `parseGlobalFlags` leaves
+ * `format` at `"plain"` under auto-detection and records `autoLlm`
+ * separately — so an inferred output mode can never move the default
+ * (cross-CLI parity) bytes. Hoisted so the gate and the renderer pick exist
+ * ONCE instead of drifting per call site (they had already split: sites
+ * gated on json only vs json|llm, and `--format llm` enveloped some members
+ * of the usage-error class while siblings stayed raw). Deliberately NOT
+ * routed through here: the always-render sites with no raw arm to arbitrate
+ * — `renderStartupError`, bin.ts's bad-`--format` rejection,
+ * `handleProgramError`'s non-Commander fallthrough, and dispatch's
+ * `renderError` (which deliberately includes autoLlm for run errors) — each
+ * picks a PragmaError renderer directly.
  *
  * @param error - The structured error to render.
  * @param format - The parsed global `--format` value.

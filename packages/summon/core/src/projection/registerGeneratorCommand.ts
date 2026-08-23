@@ -78,8 +78,8 @@ export interface GeneratorCliHost<
    * the write (a host reframing the message for an explicitly requested
    * machine format — pragma routes both through the same error envelope
    * every other `create` failure emits under `--format json`/`--format
-   * llm`, carrying `detail`'s suggested invocation in the envelope's
-   * `suggestions` field); return `false` to leave the default
+   * llm`, carrying `detail.suggestion` — the bare matched segment — in the
+   * envelope's `suggestions` field); return `false` to leave the default
    * presentation, the message verbatim on stderr — the cross-CLI parity
    * bytes. The projection owns the exit code (2) either way. The return
    * is a REQUIRED `boolean` (not `boolean | void`): a writer that writes

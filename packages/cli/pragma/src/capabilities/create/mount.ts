@@ -356,15 +356,14 @@ function mount(parent: Command, host: CliMountHost): void {
     // parity surface. Codes mirror bin.ts's classification of Commander
     // parse failures: unknown command → UNKNOWN_VERB, every other usage
     // error → INVALID_INPUT. The envelope `message` is SINGLE-LINE (the
-    // prefix-stripped first line of the projection's rendering) and the
-    // did-you-mean rides in the covenant's `suggestions` field as the
-    // corrected invocation — exactly how bin.ts's own UNKNOWN_VERB tier
-    // serializes, so one code has one shape.
+    // prefix-stripped first line of the projection's rendering) and
+    // `suggestions` carries the BARE candidate segment (`detail.suggestion`)
+    // — the field's one convention (see ErrorPayload.suggestions), matching
+    // bin.ts's own UNKNOWN_VERB tier. The corrected FULL invocation
+    // (`[...detail.chain, suggestion]`) lives only in the default prose
+    // did-you-mean line, which the machine formats drop.
     writeUsageError: (message, kind, detail) => {
-      const suggested =
-        detail?.suggestion === undefined
-          ? undefined
-          : [...detail.chain, detail.suggestion].join(" ");
+      const suggested = detail?.suggestion;
       const error = new PragmaError({
         code: kind === "unknown-segment" ? "UNKNOWN_VERB" : "INVALID_INPUT",
         message: (message.split("\n")[0] as string).replace(/^error:\s*/i, ""),

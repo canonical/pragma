@@ -301,10 +301,13 @@ async function handleProgramError(
       if (unknown) {
         // Route through the same PragmaError + renderers as every other error,
         // so the plain path gets the `Error:` prefix and the shared "Did you
-        // mean?" list instead of a second, inline rendering.
+        // mean?" list instead of a second, inline rendering — and an explicit
+        // machine format gets the same envelope every other usage error
+        // emits (the kernel's one gate+renderer decision; plain and json
+        // bytes unchanged by construction).
         const [
           { PragmaError },
-          { renderErrorPlain, renderErrorJson },
+          { renderErrorForFormat, renderErrorPlain },
           { suggestNames },
         ] = await Promise.all([
           import("./kernel/error/PragmaError.js"),
@@ -318,7 +321,7 @@ async function handleProgramError(
           suggestions,
         });
         process.stderr.write(
-          `${format === "json" ? renderErrorJson(unknownError) : renderErrorPlain(unknownError)}\n`,
+          `${renderErrorForFormat(unknownError, format) ?? renderErrorPlain(unknownError)}\n`,
         );
       }
       process.exitCode = 2;

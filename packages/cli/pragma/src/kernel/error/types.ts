@@ -54,6 +54,15 @@ interface PragmaErrorData {
 interface ErrorPayload {
   readonly code: ErrorCode;
   readonly message: string;
+  /**
+   * Fuzzy-matched alternative names — BARE candidate tokens the caller can
+   * substitute for the one token it typed (a verb, a tree segment), never
+   * full invocations. Every producer serializes this ONE convention:
+   * bin.ts's unknown-command tier emits the candidate name (`block`) and
+   * the create mount's projection tier the candidate segment (`react`);
+   * the corrected full command line, when one is shown, lives in the
+   * default prose did-you-mean rendering, not in this field.
+   */
   readonly suggestions?: readonly string[];
   readonly recovery?: Recovery;
   readonly validOptions?: readonly string[];

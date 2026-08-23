@@ -151,10 +151,12 @@ describe("the mounted create grammar (subprocess)", () => {
   // writer reframes them under writeRefusal's exact condition — explicit
   // `--format json`/`--format llm` only — with bin.ts's code taxonomy:
   // unknown command → UNKNOWN_VERB, excess/usage → INVALID_INPUT — and
-  // bin.ts's SHAPE: `message` is a single prefix-stripped line and the
-  // did-you-mean is the covenant's `suggestions` field (the corrected
-  // invocation), so one code serializes one way across the two tiers.
-  it("the unknown-segment error envelopes under --format json — UNKNOWN_VERB with the suggestion in `suggestions`", () => {
+  // bin.ts's SHAPE: `message` is a single prefix-stripped line and
+  // `suggestions` carries the BARE candidate segment — the field's ONE
+  // convention (ErrorPayload.suggestions: substitutable names, never full
+  // invocations), matching bin.ts's own UNKNOWN_VERB tier. The corrected
+  // full invocation lives only in the DEFAULT prose did-you-mean line.
+  it("the unknown-segment error envelopes under --format json — UNKNOWN_VERB with the bare segment in `suggestions`", () => {
     const { status, stderr, cwd } = run([
       "create",
       "component",
@@ -175,11 +177,10 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(envelope.error.code).toBe("UNKNOWN_VERB");
     // SINGLE line — an agent rendering `message` never meets an embedded
     // newline, and the structured match sits where every other pragma
-    // fuzzy-match error puts it.
+    // fuzzy-match error puts it, in the field's convention: the bare
+    // candidate token, exactly as `pragma blok --format json` serializes.
     expect(envelope.error.message).toBe("unknown command 'reakt'");
-    expect(envelope.error.suggestions).toEqual([
-      "pragma create component react",
-    ]);
+    expect(envelope.error.suggestions).toEqual(["react"]);
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
@@ -209,14 +210,39 @@ describe("the mounted create grammar (subprocess)", () => {
     // OMITTED — exactly as the kernel tier serializes an empty match list.
     expect(envelope.error.suggestions).toBeUndefined();
     expect(readdirSync(cwd)).toEqual([]);
+
+    // And WITH a match, the excess class carries the same bare-segment
+    // convention (the sibling `svelte`, not a joined invocation).
+    const matched = run([
+      "create",
+      "component",
+      "react",
+      "MyThing",
+      "svelte",
+      "--format",
+      "json",
+    ]);
+    expect(matched.status).toBe(2);
+    const matchedLine = matched.stderr
+      .split("\n")
+      .find((candidate) => candidate.startsWith("{"));
+    expect(matchedLine, `no JSON envelope:\n${matched.stderr}`).toBeDefined();
+    const matchedEnvelope = JSON.parse(matchedLine as string) as {
+      error: { code: string; suggestions?: string[] };
+    };
+    expect(matchedEnvelope.error.code).toBe("INVALID_INPUT");
+    expect(matchedEnvelope.error.suggestions).toEqual(["svelte"]);
   }, 60_000);
 
-  it("bin-tier usage errors envelope under --format llm too — one gate for the whole class (kernel-wide)", () => {
+  it("bin-tier usage errors envelope under --format llm too — the unknown option and the --framework migration error", () => {
     // Before the hoist the machine-format decision existed as four copies
     // under TWO gates: bin.ts's two sites enveloped on json ONLY, so under
     // --format llm an excess positional enveloped while an unknown option
     // and the --framework migration error stayed raw prose — one taxonomy
-    // class, split. All four sites now share renderErrorForFormat.
+    // class, split. All five usage-error sites (these two, the
+    // unknown-command arm, and the projection writer's two classes) now
+    // share renderErrorForFormat; the unknown-command member is pinned by
+    // its own cells below.
     const bogus = run(["create", "package", "--bogus", "--format", "llm"]);
     expect(bogus.status).toBe(2);
     expect(bogus.stderr).toContain("## Error: INVALID_INPUT");
@@ -247,9 +273,42 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(status).toBe(2);
     expect(stderr).toContain("## Error: UNKNOWN_VERB");
     expect(stderr).toContain("unknown command 'reakt'");
-    // The renderer's own Suggestions row — not a third prose line.
-    expect(stderr).toContain("Suggestions: pragma create component react");
+    // The renderer's own Suggestions row — not a third prose line — with
+    // the bare candidate segment, the field's one convention.
+    expect(stderr).toContain("Suggestions: react");
     expect(stderr).not.toContain("Did you mean");
+  }, 60_000);
+
+  it("the bin-tier unknown command envelopes under --format llm — UNKNOWN_VERB with bare-token suggestions", () => {
+    // The unknown-command arm was the last handleProgramError site off
+    // renderErrorForFormat: under an explicit --format llm a typo'd verb
+    // (`pragma blok`) rendered the plain prose while its create-tier
+    // sibling (`create component reakt`) enveloped — one code, two gates.
+    const { status, stderr } = run(["blok", "--format", "llm"]);
+    expect(status).toBe(2);
+    expect(stderr).toContain("## Error: UNKNOWN_VERB");
+    expect(stderr).toContain('Unknown command "blok".');
+    expect(stderr).toContain("Suggestions: block");
+    expect(stderr).not.toContain("Did you mean");
+  }, 60_000);
+
+  it("the bin-tier unknown command envelopes under --format json — bare-token suggestions, byte-stable", () => {
+    const { status, stderr } = run(["blok", "--format", "json"]);
+    expect(status).toBe(2);
+    const line = stderr
+      .split("\n")
+      .find((candidate) => candidate.startsWith("{"));
+    expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
+    const envelope = JSON.parse(line as string) as {
+      ok: boolean;
+      error: { code: string; message: string; suggestions?: string[] };
+    };
+    expect(envelope.ok).toBe(false);
+    expect(envelope.error.code).toBe("UNKNOWN_VERB");
+    expect(envelope.error.message).toBe('Unknown command "blok".');
+    // The bare candidate token — the same convention the create tier's
+    // envelope carries, so one code has one `suggestions` shape.
+    expect(envelope.error.suggestions).toEqual(["block"]);
   }, 60_000);
 
   it("DEFAULT piped output for both projection usage errors stays the raw prose — full stderr, no envelope", () => {
