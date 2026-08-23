@@ -80,8 +80,18 @@ import {
 import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Everything the compiled binary is built FROM, relative to the package root. */
-const INPUTS = ["src", "scripts", "pragma.conf.ts", "package.json"];
+/**
+ * Everything the compiled binary is built FROM, relative to the package root.
+ * `tsconfig.json` is an input too: the bundler reads it (jsx, paths), so an
+ * option edit changes the binary while `src` never moves.
+ */
+const INPUTS = [
+  "src",
+  "scripts",
+  "pragma.conf.ts",
+  "package.json",
+  "tsconfig.json",
+];
 
 /** How long a contender waits on another process's build lock (ms). */
 const LOCK_TIMEOUT_MS = 120_000;
@@ -240,12 +250,22 @@ function workspaceDepRoots(pkgRoot: string): string[] {
   return [...visited].filter((dir) => dir !== root);
 }
 
-/** What one dep's dist is built from (a missing entry stats 0). */
+/**
+ * What one dep's dist is built from (a missing entry stats 0). Every
+ * `tsconfig.build.json` here is a thin override extending the package's own
+ * `tsconfig.json`, which supplies the compiler options that shape the emit —
+ * so both are watched. RESIDUAL, accepted: the shared
+ * `@canonical/typescript-config` base those extend is NOT watched — the
+ * packages reach it inconsistently (most via their own `node_modules` link,
+ * summon-application by relative path), so no one entry covers it; an edit
+ * there without a per-package tsconfig change can leave a dist judged fresh.
+ */
 const DIST_INPUTS = [
   "src",
   "generators",
   "package.json",
   "tsconfig.build.json",
+  "tsconfig.json",
 ];
 
 /**

@@ -197,12 +197,22 @@ function workspaceDepRoots(pkgRoot: string): string[] {
   return [...visited].filter((dir) => dir !== root);
 }
 
-/** What one dep's dist is built from (a missing entry stats 0). */
+/**
+ * What one dep's dist is built from (a missing entry stats 0). Every
+ * `tsconfig.build.json` here is a thin override extending the package's own
+ * `tsconfig.json`, which supplies the compiler options that shape the emit —
+ * so both are watched. RESIDUAL, accepted: the shared
+ * `@canonical/typescript-config` base those extend is NOT watched — the
+ * packages reach it inconsistently (most via their own `node_modules` link,
+ * summon-application by relative path), so no one entry covers it; an edit
+ * there without a per-package tsconfig change can leave a dist judged fresh.
+ */
 const DIST_INPUTS = [
   "src",
   "generators",
   "package.json",
   "tsconfig.build.json",
+  "tsconfig.json",
 ];
 
 /**
