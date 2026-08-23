@@ -50,21 +50,108 @@
  * only then is `dist/pragma` judged — a refreshed dep dist moves the mtimes
  * the binary check watches, so the binary that bundles them is rebuilt in
  * the same setup pass and every worker sees one consistent generation.
+ *
+ * THAT PLACEMENT SERIALIZES ONE PROCESS, NOT THE WORKSPACE. cli/summon's
+ * sibling gate (src/testing/globalSetup.ts) rebuilds four of the same dep
+ * dists from ITS process, nothing orders the two suites, and two
+ * invocations of this package's own suites can overlap too — so every
+ * rebuild here (each per-root dep dist AND `dist/pragma`) also takes an
+ * O_EXCL lockfile beside the served artifact ({@link buildUnderLock}): a
+ * second process finding the lock waits for release and RE-STATS instead
+ * of double-building (two in-place `tsc` rewrites truncating one dist
+ * under a live importer), and a lock that never clears fails loudly after
+ * a timeout instead of forever.
  */
 
 import { spawnSync } from "node:child_process";
 import {
+  closeSync,
+  existsSync,
   lstatSync,
+  mkdirSync,
+  openSync,
   readdirSync,
   readFileSync,
   realpathSync,
+  rmSync,
   statSync,
+  writeSync,
 } from "node:fs";
-import { join, sep } from "node:path";
+import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** Everything the compiled binary is built FROM, relative to the package root. */
 const INPUTS = ["src", "scripts", "pragma.conf.ts", "package.json"];
+
+/** How long a contender waits on another process's build lock (ms). */
+const LOCK_TIMEOUT_MS = 120_000;
+
+/** Contention poll interval (ms). */
+const LOCK_POLL_MS = 200;
+
+/** Synchronous sleep — the gate is sync, in the main process, pre-worker. */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Serialize one artifact's rebuild across PROCESSES with an `O_EXCL`
+ * lockfile beside the served artifact — the same lock path every gate that
+ * serves this dist computes, so contention meets contention. The holder
+ * re-checks freshness UNDER the lock (a release between the caller's stat
+ * and the acquire means the dist was just built) and builds only if still
+ * stale; a contender waits for release and then RE-STATS instead of
+ * building — looping back to contend only if the dist is somehow still
+ * stale (the holder failed). A lockfile that never clears (a killed
+ * builder) fails loudly after {@link LOCK_TIMEOUT_MS} naming the file,
+ * rather than double-building or waiting forever.
+ *
+ * TWIN: cli/summon's globalSetup (src/testing/globalSetup.ts) carries the
+ * same helper — the two gates are deliberate SIBLINGS with no import edge
+ * (importing from `@canonical/pragma-cli` there would close a dependency
+ * cycle); keep the copies in step.
+ *
+ * @param artifact - The served dist artifact the lock guards.
+ * @param isFresh - Re-stats the artifact against its inputs.
+ * @param build - Rebuilds the artifact (throws loudly on failure).
+ * @note Impure — creates and removes `<artifact>.lock`; blocks while waiting.
+ */
+function buildUnderLock(
+  artifact: string,
+  isFresh: () => boolean,
+  build: () => void,
+): void {
+  const lockPath = `${artifact}.lock`;
+  const deadline = Date.now() + LOCK_TIMEOUT_MS;
+  // A never-built package has no dist dir yet; the lock needs its parent.
+  mkdirSync(dirname(lockPath), { recursive: true });
+  for (;;) {
+    let fd: number;
+    try {
+      fd = openSync(lockPath, "wx");
+    } catch (cause) {
+      if ((cause as NodeJS.ErrnoException).code !== "EEXIST") throw cause;
+      if (Date.now() >= deadline) {
+        throw new Error(
+          `perf globalSetup: build lock ${lockPath} still held after ` +
+            `${LOCK_TIMEOUT_MS}ms — a killed build may have left it behind; ` +
+            "delete the file and re-run",
+        );
+      }
+      sleepSync(LOCK_POLL_MS);
+      if (!existsSync(lockPath) && isFresh()) return;
+      continue;
+    }
+    try {
+      writeSync(fd, `${process.pid}\n`);
+      if (!isFresh()) build();
+      return;
+    } finally {
+      closeSync(fd);
+      rmSync(lockPath, { force: true });
+    }
+  }
+}
 
 /**
  * What feeds the binary inside one workspace dependency: its authored source,
@@ -217,21 +304,26 @@ function buildStaleDepDists(pkgRoot: string): void {
   for (const root of ordered) {
     const artifact = servedDistArtifact(root);
     if (!artifact) continue;
-    const built = newestMtime(artifact);
-    const fresh =
-      built > 0 &&
-      DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built);
-    if (fresh) continue;
-    const result = spawnSync("bun", ["run", "build"], {
-      cwd: root,
-      stdio: "pipe",
-      encoding: "utf-8",
-    });
-    if (result.status !== 0) {
-      throw new Error(
-        `perf globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+    const isFresh = (): boolean => {
+      const built = newestMtime(artifact);
+      return (
+        built > 0 &&
+        DIST_INPUTS.every((input) => newestMtime(join(root, input)) < built)
       );
-    }
+    };
+    if (isFresh()) continue;
+    buildUnderLock(artifact, isFresh, () => {
+      const result = spawnSync("bun", ["run", "build"], {
+        cwd: root,
+        stdio: "pipe",
+        encoding: "utf-8",
+      });
+      if (result.status !== 0) {
+        throw new Error(
+          `perf globalSetup: failed to build ${root}'s dist:\n${result.stdout}${result.stderr}`,
+        );
+      }
+    });
   }
 }
 
@@ -241,20 +333,29 @@ export default function setup(): void {
   // (which bundles them) stale below, so one setup pass yields one
   // consistent generation for every worker.
   buildStaleDepDists(root);
-  const built = newestMtime(join(root, "dist", "pragma"));
-  const fresh =
-    built > 0 &&
-    INPUTS.every((input) => newestMtime(join(root, input)) < built) &&
-    workspaceDepRoots(root).every((dep) =>
-      DEP_INPUTS.every((input) => newestMtime(join(dep, input)) < built),
+  const binary = join(root, "dist", "pragma");
+  const isFresh = (): boolean => {
+    const built = newestMtime(binary);
+    return (
+      built > 0 &&
+      INPUTS.every((input) => newestMtime(join(root, input)) < built) &&
+      workspaceDepRoots(root).every((dep) =>
+        DEP_INPUTS.every((input) => newestMtime(join(dep, input)) < built),
+      )
     );
-  if (fresh) return;
+  };
+  if (isFresh()) return;
 
-  const result = spawnSync("bun", ["run", "scripts/build.ts"], {
-    cwd: root,
-    stdio: "inherit",
+  // The binary rebuild is the same cross-process hazard as a dep dist (two
+  // overlapping invocations of this package's suites), so it takes the
+  // same lock.
+  buildUnderLock(binary, isFresh, () => {
+    const result = spawnSync("bun", ["run", "scripts/build.ts"], {
+      cwd: root,
+      stdio: "inherit",
+    });
+    if (result.status !== 0) {
+      throw new Error("perf globalSetup: failed to build dist/pragma");
+    }
   });
-  if (result.status !== 0) {
-    throw new Error("perf globalSetup: failed to build dist/pragma");
-  }
 }
