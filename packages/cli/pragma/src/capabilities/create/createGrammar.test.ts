@@ -11,6 +11,10 @@ import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildOptionInfo,
+  missingExplicitFlags,
+} from "@canonical/summon-core/projection";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RECOVERY_CLI_PREFIX, VERSION } from "../../constants.js";
 import type { GlobalFlags } from "../../kernel/runtime/types.js";
@@ -515,7 +519,7 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(stderr).toContain(
       "Refusing to scaffold in a non-interactive run without complete input. " +
         "Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. " +
-        "Missing: --component-path, --with-styles, --with-stories, --with-ssr-tests.",
+        "Missing: --component-path, --no-with-styles, --no-with-stories, --no-with-ssr-tests.",
     );
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
@@ -594,9 +598,45 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(result.stderr).toBe(
       "Refusing to scaffold in a non-interactive run without complete input. " +
         "Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. " +
-        "Missing: --component-path, --with-styles, --with-stories, --with-ssr-tests.\n",
+        "Missing: --component-path, --no-with-styles, --no-with-stories, --no-with-ssr-tests.\n",
     );
     expect(readdirSync(cwd)).toEqual([]);
+  }, 60_000);
+
+  it("the refusal's own instruction WORKS: its Missing tokens supplied back (+ --dry-run) parse and preview, exit 0", () => {
+    // Take the message's advice VERBATIM: extract the tokens the bare
+    // refusal prints, supply each back (a value for the path flag; the
+    // `--no-` confirms are bare), add --dry-run, and the same leaf must
+    // preview cleanly. Pre-fix the list kebab-cased prompt NAMES —
+    // `--with-styles` and friends, which no host registers — so this
+    // exact round-trip was `error: unknown option`, exit 2.
+    const refusal = run(["create", "component", "react"]);
+    expect(refusal.status).toBe(2);
+    const missing = /Missing: ([^\n]*)\./.exec(refusal.stderr);
+    expect(missing, `no Missing list in:\n${refusal.stderr}`).not.toBeNull();
+    const tokens = (missing as RegExpExecArray)[1]?.split(", ") ?? [];
+    expect(tokens).toEqual([
+      "--component-path",
+      "--no-with-styles",
+      "--no-with-stories",
+      "--no-with-ssr-tests",
+    ]);
+    const supplied = tokens.flatMap((token) =>
+      token === "--component-path"
+        ? [token, "src/components/Replied"]
+        : [token],
+    );
+    const replied = run([
+      "create",
+      "component",
+      "react",
+      ...supplied,
+      "--dry-run",
+    ]);
+    expect(replied.stderr).not.toContain("unknown option");
+    expect(replied.status).toBe(0);
+    expect(replied.stdout).toContain("Dry run");
+    expect(readdirSync(replied.cwd)).toEqual([]);
   }, 60_000);
 
   it("row 5 on the wire: a fully-explicit non-TTY leaf runs without --yes", () => {
@@ -732,4 +772,27 @@ describe("the wizard's seed — explicit answers only", () => {
       expect(tree).toContain(surface.description);
     }
   });
+});
+
+describe("the refusal's Missing tokens are REGISTERED flags — every declared leaf", () => {
+  // The round-14 defect: kebab-casing prompt NAMES advertised 13 of the 25
+  // tokens across the five leaves under spellings NO host registers (a
+  // default-true confirm registers ONLY `--no-<kebab>`), so following the
+  // refusal's own instruction exited 2. The pin: for every declared leaf,
+  // the bare-invocation Missing list ⊆ the long-flag set the single
+  // flag-shape authority yields for that leaf's prompts.
+  for (const [commandPath, surface] of Object.entries(CREATE_SURFACE)) {
+    it(`${commandPath}: missingExplicitFlags({}) names only buildOptionInfo's registered long forms`, () => {
+      const registered = surface.prompts.map(
+        (prompt) => buildOptionInfo(prompt).flags.split(" ")[0],
+      );
+      const missing = missingExplicitFlags(surface.prompts, {});
+      // Every declared leaf has at least one unconditional prompt, so an
+      // empty list can never green this pin vacuously.
+      expect(missing.length).toBeGreaterThan(0);
+      for (const token of missing) {
+        expect(registered).toContain(token);
+      }
+    });
+  }
 });

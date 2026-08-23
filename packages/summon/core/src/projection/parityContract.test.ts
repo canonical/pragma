@@ -35,10 +35,11 @@ describe("parity contract drift-guard — emitted == committed (PROTECTED)", () 
     expect(
       contract.split("\n").filter((line) => /^\| (yes|—) \|/.test(line)).length,
     ).toBe(32);
-    // …and the refusal template is the shared one, verbatim.
+    // …and the refusal template is the shared one, verbatim — the exemplar's
+    // default-true confirm listed by its only REGISTERED form (`--no-…`).
     expect(contract).toContain(
       "Refusing to scaffold in a non-interactive run without complete input.",
     );
-    expect(contract).toContain("Missing: --component-path, --with-styles.");
+    expect(contract).toContain("Missing: --component-path, --no-with-styles.");
   });
 });

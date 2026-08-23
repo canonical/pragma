@@ -147,7 +147,7 @@ describe("row 6 — non-TTY refusal (PROTECTED)", () => {
     expect(stderr).toContain(
       "Refusing to scaffold in a non-interactive run without complete input. " +
         "Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. " +
-        "Missing: --name, --description, --greeting, --with-readme.",
+        "Missing: --name, --description, --greeting, --no-with-readme.",
     );
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
@@ -159,7 +159,7 @@ describe("row 6 — non-TTY refusal (PROTECTED)", () => {
       cwd,
     );
     expect(status).toBe(2);
-    expect(stderr).toContain("Missing: --description, --with-readme.");
+    expect(stderr).toContain("Missing: --description, --no-with-readme.");
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 });

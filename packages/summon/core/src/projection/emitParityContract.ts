@@ -308,9 +308,12 @@ ${interactionTable()}
   > ${refusalBase}
 
   With a missing list (the exemplar's conditional prompt is excluded — the
-  \`Missing:\` list is the unconditional prompts absent from the explicit
-  answers, declared order, kebab-cased; a live \`when\` and a projected
-  \`conditional: true\` are treated identically):
+  \`Missing:\` list names each unconditional prompt absent from the explicit
+  answers, declared order, by its PRIMARY registered long form from
+  \`buildOptionInfo\` (§2) — \`--no-<kebab>\` for a default-true confirm,
+  \`--<kebab>\` otherwise — so every listed token parses on the command
+  that printed it; a live \`when\` and a projected \`conditional: true\`
+  are treated identically):
 
   > ${refusalWithMissing}
 

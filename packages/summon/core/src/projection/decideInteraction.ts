@@ -13,7 +13,7 @@
  * rather than silently scaffolding from defaults.
  */
 
-import toKebabCase from "./kebab.js";
+import buildOptionInfo from "./buildOptionInfo.js";
 import type { PromptLike } from "./types.js";
 
 /** The five interaction modes a CLI invocation resolves to. */
@@ -62,12 +62,19 @@ export function decideInteraction(
 }
 
 /**
- * The kebab-case flags of the unconditional prompts absent from the explicit
- * answers, in declared order — the `Missing:` list of the refusal message.
+ * The PRIMARY registered long-form flag of each unconditional prompt absent
+ * from the explicit answers, in declared order — the `Missing:` list of the
+ * refusal message. Every token is derived through {@link buildOptionInfo},
+ * the single flag-shape authority both binaries register from, so every
+ * listed token is one the command actually answers to: a default-`true`
+ * confirm is listed as its only registered form `--no-<kebab>` (kebab-casing
+ * the prompt NAME advertised `--<kebab>`, a flag neither host registers —
+ * following the refusal's own instruction then exited 2), everything else as
+ * `--<kebab>`.
  *
  * @param prompts - The command's prompts (live or projected).
  * @param explicit - The explicitly provided answers (no defaults).
- * @returns Kebab-case flag names (without `--`).
+ * @returns Registered long-form flag tokens (`--` included).
  */
 export function missingExplicitFlags(
   prompts: readonly PromptLike[],
@@ -79,21 +86,23 @@ export function missingExplicitFlags(
         !(prompt.when !== undefined || prompt.conditional === true) &&
         !(prompt.name in explicit),
     )
-    .map((prompt) => toKebabCase(prompt.name));
+    .map((prompt) => buildOptionInfo(prompt).flags.split(" ")[0]);
 }
 
 /**
  * The refusal message — authored ONCE here, written verbatim by BOTH CLIs
- * (stderr, exit 2).
+ * (stderr, exit 2). The tokens are rendered VERBATIM — they arrive as full
+ * registered flags (see {@link missingExplicitFlags}); re-prefixing here
+ * would double the dashes.
  *
- * @param missingKebabFlags - The missing flags (see {@link missingExplicitFlags}).
+ * @param missingFlags - The missing flag tokens (see
+ *   {@link missingExplicitFlags}).
  * @returns The complete refusal message.
  */
-export function refusalMessage(missingKebabFlags: readonly string[]): string {
+export function refusalMessage(missingFlags: readonly string[]): string {
   const base =
     "Refusing to scaffold in a non-interactive run without complete input. " +
     "Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag.";
-  if (missingKebabFlags.length === 0) return base;
-  const flags = missingKebabFlags.map((flag) => `--${flag}`).join(", ");
-  return `${base} Missing: ${flags}.`;
+  if (missingFlags.length === 0) return base;
+  return `${base} Missing: ${missingFlags.join(", ")}.`;
 }

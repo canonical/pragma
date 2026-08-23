@@ -175,11 +175,14 @@ All 32 rows, enumerated from the code:
   > Refusing to scaffold in a non-interactive run without complete input. Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag.
 
   With a missing list (the exemplar's conditional prompt is excluded — the
-  `Missing:` list is the unconditional prompts absent from the explicit
-  answers, declared order, kebab-cased; a live `when` and a projected
-  `conditional: true` are treated identically):
+  `Missing:` list names each unconditional prompt absent from the explicit
+  answers, declared order, by its PRIMARY registered long form from
+  `buildOptionInfo` (§2) — `--no-<kebab>` for a default-true confirm,
+  `--<kebab>` otherwise — so every listed token parses on the command
+  that printed it; a live `when` and a projected `conditional: true`
+  are treated identically):
 
-  > Refusing to scaffold in a non-interactive run without complete input. Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. Missing: --component-path, --with-styles.
+  > Refusing to scaffold in a non-interactive run without complete input. Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. Missing: --component-path, --no-with-styles.
 
 - **`wizard`** asks exactly `pendingPrompts(prompts, explicit)`: the
   explicitly provided answers are never re-asked, and a conditional prompt

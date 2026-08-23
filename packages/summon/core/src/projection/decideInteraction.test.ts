@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import buildOptionInfo from "./buildOptionInfo.js";
 import {
   decideInteraction,
   type InteractionMode,
@@ -92,28 +93,46 @@ describe("missingExplicitFlags", () => {
     },
   ];
 
-  it("lists unconditional prompts absent from the explicit answers, kebab-cased, declared order", () => {
+  it("lists unconditional prompts absent from the explicit answers as their PRIMARY registered long form, declared order", () => {
+    // The default-true confirm is listed as `--no-with-styles` — its ONLY
+    // registered flag. Kebab-casing the prompt name advertised
+    // `--with-styles`, which neither host registers: following the
+    // refusal's own instruction was `error: unknown option`, exit 2.
     expect(missingExplicitFlags(prompts, {})).toEqual([
-      "component-path",
-      "with-styles",
+      "--component-path",
+      "--no-with-styles",
     ]);
     expect(missingExplicitFlags(prompts, { componentPath: "x" })).toEqual([
-      "with-styles",
+      "--no-with-styles",
     ]);
   });
 
+  it("every returned token IS a flag buildOptionInfo registers for the same prompt set", () => {
+    // The derivation pin: the list may only name tokens the command
+    // actually answers to — the long-flag set the single flag-shape
+    // authority yields for these prompts.
+    const registered = prompts.map(
+      (prompt) => buildOptionInfo(prompt).flags.split(" ")[0],
+    );
+    for (const token of missingExplicitFlags(prompts, {})) {
+      expect(registered).toContain(token);
+    }
+  });
+
   it("skips conditional prompts in both live and projected form", () => {
-    expect(missingExplicitFlags(prompts, {})).not.toContain("use-ts-stories");
-    expect(missingExplicitFlags(prompts, {})).not.toContain("live-conditional");
+    expect(missingExplicitFlags(prompts, {})).not.toContain("--use-ts-stories");
+    expect(missingExplicitFlags(prompts, {})).not.toContain(
+      "--live-conditional",
+    );
   });
 });
 
 describe("refusalMessage", () => {
-  it("carries the recovery and the missing flag list", () => {
-    expect(refusalMessage(["component-path", "description"])).toBe(
+  it("renders the received tokens VERBATIM after `Missing:` — no re-prefixing", () => {
+    expect(refusalMessage(["--component-path", "--no-with-styles"])).toBe(
       "Refusing to scaffold in a non-interactive run without complete input. " +
         "Pass --yes to accept defaults, --dry-run to preview, or provide every answer as a flag. " +
-        "Missing: --component-path, --description.",
+        "Missing: --component-path, --no-with-styles.",
     );
   });
 
