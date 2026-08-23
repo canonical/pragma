@@ -1,7 +1,8 @@
 /**
  * A generator-raised typed invalid answer (summon-core's
- * `invalidAnswersError`, code GENERATOR_INVALID_ANSWER — the shape
- * application/react's ssr+router guard throws) renders as the App's clean
+ * `invalidAnswersError`, code GENERATOR_INVALID_ANSWER — a cross-answer
+ * constraint, two answers only valid together; no shipped generator raises
+ * one today, so a fixture drives it) renders as the App's clean
  * error phase — message + code, no crash box, no stack — on the run path
  * (pre-filled answers), the same UI every execution failure gets.
  */

@@ -49,8 +49,10 @@ export const GENERATOR_CANCELLED = "GENERATOR_CANCELLED";
 
 /**
  * Build the typed error a generator's `generate` throws for a CROSS-answer
- * constraint no single prompt's `validate` can see (e.g. application/react's
- * "SSR and the router are required together"). It carries the same
+ * constraint no single prompt's `validate` can see — two answers only valid
+ * together. No shipped generator declares one today (application/react's
+ * former ssr+router guard is gone with its prompts); the `guarded` fixture
+ * in cli/summon's interaction tests shows the shape. It carries the same
  * {@link GENERATOR_INVALID_ANSWER} code the validation failure inside
  * {@link execute} raises, so a host routes it down its existing invalid-input
  * pathway — pragma maps the code to `INVALID_INPUT` (exit 2), the summon bin

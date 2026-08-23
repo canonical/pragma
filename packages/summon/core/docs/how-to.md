@@ -465,18 +465,18 @@ summon my-gen --name=auto --yes           # same as -y
 For fully automated execution in CI/CD:
 
 ```bash
-# Provide ALL required prompts as flags + -y
+# Provide ALL required prompts as flags + -y. The confirm prompts are
+# default-on, so only the path is required here; a default-true confirm
+# registers ONLY its --no- form (opt out with e.g. --no-with-styles).
 summon component react \
   --component-path=src/components/Button \
-  --with-styles \
-  --with-stories \
-  --with-ssr-tests \
   -y
 ```
 
 Key flags:
 - `-y` / `--yes` — Skip all confirmation prompts AND the file preview step
-- All prompt values as flags (check `summon <generator> --help` for available flags)
+- All prompt values as REGISTERED flags (check `summon <generator> --help`
+  for the exact spellings — a default-true confirm has only a `--no-` form)
 
 ### LLM-Optimized Output
 

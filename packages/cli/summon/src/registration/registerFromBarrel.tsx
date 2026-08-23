@@ -297,7 +297,8 @@ async function runGeneratorAction(
       }
     } catch (error) {
       // A generator-raised typed invalid answer (a cross-answer constraint
-      // its `generate` enforces, e.g. application/react's ssr+router guard)
+      // its `generate` enforces — two answers only valid together; no
+      // shipped generator raises one today)
       // fails exactly like `validateAnswers` above: the bare message on
       // stderr, exit 2. Any OTHER throw is a generator bug — still the bare
       // message line, with the runtime class (exit 1), per §3's batch

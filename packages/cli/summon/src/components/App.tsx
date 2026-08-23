@@ -831,8 +831,9 @@ export const App = ({
 
   // Generate the task, entering the error phase on ANY throw — §3's exit
   // contract: a rendered failure never exits 0. A generator-raised typed
-  // invalid answer (a cross-answer constraint its `generate` enforces, e.g.
-  // application/react's ssr+router guard) is the usage class
+  // invalid answer (a cross-answer constraint its `generate` enforces — two
+  // answers only valid together; no shipped generator raises one today) is
+  // the usage class
   // (GENERATOR_INVALID_ANSWER → the effect's exit 2); any OTHER throw is a
   // generator bug rendered as GENERATE_ERROR — the run/wizard sibling of the
   // batch arms' bare stderr line — carrying the runtime class (exit 1).

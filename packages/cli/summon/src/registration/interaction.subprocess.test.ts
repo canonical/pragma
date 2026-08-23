@@ -90,7 +90,9 @@ export default {
 `,
   );
   // A generator with a CROSS-answer guard raised as summon-core's typed
-  // invalid answer — the shape application/react's ssr+router guard uses.
+  // invalid answer — two answers only valid together; no shipped generator
+  // raises one today (application/react's former guard is gone with its
+  // prompts), so this fixture keeps the pathway covered.
   mkdirSync(join(dir, "guarded"));
   writeFileSync(
     join(dir, "guarded", "index.js"),
