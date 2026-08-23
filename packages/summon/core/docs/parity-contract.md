@@ -24,12 +24,13 @@ The invariant binds the DECLARED BINDING PATHS as each host mounts them —
 `component/react|svelte|lit`, `package`, `application/react`: pragma's
 `CREATE_GENERATORS` declaration, and the same paths of the summon bin's
 discovered (or `--generators`-served) generator packages. Other generators
-a discovered package exports (`domain`/`route`/`wrapper`) and the summon
+a discovered package exports (`domain`/`route`/`wrapper` from
+summon-application, `monorepo` from summon-monorepo) and the summon
 builtins (`init`, `example/hello`, `example/webapp`) are summon-only
 surface OUTSIDE this contract — reachable through summon discovery only,
-never mounted by pragma, and no rule below speaks for them. A host's root presentation (the `create` topic page,
-summon's root help) is host prose; every rule below binds the declared
-paths beneath it.
+never mounted by pragma, and no rule below speaks for them. A host's root
+presentation (the `create` topic page, summon's root help) is host prose;
+every rule below binds the declared paths beneath it.
 
 ## 2. Grammar derivation
 
@@ -198,7 +199,12 @@ All 32 rows, enumerated from the code:
   written — with a message echoing the offending value:
   `Invalid --<flag> "<value>": <detail>` from a `validate` rejection,
   `Invalid --<flag> "<value>". Valid values: <choices>.` from a value
-  outside a select's choices. The declared path prompts
+  outside a select's choices. For this class the shared LINE is the
+  parity surface: pragma additionally renders it through its host error
+  rendering — a plain `Error: ` prefix, the condensed frame under
+  auto-detected LLM output or an explicit `--format llm`, the envelope
+  under `--format json` — while summon writes the bare line in every
+  format. The declared path prompts
   (`--component-path` on the three component leaves, `--app-path`)
   each carry a `validate` that rejects an absolute path and `..`
   traversal, so an output path that would escape the invocation
@@ -206,12 +212,15 @@ All 32 rows, enumerated from the code:
   pragma ADDITIONALLY refuses a path that RESOLVES outside the
   workspace through a symlink (its host-level jail, behind the shared
   validators — summon relies on the validator tier). Known residue,
-  disclosed and OUT of contract: the summon-only generators outside the
-  declared set (§1 — `domain`/`route`/`wrapper`, the builtins
-  `init`, `example/hello`, `example/webapp`) take name/path
-  prompts with no validator, and summon scaffolds where they point,
-  the invocation directory's outside included. The batch modes additionally
-  fail loudly (exit 2) on a required answer that is missing even after
+  disclosed and OUT of contract: the UNVALIDATED summon-only generators
+  outside the declared set (§1 — `domain`/`route`/`wrapper`, the
+  builtins `init`, `example/hello`, `example/webapp`) take
+  name/path prompts with no validator, and summon scaffolds where they
+  point, the invocation directory's outside included; `monorepo` is
+  not among them — its `name` prompt carries its own kebab-case
+  validator, so `../evil` fails this same gate at exit 2. The batch modes
+  additionally fail loudly (exit 2) on a required answer that is missing
+  even after
   defaults, and re-check the defaults-applied set (an invalid generator
   default fails the same way). A failure raised PAST that gate keeps the
   same classes in every arm: a generator-raised typed invalid answer (a
