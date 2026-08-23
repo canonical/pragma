@@ -150,12 +150,15 @@ describe("the mounted create grammar (subprocess)", () => {
   // closed the refusal; unknown option/verb already enveloped). The host
   // writer reframes them under writeRefusal's exact condition — explicit
   // `--format json`/`--format llm` only — with bin.ts's code taxonomy:
-  // unknown command → UNKNOWN_VERB, excess/usage → INVALID_INPUT — and
-  // bin.ts's SHAPE: `message` is a single prefix-stripped line and
-  // `suggestions` carries the BARE candidate segment — the field's ONE
-  // convention (ErrorPayload.suggestions: substitutable names, never full
-  // invocations), matching bin.ts's own UNKNOWN_VERB tier. The corrected
-  // full invocation lives only in the DEFAULT prose did-you-mean line.
+  // unknown command → UNKNOWN_VERB, excess/usage → INVALID_INPUT — and a
+  // single prefix-stripped `message` line. The match serializes PER KIND:
+  // an unknown segment is a FUZZY match, so its bare candidate rides in
+  // `suggestions` (substitutable for the token the message names —
+  // ErrorPayload.suggestions' convention, matching bin.ts's UNKNOWN_VERB
+  // tier); an excess positional's match is NOT substitutable (it may BE
+  // the stray its own message calls unexpected), so that kind omits
+  // `suggestions` and carries the runnable correction as `recovery.cli` —
+  // the same command the DEFAULT prose did-you-mean line names.
   it("the unknown-segment error envelopes under --format json — UNKNOWN_VERB with the bare segment in `suggestions`", () => {
     const { status, stderr, cwd } = run([
       "create",
@@ -184,7 +187,24 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("the excess-positional error envelopes under --format json — INVALID_INPUT, never raw prose", () => {
+  it("the excess-positional error envelopes under --format json — INVALID_INPUT, recovery.cli carrying the correction", () => {
+    /** Parse the one JSON line an envelope-writing spawn leaves on stderr. */
+    const envelopeOf = (stderr: string) => {
+      const line = stderr
+        .split("\n")
+        .find((candidate) => candidate.startsWith("{"));
+      expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
+      return JSON.parse(line as string) as {
+        ok: boolean;
+        error: {
+          code: string;
+          message: string;
+          suggestions?: string[];
+          recovery?: { message: string; cli?: string };
+        };
+      };
+    };
+
     const { status, stderr, cwd } = run([
       "create",
       "component",
@@ -195,24 +215,24 @@ describe("the mounted create grammar (subprocess)", () => {
       "json",
     ]);
     expect(status).toBe(2);
-    const line = stderr
-      .split("\n")
-      .find((candidate) => candidate.startsWith("{"));
-    expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
-    const envelope = JSON.parse(line as string) as {
-      ok: boolean;
-      error: { code: string; message: string; suggestions?: string[] };
-    };
+    const envelope = envelopeOf(stderr);
     expect(envelope.ok).toBe(false);
     expect(envelope.error.code).toBe("INVALID_INPUT");
     expect(envelope.error.message).toBe('unexpected argument "Extra"');
-    // No operand matched a segment: no suggestion, so the optional field is
-    // OMITTED — exactly as the kernel tier serializes an empty match list.
+    // No operand matched a segment: nothing runnable exists, so BOTH
+    // optional fields are OMITTED — exactly as serializeError drops every
+    // empty optional.
     expect(envelope.error.suggestions).toBeUndefined();
+    expect(envelope.error.recovery).toBeUndefined();
     expect(readdirSync(cwd)).toEqual([]);
 
-    // And WITH a match, the excess class carries the same bare-segment
-    // convention (the sibling `svelte`, not a joined invocation).
+    // WITH a match the correction is STRUCTURAL, never a substitution: in
+    // `react MyThing svelte` the matched operand (`svelte`) IS the token
+    // the message calls unexpected — a `suggestions` entry here told an
+    // agent to substitute `svelte` for `svelte` and retry the same argv
+    // (round-11 F2, found by four reviewers). The kind omits `suggestions`
+    // and carries the runnable command in the covenant's `recovery.cli` —
+    // byte-for-byte the command the default prose did-you-mean names.
     const matched = run([
       "create",
       "component",
@@ -223,15 +243,59 @@ describe("the mounted create grammar (subprocess)", () => {
       "json",
     ]);
     expect(matched.status).toBe(2);
-    const matchedLine = matched.stderr
-      .split("\n")
-      .find((candidate) => candidate.startsWith("{"));
-    expect(matchedLine, `no JSON envelope:\n${matched.stderr}`).toBeDefined();
-    const matchedEnvelope = JSON.parse(matchedLine as string) as {
-      error: { code: string; suggestions?: string[] };
-    };
+    const matchedEnvelope = envelopeOf(matched.stderr);
     expect(matchedEnvelope.error.code).toBe("INVALID_INPUT");
-    expect(matchedEnvelope.error.suggestions).toEqual(["svelte"]);
+    expect(matchedEnvelope.error.message).toBe('unexpected argument "svelte"');
+    expect(matchedEnvelope.error.suggestions).toBeUndefined();
+    expect(matchedEnvelope.error.recovery).toEqual({
+      message: "Run the corrected invocation.",
+      cli: "pragma create component svelte",
+    });
+
+    // The stray≠suggestion shape — `react svelte X` binds `svelte` as the
+    // positional and overflows `X` — carries the SAME correction while its
+    // message names an operand the correction never mentions: the shape
+    // that made a bare `suggestions` token unactionable.
+    const crossed = run([
+      "create",
+      "component",
+      "react",
+      "svelte",
+      "X",
+      "--format",
+      "json",
+    ]);
+    expect(crossed.status).toBe(2);
+    const crossedEnvelope = envelopeOf(crossed.stderr);
+    expect(crossedEnvelope.error.code).toBe("INVALID_INPUT");
+    expect(crossedEnvelope.error.message).toBe('unexpected argument "X"');
+    expect(crossedEnvelope.error.suggestions).toBeUndefined();
+    expect(crossedEnvelope.error.recovery).toEqual({
+      message: "Run the corrected invocation.",
+      cli: "pragma create component svelte",
+    });
+  }, 60_000);
+
+  it("the excess-positional recovery renders under --format llm through the renderer's own Recovery row", () => {
+    const { status, stderr } = run([
+      "create",
+      "component",
+      "react",
+      "MyThing",
+      "svelte",
+      "--format",
+      "llm",
+    ]);
+    expect(status).toBe(2);
+    expect(stderr).toContain("## Error: INVALID_INPUT");
+    expect(stderr).toContain('unexpected argument "svelte"');
+    // renderErrorLlm's existing recovery framing — no Suggestions row for
+    // this kind, and no bespoke framing invented for it.
+    expect(stderr).toContain(
+      "Recovery: Run the corrected invocation. `pragma create component svelte`",
+    );
+    expect(stderr).not.toContain("Suggestions:");
+    expect(stderr).not.toContain("Did you mean");
   }, 60_000);
 
   it("bin-tier usage errors envelope under --format llm too — the unknown option and the --framework migration error", () => {

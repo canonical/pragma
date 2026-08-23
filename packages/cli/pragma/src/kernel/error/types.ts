@@ -57,11 +57,15 @@ interface ErrorPayload {
   /**
    * Fuzzy-matched alternative names — BARE candidate tokens the caller can
    * substitute for the one token it typed (a verb, a tree segment), never
-   * full invocations. Every producer serializes this ONE convention:
+   * full invocations. The FUZZY tiers serialize this one convention:
    * bin.ts's unknown-command tier emits the candidate name (`block`) and
-   * the create mount's projection tier the candidate segment (`react`);
-   * the corrected full command line, when one is shown, lives in the
-   * default prose did-you-mean rendering, not in this field.
+   * the create mount's unknown-segment tier the candidate segment
+   * (`react`); the corrected full command line, when one is shown, lives
+   * in the default prose did-you-mean rendering, not in this field. An
+   * excess positional is NOT a fuzzy match — its matched operand may be
+   * the very token its message calls unexpected, or one the message never
+   * names — so that producer omits this field entirely and ships the
+   * runnable corrected command as `recovery.cli` instead.
    */
   readonly suggestions?: readonly string[];
   readonly recovery?: Recovery;

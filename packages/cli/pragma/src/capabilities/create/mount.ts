@@ -356,18 +356,35 @@ function mount(parent: Command, host: CliMountHost): void {
     // parity surface. Codes mirror bin.ts's classification of Commander
     // parse failures: unknown command → UNKNOWN_VERB, every other usage
     // error → INVALID_INPUT. The envelope `message` is SINGLE-LINE (the
-    // prefix-stripped first line of the projection's rendering) and
-    // `suggestions` carries the BARE candidate segment (`detail.suggestion`)
-    // — the field's one convention (see ErrorPayload.suggestions), matching
-    // bin.ts's own UNKNOWN_VERB tier. The corrected FULL invocation
-    // (`[...detail.chain, suggestion]`) lives only in the default prose
-    // did-you-mean line, which the machine formats drop.
+    // prefix-stripped first line of the projection's rendering); the match
+    // is serialized PER KIND. An unknown SEGMENT is a fuzzy match, so its
+    // bare candidate rides in `suggestions` (substitutable for the token
+    // the message names — the field's convention, see
+    // ErrorPayload.suggestions — matching bin.ts's own UNKNOWN_VERB tier).
+    // An excess positional's match is NOT substitutable — it may BE the
+    // stray the message calls unexpected, or an operand the message never
+    // names — so that kind OMITS `suggestions` and carries the runnable
+    // correction in the covenant's `recovery.cli` instead:
+    // `[...detail.chain, suggestion].join(" ")`, byte-for-byte the command
+    // the default prose did-you-mean line names (`chain[0]` is the mounted
+    // program's own name, so the D5 prefix invariant holds by derivation,
+    // never by literal).
     writeUsageError: (message, kind, detail) => {
       const suggested = detail.suggestion;
       const error = new PragmaError({
         code: kind === "unknown-segment" ? "UNKNOWN_VERB" : "INVALID_INPUT",
         message: (message.split("\n")[0] as string).replace(/^error:\s*/i, ""),
-        ...(suggested === undefined ? {} : { suggestions: [suggested] }),
+        ...(kind === "unknown-segment" && suggested !== undefined
+          ? { suggestions: [suggested] }
+          : {}),
+        ...(kind === "excess-positional" && suggested !== undefined
+          ? {
+              recovery: {
+                message: "Run the corrected invocation.",
+                cli: [...detail.chain, suggested].join(" "),
+              },
+            }
+          : {}),
       });
       const rendered = renderErrorForFormat(error, host.globalFlags.format);
       if (rendered === undefined) return false;

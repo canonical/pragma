@@ -39,7 +39,13 @@ export type UsageErrorKind = "unknown-segment" | "excess-positional";
 export interface UsageErrorDetail {
   /** The offending token: the stray operand / unknown segment. */
   readonly stray: string;
-  /** The suggested segment, when one ranked close enough. */
+  /**
+   * The suggested segment, when one matched — per-kind: for
+   * `unknown-segment` the candidate that RANKED closest to the stray
+   * (fuzzy, substitutable for it); for `excess-positional` the first
+   * OPERAND — bound or excess, possibly the stray itself — that exactly
+   * names a sibling or child segment (structural, not a substitution).
+   */
   readonly suggestion?: string;
   /**
    * The invocation chain the suggestion completes (root/bin name first):
@@ -78,8 +84,11 @@ export interface GeneratorCliHost<
    * the write (a host reframing the message for an explicitly requested
    * machine format — pragma routes both through the same error envelope
    * every other `create` failure emits under `--format json`/`--format
-   * llm`, carrying `detail.suggestion` — the bare matched segment — in the
-   * envelope's `suggestions` field); return `false` to leave the default
+   * llm`, serializing the match PER KIND: the unknown-segment candidate
+   * as the bare segment in the envelope's `suggestions`, the
+   * excess-positional match as the runnable corrected command in
+   * `recovery.cli`, the `[...detail.chain, detail.suggestion]` join);
+   * return `false` to leave the default
    * presentation, the message verbatim on stderr — the cross-CLI parity
    * bytes. The projection owns the exit code (2) either way. The return
    * is a REQUIRED `boolean` (not `boolean | void`): a writer that writes
