@@ -357,7 +357,8 @@ describe("the excess-positional guard", () => {
   it("a host writeUsageError that claims the write replaces the default stderr line", async () => {
     const program = makeProgram();
     const { host } = makeHost();
-    const writes: Array<{ message: string; kind: string }> = [];
+    const writes: Array<{ message: string; kind: string; detail: unknown }> =
+      [];
     const stderr = vi
       .spyOn(process.stderr, "write")
       .mockImplementation(() => true);
@@ -371,8 +372,8 @@ describe("the excess-positional guard", () => {
       ],
       {
         ...host,
-        writeUsageError: (message, kind) => {
-          writes.push({ message, kind });
+        writeUsageError: (message, kind, detail) => {
+          writes.push({ message, kind, detail });
           return true;
         },
       },
@@ -384,11 +385,56 @@ describe("the excess-positional guard", () => {
       {
         message: 'error: unexpected argument "Extra"',
         kind: "excess-positional",
+        // No segment matched: the detail carries the stray and the chain,
+        // no suggestion — a reframing host omits its suggestions field.
+        detail: { stray: "Extra", chain: ["bin", "widget"] },
       },
     ]);
     // The claimed write suppresses the projection's default presentation;
     // the exit code stays projection-owned.
     expect(stderr).not.toHaveBeenCalled();
+    expect(process.exitCode).toBe(2);
+    stderr.mockRestore();
+  });
+
+  it("the excess-positional detail carries the matched segment and its chain", async () => {
+    const program = makeProgram();
+    const { host } = makeHost();
+    const details: unknown[] = [];
+    const stderr = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation(() => true);
+    registerGeneratorCommands(
+      program,
+      [
+        { path: ["component"], description: "component generators" },
+        {
+          path: ["component", "react"],
+          generator: makeGenerator("component/react", { positional: true }),
+        },
+        {
+          path: ["component", "svelte"],
+          generator: makeGenerator("component/svelte", { positional: true }),
+        },
+      ],
+      {
+        ...host,
+        writeUsageError: (_message, _kind, detail) => {
+          details.push(detail);
+          return true;
+        },
+      },
+    );
+    await program.parseAsync(["component", "react", "svelte", "X"], {
+      from: "user",
+    });
+    // The sibling case: the STRAY is the overflow operand, the SUGGESTION
+    // the matched sibling, and the chain the corrected invocation's prefix —
+    // `[...chain, suggestion].join(" ")` is byte-for-byte the command the
+    // message's did-you-mean line names (`bin component svelte`).
+    expect(details).toEqual([
+      { stray: "X", suggestion: "svelte", chain: ["bin", "component"] },
+    ]);
     expect(process.exitCode).toBe(2);
     stderr.mockRestore();
   });
@@ -407,7 +453,7 @@ describe("the excess-positional guard", () => {
           generator: makeGenerator("widget", { positional: true }),
         },
       ],
-      { ...host, writeUsageError: () => undefined },
+      { ...host, writeUsageError: () => false },
     );
     await program.parseAsync(["widget", "MyComponent", "Extra"], {
       from: "user",
@@ -540,7 +586,8 @@ describe("the namespace command — shared stray and bare behavior", () => {
   it("the stray-segment message routes through a claiming host writeUsageError with its kind", async () => {
     const program = makeProgram();
     const { host } = makeHost();
-    const writes: Array<{ message: string; kind: string }> = [];
+    const writes: Array<{ message: string; kind: string; detail: unknown }> =
+      [];
     const stderr = vi
       .spyOn(process.stderr, "write")
       .mockImplementation(() => true);
@@ -555,8 +602,8 @@ describe("the namespace command — shared stray and bare behavior", () => {
       ],
       {
         ...host,
-        writeUsageError: (message, kind) => {
-          writes.push({ message, kind });
+        writeUsageError: (message, kind, detail) => {
+          writes.push({ message, kind, detail });
           return true;
         },
       },
@@ -567,6 +614,13 @@ describe("the namespace command — shared stray and bare behavior", () => {
         message:
           "error: unknown command 'reakt'\nDid you mean 'bin component react'?",
         kind: "unknown-segment",
+        // The structured twin of the rendered lines: the stray, the ranked
+        // segment, and the chain whose join names the corrected command.
+        detail: {
+          stray: "reakt",
+          suggestion: "react",
+          chain: ["bin", "component"],
+        },
       },
     ]);
     expect(stderr).not.toHaveBeenCalled();

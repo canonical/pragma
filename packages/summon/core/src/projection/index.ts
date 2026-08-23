@@ -42,6 +42,7 @@ export { default as toKebabCase } from "./kebab.js";
 export { default as projectGenerator } from "./projectGenerator.js";
 export type {
   GeneratorCliHost,
+  UsageErrorDetail,
   UsageErrorKind,
 } from "./registerGeneratorCommand.js";
 export {

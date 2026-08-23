@@ -359,15 +359,22 @@ function mount(parent: Command, host: CliMountHost): void {
     // piped bytes stay the cross-CLI parity surface — through the same
     // renderers every other pragma error uses. Codes mirror bin.ts's
     // classification of Commander parse failures: unknown command →
-    // UNKNOWN_VERB, every other usage error → INVALID_INPUT; like bin.ts's
-    // envelope path, the message drops its `error: ` prefix (the
-    // did-you-mean line rides inside it).
-    writeUsageError: (message, kind) => {
+    // UNKNOWN_VERB, every other usage error → INVALID_INPUT. The envelope
+    // `message` is SINGLE-LINE (the prefix-stripped first line of the
+    // projection's rendering) and the did-you-mean rides in the covenant's
+    // `suggestions` field as the corrected invocation — exactly how bin.ts's
+    // own UNKNOWN_VERB tier serializes, so one code has one shape.
+    writeUsageError: (message, kind, detail) => {
       const { format } = host.globalFlags;
       if (format !== "json" && format !== "llm") return false;
+      const suggested =
+        detail?.suggestion === undefined
+          ? undefined
+          : [...detail.chain, detail.suggestion].join(" ");
       const error = new PragmaError({
         code: kind === "unknown-segment" ? "UNKNOWN_VERB" : "INVALID_INPUT",
-        message: message.replace(/^error:\s*/i, ""),
+        message: (message.split("\n")[0] as string).replace(/^error:\s*/i, ""),
+        ...(suggested === undefined ? {} : { suggestions: [suggested] }),
       });
       process.stderr.write(
         `${format === "json" ? renderErrorJson(error) : renderErrorLlm(error)}\n`,

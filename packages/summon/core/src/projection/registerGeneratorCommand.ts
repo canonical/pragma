@@ -29,6 +29,26 @@ import type {
 /** The projection's two designed usage-error classes (the writer's tag). */
 export type UsageErrorKind = "unknown-segment" | "excess-positional";
 
+/**
+ * The structured facts behind a projection usage error, handed to a host's
+ * {@link GeneratorCliHost.writeUsageError} alongside the rendered message —
+ * so a host reframing the error for a machine format can put the match in a
+ * structured field (pragma's envelope `suggestions`) instead of re-parsing
+ * the prose.
+ */
+export interface UsageErrorDetail {
+  /** The offending token: the stray operand / unknown segment. */
+  readonly stray: string;
+  /** The suggested segment, when one ranked close enough. */
+  readonly suggestion?: string;
+  /**
+   * The invocation chain the suggestion completes (root/bin name first):
+   * `[...chain, suggestion].join(" ")` is exactly the corrected command the
+   * message's did-you-mean line names.
+   */
+  readonly chain: readonly string[];
+}
+
 /** The host seam: what a binary contributes to each registered command. */
 export interface GeneratorCliHost<
   G extends SurfaceGenerator = GeneratorDefinition,
@@ -58,24 +78,38 @@ export interface GeneratorCliHost<
    * the write (a host reframing the message for an explicitly requested
    * machine format — pragma routes both through the same error envelope
    * every other `create` failure emits under `--format json`/`--format
-   * llm`); any other return leaves the default presentation, the message
-   * verbatim on stderr — the cross-CLI parity bytes. The projection owns
-   * the exit code (2) either way.
+   * llm`, carrying `detail`'s suggested invocation in the envelope's
+   * `suggestions` field); return `false` to leave the default
+   * presentation, the message verbatim on stderr — the cross-CLI parity
+   * bytes. The projection owns the exit code (2) either way. The return
+   * is a REQUIRED `boolean` (not `boolean | void`): a writer that writes
+   * and returns nothing would be indistinguishable from one declining,
+   * and the projection would write the default line again — a silent
+   * double-write.
    */
   readonly writeUsageError?: (
     message: string,
     kind: UsageErrorKind,
-  ) => boolean | void;
+    detail?: UsageErrorDetail,
+  ) => boolean;
+}
+
+/** A usage error as built: the rendered message plus its structured facts. */
+interface UsageError {
+  readonly message: string;
+  readonly detail: UsageErrorDetail;
 }
 
 /** Write one of the projection's usage errors, host writer first. */
 function writeUsageError<G extends SurfaceGenerator>(
   host: GeneratorCliHost<G>,
-  message: string,
+  usage: UsageError,
   kind: UsageErrorKind,
 ): void {
-  if (host.writeUsageError?.(message, kind) === true) return;
-  process.stderr.write(`${message}\n`);
+  if (host.writeUsageError?.(usage.message, kind, usage.detail) === true) {
+    return;
+  }
+  process.stderr.write(`${usage.message}\n`);
 }
 
 /** Add prompt-based options to a Commander command. */
@@ -105,8 +139,36 @@ function addPromptOptions(cmd: Command, prompts: readonly PromptLike[]): void {
  * @param operands - Every operand the command received (bound + excess).
  * @param siblings - The leaf's sibling segments (other children of its parent).
  * @param children - The leaf's own child segments (runnable-namespace case).
- * @returns The full error text (one or two lines, no trailing newline).
+ * @returns The rendered error text (one or two lines, no trailing newline)
+ *   plus the structured facts a host writer may reframe.
  */
+function excessArgumentUsage(
+  commandChain: readonly string[],
+  stray: string,
+  operands: readonly string[],
+  siblings: ReadonlySet<string>,
+  children: ReadonlySet<string>,
+): UsageError {
+  const error = `error: unexpected argument "${stray}"`;
+  for (const operand of operands) {
+    if (children.has(operand)) {
+      return {
+        message: `${error}\nDid you mean '${[...commandChain, operand].join(" ")}'?`,
+        detail: { stray, suggestion: operand, chain: commandChain },
+      };
+    }
+    if (siblings.has(operand)) {
+      const chain = commandChain.slice(0, -1);
+      return {
+        message: `${error}\nDid you mean '${[...chain, operand].join(" ")}'?`,
+        detail: { stray, suggestion: operand, chain },
+      };
+    }
+  }
+  return { message: error, detail: { stray, chain: commandChain } };
+}
+
+/** The rendered text of {@link excessArgumentUsage} (the tested surface). */
 export function excessArgumentMessage(
   commandChain: readonly string[],
   stray: string,
@@ -114,16 +176,8 @@ export function excessArgumentMessage(
   siblings: ReadonlySet<string>,
   children: ReadonlySet<string>,
 ): string {
-  const error = `error: unexpected argument "${stray}"`;
-  for (const operand of operands) {
-    if (children.has(operand)) {
-      return `${error}\nDid you mean '${[...commandChain, operand].join(" ")}'?`;
-    }
-    if (siblings.has(operand)) {
-      return `${error}\nDid you mean '${[...commandChain.slice(0, -1), operand].join(" ")}'?`;
-    }
-  }
-  return error;
+  return excessArgumentUsage(commandChain, stray, operands, siblings, children)
+    .message;
 }
 
 /**
@@ -198,18 +252,31 @@ function closestSegment(
  *   invocation (`pragma create component react`, not a truncated one).
  * @param stray - The unrecognized segment.
  * @param children - The namespace's child segments.
- * @returns The full error text (one or two lines, no trailing newline).
+ * @returns The rendered error text (one or two lines, no trailing newline)
+ *   plus the structured facts a host writer may reframe.
  */
+function unknownSegmentUsage(
+  commandChain: readonly string[],
+  stray: string,
+  children: readonly string[],
+): UsageError {
+  const error = `error: unknown command '${stray}'`;
+  const suggestion = closestSegment(stray, children);
+  return suggestion === undefined
+    ? { message: error, detail: { stray, chain: commandChain } }
+    : {
+        message: `${error}\nDid you mean '${[...commandChain, suggestion].join(" ")}'?`,
+        detail: { stray, suggestion, chain: commandChain },
+      };
+}
+
+/** The rendered text of {@link unknownSegmentUsage} (the tested surface). */
 export function unknownSegmentMessage(
   commandChain: readonly string[],
   stray: string,
   children: readonly string[],
 ): string {
-  const error = `error: unknown command '${stray}'`;
-  const suggestion = closestSegment(stray, children);
-  return suggestion === undefined
-    ? error
-    : `${error}\nDid you mean '${[...commandChain, suggestion].join(" ")}'?`;
+  return unknownSegmentUsage(commandChain, stray, children).message;
 }
 
 /** The command's full name chain (root/bin name first, leaf last). */
@@ -314,14 +381,14 @@ function configureGeneratorCommand<G extends SurfaceGenerator>(
   cmd.action(async (...actionArgs: unknown[]) => {
     if (cmd.args.length > declaredPositionals) {
       const stray = cmd.args[declaredPositionals] as string;
-      const message = excessArgumentMessage(
+      const usage = excessArgumentUsage(
         commandChain(cmd),
         stray,
         cmd.args,
         siblings,
         children,
       );
-      writeUsageError(host, message, "excess-positional");
+      writeUsageError(host, usage, "excess-positional");
       process.exitCode = 2;
       return;
     }
@@ -354,7 +421,7 @@ function configureNamespaceCommand<G extends SurfaceGenerator>(
       const children = cmd.commands.map((child) => child.name());
       writeUsageError(
         host,
-        unknownSegmentMessage(commandChain(cmd), stray, children),
+        unknownSegmentUsage(commandChain(cmd), stray, children),
         "unknown-segment",
       );
       process.exitCode = 2;

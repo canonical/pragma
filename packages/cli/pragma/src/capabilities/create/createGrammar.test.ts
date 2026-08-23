@@ -150,8 +150,11 @@ describe("the mounted create grammar (subprocess)", () => {
   // closed the refusal; unknown option/verb already enveloped). The host
   // writer reframes them under writeRefusal's exact condition — explicit
   // `--format json`/`--format llm` only — with bin.ts's code taxonomy:
-  // unknown command → UNKNOWN_VERB, excess/usage → INVALID_INPUT.
-  it("the unknown-segment error envelopes under --format json — UNKNOWN_VERB, like the bin's own tier", () => {
+  // unknown command → UNKNOWN_VERB, excess/usage → INVALID_INPUT — and
+  // bin.ts's SHAPE: `message` is a single prefix-stripped line and the
+  // did-you-mean is the covenant's `suggestions` field (the corrected
+  // invocation), so one code serializes one way across the two tiers.
+  it("the unknown-segment error envelopes under --format json — UNKNOWN_VERB with the suggestion in `suggestions`", () => {
     const { status, stderr, cwd } = run([
       "create",
       "component",
@@ -166,14 +169,17 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
     const envelope = JSON.parse(line as string) as {
       ok: boolean;
-      error: { code: string; message: string };
+      error: { code: string; message: string; suggestions?: string[] };
     };
     expect(envelope.ok).toBe(false);
     expect(envelope.error.code).toBe("UNKNOWN_VERB");
-    expect(envelope.error.message).toContain("unknown command 'reakt'");
-    expect(envelope.error.message).toContain(
-      "Did you mean 'pragma create component react'?",
-    );
+    // SINGLE line — an agent rendering `message` never meets an embedded
+    // newline, and the structured match sits where every other pragma
+    // fuzzy-match error puts it.
+    expect(envelope.error.message).toBe("unknown command 'reakt'");
+    expect(envelope.error.suggestions).toEqual([
+      "pragma create component react",
+    ]);
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
@@ -194,15 +200,18 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(line, `no JSON envelope on stderr:\n${stderr}`).toBeDefined();
     const envelope = JSON.parse(line as string) as {
       ok: boolean;
-      error: { code: string; message: string };
+      error: { code: string; message: string; suggestions?: string[] };
     };
     expect(envelope.ok).toBe(false);
     expect(envelope.error.code).toBe("INVALID_INPUT");
-    expect(envelope.error.message).toContain('unexpected argument "Extra"');
+    expect(envelope.error.message).toBe('unexpected argument "Extra"');
+    // No operand matched a segment: no suggestion, so the optional field is
+    // OMITTED — exactly as the kernel tier serializes an empty match list.
+    expect(envelope.error.suggestions).toBeUndefined();
     expect(readdirSync(cwd)).toEqual([]);
   }, 60_000);
 
-  it("the unknown-segment error under --format llm carries the condensed error framing", () => {
+  it("the unknown-segment error under --format llm carries the condensed framing with a Suggestions line", () => {
     const { status, stderr } = run([
       "create",
       "component",
@@ -213,6 +222,9 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(status).toBe(2);
     expect(stderr).toContain("## Error: UNKNOWN_VERB");
     expect(stderr).toContain("unknown command 'reakt'");
+    // The renderer's own Suggestions row — not a third prose line.
+    expect(stderr).toContain("Suggestions: pragma create component react");
+    expect(stderr).not.toContain("Did you mean");
   }, 60_000);
 
   it("DEFAULT piped output for both projection usage errors stays the raw prose — full stderr, no envelope", () => {
