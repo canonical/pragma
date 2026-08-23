@@ -257,10 +257,26 @@ const DIST_INPUTS = [
  * statted as one absolute constant, UNCONDITIONALLY for every dep root (a
  * cheap single stat; roots whose build never runs it just carry a harmless
  * extra input).
+ *
+ * WATCHED-CONSTANT RULE: for one absolute constant a stat of 0 is ALWAYS a
+ * bug — the copier moved (the filed PRA-138 relocation is the standing
+ * trigger) and the constant dangles — never a legitimate absence like
+ * {@link DIST_INPUTS}' root-relative entries. `newestMtime`'s 0 would make
+ * `0 < built` vacuously true, silently deleting the clause from every
+ * gate, so the module THROWS at load while the path is missing. EXPORTED
+ * for the existsSync pin in globalSetup.test.ts.
+ * TWIN: cli/pragma's perf globalSetup carries the same constant and rule.
  */
-const TEMPLATE_COPIER = fileURLToPath(
+export const TEMPLATE_COPIER = fileURLToPath(
   new URL("../../../../../scripts/copy-templates.ts", import.meta.url),
 );
+if (!existsSync(TEMPLATE_COPIER)) {
+  throw new Error(
+    `summon globalSetup: the watched template copier is MISSING at ${TEMPLATE_COPIER} — ` +
+      "the TEMPLATE_COPIER constant dangles (copier moved?); fix the path, " +
+      "or its freshness clause silently stops watching",
+  );
+}
 
 /**
  * The served entry artifact of one workspace package (`module` ?? `main`),

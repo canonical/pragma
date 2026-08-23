@@ -22,7 +22,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { buildDistOrDestroy } from "./globalSetup.js";
+import { buildDistOrDestroy, TEMPLATE_COPIER } from "./globalSetup.js";
 
 describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
   let root: string;
@@ -149,5 +149,17 @@ describe("buildDistOrDestroy — the per-root build-or-destroy wrapper", () => {
     expect(invoked).toBe(false);
     expect(watched.map((dir) => statSync(dir).mtimeMs)).toEqual(before);
     expect(existsSync(join(root, ".dist-build.lock"))).toBe(false);
+  });
+});
+
+describe("TEMPLATE_COPIER — the watched repo-root constant", () => {
+  it("resolves to a real file — a dangling constant would stat 0 and silently un-watch the copier", () => {
+    // The gate's isFresh uses `newestMtime(TEMPLATE_COPIER) < built`, and
+    // newestMtime returns 0 for a missing path — always true against an
+    // existing artifact, i.e. the clause becomes a NO-OP with no red cell.
+    // The module also throws at load when the path is missing; this pin
+    // fails the suite loudly at the moment a relocation (PRA-138) orphans
+    // the constant instead of quietly returning to the round-15 F8 hole.
+    expect(existsSync(TEMPLATE_COPIER)).toBe(true);
   });
 });

@@ -310,10 +310,26 @@ const DIST_INPUTS = [
  * extra input). The compiled BINARY's own rule deliberately omits it:
  * `scripts/build.ts` embeds each package's `src` templates directly and
  * never runs the copier.
+ *
+ * WATCHED-CONSTANT RULE: for one absolute constant a stat of 0 is ALWAYS a
+ * bug — the copier moved (the filed PRA-138 relocation is the standing
+ * trigger) and the constant dangles — never a legitimate absence like
+ * {@link DIST_INPUTS}' root-relative entries. `newestMtime`'s 0 would make
+ * `0 < built` vacuously true, silently deleting the clause from every
+ * gate, so the module THROWS at load while the path is missing. EXPORTED
+ * for the existsSync pin in globalSetup.test.ts.
+ * TWIN: cli/summon's globalSetup carries the same constant and rule.
  */
-const TEMPLATE_COPIER = fileURLToPath(
+export const TEMPLATE_COPIER = fileURLToPath(
   new URL("../../../../../../scripts/copy-templates.ts", import.meta.url),
 );
+if (!existsSync(TEMPLATE_COPIER)) {
+  throw new Error(
+    `perf globalSetup: the watched template copier is MISSING at ${TEMPLATE_COPIER} — ` +
+      "the TEMPLATE_COPIER constant dangles (copier moved?); fix the path, " +
+      "or its freshness clause silently stops watching",
+  );
+}
 
 /**
  * The served entry artifact of one workspace package (`module` ?? `main`),
