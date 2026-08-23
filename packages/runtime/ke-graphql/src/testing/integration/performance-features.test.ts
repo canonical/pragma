@@ -17,6 +17,7 @@ import {
   type SchemaPluginApi,
   serializeExtraction,
 } from "../../lib/compiler/index.js";
+import runPasses from "../../lib/compiler/runPasses.js";
 import { createSchemaPlugin } from "../../lib/index.js";
 import { GRAPHQL_TERMS } from "../../lib/shared/index.js";
 import { DS_REALISTIC_TTL, MINIMAL_TTL, PREFIXES } from "../index.js";
@@ -119,6 +120,25 @@ describe("extraction artifact (DMMF-style boot)", () => {
     expect(
       compileFromExtraction(artifact).schema.getType("Thing"),
     ).toBeDefined();
+  });
+
+  it("tolerates an extraction object built without the deferred list", async () => {
+    // The field is optional on the public RawExtraction type: a consumer
+    // constructing extraction objects by hand may omit it entirely, and both
+    // Pass 2 and serialization must treat absence as the empty list.
+    const store = await boot(MINIMAL_TTL);
+    const live = await compile(createStoreQueryFn(store), PREFIXES);
+    const { deferredSyntheticNamespaces: _dropped, ...bare } = live.extraction;
+    const serialized = serializeExtraction(bare, "0");
+    expect(
+      deserializeExtraction(serialized).extraction.deferredSyntheticNamespaces,
+    ).toEqual([]);
+    expect(
+      compileFromExtraction(JSON.parse(serialized)).schema.getType("Thing"),
+    ).toBeDefined();
+    // And the passes accept the bare object directly, not only via the
+    // artifact path (which fills the default in during deserialization).
+    expect(runPasses(bare, {}).schema.getType("Thing")).toBeDefined();
   });
 
   it("defaults graphqlAnnotations to [] for a pre-vocabulary artifact", async () => {

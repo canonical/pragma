@@ -58,7 +58,7 @@ export const serializeExtraction = (
       functionals: [...extraction.functionals],
       datatypes: extraction.datatypes,
       namespaces: [...extraction.namespaces],
-      deferredSyntheticNamespaces: extraction.deferredSyntheticNamespaces,
+      deferredSyntheticNamespaces: extraction.deferredSyntheticNamespaces ?? [],
       shaclConstraints: extraction.shaclConstraints,
       unions: extraction.unions,
       instanceStats: [...extraction.instanceStats],

@@ -217,7 +217,7 @@ export interface RawExtraction {
    * for every namespace its bound overlay leaves on the synthetic — under
    * mode "auto" that is all of them — and stays silent for the rest.
    */
-  deferredSyntheticNamespaces: readonly string[];
+  deferredSyntheticNamespaces?: readonly string[];
   shaclConstraints: RawShaclConstraint[];
   unions: RawUnion[];
 
