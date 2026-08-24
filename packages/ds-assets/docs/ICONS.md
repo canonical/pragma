@@ -79,6 +79,32 @@ The hash changes only when that specific icon's contents change, so:
 
 If your build tooling already fingerprints static directories at the CDN/infra layer, this is redundant and you can self-host plain `icons/` instead — just be sure your infra's fingerprinting genuinely keys on file content, not just a directory-level version stamp, or you're back to the coarse-invalidation problem above.
 
+### Custom icons
+
+`Icon` (`@canonical/react-ds-global`) accepts icon names outside `ds-assets` — its `icon` prop takes any string, not just the built-in `IconName` union. A custom icon with no manifest entry still renders (falling back to plain `<icon>.svg` naming), but isn't cache-safe on its own.
+
+To give a custom icon the same per-file cache invalidation as `ds-assets`' own icons, hash it the same way, using the underlying utility `ds-assets` itself is built on:
+
+```typescript
+import { buildAssetManifest } from "@canonical/ds-assets/build";
+
+// In your build script:
+const customManifest = buildAssetManifest({
+  sourceDir: "./src/custom-icons",
+  outDir: "./public/icons",
+});
+```
+
+Then merge it into `ICON_MANIFEST` when passing `manifest` to `Icon`:
+
+```tsx
+import { ICON_MANIFEST } from "@canonical/ds-assets";
+
+<Icon icon="my-custom-icon" manifest={{ ...ICON_MANIFEST, ...customManifest }} />
+```
+
+`buildAssetManifest` is Node-only (reads/writes the filesystem) — import it from your own build tooling, not from browser-rendered code.
+
 ## Changes from Vanilla
 
 Vanilla's icon set had inconsistent colouring. Some icons were monochromatic using `currentColor`, others used hardcoded colours. All icons have been updated to use `currentColor` exclusively.

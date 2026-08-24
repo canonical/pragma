@@ -9,7 +9,7 @@ import type { IconName } from "./types.js";
  * `dist/icons/` verbatim gets correct per-file cache invalidation with no
  * extra configuration. See docs/ICONS.md.
  */
-export const ICON_MANIFEST: Record<IconName, string> = {
+const ICON_MANIFEST: Record<IconName, string> = {
   "add-canvas": "add-canvas.b98b4038.svg",
   "add-logical-volume": "add-logical-volume.fa70f6c7.svg",
   "add-partition": "add-partition.87402d34.svg",
@@ -176,3 +176,5 @@ export const ICON_MANIFEST: Record<IconName, string> = {
   x: "x.3954461a.svg",
   youtube: "youtube.3bd402a6.svg",
 };
+
+export default ICON_MANIFEST;

@@ -96,9 +96,26 @@ If you serve the icons from a different path:
   ```
 
   There is currently no global default — the override is per component
-  instance. `Icon` also accepts a `manifest` prop to override
-  `ICON_MANIFEST` — for a custom self-hosting scheme, or a mocked manifest in
-  tests.
+  instance. `Icon` also accepts a `manifest` prop to override or extend
+  `ICON_MANIFEST` — for a mocked manifest in tests, a custom self-hosting
+  scheme, or **icons outside `ds-assets`**: `icon` accepts any string, so a
+  custom icon renders once you self-host its SVG under `rootPath` and give
+  it a manifest entry:
+
+  ```tsx
+  <Icon
+    icon="my-custom-icon"
+    manifest={{ ...ICON_MANIFEST, "my-custom-icon": "my-custom-icon.<hash>.svg" }}
+  />
+  ```
+
+  A custom icon with no manifest entry still renders, falling back to plain
+  `<icon>.svg` naming — functional, but not cache-safe, so give it a
+  manifest entry if you care about invalidating it correctly. To hash your
+  own icons the same way `ds-assets` hashes its own (rather than inventing
+  your own scheme), use `buildAssetManifest` from
+  `@canonical/ds-assets/build` in your own build script — see `ds-assets`'
+  [docs/ICONS.md](../../ds-assets/docs/ICONS.md#custom-icons).
 
 - **CSS-referenced icons** (such as the `Accordion` caret) are fixed at
   `/icons` in the stylesheet and cannot be redirected via a prop. Serve the

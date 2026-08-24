@@ -11,6 +11,10 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
     },
+    "./build": {
+      "types": "./dist/types/build/index.d.ts",
+      "import": "./dist/esm/build/index.js"
+    },
     "./icons/*": "./icons/*",
     "./fonts/*": "./fonts/*",
     "./package.json": "./package.json"

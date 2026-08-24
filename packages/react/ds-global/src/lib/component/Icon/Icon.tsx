@@ -32,7 +32,14 @@ const Icon = ({
   role,
   ...props
 }: IconProps): ReactElement => {
-  const fileName = manifest?.[icon] ?? ICON_MANIFEST[icon];
+  // `icon` may name a custom icon outside `ds-assets`, so the manifest
+  // lookups here are partial despite `ICON_MANIFEST`'s type: an unrecognised
+  // `icon` falls through both maps to plain `<icon>.svg` naming — functional,
+  // but only cache-safe once the consumer adds a manifest entry for it.
+  const fileName =
+    manifest?.[icon] ??
+    (ICON_MANIFEST as Record<string, string>)[icon] ??
+    `${icon}.svg`;
 
   // Icons are decorative by default and hidden from assistive technology.
   // Providing an accessible name (aria-label/aria-labelledby) or an explicit

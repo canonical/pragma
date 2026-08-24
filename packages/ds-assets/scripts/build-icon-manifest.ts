@@ -1,6 +1,7 @@
 /**
- * Generates a content-hash manifest for the icons in `icons/`, and writes a
- * hashed copy of each SVG to `dist/icons/` for cache-safe self-hosting.
+ * Generates ICON_MANIFEST — a content-hash manifest for the icons in
+ * `icons/` — and writes a hashed copy of each SVG to `dist/icons/` for
+ * cache-safe self-hosting.
  *
  * Filenames are stable across releases (`search.svg` never changes name even
  * when its glyph does), so a consumer who self-hosts `icons/` verbatim behind
@@ -10,39 +11,38 @@
  * at the granularity of the actual change — updating one icon only
  * invalidates that icon's URL, not the whole set. See docs/ICONS.md.
  *
+ * The hashing itself is `buildAssetManifest` (src/build/), which is also
+ * exported from `@canonical/ds-assets/build` so consumers can apply the same
+ * content-addressing to their own custom icons. This script layers ds-assets-
+ * specific concerns on top: ordering the manifest by `ICON_NAMES` (for a
+ * stable, meaningful git diff) and emitting it as a typed `.ts` module.
+ *
  * Run via `bun run build:icons-manifest` (wired into `build:package`, so a
  * normal `bun run build` keeps `dist/icons/` and the committed
  * `src/icons/manifest.generated.ts` in sync automatically). Also runnable
  * directly to regenerate the manifest after editing an icon by hand.
  */
-import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildAssetManifest } from "../src/build/buildAssetManifest.js";
 import { ICON_NAMES } from "../src/icons/constants.js";
 
-/** Matches the default hash length bundlers (Vite, webpack) use for their
- * own emitted assets — short enough to keep filenames readable, long enough
- * that collisions are not a practical concern for a set of this size. */
-const HASH_LENGTH = 8;
-
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
-const iconsDir = join(packageRoot, "icons");
-const distIconsDir = join(packageRoot, "dist", "icons");
 const manifestPath = join(packageRoot, "src", "icons", "manifest.generated.ts");
 
-mkdirSync(distIconsDir, { recursive: true });
+const hashedFileNames = buildAssetManifest({
+  sourceDir: join(packageRoot, "icons"),
+  outDir: join(packageRoot, "dist", "icons"),
+});
 
 const manifestEntries = ICON_NAMES.map((iconName) => {
-  const contents = readFileSync(join(iconsDir, `${iconName}.svg`));
-  const hash = createHash("sha256")
-    .update(contents)
-    .digest("hex")
-    .slice(0, HASH_LENGTH);
-  const hashedFileName = `${iconName}.${hash}.svg`;
-
-  writeFileSync(join(distIconsDir, hashedFileName), contents);
-
+  const hashedFileName = hashedFileNames[iconName];
+  if (!hashedFileName) {
+    throw new Error(
+      `buildAssetManifest produced no entry for "${iconName}" — is icons/${iconName}.svg missing?`,
+    );
+  }
   return [iconName, hashedFileName] as const;
 });
 
@@ -57,9 +57,11 @@ import type { IconName } from "./types.js";
  * \`dist/icons/\` verbatim gets correct per-file cache invalidation with no
  * extra configuration. See docs/ICONS.md.
  */
-export const ICON_MANIFEST: Record<IconName, string> = {
+const ICON_MANIFEST: Record<IconName, string> = {
 ${manifestEntries.map(([name, fileName]) => `  "${name}": "${fileName}",`).join("\n")}
 };
+
+export default ICON_MANIFEST;
 `;
 
 writeFileSync(manifestPath, manifestSource);

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ICON_NAMES } from "./constants.js";
-import { ICON_MANIFEST } from "./manifest.generated.js";
+import ICON_MANIFEST from "./manifest.generated.js";
 
 describe("ICON_MANIFEST", () => {
   it("has an entry for every icon in `ICON_NAMES`, and no extras", () => {

@@ -62,4 +62,27 @@ describe("Icon component", () => {
     const use = container.querySelector("use");
     expect(use).toHaveAttribute("href", `/icons/${ICON_MANIFEST.user}#user`);
   });
+
+  it("renders a custom icon (outside ICON_MANIFEST) given a manifest entry for it", () => {
+    const { container } = render(
+      <Component
+        icon="my-custom-icon"
+        manifest={{ "my-custom-icon": "my-custom-icon.deadbeef.svg" }}
+      />,
+    );
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute(
+      "href",
+      "/icons/my-custom-icon.deadbeef.svg#my-custom-icon",
+    );
+  });
+
+  it("falls back to plain `<icon>.svg` naming for a custom icon with no manifest entry", () => {
+    const { container } = render(<Component icon="my-custom-icon" />);
+    const use = container.querySelector("use");
+    expect(use).toHaveAttribute(
+      "href",
+      "/icons/my-custom-icon.svg#my-custom-icon",
+    );
+  });
 });
