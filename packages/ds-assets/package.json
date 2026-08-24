@@ -41,7 +41,7 @@
     "build:all": "bun run build:package",
     "build:package": "bun run build:icons-manifest && bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
-    "build:icons-manifest": "bun run scripts/build-icon-manifest.ts",
+    "build:icons-manifest": "bun run scripts/build-icon-manifest.ts && biome check --write src/icons/manifest.generated.ts",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",
