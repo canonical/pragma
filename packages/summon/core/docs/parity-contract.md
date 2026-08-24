@@ -98,20 +98,26 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   `--dry-run`/`--undo`/`--yes`. Everything else either host registers is
   a HOST EXTRA, outside the parity set because neither host is required to
   declare the other's. One RULE governs every extra, and it needs no
-  inventory: a token one host reads and the other does not is rejected LOUDLY
-  by the other — `error: unknown option '<token>'`, exit 2, nothing written
-  — even appended to an otherwise complete leaf invocation that host would
-  have scaffolded. The AUTHORITATIVE list of what a host DECLARES is that
+  inventory: a FLAG token one host reads and the other does not is rejected
+  LOUDLY by the other — `error: unknown option '<token>'`, exit 2, nothing
+  written — even appended to an otherwise complete leaf invocation that host
+  would have scaffolded. A registered SUBCOMMAND spelling is rejected just as
+  loudly, in the other error class — `error: unknown command '<token>'` —
+  which is why the rule names the token KIND (`help`, below). The
+  AUTHORITATIVE list of what a host DECLARES is that
   host's own help — its root `--help` and the leaf's — on both sides. Read
   them; a list written here could only go stale, because neither host is
   bound by the other's document. Two things those pages do not settle, both
-  named below: summon's pre-Commander argv scans are a protocol no help page
-  carries, and a token can sit on one host's page while the other still READS
-  it under a different meaning (`-v`). Extras also differ in
-  KIND, not only in spelling — summon's `--format json` and `SUMMON_LLM=1`
+  named below: summon's completion PROTOCOL spellings sit on no help page on
+  either host (its `--setup-completion`/`--cleanup-completion` siblings are
+  declared root options and DO appear on summon's, though the same
+  pre-Commander scan answers them), and a token can sit on one host's page
+  while the other still READS it under a different meaning (`-v`). Extras
+  also differ in KIND, not only in spelling — summon's `--format json`
+  and `SUMMON_LLM=1`
   imply `--dry-run` (a MODE change: such a run writes nothing where pragma
   with the same argv writes the tree), and so does `--llm`, whose LONG form
-  is the one long spelling that does not port (unlike `--verbose`'s):
+  does not port either (where `--verbose`'s does):
   `pragma create … --llm` is `error: unknown option '--llm'`, exit 2.
 - **What puts a token in one host's list and not the other's** are these
   mechanisms; the tokens named below are measured EXAMPLES of each, not an
@@ -136,11 +142,17 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   writes the tree from that directory's generators where
   `pragma create … --generators <dir>` is
   `error: unknown option '--generators'`, exit 2, nothing written. `-v` is
-  the version swap's other half — a token COLLISION, not a spelling: summon
-  reads its `--verbose` and writes the tree, pragma reads its `--version`,
-  prints it, and exits 0 having written nothing (the BARE long form
-  `--verbose` ports; only the short form collides, and the `=` form is
-  pragma-only — below). **Pre-Commander whole-argv scans** — summon's bin
+  the version swap's other half — a token COLLISION, not a spelling — but it
+  is NOT this mechanism: it belongs to a different one on each side. On summon
+  it is a declared leaf extra (the mechanism above, `registerStandardFlags`),
+  so `summon component react src/components/B --yes -v` writes the tree
+  while `summon -v` at the ROOT is `error: unknown option '-v'`, exit 2 —
+  where `-V` and `-g` are consumed in BOTH positions. On pragma it is read
+  by pragma's OWN pre-Commander whole-argv scan rather than by Commander, so
+  `pragma create … -v` prints pragma's version and exits 0 having written
+  nothing. (The BARE long form `--verbose` ports at a leaf; only the short
+  form collides, and the `=` form is pragma-only — below.)
+  **Pre-Commander whole-argv scans** — summon's bin
   inspects the raw argv and returns BEFORE Commander parses, so such a token
   is read wherever it sits and suppresses the scaffold entirely. The
   completion-protocol spellings are one such scan, and they are a CLASS rather
@@ -154,6 +166,18 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   having written NOTHING to the target tree — and rewritten the invoking
   user's shell init file — where the same argv on pragma is
   `error: unknown option '--setup-completion'`, exit 2.
+  **A registered SUBCOMMAND** — the one mechanism whose extras are not flags,
+  and the reason the RULE names the token kind. summon's barrel turns
+  Commander's `help` command back on at every NAMESPACE it registers
+  (`onNamespace: cmd.helpCommand(true)`, which the projection's namespace
+  action would otherwise suppress), and pragma deliberately does not declare
+  it — so `summon component help` and `summon help component` each print a
+  usage page and exit 0, where `pragma create component help` is
+  `error: unknown command 'help'` and `pragma create help component` is
+  `Error: Unknown command "help".` — exit 2, nothing written, both of them
+  the unknown-COMMAND class rather than the unknown-option one. It is a
+  namespace spelling on both counts: no LEAF page on either host carries a
+  `help` row, and after a complete leaf path the token is just a positional.
 - **The mirror direction** — tokens pragma accepts and summon rejects
   loudly — is a CLASS: pragma's whole-argv scan swallows `--detail` (either
   spelling), any `--detail=<value>`, and any `--verbose=<value>` before
@@ -188,10 +212,6 @@ The whole surface derives from `GeneratorDefinition.prompts` through
   `pragma create … --format bogus` is `Error: Invalid format "bogus".`,
   exit 2, nothing written (`--format=bogus` and `--format=` fail the same
   gate), where summon with each of the three exits 0 and writes the tree.
-  Commander's implicit `help` subcommand is likewise a summon host spelling
-  (`summon help component`, `summon component help`);
-  `pragma create component help` errors as an unknown segment (and
-  `pragma create help component` errors at the host's topic tier).
 
 ## 3. The interaction decision
 
