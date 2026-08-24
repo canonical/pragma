@@ -2,6 +2,8 @@
 
 <script lang="ts" module>
   import { defineMeta } from "@storybook/addon-svelte-csf";
+  import { expect } from "storybook/test";
+  import type { ComponentProps } from "svelte";
   import SkipLink from "./SkipLink.svelte";
 
   const { Story } = defineMeta({
@@ -24,6 +26,16 @@
       },
     },
   });
+
+  // Focuses the rendered SkipLink so its real `:focus`/`:focus-visible` styles
+  // apply.
+  const focusSkipLink: NonNullable<
+    ComponentProps<typeof Story>["play"]
+  > = async ({ canvas }) => {
+    const skipLink = canvas.getByText("Skip to main content");
+    await expect(skipLink).toBeInTheDocument();
+    skipLink.focus();
+  };
 </script>
 
 <Story name="Default" asChild>
@@ -93,33 +105,29 @@
 	</main>
 </Story>
 
-<Story name="Focused" tags={["!dev", "!autodocs"]} asChild>
-	<div class="story-force-focused">
-		<SkipLink />
-	</div>
+<Story
+	name="Focused"
+	tags={["!dev", "!autodocs"]}
+	play={focusSkipLink}
+	asChild
+>
+	<SkipLink />
 	<main id="main" tabindex="-1">
 		<p>Forced-visible style variant for visual checks.</p>
 	</main>
 </Story>
 
-<Story name="FocusedRtl" tags={["!dev", "!autodocs"]} asChild>
-	<div class="story-force-focused" dir="rtl">
+<Story
+	name="FocusedRtl"
+	tags={["!dev", "!autodocs"]}
+	play={focusSkipLink}
+	asChild
+>
+	<div dir="rtl">
 		<SkipLink />
 	</div>
 	<main id="main" tabindex="-1" dir="rtl">
 		<p>Forced-visible RTL style variant for visual checks.</p>
 	</main>
 </Story>
-
-<style>
-	.story-force-focused :global(.skip-link) {
-		inset-inline-start: var(--space-100, 0.5rem) !important;
-		outline-offset: calc(-1 * var(--dimension-stroke-thickness-large, 3px)) !important;
-		padding-block: var(--space-200, 1rem) !important;
-		padding-inline: var(--space-200, 1rem) !important;
-		position: fixed !important;
-		top: var(--space-100, 0.5rem) !important;
-		z-index: 999999 !important;
-	}
-</style>
 
