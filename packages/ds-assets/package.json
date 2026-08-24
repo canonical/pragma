@@ -3,8 +3,18 @@
   "description": "Assets for Pragma.",
   "version": "0.34.0",
   "type": "module",
+  "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
+    },
+    "./icons/*": "./icons/*",
+    "./fonts/*": "./fonts/*",
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
     "fonts",
@@ -29,8 +39,9 @@
   "scripts": {
     "build": "bun run build:package",
     "build:all": "bun run build:package",
-    "build:package": "bun run build:package:tsc",
+    "build:package": "bun run build:icons-manifest && bun run build:package:tsc",
     "build:package:tsc": "tsc -p tsconfig.build.json",
+    "build:icons-manifest": "bun run scripts/build-icon-manifest.ts",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
     "check:webarchitect": "webarchitect library",
     "check:fix": "bun run check:biome:fix && bun run check:ts",

@@ -64,11 +64,27 @@ icon affordance (e.g. the `Accordion` caret) — reference SVGs from
 `@canonical/ds-assets` **at runtime**, not from the JavaScript bundle. Each
 glyph is fetched by URL, e.g. `/icons/spinner.svg#spinner`.
 
-Your application must therefore **serve the `@canonical/ds-assets` icons at
+Your application must therefore **serve `@canonical/ds-assets`' icons at
 `/icons`**. In most setups this means copying (or symlinking) the package's
-`icons/` directory into the app's static/public directory so the files are
-reachable at `/icons/*.svg`. If the icons are not served, icon-rendering
-components mount but appear empty (the SVG `<use>` resolves to nothing).
+icons into the app's static/public directory so the files are reachable at
+`/icons/*.svg`. If the icons are not served, icon-rendering components mount
+but appear empty (the SVG `<use>` resolves to nothing).
+
+**Serve `dist/icons/`, not `icons/`.** `ds-assets`' plain `icons/` directory
+uses stable, unversioned filenames (`search.svg`), so an icon update can be
+served stale indefinitely by any cache that already has the old file — the
+URL never changes to signal that it should refetch. `dist/icons/` ships the
+same SVGs under content-hashed filenames instead (`search.a1b2c3d4.svg`), so
+each icon's URL only changes when that icon's contents do. `Icon` reads
+`@canonical/ds-assets`' `ICON_MANIFEST` by default to resolve the current
+hashed filename for each icon name, so `<Icon icon="search" />` works
+correctly with no extra configuration as long as `rootPath` points at
+wherever you served `dist/icons/`. See `ds-assets`'
+[docs/ICONS.md](../../ds-assets/docs/ICONS.md#self-hosting-and-cache-invalidation)
+for the full explanation.
+
+> `Spinner` and CSS-referenced icons (such as the `Accordion` caret) still
+> reference plain, unhashed filenames and don't benefit from this yet.
 
 If you serve the icons from a different path:
 
@@ -80,7 +96,9 @@ If you serve the icons from a different path:
   ```
 
   There is currently no global default — the override is per component
-  instance.
+  instance. `Icon` also accepts a `manifest` prop to override
+  `ICON_MANIFEST` — for a custom self-hosting scheme, or a mocked manifest in
+  tests.
 
 - **CSS-referenced icons** (such as the `Accordion` caret) are fixed at
   `/icons` in the stylesheet and cannot be redirected via a prop. Serve the

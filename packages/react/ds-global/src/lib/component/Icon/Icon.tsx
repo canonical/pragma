@@ -1,3 +1,4 @@
+import { ICON_MANIFEST } from "@canonical/ds-assets";
 import type { ReactElement } from "react";
 import type { IconProps } from "./types.js";
 import "./styles.css";
@@ -13,6 +14,12 @@ const hasAccessibleName = (value: string | undefined): boolean =>
  *
  * `import { Icon } from "@canonical/react-ds-global";`
  *
+ * References the icon by its content-hashed filename from `ICON_MANIFEST`
+ * (`@canonical/ds-assets`) by default, so consumers who self-host
+ * `dist/icons/` verbatim get correct per-file cache invalidation with no
+ * extra configuration — updating one icon only busts that icon's URL, not
+ * the whole set. See `manifest` to override.
+ *
  * @implements ds:global.component.icon
  */
 const Icon = ({
@@ -21,9 +28,12 @@ const Icon = ({
   icon,
   className,
   rootPath = "/icons",
+  manifest,
   role,
   ...props
 }: IconProps): ReactElement => {
+  const fileName = manifest?.[icon] ?? ICON_MANIFEST[icon];
+
   // Icons are decorative by default and hidden from assistive technology.
   // Providing an accessible name (aria-label/aria-labelledby) or an explicit
   // role exposes the icon as a named image instead. An empty label counts as
@@ -42,7 +52,7 @@ const Icon = ({
       aria-hidden={isLabelled || role ? undefined : true}
       {...props}
     >
-      <use href={`${rootPath}/${icon}.svg#${icon}`} />
+      <use href={`${rootPath}/${fileName}#${icon}`} />
     </svg>
   );
 };

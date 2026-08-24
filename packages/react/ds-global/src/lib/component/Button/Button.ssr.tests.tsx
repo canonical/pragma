@@ -1,3 +1,4 @@
+import { ICON_MANIFEST } from "@canonical/ds-assets";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import Component from "./Button.js";
@@ -63,6 +64,6 @@ describe("Button SSR", () => {
     const html = renderToString(<Component icon="edit">Add</Component>);
     expect(html).toContain('class="icon"');
     expect(html).toContain("ds icon");
-    expect(html).toContain("/icons/edit.svg#edit");
+    expect(html).toContain(`/icons/${ICON_MANIFEST.edit}#edit`);
   });
 });
