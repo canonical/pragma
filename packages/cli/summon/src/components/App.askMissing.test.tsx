@@ -38,7 +38,7 @@ const generator: GeneratorDefinition = {
   generate: () => task(pure(undefined)).unwrap(),
 };
 
-const tick = () => new Promise((resolve) => setTimeout(resolve, 25));
+const tick = (ms = 25) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("App askMissing — the wizard asks only the pending prompts", () => {
   it("shows provided answers as completed and asks the first missing prompt", async () => {
@@ -63,7 +63,18 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
     );
     await tick();
     stdin.write("y"); // Include stories? -> yes
-    await tick();
+    // The wizard's handler IS attached by the time this lands (measured: 0
+    // lost in 72 runs, idle and under load) — but the unlocked prompt can
+    // paint LATE, past one 25ms tick. So poll for the frame rather than
+    // guessing a tick, and do NOT re-write the `y`: unlike the esc below it
+    // is not idempotent — a second one would answer the prompt it unlocked.
+    const deadline = Date.now() + 15_000;
+    while (
+      !(lastFrame() ?? "").includes("Use TypeScript stories?") &&
+      Date.now() < deadline
+    ) {
+      await tick();
+    }
     expect(lastFrame()).toContain("Use TypeScript stories?");
     unmount();
   }, 20_000);
@@ -98,8 +109,21 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
     );
     await tick();
     expect(lastFrame()).toContain("Proceed?");
-    stdin.write("\u001B"); // esc
-    await tick();
+    // Same rule as App.confirmGate.test.tsx:55-70, same shape: Ink attaches
+    // its stdin listener asynchronously in a fresh worker (measured here: a
+    // cold worker's first render loses the esc outright — 5 of 72 — and no
+    // amount of waiting recovers one), so the esc is re-written until the
+    // gate lets go. Extra escapes are harmless — measured: the re-opened
+    // wizard sits at step 1 with an empty history, so a redundant esc exits
+    // the App without disturbing the frame asserted below.
+    const deadline = Date.now() + 15_000;
+    while (
+      !(lastFrame() ?? "").includes("Step 1 of 2") &&
+      Date.now() < deadline
+    ) {
+      stdin.write("\u001B"); // esc
+      await tick(50);
+    }
     const frame = lastFrame() ?? "";
     expect(frame).toContain("Step 1 of 2");
     expect(frame).toContain("Title:");

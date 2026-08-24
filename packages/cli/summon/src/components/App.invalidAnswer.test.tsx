@@ -45,7 +45,19 @@ describe("App — a typed invalid answer is the clean error phase, not a crash",
     const { lastFrame, unmount } = render(
       <App generator={guarded} preview={false} answers={{ ok: false }} />,
     );
-    await tick();
+    // The error phase's exit code is owned by a passive effect (App.tsx:996),
+    // which flushes AFTER the commit that paints the error — so one fixed
+    // tick can read the rendered message and a still-unset exitCode
+    // (measured: 4 of 72 runs under load, always the code, never the frame).
+    // Poll for the settled pair; a real regression still falls through to the
+    // assertions below and fails there, loudly.
+    const settled = () =>
+      process.exitCode !== undefined &&
+      (lastFrame() ?? "").includes("Code: GENERATOR_INVALID_ANSWER");
+    const deadline = Date.now() + 15_000;
+    while (!settled() && Date.now() < deadline) {
+      await tick();
+    }
     const frame = lastFrame() ?? "";
     expect(frame).toContain("✗ Error: OK is required — drop --no-ok.");
     expect(frame).toContain("Code: GENERATOR_INVALID_ANSWER");
