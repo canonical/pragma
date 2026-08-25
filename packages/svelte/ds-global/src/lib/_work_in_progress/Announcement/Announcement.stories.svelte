@@ -6,7 +6,7 @@
   import Announcement from "./Announcement.svelte";
 
   const { Story } = defineMeta({
-    title: "Components/Announcement",
+    title: "_work_in_progress/Components/Announcement",
     component: Announcement,
     tags: ["autodocs"],
     argTypes: {
