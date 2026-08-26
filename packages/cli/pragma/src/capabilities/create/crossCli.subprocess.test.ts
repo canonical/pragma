@@ -3,7 +3,7 @@
  * binding, THREE producers make the same tree from the same answers, byte for
  * byte —
  *
- *   (1) the compiled `dist/pragma` binary (`pragma create <path…>`),
+ *   (1) the shipped `dist/src/bin.js` entry (`pragma create <path…>`),
  *   (2) the REAL summon bin (`summon <path…>`, served the same generator
  *       packages through `--generators`), and
  *   (3) the conformance REFERENCE (`produceReference` — summon-core `execute`
@@ -50,7 +50,12 @@ import { CREATE_GENERATORS } from "./constants.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
-const compiledBin = join(repoRoot, "packages/cli/pragma/dist/pragma");
+/**
+ * The shipped pragma entry. Spawned as `node <entry>` because the distribution
+ * emits JavaScript rather than a self-executing binary — so every call site
+ * below passes the entry as the runtime's FIRST argument.
+ */
+const pragmaEntry = join(repoRoot, "packages/cli/pragma/dist/src/bin.js");
 const summonBin = join(repoRoot, "packages/cli/summon/src/bin.tsx");
 
 const freshCwd = (prefix: string): string =>
@@ -94,7 +99,7 @@ function commandPathOf(fixtureGenerator: string): string {
 /** Producer (1): the compiled pragma binary. */
 function producePragma(args: readonly string[]): TreeSnapshot {
   const cwd = freshCwd("crosscli-pragma-");
-  execFileSync(compiledBin, ["create", ...args], {
+  execFileSync(process.execPath, [pragmaEntry, "create", ...args], {
     cwd,
     stdio: "pipe",
     input: "",
@@ -126,11 +131,15 @@ function helpOf(
   const cwd = freshCwd("crosscli-help-");
   const result =
     bin === "pragma"
-      ? spawnSync(compiledBin, ["create", ...path, "--help"], {
-          cwd,
-          encoding: "utf-8",
-          input: "",
-        })
+      ? spawnSync(
+          process.execPath,
+          [pragmaEntry, "create", ...path, "--help"],
+          {
+            cwd,
+            encoding: "utf-8",
+            input: "",
+          },
+        )
       : spawnSync(
           "bun",
           [summonBin, "--generators", generatorsDir, ...path, "--help"],
@@ -316,11 +325,15 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   )) {
     it(`${commandPath}: both bins refuse a bare non-TTY leaf with the same bytes, exit 2`, () => {
       const path = commandPath.split("/");
-      const pragma = spawnSync(compiledBin, ["create", ...path], {
-        cwd: freshCwd("crosscli-refuse-"),
-        encoding: "utf-8",
-        input: "",
-      });
+      const pragma = spawnSync(
+        process.execPath,
+        [pragmaEntry, "create", ...path],
+        {
+          cwd: freshCwd("crosscli-refuse-"),
+          encoding: "utf-8",
+          input: "",
+        },
+      );
       const summon = spawnSync(
         "bun",
         [summonBin, "--generators", generatorsDir, ...path],
@@ -356,8 +369,16 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
     const pragmaCwd = freshCwd("crosscli-guard-");
     const pragma = spawnSync(
-      compiledBin,
-      ["create", "application", "react", "my-app", "--no-ssr", "--dry-run"],
+      process.execPath,
+      [
+        pragmaEntry,
+        "create",
+        "application",
+        "react",
+        "my-app",
+        "--no-ssr",
+        "--dry-run",
+      ],
       {
         cwd: pragmaCwd,
         encoding: "utf-8",
@@ -411,11 +432,15 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       "--yes",
     ];
     const pragmaCwd = freshCwd("crosscli-invalid-");
-    const pragma = spawnSync(compiledBin, ["create", ...args], {
-      cwd: pragmaCwd,
-      encoding: "utf-8",
-      input: "",
-    });
+    const pragma = spawnSync(
+      process.execPath,
+      [pragmaEntry, "create", ...args],
+      {
+        cwd: pragmaCwd,
+        encoding: "utf-8",
+        input: "",
+      },
+    );
     expect(pragma.status).toBe(2);
     expect(pragma.stderr).toContain("INVALID_INPUT");
     const pragmaInvalid = invalidValueLine(pragma.stderr ?? "");
@@ -455,11 +480,15 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     ];
     const pragmaBase = freshCwd("crosscli-escape-");
     mkdirSync(join(pragmaBase, "inner"));
-    const pragma = spawnSync(compiledBin, ["create", ...args], {
-      cwd: join(pragmaBase, "inner"),
-      encoding: "utf-8",
-      input: "",
-    });
+    const pragma = spawnSync(
+      process.execPath,
+      [pragmaEntry, "create", ...args],
+      {
+        cwd: join(pragmaBase, "inner"),
+        encoding: "utf-8",
+        input: "",
+      },
+    );
     expect(pragma.status).toBe(2);
     expect(pragma.stderr).toContain("INVALID_INPUT");
     const pragmaInvalid = invalidValueLine(pragma.stderr ?? "");
@@ -485,11 +514,15 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     const target = join(freshCwd("crosscli-escape-abs-"), "abs-app");
     const args = ["application", "react", target, "--yes", "--no-run-install"];
     const pragmaCwd = freshCwd("crosscli-escape-");
-    const pragma = spawnSync(compiledBin, ["create", ...args], {
-      cwd: pragmaCwd,
-      encoding: "utf-8",
-      input: "",
-    });
+    const pragma = spawnSync(
+      process.execPath,
+      [pragmaEntry, "create", ...args],
+      {
+        cwd: pragmaCwd,
+        encoding: "utf-8",
+        input: "",
+      },
+    );
     expect(pragma.status).toBe(2);
     expect(pragma.stderr).toContain("INVALID_INPUT");
     const pragmaInvalid = invalidValueLine(pragma.stderr ?? "");
@@ -518,12 +551,16 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
     mkdirSync(join(configHome, "pragma"));
     writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
-    const pragma = spawnSync(compiledBin, ["create", "component", "react"], {
-      cwd: freshCwd("crosscli-refuse-"),
-      encoding: "utf-8",
-      input: "",
-      env: { ...process.env, XDG_CONFIG_HOME: configHome },
-    });
+    const pragma = spawnSync(
+      process.execPath,
+      [pragmaEntry, "create", "component", "react"],
+      {
+        cwd: freshCwd("crosscli-refuse-"),
+        encoding: "utf-8",
+        input: "",
+        env: { ...process.env, XDG_CONFIG_HOME: configHome },
+      },
+    );
     const summon = spawnSync(
       "bun",
       [summonBin, "--generators", generatorsDir, "component", "react"],
@@ -564,12 +601,16 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
       mkdirSync(join(configHome, "pragma"));
       writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
       const pragmaCwd = freshCwd("crosscli-refuse-");
-      const pragma = spawnSync(compiledBin, ["create", ...vector.args], {
-        cwd: pragmaCwd,
-        encoding: "utf-8",
-        input: "",
-        env: { ...process.env, XDG_CONFIG_HOME: configHome },
-      });
+      const pragma = spawnSync(
+        process.execPath,
+        [pragmaEntry, "create", ...vector.args],
+        {
+          cwd: pragmaCwd,
+          encoding: "utf-8",
+          input: "",
+          env: { ...process.env, XDG_CONFIG_HOME: configHome },
+        },
+      );
       const summonCwd = freshCwd("crosscli-refuse-");
       const summon = spawnSync(
         "bun",
@@ -597,12 +638,16 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     mkdirSync(join(configHome, "pragma"));
     writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
     const args = ["component", "react", "src/components/Foo", "--bogus"];
-    const pragma = spawnSync(compiledBin, ["create", ...args], {
-      cwd: freshCwd("crosscli-unknown-"),
-      encoding: "utf-8",
-      input: "",
-      env: { ...process.env, XDG_CONFIG_HOME: configHome },
-    });
+    const pragma = spawnSync(
+      process.execPath,
+      [pragmaEntry, "create", ...args],
+      {
+        cwd: freshCwd("crosscli-unknown-"),
+        encoding: "utf-8",
+        input: "",
+        env: { ...process.env, XDG_CONFIG_HOME: configHome },
+      },
+    );
     const summon = spawnSync(
       "bun",
       [summonBin, "--generators", generatorsDir, ...args],
@@ -625,12 +670,16 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
     const configHome = mkdtempSync(join(tmpdir(), "crosscli-cfg-"));
     mkdirSync(join(configHome, "pragma"));
     writeFileSync(join(configHome, "pragma", "config.json"), "{}\n");
-    const pragma = spawnSync(compiledBin, ["create", "component", "reakt"], {
-      cwd: freshCwd("crosscli-unknown-"),
-      encoding: "utf-8",
-      input: "",
-      env: { ...process.env, XDG_CONFIG_HOME: configHome },
-    });
+    const pragma = spawnSync(
+      process.execPath,
+      [pragmaEntry, "create", "component", "reakt"],
+      {
+        cwd: freshCwd("crosscli-unknown-"),
+        encoding: "utf-8",
+        input: "",
+        env: { ...process.env, XDG_CONFIG_HOME: configHome },
+      },
+    );
     const summon = spawnSync(
       "bun",
       [summonBin, "--generators", generatorsDir, "component", "reakt"],
