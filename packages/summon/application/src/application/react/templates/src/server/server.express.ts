@@ -85,6 +85,7 @@ async function start() {
         {
           url,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          ...(disposition.dehydratedState ?? {}),
         },
         { htmlString: html, statusCode: disposition.status },
       );

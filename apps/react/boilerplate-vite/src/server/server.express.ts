@@ -97,6 +97,7 @@ async function start() {
           url,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
           locale,
+          ...(disposition.dehydratedState ?? {}),
         },
         {
           htmlString: html,

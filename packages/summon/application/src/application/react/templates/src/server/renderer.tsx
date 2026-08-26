@@ -66,6 +66,10 @@ export default function createAppRenderer(
     return disposition;
   }
 
+  // Flat-spread the dehydrated router state into the page payload; the client
+  // reads it back with readDehydratedState() and resumes the server match.
+  Object.assign(initialData, disposition.dehydratedState ?? {});
+
   return {
     kind: "render",
     renderer: new JSXRenderer(EntryServer, initialData, {

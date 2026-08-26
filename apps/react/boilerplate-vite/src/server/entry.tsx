@@ -23,6 +23,14 @@ interface InitialData extends Record<string, unknown> {
   readonly url?: string;
   /** Colour-scheme preference resolved from the request cookie, if any. */
   readonly theme?: "light" | "dark";
+  /**
+   * Flat dehydrated router state (from resolveRouteDisposition), read back by
+   * router-react's readDehydratedState() on the client. Absent in SPA cells.
+   */
+  readonly href?: string;
+  readonly kind?: "route" | "not-found";
+  readonly routeId?: string | null;
+  readonly status?: number;
   /** Locale negotiated from the request cookie / Accept-Language, if any. */
   readonly locale?: string;
 }

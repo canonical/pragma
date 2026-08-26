@@ -102,6 +102,7 @@ Bun.serve({
           url: requestUrl,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
           locale,
+          ...(disposition.dehydratedState ?? {}),
         },
         {
           htmlString: html,
