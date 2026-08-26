@@ -1097,36 +1097,42 @@ export default function createRouter<
     const replace = (buildArgs[0] as { replace?: boolean } | undefined)
       ?.replace;
 
-    if (adapter) {
-      if (isBlocked()) {
-        pendingNavigation = {
-          href: intent.href,
-          replace: replace ?? false,
-          resolve: () => {
-            pendingNavigation = null;
-            saveScrollPosition();
-            syncAdapterLocation(
-              intent.href,
-              replace ? { replace: true } : undefined,
-            );
-            void performLoad(
-              intent.href,
-              0,
-              true,
-              replace ? "pop" : "push",
-            ).catch(ignoreScheduledLoadError);
-          },
-        };
-
-        return intent;
-      }
-
-      saveScrollPosition();
-      syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
-      void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
-        ignoreScheduledLoadError,
+    if (!adapter) {
+      throw new Error(
+        "router.navigate() requires a platform adapter. Construct the router " +
+          "with { adapter } — an adapterless router only matches and builds " +
+          "URLs (match(), buildPath(), load()).",
       );
     }
+
+    if (isBlocked()) {
+      pendingNavigation = {
+        href: intent.href,
+        replace: replace ?? false,
+        resolve: () => {
+          pendingNavigation = null;
+          saveScrollPosition();
+          syncAdapterLocation(
+            intent.href,
+            replace ? { replace: true } : undefined,
+          );
+          void performLoad(
+            intent.href,
+            0,
+            true,
+            replace ? "pop" : "push",
+          ).catch(ignoreScheduledLoadError);
+        },
+      };
+
+      return intent;
+    }
+
+    saveScrollPosition();
+    syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
+    void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
+      ignoreScheduledLoadError,
+    );
 
     return intent;
   }) as NavigateFn<TRoutes>;
@@ -1176,12 +1182,18 @@ export default function createRouter<
     const href = toHref(nextUrl);
     const replace = options?.replace ?? false;
 
-    if (adapter) {
-      syncAdapterLocation(href, replace ? { replace: true } : undefined);
-      void performLoad(href, 0, true, replace ? "pop" : "push").catch(
-        ignoreScheduledLoadError,
+    if (!adapter) {
+      throw new Error(
+        "router.setSearchParams() requires a platform adapter. Construct the " +
+          "router with { adapter } — an adapterless router only matches and " +
+          "builds URLs (match(), buildPath(), load()).",
       );
     }
+
+    syncAdapterLocation(href, replace ? { replace: true } : undefined);
+    void performLoad(href, 0, true, replace ? "pop" : "push").catch(
+      ignoreScheduledLoadError,
+    );
   }
 
   const prefetch: PrefetchFn<TRoutes> = ((
