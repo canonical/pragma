@@ -1,5 +1,6 @@
 import { ICON_NAMES } from "@canonical/ds-assets";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react-vite";
+import customIconManifest from "./customIconManifest.generated.js";
 import Component from "./Icon.js";
 
 const meta = {
@@ -29,6 +30,38 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     icon: "user",
+  },
+};
+
+export const CustomIcons: Story = {
+  args: {
+    icon: "brand-mark",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Custom icons are self-hosted under `rootPath` and use content-hashed manifest entries for cache-safe updates.",
+      },
+    },
+  },
+  render: () => {
+    return (
+      <div style={{ display: "flex", gap: "1rem" }}>
+        <Component
+          aria-label="Brand mark"
+          icon="brand-mark"
+          manifest={customIconManifest}
+          rootPath="/custom-icons"
+        />
+        <Component
+          aria-label="Service status"
+          icon="service-status"
+          manifest={customIconManifest}
+          rootPath="/custom-icons"
+        />
+      </div>
+    );
   },
 };
 

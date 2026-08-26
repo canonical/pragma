@@ -27,7 +27,8 @@
   "scripts": {
     "build": "bun run build:package",
     "build:all": "bun run build:package && bun run build:storybook",
-    "build:storybook": "storybook build",
+    "build:storybook": "bun run build:storybook:custom-icons && storybook build",
+    "build:storybook:custom-icons": "bun scripts/build-custom-icon-manifest.ts",
     "build:package": "bun run build:package:tsc && bun run build:package:copycss",
     "build:package:copycss": "copyfiles -u 1 'src/lib/{,**/}*.css' dist/esm",
     "build:package:tsc": "tsc -p tsconfig.build.json",
@@ -37,7 +38,7 @@
     "check:biome": "biome check",
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
-    "storybook": "storybook dev -p 6006 --no-open --host 0.0.0.0",
+    "storybook": "bun run build:storybook:custom-icons && storybook dev -p 6006 --no-open --host 0.0.0.0",
     "test": "bun run test:vitest",
     "test:vitest": "vitest run",
     "test:vitest:watch": "vitest"

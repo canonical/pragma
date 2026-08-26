@@ -92,6 +92,7 @@ import { buildAssetManifest } from "@canonical/ds-assets/build";
 const customManifest = buildAssetManifest({
   sourceDir: "./src/custom-icons",
   outDir: "./public/icons",
+  manifestPath: "./src/custom-icons/manifest.generated.ts",
 });
 ```
 
@@ -99,6 +100,7 @@ Then merge it into `ICON_MANIFEST` when passing `manifest` to `Icon`:
 
 ```tsx
 import { ICON_MANIFEST } from "@canonical/ds-assets";
+import customManifest from "./custom-icons/manifest.generated.js";
 
 <Icon icon="my-custom-icon" manifest={{ ...ICON_MANIFEST, ...customManifest }} />
 ```
