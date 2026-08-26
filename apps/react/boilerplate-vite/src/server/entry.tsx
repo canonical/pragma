@@ -13,7 +13,7 @@ import { catalogs, i18nConfig } from "#i18n/index.js";
 import { createEnvironment } from "#relay/environment.js";
 import {
   appRoutes,
-  getAuthRedirectHref,
+  getAuthRedirectForMatch,
   middleware,
   notFoundRoute,
 } from "../routes.js";
@@ -68,12 +68,6 @@ const dispositionMatcher = createRouter(appRoutes, {
  * soft 200.
  */
 export function resolveRouteDisposition(url: string): RouteDisposition {
-  const authRedirect = getAuthRedirectHref(url);
-
-  if (authRedirect) {
-    return { kind: "redirect", status: 302, location: authRedirect };
-  }
-
   let matchResult: ReturnType<typeof dispositionMatcher.match>;
 
   try {
@@ -94,6 +88,15 @@ export function resolveRouteDisposition(url: string): RouteDisposition {
       status: matchResult.status,
       location: matchResult.redirectTo,
     };
+  }
+
+  // Auth is decided from the router's own match (pattern + validated search),
+  // never from the raw URL — the two normalize differently.
+  const authRedirect =
+    matchResult?.kind === "route" ? getAuthRedirectForMatch(matchResult) : null;
+
+  if (authRedirect) {
+    return { kind: "redirect", status: 302, location: authRedirect };
   }
 
   const status = matchResult?.status ?? 404;
