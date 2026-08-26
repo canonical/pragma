@@ -1080,6 +1080,8 @@ export default function createRouter<
   let pendingNavigation: {
     href: string;
     replace: boolean;
+    /** Ids of the blockers whose isActive() intercepted this navigation. */
+    blockedBy: ReadonlySet<string>;
     resolve: () => void;
   } | null = null;
 
@@ -1102,10 +1104,13 @@ export default function createRouter<
       );
     }
 
-    if (isBlocked()) {
+    const activeBlockerIds = getActiveBlockerIds();
+
+    if (activeBlockerIds.size > 0) {
       pendingNavigation = {
         href: intent.href,
         replace: replace ?? false,
+        blockedBy: activeBlockerIds,
         resolve: () => {
           pendingNavigation = null;
           notifyBlockerState();
@@ -1140,14 +1145,16 @@ export default function createRouter<
   const blockerSubject = createSubject<"idle" | "blocked">();
   let blockerIdCounter = 0;
 
-  function isBlocked(): boolean {
-    for (const isActive of blockers.values()) {
+  function getActiveBlockerIds(): Set<string> {
+    const activeIds = new Set<string>();
+
+    for (const [id, isActive] of blockers.entries()) {
       if (isActive()) {
-        return true;
+        activeIds.add(id);
       }
     }
 
-    return false;
+    return activeIds;
   }
 
   function notifyBlockerState(): void {
@@ -1605,26 +1612,36 @@ export default function createRouter<
 
       blockers.set(id, isActive);
 
+      // Every action is scoped to this registration: a handle whose blocker
+      // did not intercept the pending navigation reports idle and cannot
+      // proceed, cancel, or discard it.
+      const isBlockedByThis = (): boolean =>
+        pendingNavigation?.blockedBy.has(id) ?? false;
+
       return {
         get state() {
-          return pendingNavigation ? ("blocked" as const) : ("idle" as const);
+          return isBlockedByThis() ? ("blocked" as const) : ("idle" as const);
         },
         proceed() {
-          pendingNavigation?.resolve();
+          if (isBlockedByThis()) {
+            pendingNavigation?.resolve();
+          }
         },
         cancel() {
-          if (pendingNavigation) {
+          if (isBlockedByThis()) {
             pendingNavigation = null;
             notifyBlockerState();
           }
         },
         subscribe(listener: (state: "idle" | "blocked") => void) {
-          return blockerSubject.subscribe(listener);
+          return blockerSubject.subscribe(() => {
+            listener(isBlockedByThis() ? "blocked" : "idle");
+          });
         },
         dispose() {
           blockers.delete(id);
 
-          if (pendingNavigation) {
+          if (isBlockedByThis()) {
             pendingNavigation = null;
             notifyBlockerState();
           }
