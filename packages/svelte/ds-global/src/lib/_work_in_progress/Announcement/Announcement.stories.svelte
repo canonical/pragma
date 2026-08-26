@@ -83,6 +83,40 @@
 </Story>
 
 <Story
+  name="WithAlertRole"
+  args={{
+    criticality: "error",
+    heading: "Connection lost",
+    role: "alert",
+    "aria-live": "assertive",
+  }}
+  parameters={{
+    docs: {
+      canvas: {
+        sourceState: "shown",
+      },
+      description: {
+        story: `\`criticality\` only controls the announcement's visual treatment.  
+It doesn't imply an ARIA role or live-region behavior.
+
+Per [MDN's guidance on the \`alert\` role](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/alert_role),
+\`role="alert"\` should be reserved for content that demands the user's
+immediate attention, and used
+sparingly. A persistently-rendered \`criticality="error"\` announcement, for
+example, is not necessarily an alert.
+The right semantics depend on how
+the announcement is used rather than how it looks. 
+
+Consumers should set
+\`role\` and \`aria-live\` explicitly when appropriate, as in the example below.`,
+      },
+    },
+  }}
+>
+  Local changes will not be saved until the connection is restored.
+</Story>
+
+<Story
   name="LongMessage"
   args={{
     criticality: "information",
