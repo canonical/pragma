@@ -1,18 +1,102 @@
 import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
-import { createRouter, createServerAdapter } from "@canonical/router-core";
+import {
+  createRouter,
+  createServerAdapter,
+  StatusResponse,
+} from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 <% if (relay) { -%>
 import { RelayEnvironmentProvider } from "react-relay";
 import { createEnvironment } from "#relay/environment.js";
 <% } -%>
-import { appRoutes, middleware, notFoundRoute } from "../routes.js";
+import {
+  appRoutes,
+  getAuthRedirectHref,
+  middleware,
+  notFoundRoute,
+} from "../routes.js";
 import "#styles/app.css";
 
 interface InitialData extends Record<string, unknown> {
   readonly url?: string;
   /** Colour-scheme preference resolved from the request cookie, if any. */
   readonly theme?: "light" | "dark";
+}
+
+/** How the server should answer a request for this URL. */
+export type RouteDisposition =
+  | {
+      readonly kind: "render";
+      readonly status: number;
+      readonly dehydratedState: {
+        readonly href: string;
+        readonly kind: "route" | "not-found";
+        readonly routeId: string | null;
+        readonly status: number;
+      } | null;
+    }
+  | {
+      readonly kind: "redirect";
+      readonly status: number;
+      readonly location: string;
+    };
+
+// A module-scope adapterless router is a pure matcher: without an adapter,
+// construction fires no load and no warm hooks, and match() runs no hooks at
+// all. Never use a server-adapter router here — it warms at construction.
+const dispositionMatcher = createRouter(appRoutes, {
+  middleware: [...middleware],
+  notFound: notFoundRoute,
+});
+
+/**
+ * Resolve a request URL to the HTTP answer the router implies: a redirect
+ * (auth guard or a static redirect route) or a render with the matched
+ * document's real status — a matched not-found page is a 404 response, not a
+ * soft 200.
+ */
+export function resolveRouteDisposition(url: string): RouteDisposition {
+  const authRedirect = getAuthRedirectHref(url);
+
+  if (authRedirect) {
+    return { kind: "redirect", status: 302, location: authRedirect };
+  }
+
+  let matchResult: ReturnType<typeof dispositionMatcher.match>;
+
+  try {
+    matchResult = dispositionMatcher.match(url);
+  } catch (error) {
+    // A rejected search schema is a client error; render the shell with the
+    // error status and let the client router re-derive the same state.
+    return {
+      kind: "render",
+      status: error instanceof StatusResponse ? error.status : 500,
+      dehydratedState: null,
+    };
+  }
+
+  if (matchResult?.kind === "redirect") {
+    return {
+      kind: "redirect",
+      status: matchResult.status,
+      location: matchResult.redirectTo,
+    };
+  }
+
+  const status = matchResult?.status ?? 404;
+
+  return {
+    kind: "render",
+    status,
+    dehydratedState: {
+      href: url,
+      kind: matchResult?.kind === "route" ? "route" : "not-found",
+      routeId: matchResult?.kind === "route" ? String(matchResult.name) : null,
+      status,
+    },
+  };
 }
 
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {

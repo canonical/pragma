@@ -63,15 +63,30 @@ Bun.serve({
       }
     }
 
-    const renderer =
-      url.pathname === "/sitemap.xml"
-        ? (createSitemapRenderer as CreateSitemapRenderer)()
-        : (createAppRenderer as CreateAppRenderer)(req);
-    const stream = await renderer.renderToReadableStream(req.signal);
+    if (url.pathname === "/sitemap.xml") {
+      const renderer = (createSitemapRenderer as CreateSitemapRenderer)();
+      const stream = await renderer.renderToReadableStream(req.signal);
+
+      return new Response(stream, {
+        status: renderer.statusCode,
+        headers: { "Content-Type": renderer.contentType },
+      });
+    }
+
+    const appResult = (createAppRenderer as CreateAppRenderer)(req);
+
+    if (appResult.kind === "redirect") {
+      return new Response(null, {
+        status: appResult.status,
+        headers: { location: appResult.location },
+      });
+    }
+
+    const stream = await appResult.renderer.renderToReadableStream(req.signal);
 
     return new Response(stream, {
-      status: renderer.statusCode,
-      headers: { "Content-Type": renderer.contentType },
+      status: appResult.renderer.statusCode,
+      headers: { "Content-Type": appResult.renderer.contentType },
     });
   },
 });

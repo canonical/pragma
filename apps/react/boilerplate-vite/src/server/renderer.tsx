@@ -22,7 +22,11 @@ import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
 import { i18nConfig } from "#i18n/config.js";
-import EntryServer, { type InitialData } from "./entry.js";
+import EntryServer, {
+  type InitialData,
+  type RouteDisposition,
+  resolveRouteDisposition,
+} from "./entry.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -55,7 +59,17 @@ function acceptLanguageHeader(
  * URL for routing and the cookie-backed theme so the first paint matches the
  * user's preference, passing both as the renderer's initial data.
  */
-export default function createAppRenderer(request: Request | IncomingMessage) {
+/** The app renderer's answer: a stream renderer, or an HTTP redirect. */
+export type AppRendererResult =
+  | {
+      readonly kind: "render";
+      readonly renderer: JSXRenderer<typeof EntryServer, InitialData>;
+    }
+  | Extract<RouteDisposition, { kind: "redirect" }>;
+
+export default function createAppRenderer(
+  request: Request | IncomingMessage,
+): AppRendererResult {
   const cookie = cookieHeader(request);
   const { theme } = extractPreferences(cookie);
   const locale = negotiateLocale(i18nConfig, {
@@ -67,8 +81,18 @@ export default function createAppRenderer(request: Request | IncomingMessage) {
     theme: theme === "light" || theme === "dark" ? theme : undefined,
     locale,
   };
-  return new JSXRenderer(EntryServer, initialData, {
-    htmlString,
-    defaultLocale: locale,
-  });
+  const disposition = resolveRouteDisposition(initialData.url ?? "/");
+
+  if (disposition.kind === "redirect") {
+    return disposition;
+  }
+
+  return {
+    kind: "render",
+    renderer: new JSXRenderer(EntryServer, initialData, {
+      htmlString,
+      defaultLocale: locale,
+      statusCode: disposition.status,
+    }),
+  };
 }

@@ -65,9 +65,17 @@ Bun.serve({
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(requestUrl, template);
 
-      const { default: EntryServer } = await vite.ssrLoadModule(
-        "/src/server/entry.tsx",
-      );
+      const { default: EntryServer, resolveRouteDisposition } =
+        await vite.ssrLoadModule("/src/server/entry.tsx");
+
+      const disposition = resolveRouteDisposition(requestUrl);
+
+      if (disposition.kind === "redirect") {
+        return new Response(null, {
+          status: disposition.status,
+          headers: { location: disposition.location },
+        });
+      }
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
@@ -85,7 +93,7 @@ Bun.serve({
           url: requestUrl,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
         },
-        { htmlString: html },
+        { htmlString: html, statusCode: disposition.status },
       );
       const stream = await renderer.renderToReadableStream(req.signal);
 

@@ -20,7 +20,11 @@ import path from "node:path";
 import { extractPreferences } from "@canonical/react-hooks";
 import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
-import EntryServer, { type InitialData } from "./entry.js";
+import EntryServer, {
+  type InitialData,
+  type RouteDisposition,
+  resolveRouteDisposition,
+} from "./entry.js";
 
 const htmlString = fs.readFileSync(
   path.join(process.cwd(), "dist", "client", "index.html"),
@@ -40,11 +44,33 @@ function cookieHeader(request: Request | IncomingMessage): string | null {
  * URL for routing and the cookie-backed theme so the first paint matches the
  * user's preference, passing both as the renderer's initial data.
  */
-export default function createAppRenderer(request: Request | IncomingMessage) {
+/** The app renderer's answer: a stream renderer, or an HTTP redirect. */
+export type AppRendererResult =
+  | {
+      readonly kind: "render";
+      readonly renderer: JSXRenderer<typeof EntryServer, InitialData>;
+    }
+  | Extract<RouteDisposition, { kind: "redirect" }>;
+
+export default function createAppRenderer(
+  request: Request | IncomingMessage,
+): AppRendererResult {
   const { theme } = extractPreferences(cookieHeader(request));
   const initialData: InitialData = {
     url: getRequestUrl(request),
     theme: theme === "light" || theme === "dark" ? theme : undefined,
   };
-  return new JSXRenderer(EntryServer, initialData, { htmlString });
+  const disposition = resolveRouteDisposition(initialData.url ?? "/");
+
+  if (disposition.kind === "redirect") {
+    return disposition;
+  }
+
+  return {
+    kind: "render",
+    renderer: new JSXRenderer(EntryServer, initialData, {
+      htmlString,
+      statusCode: disposition.status,
+    }),
+  };
 }
