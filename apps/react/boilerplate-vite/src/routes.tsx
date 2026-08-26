@@ -26,12 +26,7 @@ function hasDemoAuth(search: unknown): boolean {
 
 export function getAuthRedirectHref(input: string | URL): string | null {
   const url =
-    input instanceof URL
-      ? input
-      : new URL(
-          input.startsWith("http") ? input : input,
-          "https://router.local",
-        );
+    input instanceof URL ? input : new URL(input, "https://router.local");
 
   if (
     !protectedPaths.has(url.pathname) ||
