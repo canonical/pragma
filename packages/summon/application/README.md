@@ -136,7 +136,7 @@ const [billing] = group(publicLayout, [billingRoutes.billing] as const);
 
 ### `summon route <domain>/<name>`
 
-Adds a page component to an existing domain and appends the import to its `routes.ts`.
+Adds a page component to an existing domain and wires it into the domain's `routes.ts` — no manual edit needed.
 
 ```bash
 summon route billing/invoices
@@ -147,16 +147,16 @@ Produces:
 ```
 src/domains/billing/
 ├── InvoicesPage.tsx   # New page component
-└── routes.ts          # Import + TODO comment appended
+└── routes.ts          # Import + route entry inserted
 ```
 
-The generator appends the import and a comment with the route entry. Add the route to the `routes` object manually:
+The generator locates the `routes` object with the TypeScript AST and splices in both the import and the full entry:
 
 ```ts
 invoices: route({ url: "/billing/invoices", content: InvoicesPage }),
 ```
 
-Create the domain first with `summon domain <name>`.
+Running with `--undo` removes exactly that entry and import again. Create the domain first with `summon domain <name>`.
 
 ### `summon wrapper <name>`
 
