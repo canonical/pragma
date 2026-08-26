@@ -48,7 +48,7 @@
     "@canonical/biome-config": "^0.34.0",
     "@canonical/typescript-config": "^0.34.0",
     "@canonical/vitest-config-react": "^0.34.0",
-    "@cloudflare/workers-types": "^4.20250620.0",
+    "@cloudflare/workers-types": "^5.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
