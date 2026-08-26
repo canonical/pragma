@@ -10,7 +10,7 @@ import {
 import { hydrateRoot } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
 import { catalogs, i18nConfig } from "#i18n/index.js";
-import { createEnvironment } from "#relay/environment.js";
+import { getBrowserEnvironment } from "#relay/environment.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/index.css";
 
@@ -28,7 +28,7 @@ const router = createRouter(appRoutes, {
 
 // One Relay environment (network + normalized store) for the whole browser
 // session — module scope, so client-side navigations share the cache.
-const relayEnvironment = createEnvironment();
+const relayEnvironment = getBrowserEnvironment();
 
 /**
  * Resolve the locale for the first client render.

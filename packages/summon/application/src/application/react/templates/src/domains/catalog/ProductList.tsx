@@ -4,9 +4,9 @@ import type { ProductListQuery } from "#relay/__generated__/ProductListQuery.gra
 import ProductCard from "./ProductCard.js";
 
 /** How many products the list requests from the connection. */
-const PAGE_SIZE = 4;
+export const PAGE_SIZE = 4;
 
-const productListQuery = graphql`
+export const productListQuery = graphql`
   query ProductListQuery($count: Int!, $cursor: String) {
     viewer {
       name

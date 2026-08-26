@@ -8,7 +8,7 @@ import {
 import { hydrateRoot } from "react-dom/client";
 <% if (relay) { -%>
 import { RelayEnvironmentProvider } from "react-relay";
-import { createEnvironment } from "#relay/environment.js";
+import { getBrowserEnvironment } from "#relay/environment.js";
 <% } -%>
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/index.css";
@@ -28,7 +28,7 @@ const router = createRouter(appRoutes, {
 
 // One Relay environment (network + normalized store) for the whole browser
 // session — module scope, so client-side navigations share the cache.
-const relayEnvironment = createEnvironment();
+const relayEnvironment = getBrowserEnvironment();
 <% } -%>
 
 const root = document.getElementById("root");
