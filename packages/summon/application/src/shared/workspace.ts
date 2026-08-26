@@ -127,6 +127,14 @@ export function findEnclosingWorkspaceRoot(
         if (coversRelativePath(globs, relativePath)) return current;
       }
     }
+    // A pnpm workspace declares its members in pnpm-workspace.yaml, not in
+    // package.json `workspaces` — treat such a root as enclosing without
+    // parsing the YAML (member globs are overwhelmingly directory-wide, and
+    // misclassifying a pnpm root as "standalone" emits an app-local bun-only
+    // patch block the root would never apply).
+    if (existsSync(path.join(current, "pnpm-workspace.yaml"))) {
+      return current;
+    }
     const parent = path.dirname(current);
     if (parent === current) return null;
     current = parent;
