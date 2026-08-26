@@ -59,4 +59,78 @@ describe("detectMonorepo", () => {
 
     expect(result.value).toEqual({ isMonorepo: false });
   });
+
+  it("detects lerna.json in a distant ancestor (deeper than two levels)", () => {
+    const result = dryRunWith(
+      detectMonorepo("/repo/packages/summon/package"),
+      buildMocks((p) => p === "/repo/lerna.json"),
+    );
+
+    expect(result.value).toEqual({ isMonorepo: true, version: "0.22.0" });
+  });
+
+  it("degrades a malformed lerna.json to not-monorepo instead of crashing", () => {
+    const result = dryRunWith(
+      detectMonorepo("/a/b/c"),
+      buildMocks((p) => p === "/a/b/c/lerna.json", "{not json"),
+    );
+
+    expect(result.value).toEqual({ isMonorepo: false });
+  });
+
+  it("detects a pnpm workspace root and reads its manifest version", () => {
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      [
+        "Exists",
+        (e) => {
+          const p = (e as { path: string }).path;
+          return (
+            p === "/repo/pnpm-workspace.yaml" || p === "/repo/package.json"
+          );
+        },
+      ],
+      ["ReadFile", () => JSON.stringify({ version: "2.0.0" })],
+    ]);
+
+    const result = dryRunWith(detectMonorepo("/repo/packages/x"), mocks);
+
+    expect(result.value).toEqual({ isMonorepo: true, version: "2.0.0" });
+  });
+
+  it("detects a package.json workspaces root", () => {
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      ["Exists", (e) => (e as { path: string }).path === "/repo/package.json"],
+      [
+        "ReadFile",
+        () => JSON.stringify({ version: "3.1.0", workspaces: ["packages/*"] }),
+      ],
+    ]);
+
+    const result = dryRunWith(detectMonorepo("/repo/apps"), mocks);
+
+    expect(result.value).toEqual({ isMonorepo: true, version: "3.1.0" });
+  });
+
+  it("skips a plain package.json without workspaces and keeps walking up", () => {
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      [
+        "Exists",
+        (e) => {
+          const p = (e as { path: string }).path;
+          return p === "/repo/app/package.json" || p === "/repo/lerna.json";
+        },
+      ],
+      [
+        "ReadFile",
+        (e) =>
+          (e as { path: string }).path === "/repo/lerna.json"
+            ? lernaJson
+            : JSON.stringify({ name: "app" }),
+      ],
+    ]);
+
+    const result = dryRunWith(detectMonorepo("/repo/app"), mocks);
+
+    expect(result.value).toEqual({ isMonorepo: true, version: "0.22.0" });
+  });
 });

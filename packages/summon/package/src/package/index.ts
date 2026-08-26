@@ -158,8 +158,10 @@ OPTIONS:
                       repos; monorepos read only the root template)
 
 The generator auto-detects:
-  - Monorepo: Uses lerna.json version when in pragma monorepo
-  - Package manager: Detects bun/yarn/pnpm (defaults to bun)`,
+  - Monorepo: walks up to the nearest lerna.json, pnpm-workspace.yaml, or
+    package.json "workspaces" root and uses its version
+  - Package manager: nearest lockfile wins, walking up from the current
+    directory (bun > pnpm > yarn > npm within a directory; defaults to bun)`,
     examples: [
       "summon package --name=@canonical/my-tool --type=tool-ts",
       "summon package --name=@canonical/my-lib --type=library --with-react",

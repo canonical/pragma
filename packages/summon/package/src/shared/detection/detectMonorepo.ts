@@ -1,44 +1,99 @@
 import * as path from "node:path";
 import { exists, flatMap, pure, readFile, type Task } from "@canonical/task";
 import type { MonorepoInfo } from "../types.js";
+import { ancestorDirs } from "./detectPackageManager.js";
+
+const notMonorepo: MonorepoInfo = { isMonorepo: false };
+
+/** Parse JSON without throwing; a malformed file reads as no data. */
+const safeParse = (content: string): Record<string, unknown> | null => {
+  try {
+    const parsed: unknown = JSON.parse(content);
+    return typeof parsed === "object" && parsed !== null
+      ? (parsed as Record<string, unknown>)
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+/** The version field of a parsed manifest, when it is a string. */
+const versionOf = (data: Record<string, unknown>): string | undefined =>
+  typeof data.version === "string" ? data.version : undefined;
 
 /**
- * Detect if running in a monorepo and get the version.
- *
- * @note Impure — reads lerna.json from the filesystem.
+ * Probe one directory for a monorepo marker: `lerna.json` (version from it),
+ * `pnpm-workspace.yaml` (version from the adjacent `package.json`), or a
+ * `package.json` with a `workspaces` field. Falls through to `next` when the
+ * directory carries no marker (or only a malformed one).
  */
-export default function detectMonorepo(cwd: string): Task<MonorepoInfo> {
-  const lernaPath = path.join(cwd, "lerna.json");
-  const parentLernaPath = path.join(cwd, "..", "lerna.json");
-  const grandparentLernaPath = path.join(cwd, "..", "..", "lerna.json");
+function detectAt(dir: string, next: Task<MonorepoInfo>): Task<MonorepoInfo> {
+  const lernaPath = path.join(dir, "lerna.json");
+  const pnpmWorkspacePath = path.join(dir, "pnpm-workspace.yaml");
+  const packageJsonPath = path.join(dir, "package.json");
 
-  const parseLerna = (content: string): MonorepoInfo => {
-    const lerna = JSON.parse(content);
-    return { isMonorepo: true, version: lerna.version };
-  };
-
-  const notMonorepo: MonorepoInfo = { isMonorepo: false };
+  const versionFromPackageJson: Task<MonorepoInfo> = flatMap(
+    exists(packageJsonPath),
+    (hasManifest) =>
+      hasManifest
+        ? flatMap(readFile(packageJsonPath), (content) => {
+            const manifest = safeParse(content);
+            return pure<MonorepoInfo>({
+              isMonorepo: true,
+              version: manifest === null ? undefined : versionOf(manifest),
+            });
+          })
+        : pure<MonorepoInfo>({ isMonorepo: true }),
+  );
 
   return flatMap(exists(lernaPath), (hasLerna) => {
     if (hasLerna) {
-      return flatMap(readFile(lernaPath), (content) =>
-        pure(parseLerna(content)),
-      );
-    }
-    return flatMap(exists(parentLernaPath), (hasParent) => {
-      if (hasParent) {
-        return flatMap(readFile(parentLernaPath), (content) =>
-          pure(parseLerna(content)),
-        );
-      }
-      return flatMap(exists(grandparentLernaPath), (hasGrandparent) => {
-        if (hasGrandparent) {
-          return flatMap(readFile(grandparentLernaPath), (content) =>
-            pure(parseLerna(content)),
-          );
+      return flatMap(readFile(lernaPath), (content) => {
+        const lerna = safeParse(content);
+        // Malformed lerna.json: not proof of a monorepo — keep looking upward
+        // instead of crashing the whole generation.
+        if (lerna === null) {
+          return next;
         }
-        return pure(notMonorepo);
+        return pure<MonorepoInfo>({
+          isMonorepo: true,
+          version: versionOf(lerna),
+        });
+      });
+    }
+    return flatMap(exists(pnpmWorkspacePath), (hasPnpmWorkspace) => {
+      if (hasPnpmWorkspace) {
+        return versionFromPackageJson;
+      }
+      return flatMap(exists(packageJsonPath), (hasManifest) => {
+        if (!hasManifest) {
+          return next;
+        }
+        return flatMap(readFile(packageJsonPath), (content) => {
+          const manifest = safeParse(content);
+          if (manifest !== null && "workspaces" in manifest) {
+            return pure<MonorepoInfo>({
+              isMonorepo: true,
+              version: versionOf(manifest),
+            });
+          }
+          return next;
+        });
       });
     });
   });
+}
+
+/**
+ * Detect if running in a monorepo and get its version. Walks from `cwd` up
+ * to the filesystem root, nearest directory first, recognising lerna, pnpm,
+ * and package.json-`workspaces` (npm/yarn/bun) roots.
+ *
+ * @note Impure — probes the filesystem for workspace markers.
+ */
+export default function detectMonorepo(cwd: string): Task<MonorepoInfo> {
+  return ancestorDirs(cwd).reduceRight<Task<MonorepoInfo>>(
+    (fallback, dir) => detectAt(dir, fallback),
+    pure(notMonorepo),
+  );
 }

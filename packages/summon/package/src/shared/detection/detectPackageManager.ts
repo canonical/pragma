@@ -3,44 +3,54 @@ import { exists, ifElseM, pure, type Task } from "@canonical/task";
 import type { PackageManager } from "../types.js";
 
 /**
- * Detect the package manager in use.
+ * Lockfiles in detection-priority order within one directory. Both bun
+ * lockfile generations are probed; the remaining managers follow the
+ * documented preference order.
+ */
+const LOCKFILES: ReadonlyArray<readonly [string, PackageManager]> = [
+  ["bun.lockb", "bun"],
+  ["bun.lock", "bun"],
+  ["pnpm-lock.yaml", "pnpm"],
+  ["yarn.lock", "yarn"],
+  ["package-lock.json", "npm"],
+];
+
+/**
+ * Every directory from `start` up to the filesystem root, nearest first.
+ */
+export function ancestorDirs(start: string): string[] {
+  const dirs: string[] = [];
+  let current = path.resolve(start);
+  for (;;) {
+    dirs.push(current);
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return dirs;
+    }
+    current = parent;
+  }
+}
+
+/**
+ * Detect the package manager in use: the nearest directory (walking from
+ * `cwd` up to the filesystem root) that holds a lockfile wins, and within a
+ * directory the priority is bun → pnpm → yarn → npm. Falls back to bun when
+ * no lockfile is found anywhere.
  *
  * @note Impure — probes the filesystem for lock files.
  */
 export default function detectPackageManager(
   cwd: string,
 ): Task<PackageManager> {
-  const bunLock = path.join(cwd, "bun.lockb");
-  const bunLock2 = path.join(cwd, "bun.lock");
-  const yarnLock = path.join(cwd, "yarn.lock");
-  const pnpmLock = path.join(cwd, "pnpm-lock.yaml");
-
-  const parentBunLock = path.join(cwd, "..", "..", "bun.lockb");
-  const parentBunLock2 = path.join(cwd, "..", "..", "bun.lock");
-
-  return ifElseM(
-    exists(bunLock),
-    pure("bun" as const),
-    ifElseM(
-      exists(bunLock2),
-      pure("bun" as const),
-      ifElseM(
-        exists(parentBunLock),
-        pure("bun" as const),
-        ifElseM(
-          exists(parentBunLock2),
-          pure("bun" as const),
-          ifElseM(
-            exists(yarnLock),
-            pure("yarn" as const),
-            ifElseM(
-              exists(pnpmLock),
-              pure("pnpm" as const),
-              pure("bun" as const),
-            ),
-          ),
-        ),
-      ),
+  const probes = ancestorDirs(cwd).flatMap((dir) =>
+    LOCKFILES.map(
+      ([file, manager]) => [path.join(dir, file), manager] as const,
     ),
+  );
+
+  return probes.reduceRight<Task<PackageManager>>(
+    (fallback, [lockPath, manager]) =>
+      ifElseM(exists(lockPath), pure(manager), fallback),
+    pure("bun"),
   );
 }
