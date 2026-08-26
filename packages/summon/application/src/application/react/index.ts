@@ -9,6 +9,7 @@ import {
   copyFile,
   exec,
   exists,
+  fail,
   flatMap,
   info,
   pure,
@@ -18,6 +19,7 @@ import {
 } from "@canonical/task";
 import { pickPackageManager } from "../../shared/packageManager.js";
 import { packageVersion } from "../../shared/packageVersion.js";
+import { validateAppPath } from "../../shared/validators.js";
 import { resolvePragmaVersion } from "../../shared/versions.js";
 import { findEnclosingWorkspaceRoot } from "../../shared/workspace.js";
 
@@ -37,6 +39,7 @@ const prompts: PromptDefinition[] = [
     message: "Application directory name:",
     default: "my-app",
     positional: true,
+    validate: validateAppPath,
     group: "Application",
   },
   {
@@ -114,10 +117,12 @@ Requires both --ssr and --router flags.`,
 
   generate: (answers) => {
     if (!answers.ssr || !answers.router) {
-      throw new Error(
-        "The application/react generator requires both --ssr and --router. " +
+      return fail({
+        code: "APP_UNSUPPORTED_MODE",
+        message:
+          "The application/react generator requires both --ssr and --router. " +
           "Standalone SPA mode is not supported.",
-      );
+      });
     }
 
     // The app path is a directory path, not a route path — keep it as given
@@ -137,10 +142,12 @@ Requires both --ssr and --router flags.`,
       .replace(/^[._-]+|[._-]+$/g, "");
 
     if (!name) {
-      throw new Error(
-        `Could not derive a valid application name from path "${appPath}". ` +
+      return fail({
+        code: "APP_NAME_INVALID",
+        message:
+          `Could not derive a valid application name from path "${appPath}". ` +
           "Pass an explicit directory name (lowercase letters/digits).",
-      );
+      });
     }
 
     const dest = (...segments: string[]) => path.join(appPath, ...segments);
@@ -192,17 +199,30 @@ Requires both --ssr and --router flags.`,
           : `Application "${appPath}" created. Install a package manager (bun, pnpm, npm, or yarn), then run \`cd ${appPath} && <pm> install && <pm> run dev\` to start.`;
 
       return sequence_([
-        // Warn (don't block) if the destination already exists — scaffolding
-        // will overwrite files in place.
+        // Refuse to scaffold over an existing directory: every write's default
+        // undo is a delete, so overwrite-then-`--undo` would destroy files the
+        // user owned before the run (the same guard domain/wrapper apply).
         flatMap(exists(appPath), (present) =>
-          when(
-            present,
-            warn(
-              `"${appPath}" already exists — existing files may be overwritten.`,
-            ),
-          ),
+          present
+            ? fail({
+                code: "APP_DEST_EXISTS",
+                message:
+                  `"${appPath}" already exists. Scaffolding over it would let ` +
+                  "--undo delete pre-existing files. Choose a different " +
+                  "directory or remove it first.",
+              })
+            : pure(undefined),
         ),
         info(`Scaffolding React application in "${appPath}"...`),
+        // The scaffolded package.json composes its scripts with `bun run`; on
+        // a machine where another manager was detected, say so up front.
+        when(
+          pm !== null && pm !== "bun",
+          warn(
+            `Detected ${pm}, but the generated scripts use \`bun run\` — ` +
+              "install bun to run the app's composite scripts.",
+          ),
+        ),
 
         // EJS templates (files needing interpolation)
         template({

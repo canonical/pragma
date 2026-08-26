@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dryRun, sequence_ } from "@canonical/task";
+import { dryRun, dryRunWith, type Effect, sequence_ } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import { generators } from "./index.js";
 
@@ -378,6 +378,24 @@ describe("application/react generator", () => {
 
     expect(filePaths).toContain("custom-app/package.json");
     expect(filePaths).toContain("custom-app/src/client/entry.tsx");
+  });
+
+  it("refuses to scaffold over an existing directory", () => {
+    // Every write's default undo is a delete, so overwrite-then-`--undo`
+    // would destroy pre-existing files — the guard must hard-fail, not warn.
+    const task = generators["application/react"].generate({
+      appPath: "my-app",
+      ssr: true,
+      router: true,
+      forms: false,
+      relay: false,
+      runInstall: false,
+    });
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      ["Exists", (e) => (e as { path: string }).path === "my-app"],
+    ]);
+
+    expect(() => dryRunWith(task, mocks)).toThrow(/already exists/);
   });
 
   it("throws when --ssr is false", () => {
