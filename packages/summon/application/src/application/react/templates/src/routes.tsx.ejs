@@ -114,9 +114,19 @@ const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
 
 <% } -%>
+// Static redirect route: matched entirely from the URL, no content — the
+// router (and the SSR disposition helper) answers with a real 301. Static
+// redirects accept 301 or 308 only; runtime redirect() covers the 302 family.
+const legacyHome = route({
+  url: "/home",
+  redirect: "/",
+  status: 301,
+});
+
 const appRoutes = {
   guide,
   home,
+  legacyHome,
   account,
   login,
 <% if (forms) { -%>
