@@ -20,6 +20,7 @@ import {
   getPackageShortName,
   PACKAGE_NAME,
   type PackageAnswers,
+  packageVersion,
   validatePackageName,
 } from "../shared/index.js";
 
@@ -133,7 +134,7 @@ export const generator: GeneratorDefinition<PackageAnswers> = {
     displayName: PACKAGE_NAME,
     description:
       "Generate a new npm package with proper configuration for the pragma monorepo",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a new npm package with proper configuration.
 
 PACKAGE TYPES:

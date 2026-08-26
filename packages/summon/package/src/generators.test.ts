@@ -40,7 +40,7 @@ const renderManifest = (
 describe("package generator", () => {
   it("has correct meta information", () => {
     expect(generator.meta.name).toBe("package");
-    expect(generator.meta.version).toBe("0.1.0");
+    expect(generator.meta.version).toBe(pkg.version);
     expect(generator.meta.description).toBeDefined();
   });
 

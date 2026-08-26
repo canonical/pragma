@@ -17,6 +17,7 @@ import {
   when,
 } from "@canonical/task";
 import { pickPackageManager } from "../../shared/packageManager.js";
+import { packageVersion } from "../../shared/packageVersion.js";
 import { resolvePragmaVersion } from "../../shared/versions.js";
 import { findEnclosingWorkspaceRoot } from "../../shared/workspace.js";
 
@@ -86,7 +87,7 @@ export const generator: GeneratorDefinition<ApplicationReactAnswers> = {
     name: "application/react",
     displayName: "@canonical/summon-application:application/react",
     description: "Scaffold a complete React application with SSR and routing",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Creates a full React application with:
   - Vite build + dev server
   - Server-side rendering (Express + Bun dev servers)

@@ -22,6 +22,7 @@ import {
   validateMonorepoName,
   validateRepository,
 } from "../shared/index.js";
+import { packageVersion } from "../shared/packageVersion.js";
 
 // =============================================================================
 // Template Paths
@@ -142,7 +143,7 @@ export const generator: GeneratorDefinition<MonorepoAnswers> = {
     displayName: PACKAGE_NAME,
     description:
       "Generate a new Bun + Lerna monorepo with CI, release, and shared config",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Generate a new monorepo shell with opinionated defaults.
 
 This generator creates the monorepo infrastructure only — it does NOT create

@@ -18,7 +18,5 @@ export default function createTemplateContext(
     ),
     repository: answers.repository,
     bunVersion: answers.bunVersion,
-    generatorName: "@canonical/summon-monorepo",
-    generatorVersion: "0.1.0",
   };
 }

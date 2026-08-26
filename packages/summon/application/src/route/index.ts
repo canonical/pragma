@@ -14,6 +14,7 @@ import {
 } from "@canonical/task";
 import { toCamelCase, toPascalCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
+import { packageVersion } from "../shared/packageVersion.js";
 import { insertRoute, removeRoute } from "./insertRoute.js";
 
 export interface RouteAnswers {
@@ -56,7 +57,7 @@ export const generator: GeneratorDefinition<RouteAnswers> = {
     name: "route",
     displayName: "@canonical/summon-application:route",
     description: "Add a route page to an existing domain",
-    version: "0.1.0",
+    version: packageVersion(),
     help: `Creates a page component inside an existing domain directory.
 
 Given a path like "account/settings":

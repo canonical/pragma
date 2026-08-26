@@ -8,6 +8,7 @@
 import * as fs from "node:fs";
 import { dryRun, dryRunWith, type Effect, type Task } from "@canonical/task";
 import { describe, expect, it } from "vitest";
+import pkg from "../package.json" with { type: "json" };
 import { generators } from "./index.js";
 
 /**
@@ -61,7 +62,7 @@ describe("component/react generator", () => {
     });
 
     it("has version", () => {
-      expect(generator.meta.version).toBe("0.1.0");
+      expect(generator.meta.version).toBe(pkg.version);
     });
 
     it("has help text", () => {
@@ -225,7 +226,7 @@ describe("component/svelte generator", () => {
     });
 
     it("has version", () => {
-      expect(generator.meta.version).toBe("0.1.0");
+      expect(generator.meta.version).toBe(pkg.version);
     });
   });
 
@@ -363,7 +364,7 @@ describe("component/lit generator", () => {
     });
 
     it("has version", () => {
-      expect(generator.meta.version).toBe("0.1.0");
+      expect(generator.meta.version).toBe(pkg.version);
     });
 
     it("has help text mentioning decorators", () => {

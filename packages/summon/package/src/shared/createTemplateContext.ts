@@ -24,16 +24,11 @@ export default function createTemplateContext(
     type: answers.type,
     version,
     license: getLicense(answers.type),
-    module: entryPoints.module,
-    types: entryPoints.types,
-    files: entryPoints.files,
     needsBuild: entryPoints.needsBuild,
     canonicalVersion: packageVersion(),
     ruleset: getRuleset(answers.type, answers.withReact),
     withReact: answers.withReact,
     withStorybook: answers.withStorybook,
     withCli: answers.withCli,
-    generatorName: "@canonical/summon-package",
-    generatorVersion: "0.1.0",
   };
 }
