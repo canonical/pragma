@@ -3,8 +3,8 @@ export default class StatusResponse<TData = unknown> {
   readonly status: number;
   readonly data: TData;
 
-  constructor(status: number, data: TData) {
+  constructor(status: number, data?: TData) {
     this.status = status;
-    this.data = data;
+    this.data = data as TData;
   }
 }

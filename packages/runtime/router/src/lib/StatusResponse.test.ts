@@ -11,4 +11,11 @@ describe("StatusResponse", () => {
     expect(statusResponse.status).toBe(503);
     expect(statusResponse.data).toEqual({ message: "Back soon", eta: "5m" });
   });
+
+  it("constructs with a status alone", () => {
+    const statusResponse = new StatusResponse(401);
+
+    expect(statusResponse.status).toBe(401);
+    expect(statusResponse.data).toBeUndefined();
+  });
 });

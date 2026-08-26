@@ -766,7 +766,6 @@ export interface Router<
   readonly routes: TRoutes;
   readonly notFound: TNotFound;
   readonly adapter: PlatformAdapter | null;
-  readonly store: RouterStore<TRoutes, TNotFound>;
   getRoute<TName extends RouteName<TRoutes>>(
     name: TName,
   ): RouteOf<TRoutes, TName>;

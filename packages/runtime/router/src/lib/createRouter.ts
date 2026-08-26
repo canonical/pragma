@@ -1575,11 +1575,10 @@ export default function createRouter<
     );
   };
 
-  return {
+  const router: Router<TRoutes, TNotFound> = {
     adapter,
     routes: resolvedRoutes,
     notFound: options?.notFound as TNotFound,
-    store,
     getRoute(name) {
       return resolvedRoutes[name];
     },
@@ -1647,4 +1646,8 @@ export default function createRouter<
       return store.subscribeToSearchParam(key, listener);
     },
   };
+
+  // The store stays reachable on the concrete object for this package's own
+  // tests, but is not part of the public Router contract.
+  return Object.assign(router, { store });
 }

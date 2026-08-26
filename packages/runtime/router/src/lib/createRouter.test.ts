@@ -6,8 +6,22 @@ import group from "./group.js";
 import redirect from "./redirect.js";
 import route from "./route.js";
 import StatusResponse from "./StatusResponse.js";
-import type { AnyRoute, RouteMiddleware, StandardSchemaV1 } from "./types.js";
+import type {
+  AnyRoute,
+  RouteMap,
+  RouteMiddleware,
+  RouterStore,
+  StandardSchemaV1,
+} from "./types.js";
 import wrapper from "./wrapper.js";
+
+/**
+ * Reach the router's internal store — not part of the public Router
+ * contract, kept reachable on the concrete object for these tests.
+ */
+function getInternalStore(router: unknown): RouterStore<RouteMap, AnyRoute> {
+  return (router as { store: RouterStore<RouteMap, AnyRoute> }).store;
+}
 
 describe("createRouter", () => {
   it("builds hrefs and navigation intents from typed route names", () => {
@@ -574,7 +588,7 @@ describe("createRouter", () => {
     });
 
     expect(router.getState().location.href).toBe("/?page=2#details");
-    expect(router.store.getSnapshot()).toMatchObject({
+    expect(getInternalStore(router).getSnapshot()).toMatchObject({
       href: "/?page=2#details",
       navigationState: "idle",
       pathname: "/",
@@ -600,8 +614,8 @@ describe("createRouter", () => {
     router.subscribeToSearchParam("page", pageListener);
     router.subscribeToNavigation(navigationListener);
 
-    router.store.setLocation("/?page=1");
-    router.store.setNavigationState("loading");
+    getInternalStore(router).setLocation("/?page=1");
+    getInternalStore(router).setNavigationState("loading");
 
     expect(stateListener).toHaveBeenCalledTimes(2);
     expect(pageListener).toHaveBeenCalledWith("1", null);
