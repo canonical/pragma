@@ -32,10 +32,13 @@ describe("createRouter", () => {
       content: ({ params }) => params.userId,
     });
 
-    const router = createRouter({
-      home: homeRoute,
-      user: userRoute,
-    });
+    const router = createRouter(
+      {
+        home: homeRoute,
+        user: userRoute,
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
 
     expect(router.getRoute("user")).toBe(userRoute);
     expect(router.buildPath("home")).toBe("/");
@@ -73,9 +76,10 @@ describe("createRouter", () => {
       content: () => "home",
     });
 
-    const router = createRouter({
-      home: homeRoute,
-    });
+    const router = createRouter(
+      { home: homeRoute },
+      { adapter: createMemoryAdapter("/") },
+    );
 
     expect(router.navigate("home")).toEqual({
       name: "home",
@@ -177,11 +181,14 @@ describe("createRouter", () => {
       content: ({ search }) => `${search.q}:${search.page}`,
     });
 
-    const router = createRouter({
-      home: homeRoute,
-      user: userRoute,
-      search: searchRoute,
-    });
+    const router = createRouter(
+      {
+        home: homeRoute,
+        user: userRoute,
+        search: searchRoute,
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
 
     const navigationIntent = router.navigate("search", {
       search: {
@@ -1816,17 +1823,6 @@ describe("createRouter", () => {
     });
   });
 
-  it("no-ops setSearchParams when no adapter is present", () => {
-    const router = createRouter({
-      list: route({ url: "/list", content: () => "list" }),
-    });
-
-    // Should not throw — just does nothing
-    router.setSearchParams({ page: "2" });
-
-    expect(router.getState().location.pathname).toBe("/");
-  });
-
   it("syncs adapter location after runtime redirect during navigate", async () => {
     const adapter = createMemoryAdapter("/");
     const router = createRouter(
@@ -1946,17 +1942,20 @@ describe("createRouter", () => {
 
     it("passes validated params to prefetch and builds paths from schema output", async () => {
       const prefetchSpy = vi.fn();
-      const router = createRouter({
-        user: route({
-          url: "/users/:id",
-          params: numericIdSchema,
-          prefetch: (params, _search, _context) => {
-            expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
-            prefetchSpy(params);
-          },
-          content: ({ params }) => String(params.id),
-        }),
-      });
+      const router = createRouter(
+        {
+          user: route({
+            url: "/users/:id",
+            params: numericIdSchema,
+            prefetch: (params, _search, _context) => {
+              expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
+              prefetchSpy(params);
+            },
+            content: ({ params }) => String(params.id),
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
 
       expect(router.buildPath("user", { params: { id: 42 } })).toBe(
         "/users/42",
@@ -2436,6 +2435,41 @@ describe("createRouter", () => {
       } finally {
         process.off("unhandledRejection", onUnhandled);
       }
+    });
+  });
+
+  describe("adapterless routers fail loudly", () => {
+    it("throws from navigate() when constructed without an adapter", () => {
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+      });
+
+      expect(() => {
+        router.navigate("home");
+      }).toThrow("router.navigate() requires a platform adapter.");
+    });
+
+    it("throws from setSearchParams() when constructed without an adapter", () => {
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+      });
+
+      expect(() => {
+        router.setSearchParams({ page: "2" });
+      }).toThrow("router.setSearchParams() requires a platform adapter.");
+    });
+
+    it("still matches and builds paths without an adapter", async () => {
+      const router = createRouter({
+        home: route({ url: "/", content: () => "home" }),
+      });
+
+      expect(router.buildPath("home")).toBe("/");
+      expect(router.match("/")).toMatchObject({ kind: "route", name: "home" });
+
+      const result = await router.load("/");
+
+      expect(result.status).toBe(200);
     });
   });
 });
