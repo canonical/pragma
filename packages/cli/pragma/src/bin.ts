@@ -16,6 +16,13 @@
 import type { Command } from "commander";
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "./constants.js";
 
+/**
+ * The flags a bare invocation answers itself. `--version` returns earlier; the
+ * help forms fall through to the front door, which IS their answer — so the
+ * unknown-flag guard must not mistake them for typos.
+ */
+const ROOT_FLAGS = new Set(["--help", "-h", "--version", "-v"]);
+
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
@@ -119,6 +126,43 @@ async function main(): Promise<void> {
   //    prints the curated front door instead of exiting silently. Uses the
   //    static capabilities — the front door never reads config or stories.
   if (!args.some((arg) => !arg.startsWith("-"))) {
+    // `args` is argv with the global flags already stripped, so a token still
+    // starting with `-` here is a flag this program does not have — EXCEPT the
+    // two the front door itself answers, which reach this branch by design.
+    // Commander rejects unknown flags below the root; without this the ROOT
+    // answered a typo with the front door and exit 0, so `pragma --detial
+    // standard` read as success.
+    const unknownFlag = args.find(
+      (arg) => arg.startsWith("-") && !ROOT_FLAGS.has(arg),
+    );
+    if (unknownFlag !== undefined) {
+      const [
+        { PragmaError },
+        { renderErrorPlain, renderErrorJson },
+        { mapExitCode },
+      ] = await Promise.all([
+        import("./kernel/error/PragmaError.js"),
+        import("./kernel/error/renderError.js"),
+        import("./kernel/project/cli/exitCodes.js"),
+      ]);
+      const error = new PragmaError({
+        code: "INVALID_INPUT",
+        message: `Unknown option "${unknownFlag}".`,
+        recovery: {
+          message: "Run with `--help` to see the available options.",
+        },
+      });
+      process.stderr.write(
+        `${
+          globalFlags.format === "json"
+            ? renderErrorJson(error)
+            : renderErrorPlain(error)
+        }\n`,
+      );
+      process.exitCode = mapExitCode(error.code);
+      return;
+    }
+
     const { formatRootHelp } = await import("./kernel/project/cli/rootHelp.js");
     const live = capabilities
       .flatMap((module) => [...module.verbs])

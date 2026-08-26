@@ -4,6 +4,18 @@
  * `--format`, `--verbose`, and `--detail` may appear anywhere on the line, so
  * they are scanned and stripped before Commander sees argv — otherwise
  * `enablePositionalOptions()` scoping would reject a flag placed after a verb.
+ *
+ * ANYWHERE STOPS AT `--`. Everything after the option terminator is the user's
+ * data, not this program's flags: `block lookup -- --format` looks up a block
+ * literally named `--format`. Commander honours the terminator on its own, so
+ * a scan here that ignored it would parse — and strip — tokens Commander was
+ * about to hand through verbatim.
+ *
+ * A FLAG'S VALUE IS NEVER ANOTHER FLAG. `--detail --category css` supplies no
+ * detail; it is a valueless `--detail` followed by a separate flag. Reading the
+ * next token unconditionally would consume `--category` as the value and strip
+ * it, so the filter would vanish and the command would answer over the whole
+ * set instead — a wrong answer with no diagnostic.
  * Ported from the v1 `parseGlobalFlags`, with two v2 changes: a new `--detail`
  * flag and the `--format text` value renamed to `plain` (the kernel's
  * {@link OutputFormat}). The dedicated `--llm` flag was folded into
@@ -13,6 +25,35 @@
 
 import { DETAIL_LEVELS, type DetailLevel } from "../../../constants.js";
 import type { GlobalFlags } from "../../runtime/types.js";
+
+/** The end-of-options separator: nothing after it is a flag of this program. */
+const OPTION_TERMINATOR = "--";
+
+/**
+ * The span of argv this program's flags may occupy — everything before the
+ * option terminator, or all of argv when there is none.
+ *
+ * @param argv - The user's arguments.
+ * @returns The scannable span; the same array when no terminator is present.
+ */
+function selectScanSpan(argv: readonly string[]): readonly string[] {
+  const terminator = argv.indexOf(OPTION_TERMINATOR);
+  return terminator === -1 ? argv : argv.slice(0, terminator);
+}
+
+/**
+ * Whether a token can serve as a flag's value.
+ *
+ * A token starting with `-` is the next flag, not this one's value. Shared by
+ * every reader below so the space form cannot swallow a sibling flag at one
+ * call site while guarding against it at another.
+ *
+ * @param token - The token following a flag, if any.
+ * @returns True when the token is a value rather than another flag.
+ */
+function isFlagValue(token: string | undefined): token is string {
+  return token !== undefined && !token.startsWith("-");
+}
 
 /**
  * Read a `--flag`'s value, accepting both `--flag value` and `--flag=value`.
@@ -25,13 +66,16 @@ function readFlagValue(
   argv: readonly string[],
   flag: string,
 ): string | undefined {
+  const span = selectScanSpan(argv);
   const equalsPrefix = `${flag}=`;
-  const equalsArg = argv.find((arg) => arg.startsWith(equalsPrefix));
+  const equalsArg = span.find((arg) => arg.startsWith(equalsPrefix));
   if (equalsArg !== undefined) {
     return equalsArg.slice(equalsPrefix.length);
   }
-  const spaceIndex = argv.indexOf(flag);
-  return spaceIndex === -1 ? undefined : argv[spaceIndex + 1];
+  const spaceIndex = span.indexOf(flag);
+  if (spaceIndex === -1) return undefined;
+  const value = span.at(spaceIndex + 1);
+  return isFlagValue(value) ? value : undefined;
 }
 
 /**
@@ -46,14 +90,17 @@ function readFlagValue(
  * @returns The raw value, `""` for a valueless `--format`, or `undefined`.
  */
 export function readRawFormat(argv: readonly string[]): string | undefined {
-  const equalsArg = argv.find((arg) => arg.startsWith("--format="));
+  const span = selectScanSpan(argv);
+  const equalsArg = span.find((arg) => arg.startsWith("--format="));
   if (equalsArg !== undefined) return equalsArg.slice("--format=".length);
 
-  const spaceIndex = argv.indexOf("--format");
+  const spaceIndex = span.indexOf("--format");
   if (spaceIndex === -1) return undefined;
 
-  const value = argv[spaceIndex + 1];
-  return value !== undefined && !value.startsWith("-") ? value : "";
+  // `""` rather than `undefined`: a valueless `--format` must be REJECTED by the
+  // caller, not fall through to the default.
+  const value = span.at(spaceIndex + 1);
+  return isFlagValue(value) ? value : "";
 }
 
 /**
@@ -112,7 +159,7 @@ export function parseGlobalFlags(
     llm: format === "llm" || autoLlm,
     autoLlm,
     format,
-    verbose: argv.includes("--verbose"),
+    verbose: selectScanSpan(argv).includes("--verbose"),
     ...(detail !== undefined ? { detail } : {}),
   };
 }
@@ -122,7 +169,8 @@ export function parseGlobalFlags(
  *
  * Since {@link parseGlobalFlags} pre-parses these, they are dropped so they do
  * not collide with Commander's positional scoping, letting the user place them
- * anywhere on the line.
+ * anywhere on the line — anywhere before the option terminator, which this
+ * stops at and hands through whole.
  *
  * @param argv - The user's arguments.
  * @returns A new array with global flags stripped.
@@ -130,20 +178,31 @@ export function parseGlobalFlags(
 export function stripGlobalFlags(argv: readonly string[]): string[] {
   const result: string[] = [];
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
+    const arg = argv.at(i);
+    if (arg === undefined) continue;
+
+    // Past the terminator nothing is ours: hand the remainder over untouched,
+    // terminator included, so Commander still sees where options end.
+    if (arg === OPTION_TERMINATOR) {
+      result.push(...argv.slice(i));
+      return result;
+    }
+
     if (arg === "--verbose") continue;
     if (
-      arg?.startsWith("--format=") ||
-      arg?.startsWith("--verbose=") ||
-      arg?.startsWith("--detail=")
+      arg.startsWith("--format=") ||
+      arg.startsWith("--verbose=") ||
+      arg.startsWith("--detail=")
     ) {
       continue;
     }
     if (arg === "--format" || arg === "--detail") {
-      i += 1; // skip the space-form value too
+      // Skip the value ONLY when the next token is one. A valueless flag before
+      // another flag must leave that flag standing.
+      if (isFlagValue(argv.at(i + 1))) i += 1;
       continue;
     }
-    result.push(arg as string);
+    result.push(arg);
   }
   return result;
 }
