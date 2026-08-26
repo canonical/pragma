@@ -1,10 +1,11 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { parallel, sequence_, when } from "./combinators.js";
+import { ifElseM, parallel, sequence_, when } from "./combinators.js";
 import { dryRun } from "./dry-run.js";
 import { TaskExecutionError } from "./errors.js";
+import { runTask } from "./interpreter.js";
 import {
   appendFile,
   copyDirectory,
@@ -15,12 +16,13 @@ import {
   mkdir,
   readFile,
   symlink,
+  transformFile,
   writeFile,
 } from "./primitives.js";
 import { $, effect, fail, flatMap, gen, map, pure, recover } from "./task.js";
 import type { Task } from "./types.js";
 import { collectUndos } from "./undo.js";
-import { runUndo } from "./undo-interpreter.js";
+import { hostExistsResolver, runUndo } from "./undo-interpreter.js";
 
 // =============================================================================
 // collectUndos
@@ -573,6 +575,237 @@ describe("collectUndos - lazy node handling", () => {
 // =============================================================================
 // collectUndos - Parallel result value is readable by a continuation
 // =============================================================================
+
+describe("collectUndos - host-backed Exists resolution", () => {
+  // The regression this pins: a task that branches on pre-existing host state
+  // (append-if-exists / create-if-missing) must collect the undo of the branch
+  // the forward run actually took. Without a resolver every Exists is false,
+  // so collection always picks the create branch — whose default undo deletes
+  // the pre-existing file.
+  const appendOrCreate = (indexPath: string, line: string): Task<void> =>
+    ifElseM(
+      exists(indexPath),
+      appendFile(indexPath, line, true, { undo: info("remove appended line") }),
+      writeFile(indexPath, line),
+    );
+
+  it("collects the append branch's undo when the resolver reports the path", () => {
+    const undos = collectUndos(appendOrCreate("/idx.ts", "line\n"), {
+      resolveExists: (p) => p === "/idx.ts",
+    });
+
+    expect(undos).toHaveLength(1);
+    const effects = dryRun(undos[0]).effects;
+    expect(effects[0]._tag).toBe("Log");
+  });
+
+  it("collects the create branch's undo when the resolver denies the path", () => {
+    const undos = collectUndos(appendOrCreate("/idx.ts", "line\n"), {
+      resolveExists: () => false,
+    });
+
+    expect(undos).toHaveLength(1);
+    const effects = dryRun(undos[0]).effects;
+    expect(effects[0]._tag).toBe("DeleteFile");
+  });
+
+  it("keeps the legacy blank-filesystem behavior without a resolver", () => {
+    const undos = collectUndos(appendOrCreate("/idx.ts", "line\n"));
+
+    expect(undos).toHaveLength(1);
+    const effects = dryRun(undos[0]).effects;
+    expect(effects[0]._tag).toBe("DeleteFile");
+  });
+
+  it("composes the resolver with the walk's own virtual writes", () => {
+    // The walk itself creates /a; a denying resolver must not hide it.
+    const task = gen(function* () {
+      yield* $(writeFile("/a.txt", "a"));
+      const found = yield* $(exists("/a.txt"));
+      if (found) {
+        yield* $(writeFile("/b.txt", "b"));
+      }
+    });
+    const undos = collectUndos(task, { resolveExists: () => false });
+
+    expect(undos).toHaveLength(2);
+  });
+});
+
+describe("collectUndos - fail-backtracking", () => {
+  // The run being undone succeeded, so collection must not end in a Fail: a
+  // forward-only guard (fail-if-present on a file the run itself created)
+  // reads as failing under host resolution, and the walk must flip that
+  // Exists decision and continue instead of aborting.
+  it("flips an Exists decision that steers into a guard failure", () => {
+    const task = ifElseM(
+      exists("/page.tsx"),
+      fail({ code: "PAGE_EXISTS", message: "already there" }),
+      writeFile("/page.tsx", "content"),
+    );
+
+    const undos = collectUndos(task, { resolveExists: () => true });
+
+    expect(undos).toHaveLength(1);
+    expect(dryRun(undos[0]).effects[0]._tag).toBe("DeleteFile");
+  });
+
+  it("flips only the failing decision in a route-style guard chain", () => {
+    // Domain must exist (true is fine), page must not (true fails): only the
+    // page decision gets flipped.
+    const task = flatMap(exists("/routes.ts"), (domainPresent) =>
+      !domainPresent
+        ? fail({ code: "DOMAIN_MISSING", message: "no domain" })
+        : flatMap(exists("/page.tsx"), (pagePresent) =>
+            pagePresent
+              ? fail({ code: "PAGE_EXISTS", message: "already there" })
+              : sequence_([
+                  writeFile("/page.tsx", "content"),
+                  writeFile("/routes.ts", "routes", {
+                    undo: info("un-insert route"),
+                  }),
+                ]),
+          ),
+    );
+
+    const undos = collectUndos(task, { resolveExists: () => true });
+
+    expect(undos).toHaveLength(2);
+    expect(dryRun(undos[0]).effects[0]._tag).toBe("DeleteFile");
+    expect(dryRun(undos[1]).effects[0]._tag).toBe("Log");
+  });
+
+  it("backtracks even without a resolver", () => {
+    // Legacy preference is false everywhere; a fail on the false branch still
+    // flips rather than aborting collection.
+    const task = ifElseM(
+      exists("/idx.ts"),
+      appendFile("/idx.ts", "line\n", true, { undo: info("remove line") }),
+      fail({ code: "MUST_EXIST", message: "missing" }),
+    );
+
+    const undos = collectUndos(task);
+
+    expect(undos).toHaveLength(1);
+    expect(dryRun(undos[0]).effects[0]._tag).toBe("Log");
+  });
+
+  /**
+   * A re-interpretable chain of `count` free Exists decisions ending in an
+   * unavoidable failure — every branch assignment fails.
+   */
+  const alwaysFailingTree = (count: number): Task<unknown> => {
+    let tail: Task<unknown> = fail({ code: "ALWAYS", message: "every leaf" });
+    for (let i = count - 1; i >= 0; i--) {
+      const rest = tail;
+      tail = flatMap(exists(`/decision-${i}`), () => rest);
+    }
+    return tail;
+  };
+
+  it("rethrows when no flip can avoid the failure", () => {
+    // 2 decisions → 4 assignments, all failing: the search exhausts and the
+    // genuine failure surfaces.
+    expect(() =>
+      collectUndos(alwaysFailingTree(2), { resolveExists: () => true }),
+    ).toThrow(TaskExecutionError);
+  });
+
+  it("still rethrows an unconditional failure immediately", () => {
+    expect(() =>
+      collectUndos(fail({ code: "ERR", message: "boom" }), {
+        resolveExists: () => true,
+      }),
+    ).toThrow(TaskExecutionError);
+  });
+
+  it("gives up after the walk-attempt cap on a pathological tree", () => {
+    // 7 free decisions with every leaf failing = 128 assignments to exhaust,
+    // above the 64-attempt cap.
+    expect(() => collectUndos(alwaysFailingTree(7))).toThrow(
+      /did not converge/,
+    );
+  });
+
+  it("surfaces the failure for a non-re-interpretable gen() task", () => {
+    // A gen() task closes over a single iterator: the backtracking re-walk
+    // sees a spent generator that yields nothing, which must not read as a
+    // successful, empty undo plan.
+    const task = gen(function* () {
+      yield* $(exists("/a"));
+      yield* $(fail({ code: "GUARD", message: "boom" }));
+    });
+
+    expect(() => collectUndos(task, { resolveExists: () => true })).toThrow(
+      TaskExecutionError,
+    );
+  });
+});
+
+describe("hostExistsResolver", () => {
+  it("resolves relative paths against the given cwd", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-host-"));
+    try {
+      writeFileSync(join(tempDir, "present.txt"), "x");
+      const resolve = hostExistsResolver(tempDir);
+
+      expect(resolve("present.txt")).toBe(true);
+      expect(resolve("missing.txt")).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it("uses paths verbatim without a cwd", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-host-"));
+    try {
+      const filePath = join(tempDir, "present.txt");
+      writeFileSync(filePath, "x");
+      const resolve = hostExistsResolver();
+
+      expect(resolve(filePath)).toBe(true);
+      expect(resolve(join(tempDir, "missing.txt"))).toBe(false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("runUndo - branch fidelity against the real filesystem", () => {
+  it("un-appends from a pre-existing file instead of deleting it", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "task-undo-append-"));
+    const indexPath = join(tempDir, "index.ts");
+    const existing = 'export * from "./Old/index.js";\n';
+    const appended = 'export * from "./New/index.js";\n';
+
+    try {
+      writeFileSync(indexPath, existing);
+
+      const makeTask = (): Task<void> =>
+        ifElseM(
+          exists(indexPath),
+          appendFile(indexPath, appended, true, {
+            undo: transformFile(indexPath, (content) =>
+              content.replace(appended, ""),
+            ),
+          }),
+          writeFile(indexPath, appended),
+        );
+
+      await runTask(makeTask());
+      expect(readFileSync(indexPath, "utf-8")).toBe(existing + appended);
+
+      const result = await runUndo(makeTask());
+
+      expect(result.undoCount).toBe(1);
+      // The pre-existing file survives with only the appended line removed —
+      // NOT deleted via the create branch's DeleteFile default undo.
+      expect(readFileSync(indexPath, "utf-8")).toBe(existing);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+});
 
 describe("collectUndos - Parallel result threaded to continuation", () => {
   it("threads each child's real mocked forward value to a continuation", () => {

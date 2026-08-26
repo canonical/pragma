@@ -27,10 +27,23 @@ export default function appendExportToParentIndex(
     exists(indexPath),
     // If exists, append (if not already exported)
     flatMap(readFile(indexPath), (content) => {
-      if (content.includes(`./${componentName}`)) {
+      // Whole-line match — a substring check on `./${componentName}` would
+      // false-positive on prefix-named siblings (adding Button next to an
+      // existing ButtonGroup export) and silently skip the append.
+      const alreadyExported = content
+        .split("\n")
+        .some((existingLine) => existingLine.trim() === exportLine.trim());
+      if (alreadyExported) {
         return pure(undefined); // Already exported
       }
-      return appendFile(indexPath, exportLine, true, {
+      // AppendFile inserts no separator: when the existing content does not
+      // end in a newline, lead with one so the export lands on its own line
+      // (and the line-based undo below can always match it).
+      const chunk =
+        content.length > 0 && !content.endsWith("\n")
+          ? `\n${exportLine}`
+          : exportLine;
+      return appendFile(indexPath, chunk, true, {
         undo: removeLineFromFile(indexPath, exportLine),
       });
     }),
