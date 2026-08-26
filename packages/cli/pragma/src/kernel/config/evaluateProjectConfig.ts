@@ -16,11 +16,18 @@
  *
  * LIMITATION (accepted, per the review fold): a *transitively*-imported file
  * (e.g. `./pkgs.ts`) edited without touching the entry's mtime is not detected
- * across processes. The fix that would catch it — `bun build --bundle` the config
- * and key on the bundle hash — is unavailable: Bun's bundler cannot run inside
- * the `bun build --compile` binary (no source filesystem at `/$bunfs/root`), and
- * bundling on every load would also blow the warm-load budget. Touch the entry
- * (or bump VERSION) to force a rebuild.
+ * across processes. The fix that would catch it — bundling the config and keying
+ * on the bundle hash — would blow the warm-load budget on every load. Touch the
+ * entry (or bump VERSION) to force a rebuild.
+ *
+ * THE CONFIG IS THE CONSUMER'S OWN TYPESCRIPT, and this is the one place the
+ * distribution executes code it did not author. `pragma` ships on a `node`
+ * shebang, so that import is served by node's type STRIPPING — which erases
+ * annotations and refuses syntax that would need real emit (`enum`, `namespace`,
+ * parameter properties). Those are rejected with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`,
+ * which {@link evaluateProjectConfig} names specifically rather than letting it
+ * arrive as an anonymous load failure. The `engines` floor (node >= 22.18) is what
+ * makes stripping default-on; below it the import fails outright.
  */
 
 import { createHash } from "node:crypto";
@@ -103,6 +110,23 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
   } catch (error) {
     if (error instanceof PragmaError) throw error;
     const reason = error instanceof Error ? error.message : String(error);
+    // Node strips types rather than compiling them, so a config using syntax that
+    // needs real emit fails here with a message naming neither the constraint nor
+    // the fix. Say both — this is a supported config that simply must be written
+    // in erasable TypeScript, and the author has no other way to learn that.
+    if (
+      typeof (error as { code?: unknown })?.code === "string" &&
+      (error as { code: string }).code === "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX"
+    ) {
+      throw PragmaError.configError(
+        `Your ${PROJECT_CONFIG_FILENAME} uses TypeScript syntax that cannot be erased: ${reason}`,
+        {
+          recovery: {
+            message: `Rewrite it in erasable TypeScript — types, interfaces and \`satisfies\` are fine; \`enum\`, \`namespace\` and constructor parameter properties are not. A plain object literal with a \`default\` export always works.`,
+          },
+        },
+      );
+    }
     throw PragmaError.configError(
       `Could not load project config ${path}: ${reason}`,
       {

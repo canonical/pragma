@@ -8,7 +8,7 @@
 npm install -g @canonical/pragma-cli
 ```
 
-This installs the `pragma` binary: a prebuilt, standalone executable (`dist/pragma`). The package publishes for **Linux x64 only** (`"os": ["linux"]`, `"cpu": ["x64"]`) — other platforms are not yet shipped.
+This installs the `pragma` command. The package ships compiled JavaScript and runs on **Node.js 22.18 or newer**, on any platform Node supports — pragma reads its own `pragma.config.ts` through Node's TypeScript type stripping, which is on by default from that version.
 
 Check your environment and confirm the install:
 

@@ -18,10 +18,11 @@
  *    examples in `create.verb.ts`, so the surface is a deliberate SUBSET —
  *    `@canonical/summon-application` ships `application/react`, `domain`, `route`
  *    and `wrapper`, and `create` exposes one of them;
- *  - `bun build --compile` bundles only statically analysable import specifiers,
- *    so a shipped binary can never `import(name)` a declared package (measured:
- *    `Cannot find module '@canonical/summon-component' from '/$bunfs/root/…'`).
- *    `pickGenerator` must import all three statically.
+ *  - `pickGenerator` imports all three generators STATICALLY. The historical
+ *    cause was `bun build --compile`, which bundles only statically analysable
+ *    specifiers and so could never `import(name)` a declared package; the
+ *    static form is kept because a computed specifier defeats every bundler
+ *    and is worth nothing here.
  *
  * `create.test.ts` pins what is checkable: every binding resolves to the
  * generator it names, and the embedded manifest carries only the templates of
@@ -52,13 +53,10 @@ export const CREATE_GENERATORS = {
     /** The generator-map key `create package` runs. */
     key: "package",
     /**
-     * NOT runnable from the compiled binary: this generator calls
-     * `template({ source })` with no `content:`, so summon-core falls through to
-     * `readFile(options.source)`. Measured against a real `dist/pragma` with the
-     * gate lifted: `ENOENT: no such file or directory, open
-     * '/$bunfs/templates/package.json.ejs'`, after `mkdir` had already created
-     * `my-lib/` and `my-lib/src/` — a half-made package left on disk. A
-     * `--dry-run` exits 0 without reading a template, so it does NOT test this.
+     * Reads templates by PATH, not through the embedded manifest: this generator
+     * calls `template({ source })` with no `content:`, so summon-core goes
+     * straight to `readFile(options.source)`. Embedding its templates would be
+     * dead weight — nothing would ever look them up.
      */
     readsEmbeddedTemplates: false,
   },
@@ -66,9 +64,8 @@ export const CREATE_GENERATORS = {
     /** The generator-map key `create application` runs. */
     key: "application/react",
     /**
-     * NOT runnable from the compiled binary — same cause as `package` (measured:
-     * `ENOENT … '/$bunfs/root/templates/package.json.ejs'`, after the app
-     * directory was created). It also `copy()`s non-`.ejs` assets.
+     * Reads templates by PATH — same as `package`, and it also `copy()`s
+     * non-`.ejs` assets, which no manifest of `.ejs` strings could carry.
      */
     readsEmbeddedTemplates: false,
   },

@@ -1,8 +1,8 @@
 /**
- * Vitest global setup: build the compiled `dist/pragma` once, before the suite,
- * if it is missing OR older than the sources it was built from.
+ * Vitest global setup: emit `dist/` once, before the suite, if the shipped
+ * entry is missing OR older than the sources it was built from.
  *
- * Shared by both configs, because two suites spawn the binary: the perf budgets
+ * Shared by both configs, because two suites spawn the shipped entry: the perf budgets
  * (src/testing/perf/**, `test:perf`) and the storeless-guarantee guards in
  * src/kernel/completion/safety.test.ts (the main `test:vitest` pass). Wiring it
  * into both means `bun run test` on a clean checkout provisions the binary with
@@ -19,7 +19,7 @@
  * STALENESS INCLUDES THE EMBEDDED WORKSPACE DEPS. The binary bundles every
  * `@canonical/*` workspace package it (transitively) imports — task, summon-*,
  * ke, … — so an edit to `packages/runtime/task` is a change to what
- * `dist/pragma` runs, yet this package's own `src` never moves. The gate
+ * the shipped entry runs, yet this package's own `src` never moves. The gate
  * therefore also watches each workspace-linked dependency (found by following
  * the `node_modules/<name>` symlinks, transitively) — its `src` (the authored
  * source), `dist` (what the bundler actually embeds, per the dep's export map)
@@ -126,7 +126,9 @@ function workspaceDepRoots(pkgRoot: string): string[] {
 
 export default function setup(): void {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
-  const built = newestMtime(join(root, "dist", "pragma"));
+  // The emitted entry stands for the whole emit: `tsc` rewrites every output on
+  // each run, so `bin.js` is no staler than the tree around it.
+  const built = newestMtime(join(root, "dist", "src", "bin.js"));
   const fresh =
     built > 0 &&
     INPUTS.every((input) => newestMtime(join(root, input)) < built) &&
@@ -140,6 +142,6 @@ export default function setup(): void {
     stdio: "inherit",
   });
   if (result.status !== 0) {
-    throw new Error("perf globalSetup: failed to build dist/pragma");
+    throw new Error("perf globalSetup: failed to emit dist/");
   }
 }

@@ -1,10 +1,10 @@
 /**
- * Test helper: spawn-and-CAPTURE the real `pragma` binary.
+ * Test helper: spawn-and-CAPTURE the real `pragma` entry point.
  *
  * {@link measureCommand} (the perf helper) discards stdout/stderr — it only
  * times spawns. This is the complementary helper for tests that need to READ
  * what the process printed: the true end-to-end boundary (argv parsing,
- * first-run, the compiled/`bun` entry point, real process exit codes).
+ * first-run, the shipped entry point, real process exit codes).
  *
  * Kept THIN — most behavioral coverage should run in-process via
  * `executeVerb`/`projectCli`/`projectMcp`; reserve `runCli` for tests where the
@@ -18,9 +18,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** The compiled binary the perf `globalSetup` guarantees exists before tests run. */
-const COMPILED_BINARY = fileURLToPath(
-  new URL("../../../dist/pragma", import.meta.url),
+/**
+ * The emitted entry the perf `globalSetup` guarantees exists before tests run —
+ * the `bin` the published package points at, run the way a consumer runs it.
+ */
+const BUILT_ENTRY = fileURLToPath(
+  new URL("../../../dist/src/bin.js", import.meta.url),
 );
 
 /** The `bin.ts` entry point, for fast source-mode spawns (no rebuild). */
@@ -37,11 +40,12 @@ export interface RunCliOptions {
    */
   readonly env?: Record<string, string | undefined>;
   /**
-   * `"compiled"` (default) spawns `dist/pragma` — the true release boundary.
-   * `"source"` spawns `bun src/bin.ts` — faster, no rebuild required, for
-   * journeys that do not test the compiled-binary boundary itself.
+   * `"built"` (default) spawns `node dist/src/bin.js` — the true release
+   * boundary, exactly what a consumer's `pragma` runs. `"source"` spawns
+   * `bun src/bin.ts` — faster, no rebuild required, for journeys that do not
+   * test the shipped-entry boundary itself.
    */
-  readonly mode?: "compiled" | "source";
+  readonly mode?: "built" | "source";
   /** Spawn timeout in milliseconds (default 20000). */
   readonly timeoutMs?: number;
 }
@@ -85,9 +89,12 @@ export function runCli(
   args: readonly string[],
   options: RunCliOptions = {},
 ): RunCliResult {
-  const mode = options.mode ?? "compiled";
-  const command = mode === "compiled" ? COMPILED_BINARY : "bun";
-  const spawnArgs = mode === "compiled" ? [...args] : [SOURCE_ENTRY, ...args];
+  const mode = options.mode ?? "built";
+  // Both modes spawn a RUNTIME with an entry argument now — the built entry is
+  // emitted JavaScript, not a self-executing binary, so `node` names it.
+  const command = mode === "built" ? "node" : "bun";
+  const entry = mode === "built" ? BUILT_ENTRY : SOURCE_ENTRY;
+  const spawnArgs = [entry, ...args];
 
   const result = spawnSync(command, spawnArgs, {
     cwd: options.cwd,

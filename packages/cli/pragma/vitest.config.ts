@@ -10,9 +10,9 @@ export default defineConfig({
     // measures CPU contention, not the binary, so the ceilings flake red. They
     // stay ENFORCED, just out of this pass.
     exclude: [...configDefaults.exclude, "src/testing/perf/**"],
-    // safety.test.ts's storeless-guarantee guards spawn the compiled dist/pragma
+    // safety.test.ts's storeless-guarantee guards spawn the shipped entry
     // — a correctness check (exit/stdout), not a timing one, so it belongs in
-    // this pass. Reuse the perf suite's "build the binary once if missing"
+    // this pass. Reuse the perf suite's "emit once if missing"
     // globalSetup so a clean `test:vitest` provisions it instead of failing with
     // a null exit status (the binary was previously assumed pre-built here).
     globalSetup: ["./src/testing/perf/globalSetup.ts"],

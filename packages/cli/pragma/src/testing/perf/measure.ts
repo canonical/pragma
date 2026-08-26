@@ -62,7 +62,8 @@ export function trimmedMean(sorted: readonly number[], trim = 0.1): number {
 /**
  * Measure the wall-clock cost of running `binary args…` repeatedly.
  *
- * @param binary - Absolute path to the compiled binary.
+ * @param binary - Absolute path to the executable to spawn (the runtime, when
+ *   the entry is passed as its first argument).
  * @param args - Arguments passed on each spawn.
  * @param options - Run/warmup counts and env overlay.
  * @returns Median, p95, and the kept samples.

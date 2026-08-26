@@ -1,10 +1,11 @@
 # Performance budgets — `pragma`
 
-The compiled binary must stay fast enough that agents and humans reach for it
-without hesitation. These budgets are enforced by the protected perf tests
-(`src/testing/perf/*`), which spawn the standalone `dist/pragma` binary,
-discard warmups, and assert median/p95 against the ceilings in
-`src/testing/perf/budgets.ts`.
+`pragma` must stay fast enough that agents and humans reach for it without
+hesitation. These budgets are enforced by the protected perf tests
+(`src/testing/perf/*`), which spawn the shipped entry the way a consumer does
+(`node dist/src/bin.js`), discard warmups, and assert median/p95 against the
+ceilings in `src/testing/perf/budgets.ts`. Node's own startup is INSIDE every
+sample, because the user pays it.
 
 ## Designed targets (surface covenant)
 
@@ -20,7 +21,9 @@ discard warmups, and assert median/p95 against the ceilings in
 ## Measured (day-1 perf spike, commit 6)
 
 Environment: Linux x64, Bun v1.3.11, `bun build --compile --minify`
-(`dist/pragma`). Method: `measureCommand` spawns the standalone binary 30×,
+(`dist/pragma`) — the artifact shipped at the time; the distribution has since
+moved to emitted JavaScript on Node, which costs roughly 2x on the fast paths
+and remains inside every ceiling below. Method: `measureCommand` spawns 30x,
 discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 (un-skipped) re-measure a batch of spawns and assert against the ceilings below.
 

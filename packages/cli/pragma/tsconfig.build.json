@@ -1,0 +1,28 @@
+{
+  // The EMIT config, split from `tsconfig.json` (which stays the editor/`check:ts`
+  // view and covers `scripts/` and the test tree). Modelled on
+  // `packages/cli/summon/tsconfig.build.json` — pragma and summon ship as the same
+  // kind of artifact, so they are built the same way.
+  //
+  // `rootDir: "."` spans BOTH `src/` and `pragma.conf.ts`, so both land under
+  // `dist/` preserving their relative layout: `dist/src/bin.js` and
+  // `dist/pragma.conf.js`. That relationship is load-bearing —
+  // `src/kernel/render/prefixes.ts` imports `../../../pragma.conf.js`, which
+  // resolves only if the conf keeps its position one level above `src/`.
+  // `src/constants.ts` imports `../package.json` the same way; `resolveJsonModule`
+  // copies it to `dist/package.json` so that specifier stays true after emit.
+  //
+  // `scripts/` is deliberately NOT included: it is build tooling (it imports
+  // `Bun.*`), it must not ship, and nothing under `src/` imports it.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    // Emitted so the types-only `src/index.ts` barrel ships real declarations for
+    // consumers, decoupling them from this package's source.
+    "declaration": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts", "pragma.conf.ts"],
+  "exclude": ["src/**/*.test.ts", "src/testing/**"]
+}
