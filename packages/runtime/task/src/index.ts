@@ -177,6 +177,7 @@ export {
 // the collected undos is `runUndo`'s job, in `@canonical/task/node`)
 // =============================================================================
 
+export type { CollectUndosOptions } from "./lib/undo.js";
 export { collectUndos } from "./lib/undo.js";
 
 // =============================================================================
