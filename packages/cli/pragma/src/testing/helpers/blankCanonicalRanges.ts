@@ -8,7 +8,7 @@
  * `^0.34.0` vs `^0.33.0` across all 11 ranges into a red that says nothing
  * about the code under test. The networked cases prove the TEMPLATE surface;
  * range truth belongs to the offline cells, where the outcome is forced
- * (`capabilities/create/compiledCreate.subprocess.test.ts`).
+ * (`capabilities/create/shippedCreate.subprocess.test.ts`).
  *
  * The regex preserves the dependency KEY (`$1`), so a key-set or
  * non-@canonical divergence still fails; only the range value collapses.

@@ -1,5 +1,6 @@
 # Test screenshots
 __screenshots__/
+.vitest-attachments/
 
 # [os] OS & editor files
 Desktop.ini

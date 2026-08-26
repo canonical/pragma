@@ -1,7 +1,7 @@
 /**
  * Perf measurement helper for the compiled `pragma` binary.
  *
- * Spawns the standalone binary N times, discards warmups, and reports the
+ * Spawns the shipped entry N times, discards warmups, and reports the
  * median and p95 of the wall-clock durations. Kept dependency-free (only
  * `node:child_process`) so it can run inside vitest without touching the
  * kernel's import graph. Wired up by the perf-spike commit; the skeleton
@@ -65,12 +65,13 @@ export function trimmedMean(sorted: readonly number[], trim = 0.1): number {
  * Every budget argv exits 0 by contract, so a sample that FAILS —
  * nonzero/killed `status` or a spawn `error` — throws on the spot, naming
  * the argv and the failure. Without this the timing loop certified
- * non-runnable binaries: the staleness gate guarantees the binary's
- * FRESHNESS, not its runnability, and a truncated `dist/pragma` (an
- * interrupted build) failed every spawn in ~0.3ms — sailing under every
- * ceiling and turning the PROTECTED budgets into a vacuous pass.
+ * non-runnable artifacts: the staleness gate guarantees the emit's
+ * FRESHNESS, not its runnability, and a truncated artifact (an interrupted
+ * build) failed every spawn in ~0.3ms — sailing under every ceiling and
+ * turning the PROTECTED budgets into a vacuous pass.
  *
- * @param binary - Absolute path to the compiled binary.
+ * @param binary - Absolute path to the executable to spawn (the runtime, when
+ *   the entry is passed as its first argument).
  * @param args - Arguments passed on each spawn.
  * @param options - Run/warmup counts and env overlay.
  * @returns Median, p95, and the kept samples.

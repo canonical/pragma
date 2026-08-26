@@ -3,7 +3,7 @@
  *
  * Writes `docs/reference/` from the live capability grammar WITHOUT compiling
  * the binary. `scripts/build.ts` runs the same {@link writeReferenceDocs} step
- * before `Bun.build`; this script isolates it so `bun run scripts/genReference.ts`
+ * before the `tsc` emit; this script isolates it so `bun run scripts/genReference.ts`
  * is a sub-second doc refresh. Importing `build.ts` does not trigger a compile —
  * its build block is guarded by `import.meta.main`.
  */

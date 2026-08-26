@@ -622,10 +622,12 @@ describe("declared generator bindings (PROTECTED)", () => {
     }
   });
 
-  it("no binding publishes an availability caveat — every one runs compiled", () => {
-    // The PRA-14 gate is superseded: the compiled binary generates all three
-    // (compiledCreate.subprocess.test.ts proves it byte-for-byte), so no verb
-    // may reintroduce the "Source-run only." marker or an UNSUPPORTED doc.
+  it("no binding publishes an availability caveat — every one runs everywhere", () => {
+    // The PRA-14 gate is superseded: every generator's templates are reachable
+    // from a published install (shippedCreate.subprocess.test.ts proves all
+    // three byte-for-byte), so no verb may reintroduce the "Source-run only."
+    // marker or an UNSUPPORTED doc. Publishing one would now be a false
+    // statement to every agent enumerating the tools.
     for (const verb of createModule.verbs) {
       expect(verb.summary).not.toContain("Source-run only.");
       expect(verb.doc ?? "").not.toContain("UNSUPPORTED");

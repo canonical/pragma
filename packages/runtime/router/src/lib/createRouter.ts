@@ -497,6 +497,22 @@ function isRedirectMatch(value: unknown): value is {
  */
 function ignoreScheduledLoadError(_error: unknown): void {}
 
+/**
+ * Rejections from async prefetch hooks that carry control flow rather than a
+ * side-effect failure: a runtime redirect or a typed status.  They receive
+ * the same meaning as their synchronous counterparts, applied late.
+ */
+type ScheduledControlFlowError =
+  | RouteRedirect
+  | StatusResponse<unknown>
+  | Response;
+
+interface ScheduledControlFlow {
+  /** Latch — only the first control-flow signal of a load is applied. */
+  applied: boolean;
+  apply(error: ScheduledControlFlowError): void;
+}
+
 function createDehydratedState<
   TRoutes extends RouteMap,
   TNotFound extends AnyRoute | undefined,
@@ -692,8 +708,38 @@ export default function createRouter<
   async function resolveLoadData(
     currentMatch: RouterMatch<TRoutes, TNotFound> | null,
     signal: AbortSignal,
+    scheduledControlFlow: ScheduledControlFlow,
   ): Promise<ResolvedLoadData<TRoutes, TNotFound>> {
     const nextRoute = currentMatch?.route;
+
+    // A rejection from an async prefetch hook is honoured when it carries
+    // control flow (a runtime redirect or a typed status): the first one wins
+    // and is applied late by the caller's guard.  Any other rejection is an
+    // ordinary side-effect failure and is deliberately ignored — prefetch
+    // never blocks rendering.
+    const handleScheduledRejection = (thrownError: unknown): void => {
+      if (
+        scheduledControlFlow.applied ||
+        !(
+          thrownError instanceof RouteRedirect ||
+          thrownError instanceof StatusResponse ||
+          thrownError instanceof Response
+        )
+      ) {
+        ignoreScheduledLoadError(thrownError);
+        return;
+      }
+
+      scheduledControlFlow.applied = true;
+
+      try {
+        scheduledControlFlow.apply(thrownError);
+      } catch (applyError) {
+        // Applying late control flow must never surface as an unhandled
+        // rejection (e.g. an adapter that cannot navigate).
+        ignoreScheduledLoadError(applyError);
+      }
+    };
 
     // Fire prefetch hooks as fire-and-forget side effects.
     // Wrapper prefetches run for all wrappers (no caching/reuse).
@@ -710,7 +756,7 @@ export default function createRouter<
         if (currentWrapper.prefetch) {
           void Promise.resolve(
             currentWrapper.prefetch(rawWrapperParams, { signal }),
-          ).catch(ignoreScheduledLoadError);
+          ).catch(handleScheduledRejection);
         }
       }
 
@@ -719,7 +765,7 @@ export default function createRouter<
           nextRoute.prefetch(currentMatch.params, currentMatch.search, {
             signal,
           }),
-        ).catch(ignoreScheduledLoadError);
+        ).catch(handleScheduledRejection);
       }
     }
 
@@ -767,14 +813,59 @@ export default function createRouter<
     }
 
     const prefetchPromise = (async () => {
+      // Same stash discipline as navigation loads: a rejection arriving
+      // before the entry is cached would otherwise miss the cache and be
+      // dropped by the location guard.
+      const lateControlFlow: {
+        pending: ScheduledControlFlowError | null;
+        cached: boolean;
+      } = { pending: null, cached: false };
+
+      const applyPrefetchControlFlow = (
+        thrownError: ScheduledControlFlowError,
+      ): void => {
+        applyLatePrefetchControlFlow(thrownError, {
+          href,
+          url,
+          currentMatch,
+          redirectDepth,
+        });
+      };
+
+      const scheduledControlFlow: ScheduledControlFlow = {
+        applied: false,
+        apply: (thrownError) => {
+          if (!lateControlFlow.cached) {
+            lateControlFlow.pending = thrownError;
+
+            return;
+          }
+
+          applyPrefetchControlFlow(thrownError);
+        },
+      };
+
       try {
         const prefetchedLoad = await resolveLoadData(
           currentMatch,
           createIdleSignal(),
+          scheduledControlFlow,
         );
 
         prefetchedLoads.set(href, prefetchedLoad);
+        lateControlFlow.cached = true;
+
+        const pendingControlFlow = lateControlFlow.pending;
+
+        if (pendingControlFlow) {
+          lateControlFlow.pending = null;
+          applyPrefetchControlFlow(pendingControlFlow);
+        }
       } catch (thrownError) {
+        scheduledControlFlow.applied = true;
+        lateControlFlow.cached = true;
+        lateControlFlow.pending = null;
+
         if (thrownError instanceof RouteRedirect) {
           await prefetchHref(thrownError.to, redirectDepth + 1);
           return;
@@ -800,6 +891,133 @@ export default function createRouter<
 
     ignoredAdapterHref = href;
     currentAdapter.navigate(href, navigationOptions);
+  }
+
+  /**
+   * Apply a control-flow rejection (redirect / status) that arrived from an
+   * async prefetch hook after its navigation already committed.  Prefetch is
+   * fire-and-forget, so a late arrival is expected: the page may render
+   * briefly before the redirect or error status lands.  The guards drop the
+   * rejection when the load was superseded or the user moved on.
+   */
+  function applyLateNavigationControlFlow(
+    thrownError: ScheduledControlFlowError,
+    context: {
+      url: URL;
+      currentMatch: RouterMatch<TRoutes, TNotFound> | null;
+      signal: AbortSignal;
+      redirectDepth: number;
+      shouldSyncAdapter: boolean;
+      mode: NavigationMode;
+    },
+  ): void {
+    if (
+      context.signal.aborted ||
+      store.getState().location.href !== toHref(context.url)
+    ) {
+      return;
+    }
+
+    if (thrownError instanceof RouteRedirect) {
+      void performLoad(
+        thrownError.to,
+        context.redirectDepth + 1,
+        context.shouldSyncAdapter,
+        context.mode,
+      )
+        .then((redirectedResult) => {
+          if (
+            context.shouldSyncAdapter &&
+            adapter &&
+            toHref(adapter.getLocation()) !== redirectedResult.location.href
+          ) {
+            syncAdapterLocation(redirectedResult.location.href, {
+              replace: true,
+            });
+          }
+        })
+        .catch(ignoreScheduledLoadError);
+
+      return;
+    }
+
+    const status = getErrorStatus(thrownError);
+
+    currentLoadResult = createLoadResult<TRoutes, TNotFound>({
+      error: thrownError,
+      location: store.commit(context.url, context.currentMatch, status)
+        .location,
+      match: context.currentMatch,
+      status,
+    });
+  }
+
+  /**
+   * Apply a control-flow rejection from an async prefetch hook that ran for a
+   * hover/manual prefetch.  A still-cached entry absorbs the outcome so the
+   * eventual navigation observes it; an entry already consumed by a
+   * navigation to that href applies live; otherwise the user went elsewhere
+   * and the rejection is dropped.
+   */
+  function applyLatePrefetchControlFlow(
+    thrownError: ScheduledControlFlowError,
+    context: {
+      href: string;
+      url: URL;
+      currentMatch: RouterMatch<TRoutes, TNotFound> | null;
+      redirectDepth: number;
+    },
+  ): void {
+    if (thrownError instanceof RouteRedirect) {
+      if (prefetchedLoads.delete(context.href)) {
+        void prefetchHref(thrownError.to, context.redirectDepth + 1).catch(
+          ignoreScheduledLoadError,
+        );
+
+        return;
+      }
+
+      if (store.getState().location.href === context.href) {
+        void performLoad(
+          thrownError.to,
+          context.redirectDepth + 1,
+          true,
+          "push",
+        )
+          .then((redirectedResult) => {
+            if (
+              adapter &&
+              toHref(adapter.getLocation()) !== redirectedResult.location.href
+            ) {
+              syncAdapterLocation(redirectedResult.location.href, {
+                replace: true,
+              });
+            }
+          })
+          .catch(ignoreScheduledLoadError);
+      }
+
+      return;
+    }
+
+    const status = getErrorStatus(thrownError);
+    const cachedLoad = prefetchedLoads.get(context.href);
+
+    if (cachedLoad) {
+      prefetchedLoads.set(context.href, { ...cachedLoad, status });
+
+      return;
+    }
+
+    if (store.getState().location.href === context.href) {
+      currentLoadResult = createLoadResult<TRoutes, TNotFound>({
+        error: thrownError,
+        location: store.commit(context.url, context.currentMatch, status)
+          .location,
+        match: context.currentMatch,
+        status,
+      });
+    }
   }
 
   function saveScrollPosition(): void {
@@ -1097,6 +1315,41 @@ export default function createRouter<
     previousController?.abort();
     store.setNavigationState("loading");
 
+    // A control-flow rejection can land while this load is still in flight
+    // (an already-settled async hook rejects on the next microtask).  Stash it
+    // until the load commits, then apply — otherwise the location-currency
+    // guard would see the previous location and wrongly drop it.
+    const lateControlFlow: {
+      pending: ScheduledControlFlowError | null;
+      committed: boolean;
+    } = { pending: null, committed: false };
+
+    const applyNavigationControlFlow = (
+      thrownError: ScheduledControlFlowError,
+    ): void => {
+      applyLateNavigationControlFlow(thrownError, {
+        url,
+        currentMatch,
+        signal: abortController.signal,
+        redirectDepth,
+        shouldSyncAdapter,
+        mode,
+      });
+    };
+
+    const scheduledControlFlow: ScheduledControlFlow = {
+      applied: false,
+      apply: (thrownError) => {
+        if (!lateControlFlow.committed) {
+          lateControlFlow.pending = thrownError;
+
+          return;
+        }
+
+        applyNavigationControlFlow(thrownError);
+      },
+    };
+
     try {
       const pendingPrefetch = pendingPrefetches.get(href);
 
@@ -1111,7 +1364,11 @@ export default function createRouter<
       const prefetchedLoad = prefetchedLoads.get(href);
       const resolvedLoad =
         prefetchedLoad ??
-        (await resolveLoadData(currentMatch, abortController.signal));
+        (await resolveLoadData(
+          currentMatch,
+          abortController.signal,
+          scheduledControlFlow,
+        ));
 
       prefetchedLoads.delete(href);
 
@@ -1131,8 +1388,23 @@ export default function createRouter<
       });
       scheduleAccessibilityEffects(result, mode);
 
+      lateControlFlow.committed = true;
+
+      const pendingControlFlow = lateControlFlow.pending;
+
+      if (pendingControlFlow) {
+        lateControlFlow.pending = null;
+        applyNavigationControlFlow(pendingControlFlow);
+      }
+
       return result;
     } catch (thrownError) {
+      // A synchronous throw already carried the load's control flow — a late
+      // async rejection must not apply on top of it.
+      scheduledControlFlow.applied = true;
+      lateControlFlow.committed = true;
+      lateControlFlow.pending = null;
+
       if (thrownError instanceof RouteRedirect) {
         abortController.abort();
         const redirectedResult = await performLoad(

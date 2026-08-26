@@ -268,7 +268,7 @@ describe("default-pack journey — block list, populated and empty (E1)", () => 
   });
 
   it("an ontology-only pack with no blocks lists empty — a calm exit 0", async () => {
-    // D10-A, MEASURED at the dispatch seam the binary uses: the declared list
+    // D10-A, MEASURED at the dispatch seam the CLI uses: the declared list
     // body (`makeListRun`) returns `[]` and never throws on emptiness, so the
     // process still exits 0 — no exit-code delta against the hand-written verb.
     // Only the empty MESSAGE moved (the story's `emptyRecovery` replaces the

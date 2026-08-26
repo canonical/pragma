@@ -33,11 +33,13 @@
  * - The embedded fallback is read from `pack.index.generated` — its OWN
  *   generated module (only the index string) — so the storeless `__complete`
  *   path never EVALUATES the n-quads/schema/manifest strings that live in
- *   `pack.generated`. It does not avoid parsing them: `bun build --compile`
- *   emits one script, so the whole embed is parsed at process start on every
- *   invocation (~+25 ms here, measured on `--version` against a toy-embed
- *   binary; BUDGETS.md records it). What the split buys is that a completion
- *   never allocates the 1.87 MB.
+ *   `pack.generated`. Under the compiled binary it did not avoid PARSING them
+ *   either — one emitted script meant the whole embed was parsed at process
+ *   start on every invocation (~+25 ms, measured on `--version`; BUDGETS.md
+ *   records it), and the split bought only that a completion never allocated
+ *   the 1.87 MB. Shipping per-module output changed that: `pack.generated` is
+ *   a separate module the fast path never imports, so it is no longer parsed
+ *   at all there. The split now buys both.
  * - The active pack is resolved through `kernel/runtime/paths` — a LEAF module
  *   (node builtins only) that shares the pointer read with `resolveSources`.
  *   `resolveSources` itself is unreachable from here: it pulls the graphpack

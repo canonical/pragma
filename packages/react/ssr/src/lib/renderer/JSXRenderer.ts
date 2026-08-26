@@ -258,7 +258,7 @@ export default class JSXRenderer<
         },
       });
 
-      this.statusCode = 200;
+      this.statusCode = this.options.statusCode ?? 200;
       this.statusReady = Promise.resolve();
       return stream;
     } catch (error) {
@@ -332,7 +332,9 @@ export default class JSXRenderer<
       onShellReady: () => {
         onShellReadyCallback?.();
         /* v8 ignore next -- errorRef.current is set by onError which fires before onShellReady in edge cases */
-        this.statusCode = errorRef.current ? 500 : 200;
+        this.statusCode = errorRef.current
+          ? 500
+          : (this.options.statusCode ?? 200);
         resolveStatus();
       },
       onAllReady() {
@@ -360,7 +362,7 @@ export default class JSXRenderer<
     const props = this.getComponentProps();
     const jsx = createElement(this.Component, props);
     const html = reactRenderToString(jsx);
-    this.statusCode = 200;
+    this.statusCode = this.options.statusCode ?? 200;
     this.statusReady = Promise.resolve();
     return html;
   };

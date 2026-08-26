@@ -65,7 +65,7 @@
     "@canonical/biome-config": "^0.34.0",
     "@canonical/typescript-config": "^0.34.0",
     "@types/bun": "^1.3.10",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "@types/omelette": "^0.4.5",
     "@types/react": "^19.2.14",
     "ink-testing-library": "^4.0.0",

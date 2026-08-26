@@ -2,10 +2,12 @@
 
 <script lang="ts" module>
   import { defineMeta } from "@storybook/addon-svelte-csf";
+  import { expect } from "storybook/test";
+  import type { ComponentProps } from "svelte";
   import SkipLink from "./SkipLink.svelte";
 
   const { Story } = defineMeta({
-    title: "Components/SkipLink",
+    title: "_work_in_progress/pattern/SkipLink",
     component: SkipLink,
     tags: ["autodocs"],
     parameters: {
@@ -24,17 +26,29 @@
       },
     },
   });
+
+  // Focuses the rendered SkipLink so its real `:focus`/`:focus-visible` styles
+  // apply.
+  const focusSkipLink: NonNullable<
+    ComponentProps<typeof Story>["play"]
+  > = async ({ canvas }) => {
+    const skipLink = canvas.getByText("Skip to main content");
+    await expect(skipLink).toBeInTheDocument();
+    skipLink.focus();
+  };
 </script>
 
 <Story name="Default" asChild>
 	<SkipLink />
 	<main id="main" tabindex="-1">
 		<p>
-			Click inside this example box, then press Tab to focus the skip
-			link.
+			Click inside this example box, then press "Shift+Tab" to make the
+			skip link focused and visible.
 		</p>
 		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
-		<a href="#">After skipping to main content, this is next in focus order</a>
+		<a href="#">
+			After skipping to main content, this should be next in focus order
+		</a>
 	</main>
 </Story>
 
@@ -53,14 +67,16 @@
 	}}
 	asChild
 >
-	<SkipLink mainId="my-main-element">Skip to custom main element</SkipLink>
+	<SkipLink mainId="my-main-element" />
 	<main id="my-main-element" tabindex="-1">
 		<p>
-			Click inside this example box, then press Tab to focus the skip
-			link.
+			Click inside this example box, then press "Shift+Tab" to make the
+			skip link focused and visible.
 		</p>
 		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
-		<a href="#">After skipping to main content, this is next in focus order</a>
+		<a href="#">
+			After skipping to main content, this should be next in focus order
+		</a>
 	</main>
 </Story>
 
@@ -79,41 +95,39 @@
 	<SkipLink>Custom skip text</SkipLink>
 	<main id="main" tabindex="-1">
 		<p>
-			Click inside this example box, then press Tab to focus the skip
-			link.
+			Click inside this example box, then press "Shift+Tab" to make the
+			skip link focused and visible.
 		</p>
 		<!-- svelte-ignore a11y_invalid_attribute: for demo only -->
-		<a href="#">After skipping to main content, this is next in focus order</a>
+		<a href="#">
+			After skipping to main content, this should be next in focus order
+		</a>
 	</main>
 </Story>
 
-<Story name="Focused" tags={["!dev", "!autodocs"]} asChild>
-	<div class="story-force-focused">
-		<SkipLink />
-	</div>
+<Story
+	name="Focused"
+	tags={["!dev", "!autodocs"]}
+	play={focusSkipLink}
+	asChild
+>
+	<SkipLink />
 	<main id="main" tabindex="-1">
 		<p>Forced-visible style variant for visual checks.</p>
 	</main>
 </Story>
 
-<Story name="FocusedRtl" tags={["!dev", "!autodocs"]} asChild>
-	<div class="story-force-focused" dir="rtl">
+<Story
+	name="FocusedRtl"
+	tags={["!dev", "!autodocs"]}
+	play={focusSkipLink}
+	asChild
+>
+	<div dir="rtl">
 		<SkipLink />
 	</div>
 	<main id="main" tabindex="-1" dir="rtl">
 		<p>Forced-visible RTL style variant for visual checks.</p>
 	</main>
 </Story>
-
-<style>
-	.story-force-focused :global(.skip-link) {
-		inset-inline-start: var(--space-100, 0.5rem) !important;
-		outline-offset: calc(-1 * var(--dimension-stroke-thickness-large, 3px)) !important;
-		padding-block: var(--space-200, 1rem) !important;
-		padding-inline: var(--space-200, 1rem) !important;
-		position: fixed !important;
-		top: var(--space-100, 0.5rem) !important;
-		z-index: 999999 !important;
-	}
-</style>
 

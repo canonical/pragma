@@ -1,5 +1,5 @@
 /**
- * A1 — first-run onboarding, observed through the real compiled binary.
+ * A1 — first-run onboarding, observed through the real shipped entry.
  *
  * Unit mechanics (`ensureFirstRun`/`firstRunTask`) are PR1-protected
  * (`kernel/config/firstRun.test.ts`); this is the e2e pin: a fresh XDG config

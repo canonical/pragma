@@ -1,7 +1,12 @@
 // biome-ignore-all lint/suspicious/noTemplateCurlyInString: bash parameter expansions, not JS templates
 /**
- * The bash completion script (static tier). Requires bash >= 4 (mapfile);
- * the package pins os:["linux"], where that floor holds.
+ * The bash completion script (static tier). Requires bash >= 4 for `mapfile`.
+ * That floor is NOT guaranteed by the platform any more: the package dropped
+ * its `os: ["linux"]` pin when it stopped shipping a linux-x64 executable, and
+ * macOS still ships bash 3.2, which has no `mapfile`. `setup completions`
+ * writes this script wherever it is asked to; on such a machine the user's
+ * remedy is a newer bash (zsh and fish are unaffected and are the platform
+ * defaults there).
  *
  * Structure — nouns, verbs, flag names, enum values — is inlined into
  * generator-validated LITERAL `compgen -W` tables (never a variable, never

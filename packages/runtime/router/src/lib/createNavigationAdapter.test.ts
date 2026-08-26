@@ -14,6 +14,11 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
 
   const navigationWindow = {
     location: { href: initialHref },
+    // Set to emulate the real Navigation API's `{ committed, finished }`
+    // return value; `undefined` emulates environments without it.
+    nextNavigateResult: undefined as
+      | { committed?: Promise<unknown>; finished?: Promise<unknown> }
+      | undefined,
     navigation: {
       currentEntry: { url: initialHref },
       navigate(url: string, options?: { history?: "push" | "replace" }) {
@@ -22,6 +27,8 @@ function createFakeNavigationWindow(initialHref = "https://example.com/") {
           navigationWindow.location.href,
         ).href;
         void options;
+
+        return navigationWindow.nextNavigateResult;
       },
       addEventListener(_type: "navigate", listener: typeof navigateListener) {
         navigateListener = listener;
@@ -153,5 +160,44 @@ describe("createNavigationAdapter (Navigation API)", () => {
     void getListener;
 
     expect(listener).toHaveBeenCalledTimes(0);
+  });
+
+  it("catches rejections from the navigation transition promises", async () => {
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+
+    try {
+      const navigationWindow = createFakeNavigationWindow();
+      const adapter = createNavigationAdapter(navigationWindow);
+
+      // A superseded navigation rejects both transition promises.
+      navigationWindow.nextNavigateResult = {
+        committed: Promise.reject(new Error("aborted")),
+        finished: Promise.reject(new Error("superseded")),
+      };
+      adapter.navigate("/docs");
+
+      // Partial results (either promise absent) must also be tolerated.
+      navigationWindow.nextNavigateResult = {
+        committed: Promise.resolve(null),
+      };
+      adapter.navigate("/docs?page=2");
+
+      navigationWindow.nextNavigateResult = {
+        finished: Promise.reject(new Error("superseded")),
+      };
+      adapter.navigate("/guides", { replace: true });
+
+      // Drain microtasks twice so any unhandled rejection gets reported.
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(unhandled).toEqual([]);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
   });
 });

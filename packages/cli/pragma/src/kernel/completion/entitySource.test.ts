@@ -313,7 +313,7 @@ describe("the storeless fast path implements the pointer half", () => {
     // and would pass with the config file deleted. The read half refusing is
     // what makes this directory a configured-but-unbuilt project rather than a
     // fresh install. (`doctor` says so too, in the same words: verified against
-    // the compiled binary, where `block list` raises STORE_UNAVAILABLE while
+    // a cold install, where `block list` raises STORE_UNAVAILABLE while
     // this same completion still answers.)
     //
     // If a later change gives the fast path a config-free way to see

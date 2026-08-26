@@ -19,7 +19,7 @@
   "dependencies": {
     "@canonical/lit-ds-prototype": "^0.34.0",
     "@canonical/styles": "^0.34.0",
-    "@lit-labs/ssr": "^3.3.0",
+    "@lit-labs/ssr": "^4.0.0",
     "@lit-labs/ssr-client": "^1.1.7",
     "lit": "^3.3.2"
   },
@@ -28,7 +28,7 @@
     "@canonical/biome-config": "^0.34.0",
     "@canonical/typescript-config-lit": "^0.34.0",
     "@types/express": "^5.0.6",
-    "@types/node": "^24.12.0",
+    "@types/node": "^26.0.0",
     "express": "^5.2.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.1"

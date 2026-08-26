@@ -183,12 +183,24 @@ export function isModuleNotFound(cause: unknown): boolean {
  * `--compile` bundler includes them — they stay behind this lazy boundary, so
  * the fast paths and `create --yes` still load neither summon-core nor React).
  *
- * The manifest is injected BEFORE `pickGenerator` — summon-core's ONE
- * embedded store serves every declared generator package (all three route
- * reads through `loadTemplateSync`), and the generators load their templates
- * on first `generate()`. In a source run the disk read wins and the manifest
- * is inert. A stale resolution failure is a defensive backstop
- * {@link isModuleNotFound} turns into a clean refusal.
+ * The manifest is injected BEFORE `pickGenerator` — summon-core's ONE embedded
+ * store serves every declared generator package, since all three now route
+ * their reads through `loadTemplateSync`, and the generators load their
+ * templates on first `generate()`.
+ *
+ * THE DISK READ WINS, so the manifest is inert in every healthy install.
+ * `loadTemplateSync` tries the real file under the RESOLVED generator package's
+ * shipped templates tree first and reaches the manifest only when that read
+ * throws. Only `component` declares roots to embed (`constants.ts`): the other
+ * two would be carrying bytes that can only be reached by an install broken
+ * enough that failing loudly is the better answer.
+ *
+ * EVERY BINDING RUNS EVERYWHERE, with nothing done specially for it. This
+ * function once carried an availability gate, because `bun build --compile`
+ * resolved modules under a virtual `/$bunfs` with no templates on disk; that
+ * artifact is gone and the gate with it. A resolution failure is still turned
+ * into a clean refusal by {@link isModuleNotFound} rather than surfacing as an
+ * internal bug.
  */
 async function loadCreateRuntime() {
   try {
@@ -251,8 +263,9 @@ export async function runCreate(
   params: Record<string, unknown>,
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
-  // Lazy: importing these pulls summon-core (and with it React) — kept off
-  // every non-create path. STATIC dynamic imports so `--compile` bundles them.
+  // Lazy: importing these pulls summon-core (and with it React) — kept off every
+  // non-create path. The specifiers stay static so they remain analysable; the
+  // embedded `.ejs` manifest is injected here as the disk read's fallback.
   const { pickGenerator, summon } = await loadCreateRuntime();
 
   const generator = pickGenerator(commandPath);

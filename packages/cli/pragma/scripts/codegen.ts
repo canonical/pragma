@@ -20,7 +20,7 @@
  * PACKAGE_VERSIONS block: a workspace version bump rewrites exactly those
  * lines, no release step rebuilds this package, NO drift guard compares
  * the block as bytes — and the compiled binary plus the two PROTECTED
- * offline cells (compiledCreate.subprocess.test.ts) pin the release line
+ * offline cells (shippedCreate.subprocess.test.ts) pin the release line
  * FROM it against the live workspace manifests, so tolerating it stale
  * would green the gate and then redden those cells two files from the
  * cause, with the freshly built binary scaffolding the PREVIOUS release
@@ -300,7 +300,7 @@ export function generateTemplateManifest({
         );
       }
       // REPAIR, not tolerate: the compiled binary embeds this block, and
-      // the PROTECTED offline cells (compiledCreate.subprocess.test.ts)
+      // the PROTECTED offline cells (shippedCreate.subprocess.test.ts)
       // pin the release line from it against the live workspace manifests
       // — leaving it stale would green this gate and then fail those cells
       // two files away, with the just-built binary scaffolding the

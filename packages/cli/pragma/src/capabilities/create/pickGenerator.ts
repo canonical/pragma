@@ -10,11 +10,11 @@ type GeneratorMap = Record<string, GeneratorDefinition | undefined>;
 
 /**
  * The declared packages' generator maps, bound by noun. The STATIC imports above
- * are load-bearing: `bun build --compile` bundles only statically analysable
- * specifiers, so `import(CREATE_GENERATORS[kind].name)` would leave the
- * generators out of the binary (measured: `Cannot find module
- * '@canonical/summon-component' from '/$bunfs/root/…'`). The declaration decides
- * WHICH generator runs; it cannot decide which module is linked.
+ * are load-bearing: a computed `import(CREATE_GENERATORS[kind].name)` is opaque
+ * to every bundler and analyser, and the historical cost was measured — under
+ * `bun build --compile` it left the generators out of the artifact entirely
+ * (`Cannot find module '@canonical/summon-component'`). The declaration decides
+ * WHICH generator runs; it cannot decide which module is reachable.
  *
  * The maps' `generate` is invariant in its (specific) answer type, so they are
  * erased to the base definition via `unknown` — runtime-safe because `execute`

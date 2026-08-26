@@ -2,24 +2,23 @@
  * The generator bindings the `create` surface exposes — the one list the
  * surface's mechanical copies derive from: the `CreateKind` union (`types.ts`),
  * the generator lookup (`pickGenerator.ts`), and the template roots the
- * bundler embeds (`scripts/build.ts`). Prose is NOT derived: the verb
+ * manifest carries (`scripts/build.ts`). Prose is NOT derived: the verb
  * summaries in `create.verb.ts` and `capabilities/hints.ts` still name the
  * frameworks by hand.
  *
  * This table is the SINGLE authoring point for which generator packages the
  * distribution ships: it binds each `create` noun to the command PATHS it
  * runs (the generator-map keys, `component/react` … `application/react`) and
- * to the template roots `scripts/build.ts` harvests for the compiled binary.
+ * to the template roots `scripts/build.ts` harvests for the embedded manifest.
  * The binding is hand-written because neither half can be discovered:
  *  - surfacing a noun also needs prose and examples in `create.verb.ts`, so
  *    the surface is a deliberate SUBSET — `@canonical/summon-application`
  *    ships `application/react`, `domain`, `route` and `wrapper`, and `create`
  *    exposes one of them;
- *  - `bun build --compile` bundles only statically analysable import
- *    specifiers, so a shipped binary can never `import(name)` a declared
- *    package (measured: `Cannot find module '@canonical/summon-component'
- *    from '/$bunfs/root/…'`). `pickGenerator` must import all three
- *    statically.
+ *  - `pickGenerator` imports all three generators STATICALLY. A computed
+ *    `import(name)` is opaque to every bundler and analyser; the historical
+ *    cost was measured under `bun build --compile`, which left the
+ *    generators out of the artifact entirely.
  *
  * Every declared root is EMBEDDED and every declared path RUNS from the
  * compiled binary — the generators all route reads through summon-core's
@@ -37,23 +36,32 @@ export const CREATE_GENERATORS = {
     name: "@canonical/summon-component",
     /** The command paths this binding runs (generator-map keys). */
     paths: ["component/react", "component/svelte", "component/lit"],
-    /** The template roots the binary carries, keyed by command-path prefix. */
+    /**
+     * The template roots the embedded manifest carries, keyed by command-path
+     * prefix.
+     *
+     * ONLY `component` declares any. The manifest is a fallback:
+     * `loadTemplateSync` reads the real file from the resolved generator
+     * package first and reaches the manifest only when that read throws. The
+     * other two generators call `template({ source })`, which never consults
+     * it, so embedding their templates would be bytes nothing can look up.
+     */
     templateRoots: [{ prefix: "component", relDir: "src/templates" }],
   },
   package: {
     name: "@canonical/summon-package",
     paths: ["package"],
-    templateRoots: [{ prefix: "package", relDir: "src/templates" }],
+    /** None: this generator reads templates by path. See `component` above. */
+    templateRoots: [],
   },
   application: {
     name: "@canonical/summon-application",
     paths: ["application/react"],
-    templateRoots: [
-      {
-        prefix: "application/react",
-        relDir: "src/application/react/templates",
-      },
-    ],
+    /**
+     * None: reads by path like `package`, and also `copy()`s non-`.ejs` assets,
+     * which no manifest of `.ejs` strings could carry.
+     */
+    templateRoots: [],
   },
 } as const;
 

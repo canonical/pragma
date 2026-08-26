@@ -1,11 +1,11 @@
 /**
- * Vitest global setup: build the compiled `dist/pragma` once, before the suite,
+ * Vitest global setup: emit `dist/` once, before the suite,
  * if it is missing OR older than the sources it was built from.
  *
- * Shared by both configs, because two suites spawn the binary: the perf budgets
+ * Shared by both configs, because two suites spawn the shipped entry: the perf budgets
  * (src/testing/perf/**, `test:perf`) and the storeless-guarantee guards in
  * src/kernel/completion/safety.test.ts (the main `test:vitest` pass). Wiring it
- * into both means `bun run test` on a clean checkout provisions the binary with
+ * into both means `bun run test` on a clean checkout provisions the emit with
  * no manual build step — neither suite may assume it is pre-built.
  *
  * STALENESS, not mere existence. `existsSync` alone meant every spawned-binary
@@ -19,7 +19,7 @@
  * STALENESS INCLUDES THE EMBEDDED WORKSPACE DEPS. The binary bundles every
  * `@canonical/*` workspace package it (transitively) imports — task, summon-*,
  * ke, … — so an edit to `packages/runtime/task` is a change to what
- * `dist/pragma` runs, yet this package's own `src` never moves. The gate
+ * the shipped entry runs, yet this package's own `src` never moves. The gate
  * therefore also watches each workspace-linked dependency (found by following
  * the `node_modules/<name>` symlinks, transitively) — its `src` (the authored
  * source), `dist` (what the bundler actually embeds, per the dep's export map)
@@ -47,15 +47,15 @@
  * `vitest run <file>` invocations alike, under both configs. Order matters:
  * stale dep dists rebuild first (dependencies before dependents — a cycle
  * throws loudly, naming its members, instead of hanging the topo loop), and
- * only then is `dist/pragma` judged — a refreshed dep dist moves the mtimes
- * the binary check watches, so the binary that bundles them is rebuilt in
+ * only then is the emit judged — a refreshed dep dist moves the mtimes
+ * the emit check watches, so the entry that loads them is rebuilt in
  * the same setup pass and every worker sees one consistent generation.
  *
  * THAT PLACEMENT SERIALIZES ONE PROCESS, NOT THE WORKSPACE. cli/summon's
  * sibling gate (src/testing/globalSetup.ts) rebuilds four of the same dep
  * dists from ITS process, nothing orders the two suites, and two
  * invocations of this package's own suites can overlap too — so every
- * root here (each per-root dep dist AND `dist/pragma`) ALWAYS enters
+ * root here (each per-root dep dist AND the emit) ALWAYS enters
  * {@link buildUnderLock}, which takes an O_EXCL lockfile at the root's
  * top level — OUTSIDE every tree the freshness rules stat — and judges
  * freshness only UNDER it: a second process finding the lock waits for
@@ -86,9 +86,10 @@ import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Everything the compiled binary is built FROM, relative to the package root.
- * `tsconfig.json` is an input too: the bundler reads it (jsx, paths), so an
- * option edit changes the binary while `src` never moves.
+ * Everything the emit is built FROM, relative to the package root. Both
+ * tsconfigs are inputs: `tsconfig.build.json` IS the emit configuration and
+ * `tsconfig.json` is what it extends, so an option edit changes `dist` while
+ * `src` never moves.
  */
 const INPUTS = [
   "src",
@@ -96,6 +97,7 @@ const INPUTS = [
   "pragma.conf.ts",
   "package.json",
   "tsconfig.json",
+  "tsconfig.build.json",
 ];
 
 /** How long a contender waits on another process's build lock (ms). */
@@ -115,8 +117,8 @@ function sleepSync(ms: number): void {
  * OUTSIDE every tree the freshness rules stat. The lock's own
  * create/unlink is a directory mutation, and a lock kept beside the
  * served artifact inside `dist/**` bumped a directory {@link DEP_INPUTS}
- * watches on EVERY entry, so a fully fresh tree re-judged `dist/pragma`
- * stale and rebuilt the binary on every vitest invocation (measured);
+ * watches on EVERY entry, so a fully fresh tree re-judged the emit
+ * stale and rebuilt it on every vitest invocation (measured);
  * the root's own mtime, by contrast, is watched by nothing — only its
  * named children are. The file must also stay UNTRACKED: the root-level
  * home sits outside the ignored `dist/`, so `.dist-build.lock` has its
@@ -197,7 +199,7 @@ function buildUnderLock(
 }
 
 /**
- * What feeds the binary inside one workspace dependency: its authored source,
+ * What feeds the entry inside one workspace dependency: its authored source,
  * the compiled output the bundler embeds, and its manifest. Deliberately NOT
  * the whole package dir — that would watch `coverage/` and `node_modules/`,
  * whose mtimes move on every test run and would force a rebuild loop.
@@ -230,7 +232,7 @@ function newestMtime(path: string): number {
 }
 
 /**
- * Every workspace package the binary can embed, transitively: follow each
+ * Every workspace package the entry can load, transitively: follow each
  * `node_modules/<name>` symlink whose target lives OUTSIDE any `node_modules`
  * store (that is what distinguishes a workspace link from a registry install),
  * then repeat from the target's own `node_modules`. Cycles are cut by the
@@ -475,7 +477,7 @@ export function buildDistOrDestroy(
  * (summon-application's tsc reads summon-core's `dist/types`). Runs in the
  * main process before any worker exists, so an in-place `tsc`/copy-templates
  * rewrite can never race a worker importing or spawning the same files.
- * Staleness is the binary gate's own honest mtime rule, per package: its
+ * Staleness is the emit gate's own honest mtime rule, per package: its
  * served entry artifact must be newer than every {@link DIST_INPUTS} entry.
  *
  * @param pkgRoot - This package's root directory (the closure's seed).
@@ -528,7 +530,12 @@ export default function setup(): void {
   // (which bundles them) stale below, so one setup pass yields one
   // consistent generation for every worker.
   buildStaleDepDists(root);
-  const binary = join(root, "dist", "pragma");
+  // The SUCCESS SENTINEL, not an output file. `tsc` writes its outputs even
+  // when it exits non-zero, so an emitted file carries a fresh mtime from a
+  // build that FAILED — keying on one would mark that wreckage fresh and run
+  // every spawning PROTECTED suite against it. `scripts/build.ts` writes
+  // `dist/.build-ok` last and only on a clean emit.
+  const binary = join(root, "dist", ".build-ok");
   const isFresh = (): boolean => {
     const built = newestMtime(binary);
     return (
