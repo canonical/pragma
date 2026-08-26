@@ -11,12 +11,13 @@ import {
   type StampConfig,
 } from "@canonical/summon-core";
 import {
+  collectUndos,
   dryRun,
   type Effect,
   type Task,
   type TaskError,
 } from "@canonical/task";
-import { runUndo } from "@canonical/task/node";
+import { hostExistsResolver, runCollectedUndos } from "@canonical/task/node";
 import { Box, Text, useApp, useInput } from "ink";
 import { useCallback, useEffect, useState } from "react";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
@@ -772,9 +773,33 @@ export type AppState =
       effects: Effect[];
       promptAnswers: Record<string, unknown>;
     }
+  | { phase: "undoPreview"; planEffects: Effect[] }
+  | {
+      phase: "confirmingUndo";
+      undos: Task<void>[];
+      planEffects: Effect[];
+      unreversible: Effect[];
+    }
+  | { phase: "undone"; undoCount: number; unreversible: Effect[] }
   | { phase: "executing"; task: Task<void> }
   | { phase: "complete"; effects: TimedEffect[]; duration: number }
   | { phase: "error"; error: TaskError; answers?: Record<string, unknown> };
+
+/**
+ * The effects an undo plan would perform, minus the read/log plumbing an undo
+ * task walks through (a remove-line undo reads the file before rewriting it —
+ * the read is not part of what gets reversed).
+ */
+const UNDO_PLAN_PLUMBING = new Set([
+  "Log",
+  "ReadFile",
+  "Exists",
+  "ReadContext",
+]);
+const undoPlanEffects = (undos: readonly Task<void>[]): Effect[] =>
+  undos
+    .flatMap((undoTask) => dryRun(undoTask).effects)
+    .filter((effect) => !UNDO_PLAN_PLUMBING.has(effect._tag));
 
 export interface AppProps {
   /** The generator to run */
@@ -789,6 +814,8 @@ export interface AppProps {
   verbose?: boolean;
   /** Pre-filled answers (for non-interactive mode) */
   answers?: Record<string, unknown>;
+  /** Skip confirmation gates (`--yes`) */
+  yes?: boolean;
   /** Stamp configuration for generated files (undefined = no stamps) */
   stamp?: StampConfig;
 }
@@ -800,6 +827,7 @@ export const App = ({
   undo = false,
   verbose = false,
   answers: prefilledAnswers,
+  yes = false,
   stamp,
 }: AppProps) => {
   const { exit } = useApp();
@@ -811,6 +839,31 @@ export const App = ({
   );
   const [showFiles, setShowFiles] = useState(false);
 
+  const runUndoPlan = useCallback(
+    (
+      undos: Task<void>[],
+      unreversible: Effect[],
+      promptAnswers: Record<string, unknown>,
+    ) => {
+      (async () => {
+        try {
+          const { undoCount } = await runCollectedUndos(undos);
+          setState({ phase: "undone", undoCount, unreversible });
+        } catch (err) {
+          setState({
+            phase: "error",
+            error:
+              err instanceof Error
+                ? { code: "UNDO_ERROR", message: err.message }
+                : { code: "UNKNOWN_ERROR", message: String(err) },
+            answers: promptAnswers,
+          });
+        }
+      })();
+    },
+    [],
+  );
+
   const handlePromptsComplete = useCallback(
     (promptAnswers: Record<string, unknown>) => {
       setAnswers(promptAnswers);
@@ -818,33 +871,50 @@ export const App = ({
       // Generate the task
       const task = generator.generate(promptAnswers);
 
-      // Undo mode: run undo directly
+      // Undo mode: collect the plan ONCE (host-backed Exists resolution, so
+      // branch selection matches the run being undone), show it, and execute
+      // exactly the collected undos — never re-walk the task in between.
       if (undo) {
-        (async () => {
-          try {
-            const result = await runUndo(task);
-            setState({
-              phase: "complete",
-              effects: [],
-              duration: 0,
-            });
-            if (result.undoCount === 0) {
-              setState({
-                phase: "error",
-                error: { code: "NOTHING_TO_UNDO", message: "Nothing to undo." },
-              });
-            }
-          } catch (err) {
+        try {
+          const unreversible: Effect[] = [];
+          const undos = collectUndos(task, {
+            resolveExists: hostExistsResolver(),
+            onForwardEffect: (effect) => {
+              if (effect._tag === "Exec") unreversible.push(effect);
+            },
+          });
+          if (undos.length === 0) {
             setState({
               phase: "error",
-              error:
-                err instanceof Error
-                  ? { code: "UNDO_ERROR", message: err.message }
-                  : { code: "UNKNOWN_ERROR", message: String(err) },
-              answers: promptAnswers,
+              error: { code: "NOTHING_TO_UNDO", message: "Nothing to undo." },
             });
+            return;
           }
-        })();
+          const planEffects = undoPlanEffects(undos);
+          if (dryRunOnly) {
+            setState({ phase: "undoPreview", planEffects });
+            return;
+          }
+          if (yes) {
+            runUndoPlan(undos, unreversible, promptAnswers);
+            return;
+          }
+          setState({
+            phase: "confirmingUndo",
+            undos,
+            planEffects,
+            unreversible,
+          });
+        } catch (err) {
+          setState({
+            phase: "error",
+            error:
+              err instanceof Error
+                ? { code: "UNDO_ERROR", message: err.message }
+                : { code: "UNKNOWN_ERROR", message: String(err) },
+            answers: promptAnswers,
+          });
+        }
         return;
       }
 
@@ -875,7 +945,7 @@ export const App = ({
         setState({ phase: "executing", task });
       }
     },
-    [generator, preview, dryRunOnly, undo],
+    [generator, preview, dryRunOnly, undo, yes, runUndoPlan],
   );
 
   const handleConfirm = useCallback(() => {
@@ -914,7 +984,12 @@ export const App = ({
     setState({ phase: "prompting" });
   }, []);
 
-  // Handle confirm/cancel/back/show-files input when in confirming state
+  const handleUndoConfirm = useCallback(() => {
+    if (state.phase !== "confirmingUndo") return;
+    runUndoPlan(state.undos, state.unreversible, answers);
+  }, [state, runUndoPlan, answers]);
+
+  // Handle confirm/cancel/back/show-files input when in a confirming state
   useInput(
     (input, key) => {
       if (state.phase === "confirming") {
@@ -929,9 +1004,18 @@ export const App = ({
         } else if (input.toLowerCase() === "n") {
           handleCancel();
         }
+      } else if (state.phase === "confirmingUndo") {
+        if (key.return || input.toLowerCase() === "y") {
+          handleUndoConfirm();
+        } else if (key.escape || input.toLowerCase() === "n") {
+          handleCancel();
+        }
       }
     },
-    { isActive: state.phase === "confirming" },
+    {
+      isActive:
+        state.phase === "confirming" || state.phase === "confirmingUndo",
+    },
   );
 
   return (
@@ -968,6 +1052,66 @@ export const App = ({
           <Box marginTop={1}>
             <Text dimColor>Dry-run complete. No files were modified.</Text>
           </Box>
+        </Box>
+      )}
+
+      {state.phase === "undoPreview" && (
+        <Box flexDirection="column">
+          <DryRunTimeline
+            effects={state.planEffects}
+            title="Undo plan (dry-run):"
+            verbose={verbose}
+          />
+          <Box marginTop={1}>
+            <Text dimColor>Dry-run complete. No files were modified.</Text>
+          </Box>
+        </Box>
+      )}
+
+      {state.phase === "confirmingUndo" && (
+        <Box flexDirection="column">
+          <DryRunTimeline
+            effects={state.planEffects}
+            title={`Undo will reverse ${state.undos.length} step${state.undos.length === 1 ? "" : "s"}:`}
+            verbose={verbose}
+          />
+          {state.unreversible.length > 0 && (
+            <Box marginTop={1}>
+              <Text color="yellow">
+                {state.unreversible.length} exec step
+                {state.unreversible.length === 1 ? "" : "s"} (e.g. installs)
+                cannot be reversed; artifacts may remain.
+              </Text>
+            </Box>
+          )}
+          <Box marginTop={1}>
+            <Text color="magenta">› </Text>
+            <Text bold>Reverse these steps? </Text>
+            <Text dimColor>(y/N) </Text>
+            <Text dimColor italic>
+              esc to cancel
+            </Text>
+          </Box>
+        </Box>
+      )}
+
+      {state.phase === "undone" && (
+        <Box flexDirection="column">
+          <Box>
+            <Text color="green">
+              ✓ Undo complete ({state.undoCount} step
+              {state.undoCount === 1 ? "" : "s"} reversed).
+            </Text>
+          </Box>
+          {state.unreversible.length > 0 && (
+            <Box marginTop={1}>
+              <Text dimColor>
+                Note: {state.unreversible.length} exec step
+                {state.unreversible.length === 1 ? "" : "s"} were not reversed;
+                their artifacts may remain.
+              </Text>
+            </Box>
+          )}
         </Box>
       )}
 

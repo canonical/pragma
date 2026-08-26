@@ -18,8 +18,13 @@ import {
   type PromptDefinition,
   type StampConfig,
 } from "@canonical/summon-core";
-import { dryRun } from "@canonical/task";
-import { runUndo } from "@canonical/task/node";
+import {
+  collectUndos,
+  describeEffect,
+  dryRun,
+  type Effect,
+} from "@canonical/task";
+import { hostExistsResolver, runCollectedUndos } from "@canonical/task/node";
 import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
@@ -356,16 +361,48 @@ const configureGeneratorCommand = (
         ? createGeneratorStamp(generator)
         : undefined;
 
-      // Undo mode (non-interactive batch)
+      // Undo mode (non-interactive batch): collect the plan ONCE with
+      // host-backed Exists resolution, show it, then execute exactly the
+      // collected undos — never re-walk the task between preview and run.
       if (hasAllAnswers && actualOptions.undo && !isTTY) {
         const task = generator.generate(answersWithDefaults);
         try {
-          const result = await runUndo(task);
-          if (result.undoCount === 0) {
+          const unreversible: Effect[] = [];
+          const undos = collectUndos(task, {
+            resolveExists: hostExistsResolver(),
+            onForwardEffect: (effect) => {
+              if (effect._tag === "Exec") unreversible.push(effect);
+            },
+          });
+          if (undos.length === 0) {
             console.log("Nothing to undo.");
-          } else {
-            console.log(
-              `Undo complete (${result.undoCount} step${result.undoCount === 1 ? "" : "s"} reversed).`,
+            return;
+          }
+          const plumbing = new Set([
+            "Log",
+            "ReadFile",
+            "Exists",
+            "ReadContext",
+          ]);
+          const planLines = undos
+            .flatMap((undoTask) => dryRun(undoTask).effects)
+            .filter((effect) => !plumbing.has(effect._tag))
+            .map(describeEffect);
+          // Diagnostics go to stderr so stdout stays a clean data stream.
+          process.stderr.write(
+            `Undo will reverse ${undos.length} step${undos.length === 1 ? "" : "s"}:\n${planLines.map((line) => `  - ${line}`).join("\n")}\n`,
+          );
+          if (actualOptions.dryRun) {
+            console.log("Dry-run complete. Nothing was reversed.");
+            return;
+          }
+          const result = await runCollectedUndos(undos);
+          console.log(
+            `Undo complete (${result.undoCount} step${result.undoCount === 1 ? "" : "s"} reversed).`,
+          );
+          if (unreversible.length > 0) {
+            process.stderr.write(
+              `Note: ${unreversible.length} exec step${unreversible.length === 1 ? "" : "s"} were not reversed (e.g. installs); their artifacts may remain.\n`,
             );
           }
         } catch (err) {
@@ -454,6 +491,7 @@ const configureGeneratorCommand = (
             preview={shouldShowPreview}
             dryRunOnly={actualOptions.dryRun as boolean}
             undo={actualOptions.undo as boolean}
+            yes={skipPrompts}
             verbose={actualOptions.verbose as boolean}
             answers={passedAnswers}
             stamp={stamp}
