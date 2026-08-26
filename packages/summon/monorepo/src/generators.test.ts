@@ -97,7 +97,9 @@ describe("monorepo generator", () => {
       expect(pkgFile).toBeDefined();
 
       const pkg = JSON.parse(pkgFile?.content ?? "");
-      expect(pkg.name).toBe("test-monorepo-monorepo");
+      // The name is used as-is: appending a suffix turned the default
+      // "my-monorepo" into "my-monorepo-monorepo".
+      expect(pkg.name).toBe("test-monorepo");
       expect(pkg.private).toBe(true);
       expect(pkg.version).toBe("0.0.0");
       expect(pkg.description).toBe("A test monorepo");
@@ -112,6 +114,16 @@ describe("monorepo generator", () => {
       expect(pkg.devDependencies.lerna).toBeDefined();
       expect(pkg.devDependencies.nx).toBeDefined();
       expect(pkg.devDependencies["@vitest/coverage-v8"]).toBeDefined();
+      // The root configs extend these packages, so the root manifest must
+      // declare them (a fresh install previously could not resolve them),
+      // and coverage-v8 needs its vitest peer alongside.
+      expect(pkg.devDependencies.vitest).toBeDefined();
+      expect(pkg.devDependencies["@biomejs/biome"]).toBeDefined();
+      expect(pkg.devDependencies["@canonical/biome-config"]).toMatch(/^\^\d/);
+      expect(pkg.devDependencies["@canonical/typescript-config-base"]).toMatch(
+        /^\^\d/,
+      );
+      expect(pkg.devDependencies.typescript).toBeDefined();
     });
 
     it("generates lerna.json with fixed versioning", () => {
@@ -165,15 +177,34 @@ describe("monorepo generator", () => {
       expect(biome.extends).toEqual(["@canonical/biome-config"]);
     });
 
-    it("generates tag.yml with NPM_AUTH_TOKEN", () => {
+    it("generates tag.yml publishing via OIDC trusted publishing", () => {
       const result = dryRun(generator.generate(defaultAnswers));
 
       const tagFile = getFiles(result).find(
         (f) => f.path === "test-monorepo/.github/workflows/tag.yml",
       );
       expect(tagFile).toBeDefined();
-      expect(tagFile?.content).toContain("NPM_AUTH_TOKEN");
-      expect(tagFile?.content).not.toContain("NODE_AUTH_TOKEN");
+      // The old pattern set NPM_AUTH_TOKEN step-scoped on setup-node — a
+      // variable setup-node never reads (it reads NODE_AUTH_TOKEN), scoped to
+      // a step the publish never runs in. OIDC needs neither secret.
+      expect(tagFile?.content).toContain("id-token: write");
+      expect(tagFile?.content).not.toContain("NPM_AUTH_TOKEN");
+    });
+
+    it("omits repository metadata when no repository was given", () => {
+      const result = dryRun(
+        generator.generate({ ...defaultAnswers, repository: "" }),
+      );
+
+      const pkgFile = getFiles(result).find(
+        (f) => f.path === "test-monorepo/package.json",
+      );
+      const pkg = JSON.parse(pkgFile?.content ?? "");
+      // Previously this emitted "url": "", "bugs": {"url": "/issues"},
+      // "homepage": "#readme" — malformed metadata.
+      expect(pkg.repository).toBeUndefined();
+      expect(pkg.bugs).toBeUndefined();
+      expect(pkg.homepage).toBeUndefined();
     });
 
     it("generates setup-env with pinned bun version", () => {

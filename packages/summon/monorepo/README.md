@@ -52,7 +52,7 @@ summon monorepo --name=my-project --description="My awesome project"
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `name` | string | _(required)_ | Monorepo name (kebab-case) |
+| `name` | string | `my-monorepo` | Monorepo name (kebab-case), used as-is |
 | `description` | string | `""` | Description |
 | `license` | `LGPL-3.0` \| `GPL-3.0` | `LGPL-3.0` | Root license |
 | `typescriptConfig` | string | `@canonical/typescript-config-base` | Shared TypeScript config |
@@ -69,20 +69,20 @@ summon monorepo --name=my-project --description="My awesome project"
 | Module system | ESM (`"type": "module"`) |
 | Build output | `dist/esm/` + `dist/types/` |
 | Test runner | Vitest with v8 coverage |
-| Test file pattern | `*.tests.ts` (plural) |
+| Test file pattern | `*.test.ts` |
 | Linter/formatter | Biome via `@canonical/biome-config` |
 | Versioning | Lerna fixed mode |
 | Orchestration | Lerna + Nx caching |
 | CI | Two parallel jobs (check + build-and-test) |
 | PR lint | Conventional commits (`amannn/action-semantic-pull-request@v6`) |
 | Merge strategy | Squash merge with PR title |
-| Release | `tag.yml` workflow_dispatch with `NPM_AUTH_TOKEN` |
+| Release | `tag.yml` workflow_dispatch, npm OIDC trusted publishing |
 
 ## Post-Setup Actions
 
 After running the generator:
 
-1. **Configure `NPM_AUTH_TOKEN` secret** in GitHub repo settings
+1. **Configure npm trusted publishers** for each package (repo + `tag.yml`) after its first manual publish
 2. **Configure squash merge** as the default (or only) merge strategy
 3. **Set "Default commit message"** to "Pull request title"
 4. **Generate initial changelogs** (optional): `bun run lerna version --conventional-commits --no-git-tag-version --no-push --yes`

@@ -32,6 +32,7 @@ runs:
       uses: ./.github/actions/setup-git
       with:
         name: ${{ github.actor }}
+        email: ${{ github.actor }}@users.noreply.github.com
 
     - name: Commit and tag v${{ steps.lerna_version.outputs.VERSION }}
       shell: bash
