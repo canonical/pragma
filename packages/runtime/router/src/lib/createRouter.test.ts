@@ -1583,6 +1583,44 @@ describe("createRouter", () => {
     expect(result.match).toMatchObject({ kind: "route", name: "login" });
   });
 
+  it("scopes blocker handles to the registration that intercepted", async () => {
+    const router = createRouter(
+      {
+        home: route({ url: "/", content: () => "home" }),
+        about: route({ url: "/about", content: () => "about" }),
+      },
+      { adapter: createMemoryAdapter("/") },
+    );
+
+    await router.load("/");
+
+    const active = router.block(() => true);
+    const inactive = router.block(() => false);
+
+    router.navigate("about");
+
+    expect(active.state).toBe("blocked");
+    expect(inactive.state).toBe("idle");
+
+    // A handle whose blocker did not intercept cannot act on the navigation.
+    inactive.proceed();
+    inactive.cancel();
+
+    expect(active.state).toBe("blocked");
+    expect(router.getState().location.pathname).toBe("/");
+
+    // Disposing the non-intercepting blocker leaves the navigation pending.
+    inactive.dispose();
+
+    expect(active.state).toBe("blocked");
+
+    active.proceed();
+
+    await vi.waitFor(() => {
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+  });
+
   it("discards the pending navigation when disposing a blocker while blocked", async () => {
     const router = createRouter(
       {
