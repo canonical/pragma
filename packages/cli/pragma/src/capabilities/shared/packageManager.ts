@@ -33,7 +33,7 @@ function packageManager(): string {
  * Detect how the binary was installed — package manager and scope.
  *
  * @returns The install source (pm, label).
- * @note Impure — reads `process.argv`/`process.env`.
+ * @note Impure — reads `import.meta.url`, the working directory, and `process.env`.
  */
 export function detectInstallSource(): InstallSource {
   // The entry's own location, NOT `process.argv[1]`. Under the compiled binary
