@@ -1,65 +1,42 @@
-import * as path from "node:path";
+import getCommentStyle from "../template/getCommentStyle.js";
 import type StampConfig from "../types/StampConfig.js";
 
-const COMMENT_STYLES: Record<
-  string,
-  {
-    single?: string;
-    blockStart?: string;
-    blockEnd?: string;
-    preferBlock?: boolean;
+/**
+ * The prologue a stamp must stay BELOW: a shebang, a PHP open tag, or an XML
+ * declaration must remain the file's first bytes or the file stops working
+ * (interpreter selection, PHP emitting the comment as page text, ill-formed
+ * XML). Returns the offset just past the prologue (including its newline when
+ * present), or null when the content has no prologue.
+ */
+function prologueEnd(content: string): number | null {
+  if (content.startsWith("#!") || content.startsWith("<?php")) {
+    const newline = content.indexOf("\n");
+    return newline === -1 ? content.length : newline + 1;
   }
-> = {
-  ".ts": { single: "//" },
-  ".tsx": { single: "//" },
-  ".js": { single: "//" },
-  ".jsx": { single: "//" },
-  ".mjs": { single: "//" },
-  ".cjs": { single: "//" },
-  ".css": { blockStart: "/*", blockEnd: "*/", preferBlock: true },
-  ".scss": { single: "//" },
-  ".sass": { single: "//" },
-  ".less": { single: "//" },
-  ".html": { blockStart: "<!--", blockEnd: "-->" },
-  ".htm": { blockStart: "<!--", blockEnd: "-->" },
-  ".xml": { blockStart: "<!--", blockEnd: "-->" },
-  ".svg": { blockStart: "<!--", blockEnd: "-->" },
-  ".vue": { blockStart: "<!--", blockEnd: "-->" },
-  ".svelte": { blockStart: "<!--", blockEnd: "-->" },
-  ".yaml": { single: "#" },
-  ".yml": { single: "#" },
-  ".toml": { single: "#" },
-  ".sh": { single: "#" },
-  ".bash": { single: "#" },
-  ".zsh": { single: "#" },
-  ".py": { single: "#" },
-  ".rb": { single: "#" },
-  ".go": { single: "//" },
-  ".rs": { single: "//" },
-  ".java": { single: "//" },
-  ".kt": { single: "//" },
-  ".swift": { single: "//" },
-  ".c": { single: "//" },
-  ".cpp": { single: "//" },
-  ".h": { single: "//" },
-  ".php": { single: "//" },
-  ".md": { blockStart: "<!--", blockEnd: "-->" },
-  ".mdx": { blockStart: "{/*", blockEnd: "*/}" },
-  ".sql": { single: "--" },
-  ".json": {},
-};
+  if (content.startsWith("<?xml")) {
+    const close = content.indexOf("?>");
+    if (close !== -1) {
+      const after = close + 2;
+      return content.charAt(after) === "\n" ? after + 1 : after;
+    }
+  }
+  return null;
+}
 
 /**
- * Apply a stamp to file content based on file extension.
- * Returns the original content if the file type doesn't support comments.
+ * Apply a stamp to file content based on file extension. Uses the same
+ * comment-style table as {@link getCommentStyle} — one source, no drift.
+ * Returns the original content when the file type doesn't support comments,
+ * and is IDEMPOTENT: content already carrying this exact stamp line is
+ * returned unchanged, so driving the same WriteFile effect twice (preview
+ * then run, or a re-drive) cannot stack stamps.
  */
 export default function applyStamp(
   filePath: string,
   content: string,
   stamp: StampConfig,
 ): string {
-  const ext = path.extname(filePath).toLowerCase();
-  const style = COMMENT_STYLES[ext];
+  const style = getCommentStyle(filePath);
 
   if (!style) {
     return content;
@@ -76,14 +53,16 @@ export default function applyStamp(
     return content;
   }
 
-  // Handle shebang - place stamp after it
-  if (content.startsWith("#!")) {
-    const firstNewline = content.indexOf("\n");
-    if (firstNewline !== -1) {
-      const shebang = content.slice(0, firstNewline + 1);
-      const rest = content.slice(firstNewline + 1);
-      return `${shebang}${stampLine}\n\n${rest}`;
-    }
+  if (content.includes(stampLine)) {
+    return content;
+  }
+
+  const at = prologueEnd(content);
+  if (at !== null) {
+    const head = content.slice(0, at);
+    const rest = content.slice(at);
+    const separator = head.endsWith("\n") ? "" : "\n";
+    return `${head}${separator}${stampLine}\n\n${rest}`;
   }
 
   return `${stampLine}\n\n${content}`;
