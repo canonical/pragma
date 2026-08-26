@@ -1,4 +1,4 @@
-import { createHashRouter, route } from "@canonical/router-core";
+import { createHashAdapter, createRouter, route } from "@canonical/router-core";
 import { RouterProvider, useRoute } from "@canonical/router-react";
 import { Lorem, withBaseLayer } from "@canonical/storybook-addon-utils";
 import type { Decorator } from "@storybook/react-vite";
@@ -30,7 +30,7 @@ export { CanonicalLogo } from "./CanonicalLogo/index.js";
 /**
  * Link adapter for the stories. SideNavigation is router-agnostic (it only sees
  * `LinkComponentProps`); this bridges its raw-URL nav items to the hash router
- * that `withNavigationRouterProps` provides — `createHashRouter` reads
+ * that `withNavigationRouterProps` provides — the hash adapter reads
  * `location.hash`, so an href into the fragment navigates client-side with no
  * server.
  */
@@ -63,7 +63,7 @@ const navRoutes = { story: route({ url: "/", content: () => null }) } as const;
  * (`root` / `footerRoot`).
  */
 export const withNavigationRouterProps: Decorator = (Story, context) => {
-  const router = createHashRouter(navRoutes);
+  const router = createRouter(navRoutes, { adapter: createHashAdapter() });
   const RouterPropsBridge = (): ReactNode => {
     const { pathname } = useRoute();
     // Merge over the story's existing args explicitly (don't rely on SB's

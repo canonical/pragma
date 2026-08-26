@@ -1,9 +1,13 @@
-import { createRouter, route } from "@canonical/router-core";
+import {
+  createHistoryAdapter,
+  createRouter,
+  route,
+} from "@canonical/router-core";
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import createHydratedRouter from "./createHydratedRouter.js";
 import Outlet from "./Outlet/Outlet.js";
 import RouterProvider from "./RouterProvider/Provider.js";
+import readDehydratedState from "./readDehydratedState.js";
 
 const routes = {
   page: route({
@@ -15,22 +19,27 @@ const routes = {
   }),
 };
 
-describe("createHydratedRouter", () => {
+describe("readDehydratedState", () => {
   afterEach(() => {
     delete (window as Window & { __INITIAL_DATA__?: unknown }).__INITIAL_DATA__;
     window.history.replaceState({}, "", "/");
   });
 
-  it("creates a browser-backed router and hydrates initial state from the window", async () => {
+  it("hydrates a router from dehydrated state carried in the window payload", async () => {
     const serverRouter = createRouter(routes);
 
     await serverRouter.load("/pages/hello");
 
-    (window as Window & { __INITIAL_DATA__?: unknown }).__INITIAL_DATA__ =
-      serverRouter.dehydrate();
+    (window as Window & { __INITIAL_DATA__?: unknown }).__INITIAL_DATA__ = {
+      ...serverRouter.dehydrate(),
+      theme: "light",
+    };
     window.history.replaceState({}, "", "/pages/hello");
 
-    const router = createHydratedRouter(routes);
+    const router = createRouter(routes, {
+      adapter: createHistoryAdapter(),
+      hydratedState: readDehydratedState() ?? undefined,
+    });
 
     render(
       <RouterProvider router={router}>
@@ -45,10 +54,16 @@ describe("createHydratedRouter", () => {
     expect(router.getState().match?.kind).toBe("route");
   });
 
-  it("returns a browser-backed router when no initial data is present", () => {
-    const router = createHydratedRouter(routes);
+  it("returns null when no payload is present", () => {
+    expect(readDehydratedState()).toBeNull();
+  });
 
-    expect(router.adapter).not.toBeNull();
-    expect(router.getState().location.pathname).toBe("/");
+  it("returns null when the payload carries no dehydrated router fields", () => {
+    (window as Window & { __INITIAL_DATA__?: unknown }).__INITIAL_DATA__ = {
+      url: "/pages/hello",
+      theme: "dark",
+    };
+
+    expect(readDehydratedState()).toBeNull();
   });
 });
