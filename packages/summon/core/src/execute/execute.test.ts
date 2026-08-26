@@ -3,8 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   $,
+  collectUndos,
   dryRun,
+  exists,
+  fail,
   gen,
+  ifElseM,
   mkdir,
   sequence_,
   type Task,
@@ -144,5 +148,79 @@ describe("execute — generate() re-interpretation parity (no single-use gen() u
     expect(dryRun(seqBuilt).effects.map((e) => e._tag)).toEqual(
       dryRun(seqBuilt).effects.map((e) => e._tag),
     );
+  });
+});
+
+describe("execute — the seam task itself is re-interpretable", () => {
+  // execute() used to be gen()-based and therefore single-use: pragma's
+  // dispatch dry-runs the verb task and then executes it, and undo collection
+  // re-walks it (including fail-backtracking restarts). All of those interpret
+  // the SAME task object more than once, so the seam must be built from
+  // re-runnable combinators.
+  it("yields identical effects when interpreted twice", () => {
+    const task = execute(fixture, {
+      prompt: autoPrompt({}),
+      params: { path: "out.txt", flavor: "a" },
+    });
+
+    const first = dryRun(task).effects.map((e) => e._tag);
+    const second = dryRun(task).effects.map((e) => e._tag);
+
+    expect(first).toContain("WriteFile");
+    expect(second).toEqual(first);
+  });
+
+  it("performs ALL effects of a gen()-based generate (fresh build per drive)", async () => {
+    // A generator whose generate() uses gen() previously truncated: the
+    // preview dry-run spent the iterator and the real run performed only the
+    // first effect. Each interpretation now invokes generate() anew.
+    const genFixture: GeneratorDefinition = {
+      ...fixture,
+      generate: (a) =>
+        gen(function* () {
+          yield* $(mkdir("."));
+          yield* $(writeFile(String(a.path), "one\n"));
+          yield* $(writeFile("second.txt", "two\n"));
+        }),
+    };
+    const dir = mkdtempSync(join(tmpdir(), "execute-gen-"));
+
+    await runGeneratorTask(
+      execute(genFixture, {
+        prompt: autoPrompt({}),
+        params: { path: "out.txt", flavor: "a" },
+      }),
+      { cwd: dir, promptHandler: autoPrompt({}) },
+    );
+
+    expect(readFileSync(join(dir, "out.txt"), "utf-8")).toBe("one\n");
+    expect(readFileSync(join(dir, "second.txt"), "utf-8")).toBe("two\n");
+  });
+
+  it("undo collection backtracks through a fail-if-exists guard", () => {
+    // The pragma --undo path collects undos from the execute() task itself.
+    // A guard that refuses to scaffold over an existing directory reads as
+    // failing under host-backed Exists resolution (the forward run created
+    // the directory), so collection must be able to restart the walk with
+    // that decision flipped — impossible while the seam was single-use.
+    const guarded: GeneratorDefinition = {
+      ...fixture,
+      generate: (a) =>
+        ifElseM(
+          exists("target"),
+          fail({ code: "TARGET_EXISTS", message: "already exists" }),
+          sequence_([mkdir("target"), writeFile(String(a.path), "x\n")]),
+        ),
+    };
+
+    const undos = collectUndos(
+      execute(guarded, {
+        prompt: autoPrompt({}),
+        params: { path: "out.txt", flavor: "a" },
+      }),
+      { resolveExists: (p) => p === "target" },
+    );
+
+    expect(undos.length).toBeGreaterThan(0);
   });
 });
