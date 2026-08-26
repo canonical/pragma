@@ -1,7 +1,7 @@
 import { isSupportedLocale, negotiateLocale } from "@canonical/i18n-core";
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
-import { createBrowserRouter } from "@canonical/router-core";
+import { createBrowserAdapter, createRouter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { hydrateRoot } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
@@ -10,7 +10,8 @@ import { createEnvironment } from "#relay/environment.js";
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/index.css";
 
-const router = createBrowserRouter(appRoutes, {
+const router = createRouter(appRoutes, {
+  adapter: createBrowserAdapter(),
   middleware: [...middleware],
   notFound: notFoundRoute,
 });

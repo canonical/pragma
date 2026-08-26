@@ -120,7 +120,7 @@ export type RouteParamValues = Readonly<Record<string, string>>;
 export type InferSearch<TSchema> = InferOutput<TSchema>;
 
 /**
- * The params a route's `content`/`prefetch` receive: the params schema's
+ * The params a route's `content`/`warm` receive: the params schema's
  * output when one is declared, otherwise the raw string params inferred
  * from the path pattern.
  */
@@ -160,7 +160,7 @@ export interface WrapperDefinition<TRendered = unknown> {
     [props: WrapperComponentProps<TRendered>],
     TRendered
   >;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [params: RouteParamValues, context: NavigationContext],
     void | Promise<void>
   >;
@@ -214,7 +214,7 @@ export interface DataRouteInput<
     TRendered,
     TParamsSchema
   >;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [
       params: InferParams<TPath, TParamsSchema>,
       search: InferSearch<TSearchSchema>,
@@ -268,7 +268,7 @@ export interface DataRouteDefinition<
     TRendered,
     TParamsSchema
   >;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [
       params: InferParams<TPath, TParamsSchema>,
       search: InferSearch<TSearchSchema>,
@@ -315,7 +315,7 @@ export type RouteDefinition<
 export interface AnyRoute {
   readonly url: string;
   readonly content?: AnyRouteContent;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [params: unknown, search: unknown, context: NavigationContext],
     void | Promise<void>
   >;
@@ -403,7 +403,7 @@ export type NavigateFn<TRoutes extends RouteMap> = UnionToIntersection<
   }[RouteName<TRoutes>]
 >;
 
-export type PrefetchFn<TRoutes extends RouteMap> = UnionToIntersection<
+export type WarmFn<TRoutes extends RouteMap> = UnionToIntersection<
   {
     [TName in RouteName<TRoutes>]: (
       name: TName,
@@ -622,9 +622,21 @@ export interface RouterStore<
   ): () => void;
 }
 
-export interface RouterBlocker {
-  readonly id: string;
-  readonly isActive: () => boolean;
+/** Handle returned by `router.block()` controlling one navigation blocker. */
+export interface RouterBlockerHandle {
+  /** `"blocked"` while a navigation is intercepted and awaiting a decision. */
+  readonly state: "idle" | "blocked";
+  /** Continue the blocked navigation. */
+  proceed(): void;
+  /** Discard the blocked navigation and stay on the current page. */
+  cancel(): void;
+  /** Subscribe to blocked/idle transitions. */
+  subscribe(listener: (state: "idle" | "blocked") => void): () => void;
+  /**
+   * Remove the blocker. A navigation currently blocked on it is discarded,
+   * not resumed.
+   */
+  dispose(): void;
 }
 
 export interface PlatformNavigateOptions {
@@ -754,7 +766,6 @@ export interface Router<
   readonly routes: TRoutes;
   readonly notFound: TNotFound;
   readonly adapter: PlatformAdapter | null;
-  readonly store: RouterStore<TRoutes, TNotFound>;
   getRoute<TName extends RouteName<TRoutes>>(
     name: TName,
   ): RouteOf<TRoutes, TName>;
@@ -771,12 +782,14 @@ export interface Router<
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;
-  prefetch: PrefetchFn<TRoutes>;
-  registerBlocker(blocker: RouterBlocker): void;
-  unregisterBlocker(id: string): void;
-  readonly blockerState: "idle" | "blocked";
-  proceedNavigation(): void;
-  cancelNavigation(): void;
+  warm: WarmFn<TRoutes>;
+  /**
+   * Register a navigation blocker. While `isActive()` returns true,
+   * `navigate()` is intercepted and held until the returned handle's
+   * `proceed()` or `cancel()` decides it. Blockers cover `navigate()` only —
+   * `setSearchParams()` and adapter-driven back/forward are not intercepted.
+   */
+  block(isActive: () => boolean): RouterBlockerHandle;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
   setSearchParams(
     params:

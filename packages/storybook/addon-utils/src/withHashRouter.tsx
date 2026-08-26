@@ -1,4 +1,9 @@
-import { createHashRouter, type RouteMap, route } from "@canonical/router-core";
+import {
+  createHashAdapter,
+  createRouter,
+  type RouteMap,
+  route,
+} from "@canonical/router-core";
 import { RouterProvider } from "@canonical/router-react";
 import type {
   Renderer,
@@ -42,6 +47,6 @@ export interface WithHashRouterOptions {
 export const withHashRouter =
   ({ routes = defaultRoutes }: WithHashRouterOptions = {}) =>
   (StoryFn: StoryFunction<Renderer>, _context: StoryContext<Renderer>) => {
-    const router = createHashRouter(routes);
+    const router = createRouter(routes, { adapter: createHashAdapter() });
     return <RouterProvider router={router}>{StoryFn()}</RouterProvider>;
   };

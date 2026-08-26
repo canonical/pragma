@@ -28,8 +28,8 @@ function buildOptionsObject(
  *
  * `Link` builds the destination `href` from a typed route name plus optional
  * params, search values, and hash. Primary-button clicks are intercepted and
- * routed through `router.navigate()`, while hover prefetches the destination
- * route data through `router.prefetch()`.
+ * routed through `router.navigate()`, while hover warms the destination
+ * route data through `router.warm()`.
  *
  * Sets `aria-current="page"` when the link target matches the current location.
  */
@@ -62,7 +62,7 @@ const Link = forwardRef(function Link<
     name: TName,
     options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
   ) => unknown;
-  const prefetch = router.prefetch as (
+  const warm = router.warm as (
     name: TName,
     options?: LinkBuildOptions<RouteOf<TRoutes, TName>>,
   ) => Promise<void>;
@@ -117,12 +117,12 @@ const Link = forwardRef(function Link<
         }
 
         if (hasOptions) {
-          void prefetch(
+          void warm(
             to,
             buildOptions as LinkBuildOptions<RouteOf<TRoutes, TName>>,
           );
         } else {
-          void prefetch(to);
+          void warm(to);
         }
       }}
       ref={forwardedRef}

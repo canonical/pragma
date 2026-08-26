@@ -24,11 +24,11 @@ async function readStream(stream: ReadableStream): Promise<string> {
 
 describe("renderToStream", () => {
   it("loads the route, renders the server router, and returns bootstrap data", async () => {
-    const prefetchSpy = vi.fn(async () => {});
+    const warmSpy = vi.fn(async () => {});
     const router = createRouter({
       home: route({
         url: "/",
-        prefetch: prefetchSpy,
+        warm: warmSpy,
         content: () => <main>home-content</main>,
       }),
     });

@@ -82,7 +82,7 @@ function createStaticRouter<
 };
 ```
 
-SSR router. Matches `url` synchronously and hydrates the store so `render()`/`<Outlet>` work without awaiting `load()`; prefetch fires in the background. The returned object adds a `match` field for status-code and redirect decisions before rendering. `options` omits `adapter` and `initialUrl`.
+SSR router. Matches `url` synchronously and hydrates the store so `render()`/`<Outlet>` work without awaiting `load()`; warm fires in the background. The returned object adds a `match` field for status-code and redirect decisions before rendering. `options` omits `adapter` and `initialUrl`.
 
 ```ts
 const router = createStaticRouter(appRoutes, req.url, {
@@ -152,7 +152,7 @@ interface Router<TRoutes extends RouteMap, TNotFound extends AnyRoute | undefine
   load(url: string | URL): Promise<RouterLoadResult<TRoutes, TNotFound>>;
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;                         // (name, options?) => NavigationIntent
-  prefetch: PrefetchFn<TRoutes>;                         // (name, options?) => Promise<void>
+  warm: WarmFn<TRoutes>;                         // (name, options?) => Promise<void>
   registerBlocker(blocker: RouterBlocker): void;
   unregisterBlocker(id: string): void;
   readonly blockerState: "idle" | "blocked";
@@ -172,14 +172,14 @@ interface Router<TRoutes extends RouteMap, TNotFound extends AnyRoute | undefine
 ```
 
 - **`navigate(name, options?)`** and **`buildPath(name, options?)`** take a route name and `PathBuildOptions`. `params` is required at the type level iff the route's `url` contains `:params`; `search`, `hash`, and `replace` are optional. `navigate` returns a `NavigationIntent` (`{ name, href, params, search, hash? }`); `buildPath` returns the built path string.
-- **`prefetch(name, options?)`** returns `Promise<void>` — warms the route's `prefetch` hook ahead of navigation.
+- **`warm(name, options?)`** returns `Promise<void>` — warms the route's `warm` hook ahead of navigation.
 - **`render(result?)`** returns `unknown` (framework-agnostic); the React layer consumes it via `<Outlet>`.
 - **`render()` returns `unknown`**, not a React element — typing is supplied by `TRendered` on `content`/`wrapper.component`.
 
 ```ts
 router.navigate("account", { search: { auth: "1" } });
 const href = router.buildPath("guide", { params: { slug: "intro" } });
-await router.prefetch("home");
+await router.warm("home");
 ```
 
 ### Route definition — `route`
@@ -215,7 +215,7 @@ Constructs one flat route and derives its path codec. The returned definition ad
 interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSchema> {
   readonly url: TPath;
   readonly content: RouteContent<TPath, TSearchSchema, TRendered, TParamsSchema>;
-  readonly prefetch?: BivariantCallback<
+  readonly warm?: BivariantCallback<
     [params: InferParams<TPath, TParamsSchema>, search: InferSearch<TSearchSchema>, context: NavigationContext],
     void | Promise<void>
   >;
@@ -228,8 +228,8 @@ interface DataRouteInput<TPath, TSearchSchema, TRendered, TWrappers, TParamsSche
 
 - **`url`** — path pattern. `:param` segments become typed params; modifiers (`?`, `*`, `+`, `(regex)`) are stripped for naming. `RouteParams<TPath>` infers `{ readonly [name]: string }`, or `Record<string, never>` when the path has none.
 - **`content`** — the component, called with `RouteContentProps`. Carries an optional `preload?: () => Promise<RouteModule>` for code-splitting.
-- **`prefetch`** — see [the prefetch hook](#the-prefetch-hook).
-- **`params`** — a [Standard Schema](#params-validation) validator for the path params; its output type replaces `RouteParams<TPath>` everywhere (`content`, `prefetch`, `Link`, `navigate`, `buildPath`). A failed validation makes the URL a **non-match** (404), not an error.
+- **`warm`** — see [the warm hook](#the-warm-hook).
+- **`params`** — a [Standard Schema](#params-validation) validator for the path params; its output type replaces `RouteParams<TPath>` everywhere (`content`, `warm`, `Link`, `navigate`, `buildPath`). A failed validation makes the URL a **non-match** (404), not an error.
 - **`search`** — a [Standard Schema](#search-validation) validator; its output type flows to `content`'s `search` prop and the route's `SearchOf`. A failed validation throws a 400 `StatusResponse`.
 - **`wrappers`** — layout wrappers (usually applied via `group`, not set by hand).
 - **`meta`** — arbitrary readonly metadata.
@@ -262,12 +262,12 @@ function AccountPage({ params, search }: RouteContentProps<{ readonly id: string
 }
 ```
 
-#### The `prefetch` hook
+#### The `warm` hook
 
-`prefetch` is the **only** data hook — there is no `fetch` field anywhere. It is fire-and-forget: the router does **not** block render on it or feed its result to the component. Use it to warm an external cache (Relay, TanStack Query, SWR) or preload assets at navigation time; components own their own data.
+`warm` is the **only** data hook — there is no `fetch` field anywhere. It is fire-and-forget: the router does **not** block render on it or feed its result to the component. Use it to warm an external cache (Relay, TanStack Query, SWR) or preload assets at navigation time; components own their own data.
 
 ```ts
-readonly prefetch?: (
+readonly warm?: (
   params: InferParams<TPath, TParamsSchema>,
   search: InferSearch<TSearchSchema>,
   context: NavigationContext,
@@ -282,10 +282,10 @@ interface NavigationContext {
 }
 ```
 
-Throwing inside `prefetch` is meaningful: throw a [`StatusResponse`](#statusresponse) for an HTTP-like error, or call [`redirect()`](#runtime-redirects--redirect-redirect-routeredirect) to short-circuit navigation. Both propagate to standard React error boundaries on the client and to the server handler under SSR.
+Throwing inside `warm` is meaningful: throw a [`StatusResponse`](#statusresponse) for an HTTP-like error, or call [`redirect()`](#runtime-redirects--redirect-redirect-routeredirect) to short-circuit navigation. Both propagate to standard React error boundaries on the client and to the server handler under SSR.
 
 ```ts
-prefetch: (params, search, context) => {
+warm: (params, search, context) => {
   void queryClient.prefetchQuery({
     queryKey: ["user", params.id],
     queryFn: ({ signal }) => fetchUser(params.id, signal),
@@ -328,7 +328,7 @@ interface RouteCodec<TPath extends string = string, TParams = RouteParams<TPath>
 
 `TParams` is `InferParams<TPath, TParamsSchema>` — the [params schema](#params-validation)'s output when one is declared, otherwise the raw string params inferred from the path. `parse` applies the params schema: a rejected URL returns `null`, exactly like a pattern mismatch. `render` accepts the schema's output values and serializes non-string values (numbers, booleans) with `String()`.
 
-The definition is the input shape with `wrappers` made required (defaulted to `[]`) plus `parse`/`render`. `DataRouteDefinition` keeps the same three-arg `prefetch` signature as the input.
+The definition is the input shape with `wrappers` made required (defaulted to `[]`) plus `parse`/`render`. `DataRouteDefinition` keeps the same three-arg `warm` signature as the input.
 
 ### Composition — `wrapper`, `group`
 
@@ -348,7 +348,7 @@ Identity passthrough that fixes the single type parameter `TRendered`. The defin
 interface WrapperDefinition<TRendered = unknown> {
   readonly id: string;                                          // must be unique across the route map
   readonly component: (props: WrapperComponentProps<TRendered>) => TRendered;
-  readonly prefetch?: (params: RouteParamValues, context: NavigationContext) => void | Promise<void>;
+  readonly warm?: (params: RouteParamValues, context: NavigationContext) => void | Promise<void>;
 }
 
 interface WrapperComponentProps<TRendered = unknown> {
@@ -356,7 +356,7 @@ interface WrapperComponentProps<TRendered = unknown> {
 }
 ```
 
-Note the wrapper `prefetch` takes **two** args `(params, context)` — no `search`, unlike route `prefetch`. Wrapper prefetches are fire-and-forget and not cached. Wrappers are shared across routes, so `params` is always the **raw string params** extracted from the URL (`RouteParamValues`) — a route's [params schema](#params-validation) only transforms what the route's own hooks receive.
+Note the wrapper `warm` takes **two** args `(params, context)` — no `search`, unlike route `warm`. Wrapper warms are fire-and-forget and not cached. Wrappers are shared across routes, so `params` is always the **raw string params** extracted from the URL (`RouteParamValues`) — a route's [params schema](#params-validation) only transforms what the route's own hooks receive.
 
 ```ts
 const publicLayout = wrapper<ReactElement>({
@@ -421,7 +421,7 @@ Applies each middleware to each route with **outermost-first** array semantics (
 
 #### Middleware contract (the `withAuth` pattern)
 
-A middleware that guards protected paths wraps the route's existing `prefetch`, preserving it for the authorised case:
+A middleware that guards protected paths wraps the route's existing `warm`, preserving it for the authorised case:
 
 ```ts
 export function withAuth(loginPath: string): RouteMiddleware {
@@ -430,17 +430,17 @@ export function withAuth(loginPath: string): RouteMiddleware {
       return currentRoute;                          // leave unprotected routes untouched
     }
 
-    const currentPrefetch = currentRoute.prefetch;  // preserve the original
+    const currentWarm = currentRoute.warm;  // preserve the original
 
     return {
       ...currentRoute,
-      prefetch: (params: unknown, search: unknown, context: NavigationContext) => {
+      warm: (params: unknown, search: unknown, context: NavigationContext) => {
         if (!hasDemoAuth(search)) {
           const from = currentRoute.render((params ?? {}) as RouteParamValues | Record<string, never>);
           redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);  // throws RouteRedirect
         }
-        if (currentPrefetch) {
-          return currentPrefetch(params, search, context);
+        if (currentWarm) {
+          return currentWarm(params, search, context);
         }
       },
     };
@@ -471,7 +471,7 @@ function getAuthRedirectHref(input: string | URL): string | null {
 
 ### Runtime redirects — `redirect`, `Redirect`, `RouteRedirect`
 
-> **`Redirect` is not a React component.** It is the `RouteRedirect` class, re-exported from `@canonical/router-core` under the name `Redirect`. There is no `<Redirect>` element. Use these as the throwable redirect primitives inside a `prefetch`/`fetch`-time hook.
+> **`Redirect` is not a React component.** It is the `RouteRedirect` class, re-exported from `@canonical/router-core` under the name `Redirect`. There is no `<Redirect>` element. Use these as the throwable redirect primitives inside a `warm`/`fetch`-time hook.
 
 #### `redirect`
 
@@ -479,7 +479,7 @@ function getAuthRedirectHref(input: string | URL): string | null {
 function redirect(to: string, status: 301 | 302 | 307 | 308 = 302): never;
 ```
 
-Throws a `RouteRedirect` to short-circuit navigation from inside a route or wrapper `prefetch` (or middleware). Status union is **wider** than static redirect routes (which only allow `301 | 308`); default is `302`.
+Throws a `RouteRedirect` to short-circuit navigation from inside a route or wrapper `warm` (or middleware). Status union is **wider** than static redirect routes (which only allow `301 | 308`); default is `302`.
 
 ```ts
 redirect(`/login?from=${encodeURIComponent(from)}`, 302);
@@ -507,10 +507,10 @@ class StatusResponse<TData = unknown> {
 }
 ```
 
-A typed non-success status thrown from a `prefetch`. Surfaces to React error boundaries (client) or the SSR handler (server) for HTTP-like error UI.
+A typed non-success status thrown from a `warm`. Surfaces to React error boundaries (client) or the SSR handler (server) for HTTP-like error UI.
 
 ```ts
-prefetch: async (params) => {
+warm: async (params) => {
   const user = await fetchUser(params.id);
   if (!user) throw new StatusResponse(404, { id: params.id });
 },
@@ -555,7 +555,7 @@ Any [Standard Schema](https://standardschema.dev)-compatible library schema can 
 
 #### Params validation
 
-`params` validates the path params extracted from the URL. The schema's output type replaces `RouteParams<TPath>` everywhere: `content`'s `params` prop, `prefetch`'s first argument, `ParamsOf<TRoute>`, and the `params` accepted by `Link`, `navigate`, and `buildPath`.
+`params` validates the path params extracted from the URL. The schema's output type replaces `RouteParams<TPath>` everywhere: `content`'s `params` prop, `warm`'s first argument, `ParamsOf<TRoute>`, and the `params` accepted by `Link`, `navigate`, and `buildPath`.
 
 **Failure semantics: a rejected URL is a non-match, not an error.** Matching falls through to the next candidate route and ultimately the `notFound` route (404) — the same behaviour as a pattern mismatch. Use it to reject syntactically invalid resource identifiers before any code runs:
 
@@ -586,7 +586,7 @@ const product = route({
 router.buildPath("product", { params: { id: 42 } });   // "/products/42" — typed, serialized with String()
 ```
 
-For *semantic* validation (does the record exist?), keep using `prefetch` + [`StatusResponse`](#statusresponse). For simple syntactic constraints, a `(regex)` modifier in the pattern (`/products/:id(\\d+)`) also works — `params` adds typed coercion on top.
+For *semantic* validation (does the record exist?), keep using `warm` + [`StatusResponse`](#statusresponse). For simple syntactic constraints, a `(regex)` modifier in the pattern (`/products/:id(\\d+)`) also works — `params` adds typed coercion on top.
 
 #### Search validation
 
@@ -697,7 +697,7 @@ function Link<
 >(props: LinkProps<TRoutes, TName>): ReactElement;
 ```
 
-A `forwardRef` anchor that builds `href` from a **typed route name**. Intercepts primary-button clicks → `router.navigate()`, hover (`onMouseEnter`) → `router.prefetch()`, and sets `aria-current="page"` when its target matches the current pathname. Modified clicks, `download`, and `target` fall through to native anchor behaviour.
+A `forwardRef` anchor that builds `href` from a **typed route name**. Intercepts primary-button clicks → `router.navigate()`, hover (`onMouseEnter`) → `router.warm()`, and sets `aria-current="page"` when its target matches the current pathname. Modified clicks, `download`, and `target` fall through to native anchor behaviour.
 
 ```ts
 type LinkProps<TRoutes, TName> =
@@ -751,7 +751,7 @@ All default their generics to `RegisteredRouteMap` / `RegisteredNotFound` (see [
 function useRouter<TRoutes = RegisteredRouteMap, TNotFound = RegisteredNotFound>(): Router<TRoutes, TNotFound>;
 ```
 
-The raw router from the nearest provider. Throws if no provider is present. Use for imperative `navigate`/`buildPath`/`prefetch`.
+The raw router from the nearest provider. Throws if no provider is present. Use for imperative `navigate`/`buildPath`/`warm`.
 
 ```ts
 const router = useRouter();
