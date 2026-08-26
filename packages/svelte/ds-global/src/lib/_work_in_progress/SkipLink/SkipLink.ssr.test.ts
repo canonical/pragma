@@ -28,7 +28,9 @@ describe("SkipLink SSR", () => {
     it("renders custom children when provided", () => {
       const page = render(Component, {
         props: {
-          children: createRawSnippet(() => ({ render: () => "Go to main" })),
+          children: createRawSnippet(() => ({
+            render: () => "<span>Go to main</span>",
+          })),
         } satisfies ComponentProps<typeof Component>,
       });
       expect(componentLocator(page).textContent).toBe("Go to main");

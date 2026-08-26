@@ -12,7 +12,7 @@ const componentCssClassName = "ds skip-link";
  * `SkipLink` should be placed near the top of your document body, before the `<main>` element.
  * The `<main>` element should have a `tabindex` of `-1` to prevent it from receiving focus from the keyboard without using the skip link.
  *
- * @implements ds:site.pattern.skip_link
+ * @implements ds:global.pattern.skip_link
  */
 const SkipLink = ({
   className,
