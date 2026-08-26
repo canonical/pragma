@@ -15,7 +15,7 @@ describe("HiddenEvents component", () => {
 
   describe("basics", () => {
     it("renders", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(componentLocator(page)).toBeInTheDocument();
     });
   });
@@ -25,14 +25,20 @@ describe("HiddenEvents component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = componentLocator(page);
       await expect.element(element).toHaveClass("ds");
       await expect.element(element).toHaveClass("timeline-hidden-events");
@@ -40,7 +46,10 @@ describe("HiddenEvents component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, { ...baseProps, style: "color: orange;" });
+      const page = await render(Component, {
+        ...baseProps,
+        style: "color: orange;",
+      });
       await expect
         .element(componentLocator(page))
         .toHaveStyle({ color: "orange" });
@@ -49,18 +58,18 @@ describe("HiddenEvents component", () => {
 
   describe("Renders", () => {
     it("hidden events number", async () => {
-      const page = render(Component, { ...baseProps, numHidden: 888 });
+      const page = await render(Component, { ...baseProps, numHidden: 888 });
       await expect.element(componentLocator(page)).toHaveTextContent("888");
     });
 
     describe("Links", () => {
       it("without the links by default", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect.element(page.getByRole("link")).not.toBeInTheDocument();
       });
 
       it("renders child links", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           children: oneLink,
         });
@@ -70,7 +79,7 @@ describe("HiddenEvents component", () => {
       });
 
       it("renders multiple child links", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           children: multipleLinks,
         });

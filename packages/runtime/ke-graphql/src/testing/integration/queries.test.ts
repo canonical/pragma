@@ -107,6 +107,7 @@ describe("ds-realistic resolution", () => {
     expect(subcomponents.edges).toHaveLength(1);
     expect(subcomponents.edges[0]?.node.standalone).toBe(false);
     expect(
+      // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
       (subcomponents.edges[0]?.node.parentComponent as { name: string }).name,
     ).toBe("Button");
     // synthetic inverse: reverse assertions found via the inverse loader
@@ -186,6 +187,7 @@ describe("ds-realistic resolution", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     const meta = (result.data?.component as Record<string, unknown>)
       ._meta as Record<string, unknown>;
     const type = meta.type as Record<string, unknown>;
@@ -215,6 +217,7 @@ describe("ds-realistic resolution", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     const prefixes = (result.data?.ontologies as Array<{ prefix: string }>).map(
       (o) => o.prefix,
     );
@@ -256,6 +259,7 @@ describe("embedded blank nodes", () => {
       `{ standard(uri: "ex:s1") { title examples { code language } } }`,
     );
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     const examples = (result.data?.standard as Record<string, unknown>)
       .examples as Array<Record<string, unknown>>;
     expect(examples).toHaveLength(2);
@@ -271,10 +275,13 @@ describe("coercion", () => {
       onRuntimeWarning: (w) => warnings.push(w.reason),
     });
     const active = await run(compiled, `{ item(uri: "ex:i1") { active } }`);
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((active.data?.item as { active: boolean }).active).toBe(true);
     const label = await run(compiled, `{ item(uri: "ex:i3") { label } }`);
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((label.data?.item as { label: string }).label).toBe("Tagged");
     const summary = await run(compiled, `{ item(uri: "ex:i5") { summary } }`);
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((summary.data?.item as { summary: string }).summary).toBe("");
   });
 

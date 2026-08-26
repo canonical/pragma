@@ -2,17 +2,5 @@
   "extends": ["@canonical/biome-config"],
   "files": {
     "includes": ["**/src/**", "**/demo/**", "**/*.json"]
-  },
-  "overrides": [
-    {
-      "includes": ["**/*.test.ts"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnsafeOptionalChaining": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }

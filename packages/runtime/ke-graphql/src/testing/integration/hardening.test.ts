@@ -84,6 +84,7 @@ describe("forced abstract with direct instances (C1 + V015)", () => {
     });
     if (!isIncrementalResults(execution)) {
       expect(execution.errors).toBeUndefined();
+      // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
       expect((execution.data?.node as { __typename: string }).__typename).toBe(
         "Dog",
       );

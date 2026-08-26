@@ -80,6 +80,7 @@ describe("createSchemaPlugin", () => {
       source: `{ thing(uri: "ex:widget") { name } }`,
       contextValue: context,
     });
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.thing as { name: string }).name).toBe("Widget");
   });
 
@@ -128,6 +129,7 @@ describe("createSchemaPlugin", () => {
     });
     expect(result.errors).toBeUndefined();
     expect(result.data?.hello).toBe("world");
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.thing as { shout: string }).shout).toBe("ex:widget!");
   });
 
@@ -162,6 +164,7 @@ describe("createSchemaPlugin", () => {
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.firstThing as { name: string }).name).toBe("Widget");
   });
 
@@ -204,6 +207,7 @@ describe("createSchemaPlugin", () => {
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.thing as { label: string }).label).toBe("The Widget");
   });
 
@@ -313,6 +317,7 @@ describe("createSchemaPlugin", () => {
       contextValue: api?.createContext(store),
     });
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.thing as { name: string }).name).toBe("Widget");
   });
 });

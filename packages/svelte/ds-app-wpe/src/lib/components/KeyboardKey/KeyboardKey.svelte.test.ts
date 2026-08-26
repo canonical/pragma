@@ -4,13 +4,13 @@ import Component from "./KeyboardKey.svelte";
 
 describe("KeyboardKey component", () => {
   it("renders the label for a key", async () => {
-    const page = render(Component, { keyValue: "enter" });
+    const page = await render(Component, { keyValue: "enter" });
     await expect.element(page.getByText("↵")).toBeVisible();
   });
 
   describe("attributes", () => {
     it("passes through additional props", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         keyValue: "ctrl",
         "data-testid": "test-component",
       });
@@ -20,14 +20,17 @@ describe("KeyboardKey component", () => {
     });
 
     it("sets an accessible label for symbol keys", async () => {
-      const page = render(Component, { keyValue: "enter" });
+      const page = await render(Component, { keyValue: "enter" });
       await expect
         .element(page.getByText("↵"))
         .toHaveAttribute("aria-label", "Enter");
     });
 
     it("applies base and custom classes", async () => {
-      const page = render(Component, { keyValue: "ctrl", class: "test-class" });
+      const page = await render(Component, {
+        keyValue: "ctrl",
+        class: "test-class",
+      });
       const el = page.getByText("Ctrl");
       await expect.element(el).toHaveClass("ds");
       await expect.element(el).toHaveClass("keyboard-key");

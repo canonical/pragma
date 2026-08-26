@@ -15,7 +15,7 @@ describe("ApplicationLayout component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders children in the content region", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(page.getByText("Test content")).toBeVisible();
     expect(
       componentRoot(page).querySelector(":scope > .content")?.textContent,
@@ -23,7 +23,7 @@ describe("ApplicationLayout component", () => {
   });
 
   it("applies the base and custom class to the root", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       class: "custom-class",
     });
@@ -34,7 +34,7 @@ describe("ApplicationLayout component", () => {
   });
 
   it("renders the navigation slot in the navigation region", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       navigation: createRawSnippet(() => ({
         render: () => "<span>Nav</span>",
@@ -49,7 +49,7 @@ describe("ApplicationLayout component", () => {
   });
 
   it("omits the navigation region when the slot is not provided", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentRoot(page)).toBeInTheDocument();
     expect(
       componentRoot(page).querySelector(":scope > .navigation"),
@@ -57,7 +57,7 @@ describe("ApplicationLayout component", () => {
   });
 
   it("passes through additional props", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       "data-testid": "test-component",
     });

@@ -14,7 +14,7 @@ describe("Badge component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -23,21 +23,27 @@ describe("Badge component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("badge");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -49,13 +55,13 @@ describe("Badge component", () => {
 
   describe("Display value", () => {
     it("displays the capped variant by default", async () => {
-      const page = render(Component, { ...baseProps, value: 10000 });
+      const page = await render(Component, { ...baseProps, value: 10000 });
       await expect.element(componentLocator(page)).toHaveTextContent("999+");
     });
 
     describe("capped", () => {
       it("displays 0 for negative values", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: -1,
           variant: "capped",
@@ -64,7 +70,7 @@ describe("Badge component", () => {
       });
 
       it("rounds to the nearest integer", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: 42.6,
           variant: "capped",
@@ -73,7 +79,7 @@ describe("Badge component", () => {
       });
 
       it("displays the values up to 999", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: 999,
           variant: "capped",
@@ -82,7 +88,7 @@ describe("Badge component", () => {
       });
 
       it("caps the value at 999", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: 10000,
           variant: "capped",
@@ -93,7 +99,7 @@ describe("Badge component", () => {
 
     describe("rounded", () => {
       it("displays 0 for negative values", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: -1,
           variant: "rounded",
@@ -102,7 +108,7 @@ describe("Badge component", () => {
       });
 
       it("rounds to the nearest integer", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: 42.6,
           variant: "rounded",
@@ -120,7 +126,7 @@ describe("Badge component", () => {
         [1_000_000_000, "1B"],
         [1_234_567_890_123, "1.2T"],
       ])("displays %d as %s", async (input, expected) => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           value: input,
           variant: "rounded",

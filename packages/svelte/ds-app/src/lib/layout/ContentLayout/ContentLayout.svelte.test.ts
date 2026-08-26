@@ -15,7 +15,7 @@ describe("ContentLayout component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders children as direct grid items", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
 
     await expect.element(page.getByText("Card A")).toBeVisible();
     expect(
@@ -24,7 +24,7 @@ describe("ContentLayout component", () => {
   });
 
   it("applies the base and custom class to the root", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       class: "custom-class",
     });
@@ -35,7 +35,7 @@ describe("ContentLayout component", () => {
   });
 
   it("uses the fixed-responsive grid preset by default", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
 
     await expect.element(componentRoot(page)).toHaveClass("grid");
     await expect.element(componentRoot(page)).toHaveClass("responsive");
@@ -43,7 +43,7 @@ describe("ContentLayout component", () => {
   });
 
   it("switches to the intrinsic grid preset via the grid prop", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       grid: "intrinsic",
     });
@@ -54,7 +54,7 @@ describe("ContentLayout component", () => {
   });
 
   it("passes through additional props", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       "data-testid": "test-component",
     });

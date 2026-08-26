@@ -14,7 +14,7 @@ describe("UserAvatar component", () => {
 
   describe("basics", () => {
     it("renders", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(page.getByTestId("user-avatar")).toBeVisible();
     });
   });
@@ -24,14 +24,20 @@ describe("UserAvatar component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(page.getByTestId("user-avatar"))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = page.getByTestId("user-avatar");
       await expect.element(element).toHaveClass("test-class");
       await expect.element(element).toHaveClass("ds");
@@ -39,7 +45,7 @@ describe("UserAvatar component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -51,7 +57,7 @@ describe("UserAvatar component", () => {
 
   describe("renders as <img>", () => {
     it("when userAvatarUrl and userName are provided", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         userAvatarUrl: avatarUrl,
         userName: "John Doe",
@@ -67,7 +73,7 @@ describe("UserAvatar component", () => {
     });
 
     it("when userAvatarUrl is provided without userName", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         userAvatarUrl: avatarUrl,
       });
@@ -84,7 +90,10 @@ describe("UserAvatar component", () => {
 
   describe("renders as <abbr>", () => {
     it("when userName is provided without userAvatarUrl", async () => {
-      const page = render(Component, { ...baseProps, userName: "John Doe" });
+      const page = await render(Component, {
+        ...baseProps,
+        userName: "John Doe",
+      });
 
       await expectIs("abbr", page);
       await expect.element(page.getByTitle("John Doe")).toBeVisible();
@@ -93,7 +102,7 @@ describe("UserAvatar component", () => {
 
   describe("renders as icon", () => {
     it("when no user data is provided", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
 
       await expectIs("svg", page);
     });
@@ -101,7 +110,7 @@ describe("UserAvatar component", () => {
 
   describe("imageAttributes", () => {
     it("applies img-specific attributes to the avatar image", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         userAvatarUrl: avatarUrl,
         imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
@@ -113,7 +122,7 @@ describe("UserAvatar component", () => {
     });
 
     it("are not applied when rendering as <abbr>", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         userName: "John Doe",
         imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
@@ -126,7 +135,7 @@ describe("UserAvatar component", () => {
     });
 
     it("are not applied when rendering as icon", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         imageAttributes: { alt: "John Doe's avatar", loading: "lazy" },
       });
@@ -140,7 +149,7 @@ describe("UserAvatar component", () => {
 
   describe("fallback behaviors", () => {
     it("falls back to <abbr> when JS handles image error and userName is provided", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         userAvatarUrl: "invalid-url",
         userName: "John Doe",
@@ -154,7 +163,7 @@ describe("UserAvatar component", () => {
     });
 
     it("falls back to icon when JS handles image error and userName is missing", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         userAvatarUrl: "invalid-url",
       });
@@ -167,7 +176,7 @@ describe("UserAvatar component", () => {
 
     describe("when no JS is available", () => {
       it("keeps rendering as <img> in no-JS when userName is provided", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           userAvatarUrl: `invalid-url`,
           userName: "John Doe",
@@ -182,7 +191,7 @@ describe("UserAvatar component", () => {
       });
 
       it("keeps rendering as <img> in no-JS without userName", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           userAvatarUrl: "invalid-url",
           onerror: () => {},
@@ -201,7 +210,7 @@ describe("UserAvatar component", () => {
     const sizeModifiers = ["small", "large"] as const;
 
     it.each(sizeModifiers)("applies %s modifier", async (size) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         size,
       });
@@ -222,7 +231,7 @@ const elements = ["img", "abbr", "svg"] as const;
 
 async function expectIs(
   element: (typeof elements)[number],
-  page: ReturnType<typeof render>,
+  page: Awaited<ReturnType<typeof render>>,
 ) {
   const rootLocator = page.getByTestId("user-avatar");
 

@@ -9,7 +9,7 @@ describe("NumberInput component", () => {
   const baseProps = {} satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeVisible();
   });
 
@@ -18,21 +18,27 @@ describe("NumberInput component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("number-input");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -44,14 +50,14 @@ describe("NumberInput component", () => {
 
   describe("Input attributes", () => {
     it("sets type to number", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("type", "number");
     });
 
     it("applies value", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: 123,
       });
@@ -60,12 +66,12 @@ describe("NumberInput component", () => {
 
     describe("Disabled state", () => {
       it("isn't disabled by default", async () => {
-        const page = render(Component, { ...baseProps });
+        const page = await render(Component, { ...baseProps });
         await expect.element(componentLocator(page)).not.toBeDisabled();
       });
 
       it("can be disabled", async () => {
-        const page = render(Component, {
+        const page = await render(Component, {
           ...baseProps,
           disabled: true,
         });
@@ -76,7 +82,7 @@ describe("NumberInput component", () => {
 
   describe("Validation attributes", () => {
     it("applies required", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         required: true,
       });
@@ -90,7 +96,7 @@ describe("NumberInput component", () => {
     });
 
     it("applies min and max", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         min: 5,
         max: 10,

@@ -15,12 +15,12 @@ const baseProps = {
 
 describe("SearchBox component", () => {
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeVisible();
   });
 
   it("applies classes", async () => {
-    const page = render(Component, { ...baseProps, class: "test-class" });
+    const page = await render(Component, { ...baseProps, class: "test-class" });
     await expect.element(componentLocator(page)).toHaveClass("test-class");
     await expect.element(componentLocator(page)).toHaveClass("ds");
     await expect.element(componentLocator(page)).toHaveClass("search-box");
@@ -28,13 +28,11 @@ describe("SearchBox component", () => {
 
   describe("basics", () => {
     it("doesn't throw", async () => {
-      expect(() => {
-        render(Component, { ...baseProps });
-      }).not.toThrow();
+      await render(Component, { ...baseProps });
     });
 
     it("renders wrapper, input and button", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(wrapperLocator(page)).toBeInTheDocument();
       await expect.element(inputLocator(page)).toBeInTheDocument();
       await expect.element(buttonLocator(page)).toBeInTheDocument();
@@ -46,7 +44,7 @@ describe("SearchBox component", () => {
       ["name", "test-name"],
       ["placeholder", "test-placeholder"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         [attribute]: expected,
       });
@@ -56,12 +54,15 @@ describe("SearchBox component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, { style: "color: orange;", ...baseProps });
+      const page = await render(Component, {
+        style: "color: orange;",
+        ...baseProps,
+      });
       await expect.element(inputLocator(page)).toHaveStyle({ color: "orange" });
     });
 
     it("can be required", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         required: true,
       });
@@ -69,7 +70,7 @@ describe("SearchBox component", () => {
     });
 
     it("applies value", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "test-value",
       });
@@ -79,20 +80,23 @@ describe("SearchBox component", () => {
 
   describe("button and input", () => {
     it("are not disabled by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect.element(inputLocator(page)).toBeEnabled();
       await expect.element(buttonLocator(page)).toBeEnabled();
     });
 
     it("can be disabled", async () => {
-      const page = render(Component, { ...baseProps, disabled: true });
+      const page = await render(Component, { ...baseProps, disabled: true });
       await expect.element(inputLocator(page)).toBeDisabled();
       await expect.element(buttonLocator(page)).toBeDisabled();
     });
 
     it("share the same accessible name", async () => {
       const label = "test-label";
-      const page = render(Component, { ...baseProps, "aria-label": label });
+      const page = await render(Component, {
+        ...baseProps,
+        "aria-label": label,
+      });
       await expect
         .element(page.getByRole("searchbox", { name: label }))
         .toBeInTheDocument();
@@ -102,7 +106,7 @@ describe("SearchBox component", () => {
     });
 
     it("renders a default search button when children are not provided", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
       });
       await expect
@@ -111,7 +115,7 @@ describe("SearchBox component", () => {
     });
 
     it("composed SearchButton inherits aria-label from SearchBox context", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         children: inheritedChildren,
       });
@@ -121,7 +125,7 @@ describe("SearchBox component", () => {
     });
 
     it("composed SearchButton inherits disabled from SearchBox context", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         disabled: true,
         children: inheritedChildren,
@@ -133,7 +137,7 @@ describe("SearchBox component", () => {
     });
 
     it("composed SearchButton can override inherited aria-label and disabled", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         disabled: true,
         children: overriddenChildren,

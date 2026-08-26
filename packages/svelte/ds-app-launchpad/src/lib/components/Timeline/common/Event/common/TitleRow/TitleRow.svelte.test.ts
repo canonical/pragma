@@ -19,7 +19,7 @@ describe("TitleRow component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, baseProps);
+    const page = await render(Component, baseProps);
     await expect.element(componentLocator(page)).toBeInTheDocument();
     await expect
       .element(page.getByText("Title Row Content"))
@@ -27,7 +27,7 @@ describe("TitleRow component", () => {
   });
 
   it("renders leadingText", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       leadingText: "Leading Text",
     });
@@ -39,21 +39,30 @@ describe("TitleRow component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies style", async () => {
-      const page = render(Component, { ...baseProps, style: "color: orange;" });
+      const page = await render(Component, {
+        ...baseProps,
+        style: "color: orange;",
+      });
       await expect
         .element(componentLocator(page))
         .toHaveStyle("color: orange;");
     });
 
     it("applies class", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = componentLocator(page);
       await expect.element(element).toHaveClass("ds");
       await expect.element(element).toHaveClass("timeline-title-row");

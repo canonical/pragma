@@ -16,17 +16,17 @@ describe("Card component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
   it("applies ds card classes", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toHaveClass("ds", "card");
   });
 
   it("renders children", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       children: createRawSnippet(() => ({
         render: () => `<span>Content</span>`,
@@ -40,14 +40,17 @@ describe("Card component", () => {
       ["id", "test-id"],
       ["aria-label", "test-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies custom class", async () => {
-      const page = render(Component, { ...baseProps, class: "custom" });
+      const page = await render(Component, { ...baseProps, class: "custom" });
       await expect
         .element(componentLocator(page))
         .toHaveClass("ds", "card", "custom");
@@ -57,7 +60,7 @@ describe("Card component", () => {
 
 describe("Card.Header", () => {
   it("renders with card-header class", async () => {
-    const page = render(Header, {
+    const page = await render(Header, {
       "data-testid": "header",
       children: createRawSnippet(() => ({
         render: () => `<span>Title</span>`,
@@ -71,7 +74,7 @@ describe("Card.Header", () => {
 
 describe("Card.Content", () => {
   it("renders with card-content class", async () => {
-    const page = render(Content, {
+    const page = await render(Content, {
       "data-testid": "content",
       children: createRawSnippet(() => ({ render: () => `<span>Body</span>` })),
     });
@@ -83,7 +86,7 @@ describe("Card.Content", () => {
 
 describe("Card.Footer", () => {
   it("renders with card-footer class", async () => {
-    const page = render(Footer, {
+    const page = await render(Footer, {
       "data-testid": "footer",
       children: createRawSnippet(() => ({ render: () => `<span>Tag</span>` })),
     });
@@ -95,7 +98,7 @@ describe("Card.Footer", () => {
 
 describe("Card.Image", () => {
   it("renders an img with card-image class", async () => {
-    const page = render(Image, {
+    const page = await render(Image, {
       "data-testid": "image",
       src: "test.png",
       alt: "test",

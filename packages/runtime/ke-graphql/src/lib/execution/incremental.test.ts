@@ -99,6 +99,7 @@ describe("executeLocal (in-process execution)", () => {
     expect(isIncrementalResults(execution)).toBe(false);
     if (!isIncrementalResults(execution)) {
       expect(execution.errors).toBeUndefined();
+      // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
       expect((execution.data?.component as Record<string, unknown>).name).toBe(
         "Button",
       );
@@ -173,6 +174,7 @@ describe("relayFormatAdapter", () => {
     }
     // initial payload: plain data, no path
     expect(payloads[0]?.path).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((payloads[0]?.data?.component as Record<string, unknown>).name).toBe(
       "Button",
     );
@@ -183,6 +185,7 @@ describe("relayFormatAdapter", () => {
     expect(last?.path).toEqual(["component"]);
     expect(last?.label).toBe("summary");
     expect(last?.extensions?.is_final).toBe(true);
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((last?.data as Record<string, unknown>).summary).toBe(
       "Primary action trigger.",
     );
@@ -613,6 +616,7 @@ describe("extractStatic (build-time static extraction)", () => {
     );
     expect(perEntity).toEqual(["ThingQuery:ex:widget"]);
     const widget = results.get("ThingQuery:ex:widget");
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((widget?.data?.thing as { name: string }).name).toBe("Widget");
   });
 

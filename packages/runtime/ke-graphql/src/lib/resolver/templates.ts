@@ -227,7 +227,7 @@ export const createEmbeddedSingularResolver = (
   return (parent, _args, ctx) => {
     const values = parent.triples.get(field.propertyUri);
     const v = values?.find((value) => value.kind === "blank");
-    if (v?.kind !== "blank") {
+    if (!v || v.kind !== "blank") {
       return null;
     }
     return {

@@ -20,7 +20,7 @@ describe("SkipLink component", () => {
 
     it("moves focus to the main element when activated", async () => {
       mainEl.id = "main";
-      const page = render(Component);
+      const page = await render(Component);
       componentLocator(page).element().focus();
       await componentLocator(page).click();
       expect(document.activeElement).toBe(mainEl);
@@ -28,7 +28,7 @@ describe("SkipLink component", () => {
 
     it("moves focus to a custom main element when mainId is set", async () => {
       mainEl.id = "custom-content";
-      const page = render(Component, { mainId: "custom-content" });
+      const page = await render(Component, { mainId: "custom-content" });
       componentLocator(page).element().focus();
       await componentLocator(page).click();
       expect(document.activeElement).toBe(mainEl);

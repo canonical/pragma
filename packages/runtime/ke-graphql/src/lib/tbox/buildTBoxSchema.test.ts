@@ -116,8 +116,11 @@ describe("Ontology and lookups", () => {
     >;
     const ex = ontologies.find((o) => o.prefix === "ex");
     expect(ex?.namespace).toBe("http://example.org/");
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((ex?.classes as unknown[]).length).toBe(1);
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((ex?.properties as unknown[]).length).toBe(2);
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.ontology as { prefix: string }).prefix).toBe("ex");
     expect(result.data?.unknown).toBeNull();
   });
@@ -145,6 +148,7 @@ describe("Ontology and lookups", () => {
     expect(property.inverse).toBeNull();
     expect(result.data?.missing).toBeNull();
     // Prefixed form resolves like ontologyClass does.
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.prefixed as { uri: string }).uri).toBe(
       "http://example.org/count",
     );
@@ -175,10 +179,12 @@ describe("Ontology and lookups", () => {
     expect(rel.range).toBe("http://example.org/Cat");
     expect((rel.domain as { label: string }).label).toBe("Thing");
     // unknown range echoes the raw URI string.
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.weird as { range: string }).range).toBe(
       "http://external.example/Mystery",
     );
     // a property with no rdfs:domain has a null domain.
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.domainless as { domain: unknown }).domain).toBeNull();
     // an inverse pair exposes the inverse property; definition is absent here.
     const inv = result.data?.inv as {
@@ -209,9 +215,11 @@ describe("Ontology and lookups", () => {
     expect(cls.definition).toBe("A reusable UI component.");
     expect(cls.namespace).toBe("ds");
     // prefixed-form fallback resolves both class and property…
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.byPrefixed as { uri: string }).uri).toBe(
       "https://ds.canonical.com/Component",
     );
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.propByPrefixed as { uri: string }).uri).toBe(
       "https://ds.canonical.com/name",
     );
@@ -270,6 +278,7 @@ describe("Ontology and lookups", () => {
       }`,
     );
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     const properties = (result.data?.ontologyClass as Record<string, unknown>)
       .properties as Array<{
       property: { label: string };
@@ -316,6 +325,7 @@ describe("EntityMeta edge cases", () => {
     );
     expect(result.errors).toBeUndefined();
     expect(
+      // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
       (result.data?.thing as { _meta: { field: unknown } })._meta.field,
     ).toBeNull();
   });
@@ -328,6 +338,7 @@ describe("datatype list fields", () => {
     });
     const result = await run(compiled, `{ thing(uri: "ex:widget") { names } }`);
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.thing as { names: string[] }).names).toEqual([
       "Widget",
     ]);
@@ -500,6 +511,7 @@ describe("TBox defensive branches (synthetic parents)", () => {
       }`,
     });
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.unionProp as { range: string }).range).toBe(
       "Cat | Dog",
     );
@@ -556,6 +568,7 @@ describe("TBox defensive branches (synthetic parents)", () => {
       source: `{ orphanMeta { fields { property { uri } } } }`,
     });
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.orphanMeta as { fields: unknown[] }).fields).toEqual(
       [],
     );

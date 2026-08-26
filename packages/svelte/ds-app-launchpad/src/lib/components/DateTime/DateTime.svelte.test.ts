@@ -27,7 +27,7 @@ describe("DateTime component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, baseProps);
+    const page = await render(Component, baseProps);
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -36,21 +36,30 @@ describe("DateTime component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, value) => {
-      const page = render(Component, { ...baseProps, [attribute]: value });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: value,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, value);
     });
 
     it("applies style", async () => {
-      const page = render(Component, { ...baseProps, style: "color: orange;" });
+      const page = await render(Component, {
+        ...baseProps,
+        style: "color: orange;",
+      });
       await expect
         .element(componentLocator(page))
         .toHaveStyle("color: orange;");
     });
 
     it("applies class", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const element = componentLocator(page);
       await expect.element(element).toHaveClass("test-class");
     });
@@ -58,21 +67,21 @@ describe("DateTime component", () => {
 
   describe("datetime attribute", () => {
     it("applies correct datetime attribute for Date input", async () => {
-      const page = render(Component, baseProps);
+      const page = await render(Component, baseProps);
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("datetime", date.toISOString());
     });
 
     it("applies correct datetime attribute for timestamp input", async () => {
-      const page = render(Component, { ...baseProps, date: timestamp });
+      const page = await render(Component, { ...baseProps, date: timestamp });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("datetime", date.toISOString());
     });
 
     it("applies correct datetime attribute for date string input", async () => {
-      const page = render(Component, { ...baseProps, date: dateString });
+      const page = await render(Component, { ...baseProps, date: dateString });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("datetime", date.toISOString());
@@ -80,7 +89,7 @@ describe("DateTime component", () => {
   });
 
   it("accepts custom formatter", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       formatter: {
         format: (date: Date) => `Formatted: ${date.toISOString()}`,

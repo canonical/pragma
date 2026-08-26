@@ -15,7 +15,7 @@ describe("Chip component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -24,21 +24,27 @@ describe("Chip component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("chip");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -50,13 +56,16 @@ describe("Chip component", () => {
 
   describe("Initial Rendering", () => {
     it("should render with default props as a non-interactive element", async () => {
-      const page = render(Component, { ...baseProps, value: "Default Chip" });
+      const page = await render(Component, {
+        ...baseProps,
+        value: "Default Chip",
+      });
 
       await expect.element(page.getByRole("button")).not.toBeInTheDocument();
     });
 
     it("should render with a lead element", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         lead: "Key",
         value: "Value",
@@ -70,7 +79,7 @@ describe("Chip component", () => {
       const icon: Snippet = createRawSnippet(() => ({
         render: () => `<div data-testid="custom-icon"></div>`,
       }));
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Icon Chip",
         icon,
@@ -80,7 +89,7 @@ describe("Chip component", () => {
     });
 
     it("should apply custom class and modifiers", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Styled Chip",
         class: "extra-class",
@@ -94,7 +103,7 @@ describe("Chip component", () => {
     });
 
     it("should not render a button when dismiss is provided", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Dismissible",
         ondismiss: () => {},
@@ -109,7 +118,7 @@ describe("Chip component", () => {
     });
 
     it("should not render a button when readonly is provided", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Readonly",
         readonly: true,
@@ -124,7 +133,7 @@ describe("Chip component", () => {
   describe("Interactions & States", () => {
     it("should render a working button when onclick is provided", async () => {
       const onclick = vi.fn();
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Clickable",
         onclick,
@@ -138,7 +147,7 @@ describe("Chip component", () => {
 
     it("should render a working dismiss button when ondismiss is provided", async () => {
       const ondismiss = vi.fn();
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         value: "Dismissible",
         ondismiss,

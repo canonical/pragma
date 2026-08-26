@@ -68,6 +68,7 @@ describe("extraction artifact (DMMF-style boot)", () => {
       contextValue: rebuilt.createContext(store),
     });
     expect(result.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((result.data?.thing as { name: string }).name).toBe("Widget");
   });
 
@@ -163,6 +164,7 @@ describe("lazy store (TBox needs no store)", () => {
       contextValue: ctx,
     });
     expect(tbox.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((tbox.data?.ontologyClass as { label: string }).label).toBe("Thing");
 
     // ABox: blocked until the store arrives.
@@ -180,6 +182,7 @@ describe("lazy store (TBox needs no store)", () => {
     releaseStore(store);
     const resolved = await abox;
     expect(resolved.errors).toBeUndefined();
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((resolved.data?.thing as { name: string }).name).toBe("Widget");
   });
 });
@@ -264,6 +267,7 @@ describe("slice-before-hydrate listings", () => {
       variableValues: { c: connection.edges[0]?.cursor },
       contextValue: result.createContext(store),
     });
+    // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
     expect((page2.data?.modifiers as { edges: unknown[] }).edges).toHaveLength(
       0,
     );
@@ -290,6 +294,7 @@ describe("store-free TBox (tboxLoader removed)", () => {
     });
     expect(tbox.errors).toBeUndefined();
     expect(
+      // biome-ignore lint/correctness/noUnsafeOptionalChaining: test assertion — value asserted present
       (tbox.data?.ontologyProperty as { acceptanceCriteria: string })
         .acceptanceCriteria,
     ).toBe("Must be a human-readable display name.");

@@ -17,7 +17,7 @@ describe("Select component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(selectLocator(page)).toBeVisible();
     await expect
       .element(page.getByRole("option"))
@@ -29,14 +29,20 @@ describe("Select component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(selectLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       const wrapper = componentLocator(page).element();
       await expect.element(wrapper).toHaveClass("test-class");
       await expect.element(wrapper).toHaveClass("ds");
@@ -44,7 +50,7 @@ describe("Select component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -53,7 +59,7 @@ describe("Select component", () => {
   });
 
   it("renders when multiple is true", async () => {
-    const page = render(Component, { ...baseProps, multiple: true });
+    const page = await render(Component, { ...baseProps, multiple: true });
     await expect.element(page.getByRole("listbox")).toHaveAttribute("multiple");
     await expect
       .element(page.getByRole("option"))

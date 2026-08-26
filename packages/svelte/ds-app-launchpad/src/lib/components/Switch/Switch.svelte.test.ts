@@ -8,7 +8,7 @@ describe("Switch component", () => {
   const baseProps = {};
 
   it("renders", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toBeInTheDocument();
   });
 
@@ -17,21 +17,27 @@ describe("Switch component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies classes", async () => {
-      const page = render(Component, { ...baseProps, class: "test-class" });
+      const page = await render(Component, {
+        ...baseProps,
+        class: "test-class",
+      });
       await expect.element(componentLocator(page)).toHaveClass("test-class");
       await expect.element(componentLocator(page)).toHaveClass("ds");
       await expect.element(componentLocator(page)).toHaveClass("switch");
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -43,7 +49,7 @@ describe("Switch component", () => {
 
   describe("Switch state", () => {
     it("is not checked by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const switchElement = componentLocator(page);
       await expect.element(switchElement).not.toBeChecked();
       await expect
@@ -52,7 +58,7 @@ describe("Switch component", () => {
     });
 
     it("can be checked", async () => {
-      const page = render(Component, { ...baseProps, checked: true });
+      const page = await render(Component, { ...baseProps, checked: true });
       const switchElement = componentLocator(page);
       await expect.element(switchElement).toBeChecked();
       await expect
@@ -61,7 +67,7 @@ describe("Switch component", () => {
     });
 
     it("isn't disabled by default", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const switchElement = componentLocator(page);
       await expect.element(switchElement).not.toBeDisabled();
       await expect
@@ -70,7 +76,7 @@ describe("Switch component", () => {
     });
 
     it("can be disabled", async () => {
-      const page = render(Component, { ...baseProps, disabled: true });
+      const page = await render(Component, { ...baseProps, disabled: true });
       const switchElement = componentLocator(page);
       await expect.element(switchElement).toBeDisabled();
       await expect
@@ -79,7 +85,7 @@ describe("Switch component", () => {
     });
 
     it("toggles checked state on click", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const switchElement = componentLocator(page);
 
       await expect.element(switchElement).not.toBeChecked();
@@ -99,7 +105,7 @@ describe("Switch component", () => {
 
   describe("Group controlled", () => {
     it("isn't checked if group and value are undefined", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         group: undefined,
         value: undefined,
@@ -108,7 +114,7 @@ describe("Switch component", () => {
     });
 
     it("isn't checked if group doesn't include value", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         group: ["a", "b"],
         value: "c",
@@ -117,7 +123,7 @@ describe("Switch component", () => {
     });
 
     it("is checked if group includes value", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         group: ["a", "b", "c"],
         value: "c",
@@ -130,7 +136,7 @@ describe("Switch component", () => {
     it("emits change event on click", async () => {
       const onchange = vi.fn();
 
-      const page = render(Component, { ...baseProps, onchange });
+      const page = await render(Component, { ...baseProps, onchange });
       const switchElement = componentLocator(page);
       await switchElement.click();
       expect(onchange).toHaveBeenCalledOnce();
@@ -139,14 +145,14 @@ describe("Switch component", () => {
 
   describe("Accessibility", () => {
     it("can be focused", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const switchElement = componentLocator(page);
       (switchElement.element() as HTMLElement).focus();
       await expect.element(switchElement).toHaveFocus();
     });
 
     it("can be toggled with space key", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       const switchElement = componentLocator(page);
       await expect.element(switchElement).not.toBeChecked();
       (switchElement.element() as HTMLElement).focus();
@@ -159,6 +165,6 @@ describe("Switch component", () => {
   });
 });
 
-function componentLocator(page: ReturnType<typeof render>): Locator {
+function componentLocator(page: Awaited<ReturnType<typeof render>>): Locator {
   return page.getByRole("switch");
 }

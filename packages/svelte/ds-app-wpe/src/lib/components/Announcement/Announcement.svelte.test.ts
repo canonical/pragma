@@ -15,14 +15,14 @@ describe("Announcement component", () => {
   } satisfies ComponentProps<typeof Component>;
 
   it("renders content", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect
       .element(page.getByText("Announcement content"))
       .toBeInTheDocument();
   });
 
   it("renders an optional heading as string", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       heading: "System Maintenance",
     });
@@ -30,7 +30,7 @@ describe("Announcement component", () => {
   });
 
   it("renders an optional heading as snippet", async () => {
-    const page = render(Component, {
+    const page = await render(Component, {
       ...baseProps,
       heading: createRawSnippet(() => ({
         render: () => `<strong>Bold Heading</strong>`,
@@ -40,23 +40,26 @@ describe("Announcement component", () => {
   });
 
   it("omits the heading element when heading is not provided", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     const root = componentLocator(page).element();
     expect(root.querySelector(".heading")).toBeNull();
   });
 
   it("applies the criticality modifier class", async () => {
-    const page = render(Component, { ...baseProps, criticality: "error" });
+    const page = await render(Component, {
+      ...baseProps,
+      criticality: "error",
+    });
     await expect.element(componentLocator(page)).toHaveClass("error");
   });
 
   it("defaults criticality to information", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     await expect.element(componentLocator(page)).toHaveClass("information");
   });
 
   it("renders a decorative icon element with aria-hidden", async () => {
-    const page = render(Component, { ...baseProps });
+    const page = await render(Component, { ...baseProps });
     const root = componentLocator(page).element();
     const icon = root.querySelector(".icon");
     expect(icon).not.toBeNull();
@@ -68,14 +71,17 @@ describe("Announcement component", () => {
       ["id", "test-id"],
       ["aria-label", "test-aria-label"],
     ])("applies %s", async (attribute, expected) => {
-      const page = render(Component, { ...baseProps, [attribute]: expected });
+      const page = await render(Component, {
+        ...baseProps,
+        [attribute]: expected,
+      });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute(attribute, expected);
     });
 
     it("applies custom class", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         class: "custom-class",
       });
@@ -85,7 +91,7 @@ describe("Announcement component", () => {
     });
 
     it("applies style", async () => {
-      const page = render(Component, {
+      const page = await render(Component, {
         ...baseProps,
         style: "color: orange;",
       });
@@ -95,7 +101,7 @@ describe("Announcement component", () => {
     });
 
     it("passes through additional props", async () => {
-      const page = render(Component, { ...baseProps });
+      const page = await render(Component, { ...baseProps });
       await expect
         .element(componentLocator(page))
         .toHaveAttribute("data-testid", "announcement");
