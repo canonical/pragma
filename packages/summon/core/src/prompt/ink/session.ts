@@ -103,13 +103,17 @@ export class SessionController {
     generator: GeneratorDefinition,
     private readonly onUserCancel?: () => void,
     private readonly cwd?: string,
+    initialAnswers: Readonly<Record<string, unknown>> = {},
   ) {
+    // Seed flag/MCP-provided answers: collectAnswers never asks for them, so
+    // without the seed the confirm gate's preview and the step counter run
+    // against an answer set with those values missing.
     this.current = {
       phase: "idle",
       generator,
-      answers: {},
+      answers: { ...initialAnswers },
       step: 0,
-      total: countApplicable(generator, {}),
+      total: countApplicable(generator, { ...initialAnswers }),
       previewEffects: [],
       progress: [],
     };

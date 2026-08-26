@@ -14,3 +14,4 @@ export {
   getLlmEffectPath,
   isVisibleEffect,
 } from "./effects.js";
+export { default as flagName } from "./flagName.js";

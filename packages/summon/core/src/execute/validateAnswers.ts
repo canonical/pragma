@@ -12,11 +12,8 @@
  * {@link execute} so both interactive and non-interactive paths share it.
  */
 
+import flagName from "../format/flagName.js";
 import type PromptDefinition from "../types/PromptDefinition.js";
-
-/** Convert a camelCase prompt name to its kebab-case CLI flag form. */
-const toKebab = (name: string): string =>
-  name.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 
 /**
  * Find the first answer that violates its prompt's constraints.
@@ -31,7 +28,7 @@ export default function validateAnswers(
 ): string | null {
   for (const prompt of prompts) {
     if (prompt.when && prompt.when(answers) !== true) continue;
-    if (!(prompt.name in answers)) continue;
+    if (!Object.hasOwn(answers, prompt.name)) continue;
     const value = answers[prompt.name];
 
     if (
@@ -41,14 +38,28 @@ export default function validateAnswers(
       !prompt.choices.some((choice) => choice.value === value)
     ) {
       const valid = prompt.choices.map((choice) => choice.value).join(", ");
-      return `Invalid --${toKebab(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
+      return `Invalid --${flagName(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
+    }
+
+    if (
+      prompt.type === "multiselect" &&
+      prompt.choices &&
+      prompt.choices.length > 0 &&
+      Array.isArray(value)
+    ) {
+      const allowed = new Set(prompt.choices.map((choice) => choice.value));
+      const unknown = value.find((entry) => !allowed.has(String(entry)));
+      if (unknown !== undefined) {
+        const valid = prompt.choices.map((choice) => choice.value).join(", ");
+        return `Invalid --${flagName(prompt.name)} "${String(unknown)}". Valid values: ${valid}.`;
+      }
     }
 
     if (prompt.validate) {
       const verdict = prompt.validate(value);
       if (verdict !== true) {
         const detail = typeof verdict === "string" ? verdict : "invalid value";
-        return `Invalid --${toKebab(prompt.name)}: ${detail}`;
+        return `Invalid --${flagName(prompt.name)}: ${detail}`;
       }
     }
   }

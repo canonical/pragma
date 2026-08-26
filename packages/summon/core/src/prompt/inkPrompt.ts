@@ -40,6 +40,13 @@ export interface InkPromptOptions {
    * back to the process cwd, matching a run given no `cwd` of its own.
    */
   readonly cwd?: string;
+  /**
+   * Answers already provided outside the wizard (CLI flags / MCP args).
+   * Seeded into the session so the confirm gate's preview and step counter
+   * see the full answer set — without this a partially-flagged run previews
+   * with those answers missing (`undefined` paths, wrong plan).
+   */
+  readonly initialAnswers?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -88,10 +95,19 @@ export default function inkPrompt(
   let mounted: MountedSession | undefined;
 
   const ensure = (): Promise<MountedSession> => {
-    mountP ??= import("./ink/mount.js").then((mod) => {
-      mounted = mod.mountPromptSession(generator, options);
-      return mounted;
-    });
+    mountP ??= import("./ink/mount.js").then(
+      (mod) => {
+        mounted = mod.mountPromptSession(generator, options);
+        return mounted;
+      },
+      (error) => {
+        // Do not cache a failed mount: a transient import failure would
+        // otherwise reject every later prompt in the session with the same
+        // stale error.
+        mountP = undefined;
+        throw error;
+      },
+    );
     return mountP;
   };
 

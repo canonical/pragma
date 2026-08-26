@@ -45,6 +45,7 @@ export function mountPromptSession(
     generator,
     options.onCancel,
     options.cwd,
+    options.initialAnswers,
   );
   const instance = render(<Wizard controller={controller} />, {
     stdout: process.stderr as unknown as NodeJS.WriteStream,

@@ -60,3 +60,52 @@ describe("validateAnswers", () => {
     expect(validateAnswers(prompts, {})).toBeNull();
   });
 });
+
+describe("validateAnswers — multiselect and hostile names", () => {
+  it("rejects a multiselect value outside the declared choices", () => {
+    const prompts = [
+      {
+        name: "features",
+        message: "?",
+        type: "multiselect" as const,
+        choices: [
+          { label: "A", value: "a" },
+          { label: "B", value: "b" },
+        ],
+      },
+    ];
+    // select membership was checked; multiselect flowed through unvalidated.
+    expect(validateAnswers(prompts, { features: ["a", "zzz"] })).toContain(
+      '"zzz"',
+    );
+    expect(validateAnswers(prompts, { features: ["a", "b"] })).toBeNull();
+  });
+
+  it("names the offending flag with the CLI's own kebab form", () => {
+    const prompts = [
+      {
+        name: "componentURL",
+        message: "?",
+        type: "text" as const,
+        validate: () => "nope",
+      },
+    ];
+    const message = validateAnswers(prompts, { componentURL: "x" });
+    expect(message).toContain("--component-url");
+    expect(message).not.toContain("--component-u-r-l");
+  });
+
+  it("does not treat prototype properties as provided answers", () => {
+    const prompts = [
+      {
+        name: "toString",
+        message: "?",
+        type: "text" as const,
+        validate: () => "invalid",
+      },
+    ];
+    // `"toString" in answers` is true for any object; Object.hasOwn is not.
+    expect(validateAnswers(prompts, {})).toBeNull();
+    expect(validateAnswers(prompts, { toString: "x" })).toContain("invalid");
+  });
+});

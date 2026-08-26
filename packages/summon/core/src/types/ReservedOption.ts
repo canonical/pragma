@@ -18,6 +18,7 @@ type ReservedOption =
   | "showFiles"
   | "show-files"
   | "verbose"
-  | "generatedStamp";
+  | "generatedStamp"
+  | "generated-stamp";
 
 export type { ReservedOption as default };

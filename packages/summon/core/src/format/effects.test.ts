@@ -689,3 +689,59 @@ describe("formatLlmHelp", () => {
     expect(result).toContain("## Optional Options");
   });
 });
+
+describe("buildReplayCommand — shell safety and flag naming", () => {
+  it("quotes values a POSIX shell would split or interpret", () => {
+    const prompts = [
+      { name: "description", message: "?", type: "text" as const },
+    ];
+    const result = buildReplayCommand(
+      "test-gen",
+      { description: "A demo project" },
+      prompts,
+    );
+    expect(result).toContain("--description 'A demo project'");
+  });
+
+  it("leaves plain values unquoted", () => {
+    const prompts = [{ name: "name", message: "?", type: "text" as const }];
+    expect(
+      buildReplayCommand("test-gen", { name: "my-app" }, prompts),
+    ).toContain("--name my-app");
+  });
+
+  it("names flags with the same algorithm help and Commander use", () => {
+    // /[A-Z]/g-style splitting produced --component-u-r-l for componentURL.
+    const prompts = [
+      { name: "componentURL", message: "?", type: "text" as const },
+    ];
+    const result = buildReplayCommand(
+      "test-gen",
+      { componentURL: "x" },
+      prompts,
+    );
+    expect(result).toContain("--component-url x");
+    expect(result).not.toContain("--component-u-r-l");
+  });
+});
+
+describe("formatLlmHelp — select without choices", () => {
+  it("renders a generic value hint instead of crashing", () => {
+    const generator = {
+      meta: {
+        name: "g",
+        displayName: "g",
+        description: "d",
+        version: "1.0.0",
+      },
+      prompts: [{ name: "mode", message: "Mode?", type: "select" as const }],
+      generate: () => {
+        throw new Error("unused");
+      },
+    };
+    // choices is optional on PromptDefinition; this previously threw a
+    // TypeError on --help --llm.
+    const output = formatLlmHelp(generator, "g");
+    expect(output).toContain("`<value>`");
+  });
+});
