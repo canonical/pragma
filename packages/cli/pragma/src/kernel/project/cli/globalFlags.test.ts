@@ -105,3 +105,68 @@ describe("readRawFormat", () => {
     expect(readRawFormat(["block", "list"])).toBeUndefined();
   });
 });
+
+describe("the option terminator bounds every scan (PROTECTED)", () => {
+  // `--` means the rest is the user's data. A scanner that ignored it would
+  // both misread a flag and STRIP it, so a lookup for a block literally named
+  // `--format` would lose its own argument and change how the error rendered.
+  it("does not read a flag that appears after `--`", () => {
+    expect(readRawFormat(["block", "lookup", "--", "--format", "json"])).toBe(
+      undefined,
+    );
+    expect(
+      parseGlobalFlags(["block", "lookup", "--", "--verbose"], TTY).verbose,
+    ).toBe(false);
+    expect(
+      parseGlobalFlags(["block", "lookup", "--", "--detail", "detailed"], TTY)
+        .detail,
+    ).toBe(undefined);
+  });
+
+  it("hands everything from `--` onward through untouched", () => {
+    expect(
+      stripGlobalFlags(["block", "lookup", "--", "--format", "json"]),
+    ).toEqual(["block", "lookup", "--", "--format", "json"]);
+  });
+
+  it("still reads a flag that appears before `--`", () => {
+    expect(
+      readRawFormat(["--format", "json", "block", "lookup", "--", "x"]),
+    ).toBe("json");
+    expect(
+      stripGlobalFlags(["--format", "json", "block", "lookup", "--", "x"]),
+    ).toEqual(["block", "lookup", "--", "x"]);
+  });
+});
+
+describe("a flag's value is never another flag (PROTECTED)", () => {
+  // The defect this pins: a valueless `--detail` consumed the NEXT flag as its
+  // value and stripped it, so `--detail --category css` silently answered over
+  // the whole set instead of the filtered one — a wrong answer, no diagnostic.
+  it("leaves a following flag standing when the value is absent", () => {
+    expect(
+      stripGlobalFlags(["standard", "list", "--detail", "--category", "css"]),
+    ).toEqual(["standard", "list", "--category", "css"]);
+  });
+
+  it("reports no detail for a valueless --detail", () => {
+    expect(
+      parseGlobalFlags(["standard", "list", "--detail", "--category"], TTY)
+        .detail,
+    ).toBe(undefined);
+  });
+
+  it("still consumes a real value", () => {
+    expect(
+      stripGlobalFlags(["standard", "list", "--detail", "summary"]),
+    ).toEqual(["standard", "list"]);
+    expect(
+      parseGlobalFlags(["standard", "list", "--detail", "summary"], TTY).detail,
+    ).toBe("summary");
+  });
+
+  it("reports a valueless --format as empty so the caller rejects it", () => {
+    // `""`, not `undefined` — `undefined` would fall through to the default.
+    expect(readRawFormat(["--format", "--verbose"])).toBe("");
+  });
+});
