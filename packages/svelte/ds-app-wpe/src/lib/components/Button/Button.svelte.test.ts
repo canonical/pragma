@@ -24,7 +24,9 @@ describe("Button component", () => {
   describe("rendering", () => {
     it("renders children", async () => {
       const page = render(Component, { ...baseProps });
-      await expect.element(page.getByText(buttonChildrenText)).toBeInTheDocument();
+      await expect
+        .element(page.getByText(buttonChildrenText))
+        .toBeInTheDocument();
     });
 
     it("renders as a button element", async () => {
@@ -47,9 +49,7 @@ describe("Button component", () => {
   describe("class prop", () => {
     it("applies custom class", async () => {
       const page = render(Component, { ...baseProps, class: "test-class" });
-      await expect
-        .element(componentLocator(page))
-        .toHaveClass("test-class");
+      await expect.element(componentLocator(page)).toHaveClass("test-class");
     });
 
     it("preserves base classes with custom class", async () => {
@@ -133,11 +133,14 @@ describe("Button component", () => {
     it("renders the icon before the label in DOM order", async () => {
       const page = render(Component, { ...baseProps, icon: buttonIcon });
       const button = componentLocator(page).element();
-      const iconSlot = button.querySelector(".icon");
-      const label = button.querySelector(".label");
-      expect(
-        iconSlot!.compareDocumentPosition(label!) & Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
+      const children = Array.from(button.children);
+      const iconSlotIndex = children.findIndex((el) =>
+        el.classList.contains("icon"),
+      );
+      const labelIndex = children.findIndex((el) =>
+        el.classList.contains("label"),
+      );
+      expect(iconSlotIndex).toBeLessThan(labelIndex);
     });
 
     it("wraps the icon in the icon slot class", async () => {
@@ -149,8 +152,13 @@ describe("Button component", () => {
     });
 
     it("renders icon-only button", async () => {
-      const page = render(Component, { icon: buttonIcon, "aria-label": "Close" });
-      expect(page.container.querySelector(`[data-testid='${iconTestId}']`)).not.toBeNull();
+      const page = render(Component, {
+        icon: buttonIcon,
+        "aria-label": "Close",
+      });
+      expect(
+        page.container.querySelector(`[data-testid='${iconTestId}']`),
+      ).not.toBeNull();
       await expect
         .element(page.getByRole("button"))
         .toHaveAttribute("aria-label", "Close");
@@ -198,7 +206,9 @@ describe("Button component", () => {
   describe("loading state", () => {
     it("overlays a Spinner while loading", async () => {
       const page = render(Component, { ...baseProps, loading: true });
-      const spinner = page.container.querySelector(".loading-spinner .ds.spinner");
+      const spinner = page.container.querySelector(
+        ".loading-spinner .ds.spinner",
+      );
       expect(spinner).not.toBeNull();
     });
 
@@ -224,7 +234,11 @@ describe("Button component", () => {
     });
 
     it("keeps the consumer icon in the DOM but adds the Spinner overlay", async () => {
-      const page = render(Component, { ...baseProps, loading: true, icon: buttonIcon });
+      const page = render(Component, {
+        ...baseProps,
+        loading: true,
+        icon: buttonIcon,
+      });
       expect(page.container.querySelector(".icon")).not.toBeNull();
       expect(page.container.querySelector(".loading-spinner")).not.toBeNull();
     });

@@ -1,10 +1,11 @@
 <script lang="ts" module>
   export const buttonChildrenText = "Click me";
-  export const submitChildrenText = "Submit";
   export const complexChildrenText = "Complex content";
   export const iconTestId = "icon";
+  export const submitChildrenText = "Submit";
 
-  export { buttonChildren, buttonIcon, submitChildren, complexChildren };
+  // biome-ignore lint/style/useExportType: snippets are Svelte runtime values
+  export { buttonChildren, buttonIcon, complexChildren, submitChildren };
 </script>
 
 {#snippet buttonChildren()}
