@@ -1,6 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import createMemoryAdapter from "./createMemoryAdapter.js";
 import createRouter from "./createRouter.js";
+import createStaticRouter from "./createStaticRouter.js";
 import group from "./group.js";
 import redirect from "./redirect.js";
 import route from "./route.js";
@@ -2162,6 +2163,279 @@ describe("createRouter", () => {
       expect(result.error).toBeInstanceOf(StatusResponse);
       expect((result.error as StatusResponse<unknown>).status).toBe(400);
       expect(router.getState().location.status).toBe(400);
+    });
+  });
+
+  describe("async prefetch control flow", () => {
+    it("applies a redirect rejected from an async prefetch after the load commits", async () => {
+      let releasePrefetch!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releasePrefetch = resolve;
+      });
+
+      const router = createRouter(
+        {
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            prefetch: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      // Fire-and-forget: the load commits before the rejection arrives.
+      const result = await router.load("/guarded");
+
+      expect(result.location.pathname).toBe("/guarded");
+
+      releasePrefetch();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+      });
+    });
+
+    it("commits the status of a StatusResponse rejected from an async prefetch", async () => {
+      let releasePrefetch!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releasePrefetch = resolve;
+      });
+
+      const router = createRouter(
+        {
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            prefetch: async () => {
+              await gate;
+              throw new StatusResponse(403, "forbidden");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      const result = await router.load("/failing");
+
+      expect(result.status).toBe(200);
+
+      releasePrefetch();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.status).toBe(403);
+      });
+      expect(router.dehydrate()?.status).toBe(403);
+    });
+
+    it("drops late control flow when the user navigated elsewhere meanwhile", async () => {
+      let releasePrefetch!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releasePrefetch = resolve;
+      });
+
+      const router = createRouter(
+        {
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            prefetch: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          about: route({ url: "/about", content: () => "about" }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/guarded");
+      await router.load("/about");
+
+      releasePrefetch();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(router.getState().location.pathname).toBe("/about");
+    });
+
+    it("folds an async status rejection into a still-cached prefetch entry", async () => {
+      let releasePrefetch!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releasePrefetch = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            prefetch: async () => {
+              await gate;
+              throw new StatusResponse(410, "gone");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.prefetch("failing");
+
+      releasePrefetch();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const result = await router.load("/failing");
+
+      expect(result.status).toBe(410);
+    });
+
+    it("applies a status live when its prefetch entry was already consumed", async () => {
+      let releasePrefetch!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releasePrefetch = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          failing: route({
+            url: "/failing",
+            content: () => "fail",
+            prefetch: async () => {
+              await gate;
+              throw new StatusResponse(410, "gone");
+            },
+          }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.prefetch("failing");
+
+      // Consumes the cached entry; the prefetch hook does not re-run.
+      const result = await router.load("/failing");
+
+      expect(result.status).toBe(200);
+
+      releasePrefetch();
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.status).toBe(410);
+      });
+    });
+
+    it("redirects via a still-cached prefetch entry on the eventual navigation", async () => {
+      let releasePrefetch!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releasePrefetch = resolve;
+      });
+
+      const router = createRouter(
+        {
+          home: route({ url: "/", content: () => "home" }),
+          guarded: route({
+            url: "/guarded",
+            content: () => "guarded",
+            prefetch: async () => {
+              await gate;
+              redirect("/login");
+            },
+          }),
+          login: route({ url: "/login", content: () => "login" }),
+        },
+        { adapter: createMemoryAdapter("/") },
+      );
+
+      await router.load("/");
+      await router.prefetch("guarded");
+
+      releasePrefetch();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      // The redirect target is prefetched in place of the guarded entry; the
+      // eventual navigation re-learns the redirect and applies it late —
+      // identical to navigating without a prior hover-prefetch.
+      const result = await router.load("/guarded");
+
+      expect(result.location.pathname).toBe("/guarded");
+
+      await vi.waitFor(() => {
+        expect(router.getState().location.pathname).toBe("/login");
+      });
+    });
+
+    it("tolerates async prefetch control flow on a static router", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const router = createStaticRouter(
+          {
+            guarded: route({
+              url: "/guarded",
+              content: () => "guarded",
+              prefetch: async () => {
+                redirect("/login");
+              },
+            }),
+            login: route({ url: "/login", content: () => "login" }),
+          },
+          "/guarded",
+        );
+
+        await router.load("/guarded");
+
+        await vi.waitFor(() => {
+          expect(router.getState().location.pathname).toBe("/login");
+        });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
+    });
+
+    it("keeps ignoring async rejections that carry no control flow", async () => {
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on("unhandledRejection", onUnhandled);
+
+      try {
+        const router = createRouter(
+          {
+            failing: route({
+              url: "/failing",
+              content: () => "fail",
+              prefetch: async () => {
+                throw new Error("cache warm failed");
+              },
+            }),
+          },
+          { adapter: createMemoryAdapter("/") },
+        );
+
+        const result = await router.load("/failing");
+
+        expect(result.status).toBe(200);
+
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
+        expect(router.getState().location.status).toBe(200);
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off("unhandledRejection", onUnhandled);
+      }
     });
   });
 });

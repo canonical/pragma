@@ -393,4 +393,40 @@ describe("JSXRenderer", () => {
       expect(renderer.statusCode).toBe(200);
     });
   });
+
+  describe("options.statusCode", () => {
+    it("reports the configured status for a successful readable stream render", async () => {
+      const renderer = new JSXRenderer(TestComponent, {}, { statusCode: 404 });
+      await renderer.renderToReadableStream();
+      expect(renderer.statusCode).toBe(404);
+    });
+
+    it("reports the configured status for a successful pipeable stream render", async () => {
+      const renderer = new JSXRenderer(TestComponent, {}, { statusCode: 404 });
+      renderer.renderToPipeableStream();
+      await renderer.statusReady;
+      expect(renderer.statusCode).toBe(404);
+    });
+
+    it("reports the configured status for renderToString", () => {
+      const renderer = new JSXRenderer(TestComponent, {}, { statusCode: 404 });
+      renderer.renderToString();
+      expect(renderer.statusCode).toBe(404);
+    });
+
+    it("still reports 500 on shell error regardless of the option", async () => {
+      const ErrorComponent: React.FC<
+        ServerEntrypointProps<Record<string, unknown>>
+      > = () => {
+        throw new Error("Shell error");
+      };
+      const consoleSpy = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const renderer = new JSXRenderer(ErrorComponent, {}, { statusCode: 404 });
+      await renderer.renderToReadableStream();
+      expect(renderer.statusCode).toBe(500);
+      consoleSpy.mockRestore();
+    });
+  });
 });
