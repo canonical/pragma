@@ -40,7 +40,7 @@ router.buildPath("account", { params: { team: "web" } });
 // "/account/web"
 
 router.navigate("home");
-await router.prefetch("account", { params: { team: "web" } });
+await router.warm("account", { params: { team: "web" } });
 ```
 
 ### 4. Render through your framework binding
@@ -52,8 +52,8 @@ The core package intentionally stops at route matching, state, dehydration, and 
 - **Routes are flat.** Every route is declared with `route()`.
 - **Wrappers are annotations.** Reuse layout with `wrapper()` and `group()`.
 - **Middleware is route-to-route transformation.** Use it to add auth, i18n, metrics, or shared wrapper policy. Middleware runs once, before the router is created.
-- **`prefetch()` is fire-and-forget.** It warms caches, preloads assets, or runs side effects at navigation time. It does not provide data to `content()` — components own their data via their cache library.
-- **URL params are validated by schemas.** Give a route a `params` or `search` [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, or hand-rolled) and the validated, typed output flows to `content()`, `prefetch()`, and the typed navigation helpers.
+- **`warm()` is fire-and-forget.** It warms caches, preloads assets, or runs side effects at navigation time. It does not provide data to `content()` — components own their data via their cache library.
+- **URL params are validated by schemas.** Give a route a `params` or `search` [Standard Schema](https://standardschema.dev) validator (Zod, Valibot, ArkType, or hand-rolled) and the validated, typed output flows to `content()`, `warm()`, and the typed navigation helpers.
 - **SSR is built in.** `dehydrate()` preserves navigation state across the server/client boundary.
 
 ## Progressive disclosure
@@ -69,14 +69,14 @@ const settingsRoute = route({
 });
 ```
 
-### Route with prefetch
+### Route with warm
 
-`prefetch()` is a fire-and-forget navigation-time hook. Use it to warm a cache, preload assets, fire analytics, or run permission checks. It does not return data to the component.
+`warm()` is a fire-and-forget navigation-time hook. Use it to warm a cache, preload assets, fire analytics, or run permission checks. It does not return data to the component.
 
 ```tsx
 const userRoute = route({
   url: "/users/:id",
-  prefetch: async ({ id }, _search, { signal }) => {
+  warm: async ({ id }, _search, { signal }) => {
     await queryClient.prefetchQuery({
       queryKey: ["user", id],
       queryFn: () => fetchUser(id),
@@ -122,7 +122,7 @@ const listRoute = route({
 
 No dependency? Hand-roll the schema — either the Standard Schema v1 shape (`{ "~standard": { version: 1, vendor, validate } }`, annotate with `StandardSchemaV1<In, Out>` for inference) or the legacy type-only shape (`{ "~standard": { output, validate } }`). See the [Router API reference](../../../docs/references/ROUTER_API.md#schema-validation) for both.
 
-Validation runs at match time and is **synchronous** — async validators (e.g. Zod async refinements) throw with an explanatory error. For semantic checks (does the record exist?) use `prefetch` + `StatusResponse`.
+Validation runs at match time and is **synchronous** — async validators (e.g. Zod async refinements) throw with an explanatory error. For semantic checks (does the record exist?) use `warm` + `StatusResponse`.
 
 ### Wrapper composition
 
@@ -142,14 +142,14 @@ const [dashboardRoute, reportsRoute] = group(appShell, [
 
 ### Error handling
 
-The router does not ship an error boundary component. Errors from `prefetch()` are thrown into the React render tree and caught by standard React error boundaries. Use `StatusResponse` to signal HTTP-like errors:
+The router does not ship an error boundary component. Errors from `warm()` are thrown into the React render tree and caught by standard React error boundaries. Use `StatusResponse` to signal HTTP-like errors:
 
 ```tsx
 import { StatusResponse, route } from "@canonical/router-core";
 
 const protectedRoute = route({
   url: "/admin",
-  prefetch: async () => {
+  warm: async () => {
     if (!isAuthenticated()) {
       throw new StatusResponse(401);
     }
@@ -176,7 +176,7 @@ import { redirect, route } from "@canonical/router-core";
 
 const loginRequired = route({
   url: "/private",
-  prefetch: async () => {
+  warm: async () => {
     redirect("/login", 302);
   },
   content: () => "private",
@@ -279,7 +279,7 @@ else if (serverRouter.match.kind === "redirect") {
 const testRouter = createMemoryRouter(routes, "/users/42");
 ```
 
-`createStaticRouter` fires `prefetch()` eagerly on construction, so caches start warming before React renders.
+`createStaticRouter` fires `warm()` eagerly on construction, so caches start warming before React renders.
 
 The low-level `createRouter(routes, { adapter })` is still available for cases that need explicit adapter control.
 

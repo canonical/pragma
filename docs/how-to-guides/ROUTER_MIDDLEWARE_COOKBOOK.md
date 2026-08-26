@@ -2,7 +2,7 @@
 
 Middleware in `@canonical/router-core` transforms routes once, before the router is created. Use middleware when a concern should apply consistently across a route map without editing every route declaration by hand.
 
-This is a recipe collection. Each recipe is a self-contained middleware factory you can copy, adapt, and compose. Every example is valid against the current API: the route data hook is `prefetch(params, search, context)` — there is no `fetch` field.
+This is a recipe collection. Each recipe is a self-contained middleware factory you can copy, adapt, and compose. Every example is valid against the current API: the route data hook is `warm(params, search, context)` — there is no `fetch` field.
 
 ## When to use middleware
 
@@ -13,7 +13,7 @@ Use middleware for cross-cutting policy:
 - timing or tracing of navigation-time work
 - shared wrapper or error-boundary policy
 
-Avoid middleware when the concern is relevant to a single route. In that case, keep it in the route's `prefetch` or `content`. Prefer wrappers (`wrapper()` + `group()`) for layout and shared UI; reserve middleware for behaviour that rewrites the route itself.
+Avoid middleware when the concern is relevant to a single route. In that case, keep it in the route's `warm` or `content`. Prefer wrappers (`wrapper()` + `group()`) for layout and shared UI; reserve middleware for behaviour that rewrites the route itself.
 
 ## The middleware contract
 
@@ -87,11 +87,11 @@ export function withAuth(loginPath: string): RouteMiddleware {
       return currentRoute;
     }
 
-    const currentPrefetch = currentRoute.prefetch;
+    const currentWarm = currentRoute.warm;
 
     return {
       ...currentRoute,
-      prefetch: (
+      warm: (
         params: unknown,
         search: unknown,
         context: NavigationContext,
@@ -104,8 +104,8 @@ export function withAuth(loginPath: string): RouteMiddleware {
           redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
         }
 
-        if (currentPrefetch) {
-          return currentPrefetch(params, search, context);
+        if (currentWarm) {
+          return currentWarm(params, search, context);
         }
       },
     };
@@ -115,14 +115,14 @@ export function withAuth(loginPath: string): RouteMiddleware {
 
 What makes this correct against the current API:
 
-- **The data hook is `prefetch`, not `fetch`.** The route's only data hook is `prefetch(params, search, context)`. The middleware captures the original (`const currentPrefetch = currentRoute.prefetch;`) and delegates to it once the auth check passes.
-- **`redirect()` does not return — it throws.** `redirect(to, status)` constructs a `RouteRedirect` (exported as `Redirect`) and throws it; its return type is `never`. You do not `return redirect(...)`. The throw unwinds out of the void-returning `prefetch`, and the router catches it and performs the navigation. Because the redirect throws, the `currentPrefetch(...)` call below it is unreachable for unauthenticated visitors — exactly the intent.
-- **`prefetch` returns `void | Promise<void>`.** The redirect is a side effect on the control flow, not a value the hook hands back. Never try to model the redirect as a return value or a resolved promise.
+- **The data hook is `warm`, not `fetch`.** The route's only data hook is `warm(params, search, context)`. The middleware captures the original (`const currentWarm = currentRoute.warm;`) and delegates to it once the auth check passes.
+- **`redirect()` does not return — it throws.** `redirect(to, status)` constructs a `RouteRedirect` (exported as `Redirect`) and throws it; its return type is `never`. You do not `return redirect(...)`. The throw unwinds out of the void-returning `warm`, and the router catches it and performs the navigation. Because the redirect throws, the `currentWarm(...)` call below it is unreachable for unauthenticated visitors — exactly the intent.
+- **`warm` returns `void | Promise<void>`.** The redirect is a side effect on the control flow, not a value the hook hands back. Never try to model the redirect as a return value or a resolved promise.
 - **Status `302` is the runtime default.** The runtime `redirect()` helper accepts `301 | 302 | 307 | 308` and defaults to `302`. The boilerplate passes `302` explicitly. Do not confuse this with static redirect routes (`route({ url, redirect, status })`), whose `status` is narrower: `301 | 308` only.
 
 ### The pure-decision companion: `getAuthRedirectHref`
 
-The middleware decides at navigation time, inside `prefetch`. But a server (sitemap generation, an SSR pre-flight, an edge function) often needs the **same** decision *without* a router and without throwing. Factor the decision into a pure helper and call it from both places:
+The middleware decides at navigation time, inside `warm`. But a server (sitemap generation, an SSR pre-flight, an edge function) often needs the **same** decision *without* a router and without throwing. Factor the decision into a pure helper and call it from both places:
 
 ```ts
 export function getAuthRedirectHref(input: string | URL): string | null {
@@ -152,7 +152,7 @@ if (redirectHref) {
 // otherwise fall through to createStaticRouter(...) + render
 ```
 
-This is the corrected shape of the auth recipe: the **throwing** path lives inside `prefetch` (client navigation), the **pure** path is a reusable function (server pre-flight), and both share `protectedPaths` and `hasDemoAuth` so the policy cannot drift between them.
+This is the corrected shape of the auth recipe: the **throwing** path lives inside `warm` (client navigation), the **pure** path is a reusable function (server pre-flight), and both share `protectedPaths` and `hasDemoAuth` so the policy cannot drift between them.
 
 ### Rationale
 
@@ -162,7 +162,7 @@ This is the corrected shape of the auth recipe: the **throwing** path lives insi
 
 ## Recipe: `withI18n(defaultLocale)`
 
-Prefix every route with a `:locale` segment and inject the resolved locale into downstream `prefetch` work. Because `applyMiddleware` rebuilds the codec from the rewritten `url`, both matching and link-building pick up the new segment automatically.
+Prefix every route with a `:locale` segment and inject the resolved locale into downstream `warm` work. Because `applyMiddleware` rebuilds the codec from the rewritten `url`, both matching and link-building pick up the new segment automatically.
 
 ```ts
 import {
@@ -173,12 +173,12 @@ import {
 
 export function withI18n(defaultLocale: string): RouteMiddleware {
   return ((currentRoute: AnyRoute) => {
-    const currentPrefetch = currentRoute.prefetch;
+    const currentWarm = currentRoute.warm;
 
     return {
       ...currentRoute,
       url: `/:locale${currentRoute.url === "/" ? "" : currentRoute.url}`,
-      prefetch: currentPrefetch
+      warm: currentWarm
         ? (
             params: Record<string, string>,
             search: unknown,
@@ -186,7 +186,7 @@ export function withI18n(defaultLocale: string): RouteMiddleware {
           ) => {
             const locale = params.locale ?? defaultLocale;
 
-            return currentPrefetch(params, { ...(search as object), locale }, context);
+            return currentWarm(params, { ...(search as object), locale }, context);
           }
         : undefined,
     };
@@ -197,8 +197,8 @@ export function withI18n(defaultLocale: string): RouteMiddleware {
 Notes:
 
 - The rewritten `url` becomes `/:locale/account`, `/:locale/guides/:slug`, and so on. You do not call `matchPath`/`renderPattern` yourself — `applyMiddleware` does it from `transformed.url`.
-- `prefetch` stays `undefined` when the source route has no data hook. Wrapping a non-existent hook would force a hook onto a route that never had one.
-- The locale is folded into `search` for the delegated `prefetch` call; the original three-argument shape `(params, search, context)` is preserved.
+- `warm` stays `undefined` when the source route has no data hook. Wrapping a non-existent hook would force a hook onto a route that never had one.
+- The locale is folded into `search` for the delegated `warm` call; the original three-argument shape `(params, search, context)` is preserved.
 
 ### Rationale
 
@@ -208,7 +208,7 @@ Notes:
 
 ## Recipe: `withTiming(report)`
 
-Measure how long a route's navigation-time `prefetch` runs. Pure instrumentation: it never changes routing behaviour.
+Measure how long a route's navigation-time `warm` runs. Pure instrumentation: it never changes routing behaviour.
 
 ```ts
 import {
@@ -221,15 +221,15 @@ export function withTiming(
   report: (event: { route: string; durationMs: number }) => void,
 ): RouteMiddleware {
   return ((currentRoute: AnyRoute) => {
-    const currentPrefetch = currentRoute.prefetch;
+    const currentWarm = currentRoute.warm;
 
-    if (!currentPrefetch) {
+    if (!currentWarm) {
       return currentRoute;
     }
 
     return {
       ...currentRoute,
-      prefetch: async (
+      warm: async (
         params: unknown,
         search: unknown,
         context: NavigationContext,
@@ -237,7 +237,7 @@ export function withTiming(
         const startedAt = performance.now();
 
         try {
-          return await currentPrefetch(params, search, context);
+          return await currentWarm(params, search, context);
         } finally {
           report({
             durationMs: performance.now() - startedAt,
@@ -252,8 +252,8 @@ export function withTiming(
 
 Notes:
 
-- Return the route untouched when there is no `prefetch` to time.
-- `prefetch` may return `void` or `Promise<void>`; `await` handles both, and the `finally` reports even if the hook throws (including a `redirect()` thrown by an inner auth middleware) — instrumentation should not swallow that throw.
+- Return the route untouched when there is no `warm` to time.
+- `warm` may return `void` or `Promise<void>`; `await` handles both, and the `finally` reports even if the hook throws (including a `redirect()` thrown by an inner auth middleware) — instrumentation should not swallow that throw.
 
 ### Rationale
 
@@ -294,8 +294,8 @@ export function withErrorBoundary(
 Notes:
 
 - `wrappers` is always present on a `RouteDefinition` (it defaults to `[]`), so `[boundary, ...currentRoute.wrappers]` is safe without a guard.
-- `wrapper()` takes a single type parameter, `wrapper<TRendered>` (here `ReactElement`). A wrapper's own optional `prefetch` is `(params, context)` — two arguments, no `search` — distinct from a route's three-argument `prefetch`.
-- The error experience itself is a React `<ErrorBoundary>` inside the wrapper component. The router has no error-UI field; render errors propagate past `<Outlet>`, so the boundary belongs in the wrapper's JSX. Use `StatusResponse` from a `prefetch` to signal an HTTP-like status to that boundary.
+- `wrapper()` takes a single type parameter, `wrapper<TRendered>` (here `ReactElement`). A wrapper's own optional `warm` is `(params, context)` — two arguments, no `search` — distinct from a route's three-argument `warm`.
+- The error experience itself is a React `<ErrorBoundary>` inside the wrapper component. The router has no error-UI field; render errors propagate past `<Outlet>`, so the boundary belongs in the wrapper's JSX. Use `StatusResponse` from a `warm` to signal an HTTP-like status to that boundary.
 
 ### Rationale
 
@@ -318,9 +318,9 @@ const router = createBrowserRouter(appRoutes, {
 
 Reading the array left to right:
 
-1. `withI18n("en")` rewrites the URL first, so `withAuth` and `withTiming` see the locale-prefixed route and the locale-aware `prefetch`.
-2. `withAuth("/login")` wraps the (now locale-aware) `prefetch` with its redirect guard.
-3. `withTiming(report)` wraps last, so its timer is the innermost wrapper around whatever the chain produced — it measures the full composed `prefetch`, redirect throw included.
+1. `withI18n("en")` rewrites the URL first, so `withAuth` and `withTiming` see the locale-prefixed route and the locale-aware `warm`.
+2. `withAuth("/login")` wraps the (now locale-aware) `warm` with its redirect guard.
+3. `withTiming(report)` wraps last, so its timer is the innermost wrapper around whatever the chain produced — it measures the full composed `warm`, redirect throw included.
 
 If you reverse the order, `withAuth` would inspect the unprefixed URL and the timer would sit outside the redirect logic. Order is meaningful; choose it deliberately.
 
@@ -336,9 +336,9 @@ export const middleware = [withAuth("/login")] as const;
 ## Rules of thumb
 
 - return the original route unchanged when the rule does not apply
-- capture and delegate to `currentRoute.prefetch` — never assume it exists, and never replace it with a hook the route never had
-- there is no `fetch` field; `prefetch(params, search, context)` is the only route data hook
-- `redirect()` throws (`never`) — call it for its side effect inside `prefetch`, never `return` it
+- capture and delegate to `currentRoute.warm` — never assume it exists, and never replace it with a hook the route never had
+- there is no `fetch` field; `warm(params, search, context)` is the only route data hook
+- `redirect()` throws (`never`) — call it for its side effect inside `warm`, never `return` it
 - factor any decision a server also needs into a pure helper (the `getAuthRedirectHref` pattern) so client and server share one policy
 - prefer middleware for cross-cutting policy, wrappers (`wrapper()` + `group()`) for layout and shared UI
 - document any redirect or URL-shape change clearly for consumers — middleware rewrites routes out from under the call site

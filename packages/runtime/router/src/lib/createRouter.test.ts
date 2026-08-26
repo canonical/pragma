@@ -809,8 +809,8 @@ describe("createRouter", () => {
     );
   });
 
-  it("prefetches lazy content without mutating router state", async () => {
-    const prefetchSpy = vi.fn(async () => {});
+  it("warms lazy content without mutating router state", async () => {
+    const warmSpy = vi.fn(async () => {});
     const preloadSpy = vi.fn(async () => ({ default: "SettingsPage" }));
     const content = Object.assign(() => "settings", {
       preload: preloadSpy,
@@ -822,13 +822,13 @@ describe("createRouter", () => {
       }),
       settings: route({
         url: "/settings",
-        prefetch: prefetchSpy,
+        warm: warmSpy,
         content,
       }),
     });
 
-    await router.prefetch("settings");
-    await router.prefetch("settings");
+    await router.warm("settings");
+    await router.warm("settings");
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.getState().location.href).toBe("/");
@@ -840,12 +840,12 @@ describe("createRouter", () => {
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.render(result)).toBe("settings");
 
-    await router.prefetch("settings");
+    await router.warm("settings");
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("reuses an in-flight prefetch when a matching load starts", async () => {
+  it("reuses an in-flight warm when a matching load starts", async () => {
     let resolvePreload: ((value: { default: string }) => void) | null = null;
     const preloadSpy = vi.fn(() => {
       return new Promise<{ default: string }>((resolve) => {
@@ -862,21 +862,21 @@ describe("createRouter", () => {
       }),
     });
 
-    const prefetchPromise = router.prefetch("docs");
+    const warmPromise = router.warm("docs");
     const loadPromise = router.load("/docs");
 
     (resolvePreload as unknown as (value: { default: string }) => void)({
       default: "DocsPage",
     });
 
-    await prefetchPromise;
+    await warmPromise;
     const result = await loadPromise;
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
     expect(router.render(result)).toBe("docs");
   });
 
-  it("deduplicates concurrent prefetch calls for the same href", async () => {
+  it("deduplicates concurrent warm calls for the same href", async () => {
     let resolvePreload: ((value: { default: string }) => void) | null = null;
     const preloadSpy = vi.fn(() => {
       return new Promise<{ default: string }>((resolve) => {
@@ -890,22 +890,22 @@ describe("createRouter", () => {
       }),
     });
 
-    const firstPrefetch = router.prefetch("docs");
-    const secondPrefetch = router.prefetch("docs");
+    const firstWarm = router.warm("docs");
+    const secondWarm = router.warm("docs");
 
     (resolvePreload as unknown as (value: { default: string }) => void)({
       default: "DocsPage",
     });
 
-    await Promise.all([firstPrefetch, secondPrefetch]);
+    await Promise.all([firstWarm, secondWarm]);
 
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("surfaces non-redirect prefetch failures and clears the pending entry", async () => {
+  it("surfaces non-redirect warm failures and clears the pending entry", async () => {
     const preloadSpy = vi
       .fn<() => Promise<{ default: string }>>()
-      .mockRejectedValueOnce(new Error("prefetch-failure"))
+      .mockRejectedValueOnce(new Error("warm-failure"))
       .mockResolvedValueOnce({ default: "RecoveredPage" });
     const router = createRouter({
       broken: route({
@@ -914,13 +914,13 @@ describe("createRouter", () => {
       }),
     });
 
-    await expect(router.prefetch("broken")).rejects.toThrow("prefetch-failure");
-    await expect(router.prefetch("broken")).resolves.toBeUndefined();
+    await expect(router.warm("broken")).rejects.toThrow("warm-failure");
+    await expect(router.warm("broken")).resolves.toBeUndefined();
 
     expect(preloadSpy).toHaveBeenCalledTimes(2);
   });
 
-  it("aborts a load that is waiting on an in-flight prefetch when a newer load starts", async () => {
+  it("aborts a load that is waiting on an in-flight warm when a newer load starts", async () => {
     let resolvePreload: ((value: { default: string }) => void) | null = null;
     const preloadSpy = vi.fn(() => {
       return new Promise<{ default: string }>((resolve) => {
@@ -938,7 +938,7 @@ describe("createRouter", () => {
       }),
     });
 
-    const prefetchPromise = router.prefetch("docs");
+    const warmPromise = router.warm("docs");
     const firstLoad = router.load("/docs");
     const secondLoad = router.load("/");
 
@@ -946,7 +946,7 @@ describe("createRouter", () => {
       default: "DocsPage",
     });
 
-    await prefetchPromise;
+    await warmPromise;
 
     await expect(firstLoad).rejects.toThrow("aborted");
     await expect(secondLoad).resolves.toMatchObject({
@@ -956,7 +956,7 @@ describe("createRouter", () => {
     expect(preloadSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("throws after an excessive redirect loop during prefetch", async () => {
+  it("throws after an excessive redirect loop during warm", async () => {
     const router = createRouter({
       loop: route({
         url: "/loop",
@@ -965,8 +965,8 @@ describe("createRouter", () => {
       }),
     });
 
-    await expect(router.prefetch("loop")).rejects.toThrow(
-      "Too many redirects during router.prefetch().",
+    await expect(router.warm("loop")).rejects.toThrow(
+      "Too many redirects during router.warm().",
     );
   });
 
@@ -1000,11 +1000,11 @@ describe("createRouter", () => {
         }),
       });
 
-      await router.prefetch("docs");
+      await router.warm("docs");
       await router.load("/docs");
 
       (cleanupCallback as unknown as (key: string) => void)("docs");
-      await router.prefetch("docs");
+      await router.warm("docs");
 
       expect(preloadSpy).toHaveBeenCalledTimes(2);
     } finally {
@@ -1041,7 +1041,7 @@ describe("createRouter", () => {
     expect(router.render()).toBe("not-found");
   });
 
-  it("follows static redirects during prefetch", async () => {
+  it("follows static redirects during warm", async () => {
     const modernPreload = vi.fn(async () => ({ default: "ModernPage" }));
     const router = createRouter({
       legacy: route({
@@ -1057,7 +1057,7 @@ describe("createRouter", () => {
       }),
     });
 
-    await router.prefetch("legacy");
+    await router.warm("legacy");
 
     expect(modernPreload).toHaveBeenCalledTimes(1);
 
@@ -1562,13 +1562,13 @@ describe("createRouter", () => {
     });
   });
 
-  it("follows runtime redirects thrown from prefetch during load", async () => {
+  it("follows runtime redirects thrown from warm during load", async () => {
     const router = createRouter(
       {
         guarded: route({
           url: "/guarded",
           content: () => "guarded",
-          prefetch: () => {
+          warm: () => {
             redirect("/login");
           },
         }),
@@ -1714,7 +1714,7 @@ describe("createRouter", () => {
         failing: route({
           url: "/failing",
           content: () => "fail",
-          prefetch: () => {
+          warm: () => {
             throw new Response("Forbidden", { status: 403 });
           },
         }),
@@ -1733,7 +1733,7 @@ describe("createRouter", () => {
         failing: route({
           url: "/failing",
           content: () => "fail",
-          prefetch: () => {
+          warm: () => {
             throw "string error";
           },
         }),
@@ -1746,13 +1746,13 @@ describe("createRouter", () => {
     expect(result.status).toBe(500);
   });
 
-  it("fires wrapper prefetch during load", async () => {
-    const wrapperPrefetch = vi.fn();
+  it("fires wrapper warm during load", async () => {
+    const wrapperWarm = vi.fn();
 
     const layout = wrapper({
       id: "layout",
       component: ({ children }) => children,
-      prefetch: wrapperPrefetch,
+      warm: wrapperWarm,
     });
 
     const [home] = group(layout, [
@@ -1767,17 +1767,17 @@ describe("createRouter", () => {
     await router.load("/");
 
     await vi.waitFor(() => {
-      expect(wrapperPrefetch).toHaveBeenCalled();
+      expect(wrapperWarm).toHaveBeenCalled();
     });
   });
 
-  it("follows runtime redirects during prefetch", async () => {
+  it("follows runtime redirects during warm", async () => {
     const router = createRouter(
       {
         guarded: route({
           url: "/guarded",
           content: () => "guarded",
-          prefetch: () => {
+          warm: () => {
             redirect("/login");
           },
         }),
@@ -1787,9 +1787,9 @@ describe("createRouter", () => {
     );
 
     await router.load("/");
-    await router.prefetch("guarded");
+    await router.warm("guarded");
 
-    // After prefetch follows the redirect, navigating should land on login
+    // After warm follows the redirect, navigating should land on login
     const result = await router.load("/guarded");
 
     expect(result.location.pathname).toBe("/login");
@@ -1861,7 +1861,7 @@ describe("createRouter", () => {
         guarded: route({
           url: "/guarded",
           content: () => "guarded",
-          prefetch: () => {
+          warm: () => {
             redirect("/login");
           },
         }),
@@ -1970,16 +1970,16 @@ describe("createRouter", () => {
       expect(router.match("/users/abc")).toBeNull();
     });
 
-    it("passes validated params to prefetch and builds paths from schema output", async () => {
-      const prefetchSpy = vi.fn();
+    it("passes validated params to warm and builds paths from schema output", async () => {
+      const warmSpy = vi.fn();
       const router = createRouter(
         {
           user: route({
             url: "/users/:id",
             params: numericIdSchema,
-            prefetch: (params, _search, _context) => {
+            warm: (params, _search, _context) => {
               expectTypeOf(params).toEqualTypeOf<{ readonly id: number }>();
-              prefetchSpy(params);
+              warmSpy(params);
             },
             content: ({ params }) => String(params.id),
           }),
@@ -1998,7 +1998,7 @@ describe("createRouter", () => {
 
       await router.load("/users/42");
 
-      expect(prefetchSpy).toHaveBeenCalledWith({ id: 42 });
+      expect(warmSpy).toHaveBeenCalledWith({ id: 42 });
     });
 
     it("gates redirect routes on their params schema", () => {
@@ -2032,14 +2032,14 @@ describe("createRouter", () => {
       });
     });
 
-    it("passes raw string params to wrapper prefetch, validated params to route prefetch", async () => {
+    it("passes raw string params to wrapper warm, validated params to route warm", async () => {
       const wrapperSpy = vi.fn();
       const routeSpy = vi.fn();
 
       const shell = wrapper({
         id: "raw-params-shell",
         component: ({ children }) => children,
-        prefetch: (params) => {
+        warm: (params) => {
           wrapperSpy(params);
         },
       });
@@ -2048,7 +2048,7 @@ describe("createRouter", () => {
         route({
           url: "/users/:id",
           params: numericIdSchema,
-          prefetch: (params) => {
+          warm: (params) => {
             routeSpy(params);
           },
           content: ({ params }) => String(params.id),
@@ -2195,11 +2195,11 @@ describe("createRouter", () => {
     });
   });
 
-  describe("async prefetch control flow", () => {
-    it("applies a redirect rejected from an async prefetch after the load commits", async () => {
-      let releasePrefetch!: () => void;
+  describe("async warm control flow", () => {
+    it("applies a redirect rejected from an async warm after the load commits", async () => {
+      let releaseWarm!: () => void;
       const gate = new Promise<void>((resolve) => {
-        releasePrefetch = resolve;
+        releaseWarm = resolve;
       });
 
       const router = createRouter(
@@ -2207,7 +2207,7 @@ describe("createRouter", () => {
           guarded: route({
             url: "/guarded",
             content: () => "guarded",
-            prefetch: async () => {
+            warm: async () => {
               await gate;
               redirect("/login");
             },
@@ -2222,17 +2222,17 @@ describe("createRouter", () => {
 
       expect(result.location.pathname).toBe("/guarded");
 
-      releasePrefetch();
+      releaseWarm();
 
       await vi.waitFor(() => {
         expect(router.getState().location.pathname).toBe("/login");
       });
     });
 
-    it("commits the status of a StatusResponse rejected from an async prefetch", async () => {
-      let releasePrefetch!: () => void;
+    it("commits the status of a StatusResponse rejected from an async warm", async () => {
+      let releaseWarm!: () => void;
       const gate = new Promise<void>((resolve) => {
-        releasePrefetch = resolve;
+        releaseWarm = resolve;
       });
 
       const router = createRouter(
@@ -2240,7 +2240,7 @@ describe("createRouter", () => {
           failing: route({
             url: "/failing",
             content: () => "fail",
-            prefetch: async () => {
+            warm: async () => {
               await gate;
               throw new StatusResponse(403, "forbidden");
             },
@@ -2253,7 +2253,7 @@ describe("createRouter", () => {
 
       expect(result.status).toBe(200);
 
-      releasePrefetch();
+      releaseWarm();
 
       await vi.waitFor(() => {
         expect(router.getState().location.status).toBe(403);
@@ -2262,9 +2262,9 @@ describe("createRouter", () => {
     });
 
     it("drops late control flow when the user navigated elsewhere meanwhile", async () => {
-      let releasePrefetch!: () => void;
+      let releaseWarm!: () => void;
       const gate = new Promise<void>((resolve) => {
-        releasePrefetch = resolve;
+        releaseWarm = resolve;
       });
 
       const router = createRouter(
@@ -2272,7 +2272,7 @@ describe("createRouter", () => {
           guarded: route({
             url: "/guarded",
             content: () => "guarded",
-            prefetch: async () => {
+            warm: async () => {
               await gate;
               redirect("/login");
             },
@@ -2286,16 +2286,16 @@ describe("createRouter", () => {
       await router.load("/guarded");
       await router.load("/about");
 
-      releasePrefetch();
+      releaseWarm();
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(router.getState().location.pathname).toBe("/about");
     });
 
-    it("folds an async status rejection into a still-cached prefetch entry", async () => {
-      let releasePrefetch!: () => void;
+    it("folds an async status rejection into a still-cached warm entry", async () => {
+      let releaseWarm!: () => void;
       const gate = new Promise<void>((resolve) => {
-        releasePrefetch = resolve;
+        releaseWarm = resolve;
       });
 
       const router = createRouter(
@@ -2304,7 +2304,7 @@ describe("createRouter", () => {
           failing: route({
             url: "/failing",
             content: () => "fail",
-            prefetch: async () => {
+            warm: async () => {
               await gate;
               throw new StatusResponse(410, "gone");
             },
@@ -2314,9 +2314,9 @@ describe("createRouter", () => {
       );
 
       await router.load("/");
-      await router.prefetch("failing");
+      await router.warm("failing");
 
-      releasePrefetch();
+      releaseWarm();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       const result = await router.load("/failing");
@@ -2324,10 +2324,10 @@ describe("createRouter", () => {
       expect(result.status).toBe(410);
     });
 
-    it("applies a status live when its prefetch entry was already consumed", async () => {
-      let releasePrefetch!: () => void;
+    it("applies a status live when its warm entry was already consumed", async () => {
+      let releaseWarm!: () => void;
       const gate = new Promise<void>((resolve) => {
-        releasePrefetch = resolve;
+        releaseWarm = resolve;
       });
 
       const router = createRouter(
@@ -2336,7 +2336,7 @@ describe("createRouter", () => {
           failing: route({
             url: "/failing",
             content: () => "fail",
-            prefetch: async () => {
+            warm: async () => {
               await gate;
               throw new StatusResponse(410, "gone");
             },
@@ -2346,24 +2346,24 @@ describe("createRouter", () => {
       );
 
       await router.load("/");
-      await router.prefetch("failing");
+      await router.warm("failing");
 
-      // Consumes the cached entry; the prefetch hook does not re-run.
+      // Consumes the cached entry; the warm hook does not re-run.
       const result = await router.load("/failing");
 
       expect(result.status).toBe(200);
 
-      releasePrefetch();
+      releaseWarm();
 
       await vi.waitFor(() => {
         expect(router.getState().location.status).toBe(410);
       });
     });
 
-    it("redirects via a still-cached prefetch entry on the eventual navigation", async () => {
-      let releasePrefetch!: () => void;
+    it("redirects via a still-cached warm entry on the eventual navigation", async () => {
+      let releaseWarm!: () => void;
       const gate = new Promise<void>((resolve) => {
-        releasePrefetch = resolve;
+        releaseWarm = resolve;
       });
 
       const router = createRouter(
@@ -2372,7 +2372,7 @@ describe("createRouter", () => {
           guarded: route({
             url: "/guarded",
             content: () => "guarded",
-            prefetch: async () => {
+            warm: async () => {
               await gate;
               redirect("/login");
             },
@@ -2383,14 +2383,14 @@ describe("createRouter", () => {
       );
 
       await router.load("/");
-      await router.prefetch("guarded");
+      await router.warm("guarded");
 
-      releasePrefetch();
+      releaseWarm();
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // The redirect target is prefetched in place of the guarded entry; the
+      // The redirect target is warmed in place of the guarded entry; the
       // eventual navigation re-learns the redirect and applies it late —
-      // identical to navigating without a prior hover-prefetch.
+      // identical to navigating without a prior hover-warm.
       const result = await router.load("/guarded");
 
       expect(result.location.pathname).toBe("/guarded");
@@ -2400,7 +2400,7 @@ describe("createRouter", () => {
       });
     });
 
-    it("tolerates async prefetch control flow on a server-adapter router", async () => {
+    it("tolerates async warm control flow on a server-adapter router", async () => {
       const unhandled: unknown[] = [];
       const onUnhandled = (reason: unknown) => {
         unhandled.push(reason);
@@ -2413,7 +2413,7 @@ describe("createRouter", () => {
             guarded: route({
               url: "/guarded",
               content: () => "guarded",
-              prefetch: async () => {
+              warm: async () => {
                 redirect("/login");
               },
             }),
@@ -2446,7 +2446,7 @@ describe("createRouter", () => {
             failing: route({
               url: "/failing",
               content: () => "fail",
-              prefetch: async () => {
+              warm: async () => {
                 throw new Error("cache warm failed");
               },
             }),

@@ -49,15 +49,11 @@ export function withAuth(loginPath: string): RouteMiddleware {
       return currentRoute;
     }
 
-    const currentPrefetch = currentRoute.prefetch;
+    const currentWarm = currentRoute.warm;
 
     return {
       ...currentRoute,
-      prefetch: (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
+      warm: (params: unknown, search: unknown, context: NavigationContext) => {
         if (!hasDemoAuth(search)) {
           const from = currentRoute.render(
             (params ?? {}) as RouteParamValues | Record<string, never>,
@@ -66,8 +62,8 @@ export function withAuth(loginPath: string): RouteMiddleware {
           redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
         }
 
-        if (currentPrefetch) {
-          return currentPrefetch(params, search, context);
+        if (currentWarm) {
+          return currentWarm(params, search, context);
         }
       },
     };
