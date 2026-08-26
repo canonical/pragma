@@ -95,6 +95,53 @@ describe("component/react undo plan", () => {
 });
 
 // =============================================================================
+// Pre-existing parent index (host-backed Exists resolution)
+// =============================================================================
+
+describe("undo plan against a pre-existing parent index", () => {
+  // Regression: collecting undos with a blank filesystem always took the
+  // create branch of appendExportToParentIndex, so `--undo` deleted a barrel
+  // index.ts that existed before the forward run. With a host-backed
+  // resolveExists (what runUndo supplies), collection must take the append
+  // branch and keep the barrel.
+  const generator = generators["component/react"];
+  const parentIndex = "src/components/index.ts";
+  const answers = {
+    componentPath: "src/components/Button",
+    withStyles: true,
+    withStories: true,
+    withSsrTests: true,
+  };
+  const resolveExists = (p: string) => p === parentIndex;
+
+  it("never deletes the pre-existing parent index", () => {
+    const undos = collectUndos(generator.generate(answers), { resolveExists });
+
+    const indexDeletes = undos
+      .flatMap((undo) => dryRun(undo).effects)
+      .filter(
+        (e) =>
+          e._tag === "DeleteFile" &&
+          (e as { path: string }).path === parentIndex,
+      );
+    expect(indexDeletes).toHaveLength(0);
+    // Same step count as the create branch: the append contributes its
+    // remove-line undo instead of a DeleteFile.
+    expect(undos.length).toBe(16);
+  });
+
+  it("collects the remove-line undo for the barrel append", () => {
+    const undos = collectUndos(generator.generate(answers), { resolveExists });
+
+    // The appendExport step is the generator's last undoable effect; its undo
+    // reads the barrel to strip just the appended line rather than delete it.
+    const lastUndoEffects = dryRun(undos[undos.length - 1]).effects;
+    expect(lastUndoEffects[0]._tag).toBe("ReadFile");
+    expect((lastUndoEffects[0] as { path: string }).path).toBe(parentIndex);
+  });
+});
+
+// =============================================================================
 // Svelte
 // =============================================================================
 
