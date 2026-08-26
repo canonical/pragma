@@ -108,21 +108,39 @@ describe("server matrix (2×3) serves correctly", () => {
               redirect: "manual",
             });
             expect(legacy.status).toBe(301);
+            const legacyLocation = legacy.headers.get("location");
+            expect(legacyLocation, "301 must carry a Location").toBeTruthy();
             expect(
-              new URL(legacy.headers.get("location") ?? "", server.base)
-                .pathname,
+              new URL(legacyLocation as string, server.base).pathname,
             ).toBe("/");
 
             const guarded = await fetch(`${server.base}/account`, {
               redirect: "manual",
             });
             expect(guarded.status).toBe(302);
+            const guardedHeader = guarded.headers.get("location");
+            expect(guardedHeader, "302 must carry a Location").toBeTruthy();
             const guardedLocation = new URL(
-              guarded.headers.get("location") ?? "",
+              guardedHeader as string,
               server.base,
             );
             expect(guardedLocation.pathname).toBe("/login");
             expect(guardedLocation.searchParams.get("from")).toBe("/account");
+
+            // The auth decision comes from the router's own match, so URL
+            // shapes the router normalizes differently from a raw-URL check
+            // must still redirect: a trailing slash, and duplicate auth
+            // values where the router keeps the last one.
+            const trailing = await fetch(`${server.base}/account/`, {
+              redirect: "manual",
+            });
+            expect(trailing.status).toBe(302);
+
+            const duplicated = await fetch(
+              `${server.base}/account?auth=1&auth=0`,
+              { redirect: "manual" },
+            );
+            expect(duplicated.status).toBe(302);
 
             const authorized = await fetch(`${server.base}/account?auth=1`);
             expect(authorized.status).toBe(200);
