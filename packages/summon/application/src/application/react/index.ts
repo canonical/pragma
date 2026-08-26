@@ -88,7 +88,7 @@ const templateCache = new Map<string, LoadedTemplate>();
 function load(templatePath: string): LoadedTemplate {
   let loaded = templateCache.get(templatePath);
   if (!loaded) {
-    loaded = loadTemplateSync("application/react", src(templatePath));
+    loaded = loadTemplateSync(src(templatePath));
     templateCache.set(templatePath, loaded);
   }
   return loaded;

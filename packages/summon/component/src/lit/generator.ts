@@ -30,7 +30,7 @@ import {
   getParentDir,
   PACKAGE_NAME,
 } from "../shared/index.js";
-import { loadTemplateSync } from "../shared/loadTemplate.js";
+import { loadTemplateSync } from "@canonical/summon-core";
 import type { LitAnswers } from "./types.js";
 
 // =============================================================================

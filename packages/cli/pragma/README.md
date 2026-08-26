@@ -52,7 +52,7 @@ pragma is extended along two independent planes:
 pragma create component react src/components/Button
 ```
 
-— is `summon component react src/components/Button` wearing a different binary: same tree segments, same prompt-derived flags, same wizard, byte-identical output for `component`, `package`, and `application` alike. summon is not a runtime dependency. Each generator package ships its own template tree, so all three run from a published install. The normative parity contract lives at [packages/summon/core/docs/parity-contract.md](../../summon/core/docs/parity-contract.md).
+— is `summon component react src/components/Button` wearing a different binary: same tree segments, same prompt-derived flags, same wizard, byte-identical output for `component`, `package`, and `application` alike. summon is not a runtime dependency. Each generator package ships its own template tree, so all three run from a published install. Parity is not written down but EXECUTED: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit.
 
 ## MCP
 

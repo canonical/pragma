@@ -985,7 +985,7 @@ export const App = ({
     }
   }, [prefilledAnswers, askMissing, state.phase, handlePromptsComplete]);
 
-  // The error phase owns the process exit code (parity-contract §3): a
+  // The error phase owns the process exit code (the cross-CLI matrix): a
   // rendered failure must not exit 0 — pragma routes the same failures
   // through mapExitCode (usage → 2, everything else → 1). The typed invalid
   // answer (a generator's cross-answer guard) is the usage class; every

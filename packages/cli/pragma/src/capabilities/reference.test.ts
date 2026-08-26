@@ -82,21 +82,14 @@ describe("reference docs drift-guard — emitReference == committed (PROTECTED)"
     expect(chapter).toContain("| `--use-ts-stories` |");
   });
 
-  it("the create chapter points at the parity contract, and the link resolves", () => {
+  it("the create chapter says the contract is executed, and names the guard", () => {
     const commands = readCommitted("commands.md");
     const start = commands.indexOf("\n## create\n");
     expect(start).toBeGreaterThan(-1);
     const chapter = commands.slice(start, commands.indexOf("\n### ", start));
-    // Pragma's docs point, never copy — the pinned pointer.
-    expect(chapter).toContain("summon/core/docs/parity-contract.md");
-    // The relative target resolves from the page — what lychee --offline
-    // checks on every PR.
-    const link = chapter.match(/\]\(([^)]*parity-contract\.md)\)/)?.[1];
-    expect(link).toBeDefined();
-    expect(
-      existsSync(
-        fileURLToPath(new URL(`../../docs/reference/${link}`, import.meta.url)),
-      ),
-    ).toBe(true);
+    // Pragma's docs point, never copy. The pointer names a TEST rather than a
+    // document, because the parity claim is only worth what executes it: a
+    // prose contract can go stale silently, a spawned matrix cannot.
+    expect(chapter).toContain("crossCli.subprocess.test.ts");
   });
 });

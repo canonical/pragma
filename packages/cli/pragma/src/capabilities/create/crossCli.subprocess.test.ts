@@ -9,7 +9,9 @@
  *   (3) the conformance REFERENCE (`produceReference` — summon-core `execute`
  *       with `autoPrompt` and the shared stamp).
  *
- * NORMATIVE SOURCE: `packages/summon/core/docs/parity-contract.md` — the
+ * THIS FILE IS THE CONTRACT. It replaced a generated prose document whose
+ * drift guard compared the emitter's output to itself and so could not fail
+ * for any behaviour change — the
  * grammar-derivation rules, the interaction table, and the parity flag set
  * this suite executes. Each producer's argv derives from the SAME fixture
  * answers via `flagizeAnswers`, so the vectors are identical modulo the
@@ -412,7 +414,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
 
   // The same refusal for an invalid EXPLICIT answer under `--yes` (run mode):
   // validation runs before any UI or write in both hosts — downstream of the
-  // refuse decision (parity-contract §3) — so neither may scaffold a tree
+  // refuse decision (the cross-CLI matrix) — so neither may scaffold a tree
   // carrying the invalid value. Before the hoist, summon validated only in
   // the batch arms — `--dry-run` refused while a plain `--yes` run scaffolded
   // `./Bad Name!/` with the broken name in its package.json.
@@ -468,7 +470,7 @@ describe("cross-CLI conformance matrix (PROTECTED)", () => {
   // the fix summon exited 0 and scaffolded 75 entries outside the workspace
   // where pragma's SEC-2 jail refused. The jail is now the host-level
   // backstop behind this shared tier; its symlink-resolution check stays
-  // pragma-only (parity-contract §3, a named follow-up — deliberately no
+  // pragma-only (the cross-CLI matrix, a named follow-up — deliberately no
   // cell pins that divergence).
   it("application/react: a ../ escape fails the shared validator in both bins — exit 2, nothing written outside", () => {
     const args = [

@@ -2,7 +2,7 @@
  * The ONE interaction decision (R2). Both products call this — the summon bin
  * and pragma's `create` — so a given (flags, TTY, answers) state produces the
  * same mode in either binary. The normative table lives in
- * `docs/parity-contract.md`, EMITTED from this module; the exhaustive 32-cell
+ * the cross-CLI matrix, which executes this module's decision; the exhaustive 32-cell
  * test in `decideInteraction.test.ts` pins every row.
  *
  * Precedence: `--dry-run` > `--undo` > the rest. The batch modes ignore TTY —

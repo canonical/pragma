@@ -167,7 +167,7 @@ pragma config show --format json
 
 ## create
 
-The `create` surface is a PROJECTION of the summon generator tree: `pragma create <path...>` ≡ `summon <path...>` over the declared bindings — same grammar, same flags, same wizard, byte-identical trees. Tree segments are subcommands (`create component react|svelte|lit`, `create application react`), and every flag derives from the generators' own prompts (a default-on confirm registers only its `--no-` form). The normative contract lives at [packages/summon/core/docs/parity-contract.md](../../../../summon/core/docs/parity-contract.md).
+The `create` surface is a PROJECTION of the summon generator tree: `pragma create <path...>` ≡ `summon <path...>` over the declared bindings — same grammar, same flags, same wizard, byte-identical trees. Tree segments are subcommands (`create component react|svelte|lit`, `create application react`), and every flag derives from the generators' own prompts (a default-on confirm registers only its `--no-` form). The contract is EXECUTED, not written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit.
 
 ### pragma create application
 

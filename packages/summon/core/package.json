@@ -48,7 +48,6 @@
     "check:biome:fix": "biome check --write",
     "check:ts": "tsc --noEmit",
     "check:webarchitect": "webarchitect library --license GPL-3.0",
-    "gen:parity": "bun run scripts/genParityContract.ts",
     "test": "bun run test:vitest && bun run test:ink",
     "test:vitest": "vitest run --coverage --exclude '**/*.test.tsx'",
     "test:ink": "vitest run --no-coverage 'src/prompt/ink/wizard.test.tsx'",

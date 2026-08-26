@@ -27,7 +27,7 @@ import {
   PACKAGE_NAME,
   sharedPrompts,
 } from "../shared/index.js";
-import { loadTemplateSync } from "../shared/loadTemplate.js";
+import { loadTemplateSync } from "@canonical/summon-core";
 import type { ReactComponentAnswers } from "./types.js";
 
 // =============================================================================

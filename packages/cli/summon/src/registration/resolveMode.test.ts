@@ -4,7 +4,7 @@
  * TTYs). §L items 4a/4b live here: TTY `--dry-run` renders the batch plan
  * and TTY `--undo` runs batch undo (the OLD decision block sent both to
  * Ink), and a TTY with partial flags asks the missing prompts. The
- * `summonIsTTY` expression itself (stdin AND STDOUT — parity-contract §3) is
+ * `summonIsTTY` expression itself (stdin AND STDOUT — the cross-CLI matrix) is
  * pinned against patched streams.
  */
 

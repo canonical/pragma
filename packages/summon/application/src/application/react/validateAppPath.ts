@@ -7,7 +7,7 @@ import * as path from "node:path";
  * `..` segments (either would write outside the tree the run was started in)
  * — the same guard `component/*`'s `validateComponentPath` applies, so an
  * escaping output path fails the SHARED prompt-validate gate in BOTH hosts
- * (parity-contract §3). Pragma's SEC-2 jail stays the host-level backstop
+ * (the cross-CLI matrix). Pragma's SEC-2 jail stays the host-level backstop
  * behind this: its symlink-resolution check is the one class a value-only
  * validator cannot see.
  *

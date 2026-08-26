@@ -557,12 +557,9 @@ export default function setup(): void {
       cwd: root,
       stdio: "inherit",
       // The GATE's build rewrites NONE of the committed artifacts its
-      // drift guards read: the two generated modules run in CHECK mode (a
-      // stale committed module FAILS this build, naming itself — except a
-      // versions-only stale PACKAGE_VERSIONS block, a workspace bump's
-      // expected residue, which check mode REPAIRS with a notice so the
-      // binary this spawn builds and the PROTECTED offline cells agree
-      // with the live manifests) and no reference docs are written —
+      // drift guards read: the generated surface runs in CHECK mode (a stale
+      // committed module FAILS this build, naming itself) and no reference
+      // docs are written —
       // otherwise this same vitest run would silently repair what its
       // drift guards (create.test.ts's PROTECTED cells; reference.test.ts)
       // exist to catch. Every guard compares the bytes git actually holds.

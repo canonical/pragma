@@ -1,6 +1,5 @@
 import { dryRun } from "@canonical/task";
-import { afterEach, describe, expect, it } from "vitest";
-import { setEmbeddedTemplates } from "../embedded/store.js";
+import { describe, expect, it } from "vitest";
 import template from "./template.js";
 import templateDir from "./templateDir.js";
 
@@ -85,47 +84,5 @@ describe("templateDir task", () => {
     });
 
     expect(() => dryRun(t)).not.toThrow();
-  });
-});
-
-describe("template in embedded context", () => {
-  afterEach(() => {
-    setEmbeddedTemplates({});
-  });
-
-  it("a content-less call fails with the NAMED error once a manifest is injected", () => {
-    setEmbeddedTemplates({ "component/react/x.ejs": "irrelevant" });
-    const t = template({
-      source: "/$bunfs/root/templates/package.json.ejs",
-      dest: "my-lib/package.json",
-      vars: {},
-    });
-    expect(() => dryRun(t)).toThrow(
-      'Template for "my-lib/package.json" would read /$bunfs/root/templates/package.json.ejs ' +
-        "from disk in embedded context — the generator must pass content (loadTemplateSync).",
-    );
-  });
-
-  it("a content-carrying call is unaffected by embedded context", () => {
-    setEmbeddedTemplates({ "component/react/x.ejs": "irrelevant" });
-    const t = template({
-      source: "/templates/x.ejs",
-      content: "hello <%= name %>",
-      dest: "out.txt",
-      vars: { name: "world" },
-    });
-    const { effects } = dryRun(t);
-    const write = effects.find((e) => e._tag === "WriteFile");
-    expect((write as { content: string }).content).toBe("hello world");
-  });
-
-  it("the source-run fallback (empty manifest) still reads from disk, byte-identical", () => {
-    const t = template({
-      source: "/templates/x.ejs",
-      dest: "out.txt",
-      vars: {},
-    });
-    const { effects } = dryRun(t);
-    expect(effects.some((e) => e._tag === "ReadFile")).toBe(true);
   });
 });

@@ -537,7 +537,9 @@ The recovery is in the message: pass `--yes` to accept defaults, `--dry-run`
 to preview without writing, or provide every remaining answer as a flag (a
 fully-explicit non-TTY run executes without `--yes`). The full decision
 table — all 32 input combinations, shared verbatim with `pragma create` — is
-normative in [the parity contract](./parity-contract.md), §3.
+pinned by the cross-CLI matrix
+(`packages/cli/pragma/src/capabilities/create/crossCli.subprocess.test.ts`),
+which runs both CLIs over the same argv.
 
 **Alternative**: For complex component generation that integrates with design system ontologies, consider using the `component-from-ontology` skill in `/skills/component-from-ontology/SKILL.md`, which provides LLM-guided generation without TTY requirements.
 

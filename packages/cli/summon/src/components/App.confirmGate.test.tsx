@@ -4,7 +4,7 @@
  * generator whose `generate` succeeds for the preview and throws on the
  * confirm re-generate must land in the App's error phase — GENERATE_ERROR,
  * exit code 1 — not in Ink's error boundary (a crash box that owns no exit
- * code: the silent-success class parity-contract §3 forbids). Rendered with
+ * code: the silent-success class the cross-CLI matrix forbids). Rendered with
  * ink-testing-library, driven to `Proceed?` and confirmed with `y`.
  */
 

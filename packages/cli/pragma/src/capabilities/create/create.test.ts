@@ -647,62 +647,6 @@ describe("declared generator bindings (PROTECTED)", () => {
     expect(framework?.default).toBeUndefined();
   });
 
-  it("embeds exactly the declared roots' trees — every prefix served, none stray", async () => {
-    const { TEMPLATES } = await import("./templates.embedded.generated.js");
-    const keys = Object.keys(TEMPLATES);
-    const declaredPrefixes = Object.values(CREATE_GENERATORS).flatMap(
-      (binding) => binding.templateRoots.map((root) => root.prefix),
-    );
-    // Non-empty first: `.every()` over an empty list is vacuous.
-    expect(keys.length).toBeGreaterThan(0);
-    // ≥1 entry per declared root: a root the build silently skipped would
-    // leave its binding dying "Template not found" at run time.
-    for (const prefix of declaredPrefixes) {
-      expect(
-        keys.filter((key) => key.startsWith(`${prefix}/`)).length,
-        `no embedded entries under ${prefix}/`,
-      ).toBeGreaterThan(0);
-    }
-    // …and NOTHING outside the declared prefixes: any other entry is dead
-    // weight the loaders can never key.
-    expect(
-      keys.filter(
-        (key) =>
-          !declaredPrefixes.some((prefix) => key.startsWith(`${prefix}/`)),
-      ),
-    ).toEqual([]);
-  });
-
-  it("every committed manifest entry is READER-DERIVABLE from the declared trees", async () => {
-    // The prefix check above cannot see a key the reader would derive
-    // DIFFERENTLY (e.g. a nested templates/ dir folding onto another key, or
-    // a stale committed manifest). Re-deriving the whole manifest through the
-    // seam's own writer — which keys via qualifiedKey, the reader's function
-    // — and requiring deep equality makes "embedded but unreachable" and
-    // "committed but stale" both test failures. Staleness survives to be
-    // seen: the gate's build runs the manifest codegen in CHECK mode
-    // (PRAGMA_BUILD_SKIP_DOCS=1 in scripts/build.ts), failing rather than
-    // rewriting the committed TEMPLATES half — the bytes this guard reads
-    // — before workers start. The ONE exception is the PACKAGE_VERSIONS
-    // block, which this guard does not read: a difference confined to it
-    // is the expected residue of a workspace version bump and is REPAIRED
-    // in place with a notice rather than thrown on (see scripts/codegen.ts).
-    const { TEMPLATES } = await import("./templates.embedded.generated.js");
-    const { buildEmbeddedManifest } = await import("@canonical/summon-core");
-    const roots = Object.values(CREATE_GENERATORS).flatMap((binding) =>
-      binding.templateRoots.map((root) => ({
-        prefix: root.prefix,
-        dir: fileURLToPath(
-          new URL(
-            `../../../node_modules/${binding.name}/${root.relDir}`,
-            import.meta.url,
-          ),
-        ),
-      })),
-    );
-    expect(TEMPLATES).toEqual(buildEmbeddedManifest(roots));
-  });
-
   it("create surfaces exactly the three declared nouns", () => {
     // A LITERAL surface pin, deliberately not derived from CREATE_GENERATORS:
     // surfacing a noun also needs a hand-written prompt mirror, path param and

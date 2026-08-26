@@ -38,7 +38,7 @@ const templatesDir = path.join(__dirname, "..", "templates");
  */
 function loadPackageTemplates() {
   const load = (file: string) =>
-    loadTemplateSync("package", path.join(templatesDir, file));
+    loadTemplateSync(path.join(templatesDir, file));
   return {
     packageJson: load("package.json.ejs"),
     tsconfig: load("tsconfig.json.ejs"),

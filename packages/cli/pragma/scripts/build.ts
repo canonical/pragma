@@ -1,12 +1,10 @@
 /**
  * Build script for the `pragma` compiled binary.
  *
- * Four steps: (1) codegen the create surface
- * (`createSurface.generated.ts`), (2) codegen the embedded template
- * manifest (`templates.embedded.generated.ts`), (3) emit the reference
- * docs (`docs/reference/`), then (4) compile `src/` to `dist/` with `tsc`
- * — the first three write the three committed artifacts the drift guards
- * read.
+ * Three steps: (1) codegen the create surface
+ * (`createSurface.generated.ts`), (2) emit the reference docs
+ * (`docs/reference/`), then (3) compile `src/` to `dist/` with `tsc` — the
+ * first two write the committed artifacts the drift guards read.
  *
  * ONE PASS IS SELF-CONSISTENT: the reference docs render the surface this
  * pass just produced. `capabilities` is imported at process start, so when
@@ -17,21 +15,12 @@
  * on the SAME generation. A GATE's build sets PRAGMA_BUILD_SKIP_DOCS=1 and
  * rewrites NONE of the three committed artifacts its drift guards read
  * (one scoped exception below): the two generated modules
- * (createSurface.generated.ts, templates.embedded.generated.ts) run in
- * CHECK mode (`scripts/codegen.ts` — importable so the seam is pinned by
- * unit cells) — a stale committed module FAILS the build loudly, naming
- * itself and `bun run build` as the repair — and the docs step writes
- * nothing, so every drift guard (create.test.ts's two PROTECTED cells,
- * reference.test.ts) compares the bytes git actually holds and can fail on
- * a stale committed tree. THE exception: a workspace version bump
- * legitimately stales the manifest's PACKAGE_VERSIONS block — no release
- * step rebuilds this package, NO drift guard compares that block as
- * bytes, and the PROTECTED offline cells pin the release line FROM it
- * against the live workspace manifests — so check mode REPAIRS a
- * versions-only difference (writes the assembled module; a NOTICE names
- * the three-line diff as the developer's to commit), keeping the gate,
- * the emit it produces, and the suite agreeing after a bump, while
- * TEMPLATES or surface staleness still fails writing nothing.
+ * (`createSurface.generated.ts`) runs in CHECK mode (`scripts/codegen.ts` —
+ * importable so the seam is pinned by unit cells): a stale committed module
+ * FAILS the build loudly, naming itself and `bun run build` as the repair, and
+ * the docs step writes nothing. So every drift guard (create.test.ts's
+ * PROTECTED cell, reference.test.ts) compares the bytes git actually holds and
+ * can fail on a stale committed tree.
  *
  * WHAT SHIPS is emitted JavaScript on a `node` shebang — `dist/src/bin.js`,
  * the `bin` entry — not a standalone executable, so every binding runs from a
@@ -83,7 +72,7 @@ const REFERENCE_DIR = fileURLToPath(new URL("../docs/reference/", scriptsUrl));
 /**
  * Write the generated Markdown reference (`emitReference(capabilities)`) into
  * `docs/reference/`, one file per page. Deterministic, so — like
- * {@link generateTemplateManifest} — a page is written ONLY when its bytes
+ * {@link generateCreateSurface} — a page is written ONLY when its bytes
  * differ, keeping a rebuild a working-tree no-op. Any committed `.md` the
  * emitter no longer produces (a removed noun's page) is pruned, so the tree
  * self-heals instead of leaning on the drift-guard to catch the orphan.

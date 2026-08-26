@@ -14,31 +14,16 @@
  *
  * CHECK MODE (`{ check: true }` — a gate's build, PRAGMA_BUILD_SKIP_DOCS=1
  * in build.ts): COMPARE, never silently repair. A stale committed
- * `createSurface.generated.ts` (full bytes) or a stale TEMPLATES half of
- * `templates.embedded.generated.ts` FAILS loudly, naming the module and
- * `bun run build` as the repair. ONE scoped exception, the manifest's
- * PACKAGE_VERSIONS block: a workspace version bump rewrites exactly those
- * lines, no release step rebuilds this package, NO drift guard compares
- * the block as bytes — and the compiled binary plus the two PROTECTED
- * offline cells (shippedCreate.subprocess.test.ts) pin the release line
- * FROM it against the live workspace manifests, so tolerating it stale
- * would green the gate and then redden those cells two files from the
- * cause, with the freshly built binary scaffolding the PREVIOUS release
- * line. A versions-only difference is therefore REPAIRED: check mode
- * writes the assembled module (fresh versions into the committed file,
- * restoring binary/cells/disk-walk agreement) and logs a NOTICE that the
- * three-line diff is the developer's to commit. The repair never fires
- * when the TEMPLATES half or frame differs — that still throws naming
- * TEMPLATES, writing nothing, even when the versions block is stale too —
- * and build.ts checks the surface FIRST, so a stale surface fails the
- * build before any repair.
+ * `createSurface.generated.ts` FAILS loudly, naming the module and
+ * `bun run build` as the repair. The gate must judge the bytes git actually
+ * holds, so repairing them in the same run that checks them would green a
+ * stale tree and hide the drift the guard exists to surface.
  */
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { generators as applicationGenerators } from "@canonical/summon-application";
 import { generators as componentGenerators } from "@canonical/summon-component";
-import { buildEmbeddedManifest } from "@canonical/summon-core";
 import { projectGenerator } from "@canonical/summon-core/projection";
 import { generators as packageGenerators } from "@canonical/summon-package";
 import { CREATE_GENERATORS } from "../src/capabilities/create/constants.js";

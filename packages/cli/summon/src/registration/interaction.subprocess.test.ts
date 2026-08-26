@@ -9,7 +9,7 @@
  *  - row 1/2: `--dry-run`/`--undo` are batch renders, dry-run taking
  *    precedence, and a missing/invalid batch answer errors loudly (exit 2);
  *  - the run arm's exit codes: an execution failure renders in the App and
- *    exits 1 (parity-contract §3 — never exit 0 on a rendered failure);
+ *    exits 1 (the cross-CLI matrix — never exit 0 on a rendered failure);
  *  - the exit classification's INFORMATIONAL branches: `--help`/`--version`
  *    exit 0, the root invoked with options but no command carries the help
  *    error's own exit 1, the implicit `help` command exits 0 — the branches

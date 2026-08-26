@@ -261,7 +261,7 @@ export async function runCreate(
   // with a clean INVALID_INPUT (execute re-validates as a backstop). Runs
   // BEFORE the jail: the path prompts' own validators reject absolute/`..`
   // escapes, so an escaping output path fails the SHARED validator line in
-  // both hosts (parity-contract §3) and the jail below stays the backstop
+  // both hosts (the cross-CLI matrix) and the jail below stays the backstop
   // its docblock claims.
   const pathParam = PATH_PARAM[kind];
   const invalid = summon.validateAnswers(generator.prompts, answers);

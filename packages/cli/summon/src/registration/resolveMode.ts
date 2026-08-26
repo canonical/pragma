@@ -18,7 +18,7 @@ import {
 } from "@canonical/summon-core/projection";
 
 /**
- * Summon's TTY fact (parity-contract §3): stdin AND stdout are TTYs — the
+ * Summon's TTY fact (the cross-CLI matrix): stdin AND stdout are TTYs — the
  * wizard renders to stdout, so a piped stdout must be non-interactive.
  *
  * @returns True when both streams are TTYs.

@@ -274,7 +274,7 @@ async function runGeneratorAction(
   // scaffolded a tree carrying the invalid value) — but AFTER the refuse
   // arm: pragma's mount decides (and refuses) before its create runtime
   // loads, so refuse must win over invalid input in BOTH hosts
-  // (parity-contract §3). The batch arms re-check the defaults-applied set
+  // (the cross-CLI matrix). The batch arms re-check the defaults-applied set
   // below (an invalid generator DEFAULT stays loud).
   if (!failLoudInvalidAnswers(generator, cliAnswers)) return;
 
@@ -418,7 +418,7 @@ const summonHost: GeneratorCliHost = {
   },
   action: (entry, positionalValue, options) =>
     runGeneratorAction(entry, positionalValue, options),
-  // Summon's host spelling (parity-contract §2): Commander's implicit
+  // Summon's host spelling (the cross-CLI matrix): Commander's implicit
   // `help` subcommand stays available on namespaces (`summon component
   // help`, the `help [command]` row in the namespace help page). The
   // projection's namespace action would otherwise suppress Commander's

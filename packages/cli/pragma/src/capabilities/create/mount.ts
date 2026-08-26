@@ -544,5 +544,6 @@ const REFERENCE_INTRO =
   "same grammar, same flags, same wizard, byte-identical trees. Tree segments are " +
   "subcommands (`create component react|svelte|lit`, `create application react`), and " +
   "every flag derives from the generators' own prompts (a default-on confirm registers " +
-  "only its `--no-` form). The normative contract lives at " +
-  "[packages/summon/core/docs/parity-contract.md](../../../../summon/core/docs/parity-contract.md).";
+  "only its `--no-` form). The contract is EXECUTED, not written down: " +
+  "`crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares " +
+  "what they emit.";
