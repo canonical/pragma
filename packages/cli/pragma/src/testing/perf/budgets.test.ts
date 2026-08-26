@@ -16,7 +16,7 @@ import {
 import { measureCommand, percentile, trimmedMean } from "./measure.js";
 
 /**
- * The emitted entry the perf globalSetup guarantees exists, spawned through
+ * The shipped entry the perf globalSetup guarantees exists, spawned through
  * `node` — which is what a consumer's `pragma` does, so node's own startup is
  * inside every sample rather than excluded from it. The budgets below are
  * ceilings on what a user waits, not on what a bundler produced.
@@ -105,7 +105,7 @@ describe("perf budgets (PROTECTED)", () => {
 
   it("warm store-backed verb stays under budget", { retry: 2 }, () => {
     // __store-probe boots the embedded pack from its n-quads cache and queries
-    // it — the full store-backed verb cost in the compiled binary. The first
+    // it — the full store-backed verb cost through the shipped entry. The first
     // spawn materializes the pack; warmups absorb it, then it is a cache hit.
     // Note that with 9 kept samples a nearest-rank p95 IS the maximum (see
     // BUDGETS.md's p95-stabilization section) — deliberately kept, because the

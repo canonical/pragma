@@ -1,11 +1,11 @@
 /**
- * The package tier, end to end: a noun the binary never shipped.
+ * The package tier, end to end: a noun the distribution never shipped.
  *
  * A package that ships `stories/*.json` and is declared as a `file:` pack
  * contributes a working command to a project that declares it — resolved by
  * `sources update`, hashed into the pack, written into the pack directory, read
  * back storelessly at dispatch, and answered from the fixture graph. Proven both
- * in-process and through the COMPILED binary in a real subprocess.
+ * in-process and through the SHIPPED entry in a real subprocess.
  *
  * The same package also ships a malformed story and a schema-invalid one. Those
  * must be DROPPED, not fatal: package stories reach dispatch before the command
@@ -43,7 +43,7 @@ ex:soup a ex:Recipe ; ex:name "Soup" .
 ex:stew a ex:Recipe ; ex:name "Stew" .
 `;
 
-/** A valid read story — the noun the binary never shipped. */
+/** A valid read story — the noun the distribution never shipped. */
 const RECIPE_STORY = JSON.stringify({
   noun: "recipe",
   description: "List recipes.",
@@ -147,7 +147,7 @@ describe("the two recoveries still run with bad stories in the pack", () => {
   });
 });
 
-describe("the compiled binary answers the package's noun (subprocess)", () => {
+describe("the shipped entry answers the package's noun (subprocess)", () => {
   it("pragma recipe list --format json returns the package's rows", () => {
     const result = runCli(["recipe", "list", "--format", "json"], {
       cwd: graph.cwd,

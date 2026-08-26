@@ -239,11 +239,12 @@ const PATH_PARAM: Record<CreateKind, string | undefined> = {
 
 /**
  * True when a dynamic import failed because the module could not be RESOLVED.
- * summon-core + the generators are now bundled into the binary, so this should
- * not arise; {@link loadCreateRuntime} keeps it as a defensive backstop that
- * turns a resolution failure into a clean gate rather than a raw "internal bug"
- * report. Matched structurally across bun (`ResolveMessage`) and node
- * (`ERR_MODULE_NOT_FOUND`) so a genuine runtime error still propagates.
+ * The live case is an install whose `@canonical/summon-*` dependencies are
+ * missing or pruned; {@link loadCreateRuntime} keeps this as a defensive
+ * backstop that turns a resolution failure into a clean refusal rather than a
+ * raw "internal bug" report. Matched structurally across node
+ * (`ERR_MODULE_NOT_FOUND`) and bun (`ResolveMessage`) so a genuine runtime error
+ * still propagates.
  */
 export function isModuleNotFound(cause: unknown): boolean {
   if (!cause || typeof cause !== "object") return false;
@@ -263,21 +264,20 @@ export function isModuleNotFound(cause: unknown): boolean {
 
 /**
  * Load the create runtime: inject the embedded template manifest, then import
- * the generator selector + summon-core (STATIC dynamic imports, so bun's
- * `--compile` bundler includes them — they stay behind this lazy boundary, so
- * the fast paths and `create --yes` still load neither summon-core nor React).
+ * the generator selector + summon-core (STATIC specifiers behind a dynamic
+ * import, so they stay analysable while remaining behind this lazy boundary —
+ * the fast paths and `create --yes` load neither summon-core nor React).
  *
  * The manifest is injected BEFORE `pickGenerator` — the component loader
  * consults it when its disk read fails, and the generators load their templates
  * on first `generate()`. It is imported from summon-component's `loadTemplate`
  * submodule so this does not evaluate the generator index first.
  *
- * THE DISK READ WINS. `loadTemplateSync` tries the real file under
- * each generator package's `dist/esm` templates tree first and reaches the manifest
- * only when that read fails, so the manifest is normally inert. It is kept as
- * the fallback arm because it pins template bytes to this package's version
- * rather than to whatever the consumer's resolution supplies — not, any longer,
- * because a filesystem is missing.
+ * THE DISK READ WINS. `loadTemplateSync` tries the real file under the resolved
+ * generator package's `dist/esm` templates tree first and reaches the manifest
+ * only when that read throws, so the manifest is inert in every healthy install.
+ * It survives as the fallback arm it always was — for a broken or pruned
+ * install, not because a filesystem is missing.
  *
  * EVERY BINDING RUNS EVERYWHERE. The availability gate this function used to
  * carry existed because `bun build --compile` resolved modules under a virtual
@@ -304,9 +304,9 @@ async function loadCreateRuntime(kind: CreateKind) {
       throw new PragmaError({
         code: "UNSUPPORTED",
         message:
-          "`create` could not load its generator runtime. Run it from a source checkout, or use the `summon` CLI.",
+          "`create` could not load its generator runtime — the `@canonical/summon-*` packages it depends on could not be resolved.",
         recovery: {
-          message: "Run `create` from a source checkout, or use `summon`.",
+          message: `Reinstall ${BIN_NAME} (its generator dependencies look missing), or use the \`summon\` CLI.`,
         },
       });
     }
@@ -331,9 +331,8 @@ async function runCreate(
   rt: PragmaRuntime,
 ): Promise<Task<GeneratorResult>> {
   // Lazy: importing these pulls summon-core (and with it React) — kept off every
-  // non-create path. Now STATIC dynamic imports so `--compile` bundles them; the
-  // embedded `.ejs` manifest is injected here. A binding that does not read
-  // through it stays a source-run feature in the binary.
+  // non-create path. The specifiers stay static so they remain analysable; the
+  // embedded `.ejs` manifest is injected here as the disk read's fallback.
   const { pickGenerator, summon } = await loadCreateRuntime(kind);
 
   // Normalize the CLI/MCP `--with-X` include-flags to the generator prompt names
@@ -441,8 +440,8 @@ const CREATE_CAPABILITY = {
  * NO BINDING CARRIES AN AVAILABILITY CAVEAT. Every generator's templates are
  * reachable on disk from the installed package, so `component`, `package` and
  * `application` are equally available and their summaries say only what they
- * make. The `Source-run only.` suffix and the `doc` that explained the compiled
- * binary's refusal are gone with the binary.
+ * make. The `Source-run only.` suffix and the `doc` that explained the refusal
+ * are gone with the artifact that refused.
  */
 function createVerb(
   kind: CreateKind,

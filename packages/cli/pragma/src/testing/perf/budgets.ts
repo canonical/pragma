@@ -23,7 +23,7 @@ export const BUDGET_PROJECT_CONFIG_MS = 10;
 
 /**
  * Warm store-backed verb ceiling (ms) — a store boot from the cached n-quads
- * dump plus a query, in the compiled binary.
+ * dump plus a query, through the shipped entry.
  *
  * Re-derived when the embed became the distribution's real 8 479-triple graph
  * instead of a 23-triple sample. Netted against a `--version` control from the

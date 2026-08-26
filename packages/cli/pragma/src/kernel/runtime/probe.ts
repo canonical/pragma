@@ -1,12 +1,12 @@
 /**
  * The `__store-probe` diagnostic — boot the embedded pack and report a count.
  *
- * Its whole reason to exist is the compiled binary: it exercises the full
- * store-boot path (oxigraph WASM load, n-quads cache load, `compileFromExtraction`,
- * a SPARQL count) so a spawned-binary smoke test can prove the WASM and the
- * embedded pack survive `bun build --compile`. A silent store-boot failure in
- * the standalone binary is the one failure vitest's in-process suite cannot
- * catch, so this is the guard. Storeless code never imports it — the bin
+ * Its whole reason to exist is the PROCESS BOUNDARY: it exercises the full
+ * store-boot path (oxigraph WASM load, n-quads cache load,
+ * `compileFromExtraction`, a SPARQL count) so a spawned smoke test can prove the
+ * WASM and the embedded pack load from what actually ships. A silent store-boot
+ * failure in the shipped artifact is the one failure vitest's in-process suite
+ * cannot catch, so this is the guard (`wasmEmbed.test.ts` spawns it). Storeless code never imports it — the bin
  * fast-paths it behind a dynamic import.
  */
 

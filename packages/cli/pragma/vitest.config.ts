@@ -6,7 +6,7 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     // The perf-budget TIMING tests (src/testing/perf/**) are isolated into their
     // own SERIAL pass (vitest.perf.config.ts / the `test:perf` script): spawning +
-    // timing the compiled binary inside this parallel, coverage-instrumented run
+    // timing the shipped entry inside this parallel, coverage-instrumented run
     // measures CPU contention, not the binary, so the ceilings flake red. They
     // stay ENFORCED, just out of this pass.
     exclude: [...configDefaults.exclude, "src/testing/perf/**"],
@@ -14,7 +14,7 @@ export default defineConfig({
     // — a correctness check (exit/stdout), not a timing one, so it belongs in
     // this pass. Reuse the perf suite's "emit once if missing"
     // globalSetup so a clean `test:vitest` provisions it instead of failing with
-    // a null exit status (the binary was previously assumed pre-built here).
+    // a null exit status (the emit was previously assumed pre-built here).
     globalSetup: ["./src/testing/perf/globalSetup.ts"],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],
     environment: "node",

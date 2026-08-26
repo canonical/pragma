@@ -22,8 +22,8 @@ sample, because the user pays it.
 
 Environment: Linux x64, Bun v1.3.11, `bun build --compile --minify`
 (`dist/pragma`) — the artifact shipped at the time; the distribution has since
-moved to emitted JavaScript on Node, which costs roughly 2x on the fast paths
-and remains inside every ceiling below. Method: `measureCommand` spawns 30x,
+moved to emitted JavaScript on Node, which costs roughly 2× on the fast paths
+and remains inside every ceiling below. Method: `measureCommand` spawns 30×,
 discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 (un-skipped) re-measure a batch of spawns and assert against the ceilings below.
 
@@ -55,7 +55,8 @@ unchanged; only the statistic it is asserted against was made reliable.
 | `__store-probe` (store)    | ~147 ms | ~176 ms | 500 ms  | re-derived (see below)    |
 
 The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
-cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
+cache load + `compileFromExtraction` + a SPARQL count, across the process
+boundary)
 measured ~147 ms median here — but that timed a boot of the 23-triple
 **placeholder** pack. Against the real embedded graph the store component is
 ~2.8× that; see "The embedded pack becomes the real graph" below, where the
@@ -153,9 +154,10 @@ it is 1.67× the designed 300 ms target, where `--help`'s enforced ceiling is
 the surface covenant and `budgets.$comment` now names it as the third
 designed-vs-enforced divergence.
 
-**Also measured — the per-invocation start tax.** The real embed makes the
-binary ~2.0 MB bigger (104.8 → 106.8 MB), and `bun build --compile` emits one
-script, so the whole embed is *parsed* at process start on every invocation even
+**Also measured — the per-invocation start tax**, on the compiled binary of the
+time. The real embed made it ~2.0 MB bigger (104.8 → 106.8 MB), and
+`bun build --compile` emitted one script, so the whole embed was *parsed* at
+process start on every invocation even
 though `--version` and `--help` import neither generated module. Measured on
 `--version` under the interleaved protocol, which is the only one where the two
 binaries face the same page-cache pressure: **+24.1 / +24.7 / +28.4 ms**. Scaled
@@ -223,8 +225,9 @@ Confirmed by the spike:
   (`complete.test.ts`), no config or store read.
 - **project config is served warm** — `evaluateProjectConfig` returns the
   content-hash cache on a hit without re-importing (`readConfig.test.ts`), and
-  the compiled binary evaluates an external `pragma.config.ts` natively (D7
-  verified — no subprocess fallback needed).
+  the shipped entry evaluates an external `pragma.config.ts` natively — under
+  Node that is type STRIPPING, so the config must be erasable TypeScript
+  (`engines` pins the floor that makes it default-on).
 
 ## Stories in packs — no budget movement (A/B)
 

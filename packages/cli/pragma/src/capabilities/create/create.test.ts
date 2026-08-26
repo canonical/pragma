@@ -463,7 +463,7 @@ describe("generator→grammar adapter parity (PROTECTED)", () => {
 
 describe("compiled-binary create gate (M4)", () => {
   it("detects a module-resolution failure but not a genuine runtime error", () => {
-    // bun --compile's unresolved-specifier error (the shipped-binary case).
+    // an unresolved-specifier error (the broken-install case).
     expect(
       isModuleNotFound({
         name: "ResolveMessage",
@@ -549,7 +549,7 @@ describe("declared generator bindings (PROTECTED)", () => {
     const { TEMPLATES } = await import("./templates.embedded.generated.js");
     const keys = Object.keys(TEMPLATES);
     // summon-component's `qualifiedKey()` prefixes EVERY lookup with
-    // `component/`, so any other entry ships dead weight the binary can never
+    // `component/`, so any other entry ships dead weight the loader can never
     // read — and a binding embedded without a manifest-reading generator would
     // put one here. Non-empty first: `.every()` over an empty list is vacuous.
     expect(keys.length).toBeGreaterThan(0);

@@ -1,15 +1,15 @@
 /**
  * The generator bindings the `create` surface exposes — the one list the
  * surface's mechanical copies derive from: the `CreateKind` union (`types.ts`),
- * the `--framework` enum and the compiled-binary gate (`create.verb.ts`), the
- * generator lookup (`pickGenerator.ts`), and the template roots the bundler
- * embeds (`scripts/build.ts`). Prose is NOT derived: the verb summaries below
+ * the `--framework` enum (`create.verb.ts`), the generator lookup
+ * (`pickGenerator.ts`), and the template roots the manifest carries
+ * (`scripts/build.ts`). Prose is NOT derived: the verb summaries below
  * `createVerbs` and `capabilities/hints.ts` still name the frameworks by hand.
  *
  * This table is the SINGLE authoring point for which generator packages the
  * distribution ships: it binds each `create` noun to the generator-map key it
- * runs, and — for the one generator whose templates the binary carries — to
- * the package `scripts/build.ts` harvests them from. (A parallel `generators`
+ * runs, and — for the one generator that reads through the embedded manifest —
+ * to the package `scripts/build.ts` harvests its templates from. (A parallel `generators`
  * CONFIG field once declared the same packages; it was validated, layered and
  * read by nothing, and was removed under the L-OPEN-1 ruling — the config
  * validator now rejects it loudly.) The binding is hand-written because
@@ -33,19 +33,16 @@
  */
 export const CREATE_GENERATORS = {
   component: {
-    /**
-     * The declaring package: `scripts/build.ts` harvests its `.ejs` for the
-     * binary.
-     */
+    /** The declaring package: `scripts/build.ts` harvests its `.ejs`. */
     name: "@canonical/summon-component",
     /** `--framework <f>` runs `component/<f>`; the FIRST is the enum default. */
     frameworks: ["react", "svelte", "lit"],
     /**
-     * Runs from the compiled binary: this generator routes every template read
-     * through `loadTemplateSync` and passes `content:` into `template()`, so the
-     * embedded manifest serves it. That — not the templates' file extensions —
-     * is the property that decides it, and it is a fact about the GENERATOR's
-     * source, not about what this build chooses to embed.
+     * Reads through the embedded manifest: this generator routes every template
+     * read through `loadTemplateSync` and passes `content:` into `template()`,
+     * so the manifest can serve it when the disk read throws. That — not the
+     * templates' file extensions — is the property that decides it, and it is a
+     * fact about the GENERATOR's source, not about what this build embeds.
      */
     readsEmbeddedTemplates: true,
   },

@@ -17,14 +17,18 @@
  * module is already its own file behind those same lazy boundaries, so the fast
  * paths keep loading nothing they do not use.
  *
- * THE TEMPLATE MANIFEST OUTLIVES THE BINARY, deliberately. It was introduced
- * because `--compile` has no filesystem for the generators' `.ejs` to live on.
- * That reason is gone — uncompiled, `loadTemplateSync` finds the real files
- * under each generator package's `dist/esm` templates tree, which is the path it
- * tries FIRST. The manifest stays as the fallback arm it always was, now
- * earning its place for a different reason: it pins template bytes to this
- * package's version instead of to whatever the consumer's resolution happens to
- * supply. Step 1 therefore stays, and its drift guard with it.
+ * THE TEMPLATE MANIFEST'S REASON EXPIRED WITH THE BINARY, and step 1 is kept
+ * for now rather than because it still earns its keep. It existed because
+ * `--compile` gave the generators' `.ejs` no filesystem to live on.
+ * `loadTemplateSync` reads the real file FIRST and reaches the manifest only
+ * when that read throws — and the path it reads is derived from the RESOLVED
+ * generator package, so whatever templates a consumer's resolution supplies are
+ * the ones on disk and the ones that win. The manifest therefore pins nothing;
+ * it fires only when a generator package's shipped templates cannot be read,
+ * i.e. a broken or pruned install, where it silently serves this package's
+ * frozen copy instead of failing loudly. Whether it survives at all belongs to
+ * the create-surface work, which is changing what it covers; deciding it here
+ * would settle that question from the wrong end.
  */
 
 import { spawnSync } from "node:child_process";
@@ -224,6 +228,16 @@ if (import.meta.main) {
     console.error(`Build failed${emit.error ? `: ${emit.error.message}` : ""}`);
     process.exit(1);
   }
+
+  // The success sentinel, written LAST and only on a clean emit. `tsc` writes
+  // its outputs even when it exits non-zero, so an output file's mtime cannot
+  // tell a finished build from a failed one — a freshness check keyed on
+  // `dist/src/bin.js` would call the wreckage of a failed build fresh, skip the
+  // rebuild on the next run, and leave every spawning suite green against it.
+  // The compiled build never needed this: `bun build` left its outfile alone on
+  // failure, so a failure stayed loudly stale. `testing/perf/globalSetup.ts`
+  // reads THIS file, not the entry.
+  writeFileSync(fileURLToPath(new URL("../dist/.build-ok", scriptsUrl)), "");
 
   console.log("Built dist/ (tsc)");
 }

@@ -348,7 +348,7 @@ describe("storeless guarantee (PROTECTED)", () => {
     // The perf globalSetup guarantees the emitted `dist/` exists.
     // A FRESH INSTALL, reproduced: nothing is inherited from this process's
     // environment, the cwd holds no config, and $HOME plus all three XDG roots
-    // are empty temps. Anything the binary answers here it answered from
+    // are empty temps. Anything the entry answers here it answered from
     // itself. (The suite before this inherited `...process.env`, so it could
     // not tell a compiled-in answer from an ambient one.)
     const entry = fileURLToPath(
@@ -380,7 +380,7 @@ describe("storeless guarantee (PROTECTED)", () => {
     expect(nouns.stderr).toBe("");
 
     // The headline guarantee of the embedded pack: a user who has installed
-    // the binary and nothing else gets ENTITY candidates on the first TAB.
+    // the shipped entry and nothing else gets ENTITY candidates on the first TAB.
     // Every other pin on the embedded index runs in-process, where an emit
     // change that made `pack.index.generated.ts` unreachable FROM THE SHIPPED
     // ENTRY would leave the whole suite green.

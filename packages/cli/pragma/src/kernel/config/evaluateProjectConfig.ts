@@ -27,7 +27,8 @@
  * parameter properties). Those are rejected with `ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX`,
  * which {@link evaluateProjectConfig} names specifically rather than letting it
  * arrive as an anonymous load failure. The `engines` floor (node >= 22.18) is what
- * makes stripping default-on; below it the import fails outright.
+ * makes stripping default-on — and the range excludes 23.0-23.5, which satisfy
+ * a bare `>=22.18` but predate the 23.x line's own default-on release (23.6).
  */
 
 import { createHash } from "node:crypto";
@@ -114,10 +115,8 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
     // needs real emit fails here with a message naming neither the constraint nor
     // the fix. Say both — this is a supported config that simply must be written
     // in erasable TypeScript, and the author has no other way to learn that.
-    if (
-      typeof (error as { code?: unknown })?.code === "string" &&
-      (error as { code: string }).code === "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX"
-    ) {
+    const { code } = (error ?? {}) as { code?: unknown };
+    if (code === "ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX") {
       throw PragmaError.configError(
         `Your ${PROJECT_CONFIG_FILENAME} uses TypeScript syntax that cannot be erased: ${reason}`,
         {

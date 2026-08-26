@@ -38,7 +38,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "../../../../../..");
 const cliNextDir = join(repoRoot, "packages/cli/pragma");
 const sourceEntry = join(cliNextDir, "src/bin.ts");
-const builtEntry = join(cliNextDir, "dist/src/bin.js");
+const shippedEntry = join(cliNextDir, "dist/src/bin.js");
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-shipped-"));
 
 // `dist/` is provisioned by `testing/perf/globalSetup.ts`, which re-emits it
@@ -106,18 +106,18 @@ function create(
 describe("shipped pragma create (PROTECTED)", () => {
   for (const { label, args } of CASES) {
     it(`${label}: shipped entry ≡ source run, byte-for-byte`, () => {
-      // (1) The emitted entry, exactly as a consumer's `pragma` runs it.
-      const built = create(process.execPath, [builtEntry], args);
+      // (1) The shipped entry, exactly as a consumer's `pragma` runs it.
+      const shipped = create(process.execPath, [shippedEntry], args);
       // (2) A source run — the reference output.
       const source = create("bun", [sourceEntry], args);
 
       // Wrote something. Before the distribution stopped shipping a compiled
       // binary, `package` and `application` wrote NOTHING here — they refused.
-      expect(built.size).toBeGreaterThan(0);
+      expect(shipped.size).toBeGreaterThan(0);
       // Same file set …
-      expect([...built.keys()].sort()).toEqual([...source.keys()].sort());
+      expect([...shipped.keys()].sort()).toEqual([...source.keys()].sort());
       // … and byte-identical contents.
-      for (const [path, content] of built) {
+      for (const [path, content] of shipped) {
         expect(source.get(path), `content of ${path}`).toBe(content);
       }
     }, 180_000);
@@ -149,7 +149,7 @@ describe("shipped pragma READ smoke (PROTECTED)", () => {
 
   for (const { args, okExit } of READS) {
     it(`\`${args.join(" ")}\` runs without a Template-not-found crash`, () => {
-      const result = spawnSync(process.execPath, [builtEntry, ...args], {
+      const result = spawnSync(process.execPath, [shippedEntry, ...args], {
         cwd: freshCwd(),
         stdio: "pipe",
         encoding: "utf-8",

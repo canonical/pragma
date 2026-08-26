@@ -75,7 +75,7 @@ function errorDetail(error: unknown): string {
 }
 
 /** Recursively collect `*.ttl` files under a directory (a manual walk — the
- * compiled binary's node:fs globSync mishandles `**`, so we avoid it). */
+ * node:fs globSync has mishandled `**` under a shipped runtime, so we avoid it). */
 function walkTtl(
   dir: string,
   base: string,

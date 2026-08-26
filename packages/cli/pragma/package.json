@@ -31,6 +31,7 @@
   },
   "scripts": {
     "build": "bun run scripts/build.ts",
+    "build:all": "bun run build",
     "bundle": "bun run scripts/bundle.ts",
     "gen:reference": "bun run scripts/genReference.ts",
     "check": "bun run check:biome && bun run check:ts && bun run check:webarchitect",
@@ -44,8 +45,7 @@
     "test:perf": "vitest run --config vitest.perf.config.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "eval": "bun run src/testing/eval/report.ts",
-    "build:all": "bun run build"
+    "eval": "bun run src/testing/eval/report.ts"
   },
   "dependencies": {
     "@canonical/harnesses": "^0.34.0",
@@ -76,6 +76,6 @@
     "vitest": "^4.0.18"
   },
   "engines": {
-    "node": ">=22.18"
+    "node": ">=22.18 <23 || >=23.6"
   }
 }

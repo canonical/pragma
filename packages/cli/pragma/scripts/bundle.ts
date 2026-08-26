@@ -6,7 +6,7 @@
  * update`'s own prefix precedence) into a throwaway cache, then inlines the five
  * artifacts as escaped JS strings, across three generated modules (the carried
  * `stories.json` gets its own so the dispatch path never loads the n-quads). Inlining (rather than shipping file assets)
- * is what lets the pack survive `bun build --compile` with no asset step, so a
+ * is what lets the pack travel with the emitted modules with no asset step, so a
  * cold install answers store-backed reads offline.
  *
  * NOT byte-reproducible, and deliberately does not try to be: `data.nq`'s blank
@@ -63,7 +63,7 @@ import {
  * resolves it from `node_modules` (pinned in devDependencies) and the manifest's
  * `sourceRef` records `npm:<version>` rather than `git:<sha>`, so the artifact
  * never claims a provenance it does not have. `pragma.conf.ts` keeps its git
- * source, which is the correct ref for real users — a compiled binary carries no
+ * source, which is the correct ref for real users — a published package carries no
  * `node_modules`. Delete the entry once the remote is reachable from the build.
  */
 const SOURCE_OVERRIDES: Readonly<Record<string, PackDeclaration>> = {

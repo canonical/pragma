@@ -1,7 +1,7 @@
 /**
  * Perf measurement helper for the compiled `pragma` binary.
  *
- * Spawns the standalone binary N times, discards warmups, and reports the
+ * Spawns the shipped entry N times, discards warmups, and reports the
  * median and p95 of the wall-clock durations. Kept dependency-free (only
  * `node:child_process`) so it can run inside vitest without touching the
  * kernel's import graph. Wired up by the perf-spike commit; the skeleton

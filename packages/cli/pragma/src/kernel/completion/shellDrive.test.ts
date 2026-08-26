@@ -50,9 +50,11 @@ import { emitScripts } from "./emitScripts.js";
  *   scripts; the live bash script offers the live grammar's structure with
  *   zero process exec; it hands `__complete` a literal argv and offers back
  *   what it answers; it honours the `minChars` gate. The bash describes are
- *   deliberately NOT gated on a `hasShell` probe — the package pins
- *   `os: ["linux"]`, so a machine with no usable bash should fail this file
- *   loudly rather than skip it and report nothing.
+ *   deliberately NOT gated on a `hasShell` probe — CI runs linux with a modern
+ *   bash, so a machine with no usable bash should fail this file loudly
+ *   rather than skip it and report nothing. (The package no longer pins
+ *   `os: ["linux"]`; run on a bash-3.2 macOS box this fails loudly, which is
+ *   the intended signal — see `templates/bash.ts` on the mapfile floor.)
  * - **By execution only where the shell is installed:** the same guarantees
  *   for zsh and fish. Those describes `skipIf` the shell is absent, which
  *   includes this development box and, today, CI — so on those machines they

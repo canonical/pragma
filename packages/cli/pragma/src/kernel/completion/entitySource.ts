@@ -33,7 +33,7 @@
  * - The embedded fallback is read from `pack.index.generated` — its OWN
  *   generated module (only the index string) — so the storeless `__complete`
  *   path never EVALUATES the n-quads/schema/manifest strings that live in
- *   `pack.generated`. It does not avoid parsing them: `bun build --compile`
+ *   `pack.generated`. It does not avoid parsing them: a bundler
  *   emits one script, so the whole embed is parsed at process start on every
  *   invocation (~+25 ms here, measured on `--version` against a toy-embed
  *   binary; BUDGETS.md records it). What the split buys is that a completion

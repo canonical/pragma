@@ -3,7 +3,7 @@
  * stories those packs supply.
  *
  * Consumed three times: statically imported by `src/kernel/config/defaults.ts`
- * as the lowest config layer (compiled into the binary — no fs), by
+ * as the lowest config layer (compiled with the source — no fs), by
  * `src/capabilities/distribution.ts` (which compiles the declared stories into
  * capability modules at module load), and at build time by the bundler. A
  * NON-magic name on purpose: `findProjectConfig` only discovers

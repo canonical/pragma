@@ -6,9 +6,9 @@ Every field a `pragma` config layer may declare. Generated from the config type 
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config compiled into the binary.
+1. **Built-in defaults** — the distribution config shipped with the package.
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`, written by `pragma config set`.
-3. **Project config** — the nearest `pragma.config.ts` (or `pragma.config.js`, the compiled-binary fallback), walking up from the working directory.
+3. **Project config** — the nearest `pragma.config.ts` (or `pragma.config.js`, the JavaScript fallback), walking up from the working directory.
 
 A higher layer REPLACES a lower one field by field. No field is deep-merged — not `packs`, not `prefixes`, not `completion`. A project declaring one prefix therefore replaces the distribution's whole prefix map, including the namespaces its own packs are built with; declare every prefix you need, not only the new one.
 
@@ -18,7 +18,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 | Field | Type | Notes |
 | --- | --- | --- |
-| `name` | string (optional) | Distribution-only — see below. The binary's own name, read from the distribution config at module load. |
+| `name` | string (optional) | Distribution-only — see below. The program's own name, read from the distribution config at module load. |
 | `help` | string (optional) | Distribution-only — see below. The one-line blurb on the front door and in the MCP handshake. |
 | `colophon` | object (optional) | Distribution-only — see below. The toolchain's own story, rendered first by the `colophon` verb and titled with the distribution's name: `{ markdown, summary? }`, both Markdown bodies with no leading H1 (`summary` is the condensed `--format llm` form). Declared content, not code — a fork edits it to tell its own story. |
 | `issuesUrl` | URL string (optional) | Distribution-only — see below. Where the first-run note asks users to report problems. |
@@ -32,7 +32,7 @@ The `Type` column is prose; the field set and each field's optionality are check
 
 ## Distribution-only fields
 
-`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the binary. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
+`name`, `help` and `issuesUrl` are read from the distribution config when the program loads, because the surfaces that need them — `--help`, shell completion, the MCP handshake, the first-run note — run before or without the config layer. `colophon` is read from the same file at render time: the `colophon` verb narrates whatever the distribution declares there. The validator ACCEPTS all four in a global or project layer, and they have **no effect there and are not reported** by `config show`. Changing them means forking: edit the distribution config and rebuild the package. The distribution config's `vocabulary` export is not a config field at all — no layer may declare it, and a fork changes it in the same file it changes `name` in.
 
 ## What `config show` reports
 
@@ -44,7 +44,7 @@ The `packages` field was renamed to `packs`. A layer that still declares `packag
 
 ## Removed: `generators`
 
-The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (a compiled binary can only run generators it was linked with), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.
+The `generators` field was removed: it was accepted by the validator, layered, and read by nothing — the `create` verbs resolve their generators statically (they are imported by name, not looked up at run time), so declaring it changed only what `config show` printed. A layer that still declares it fails loudly at load with an error naming the removed field; delete it. Declared generators may return as a working feature in a later program.
 
 ## Removed: `completion.caseSensitive`
 

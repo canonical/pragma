@@ -25,7 +25,7 @@
  * TODO(AV-231/E4): when `node-pty` (or an equivalent PTY shim) is on the
  * devDependency set, replace each `it.todo` with a PTY-driven `it` that spawns
  * the shipped `pragma create …` under a pty, writes the keystroke, and asserts the exit
- * code + "Cancelled." line. The compiled binary is already provisioned for the
+ * code + "Cancelled." line. The shipped entry is already provisioned for the
  * spawn-e2e layer by `testing/perf/globalSetup.ts`.
  */
 

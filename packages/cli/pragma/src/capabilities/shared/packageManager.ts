@@ -4,11 +4,14 @@
  *
  * Promotes the detector that lived inline in `info/collectInfo.ts`: the package
  * manager comes from npm's `npm_config_user_agent` (set by npm/pnpm/yarn/bun
- * when they run a script), the scope from whether the binary sits under
- * `node_modules`. With no agent we report the honest runtime rather than
- * guessing. The old shell's full package.json walk (`#package-manager`) is
+ * when they run a script), the scope from whether the installed entry sits
+ * under the CURRENT PROJECT. With no agent we report the honest runtime rather
+ * than guessing. The old shell's full package.json walk (`#package-manager`) is
  * dropped — only this heuristic and the update-command map survive.
  */
+
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** The install source: package manager and a display label. */
 export interface InstallSource {
@@ -33,8 +36,21 @@ function packageManager(): string {
  * @note Impure — reads `process.argv`/`process.env`.
  */
 export function detectInstallSource(): InstallSource {
-  const bin = process.argv[1] ?? "";
-  const scope = bin.includes("node_modules") ? "local" : "global";
+  // The entry's own location, NOT `process.argv[1]`. Under the compiled binary
+  // argv[1] was the user's FIRST ARGUMENT (the executable was argv[0]), so the
+  // old `includes("node_modules")` test read a command word and answered
+  // "global" for almost everything. Shipping `node dist/src/bin.js` moves the
+  // entry path INTO argv[1], where it always contains `node_modules` — which
+  // would answer "local" for everything, the same bug facing the other way.
+  // `import.meta.url` is the honest source either way.
+  const entry = fileURLToPath(import.meta.url);
+  // Local means "installed into this project": a global prefix lives outside
+  // the working tree. Resolved so a symlinked `node_modules/.bin` shim does not
+  // decide it. A project nested under the global prefix would read as global —
+  // an accepted corner, and quieter than the reverse.
+  const scope = entry.startsWith(`${resolve(process.cwd())}/`)
+    ? "local"
+    : "global";
   const pm = packageManager();
   return { pm, label: `${pm} (${scope})` };
 }

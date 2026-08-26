@@ -26,7 +26,7 @@ pragma sources update
 pragma capabilities
 ```
 
-Reads answer from the moment you install: the binary carries a compiled snapshot of the design system, so `block list` and `block lookup` work with no cache and no network. `pragma sources update` rebuilds the store from the live packs named in your `pragma.config.ts`; `pragma sources status` reports which of the two is answering and what it was built from.
+Reads answer from the moment you install: the package carries a compiled snapshot of the design system, so `block list` and `block lookup` work with no cache and no network. `pragma sources update` rebuilds the store from the live packs named in your `pragma.config.ts`; `pragma sources status` reports which of the two is answering and what it was built from.
 
 To register pragma with a detected AI harness as an MCP server:
 
@@ -51,7 +51,7 @@ pragma is extended along two independent planes:
 pragma create component src/components/Button --framework react
 ```
 
-— produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency. The binary carries the **component** generator's templates, so `pragma create component` runs from a clean install; `pragma create package` and `pragma create application` read their templates from disk and so refuse from the binary with `UNSUPPORTED` — run those from a source checkout, or use the `summon` CLI.
+— produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency. Each generator package ships its own template tree, so all three — `pragma create component`, `create package` and `create application` — run from a clean install.
 
 ## MCP
 

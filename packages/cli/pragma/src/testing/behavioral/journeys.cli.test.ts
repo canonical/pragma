@@ -4,7 +4,7 @@
  * BACKING ADAPTATION: the plan lists this as "fixture + spawn"; the PR4 quality
  * bar (R7 — keep the spawn-e2e layer to exactly A1-A4/A7) overrides that, so
  * this drives `block list` through the REAL CLI dispatch path (`executeVerb`,
- * the same function the compiled binary's `dispatch()` calls) IN-PROCESS
+ * the same function the shipped entry's `dispatch()` calls) IN-PROCESS
  * against the fixture, rather than spawning. It still exercises the true CLI
  * seam (typed params -> dispatch -> render), just without forking a process.
  *
