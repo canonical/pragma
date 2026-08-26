@@ -5,6 +5,7 @@
  * processes barrel exports from summon-* packages.
  */
 
+import { pathToFileURL } from "node:url";
 import type { GeneratorDefinition } from "@canonical/summon-core";
 import { generatorCache } from "@canonical/summon-core";
 
@@ -24,7 +25,9 @@ export default async function loadGenerator(
     throw new Error(`Generator not found in cache: ${cacheKey}`);
   }
 
-  const module = await import(generatorPath);
+  // pathToFileURL: a raw absolute path is not a valid ESM specifier on
+  // Windows (the drive letter parses as a protocol).
+  const module = await import(pathToFileURL(generatorPath).href);
   const generator = module.default ?? module.generator;
 
   if (!generator) {
