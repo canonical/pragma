@@ -1433,19 +1433,25 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+    const transitions: Array<"idle" | "blocked"> = [];
+
+    blocker.subscribe((state) => {
+      transitions.push(state);
+    });
     router.navigate("about");
 
-    expect(router.blockerState).toBe("blocked");
+    expect(blocker.state).toBe("blocked");
     expect(router.getState().location.pathname).toBe("/");
 
-    router.proceedNavigation();
+    blocker.proceed();
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
     });
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
+    expect(transitions).toEqual(["blocked", "idle"]);
   });
 
   it("cancels blocked navigation and stays on the current page", async () => {
@@ -1459,13 +1465,19 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+    const transitions: Array<"idle" | "blocked"> = [];
+
+    blocker.subscribe((state) => {
+      transitions.push(state);
+    });
     router.navigate("about");
 
-    expect(router.blockerState).toBe("blocked");
-    router.cancelNavigation();
+    expect(blocker.state).toBe("blocked");
+    blocker.cancel();
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
+    expect(transitions).toEqual(["blocked", "idle"]);
     expect(router.getState().location.pathname).toBe("/");
   });
 
@@ -1480,17 +1492,18 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => false });
+    const blocker = router.block(() => false);
+
     router.navigate("about");
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
     });
   });
 
-  it("removes blockers on unregister", async () => {
+  it("removes blockers on dispose", async () => {
     const router = createRouter(
       {
         home: route({ url: "/", content: () => "home" }),
@@ -1501,11 +1514,12 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
-    router.unregisterBlocker("form");
+    const blocker = router.block(() => true);
+
+    blocker.dispose();
     router.navigate("about");
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");
@@ -1555,7 +1569,7 @@ describe("createRouter", () => {
     expect(result.match).toMatchObject({ kind: "route", name: "login" });
   });
 
-  it("clears pending navigation when unregistering a blocker while blocked", async () => {
+  it("discards the pending navigation when disposing a blocker while blocked", async () => {
     const router = createRouter(
       {
         home: route({ url: "/", content: () => "home" }),
@@ -1566,15 +1580,16 @@ describe("createRouter", () => {
 
     await router.load("/");
 
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+
     router.navigate("about");
 
-    expect(router.blockerState).toBe("blocked");
+    expect(blocker.state).toBe("blocked");
 
-    // Unregistering while blocked should clear the pending navigation
-    router.unregisterBlocker("form");
+    // Disposing while blocked discards the pending navigation
+    blocker.dispose();
 
-    expect(router.blockerState).toBe("idle");
+    expect(blocker.state).toBe("idle");
     // Navigation was cleared, not proceeded — should stay on "/"
     expect(router.getState().location.pathname).toBe("/");
   });
@@ -1812,11 +1827,12 @@ describe("createRouter", () => {
     );
 
     await router.load("/");
-    router.registerBlocker({ id: "form", isActive: () => true });
+    const blocker = router.block(() => true);
+
     router.navigate("about", { replace: true });
 
-    expect(router.blockerState).toBe("blocked");
-    router.proceedNavigation();
+    expect(blocker.state).toBe("blocked");
+    blocker.proceed();
 
     await vi.waitFor(() => {
       expect(router.getState().location.pathname).toBe("/about");

@@ -4,6 +4,7 @@ import ScrollManager from "../a11y/ScrollManager.js";
 import ViewTransitionManager from "../a11y/ViewTransitionManager.js";
 import buildUrl from "./buildUrl.js";
 import createRouterStore from "./createRouterStore.js";
+import createSubject from "./createSubject.js";
 import {
   createRouteCodec,
   matchPath,
@@ -33,7 +34,6 @@ import type {
   Router,
   RouterAccessibilityContext,
   RouterAccessibilityDocumentLike,
-  RouterBlocker,
   RouterDehydratedState,
   RouterLoadResult,
   RouterMatch,
@@ -1111,6 +1111,7 @@ export default function createRouter<
         replace: replace ?? false,
         resolve: () => {
           pendingNavigation = null;
+          notifyBlockerState();
           saveScrollPosition();
           syncAdapterLocation(
             intent.href,
@@ -1124,6 +1125,7 @@ export default function createRouter<
           ).catch(ignoreScheduledLoadError);
         },
       };
+      notifyBlockerState();
 
       return intent;
     }
@@ -1137,16 +1139,22 @@ export default function createRouter<
     return intent;
   }) as NavigateFn<TRoutes>;
 
-  const blockers = new Map<string, RouterBlocker>();
+  const blockers = new Map<string, () => boolean>();
+  const blockerSubject = createSubject<"idle" | "blocked">();
+  let blockerIdCounter = 0;
 
   function isBlocked(): boolean {
-    for (const blocker of blockers.values()) {
-      if (blocker.isActive()) {
+    for (const isActive of blockers.values()) {
+      if (isActive()) {
         return true;
       }
     }
 
     return false;
+  }
+
+  function notifyBlockerState(): void {
+    blockerSubject.next(pendingNavigation ? "blocked" : "idle");
   }
 
   function setSearchParams(
@@ -1594,24 +1602,38 @@ export default function createRouter<
     match,
     navigate,
     prefetch,
-    get blockerState() {
-      return pendingNavigation ? ("blocked" as const) : ("idle" as const);
-    },
-    proceedNavigation() {
-      pendingNavigation?.resolve();
-    },
-    cancelNavigation() {
-      pendingNavigation = null;
-    },
-    registerBlocker(blocker: RouterBlocker) {
-      blockers.set(blocker.id, blocker);
-    },
-    unregisterBlocker(id: string) {
-      blockers.delete(id);
+    block(isActive: () => boolean) {
+      blockerIdCounter += 1;
 
-      if (pendingNavigation) {
-        pendingNavigation = null;
-      }
+      const id = `blocker-${blockerIdCounter}`;
+
+      blockers.set(id, isActive);
+
+      return {
+        get state() {
+          return pendingNavigation ? ("blocked" as const) : ("idle" as const);
+        },
+        proceed() {
+          pendingNavigation?.resolve();
+        },
+        cancel() {
+          if (pendingNavigation) {
+            pendingNavigation = null;
+            notifyBlockerState();
+          }
+        },
+        subscribe(listener: (state: "idle" | "blocked") => void) {
+          return blockerSubject.subscribe(listener);
+        },
+        dispose() {
+          blockers.delete(id);
+
+          if (pendingNavigation) {
+            pendingNavigation = null;
+            notifyBlockerState();
+          }
+        },
+      };
     },
     render,
     setSearchParams,
