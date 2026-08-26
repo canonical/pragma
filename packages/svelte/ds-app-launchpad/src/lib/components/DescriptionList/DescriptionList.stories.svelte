@@ -25,7 +25,7 @@
       layout handles it.
     </DescriptionList.Item>
     <DescriptionList.Item name="Status">
-      <Chip value="Active" readonly severity="positive" />
+      <Chip value="Active" readonly criticality="success" />
     </DescriptionList.Item>
     <DescriptionList.Item name="Artifact">
       <Link href="#">View Artifact</Link>
