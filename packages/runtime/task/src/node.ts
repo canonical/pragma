@@ -40,4 +40,8 @@ export { runPreview } from "./lib/preview-interpreter.js";
 // =============================================================================
 
 export type { UndoResult } from "./lib/undo-interpreter.js";
-export { hostExistsResolver, runUndo } from "./lib/undo-interpreter.js";
+export {
+  hostExistsResolver,
+  runCollectedUndos,
+  runUndo,
+} from "./lib/undo-interpreter.js";
