@@ -4,7 +4,7 @@ pragma turns a design system into a queryable knowledge graph, then projects it 
 
 ## Install and check
 
-Install the global binary, then run the environment check:
+Install the CLI, then run the environment check:
 
 ```bash
 pragma doctor
@@ -14,7 +14,7 @@ pragma doctor
 
 ## The store
 
-Reads work from the moment you install. The binary carries a compiled snapshot
+Reads work from the moment you install. The package carries a compiled snapshot
 of the design system, so `block list` answers on a machine with no cache, no
 network, and no git credentials.
 

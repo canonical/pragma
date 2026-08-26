@@ -1,28 +1,29 @@
 /**
- * Vitest global setup: build the compiled `dist/pragma` once, before the suite,
- * if it is missing OR older than the sources it was built from.
+ * Vitest global setup: emit `dist/` once, before the suite, if the shipped
+ * entry is missing OR older than the sources it was built from.
  *
- * Shared by both configs, because two suites spawn the binary: the perf budgets
+ * Shared by both configs, because two suites spawn the shipped entry: the perf budgets
  * (src/testing/perf/**, `test:perf`) and the storeless-guarantee guards in
  * src/kernel/completion/safety.test.ts (the main `test:vitest` pass). Wiring it
- * into both means `bun run test` on a clean checkout provisions the binary with
+ * into both means `bun run test` on a clean checkout provisions the emit with
  * no manual build step — neither suite may assume it is pre-built.
  *
- * STALENESS, not mere existence. `existsSync` alone meant every spawned-binary
- * guard ran against whatever binary happened to be on disk: a mutation to
+ * STALENESS, not mere existence. `existsSync` alone meant every spawned-entry
+ * guard ran against whatever emit happened to be on disk: a mutation to
  * `bin.ts` making the storeless `__complete` path write to `$HOME` and boot the
  * store — precisely what `safety.test.ts` is PROTECTED to forbid — was live
  * when run from source and invisible through the gate. The guard whose own
  * docblock warns that an unreachable bundle "would leave the whole suite green"
- * was itself green against a binary that predated the change under test.
+ * was itself green against an emit that predated the change under test.
  *
- * STALENESS INCLUDES THE EMBEDDED WORKSPACE DEPS. The binary bundles every
+ * STALENESS INCLUDES THE WORKSPACE DEPS. The shipped entry RESOLVES every
  * `@canonical/*` workspace package it (transitively) imports — task, summon-*,
- * ke, … — so an edit to `packages/runtime/task` is a change to what
- * `dist/pragma` runs, yet this package's own `src` never moves. The gate
+ * ke, … — through `node_modules` symlinks, so an edit to
+ * `packages/runtime/task` is a change to what
+ * the shipped entry runs, yet this package's own `src` never moves. The gate
  * therefore also watches each workspace-linked dependency (found by following
  * the `node_modules/<name>` symlinks, transitively) — its `src` (the authored
- * source), `dist` (what the bundler actually embeds, per the dep's export map)
+ * source), `dist` (what the entry actually loads, per the dep's export map)
  * and `package.json`. Registry deps resolve into a `node_modules` store path
  * and are skipped: their content only changes with a lockfile change, which
  * `bun install` surfaces as a fresh symlink mtime anyway. Content hashing of
@@ -39,12 +40,12 @@ import { lstatSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Everything the compiled binary is built FROM, relative to the package root. */
+/** Everything the emit is built FROM, relative to the package root. */
 const INPUTS = ["src", "scripts", "pragma.conf.ts", "package.json"];
 
 /**
- * What feeds the binary inside one workspace dependency: its authored source,
- * the compiled output the bundler embeds, and its manifest. Deliberately NOT
+ * What feeds the entry inside one workspace dependency: its authored source,
+ * the compiled output it loads, and its manifest. Deliberately NOT
  * the whole package dir — that would watch `coverage/` and `node_modules/`,
  * whose mtimes move on every test run and would force a rebuild loop.
  */
@@ -76,7 +77,7 @@ function newestMtime(path: string): number {
 }
 
 /**
- * Every workspace package the binary can embed, transitively: follow each
+ * Every workspace package the entry can load, transitively: follow each
  * `node_modules/<name>` symlink whose target lives OUTSIDE any `node_modules`
  * store (that is what distinguishes a workspace link from a registry install),
  * then repeat from the target's own `node_modules`. Cycles are cut by the
@@ -126,7 +127,13 @@ function workspaceDepRoots(pkgRoot: string): string[] {
 
 export default function setup(): void {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
-  const built = newestMtime(join(root, "dist", "pragma"));
+  // The SUCCESS SENTINEL, not an output file. `tsc` writes its outputs even when
+  // it exits non-zero, so `dist/src/bin.js` carries a fresh mtime from a build
+  // that FAILED — keying on it would mark that wreckage fresh, skip the rebuild,
+  // and run every spawning PROTECTED suite against it. `scripts/build.ts` writes
+  // `dist/.build-ok` last and only on a clean emit, so its mtime answers the
+  // question this gate is actually asking: did a build FINISH?
+  const built = newestMtime(join(root, "dist", ".build-ok"));
   const fresh =
     built > 0 &&
     INPUTS.every((input) => newestMtime(join(root, input)) < built) &&
@@ -140,6 +147,6 @@ export default function setup(): void {
     stdio: "inherit",
   });
   if (result.status !== 0) {
-    throw new Error("perf globalSetup: failed to build dist/pragma");
+    throw new Error("perf globalSetup: failed to emit dist/");
   }
 }

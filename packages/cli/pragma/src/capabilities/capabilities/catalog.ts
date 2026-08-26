@@ -91,7 +91,7 @@ export function buildDiscoverySequence(
       stage: 2,
       tool: "sources_status",
       purpose:
-        "See which pack is answering. A fresh install answers reads from the snapshot embedded in the binary and needs no build; only an `unavailable` status requires sources_update (confirm: true), which is a project that declared its own packs and has not built them.",
+        "See which pack is answering. A fresh install answers reads from the snapshot shipped with the CLI and needs no build; only an `unavailable` status requires sources_update (confirm: true), which is a project that declared its own packs and has not built them.",
     },
     {
       stage: 3,

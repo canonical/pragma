@@ -1,30 +1,43 @@
 /**
- * Build script for the `pragma` compiled binary.
+ * Build script for the `pragma` distribution.
  *
- * Two steps: (1) codegen the embedded template manifest, then (2) compile the
- * CLI entry (`src/bin.ts`) into a standalone executable with `Bun.build`.
+ * Three steps: (1) codegen the embedded template manifest, (2) emit the
+ * reference docs, then (3) compile `src/` to `dist/` with `tsc`.
  *
- * COMPILED `create` (PR7, resolved) — `create component` runs from the shipped
- * binary. `create.verb.ts` reaches summon-core + the generators through STATIC
- * dynamic imports (behind its lazy boundary), so bun's `--compile` bundler
- * includes them. The generators load their `.ejs` templates from disk
- * (`import.meta`-relative), which do not exist in a standalone binary, so this
- * script inlines the reachable generator templates into `create/templates`
- * `.embedded.generated.ts` — the same inline-strings-survive-`--compile`
- * technique as `graphpack/embedded/pack.generated.ts` — keyed by
- * directory-qualified path (`component/react/types.ts.ejs`). The component
- * loader consults that manifest when its disk read fails, keyed by the qualified
- * path so react/svelte/lit never collide. A compiled-binary smoke test
- * (create/compiledCreate.subprocess.test.ts) proves the three frameworks are
- * byte-identical to a source run, and pins the refusal for the nouns that stay a
- * source-run feature.
+ * WHAT SHIPS is emitted JavaScript on a `node` shebang — `dist/src/bin.js`,
+ * the `bin` entry — not a standalone executable. `@canonical/summon` has always
+ * shipped this way; pragma now matches it, so the two CLIs are one packaging
+ * discipline. Dropping the executable drops the `os`/`cpu` linux-x64 lock with
+ * it, and the ~105 MB artifact whose provenance the publish lane could not
+ * prove (it had no build step for this package until `build:all` was added).
+ *
+ * COLD START is preserved by construction, not by a bundler flag. The compiled
+ * build needed `splitting: true` so the lazily `import()`ed summon-core and
+ * generators became separate chunks rather than startup cost. Under `tsc` every
+ * module is already its own file behind those same lazy boundaries, so the fast
+ * paths keep loading nothing they do not use.
+ *
+ * THE TEMPLATE MANIFEST'S REASON EXPIRED WITH THE BINARY, and step 1 is kept
+ * for now rather than because it still earns its keep. It existed because
+ * `--compile` gave the generators' `.ejs` no filesystem to live on.
+ * `loadTemplateSync` reads the real file FIRST and reaches the manifest only
+ * when that read throws — and the path it reads is derived from the RESOLVED
+ * generator package, so whatever templates a consumer's resolution supplies are
+ * the ones on disk and the ones that win. The manifest therefore pins nothing;
+ * it fires only when a generator package's shipped templates cannot be read,
+ * i.e. a broken or pruned install, where it silently serves this package's
+ * frozen copy instead of failing loudly. Whether it survives at all belongs to
+ * the create-surface work, which is changing what it covers; deciding it here
+ * would settle that question from the wrong end.
  */
 
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -36,11 +49,14 @@ import { emitReference } from "../src/kernel/spec/emitReference.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
 
+/** The emit target, cleared before every build so it holds only this build. */
+const DIST_DIR = fileURLToPath(new URL("../dist/", scriptsUrl));
+
 /**
- * The generators whose `.ejs` the binary must carry: exactly the bindings
- * `create.verb.ts` lets run from the compiled binary
- * (`readsEmbeddedTemplates`). Keys are `<id>/<path-relative-to-root>`, matching
- * the qualified key the component loader derives from a template's source path.
+ * The generators whose `.ejs` the manifest carries: exactly the bindings that
+ * READ through it (`readsEmbeddedTemplates`). Keys are
+ * `<id>/<path-relative-to-root>`, matching the qualified key the component
+ * loader derives from a template's source path.
  *
  * The root is the declared package's `src/templates` — the source of truth,
  * identical to that package's dist copy — reached through this package's own
@@ -50,10 +66,11 @@ const scriptsUrl = new URL(".", import.meta.url);
  * `name` is the single declared fact it consumes.
  *
  * `summon-package` / `summon-application` are excluded deliberately: their
- * generators call `template({ source })`, so a compiled binary can never read an
- * embedded template for them, and `qualifiedKey()` in summon-component prefixes
- * every lookup with `component/` — their entries were unreachable by
- * construction (26 of the 46 previously embedded).
+ * generators call `template({ source })`, which never consults the manifest, and
+ * `qualifiedKey()` in summon-component prefixes every lookup with `component/` —
+ * their entries were unreachable by construction (26 of the 46 once embedded).
+ * They read their templates from disk, which is now the only path anything uses
+ * by default.
  */
 const TEMPLATE_ROOTS: ReadonlyArray<{ id: string; root: string }> =
   Object.entries(CREATE_GENERATORS).flatMap(([id, binding]) =>
@@ -103,8 +120,8 @@ function generateTemplateManifest(): number {
   for (const { id, root } of TEMPLATE_ROOTS) {
     const files = collectEjs(root);
     // Fail loud PER ROOT rather than ship a manifest missing a binding's
-    // templates: the binary's `create <id>` would otherwise die with "Template
-    // not found" at run time. A missing or renamed root throws ENOENT out of
+    // templates: `create <id>` would otherwise die with "Template not found" at
+    // run time on any consumer whose disk copy is missing. A missing or renamed root throws ENOENT out of
     // `collectEjs` first, naming the path; this covers the root that exists and
     // holds nothing. (Checking the total instead would be vacuous the moment a
     // second binding embeds.)
@@ -127,8 +144,8 @@ function generateTemplateManifest(): number {
   const module = `// AUTO-GENERATED by scripts/build.ts — do not edit by hand.
 // Regenerate: \`bun run scripts/build.ts\`. Inlines the .ejs templates of the
 // generators that read through this manifest (\`create component\`) as strings, so
-// \`pragma create component\` works from the standalone --compile binary (the .ejs
-// files are absent from the binary's virtual filesystem).
+// \`pragma create component\` still resolves its templates when the on-disk copy
+// under the generator package cannot be read. The disk read is tried FIRST.
 /** Directory-qualified template path → file contents. */
 export const TEMPLATES: Record<string, string> = {
 ${body}
@@ -136,7 +153,7 @@ ${body}
 `;
   // Write only when changed: the output is deterministic, so a rebuild is a
   // no-op — no working-tree churn, and no rewrite racing a concurrent import
-  // (the compiled-binary smoke test rebuilds while sibling create tests run).
+  // (the create smoke test rebuilds while sibling create tests run).
   if (
     !existsSync(MANIFEST_OUT) ||
     readFileSync(MANIFEST_OUT, "utf-8") !== module
@@ -185,7 +202,7 @@ function writeReferenceDocs(): number {
 export { writeReferenceDocs };
 
 // Only the actual build (not an `import` of `writeReferenceDocs` from the fast
-// `genReference` script) runs codegen and compiles the binary.
+// `genReference` script) runs codegen and emits `dist/`.
 if (import.meta.main) {
   const embedded = generateTemplateManifest();
   console.log(
@@ -197,29 +214,44 @@ if (import.meta.main) {
     `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
   );
 
-  const result = await Bun.build({
-    entrypoints: ["src/bin.ts"],
-    minify: true,
-    // Code-splitting is load-bearing for cold-start: it emits the lazily
-    // `import()`ed summon-core + generators (+ Ink/React) as SEPARATE chunks the
-    // binary parses on demand, not at startup. Without it, bundling summon adds
-    // ~135 ms to every invocation (blowing the __complete/--help budgets); with
-    // it, the fast paths stay at/under their budgets while `create` loads summon
-    // only when it runs.
-    splitting: true,
-    compile: {
-      target: "bun-linux-x64",
-      outfile: "dist/pragma",
+  // CLEAR `dist` FIRST. `tsc` writes into `outDir`; it never prunes it, and
+  // `files` publishes the whole directory — so anything a previous build left
+  // there ships. That is not hypothetical: building here after the compiled
+  // build left its 105 MB `dist/pragma` in place, which would have gone into
+  // the tarball and undone both the size reduction and the provenance this
+  // build exists to give. Outputs for deleted or renamed sources have the same
+  // shape, quietly. Recreating the directory makes `dist` mean exactly "what
+  // this build produced".
+  rmSync(DIST_DIR, { recursive: true, force: true });
+
+  // `tsc` runs as a child rather than through the compiler API: the emit config
+  // lives in `tsconfig.build.json` (one declaration, shared with editors and
+  // `check:ts`), and a non-zero exit is the whole error contract we need.
+  const emit = spawnSync("tsc", ["-p", "tsconfig.build.json"], {
+    cwd: fileURLToPath(new URL("..", scriptsUrl)),
+    stdio: "inherit",
+    // Resolve the workspace's own tsc rather than whatever is on PATH — the
+    // global `tsc` on a developer machine is frequently a different compiler.
+    env: {
+      ...process.env,
+      PATH: `${fileURLToPath(new URL("../node_modules/.bin", scriptsUrl))}:${process.env.PATH ?? ""}`,
     },
   });
 
-  if (!result.success) {
-    console.error("Build failed:");
-    for (const log of result.logs) {
-      console.error(log);
-    }
+  if (emit.error || emit.status !== 0) {
+    console.error(`Build failed${emit.error ? `: ${emit.error.message}` : ""}`);
     process.exit(1);
   }
 
-  console.log("Built dist/pragma");
+  // The success sentinel, written LAST and only on a clean emit. `tsc` writes
+  // its outputs even when it exits non-zero, so an output file's mtime cannot
+  // tell a finished build from a failed one — a freshness check keyed on
+  // `dist/src/bin.js` would call the wreckage of a failed build fresh, skip the
+  // rebuild on the next run, and leave every spawning suite green against it.
+  // The compiled build never needed this: `bun build` left its outfile alone on
+  // failure, so a failure stayed loudly stale. `testing/perf/globalSetup.ts`
+  // reads THIS file, not the entry.
+  writeFileSync(fileURLToPath(new URL("../dist/.build-ok", scriptsUrl)), "");
+
+  console.log("Built dist/ (tsc)");
 }

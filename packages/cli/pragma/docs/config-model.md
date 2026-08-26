@@ -6,7 +6,7 @@ How to author a pragma configuration. **Every field, its type and its layering b
 
 From lowest to highest precedence:
 
-1. **Built-in defaults** — the distribution config `pragma.conf.ts`, bundled into the binary (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
+1. **Built-in defaults** — the distribution config `pragma.conf.ts`, shipped with the package (identity, default packs and the read stories they supply, `channel: normal`, `detail: standard`).
 2. **Global config** — `$XDG_CONFIG_HOME/pragma/config.json`. Machine-wide state, written by the config setters.
 3. **Project config** — the nearest `pragma.config.ts`, walking up from the current directory. It is *evaluated* (not just parsed), and the result is content-hash cached under `$XDG_STATE_HOME/pragma/config-cache/<sha256>.json` so a re-run skips re-evaluation when the file is unchanged.
 
@@ -20,7 +20,7 @@ Stories reach the CLI from three places, weakest to strongest:
 
 | Tier | Where it is declared | Validation failure |
 | --- | --- | --- |
-| **distribution** | `packs[].stories` in the binary's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
+| **distribution** | `packs[].stories` in the distribution's own `pragma.conf.ts` | compile-time: `tsc` for the shape, plus the `parsePackDefinition` round-trip in `distribution.test.ts` for the grammar |
 | **package** | `stories/*.json` shipped by a package the active pack was built from | the story is **ignored**, named on stderr and under `doctor`'s `pack refs` |
 | **config** | `packs[].stories`, then the top-level `stories`, in your config | fatal `CONFIG_ERROR` |
 

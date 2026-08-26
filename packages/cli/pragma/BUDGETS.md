@@ -1,10 +1,11 @@
 # Performance budgets — `pragma`
 
-The compiled binary must stay fast enough that agents and humans reach for it
-without hesitation. These budgets are enforced by the protected perf tests
-(`src/testing/perf/*`), which spawn the standalone `dist/pragma` binary,
-discard warmups, and assert median/p95 against the ceilings in
-`src/testing/perf/budgets.ts`.
+`pragma` must stay fast enough that agents and humans reach for it without
+hesitation. These budgets are enforced by the protected perf tests
+(`src/testing/perf/*`), which spawn the shipped entry the way a consumer does
+(`node dist/src/bin.js`), discard warmups, and assert median/p95 against the
+ceilings in `src/testing/perf/budgets.ts`. Node's own startup is INSIDE every
+sample, because the user pays it.
 
 ## Designed targets (surface covenant)
 
@@ -20,13 +21,45 @@ discard warmups, and assert median/p95 against the ceilings in
 ## Measured (day-1 perf spike, commit 6)
 
 Environment: Linux x64, Bun v1.3.11, `bun build --compile --minify`
-(`dist/pragma`). Method: `measureCommand` spawns the standalone binary 30×,
+(`dist/pragma`) — the artifact shipped at the time; the distribution has since
+moved to emitted JavaScript on Node, which costs roughly 2× on the fast paths
+and remains inside every ceiling below. Method: `measureCommand` spawns 30×,
 discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 (un-skipped) re-measure a batch of spawns and assert against the ceilings below.
 
 **The measured numbers below, and the ceilings derived from them, reference this
 day-1 spike hardware (treated as the CI reference box).** A slower box shifts the
 whole distribution up; the ceilings are the covenant, not the observations.
+
+## Re-derived for the shipped entry
+
+Every figure above was measured against a `bun build --compile` executable. The
+distribution now ships JavaScript that `node` executes, which costs roughly 2×
+on the fast paths — so a ceiling set at 2× the *binary's* median lands on the
+*emit's* median, where it can no longer separate a regression from a slow
+runner.
+
+`__complete` demonstrated this rather than merely risking it. Three CI attempts,
+all against the 100 ms ceiling:
+
+| Attempt | trimmed mean |
+|---|---|
+| 1 | 100.37 ms |
+| 2 | 100.20 ms |
+| 3 | 100.15 ms |
+
+That is a ceiling sitting on the median, not above it.
+
+| Budget | Compiled median | Shipped entry | Ceiling | Basis |
+|---|---|---|---|---|
+| `pragma --help` | ~61 ms | ~72 ms local | **130 ms** (unchanged) | still has real headroom to lose |
+| `pragma __complete` | ~46 ms | ~69 ms local · ~100 ms CI trimmed mean | **150 ms** (was 100) | 2× the shipped median, the same rule as before |
+
+**The designed 50 ms target is not met, and is recorded as unmet rather than
+moved.** The shipped entry cannot reach it: node's own start consumes most of
+that number before pragma runs a line. Completion is typed interactively, so
+this is the budget most worth pulling back down — it is the one number the
+packaging change genuinely cost.
 
 ## p95 stabilization (`__complete`)
 
@@ -39,8 +72,10 @@ box. The `__complete` budget test therefore enforces the ceiling on a
 **10%-trimmed mean** (`measure.trimmedMean`) — a robust central estimate the
 occasional spike cannot dominate — over 30 spawns (5 warmups, `retry: 3`), and
 keeps **p95 as a soft check** (asserted with 1.5× headroom) to still catch a
-gross regression. `BUDGET_COMPLETE_MS` stays **100 ms** — the ceiling is
-unchanged; only the statistic it is asserted against was made reliable.
+gross regression. At the time `BUDGET_COMPLETE_MS` stayed **100 ms** — that
+change made the statistic reliable without touching the ceiling. The ceiling
+itself was re-derived later, when the shipped artifact changed; see
+"Re-derived for the shipped entry" below.
 
 | Path                       | Median  | p95     | Budget  | Basis                     |
 | -------------------------- | ------- | ------- | ------- | ------------------------- |
@@ -52,7 +87,8 @@ unchanged; only the statistic it is asserted against was made reliable.
 | `__store-probe` (store)    | ~147 ms | ~176 ms | 500 ms  | re-derived (see below)    |
 
 The store-backed verb budget (`__store-probe`: oxigraph WASM load + n-quads
-cache load + `compileFromExtraction` + a SPARQL count, in the compiled binary)
+cache load + `compileFromExtraction` + a SPARQL count, across the process
+boundary)
 measured ~147 ms median here — but that timed a boot of the 23-triple
 **placeholder** pack. Against the real embedded graph the store component is
 ~2.8× that; see "The embedded pack becomes the real graph" below, where the
@@ -150,9 +186,10 @@ it is 1.67× the designed 300 ms target, where `--help`'s enforced ceiling is
 the surface covenant and `budgets.$comment` now names it as the third
 designed-vs-enforced divergence.
 
-**Also measured — the per-invocation start tax.** The real embed makes the
-binary ~2.0 MB bigger (104.8 → 106.8 MB), and `bun build --compile` emits one
-script, so the whole embed is *parsed* at process start on every invocation even
+**Also measured — the per-invocation start tax**, on the compiled binary of the
+time. The real embed made it ~2.0 MB bigger (104.8 → 106.8 MB), and
+`bun build --compile` emitted one script, so the whole embed was *parsed* at
+process start on every invocation even
 though `--version` and `--help` import neither generated module. Measured on
 `--version` under the interleaved protocol, which is the only one where the two
 binaries face the same page-cache pressure: **+24.1 / +24.7 / +28.4 ms**. Scaled
@@ -220,8 +257,9 @@ Confirmed by the spike:
   (`complete.test.ts`), no config or store read.
 - **project config is served warm** — `evaluateProjectConfig` returns the
   content-hash cache on a hit without re-importing (`readConfig.test.ts`), and
-  the compiled binary evaluates an external `pragma.config.ts` natively (D7
-  verified — no subprocess fallback needed).
+  the shipped entry evaluates an external `pragma.config.ts` natively — under
+  Node that is type STRIPPING, so the config must be erasable TypeScript
+  (`engines` pins the floor that makes it default-on).
 
 ## Stories in packs — no budget movement (A/B)
 
