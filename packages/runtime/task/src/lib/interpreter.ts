@@ -287,12 +287,18 @@ const simpleGlob = async (pattern: string, cwd: string): Promise<string[]> => {
  * `Glob` effect's (otherwise real) matches.
  */
 export const matchesPattern = (filepath: string, pattern: string): boolean => {
-  // Very simple glob matching - just handles * and **
+  // Very simple glob matching - just handles * and **. Dots are escaped FIRST:
+  // escaping them after the `**` → `.*` substitution turned the wildcard into
+  // `\.*` (zero-or-more literal dots), so `glob("**/*")` matched nothing. A
+  // `**/` prefix also matches ZERO directories (standard globstar), so
+  // `**/*` covers top-level files too.
   const regex = pattern
+    .replace(/\./g, "\\.")
+    .replace(/\*\*\//g, "<<GLOBSTARSLASH>>")
     .replace(/\*\*/g, "<<GLOBSTAR>>")
     .replace(/\*/g, "[^/]*")
-    .replace(/<<GLOBSTAR>>/g, ".*")
-    .replace(/\./g, "\\.");
+    .replace(/<<GLOBSTARSLASH>>/g, "(?:.*/)?")
+    .replace(/<<GLOBSTAR>>/g, ".*");
   return new RegExp(`^${regex}$`).test(filepath);
 };
 

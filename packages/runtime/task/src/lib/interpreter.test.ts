@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from "vitest";
 import { parallel, sequence_ } from "./combinators.js";
 import {
   executeEffect,
+  matchesPattern,
   run,
   runTask,
   TaskExecutionError,
@@ -1914,5 +1915,27 @@ describe("Interpreter - interruption bypasses recovery", () => {
 
     // The interrupt bypassed the recover handler entirely.
     expect(handlerCalls).toBe(0);
+  });
+});
+
+describe("matchesPattern — the fallback glob matcher", () => {
+  it("matches everything under a directory with **/*", () => {
+    // Regression: dots were escaped AFTER the ** → .* substitution, turning
+    // the wildcard into `\.*` (zero-or-more literal dots) — glob("**/*")
+    // matched nothing under plain Node.
+    expect(matchesPattern("a.txt", "**/*")).toBe(true);
+    expect(matchesPattern("dir/a.txt", "**/*")).toBe(true);
+    expect(matchesPattern("dir/sub/b.ts", "**/*")).toBe(true);
+  });
+
+  it("keeps * within one path segment", () => {
+    expect(matchesPattern("x.ts", "*.ts")).toBe(true);
+    expect(matchesPattern("dir/x.ts", "*.ts")).toBe(false);
+    expect(matchesPattern("dir/x.ts", "dir/*.ts")).toBe(true);
+  });
+
+  it("treats dots in the pattern literally", () => {
+    expect(matchesPattern("axts", "a.ts")).toBe(false);
+    expect(matchesPattern("a.ts", "a.ts")).toBe(true);
   });
 });

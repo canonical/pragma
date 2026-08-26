@@ -36,6 +36,7 @@ export default function template(options: TemplateOptions): Task<void> {
   return task(mkdir(destDir))
     .chain(() => readSource)
     .map((content) => renderString(content, options.vars, engine))
+    .map((rendered) => options.transform?.(rendered) ?? rendered)
     .chain((rendered) => task(writeFile(destPath, rendered)))
     .unwrap();
 }
