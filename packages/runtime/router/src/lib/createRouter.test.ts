@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import createMemoryAdapter from "./createMemoryAdapter.js";
 import createRouter from "./createRouter.js";
-import createStaticRouter from "./createStaticRouter.js";
+import createServerAdapter from "./createServerAdapter.js";
 import group from "./group.js";
 import redirect from "./redirect.js";
 import route from "./route.js";
@@ -2370,7 +2370,7 @@ describe("createRouter", () => {
       });
     });
 
-    it("tolerates async prefetch control flow on a static router", async () => {
+    it("tolerates async prefetch control flow on a server-adapter router", async () => {
       const unhandled: unknown[] = [];
       const onUnhandled = (reason: unknown) => {
         unhandled.push(reason);
@@ -2378,7 +2378,7 @@ describe("createRouter", () => {
       process.on("unhandledRejection", onUnhandled);
 
       try {
-        const router = createStaticRouter(
+        const router = createRouter(
           {
             guarded: route({
               url: "/guarded",
@@ -2389,7 +2389,7 @@ describe("createRouter", () => {
             }),
             login: route({ url: "/login", content: () => "login" }),
           },
-          "/guarded",
+          { adapter: createServerAdapter("/guarded") },
         );
 
         await router.load("/guarded");
