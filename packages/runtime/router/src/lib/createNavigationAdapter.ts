@@ -1,8 +1,16 @@
 import type { PlatformAdapter, PlatformNavigateOptions } from "./types.js";
 
+interface NavigationResultLike {
+  readonly committed?: Promise<unknown>;
+  readonly finished?: Promise<unknown>;
+}
+
 interface NavigationLike {
   readonly currentEntry: { readonly url: string | null } | null;
-  navigate(url: string, options?: { history?: "push" | "replace" }): void;
+  navigate(
+    url: string,
+    options?: { history?: "push" | "replace" },
+  ): NavigationResultLike | undefined;
   addEventListener(
     type: "navigate",
     listener: (event: NavigateEventLike) => void,
@@ -25,6 +33,19 @@ interface NavigationWindowLike {
   readonly navigation: NavigationLike;
   readonly location: { readonly href: string };
 }
+
+/**
+ * Intentional no-op `.catch()` handler for the Navigation API's transition
+ * promises.
+ *
+ * `navigation.navigate()` returns a `{ committed, finished }` promise pair;
+ * either can reject when a navigation is superseded, aborted, or immediately
+ * cancelled.  Those rejections are harmless to the router — subscribers were
+ * already notified and a superseding navigation carries its own notification —
+ * so this handler only prevents unhandled promise rejections without
+ * swallowing errors that matter.
+ */
+function ignoreNavigationTransitionError(_error: unknown): void {}
 
 function getDefaultNavigationWindow(): NavigationWindowLike {
   const win = globalThis as { window?: NavigationWindowLike };
@@ -79,9 +100,12 @@ export default function createNavigationAdapter(
       return getLocation();
     },
     navigate(url, navigationOptions?: PlatformNavigateOptions) {
-      navigation.navigate(url, {
+      const result = navigation.navigate(url, {
         history: navigationOptions?.replace ? "replace" : "push",
       });
+
+      result?.committed?.catch(ignoreNavigationTransitionError);
+      result?.finished?.catch(ignoreNavigationTransitionError);
 
       notify();
     },
