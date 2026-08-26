@@ -61,10 +61,14 @@ export function setEmbeddedTemplates(
  * `template()` and read from disk, so no manifest entry could serve them.
  */
 function qualifiedKey(source: string): string | undefined {
+  // Manifest keys are always forward-slash; sources are built with path.join,
+  // which yields backslashes on Windows — normalize before matching so a
+  // compiled binary resolves its templates there too.
+  const normalized = source.replaceAll("\\", "/");
   const marker = "/templates/";
-  const at = source.lastIndexOf(marker);
+  const at = normalized.lastIndexOf(marker);
   if (at === -1) return undefined;
-  return `component/${source.slice(at + marker.length)}`;
+  return `component/${normalized.slice(at + marker.length)}`;
 }
 
 /**

@@ -208,7 +208,6 @@ describe("component/lit undo plan", () => {
       componentPath: "src/lib/components/Button",
       withStyles: true,
       withStories: true,
-      withSsrTests: false,
     });
     const undos = collectUndos(task);
 
@@ -222,7 +221,6 @@ describe("component/lit undo plan", () => {
       componentPath: "src/lib/components/Button",
       withStyles: false,
       withStories: false,
-      withSsrTests: false,
     });
     const minUndos = collectUndos(minTask);
 
@@ -235,7 +233,6 @@ describe("component/lit undo plan", () => {
       componentPath: "src/lib/components/Widget",
       withStyles: true,
       withStories: true,
-      withSsrTests: false,
     });
     const undos = collectUndos(task);
     const tags = getUndoEffectTags(undos);

@@ -10,6 +10,7 @@ import { dryRun, dryRunWith, type Effect, type Task } from "@canonical/task";
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
 import { generators } from "./index.js";
+import dryRunWithFileState from "./shared/file-operations/dryRunWithFileState.js";
 
 /**
  * Helper: dry-run with actual file reading for templates.
@@ -28,6 +29,9 @@ const dryRunWithTemplates = <A>(task: Task<A>) => {
         return `[mock content of ${e.path}]`;
       },
     ],
+    // Blank filesystem: the default mock answers Exists with true, which
+    // would trip the component-exists guard.
+    ["Exists", () => false],
   ]);
   return dryRunWith(task, mocks);
 };
@@ -123,8 +127,8 @@ describe("component/react generator", () => {
       expect(paths).toContain("src/components/Button/Button.tsx");
       expect(paths).toContain("src/components/Button/types.ts");
       expect(paths).toContain("src/components/Button/index.ts");
-      expect(paths).toContain("src/components/Button/Button.tests.tsx");
-      expect(paths).toContain("src/components/Button/Button.ssr.tests.tsx");
+      expect(paths).toContain("src/components/Button/Button.test.tsx");
+      expect(paths).toContain("src/components/Button/Button.ssr.test.tsx");
       expect(paths).toContain("src/components/Button/Button.stories.tsx");
       expect(paths).toContain("src/components/Button/styles.css");
     });
@@ -145,8 +149,8 @@ describe("component/react generator", () => {
       expect(paths).toContain("src/components/Icon/Icon.tsx");
       expect(paths).toContain("src/components/Icon/types.ts");
       expect(paths).toContain("src/components/Icon/index.ts");
-      expect(paths).toContain("src/components/Icon/Icon.tests.tsx");
-      expect(paths).not.toContain("src/components/Icon/Icon.ssr.tests.tsx");
+      expect(paths).toContain("src/components/Icon/Icon.test.tsx");
+      expect(paths).not.toContain("src/components/Icon/Icon.ssr.test.tsx");
       expect(paths).not.toContain("src/components/Icon/Icon.stories.tsx");
       expect(paths).not.toContain("src/components/Icon/styles.css");
     });
@@ -416,7 +420,6 @@ describe("component/lit generator", () => {
         componentPath: "src/lib/components/Button",
         withStyles: true,
         withStories: true,
-        withSsrTests: false,
       });
 
       const result = dryRun(task);
@@ -427,7 +430,7 @@ describe("component/lit generator", () => {
       expect(paths).toContain("src/lib/components/Button/Button.ts");
       expect(paths).toContain("src/lib/components/Button/index.ts");
       expect(paths).toContain("src/lib/components/Button/types.ts");
-      expect(paths).toContain("src/lib/components/Button/Button.tests.ts");
+      expect(paths).toContain("src/lib/components/Button/Button.test.ts");
       expect(paths).toContain("src/lib/components/Button/Button.stories.ts");
       expect(paths).toContain("src/lib/components/Button/styles.css");
     });
@@ -437,7 +440,6 @@ describe("component/lit generator", () => {
         componentPath: "src/lib/components/Icon",
         withStyles: false,
         withStories: false,
-        withSsrTests: false,
       });
 
       const result = dryRun(task);
@@ -448,7 +450,7 @@ describe("component/lit generator", () => {
       expect(paths).toContain("src/lib/components/Icon/Icon.ts");
       expect(paths).toContain("src/lib/components/Icon/index.ts");
       expect(paths).toContain("src/lib/components/Icon/types.ts");
-      expect(paths).toContain("src/lib/components/Icon/Icon.tests.ts");
+      expect(paths).toContain("src/lib/components/Icon/Icon.test.ts");
       expect(paths).not.toContain("src/lib/components/Icon/Icon.stories.ts");
       expect(paths).not.toContain("src/lib/components/Icon/styles.css");
     });
@@ -458,7 +460,6 @@ describe("component/lit generator", () => {
         componentPath: "src/lib/components/MyButton",
         withStyles: false,
         withStories: false,
-        withSsrTests: false,
       });
 
       const result = dryRunWithTemplates(task);
@@ -478,7 +479,6 @@ describe("component/lit generator", () => {
         componentPath: "src/lib/components/MyButton",
         withStyles: false,
         withStories: false,
-        withSsrTests: false,
       });
 
       const result = dryRunWithTemplates(task);
@@ -497,7 +497,6 @@ describe("component/lit generator", () => {
         componentPath: "src/lib/components/Card",
         withStyles: false,
         withStories: false,
-        withSsrTests: false,
       });
 
       const result = dryRun(task);
@@ -511,5 +510,46 @@ describe("component/lit generator", () => {
       const content = (parentIndex as { content: string }).content;
       expect(content).toContain('export * from "./Card/index.js"');
     });
+  });
+});
+
+describe("component-exists guard", () => {
+  it("react refuses to scaffold over an existing component directory", () => {
+    const task = generators["component/react"].generate({
+      componentPath: "src/components/Button",
+      withStyles: false,
+      withStories: false,
+      withSsrTests: false,
+    });
+
+    expect(() =>
+      dryRunWithFileState(task, { "src/components/Button": "" }),
+    ).toThrow(/already exists/);
+  });
+
+  it("svelte refuses to scaffold over an existing component directory", () => {
+    const task = generators["component/svelte"].generate({
+      componentPath: "src/lib/components/Button",
+      withStyles: false,
+      withStories: false,
+      useTsStories: false,
+      withSsrTests: false,
+    });
+
+    expect(() =>
+      dryRunWithFileState(task, { "src/lib/components/Button": "" }),
+    ).toThrow(/already exists/);
+  });
+
+  it("lit refuses to scaffold over an existing component directory", () => {
+    const task = generators["component/lit"].generate({
+      componentPath: "src/lib/components/Button",
+      withStyles: false,
+      withStories: false,
+    });
+
+    expect(() =>
+      dryRunWithFileState(task, { "src/lib/components/Button": "" }),
+    ).toThrow(/already exists/);
   });
 });
