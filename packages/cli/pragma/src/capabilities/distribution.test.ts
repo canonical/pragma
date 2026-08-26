@@ -46,14 +46,18 @@ describe("the distribution's declared stories (PROTECTED)", () => {
     ]);
   });
 
-  it.each([
-    ...declaredStories.keys(),
-  ])("the %s story validates against the pack grammar, unchanged", (noun) => {
-    const story = declaredStories.get(noun);
-    expect(
-      parsePackDefinition(JSON.parse(JSON.stringify(story)), "pragma.conf.ts"),
-    ).toEqual(story);
-  });
+  it.each([...declaredStories.keys()])(
+    "the %s story validates against the pack grammar, unchanged",
+    (noun) => {
+      const story = declaredStories.get(noun);
+      expect(
+        parsePackDefinition(
+          JSON.parse(JSON.stringify(story)),
+          "pragma.conf.ts",
+        ),
+      ).toEqual(story);
+    },
+  );
 
   it("every declared noun reaches the registry as an overridable module", () => {
     for (const noun of declaredStories.keys()) {

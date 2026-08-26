@@ -26,16 +26,15 @@ describe("Log SSR", () => {
       );
     });
 
-    it.each([
-      "Line",
-      "Timestamp",
-      "Content",
-    ])("renders column header %s", (header) => {
-      const page = render(Component, { props: { ...baseProps } });
-      expect(columnHeaderLocator(page, header)).toBeInstanceOf(
-        page.window.HTMLTableCellElement,
-      );
-    });
+    it.each(["Line", "Timestamp", "Content"])(
+      "renders column header %s",
+      (header) => {
+        const page = render(Component, { props: { ...baseProps } });
+        expect(columnHeaderLocator(page, header)).toBeInstanceOf(
+          page.window.HTMLTableCellElement,
+        );
+      },
+    );
 
     it("doesn't render timestamp column when hideTimestamps is true", () => {
       const page = render(Component, {

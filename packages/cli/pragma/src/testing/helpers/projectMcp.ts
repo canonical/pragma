@@ -84,7 +84,7 @@ export async function projectMcp(
         arguments: args,
       })) as CallToolResult;
       const first = result.content[0];
-      if (!first || first.type !== "text") {
+      if (first?.type !== "text") {
         throw new Error(`tool "${name}" returned no text content`);
       }
       return JSON.parse(first.text) as Record<string, unknown>;

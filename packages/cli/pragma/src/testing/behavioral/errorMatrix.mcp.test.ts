@@ -67,25 +67,27 @@ afterAll(async () => {
 });
 
 describe("lookup miss — total miss fails the call (B3, adapted)", () => {
-  it.each(
-    lookupVerbs.map((v) => v.noun),
-  )("%s_lookup: a single unknown name fails with ENTITY_NOT_FOUND", async (noun) => {
-    const result = await mcp.callTool(`${noun}_lookup`, {
-      name: ["zzz-definitely-not-a-real-entity"],
-    });
-    expect(result.ok).toBe(false);
-    expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
-  });
+  it.each(lookupVerbs.map((v) => v.noun))(
+    "%s_lookup: a single unknown name fails with ENTITY_NOT_FOUND",
+    async (noun) => {
+      const result = await mcp.callTool(`${noun}_lookup`, {
+        name: ["zzz-definitely-not-a-real-entity"],
+      });
+      expect(result.ok).toBe(false);
+      expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
+    },
+  );
 
-  it.each(
-    lookupVerbs.map((v) => v.noun),
-  )("%s_lookup: an all-unknown batch ALSO fails (not a partial report)", async (noun) => {
-    const result = await mcp.callTool(`${noun}_lookup`, {
-      name: ["zzz-nope-one", "zzz-nope-two"],
-    });
-    expect(result.ok).toBe(false);
-    expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
-  });
+  it.each(lookupVerbs.map((v) => v.noun))(
+    "%s_lookup: an all-unknown batch ALSO fails (not a partial report)",
+    async (noun) => {
+      const result = await mcp.callTool(`${noun}_lookup`, {
+        name: ["zzz-nope-one", "zzz-nope-two"],
+      });
+      expect(result.ok).toBe(false);
+      expect((result.error as { code: string }).code).toBe("ENTITY_NOT_FOUND");
+    },
+  );
 });
 
 describe("list — a narrowing filter to zero rows is a plain empty list (B3, adapted)", () => {
@@ -95,19 +97,17 @@ describe("list — a narrowing filter to zero rows is a plain empty list (B3, ad
     expect(filteredListVerbs.length).toBeGreaterThan(0);
   });
 
-  it.each(
-    filteredListVerbs,
-  )("$tool: an unmatched filter value narrows to [] (no EMPTY_RESULTS)", async ({
-    tool,
-    param,
-  }) => {
-    const result = await mcp.callTool(tool, {
-      [param]: "zzz-definitely-not-a-real-value",
-    });
-    expect(result.ok).toBe(true);
-    expect(result.data).toEqual([]);
-    expect(result.meta).toEqual({});
-  });
+  it.each(filteredListVerbs)(
+    "$tool: an unmatched filter value narrows to [] (no EMPTY_RESULTS)",
+    async ({ tool, param }) => {
+      const result = await mcp.callTool(tool, {
+        [param]: "zzz-definitely-not-a-real-value",
+      });
+      expect(result.ok).toBe(true);
+      expect(result.data).toEqual([]);
+      expect(result.meta).toEqual({});
+    },
+  );
 });
 
 describe("ontology_show — an unknown prefix is INVALID_INPUT (B3)", () => {

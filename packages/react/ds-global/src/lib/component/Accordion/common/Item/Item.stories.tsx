@@ -53,6 +53,7 @@ export const WithRichContent: Story = {
           <li>Other components</li>
         </ul>
         <p className="p">
+          {/* biome-ignore lint/a11y/noAmbiguousAnchorText: placeholder story content, not a real link */}
           <a href="#example">Learn more</a>
         </p>
       </>

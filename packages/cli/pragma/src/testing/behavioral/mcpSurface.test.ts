@@ -114,31 +114,34 @@ describe("every MCP tool is callable and returns a well-formed envelope (B4)", (
     expect(everyExposedVerb.length).toBeGreaterThan(0);
   });
 
-  it.each(
-    everyExposedVerb,
-  )("$tool: callable, well-formed envelope, annotations match capability.mutates", async (v) => {
-    const tool = v.tool as string;
-    const args = representativeArgs(v);
-    const result = await mcp.callTool(tool, args);
+  it.each(everyExposedVerb)(
+    "$tool: callable, well-formed envelope, annotations match capability.mutates",
+    async (v) => {
+      const tool = v.tool as string;
+      const args = representativeArgs(v);
+      const result = await mcp.callTool(tool, args);
 
-    expect(typeof result.ok).toBe("boolean");
-    if (result.ok) {
-      expect("data" in result).toBe(true);
-      expect(typeof result.meta).toBe("object");
-    } else {
-      const error = result.error as { code?: unknown; message?: unknown };
-      expect(typeof error.code).toBe("string");
-      expect(typeof error.message).toBe("string");
-    }
+      expect(typeof result.ok).toBe("boolean");
+      if (result.ok) {
+        expect("data" in result).toBe(true);
+        expect(typeof result.meta).toBe("object");
+      } else {
+        const error = result.error as { code?: unknown; message?: unknown };
+        expect(typeof error.code).toBe("string");
+        expect(typeof error.message).toBe("string");
+      }
 
-    const registered = registeredTools.find((t) => t.name === tool);
-    expect(registered).toBeDefined();
-    const annotations = registered?.annotations as
-      | { readOnlyHint?: boolean; destructiveHint?: boolean }
-      | undefined;
-    expect(annotations?.readOnlyHint).toBe(!v.mutates);
-    if (v.spec.capability.destructive !== undefined) {
-      expect(annotations?.destructiveHint).toBe(v.spec.capability.destructive);
-    }
-  });
+      const registered = registeredTools.find((t) => t.name === tool);
+      expect(registered).toBeDefined();
+      const annotations = registered?.annotations as
+        | { readOnlyHint?: boolean; destructiveHint?: boolean }
+        | undefined;
+      expect(annotations?.readOnlyHint).toBe(!v.mutates);
+      if (v.spec.capability.destructive !== undefined) {
+        expect(annotations?.destructiveHint).toBe(
+          v.spec.capability.destructive,
+        );
+      }
+    },
+  );
 });

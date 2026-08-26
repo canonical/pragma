@@ -51,12 +51,12 @@
    * upstream has none. (Removing it once upstream lands is still tidy, but no
    * longer load-bearing.) */
   :where(
-      .surface,
-      .surface .surface,
-      .surface .surface .surface,
-      .contrasted,
-      .modal
-    ) {
+    .surface,
+    .surface .surface,
+    .surface .surface .surface,
+    .contrasted,
+    .modal
+  ) {
     --surface-color-foreground-checkbox-selected: var(
       --color-foreground-checkbox-selected
     );

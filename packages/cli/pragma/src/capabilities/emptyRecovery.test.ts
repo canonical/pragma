@@ -91,29 +91,26 @@ const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
 const REAL = { dryRun: false, undo: false, yes: false };
 
 describe("pack list empty-state (U5, PROTECTED)", () => {
-  it.each(
-    PACK_LISTS,
-  )("$pack.noun list on an empty store returns [] — never throws", async ({
-    pack,
-  }) => {
-    await expect(listVerb(pack).run({}, rt)).resolves.toEqual([]);
-  });
+  it.each(PACK_LISTS)(
+    "$pack.noun list on an empty store returns [] — never throws",
+    async ({ pack }) => {
+      await expect(listVerb(pack).run({}, rt)).resolves.toEqual([]);
+    },
+  );
 
-  it.each(
-    PACK_LISTS,
-  )("$pack.noun list renders a non-blank message (+ hint) and keeps JSON []", ({
-    pack,
-    hint,
-  }) => {
-    const { formatters } = listVerb(pack).output;
-    const plain = formatters.plain([]);
-    expect(plain).toContain(`No ${pack.noun} entries found.`);
-    expect(plain).toMatch(hint);
-    // JSON is the uniform empty array — unchanged by the message.
-    expect(formatters.json([])).toBe("[]");
-    // The llm view stays non-blank too (the `(0)` heading plus the message).
-    expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
-  });
+  it.each(PACK_LISTS)(
+    "$pack.noun list renders a non-blank message (+ hint) and keeps JSON []",
+    ({ pack, hint }) => {
+      const { formatters } = listVerb(pack).output;
+      const plain = formatters.plain([]);
+      expect(plain).toContain(`No ${pack.noun} entries found.`);
+      expect(plain).toMatch(hint);
+      // JSON is the uniform empty array — unchanged by the message.
+      expect(formatters.json([])).toBe("[]");
+      // The llm view stays non-blank too (the `(0)` heading plus the message).
+      expect(formatters.llm([]).trim().length).toBeGreaterThan(0);
+    },
+  );
 
   it("dispatch prints the empty message on stdout and exits 0 (end-to-end)", async () => {
     const outcome = await executeVerb(

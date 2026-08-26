@@ -389,17 +389,16 @@ describe("generated bash — the live grammar's script", () => {
     expect(parses("bash", fixture.bash)).toBe(0);
   });
 
-  it.each(STRUCTURE)("answers $at from the inlined table, execing nothing", ({
-    words,
-    cword,
-    offers,
-  }) => {
-    const { reply, calls } = driveBash(live.bash, words, cword);
-    expect(reply.sort()).toEqual([...offers].sort());
-    // The structural tier is the point of a generated script: a TAB here
-    // must never cost a process spawn, nor depend on a pack being built.
-    expect(calls).toEqual([]);
-  });
+  it.each(STRUCTURE)(
+    "answers $at from the inlined table, execing nothing",
+    ({ words, cword, offers }) => {
+      const { reply, calls } = driveBash(live.bash, words, cword);
+      expect(reply.sort()).toEqual([...offers].sort());
+      // The structural tier is the point of a generated script: a TAB here
+      // must never cost a process spawn, nor depend on a pack being built.
+      expect(calls).toEqual([]);
+    },
+  );
 
   it("hands __complete the protocol argv and OFFERS what it answers", () => {
     // The last mile, and the only assertion that covers it: everything else
@@ -468,17 +467,14 @@ describe.skipIf(!hasShell("zsh"))(
     // test below, and the other five are asserted as the exact sets zsh really
     // returns. An `arrayContaining` here would be blind to the regression this
     // file exists to catch — a slot that offers EXTRA, wrong candidates.
-    it.each(
-      STRUCTURE.filter((row) => row.at !== "pragma co"),
-    )("OFFERS exactly the candidates for $at, execing nothing", ({
-      words,
-      cword,
-      offers,
-    }) => {
-      const { reply, calls } = driveZsh(live.zsh, words, cword);
-      expect(reply.sort()).toEqual([...offers].sort());
-      expect(calls).toEqual([]);
-    });
+    it.each(STRUCTURE.filter((row) => row.at !== "pragma co"))(
+      "OFFERS exactly the candidates for $at, execing nothing",
+      ({ words, cword, offers }) => {
+        const { reply, calls } = driveZsh(live.zsh, words, cword);
+        expect(reply.sort()).toEqual([...offers].sort());
+        expect(calls).toEqual([]);
+      },
+    );
 
     it("offers the WHOLE noun table for a partial noun, leaving the filtering to zsh", () => {
       const { reply, calls } = driveZsh(live.zsh, ["pragma", "co"], 1);
@@ -540,14 +536,14 @@ describe.skipIf(!hasShell("fish"))(
         line: "pragma --format=",
         offers: ["--format=json", "--format=llm", "--format=plain"],
       },
-    ])("answers $line from the inlined rules, execing nothing", ({
-      line,
-      offers,
-    }) => {
-      const { reply, calls } = driveFish(live.fish, line);
-      expect(reply.sort()).toEqual([...offers].sort());
-      expect(calls).toEqual([]);
-    });
+    ])(
+      "answers $line from the inlined rules, execing nothing",
+      ({ line, offers }) => {
+        const { reply, calls } = driveFish(live.fish, line);
+        expect(reply.sort()).toEqual([...offers].sort());
+        expect(calls).toEqual([]);
+      },
+    );
 
     it("hands __complete the SAME protocol argv bash does, and OFFERS the answer", () => {
       const { reply, calls } = driveFish(

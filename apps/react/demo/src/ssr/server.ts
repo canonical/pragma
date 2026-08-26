@@ -11,7 +11,7 @@ const app = express();
 
 app.use(/^\/(assets|public)/, express.static("dist/client/assets"));
 
-app.get("/stream", async (req, res, next) => {
+app.get("/stream", async (_req, res, next) => {
   const renderer = new JSXRenderer(
     EntryServer,
     {},

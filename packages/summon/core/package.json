@@ -50,7 +50,7 @@
     "test:vitest:watch": "vitest"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.9",
+    "@biomejs/biome": "2.5.10",
     "@canonical/biome-config": "^0.34.0",
     "@canonical/typescript-config": "^0.34.0",
     "@canonical/webarchitect": "^0.34.0",

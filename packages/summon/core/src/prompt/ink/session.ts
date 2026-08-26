@@ -256,7 +256,7 @@ export class SessionController {
   /** The user answered the confirm gate. */
   submitConfirm(proceed: boolean): void {
     const pending = this.pending;
-    if (!pending || !pending.isConfirm) return;
+    if (!pending?.isConfirm) return;
     this.pending = undefined;
     if (proceed) this.executionStart = performance.now();
     this.set({ phase: proceed ? "executing" : "cancelled" });

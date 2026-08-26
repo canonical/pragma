@@ -22,23 +22,27 @@ describe("getCommentStyle", () => {
     [".h", "//", "/*", "*/"],
     [".hpp", "//", "/*", "*/"],
     [".php", "//", "/*", "*/"],
-  ])("returns single-line '//' style for %s", (ext, single, blockStart, blockEnd) => {
-    const style = getCommentStyle(`file${ext}`);
-    expect(style).not.toBeNull();
-    expect(style?.single).toBe(single);
-    expect(style?.blockStart).toBe(blockStart);
-    expect(style?.blockEnd).toBe(blockEnd);
-  });
+  ])(
+    "returns single-line '//' style for %s",
+    (ext, single, blockStart, blockEnd) => {
+      const style = getCommentStyle(`file${ext}`);
+      expect(style).not.toBeNull();
+      expect(style?.single).toBe(single);
+      expect(style?.blockStart).toBe(blockStart);
+      expect(style?.blockEnd).toBe(blockEnd);
+    },
+  );
 
-  it.each([
-    [".css", "/*", "*/", true],
-  ])("returns block style with preferBlock for %s", (ext, start, end, pref) => {
-    const style = getCommentStyle(`file${ext}`);
-    expect(style).not.toBeNull();
-    expect(style?.blockStart).toBe(start);
-    expect(style?.blockEnd).toBe(end);
-    expect(style?.preferBlock).toBe(pref);
-  });
+  it.each([[".css", "/*", "*/", true]])(
+    "returns block style with preferBlock for %s",
+    (ext, start, end, pref) => {
+      const style = getCommentStyle(`file${ext}`);
+      expect(style).not.toBeNull();
+      expect(style?.blockStart).toBe(start);
+      expect(style?.blockEnd).toBe(end);
+      expect(style?.preferBlock).toBe(pref);
+    },
+  );
 
   it.each([
     [".html", "<!--", "-->"],
