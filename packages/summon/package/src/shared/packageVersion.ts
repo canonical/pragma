@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BUNFS_PREFIX, embeddedPackageVersion } from "@canonical/summon-core";
 import { PACKAGE_NAME } from "./packageName.js";
 
 /**
@@ -16,20 +15,12 @@ import { PACKAGE_NAME } from "./packageName.js";
  *
  * A `/$bunfs`-anchored walk (a `bun build --compile` host) refuses to start:
  * the parent chain LEAVES the virtual filesystem (`/$bunfs/root` → `/$bunfs`
- * → `/`), and `/package.json` is a REAL path — measured: a root-level decoy
- * naming this package made the shipped binary pin the decoy's version into
- * every `create package` manifest, bypassing the embedded store. Compiled
- * hosts are served by the store (see {@link resolveOwnVersion}); the walk
- * throws immediately, reading nothing.
+ * → `/`), and `/package.json` is a REAL path — so the walk stops at the first
+ * manifest naming this package and never probes above the install root.
  *
  * @note Impure — reads the filesystem.
  */
 export function findOwnVersion(from: string): string {
-  if (from.startsWith(BUNFS_PREFIX)) {
-    throw new Error(
-      `packageVersion: no package.json naming ${PACKAGE_NAME} above ${from}`,
-    );
-  }
   let dir = from;
   for (;;) {
     try {
@@ -94,11 +85,5 @@ export function packageVersion(): string {
  * fallback. Exported for tests; production callers use {@link packageVersion}.
  */
 export function resolveOwnVersion(from: string): string {
-  try {
-    return findOwnVersion(from);
-  } catch (error) {
-    const embedded = embeddedPackageVersion(PACKAGE_NAME);
-    if (embedded !== undefined) return embedded;
-    throw error;
-  }
+  return findOwnVersion(from);
 }

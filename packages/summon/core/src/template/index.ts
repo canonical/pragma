@@ -1,21 +1,8 @@
 export { default as ejsEngine } from "./ejsEngine.js";
-export type {
-  EmbeddedRoot,
-  LoadedTemplate,
-  RawFileOptions,
-} from "./embedded/index.js";
-export {
-  BUNFS_PREFIX,
-  buildEmbeddedManifest,
-  embeddedPackageVersion,
-  hasEmbeddedTemplates,
-  loadTemplate,
-  loadTemplateSync,
-  qualifiedKey,
-  rawFile,
-  setEmbeddedPackageVersions,
-  setEmbeddedTemplates,
-} from "./embedded/index.js";
+export type { LoadedTemplate } from "./loadTemplate.js";
+export { loadTemplate, loadTemplateSync } from "./loadTemplate.js";
+export type { RawFileOptions } from "./rawFile.js";
+export { default as rawFile } from "./rawFile.js";
 export { default as generateStamp } from "./generateStamp.js";
 export { default as generatorComment } from "./generatorComment.js";
 export { default as getCommentStyle } from "./getCommentStyle.js";

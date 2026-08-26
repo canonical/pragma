@@ -107,7 +107,6 @@ export { runGeneratorTask } from "./run/index.js";
 // =============================================================================
 
 export type {
-  EmbeddedRoot,
   LoadedTemplate,
   RawFileOptions,
   TemplateDirOptions,
@@ -115,24 +114,17 @@ export type {
   TemplatingEngine,
 } from "./template/index.js";
 export {
-  BUNFS_PREFIX,
-  buildEmbeddedManifest,
   ejsEngine,
-  embeddedPackageVersion,
   generateStamp,
   generatorComment,
   getCommentStyle,
-  hasEmbeddedTemplates,
   loadTemplate,
   loadTemplateSync,
-  prependStamp,
-  qualifiedKey,
   rawFile,
+  prependStamp,
   renderFile,
   renderString,
   renderStringAsync,
-  setEmbeddedPackageVersions,
-  setEmbeddedTemplates,
   template,
   templateDir,
   templateHelpers,

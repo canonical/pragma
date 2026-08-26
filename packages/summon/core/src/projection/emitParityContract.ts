@@ -482,34 +482,21 @@ ${interactionTable()}
   writes stderr). The stream and its framing are host presentation; the
   exit code is parity surface — a rendered failure never exits 0.
 
-## 4. The template-seam guarantee
+## 4. The template seam
 
-Generators must work wherever a host runs, including a compiled binary that
-carries no template files — guaranteed by one seam in
-\`summon-core/template/embedded\`:
+Generators load their templates from their OWN package: \`copy-templates.ts\`
+puts each package's \`templates/\` tree into its \`dist/esm\`, and the generator
+resolves them \`__dirname\`-relative through \`loadTemplateSync\`. A miss is a
+hard error naming the path — callers do not guard against empty content, and a
+silent \`""\` would write blank files.
 
-- **One key scheme**, reader and writer co-located: a template's key is
-  \`<prefix>/<path after the last "templates/" segment>\` (\`qualifiedKey\`).
-  The writer (\`buildEmbeddedManifest\`) derives every key through
-  \`qualifiedKey\` itself — whatever it embeds, the reader can address, by
-  construction. It walks each declared root — every file, dotfiles included,
-  UTF-8 validated; a zero-file root, a file outside any \`templates/\`
-  segment, and two files folding onto one key are each a BUILD failure. The
-  host injects the manifest (\`setEmbeddedTemplates\`) and the generator
-  packages' versions (\`setEmbeddedPackageVersions\`) before loading
-  generators.
-- **Disk first, embedded fallback, miss = hard error naming the key**:
-  \`loadTemplateSync\` reads the file when it exists and otherwise serves the
-  embedded entry; a total miss throws
-  \`Template not found: <source> (not on disk, and no embedded template for
-  '<key>').\`
-- **A content-less \`template()\` cannot slip through**: in embedded context
-  (\`hasEmbeddedTemplates()\`) a \`template()\` without \`content\` fails as
-  \`TEMPLATE_DISK_READ_IN_EMBEDDED_CONTEXT\`, naming the destination and
-  source, instead of reaching for the filesystem.
+- **Loading is SYNCHRONOUS on purpose**, so a generator loads inside its
+  synchronous \`generate(answers)\` rather than at module eval. That is what
+  keeps READ commands template-free: \`--help\` and completion never reach a
+  \`generate\`, so they never touch a template.
 - **Raw carried assets are verbatim**: \`rawFile()\` writes byte-for-byte
-  (\`WriteFile\` with \`verbatim: true\`) and is never stamped — generated
-  trees match a disk install exactly.
+  (\`WriteFile\` with \`verbatim: true\`) and is never stamped — generated trees
+  match a disk install exactly.
 
 ## 5. The MCP mapping rule
 

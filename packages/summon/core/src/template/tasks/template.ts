@@ -1,6 +1,5 @@
 import * as path from "node:path";
 import {
-  fail,
   mkdir,
   pure,
   readFile,
@@ -9,13 +8,8 @@ import {
   writeFile,
 } from "@canonical/task";
 import ejsEngine from "../ejsEngine.js";
-import { hasEmbeddedTemplates } from "../embedded/store.js";
 import renderString from "../renderString.js";
 import type { TemplateOptions } from "./types.js";
-
-/** Task-error code for a content-less template read in embedded context. */
-export const TEMPLATE_DISK_READ_IN_EMBEDDED_CONTEXT =
-  "TEMPLATE_DISK_READ_IN_EMBEDDED_CONTEXT";
 
 /**
  * Render a single template file to a destination.
@@ -45,14 +39,7 @@ export default function template(options: TemplateOptions): Task<void> {
   const readSource: Task<string> =
     options.content !== undefined
       ? task(pure(options.content)).unwrap()
-      : hasEmbeddedTemplates()
-        ? fail<string>({
-            code: TEMPLATE_DISK_READ_IN_EMBEDDED_CONTEXT,
-            message:
-              `Template for "${destPath}" would read ${options.source} from disk ` +
-              "in embedded context — the generator must pass content (loadTemplateSync).",
-          })
-        : task(readFile(options.source)).unwrap();
+      : task(readFile(options.source)).unwrap();
 
   return task(mkdir(destDir))
     .chain(() => task(readSource))

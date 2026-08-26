@@ -2,7 +2,6 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { setEmbeddedPackageVersions } from "@canonical/summon-core";
 import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import pkg from "../../package.json" with { type: "json" };
 import {
@@ -84,66 +83,5 @@ describe("packageVersion", () => {
       JSON.stringify({ name: "@canonical/summon-package" }),
     );
     expect(() => findOwnVersion(root)).toThrow(/no package\.json naming/);
-  });
-});
-
-describe("resolveOwnVersion (the compiled-binary fallback)", () => {
-  afterEach(() => {
-    setEmbeddedPackageVersions({});
-  });
-
-  it("prefers the disk walk when a manifest is reachable", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "own-version-disk-"));
-    writeFileSync(
-      path.join(dir, "package.json"),
-      JSON.stringify({ name: "@canonical/summon-package", version: "7.7.7" }),
-    );
-    setEmbeddedPackageVersions({ "@canonical/summon-package": "9.9.9" });
-    expect(resolveOwnVersion(dir)).toBe("7.7.7");
-  });
-
-  it("positive control: the mock DOES intercept this module's walk — a plain anchor is served the decoy", () => {
-    // Without this cell, the /$bunfs assertions below are satisfiable by an
-    // INERT mock: `reads` is written only by the mock, and on a decoy-free
-    // host the unguarded walk exhausts into the same store answer — so a
-    // refactor moving the walk off `readFileSync` (openSync/readSync,
-    // node:fs/promises) would silently disarm the guard's only pin. With
-    // interception ON, a real tmpdir anchor must resolve the decoy AND
-    // record the probe, proving the mock reaches the walk it claims to.
-    const dir = mkdtempSync(path.join(tmpdir(), "own-version-control-"));
-    fsControl.reads.length = 0;
-    fsControl.interceptReads = true;
-    try {
-      expect(findOwnVersion(dir)).toBe("7.7.7");
-      expect(fsControl.reads.length).toBeGreaterThan(0);
-    } finally {
-      fsControl.interceptReads = false;
-    }
-  });
-
-  it("refuses to walk from a /$bunfs anchor — no real-filesystem probe, the store serves the compiled host", () => {
-    // The walk's parent chain from `/$bunfs/root` LEAVES the virtual
-    // filesystem (`/$bunfs` → `/`), where `/package.json` is a REAL path a
-    // host-level decoy could serve (measured hijack: a transient root-level
-    // decoy re-pinned the shipped binary's `create package` ranges). The fs
-    // mock simulates that hijacked host — every probe would resolve the
-    // decoy — so the guard must throw WITHOUT reading anything and the
-    // injected build-time version must win.
-    fsControl.reads.length = 0;
-    fsControl.interceptReads = true;
-    try {
-      setEmbeddedPackageVersions({ "@canonical/summon-package": "1.1.1" });
-      expect(resolveOwnVersion("/$bunfs/root")).toBe("1.1.1");
-      expect(fsControl.reads).toEqual([]);
-    } finally {
-      fsControl.interceptReads = false;
-    }
-  });
-
-  it("still throws the walk's error when nothing was injected", () => {
-    const dir = mkdtempSync(path.join(tmpdir(), "own-version-none-"));
-    expect(() => resolveOwnVersion(dir)).toThrow(
-      /no package\.json naming @canonical\/summon-package/,
-    );
   });
 });

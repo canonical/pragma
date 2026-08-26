@@ -32,36 +32,14 @@
  */
 export const CREATE_GENERATORS = {
   component: {
-    /** The declaring package (the workspace dir the build harvests from). */
-    name: "@canonical/summon-component",
     /** The command paths this binding runs (generator-map keys). */
     paths: ["component/react", "component/svelte", "component/lit"],
-    /**
-     * The template roots the embedded manifest carries, keyed by command-path
-     * prefix.
-     *
-     * ONLY `component` declares any. The manifest is a fallback:
-     * `loadTemplateSync` reads the real file from the resolved generator
-     * package first and reaches the manifest only when that read throws. The
-     * other two generators call `template({ source })`, which never consults
-     * it, so embedding their templates would be bytes nothing can look up.
-     */
-    templateRoots: [{ prefix: "component", relDir: "src/templates" }],
   },
   package: {
-    name: "@canonical/summon-package",
     paths: ["package"],
-    /** None: this generator reads templates by path. See `component` above. */
-    templateRoots: [],
   },
   application: {
-    name: "@canonical/summon-application",
     paths: ["application/react"],
-    /**
-     * None: reads by path like `package`, and also `copy()`s non-`.ejs` assets,
-     * which no manifest of `.ejs` strings could carry.
-     */
-    templateRoots: [],
   },
 } as const;
 

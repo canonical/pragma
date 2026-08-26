@@ -178,51 +178,32 @@ export function isModuleNotFound(cause: unknown): boolean {
 }
 
 /**
- * Load the create runtime: inject the embedded template manifest, then import
- * the generator selector + summon-core (STATIC dynamic imports, so bun's
- * `--compile` bundler includes them — they stay behind this lazy boundary, so
- * the fast paths and `create --yes` still load neither summon-core nor React).
+ * Load the create runtime — the generator selector and summon-core.
  *
- * The manifest is injected BEFORE `pickGenerator` — summon-core's ONE embedded
- * store serves every declared generator package, since all three now route
- * their reads through `loadTemplateSync`, and the generators load their
- * templates on first `generate()`.
+ * Lazy, and the specifiers stay STATIC so they remain analysable: importing
+ * these pulls summon-core and with it React, which must stay off `--help`,
+ * completion and every read. The generators load their own templates from their
+ * own packages on first `generate()`.
  *
- * THE DISK READ WINS, so the manifest is inert in every healthy install.
- * `loadTemplateSync` tries the real file under the RESOLVED generator package's
- * shipped templates tree first and reaches the manifest only when that read
- * throws. Only `component` declares roots to embed (`constants.ts`): the other
- * two would be carrying bytes that can only be reached by an install broken
- * enough that failing loudly is the better answer.
- *
- * EVERY BINDING RUNS EVERYWHERE, with nothing done specially for it. This
- * function once carried an availability gate, because `bun build --compile`
- * resolved modules under a virtual `/$bunfs` with no templates on disk; that
- * artifact is gone and the gate with it. A resolution failure is still turned
- * into a clean refusal by {@link isModuleNotFound} rather than surfacing as an
- * internal bug.
+ * A resolution failure means a broken or pruned install, and
+ * {@link isModuleNotFound} turns it into a clean refusal rather than an
+ * internal-bug report.
  */
 async function loadCreateRuntime() {
   try {
-    // Inject the embedded manifest (templates + build-time package versions)
-    // before any generator loads a template or resolves its own version.
-    const [summon, { PACKAGE_VERSIONS, TEMPLATES }] = await Promise.all([
+    const [summon, pick] = await Promise.all([
       import("@canonical/summon-core"),
-      import("./templates.embedded.generated.js"),
+      import("./pickGenerator.js"),
     ]);
-    summon.setEmbeddedTemplates(TEMPLATES);
-    summon.setEmbeddedPackageVersions(PACKAGE_VERSIONS);
-
-    const pick = await import("./pickGenerator.js");
     return { pickGenerator: pick.pickGenerator, summon };
   } catch (cause) {
     if (isModuleNotFound(cause)) {
       throw new PragmaError({
         code: "UNSUPPORTED",
         message:
-          "`create` could not load its generator runtime. Run it from a source checkout, or use the `summon` CLI.",
+          "`create` cannot load its generator runtime — the `@canonical/summon-*` packages it depends on could not be resolved.",
         recovery: {
-          message: "Run `create` from a source checkout, or use `summon`.",
+          message: `Reinstall ${BIN_NAME}; its generator dependencies look missing.`,
         },
       });
     }

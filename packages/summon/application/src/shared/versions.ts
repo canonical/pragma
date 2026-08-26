@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BUNFS_PREFIX, embeddedPackageVersion } from "@canonical/summon-core";
 import type { ExecResult, Task } from "@canonical/task";
 import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
 
@@ -61,7 +60,6 @@ function findInstalledVersion(
   from: string,
   packageName: string,
 ): string | undefined {
-  if (from.startsWith(BUNFS_PREFIX)) return undefined;
   const versionAt = (manifestPath: string): string | undefined => {
     try {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
@@ -120,11 +118,7 @@ export function readVersion(
   packageName: string,
   anchor: string = path.dirname(fileURLToPath(import.meta.url)),
 ): string {
-  return (
-    findInstalledVersion(anchor, packageName) ??
-    embeddedPackageVersion(packageName) ??
-    "unknown"
-  );
+  return findInstalledVersion(anchor, packageName) ?? "unknown";
 }
 
 /**

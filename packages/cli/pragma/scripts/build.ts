@@ -70,12 +70,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
-import {
-  checkModeFromEnv,
-  generateCreateSurface,
-  generateTemplateManifest,
-  TEMPLATE_ROOTS,
-} from "./codegen.js";
+import { checkModeFromEnv, generateCreateSurface } from "./codegen.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
 
@@ -139,18 +134,6 @@ if (import.meta.main) {
   });
   console.log(
     `Projected ${surfaced} generator binding(s) → createSurface.generated.ts`,
-  );
-
-  const manifest = generateTemplateManifest({ check });
-  const perRoot = TEMPLATE_ROOTS.map(
-    ({ prefix }) =>
-      `${prefix}: ${
-        Object.keys(manifest).filter((key) => key.startsWith(`${prefix}/`))
-          .length
-      }`,
-  ).join(", ");
-  console.log(
-    `Embedded ${Object.keys(manifest).length} generator templates (${perRoot}) → templates.embedded.generated.ts`,
   );
 
   if (check) {
