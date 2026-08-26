@@ -43,34 +43,35 @@ export function getAuthRedirectHref(input: string | URL): string | null {
 }
 
 export function withAuth(loginPath: string): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     if (!protectedPaths.has(currentRoute.url)) {
       return currentRoute;
     }
 
     const currentWarm = currentRoute.warm;
+    const guardedWarm = (
+      params: unknown,
+      search: unknown,
+      context: NavigationContext,
+    ) => {
+      if (!hasDemoAuth(search)) {
+        const from = currentRoute.render(
+          (params ?? {}) as RouteParamValues | Record<string, never>,
+        );
 
-    return {
-      ...currentRoute,
-      warm: (
-        params: unknown,
-        search: unknown,
-        context: NavigationContext,
-      ) => {
-        if (!hasDemoAuth(search)) {
-          const from = currentRoute.render(
-            (params ?? {}) as RouteParamValues | Record<string, never>,
-          );
+        redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
+      }
 
-          redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
-        }
-
-        if (currentWarm) {
-          return currentWarm(params, search, context);
-        }
-      },
+      if (currentWarm) {
+        return currentWarm(params, search, context);
+      }
     };
-  }) as RouteMiddleware;
+
+    // Overriding `warm` widens the property's type, so the object needs a
+    // local assertion back to TRoute; the middleware's signature itself is
+    // now the real generic contract.
+    return { ...currentRoute, warm: guardedWarm } as TRoute;
+  };
 }
 
 const publicLayout = wrapper<ReactElement>({
