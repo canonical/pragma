@@ -12,7 +12,7 @@ import readDehydratedState from "./readDehydratedState.js";
 const routes = {
   page: route({
     url: "/pages/:slug",
-    prefetch: vi.fn(async ({ slug }: { slug: string }) => {
+    warm: vi.fn(async ({ slug }: { slug: string }) => {
       void slug;
     }),
     content: ({ params }) => `page:${params.slug}`,
