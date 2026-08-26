@@ -622,9 +622,21 @@ export interface RouterStore<
   ): () => void;
 }
 
-export interface RouterBlocker {
-  readonly id: string;
-  readonly isActive: () => boolean;
+/** Handle returned by `router.block()` controlling one navigation blocker. */
+export interface RouterBlockerHandle {
+  /** `"blocked"` while a navigation is intercepted and awaiting a decision. */
+  readonly state: "idle" | "blocked";
+  /** Continue the blocked navigation. */
+  proceed(): void;
+  /** Discard the blocked navigation and stay on the current page. */
+  cancel(): void;
+  /** Subscribe to blocked/idle transitions. */
+  subscribe(listener: (state: "idle" | "blocked") => void): () => void;
+  /**
+   * Remove the blocker. A navigation currently blocked on it is discarded,
+   * not resumed.
+   */
+  dispose(): void;
 }
 
 export interface PlatformNavigateOptions {
@@ -772,11 +784,13 @@ export interface Router<
   match(url: string | URL): RouterMatch<TRoutes, TNotFound> | null;
   navigate: NavigateFn<TRoutes>;
   prefetch: PrefetchFn<TRoutes>;
-  registerBlocker(blocker: RouterBlocker): void;
-  unregisterBlocker(id: string): void;
-  readonly blockerState: "idle" | "blocked";
-  proceedNavigation(): void;
-  cancelNavigation(): void;
+  /**
+   * Register a navigation blocker. While `isActive()` returns true,
+   * `navigate()` is intercepted and held until the returned handle's
+   * `proceed()` or `cancel()` decides it. Blockers cover `navigate()` only —
+   * `setSearchParams()` and adapter-driven back/forward are not intercepted.
+   */
+  block(isActive: () => boolean): RouterBlockerHandle;
   render(result?: RouterLoadResult<TRoutes, TNotFound> | null): unknown;
   setSearchParams(
     params:
