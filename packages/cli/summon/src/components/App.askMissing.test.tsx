@@ -40,6 +40,32 @@ const generator: GeneratorDefinition = {
 
 const tick = (ms = 25) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Poll until a frame satisfies `check`, then return it.
+ *
+ * The confirm gate is NOT the mount commit — it is the tail of an async chain
+ * (`PromptSequence`'s `onComplete` -> `handlePromptsComplete` -> `generateTask`
+ * -> `setState({phase:"confirming"})`). A single fixed tick can therefore read a
+ * frame the gate has not painted yet, which is exactly what happened under
+ * suite parallelism: 2 failures in 84 loaded runs, 0 in 30 unloaded, and
+ * 216/216 when the file ran alone — i.e. visible only in the condition CI runs
+ * in. Lifted from `summon-core`'s `wizard.test.tsx`.
+ */
+const waitForFrame = async (
+  read: () => string | undefined,
+  check: (frame: string) => boolean,
+  timeout = 15_000,
+): Promise<string> => {
+  const deadline = Date.now() + timeout;
+  let frame = read() ?? "";
+  while (!check(frame) && Date.now() < deadline) {
+    await tick(15);
+    frame = read() ?? "";
+  }
+  return frame;
+};
+
+
 describe("App askMissing — the wizard asks only the pending prompts", () => {
   it("shows provided answers as completed and asks the first missing prompt", async () => {
     const { lastFrame, unmount } = render(
@@ -87,8 +113,7 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
         answers={{ title: "Widget", withStories: false }}
       />,
     );
-    await tick();
-    const frame = lastFrame() ?? "";
+    const frame = await waitForFrame(lastFrame, (f) => f.includes("Proceed?"));
     expect(frame).toContain("Proceed?");
     expect(frame).not.toContain("Step 1");
     unmount();
@@ -107,8 +132,9 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
         answers={{ title: "Widget", withStories: false }}
       />,
     );
-    await tick();
-    expect(lastFrame()).toContain("Proceed?");
+    expect(
+      await waitForFrame(lastFrame, (frame) => frame.includes("Proceed?")),
+    ).toContain("Proceed?");
     // Same rule as App.confirmGate.test.tsx:55-70, same shape: Ink attaches
     // its stdin listener asynchronously in a fresh worker (measured here: a
     // cold worker's first render loses the esc outright — 5 of 72 — and no
@@ -127,6 +153,12 @@ describe("App askMissing — the wizard asks only the pending prompts", () => {
     const frame = lastFrame() ?? "";
     expect(frame).toContain("Step 1 of 2");
     expect(frame).toContain("Title:");
+    // The PRE-FILL, which is the behaviour the comment above promises and
+    // nothing here pinned: `Title:` is the active prompt's MESSAGE and renders
+    // whether or not a value carried over. The carried value renders beneath
+    // it. The round-22 review proved this by break + control — setting
+    // `initialAnswers={undefined}` left this cell green until this line existed.
+    expect(frame).toContain("Widget");
     expect(frame).not.toContain("Proceed?");
     unmount();
   }, 20_000);

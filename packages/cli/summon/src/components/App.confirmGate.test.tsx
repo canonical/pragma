@@ -34,6 +34,32 @@ const stateful: GeneratorDefinition = {
 
 const tick = (ms = 25) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Poll until a frame satisfies `check`, then return it.
+ *
+ * The confirm gate is NOT the mount commit — it is the tail of an async chain
+ * (`PromptSequence`'s `onComplete` -> `handlePromptsComplete` -> `generateTask`
+ * -> `setState({phase:"confirming"})`). A single fixed tick can therefore read a
+ * frame the gate has not painted yet, which is exactly what happened under
+ * suite parallelism: 2 failures in 84 loaded runs, 0 in 30 unloaded, and
+ * 216/216 when the file ran alone — i.e. visible only in the condition CI runs
+ * in. Lifted from `summon-core`'s `wizard.test.tsx`.
+ */
+const waitForFrame = async (
+  read: () => string | undefined,
+  check: (frame: string) => boolean,
+  timeout = 15_000,
+): Promise<string> => {
+  const deadline = Date.now() + timeout;
+  let frame = read() ?? "";
+  while (!check(frame) && Date.now() < deadline) {
+    await tick(15);
+    frame = read() ?? "";
+  }
+  return frame;
+};
+
+
 describe("App — the confirm gate's re-generate lands in the error phase", () => {
   // The error phase sets process.exitCode; never leak it across cases (or
   // into the worker's own exit).
@@ -48,8 +74,9 @@ describe("App — the confirm gate's re-generate lands in the error phase", () =
     const { lastFrame, stdin, unmount } = render(
       <App generator={stateful} askMissing answers={{ title: "Widget" }} />,
     );
-    await tick();
-    expect(lastFrame()).toContain("Proceed?");
+    expect(
+      await waitForFrame(lastFrame, (frame) => frame.includes("Proceed?")),
+    ).toContain("Proceed?");
     expect(generateCalls).toBe(1);
 
     // Confirming re-generates; the second call throws — the one path that
@@ -60,11 +87,17 @@ describe("App — the confirm gate's re-generate lands in the error phase", () =
     // it — extra writes are harmless: each accepted `y` re-runs the same
     // throwing re-generate, and once the error phase renders, gate input
     // is inactive.
+    // The exit code is owned by a passive effect (App.tsx:996) that flushes
+    // AFTER the commit painting the error, so a loop exiting on the FRAME alone
+    // can read a rendered message and a still-unset exitCode. Wait for the
+    // settled PAIR — the remedy `App.invalidAnswer.test.tsx` already took, in
+    // the file it copied this shape from. Measured on the real package: 4 of 8
+    // runs failed here under contention, every failure the code, never the frame.
+    const settled = () =>
+      (lastFrame() ?? "").includes("Code: GENERATE_ERROR") &&
+      process.exitCode !== undefined;
     const deadline = Date.now() + 15_000;
-    while (
-      !(lastFrame() ?? "").includes("Code: GENERATE_ERROR") &&
-      Date.now() < deadline
-    ) {
+    while (!settled() && Date.now() < deadline) {
       stdin.write("y");
       await tick(50);
     }
