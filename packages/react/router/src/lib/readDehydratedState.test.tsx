@@ -66,4 +66,48 @@ describe("readDehydratedState", () => {
 
     expect(readDehydratedState()).toBeNull();
   });
+
+  it("returns null for structurally invalid dehydrated state", () => {
+    const globalWindow = window as Window & { __INITIAL_DATA__?: unknown };
+
+    globalWindow.__INITIAL_DATA__ = {
+      href: "/",
+      kind: "route",
+      status: "bad",
+    };
+    expect(readDehydratedState()).toBeNull();
+
+    globalWindow.__INITIAL_DATA__ = {
+      href: "/",
+      kind: "banana",
+      routeId: null,
+      status: 200,
+    };
+    expect(readDehydratedState()).toBeNull();
+
+    globalWindow.__INITIAL_DATA__ = {
+      href: "/",
+      kind: "route",
+      routeId: null,
+      status: 200,
+    };
+    expect(readDehydratedState()).toBeNull();
+  });
+
+  it("normalizes the returned state to the router fields alone", () => {
+    (window as Window & { __INITIAL_DATA__?: unknown }).__INITIAL_DATA__ = {
+      href: "/pages/hello",
+      kind: "not-found",
+      routeId: undefined,
+      status: 404,
+      theme: "dark",
+    };
+
+    expect(readDehydratedState()).toEqual({
+      href: "/pages/hello",
+      kind: "not-found",
+      routeId: null,
+      status: 404,
+    });
+  });
 });

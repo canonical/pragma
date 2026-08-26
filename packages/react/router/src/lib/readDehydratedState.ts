@@ -34,11 +34,33 @@ export default function readDehydratedState<
     return null;
   }
 
-  const state = candidate as { href?: unknown; kind?: unknown };
+  const state = candidate as {
+    href?: unknown;
+    kind?: unknown;
+    routeId?: unknown;
+    status?: unknown;
+  };
 
-  if (typeof state.href !== "string" || typeof state.kind !== "string") {
+  if (
+    typeof state.href !== "string" ||
+    typeof state.status !== "number" ||
+    (state.kind !== "route" &&
+      state.kind !== "not-found" &&
+      state.kind !== "unmatched")
+  ) {
     return null;
   }
 
-  return candidate as RouterDehydratedState<TRoutes>;
+  if (state.kind === "route" && typeof state.routeId !== "string") {
+    return null;
+  }
+
+  // Return a normalized copy so extra payload keys (url, theme, …) and any
+  // malformed routeId on non-route kinds never reach hydrate().
+  return {
+    href: state.href,
+    kind: state.kind,
+    routeId: state.kind === "route" ? state.routeId : null,
+    status: state.status,
+  } as RouterDehydratedState<TRoutes>;
 }
