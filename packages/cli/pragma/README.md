@@ -8,7 +8,8 @@
 npm install -g @canonical/pragma-cli
 ```
 
-This installs the `pragma` command. The package ships compiled JavaScript and runs on **Node.js 22.18 or newer**, on any platform Node supports — pragma reads its own `pragma.config.ts` through Node's TypeScript type stripping, which is on by default from that version.
+This installs the `pragma` command. The package ships compiled JavaScript and runs on **Node.js 22.18+ or 23.6+** (any 24 or later), on any platform Node supports — pragma reads its own `pragma.config.ts` through Node's TypeScript type stripping, which is on by default from those versions. Node 23.0-23.5 are excluded deliberately: they
+satisfy a plain `>=22.18` but predate the 23.x line's own default-on release.
 
 Check your environment and confirm the install:
 

@@ -18,9 +18,13 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
-    // Emitted so the types-only `src/index.ts` barrel ships real declarations for
-    // consumers, decoupling them from this package's source.
-    "declaration": true,
+    // NO `declaration`. It would emit a `.d.ts` surface nothing resolves: the
+    // `tool-ts` ruleset fixes `module` and `types` at `src/index.ts` and `files`
+    // ships `src`, so a consumer's TypeScript reads the source barrel directly.
+    // Emitting declarations beside it would be dead weight in every tarball and
+    // a second, silently divergent copy of the same types. Exposing the emitted
+    // ones instead is a packaging decision that belongs with that ruleset, not
+    // with this build.
     "sourceMap": true
   },
   "include": ["src/**/*.ts", "pragma.conf.ts"],

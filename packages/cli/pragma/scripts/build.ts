@@ -37,6 +37,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -47,6 +48,9 @@ import { capabilities } from "../src/capabilities/index.js";
 import { emitReference } from "../src/kernel/spec/emitReference.js";
 
 const scriptsUrl = new URL(".", import.meta.url);
+
+/** The emit target, cleared before every build so it holds only this build. */
+const DIST_DIR = fileURLToPath(new URL("../dist/", scriptsUrl));
 
 /**
  * The generators whose `.ejs` the manifest carries: exactly the bindings that
@@ -209,6 +213,16 @@ if (import.meta.main) {
   console.log(
     `Wrote ${changedDocs} changed reference page(s) → docs/reference/`,
   );
+
+  // CLEAR `dist` FIRST. `tsc` writes into `outDir`; it never prunes it, and
+  // `files` publishes the whole directory — so anything a previous build left
+  // there ships. That is not hypothetical: building here after the compiled
+  // build left its 105 MB `dist/pragma` in place, which would have gone into
+  // the tarball and undone both the size reduction and the provenance this
+  // build exists to give. Outputs for deleted or renamed sources have the same
+  // shape, quietly. Recreating the directory makes `dist` mean exactly "what
+  // this build produced".
+  rmSync(DIST_DIR, { recursive: true, force: true });
 
   // `tsc` runs as a child rather than through the compiler API: the emit config
   // lives in `tsconfig.build.json` (one declaration, shared with editors and

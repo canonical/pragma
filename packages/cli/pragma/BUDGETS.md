@@ -31,6 +31,36 @@ discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 day-1 spike hardware (treated as the CI reference box).** A slower box shifts the
 whole distribution up; the ceilings are the covenant, not the observations.
 
+## Re-derived for the shipped entry
+
+Every figure above was measured against a `bun build --compile` executable. The
+distribution now ships JavaScript that `node` executes, which costs roughly 2×
+on the fast paths — so a ceiling set at 2× the *binary's* median lands on the
+*emit's* median, where it can no longer separate a regression from a slow
+runner.
+
+`__complete` demonstrated this rather than merely risking it. Three CI attempts,
+all against the 100 ms ceiling:
+
+| Attempt | trimmed mean |
+|---|---|
+| 1 | 100.37 ms |
+| 2 | 100.20 ms |
+| 3 | 100.15 ms |
+
+That is a ceiling sitting on the median, not above it.
+
+| Budget | Compiled median | Shipped entry | Ceiling | Basis |
+|---|---|---|---|---|
+| `pragma --help` | ~61 ms | ~72 ms local | **130 ms** (unchanged) | still has real headroom to lose |
+| `pragma __complete` | ~46 ms | ~69 ms local · ~100 ms CI trimmed mean | **150 ms** (was 100) | 2× the shipped median, the same rule as before |
+
+**The designed 50 ms target is not met, and is recorded as unmet rather than
+moved.** The shipped entry cannot reach it: node's own start consumes most of
+that number before pragma runs a line. Completion is typed interactively, so
+this is the budget most worth pulling back down — it is the one number the
+packaging change genuinely cost.
+
 ## p95 stabilization (`__complete`)
 
 A nearest-rank p95 over a small sample is effectively the *maximum* of that
@@ -42,8 +72,10 @@ box. The `__complete` budget test therefore enforces the ceiling on a
 **10%-trimmed mean** (`measure.trimmedMean`) — a robust central estimate the
 occasional spike cannot dominate — over 30 spawns (5 warmups, `retry: 3`), and
 keeps **p95 as a soft check** (asserted with 1.5× headroom) to still catch a
-gross regression. `BUDGET_COMPLETE_MS` stays **100 ms** — the ceiling is
-unchanged; only the statistic it is asserted against was made reliable.
+gross regression. At the time `BUDGET_COMPLETE_MS` stayed **100 ms** — that
+change made the statistic reliable without touching the ceiling. The ceiling
+itself was re-derived later, when the shipped artifact changed; see
+"Re-derived for the shipped entry" below.
 
 | Path                       | Median  | p95     | Budget  | Basis                     |
 | -------------------------- | ------- | ------- | ------- | ------------------------- |
