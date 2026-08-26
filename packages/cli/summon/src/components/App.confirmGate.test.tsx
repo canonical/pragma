@@ -59,7 +59,6 @@ const waitForFrame = async (
   return frame;
 };
 
-
 describe("App — the confirm gate's re-generate lands in the error phase", () => {
   // The error phase sets process.exitCode; never leak it across cases (or
   // into the worker's own exit).

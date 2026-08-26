@@ -65,7 +65,6 @@ const waitForFrame = async (
   return frame;
 };
 
-
 describe("App askMissing — the wizard asks only the pending prompts", () => {
   it("shows provided answers as completed and asks the first missing prompt", async () => {
     const { lastFrame, unmount } = render(

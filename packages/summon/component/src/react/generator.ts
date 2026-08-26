@@ -15,9 +15,12 @@
 
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type GeneratorDefinition, template } from "@canonical/summon-core";
+import {
+  type GeneratorDefinition,
+  loadTemplateSync,
+  template,
+} from "@canonical/summon-core";
 import { debug, info, mkdir, sequence_, when } from "@canonical/task";
-
 import {
   appendExportToParentIndex,
   createComponentPathPrompt,
@@ -27,7 +30,6 @@ import {
   PACKAGE_NAME,
   sharedPrompts,
 } from "../shared/index.js";
-import { loadTemplateSync } from "@canonical/summon-core";
 import type { ReactComponentAnswers } from "./types.js";
 
 // =============================================================================
