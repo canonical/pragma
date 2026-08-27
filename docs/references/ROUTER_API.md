@@ -420,17 +420,22 @@ createRouter(appRoutes, { adapter: createBrowserAdapter(), middleware: [...middl
 createRouter(appRoutes, { adapter: createServerAdapter(url), middleware: [...middleware], notFound: notFoundRoute }); // server
 ```
 
-For a server-side pre-render decision that must not throw, mirror the same logic in a pure helper that returns the redirect href or `null`:
+For a server-side pre-render decision that must not throw, mirror the same logic in a pure helper — and hand it the router's **match**, never the raw URL. A raw-URL check normalizes differently from the router (trailing slashes are ignored by matching, and the last duplicate search value wins), so it could let a protected page render unauthenticated:
 
 ```ts
-function getAuthRedirectHref(input: string | URL): string | null {
-  const url = input instanceof URL ? input : new URL(input, "https://router.local");
-  if (!protectedPaths.has(url.pathname) || hasDemoAuth({ auth: url.searchParams.get("auth") })) {
+function getAuthRedirectForMatch(match: {
+  readonly route: AnyRoute;
+  readonly search: unknown;
+  readonly pathname: string;
+}): string | null {
+  if (!protectedPaths.has(match.route.url) || hasDemoAuth(match.search)) {
     return null;
   }
-  return `/login?from=${encodeURIComponent(url.pathname)}`;
+  return `/login?from=${encodeURIComponent(match.pathname)}`;
 }
 ```
+
+The server matches first, then asks (see [Entry wiring](#entry-wiring-reference)).
 
 ### Error model: errors are state
 
@@ -1054,11 +1059,6 @@ const dispositionMatcher = createRouter(appRoutes, {
 });
 
 export function resolveRouteDisposition(url: string): RouteDisposition {
-  const authRedirect = getAuthRedirectHref(url);
-  if (authRedirect) {
-    return { kind: "redirect", status: 302, location: authRedirect };
-  }
-
   let matchResult: ReturnType<typeof dispositionMatcher.match>;
   try {
     matchResult = dispositionMatcher.match(url);
@@ -1073,6 +1073,15 @@ export function resolveRouteDisposition(url: string): RouteDisposition {
 
   if (matchResult?.kind === "redirect") {
     return { kind: "redirect", status: matchResult.status, location: matchResult.redirectTo };
+  }
+
+  // Auth is decided AFTER matching, from the router's own data — the matched
+  // pattern and the schema-validated search — so the server can never
+  // normalize differently from the router.
+  const authRedirect =
+    matchResult?.kind === "route" ? getAuthRedirectForMatch(matchResult) : null;
+  if (authRedirect) {
+    return { kind: "redirect", status: 302, location: authRedirect };
   }
 
   const status = matchResult?.status ?? 404;

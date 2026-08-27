@@ -127,38 +127,38 @@ What makes this correct against the current API:
 - **`warm` returns `void | Promise<void>`.** The redirect is a side effect on the control flow, not a value the hook hands back. Never try to model the redirect as a return value or a resolved promise.
 - **Status `302` is the runtime default.** The runtime `redirect()` helper accepts `301 | 302 | 307 | 308` and defaults to `302`. The boilerplate passes `302` explicitly. Do not confuse this with static redirect routes (`route({ url, redirect, status })`), whose `status` is narrower: `301 | 308` only.
 
-### The pure-decision companion: `getAuthRedirectHref`
+### The pure-decision companion: `getAuthRedirectForMatch`
 
-The middleware decides at navigation time, inside `warm`. But a server (sitemap generation, an SSR pre-flight, an edge function) often needs the **same** decision *without* a router and without throwing. Factor the decision into a pure helper and call it from both places:
+The middleware decides at navigation time, inside `warm`. But a server (an SSR pre-flight, an edge function) needs the **same** decision without throwing. Factor it into a pure helper — and hand it the router's **match**, never the raw URL. A raw-URL check disagrees with router matching on exactly the inputs an attacker would try: matching ignores trailing empty path segments (`/account/` matches `/account`) and validated search keeps the **last** duplicate value (`?auth=1&auth=0` means `auth=0`), while `url.pathname` compares raw and `URLSearchParams.get()` reads the first value — so a raw-URL guard can SSR a protected page unauthenticated:
 
 ```ts
-export function getAuthRedirectHref(input: string | URL): string | null {
-  const url =
-    input instanceof URL ? input : new URL(input, "https://router.local");
-
-  if (
-    !protectedPaths.has(url.pathname) ||
-    hasDemoAuth({ auth: url.searchParams.get("auth") })
-  ) {
+export function getAuthRedirectForMatch(match: {
+  readonly route: AnyRoute;
+  readonly search: unknown;
+  readonly pathname: string;
+}): string | null {
+  if (!protectedPaths.has(match.route.url) || hasDemoAuth(match.search)) {
     return null;
   }
 
-  return `/login?from=${encodeURIComponent(url.pathname)}`;
+  return `/login?from=${encodeURIComponent(match.pathname)}`;
 }
 ```
 
-`getAuthRedirectHref` returns the redirect target as a string, or `null` when no redirect is needed. It never throws and never touches the router, so a server can branch on it before rendering:
+The helper never throws; the server **matches first** (with an adapterless pure-matcher router), then asks:
 
 ```ts
-const redirectHref = getAuthRedirectHref(requestUrl);
+const matchResult = matcher.match(requestUrl); // adapterless createRouter — a pure matcher
+const redirectHref =
+  matchResult?.kind === "route" ? getAuthRedirectForMatch(matchResult) : null;
 if (redirectHref) {
   return Response.redirect(redirectHref, 302);
 }
-// otherwise fall through to matching + rendering — see the boilerplate's
+// otherwise fall through to rendering — see the boilerplate's
 // resolveRouteDisposition in apps/react/boilerplate-vite/src/server/entry.tsx
 ```
 
-This is the corrected shape of the auth recipe: the **throwing** path lives inside `warm` (client navigation), the **pure** path is a reusable function (server pre-flight), and both share `protectedPaths` and `hasDemoAuth` so the policy cannot drift between them.
+This is the corrected shape of the auth recipe: the **throwing** path lives inside `warm` (client navigation), the **pure** path is a reusable function fed by the router's own match (server pre-flight), and both share `protectedPaths` and `hasDemoAuth` so the policy cannot drift between them.
 
 ### Rationale
 
@@ -349,13 +349,13 @@ export const middleware = [withAuth("/login")] as const;
 - capture and delegate to `currentRoute.warm` — never assume it exists, and never replace it with a hook the route never had
 - there is no `fetch` field; `warm(params, search, context)` is the only route data hook
 - `redirect()` throws (`never`) — call it for its side effect inside `warm`, never `return` it; thrown sync it applies before commit, thrown from an async hook it applies late (render never blocks)
-- factor any decision a server also needs into a pure helper (the `getAuthRedirectHref` pattern) so client and server share one policy
+- factor any decision a server also needs into a pure helper fed by the router's match (the `getAuthRedirectForMatch` pattern) so client and server share one policy
 - prefer middleware for cross-cutting policy, wrappers (`wrapper()` + `group()`) for layout and shared UI
 - document any redirect or URL-shape change clearly for consumers — middleware rewrites routes out from under the call site
 
 ## See a working example
 
-The live auth middleware — `withAuth` and the pure `getAuthRedirectHref` companion — is in [apps/react/boilerplate-vite/src/routes.tsx](../../apps/react/boilerplate-vite/src/routes.tsx). The routes it transforms, including the Standard Schema v1 search schemas, are in [apps/react/boilerplate-vite/src/domains/account/routes.ts](../../apps/react/boilerplate-vite/src/domains/account/routes.ts) and [apps/react/boilerplate-vite/src/domains/marketing/routes.ts](../../apps/react/boilerplate-vite/src/domains/marketing/routes.ts). The client and server entries that apply the middleware are [src/client/entry.tsx](../../apps/react/boilerplate-vite/src/client/entry.tsx) and [src/server/entry.tsx](../../apps/react/boilerplate-vite/src/server/entry.tsx).
+The live auth middleware — `withAuth` and the pure `getAuthRedirectForMatch` companion — is in [apps/react/boilerplate-vite/src/routes.tsx](../../apps/react/boilerplate-vite/src/routes.tsx). The routes it transforms, including the Standard Schema v1 search schemas, are in [apps/react/boilerplate-vite/src/domains/account/routes.ts](../../apps/react/boilerplate-vite/src/domains/account/routes.ts) and [apps/react/boilerplate-vite/src/domains/marketing/routes.ts](../../apps/react/boilerplate-vite/src/domains/marketing/routes.ts). The client and server entries that apply the middleware are [src/client/entry.tsx](../../apps/react/boilerplate-vite/src/client/entry.tsx) and [src/server/entry.tsx](../../apps/react/boilerplate-vite/src/server/entry.tsx).
 
 ## Reference
 
