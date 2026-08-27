@@ -24,47 +24,37 @@
 /**
  * `pragma --help` ceiling (ms). Designed 50; the compiled median was ~61 → 2×.
  *
- * RAISED from 130, and the cause is named rather than absorbed. Two costs
- * stacked: shipping JavaScript that node executes roughly doubled the fast
- * paths, and the create surface's projection added ~46 ms of eager import on
- * top. Measured locally at ~151 ms (load 1.8) against the old 130.
- *
- * WHERE THE 46 ms GOES: `capabilities/index` barrels every capability, and
- * `create.verb.ts` statically value-imports `@canonical/summon-core/projection`
- * — `decideInteraction`, `refusalMessage`, `toKebabCase` and friends, the logic
- * this CLI shares with summon so the two cannot drift. Help pays for it without
- * using it. `lazy.test.ts` passes because that subpath is not what it guards
- * (it guards summon-core proper, React, zod and oxigraph, all still absent).
- *
- * Moving the projection behind the lazy boundary is the real fix and belongs
- * with the create-surface work, not with a budget edit. This ceiling is
- * therefore PROVISIONAL: it is sized to let CI tell us the real
- * runner-to-laptop ratio rather than guessed tight enough to flake, and it
- * should come back down when the eager import does.
+ * RESTORED to 130 from the provisional 220. The 220 covered the create
+ * surface's eager registration imports on the capabilities barrel; those are
+ * gone — the registered flag spellings are baked into
+ * `createSurface.generated.ts` at build time, the mount's adapter loads
+ * behind `CliProjection.prepare()`, and the bare-help path no longer loads
+ * Commander at all — and the lazy-graph guard in `lazy.test.ts` pins all
+ * three so the cost cannot creep back silently. Measured after the recovery:
+ * ~60 ms median through the shipped entry (three 15-spawn runs on the shared
+ * dev box, load 5–7; ~71 ms before). 130 is the 2×-median rule against the
+ * artifact that ships, and the same number this path carried before the
+ * regression — see BUDGETS.md for the measurements.
  */
-export const BUDGET_HELP_MS = 220;
+export const BUDGET_HELP_MS = 130;
 
 /**
  * `pragma __complete …` ceiling (ms). Designed 50 — **not met, and recorded as
  * such**: the shipped entry cannot reach it, because node's own start is most
  * of that number before pragma runs a line.
  *
- * Compiled median was ~46 (ceiling 100 = 2×). The shipped entry measures ~69 ms
- * locally and ~100 ms as a CI trimmed mean, so 100 was the median, not a
- * ceiling. 150 restores the 2× rule against the artifact that ships and still
- * fails a 50 % regression from today — a gate rather than a rubber stamp.
- *
- * RAISED AGAIN, from 150, for the same reason as {@link BUDGET_HELP_MS} and to
- * the same number: both fast paths import `capabilities/index`, so both pay the
- * create surface's eager `@canonical/summon-core/projection` import. Measured
- * ~163 ms locally. The two ceilings sit together because the two costs are now
- * the same cost.
- *
- * Completion is typed interactively, so this is the budget most worth pulling
- * back down — and the eager import is the thing to pull. PROVISIONAL on the
- * same terms.
+ * RESTORED to 150 from the provisional 220, for the same reason as
+ * {@link BUDGET_HELP_MS}: the eager create-surface imports both fast paths
+ * paid for are now deferred, and completion additionally sheds Commander —
+ * nothing on the `__complete` closure imports it any more. Measured after
+ * the recovery: ~64–69 ms median locally (~74 ms before). 150 is what the 2×
+ * rule gave this path the last time the shipped artifact was measured
+ * against CI (local ~69 ms → CI trimmed mean ~100 ms), and the recovery
+ * brings the local median back below that reference point, so the old
+ * ceiling is the honest one again. Completion is typed interactively, so
+ * this stays the budget most worth defending.
  */
-export const BUDGET_COMPLETE_MS = 220;
+export const BUDGET_COMPLETE_MS = 150;
 
 /** Warm project-config (`pragma.config.ts`) load ceiling (ms). Cache hit is sub-ms. */
 export const BUDGET_PROJECT_CONFIG_MS = 10;

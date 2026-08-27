@@ -140,6 +140,38 @@ describe("lazy dispatch — module-graph probe (PROTECTED)", () => {
     }
   });
 
+  // The create surface's registration machinery — summon-core's projection
+  // helpers, its Commander adapter, and Commander itself — must stay behind
+  // the mount's dynamic import: `--help` and `__complete` both import this
+  // barrel and neither registers a single create command, so an eager edge
+  // here taxes every fast-path spawn for work only a dispatched `create`
+  // invocation performs. The registered flag/positional spellings the fast
+  // paths DO need (completion tokens, reference syntax) are baked into
+  // `createSurface.generated.ts` at build time, so nothing on this graph has
+  // to call the projection to learn them. Type-only imports are allowed —
+  // they are erased — which is why this walks import STATEMENTS rather than
+  // grepping for the specifier.
+  it("capabilities/index pulls no summon-core projection, adapter, or commander value import (PROTECTED)", () => {
+    const banned = [/^@canonical\/summon-core\/projection/, /^commander$/];
+    const graph = staticImportGraph(resolve(here, "index.ts"));
+    const pkgRoot = resolve(here, "..", "..");
+    // Anchored to line start so the word "import" inside a docblock cannot
+    // open a match that swallows prose down to the next real specifier.
+    const importRe = /^import\s+([^;]*?)from\s*["']([^"']+)["']/gm;
+    const offenders: string[] = [];
+    for (const file of graph) {
+      const source = readFileSync(file, "utf-8");
+      for (const match of source.matchAll(importRe)) {
+        const clause = match[1] as string;
+        const specifier = match[2] as string;
+        if (!banned.some((re) => re.test(specifier))) continue;
+        if (/^type\s/.test(clause.trim())) continue;
+        offenders.push(`${relative(pkgRoot, file)} → ${specifier}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it("NO module on that graph statically imports zod (PROTECTED)", () => {
     // This used to pin an exact set of one — `graphpack/types.ts`, reached via
     // `resolveSources` → `packIsComplete` → `readManifest` → `manifestSchema

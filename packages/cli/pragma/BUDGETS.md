@@ -51,13 +51,52 @@ neither uses it. `lazy.test.ts` stays green because that subpath is not what it
 guards: summon-core proper, React, zod and oxigraph are all still absent from
 the fast-path graph.
 
-The two ceilings now sit together because the two costs are the same cost.
+The two ceilings sat together because the two costs were the same cost.
 
-**Both are PROVISIONAL.** Moving the projection behind the lazy boundary is the
-real fix and belongs with the create-surface work rather than a budget edit;
-these numbers should come back down when the eager import does. They are sized
-to let CI report the true runner-to-laptop ratio rather than guessed tight
-enough to flake.
+**Both were PROVISIONAL**, sized to hold until the eager import moved behind
+the lazy boundary — which the next section records.
+
+## Recovered: the create registration leaves the fast paths
+
+The provisional 220 ms ceilings existed to cover eager create-surface imports
+on the capabilities barrel. Three changes removed them:
+
+1. **Registered syntax is baked, not derived.** The build already projected
+   the generators into `createSurface.generated.ts`; it now also bakes each
+   prompt's REGISTERED CLI spelling (`CREATE_CLI_SYNTAX`: flag token,
+   takes-value, kebab name), so completion and the reference emitter read
+   data instead of calling the projection's flag-shape authority at import
+   time.
+2. **The mount's registration machinery is deferred.** The projection hook
+   split into a light half on the barrel (`cliProjection.ts` — completion +
+   reference syntax over baked data) and a heavy half (`mount.ts` —
+   summon-core's Commander adapter, the interaction decisions, the kernel
+   dispatcher) loaded by `CliProjection.prepare()`, which only the bin awaits
+   right before `buildProgram`. `create.verb.ts`'s projection helpers moved
+   behind the same lazy `run` import that already guarded summon-core proper.
+3. **The bare-help path no longer loads Commander.** The bin answered
+   `--help`/the front door from the capability registry alone but imported
+   the program builder first; that import now happens after the
+   bare-invocation branch.
+
+The lazy-graph guard in `lazy.test.ts` pins all three: no module on the
+`capabilities/index` static graph may value-import
+`@canonical/summon-core/projection`, its Commander adapter, or `commander`.
+
+**Measured** (shared dev box, load 5–7, `measureCommand` through
+`node dist/src/bin.js`, 15 spawns/3 warmups for help and 30/5 for complete,
+three runs each):
+
+| Path | before (median) | after (medians across runs) | ceiling |
+|---|---|---|---|
+| `pragma --help` | ~71 ms | 58.1 · 59.9 · 62.4 ms | **130 ms** (2× median — the pre-regression number) |
+| `pragma __complete` | ~74 ms | 62.3 · 65.7 · 69.4 ms | **150 ms** (the 2×-rule number from the last local-vs-CI calibration) |
+
+The capabilities barrel's own import cost fell from ~38 ms to ~29 ms in the
+same runs. Both medians are back at or below the shipped-entry numbers the
+130/150 ceilings were originally derived from, so those ceilings are restored
+rather than re-invented; the designed 50 ms target remains recorded as unmet
+(node's start alone spends most of it).
 
 ## Re-derived for the shipped entry
 

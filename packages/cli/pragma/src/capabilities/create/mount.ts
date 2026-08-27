@@ -16,15 +16,18 @@
  * rendering, exit codes, SIGINT and the SEC-2 jail reuse the existing
  * machinery byte-for-byte.
  *
- * Fast-path discipline: this module imports only the projection (UI-free,
- * graph-guarded), the generated surface data, and kernel
- * spec/dispatch/help-format modules — never summon-core's barrel or a
- * generator.
+ * This is the HEAVY half of the create projection, reached ONLY through the
+ * dynamic import in `cliProjection.ts` — the light half the capabilities
+ * barrel carries. The split exists for the fast paths: `--help` and
+ * `__complete` import the barrel on every spawn and register nothing, so the
+ * registration machinery this module needs (summon-core's projection helpers
+ * and Commander adapter, Commander itself, the kernel dispatcher) must load
+ * only when an invocation actually enters the `create` subtree. The
+ * lazy-graph guard in `lazy.test.ts` pins that boundary.
  */
 
 import type { GeneratorResult } from "@canonical/summon-core";
 import {
-  buildOptionInfo,
   type CommandEntry,
   decideInteraction,
   explicitAnswersComplete,
@@ -34,7 +37,6 @@ import {
   missingExplicitFlags,
   type ProjectedPrompt,
   refusalMessage,
-  toKebabCase,
 } from "@canonical/summon-core/projection";
 import {
   type CommanderHost,
@@ -43,7 +45,6 @@ import {
 } from "@canonical/summon-core/projection/commander";
 import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
-import { BIN_NAME } from "../../constants.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { renderErrorForFormat } from "../../kernel/error/renderError.js";
 import {
@@ -57,14 +58,7 @@ import {
   helpHeading,
   helpUsage,
 } from "../../kernel/project/cli/helpFormat.js";
-import type {
-  CliMountHost,
-  CliProjection,
-  CompletionChildFlag,
-  CompletionChildSpec,
-  ReferenceCliSyntax,
-  VerbSpec,
-} from "../../kernel/spec/types.js";
+import type { CliMountHost, VerbSpec } from "../../kernel/spec/types.js";
 import { CREATE_GENERATORS } from "./constants.js";
 import { createFormatters } from "./create.render.js";
 import { CREATE_CAPABILITY, runCreate } from "./create.verb.js";
@@ -218,79 +212,13 @@ function writeRefusal(
   process.exitCode = 2;
 }
 
-/** Build the mount (the module-level CLI projection hook). */
-export function createCliProjection(): CliProjection {
-  return {
-    mount,
-    completionChildren,
-    referenceIntro: REFERENCE_INTRO,
-    referenceSyntax,
-  };
-}
-
-/** The leaves' prompts, unioned by first-seen name (the binding param order). */
-function unionPrompts(paths: readonly string[]): ProjectedPrompt[] {
-  const seen = new Set<string>();
-  const union: ProjectedPrompt[] = [];
-  for (const commandPath of paths) {
-    for (const prompt of CREATE_SURFACE[commandPath]?.prompts ?? []) {
-      if (seen.has(prompt.name)) continue;
-      seen.add(prompt.name);
-      union.push(prompt);
-    }
-  }
-  return union;
-}
-
 /**
- * The REGISTERED reference syntax for one binding verb (the mounted spelling
- * the generated reference prints): the usage line carries the real tree
- * segment (`create application react …`, `<framework>` for the multi-leaf
- * binding — its values live in the Args table) and the registered kebab
- * positional, which is also handed over as the per-param positional token so
- * the Arguments table prints the SAME spelling; each flag token is the one
- * the mount actually registers (a default-true confirm registers ONLY its
- * `--no-` form), derived from the same `buildOptionInfo` the mount and
- * completion use. Reached only through {@link createCliProjection} — one
- * seam, THREE consumers, all speaking registration: the kernel's reference
- * emitter (the reference pins read the committed pages it produced),
- * `emitSurface` (the covenant's mounted-noun flag + positional tokens,
- * L-CIS-2), and the `docExamples` gate's valid-token vocabulary. A change
- * of meaning here moves all three together — the covenant conformance and
- * derivation-tie cells in surface.test.ts are the tripwire.
+ * Mount the generator tree onto the `create` parent command.
+ *
+ * The registration entry `cliProjection.ts` dynamically imports — see this
+ * module's header for why it must not be reached statically.
  */
-function referenceSyntax(
-  verbPath: VerbSpec["path"],
-): ReferenceCliSyntax | undefined {
-  const kind = verbPath[1] as CreateKind | undefined;
-  const binding = kind ? CREATE_GENERATORS[kind] : undefined;
-  if (verbPath[0] !== "create" || !binding) return undefined;
-  const paths = binding.paths as readonly string[];
-  const first = paths[0] as string;
-
-  const tokens: string[] = ["create", kind as string];
-  if (paths.length > 1) tokens.push("<framework>");
-  else if (first.includes("/")) tokens.push(first.split("/")[1] as string);
-  const prompts = unionPrompts(paths);
-  const positional = prompts.find((prompt) => prompt.positional === true);
-  const positionalTokens: Record<string, string> = {};
-  if (positional) {
-    const token = `[${toKebabCase(positional.name)}]`;
-    tokens.push(token);
-    positionalTokens[positional.name] = token;
-  }
-  tokens.push("[options]");
-
-  const flagTokens: Record<string, string> = {};
-  for (const prompt of prompts) {
-    if (prompt.positional === true) continue;
-    flagTokens[prompt.name] = promptFlag(prompt).flag;
-  }
-  return { usage: tokens.join(" "), flagTokens, positionalTokens };
-}
-
-/** Mount the generator tree onto the `create` parent command. */
-function mount(parent: Command, host: CliMountHost): void {
+export function mountCreateTree(parent: Command, host: CliMountHost): void {
   // The parent's own face: the topic tree (paths + descriptions), on bare
   // `create` AND on `create --help` alike, exit 0.
   parent.configureHelp({ formatHelp: () => "" });
@@ -454,89 +382,3 @@ export function topicTree(programName: string): string {
     ),
   ].join("\n");
 }
-
-/**
- * One leaf's completion node, derived from its projected prompts. EVERY
- * prompt is a flag — `addPromptOptions` registers positional prompts as
- * options too (`--component-path` is as real as `--no-with-styles`), the
- * positional argument being an additional spelling, not a replacement.
- */
-function leafChild(label: string, commandPath: string): CompletionChildSpec {
-  const surface = CREATE_SURFACE[commandPath];
-  const prompts = surface?.prompts ?? [];
-  return {
-    label,
-    flags: prompts.map(promptFlag),
-    positionals: prompts
-      .filter((prompt) => prompt.positional === true)
-      .map((prompt) => ({
-        name: prompt.name,
-        required: false,
-        files: /(path|dir)$/i.test(prompt.name),
-      })),
-  };
-}
-
-/** A prompt's completion flag: the REGISTERED token (`--no-` for default-true). */
-function promptFlag(prompt: ProjectedPrompt): CompletionChildFlag {
-  const info = buildOptionInfo(prompt);
-  const token = info.flags.split(" ")[0] as string;
-  return {
-    flag: token,
-    takesValue: info.flags.includes("<"),
-    ...(prompt.type === "select" && prompt.choices && prompt.choices.length > 0
-      ? { values: prompt.choices.map((choice) => choice.value) }
-      : {}),
-  };
-}
-
-/**
- * The completion surface per verb label: leaves carry their prompt-derived
- * flags in their REGISTERED spelling; a namespace node offers its segment
- * values at position 0, the shared leaf positional after it, and the leaf
- * children for the dynamic tier's precise walk — but NO prompt flags of its
- * own: Commander registers those on the leaves, so a pre-segment offer
- * (`create component --use-ts-stories svelte`) completes an ordering the
- * CLI rejects as an unknown option.
- */
-function completionChildren(): Readonly<Record<string, CompletionChildSpec>> {
-  const record: Record<string, CompletionChildSpec> = {};
-  for (const [kind, binding] of Object.entries(CREATE_GENERATORS)) {
-    const paths = binding.paths as readonly string[];
-    const first = paths[0] as string;
-    if (paths.length === 1 && !first.includes("/")) {
-      record[kind] = leafChild(kind, first);
-      continue;
-    }
-    const children = paths.map((commandPath) =>
-      leafChild(commandPath.split("/")[1] as string, commandPath),
-    );
-    // The shared tail: every declared leaf carries the same positional shape.
-    const tail = children[0]?.positionals ?? [];
-    record[kind] = {
-      label: kind,
-      flags: [],
-      positionals: [
-        {
-          name: "framework",
-          required: true,
-          values: children.map((child) => child.label),
-        },
-        ...tail,
-      ],
-      children,
-    };
-  }
-  return record;
-}
-
-/** The generated-reference intro under the `create` heading (the pointer). */
-const REFERENCE_INTRO =
-  "The `create` surface is a PROJECTION of the summon generator tree: " +
-  `\`${BIN_NAME} create <path...>\` ≡ \`summon <path...>\` over the declared bindings — ` +
-  "same grammar, same flags, same wizard, byte-identical trees. Tree segments are " +
-  "subcommands (`create component react|svelte|lit`, `create application react`), and " +
-  "every flag derives from the generators' own prompts (a default-on confirm registers " +
-  "only its `--no-` form). The contract is EXECUTED, not written down: " +
-  "`crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares " +
-  "what they emit.";

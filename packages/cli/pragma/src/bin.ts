@@ -115,11 +115,11 @@ async function main(): Promise<void> {
     await ensureFirstRun();
   }
 
-  // 6. Build the command tree.
-  const [{ buildProgram }, { capabilities }] = await Promise.all([
-    import("./kernel/project/cli/buildProgram.js"),
-    import("./capabilities/index.js"),
-  ]);
+  // 6. Load the capability registry — the command tree's data. Commander and
+  //    the program builder are NOT loaded yet: the bare-invocation branch
+  //    below answers `--help` and the front door from the registry alone, so
+  //    the help fast path never pays for the parser it will not run.
+  const { capabilities } = await import("./capabilities/index.js");
   const args = stripGlobalFlags(argv);
 
   // 7. A bare invocation (no command token — argv empty or only global flags)
@@ -210,6 +210,14 @@ async function main(): Promise<void> {
     ),
   );
 
+  // A mount may defer its registration machinery behind `prepare()` (the
+  // fast paths import the projection hook without ever mounting) — resolve
+  // every deferred import before the tree is built, alongside the program
+  // builder's own deferred load.
+  const [{ buildProgram }] = await Promise.all([
+    import("./kernel/project/cli/buildProgram.js"),
+    ...[...mounts.values()].map((projection) => projection.prepare?.()),
+  ]);
   const program = buildProgram(verbs, {
     globalFlags,
     programName: BIN_NAME,

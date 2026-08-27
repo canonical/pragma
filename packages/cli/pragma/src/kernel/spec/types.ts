@@ -312,6 +312,18 @@ export interface CliMountHost {
  * completion labels); the mount owns everything beneath the noun.
  */
 export interface CliProjection {
+  /**
+   * Load the mount's registration machinery, when it is deferred. The
+   * projection hook rides the capabilities barrel, which `--help` and
+   * `__complete` import on every spawn — so a mount whose registration needs
+   * heavy modules (a Commander adapter, shared decision logic) keeps them
+   * behind this async step instead of a static import, and only the one
+   * caller that actually builds the command tree (the bin, before
+   * `buildProgram`) awaits it. {@link mount} stays synchronous and throws
+   * when invoked unprepared, so a future caller cannot silently skip the
+   * step.
+   */
+  readonly prepare?: () => Promise<void>;
   /** Populate this module's noun parent with its subcommands. */
   readonly mount: (
     parent: import("commander").Command,

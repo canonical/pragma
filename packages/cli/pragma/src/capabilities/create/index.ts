@@ -9,8 +9,8 @@
 
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type { CapabilityModule } from "../../kernel/spec/types.js";
+import { createCliProjection } from "./cliProjection.js";
 import { createVerbs } from "./create.verb.js";
-import { createCliProjection } from "./mount.js";
 
 /** The `create` capability module. */
 export const createModule: CapabilityModule = {
