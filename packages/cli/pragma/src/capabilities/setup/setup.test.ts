@@ -25,10 +25,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
 import { execute } from "@canonical/summon-core";
 import { dryRun, type Effect, type Task } from "@canonical/task";
-import { runTask } from "@canonical/task/node";
+import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { emitScripts } from "../../kernel/completion/emitScripts.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
@@ -40,7 +40,12 @@ import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
 import { buildSetupRun } from "./operations/setupGenerator.js";
-import { composeSkills, detectSkills } from "./operations/setupSkills.js";
+import {
+  composeSkills,
+  composeSkillsRemoval,
+  detectSkills,
+  ownedSkillLinks,
+} from "./operations/setupSkills.js";
 import { setupModule } from "./setup.verb.js";
 import { completionScriptPath, detectShell, type ShellId } from "./shell.js";
 
@@ -736,6 +741,66 @@ describe("setup skills", () => {
     expect(readFileSync(join(realDir, "SKILL.md"), "utf-8")).toBe(
       "hand-placed\n",
     );
+  });
+
+  it("never owns — and never removes — a link into a SIBLING of the skill root", async () => {
+    // Ownership was a string prefix, and `<sourceRoot>-backup/my-skill` starts
+    // with `<sourceRoot>`. So a link the USER made into their own backup
+    // directory was classified as ours, and `--undo` deleted it: a file this
+    // command never created and had no business touching.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const backup = join(cwd, ".pragma", "skills-backup", "my-skill");
+    mkdirSync(backup, { recursive: true });
+    writeFileSync(join(backup, "SKILL.md"), "the user's own copy\n");
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(backup, linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.owned).toBe(false);
+    expect(ownedSkillLinks(detected).map((a) => a.linkPath)).not.toContain(
+      linkPath,
+    );
+
+    // The removal is what `--undo` runs: it must leave both the link and the
+    // directory it points at exactly where they were.
+    await runUndo(composeSkillsRemoval(detected));
+    expect(readlinkSync(linkPath)).toBe(backup);
+    expect(readFileSync(join(backup, "SKILL.md"), "utf-8")).toBe(
+      "the user's own copy\n",
+    );
+  });
+
+  it("owns a RELATIVE link into the skill root, resolved against the link dir", async () => {
+    // `readlink` reports the raw target, which may be relative — resolving it
+    // against the link's own directory is what makes the containment test
+    // answer about a real path rather than a string.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(relative(linkDir, skillDir), linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.owned).toBe(true);
+
+    await runUndo(composeSkillsRemoval(detected));
+    expect(existsSync(linkPath)).toBe(false);
   });
 });
 

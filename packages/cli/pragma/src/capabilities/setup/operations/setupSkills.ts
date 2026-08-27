@@ -23,7 +23,7 @@
  */
 
 import { lstatSync, readlinkSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import {
   deleteFile,
   mkdir,
@@ -90,6 +90,40 @@ type LinkState =
   | { readonly kind: "absent" }
   | { readonly kind: "symlink"; readonly target: string }
   | { readonly kind: "other" };
+
+/**
+ * Whether a link's destination lives INSIDE the band's skill root — the
+ * ownership test, and the one that decides what `--undo` deletes.
+ *
+ * A raw `readlink` target may be relative, so it is resolved against the link's
+ * own directory first; then containment is tested by PATH SEGMENT. A string
+ * prefix answered yes for `<root>-backup/foo`, so a user's own link into a
+ * sibling directory was classified as ours and removed by `--undo` — a file we
+ * never created and had no business deleting.
+ *
+ * The root itself is not "inside" it: a link pointing AT the root is not one of
+ * the per-skill links this command writes.
+ *
+ * @param root - The band's skill source root, absolute.
+ * @param linkPath - The absolute path of the link being classified.
+ * @param rawTarget - The link's destination exactly as `readlink` reported it.
+ * @returns Whether the destination is a path under the root.
+ * @note Pure — it resolves and compares strings, and reads nothing.
+ */
+function withinRoot(
+  root: string,
+  linkPath: string,
+  rawTarget: string,
+): boolean {
+  const destination = resolve(dirname(linkPath), rawTarget);
+  const rel = relative(root, destination);
+  return (
+    rel.length > 0 &&
+    rel !== ".." &&
+    !rel.startsWith(`..${sep}`) &&
+    !isAbsolute(rel)
+  );
+}
 
 /**
  * Classify a link path WITHOUT following it: absent, a symlink (with its raw
@@ -222,7 +256,9 @@ export async function detectSkills(
         linkPath,
         action,
         harnessName: name,
-        owned: state.kind === "symlink" && state.target.startsWith(sourceRoot),
+        owned:
+          state.kind === "symlink" &&
+          withinRoot(sourceRoot, linkPath, state.target),
       });
     }
   }
