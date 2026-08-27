@@ -247,14 +247,14 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     );
     expect(pragmaMcpEntry("/work", "project")).toEqual({
       command: "recipes",
-      args: ["mcp"],
+      args: ["mcp", "serve"],
       cwd: "/work",
     });
     // The global band omits `cwd` (a per-user server is not project-pinned)
     // but still runs the fork's own binary.
     expect(pragmaMcpEntry("/work", "global")).toEqual({
       command: "recipes",
-      args: ["mcp"],
+      args: ["mcp", "serve"],
     });
   });
 

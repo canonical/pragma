@@ -14,13 +14,25 @@ import { delimiter, isAbsolute, join } from "node:path";
 /**
  * Extract the stdio command from an MCP server config entry, if any. HTTP/SSE
  * entries (`{ type: "http", url }`) have no command and are not checked.
+ *
+ * Both entry shapes resolve to the same executable. A harness whose schema
+ * requires `command` to be an argv array (OpenCode) carries the executable in
+ * its first element; a string-valued `command` IS the executable. Reading only
+ * the string form made this check skip an entry `setup` had just written
+ * correctly, and report no command-based servers on a configured machine.
  */
 export function commandOf(entry: unknown): string | undefined {
   if (typeof entry !== "object" || entry === null) return undefined;
   const command = (entry as { command?: unknown }).command;
-  return typeof command === "string" && command.length > 0
-    ? command
-    : undefined;
+  if (typeof command === "string") {
+    return command.length > 0 ? command : undefined;
+  }
+  if (Array.isArray(command)) {
+    return command.find(
+      (part): part is string => typeof part === "string" && part.length > 0,
+    );
+  }
+  return undefined;
 }
 
 /**

@@ -210,7 +210,7 @@ async function runSetup(
     return pure<SetupPlan>({ ...run.plan, preview: true });
   }
 
-  const { isTTY, transport, yes, signal, abort } = rt.interaction ?? {
+  const { transport, yes, signal, abort } = rt.interaction ?? {
     isTTY: false,
     transport: "cli" as const,
     yes: true,
@@ -298,7 +298,10 @@ async function runSetup(
       // recap above. A bare list of target names would make the reader re-run
       // each one to find out why it failed.
       const named = failed
-        .map((row) => `${row.target} (${row.outcome?.note ?? "no cause recorded"})`)
+        .map(
+          (row) =>
+            `${row.target} (${row.outcome?.note ?? "no cause recorded"})`,
+        )
         .join("; ");
       throw new PragmaError({
         code: "UNSUPPORTED",

@@ -297,7 +297,10 @@ export function composeSkills(d: SkillsDetection): Task<void> {
  * @param band - The band being reported.
  * @returns The reason line.
  */
-export const skillsSkipReason = (sourceRoot: string, band: ScopeBand): string =>
+export const skillsSkipReason = (
+  sourceRoot: string,
+  band: ScopeBand,
+): string =>
   band === "project"
     ? `no project skills (${sourceRoot} is absent)`
     : "no skills installed";

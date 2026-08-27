@@ -19,12 +19,12 @@
  * same state-awareness `setup skills` has always had.
  */
 
+import { dirname } from "node:path";
 import type {
   McpServerConfig,
   PlatformEnv,
   TargetGroup,
 } from "@canonical/harnesses";
-import { dirname } from "node:path";
 import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";

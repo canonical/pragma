@@ -42,11 +42,7 @@ import { capabilities } from "../index.js";
 import { buildSetupRun } from "./operations/setupGenerator.js";
 import { composeSkills, detectSkills } from "./operations/setupSkills.js";
 import { setupModule } from "./setup.verb.js";
-import {
-  completionScriptPath,
-  detectShell,
-  type ShellId,
-} from "./shell.js";
+import { completionScriptPath, detectShell, type ShellId } from "./shell.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -120,61 +116,71 @@ describe("setup completions", () => {
     );
     expect(outcome.exitCode).toBe(0);
     expect(existsSync(path)).toBe(true);
-    expect(readFileSync(path, "utf-8")).toBe(emitScripts(capabilities)[SHELL as ShellId]);
+    expect(readFileSync(path, "utf-8")).toBe(
+      emitScripts(capabilities)[SHELL as ShellId],
+    );
   });
 
-  withShell("bakes the completion config (minChars + per-family opt-out) into the emitted script", async () => {
-    // Proves the reconciled `detectCompletions(cwd)` reads `completion` config
-    // and threads {minChars, disabledFamilies} into `emitScripts` — a silent
-    // regression if the fold had dropped autocomplete's config-threading for
-    // setup's argument-free detect.
-    const cwd = tmp("pragma-setup-proj-");
-    writeFileSync(
-      join(cwd, "pragma.config.ts"),
-      "export default { completion: { minChars: 5, families: { block: false } } };\n",
-    );
-    const path = completionScriptPath(SHELL as ShellId);
-    const outcome = await executeVerb(
-      completionsVerb,
-      {},
-      YES,
-      bootRuntime(FLAGS, cwd),
-    );
-    expect(outcome.exitCode).toBe(0);
-    const written = readFileSync(path, "utf-8");
-    // The installed script is EXACTLY the config-baked emit (minChars 5, the
-    // `block` family scrubbed) — the config was threaded end to end.
-    expect(written).toBe(
-      emitScripts(capabilities, {
-        minChars: 5,
-        disabledFamilies: ["block"],
-      })[SHELL as ShellId],
-    );
-    // Both knobs actually moved the output: it differs from the default emit
-    // (minChars), and from the minChars-only emit (the family opt-out).
-    expect(written).not.toBe(emitScripts(capabilities)[SHELL as ShellId]);
-    expect(written).not.toBe(emitScripts(capabilities, { minChars: 5 })[SHELL as ShellId]);
-  });
+  withShell(
+    "bakes the completion config (minChars + per-family opt-out) into the emitted script",
+    async () => {
+      // Proves the reconciled `detectCompletions(cwd)` reads `completion` config
+      // and threads {minChars, disabledFamilies} into `emitScripts` — a silent
+      // regression if the fold had dropped autocomplete's config-threading for
+      // setup's argument-free detect.
+      const cwd = tmp("pragma-setup-proj-");
+      writeFileSync(
+        join(cwd, "pragma.config.ts"),
+        "export default { completion: { minChars: 5, families: { block: false } } };\n",
+      );
+      const path = completionScriptPath(SHELL as ShellId);
+      const outcome = await executeVerb(
+        completionsVerb,
+        {},
+        YES,
+        bootRuntime(FLAGS, cwd),
+      );
+      expect(outcome.exitCode).toBe(0);
+      const written = readFileSync(path, "utf-8");
+      // The installed script is EXACTLY the config-baked emit (minChars 5, the
+      // `block` family scrubbed) — the config was threaded end to end.
+      expect(written).toBe(
+        emitScripts(capabilities, {
+          minChars: 5,
+          disabledFamilies: ["block"],
+        })[SHELL as ShellId],
+      );
+      // Both knobs actually moved the output: it differs from the default emit
+      // (minChars), and from the minChars-only emit (the family opt-out).
+      expect(written).not.toBe(emitScripts(capabilities)[SHELL as ShellId]);
+      expect(written).not.toBe(
+        emitScripts(capabilities, { minChars: 5 })[SHELL as ShellId],
+      );
+    },
+  );
 
-  withShell("--dry-run previews the write against the detected shell, writing nothing", async () => {
-    const path = completionScriptPath(SHELL as ShellId);
-    const outcome = await executeVerb(
-      completionsVerb,
-      {},
-      DRY,
-      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-    );
-    // The dry-run renders the PLAN through the verb's formatPlan seam, not the
-    // kernel's raw effect dump: one row, the shell it detected, and the script
-    // path rendered against the header's roots instead of repeated absolutely.
-    expect(outcome.stdout).toContain("Setup plan — global band");
-    expect(outcome.stdout).toMatch(
-      new RegExp(`completions\\s+install\\s+${SHELL} →`),
-    );
-    // The confirm gate / answer prompts are never part of a plan.
-    expect(outcome.stdout).not.toContain("Prompt");
-    expect(existsSync(path)).toBe(false);
-  });
+  withShell(
+    "--dry-run previews the write against the detected shell, writing nothing",
+    async () => {
+      const path = completionScriptPath(SHELL as ShellId);
+      const outcome = await executeVerb(
+        completionsVerb,
+        {},
+        DRY,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      // The dry-run renders the PLAN through the verb's formatPlan seam, not the
+      // kernel's raw effect dump: one row, the shell it detected, and the script
+      // path rendered against the header's roots instead of repeated absolutely.
+      expect(outcome.stdout).toContain("Setup plan — global band");
+      expect(outcome.stdout).toMatch(
+        new RegExp(`completions\\s+install\\s+${SHELL} →`),
+      );
+      // The confirm gate / answer prompts are never part of a plan.
+      expect(outcome.stdout).not.toContain("Prompt");
+      expect(existsSync(path)).toBe(false);
+    },
+  );
 
   withShell(
     "refuses to install a script whose `pragma` the shell cannot find",
@@ -601,26 +607,29 @@ describe("setup (run-all wizard) — scope threading", () => {
     expect(plan).toContain(".agents/skills");
   });
 
-  withShell("--global omits the project-band skills step, keeping global steps", async () => {
-    const cwd = tmp("pragma-setup-proj-");
-    seedSkill(cwd); // WOULD be offered under the default `both`
-    seedEditorCli(); // vscode detected ⇒ the LSP install is in the plan
-    const outcome = await executeVerb(
-      setupSelfVerb,
-      { global: true },
-      DRY,
-      bootRuntime(FLAGS, cwd),
-    );
-    expect(outcome.exitCode).toBe(0);
-    const plan = outcome.stdout ?? "";
-    // The global-band steps are present under --global. Paths render against
-    // the header's roots, so the row shows `~/.zfunc/_pragma`, not an absolute
-    // prefix repeated on every line.
-    expect(plan).toMatch(new RegExp(`completions\\s+install\\s+${SHELL} →`));
-    expect(plan).toContain("lsp");
-    // The project-band skills step is gone (the bug: it used to run under --global).
-    expect(plan).not.toContain(".agents/skills");
-  });
+  withShell(
+    "--global omits the project-band skills step, keeping global steps",
+    async () => {
+      const cwd = tmp("pragma-setup-proj-");
+      seedSkill(cwd); // WOULD be offered under the default `both`
+      seedEditorCli(); // vscode detected ⇒ the LSP install is in the plan
+      const outcome = await executeVerb(
+        setupSelfVerb,
+        { global: true },
+        DRY,
+        bootRuntime(FLAGS, cwd),
+      );
+      expect(outcome.exitCode).toBe(0);
+      const plan = outcome.stdout ?? "";
+      // The global-band steps are present under --global. Paths render against
+      // the header's roots, so the row shows `~/.zfunc/_pragma`, not an absolute
+      // prefix repeated on every line.
+      expect(plan).toMatch(new RegExp(`completions\\s+install\\s+${SHELL} →`));
+      expect(plan).toContain("lsp");
+      // The project-band skills step is gone (the bug: it used to run under --global).
+      expect(plan).not.toContain(".agents/skills");
+    },
+  );
 });
 
 describe("setup skills", () => {
@@ -889,7 +898,9 @@ describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
       expect(outcome.stdout).toContain("no VS Code-family editor CLI on PATH");
       // The remedy names what would count, and states plainly that nothing is
       // possible here yet rather than offering a command this machine lacks.
-      expect(outcome.stdout).toContain("no action is possible on this machine yet");
+      expect(outcome.stdout).toContain(
+        "no action is possible on this machine yet",
+      );
     } finally {
       process.env.PATH = prevPath;
     }
@@ -992,45 +1003,51 @@ describe("setup — idempotent detection of already-present config", () => {
     expect(config.mcpServers.pragma.cwd).toBe(cwd); // updated to the real cwd
   });
 
-  withShell("completions: a second run detects the up-to-date script (state=installed)", async () => {
-    const cwd = tmp("pragma-setup-proj-");
-    const path = completionScriptPath(SHELL as ShellId);
-    // First install.
-    await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
-    const firstBody = readFileSync(path, "utf-8");
+  withShell(
+    "completions: a second run detects the up-to-date script (state=installed)",
+    async () => {
+      const cwd = tmp("pragma-setup-proj-");
+      const path = completionScriptPath(SHELL as ShellId);
+      // First install.
+      await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
+      const firstBody = readFileSync(path, "utf-8");
 
-    // The plan's completions row now reads `none` — the installed bytes are
-    // current, so a re-run composes nothing.
-    const { plan } = await buildSetupRun(
-      bootRuntime(FLAGS, cwd),
-      "completions",
-      "global",
-    );
-    expect(plan.rows.find((r) => r.target === "completions")?.action).toBe(
-      "none",
-    );
+      // The plan's completions row now reads `none` — the installed bytes are
+      // current, so a re-run composes nothing.
+      const { plan } = await buildSetupRun(
+        bootRuntime(FLAGS, cwd),
+        "completions",
+        "global",
+      );
+      expect(plan.rows.find((r) => r.target === "completions")?.action).toBe(
+        "none",
+      );
 
-    // A real second run is idempotent — the byte-identical script survives.
-    await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
-    expect(readFileSync(path, "utf-8")).toBe(firstBody);
-  });
+      // A real second run is idempotent — the byte-identical script survives.
+      await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
+      expect(readFileSync(path, "utf-8")).toBe(firstBody);
+    },
+  );
 
-  withShell("completions: a stale script (different body) reads as `stale`", async () => {
-    const cwd = tmp("pragma-setup-proj-");
-    const path = completionScriptPath(SHELL as ShellId);
-    mkdirSync(join(path, ".."), { recursive: true });
-    writeFileSync(path, "# stale hand-edited completion\n");
-    const { plan } = await buildSetupRun(
-      bootRuntime(FLAGS, cwd),
-      "completions",
-      "global",
-    );
-    // A hand-edited script is `update`, not `install`: the row says which of
-    // the two it is, because overwriting someone's edit is worth naming.
-    expect(plan.rows.find((r) => r.target === "completions")?.action).toBe(
-      "update",
-    );
-  });
+  withShell(
+    "completions: a stale script (different body) reads as `stale`",
+    async () => {
+      const cwd = tmp("pragma-setup-proj-");
+      const path = completionScriptPath(SHELL as ShellId);
+      mkdirSync(join(path, ".."), { recursive: true });
+      writeFileSync(path, "# stale hand-edited completion\n");
+      const { plan } = await buildSetupRun(
+        bootRuntime(FLAGS, cwd),
+        "completions",
+        "global",
+      );
+      // A hand-edited script is `update`, not `install`: the row says which of
+      // the two it is, because overwriting someone's edit is worth naming.
+      expect(plan.rows.find((r) => r.target === "completions")?.action).toBe(
+        "update",
+      );
+    },
+  );
 
   it("lsp: reports `unknown` when the `code` CLI is absent from PATH", async () => {
     // PATH is the isolated empty dir (beforeEach), so `code` is unresolvable:
@@ -1063,29 +1080,32 @@ describe("setup (run-all wizard)", () => {
     process.env.PATH = prevPath;
   });
 
-  withShell("--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing", async () => {
-    const cwd = tmp("pragma-setup-proj-");
-    mkdirSync(join(cwd, ".cursor"), { recursive: true }); // harness detected
-    const outcome = await executeVerb(
-      setupSelfVerb,
-      {},
-      DRY,
-      bootRuntime(FLAGS, cwd),
-    );
-    expect(outcome.exitCode).toBe(0);
-    const plan = outcome.stdout ?? "";
-    // EVERY target is a visible row — including the ones that will skip. The
-    // run-all used to build its choices only from detectable steps, so a
-    // target it could not offer vanished from the plan and from the recap.
-    for (const id of ["config", "completions", "lsp", "mcp", "skills"]) {
-      expect(plan).toContain(id);
-    }
-    expect(plan).toContain(`${SHELL} →`); // completions row
-    expect(plan).not.toContain("Prompt"); // recap gate / multiselects filtered
-    // Nothing is written by a preview.
-    expect(existsSync(completionScriptPath(SHELL as ShellId))).toBe(false);
-    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
-  });
+  withShell(
+    "--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing",
+    async () => {
+      const cwd = tmp("pragma-setup-proj-");
+      mkdirSync(join(cwd, ".cursor"), { recursive: true }); // harness detected
+      const outcome = await executeVerb(
+        setupSelfVerb,
+        {},
+        DRY,
+        bootRuntime(FLAGS, cwd),
+      );
+      expect(outcome.exitCode).toBe(0);
+      const plan = outcome.stdout ?? "";
+      // EVERY target is a visible row — including the ones that will skip. The
+      // run-all used to build its choices only from detectable steps, so a
+      // target it could not offer vanished from the plan and from the recap.
+      for (const id of ["config", "completions", "lsp", "mcp", "skills"]) {
+        expect(plan).toContain(id);
+      }
+      expect(plan).toContain(`${SHELL} →`); // completions row
+      expect(plan).not.toContain("Prompt"); // recap gate / multiselects filtered
+      // Nothing is written by a preview.
+      expect(existsSync(completionScriptPath(SHELL as ShellId))).toBe(false);
+      expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
+    },
+  );
 
   it("a failing LSP step no longer aborts the run — MCP and skills still apply, exit reflects the failure (S1-1)", async () => {
     // The audit's headline break: with an unsatisfiable LSP prerequisite the

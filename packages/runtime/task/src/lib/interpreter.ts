@@ -17,7 +17,6 @@ export { TaskExecutionError };
 // Effect Executor
 // =============================================================================
 
-
 /**
  * Write a file so that a reader never observes a half-written one.
  *

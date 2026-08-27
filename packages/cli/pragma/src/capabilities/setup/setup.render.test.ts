@@ -15,12 +15,12 @@
 
 import { describe, expect, it } from "vitest";
 import type { PlanRow, SetupPlan } from "./plan.js";
-import { renderPlanTable, renderProgressLine, renderRecap } from "./plan.render.js";
 import {
-  PREVIEW_HINT,
-  renderDryRun,
-  setupFormatters,
-} from "./setup.render.js";
+  renderPlanTable,
+  renderProgressLine,
+  renderRecap,
+} from "./plan.render.js";
+import { PREVIEW_HINT, renderDryRun, setupFormatters } from "./setup.render.js";
 
 const ROOTS = { global: "/home/u", project: "/home/u/src/app" };
 
@@ -44,8 +44,10 @@ const ROWS: PlanRow[] = [
     target: "lsp",
     band: "global",
     action: "skip",
-    detail: "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
-    reason: "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+    detail:
+      "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
+    reason:
+      "no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",
     selected: false,
   },
   {
@@ -145,7 +147,8 @@ describe("the setup plan renders as one table", () => {
           band: "project",
           action: "skip",
           detail: "no harness config location in this band",
-          reason: "no AI harness in this project writes a per-repository config",
+          reason:
+            "no AI harness in this project writes a per-repository config",
           selected: false,
         },
       ],
@@ -238,7 +241,8 @@ describe("a row that did not run never renders as one that did", () => {
       outcome: {
         status: "failed",
         note: "VS Code refused the VSIX",
-        remedy: "install manually: code --install-extension ~/.local/share/pragma/lsp/terrazzo-lsp.vsix",
+        remedy:
+          "install manually: code --install-extension ~/.local/share/pragma/lsp/terrazzo-lsp.vsix",
       },
     };
     expect(renderProgressLine(failed, 3)).toBe(

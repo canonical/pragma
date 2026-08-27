@@ -9,8 +9,13 @@
  * tests pin: reading it writes nothing.
  */
 
-import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
-import { mkdirSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";

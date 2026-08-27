@@ -74,19 +74,13 @@ function installScript(shell: ShellId): void {
  * per invocation and the check reads that one answer, so the test drives the
  * same pairing rather than letting the check re-read behind its own back.
  */
-async function check(
-  cwd: string,
-  shell: ShellId | null,
-): Promise<CheckResult> {
+async function check(cwd: string, shell: ShellId | null): Promise<CheckResult> {
   // The shell is INJECTED rather than forced through `$SHELL`: detection reads
   // the process tree now, and a test that set `$SHELL` was only ever asserting
   // against the login shell — the exact confusion this check exists to catch.
   const detection: ShellDetection =
     shell === null ? { kind: "unknown" } : { kind: "detected", shell };
-  return checkShellCompletions(
-    cwd,
-    await detectCompletions(cwd, detection),
-  );
+  return checkShellCompletions(cwd, await detectCompletions(cwd, detection));
 }
 
 /** Write a `.zshrc` that puts ~/.zfunc on fpath. */
@@ -119,7 +113,9 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     installScript("bash");
     const result = await check(tmp(), "bash");
     expect(result.status).toBe("pass");
-    expect(result.detail).toMatch(/bash \(the shell in use\) up to date and resolving/);
+    expect(result.detail).toMatch(
+      /bash \(the shell in use\) up to date and resolving/,
+    );
   });
 
   it("passes for fish once the up-to-date script is at its real path", async () => {
@@ -159,8 +155,7 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
       "export default { completion: { minChars: 5 } };\n",
     );
     expect(
-      (await detectCompletions(cwd, { kind: "detected", shell: "bash" }))
-        .state,
+      (await detectCompletions(cwd, { kind: "detected", shell: "bash" })).state,
     ).toBe("stale");
     expect((await check(cwd, "bash")).status).toBe("pass");
   });
@@ -181,6 +176,8 @@ describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
     wireZfunc();
     const result = await check(tmp(), "zsh");
     expect(result.status).toBe("pass");
-    expect(result.detail).toMatch(/zsh \(the shell in use\) up to date and resolving/);
+    expect(result.detail).toMatch(
+      /zsh \(the shell in use\) up to date and resolving/,
+    );
   });
 });

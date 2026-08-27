@@ -158,8 +158,9 @@ describe("doctor — shape & spread", () => {
     }
     // No harnesses in an empty HOME/cwd, so both mcp rows skip; the project
     // band is opt-in, so its absence is never a fault.
-    expect(banded.find((c) => c.band === "project" && c.name === "mcp")?.status)
-      .toBe("skip");
+    expect(
+      banded.find((c) => c.band === "project" && c.name === "mcp")?.status,
+    ).toBe("skip");
     // No global config in the isolated XDG — an opt-in that is not set up yet.
     expect(byName(data, "config")?.status).toBe("available");
     expect(byName(data, "config")?.remedy).toBe("pragma setup config");
@@ -274,9 +275,9 @@ describe("doctor — the banded rows can see the GLOBAL band", () => {
     const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
     const global = rows.find((r) => r.name === "mcp" && r.band === "global");
     expect(global?.status).toBe("pass");
-    expect(global?.items?.some((i) => i.label.includes("mcp_config.json"))).toBe(
-      true,
-    );
+    expect(
+      global?.items?.some((i) => i.label.includes("mcp_config.json")),
+    ).toBe(true);
     // ...and the project band stays an opt-in skip, never a fault.
     const project = rows.find((r) => r.name === "mcp" && r.band === "project");
     expect(project?.status).toBe("skip");

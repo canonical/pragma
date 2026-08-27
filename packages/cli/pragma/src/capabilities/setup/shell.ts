@@ -153,7 +153,9 @@ export function detectShell(read?: ProcessReader): ShellDetection {
   if (running !== undefined) return { kind: "detected", shell: running };
 
   const login = SHELL_MAP[(process.env.SHELL ?? "").split("/").pop() ?? ""];
-  return login === undefined ? { kind: "unknown" } : { kind: "ambiguous", login };
+  return login === undefined
+    ? { kind: "unknown" }
+    : { kind: "ambiguous", login };
 }
 
 /**

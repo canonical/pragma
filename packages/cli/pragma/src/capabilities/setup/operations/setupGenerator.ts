@@ -376,8 +376,7 @@ export async function buildSetupRun(
         // Each target reads ITS OWN child answer. One shared list was handing
         // MCP file paths to every other target's compose.
         const key = CHILD_ANSWER[row.target];
-        const children =
-          key === undefined ? undefined : readList(answers, key);
+        const children = key === undefined ? undefined : readList(answers, key);
         const task = removal
           ? hit.target.composeRemoval(hit.detection)
           : hit.target.compose(hit.detection, children);

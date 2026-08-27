@@ -298,8 +298,9 @@ describe("every drift shape converges in one write, then stays converged", () =>
       command: "pragma",
       args: ["mcp"],
     });
-    expect(JSON.parse(readFileSync(config, "utf-8")).mcpServers.pragma.args)
-      .toEqual(["mcp", "serve"]);
+    expect(
+      JSON.parse(readFileSync(config, "utf-8")).mcpServers.pragma.args,
+    ).toEqual(["mcp", "serve"]);
   });
 
   it("repairs a global entry still carrying a cwd from before that fix", async () => {
@@ -380,9 +381,7 @@ describe("every drift shape converges in one write, then stays converged", () =>
     expect(existsSync(globalConfig)).toBe(true);
 
     // Each band carries its own shape.
-    expect(
-      JSON.parse(projectBytes).mcpServers.pragma.cwd,
-    ).toBe(cwd);
+    expect(JSON.parse(projectBytes).mcpServers.pragma.cwd).toBe(cwd);
     expect(
       JSON.parse(readFileSync(globalConfig, "utf-8")).mcpServers.pragma,
     ).not.toHaveProperty("cwd");
