@@ -190,7 +190,7 @@ describe("dispatch — errors", () => {
   it("renders a declined confirm gate as a clean cancellation, not a bug report", async () => {
     // A TTY user declining execute()'s "Proceed?" gate fails the task with
     // GENERATOR_CANCELLED; the boundary must treat it as a clean cancel, never
-    // the scary INTERNAL_ERROR "please report this issue" / exit 1.
+    // the scary INTERNAL_ERROR "report this issue" / exit 1.
     const cancelling: VerbSpec = {
       ...make,
       run: () => fail({ code: "GENERATOR_CANCELLED", message: "Cancelled." }),

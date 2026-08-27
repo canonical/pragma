@@ -171,7 +171,7 @@ ex:beta ex:name "Beta" .
 /**
  * A malformed Turtle source — a subject/predicate with no object — drives the
  * `sources update` data-error classification path (a NAMED `CONFIG_ERROR`, not
- * an INTERNAL "please report this issue").
+ * an INTERNAL "report this issue").
  */
 export const MALFORMED_TTL = `@prefix ex: <https://ex.test/#> .
 ex:One a ex:Widget .

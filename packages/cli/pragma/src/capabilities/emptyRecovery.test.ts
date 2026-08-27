@@ -85,7 +85,7 @@ const listVerb = (pack: PackDefinition): VerbSpec =>
 const PACK_LISTS: readonly { pack: PackDefinition; hint: RegExp }[] = [
   { pack: storyFor("modifier"), hint: /pragma sources update/ },
   { pack: storyFor("token"), hint: /pragma sources update/ },
-  { pack: storyFor("standard"), hint: /broaden your filter/ },
+  { pack: storyFor("standard"), hint: /broaden the filter/ },
 ];
 
 const REAL = { dryRun: false, undo: false, yes: false };

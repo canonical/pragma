@@ -447,7 +447,7 @@ describe("default-pack journey — real-data shapes the clean fixture masked (E1
   // `schema.json` currently surfaces UNCLASSIFIED. `packIsComplete` only checks
   // size > 0, so torn-but-nonempty garbage bypasses the completeness guard and
   // `compileFromExtraction` throws a raw `SyntaxError` (renders as INTERNAL
-  // "please report") instead of a classified error. It SHOULD degrade to
+  // "report") instead of a classified error. It SHOULD degrade to
   // STORE_UNAVAILABLE like the emptied case does — the fix belongs in
   // `kernel/runtime/graphpack/read.ts` (guard the `schema.json` read/compile).
   // No lane in this wave owns that, so rather than a false `it.fails` hand-off

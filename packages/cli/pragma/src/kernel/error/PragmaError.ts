@@ -1,3 +1,4 @@
+import { ISSUES_URL } from "../../constants.js";
 import type { ErrorCode, PragmaErrorData, Recovery } from "./types.js";
 
 /**
@@ -168,13 +169,14 @@ class PragmaError extends Error {
    * Factory: unexpected internal failure (a bug).
    *
    * @param reason - Description of the internal error.
-   * @returns PragmaError with code `INTERNAL_ERROR` and a "please report" hint.
+   * @returns PragmaError with code `INTERNAL_ERROR` and a report-this hint
+   *   naming the issue tracker.
    */
   static internalError(reason: string): PragmaError {
     return new PragmaError({
       code: "INTERNAL_ERROR",
       message: `Internal error: ${reason}`,
-      recovery: { message: "Please report this issue." },
+      recovery: { message: `Report this issue at ${ISSUES_URL}.` },
     });
   }
 }

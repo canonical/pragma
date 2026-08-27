@@ -201,9 +201,9 @@ async function loadCreateRuntime() {
       throw new PragmaError({
         code: "UNSUPPORTED",
         message:
-          "`create` cannot load its generator runtime — the `@canonical/summon-*` packages it depends on could not be resolved.",
+          "`create` cannot load its generator runtime — the `@canonical/summon-*` packages it depends on are missing from this install.",
         recovery: {
-          message: `Reinstall ${BIN_NAME}; its generator dependencies look missing.`,
+          message: `Reinstall ${BIN_NAME} to restore its generator dependencies.`,
         },
       });
     }

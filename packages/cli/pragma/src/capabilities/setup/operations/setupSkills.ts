@@ -199,7 +199,7 @@ export function skillsEmptyError(): PragmaError {
     message: "No skills found to link.",
     recovery: cliRecovery(
       "sources update",
-      `Add a design-system package that ships skills to your config, then run \`${BIN_NAME} sources update\` to install them.`,
+      `Add a design-system pack that ships skills to your config, then run \`${BIN_NAME} sources update\` to install them.`,
     ),
   });
 }

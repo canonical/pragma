@@ -59,7 +59,7 @@ function buildChecks(
     [`${BIN_NAME} version`, checkPragmaVersion(rt)],
     [`${BIN_NAME} config`, checkConfigFile(rt)],
     ["pack refs", checkPackageRefs(rt)],
-    ["ke store", checkKeStore(rt)],
+    ["store", checkKeStore(rt)],
     ["Shell completions", checkShellCompletions(rt.cwd)],
     ["MCP configured", checkMcpConfigured(rt.cwd)],
     ["MCP commands", checkMcpCommands(rt.cwd)],

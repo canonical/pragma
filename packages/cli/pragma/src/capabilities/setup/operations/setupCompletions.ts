@@ -123,9 +123,7 @@ export async function detectCompletions(
  */
 export function composeCompletions(d: CompletionsDetection): Task<void> {
   if (d.shell === null || d.path === null || d.script === null) {
-    return warn(
-      "Could not detect your shell — set $SHELL to zsh, bash, or fish.",
-    );
+    return warn("Cannot detect your shell — set $SHELL to zsh, bash, or fish.");
   }
   const { path, script, shell, state } = d;
   const opening =

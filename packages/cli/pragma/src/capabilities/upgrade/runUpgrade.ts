@@ -61,9 +61,7 @@ export async function runUpgrade(
       executed: false,
     };
     return gen(function* () {
-      yield* $(
-        warn("Could not reach the registry — skipped the update check."),
-      );
+      yield* $(warn("Cannot reach the registry — skipped the update check."));
       return data;
     });
   }
@@ -97,7 +95,7 @@ export async function runUpgrade(
   const bin = parts[0] ?? "npm";
   const args = parts.slice(1);
   // Guard the spawn: an absent package manager (`bin` not on PATH) REJECTS the
-  // exec with ENOENT, which would collapse to INTERNAL_ERROR ("please report
+  // exec with ENOENT, which would collapse to INTERNAL_ERROR ("report
   // this issue"). Surface it as a named "`<pm>` not found on PATH" instead.
   return guardMissingBinary(
     bin,
