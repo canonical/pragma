@@ -96,13 +96,23 @@ export function runCli(
   const entry = mode === "shipped" ? SHIPPED_ENTRY : SOURCE_ENTRY;
   const spawnArgs = [entry, ...args];
 
+  // Colour OFF by default: these tests assert on bytes, and nx exports
+  // FORCE_COLOR to its test tasks, so a spawned CLI colours its help even
+  // through a pipe — green locally, red in CI, for a difference no assertion
+  // meant to make. NO_COLOR is the one convention the style seam obeys
+  // unconditionally. FORCE_COLOR is DELETED rather than overridden: Bun warns
+  // on stderr when it sees both, and stderr is part of what is asserted.
+  // `options.env` still wins, so a test that wants colour asks for it.
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    NO_COLOR: "1",
+    XDG_CONFIG_HOME: seededXdgConfigHome(),
+  };
+  delete env.FORCE_COLOR;
+
   const result = spawnSync(command, spawnArgs, {
     cwd: options.cwd,
-    env: {
-      ...process.env,
-      XDG_CONFIG_HOME: seededXdgConfigHome(),
-      ...options.env,
-    },
+    env: { ...env, ...options.env },
     encoding: "utf-8",
     timeout: options.timeoutMs ?? 20_000,
   });
