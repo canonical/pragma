@@ -53,6 +53,7 @@ import {
   SCHEMA_FILE,
   STORIES_FILE,
 } from "../src/kernel/runtime/graphpack/types.js";
+import { headCommit } from "../src/kernel/runtime/refs/gitOps.js";
 import { parsePackDeclaration } from "../src/kernel/runtime/refs/parseRef.js";
 import {
   detectPrefixClashes,
@@ -74,6 +75,26 @@ import {
 const SOURCE_OVERRIDES: Readonly<Record<string, PackDeclaration>> = {
   "@canonical/anatomy-dsl": { name: "@canonical/anatomy-dsl" }, // no `source` ⇒ npm
 };
+
+/**
+ * The pack this repository IS.
+ *
+ * `@canonical/ds-implementations` is COLLECTED FROM this monorepo into the root
+ * `data/` directory, and `pragma.conf.ts` declares it as a git ref on `#main` —
+ * the correct source for a real user, and the wrong one for this script at
+ * release time. The version job regenerates that data with the new version and
+ * its `versionedLink`s and THEN bundles, all BEFORE `git-commit.sh` makes the
+ * commit and tag, so a clone of `#main` would embed the PREVIOUS release's
+ * implementation graph into the artifact tagged for this one. The self-pack
+ * therefore reads the working tree, which is exactly the tree that becomes the
+ * tag.
+ *
+ * Nothing machine-specific reaches the artifact: the provenance recorded is
+ * `self:v<version>` — the tag this bundle is for — never the checkout path.
+ * That is also why this bypasses the `file:` refusal below rather than relaxing
+ * it: every OTHER local path would pin a developer's filesystem.
+ */
+const SELF_PACK = "@canonical/ds-implementations";
 
 const packageRoot = fileURLToPath(new URL("../", import.meta.url));
 const embeddedDir = join(packageRoot, "src/kernel/runtime/graphpack/embedded");
@@ -126,6 +147,21 @@ try {
   const declared = defaults.packs ?? [];
   const resolved = [];
   for (const entry of declared) {
+    if (entryName(entry) === SELF_PACK) {
+      const repoRoot = join(packageRoot, "../../..");
+      console.log(`Resolving ${SELF_PACK} (self)`);
+      const pkg = await resolvePackage(
+        parsePackDeclaration({ name: SELF_PACK, source: `file://${repoRoot}` }),
+        { cwd: packageRoot },
+      );
+      // `resolved` is the local path on the file lane; replace it with the tag
+      // this bundle is for, so the manifest never carries a build machine's
+      // filesystem. `headCommit` is read only to fail loudly when the working
+      // tree is not a git checkout of this repository at all.
+      headCommit(repoRoot);
+      resolved.push({ ...pkg, kind: "self", resolved: `v${VERSION}` });
+      continue;
+    }
     const ref = parsePackDeclaration(
       SOURCE_OVERRIDES[entryName(entry)] ?? entry,
     );

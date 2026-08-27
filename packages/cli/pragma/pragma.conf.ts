@@ -625,12 +625,16 @@ export default {
   // form. Both are BODIES with no leading H1 (the renderer supplies the
   // heading), grounded in this tree's real architecture.
   colophon: {
+    // The architecture handoff is a URL, not a repo path: `docs/` is outside
+    // the package's `files` allowlist and is not copied into `dist`, so an
+    // installed user has no `docs/architecture.md` to open.
     markdown: `pragma is a **domain-based toolchain** — one CLI and one MCP server
-projected from a single grammar. That machinery is documented in
-\`docs/architecture.md\`; what follows is the domain it serves.
+projected from a single grammar. That machinery is documented at
+https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md;
+what follows is the domain it serves.
 
 Made by the Canonical Webteam — https://canonical.com.`,
-    summary: `pragma is a domain-based toolchain: one CLI + MCP server projected from a single grammar (see \`docs/architecture.md\`). The domain it serves follows.
+    summary: `pragma is a domain-based toolchain: one CLI + MCP server projected from a single grammar (https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md). The domain it serves follows.
 
 Made by the Canonical Webteam — https://canonical.com.`,
   },
