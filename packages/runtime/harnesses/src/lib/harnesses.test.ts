@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import harnesses from "./harnesses.js";
+import { opendesignMcpEntry } from "./mcpEntries.js";
 
 describe("harnesses registry", () => {
   it("contains all known harnesses", () => {
@@ -60,7 +61,7 @@ describe("harnesses registry", () => {
   it("opendesign is dual-scope with project + home config and skills paths (7g)", () => {
     const od = harnesses.find((h) => h.id === "opendesign");
     expect(od?.scope).toBe("both");
-    expect(od?.normalizeEnv).toBe(true);
+    expect(od?.mcpEntry).toBe(opendesignMcpEntry);
     expect(od?.configPath("/project")).toBe("/project/.od/mcp-config.json");
     expect(
       od?.homeConfigPath?.({

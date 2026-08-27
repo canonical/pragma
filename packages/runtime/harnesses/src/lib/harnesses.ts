@@ -6,6 +6,11 @@
  * ranges to handle config format changes across versions.
  */
 
+import {
+  cursorMcpEntry,
+  opencodeMcpEntry,
+  opendesignMcpEntry,
+} from "./mcpEntries.js";
 import { userHome } from "./platformPaths.js";
 import type { HarnessDefinition } from "./types.js";
 
@@ -36,6 +41,9 @@ const harnesses: readonly HarnessDefinition[] = [
     configPath: (root) => `${root}/.cursor/mcp.json`,
     configFormat: "json",
     mcpKey: "mcpServers",
+    // Cursor's MCP docs (https://cursor.com/docs/context/mcp) type stdio
+    // entries with `type: "stdio"`.
+    mcpEntry: cursorMcpEntry,
     skillsPath: (root) => `${root}/.cursor/skills`,
   },
   {
@@ -100,6 +108,11 @@ const harnesses: readonly HarnessDefinition[] = [
     configPath: (root) => `${root}/opencode.json`,
     configFormat: "json",
     mcpKey: "mcp",
+    // OpenCode's schema (https://opencode.ai/config.json, $defs.McpLocalConfig)
+    // requires `type: "local"` + `command` as a string array and rejects
+    // unknown keys — the default `{command, args, cwd}` shape fails its
+    // validation three ways (S1-3).
+    mcpEntry: opencodeMcpEntry,
     skillsPath: (root) => `${root}/.agents/skills`,
   },
   {
@@ -150,7 +163,7 @@ const harnesses: readonly HarnessDefinition[] = [
     version: "*",
     scope: "both",
     // VERIFY(7g): OpenDesign requires the MCP server `env` to be a JSON map.
-    normalizeEnv: true,
+    mcpEntry: opendesignMcpEntry,
     detect: [
       { type: "directory", path: ".od" },
       {

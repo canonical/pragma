@@ -67,33 +67,17 @@ export function pragmaMcpEntry(cwd: string): McpServerConfig {
 }
 
 /**
- * Whether an existing MCP entry equals the pragma entry we would write, over the
- * fields we control (`command`/`args`/`cwd`). A shallow structural compare — a
- * harness that carries extra keys (e.g. `env`) still reads as `configured` as
- * long as our three fields match, so we never churn a file we did not author.
- */
-function entryMatches(
-  existing: McpServerConfig,
-  want: McpServerConfig,
-): boolean {
-  const sameArgs =
-    (existing.args ?? []).length === (want.args ?? []).length &&
-    (want.args ?? []).every((a, i) => existing.args?.[i] === a);
-  return (
-    existing.command === want.command && existing.cwd === want.cwd && sameArgs
-  );
-}
-
-/**
  * Classify one target group against its on-disk config: `absent` when no pragma
  * entry exists in ANY of the group's writes, `configured` when EVERY write
  * already carries a matching pragma entry, `drifted` otherwise (present in at
  * least one write but not matching everywhere). Reads each write's file for real
- * via `readMcpConfigFrom`.
+ * via `readMcpConfigFrom`, and matches each raw entry against what THAT write's
+ * per-harness serializer would emit (`mcpEntryMatches` ignores extra keys a
+ * harness or user added, so we never churn a file we did not author).
  *
  * @param group - The target group whose writes to inspect.
- * @param want - The pragma entry a write would emit.
- * @param readMcpConfigFrom - The harness reader (dynamically imported).
+ * @param want - The canonical pragma entry a write would serialize.
+ * @param harnessesApi - The dynamically imported harnesses module.
  * @param runTask - The node Task interpreter.
  * @returns The group's {@link McpTargetState}.
  * @note Impure — reads each write's config file.
@@ -101,17 +85,22 @@ function entryMatches(
 async function classifyGroup(
   group: TargetGroup,
   want: McpServerConfig,
-  readMcpConfigFrom: typeof import("@canonical/harnesses").readMcpConfigFrom,
+  harnessesApi: Pick<
+    typeof import("@canonical/harnesses"),
+    "readMcpConfigFrom" | "mcpEntryMatches"
+  >,
   runTask: typeof import("@canonical/task/node").runTask,
 ): Promise<McpTargetState> {
   let present = 0;
   let matching = 0;
   for (const write of group.writes) {
-    const servers = await runTask(readMcpConfigFrom(write));
+    const servers = await runTask(harnessesApi.readMcpConfigFrom(write));
     const existing = servers[MCP_SERVER_NAME];
     if (existing === undefined) continue;
     present += 1;
-    if (entryMatches(existing, want)) matching += 1;
+    if (harnessesApi.mcpEntryMatches(existing, write.serializeEntry(want))) {
+      matching += 1;
+    }
   }
   if (present === 0) return "absent";
   if (matching === group.writes.length) return "configured";
@@ -139,6 +128,7 @@ export async function detectMcp(
     {
       detectHarnesses,
       groupTargetsForScope,
+      mcpEntryMatches,
       readMcpConfigFrom,
       readPlatformEnv,
       writeMcpConfigTargets,
@@ -162,7 +152,7 @@ export async function detectMcp(
       const state = await classifyGroup(
         group,
         want,
-        readMcpConfigFrom,
+        { readMcpConfigFrom, mcpEntryMatches },
         runTask,
       );
       stateByPath.set(group.path, state);

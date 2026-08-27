@@ -22,6 +22,15 @@ export { default as detectHarnesses } from "./detectHarnesses.js";
 export { default as findHarnessById } from "./findHarnessById.js";
 export { default as harnesses } from "./harnesses.js";
 export {
+  copilotMcpEntry,
+  cursorMcpEntry,
+  defaultMcpEntry,
+  type McpEntrySerializer,
+  mcpEntryMatches,
+  opencodeMcpEntry,
+  opendesignMcpEntry,
+} from "./mcpEntries.js";
+export {
   type PlatformEnv,
   type PlatformId,
   readPlatformEnv,
