@@ -217,7 +217,15 @@ describe("config set — MCP plan-first / confirm parity", () => {
     expect(plan.ok).toBe(true);
     expect(plan.meta).toMatchObject({ planOnly: true, confirmRequired: true });
     const planLines = (plan.data as { plan: string[] }).plan;
-    expect(planLines.some((line) => line.includes("Write file"))).toBe(true);
+    // The MCP payload renders through the SHARED effect formatter — the same
+    // rows the CLI preview shows — so the write is named `Create file` rather
+    // than the interpreter's `Write file: <path> (N bytes)`. The claim is
+    // unchanged: the plan names the write it would perform, and performs none.
+    // The CLI dry-run above still pins the raw `Write file` spelling, because
+    // `config set` declares no `formatPlan` and its human preview is therefore
+    // byte-for-byte what it always was.
+    expect(planLines.some((line) => line.includes("Create file"))).toBe(true);
+    expect(planLines.at(-1)).toContain("config.json");
     expect(existsSync(globalConfigPath())).toBe(false);
 
     const done = await mcp.callTool("config_set", {

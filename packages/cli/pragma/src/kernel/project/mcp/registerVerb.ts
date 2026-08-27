@@ -7,12 +7,14 @@
  * capability, and a mutating verb gains the plan-first `confirm` flow: without
  * `confirm`, the verb's `Task` is dry-run and a plan is returned
  * (`{ planOnly: true, confirmRequired: true }`); with `confirm: true`, it runs
- * for real.
+ * for real. That plan is rendered through the SAME shared effect formatter the
+ * CLI preview uses, so the agent-facing and human-facing surfaces describe one
+ * plan rather than two views of it.
  */
 
 import { statSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import { describeEffect, type Task } from "@canonical/task";
+import type { Task } from "@canonical/task";
 import { runPreview, runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
@@ -203,16 +205,36 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
         // reads are real, writes are recorded and never executed. A tool call
         // whose confirmed run would fail now returns that error instead of a
         // confident plan, so plan-first predicts rather than reassures.
+        //
+        // NO `onLog`: a preview that PERFORMS an effect is not a preview of
+        // that effect, and the recorded `Log`s are already about to be listed.
+        // The interpreter prints nothing of its own when it is absent.
         const previewExec = mutationRuntime.exec ?? {};
         try {
           const { effects } = await runPreview(task, {
             cwd: previewExec.cwd,
             onEffectStart: previewExec.onEffectStart,
-            onLog: logToStderr,
           });
-          const plan = effects
-            .filter((effect) => effect._tag !== "Prompt")
-            .map(describeEffect);
+          // This payload is read by an LLM on a token budget, so it carries
+          // the plan a person is shown rather than the interpreter's
+          // transcript: the same `visiblePlanEffects` filter and the same
+          // `formatEffectLine` row the CLI preview renders, from the same
+          // module, so the agent-facing and human-facing surfaces describe ONE
+          // plan. Without it every internal `Check exists:` and every repeat
+          // of the output directory spent tokens burying the real artifacts.
+          //
+          // Loaded lazily, and from the LIGHT `/format` subpath: the kernel
+          // keeps summon-core proper (and React) off its static import graph.
+          const { formatEffectLine, visiblePlanEffects } = await import(
+            "@canonical/summon-core/format"
+          );
+          const rows = visiblePlanEffects(
+            effects,
+            runtime.globalFlags.verbose === true,
+          );
+          const plan = rows.map((effect, index) =>
+            formatEffectLine(effect, index === rows.length - 1),
+          );
           return toolSuccess(
             { plan },
             { planOnly: true, confirmRequired: true },

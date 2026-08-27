@@ -116,6 +116,39 @@ describe("create over MCP (PROTECTED)", () => {
     }
   });
 
+  it("the plan payload is the FILTERED plan, not the interpreter transcript", async () => {
+    // This payload is read by an LLM on a token budget. Every internal probe
+    // and every repeat of the output directory spent tokens burying the real
+    // artifacts, so the rows are the shared `visiblePlanEffects` filter and
+    // the shared `formatEffectLine` row — the same two the CLI preview uses.
+    const dir = freshCwd();
+    const prev = process.cwd();
+    process.chdir(dir);
+    try {
+      const mcp = await projectMcp([createModule], dir);
+      cleanup = mcp.cleanup;
+      const result = await mcp.callTool("create_component", {
+        framework: "react",
+        componentPath: "Button",
+        withStyles: false,
+        withStories: false,
+        withSsrTests: false,
+      });
+      const plan = (result.data as { plan: string[] }).plan;
+      const body = plan.join("\n");
+      expect(body).not.toContain("Check exists:");
+      expect(body).not.toContain("Log [");
+      // The output directory is planned ONCE, however many files it holds.
+      expect(plan.filter((line) => line.includes("Create dir"))).toEqual([
+        "├─ Create dir    Button",
+      ]);
+      expect(plan.at(-1)).toContain("└─ Info          ");
+      expect(readdirSync(dir)).toEqual([]); // nothing written
+    } finally {
+      process.chdir(prev);
+    }
+  });
+
   it("confirm: true → runs for real and writes files", async () => {
     const dir = freshCwd();
     const prev = process.cwd();
