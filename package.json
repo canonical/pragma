@@ -45,7 +45,7 @@
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
-    "@canonical/design-system": "^0.2.2",
+    "@canonical/design-system": "^0.2.3",
     "@vitest/coverage-v8": "^4.0.18",
     "lerna": "^9.0.5",
     "nx": "^22.5.4",
