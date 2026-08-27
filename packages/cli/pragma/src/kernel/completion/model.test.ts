@@ -115,6 +115,38 @@ describe("buildCompletionModel — flags and sources", () => {
     });
   });
 
+  it("marks a spec-declared repeatable string/enum flag repeatable", () => {
+    // `string[]` is not the only accumulating shape: a compiled pack marks
+    // every declared filter `repeatable`, so `--category css --category git`
+    // is the union. Reading the kind alone de-offered the flag after its
+    // first use, which is exactly when repetition becomes offerable.
+    const repeatables = buildCompletionModel([
+      moduleWith({
+        params: [
+          {
+            kind: "enum",
+            name: "category",
+            doc: "Filter by category.",
+            values: ["css", "git"],
+            repeatable: true,
+          },
+          {
+            kind: "string",
+            name: "search",
+            doc: "Free text.",
+            repeatable: true,
+          },
+          { kind: "string", name: "note", doc: "Once only." },
+        ],
+      }),
+    ]);
+    const thing = findNoun(repeatables, "thing")?.selfVerb;
+    const flagOf = (flag: string) => thing?.flags.find((f) => f.flag === flag);
+    expect(flagOf("--category")?.repeatable).toBe(true);
+    expect(flagOf("--search")?.repeatable).toBe(true);
+    expect(flagOf("--note")?.repeatable).toBe(false);
+  });
+
   it("resolves name positionals with required/variadic markers", () => {
     expect(get?.positionals).toEqual([
       {

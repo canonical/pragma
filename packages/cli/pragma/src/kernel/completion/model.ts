@@ -186,7 +186,12 @@ function toVerbEntry(verb: VerbSpec): VerbEntry {
       flags.push({
         flag: `--${name}`,
         takesValue: param.kind !== "boolean",
-        repeatable: param.kind === "string[]",
+        // Two grammars accumulate, so two shapes are repeatable: a `string[]`
+        // flag (`--tag a --tag b`) and any `string`/`enum` param the spec
+        // marks `repeatable` — the form compiled packs give every declared
+        // filter. Reading only the kind de-offered a filter after its first
+        // use, hiding the repetition the parser had just started honouring.
+        repeatable: param.kind === "string[]" || param.repeatable === true,
         source,
       });
     }
