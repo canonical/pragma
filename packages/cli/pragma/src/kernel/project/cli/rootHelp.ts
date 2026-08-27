@@ -95,7 +95,11 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           noun: "capabilities",
           summary: "Discover conventions, tools, and the discovery sequence",
         },
-        { noun: "colophon", summary: "Read where the active packs come from" },
+        // A colophon is the note at the back of a book: the typeface, the
+        // press, the paper. Nothing depends on it, which is the point — so
+        // this line does not argue for it. Every other summary in this column
+        // promises work done; this one just invites you to look.
+        { noun: "colophon", summary: "Read the credits" },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
         // Curated for PLACEMENT, not for existence: `mcp serve` is an
