@@ -196,12 +196,13 @@ describe("resource surface over the server (embedded pack)", () => {
     expect(values).toContain(BUTTON_NAME);
   });
 
-  it("reads an entity, mirroring `graph inspect` content", async () => {
+  it("serves Turtle, mirroring `graph inspect --format llm` byte for byte", async () => {
+    // The mirror survives the encoding change: both surfaces serialize the SAME
+    // reader through the SAME serializer, so this still fails the moment one of
+    // them grows a projection the other does not have.
     const read = await harness.readResource(BUTTON_URI);
-    expect(read.mimeType).toBe("application/json");
-    const fromResource = JSON.parse(read.text) as InspectResult;
+    expect(read.mimeType).toBe("text/turtle");
 
-    // The CLI twin over the same (embedded) pack must return identical content.
     const rt = bootRuntime(TEST_FLAGS);
     const inspect = graphModule.verbs.find(
       (v) => verbKey(v.path) === "graph inspect",
@@ -212,12 +213,36 @@ describe("resource surface over the server (embedded pack)", () => {
     )) as InspectResult;
     (await rt.store.get()).store.dispose();
 
-    expect(withoutBlankNodeLabels(fromResource)).toEqual(
-      withoutBlankNodeLabels(fromCli),
+    const llm = inspect.output?.formatters?.llm;
+    expect(llm).toBeDefined();
+    expect(read.text).toBe(llm?.(fromCli, TEST_FLAGS));
+  });
+
+  it("emits Turtle an RDF parser accepts", async () => {
+    // The point of serving `text/turtle` is that it IS Turtle. Asserted by
+    // PARSING it with the same engine the store uses, not by matching shapes —
+    // a document that only looks right is how a reader gets a syntax error
+    // instead of an entity.
+    const read = await harness.readResource(BUTTON_URI);
+    const dir = mkdtempSync(join(tmpdir(), "pragma-resource-ttl-"));
+    const file = join(dir, "entity.ttl");
+    writeFileSync(file, read.text);
+
+    const ke = await import("@canonical/ke");
+    const store = await ke.createStore({ sources: [file] });
+    const result = await store.query(
+      "SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }",
     );
-    expect(fromResource.uri).toBe(
-      "https://ds.canonical.com/global.component.button",
-    );
+    store.dispose();
+    expect(Number(result.bindings[0]?.n ?? 0)).toBeGreaterThan(0);
+  });
+
+  it("previews a long literal rather than spending the whole body", async () => {
+    // Measured: one button carried 8,572 of its 9,734 literal characters in two
+    // prose fields. Serving those in full at the DEFAULT level makes every read
+    // pay for documentation the reader may not have asked for.
+    const read = await harness.readResource(BUTTON_URI);
+    expect(read.text).toMatch(/# ds:guidelines — [\d,]+ chars, showing \d+/);
   });
 
   it("rejects a read of an absent entity as InvalidParams carrying ENTITY_NOT_FOUND", async () => {

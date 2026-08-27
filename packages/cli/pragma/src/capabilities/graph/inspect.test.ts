@@ -106,14 +106,22 @@ describe("graph inspect", () => {
     });
     // ...and its content is served as records instead. Asserted as a SET: the
     // order is content-derived (see the next case), never the input order.
+    // Record VALUES are terms, not strings: a record's members are as much part
+    // of the graph as the subject's own, and flattening them would reintroduce
+    // the IRI-versus-literal ambiguity the term projection exists to close.
     const changes = result.nested["ds:changeLog"] ?? [];
     expect(changes).toHaveLength(2);
-    expect(changes.map((row) => row["ds:changeType"]).sort()).toEqual([
+    expect(changes.map((row) => row["ds:changeType"]?.value).sort()).toEqual([
       "decision",
       "revision",
     ]);
-    // `rdf:type` is hoisted to `type` rather than repeated as a field.
-    expect(changes[0]?.type).toBe("ds:ChangeLogEntry");
+    expect(changes[0]?.["ds:changeType"]?.termType).toBe("Literal");
+    // `rdf:type` is hoisted to `type` rather than repeated as a field, and stays
+    // a NamedNode — so the Turtle serializer can write it back as `a ds:X`.
+    expect(changes[0]?.type).toMatchObject({
+      termType: "NamedNode",
+      prefixed: "ds:ChangeLogEntry",
+    });
   });
 
   it("counts every inbound edge at summary while listing none", async () => {

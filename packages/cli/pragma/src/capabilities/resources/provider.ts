@@ -23,6 +23,7 @@ import { readPackIndex } from "../../kernel/completion/entitySource.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { mcpErrorFrom } from "../../kernel/project/mcp/mcpError.js";
+import { toTurtle } from "../../kernel/render/turtle.js";
 import type { PackIndex } from "../../kernel/runtime/graphpack/types.js";
 import { readEntity } from "../../kernel/runtime/readEntity.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
@@ -52,9 +53,11 @@ const INDIVIDUAL_PRIORITY = 0.3;
 const URI_TEMPLATE = "pragma:{+uri}";
 
 const TEMPLATE_DESCRIPTION =
-  "Knowledge-graph entities from the local pack. Read any entry by its prefixed " +
-  "URI (e.g. pragma:ds:button); autocomplete matches URI or label substrings. " +
-  `Content mirrors \`${BIN_NAME} graph inspect <uri>\`.`;
+  "Knowledge-graph entities from the local pack, as Turtle. Read any entry by " +
+  "its prefixed URI (e.g. pragma:ds:global.component.button); autocomplete " +
+  "matches URI or label substrings. A read returns the entity's neighbourhood — " +
+  "its own triples, the edges pointing AT it, and its blank nodes inlined. " +
+  `Content mirrors \`${BIN_NAME} graph inspect <uri> --format llm\`.`;
 
 /** Agent-navigability annotations mirrored onto a listed resource. */
 export interface ResourceAnnotations {
@@ -233,7 +236,12 @@ export const resourceProvider: McpResourceProvider = {
     server.registerResource(
       "graph-entity",
       template,
-      { description: TEMPLATE_DESCRIPTION, mimeType: "application/json" },
+      // `text/turtle` because that is what the body IS. The surface used to
+      // claim `application/json` for a graph, and paid ~95 bytes of wrapper per
+      // named node to do it — one button read carried ~6.1 KB of pure structure.
+      // Turtle spends the prefixes once, writes each term as itself, and says
+      // IRI-versus-literal in syntax rather than in a `termType` field.
+      { description: TEMPLATE_DESCRIPTION, mimeType: "text/turtle" },
       async (
         url: URL,
         variables: Record<string, string | string[] | undefined>,
@@ -241,12 +249,13 @@ export const resourceProvider: McpResourceProvider = {
         try {
           const uri = readUriVariable(variables.uri);
           const entity = await readEntity(runtime, uri);
+          const { prefixes } = await runtime.store.get();
           return {
             contents: [
               {
                 uri: url.href,
-                mimeType: "application/json",
-                text: JSON.stringify(entity, null, 2),
+                mimeType: "text/turtle",
+                text: toTurtle(entity, prefixes),
               },
             ],
           };

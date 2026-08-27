@@ -57,7 +57,6 @@ import type { DetailLevel } from "../../constants.js";
 import { PragmaError } from "../error/PragmaError.js";
 import { cliRecovery } from "../error/recovery.js";
 import { resolveUri } from "../packs/iri.js";
-import type { PackChildRow } from "../packs/types.js";
 import { compactUri } from "../render/compactUri.js";
 import { resolveDetail } from "../render/disclosure.js";
 import type { PackIndex } from "./graphpack/types.js";
@@ -109,6 +108,26 @@ const SAMPLE_CAP: Readonly<Record<DetailLevel, number>> = {
 };
 
 /**
+ * How many characters of a LITERAL each level carries.
+ *
+ * The measured cost of a rich entity is not its structure but its prose: one
+ * button spent 8,572 of its 9,734 literal characters on two fields
+ * (`ds:guidelines` 5,814, `ds:usage` 2,758). Serving those in full at the
+ * DEFAULT level makes every read of that entity pay for documentation the
+ * reader may not have asked for — and the noun's own lookup verb serves the
+ * same fields under its own disclosure, properly.
+ *
+ * So long-form prose is what `detailed` is FOR. Below it a literal is previewed
+ * and marked {@link ReadTerm.truncated} with its true {@link ReadTerm.length},
+ * so a reader can always see that there is more and how much.
+ */
+const LITERAL_CAP: Readonly<Record<DetailLevel, number>> = {
+  summary: 120,
+  standard: 400,
+  detailed: Number.POSITIVE_INFINITY,
+};
+
+/**
  * Ceiling on the inbound rows fetched in one query. Above every hub this graph
  * has (335), so `count` is exact in practice; a graph that exceeds it degrades
  * to an undercount on that one predicate rather than an unbounded read.
@@ -131,6 +150,10 @@ export interface ReadTerm {
   readonly datatype?: string;
   /** Literal language tag, when the literal carries one. */
   readonly language?: string;
+  /** Set when `value` is a PREFIX of the real literal (see {@link length}). */
+  readonly truncated?: true;
+  /** The literal's true character count, present only when truncated. */
+  readonly length?: number;
   /**
    * Marks a term no `pragma:{+uri}` read can resolve. Only blank nodes carry it:
    * their labels are store-local and re-mint on every load, so following one is
@@ -138,6 +161,9 @@ export interface ReadTerm {
    */
   readonly addressable?: false;
 }
+
+/** One inlined blank node: its fields, keyed by predicate, as terms. */
+export type NestedRecord = Record<string, ReadTerm>;
 
 /** All objects asserted for one predicate on the subject. */
 export interface PredicateGroup {
@@ -178,8 +204,14 @@ export interface InspectResult {
   /**
    * Blank-node objects inlined one level, keyed by the predicate that reaches
    * them. Omitted at `summary`.
+   *
+   * Field values are TERMS, not strings: a record's members are as much a part
+   * of the graph as the subject's own, and flattening them would reintroduce
+   * exactly the IRI-versus-literal ambiguity the term projection exists to
+   * close — and leave the Turtle serializer unable to tell `ds:Foo` from
+   * `"ds:Foo"`.
    */
-  readonly nested: Record<string, PackChildRow[]>;
+  readonly nested: Record<string, NestedRecord[]>;
   /** The disclosure level this payload was built at. */
   readonly detail: DetailLevel;
 }
@@ -213,11 +245,12 @@ function nameIndex(index: PackIndex): ReadonlyMap<string, string> {
   return names;
 }
 
-/** Project one ke term into a {@link ReadTerm}. */
+/** Project one ke term into a {@link ReadTerm}, previewing long literals. */
 function toReadTerm(
   term: Term,
   prefixes: Readonly<Record<string, string>>,
   names: ReadonlyMap<string, string>,
+  detail: DetailLevel,
 ): ReadTerm {
   if (term.termType === "NamedNode") {
     const prefixed = compactUri(term.value, prefixes);
@@ -235,17 +268,17 @@ function toReadTerm(
   if (term.termType === "BlankNode") {
     return { termType: "BlankNode", value: term.value, addressable: false };
   }
+  const cap = LITERAL_CAP[detail];
+  const overlong = term.value.length > cap;
   return {
     termType: "Literal",
-    value: term.value,
+    value: overlong ? term.value.slice(0, cap) : term.value,
+    ...(overlong
+      ? { truncated: true as const, length: term.value.length }
+      : {}),
     ...(term.datatype ? { datatype: compactUri(term.datatype, prefixes) } : {}),
     ...(term.language ? { language: term.language } : {}),
   };
-}
-
-/** The compact rendering of a term inside a nested record. */
-function nestedValue(term: ReadTerm): string {
-  return term.prefixed ?? term.value;
 }
 
 /**
@@ -289,7 +322,7 @@ export async function readEntity(
   });
   const names = nameIndex(session.index);
   const term = (value: Term): ReadTerm =>
-    toReadTerm(value, session.prefixes, names);
+    toReadTerm(value, session.prefixes, names, detail);
 
   const groupMap = new Map<string, ReadTerm[]>();
   const predicates = new Map<string, ReadTerm>();
@@ -398,7 +431,7 @@ async function readNested(
   resolved: string,
   prefixes: Readonly<Record<string, string>>,
   term: (value: Term) => ReadTerm,
-): Promise<Record<string, PackChildRow[]>> {
+): Promise<Record<string, NestedRecord[]>> {
   const result = await rt.query.sparql(
     `SELECT ?predicate ?node ?nodePredicate ?nodeObject WHERE { <${resolved}> ?predicate ?node . FILTER(isBlank(?node)) . ?node ?nodePredicate ?nodeObject } ORDER BY ?predicate ?node ?nodePredicate`,
   );
@@ -406,10 +439,7 @@ async function readNested(
 
   // Keyed by blank-node label so repeated nodes under one predicate stay
   // separate records; the label itself never reaches the payload.
-  const records = new Map<
-    string,
-    { via: string; row: Record<string, string> }
-  >();
+  const records = new Map<string, { via: string; row: NestedRecord }>();
   for (const binding of result.termBindings) {
     const predicate = binding.predicate;
     const node = binding.node;
@@ -422,11 +452,11 @@ async function readNested(
       nodePredicate.value === RDF_TYPE
         ? "type"
         : compactUri(nodePredicate.value, prefixes);
-    record.row[field] = nestedValue(term(nodeObject));
+    record.row[field] = term(nodeObject);
     records.set(node.value, record);
   }
 
-  const nested: Record<string, PackChildRow[]> = {};
+  const nested: Record<string, NestedRecord[]> = {};
   for (const { via, row } of records.values()) {
     const rows = nested[via] ?? [];
     rows.push(row);
