@@ -165,6 +165,43 @@ ds:prompt.scaffold-component a ds:Prompt ;
   ds:promptArgument [ ds:argName "framework" ; rdfs:comment "react | svelte | lit." ; ds:argRequired false ] .
 `;
 
+/** The `ds:Concept` section — long-form documentation entries the `concept`
+ * story reads. Mirrors the real design-system data shape (canonical/design-system#64):
+ * `ds:name`/`ds:summary`/`ds:tier` base, the Markdown body in `ds:content`
+ * (standard disclosure), `ds:knownEdgeCases` (detailed), and `ds:conceptType`
+ * → a named `ds:ConceptType` individual carrying its own `ds:name`. */
+const CONCEPT_TTL = `
+ds:Concept a owl:Class .
+ds:ConceptType a owl:Class .
+ds:content a owl:DatatypeProperty ; rdfs:domain ds:Concept ; rdfs:range xsd:string .
+ds:knownEdgeCases a owl:DatatypeProperty ; rdfs:domain ds:Concept ; rdfs:range xsd:string .
+ds:conceptType a owl:ObjectProperty ; rdfs:domain ds:Concept ; rdfs:range ds:ConceptType .
+
+ds:concepttype.Explanation a ds:ConceptType ;
+  ds:name "Explanation" ;
+  ds:summary "Concept documentation that deepens understanding of a topic." .
+
+ds:concepttype.How-to-guide a ds:ConceptType ;
+  ds:name "How-to guide" ;
+  ds:summary "Concept documentation that walks through solving a problem." .
+
+ds:concept.Foundations-Grid a ds:Concept ;
+  ds:name "Foundations: Grid" ;
+  ds:summary "How the grid system underpins every layout." ;
+  ds:tier ds:global ;
+  ds:conceptType ds:concepttype.Explanation ;
+  ds:content "The grid is the shared spatial contract every block lays out against." ;
+  ds:knownEdgeCases "Nested grids inherit the outer gutter unless re-declared." .
+
+ds:concept.Question-mark-vs-information-icon a ds:Concept ;
+  ds:name "Question mark vs information icon" ;
+  ds:summary "Deciding between the information icon and the question mark icon." ;
+  ds:tier ds:global ;
+  ds:conceptType ds:concepttype.How-to-guide ;
+  ds:content "The information icon offers context proactively; the question mark answers a question the user already has." ;
+  ds:knownEdgeCases "Icon interpretation depends on the user's prior conventions." .
+`;
+
 /** The prefixes the canonical store is built and queried with. */
 export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
@@ -172,7 +209,7 @@ export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
 };
 
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */
-export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}`;
+export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}\n${CONCEPT_TTL}`;
 
 /** Default viewing config: no tier set, `normal` channel — drops the beta-only block. */
 export const CANONICAL_CONFIG = { channel: "normal" as const };

@@ -114,6 +114,60 @@ pragma colophon  # the toolchain + active domain story
 pragma colophon --format llm  # condensed Markdown for agents
 ```
 
+## concept
+
+### pragma concept list
+
+List design-system concepts.
+
+List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.
+
+```
+pragma concept list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
+| `--search` | `<string>` | Search in name and summary. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_list` tool.
+
+**Examples**
+
+```bash
+pragma concept list
+pragma concept list --format llm
+```
+
+### pragma concept lookup
+
+Look up a concept's full documentation by name, IRI, or glob.
+
+Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.
+
+```
+pragma concept lookup <name...>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<name...>` | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_lookup` tool.
+
+**Examples**
+
+```bash
+pragma concept lookup <name>
+```
+
 ## config
 
 ### pragma config set
