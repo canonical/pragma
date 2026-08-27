@@ -202,6 +202,55 @@ ds:concept.Question-mark-vs-information-icon a ds:Concept ;
   ds:knownEdgeCases "Icon interpretation depends on the user's prior conventions." .
 `;
 
+/**
+ * The implementation graph: two libraries whose `ds:implementsBlock` edges point
+ * at `BLOCK_TTL`'s own Button/Modal IRIs, so a test can prove the cross-pack
+ * join (an implementation collected from source resolving to a block declared by
+ * the design system) rather than just the shape of a row. Button is implemented
+ * TWICE, on two platforms — the case `--platform` has to separate.
+ */
+const IMPLEMENTATION_TTL = `
+ds:ImplementationLibrary a owl:Class .
+ds:ImplementationObject a owl:Class .
+ds:hasImplementation a owl:ObjectProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range ds:ImplementationObject .
+ds:implementsBlock a owl:ObjectProperty ; rdfs:domain ds:ImplementationObject ; rdfs:range ds:UIBlock .
+ds:libraryName a owl:DatatypeProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range xsd:string .
+ds:platform a owl:DatatypeProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range xsd:string .
+ds:libraryTier a owl:ObjectProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range ds:Tier .
+ds:implementationCount a owl:DatatypeProperty ; rdfs:domain ds:ImplementationLibrary ; rdfs:range xsd:integer .
+ds:headLink a owl:DatatypeProperty ; rdfs:domain ds:ImplementationObject ; rdfs:range xsd:string .
+ds:versionedLink a owl:DatatypeProperty ; rdfs:domain ds:ImplementationObject ; rdfs:range xsd:string .
+
+ds:implementation.library.react-ds-global a ds:ImplementationLibrary ;
+  ds:libraryName "@canonical/react-ds-global" ;
+  ds:platform "react" ;
+  ds:libraryTier ds:global ;
+  ds:version "0.34.0" ;
+  ds:implementationCount 2 ;
+  ds:hasImplementation ds:implementation.react-ds-global.button,
+                       ds:implementation.react-ds-global.modal .
+
+ds:implementation.react-ds-global.button a ds:ImplementationObject ;
+  ds:implementsBlock ds:button ;
+  ds:headLink "https://example.test/react/Button.tsx" .
+
+ds:implementation.react-ds-global.modal a ds:ImplementationObject ;
+  ds:implementsBlock ds:modal ;
+  ds:headLink "https://example.test/react/Modal.tsx" .
+
+ds:implementation.library.svelte-ds-global a ds:ImplementationLibrary ;
+  ds:libraryName "@canonical/svelte-ds-global" ;
+  ds:platform "svelte" ;
+  ds:libraryTier ds:global ;
+  ds:version "0.34.0" ;
+  ds:implementationCount 1 ;
+  ds:hasImplementation ds:implementation.svelte-ds-global.button .
+
+ds:implementation.svelte-ds-global.button a ds:ImplementationObject ;
+  ds:implementsBlock ds:button ;
+  ds:headLink "https://example.test/svelte/Button.svelte" .
+`;
+
 /** The prefixes the canonical store is built and queried with. */
 export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
   ...BLOCK_PREFIXES,
@@ -209,7 +258,7 @@ export const CANONICAL_PREFIXES: Readonly<Record<string, string>> = {
 };
 
 /** The full canonical Turtle: PR3's `BLOCK_TTL` verbatim, plus the sections above. */
-export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}\n${CONCEPT_TTL}`;
+export const CANONICAL_TTL = `${BLOCK_TTL}\n${DS_EXTRA_TTL}\n${CS_TTL}\n${PROMPT_TTL}\n${CONCEPT_TTL}\n${IMPLEMENTATION_TTL}`;
 
 /** Default viewing config: no tier set, `normal` channel — drops the beta-only block. */
 export const CANONICAL_CONFIG = { channel: "normal" as const };

@@ -227,6 +227,30 @@ Read-only.
 | --- | --- | --- | --- |
 | `sparql` | string | yes | The SPARQL query text (SELECT, ASK, or CONSTRUCT). |
 
+### implementation_libraries
+
+List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+
+Read-only.
+
+**Input**
+
+_No input parameters._
+
+### implementation_list
+
+List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `platform` | string | no | Filter by platform (e.g. react, svelte, typescript). |
+| `library` | string | no | Filter by implementation library name. |
+| `search` | string | no | Search in block and library name. |
+
 ### info
 
 Storeless — reports the CLI version, how it was installed, the layered config with per-field origins, an entity total from the pack index, and (network, silent-fail) whether a newer release is available.

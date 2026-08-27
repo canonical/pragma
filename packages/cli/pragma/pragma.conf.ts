@@ -491,6 +491,120 @@ const conceptStory: PackDefinition = {
 };
 
 /**
+ * The read story the implementation-graph pack supplies — which library
+ * implements which block, collected from the `@implements` annotations in this
+ * monorepo's source.
+ *
+ * The join this noun exists for crosses two packs: `ds:implementsBlock` points
+ * from an implementation collected HERE at the IRI of a block declared in
+ * `@canonical/design-system`. Both land in one store under the pinned `ds:`
+ * namespace, so `implementation list` answers "which React components implement
+ * a global-tier block" as a query rather than an afternoon of grepping — which
+ * is what {@link DESIGN_SYSTEM_COLOPHON} promises.
+ *
+ * LIST-ONLY, deliberately. A `ds:ImplementationObject` carries no name literal
+ * — it IS the edge from a library to a block, plus the two source links — so
+ * there is nothing a `lookup` could disclose that the list row does not already
+ * hold. The grammar admits a story with only one half; a lookup keyed on a
+ * synthesised name would be a name nobody would ever type. The libraries
+ * themselves ARE named, and `implementation libraries` lists them through the
+ * same list machinery (as `standard categories` does).
+ */
+const implementationStory: PackDefinition = {
+  noun: "implementation",
+  description: "List which library implements which design-system block.",
+  toolDescription:
+    'List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.',
+  list: {
+    // The library is the subject that carries the platform, so the row is
+    // assembled from BOTH ends of `ds:hasImplementation`. `?block` prefers the
+    // block's own `ds:name` and falls back to its IRI local name, so a row
+    // stays readable even when the design-system pack is absent from the store
+    // and only the bare `ds:implementsBlock` IRI is known.
+    query: [
+      "SELECT ?uri ?block ?library ?platform ?source",
+      "WHERE {",
+      "  ?libUri a ds:ImplementationLibrary ;",
+      "          ds:libraryName ?library ;",
+      "          ds:hasImplementation ?uri .",
+      "  ?uri a ds:ImplementationObject ;",
+      "       ds:implementsBlock ?blockUri .",
+      "  OPTIONAL { ?libUri ds:platform ?platform }",
+      "  OPTIONAL { ?uri ds:headLink ?source }",
+      "  OPTIONAL { ?blockUri ds:name ?dsName }",
+      '  BIND(COALESCE(?dsName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
+      "}",
+      "ORDER BY ?block ?library",
+    ].join("\n"),
+    columns: [
+      { field: "block", label: "Block" },
+      { field: "library", label: "Library" },
+      { field: "platform", label: "Platform" },
+      { field: "source", label: "Source" },
+      { field: "uri", label: "IRI" },
+    ],
+    filters: [
+      {
+        param: "platform",
+        variable: "platform",
+        description: "Filter by platform (e.g. react, svelte, typescript).",
+      },
+      {
+        param: "library",
+        variable: "library",
+        description: "Filter by implementation library name.",
+      },
+    ],
+    search: {
+      variables: ["block", "library"],
+      description: "Search in block and library name.",
+    },
+    emptyRecovery: {
+      message:
+        "No implementations in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
+      cli: "sources update",
+    },
+  },
+  verbs: [
+    {
+      verb: "libraries",
+      description: "List the implementation libraries.",
+      toolDescription:
+        "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.",
+      // `ds:implementationCount` is asserted by the aggregate index on the SAME
+      // subject the per-library file describes, so the two merge in the store
+      // and the count needs no aggregation here.
+      query: [
+        "SELECT ?uri ?name ?platform ?tier ?version ?count",
+        "WHERE {",
+        "  ?uri a ds:ImplementationLibrary ;",
+        "       ds:libraryName ?name .",
+        "  OPTIONAL { ?uri ds:platform ?platform }",
+        "  OPTIONAL { ?uri ds:libraryTier ?tierUri }",
+        "  OPTIONAL { ?uri ds:version ?version }",
+        "  OPTIONAL { ?uri ds:implementationCount ?count }",
+        '  BIND(REPLACE(STR(?tierUri), "^.*[/#]", "") AS ?tier)',
+        "}",
+        "ORDER BY ?name",
+      ].join("\n"),
+      columns: [
+        { field: "name", label: "Library" },
+        { field: "platform", label: "Platform" },
+        { field: "tier", label: "Tier" },
+        { field: "version", label: "Version" },
+        { field: "count", label: "Blocks" },
+        { field: "uri", label: "IRI" },
+      ],
+      emptyRecovery: {
+        message:
+          "No implementation libraries in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
+        cli: "sources update",
+      },
+    },
+  ],
+};
+
+/**
  * The read story the code-standards pack supplies — `standard` as declared data.
  *
  * Normalized for the v2 grammar: the old `digest` level is the canonical
@@ -683,6 +797,7 @@ Made by the Canonical Webteam — https://canonical.com.`,
     {
       name: "@canonical/ds-implementations",
       source: "git+https://github.com/canonical/pragma.git#main",
+      stories: [implementationStory],
     },
   ],
   // This distribution's domain namespaces, declared once and read twice.

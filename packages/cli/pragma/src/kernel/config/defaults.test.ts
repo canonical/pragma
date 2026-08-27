@@ -78,7 +78,7 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     const storyCounts = defaults.packs?.map((pack) =>
       typeof pack === "string" ? 0 : (pack.stories?.length ?? 0),
     );
-    expect(storyCounts).toEqual([5, 0, 1, 0]);
+    expect(storyCounts).toEqual([5, 0, 1, 1]);
   });
 
   it("declares no removed field — the validator would refuse to load one", () => {
