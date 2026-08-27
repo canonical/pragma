@@ -1,13 +1,21 @@
 /**
- * PROTECTED: the embedded #819 wizard renders and drives the full flow —
- * prompt sequence → preview/confirm → completion — through a seam-backed
+ * PROTECTED: the embedded #819 wizard renders the full flow — prompt sequence
+ * → preview/confirm → completion — against a seam-backed
  * {@link SessionController}, exercised with ink-testing-library.
  *
- * ONE live Ink render per process: Ink's reconciler is a process-global, so a
- * second concurrent/sequential instance in the same worker can stall frames.
- * The whole flow (including a decline at the gate) is therefore driven through a
- * single render, and the controller-only cancellation semantics are covered
- * separately in session.test.ts.
+ * Two layers, split on purpose:
+ * - the FLOW test drives phase transitions through the controller API (no
+ *   fake-TTY input at all), so what it protects — that every phase renders
+ *   correctly — is deterministic;
+ * - the KEYBOARD-BINDING tests each render one prompt and send the fewest
+ *   keystrokes that prove the component→controller wiring. Renders are
+ *   sequential and unmounted between tests (Ink's reconciler is a
+ *   process-global; overlapping live instances can stall frames), and a
+ *   dropped write can only cost a resend inside its own test — the old
+ *   monolithic keystroke drive let one dropped write wedge every later
+ *   phase, which was a recurring CI-only flake.
+ *
+ * Controller-only cancellation semantics are covered in session.test.ts.
  */
 
 import { promptEffect, writeFile, writeFileEffect } from "@canonical/task";
@@ -145,77 +153,44 @@ const multiselect = (
   promptEffect({ type: "multiselect", name, message, choices }) as PromptEffect;
 
 describe("create wizard (PROTECTED)", () => {
-  // retry: on loaded CI runners this flow occasionally wedges after a one-shot
-  // input race (locally unreproducible on node 22 and 24; the sibling tests in
-  // the same run pass in milliseconds, so it is not machine load). A retry
-  // re-renders from scratch, which clears the wedge; the wedged-state error
-  // text below still prints for every failed attempt, so occurrences remain
-  // diagnosable while they stop blocking unrelated PRs. A persistent failure
-  // still fails all three attempts.
-  it("runs prompt sequence → preview/confirm → completion", {
-    timeout: 60000,
-    retry: 2,
-  }, async () => {
+  // The flow is driven through the CONTROLLER API, not fake-TTY keystrokes:
+  // what this test protects is that every phase RENDERS correctly against the
+  // real SessionController (step counters, honest preview pane, progress,
+  // completion), and that contract is deterministic. Keystroke→handler wiring
+  // is covered one binding per render in the suite below — the old monolithic
+  // keystroke drive let a single dropped write wedge every later phase, which
+  // is exactly the CI flake this split retires.
+  it("renders prompt sequence → preview/confirm → completion", async () => {
     const c = new SessionController(gen);
-    const { lastFrame, stdin, unmount } = render(<Wizard controller={c} />);
+    const { lastFrame, unmount } = render(<Wizard controller={c} />);
     const frame = (): string => lastFrame() ?? "";
-    // On a timeout, show the state the wizard was wedged in — this failure
-    // has only ever reproduced on loaded CI runners, so the error text is the
-    // one diagnostic that comes back from there.
-    const wedged = (): string => {
-      const s = c.getSnapshot();
-      return `phase=${s.phase} answers=${JSON.stringify(s.answers)} frame:\n${frame()}`;
-    };
     try {
-      await waitFor(() => frame().includes("component/react"), 30000, wedged);
+      await waitFor(() => frame().includes("component/react"));
 
       // 1. Text prompt with a step counter.
-      void c.request(text("componentPath", "Component path:"));
+      const first = c.request(text("componentPath", "Component path:"));
       await waitFor(
         () =>
           frame().includes("Component path:") &&
           frame().includes("Step 1 of 2"),
-        30000,
-        wedged,
       );
-      // Type the value with the sentinel-probe helper — the text write races
-      // the useInput subscription just like the keystrokes, and a partial
-      // drop plus re-send would submit a garbled value. Then re-send Enter
-      // until the answer lands.
-      await typeExactly(stdin, frame, "src/components/Button", wedged);
-      await pressUntil(
-        stdin,
-        "\r",
-        () => c.getSnapshot().answers.componentPath === "src/components/Button",
-        30000,
-        wedged,
-      );
+      c.submitAnswer("src/components/Button");
+      await expect(first).resolves.toBe("src/components/Button");
 
-      // 2. Confirm prompt (submits immediately on "y").
-      void c.request(confirm("withStyles", "Include styles?"));
-      await waitFor(() => frame().includes("Step 2 of 2"), 30000, wedged);
-      await pressUntil(
-        stdin,
-        "y",
-        () => c.getSnapshot().answers.withStyles === true,
-        30000,
-        wedged,
-      );
+      // 2. Confirm prompt advances the step counter.
+      const second = c.request(confirm("withStyles", "Include styles?"));
+      await waitFor(() => frame().includes("Step 2 of 2"));
+      c.submitAnswer(true);
+      await expect(second).resolves.toBe(true);
 
-      // 3. The confirm GATE — the wizard shows the preview + "Proceed?".
-      void c.request(gate());
-      await waitFor(
-        () => frame().includes("Proceed?") && /File.*to create/.test(frame()),
-        30000,
-        wedged,
-      );
-      await pressUntil(
-        stdin,
-        "y",
-        () => c.getSnapshot().phase === "executing",
-        30000,
-        wedged,
-      );
+      // 3. The confirm GATE — the wizard shows the honest preview + "Proceed?".
+      const gated = c.request(gate());
+      await waitFor(() => frame().includes("Proceed?"));
+      await c.previewSettled();
+      await waitFor(() => /File.*to create/.test(frame()));
+      c.submitConfirm(true);
+      await expect(gated).resolves.toBe(true);
+      expect(c.getSnapshot().phase).toBe("executing");
 
       // 4. Progress + completion.
       c.reportEffectComplete(
@@ -231,7 +206,85 @@ describe("create wizard (PROTECTED)", () => {
     } finally {
       unmount();
     }
-  });
+  }, 20000);
+});
+
+describe("keyboard bindings (one prompt, one render each)", () => {
+  // Each test renders a single prompt and sends the fewest keystrokes that
+  // prove the component→controller wiring. Fresh render per test: a dropped
+  // write can only ever cost a resend inside that test's own helper, never
+  // wedge a later phase. On a timeout the error carries the wedged state —
+  // these races have only ever reproduced on loaded CI runners, so the error
+  // text is the one diagnostic that comes back from there.
+  const describeWedge =
+    (c: SessionController, frame: () => string) => (): string => {
+      const s = c.getSnapshot();
+      return `phase=${s.phase} answers=${JSON.stringify(s.answers)} frame:\n${frame()}`;
+    };
+
+  it("text prompt: typed value submits on Enter", async () => {
+    const c = new SessionController(gen);
+    const { lastFrame, stdin, unmount } = render(<Wizard controller={c} />);
+    const frame = (): string => lastFrame() ?? "";
+    const wedged = describeWedge(c, frame);
+    try {
+      void c.request(text("componentPath", "Component path:"));
+      await waitFor(() => frame().includes("Component path:"), 30000, wedged);
+      await typeExactly(stdin, frame, "src/components/Button", wedged);
+      await pressUntil(
+        stdin,
+        "\r",
+        () => c.getSnapshot().answers.componentPath === "src/components/Button",
+        30000,
+        wedged,
+      );
+    } finally {
+      unmount();
+    }
+  }, 40000);
+
+  it("confirm prompt: 'y' submits true", async () => {
+    const c = new SessionController(gen);
+    const { lastFrame, stdin, unmount } = render(<Wizard controller={c} />);
+    const frame = (): string => lastFrame() ?? "";
+    const wedged = describeWedge(c, frame);
+    try {
+      void c.request(confirm("withStyles", "Include styles?"));
+      await waitFor(() => frame().includes("Include styles?"), 30000, wedged);
+      await pressUntil(
+        stdin,
+        "y",
+        () => c.getSnapshot().answers.withStyles === true,
+        30000,
+        wedged,
+      );
+    } finally {
+      unmount();
+    }
+  }, 40000);
+
+  it("the gate: 'y' proceeds to executing", async () => {
+    const c = new SessionController(gen, undefined, undefined, {
+      componentPath: "src/components/Button",
+      withStyles: true,
+    });
+    const { lastFrame, stdin, unmount } = render(<Wizard controller={c} />);
+    const frame = (): string => lastFrame() ?? "";
+    const wedged = describeWedge(c, frame);
+    try {
+      void c.request(gate());
+      await waitFor(() => frame().includes("Proceed?"), 30000, wedged);
+      await pressUntil(
+        stdin,
+        "y",
+        () => c.getSnapshot().phase === "executing",
+        30000,
+        wedged,
+      );
+    } finally {
+      unmount();
+    }
+  }, 40000);
 });
 
 describe("cancelled frame is truthful about files written (H2)", () => {
