@@ -290,7 +290,7 @@ export function buildProgram(
   program.enablePositionalOptions();
   program.exitOverride();
   useDesignedHelp(program, () =>
-    formatRootHelp(programName, description, live),
+    formatRootHelp(programName, description, live, version),
   );
 
   const groups = new Map<string, VerbSpec[]>();

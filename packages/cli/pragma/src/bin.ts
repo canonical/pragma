@@ -203,7 +203,7 @@ async function main(): Promise<void> {
       .flatMap((module) => [...module.verbs])
       .filter((verb) => !verb.hidden);
     process.stdout.write(
-      `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live)}\n`,
+      `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live, VERSION)}\n`,
     );
     // The front door is a read, so it is where the un-set-up hint belongs: the
     // machine's state is the presence of the global config, and nothing is

@@ -212,6 +212,7 @@ const lookupSchema = z
     description: z.string().optional(),
     toolDescription: z.string().optional(),
     types: z.array(term).min(1).optional(),
+    weights: z.record(term, z.number().min(0).max(1)).optional(),
     graphqlType: graphqlName.optional(),
     fields: z.array(fieldSchema).min(1).optional(),
     sections: z.array(sectionSchema).min(1).optional(),
@@ -330,6 +331,22 @@ function refineLookup(
       message: '"lookup.type" and "lookup.types" are mutually exclusive.',
       path: ["lookup"],
     });
+  }
+
+  // A weight naming a type the lookup does not address can never apply. Reject
+  // it rather than ignore it — a silent no-op is how a stale weight survives a
+  // rename (the type moves, the weight stays, and nothing says so).
+  const addressed = new Set<string>(
+    lookup.types ?? (lookup.type ? [lookup.type] : []),
+  );
+  for (const named of Object.keys(lookup.weights ?? {})) {
+    if (!addressed.has(named)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `"lookup.weights" names "${named}", which is not in "lookup.type"/"lookup.types".`,
+        path: ["lookup", "weights"],
+      });
+    }
   }
 
   if (source === "graphql" && !lookup.graphqlType && !lookup.type) {

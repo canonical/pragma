@@ -61,6 +61,8 @@ function declaredCompletion(value: unknown): Record<string, unknown> | null {
 export const rawConfigSchema = z.object({
   name: z.string().min(1).optional(),
   help: z.string().min(1).optional(),
+  // Identity, like `name`/`help`: the wordmark root `--help` opens with.
+  logo: z.array(z.string()).optional(),
   // Declared toolchain content: the `colophon` verb renders whatever the
   // distribution declares here (markdown body + optional condensed summary).
   colophon: z
