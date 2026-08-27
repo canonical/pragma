@@ -15,6 +15,13 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     // `collectColophon` reads exactly this object. Pin the shape and the two
     // stable fragments — the story's own subject and the maker line the old
     // one-line `colophon` string carried (folded in when the field went live).
+    //
+    // DOMAIN FIRST: this section is deliberately a one-liner that hands off to
+    // `docs/architecture.md`. `pragma colophon` renders it ABOVE the active
+    // pack's domain colophon, and a reader reaching for the colophon wants the
+    // design system, not the toolchain that serves it. The length pin is the
+    // ruling: architecture prose belongs in the docs, not in front of the
+    // domain every reader came for.
     expect(defaults.colophon?.markdown).toContain("domain-based toolchain");
     expect(defaults.colophon?.markdown).toContain(
       "Made by the Canonical Webteam — https://canonical.com.",
@@ -23,6 +30,10 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     // Bodies, not documents: the renderer supplies the H1 from the name.
     expect(defaults.colophon?.markdown.startsWith("#")).toBe(false);
     expect(defaults.colophon?.summary?.startsWith("#")).toBe(false);
+    // The handoff, and the brevity that makes it honest (see the note above).
+    expect(defaults.colophon?.markdown).toContain("docs/architecture.md");
+    expect(defaults.colophon?.markdown.length).toBeLessThan(400);
+    expect(defaults.colophon?.summary?.length).toBeLessThan(400);
   });
 
   it("ships the four canonical default packs (git+https sources)", () => {
