@@ -311,10 +311,12 @@ describe("removeMcpConfig", () => {
     expect(written).toEqual({ theme: "dark" });
   });
 
-  it("REMOVES a config file whose only content was the entry", () => {
-    // The sharpest case: `setup mcp` CREATED this file, so undoing the setup
-    // must leave the filesystem as it found it. Writing `{}` back left an
-    // empty husk that the user then has to notice and delete.
+  it("NEVER removes a file it did not create, however empty it becomes", () => {
+    // Emptiness cannot establish ownership. A user may have had an empty `{}`
+    // config already — and for `.mcp.json` that empty file is itself a
+    // harness-detection signal, so deleting it would change what `doctor`
+    // sees. Removal is decided by the forward write's branch instead; this
+    // path only ever subtracts.
     const result = dryRunWith(
       removeMcpConfig(claude, "/project", "pragma"),
       buildMocks({
@@ -324,8 +326,30 @@ describe("removeMcpConfig", () => {
       }),
     );
 
-    expect(filterEffects(result.effects, "WriteFile")).toHaveLength(0);
-    expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(1);
+    expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    const written = JSON.parse(
+      filterEffects(result.effects, "WriteFile")[0].content,
+    );
+    expect(written).toEqual({});
+  });
+
+  it("removes no file on any path — ownership is not inferable here", () => {
+    // Guards the boundary this function deliberately stops at. Emptiness does
+    // not prove we created the file, and the forward write's `exists` branch
+    // cannot supply provenance either: the undo re-walk sees a file that
+    // exists by then, so it always takes the merge branch. Deleting from this
+    // path would be a guess about somebody else's config.
+    for (const content of ["{}", '{"mcpServers":{"pragma":{}}}']) {
+      const result = dryRunWith(
+        removeMcpConfig(claude, "/project", "pragma"),
+        buildMocks({
+          Exists: existsMock(() => true),
+          ReadFile: readFileMock(content),
+          WriteFile: writeMock,
+        }),
+      );
+      expect(filterEffects(result.effects, "DeleteFile")).toHaveLength(0);
+    }
   });
 
   it("keeps the container, and the file, when another server remains", () => {

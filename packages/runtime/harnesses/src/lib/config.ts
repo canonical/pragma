@@ -13,7 +13,6 @@
 
 import { dirname } from "node:path";
 import {
-  deleteFile,
   exists,
   failWith,
   flatMap,
@@ -325,32 +324,32 @@ export const removeMcpConfigFrom = (
       const servers = asServerRecord(parsed[target.mcpKey]);
       delete servers[serverName];
 
-      // UNDO RESTORES THE PRIOR STATE, it does not merely subtract an entry.
-      // Reassigning the container unconditionally left `{"mcpServers": {}}`
-      // where the user had no such key — and, for a config this command
-      // CREATED, left the file itself behind as an empty husk. Neither is the
-      // reversal `--undo` promises.
+      // Drop the container when our entry was the last one in it, rather than
+      // writing `{"mcpServers": {}}` back into a file that had no such key.
       //
-      // Undo collection walks the forward task with its effects mocked, so
-      // there is no record here of what the file looked like before the
-      // install. Emptiness is the available proxy, and it is a faithful one in
-      // every case that matters: a container we are the last entry in was one
-      // we created, and an object with nothing else in it was a file we wrote.
+      // The FILE is never removed, however empty it becomes.
       //
-      // The one over-reach is a user who had written `"mcpServers": {}`
-      // themselves, whose empty key we remove. An absent map and an empty map
-      // say the same thing to every harness that reads one, so that costs
-      // nothing — while leaving a husk where nothing was is a visible lie
-      // about what this command did.
+      // Emptiness cannot establish that we created it: a user may have had an
+      // empty `{}` config already, and for `.mcp.json` that empty file is
+      // itself a harness-detection SIGNAL, so removing it would change what
+      // `doctor` sees. Nor can the forward write's `exists` branch serve as
+      // provenance, tempting as it looks: undo collection re-walks the forward
+      // task with its effects MOCKED, and by then the file DOES exist, so the
+      // walk takes the merge branch whichever branch originally ran. Measured,
+      // not assumed — a `deleteFile` hung on the create branch never fires.
+      //
+      // Removing a file this command created therefore needs provenance
+      // RETAINED from the install (a receipt naming what was created), which
+      // is a design change rather than a patch. Until then the container key
+      // is cleaned up and the file is left: a stray `{}` costs far less than
+      // deleting a config somebody else wrote.
       if (Object.keys(servers).length > 0) {
         parsed[target.mcpKey] = servers;
       } else {
         delete parsed[target.mcpKey];
       }
 
-      return Object.keys(parsed).length === 0
-        ? deleteFile(target.path)
-        : writeFile(target.path, formatJson(parsed));
+      return writeFile(target.path, formatJson(parsed));
     }),
     pure(undefined),
   );
