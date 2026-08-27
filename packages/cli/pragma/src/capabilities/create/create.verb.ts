@@ -161,6 +161,13 @@ const APPLICATION_MIRROR: PromptDefinition[] = [
     default: true,
   },
   {
+    name: "withIntl",
+    type: "confirm",
+    message:
+      "Include internationalisation (locale negotiation, translated UI, locale switcher)?",
+    default: false,
+  },
+  {
     name: "withRelay",
     type: "confirm",
     message: "Include a Relay (GraphQL) data layer?",
@@ -194,6 +201,7 @@ export const INCLUDE_FLAG_ALIASES: Record<
     withSsr: "ssr",
     withRouter: "router",
     withForms: "forms",
+    withIntl: "intl",
     withRelay: "relay",
   },
 };

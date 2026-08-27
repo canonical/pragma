@@ -96,6 +96,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 | `withSsr` | boolean | no | Include SSR. (default: true) |
 | `withRouter` | boolean | no | Include router. (default: true) |
 | `withForms` | boolean | no | Include form components. (default: true) |
+| `withIntl` | boolean | no | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
 | `withRelay` | boolean | no | Include a Relay (GraphQL) data layer. (default: false) |
 | `runInstall` | boolean | no | Install dependencies now. (default: false) |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |

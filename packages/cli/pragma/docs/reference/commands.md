@@ -188,6 +188,7 @@ pragma create application [appPath] [options]
 | `--with-ssr` | — | Include SSR. (default: true) |
 | `--with-router` | — | Include router. (default: true) |
 | `--with-forms` | — | Include form components. (default: true) |
+| `--with-intl` | — | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
 | `--with-relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
 | `--run-install` | — | Install dependencies now. (default: false) |
 
