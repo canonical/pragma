@@ -29,8 +29,8 @@ const BANDED_DATA: DoctorData = {
     },
     {
       name: "MCP configured",
-      status: "fail",
-      detail: "detected Windsurf but pragma not configured",
+      status: "available",
+      detail: "not set up for Windsurf",
       remedy: "pragma setup mcp",
       band: "global",
     },
@@ -42,11 +42,12 @@ const BANDED_DATA: DoctorData = {
     },
   ],
   passed: 2,
-  failed: 1,
+  failed: 0,
+  available: 1,
   skipped: 1,
 };
 
-/** A fixture spanning pass/fail/skip, sub-items, and a remedy — every color path. */
+/** A fixture spanning every status tier, sub-items, and remedies — every color path. */
 const COLOR_DATA: DoctorData = {
   checks: [
     { name: "Node version", status: "pass", detail: "v24" },
@@ -60,10 +61,17 @@ const COLOR_DATA: DoctorData = {
       ],
       remedy: "pragma sources update",
     },
+    {
+      name: "Shell completions",
+      status: "available",
+      detail: "resolver OK; zsh script not installed",
+      remedy: "pragma setup completions",
+    },
     { name: "Skills symlinked", status: "skip", detail: "no harness" },
   ],
   passed: 1,
   failed: 1,
+  available: 1,
   skipped: 1,
 };
 
@@ -112,7 +120,7 @@ describe("doctor render — banded plain report", () => {
     expect(at("Global")).toBeLessThan(at("Shell completions"));
     expect(at("MCP configured")).toBeLessThan(at("Project"));
     expect(at("Project")).toBeLessThan(at("Skills symlinked"));
-    // A failing banded check keeps its inline remedy under its band.
+    // An available banded check keeps its inline setup command under its band.
     expect(out).toContain("fix: pragma setup mcp");
     // The tally closes the report.
     expect(out).toContain("2 passed");
@@ -131,7 +139,7 @@ describe("doctor render — banded llm report", () => {
     expect(at("### Global")).toBeLessThan(at("Shell completions"));
     expect(at("Shell completions")).toBeLessThan(at("### Project"));
     expect(at("### Project")).toBeLessThan(at("Skills symlinked"));
-    expect(out).toContain("_2 passed, 1 failed, 1 skipped_");
+    expect(out).toContain("_2 passed, 0 failed, 1 available, 1 skipped_");
   });
 });
 
@@ -152,9 +160,12 @@ describe("doctor render — piped output is ANSI-free (F1)", () => {
       expect(out).toContain("pragma doctor");
       expect(out).toContain("✓  Node version");
       expect(out).toContain("✗  pack refs");
+      expect(out).toContain("◇  Shell completions");
       expect(out).toContain("○  Skills symlinked");
       expect(out).toContain("↳ fix: pragma sources update");
-      expect(out).toContain("  1 passed · 1 failed · 1 skipped");
+      // The available tier keeps its setup command inline, like a fail's fix.
+      expect(out).toContain("↳ fix: pragma setup completions");
+      expect(out).toContain("  1 passed · 1 failed · 1 available · 1 skipped");
     });
   });
 });

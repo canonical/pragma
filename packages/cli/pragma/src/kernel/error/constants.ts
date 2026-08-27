@@ -25,7 +25,7 @@ const ERROR_CODES = [
   "CONFIG_ERROR",
   "INTERNAL_ERROR",
   // A runtime condition that is NOT a bug and NOT a usage mistake, so it must
-  // NOT collapse to INTERNAL_ERROR's "please report this issue": a capability
+  // NOT collapse to INTERNAL_ERROR's "report this issue": a capability
   // genuinely unavailable in this environment (`create` refusing when its
   // lazily-imported generator runtime cannot be loaded at all — the
   // module-not-found backstop in `capabilities/create/create.verb.ts`, which

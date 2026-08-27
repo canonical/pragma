@@ -6,7 +6,7 @@
  * `MISSING_REQUIRED_ANSWER` / `GENERATOR_INVALID_ANSWER` for absent or invalid
  * non-interactive answers. `runTask` rethrows these as a `TaskExecutionError`
  * carrying `.code`. Without a bridge the CLI/MCP boundary collapses every
- * non-`PragmaError` to INTERNAL_ERROR + "please report this issue" — telling a
+ * non-`PragmaError` to INTERNAL_ERROR + "report this issue" — telling a
  * user to file a bug for cancelling their own scaffold.
  *
  * The codes are matched as STRING LITERALS, never imported from summon-core, so

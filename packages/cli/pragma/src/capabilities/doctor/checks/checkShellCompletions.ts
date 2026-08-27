@@ -97,10 +97,16 @@ async function completeProbe(cwd: string): Promise<number> {
  * 3. For zsh, `~/.zfunc` is on `$fpath` — the activation step setup can only
  *    hint. Installed-but-unwired reports a distinct remedy.
  *
+ * Fault tiers: a broken resolver, a stale installed script, or an unwired zsh
+ * install are `fail` — something that exists does not work. A script that was
+ * never installed is `available`: completions are opt-in and a fresh install
+ * is healthy without them.
+ *
  * @param cwd - The project directory (the resolver's entity seam, and the
  *   `completion` config gate 2 renders this project's body from).
- * @returns A CheckResult: pass (up to date + wired + answering), fail (with the
- *   attributable remedy), or skip (shell undetected).
+ * @returns A CheckResult: pass (up to date + wired + answering), available
+ *   (never installed, with the setup remedy), fail (with the attributable
+ *   remedy), or skip (shell undetected).
  * @note Impure — reads `$SHELL`, the install path, the config layers, `.zshrc`,
  *   and drives the storeless resolver.
  */
@@ -137,9 +143,13 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
     };
   }
   if (state === "absent") {
+    // Never installed is `available`, not a fault: completions are opt-in and
+    // a fresh install is healthy without them. An INSTALLED script that is
+    // out of date or unwired (below) is the real failure — something the user
+    // set up no longer works.
     return {
       name: NAME,
-      status: "fail",
+      status: "available",
       detail: `resolver OK; ${shell} script not installed`,
       remedy: INSTALL_REMEDY,
     };

@@ -102,7 +102,7 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
   const url = `${pathToFileURL(path).href}?v=${key}`;
   // Evaluating real TypeScript can throw for reasons `parseRawConfig` never sees:
   // a syntax error, a bad import, or a top-level throw in the config module. Left
-  // unwrapped, that raw throw collapses to INTERNAL_ERROR ("please report this
+  // unwrapped, that raw throw collapses to INTERNAL_ERROR ("report this
   // issue") on EVERY command that reads config. Name it: a CONFIG_ERROR that
   // identifies the offending file and the underlying reason.
   let module: { default?: unknown };
@@ -127,7 +127,7 @@ export async function evaluateProjectConfig(path: string): Promise<RawConfig> {
       );
     }
     throw PragmaError.configError(
-      `Could not load project config ${path}: ${reason}`,
+      `Cannot load project config ${path}: ${reason}`,
       {
         recovery: {
           message: `Fix the error in your ${PROJECT_CONFIG_FILENAME} (it must evaluate to a default export), then try again.`,

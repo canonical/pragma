@@ -59,7 +59,7 @@ function buildChecks(
     [`${BIN_NAME} version`, checkPragmaVersion(rt)],
     [`${BIN_NAME} config`, checkConfigFile(rt)],
     ["pack refs", checkPackageRefs(rt)],
-    ["ke store", checkKeStore(rt)],
+    ["store", checkKeStore(rt)],
     ["Shell completions", checkShellCompletions(rt.cwd)],
     ["MCP configured", checkMcpConfigured(rt.cwd)],
     ["MCP commands", checkMcpCommands(rt.cwd)],
@@ -95,6 +95,7 @@ export async function runChecks(rt: PragmaRuntime): Promise<DoctorData> {
     checks,
     passed: checks.filter((c) => c.status === "pass").length,
     failed: checks.filter((c) => c.status === "fail").length,
+    available: checks.filter((c) => c.status === "available").length,
     skipped: checks.filter((c) => c.status === "skip").length,
   };
 }

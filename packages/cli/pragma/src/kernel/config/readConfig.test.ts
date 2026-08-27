@@ -461,7 +461,7 @@ describe("evaluateProjectConfig — mtime+VERSION cache", () => {
     freshXdg();
     // A malformed project config: references an undefined symbol → the module
     // throws at evaluation. Left unwrapped this collapsed to INTERNAL_ERROR
-    // ("please report this issue") on EVERY command that reads config.
+    // ("report this issue") on EVERY command that reads config.
     const dir = projectWith("export default { tier: definitelyNotDefined };");
     const path = join(dir, "pragma.config.ts");
 

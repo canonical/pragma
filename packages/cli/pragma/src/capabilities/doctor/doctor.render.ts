@@ -17,10 +17,17 @@ import type { Formatters } from "../../kernel/spec/types.js";
 import { BAND_LABELS } from "../shared/bands.js";
 import type { CheckResult, CheckStatus, DoctorData } from "./types.js";
 
-/** Uncolored status glyphs — tinted at render time (never baked at module load). */
+/**
+ * Uncolored status glyphs — tinted at render time (never baked at module load).
+ * `available` gets its own glyph, distinct from ✗: an opt-in integration that
+ * is not set up is not a fault, and rendering it as one would train users to
+ * ignore the failure count. The glyph pairs with the word in the tally, so the
+ * distinction survives with color stripped.
+ */
 const STATUS_GLYPHS: Record<CheckStatus, string> = {
   pass: "✓",
   fail: "✗",
+  available: "◇",
   skip: "○",
 };
 
@@ -48,11 +55,16 @@ function doctorStyle(): DoctorStyle {
   };
 }
 
-/** Tint a status glyph by meaning — green pass, red fail, yellow skip. */
+/**
+ * Tint a status glyph by meaning — green pass, red fail, cyan available
+ * (actionable-but-optional, the same tint as the `fix:` arrow it points at),
+ * yellow skip.
+ */
 function paintGlyph(status: CheckStatus, style: DoctorStyle): string {
   const glyph = STATUS_GLYPHS[status];
   if (status === "pass") return style.green(glyph);
   if (status === "fail") return style.red(glyph);
+  if (status === "available") return style.cyan(glyph);
   return style.yellow(glyph);
 }
 
@@ -89,7 +101,12 @@ function formatCheckPlain(
     }
   }
 
-  if (check.status === "fail" && check.remedy) {
+  // Both actionable tiers keep their inline instruction: a fail's remedy is
+  // the repair, an available's remedy is the setup command that enables it.
+  if (
+    (check.status === "fail" || check.status === "available") &&
+    check.remedy
+  ) {
     lines.push(
       `${INDENT}${style.cyan(FIX_ARROW)} ${style.cyan("fix:")} ${check.remedy}`,
     );
@@ -98,13 +115,22 @@ function formatCheckPlain(
   return lines;
 }
 
-/** Render the pass/fail/skip tally, coloring non-zero fail/skip. */
+/**
+ * Render the pass/fail/available/skip tally, coloring the non-zero counts.
+ * `available` is counted apart from `failed` so a healthy install with
+ * integrations left to opt into never reports failures it does not have.
+ */
 function formatSummary(data: DoctorData, style: DoctorStyle): string {
   const parts = [style.green(`${data.passed} passed`)];
   parts.push(
     data.failed > 0
       ? style.red(`${data.failed} failed`)
       : style.dim(`${data.failed} failed`),
+  );
+  parts.push(
+    data.available > 0
+      ? style.cyan(`${data.available} available`)
+      : style.dim(`${data.available} available`),
   );
   parts.push(
     data.skipped > 0
@@ -155,22 +181,20 @@ export const doctorFormatters: Formatters<DoctorData> = {
 
   llm(data) {
     const renderCheck = (check: CheckResult): string[] => {
-      const icon =
-        check.status === "pass" ? "✓" : check.status === "fail" ? "✗" : "○";
-      const out = [`- ${icon} **${check.name}**: ${check.detail}`];
+      const out = [
+        `- ${STATUS_GLYPHS[check.status]} **${check.name}**: ${check.detail}`,
+      ];
       for (const item of check.items ?? []) {
-        const itemIcon =
-          item.status === "pass"
-            ? "✓ "
-            : item.status === "fail"
-              ? "✗ "
-              : item.status === "skip"
-                ? "○ "
-                : "";
+        const itemIcon = item.status ? `${STATUS_GLYPHS[item.status]} ` : "";
         const detail = item.detail ? `: ${item.detail}` : "";
         out.push(`  - ${itemIcon}${item.label}${detail}`);
       }
-      if (check.status === "fail" && check.remedy) {
+      // Same rule as the plain path: fail and available both carry their
+      // inline instruction (the repair, or the setup command).
+      if (
+        (check.status === "fail" || check.status === "available") &&
+        check.remedy
+      ) {
         out.push(`  - _fix:_ \`${check.remedy}\``);
       }
       return out;
@@ -188,7 +212,7 @@ export const doctorFormatters: Formatters<DoctorData> = {
     section(BAND_LABELS.project, project);
     lines.push(
       "",
-      `_${data.passed} passed, ${data.failed} failed, ${data.skipped} skipped_`,
+      `_${data.passed} passed, ${data.failed} failed, ${data.available} available, ${data.skipped} skipped_`,
     );
     return lines.join("\n");
   },

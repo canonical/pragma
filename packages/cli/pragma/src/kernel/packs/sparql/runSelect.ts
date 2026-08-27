@@ -79,7 +79,7 @@ function unboundPrefixError(source: StorySource): PragmaError {
  * Run the facade query, remapping a store that cannot answer it. A generated
  * query hitting an unknown prefix surfaces an actionable error — chosen by the
  * story's provenance, see {@link unboundPrefixError} — instead of a raw SPARQL
- * "Prefix not found" wrapped as INTERNAL_ERROR ("please report this issue").
+ * "Prefix not found" wrapped as INTERNAL_ERROR ("report this issue").
  * Returns the inferred facade result type, so this module stays clear of a
  * static `@canonical/ke` import (the lazy-dispatch guard).
  */
