@@ -12,7 +12,7 @@ import {
   opencodeMcpEntry,
   opendesignMcpEntry,
 } from "./mcpEntries.js";
-import { userHome } from "./platformPaths.js";
+import { userHome, xdgConfigHome } from "./platformPaths.js";
 import type { HarnessDefinition } from "./types.js";
 
 const harnesses: readonly HarnessDefinition[] = [
@@ -116,12 +116,15 @@ const harnesses: readonly HarnessDefinition[] = [
     scope: "both",
     detect: [
       { type: "file", path: "opencode.json" },
-      { type: "directory", path: "~/.config/opencode" },
+      { type: "directory", path: "$XDG_CONFIG_HOME/opencode" },
       { type: "process", name: "opencode" },
     ],
     configPath: (root) => `${root}/opencode.json`,
-    // VERIFY(7h): the global config path, per the docs above.
-    homeConfigPath: (p) => `${userHome(p)}/.config/opencode/opencode.json`,
+    // VERIFY(7h): the global config path, per the docs above. Through
+    // `xdgConfigHome`, not `userHome`: `~/.config/<tool>` is the XDG
+    // convention, so a user with `$XDG_CONFIG_HOME` set keeps it elsewhere and
+    // writing under home would install into a file OpenCode never reads.
+    homeConfigPath: (p) => `${xdgConfigHome(p)}/opencode/opencode.json`,
     configFormat: "json",
     mcpKey: "mcp",
     // OpenCode's schema (https://opencode.ai/config.json, $defs.McpLocalConfig)

@@ -22,7 +22,7 @@ import {
 } from "@canonical/task";
 import editorClis from "./editors.js";
 import { executableCandidates } from "./executablePaths.js";
-import { type PlatformEnv, userHome } from "./platformPaths.js";
+import { type PlatformEnv, userHome, xdgConfigHome } from "./platformPaths.js";
 import type { DetectionSignal } from "./types.js";
 
 /** The context threaded through every signal check: the project root + host. */
@@ -41,14 +41,31 @@ export const CONFIDENCE_RANK: Record<Confidence, number> = {
   low: 2,
 };
 
+/** The literal prefix marking a signal path as XDG-config-relative. */
+const XDG_CONFIG_PREFIX = "$XDG_CONFIG_HOME/";
+
 /**
- * Resolve a directory/file signal path: a `~/…` path against the platform home,
- * anything else against the project root.
+ * Resolve a directory/file signal path: a `$XDG_CONFIG_HOME/…` path against the
+ * XDG config base, a `~/…` path against the platform home, anything else
+ * against the project root.
+ *
+ * The XDG form is spelled out rather than written `~/.config/…` because the two
+ * are NOT the same directory: a user who sets `$XDG_CONFIG_HOME` keeps nothing
+ * under `~/.config`, and resolving against home would report the harness absent
+ * and skip it. A tool documenting `~/.config/<tool>` is following the XDG
+ * convention and should be declared in this form.
  */
-const resolveFsPath = (path: string, ctx: DetectContext): string =>
-  path.startsWith("~/")
+const resolveFsPath = (path: string, ctx: DetectContext): string => {
+  if (path.startsWith(XDG_CONFIG_PREFIX)) {
+    return join(
+      xdgConfigHome(ctx.platform),
+      path.slice(XDG_CONFIG_PREFIX.length),
+    );
+  }
+  return path.startsWith("~/")
     ? join(userHome(ctx.platform), path.slice(2))
     : join(ctx.projectRoot, path);
+};
 
 /**
  * Check a `process` signal: whether `name` resolves on the platform `PATH` (on
