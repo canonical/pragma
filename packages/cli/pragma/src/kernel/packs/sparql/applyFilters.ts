@@ -6,7 +6,8 @@
  * preserved. With declared `values` the input is canonicalized against the set
  * (NFC, case-insensitive) and rows are matched case-insensitively; without them
  * the input is a free term matched the same way. A row lacking the variable never
- * matches. Several filters combine conjunctively.
+ * matches. Several filters combine conjunctively; several values for one
+ * filter (a repeated flag) combine as a union.
  */
 
 import { PragmaError } from "../../error/PragmaError.js";
@@ -29,23 +30,21 @@ export function applyPackFilters(
   for (const filter of filters ?? []) {
     const provided = params[filter.param];
     if (provided === undefined) continue;
+    // A repeated CLI flag accumulates into an array; MCP args stay scalar.
+    // Several values for ONE filter are a union (a row matches any of them);
+    // several filters still combine conjunctively.
+    const occurrences = Array.isArray(provided) ? provided : [provided];
+    if (occurrences.length === 0) continue;
     const values = filter.values;
-    if (values === undefined) {
-      const term = requireStringValue(provided, filter).toLowerCase();
-      result = result.filter(
-        (row) => row[filter.variable]?.normalize("NFC").toLowerCase() === term,
-      );
-      continue;
-    }
-    const canonical = canonicalizeFilterValue(
-      provided,
-      filter,
-      values,
-    ).toLowerCase();
-    result = result.filter(
-      (row) =>
-        row[filter.variable]?.normalize("NFC").toLowerCase() === canonical,
+    const terms = occurrences.map((occurrence) =>
+      values === undefined
+        ? requireStringValue(occurrence, filter).toLowerCase()
+        : canonicalizeFilterValue(occurrence, filter, values).toLowerCase(),
     );
+    result = result.filter((row) => {
+      const cell = row[filter.variable]?.normalize("NFC").toLowerCase();
+      return cell !== undefined && terms.includes(cell);
+    });
   }
   return result;
 }

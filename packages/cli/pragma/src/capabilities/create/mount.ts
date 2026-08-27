@@ -47,6 +47,7 @@ import type { Task } from "@canonical/task";
 import { type Command, CommanderError } from "commander";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import { renderErrorForFormat } from "../../kernel/error/renderError.js";
+import { MUTATION_FLAG_DOCS } from "../../kernel/project/cli/constants.js";
 import {
   cliIsTTY,
   dispatchPrepared,
@@ -75,12 +76,15 @@ interface SurfaceEntry {
 
 /** The mount's standard-flag rows for the grouped-help Global Options block. */
 const MOUNT_FLAG_HELP: HostFlags = [
-  { flags: "--dry-run", description: "Preview effects without applying them" },
-  { flags: "--undo", description: "Reverse a previous run of this command" },
-  { flags: "--yes", description: "Apply without an interactive confirmation" },
-  // The kernel's own `--help` row (rootHelp.ts), not Commander's phrasing —
-  // one voice across every help page (the unadvertised `-h` short form stays
-  // parsed, exactly as it is at the root).
+  // The kernel's own mutation-flag rows (one authoring point with
+  // registration and verb help), then its `--help` row (rootHelp.ts), not
+  // Commander's phrasing — one voice across every help page, and `--help`
+  // is the only spelling (the subtree inherits the root's long-only help
+  // option).
+  ...MUTATION_FLAG_DOCS.map(({ flag, doc }) => ({
+    flags: flag,
+    description: doc,
+  })),
   { flags: "--help", description: "Show help (works on any command)" },
 ];
 
@@ -245,10 +249,9 @@ export function mountCreateTree(parent: Command, host: CliMountHost): void {
       // Reset the designed-help suppression a Commander child inherits from
       // the root program; grouped help re-configures the leaves right after.
       cmd.configureHelp({});
-      cmd
-        .option("--dry-run", "Preview effects without applying them")
-        .option("--undo", "Reverse a previous run of this command")
-        .option("--yes", "Apply without an interactive confirmation");
+      for (const { flag, doc } of MUTATION_FLAG_DOCS) {
+        cmd.option(flag, doc);
+      }
     },
     helpFlags: MOUNT_FLAG_HELP,
     // The seam's presentation half: the projection's structure, pragma's

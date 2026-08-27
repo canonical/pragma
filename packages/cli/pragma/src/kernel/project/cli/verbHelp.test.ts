@@ -60,8 +60,38 @@ const selfVerb: VerbSpec = {
   run: async () => null,
 };
 
+/** A mutating verb with a default-true boolean, for the injected-flag rows. */
+const mutating: VerbSpec = {
+  path: ["thing", "make"],
+  summary: "Make a thing.",
+  params: [
+    {
+      kind: "boolean",
+      name: "withStyles",
+      doc: "Include styles.",
+      default: true,
+    },
+  ],
+  output: { formatters: passthrough },
+  capability: { needsStore: false, mutates: true, mcp: { expose: true } },
+  run: async () => null,
+};
+
 describe("formatVerbHelp", () => {
   const help = formatVerbHelp("pragma", get);
+
+  it("renders every flag the command parses: negations and mutation flags", () => {
+    // Help derives from the same spec facts registration reads, so a page
+    // can never deny a flag that works.
+    const mutatingHelp = formatVerbHelp("pragma", mutating);
+    expect(mutatingHelp).toContain("--with-styles");
+    expect(mutatingHelp).toContain("--no-with-styles");
+    expect(mutatingHelp).toContain("--dry-run");
+    expect(mutatingHelp).toContain("--undo");
+    expect(mutatingHelp).toContain("--yes");
+    // A read verb keeps its Flags block free of mutation rows.
+    expect(help).not.toContain("--dry-run");
+  });
 
   it("renders the usage line with the positional", () => {
     expect(help).toContain("Usage: pragma block get <name> [flags]");

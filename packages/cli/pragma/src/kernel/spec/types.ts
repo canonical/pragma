@@ -111,6 +111,14 @@ export type ParamSpec =
       default?: unknown;
       positional?: boolean;
       complete?: ParamComplete;
+      /**
+       * A repeatable flag ACCUMULATES: `--category css --category git` is
+       * the union, never last-wins (repetition is the sanctioned multi-value
+       * form, and silently dropping all but the last value is data loss).
+       * CLI-side only: the MCP arg schema keeps its scalar shape, and the
+       * run body accepts one value or many.
+       */
+      repeatable?: true;
     }
   | {
       kind: "enum";
@@ -121,6 +129,8 @@ export type ParamSpec =
       default?: string;
       positional?: boolean;
       complete?: ParamComplete;
+      /** See the string variant — repeated occurrences accumulate. */
+      repeatable?: true;
     }
   | {
       kind: "string[]";

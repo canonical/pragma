@@ -14,14 +14,20 @@
  */
 
 import type { Command } from "commander";
-import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "./constants.js";
+import {
+  BIN_NAME,
+  DETAIL_LEVELS,
+  PROGRAM_DESCRIPTION,
+  VERSION,
+} from "./constants.js";
 
 /**
  * The flags a bare invocation answers itself. `--version` returns earlier; the
- * help forms fall through to the front door, which IS their answer — so the
- * unknown-flag guard must not mistake them for typos.
+ * help form falls through to the front door, which IS its answer — so the
+ * unknown-flag guard must not mistake it for a typo. One spelling per flag:
+ * no `-h`/`-v` shorts exist anywhere on the surface.
  */
-const ROOT_FLAGS = new Set(["--help", "-h", "--version", "-v"]);
+const ROOT_FLAGS = new Set(["--help", "--version"]);
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -67,44 +73,68 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { parseGlobalFlags, readRawFormat, stripGlobalFlags } = await import(
-    "./kernel/project/cli/globalFlags.js"
-  );
+  const {
+    findValuedVerbose,
+    parseGlobalFlags,
+    readRawDetail,
+    readRawFormat,
+    stripGlobalFlags,
+  } = await import("./kernel/project/cli/globalFlags.js");
   const globalFlags = parseGlobalFlags(argv);
 
   // 3. `--version` is global — print and exit wherever it appears.
-  if (argv.some((arg) => arg === "--version" || arg === "-v")) {
+  if (argv.some((arg) => arg === "--version")) {
     process.stdout.write(`${VERSION}\n`);
     return;
   }
 
-  // 4. Reject an unknown `--format` early (help still prints regardless).
-  const explicitHelp = argv.some((arg) => arg === "--help" || arg === "-h");
-  const rawFormat = readRawFormat(argv);
-  if (
-    !explicitHelp &&
-    rawFormat !== undefined &&
-    !["plain", "llm", "json", "text"].includes(rawFormat)
-  ) {
-    const [
-      { PragmaError },
-      { renderErrorPlain, renderErrorJson },
-      { mapExitCode },
-    ] = await Promise.all([
-      import("./kernel/error/PragmaError.js"),
-      import("./kernel/error/renderError.js"),
-      import("./kernel/project/cli/exitCodes.js"),
-    ]);
-    const error = PragmaError.invalidInput("format", rawFormat, {
-      validOptions: ["plain", "llm", "json"],
-    });
-    const rendered =
-      globalFlags.format === "json"
-        ? renderErrorJson(error)
-        : renderErrorPlain(error);
-    process.stderr.write(`${rendered}\n`);
-    process.exitCode = mapExitCode(error.code);
-    return;
+  // 4. Reject a bad global-flag value early (help still prints regardless):
+  //    an unknown `--format`, an unrecognized `--detail` level (which used to
+  //    be dropped silently — the same defect class as a filter that
+  //    evaporates), and a valued `--verbose=<x>` (the flag takes no value;
+  //    accepting-and-ignoring one would be a silent no-op).
+  const explicitHelp = argv.some((arg) => arg === "--help");
+  const jsonMode = globalFlags.format === "json";
+  if (!explicitHelp) {
+    const rawFormat = readRawFormat(argv);
+    if (
+      rawFormat !== undefined &&
+      !["plain", "llm", "json"].includes(rawFormat)
+    ) {
+      await rejectGlobalValue(
+        "format",
+        rawFormat,
+        ["plain", "llm", "json"],
+        jsonMode,
+      );
+      return;
+    }
+    const rawDetail = readRawDetail(argv);
+    if (
+      rawDetail !== undefined &&
+      !(DETAIL_LEVELS as readonly string[]).includes(rawDetail)
+    ) {
+      await rejectGlobalValue(
+        "detail",
+        rawDetail,
+        [...DETAIL_LEVELS],
+        jsonMode,
+      );
+      return;
+    }
+    const valuedVerbose = findValuedVerbose(argv);
+    if (valuedVerbose !== undefined) {
+      const { PragmaError } = await import("./kernel/error/PragmaError.js");
+      await renderStartupError(
+        new PragmaError({
+          code: "INVALID_INPUT",
+          message: `\`--verbose\` takes no value; \`${valuedVerbose}\` is not a flag of this program.`,
+          recovery: { message: "Use `--verbose` on its own." },
+        }),
+        jsonMode,
+      );
+      return;
+    }
   }
 
   // 5. First-run onboarding (stderr-only, failure-tolerant). Skipped on the
@@ -235,6 +265,26 @@ async function main(): Promise<void> {
   } catch (error) {
     await handleProgramError(error, argv, globalFlags.format, verbs);
   }
+}
+
+/**
+ * Reject an invalid global-flag value before dispatch: one renderer for the
+ * `--format`/`--detail` guards, so every validated global value flag fails
+ * with the same invalid-input shape and its valid list.
+ */
+async function rejectGlobalValue(
+  name: string,
+  value: string,
+  validOptions: readonly string[],
+  jsonMode: boolean,
+): Promise<void> {
+  const { PragmaError } = await import("./kernel/error/PragmaError.js");
+  await renderStartupError(
+    PragmaError.invalidInput(name, value, {
+      validOptions: [...validOptions],
+    }),
+    jsonMode,
+  );
 }
 
 /**

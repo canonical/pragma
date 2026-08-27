@@ -176,11 +176,10 @@ describe("plain list table contract (headers, rectangular grid, cell discipline)
   });
 
   it("suppresses the header row when the context disables headers", () => {
-    const lines = renderListPlain(
-      widgets,
-      options,
-      { headers: false, stdoutIsTty: true },
-    ).split("\n");
+    const lines = renderListPlain(widgets, options, {
+      headers: false,
+      stdoutIsTty: true,
+    }).split("\n");
     expect(lines[0]).not.toMatch(/^NAME/);
     expect(lines).toHaveLength(widgets.length);
   });
@@ -210,7 +209,10 @@ describe("plain list table contract (headers, rectangular grid, cell discipline)
     const row = lines[1] as string;
     expect(row).not.toContain("\n");
     expect(row).toContain("first line second line");
-    const noteCell = row.trim().split(/\s{2,}/).at(-1) as string;
+    const noteCell = row
+      .trim()
+      .split(/\s{2,}/)
+      .at(-1) as string;
     expect(noteCell.length).toBeLessThanOrEqual(MAX_PLAIN_CELL_WIDTH);
     expect(noteCell.endsWith("…")).toBe(true);
   });

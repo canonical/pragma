@@ -74,6 +74,15 @@ export interface DispatchOutcome {
 
 /** Coerce one raw arg into the type its {@link ParamSpec} declares. */
 function coerceParam(param: ParamSpec, raw: unknown): unknown {
+  // A repeatable flag's collector hands over an array of occurrences; coerce
+  // each element so an enum still validates every value.
+  if (
+    Array.isArray(raw) &&
+    (param.kind === "string" || param.kind === "enum") &&
+    param.repeatable === true
+  ) {
+    return raw.map((value) => coerceParam(param, value));
+  }
   switch (param.kind) {
     case "number": {
       const value = typeof raw === "number" ? raw : Number(raw);
