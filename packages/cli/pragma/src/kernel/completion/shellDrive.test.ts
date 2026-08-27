@@ -351,7 +351,14 @@ const STRUCTURE = [
     at: "pragma block lookup --<TAB>",
     words: ["pragma", "block", "lookup", "--"],
     cword: 3,
-    offers: ["--detail", "--format", "--help", "--verbose"],
+    offers: [
+      "--detail",
+      "--format",
+      "--help",
+      "--no-headers",
+      "--quiet",
+      "--verbose",
+    ],
   },
 ] as const;
 
@@ -575,7 +582,14 @@ describe.skipIf(!hasShell("fish"))(
       const { reply, calls } = driveFish(live.fish, "pragma block lookup --");
       expect(calls).toEqual([]);
       expect(reply.sort()).toEqual(
-        ["--detail", "--format", "--help", "--verbose"].sort(),
+        [
+          "--detail",
+          "--format",
+          "--help",
+          "--no-headers",
+          "--quiet",
+          "--verbose",
+        ].sort(),
       );
     });
 

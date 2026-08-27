@@ -86,6 +86,8 @@ describe("parseWords — flag names (PROTECTED)", () => {
       "--format",
       "--verbose",
       "--detail",
+      "--no-headers",
+      "--quiet",
       "--help",
       "--version",
     ]);
@@ -107,6 +109,8 @@ describe("parseWords — flag names (PROTECTED)", () => {
       "--format",
       "--verbose",
       "--detail",
+      "--no-headers",
+      "--quiet",
       "--help",
     ]);
   });

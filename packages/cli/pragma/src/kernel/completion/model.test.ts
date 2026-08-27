@@ -296,6 +296,11 @@ describe("buildCompletionModel — flags and sources", () => {
       kind: "values",
       values: ["summary", "standard", "detailed"],
     });
+    // Every flag the global parser accepts is offered — a flag the surface
+    // advertises but completion omits is invisible at the TAB that would
+    // teach it.
+    expect(flags["--no-headers"]).toMatchObject({ takesValue: false });
+    expect(flags["--quiet"]).toMatchObject({ takesValue: false });
     expect(flags["--llm"]).toBeUndefined();
     expect(flags["--version"]?.rootOnly).toBe(true);
     expect(flags["--help"]?.rootOnly).toBeUndefined();
@@ -483,7 +488,14 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
     // the global tier is offered.
     expect(
       await runComplete(["create", "component", "--"], capabilities),
-    ).toEqual(["--detail", "--format", "--help", "--verbose"]);
+    ).toEqual([
+      "--detail",
+      "--format",
+      "--help",
+      "--no-headers",
+      "--quiet",
+      "--verbose",
+    ]);
   });
 
   it("leaf flag tier: `create component react --<TAB>` offers the REGISTERED flags", async () => {
@@ -502,9 +514,11 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
       "--dry-run",
       "--format",
       "--help",
+      "--no-headers",
       "--no-with-ssr-tests",
       "--no-with-stories",
       "--no-with-styles",
+      "--quiet",
       "--undo",
       "--verbose",
       "--yes",
@@ -518,9 +532,11 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
       "--dry-run",
       "--format",
       "--help",
+      "--no-headers",
       "--no-with-ssr-tests",
       "--no-with-stories",
       "--no-with-styles",
+      "--quiet",
       "--undo",
       "--use-ts-stories",
       "--verbose",

@@ -90,6 +90,13 @@ const GLOBAL_FLAGS: readonly FlagEntry[] = [
     repeatable: false,
     source: { kind: "values", values: DETAIL_LEVELS },
   },
+  {
+    flag: "--no-headers",
+    takesValue: false,
+    repeatable: false,
+    source: none(),
+  },
+  { flag: "--quiet", takesValue: false, repeatable: false, source: none() },
   { flag: "--help", takesValue: false, repeatable: false, source: none() },
   {
     flag: "--version",
