@@ -129,11 +129,17 @@ function usedPrefixes(
 function renderInbound(subject: string, group: InboundGroup): string[] {
   const predicate = renderTerm(group.predicate);
   const total = group.count.toLocaleString("en-US");
-  const note = group.sampled
-    ? `# ${predicate} — ${total} total, sample of ${group.subjects.length}; use the noun's list verb for the full set`
-    : group.truncated
-      ? `# ${predicate} — ${total} total, showing ${group.subjects.length}`
-      : `# ${predicate} — ${total}`;
+  // "sample of 0" is not a sample. A group whose members are all blank nodes has
+  // nothing addressable to exhibit, and saying so is more use to a reader than a
+  // count of the exemplars we declined to invent.
+  const note =
+    group.subjects.length === 0 && group.count > 0
+      ? `# ${predicate} — ${total} total, none individually addressable; use the noun's list verb`
+      : group.sampled
+        ? `# ${predicate} — ${total} total, sample of ${group.subjects.length}; use the noun's list verb for the full set`
+        : group.truncated
+          ? `# ${predicate} — ${total} total, showing ${group.subjects.length}`
+          : `# ${predicate} — ${total}`;
   return [
     note,
     ...group.subjects.map((s) => `${renderTerm(s)} ${predicate} ${subject} .`),

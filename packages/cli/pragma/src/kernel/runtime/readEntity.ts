@@ -397,7 +397,16 @@ async function readInbound(
     // threshold bounds both — and retaining one MORE than it is what lets the
     // fan-in test below distinguish "exactly at the threshold" from "over it".
     const rows = retained.get(key) ?? [];
-    if (rows.length <= ROSTER_THRESHOLD) rows.push(subject);
+    // Only NAMED subjects are kept as exemplars. A blank node cannot be read
+    // back through `pragma:{+uri}` and its label is re-minted on every load, so
+    // it can only ever be shown as an anonymous placeholder — and in Turtle each
+    // one written out mints a FRESH node, so a sample of three blank subjects
+    // rendered as three identical, meaningless triples. They still COUNT: the
+    // total stays exact, and a group with no nameable member shows the count
+    // alone, which is the honest answer rather than a row of `[]`.
+    if (subject.termType === "NamedNode" && rows.length <= ROSTER_THRESHOLD) {
+      rows.push(subject);
+    }
     retained.set(key, rows);
   }
 
