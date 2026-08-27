@@ -267,3 +267,34 @@ describe("resource read — cold-store failure surfaces isError + recovery (D3)"
     expect(data?.recovery?.mcp?.tool).toBe("sources_update");
   });
 });
+
+describe("a percent-encoded resource URI reads (PROTECTED)", () => {
+  let harness: Awaited<ReturnType<typeof projectMcp>>;
+  beforeAll(async () => {
+    harness = await projectMcp([graphModule]);
+  });
+  afterAll(async () => {
+    await harness.cleanup();
+  });
+
+  it("resolves the encoded form to the same entity as the plain one", async () => {
+    // A client that percent-encodes the URI it puts in a `pragma:{+uri}` read is
+    // not doing anything wrong, and the surface was rejecting its own advertised
+    // identifiers. Asserted THROUGH the server, since that is where a client
+    // meets it — the unit test on `resolveUri` cannot see the template.
+    const plain = await harness.readResource("pragma:ds:Component");
+    const encoded = await harness.readResource("pragma:ds%3AComponent");
+    expect(encoded.text).toBe(plain.text);
+  });
+
+  it("still refuses a malformed escape as InvalidParams", async () => {
+    const error = await harness.readResource("pragma:%E0%A4%A").then(
+      () => undefined,
+      (caught: unknown) => caught,
+    );
+    expect(error, "a malformed escape must not read as success").toBeDefined();
+    expect((error as { data?: { code?: string } }).data?.code).toBe(
+      "INVALID_INPUT",
+    );
+  });
+});

@@ -20,7 +20,7 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
   path: ["graph", "inspect"],
   summary:
     "Show every triple where a URI is the subject, grouped by predicate.",
-  doc: "Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:button) or absolute IRI.",
+  doc: "Inspect one entity: all predicate/object pairs asserted on the subject. Address it by prefixed name (ds:global.component.button) or absolute IRI.",
   params: [
     {
       kind: "string",
@@ -33,8 +33,10 @@ const inspectVerb: VerbSpec<Record<string, unknown>, InspectResult> = {
   ],
   output: { formatters: inspectFormatters },
   examples: [
-    { cmd: `${BIN_NAME} graph inspect ds:button` },
-    { cmd: `${BIN_NAME} graph inspect https://ds.canonical.com/button` },
+    { cmd: `${BIN_NAME} graph inspect ds:global.component.button` },
+    {
+      cmd: `${BIN_NAME} graph inspect https://ds.canonical.com/global.component.button`,
+    },
   ],
   capability: {
     needsStore: true,
