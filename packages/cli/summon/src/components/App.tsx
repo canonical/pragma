@@ -895,7 +895,10 @@ export const App = ({
             setState({ phase: "undoPreview", planEffects });
             return;
           }
-          if (yes) {
+          // Same gate contract as the forward run: flags only pre-fill
+          // answers; `--yes` skips the gate, and so does `--no-preview` —
+          // the forward flow goes straight to executing in both cases.
+          if (yes || !preview) {
             runUndoPlan(undos, unreversible, promptAnswers);
             return;
           }
