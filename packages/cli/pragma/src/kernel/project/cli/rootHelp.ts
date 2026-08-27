@@ -11,7 +11,7 @@
  */
 
 import { PROGRAM_LOGO } from "../../../constants.js";
-import type { VerbSpec } from "../../spec/types.js";
+import type { VerbSpec } from "../../spec/index.js";
 import {
   helpColumns,
   helpDim,

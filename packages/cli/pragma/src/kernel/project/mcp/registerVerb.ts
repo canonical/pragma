@@ -20,10 +20,10 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { asPragmaError } from "../../error/fromTaskError.js";
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "../../error/index.js";
 import type { InteractionRuntime, PragmaRuntime } from "../../runtime/types.js";
-import { toolName } from "../../spec/emitSurface.js";
-import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { McpAnnotations, ParamSpec, VerbSpec } from "../../spec/index.js";
+import { toolName } from "../../spec/index.js";
 import { toolError, toolSuccess } from "./envelope.js";
 
 /**

@@ -19,22 +19,21 @@ import {
   isCancellation,
   isInterruption,
 } from "../../error/fromTaskError.js";
-import { PragmaError } from "../../error/PragmaError.js";
 import {
+  PragmaError,
   renderErrorJson,
   renderErrorLlm,
   renderErrorPlain,
-} from "../../error/renderError.js";
+} from "../../error/index.js";
 import type { RenderContext } from "../../render/contracts.js";
-import { successEnvelope } from "../../render/envelope.js";
-import { writeStdout } from "../../render/writeStdout.js";
-import { bootRuntime } from "../../runtime/boot.js";
+import { successEnvelope, writeStdout } from "../../render/index.js";
+import { bootRuntime } from "../../runtime/index.js";
 import type {
   GlobalFlags,
   InteractionRuntime,
   PragmaRuntime,
 } from "../../runtime/types.js";
-import type { ParamSpec, VerbSpec } from "../../spec/types.js";
+import type { ParamSpec, VerbSpec } from "../../spec/index.js";
 import { EXIT, mapExitCode } from "./exitCodes.js";
 
 /** The CLI-only mutation flags auto-injected onto every mutating verb. */

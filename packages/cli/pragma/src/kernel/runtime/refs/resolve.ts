@@ -13,7 +13,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative } from "node:path";
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "../../error/index.js";
 import { refsCacheDir } from "../paths.js";
 import { cloneRef, fetchRef, headCommit } from "./gitOps.js";
 import { type PackageRef, redactUrl } from "./parseRef.js";

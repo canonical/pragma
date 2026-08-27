@@ -24,10 +24,10 @@
  * costs nothing on `--help`/`__complete`.
  */
 
-import type { ConfigLayers } from "../config/types.js";
-import { PragmaError } from "../error/PragmaError.js";
+import type { ConfigLayers } from "../config/index.js";
+import { PragmaError } from "../error/index.js";
 import type { PackStoryRecord } from "../runtime/graphpack/stories.js";
-import type { CapabilityModule } from "../spec/types.js";
+import type { CapabilityModule } from "../spec/index.js";
 import { compileStoryModule } from "./compile.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackEntry } from "./types.js";

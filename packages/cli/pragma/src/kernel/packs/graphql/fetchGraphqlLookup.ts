@@ -14,9 +14,8 @@
  * composed only from validated pack terms and compiled schema names.
  */
 
-import { PragmaError } from "../../error/PragmaError.js";
-import { cliRecovery } from "../../error/recovery.js";
-import type { PragmaRuntime } from "../../runtime/types.js";
+import { cliRecovery, PragmaError } from "../../error/index.js";
+import type { PragmaRuntime } from "../../runtime/index.js";
 import type { PackChildRow, PackEntity, PackLookup } from "../types.js";
 import {
   buildLookupDocument,

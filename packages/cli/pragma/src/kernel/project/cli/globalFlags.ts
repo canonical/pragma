@@ -25,7 +25,7 @@
  */
 
 import { DETAIL_LEVELS, type DetailLevel } from "../../../constants.js";
-import type { GlobalFlags } from "../../runtime/types.js";
+import type { GlobalFlags } from "../../runtime/index.js";
 
 /** The end-of-options separator: nothing after it is a flag of this program. */
 const OPTION_TERMINATOR = "--";

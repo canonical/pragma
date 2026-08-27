@@ -10,7 +10,7 @@
  * internals leak into the suggester.
  */
 
-import type { VerbSpec } from "../../spec/types.js";
+import type { VerbSpec } from "../../spec/index.js";
 
 /**
  * Curated suggestions for a token whose JOB exists under other names. Edit

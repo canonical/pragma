@@ -10,9 +10,8 @@
  * (`graph query`) goes through the facade directly and stays INVALID_INPUT.
  */
 
-import { PragmaError } from "../../error/PragmaError.js";
-import { cliRecovery } from "../../error/recovery.js";
-import type { PragmaRuntime } from "../../runtime/types.js";
+import { cliRecovery, PragmaError } from "../../error/index.js";
+import type { PragmaRuntime } from "../../runtime/index.js";
 import type { PackRow, StorySource } from "../types.js";
 
 /**

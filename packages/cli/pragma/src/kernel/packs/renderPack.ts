@@ -10,14 +10,14 @@
  */
 
 import { BIN_NAME, RECOVERY_CLI_PREFIX } from "../../constants.js";
-import { compactUri } from "../render/compactUri.js";
 import type {
   ColumnDef,
   LookupField,
   RenderListOptions,
   RenderLookupOptions,
   SectionDef,
-} from "../render/contracts.js";
+} from "../render/index.js";
+import { compactUri } from "../render/index.js";
 import {
   renderListEmptyNotice,
   renderListLlm,
@@ -25,7 +25,7 @@ import {
   renderLookupLlm,
   renderLookupPlain,
 } from "../render/renderers.js";
-import type { Formatters } from "../spec/types.js";
+import type { Formatters } from "../spec/index.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import type {
   PackChildRow,

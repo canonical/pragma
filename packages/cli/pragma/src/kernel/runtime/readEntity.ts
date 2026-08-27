@@ -54,11 +54,9 @@
  */
 
 import type { DetailLevel } from "../../constants.js";
-import { PragmaError } from "../error/PragmaError.js";
-import { cliRecovery } from "../error/recovery.js";
+import { cliRecovery, PragmaError } from "../error/index.js";
 import { resolveUri } from "../packs/iri.js";
-import { compactUri } from "../render/compactUri.js";
-import { resolveDetail } from "../render/disclosure.js";
+import { compactUri, resolveDetail } from "../render/index.js";
 import type { PackIndex } from "./graphpack/types.js";
 import type { PragmaRuntime } from "./types.js";
 

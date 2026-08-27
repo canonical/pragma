@@ -16,9 +16,9 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MCP_SERVER_NAME, VERSION } from "../../../constants.js";
-import { bootRuntime } from "../../runtime/boot.js";
-import type { GlobalFlags } from "../../runtime/types.js";
-import type { CapabilityModule } from "../../spec/types.js";
+import type { GlobalFlags } from "../../runtime/index.js";
+import { bootRuntime } from "../../runtime/index.js";
+import type { CapabilityModule } from "../../spec/index.js";
 import { buildInstructions } from "./instructions.js";
 import { registerVerb } from "./registerVerb.js";
 

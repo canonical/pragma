@@ -9,8 +9,8 @@
  */
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import type { PragmaError } from "../../error/PragmaError.js";
-import { errorEnvelope, successEnvelope } from "../../render/envelope.js";
+import type { PragmaError } from "../../error/index.js";
+import { errorEnvelope, successEnvelope } from "../../render/index.js";
 
 /**
  * Wrap success data as an MCP tool result.

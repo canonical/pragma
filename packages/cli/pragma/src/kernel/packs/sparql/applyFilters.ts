@@ -10,7 +10,7 @@
  * filter (a repeated flag) combine as a union.
  */
 
-import { PragmaError } from "../../error/PragmaError.js";
+import { PragmaError } from "../../error/index.js";
 import type { PackFilter, PackRow } from "../types.js";
 
 /**

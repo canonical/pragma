@@ -9,7 +9,7 @@
  * than silently reaching out.
  */
 
-import type { ConfigLayers } from "../config/types.js";
+import type { ConfigLayers } from "../config/index.js";
 import { materializeEmbeddedPack } from "./graphpack/embedded.js";
 import { readPack } from "./graphpack/read.js";
 import { resolveSources } from "./resolveSources.js";

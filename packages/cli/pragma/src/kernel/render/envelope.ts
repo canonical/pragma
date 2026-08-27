@@ -8,9 +8,8 @@
  * pair — is what makes CLI-JSON and MCP output provably identical.
  */
 
-import type { PragmaError } from "../error/PragmaError.js";
-import { serializeError } from "../error/serialize.js";
-import type { ErrorPayload } from "../error/types.js";
+import type { ErrorPayload, PragmaError } from "../error/index.js";
+import { serializeError } from "../error/index.js";
 
 /** The success envelope: an agent branches on `ok` before reading `data`. */
 export interface SuccessEnvelope {

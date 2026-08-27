@@ -64,7 +64,7 @@ import { discoverSkills } from "../../capabilities/skill/discover.js";
 // Inlined embedded index — its OWN generated module (only the index string), so
 // the storeless `__complete` path never pulls the n-quads/schema/manifest
 // strings that live in `pack.generated.ts`.
-import { DEFAULT_PREFIX_MAP } from "../render/prefixes.js";
+import { DEFAULT_PREFIX_MAP } from "../render/index.js";
 import { indexJson as EMBEDDED_INDEX_JSON } from "../runtime/graphpack/embedded/pack.index.generated.js";
 import type { PackIndex, PackIndexEntity } from "../runtime/graphpack/types.js";
 import { packDir, readActivePack } from "../runtime/paths.js";
