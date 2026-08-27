@@ -119,8 +119,10 @@ describe("create over MCP (PROTECTED)", () => {
   it("the plan payload is the FILTERED plan, not the interpreter transcript", async () => {
     // This payload is read by an LLM on a token budget. Every internal probe
     // and every repeat of the output directory spent tokens burying the real
-    // artifacts, so the rows are the shared `visiblePlanEffects` filter and
-    // the shared `formatEffectLine` row — the same two the CLI preview uses.
+    // artifacts, so the rows pass the shared `visiblePlanEffects` filter — the
+    // same one the CLI preview applies — and stay `describeEffect` strings,
+    // which is what makes them comparable to the CLI's own `--format json`
+    // plan rather than to its terminal rendering.
     const dir = freshCwd();
     const prev = process.cwd();
     process.chdir(dir);
@@ -136,13 +138,16 @@ describe("create over MCP (PROTECTED)", () => {
       });
       const plan = (result.data as { plan: string[] }).plan;
       const body = plan.join("\n");
+      // The interpreter's own bookkeeping is gone: no existence probes, and
+      // no debug commentary (this run is not verbose).
       expect(body).not.toContain("Check exists:");
-      expect(body).not.toContain("Log [");
+      expect(body).not.toContain("Log [debug]");
       // The output directory is planned ONCE, however many files it holds.
-      expect(plan.filter((line) => line.includes("Create dir"))).toEqual([
-        "├─ Create dir    Button",
+      expect(plan.filter((line) => line.startsWith("Created "))).toEqual([
+        "Created Button/",
       ]);
-      expect(plan.at(-1)).toContain("└─ Info          ");
+      // What the generator meant to say survives; what it whispered does not.
+      expect(plan.at(-1)).toContain("Log [info]: ");
       expect(readdirSync(dir)).toEqual([]); // nothing written
     } finally {
       process.chdir(prev);
@@ -199,12 +204,18 @@ describe("create over MCP (PROTECTED)", () => {
           withSsrTests: false,
         },
         { dryRun: true, undo: false, yes: false },
-        bootRuntime(FLAGS, dir),
+        bootRuntime({ ...FLAGS, format: "json" }, dir),
       );
-      // Every planned effect line appears in the CLI dry-run preview too.
-      for (const line of mcpPlan) {
-        expect(cliOutcome.stdout ?? "").toContain(line);
-      }
+      // The two STRUCTURED surfaces carry one plan, string for string. They
+      // are compared against each other rather than against the terminal
+      // rendering, which is deliberately a different shape: a person reads
+      // kind-columned rows, a machine reads the described effects.
+      const cliPlan = (
+        JSON.parse(cliOutcome.stdout as string) as {
+          data: { plan: string[] };
+        }
+      ).data.plan;
+      expect(mcpPlan).toEqual(cliPlan);
     } finally {
       process.chdir(prev);
     }

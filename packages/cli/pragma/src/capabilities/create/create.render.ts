@@ -21,6 +21,7 @@
 
 import type { GeneratorResult } from "@canonical/summon-core";
 import { type Effect, getAffectedFiles } from "@canonical/task";
+import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 
 /** The user-visible mutating effects, de-duplicated by path for MakeDir. */
@@ -48,22 +49,32 @@ function created(effects: readonly Effect[]): string[] {
  * paths. A dry run is already several filesystem reads deep by the time this
  * is called; a `--help` spawn never calls it at all.
  *
+ * COLOUR is decided HERE and handed to the formatter, never left to chalk's
+ * own environment detection. pragma's gate is `defaultStyle()`, which demands
+ * an attended stdout as well as a usable chalk level: nx exports `FORCE_COLOR`
+ * to every test task, so a piped preview would otherwise carry escapes that
+ * the rest of pragma's renderers — and `doctor.render.test.ts`'s pin on
+ * redirected output — do not.
+ *
  * @param effects - The effects the previewed run recorded, in order.
  * @param verbose - If true, the generator's debug logs stay in the plan.
+ * @param style - The colour decision; defaults to pragma's own render gate.
  * @returns The rendered plan, without a trailing newline.
  */
 export async function formatCreatePlan(
   effects: readonly Effect[],
   verbose: boolean,
+  style: RenderStyle = defaultStyle(),
 ): Promise<string> {
-  const { formatEffectLine, visiblePlanEffects } = await import(
+  const { effectStyleFor, formatEffectLine, visiblePlanEffects } = await import(
     "@canonical/summon-core/format"
   );
+  const rowStyle = effectStyleFor(style.enabled);
   const rows = visiblePlanEffects(effects, verbose);
   return [
     "Plan:",
     ...rows.map((effect, index) =>
-      formatEffectLine(effect, index === rows.length - 1),
+      formatEffectLine(effect, index === rows.length - 1, rowStyle),
     ),
     "",
     "Dry-run complete. No files were modified.",

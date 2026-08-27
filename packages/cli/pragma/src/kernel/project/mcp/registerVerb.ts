@@ -14,7 +14,7 @@
 
 import { statSync } from "node:fs";
 import { isAbsolute } from "node:path";
-import type { Task } from "@canonical/task";
+import { describeEffect, type Task } from "@canonical/task";
 import { runPreview, runTask } from "@canonical/task/node";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
@@ -217,24 +217,28 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
           });
           // This payload is read by an LLM on a token budget, so it carries
           // the plan a person is shown rather than the interpreter's
-          // transcript: the same `visiblePlanEffects` filter and the same
-          // `formatEffectLine` row the CLI preview renders, from the same
-          // module, so the agent-facing and human-facing surfaces describe ONE
-          // plan. Without it every internal `Check exists:` and every repeat
-          // of the output directory spent tokens burying the real artifacts.
+          // transcript: the same `visiblePlanEffects` filter the CLI preview
+          // applies, from the same module. Without it every internal
+          // `Check exists:` and every repeat of the output directory spent
+          // tokens burying the real artifacts.
+          //
+          // The FILTER is what the surfaces share; the ROW FORMAT is not.
+          // These strings are structured data, so they stay `describeEffect` —
+          // the description `@canonical/task` gives its own effects, which
+          // carries byte counts, has no terminal chrome, and cannot embed an
+          // ANSI escape however the editor that spawned this server configured
+          // colour. That also lets the CLI's `--format json` plan and this one
+          // be compared string for string, which is the A6 invariant.
           //
           // Loaded lazily, and from the LIGHT `/format` subpath: the kernel
           // keeps summon-core proper (and React) off its static import graph.
-          const { formatEffectLine, visiblePlanEffects } = await import(
+          const { visiblePlanEffects } = await import(
             "@canonical/summon-core/format"
           );
-          const rows = visiblePlanEffects(
+          const plan = visiblePlanEffects(
             effects,
             runtime.globalFlags.verbose === true,
-          );
-          const plan = rows.map((effect, index) =>
-            formatEffectLine(effect, index === rows.length - 1),
-          );
+          ).map(describeEffect);
           return toolSuccess(
             { plan },
             { planOnly: true, confirmRequired: true },

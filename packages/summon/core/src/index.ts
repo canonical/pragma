@@ -85,6 +85,7 @@ export {
 
 export {
   buildReplayCommand,
+  effectStyleFor,
   formatContentPreview,
   formatEffectLine,
   formatEffectWithContent,

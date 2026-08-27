@@ -16,8 +16,10 @@
  * in either host.
  */
 
+export type { EffectColor, EffectStyle } from "./effects.js";
 export {
   buildReplayCommand,
+  effectStyleFor,
   formatContentPreview,
   formatEffectLine,
   formatEffectWithContent,

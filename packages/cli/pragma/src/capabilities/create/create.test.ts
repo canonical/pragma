@@ -17,6 +17,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import chalk from "chalk";
 import { describe, expect, it } from "vitest";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
@@ -148,6 +149,42 @@ describe("create — real generation + stamp", () => {
     expect(stdout.split("\n").filter((l) => l.includes("Create dir"))).toEqual([
       "├─ Create dir    Widget",
     ]);
+  });
+
+  it("--dry-run stays ANSI-free when stdout is not a terminal (PROTECTED)", async () => {
+    // The row formatter used to call chalk directly, so whether a preview
+    // carried escapes was decided by chalk's environment detection at the
+    // moment of the call. pragma's gate is stricter than chalk's: it demands
+    // an ATTENDED stdout as well as a usable colour level. nx exports
+    // FORCE_COLOR to every test task, which is exactly the condition where the
+    // two disagree — chalk would colour a piped preview that every other
+    // pragma renderer, and `doctor.render.test.ts`'s pin on redirected output,
+    // leaves plain.
+    const dir = freshCwd();
+    const level = chalk.level;
+    try {
+      chalk.level = 3; // as FORCE_COLOR would leave it
+      const outcome = await runIn(
+        dir,
+        {
+          framework: "react",
+          componentPath: "Widget",
+          withStyles: false,
+          withStories: false,
+          withSsrTests: false,
+        },
+        { dryRun: true, undo: false, yes: false },
+      );
+      expect(outcome.exitCode).toBe(0);
+      // Not a TTY under vitest, so the decision is "no colour" — and the
+      // formatter is told that rather than left to work it out.
+      expect(process.stdout.isTTY).not.toBe(true);
+      expect(outcome.stdout ?? "").not.toContain("\u001B[");
+      // Still the shared shape, just uncoloured.
+      expect(outcome.stdout).toContain("├─ Create file   Widget/Widget.tsx");
+    } finally {
+      chalk.level = level;
+    }
   });
 
   it("--dry-run PLANS the generator's logs instead of performing them", async () => {

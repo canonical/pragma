@@ -384,10 +384,26 @@ export async function executeVerb(
         // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
         // so the interactive confirm gate / answer prompts never clutter it.
         const planned = effects.filter((effect) => effect._tag !== "Prompt");
+        // The DESCRIBED plan — what `--format json` carries and what a verb
+        // with no renderer of its own is dumped as — passes the same
+        // visibility filter the MCP payload and the human preview use. It is
+        // the filter, not the row format, that this seam shares: `plan` is
+        // structured description, so it stays `describeEffect` strings rather
+        // than terminal rows, and the two surfaces can be compared string for
+        // string (`testing/behavioral/parity.test.ts`, A6).
+        //
+        // Loaded lazily from the LIGHT `/format` subpath. A dry run is already
+        // several filesystem reads deep here; a `--help` spawn never reaches
+        // this branch, and the kernel keeps summon-core off its static graph.
+        const { visiblePlanEffects } = await import(
+          "@canonical/summon-core/format"
+        );
         const format = verb.output.formatPlan;
         return await renderPlan(
           flags,
-          planned.map(describeEffect),
+          visiblePlanEffects(planned, flags.verbose === true).map(
+            describeEffect,
+          ),
           planned,
           format === undefined
             ? undefined

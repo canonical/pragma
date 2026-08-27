@@ -20,11 +20,11 @@ import {
   formatLlmMarkdown,
   type GeneratorDefinition,
   isInvalidAnswersError,
-  isVisibleEffect,
   missingRequiredError,
   type PromptEffect,
   type StampConfig,
   validateAnswers,
+  visiblePlanEffects,
 } from "@canonical/summon-core";
 import {
   applyDefaults,
@@ -213,16 +213,12 @@ function runBatchDryRun(
     console.log(chalk.dim(generator.meta.description));
     console.log();
 
-    // Filter and deduplicate effects
-    const seenDirPaths = new Set<string>();
-    const visibleEffects = result.effects.filter((e) => {
-      if (!isVisibleEffect(e, verbose)) return false;
-      if (e._tag === "MakeDir") {
-        if (seenDirPaths.has(e.path)) return false;
-        seenDirPaths.add(e.path);
-      }
-      return true;
-    });
+    // The visibility filter AND the MakeDir de-duplication are ONE rule with
+    // several readers — this bin's dry-run, summon-core's own `--llm` / JSON
+    // projections, and the pragma kernel's CLI and MCP previews. This is the
+    // REFERENCE renderer the others are required to agree with, so it consumes
+    // the shared rule rather than carrying the copy it used to.
+    const visibleEffects = visiblePlanEffects(result.effects, verbose);
 
     console.log(chalk.dim.bold("Plan:"));
     visibleEffects.forEach((effect, index) => {
