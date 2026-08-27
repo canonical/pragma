@@ -40,6 +40,37 @@ const EMPTY_CELL = "-";
 const DEFAULT_CONTEXT: RenderContext = { headers: true, stdoutIsTty: true };
 
 /**
+ * The markdown heading level `renderLookupSections` gives a section in llm mode
+ * — the lookup title is `##`, so a section is `###`. Read, not re-typed, by
+ * {@link nestHeadings}: the renderer is the only party that knows its own
+ * nesting depth, and it must stay the only party that encodes it.
+ */
+const SECTION_HEADING_LEVEL = 3;
+
+/** Markdown's deepest heading. Demotion clamps here rather than overflowing. */
+const MAX_HEADING_LEVEL = 6;
+
+/**
+ * An ATX heading: up to three spaces of indent, 1–6 `#`, whitespace, text.
+ *
+ * The indent is CommonMark's — four spaces would make the line an indented
+ * code block, three or fewer leave it a heading. Missing it left
+ * `  ### Accessibility` un-nested while its unindented twin was demoted, so
+ * one body could come out with two conflicting hierarchies. The indent is
+ * captured so a rewrite preserves it.
+ */
+const ATX_HEADING = /^( {0,3})(#{1,6})(\s+\S.*)$/;
+
+/**
+ * A fenced code-block delimiter: up to three spaces of indent, then the run of
+ * markers, then whatever follows on the line (the info string).
+ *
+ * The RUN LENGTH and the info string both matter for closing, which is why
+ * they are captured rather than just recognised — see {@link nestHeadings}.
+ */
+const CODE_FENCE = /^ {0,3}((`{3,})|(~{3,}))([^`]*)$/;
+
+/**
  * The empty-state body — the message plus its optional hint on a second line,
  * or "" when the caller declared no message (bare-empty behavior preserved).
  */
@@ -291,7 +322,9 @@ function renderLookupSections<T>(
 
     sections.push("");
     sections.push(
-      mode === "llm" ? `### ${section.heading}` : `${section.heading}:`,
+      mode === "llm"
+        ? `${"#".repeat(SECTION_HEADING_LEVEL)} ${section.heading}`
+        : `${section.heading}:`,
     );
     sections.push(body);
   }
@@ -333,7 +366,81 @@ function renderFieldValue(
   }
 
   const text = formatScalarValue(value, prefixes);
-  return mode === "llm" ? text : indentBlock(text);
+  // Plain mode is not markdown — a `###` there is literal text, and rewriting
+  // it would corrupt the value. Only the llm mode's markdown has a hierarchy to
+  // collide with, so only it nests.
+  return mode === "llm"
+    ? nestHeadings(text, SECTION_HEADING_LEVEL)
+    : indentBlock(text);
+}
+
+/**
+ * Demote a section body's own ATX headings so they nest UNDER the heading the
+ * renderer gave the section.
+ *
+ * Authored markdown cannot know what level it will be rendered at; the renderer
+ * can, and so the renderer is the side that moves. A block whose shallowest
+ * heading is at or above `parentLevel` is shifted down as a whole — `###
+ * Accessibility` inside a `### Guidelines` section becomes `#### Accessibility`
+ * — which fixes the collision (a section heading immediately followed by a
+ * same-level heading reads as an empty section) while preserving the content's
+ * internal hierarchy exactly. Content already nested deeper is left alone.
+ *
+ * Headings inside a fenced code block are content, not structure — a `# ` in a
+ * shell sample is a comment — so fenced regions pass through untouched.
+ *
+ * @param text - The section body as authored.
+ * @param parentLevel - The heading level the section itself was rendered at.
+ * @returns The body with its headings nested below `parentLevel`.
+ */
+function nestHeadings(text: string, parentLevel: number): string {
+  const lines = text.split("\n");
+  const headings = new Map<number, number>();
+  // A fence CLOSES only on the same marker character, a run at least as long
+  // as the opener's, and no info string — CommonMark's rule, and the reason
+  // the opener's length is remembered rather than just its character. Toggling
+  // on any same-character run let a ``` sample inside a ```` block read as the
+  // close, after which every `#` line in that code block was rewritten as a
+  // heading: the renderer editing someone's sample code.
+  let fence: { marker: string; length: number } | undefined;
+  for (const [index, line] of lines.entries()) {
+    const delimiter = CODE_FENCE.exec(line);
+    const run = delimiter?.[1];
+    if (run !== undefined) {
+      const marker = run.charAt(0);
+      const info = (delimiter?.[4] ?? "").trim();
+      if (fence === undefined) {
+        fence = { marker, length: run.length };
+        continue;
+      }
+      if (
+        marker === fence.marker &&
+        run.length >= fence.length &&
+        info === ""
+      ) {
+        fence = undefined;
+      }
+      continue;
+    }
+    if (fence !== undefined) continue;
+    const level = ATX_HEADING.exec(line)?.[2]?.length;
+    if (level !== undefined) headings.set(index, level);
+  }
+
+  if (headings.size === 0) return text;
+  const shift = parentLevel + 1 - Math.min(...headings.values());
+  if (shift <= 0) return text;
+
+  return lines
+    .map((line, index) => {
+      const level = headings.get(index);
+      if (level === undefined) return line;
+      const hashes = "#".repeat(Math.min(level + shift, MAX_HEADING_LEVEL));
+      // `$1` keeps the line's own indent: rewriting it away would turn a
+      // legally indented heading into an unindented one.
+      return line.replace(ATX_HEADING, `$1${hashes}$3`);
+    })
+    .join("\n");
 }
 
 function renderCodeValue<T>(

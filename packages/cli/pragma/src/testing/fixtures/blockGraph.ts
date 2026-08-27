@@ -159,3 +159,33 @@ ds:rosterHub a ds:Probe ; ds:name "roster hub" .
 ds:probe.quiet a ds:Probe ; ds:hasSubcomponent ds:rosterHub .
 ${ROSTER_MEMBERS}
 `;
+
+/**
+ * An OPT-IN overlay for the lookup-addressing suite, appended to
+ * {@link BLOCK_TTL} by the tests that need it and by nothing else — the block
+ * parity, ontology and GraphQL-engine suites assert over the base graph and
+ * must keep seeing exactly two components.
+ *
+ * It models the three shapes the addressing path gets wrong: two components
+ * sharing one `ds:name` (declared zeta-first so the store's enumeration order
+ * and IRI order DISAGREE — an unordered `LIMIT 1` picks the zeta one), and a
+ * component carrying no `ds:name` at all (reachable only by IRI, the way 131 of
+ * the 144 live code standards are).
+ */
+export const AMBIGUOUS_TTL = `
+ds:apps a ds:Tier ; ds:name "apps" .
+
+ds:zeta.chip a ds:Component ;
+  ds:name "Chip" ;
+  ds:tier ds:global ;
+  ds:summary "The zeta chip — declared first, sorts last." .
+
+ds:alpha.chip a ds:Component ;
+  ds:name "Chip" ;
+  ds:tier ds:apps ;
+  ds:summary "The alpha chip — declared last, sorts first." .
+
+ds:nameless.widget a ds:Component ;
+  ds:tier ds:global ;
+  ds:summary "Carries no ds:name; addressable only by IRI." .
+`;

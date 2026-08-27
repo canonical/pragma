@@ -314,3 +314,129 @@ describe("error render matrix (× plain/llm/json)", () => {
     }).toMatchSnapshot();
   });
 });
+
+describe("section-body headings nest under the heading the renderer gives them", () => {
+  interface Doc {
+    readonly guidelines: string;
+  }
+
+  const render = (guidelines: string): string =>
+    renderLookupLlm<Doc>(
+      { guidelines },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+
+  it("demotes authored headings that collide with the section heading", () => {
+    const out = render(
+      "### Accessibility\n\n- Label the button.\n\n### Content\n\n- Verb first.",
+    );
+    expect(out).toContain("### Guidelines");
+    expect(out).toContain("#### Accessibility");
+    expect(out).toContain("#### Content");
+    expect(out).not.toMatch(/^### Accessibility$/m);
+  });
+
+  it("preserves the content's own hierarchy while shifting it as a block", () => {
+    const out = render("## Overview\n\ntext\n\n### Detail\n\nmore");
+    expect(out).toContain("#### Overview");
+    expect(out).toContain("##### Detail");
+  });
+
+  it("leaves content already nested below the section alone", () => {
+    const out = render("#### Already nested\n\ntext");
+    expect(out).toContain("#### Already nested");
+    expect(out).not.toContain("##### Already nested");
+  });
+
+  it("never emits a heading deeper than markdown's floor", () => {
+    const out = render("###### Deep\n\ntext");
+    expect(out).toContain("###### Deep");
+  });
+
+  it("leaves `#` inside a fenced code block exactly as authored", () => {
+    const out = render("### Setup\n\n```sh\n# not a heading\nbun install\n```");
+    expect(out).toContain("#### Setup");
+    expect(out).toContain("# not a heading");
+    expect(out).not.toContain("## not a heading");
+  });
+
+  it("leaves a body with no headings untouched", () => {
+    const out = render("Plain prose with a # hash mid-line.");
+    expect(out).toContain("Plain prose with a # hash mid-line.");
+  });
+
+  it("does not rewrite the plain body, where `###` is literal text", () => {
+    const out = renderLookupPlain<Doc>(
+      { guidelines: "### Accessibility" },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+    expect(out).toContain("Guidelines:");
+    expect(out).toContain("  ### Accessibility");
+  });
+});
+
+describe("section-body nesting follows CommonMark, not a near-enough reading", () => {
+  interface Doc {
+    readonly guidelines: string;
+  }
+
+  const render = (guidelines: string): string =>
+    renderLookupLlm<Doc>(
+      { guidelines },
+      {
+        title: () => "Button",
+        fields: [],
+        sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+      },
+    );
+
+  it("nests a heading indented up to three spaces, keeping its indent", () => {
+    // Four spaces would make the line an indented code block; three or fewer
+    // leave it a heading. Missing that left an indented heading at the
+    // section's own level while its unindented twin was demoted — one body
+    // rendered with two conflicting hierarchies.
+    expect(render("  ### Accessibility\n\ntext")).toMatch(
+      /^ {2}#### Accessibility$/m,
+    );
+  });
+
+  it("does not close a four-backtick fence on a three-backtick sample", () => {
+    // A closing fence must be AT LEAST as long as the opener. Toggling on any
+    // same-character run let the inner sample read as the close, after which
+    // every `#` line in that code block was rewritten — the renderer silently
+    // editing the user's sample code.
+    const out = render(
+      [
+        "````md",
+        "```",
+        "### Sample text, not a heading",
+        "```",
+        "````",
+        "",
+        "### A real heading",
+      ].join("\n"),
+    );
+    // Anchored: `#### x` CONTAINS `### x`, so a substring check would pass
+    // against the very rewrite this pins against.
+    expect(out).toMatch(/^### Sample text, not a heading$/m);
+    expect(out).toMatch(/^#### A real heading$/m);
+  });
+
+  it("does not close a fence on a run that carries an info string", () => {
+    // An opener may carry an info string; a CLOSER may not. A ```js line
+    // inside a block opens nothing and closes nothing.
+    const out = render(
+      ["```", "### inside", "```js", "### also inside", "```"].join("\n"),
+    );
+    expect(out).toMatch(/^### inside$/m);
+    expect(out).toMatch(/^### also inside$/m);
+  });
+});
