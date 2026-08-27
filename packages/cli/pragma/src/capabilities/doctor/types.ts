@@ -9,8 +9,19 @@
  */
 export type ScopeBand = "project" | "global";
 
-/** Status of a doctor check or one of its sub-items. */
-export type CheckStatus = "pass" | "fail" | "skip";
+/**
+ * Status of a doctor check or one of its sub-items.
+ *
+ * `available` is the tier between fail and skip that keeps the report honest:
+ * an opt-in integration (MCP registration, skills symlinks, a completion
+ * script) that is detected and installable but that the user has not set up.
+ * Nothing is broken — a fresh install is HEALTHY with several availables — so
+ * reporting these as `fail` would teach users that the failure count is noise.
+ * `fail` stays reserved for a real fault: something set up that no longer
+ * works, or an environment the CLI cannot run correctly in. `skip` remains
+ * "nothing to check here" (no shell detected, no harnesses present).
+ */
+export type CheckStatus = "pass" | "fail" | "available" | "skip";
 
 /**
  * A structured sub-item under a check — e.g. one resolved package under
@@ -35,7 +46,10 @@ export interface CheckResult {
   readonly detail: string;
   /** Optional structured breakdown, rendered as indented sub-items. */
   readonly items?: readonly CheckItem[];
-  /** Remedial instruction shown inline under a failing check. */
+  /**
+   * Remedial instruction shown inline under the check: for `fail` the fix,
+   * for `available` the setup command that enables the integration.
+   */
   readonly remedy?: string;
   /**
    * Which config band the check concerns, if any: `global` for the user/home
@@ -47,10 +61,12 @@ export interface CheckResult {
   readonly band?: ScopeBand;
 }
 
-/** Aggregated results from all doctor checks. */
+/** Aggregated results from all doctor checks — one count per status tier. */
 export interface DoctorData {
   readonly checks: readonly CheckResult[];
   readonly passed: number;
   readonly failed: number;
+  /** Opt-in integrations detected but not set up — counted apart from failures. */
+  readonly available: number;
   readonly skipped: number;
 }
