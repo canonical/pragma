@@ -13,6 +13,7 @@
 
 import { dirname } from "node:path";
 import {
+  deleteFile,
   exists,
   failWith,
   flatMap,
@@ -323,8 +324,33 @@ export const removeMcpConfigFrom = (
       }
       const servers = asServerRecord(parsed[target.mcpKey]);
       delete servers[serverName];
-      parsed[target.mcpKey] = servers;
-      return writeFile(target.path, formatJson(parsed));
+
+      // UNDO RESTORES THE PRIOR STATE, it does not merely subtract an entry.
+      // Reassigning the container unconditionally left `{"mcpServers": {}}`
+      // where the user had no such key — and, for a config this command
+      // CREATED, left the file itself behind as an empty husk. Neither is the
+      // reversal `--undo` promises.
+      //
+      // Undo collection walks the forward task with its effects mocked, so
+      // there is no record here of what the file looked like before the
+      // install. Emptiness is the available proxy, and it is a faithful one in
+      // every case that matters: a container we are the last entry in was one
+      // we created, and an object with nothing else in it was a file we wrote.
+      //
+      // The one over-reach is a user who had written `"mcpServers": {}`
+      // themselves, whose empty key we remove. An absent map and an empty map
+      // say the same thing to every harness that reads one, so that costs
+      // nothing — while leaving a husk where nothing was is a visible lie
+      // about what this command did.
+      if (Object.keys(servers).length > 0) {
+        parsed[target.mcpKey] = servers;
+      } else {
+        delete parsed[target.mcpKey];
+      }
+
+      return Object.keys(parsed).length === 0
+        ? deleteFile(target.path)
+        : writeFile(target.path, formatJson(parsed));
     }),
     pure(undefined),
   );
