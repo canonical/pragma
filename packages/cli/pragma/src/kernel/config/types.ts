@@ -109,7 +109,7 @@ export interface PragmaConfig {
  * wins during the merge.
  *
  * WIDER than {@link PragmaConfig}: the DISTRIBUTION layer (`pragma.conf.ts`)
- * is `satisfies RawConfig` and declares the four identity fields, which are
+ * is `satisfies RawConfig` and declares the five identity fields, which are
  * read statically and never merged. A global or project layer declaring one is
  * accepted by the validator and has no effect — `docs/reference/config.md`
  * says so, and `readConfig.test.ts` pins it.

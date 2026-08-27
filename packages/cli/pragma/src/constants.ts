@@ -17,6 +17,7 @@
 
 import pkg from "../package.json" with { type: "json" };
 import identity from "../pragma.conf.js";
+import type { RawConfig } from "./kernel/config/types.js";
 import { DETAIL_LEVELS, type DetailLevel } from "./kernel/config/types.js";
 
 /** CLI binary name — the distribution's `name`. */
@@ -87,7 +88,16 @@ const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
  * backslashes: a template literal would need every one of them escaped, which is
  * how a character gets lost the next time someone edits it.
  */
-const PROGRAM_LOGO: readonly string[] = identity.logo ?? [];
+// Read through the DECLARED type, not the literal's inferred one. The
+// distribution config is `satisfies RawConfig`, which narrows to exactly the
+// keys that file writes — so `identity.logo` does not typecheck in a fork that
+// omits the field, which is precisely the fork this feature promises a bare
+// header. The assignment (not a cast) is what `satisfies` already guarantees,
+// and it makes every OPTIONAL field readable here. The other constants keep
+// reading `identity` directly, so their literal types are untouched.
+const declared: RawConfig = identity;
+
+const PROGRAM_LOGO: readonly string[] = declared.logo ?? [];
 
 export type { DetailLevel, OutputFormat };
 export {
