@@ -551,7 +551,7 @@ const CONFIG_FIELD_DOCS: Record<keyof RawConfig, ConfigFieldDoc> = {
   tier: {
     type: "string (optional)",
     notes:
-      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>`; `none`, `default` or `-` clear it.",
+      "Accepted by the validator and SCOPES NOTHING: since the block list became declared content, no read filters by tier — the value is only reported by `config show` and `info`. Set it with `config set tier <path>` and clear it with `config unset tier`; `none`, `default` and `-` are refused as values, so no string doubles as a remove-marker.",
   },
   channel: {
     type: "`normal` | `experimental` | `prerelease` (optional)",
