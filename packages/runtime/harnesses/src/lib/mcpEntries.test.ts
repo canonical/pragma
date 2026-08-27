@@ -7,6 +7,7 @@ import {
   opencodeMcpEntry,
   opendesignMcpEntry,
 } from "./mcpEntries.js";
+import type { McpServerConfig } from "./types.js";
 
 describe("defaultMcpEntry", () => {
   it("emits the canonical shape with every optional field present", () => {
@@ -101,26 +102,28 @@ describe("opendesignMcpEntry", () => {
 });
 
 describe("mcpEntryMatches", () => {
-  const want = defaultMcpEntry({
+  const want: McpServerConfig = {
     command: "pragma",
     args: ["mcp"],
     cwd: "/project",
-  });
+  };
 
   it("matches an identical entry", () => {
     expect(
       mcpEntryMatches(
         { command: "pragma", args: ["mcp"], cwd: "/project" },
         want,
+        defaultMcpEntry,
       ),
     ).toBe(true);
   });
 
-  it("ignores EXTRA keys on the existing entry (no churn on decorated files)", () => {
+  it("ignores UNCONTROLLED extra keys (no churn on decorated files)", () => {
     expect(
       mcpEntryMatches(
         { command: "pragma", args: ["mcp"], cwd: "/project", timeout: 5000 },
         want,
+        defaultMcpEntry,
       ),
     ).toBe(true);
   });
@@ -130,68 +133,107 @@ describe("mcpEntryMatches", () => {
       mcpEntryMatches(
         { command: "pragma", args: ["mcp"], cwd: "/elsewhere" },
         want,
+        defaultMcpEntry,
       ),
     ).toBe(false);
   });
 
   it("rejects a drifted array (length and element-wise)", () => {
     expect(
-      mcpEntryMatches({ command: "pragma", args: [], cwd: "/project" }, want),
+      mcpEntryMatches(
+        { command: "pragma", args: [], cwd: "/project" },
+        want,
+        defaultMcpEntry,
+      ),
     ).toBe(false);
     expect(
       mcpEntryMatches(
         { command: "pragma", args: ["serve"], cwd: "/project" },
         want,
+        defaultMcpEntry,
       ),
     ).toBe(false);
   });
 
   it("rejects a missing field and non-object entries", () => {
-    expect(mcpEntryMatches({ command: "pragma" }, want)).toBe(false);
-    expect(mcpEntryMatches("pragma", want)).toBe(false);
-    expect(mcpEntryMatches(null, want)).toBe(false);
+    expect(mcpEntryMatches({ command: "pragma" }, want, defaultMcpEntry)).toBe(
+      false,
+    );
+    expect(mcpEntryMatches("pragma", want, defaultMcpEntry)).toBe(false);
+    expect(mcpEntryMatches(null, want, defaultMcpEntry)).toBe(false);
+  });
+
+  it("a CONTROLLED field the want omits must be ABSENT (global-band cwd)", () => {
+    // A global-band registration omits `cwd` — a per-user server must not be
+    // pinned to the directory setup happened to run from. A stale entry still
+    // carrying one is drift to converge, not decoration to ignore.
+    const globalWant: McpServerConfig = { command: "pragma", args: ["mcp"] };
+    expect(
+      mcpEntryMatches(
+        { command: "pragma", args: ["mcp"], cwd: "/home/u/Downloads" },
+        globalWant,
+        defaultMcpEntry,
+      ),
+    ).toBe(false);
+    expect(
+      mcpEntryMatches(
+        { command: "pragma", args: ["mcp"] },
+        globalWant,
+        defaultMcpEntry,
+      ),
+    ).toBe(true);
   });
 
   it("matches the opencode shape it would write, per its own serializer", () => {
-    const opencodeWant = opencodeMcpEntry({
-      command: "pragma",
-      args: ["mcp"],
-      cwd: "/project",
-    });
     expect(
       mcpEntryMatches(
         { type: "local", command: ["pragma", "mcp"], cwd: "/project" },
-        opencodeWant,
+        want,
+        opencodeMcpEntry,
       ),
     ).toBe(true);
     // The legacy default-shaped entry (S1-3's corrupt output) reads as drift.
     expect(
       mcpEntryMatches(
         { command: "pragma", args: ["mcp"], cwd: "/project" },
-        opencodeWant,
+        want,
+        opencodeMcpEntry,
       ),
     ).toBe(false);
   });
 
   it("compares nested env maps structurally (exact keys, both ways)", () => {
-    const withEnv = defaultMcpEntry({
+    const withEnv: McpServerConfig = {
       command: "pragma",
       env: { A: "1", B: "2" },
-    });
+    };
     expect(
-      mcpEntryMatches({ command: "pragma", env: { B: "2", A: "1" } }, withEnv),
+      mcpEntryMatches(
+        { command: "pragma", env: { B: "2", A: "1" } },
+        withEnv,
+        defaultMcpEntry,
+      ),
     ).toBe(true);
     expect(
-      mcpEntryMatches({ command: "pragma", env: { A: "1" } }, withEnv),
+      mcpEntryMatches(
+        { command: "pragma", env: { A: "1" } },
+        withEnv,
+        defaultMcpEntry,
+      ),
     ).toBe(false);
     expect(
       mcpEntryMatches(
         { command: "pragma", env: { A: "1", B: "2", C: "3" } },
         withEnv,
+        defaultMcpEntry,
       ),
     ).toBe(false);
-    expect(mcpEntryMatches({ command: "pragma", env: ["A"] }, withEnv)).toBe(
-      false,
-    );
+    expect(
+      mcpEntryMatches(
+        { command: "pragma", env: ["A"] },
+        withEnv,
+        defaultMcpEntry,
+      ),
+    ).toBe(false);
   });
 });

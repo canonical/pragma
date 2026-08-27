@@ -319,6 +319,86 @@ describe("setup mcp — scope & dedup", () => {
     ).toBe(true);
     expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
   });
+
+  it("a GLOBAL entry omits cwd — registrations from two directories are byte-identical", async () => {
+    // A per-user server must not be pinned to whatever directory `setup mcp
+    // --global` happened to run from (a registration made from ~/Downloads
+    // used to serve ~/Downloads forever, and re-running from repo B flipped
+    // the machine band to repo B).
+    const home = process.env.HOME ?? "";
+    const configPath = join(home, ".codeium", "windsurf", "mcp_config.json");
+    const register = async (cwd: string): Promise<string> => {
+      mkdirSync(join(cwd, ".windsurf"), { recursive: true });
+      await executeVerb(
+        verbOf("mcp"),
+        { global: true },
+        YES,
+        bootRuntime(FLAGS, cwd),
+      );
+      return readFileSync(configPath, "utf-8");
+    };
+    const fromA = await register(tmp("pragma-setup-projA-"));
+    const fromB = await register(tmp("pragma-setup-projB-"));
+    expect(fromA).toBe(fromB);
+    const entry = JSON.parse(fromA).mcpServers?.pragma;
+    expect(entry).toEqual({ command: "pragma", args: ["mcp"] });
+    expect(entry).not.toHaveProperty("cwd");
+  });
+
+  it("a stale cwd-pinned GLOBAL entry converges: drifted once, configured after", async () => {
+    const home = process.env.HOME ?? "";
+    const configPath = join(home, ".codeium", "windsurf", "mcp_config.json");
+    mkdirSync(join(home, ".codeium", "windsurf"), { recursive: true });
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        mcpServers: {
+          pragma: {
+            command: "pragma",
+            args: ["mcp"],
+            cwd: "/home/u/Downloads",
+          },
+        },
+      }),
+    );
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true });
+    const rt = bootRuntime(FLAGS, cwd);
+    const { detectMcp, mcpGroupState } = await import(
+      "./operations/setupMcp.js"
+    );
+    // The pinned entry reads as drift (the omitted cwd is a controlled field).
+    const before = await detectMcp(rt, "global");
+    expect(mcpGroupState(before, configPath)).toBe("drifted");
+    // One write converges it...
+    await executeVerb(
+      verbOf("mcp"),
+      { global: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(
+      JSON.parse(readFileSync(configPath, "utf-8")).mcpServers.pragma,
+    ).toEqual({ command: "pragma", args: ["mcp"] });
+    // ...and it stays `configured` afterwards (no churn on every run).
+    const after = await detectMcp(bootRuntime(FLAGS, cwd), "global");
+    expect(mcpGroupState(after, configPath)).toBe("configured");
+  });
+
+  it("a PROJECT entry still records the project root as cwd", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    const entry = JSON.parse(
+      readFileSync(join(cwd, ".cursor", "mcp.json"), "utf-8"),
+    ).mcpServers?.pragma;
+    expect(entry.cwd).toBe(cwd);
+  });
 });
 
 describe("setup mcp — customize opt-in gate (Item 6)", () => {

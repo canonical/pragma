@@ -246,10 +246,16 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { pragmaMcpEntry } = await import(
       "./capabilities/setup/operations/setupMcp.js"
     );
-    expect(pragmaMcpEntry("/work")).toEqual({
+    expect(pragmaMcpEntry("/work", "project")).toEqual({
       command: "recipes",
       args: ["mcp"],
       cwd: "/work",
+    });
+    // The global band omits `cwd` (a per-user server is not project-pinned)
+    // but still runs the fork's own binary.
+    expect(pragmaMcpEntry("/work", "global")).toEqual({
+      command: "recipes",
+      args: ["mcp"],
     });
   });
 

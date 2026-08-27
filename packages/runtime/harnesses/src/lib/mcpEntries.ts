@@ -133,23 +133,46 @@ const deepEquals = (a: unknown, b: unknown): boolean => {
 };
 
 /**
- * Whether an existing on-disk entry already matches what a serializer would
- * write: every serialized field must be present and deep-equal, while EXTRA
- * keys on the existing entry are ignored — a harness (or user) that decorates
- * the entry (e.g. `timeout`, `enabled`) still reads as `configured`, so a
- * re-run never churns a file it did not author.
+ * A fully-populated probe config: serializing it reveals a serializer's FULL
+ * field surface — every key it could ever emit, i.e. every key pragma
+ * CONTROLS in that harness's entry shape (see {@link mcpEntryMatches}).
+ */
+const PROBE_CONFIG: McpServerConfig = {
+  command: "probe",
+  args: ["probe"],
+  cwd: "/probe",
+  env: { PROBE: "probe" },
+};
+
+/**
+ * Whether an existing on-disk entry already matches what a write would emit
+ * for `config` under `serialize`. The comparison runs over the serializer's
+ * CONTROLLED keys (its full field surface, revealed by serializing a
+ * fully-populated probe), in both directions:
+ *
+ * - a controlled key the want carries must be present and deep-equal;
+ * - a controlled key the want OMITS must be absent — a global-band entry
+ *   deliberately omits `cwd` (a per-user server must not be pinned to
+ *   whatever directory registration happened to run from), so a stale entry
+ *   still carrying one reads as `drifted` and converges on the next write;
+ * - keys OUTSIDE the controlled surface are ignored — a harness (or user)
+ *   that decorates the entry (e.g. `timeout`, `enabled`) still reads as
+ *   `configured`, so a re-run never churns a file it did not author.
  *
  * @param existing - The raw entry read back from a harness config.
- * @param want - The serialized entry a write would emit.
- * @returns Whether the existing entry matches over the serialized fields.
+ * @param config - The canonical pragma config a write would serialize.
+ * @param serialize - The target's entry serializer.
+ * @returns Whether the existing entry matches over the controlled fields.
  */
 export const mcpEntryMatches = (
   existing: unknown,
-  want: Record<string, unknown>,
+  config: McpServerConfig,
+  serialize: McpEntrySerializer,
 ): boolean => {
   if (typeof existing !== "object" || existing === null) return false;
   const record = existing as Record<string, unknown>;
-  return Object.entries(want).every(([key, value]) =>
-    deepEquals(record[key], value),
+  const want = serialize(config);
+  return Object.keys(serialize(PROBE_CONFIG)).every((key) =>
+    deepEquals(record[key], want[key]),
   );
 };
