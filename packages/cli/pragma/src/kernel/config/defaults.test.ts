@@ -25,7 +25,7 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     expect(defaults.colophon?.summary?.startsWith("#")).toBe(false);
   });
 
-  it("ships the three canonical default packs (git+https sources)", () => {
+  it("ships the four canonical default packs (git+https sources)", () => {
     expect(
       defaults.packs?.map((pack) =>
         typeof pack === "string"
@@ -45,6 +45,10 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
         name: "@canonical/code-standards",
         source: "git+https://github.com/canonical/web-code-standards.git#main",
       },
+      {
+        name: "@canonical/ds-implementations",
+        source: "git+https://github.com/canonical/pragma.git#main",
+      },
     ]);
   });
 
@@ -55,7 +59,7 @@ describe("defaults — the validated distribution config (pragma.conf.ts)", () =
     const storyCounts = defaults.packs?.map((pack) =>
       typeof pack === "string" ? 0 : (pack.stories?.length ?? 0),
     );
-    expect(storyCounts).toEqual([4, 0, 1]);
+    expect(storyCounts).toEqual([4, 0, 1, 0]);
   });
 
   it("declares no removed field — the validator would refuse to load one", () => {
