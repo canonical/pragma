@@ -47,6 +47,7 @@
     "@canonical/router-core": "^0.34.0",
     "@canonical/router-react": "^0.34.0",
     "@canonical/storybook-addon-relay": "^0.34.0",
+    "@canonical/storybook-addon-utils": "^0.34.0",
     "@canonical/storybook-config": "^0.34.0",
     "@canonical/styles": "^0.34.0",
     "express": "^5.2.1",

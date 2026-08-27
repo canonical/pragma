@@ -58,6 +58,7 @@
     "@canonical/ds-types": "^0.34.0",
     "@canonical/router-core": "^0.34.0",
     "@canonical/router-react": "^0.34.0",
+    "@canonical/storybook-addon-utils": "^0.34.0",
     "@canonical/storybook-helpers": "^0.34.0",
     "@canonical/typescript-config-react": "^0.34.0",
     "@canonical/vitest-config-react": "^0.34.0",
