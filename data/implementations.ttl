@@ -23,4 +23,4 @@ ds:implementation.library.react-ds-global-form
 ds:implementation.library.svelte-ds-global
     a ds:ImplementationLibrary;
     rdfs:seeAlso <https://github.com/canonical/pragma/blob/main/data/svelte-ds-global/implementationLibrary.ttl>;
-    ds:implementationCount 3.
+    ds:implementationCount 4.
