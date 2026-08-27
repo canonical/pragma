@@ -5,7 +5,7 @@
 
   --log-padding-inline: var(--dimension-200);
 
-  background-color: var(--color-foreground-secondary);
+  background-color: var(--color-foreground-input);
   padding-inline-end: var(--log-padding-inline);
   padding-block-end: var(--dimension-400);
 

@@ -6,8 +6,8 @@
   font: var(--ds-typography-text-secondary-code);
   color: var(--color-text);
 
-  --log-line-background-color: var(--color-foreground-secondary);
-  --log-line-target-highlight-color: var(--active--color-foreground-secondary);
+  --log-line-background-color: var(--color-foreground-input);
+  --log-line-target-highlight-color: var(--color-foreground-input-hover);
   --log-line-target-highlight-time: 5s;
 
   > td,
