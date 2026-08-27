@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dryRun, dryRunWith } from "./dry-run.js";
+import { describeEffect } from "./effect.js";
 import {
   appendFile,
   copyDirectory,
@@ -100,6 +101,22 @@ describe("Primitives - File System", () => {
       const task = writeFile("/multiline.txt", content);
       const { effects } = dryRun(task);
       expect((effects[0] as { content: string }).content).toBe(content);
+    });
+
+    it("passes the verbatim marker through, leaving undo and describe as-is", () => {
+      const task = writeFile("/copied.txt", "bytes", { verbatim: true });
+      const { effects } = dryRun(task);
+      const effect = effects[0] as {
+        verbatim?: boolean;
+        undo?: unknown;
+      };
+      expect(effect.verbatim).toBe(true);
+      // Inert for the interpreters: default undo still attached, description
+      // unchanged — only content transforms on the effect seam read it.
+      expect(effect.undo).toBeDefined();
+      expect(describeEffect(effects[0] as never)).toBe(
+        "Write file: /copied.txt (5 bytes)",
+      );
     });
 
     it("handles content with special characters", () => {

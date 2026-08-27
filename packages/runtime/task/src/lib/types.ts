@@ -102,8 +102,19 @@ export type PromptQuestion =
 export type Effect =
   /** Read file contents as UTF-8 string */
   | { _tag: "ReadFile"; path: string }
-  /** Write content to file, creating parent directories */
-  | { _tag: "WriteFile"; path: string; content: string; undo?: Task<void> }
+  /**
+   * Write content to file, creating parent directories. `verbatim` marks the
+   * content as a carried copy that must land byte-for-byte: interpreters treat
+   * it identically, but content transforms hooked on the effect seam (e.g. a
+   * generated-file stamp) skip it.
+   */
+  | {
+      _tag: "WriteFile";
+      path: string;
+      content: string;
+      verbatim?: boolean;
+      undo?: Task<void>;
+    }
   /** Append content to file */
   | {
       _tag: "AppendFile";
