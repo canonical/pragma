@@ -287,6 +287,10 @@ const simpleGlob = async (pattern: string, cwd: string): Promise<string[]> => {
  * `Glob` effect's (otherwise real) matches.
  */
 export const matchesPattern = (filepath: string, pattern: string): boolean => {
+  // Callers hand over relative paths from `path.relative`/readdir walks, which
+  // use `\` on Windows; the pattern language is `/`-separated, so normalize
+  // the platform separator before matching.
+  const normalized = filepath.split(path.sep).join("/");
   // Very simple glob matching - just handles * and **. Dots are escaped FIRST:
   // escaping them after the `**` → `.*` substitution turned the wildcard into
   // `\.*` (zero-or-more literal dots), so `glob("**/*")` matched nothing. A
@@ -299,7 +303,7 @@ export const matchesPattern = (filepath: string, pattern: string): boolean => {
     .replace(/\*/g, "[^/]*")
     .replace(/<<GLOBSTARSLASH>>/g, "(?:.*/)?")
     .replace(/<<GLOBSTAR>>/g, ".*");
-  return new RegExp(`^${regex}$`).test(filepath);
+  return new RegExp(`^${regex}$`).test(normalized);
 };
 
 // =============================================================================
