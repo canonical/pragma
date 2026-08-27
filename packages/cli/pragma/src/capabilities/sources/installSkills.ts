@@ -10,6 +10,18 @@
  * first), and the update Task stays reversible (each created link carries an
  * unlink undo).
  *
+ * Installing alone leaks, because planning walks the PACKAGES and so only ever
+ * visits a skill that still exists. When a package DROPS one (a `0.1.2` that
+ * shipped `component-specifier` upgrading to a `0.2.0` that does not), the link
+ * the previous update installed is never revisited and is left dangling at a
+ * target that no longer exists — which reads as a broken install rather than the
+ * intentional removal it is, and which `skill` commands can still list or try to
+ * open. So planning ALSO walks the installed root and prunes those, under a
+ * deliberately narrow rule: an entry is removed only when this run did not plan
+ * it AND it is a symlink whose target is gone. A real directory is a
+ * manually-installed skill and a still-resolving symlink is someone's own link;
+ * neither is this update's to delete.
+ *
  * Decisions run against REAL fs here so the update's `--dry-run` plan is
  * accurate; the composed Task performs only the symlink/delete effects.
  */
@@ -21,16 +33,28 @@ import { installedSkillsDir } from "../skill/discover.js";
 
 /** One planned skill symlink into the installed-skills root. */
 export interface SkillLinkAction {
-  /** The package's skill folder — the symlink target. */
+  /**
+   * The symlink target: the package's skill folder for an install, or — on a
+   * `pruned` entry — the missing target the stale link still points at, kept so
+   * the prune's undo can put the link back exactly as it was.
+   */
   readonly target: string;
   /** `<installedSkillsDir>/<folderName>` — where the symlink is created. */
   readonly linkPath: string;
-  /** created (absent), skipped (already correct / a real dir), or replaced. */
-  readonly action: "created" | "skipped" | "replaced";
+  /**
+   * created (absent), skipped (already correct / a real dir), replaced, or
+   * pruned (an unplanned link whose target is gone — deleted, not re-created).
+   */
+  readonly action: "created" | "skipped" | "replaced" | "pruned";
   /** The skill folder name (the discovery key). */
   readonly folderName: string;
-  /** The package the skill came from. */
-  readonly packageName: string;
+  /**
+   * The package the skill came from. Absent on a `pruned` entry: a stale link
+   * records only a target path, and the package that installed it is precisely
+   * the one that no longer provides the skill — there is nothing honest left to
+   * attribute it to.
+   */
+  readonly packageName?: string;
 }
 
 /** What currently occupies a candidate link path. */
@@ -81,8 +105,57 @@ function packageSkillDirs(root: string): string[] {
 }
 
 /**
+ * Plan the removal of the links a package has since dropped.
+ *
+ * The install pass walks the packages, so it can only ever visit a skill that
+ * still exists; this pass walks the installed root, which is the ONLY place a
+ * dropped skill still shows up. An entry is pruned only when both hold: this run
+ * did not plan it, and it is a symlink whose target is gone. Both halves matter —
+ *
+ * - a real (non-symlink) entry is a manually-installed skill, which the install
+ *   pass already refuses to clobber (`skipped`) and which this pass must refuse
+ *   just as firmly: "unplanned" is exactly what a hand-placed skill looks like;
+ * - a symlink whose target still resolves is someone's own link into a checkout
+ *   this command knows nothing about. Unplanned does not make it garbage, and an
+ *   update that silently ate it would be a worse bug than the dangling link.
+ *
+ * A broken target, by contrast, cannot be anything but debris: nothing can read
+ * it, and re-creating it is a matter of re-running the update that installed it
+ * (which is also what this prune's undo does).
+ *
+ * @param dest - The installed-skills root.
+ * @param planned - Every folder name the install pass planned, whatever action.
+ * @returns One `pruned` action per stale link, for the plan and its preview.
+ * @note Impure — reads the installed root and stats each entry's target.
+ */
+function planStaleLinkPrunes(
+  dest: string,
+  planned: ReadonlySet<string>,
+): SkillLinkAction[] {
+  let names: string[];
+  try {
+    names = readdirSync(dest);
+  } catch {
+    return []; // No installed root — nothing was ever installed to go stale.
+  }
+  const out: SkillLinkAction[] = [];
+  for (const folderName of names) {
+    if (planned.has(folderName)) continue;
+    const linkPath = resolve(dest, folderName);
+    const state = linkState(linkPath);
+    if (state.kind !== "symlink") continue;
+    // A relative target is stored relative to the link's OWN directory, which
+    // for an entry of the installed root is that root itself.
+    if (existsSync(resolve(dest, state.target))) continue;
+    out.push({ target: state.target, linkPath, action: "pruned", folderName });
+  }
+  return out;
+}
+
+/**
  * Plan the symlink actions that install each resolved package's `skills/*` into
- * the installed-skills discovery root. First-seen wins on a folder-name clash
+ * the installed-skills discovery root, then the removals that retire the links
+ * a package has since dropped. First-seen wins on a folder-name clash
  * across packages. A real (non-symlink) entry at the link path is left untouched
  * (`skipped`) so a manually-installed skill is never clobbered.
  *
@@ -120,5 +193,9 @@ export function planSkillInstall(
       });
     }
   }
+  // `seen` is every folder name this run planned — the `skipped` ones included,
+  // so a name a package still provides is never a prune candidate even when the
+  // install pass decided to leave its entry alone.
+  actions.push(...planStaleLinkPrunes(dest, seen));
   return actions;
 }

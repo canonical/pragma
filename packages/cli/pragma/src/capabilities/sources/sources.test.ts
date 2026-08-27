@@ -1,9 +1,12 @@
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
+  readlinkSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -767,6 +770,155 @@ describe("sources update — installs package skills (U10)", () => {
     await runUndo(await buildUpdateTask(runtime));
 
     expect(existsSync(join(dataHome, "pragma", "skills", "bar"))).toBe(false);
+  });
+
+  /** The installed-skills root, created so a prior install can be seeded into it. */
+  function installedRoot(): string {
+    const root = join(dataHome, "pragma", "skills");
+    mkdirSync(root, { recursive: true });
+    return root;
+  }
+
+  /** A symlink at `<installedRoot>/<name>` whose target does not exist. */
+  function danglingLink(root: string, name: string): string {
+    const target = join(tmp("pragma-uninstalled-"), "skills", name);
+    symlinkSync(target, join(root, name));
+    return target;
+  }
+
+  // The `@canonical/design-system` 0.2.0 regression: 0.1.2 shipped
+  // `component-specifier`, 0.2.0 deleted it in favour of `specify-component`,
+  // and every machine that had updated against 0.1.2 kept a symlink into a
+  // package directory that no longer exists.
+  it("prunes a link whose package dropped the skill", async () => {
+    const pkg = skillPackage("specify-component"); // the 0.2.0 shape
+    const root = installedRoot();
+    danglingLink(root, "component-specifier"); // what 0.1.2 left behind
+
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "design-system", source: `file://${pkg}` },
+    ]);
+    await runTask(await buildUpdateTask(runtime));
+
+    expect(readdirSync(root)).toEqual(["specify-component"]);
+    expect(discoverSkills(cwd).map((s) => s.name)).not.toContain(
+      "component-specifier",
+    );
+  });
+
+  it("spares a manually-installed skill and a foreign link that still resolves", async () => {
+    const pkg = skillPackage("specify-component");
+    const root = installedRoot();
+    danglingLink(root, "component-specifier");
+
+    // A hand-installed skill: a REAL directory, belonging to no package. The
+    // install pass already refuses to clobber these; so must the prune pass.
+    const manual = join(root, "hand-written");
+    mkdirSync(manual, { recursive: true });
+    writeFileSync(
+      join(manual, "SKILL.md"),
+      "---\nname: hand-written\ndescription: Mine.\n---\n",
+    );
+    // Someone's own link into a checkout this update knows nothing about, and
+    // which still resolves. Deliberately RELATIVE: a relative target is stored
+    // relative to the LINK's directory, so resolving it against anything else
+    // (the cwd, say) would read as broken and eat a perfectly live link.
+    const foreign = join(dataHome, "elsewhere", "my-own");
+    mkdirSync(foreign, { recursive: true });
+    writeFileSync(
+      join(foreign, "SKILL.md"),
+      "---\nname: my-own\ndescription: Theirs.\n---\n",
+    );
+    symlinkSync(join("..", "..", "elsewhere", "my-own"), join(root, "my-own"));
+
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "design-system", source: `file://${pkg}` },
+    ]);
+    await runTask(await buildUpdateTask(runtime));
+
+    // Only the dangling link went.
+    expect(readdirSync(root).sort()).toEqual([
+      "hand-written",
+      "my-own",
+      "specify-component",
+    ]);
+    expect(lstatSync(manual).isDirectory()).toBe(true);
+    expect(existsSync(join(manual, "SKILL.md"))).toBe(true);
+    expect(lstatSync(join(root, "my-own")).isSymbolicLink()).toBe(true);
+    expect(existsSync(join(root, "my-own"))).toBe(true); // still resolves
+    const found = discoverSkills(cwd).map((s) => s.name);
+    expect(found).toEqual(
+      expect.arrayContaining(["hand-written", "my-own", "specify-component"]),
+    );
+  });
+
+  it("re-points, rather than prunes, a dangling link the package still provides", async () => {
+    const pkg = skillPackage("foo");
+    const root = installedRoot();
+    danglingLink(root, "foo"); // e.g. the package moved to a new cache dir
+
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    await runTask(await buildUpdateTask(runtime));
+
+    // `replaced`, never `pruned`: the prune pass skips every name this run
+    // planned, or it would delete the link the install pass just created.
+    expect(readlinkSync(join(root, "foo"))).toBe(join(pkg, "skills", "foo"));
+    expect(discoverSkills(cwd).map((s) => s.name)).toContain("foo");
+  });
+
+  it("is reversible — undo restores a pruned link, dangling target and all", async () => {
+    const pkg = skillPackage("specify-component");
+    const root = installedRoot();
+    const staleTarget = danglingLink(root, "component-specifier");
+    const link = join(root, "component-specifier");
+
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "design-system", source: `file://${pkg}` },
+    ]);
+    // The plan is made while the stale link is still there; `runUndo` MOCKS the
+    // forward effects, so stand in for the delete it would have performed.
+    const task = await buildUpdateTask(runtime);
+    rmSync(link);
+
+    const { runUndo } = await import("@canonical/task/node");
+    await runUndo(task);
+
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readlinkSync(link)).toBe(staleTarget); // the target it always had
+  });
+
+  it("undoes a prune whose forward delete never ran, rather than failing EEXIST", async () => {
+    const pkg = skillPackage("specify-component");
+    const root = installedRoot();
+    const staleTarget = danglingLink(root, "component-specifier");
+
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "design-system", source: `file://${pkg}` },
+    ]);
+    // No `rmSync` this time: the link is still in place when the undo re-links,
+    // and `fs.symlink` refuses an existing path — so the undo must clear it.
+    const { runUndo } = await import("@canonical/task/node");
+    await expect(runUndo(await buildUpdateTask(runtime))).resolves.toBeTruthy();
+
+    expect(readlinkSync(join(root, "component-specifier"))).toBe(staleTarget);
+  });
+
+  it("plans no prunes when nothing was ever installed", async () => {
+    const pkg = skillPackage("foo"); // $XDG_DATA_HOME/pragma/skills absent
+    const cwd = tmp("pragma-proj-");
+    const runtime = runtimeFor(cwd, [
+      { name: "pkg-a", source: `file://${pkg}` },
+    ]);
+    await runTask(await buildUpdateTask(runtime));
+
+    expect(readdirSync(join(dataHome, "pragma", "skills"))).toEqual(["foo"]);
   });
 });
 

@@ -322,13 +322,24 @@ export async function buildUpdateTask(
 
   // Install package-provided skills (U10): symlink each resolved package's
   // `skills/*` into the installed-skills root, so `skill list` / `setup skills`
-  // see them after an update. Kept in this Task (reversible: created links carry
-  // an unlink undo) so `sources update --undo` also removes them.
-  const skillLinks = planSkillInstall(resolved).filter(
-    (link) => link.action !== "skipped",
+  // see them after an update — and RETIRE the links of skills those packages
+  // have since dropped, which the same plan reports as `pruned`. Kept in this
+  // Task (reversible: a created link carries an unlink undo, a pruned one a
+  // re-link undo) so `sources update --undo` restores the root as it was.
+  //
+  // The two are split, not counted together: a prune is a deletion, so folding
+  // it into "Installing N skill(s)" would report a removal as an install.
+  const skillPlan = planSkillInstall(resolved);
+  const skillLinks = skillPlan.filter(
+    (link) => link.action === "created" || link.action === "replaced",
   );
+  const staleLinks = skillPlan.filter((link) => link.action === "pruned");
   if (skillLinks.length > 0)
     report?.(`Installing ${skillLinks.length} skill(s)`);
+  if (staleLinks.length > 0)
+    report?.(
+      `Removing ${staleLinks.length} skill link(s) no longer provided by any package`,
+    );
 
   report?.(`Pointing ${runtime.cwd} at pack ${built.contentHash.slice(0, 12)}`);
   return gen(function* () {
@@ -343,6 +354,25 @@ export async function buildUpdateTask(
           }),
         );
       }
+    }
+    // No `mkdir` guard here: a stale link can only have been enumerated FROM
+    // the installed root, so the root necessarily exists.
+    //
+    // The undo re-creates the link exactly as found — dangling target and all —
+    // because undo's job is to restore the prior state, not to improve on it. It
+    // clears the path first because the undo interpreter MOCKS forward effects
+    // when collecting: the delete above may never have run, and `fs.symlink`
+    // refuses a path that already exists. Same delete-then-link shape the
+    // `replaced` branch above uses, for the same reason.
+    for (const stale of staleLinks) {
+      yield* $(
+        deleteFile(stale.linkPath, {
+          undo: gen(function* () {
+            yield* $(deleteFile(stale.linkPath));
+            yield* $(symlink(stale.target, stale.linkPath));
+          }),
+        }),
+      );
     }
     return data;
   });
