@@ -4,7 +4,7 @@
  * Generates a Lit web component with a consistent file structure:
  * - `ComponentName.ts` - Main component file (Lit element)
  * - `index.ts` - Barrel export
- * - `ComponentName.tests.ts` - Unit tests with Vitest
+ * - `ComponentName.test.ts` - Unit tests with Vitest
  * - `ComponentName.stories.ts` - Storybook stories (optional)
  * - `styles.css` - CSS styles (optional)
  *
@@ -26,10 +26,12 @@ import {
   appendExportToParentIndex,
   createComponentPathPrompt,
   createTemplateContext,
+  failIfComponentExists,
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
   packageVersion,
+  sharedPrompts,
 } from "../shared/index.js";
 import { loadTemplateSync } from "../shared/loadTemplate.js";
 import type { LitAnswers } from "./types.js";
@@ -71,22 +73,11 @@ function litTemplates(): ReturnType<typeof loadLitTemplates> {
 // Custom Prompts (without SSR tests)
 // =============================================================================
 
-const litPrompts = [
-  {
-    name: "withStyles",
-    type: "confirm",
-    message: "Include styles?",
-    default: true,
-    group: "Options",
-  },
-  {
-    name: "withStories",
-    type: "confirm",
-    message: "Include Storybook stories?",
-    default: true,
-    group: "Options",
-  },
-] as const;
+// Reuse the shared prompt definitions rather than duplicating them; lit only
+// drops the SSR-tests flag it never acts on.
+const litPrompts = sharedPrompts.filter(
+  (prompt) => prompt.name !== "withSsrTests",
+);
 
 // =============================================================================
 // Generator Definition
@@ -118,7 +109,7 @@ FEATURES:
 
 The component name is extracted from the path and must be PascalCase.
 For example, 'src/lib/components/Button' creates a 'Button' component
-with the custom element tag 'button'.`,
+with the custom element tag 'ds-button'.`,
     examples: [
       "summon component lit --component-path=src/lib/components/Button",
       "summon component lit --component-path=src/lib/components/Card --with-styles --with-stories",
@@ -138,6 +129,10 @@ with the custom element tag 'button'.`,
 
     return sequence_([
       info(`Generating Lit web component: ${componentName}`),
+
+      // Refuse to scaffold over an existing component: the writes' delete
+      // undos would otherwise let --undo destroy pre-existing files.
+      failIfComponentExists(componentDir),
 
       debug("Creating component directory"),
       mkdir(componentDir),
@@ -170,7 +165,7 @@ with the custom element tag 'button'.`,
       template({
         source: t.tests.source,
         content: t.tests.content,
-        dest: path.join(componentDir, `${componentName}.tests.ts`),
+        dest: path.join(componentDir, `${componentName}.test.ts`),
         vars: ctx,
       }),
 

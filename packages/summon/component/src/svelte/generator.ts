@@ -30,6 +30,7 @@ import {
   appendExportToParentIndex,
   createComponentPathPrompt,
   createTemplateContext,
+  failIfComponentExists,
   getComponentName,
   getParentDir,
   PACKAGE_NAME,
@@ -144,6 +145,10 @@ For example, 'src/lib/components/Button' creates a 'Button' component.`,
 
     return sequence_([
       info(`Generating Svelte component: ${componentName}`),
+
+      // Refuse to scaffold over an existing component: the writes' delete
+      // undos would otherwise let --undo destroy pre-existing files.
+      failIfComponentExists(componentDir),
 
       debug("Creating component directory"),
       mkdir(componentDir),
