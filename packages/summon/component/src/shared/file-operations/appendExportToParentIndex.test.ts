@@ -33,6 +33,26 @@ describe("appendExportToParentIndex", () => {
     expect(writeEffects).toHaveLength(0);
   });
 
+  it("recognizes an equivalent hand-written export (single quotes, no semicolon)", () => {
+    // Exact string equality would miss these and append a duplicate — the
+    // check compares the parsed module path, not the serialization.
+    for (const existing of [
+      "export * from './Button/index.js';\n",
+      'export * from "./Button/index.js"\n',
+      "export  *  from   './Button/index.js'\n",
+    ]) {
+      const result = dryRunWithFileState(
+        appendExportToParentIndex("src/components", "Button"),
+        { "src/components/index.ts": existing },
+      );
+
+      const writeEffects = result.effects.filter(
+        (e) => e._tag === "AppendFile" || e._tag === "WriteFile",
+      );
+      expect(writeEffects).toHaveLength(0);
+    }
+  });
+
   it("appends when an existing export is a prefix-named sibling", () => {
     // Substring matching would treat ./ButtonGroup as covering ./Button and
     // silently skip the append — the whole-line check must not.
