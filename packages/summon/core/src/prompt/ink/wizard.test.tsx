@@ -201,7 +201,10 @@ describe("keyboard bindings (one prompt, one render each)", () => {
   // seeded default with bare Enter rather than typing, and y/Enter re-sends
   // are no-ops once the prompt has resolved. On a timeout the error carries
   // the wedged state — these races have only ever reproduced on loaded CI
-  // runners, so the error text is the one diagnostic that comes back.
+  // runners, so the error text is the one diagnostic that comes back. The
+  // outer test budget (70s) sits above both sequential 30s helper windows,
+  // so a wedge always surfaces as that diagnostic error, never as vitest's
+  // generic test timeout.
   const describeWedge =
     (c: SessionController, frame: () => string) => (): string => {
       const s = c.getSnapshot();
@@ -228,7 +231,7 @@ describe("keyboard bindings (one prompt, one render each)", () => {
     } finally {
       unmount();
     }
-  }, 40000);
+  }, 70000);
 
   it("confirm prompt: 'y' submits true", async () => {
     const c = new SessionController(gen);
@@ -248,7 +251,7 @@ describe("keyboard bindings (one prompt, one render each)", () => {
     } finally {
       unmount();
     }
-  }, 40000);
+  }, 70000);
 
   it("the gate: 'y' proceeds to executing", async () => {
     const c = new SessionController(gen, undefined, undefined, {
@@ -271,7 +274,7 @@ describe("keyboard bindings (one prompt, one render each)", () => {
     } finally {
       unmount();
     }
-  }, 40000);
+  }, 70000);
 });
 
 describe("cancelled frame is truthful about files written (H2)", () => {
