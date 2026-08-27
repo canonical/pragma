@@ -4,6 +4,7 @@ import ScrollManager from "../a11y/ScrollManager.js";
 import ViewTransitionManager from "../a11y/ViewTransitionManager.js";
 import buildUrl from "./buildUrl.js";
 import createRouterStore from "./createRouterStore.js";
+import createSubject from "./createSubject.js";
 import {
   createRouteCodec,
   matchPath,
@@ -23,7 +24,6 @@ import type {
   ParamsOf,
   PathBuildArgs,
   PlatformNavigateOptions,
-  PrefetchFn,
   RouteMap,
   RouteMiddleware,
   RouteModule,
@@ -33,13 +33,13 @@ import type {
   Router,
   RouterAccessibilityContext,
   RouterAccessibilityDocumentLike,
-  RouterBlocker,
   RouterDehydratedState,
   RouterLoadResult,
   RouterMatch,
   RouterOptions,
   SearchOf,
   StandardSchemaIssue,
+  WarmFn,
 } from "./types.js";
 
 type NavigationMode = "initial" | "none" | "pop" | "push";
@@ -489,7 +489,7 @@ function isRedirectMatch(value: unknown): value is {
 /**
  * Intentional no-op `.catch()` handler for fire-and-forget loads.
  *
- * Scheduled loads (navigate, prefetch, adapter pop) run asynchronously.  When a
+ * Scheduled loads (navigate, warm, adapter pop) run asynchronously.  When a
  * newer navigation supersedes an in-flight one, the earlier load is aborted and
  * its rejection is harmless.  Attaching this handler prevents an unhandled
  * promise rejection without swallowing errors that matter — the active load's
@@ -498,7 +498,7 @@ function isRedirectMatch(value: unknown): value is {
 function ignoreScheduledLoadError(_error: unknown): void {}
 
 /**
- * Rejections from async prefetch hooks that carry control flow rather than a
+ * Rejections from async warm hooks that carry control flow rather than a
  * side-effect failure: a runtime redirect or a typed status.  They receive
  * the same meaning as their synchronous counterparts, applied late.
  */
@@ -649,11 +649,8 @@ export default function createRouter<
   let currentLoadResult: RouterLoadResult<TRoutes, TNotFound> | null = null;
   let hydratedHref: string | null = null;
   let ignoredAdapterHref: string | null = null;
-  const pendingPrefetches = new Map<string, Promise<void>>();
-  const prefetchedLoads = new Map<
-    string,
-    ResolvedLoadData<TRoutes, TNotFound>
-  >();
+  const pendingWarmups = new Map<string, Promise<void>>();
+  const warmedLoads = new Map<string, ResolvedLoadData<TRoutes, TNotFound>>();
   const preloadedModules = new Map<string, WeakRef<RouteModule>>();
   const preloadedModuleRegistry = new FinalizationRegistry<string>((key) => {
     preloadedModules.delete(key);
@@ -712,10 +709,10 @@ export default function createRouter<
   ): Promise<ResolvedLoadData<TRoutes, TNotFound>> {
     const nextRoute = currentMatch?.route;
 
-    // A rejection from an async prefetch hook is honoured when it carries
+    // A rejection from an async warm hook is honoured when it carries
     // control flow (a runtime redirect or a typed status): the first one wins
     // and is applied late by the caller's guard.  Any other rejection is an
-    // ordinary side-effect failure and is deliberately ignored — prefetch
+    // ordinary side-effect failure and is deliberately ignored — warm
     // never blocks rendering.
     const handleScheduledRejection = (thrownError: unknown): void => {
       if (
@@ -741,9 +738,9 @@ export default function createRouter<
       }
     };
 
-    // Fire prefetch hooks as fire-and-forget side effects.
-    // Wrapper prefetches run for all wrappers (no caching/reuse).
-    // Route prefetch runs if defined. None block rendering.
+    // Fire warm hooks as fire-and-forget side effects.
+    // Wrapper warms run for all wrappers (no caching/reuse).
+    // Route warm runs if defined. None block rendering.
     if (nextRoute) {
       // Wrappers are shared across routes and typed as RouteParamValues, so
       // they receive the raw string params extracted from the URL — a route's
@@ -753,16 +750,16 @@ export default function createRouter<
       ) as RouteParamValues;
 
       for (const currentWrapper of nextRoute.wrappers) {
-        if (currentWrapper.prefetch) {
+        if (currentWrapper.warm) {
           void Promise.resolve(
-            currentWrapper.prefetch(rawWrapperParams, { signal }),
+            currentWrapper.warm(rawWrapperParams, { signal }),
           ).catch(handleScheduledRejection);
         }
       }
 
-      if (nextRoute.prefetch && currentMatch) {
+      if (nextRoute.warm && currentMatch) {
         void Promise.resolve(
-          nextRoute.prefetch(currentMatch.params, currentMatch.search, {
+          nextRoute.warm(currentMatch.params, currentMatch.search, {
             signal,
           }),
         ).catch(handleScheduledRejection);
@@ -782,12 +779,12 @@ export default function createRouter<
     };
   }
 
-  const prefetchHref = async (
+  const warmHref = async (
     input: string | URL,
     redirectDepth = 0,
   ): Promise<void> => {
     if (redirectDepth > 10) {
-      throw new Error("Too many redirects during router.prefetch().");
+      throw new Error("Too many redirects during router.warm().");
     }
 
     const url = buildUrl(input);
@@ -795,24 +792,24 @@ export default function createRouter<
     const redirectMatch = currentMatch as unknown;
 
     if (isRedirectMatch(redirectMatch)) {
-      await prefetchHref(redirectMatch.redirectTo, redirectDepth + 1);
+      await warmHref(redirectMatch.redirectTo, redirectDepth + 1);
       return;
     }
 
     const href = toHref(url);
 
-    if (prefetchedLoads.has(href)) {
+    if (warmedLoads.has(href)) {
       return;
     }
 
-    const pendingPrefetch = pendingPrefetches.get(href);
+    const pendingWarmup = pendingWarmups.get(href);
 
-    if (pendingPrefetch) {
-      await pendingPrefetch;
+    if (pendingWarmup) {
+      await pendingWarmup;
       return;
     }
 
-    const prefetchPromise = (async () => {
+    const warmPromise = (async () => {
       // Same stash discipline as navigation loads: a rejection arriving
       // before the entry is cached would otherwise miss the cache and be
       // dropped by the location guard.
@@ -821,10 +818,10 @@ export default function createRouter<
         cached: boolean;
       } = { pending: null, cached: false };
 
-      const applyPrefetchControlFlow = (
+      const applyWarmControlFlow = (
         thrownError: ScheduledControlFlowError,
       ): void => {
-        applyLatePrefetchControlFlow(thrownError, {
+        applyLateWarmControlFlow(thrownError, {
           href,
           url,
           currentMatch,
@@ -841,25 +838,25 @@ export default function createRouter<
             return;
           }
 
-          applyPrefetchControlFlow(thrownError);
+          applyWarmControlFlow(thrownError);
         },
       };
 
       try {
-        const prefetchedLoad = await resolveLoadData(
+        const warmedLoad = await resolveLoadData(
           currentMatch,
           createIdleSignal(),
           scheduledControlFlow,
         );
 
-        prefetchedLoads.set(href, prefetchedLoad);
+        warmedLoads.set(href, warmedLoad);
         lateControlFlow.cached = true;
 
         const pendingControlFlow = lateControlFlow.pending;
 
         if (pendingControlFlow) {
           lateControlFlow.pending = null;
-          applyPrefetchControlFlow(pendingControlFlow);
+          applyWarmControlFlow(pendingControlFlow);
         }
       } catch (thrownError) {
         scheduledControlFlow.applied = true;
@@ -867,18 +864,18 @@ export default function createRouter<
         lateControlFlow.pending = null;
 
         if (thrownError instanceof RouteRedirect) {
-          await prefetchHref(thrownError.to, redirectDepth + 1);
+          await warmHref(thrownError.to, redirectDepth + 1);
           return;
         }
 
         throw thrownError;
       } finally {
-        pendingPrefetches.delete(href);
+        pendingWarmups.delete(href);
       }
     })();
 
-    pendingPrefetches.set(href, prefetchPromise);
-    await prefetchPromise;
+    pendingWarmups.set(href, warmPromise);
+    await warmPromise;
   };
 
   function syncAdapterLocation(
@@ -895,7 +892,7 @@ export default function createRouter<
 
   /**
    * Apply a control-flow rejection (redirect / status) that arrived from an
-   * async prefetch hook after its navigation already committed.  Prefetch is
+   * async warm hook after its navigation already committed.  Warm is
    * fire-and-forget, so a late arrival is expected: the page may render
    * briefly before the redirect or error status lands.  The guards drop the
    * rejection when the load was superseded or the user moved on.
@@ -953,13 +950,13 @@ export default function createRouter<
   }
 
   /**
-   * Apply a control-flow rejection from an async prefetch hook that ran for a
-   * hover/manual prefetch.  A still-cached entry absorbs the outcome so the
+   * Apply a control-flow rejection from an async warm hook that ran for a
+   * hover/manual warm.  A still-cached entry absorbs the outcome so the
    * eventual navigation observes it; an entry already consumed by a
    * navigation to that href applies live; otherwise the user went elsewhere
    * and the rejection is dropped.
    */
-  function applyLatePrefetchControlFlow(
+  function applyLateWarmControlFlow(
     thrownError: ScheduledControlFlowError,
     context: {
       href: string;
@@ -969,8 +966,8 @@ export default function createRouter<
     },
   ): void {
     if (thrownError instanceof RouteRedirect) {
-      if (prefetchedLoads.delete(context.href)) {
-        void prefetchHref(thrownError.to, context.redirectDepth + 1).catch(
+      if (warmedLoads.delete(context.href)) {
+        void warmHref(thrownError.to, context.redirectDepth + 1).catch(
           ignoreScheduledLoadError,
         );
 
@@ -1001,10 +998,10 @@ export default function createRouter<
     }
 
     const status = getErrorStatus(thrownError);
-    const cachedLoad = prefetchedLoads.get(context.href);
+    const cachedLoad = warmedLoads.get(context.href);
 
     if (cachedLoad) {
-      prefetchedLoads.set(context.href, { ...cachedLoad, status });
+      warmedLoads.set(context.href, { ...cachedLoad, status });
 
       return;
     }
@@ -1083,6 +1080,8 @@ export default function createRouter<
   let pendingNavigation: {
     href: string;
     replace: boolean;
+    /** Ids of the blockers whose isActive() intercepted this navigation. */
+    blockedBy: ReadonlySet<string>;
     resolve: () => void;
   } | null = null;
 
@@ -1097,50 +1096,69 @@ export default function createRouter<
     const replace = (buildArgs[0] as { replace?: boolean } | undefined)
       ?.replace;
 
-    if (adapter) {
-      if (isBlocked()) {
-        pendingNavigation = {
-          href: intent.href,
-          replace: replace ?? false,
-          resolve: () => {
-            pendingNavigation = null;
-            saveScrollPosition();
-            syncAdapterLocation(
-              intent.href,
-              replace ? { replace: true } : undefined,
-            );
-            void performLoad(
-              intent.href,
-              0,
-              true,
-              replace ? "pop" : "push",
-            ).catch(ignoreScheduledLoadError);
-          },
-        };
-
-        return intent;
-      }
-
-      saveScrollPosition();
-      syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
-      void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
-        ignoreScheduledLoadError,
+    if (!adapter) {
+      throw new Error(
+        "router.navigate() requires a platform adapter. Construct the router " +
+          "with { adapter } — an adapterless router only matches and builds " +
+          "URLs (match(), buildPath(), load()).",
       );
     }
+
+    const activeBlockerIds = getActiveBlockerIds();
+
+    if (activeBlockerIds.size > 0) {
+      pendingNavigation = {
+        href: intent.href,
+        replace: replace ?? false,
+        blockedBy: activeBlockerIds,
+        resolve: () => {
+          pendingNavigation = null;
+          notifyBlockerState();
+          saveScrollPosition();
+          syncAdapterLocation(
+            intent.href,
+            replace ? { replace: true } : undefined,
+          );
+          void performLoad(
+            intent.href,
+            0,
+            true,
+            replace ? "pop" : "push",
+          ).catch(ignoreScheduledLoadError);
+        },
+      };
+      notifyBlockerState();
+
+      return intent;
+    }
+
+    saveScrollPosition();
+    syncAdapterLocation(intent.href, replace ? { replace: true } : undefined);
+    void performLoad(intent.href, 0, true, replace ? "pop" : "push").catch(
+      ignoreScheduledLoadError,
+    );
 
     return intent;
   }) as NavigateFn<TRoutes>;
 
-  const blockers = new Map<string, RouterBlocker>();
+  const blockers = new Map<string, () => boolean>();
+  const blockerSubject = createSubject<"idle" | "blocked">();
+  let blockerIdCounter = 0;
 
-  function isBlocked(): boolean {
-    for (const blocker of blockers.values()) {
-      if (blocker.isActive()) {
-        return true;
+  function getActiveBlockerIds(): Set<string> {
+    const activeIds = new Set<string>();
+
+    for (const [id, isActive] of blockers.entries()) {
+      if (isActive()) {
+        activeIds.add(id);
       }
     }
 
-    return false;
+    return activeIds;
+  }
+
+  function notifyBlockerState(): void {
+    blockerSubject.next(pendingNavigation ? "blocked" : "idle");
   }
 
   function setSearchParams(
@@ -1176,15 +1194,21 @@ export default function createRouter<
     const href = toHref(nextUrl);
     const replace = options?.replace ?? false;
 
-    if (adapter) {
-      syncAdapterLocation(href, replace ? { replace: true } : undefined);
-      void performLoad(href, 0, true, replace ? "pop" : "push").catch(
-        ignoreScheduledLoadError,
+    if (!adapter) {
+      throw new Error(
+        "router.setSearchParams() requires a platform adapter. Construct the " +
+          "router with { adapter } — an adapterless router only matches and " +
+          "builds URLs (match(), buildPath(), load()).",
       );
     }
+
+    syncAdapterLocation(href, replace ? { replace: true } : undefined);
+    void performLoad(href, 0, true, replace ? "pop" : "push").catch(
+      ignoreScheduledLoadError,
+    );
   }
 
-  const prefetch: PrefetchFn<TRoutes> = ((
+  const warm: WarmFn<TRoutes> = ((
     name: RouteName<TRoutes>,
     ...args: unknown[]
   ) => {
@@ -1194,8 +1218,8 @@ export default function createRouter<
       args as unknown as PathBuildArgs<RouteOf<TRoutes, typeof name>>,
     );
 
-    return prefetchHref(intent.href);
-  }) as PrefetchFn<TRoutes>;
+    return warmHref(intent.href);
+  }) as WarmFn<TRoutes>;
 
   const match = (
     input: string | URL,
@@ -1351,26 +1375,26 @@ export default function createRouter<
     };
 
     try {
-      const pendingPrefetch = pendingPrefetches.get(href);
+      const pendingWarmup = pendingWarmups.get(href);
 
-      if (pendingPrefetch) {
-        await pendingPrefetch.catch(ignoreScheduledLoadError);
+      if (pendingWarmup) {
+        await pendingWarmup.catch(ignoreScheduledLoadError);
       }
 
       if (abortController.signal.aborted) {
         throw new Error("aborted");
       }
 
-      const prefetchedLoad = prefetchedLoads.get(href);
+      const warmedLoad = warmedLoads.get(href);
       const resolvedLoad =
-        prefetchedLoad ??
+        warmedLoad ??
         (await resolveLoadData(
           currentMatch,
           abortController.signal,
           scheduledControlFlow,
         ));
 
-      prefetchedLoads.delete(href);
+      warmedLoads.delete(href);
 
       let result!: RouterLoadResult<TRoutes, TNotFound>;
 
@@ -1384,7 +1408,7 @@ export default function createRouter<
         });
 
         currentLoadResult = result;
-        prefetchedLoads.clear();
+        warmedLoads.clear();
       });
       scheduleAccessibilityEffects(result, mode);
 
@@ -1555,11 +1579,10 @@ export default function createRouter<
     );
   };
 
-  return {
+  const router: Router<TRoutes, TNotFound> = {
     adapter,
     routes: resolvedRoutes,
     notFound: options?.notFound as TNotFound,
-    store,
     getRoute(name) {
       return resolvedRoutes[name];
     },
@@ -1581,25 +1604,49 @@ export default function createRouter<
     load,
     match,
     navigate,
-    prefetch,
-    get blockerState() {
-      return pendingNavigation ? ("blocked" as const) : ("idle" as const);
-    },
-    proceedNavigation() {
-      pendingNavigation?.resolve();
-    },
-    cancelNavigation() {
-      pendingNavigation = null;
-    },
-    registerBlocker(blocker: RouterBlocker) {
-      blockers.set(blocker.id, blocker);
-    },
-    unregisterBlocker(id: string) {
-      blockers.delete(id);
+    warm,
+    block(isActive: () => boolean) {
+      blockerIdCounter += 1;
 
-      if (pendingNavigation) {
-        pendingNavigation = null;
-      }
+      const id = `blocker-${blockerIdCounter}`;
+
+      blockers.set(id, isActive);
+
+      // Every action is scoped to this registration: a handle whose blocker
+      // did not intercept the pending navigation reports idle and cannot
+      // proceed, cancel, or discard it.
+      const isBlockedByThis = (): boolean =>
+        pendingNavigation?.blockedBy.has(id) ?? false;
+
+      return {
+        get state() {
+          return isBlockedByThis() ? ("blocked" as const) : ("idle" as const);
+        },
+        proceed() {
+          if (isBlockedByThis()) {
+            pendingNavigation?.resolve();
+          }
+        },
+        cancel() {
+          if (isBlockedByThis()) {
+            pendingNavigation = null;
+            notifyBlockerState();
+          }
+        },
+        subscribe(listener: (state: "idle" | "blocked") => void) {
+          return blockerSubject.subscribe(() => {
+            listener(isBlockedByThis() ? "blocked" : "idle");
+          });
+        },
+        dispose() {
+          blockers.delete(id);
+
+          if (isBlockedByThis()) {
+            pendingNavigation = null;
+            notifyBlockerState();
+          }
+        },
+      };
     },
     render,
     setSearchParams,
@@ -1613,4 +1660,8 @@ export default function createRouter<
       return store.subscribeToSearchParam(key, listener);
     },
   };
+
+  // The store stays reachable on the concrete object for this package's own
+  // tests, but is not part of the public Router contract.
+  return Object.assign(router, { store });
 }

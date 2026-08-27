@@ -2,7 +2,7 @@ import { documentAttrs, isSupportedLocale } from "@canonical/i18n-core";
 import { I18nProvider } from "@canonical/i18n-react";
 import { HeadProvider } from "@canonical/react-head";
 import type { ServerEntrypointProps } from "@canonical/react-ssr/renderer";
-import { createStaticRouter } from "@canonical/router-core";
+import { createRouter, createServerAdapter } from "@canonical/router-core";
 import { Outlet, RouterProvider } from "@canonical/router-react";
 import { RelayEnvironmentProvider } from "react-relay";
 import { catalogs, i18nConfig } from "#i18n/index.js";
@@ -21,10 +21,24 @@ interface InitialData extends Record<string, unknown> {
 export default function EntryServer(props: ServerEntrypointProps<InitialData>) {
   const initialData = props.initialData ?? {};
   const url = initialData.url ?? "/";
-  const router = createStaticRouter(appRoutes, url, {
+  const router = createRouter(appRoutes, {
     middleware: [...middleware],
     notFound: notFoundRoute,
+    adapter: createServerAdapter(url),
   });
+  const serverMatch = router.match(url);
+
+  // Hydrate the store synchronously so render() works without awaiting
+  // load(). Redirects and unmatched URLs are the server's concern before
+  // rendering, so only real matches hydrate.
+  if (serverMatch?.kind === "route" || serverMatch?.kind === "not-found") {
+    router.hydrate({
+      href: url,
+      kind: serverMatch.kind,
+      routeId: serverMatch.kind === "route" ? serverMatch.name : null,
+      status: serverMatch.status,
+    });
+  }
 
   // A fresh Relay environment per server render, so no store state leaks
   // between requests. Nothing fetches through it yet: components that issue
