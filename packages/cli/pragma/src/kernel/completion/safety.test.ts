@@ -319,7 +319,7 @@ describe("storeless guarantee (PROTECTED)", () => {
 
     // prefixes: `ds` is in the default display map, so it comes back for `d`.
     await expect(
-      runComplete(["ontology", "show", "d"], capabilities, env),
+      runComplete(["ontology", "lookup", "d"], capabilities, env),
     ).resolves.toContain("ds");
 
     // index (derived, no field): the tier lookup is a declared pack lookup

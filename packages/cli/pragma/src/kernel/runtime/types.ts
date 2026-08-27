@@ -27,6 +27,8 @@ export interface GlobalFlags {
   readonly verbose: boolean;
   /** True when `--no-headers` suppressed the plain-table header row. */
   readonly noHeaders?: boolean;
+  /** True when `--quiet` suppresses success/progress output (errors keep printing). */
+  readonly quiet?: boolean;
   /** Explicit progressive-disclosure level from `--detail`, if any. */
   readonly detail?: DetailLevel;
 }

@@ -284,7 +284,7 @@ function renderCommandsPage(
   const blocks = [
     "# CLI command reference",
     `Every \`${BIN_NAME}\` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.`,
-    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, and `--detail <summary|standard|detailed>`.",
+    "Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, `--quiet`, and `--detail <summary|standard|detailed>`.",
   ];
   let currentNoun = "";
   for (const verb of verbs) {

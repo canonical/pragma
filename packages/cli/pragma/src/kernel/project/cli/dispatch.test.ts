@@ -161,6 +161,104 @@ describe("executeVerb — mutations", () => {
   });
 });
 
+describe("--quiet — success is silent, failure is not", () => {
+  // The rule the flag has to keep: everything muted is success-path narration
+  // (the calm zero-record notice, a mutation's stage lines). Error rendering
+  // does not route through either seam, so no failure can hide behind it.
+  const QUIET: GlobalFlags = { ...PLAIN, quiet: true };
+  const savedExit = process.exitCode;
+  afterEach(() => {
+    process.exitCode = savedExit;
+  });
+
+  const emptyList: VerbSpec = {
+    ...echo,
+    params: [],
+    output: {
+      formatters: {
+        ...passthroughFormatters,
+        plain: () => "",
+        emptyNotice: () => "No results.",
+      },
+    },
+    run: async () => [],
+  };
+
+  it("mutes the empty-state notice but keeps stdout and the exit code", async () => {
+    const loud = await executeVerb(
+      emptyList,
+      {},
+      { dryRun: false, undo: false, yes: false },
+      bootRuntime(PLAIN),
+    );
+    expect(loud.stderr).toBe("No results.\n");
+
+    const quiet = await executeVerb(
+      emptyList,
+      {},
+      { dryRun: false, undo: false, yes: false },
+      bootRuntime(QUIET),
+    );
+    expect(quiet.stderr).toBeUndefined();
+    expect(quiet.stdout).toBe(loud.stdout);
+    expect(quiet.exitCode).toBe(0);
+  });
+
+  it("mutes a mutation's progress lines", async () => {
+    const reporting: VerbSpec = {
+      ...make,
+      run: (_params, runtime) => {
+        runtime.report?.("Resolving the pack…");
+        return succeed({ made: true });
+      },
+    };
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    await executeVerb(
+      reporting,
+      {},
+      { dryRun: false, undo: false, yes: true },
+      bootRuntime(PLAIN),
+    );
+    const loud = errs.join("");
+    errs.length = 0;
+    await executeVerb(
+      reporting,
+      {},
+      { dryRun: false, undo: false, yes: true },
+      bootRuntime(QUIET),
+    );
+    spy.mockRestore();
+    expect(loud).toContain("Resolving the pack…");
+    expect(errs.join("")).toBe("");
+  });
+
+  it("still renders the error, with its exit code", async () => {
+    const failing: VerbSpec = {
+      ...echo,
+      run: async () => {
+        throw PragmaError.notFound("thing", "Nope");
+      },
+    };
+    const errs: string[] = [];
+    const spy = vi
+      .spyOn(process.stderr, "write")
+      .mockImplementation((chunk: string | Uint8Array) => {
+        errs.push(String(chunk));
+        return true;
+      });
+    await dispatch(failing, ["x"], {}, QUIET);
+    spy.mockRestore();
+    expect(errs.join("")).toContain('thing "Nope" not found.');
+    expect(process.exitCode).toBe(1);
+  });
+});
+
 describe("dispatch — errors", () => {
   const savedExit = process.exitCode;
   afterEach(() => {

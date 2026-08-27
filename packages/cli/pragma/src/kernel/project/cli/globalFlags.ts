@@ -200,6 +200,9 @@ export function parseGlobalFlags(
     // `--no-headers` suppresses the plain-table header row; it is global so
     // every list-shaped verb honors one spelling.
     ...(span.includes("--no-headers") ? { noHeaders: true } : {}),
+    // `--quiet` silences success/progress (the report seam, interpreter logs,
+    // onboarding, calm notices) while error rendering stays untouched.
+    ...(span.includes("--quiet") ? { quiet: true } : {}),
     ...(detail !== undefined ? { detail } : {}),
   };
 }
@@ -228,7 +231,9 @@ export function stripGlobalFlags(argv: readonly string[]): string[] {
       return result;
     }
 
-    if (arg === "--verbose" || arg === "--no-headers") continue;
+    if (arg === "--verbose" || arg === "--no-headers" || arg === "--quiet") {
+      continue;
+    }
     if (arg.startsWith("--format=") || arg.startsWith("--detail=")) {
       continue;
     }

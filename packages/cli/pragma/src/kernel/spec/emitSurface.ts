@@ -82,7 +82,7 @@ export const FIXED_SURFACE = {
       flag: "--format <plain|llm|json>",
       doc: "Select output format (llm = condensed Markdown for agents)",
     },
-    { flag: "--verbose", doc: "Diagnostic output on stderr" },
+    { flag: "--verbose", doc: "Diagnostic output on stderr (sources update)" },
     {
       flag: "--detail <level>",
       doc: "Progressive-disclosure level (summary, standard, detailed)",
@@ -90,6 +90,10 @@ export const FIXED_SURFACE = {
     {
       flag: "--no-headers",
       doc: "Hide the table header row in plain output",
+    },
+    {
+      flag: "--quiet",
+      doc: "Suppress success and progress output (errors still print)",
     },
   ],
   detailLevels: ["summary", "standard", "detailed"],

@@ -142,7 +142,10 @@ async function main(): Promise<void> {
   //    `--version` already returned above — so help never seeds state.
   if (!explicitHelp) {
     const { ensureFirstRun } = await import("./kernel/config/firstRun.js");
-    await ensureFirstRun();
+    // `--quiet` silences the onboarding lines but still seeds the state —
+    // onboarding is failure-tolerant by design, so muting its stderr changes
+    // nothing about the invocation.
+    await ensureFirstRun(globalFlags.quiet === true ? () => {} : undefined);
   }
 
   // 6. Load the capability registry — the command tree's data. Commander and
@@ -217,10 +220,12 @@ async function main(): Promise<void> {
       );
       const effective = await loadEffectiveModules(capabilities, process.cwd());
       modules = effective.modules;
-      for (const problem of effective.problems) {
-        process.stderr.write(
-          `Ignored story ${problem.source}: ${problem.message}\n`,
-        );
+      if (globalFlags.quiet !== true) {
+        for (const problem of effective.problems) {
+          process.stderr.write(
+            `Ignored story ${problem.source}: ${problem.message}\n`,
+          );
+        }
       }
     } catch (error) {
       await renderStartupError(error, globalFlags.format === "json");
@@ -396,9 +401,8 @@ async function handleProgramError(
       return;
     }
     if (error.code === "commander.unknownCommand") {
-      const { nounVerbMap, resolveUnknownCommand } = await import(
-        "./kernel/project/cli/suggest.js"
-      );
+      const { curatedSuggestions, nounVerbMap, resolveUnknownCommand } =
+        await import("./kernel/project/cli/suggest.js");
       const { stripGlobalFlags } = await import(
         "./kernel/project/cli/globalFlags.js"
       );
@@ -422,9 +426,10 @@ async function handleProgramError(
           import("./kernel/error/renderError.js"),
           import("./kernel/project/cli/suggestNames.js"),
         ]);
-        const suggestions = suggestNames(unknown.token, [
-          ...unknown.candidates,
-        ]);
+        const curated = curatedSuggestions(unknown.token);
+        const suggestions = curated
+          ? [...curated]
+          : suggestNames(unknown.token, [...unknown.candidates]);
         const unknownError = PragmaError.unknownVerb(unknown.token, {
           suggestions,
         });

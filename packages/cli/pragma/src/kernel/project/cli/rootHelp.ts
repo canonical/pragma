@@ -79,6 +79,7 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           summary: `Read and write ${programName} configuration`,
         },
         { noun: "info", summary: "Show version, config, and update status" },
+        { noun: "version", summary: "Print the CLI version" },
         {
           noun: "upgrade",
           summary: `Upgrade the ${programName} CLI to the latest version`,
@@ -204,7 +205,8 @@ export function formatRootHelp(
       "Progressive-disclosure level (summary, standard, detailed)",
     ],
     ["--no-headers", "Hide the table header row in plain output"],
-    ["--verbose", "Diagnostic output on stderr"],
+    ["--quiet", "Suppress success and progress output (errors still print)"],
+    ["--verbose", "Diagnostic output on stderr (sources update)"],
     ["--help", "Show help (works on any command)"],
     ["--version", "Show the CLI version"],
   ];

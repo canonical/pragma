@@ -65,6 +65,18 @@ const logToStderr = (_level: string, message: string): void => {
   process.stderr.write(`${message}\n`);
 };
 
+/** A silenced log sink — `--quiet` drops progress; errors render elsewhere. */
+const logNowhere = (_level: string, _message: string): void => {};
+
+/**
+ * The interpreter log sink for this invocation: stderr, or — under `--quiet`
+ * — nothing. Progress/stage lines are success-path output; error rendering
+ * never routes through this sink, so muting it cannot hide a failure.
+ */
+function logSink(flags: GlobalFlags): (level: string, message: string) => void {
+  return flags.quiet === true ? logNowhere : logToStderr;
+}
+
 /** The result of running a verb: what to write where, and the exit code. */
 export interface DispatchOutcome {
   readonly stdout?: string;
@@ -184,7 +196,11 @@ function renderData(
     stdoutIsTty: process.stdout.isTTY === true,
   };
   const text = verb.output.formatters.plain(data, context);
-  const notice = verb.output.formatters.emptyNotice?.(data);
+  // The calm zero-record notice is success-path guidance — `--quiet` mutes it.
+  const notice =
+    flags.quiet === true
+      ? undefined
+      : verb.output.formatters.emptyNotice?.(data);
   return {
     stdout: text ? `${text}\n` : "",
     ...(notice ? { stderr: `${notice}\n` } : {}),
@@ -291,7 +307,10 @@ export async function executeVerb(
       // Progress seam (U7): a long mutation's eager resolve/build runs before its
       // Task is returned, so `onLog` can't reach it — stream stage lines straight
       // to stderr instead, keeping stdout (the JSON/data stream) clean.
-      report: (message: string) => process.stderr.write(`${message}\n`),
+      report:
+        flags.quiet === true
+          ? () => {}
+          : (message: string) => process.stderr.write(`${message}\n`),
     };
     const task = await Promise.resolve(
       verb.run(params, mutationRuntime) as
@@ -311,7 +330,7 @@ export async function executeVerb(
         const { effects } = await runPreview(task, {
           cwd: previewExec.cwd,
           onEffectStart: previewExec.onEffectStart,
-          onLog: logToStderr,
+          onLog: logSink(flags),
         });
         // A plan is the effects a mutation WOULD apply — a `Prompt` is not one,
         // so the interactive confirm gate / answer prompts never clutter it.
@@ -328,7 +347,7 @@ export async function executeVerb(
       }
     }
     if (mutation.undo) {
-      const { undoCount } = await runUndo(task, { onLog: logToStderr });
+      const { undoCount } = await runUndo(task, { onLog: logSink(flags) });
       return renderUndo(flags, undoCount);
     }
     // Real execution: spread the verb's runner options into the node
@@ -338,7 +357,7 @@ export async function executeVerb(
     const onSigint = (): void => controller.abort();
     process.once("SIGINT", onSigint);
     try {
-      const value = await runTask(task, { onLog: logToStderr, ...exec });
+      const value = await runTask(task, { onLog: logSink(flags), ...exec });
       return renderData(verb, flags, value, {});
     } finally {
       process.removeListener("SIGINT", onSigint);

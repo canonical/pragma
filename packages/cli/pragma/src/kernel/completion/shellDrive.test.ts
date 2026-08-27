@@ -380,6 +380,7 @@ const NOUNS = [
   "tier",
   "token",
   "upgrade",
+  "version",
 ] as const;
 
 describe("generated bash — the live grammar's script", () => {

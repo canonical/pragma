@@ -103,6 +103,22 @@ describe("parseGlobalFlags", () => {
         .noHeaders,
     ).toBeUndefined();
   });
+
+  it("reads --quiet anywhere and strips it before Commander", () => {
+    expect(parseGlobalFlags(["--quiet"], TTY).quiet).toBe(true);
+    expect(parseGlobalFlags(["sources", "update", "--quiet"], TTY).quiet).toBe(
+      true,
+    );
+    expect(parseGlobalFlags(["sources", "update"], TTY).quiet).toBeUndefined();
+    expect(stripGlobalFlags(["sources", "update", "--quiet"])).toEqual([
+      "sources",
+      "update",
+    ]);
+    // Past the terminator it is the user's data, not this program's flag.
+    expect(
+      parseGlobalFlags(["graph", "query", "--", "--quiet"], TTY).quiet,
+    ).toBeUndefined();
+  });
 });
 
 describe("stripGlobalFlags", () => {

@@ -542,7 +542,8 @@ describe("formatRootHelp — grouping", () => {
         --format <plain|llm|json>  Select output format (llm = condensed Markdown for agents)
         --detail <level>           Progressive-disclosure level (summary, standard, detailed)
         --no-headers               Hide the table header row in plain output
-        --verbose                  Diagnostic output on stderr
+        --quiet                    Suppress success and progress output (errors still print)
+        --verbose                  Diagnostic output on stderr (sources update)
         --help                     Show help (works on any command)
         --version                  Show the CLI version
 

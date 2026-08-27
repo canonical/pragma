@@ -2,7 +2,7 @@
 
 Every `pragma` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.
 
-Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, and `--detail <summary|standard|detailed>`.
+Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, `--quiet`, and `--detail <summary|standard|detailed>`.
 
 ## block
 
@@ -116,11 +116,37 @@ pragma colophon --format llm  # condensed Markdown for agents
 
 ## config
 
+### pragma config get
+
+Print one resolved config value.
+
+Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
+
+```
+pragma config get <key>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<key>` | yes | The config field to read. (one of: tier, channel, detail) |
+
+- Store: storeless.
+- MCP: exposed as the `config_get` tool.
+
+**Examples**
+
+```bash
+pragma config get tier
+pragma config get channel --format json
+```
+
 ### pragma config set
 
 Set a config field by name.
 
-Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.
+Write a global config field by name. `key` is one of `tier`, `channel`, or `detail`; clearing a field is `config unset <key>`'s job, and the values that used to double as clear-markers are refused. Written to the global layer only — project configs are authored by hand.
 
 ```
 pragma config set <key> <value>
@@ -131,7 +157,7 @@ pragma config set <key> <value>
 | Argument | Required | Description |
 | --- | --- | --- |
 | `<key>` | yes | The config field to write. (one of: tier, channel, detail) |
-| `<value>` | yes | The value to write (or a field's reset sentinel, e.g. `none`). |
+| `<value>` | yes | The value to write. |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -142,7 +168,7 @@ pragma config set <key> <value>
 ```bash
 pragma config set tier apps/lxd  # scope reads to a tier
 pragma config set channel experimental
-pragma config set tier none  # clear the tier
+pragma config unset tier  # clear the tier
 ```
 
 ### pragma config show
@@ -163,6 +189,33 @@ pragma config show
 ```bash
 pragma config show
 pragma config show --format json
+```
+
+### pragma config unset
+
+Clear a config field by name.
+
+Removes a field from the global config so the built-in default (or a project config) applies again. The counterpart of `config set` — setting writes a value, unsetting removes one; no value doubles as a remove-marker.
+
+```
+pragma config unset <key>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<key>` | yes | The config field to clear. (one of: tier, channel, detail) |
+
+- Store: storeless.
+- Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
+- MCP: exposed as the `config_unset` tool.
+
+**Examples**
+
+```bash
+pragma config unset tier  # read the full graph again
+pragma config unset channel
 ```
 
 ## create
@@ -484,40 +537,6 @@ pragma ontology lookup <prefix> [options]
 pragma ontology lookup ds
 pragma ontology lookup ds --properties
 pragma ontology lookup ds --class Component
-```
-
-### pragma ontology show
-
-(deprecated: use `ontology lookup`) Show a namespace's classes (hierarchy + counts) and properties.
-
-Deprecated alias of `ontology lookup` — retained for compatibility. Prefer `ontology lookup <prefix>`.
-
-```
-pragma ontology show <prefix> [options]
-```
-
-**Arguments**
-
-| Argument | Required | Description |
-| --- | --- | --- |
-| `<prefix>` | yes | The namespace prefix (ds) or full URI. |
-
-**Flags**
-
-| Flag | Value | Description |
-| --- | --- | --- |
-| `--properties` | — | Include the properties section (also implied by --detail standard or higher). |
-| `--full-uris` | — | Show full IRIs instead of prefixed. |
-| `--class` | `<string>` | Focus on one class and its properties. |
-
-- Store: reads the local store (`pragma sources update` builds it).
-- MCP: exposed as the `ontology_show` tool.
-
-**Examples**
-
-```bash
-pragma ontology lookup ds  # prefer `lookup`
-pragma ontology show ds  # deprecated alias
 ```
 
 ## prompt
@@ -982,4 +1001,25 @@ pragma upgrade
 ```bash
 pragma upgrade
 pragma upgrade --dry-run  # show the delta and the command
+```
+
+## version
+
+### pragma version
+
+Print the CLI version.
+
+Prints the version `--version` prints — one value, two spellings of the same read.
+
+```
+pragma version
+```
+
+- Store: storeless.
+- MCP: not exposed (CLI-only).
+
+**Examples**
+
+```bash
+pragma version
 ```
