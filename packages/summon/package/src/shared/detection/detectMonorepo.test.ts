@@ -133,4 +133,65 @@ describe("detectMonorepo", () => {
 
     expect(result.value).toEqual({ isMonorepo: true, version: "0.22.0" });
   });
+
+  it("detects a pnpm workspace root that has no adjacent package.json", () => {
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      [
+        "Exists",
+        (e) => (e as { path: string }).path === "/repo/pnpm-workspace.yaml",
+      ],
+      ["ReadFile", () => ""],
+    ]);
+
+    const result = dryRunWith(detectMonorepo("/repo/packages/x"), mocks);
+
+    expect(result.value).toEqual({ isMonorepo: true });
+  });
+
+  it("detects a pnpm workspace root with a malformed manifest, sans version", () => {
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      [
+        "Exists",
+        (e) => {
+          const p = (e as { path: string }).path;
+          return (
+            p === "/repo/pnpm-workspace.yaml" || p === "/repo/package.json"
+          );
+        },
+      ],
+      ["ReadFile", () => "{ not json"],
+    ]);
+
+    const result = dryRunWith(detectMonorepo("/repo/packages/x"), mocks);
+
+    expect(result.value).toEqual({ isMonorepo: true, version: undefined });
+  });
+
+  it("reports no version when the marker's version field is not a string", () => {
+    const result = dryRunWith(
+      detectMonorepo("/a/b"),
+      buildMocks(
+        (p) => p === "/a/b/lerna.json",
+        JSON.stringify({ version: 22 }),
+      ),
+    );
+
+    expect(result.value).toEqual({ isMonorepo: true, version: undefined });
+  });
+
+  it("treats a manifest holding valid non-object JSON as no data", () => {
+    // safeParse: JSON.parse succeeds ("42" is valid JSON) but yields no
+    // object — the walk must fall through, not crash or false-positive.
+    const mocks = new Map<string, (effect: Effect) => unknown>([
+      [
+        "Exists",
+        (e) => (e as { path: string }).path === "/repo/app/package.json",
+      ],
+      ["ReadFile", () => "42"],
+    ]);
+
+    const result = dryRunWith(detectMonorepo("/repo/app"), mocks);
+
+    expect(result.value).toEqual({ isMonorepo: false });
+  });
 });
