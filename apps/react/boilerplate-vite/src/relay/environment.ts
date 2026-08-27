@@ -117,3 +117,19 @@ export const createEnvironment = (
     store: new Store(new RecordSource()),
   });
 };
+
+let browserEnvironment: Environment | null = null;
+
+/**
+ * The browser-session Relay environment, created lazily on first use.
+ *
+ * Module scope so the client entry's provider and route-level `warm` hooks
+ * share one normalized store — a navigation-time cache warm lands in the same
+ * store `useLazyLoadQuery` reads from. Server code must keep using
+ * `createEnvironment()` (fresh per request).
+ */
+export const getBrowserEnvironment = (): Environment => {
+  browserEnvironment ??= createEnvironment();
+
+  return browserEnvironment;
+};

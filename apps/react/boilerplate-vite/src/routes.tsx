@@ -24,50 +24,54 @@ function hasDemoAuth(search: unknown): boolean {
   return authValue === "1";
 }
 
-export function getAuthRedirectHref(input: string | URL): string | null {
-  const url =
-    input instanceof URL
-      ? input
-      : new URL(
-          input.startsWith("http") ? input : input,
-          "https://router.local",
-        );
-
-  if (
-    !protectedPaths.has(url.pathname) ||
-    hasDemoAuth({ auth: url.searchParams.get("auth") })
-  ) {
+/**
+ * Auth decision for an already-matched route, from the router's own data —
+ * the matched pattern and the schema-validated search. Deriving it from the
+ * raw URL would normalize differently from the router (trailing slashes,
+ * duplicate search values) and let a protected page render unauthenticated.
+ */
+export function getAuthRedirectForMatch(match: {
+  readonly route: AnyRoute;
+  readonly search: unknown;
+  readonly pathname: string;
+}): string | null {
+  if (!protectedPaths.has(match.route.url) || hasDemoAuth(match.search)) {
     return null;
   }
 
-  return `/login?from=${encodeURIComponent(url.pathname)}`;
+  return `/login?from=${encodeURIComponent(match.pathname)}`;
 }
 
 export function withAuth(loginPath: string): RouteMiddleware {
-  return ((currentRoute: AnyRoute) => {
+  return <TRoute extends AnyRoute>(currentRoute: TRoute): TRoute => {
     if (!protectedPaths.has(currentRoute.url)) {
       return currentRoute;
     }
 
     const currentWarm = currentRoute.warm;
+    const guardedWarm = (
+      params: unknown,
+      search: unknown,
+      context: NavigationContext,
+    ) => {
+      if (!hasDemoAuth(search)) {
+        const from = currentRoute.render(
+          (params ?? {}) as RouteParamValues | Record<string, never>,
+        );
 
-    return {
-      ...currentRoute,
-      warm: (params: unknown, search: unknown, context: NavigationContext) => {
-        if (!hasDemoAuth(search)) {
-          const from = currentRoute.render(
-            (params ?? {}) as RouteParamValues | Record<string, never>,
-          );
+        redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
+      }
 
-          redirect(`${loginPath}?from=${encodeURIComponent(from)}`, 302);
-        }
-
-        if (currentWarm) {
-          return currentWarm(params, search, context);
-        }
-      },
+      if (currentWarm) {
+        return currentWarm(params, search, context);
+      }
     };
-  }) as RouteMiddleware;
+
+    // Overriding `warm` widens the property's type, so the object needs a
+    // local assertion back to TRoute; the middleware's signature itself is
+    // now the real generic contract.
+    return { ...currentRoute, warm: guardedWarm } as TRoute;
+  };
 }
 
 const publicLayout = wrapper<ReactElement>({
@@ -112,9 +116,19 @@ const [contact] = group(publicLayout, [contactRoutes.contact] as const);
 
 const [catalog] = group(publicLayout, [catalogRoutes.catalog] as const);
 
+// Static redirect route: matched entirely from the URL, no content — the
+// router (and the SSR disposition helper) answers with a real 301. Static
+// redirects accept 301 or 308 only; runtime redirect() covers the 302 family.
+const legacyHome = route({
+  url: "/home",
+  redirect: "/",
+  status: 301,
+});
+
 const appRoutes = {
   guide,
   home,
+  legacyHome,
   account,
   login,
   contact,

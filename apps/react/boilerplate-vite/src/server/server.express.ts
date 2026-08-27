@@ -60,9 +60,15 @@ async function start() {
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(url, template);
 
-      const { default: EntryServer } = await vite.ssrLoadModule(
-        "/src/server/entry.tsx",
-      );
+      const { default: EntryServer, resolveRouteDisposition } =
+        await vite.ssrLoadModule("/src/server/entry.tsx");
+
+      const disposition = resolveRouteDisposition(url);
+
+      if (disposition.kind === "redirect") {
+        res.redirect(disposition.status, disposition.location);
+        return;
+      }
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
@@ -91,8 +97,13 @@ async function start() {
           url,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
           locale,
+          ...(disposition.dehydratedState ?? {}),
         },
-        { htmlString: html, defaultLocale: locale },
+        {
+          htmlString: html,
+          defaultLocale: locale,
+          statusCode: disposition.status,
+        },
       );
       const result = renderer.renderToPipeableStream();
 
