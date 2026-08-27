@@ -32,6 +32,12 @@ runs:
       shell: bash
       run: bun run check:fix
 
+      # Regenerate the implementation graph data with the new version so the
+      # tagged commit carries ds:version / ds:versionedLink for this release.
+    - name: Regenerate implementation graph data
+      shell: bash
+      run: bun scripts/collect-implementations.ts --version ${{ steps.lerna_version.outputs.VERSION }}
+
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git
       with:

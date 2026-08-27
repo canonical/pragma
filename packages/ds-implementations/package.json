@@ -1,0 +1,28 @@
+{
+  "name": "@canonical/ds-implementations",
+  "description": "Implementation libraries and implementations of the Canonical design system, as Turtle (RDF) for the knowledge graph.",
+  "version": "0.34.0",
+  "type": "module",
+  "files": [
+    "data"
+  ],
+  "author": {
+    "email": "webteam@canonical.com",
+    "name": "Canonical Webteam"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canonical/pragma"
+  },
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/canonical/pragma/issues"
+  },
+  "homepage": "https://github.com/canonical/pragma#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prepack": "rm -rf data && cp -r ../../data data"
+  }
+}

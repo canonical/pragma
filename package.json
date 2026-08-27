@@ -33,6 +33,7 @@
   ],
   "scripts": {
     "collect": "bun scripts/collect-implementations.ts",
+    "collect:check": "bun run collect && git diff --exit-code -- data/",
     "build": "lerna run build",
     "prepare": "bun run build",
     "lerna": "lerna",
@@ -44,9 +45,11 @@
     "special:clean": "bun run nx reset && lerna clean --yes && rm -rf node_modules **/dist **/node_modules"
   },
   "devDependencies": {
+    "@canonical/design-system": "^0.2.2",
     "@vitest/coverage-v8": "^4.0.18",
     "lerna": "^9.0.5",
-    "nx": "^22.5.4"
+    "nx": "^22.5.4",
+    "tinyglobby": "^0.2.14"
   },
   "msw": {
     "workerDirectory": [
