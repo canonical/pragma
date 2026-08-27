@@ -41,9 +41,11 @@
   disabled={disabled || loading}
   {...rest}
 >
-  # TODO: Update Icon to use Svelte Icon 
-  # currently blocked by: https://warthogs.atlassian.net/browse/WPE-430
-  # and https://github.com/canonical/pragma/pull/959
+  <!--
+    # TODO: Update Icon to use Svelte Icon
+    # currently blocked by: https://warthogs.atlassian.net/browse/WPE-430
+    # and https://github.com/canonical/pragma/pull/959
+  -->
   {#if icon}
     <span class="icon">
       {@render icon()}
