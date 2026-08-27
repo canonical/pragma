@@ -10,9 +10,9 @@ Fixes [list issues/bugs if needed]
 
 ### PR readiness check
 
-- [ ] PR should have one of the following labels:
-  - `Feature 🎁`, `Breaking Change 💣`, `Bug 🐛`, `Documentation 📝`, `Maintenance 🔨`.
-- [ ] PR title follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format.
+- [ ] PR title follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) format, using one of the allowed types: `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci`, `revert`.
+  - The matching type label is applied automatically from the title — there is no type label to add by hand.
+  - Breaking changes are marked with `!` in the title (e.g. `feat(router)!: …`), which adds the `breaking` label.
 - [ ] All packages define the required scripts in `package.json`:
   - [ ] All packages: `check`, `check:fix`, and `test`.
   - [ ] Packages with build steps: `build` to build the package for development or distribution, `build:all` to build **all** artifacts.

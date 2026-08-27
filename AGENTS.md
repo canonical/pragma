@@ -21,8 +21,11 @@ file is the PR workflow contract.
 - **Keep commits atomic.** One logical change per commit; the diff should be reviewable
   on its own and tell a single story. Bundling unrelated items into one commit/PR is
   allowed but should be **rare** and called out in the PR body (a "drive-by" line).
-- The PR also needs one of these **labels**: `Feature 🎁`, `Breaking Change 💣`,
-  `Bug 🐛`, `Documentation 📝`, `Maintenance 🔨`.
+- The allowed types are `feat`, `fix`, `docs`, `refactor`, `chore`, `test`, `ci` and
+  `revert`; the **type label** is derived from the title by CI, so never add one by hand.
+  A breaking change is marked with `!` in the title (`feat(router)!: …`), which is what
+  applies the `breaking` label. Every other label is a human judgement — see
+  [docs/references/LABELS.md](docs/references/LABELS.md).
 - The release CHANGELOG is Lerna-generated from commit history — write commit subjects
   for the changelog reader, not just yourself.
 
