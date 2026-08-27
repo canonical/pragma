@@ -8,6 +8,13 @@ inputs:
     description: "Prefix for the git tag. Default is 'v'."
     required: false
     default: "v"
+  packs_token:
+    description: >-
+      Token with read access to the declared pack repositories, used only to
+      refresh the CLI's embedded pack. Optional: without it the refresh is
+      skipped and the release ships the committed snapshot.
+    required: false
+    default: ""
 outputs:
   VERSION:
     description: "The new latest version number across all packages"
@@ -42,12 +49,18 @@ runs:
       # current with its own tag — a fresh install answers store-backed reads
       # offline, and that answer should not lag the release by weeks. Writes
       # nothing when the resolved upstream inputs are unchanged, so a release
-      # with no upstream movement produces no diff. Needs the network (a
-      # shallow clone per git pack).
+      # with no upstream movement produces no diff.
+      #
+      # BEST EFFORT, and it says which it did. The pack repositories are
+      # INTERNAL and cloned over HTTPS; this job's SSH deploy key is scoped to
+      # pragma alone, so without a token that can read them the clone fails —
+      # which blocked the entire 0.35.0 release for an artifact that was
+      # already committed and already valid. The script skips loudly rather
+      # than failing the release, and still fails on a real error once a token
+      # is supplied.
     - name: Refresh the CLI embedded pack
       shell: bash
-      working-directory: packages/cli/pragma
-      run: bun run bundle
+      run: ${{ github.action_path }}/refresh-pack.sh "${{ inputs.packs_token }}"
 
     - name: Setup Git CLI
       uses: ./.github/actions/setup-git

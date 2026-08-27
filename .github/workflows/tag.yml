@@ -102,6 +102,10 @@ jobs:
         uses: ./.github/actions/lerna-version
         with:
           release_type: ${{ github.event.inputs.release_type }}
+          # Optional. The pack repositories are internal and this job's deploy
+          # key does not reach them, so the embedded-pack refresh is skipped
+          # (loudly) until a token that can read them exists.
+          packs_token: ${{ secrets.PACKS_READ_TOKEN }}
 
   publish:
     name: Publish packages
