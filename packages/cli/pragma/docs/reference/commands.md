@@ -2,7 +2,7 @@
 
 Every `pragma` command, grouped by noun. Generated from the live capability grammar — do not edit by hand.
 
-Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, and `--detail <summary|standard|detailed>`.
+Global flags apply to every command: `--format <plain|llm|json>` (auto-detected — the llm/condensed-Markdown form turns on when output is piped), `--verbose`, `--no-headers`, and `--detail <summary|standard|detailed>`.
 
 ## block
 
