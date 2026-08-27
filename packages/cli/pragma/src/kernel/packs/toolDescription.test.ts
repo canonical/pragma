@@ -47,9 +47,7 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
       "Get type and theme values for one or more design tokens by name.",
     );
     // The authored MCP tool-call example survives on the MCP surface.
-    expect(desc).toContain(
-      'Example: token_lookup { names: ["color.primary"] }',
-    );
+    expect(desc).toContain('Example: token_lookup { name: ["color.primary"] }');
   });
 
   it("routes the definition-level toolDescription to the MCP list tool", async () => {
@@ -85,5 +83,46 @@ describe("pack toolDescription wiring (PROTECTED)", () => {
     const listHelp = formatVerbHelp("pragma", verb(tokenModule, "list"));
     expect(listHelp).toContain("List all design tokens with their type.");
     expect(listHelp).not.toContain("token_list {");
+  });
+});
+
+describe("a tool-call example names a parameter the tool ACCEPTS (PROTECTED)", () => {
+  // Four `*_lookup` descriptions taught agents `{ names: [...] }` while every
+  // schema required `name`. An agent copying the example — which is what an
+  // example is for — got `-32602 Invalid arguments`, and the description is
+  // the only instruction it has. Prose that contradicts the schema beside it
+  // is worse than no prose: it is a documented wrong answer.
+  it("every `Example: tool { key: … }` uses a declared property", async () => {
+    const mcp = await projectMcp([...storyModules.values()]);
+    try {
+      const tools = await mcp.listTools();
+      const offenders: string[] = [];
+
+      for (const tool of tools) {
+        const example = /Example:\s*\w+\s*\{\s*([A-Za-z_$][\w$]*)\s*:/.exec(
+          tool.description ?? "",
+        );
+        const key = example?.[1];
+        if (key === undefined) continue; // No call example to check.
+        const properties = Object.keys(
+          (tool.inputSchema as { properties?: Record<string, unknown> })
+            ?.properties ?? {},
+        );
+        if (!properties.includes(key)) {
+          offenders.push(
+            `${tool.name}: example says \`${key}\`, schema declares ${properties.join(", ")}`,
+          );
+        }
+      }
+
+      expect(offenders).toEqual([]);
+      // Guard against a vacuous pass: some tool must actually carry an example.
+      expect(
+        tools.filter((t) => /Example:\s*\w+\s*\{/.test(t.description ?? ""))
+          .length,
+      ).toBeGreaterThan(0);
+    } finally {
+      await mcp.cleanup();
+    }
   });
 });

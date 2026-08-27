@@ -232,7 +232,13 @@ export function buildExpandQuery(
 /** Build the SELECT listing all entity names — lookup-miss suggestions. */
 export function buildLookupNamesQuery(lookup: PackLookup): string {
   return [
-    "SELECT ?name WHERE {",
+    // DISTINCT: this population feeds miss-suggestions and glob expansion, and
+    // a name that several entities share is one CANDIDATE, not several. Without
+    // it a glob matching such a name expanded to it once per entity carrying
+    // it, and `lookup` then resolved each copy to the same winner — so
+    // `block lookup 'Butt*'` listed one Button twice while the other Button
+    // never appeared at all.
+    "SELECT DISTINCT ?name WHERE {",
     `  ?uri ${formatTerm(lookup.by)} ?name .`,
     buildTypeConstraint(lookup).trimEnd(),
     "}",
