@@ -41,8 +41,8 @@ import type { VerbSpec } from "../../kernel/spec/types.js";
 import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
-import { buildSetupRun } from "./operations/setupGenerator.js";
 import { detectCompletions } from "./operations/setupCompletions.js";
+import { buildSetupRun } from "./operations/setupGenerator.js";
 import {
   composeSkills,
   composeSkillsRemoval,
@@ -124,12 +124,16 @@ describe("setup completions", () => {
     const dir = tmp("pragma-setup-winpath-");
     writeFileSync(join(dir, `${BIN_NAME}.CMD`), "");
 
-    const detected = await detectCompletions(dir, { kind: "unknown" }, {
-      platform: "win32",
-      env: { PATH: dir },
-      home: dir,
-      isWsl: false,
-    });
+    const detected = await detectCompletions(
+      dir,
+      { kind: "unknown" },
+      {
+        platform: "win32",
+        env: { PATH: dir },
+        home: dir,
+        isWsl: false,
+      },
+    );
 
     expect(detected.binOnPath).toBe(true);
   });
@@ -845,7 +849,9 @@ describe("setup skills", () => {
 
     const detected = await detectSkills(bootRuntime(FLAGS, cwd), "project");
     expect(detected.available).toBe(false);
-    expect(ownedSkillLinks(detected).map((a) => a.linkPath)).toEqual([linkPath]);
+    expect(ownedSkillLinks(detected).map((a) => a.linkPath)).toEqual([
+      linkPath,
+    ]);
 
     await runUndo(composeSkillsRemoval(detected));
     // `existsSync` follows the link, so the dangling one is read through lstat.
@@ -901,9 +907,9 @@ describe("setup — detections settle independently", () => {
       ).toBeGreaterThan(0);
       // And the row is attributable, not a quiet skip: it exits non-zero.
       const applied = run.applied({});
-      expect(applied.rows.find((r) => r.target === "lsp")?.outcome?.status).toBe(
-        "failed",
-      );
+      expect(
+        applied.rows.find((r) => r.target === "lsp")?.outcome?.status,
+      ).toBe("failed");
     } finally {
       spy.mockRestore();
     }

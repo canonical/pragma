@@ -406,8 +406,12 @@ export const skillsSkipReason = (
     ? `no project skills (${sourceRoot} is absent)`
     : "no skills installed";
 
-export const ownedSkillLinks = (d: SkillsDetection): readonly SymlinkAction[] =>
-  [...d.actions.filter((a) => a.owned), ...d.orphans];
+export const ownedSkillLinks = (
+  d: SkillsDetection,
+): readonly SymlinkAction[] => [
+  ...d.actions.filter((a) => a.owned),
+  ...d.orphans,
+];
 
 /**
  * Compose the removal of every owned link. Each forward effect re-asserts the

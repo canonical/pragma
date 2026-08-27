@@ -56,7 +56,10 @@ describe("commandResolves — the host's own resolution rules", () => {
     for (const dir of dirs) rmSync(dir, { recursive: true, force: true });
   });
 
-  const hostOf = (platform: PlatformEnv["platform"], dir: string): PlatformEnv => ({
+  const hostOf = (
+    platform: PlatformEnv["platform"],
+    dir: string,
+  ): PlatformEnv => ({
     platform,
     env: { PATH: dir },
     home: dir,

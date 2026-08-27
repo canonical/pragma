@@ -448,7 +448,8 @@ export async function buildSetupRun(
     // files the entry is being taken OUT of, and counting them as "1 updated"
     // described the opposite of what the run had just done.
     const childKey = CHILD_ANSWER[row.target];
-    const kept = childKey === undefined ? undefined : readList(answers, childKey);
+    const kept =
+      childKey === undefined ? undefined : readList(answers, childKey);
     const note = removal
       ? ACTION_NOTES[row.action]
       : (childNote(row, kept) ?? ACTION_NOTES[row.action]);
