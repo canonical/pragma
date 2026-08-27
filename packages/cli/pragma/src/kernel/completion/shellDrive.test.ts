@@ -321,7 +321,7 @@ const STRUCTURE = [
     at: "pragma co",
     words: ["pragma", "co"],
     cword: 1,
-    offers: ["colophon", "config"],
+    offers: ["colophon", "concept", "config"],
   },
   {
     at: "pragma block <TAB>",
@@ -371,10 +371,12 @@ const NOUNS = [
   "block",
   "capabilities",
   "colophon",
+  "concept",
   "config",
   "create",
   "doctor",
   "graph",
+  "implementation",
   "info",
   "mcp",
   "modifier",
@@ -534,7 +536,7 @@ describe.skipIf(!hasShell("fish"))(
     });
 
     it.each([
-      { line: "pragma co", offers: ["colophon", "config"] },
+      { line: "pragma co", offers: ["colophon", "concept", "config"] },
       { line: "pragma block ", offers: ["list", "lookup", "sample"] },
       {
         line: "pragma setup ",

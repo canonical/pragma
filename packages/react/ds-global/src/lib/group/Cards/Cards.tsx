@@ -35,7 +35,7 @@ const componentCssClassName = "ds cards subgrid";
  * </Cards>
  * ```
  *
- * @implements dso:global.group.cards
+ * @implements ds:global.group.cards
  * @returns {ReactElement} the Cards group
  */
 const Cards = ({

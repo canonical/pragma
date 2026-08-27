@@ -279,7 +279,10 @@ function looksLikeIri(query: string): boolean {
   return (
     query.startsWith("http://") ||
     query.startsWith("https://") ||
-    query.includes(":")
+    // Neither an IRI nor a SPARQL prefixed name may contain whitespace, so a
+    // colon in a spaced string is part of a plain entity name — e.g. the
+    // concept "Foundations: Grid" — not a prefix separator.
+    (query.includes(":") && !/\s/.test(query))
   );
 }
 

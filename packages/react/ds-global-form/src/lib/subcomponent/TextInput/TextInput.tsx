@@ -12,6 +12,8 @@ const componentCssClassName = "ds input text chrome";
  * @returns {ReactElement} - Rendered Text
  *
  * `import { TextInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.text_input
  */
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
   function TextInput(

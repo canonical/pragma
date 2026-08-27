@@ -114,6 +114,60 @@ pragma colophon  # the active domain's story
 pragma colophon --format llm  # condensed Markdown for agents
 ```
 
+## concept
+
+### pragma concept list
+
+List design-system concepts.
+
+List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.
+
+```
+pragma concept list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--type` | `<string>` | Filter by concept type (e.g. Explanation, How-to guide). |
+| `--search` | `<string>` | Search in name and summary. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_list` tool.
+
+**Examples**
+
+```bash
+pragma concept list
+pragma concept list --format llm
+```
+
+### pragma concept lookup
+
+Look up a concept's full documentation by name, IRI, or glob.
+
+Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.
+
+```
+pragma concept lookup <name...>
+```
+
+**Arguments**
+
+| Argument | Required | Description |
+| --- | --- | --- |
+| `<name...>` | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `concept_lookup` tool.
+
+**Examples**
+
+```bash
+pragma concept lookup <name>
+```
+
 ## config
 
 ### pragma config get
@@ -397,6 +451,56 @@ pragma graph query <sparql>
 ```bash
 pragma graph query "SELECT ?s WHERE { ?s a ds:Component }"  # list every component subject
 pragma graph query "ASK { <https://ds.canonical.com/global.component.button> a ds:Component }" --format json
+```
+
+## implementation
+
+### pragma implementation libraries
+
+List the implementation libraries.
+
+List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+
+```
+pragma implementation libraries
+```
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `implementation_libraries` tool.
+
+**Examples**
+
+```bash
+pragma implementation libraries
+pragma implementation libraries --format llm
+```
+
+### pragma implementation list
+
+List which library implements which design-system block.
+
+List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+
+```
+pragma implementation list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
+| `--library` | `<string>` | Filter by implementation library name. |
+| `--search` | `<string>` | Search in block and library name. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `implementation_list` tool.
+
+**Examples**
+
+```bash
+pragma implementation list
+pragma implementation list --format llm
 ```
 
 ## info

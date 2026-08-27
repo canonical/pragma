@@ -9,6 +9,8 @@ import type { RichChoicesFieldProps } from "./types.js";
  * rendered by the individual options.
  *
  * `import { RichChoicesField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.rich_choices_field
  */
 export default withWrapper<RichChoicesFieldProps>(
   bindField<RichChoicesFieldProps>(RichChoices, "controlled"),

@@ -12,6 +12,8 @@ const componentCssClassName = "ds range";
  * @returns {ReactElement} - Rendered Range
  *
  * `import { RangeInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.range_input
  */
 export const RangeInput = forwardRef<HTMLInputElement, RangeInputProps>(
   function RangeInput(

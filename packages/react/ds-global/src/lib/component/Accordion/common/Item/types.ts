@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 /**
  * Props for the Accordion.Item subcomponent
  *
- * @implements dso:global.subcomponent.accordion-item
+ * @implements ds:global.subcomponent.accordion-item
  *
  * Anatomy (from DSL):
  * - layout.type: stack

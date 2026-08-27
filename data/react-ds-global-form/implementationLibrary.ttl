@@ -1,0 +1,12 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix ds: <https://ds.canonical.com/>.
+
+ds:implementation.library.react-ds-global-form a ds:ImplementationLibrary;
+    ds:libraryName "@canonical/react-ds-global-form";
+    ds:platform "react";
+    ds:link "https://github.com/canonical/pragma/tree/main/packages/react/ds-global-form";
+    ds:documentation "https://pragma.canonical.com/react";
+    ds:libraryTier ds:global;
+    ds:version "0.34.0".

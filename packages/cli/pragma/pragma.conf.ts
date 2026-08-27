@@ -45,6 +45,12 @@ over GraphQL or raw SPARQL.
 - **Tokens** — the themeable design values, resolved per theme.
 - **Standards** — the do / don't coding guidance, categorized and linked to the
   blocks they govern.
+- **Concepts** — the long-form documentation that belongs to no single block:
+  foundations, decision guides, and how-to guides, each typed by a
+  \`ds:ConceptType\`.
+- **Implementations** — which library implements which block, in which
+  framework, with a source link pinned to the release that shipped it: the
+  spec and the code realizing it are edges in one graph.
 
 ## How it fits together
 
@@ -57,8 +63,10 @@ over GraphQL or raw SPARQL.
 ## Why RDF
 
 One graph makes every relationship first-class and queryable: \`block lookup\`
-follows edges to modifiers and subcomponents, \`graph query\` runs arbitrary
-SPARQL, and \`ontology lookup\` reads the schema itself. The store is built once
+follows edges to modifiers and subcomponents, \`concept lookup\` reads the
+long-form documentation, \`graph query\` runs arbitrary SPARQL, and
+\`ontology lookup\` reads the schema itself. Which React components implement
+a global-tier block is one query, not an afternoon. The store is built once
 by \`sources update\` and addressed by content hash, so the domain you query is
 exactly the domain that was published.`;
 
@@ -403,6 +411,200 @@ const designSystemStories: readonly PackDefinition[] = [
 ];
 
 /**
+ * The `concept` story the design-system pack also supplies: long-form
+ * documentation not bound to a single UIBlock (foundations, how-to guides,
+ * decision guides) — ds:Concept entries ingested from Coda. The list stays
+ * terse (name/type/summary); the Markdown body is the lookup's payload,
+ * served at the `standard` level with knownEdgeCases behind `detailed`.
+ */
+const conceptStory: PackDefinition = {
+  noun: "concept",
+  description: "List design-system concepts.",
+  toolDescription:
+    "List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.",
+  list: {
+    query: [
+      "SELECT ?uri ?name ?type ?summary",
+      "WHERE {",
+      "  ?uri a ds:Concept ;",
+      "       ds:name ?name .",
+      "  OPTIONAL { ?uri ds:conceptType/ds:name ?type . }",
+      "  OPTIONAL { ?uri ds:summary ?summary . }",
+      "}",
+      "ORDER BY ?name",
+    ].join("\n"),
+    columns: [
+      { field: "uri", label: "IRI" },
+      { field: "name", label: "Name" },
+      { field: "type", label: "Type" },
+      { field: "summary", label: "Summary" },
+    ],
+    filters: [
+      {
+        param: "type",
+        variable: "type",
+        description: "Filter by concept type (e.g. Explanation, How-to guide).",
+      },
+    ],
+    search: {
+      variables: ["name", "summary"],
+      description: "Search in name and summary.",
+    },
+    emptyRecovery: {
+      message:
+        "No concepts in the store. The @canonical/design-system pack provides them; refresh the local store.",
+      cli: "sources update",
+    },
+  },
+  lookup: {
+    source: "sparql",
+    by: "ds:name",
+    type: "ds:Concept",
+    description:
+      "Look up a concept's full documentation by name, IRI, or glob.",
+    toolDescription:
+      "Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.",
+    fields: [
+      { name: "type", property: "ds:conceptType/ds:name", label: "Type" },
+      { name: "tier", property: "ds:tier", label: "Tier" },
+      { name: "summary", property: "ds:summary", label: "Summary" },
+    ],
+    sections: [
+      {
+        name: "content",
+        property: "ds:content",
+        label: "Content",
+        level: "standard",
+      },
+      {
+        name: "knownEdgeCases",
+        property: "ds:knownEdgeCases",
+        label: "Known edge cases",
+        level: "detailed",
+      },
+    ],
+    disclosure: {
+      levels: ["summary", "standard", "detailed"],
+      default: "standard",
+    },
+  },
+};
+
+/**
+ * The read story the implementation-graph pack supplies — which library
+ * implements which block, collected from the `@implements` annotations in this
+ * monorepo's source.
+ *
+ * The join this noun exists for crosses two packs: `ds:implementsBlock` points
+ * from an implementation collected HERE at the IRI of a block declared in
+ * `@canonical/design-system`. Both land in one store under the pinned `ds:`
+ * namespace, so `implementation list` answers "which React components implement
+ * a global-tier block" as a query rather than an afternoon of grepping — which
+ * is what {@link DESIGN_SYSTEM_COLOPHON} promises.
+ *
+ * LIST-ONLY, deliberately. A `ds:ImplementationObject` carries no name literal
+ * — it IS the edge from a library to a block, plus the two source links — so
+ * there is nothing a `lookup` could disclose that the list row does not already
+ * hold. The grammar admits a story with only one half; a lookup keyed on a
+ * synthesised name would be a name nobody would ever type. The libraries
+ * themselves ARE named, and `implementation libraries` lists them through the
+ * same list machinery (as `standard categories` does).
+ */
+const implementationStory: PackDefinition = {
+  noun: "implementation",
+  description: "List which library implements which design-system block.",
+  toolDescription:
+    'List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.',
+  list: {
+    // The library is the subject that carries the platform, so the row is
+    // assembled from BOTH ends of `ds:hasImplementation`. `?block` prefers the
+    // block's own `ds:name` and falls back to its IRI local name, so a row
+    // stays readable even when the design-system pack is absent from the store
+    // and only the bare `ds:implementsBlock` IRI is known.
+    query: [
+      "SELECT ?uri ?block ?library ?platform ?source",
+      "WHERE {",
+      "  ?libUri a ds:ImplementationLibrary ;",
+      "          ds:libraryName ?library ;",
+      "          ds:hasImplementation ?uri .",
+      "  ?uri a ds:ImplementationObject ;",
+      "       ds:implementsBlock ?blockUri .",
+      "  OPTIONAL { ?libUri ds:platform ?platform }",
+      "  OPTIONAL { ?uri ds:headLink ?source }",
+      "  OPTIONAL { ?blockUri ds:name ?dsName }",
+      '  BIND(COALESCE(?dsName, REPLACE(STR(?blockUri), "^.*[/#]", "")) AS ?block)',
+      "}",
+      "ORDER BY ?block ?library",
+    ].join("\n"),
+    columns: [
+      { field: "block", label: "Block" },
+      { field: "library", label: "Library" },
+      { field: "platform", label: "Platform" },
+      { field: "source", label: "Source" },
+      { field: "uri", label: "IRI" },
+    ],
+    filters: [
+      {
+        param: "platform",
+        variable: "platform",
+        description: "Filter by platform (e.g. react, svelte, typescript).",
+      },
+      {
+        param: "library",
+        variable: "library",
+        description: "Filter by implementation library name.",
+      },
+    ],
+    search: {
+      variables: ["block", "library"],
+      description: "Search in block and library name.",
+    },
+    emptyRecovery: {
+      message:
+        "No implementations in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
+      cli: "sources update",
+    },
+  },
+  verbs: [
+    {
+      verb: "libraries",
+      description: "List the implementation libraries.",
+      toolDescription:
+        "List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.",
+      // `ds:implementationCount` is asserted by the aggregate index on the SAME
+      // subject the per-library file describes, so the two merge in the store
+      // and the count needs no aggregation here.
+      query: [
+        "SELECT ?uri ?name ?platform ?tier ?version ?count",
+        "WHERE {",
+        "  ?uri a ds:ImplementationLibrary ;",
+        "       ds:libraryName ?name .",
+        "  OPTIONAL { ?uri ds:platform ?platform }",
+        "  OPTIONAL { ?uri ds:libraryTier ?tierUri }",
+        "  OPTIONAL { ?uri ds:version ?version }",
+        "  OPTIONAL { ?uri ds:implementationCount ?count }",
+        '  BIND(REPLACE(STR(?tierUri), "^.*[/#]", "") AS ?tier)',
+        "}",
+        "ORDER BY ?name",
+      ].join("\n"),
+      columns: [
+        { field: "name", label: "Library" },
+        { field: "platform", label: "Platform" },
+        { field: "tier", label: "Tier" },
+        { field: "version", label: "Version" },
+        { field: "count", label: "Blocks" },
+        { field: "uri", label: "IRI" },
+      ],
+      emptyRecovery: {
+        message:
+          "No implementation libraries in the store. The @canonical/ds-implementations pack provides them; refresh the local store.",
+        cli: "sources update",
+      },
+    },
+  ],
+};
+
+/**
  * The read story the code-standards pack supplies — `standard` as declared data.
  *
  * Normalized for the v2 grammar: the old `digest` level is the canonical
@@ -559,60 +761,16 @@ export default {
   // form. Both are BODIES with no leading H1 (the renderer supplies the
   // heading), grounded in this tree's real architecture.
   colophon: {
-    markdown: `pragma is a **domain-based toolchain**: one CLI and one MCP server projected
-from a single grammar, serving a knowledge-graph domain that reads as data.
-
-## The effect monad
-
-Reads are plain \`async\` functions; a mutation instead *describes* its effects
-as a \`Task\` (\`@canonical/task\`) that is interpreted — under the real node
-interpreter, a \`--dry-run\` planner, or an \`--undo\` reverser. Describe-then-
-interpret means dry-run and undo come for free, and the dispatcher tells the two
-worlds apart on one bit: \`capability.mutates\`.
-
-## One grammar, many projections
-
-Every capability is a \`VerbSpec\` — a noun, its params, its effect profile, its
-formatters. The CLI commands, the MCP tools, shell completion, and the
-surface/docs are all *projections* of that one shape, so they cannot drift. The
-projected surface is frozen in a covenant (\`surface/surface.v2.json\`): a single
-source of truth a test asserts the live grammar still emits, tool for tool.
-
-## LLM-optimized output
-
-Each verb renders three ways — \`plain\` for a terminal, \`json\` for the machine
-envelope, and \`llm\` for condensed Markdown. \`--format llm\` (or a non-interactive
-stdout) selects the agent form: the same data, shaped for a model to read. This
-colophon is itself a showcase of that render model.
-
-## Modular, storeless by construction
-
-Capabilities ship as **modules** — named bundles of verbs with optional
-boot / resource / prompt hooks. A verb declares whether it \`needsStore\`, and
-the dispatcher boots the triple store *only* for those; a storeless verb
-(\`info\`, \`config\`, \`capabilities\`, \`colophon\`) never pays for the graph.
-
-## Scaffolding
-
-\`pragma create\` scaffolds components, packages, and applications through the
-\`@canonical/summon-*\` generators, reusing summon's rich Ink wizard when it runs
-interactively.
-
-## The domain reads as data
-
-A domain is a **pack**: a declarative \`PackDefinition\` (its list / lookup
-queries) compiled into verbs, backed by a content-addressed graphpack that
-\`sources update\` builds once. Swap the pack and the same pragma serves a
-different domain — including the domain colophon printed below this one.
+    // The architecture handoff is a URL, not a repo path: `docs/` is outside
+    // the package's `files` allowlist and is not copied into `dist`, so an
+    // installed user has no `docs/architecture.md` to open.
+    markdown: `pragma is a **domain-based toolchain** — one CLI and one MCP server
+projected from a single grammar. That machinery is documented at
+https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md;
+what follows is the domain it serves.
 
 Made by the Canonical Webteam — https://canonical.com.`,
-    summary: `pragma is a domain-based toolchain: one CLI + MCP server projected from a single \`VerbSpec\` grammar.
-
-- **Effect monad** (\`@canonical/task\`): reads are async; a mutation returns an interpreted \`Task\`, so \`--dry-run\` and \`--undo\` are free. The dispatcher branches on \`capability.mutates\`.
-- **One grammar, many projections**: CLI, MCP tools, completion, and docs all project one \`VerbSpec\`; the emitted surface is frozen in a covenant so the projections never drift.
-- **LLM-optimized output**: every verb renders \`plain\` / \`json\` / \`llm\`; \`--format llm\` (or a piped stdout) emits condensed Markdown for agents.
-- **Modular + storeless**: capability modules; the triple store boots only for \`needsStore\` verbs.
-- **Domain as data**: a pack is a declarative \`PackDefinition\` compiled to verbs over a content-addressed graph built by \`sources update\`.
+    summary: `pragma is a domain-based toolchain: one CLI + MCP server projected from a single grammar (https://github.com/canonical/pragma/blob/main/packages/cli/pragma/docs/architecture.md). The domain it serves follows.
 
 Made by the Canonical Webteam — https://canonical.com.`,
   },
@@ -621,7 +779,7 @@ Made by the Canonical Webteam — https://canonical.com.`,
     {
       name: "@canonical/design-system",
       source: "git+https://github.com/canonical/design-system.git#main",
-      stories: designSystemStories,
+      stories: [...designSystemStories, conceptStory],
     },
     {
       name: "@canonical/anatomy-dsl",
@@ -639,6 +797,7 @@ Made by the Canonical Webteam — https://canonical.com.`,
     {
       name: "@canonical/ds-implementations",
       source: "git+https://github.com/canonical/pragma.git#main",
+      stories: [implementationStory],
     },
   ],
   // This distribution's domain namespaces, declared once and read twice.

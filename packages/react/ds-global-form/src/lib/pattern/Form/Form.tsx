@@ -75,4 +75,7 @@ const Form = ({
   return <InternalForm {...rest} defaultValues={defaultValues} mode={mode} />;
 };
 
+/**
+ * @implements ds:global.pattern.form
+ */
 export default Form;

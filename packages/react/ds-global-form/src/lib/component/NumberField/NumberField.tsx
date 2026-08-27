@@ -11,6 +11,8 @@ import type { NumberFieldProps } from "./types.js";
  * numeric value with optional min/max/step and prefix/suffix units.
  *
  * `import { NumberField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.number_field
  */
 export default withWrapper<NumberFieldProps>(
   // `valueAsNumber` so RHF stores a number, not the string the native

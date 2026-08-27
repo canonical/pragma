@@ -4,7 +4,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 /**
  * Props for the Timeline.Event subcomponent
  *
- * @implements dso:global.subcomponent.timeline-event
+ * @implements ds:global.subcomponent.timeline-event
  *
  * Anatomy (from DSL):
  * - layout.type: flow

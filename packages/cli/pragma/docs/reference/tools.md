@@ -57,6 +57,32 @@ Read-only.
 
 _No input parameters._
 
+### concept_list
+
+List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
+| `search` | string | no | Search in name and summary. |
+
+### concept_lookup
+
+Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string[] | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default standard). |
+
 ### config_get
 
 Reads the effective value of a single field after layering — built-in defaults, the global config, and the nearest project config. Prints the bare value (nothing when the field is unset), so the output substitutes directly into a shell.
@@ -200,6 +226,30 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `sparql` | string | yes | The SPARQL query text (SELECT, ASK, or CONSTRUCT). |
+
+### implementation_libraries
+
+List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+
+Read-only.
+
+**Input**
+
+_No input parameters._
+
+### implementation_list
+
+List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `platform` | string | no | Filter by platform (e.g. react, svelte, typescript). |
+| `library` | string | no | Filter by implementation library name. |
+| `search` | string | no | Search in block and library name. |
 
 ### info
 
