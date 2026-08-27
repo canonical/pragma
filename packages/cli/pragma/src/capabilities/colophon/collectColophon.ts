@@ -25,35 +25,33 @@ import type { ColophonData, ColophonSection } from "./types.js";
 /**
  * Assemble the colophon data for the current runtime.
  *
- * The toolchain section is DECLARED, not authored here: the distribution
- * config's `colophon` field carries the narrative (and its condensed summary),
- * and this collector renders whatever it declares under the distribution's own
- * name — a fork edits its config, never this module. A distribution declaring
- * no `colophon` gets no toolchain section: the packs' domain colophons stand
- * alone. The `kind: "pragma"` value is a frozen JSON discriminant (wire
- * compatibility), not the distribution's name.
+ * THE DOMAIN'S STORY WINS. A colophon answers "what am I working with", and
+ * once a domain is configured the answer is the domain — so the domain
+ * sections are the whole output, and the toolchain's own section does not
+ * ride in front of them. The toolchain section is the answer only when no
+ * domain has one: a fresh install, or a distribution that ships no story.
+ * Reading it the other way round put a paragraph about this program's
+ * architecture above the thing the user actually asked about, every time.
+ *
+ * Neither section is authored here. The toolchain half is the distribution
+ * config's `colophon` field (narrative plus condensed summary), rendered under
+ * the distribution's own name — a fork edits its config, never this module —
+ * and the domain half is each active pack's declared `colophon`. The
+ * `kind: "pragma"` value is a frozen JSON discriminant (wire compatibility),
+ * not the distribution's name.
+ *
+ * With neither declared, the payload is empty and the formatter's empty state
+ * says so, rather than the command printing nothing and leaving the reader to
+ * guess whether that is an answer or a failure.
  *
  * @param runtime - The per-invocation runtime.
- * @returns The storeless colophon payload: the distribution's declared section,
- *   then each active pack/domain that declares a `colophon`.
+ * @returns The storeless colophon payload: every active pack/domain that
+ *   declares a `colophon`, or the distribution's own section when none does.
  * @note Impure — reads the config layers (never boots the store).
  */
 export async function collectColophon(
   runtime: PragmaRuntime,
 ): Promise<ColophonData> {
-  const sections: ColophonSection[] = [];
-  if (distribution.colophon) {
-    sections.push({
-      kind: "pragma",
-      title: BIN_NAME,
-      markdown: distribution.colophon.markdown,
-      ...(distribution.colophon.summary === undefined
-        ? {}
-        : { summary: distribution.colophon.summary }),
-      source: "built-in",
-    });
-  }
-
   const { loadEffectiveModules } = await import(
     "../../kernel/packs/collect.js"
   );
@@ -68,6 +66,7 @@ export async function collectColophon(
     // story never throws — it is dropped and reported by doctor.)
   }
 
+  const sections: ColophonSection[] = [];
   for (const module of modules) {
     if (module.colophon) {
       sections.push({
@@ -77,6 +76,18 @@ export async function collectColophon(
         source: `pack:${module.name}`,
       });
     }
+  }
+
+  if (sections.length === 0 && distribution.colophon) {
+    sections.push({
+      kind: "pragma",
+      title: BIN_NAME,
+      markdown: distribution.colophon.markdown,
+      ...(distribution.colophon.summary === undefined
+        ? {}
+        : { summary: distribution.colophon.summary }),
+      source: "built-in",
+    });
   }
 
   return { sections };

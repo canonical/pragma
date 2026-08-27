@@ -96,9 +96,9 @@ pragma capabilities --format json  # the structured map
 
 ### pragma colophon
 
-Narrate how pragma and the active domain are made.
+Narrate how the active domain is made.
 
-Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's `colophon`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 ```
 pragma colophon
@@ -110,7 +110,7 @@ pragma colophon
 **Examples**
 
 ```bash
-pragma colophon  # the toolchain + active domain story
+pragma colophon  # the active domain's story
 pragma colophon --format llm  # condensed Markdown for agents
 ```
 

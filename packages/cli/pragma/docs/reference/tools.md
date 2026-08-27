@@ -49,7 +49,7 @@ _No input parameters._
 
 ### colophon
 
-Storeless — a colophon for the toolchain. Prints the story the distribution declares for itself (its config's `colophon`) followed by the active pack's domain colophon. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
+Storeless — the colophon each active pack declares for its domain. With no pack telling a story, it prints the one pragma declares for itself instead; with neither, it says so. Also available as a condensed Markdown narration for agents, or as a structured JSON projection of the sections.
 
 Read-only.
 

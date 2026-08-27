@@ -58,7 +58,8 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   colophon: {
     category: "read",
-    use_when: `Understanding how ${BIN_NAME} and the active domain are built — the toolchain + domain colophon, for onboarding or a demo`,
+    use_when:
+      "Understanding how the active domain is built — its declared colophon, for onboarding or a demo",
   },
   config_get: {
     category: "read",

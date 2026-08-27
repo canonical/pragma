@@ -93,10 +93,7 @@ function buildKernelGroups(programName: string): readonly HelpGroup[] {
           noun: "capabilities",
           summary: "Discover conventions, tools, and the discovery sequence",
         },
-        {
-          noun: "colophon",
-          summary: `Read how ${programName} and the active domain are made`,
-        },
+        { noun: "colophon", summary: "Read how the active domain is made" },
         { noun: "skill", summary: "Browse agent skills from the active packs" },
         { noun: "prompt", summary: "Browse reusable prompt templates" },
         // Curated for PLACEMENT, not for existence: `mcp serve` is an
