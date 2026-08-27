@@ -9,9 +9,16 @@ import type StampConfig from "../types/StampConfig.js";
  * present), or null when the content has no prologue.
  */
 function prologueEnd(content: string): number | null {
-  if (content.startsWith("#!") || content.startsWith("<?php")) {
+  if (content.startsWith("#!")) {
     const newline = content.indexOf("\n");
     return newline === -1 ? content.length : newline + 1;
+  }
+  if (content.startsWith("<?php")) {
+    // Protect the opening TOKEN, not the whole first line: a one-line
+    // template (`<?php echo 'hi'; ?>`) must get the stamp right after the
+    // tag — advancing to the newline would land it after `?>`, as page text.
+    const afterTag = "<?php".length;
+    return content.charAt(afterTag) === "\n" ? afterTag + 1 : afterTag;
   }
   if (content.startsWith("<?xml")) {
     const close = content.indexOf("?>");
@@ -54,6 +61,12 @@ export default function applyStamp(
   }
 
   if (content.includes(stampLine)) {
+    return content;
+  }
+
+  // A short-echo opener (`<?=`) takes an expression, not statements — there
+  // is no safe line to claim, so leave the file unstamped.
+  if (content.startsWith("<?=")) {
     return content;
   }
 
