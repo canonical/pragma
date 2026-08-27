@@ -148,20 +148,38 @@ export const selectedRows = (plan: SetupPlan): readonly PlanRow[] =>
 export const planExitFailed = (plan: SetupPlan): boolean =>
   plan.rows.some((row) => row.outcome?.status === "failed");
 
-/** `N of M selected targets` — the recap headline's counts. */
+/**
+ * `N of M targets` — the recap headline's counts.
+ *
+ * M is the rows this run took RESPONSIBILITY for: every row that reached an
+ * outcome other than `skipped`. That is deliberately not "rows with the checkbox
+ * ticked". An already-current row is offered de-selected because there is
+ * nothing to do to it, so counting ticks reported a fully converged machine as
+ * `0 of 0 configured` — a sentence that describes a machine where nothing
+ * worked exactly as it describes one where everything already did.
+ *
+ * Skips stay out of both counts: a target that cannot act on this machine is
+ * neither a success nor a shortfall, and it is already named on its own row.
+ * A row the user deselected has no outcome at all and is likewise absent.
+ *
+ * @param plan - The plan, with outcomes filled in.
+ * @returns The headline's numerator and denominator.
+ */
 export function planTally(plan: SetupPlan): {
   configured: number;
-  selected: number;
+  accountable: number;
 } {
-  const selected = plan.rows.filter((row) => row.selected);
-  const configured = selected.filter(
+  const accountable = plan.rows.filter(
+    (row) => row.outcome !== undefined && row.outcome.status !== "skipped",
+  );
+  const configured = accountable.filter(
     (row) =>
       row.outcome?.status === "done" ||
       row.outcome?.status === "noop" ||
       row.outcome?.status === "removed" ||
       row.outcome?.status === "kept",
   );
-  return { configured: configured.length, selected: selected.length };
+  return { configured: configured.length, accountable: accountable.length };
 }
 
 /**

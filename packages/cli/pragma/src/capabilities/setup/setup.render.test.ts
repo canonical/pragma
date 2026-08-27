@@ -143,10 +143,10 @@ describe("the setup plan renders as one table", () => {
 });
 
 describe("the recap is the plan replayed", () => {
-  it("counts selected targets and carries each row's outcome", () => {
+  it("counts the rows it took responsibility for and carries each row's outcome", () => {
     expect(renderRecap(APPLIED)).toBe(
       [
-        "Setup: 3 of 3 selected targets configured — global band",
+        "Setup: 4 of 4 targets configured — global band",
         "  ✓ config       ~/.config/pragma/config.json — present",
         "  ✓ completions  bash → ~/.local/share/bash-completion/completions/pragma — installed",
         "  ○ lsp          skipped — no VS Code-family editor CLI on PATH (code, codium, cursor, windsurf)",

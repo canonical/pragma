@@ -200,11 +200,11 @@ export function renderRecap(
   lead = "Setup",
   style: RenderStyle = defaultStyle(),
 ): string {
-  const { configured, selected } = planTally(plan);
+  const { configured, accountable } = planTally(plan);
   const idWidth = widthOf(plan.rows, (row) => row.target);
   const lines = [
     style.bold(
-      `${lead}: ${configured} of ${selected} selected targets configured — ${scopePhrase(plan.scope)}`,
+      `${lead}: ${configured} of ${accountable} targets configured — ${scopePhrase(plan.scope)}`,
     ),
   ];
   for (const [band, rows] of byBand(plan)) {

@@ -42,7 +42,12 @@ import type {
   VerbSpec,
 } from "../../kernel/spec/types.js";
 import { resolveSetupMode, setupModeInput } from "./mode.js";
-import { planExitFailed, type SetupPlan, TARGET_IDS } from "./plan.js";
+import {
+  planExitFailed,
+  planTally,
+  type SetupPlan,
+  TARGET_IDS,
+} from "./plan.js";
 import { renderProgressLine, renderRecap } from "./plan.render.js";
 import { setupFormatters } from "./setup.render.js";
 import type { ScopeBand, ScopeSelection, SetupMode } from "./types.js";
@@ -266,7 +271,7 @@ async function runSetup(
         .map((row) => row.target);
       throw new PragmaError({
         code: "UNSUPPORTED",
-        message: `${failed.length} of ${applied.rows.filter((r) => r.selected).length} selected targets did not complete: ${failed.join(", ")}.`,
+        message: `${failed.length} of ${planTally(applied).accountable} targets did not complete: ${failed.join(", ")}.`,
         recovery: {
           message: `The other targets are configured. Re-run the ones that did not complete: ${failed
             .map((id) => `\`${BIN_NAME} setup ${id}\``)
