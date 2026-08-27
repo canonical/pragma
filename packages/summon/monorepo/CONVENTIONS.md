@@ -70,7 +70,7 @@
 | ID | Rule | Gate |
 |----|------|------|
 | M4.1 | Test runner is **Vitest** | vitest in root deps |
-| M4.2 | Test file naming: `*.test.ts` | colocated with the source under test |
+| M4.2 | Test file naming: `*.test.ts` | no `*.tests.ts` (plural) files exist |
 | M4.3 | Test files live alongside source in `src/` | test files under src/ |
 | M4.4 | Coverage provider: `@vitest/coverage-v8` hoisted to root | dep in root package.json |
 | M4.5 | `test:coverage` script at both root and package level | scripts exist |

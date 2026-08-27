@@ -82,7 +82,7 @@
 
 | ID | Rule | Gate |
 |----|------|------|
-| P5.1 | Test files use `*.test.ts` naming | colocated with the source under test |
+| P5.1 | Test files use `*.test.ts` naming | no `*.tests.ts` (plural) files exist |
 | P5.2 | Tests located in `src/` or `src/__tests__/` | test files under `src/` |
 | P5.3 | Test runner is Vitest | `vitest` in devDependencies |
 | P5.4 | Coverage uses v8 provider via `@vitest/coverage-v8` | coverage provider = v8 |
