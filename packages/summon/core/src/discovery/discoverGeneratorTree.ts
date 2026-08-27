@@ -408,7 +408,7 @@ const discoverGlobalPackages = async (root: GeneratorNode): Promise<void> => {
 interface DiscoverOptions {
   /** When set, ONLY load from this path (for testing). */
   explicitPath?: string;
-  /** Directory containing built-in generators. Defaults to ../generators relative to this file. */
+  /** Directory containing built-in generators. When omitted, no built-ins are scanned. */
   builtinDir?: string;
 }
 
@@ -417,8 +417,8 @@ interface DiscoverOptions {
  *
  * When `explicitPath` is provided, ONLY load from that path (for testing).
  *
- * Otherwise, priority (highest to lowest, later overrides earlier):
- * 1. Built-in generators from \@canonical/summon
+ * Otherwise, priority (lowest to highest, later overrides earlier):
+ * 1. Built-in generators — only when the caller supplies `builtinDir`
  * 2. Global packages (bun link / npm link locations)
  * 3. Project ./node_modules/summon-* packages (highest priority)
  *
