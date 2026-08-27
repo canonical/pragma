@@ -298,8 +298,10 @@ async function handleProgramError(
     // the kernel only routes). Currently: `create component --framework`
     // (R1) — scoped to the ONE command that ever had the flag, so
     // `create package --framework …` keeps its honest unknown-option error
-    // instead of a migration message about a grammar it never spoke.
-    const { stripGlobalFlags } = await import(
+    // instead of a migration message about a grammar it never spoke — and
+    // scoped to the pre-terminator span: after `--` the spelling is an
+    // operand, not the retired flag, so the real parse error stands.
+    const { selectScanSpan, stripGlobalFlags } = await import(
       "./kernel/project/cli/globalFlags.js"
     );
     const strippedArgs = stripGlobalFlags(argv);
@@ -309,7 +311,7 @@ async function handleProgramError(
     if (
       strippedPositionals[0] === "create" &&
       strippedPositionals[1] === "component" &&
-      strippedArgs.some(
+      selectScanSpan(strippedArgs).some(
         (arg) => arg === "--framework" || arg.startsWith("--framework="),
       )
     ) {

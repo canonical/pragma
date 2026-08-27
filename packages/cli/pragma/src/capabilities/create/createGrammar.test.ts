@@ -131,6 +131,24 @@ describe("the mounted create grammar (subprocess)", () => {
     expect(stderr).not.toContain("the framework is now a path segment");
   }, 60_000);
 
+  it("R1 stops at the terminator: `--framework` after `--` is an operand, not the retired flag", () => {
+    // The retired-grammar scan must read only the pre-`--` span: here the
+    // parse failure is the unknown option BEFORE the terminator, and the
+    // `--framework` after it is user data — the honest error must stand
+    // instead of a migration message about a flag that was never passed.
+    const { status, stderr } = run([
+      "create",
+      "component",
+      "react",
+      "--bogus",
+      "--",
+      "--framework",
+    ]);
+    expect(status).toBe(2);
+    expect(stderr).toContain("unknown option '--bogus'");
+    expect(stderr).not.toContain("the framework is now a path segment");
+  }, 60_000);
+
   it("an excess positional errors with the designed message, exit 2", () => {
     const { status, stderr, cwd } = run([
       "create",
