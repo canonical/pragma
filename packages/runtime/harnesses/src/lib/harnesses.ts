@@ -106,12 +106,22 @@ const harnesses: readonly HarnessDefinition[] = [
     id: "opencode",
     name: "OpenCode",
     version: "*",
-    scope: "project",
+    // VERIFY(7h): OpenCode reads a GLOBAL config as well as a project one, and
+    // merges them — https://opencode.ai/docs/config/ lists
+    // `~/.config/opencode/opencode.json` above the project file in its
+    // precedence order, with later sources overriding earlier ones "only for
+    // conflicting keys". Declaring project-only meant the global band — the
+    // default, and the band this product focuses on — installed every other
+    // harness and silently skipped this one.
+    scope: "both",
     detect: [
       { type: "file", path: "opencode.json" },
+      { type: "directory", path: "~/.config/opencode" },
       { type: "process", name: "opencode" },
     ],
     configPath: (root) => `${root}/opencode.json`,
+    // VERIFY(7h): the global config path, per the docs above.
+    homeConfigPath: (p) => `${userHome(p)}/.config/opencode/opencode.json`,
     configFormat: "json",
     mcpKey: "mcp",
     // OpenCode's schema (https://opencode.ai/config.json, $defs.McpLocalConfig)
