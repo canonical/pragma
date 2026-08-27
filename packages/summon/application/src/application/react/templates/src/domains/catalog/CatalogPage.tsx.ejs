@@ -1,3 +1,6 @@
+<% if (intl) { -%>
+import { useTranslation } from "@canonical/i18n-react";
+<% } -%>
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
 import { useRelayEnvironment } from "react-relay";
@@ -6,7 +9,12 @@ import ErrorBoundary from "./ErrorBoundary.js";
 import ProductList, { PAGE_SIZE, productListQuery } from "./ProductList.js";
 
 export default function CatalogPage(): ReactElement {
+<% if (intl) { -%>
+  const { t } = useTranslation();
+  useHead({ title: t("catalog.title") });
+<% } else { -%>
   useHead({ title: "Catalog — Boilerplate" });
+<% } -%>
 
   const environment = useRelayEnvironment();
   const canRenderQuery =
@@ -19,7 +27,15 @@ export default function CatalogPage(): ReactElement {
 
   return (
     <section aria-labelledby="catalog-title">
+<% if (intl) { -%>
+      <h1 id="catalog-title">{t("catalog.heading")}</h1>
+      {/*
+        Developer documentation rather than user-facing copy (file names,
+        APIs), so it deliberately stays out of the message catalogs.
+      */}
+<% } else { -%>
       <h1 id="catalog-title">Catalog</h1>
+<% } -%>
       <p>
         This page demonstrates the Relay data layer. <code>ProductList</code>{" "}
         issues a <code>useLazyLoadQuery</code>, each <code>ProductCard</code>{" "}
@@ -53,6 +69,10 @@ export default function CatalogPage(): ReactElement {
         fallback via Suspense first.
       */}
       {canRenderQuery ? (
+<% if (intl) { -%>
+        <ErrorBoundary fallback={<p role="alert">{t("catalog.error")}</p>}>
+          <Suspense fallback={<p>{t("catalog.loading")}</p>}>
+<% } else { -%>
         <ErrorBoundary
           fallback={
             <p role="alert">
@@ -61,11 +81,16 @@ export default function CatalogPage(): ReactElement {
           }
         >
           <Suspense fallback={<p>Loading catalog…</p>}>
+<% } -%>
             <ProductList />
           </Suspense>
         </ErrorBoundary>
       ) : (
+<% if (intl) { -%>
+        <p>{t("catalog.loading")}</p>
+<% } else { -%>
         <p>Loading catalog…</p>
+<% } -%>
       )}
     </section>
   );

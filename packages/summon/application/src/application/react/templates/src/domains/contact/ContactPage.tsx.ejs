@@ -1,3 +1,6 @@
+<% if (intl) { -%>
+import { useTranslation } from "@canonical/i18n-react";
+<% } -%>
 import { Button } from "@canonical/react-ds-global";
 import { Field, Form } from "@canonical/react-ds-global-form";
 import { useHead } from "@canonical/react-head";
@@ -8,36 +11,73 @@ function handleSubmit(data: Record<string, unknown>) {
 }
 
 export default function ContactPage(): ReactElement {
+<% if (intl) { -%>
+  const { t } = useTranslation();
+  useHead({ title: t("contact.title") });
+<% } else { -%>
   useHead({ title: "Contact" });
+<% } -%>
 
   return (
     <section aria-labelledby="contact-title">
+<% if (intl) { -%>
+      <h1 id="contact-title">{t("contact.heading")}</h1>
+<% } else { -%>
       <h1 id="contact-title">Contact</h1>
+<% } -%>
       <Form onSubmit={handleSubmit}>
+<% if (intl) { -%>
+        <Field name="name" inputType="text" label={t("contact.name")} />
+<% } else { -%>
         <Field name="name" inputType="text" label="Full name" />
+<% } -%>
         <Field
           name="email"
           inputType="text"
+<% if (intl) { -%>
+          label={t("contact.email")}
+          registerProps={{ required: t("contact.emailRequired") }}
+<% } else { -%>
           label="Email address"
           registerProps={{ required: "Email is required" }}
+<% } -%>
         />
         <Field
           name="subject"
           inputType="select"
+<% if (intl) { -%>
+          label={t("contact.subject")}
+<% } else { -%>
           label="Subject"
+<% } -%>
           options={[
+<% if (intl) { -%>
+            { value: "general", label: t("contact.subjectGeneral") },
+            { value: "support", label: t("contact.subjectSupport") },
+            { value: "feedback", label: t("contact.subjectFeedback") },
+<% } else { -%>
             { value: "general", label: "General enquiry" },
             { value: "support", label: "Support" },
             { value: "feedback", label: "Feedback" },
+<% } -%>
           ]}
         />
         <Field
           name="message"
           inputType="textarea"
+<% if (intl) { -%>
+          label={t("contact.message")}
+          description={t("contact.messageHint")}
+<% } else { -%>
           label="Message"
           description="Maximum 500 characters"
+<% } -%>
         />
+<% if (intl) { -%>
+        <Button type="submit">{t("contact.send")}</Button>
+<% } else { -%>
         <Button type="submit">Send message</Button>
+<% } -%>
       </Form>
     </section>
   );
