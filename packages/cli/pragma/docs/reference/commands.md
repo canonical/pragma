@@ -453,6 +453,56 @@ pragma graph query "SELECT ?s WHERE { ?s a ds:Component }"  # list every compone
 pragma graph query "ASK { ds:button a ds:Component }" --format json
 ```
 
+## implementation
+
+### pragma implementation libraries
+
+List the implementation libraries.
+
+List the design-system implementation libraries — platform, tier, released version, and how many blocks each one implements. Example: implementation_libraries {}.
+
+```
+pragma implementation libraries
+```
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `implementation_libraries` tool.
+
+**Examples**
+
+```bash
+pragma implementation libraries
+pragma implementation libraries --format llm
+```
+
+### pragma implementation list
+
+List which library implements which design-system block.
+
+List the implementations of design-system blocks — which library implements which block, on which platform, and the source file it lives in. Optionally filter by platform or library, or search. Example: implementation_list { platform: "react" }.
+
+```
+pragma implementation list [options]
+```
+
+**Flags**
+
+| Flag | Value | Description |
+| --- | --- | --- |
+| `--platform` | `<string>` | Filter by platform (e.g. react, svelte, typescript). |
+| `--library` | `<string>` | Filter by implementation library name. |
+| `--search` | `<string>` | Search in block and library name. |
+
+- Store: reads the local store (`pragma sources update` builds it).
+- MCP: exposed as the `implementation_list` tool.
+
+**Examples**
+
+```bash
+pragma implementation list
+pragma implementation list --format llm
+```
+
 ## info
 
 ### pragma info

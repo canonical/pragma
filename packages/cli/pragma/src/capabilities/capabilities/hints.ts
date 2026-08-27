@@ -151,6 +151,16 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
     category: "read",
     use_when: "Reading a concept's full Markdown documentation by name or IRI",
   },
+  implementation_list: {
+    category: "read",
+    use_when:
+      "Finding which library implements a block, on which platform, and where its source lives",
+  },
+  implementation_libraries: {
+    category: "read",
+    use_when:
+      "Discovering which implementation libraries exist, and how much of the design system each covers",
+  },
   standard_sample: {
     category: "read",
     use_when:
