@@ -13,8 +13,9 @@
  * styler off a TTY, so no chalk-level dance is needed.
  */
 
+import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { PlanRow, SetupPlan } from "./plan.js";
+import { type PlanRow, type SetupPlan, shortenPath } from "./plan.js";
 import {
   renderPlanTable,
   renderProgressLine,
@@ -269,5 +270,48 @@ describe("the machine-readable projections carry the same rows", () => {
     for (const row of APPLIED.rows) {
       expect(out).toContain(`**${row.target}** (${row.band})`);
     }
+  });
+});
+
+describe("shortenPath — containment, on the host's own separator", () => {
+  // The rule is `node:path`'s: a root contains a path when the relative route
+  // between them walks only downwards. Hard-coding `/` answered no for every
+  // Windows path `node:path` produces, so a plan that had just named both roots
+  // in its header printed 120-character absolute rows underneath them. The
+  // win32 arm follows from `relative`/`sep` rather than from a second rule, so
+  // what is pinned here are the invariants the host separator makes visible.
+  const roots = {
+    global: join(sep, "home", "u"),
+    project: join(sep, "home", "u", "src", "app"),
+  };
+
+  it("renders under the project root first — the more specific one", () => {
+    expect(shortenPath(join(roots.project, "a", "b.json"), roots)).toBe(
+      `.${sep}${join("a", "b.json")}`,
+    );
+    expect(shortenPath(roots.project, roots)).toBe(".");
+  });
+
+  it("renders a global-band path under `~`", () => {
+    expect(shortenPath(join(roots.global, ".config", "x.json"), roots)).toBe(
+      `~${sep}${join(".config", "x.json")}`,
+    );
+    expect(shortenPath(roots.global, roots)).toBe("~");
+  });
+
+  it("does not take a sibling that merely EXTENDS a root's name as inside it", () => {
+    // `<project>-backup` is not under `<project>`; it is under the home root,
+    // and that is the root it must be rendered against.
+    expect(shortenPath(join(`${roots.project}-backup`, "a.json"), roots)).toBe(
+      `~${sep}${join("src", "app-backup", "a.json")}`,
+    );
+    // A sibling of the OUTERMOST root is under neither, so it stays absolute.
+    const outside = join(`${roots.global}-backup`, "a.json");
+    expect(shortenPath(outside, roots)).toBe(outside);
+  });
+
+  it("leaves a path under neither root absolute", () => {
+    const outside = join(sep, "etc", "pragma", "config.json");
+    expect(shortenPath(outside, roots)).toBe(outside);
   });
 });

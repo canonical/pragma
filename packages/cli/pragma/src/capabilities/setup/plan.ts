@@ -17,6 +17,7 @@
  * checks, and the verb can all reach it without dragging anything heavy along.
  */
 
+import { isAbsolute, relative, sep } from "node:path";
 import type { ScopeBand, ScopeSelection } from "./types.js";
 
 /** The five setup targets, in table (and therefore display) order. */
@@ -186,7 +187,8 @@ export function planTally(plan: SetupPlan): {
  * Render one absolute path relative to whichever root contains it — the header
  * names both roots once, so a row never repeats a 120-character prefix. The
  * global root prints as `~`; the project root prints as `.`. A path under
- * neither root stays absolute, because shortening it would be a guess.
+ * neither root stays absolute, because shortening it would be a guess — and a
+ * sibling directory whose name merely EXTENDS a root's is under neither.
  *
  * The project root is tried FIRST: a project checked out inside the home
  * directory sits under both, and the more specific root is the informative one.
@@ -200,10 +202,23 @@ export function shortenPath(path: string, roots: SetupPlan["roots"]): string {
     [roots.project, "."],
     [roots.global, "~"],
   ] as const) {
-    if (root && path === root) return marker;
-    if (root && path.startsWith(`${root}/`)) {
-      return `${marker}/${path.slice(root.length + 1)}`;
+    if (!root) continue;
+    if (path === root) return marker;
+    // Containment is a question about path SEGMENTS, and the separator is the
+    // host's. Testing `startsWith(root + "/")` answered no for every Windows
+    // path `node:path` produces, so the plan printed absolute paths where it
+    // had just named the root they sit under — and it answered YES for a
+    // sibling whose name merely extends the root's.
+    const rel = relative(root, path);
+    if (
+      rel.length === 0 ||
+      rel === ".." ||
+      rel.startsWith(`..${sep}`) ||
+      isAbsolute(rel)
+    ) {
+      continue;
     }
+    return `${marker}${sep}${rel}`;
   }
   return path;
 }
