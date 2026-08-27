@@ -1,4 +1,6 @@
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { ExecResult, Task } from "@canonical/task";
 import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
 
@@ -25,8 +27,6 @@ import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
  *    fresh as the generator binary in use.
  */
 
-const require = createRequire(import.meta.url);
-
 /**
  * A representative workspace package whose `latest` dist-tag tracks the shared
  * lerna release line. Any of the co-released packages would do; styles is a
@@ -34,28 +34,103 @@ const require = createRequire(import.meta.url);
  */
 const REPRESENTATIVE_PACKAGE = "@canonical/styles";
 
-/** Read a package's version from the installed tree (offline fallback). */
-function readVersion(packageName: string): string {
-  try {
-    const pkg = require(`${packageName}/package.json`);
-    return pkg.version ?? "unknown";
-  } catch {
-    return "unknown";
+const OWN_PACKAGE = "@canonical/summon-application";
+
+/**
+ * Walk up from `from` until a `package.json` names `packageName`, and return
+ * its version. A manifest that is unreadable, is not JSON, names another
+ * package, or carries no version is just an ancestor directory that happens to
+ * hold a `package.json`, so the walk continues; running out of parents yields
+ * "unknown".
+ *
+ * @note Impure — reads the filesystem.
+ */
+function findVersionAbove(from: string, packageName: string): string {
+  let dir = from;
+  for (;;) {
+    try {
+      const manifest = JSON.parse(
+        readFileSync(path.join(dir, "package.json"), "utf-8"),
+      ) as { name?: string; version?: string };
+      if (manifest.name === packageName && manifest.version) {
+        return manifest.version;
+      }
+    } catch {
+      // No readable manifest at this level — keep walking.
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return "unknown";
+    }
+    dir = parent;
   }
+}
+
+/**
+ * Read an installed package's version. Not `require("<pkg>/package.json")`:
+ * none of the workspace packages export `./package.json` (and their ESM-only
+ * exports maps make `require.resolve` itself throw), so module resolution is
+ * avoided entirely — the standard `node_modules/<name>/package.json` location
+ * is probed at each ancestor of this module instead, exactly the way node
+ * itself would look the package up.
+ *
+ * @note Impure — reads the filesystem.
+ */
+export function readVersion(packageName: string): string {
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (;;) {
+    try {
+      const manifest = JSON.parse(
+        readFileSync(
+          path.join(
+            dir,
+            "node_modules",
+            ...packageName.split("/"),
+            "package.json",
+          ),
+          "utf-8",
+        ),
+      ) as { version?: string };
+      if (manifest.version) {
+        return manifest.version;
+      }
+    } catch {
+      // No such package at this level — keep walking.
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return "unknown";
+    }
+    dir = parent;
+  }
+}
+
+/**
+ * This generator's own version, read by walking up from THIS module — correct
+ * from `src/` and from `dist/esm/` alike, with no build-layout coupling (see
+ * summon-package's packageVersion for the full rationale). Lazy and cached so
+ * importing this module performs no IO.
+ */
+let cachedOwnVersion: string | undefined;
+export function ownVersion(): string {
+  cachedOwnVersion ??= findVersionAbove(
+    path.dirname(fileURLToPath(import.meta.url)),
+    OWN_PACKAGE,
+  );
+  return cachedOwnVersion;
 }
 
 /**
  * The generator's own release-line version, used as the offline fallback range.
  * summon-application is published in lockstep with the workspace packages an app
- * depends on, so `^<own version>` is a safe, non-stale default.
+ * depends on, so `^<own version>` is a safe, non-stale default. The module
+ * always sits inside its own package, so the walk cannot miss in practice; the
+ * "latest" escape survives only as a last resort for a mangled installation.
  */
 function fallbackRange(): string {
-  const own = readVersion("@canonical/summon-application");
+  const own = ownVersion();
   return own === "unknown" ? "latest" : `^${own}`;
 }
-
-const coreVersion = readVersion("@canonical/summon-core");
-const appVersion = readVersion("@canonical/summon-application");
 
 const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 
@@ -68,7 +143,6 @@ const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
  * @note Impure — spawns `npm` and reads the registry over the network.
  */
 export function resolvePragmaVersion(): Task<string> {
-  const fallback = fallbackRange();
   return flatMap(
     // A missing `npm` binary makes the spawn reject (a task failure) rather
     // than resolve with a nonzero exit code, so recover to a synthetic failed
@@ -89,6 +163,7 @@ export function resolvePragmaVersion(): Task<string> {
           () => `^${latest}`,
         );
       }
+      const fallback = fallbackRange();
       return map(
         info(
           `Could not reach npm for the latest @canonical/* version; ` +
@@ -105,7 +180,7 @@ export function resolvePragmaVersion(): Task<string> {
  */
 export function printVersions(generatorName: string): Task<void> {
   return info(
-    `@canonical/summon-core         ${coreVersion}\n` +
-      `@canonical/summon-application  ${appVersion}  (${generatorName})`,
+    `@canonical/summon-core         ${readVersion("@canonical/summon-core")}\n` +
+      `@canonical/summon-application  ${ownVersion()}  (${generatorName})`,
   );
 }

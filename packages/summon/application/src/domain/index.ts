@@ -15,6 +15,7 @@ import {
 import { toCamelCase, toTitleCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
+import { validateCommandPath } from "../shared/validators.js";
 import { printVersions } from "../shared/versions.js";
 
 export interface DomainAnswers {
@@ -28,6 +29,11 @@ const prompts: PromptDefinition[] = [
     message: "Domain name (for example billing):",
     default: "example",
     positional: true,
+    validate: validateCommandPath({
+      label: "Domain name",
+      maxSegments: 1,
+      example: "billing",
+    }),
     group: "Domain",
   },
 ];

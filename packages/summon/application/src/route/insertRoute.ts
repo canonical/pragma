@@ -180,7 +180,7 @@ export function removeRoute(
           p.name.text === ins.routeKey,
       );
       if (prop) {
-        result = removeFullLines(result, prop.getStart(sf), prop.end);
+        result = removePropertySpan(result, prop.getStart(sf), prop.end);
       }
     }
   }
@@ -203,7 +203,7 @@ export function removeRoute(
       // would discard their bindings.
       !stmt.importClause.namedBindings
     ) {
-      result = removeFullLines(result, stmt.getStart(sf2), stmt.end);
+      result = removeLinesOrSpan(result, stmt.getStart(sf2), stmt.end);
       break;
     }
   }
@@ -212,15 +212,49 @@ export function removeRoute(
 }
 
 /**
- * Remove the whole-line span covering [start, end), including the node's
- * leading indentation and its trailing newline, so no blank line is left behind.
+ * Remove a property node's span [start, end) plus its separator comma: the
+ * trailing comma when one follows, otherwise the preceding one (the
+ * last-property case), so the object literal stays syntactically valid.
  */
-function removeFullLines(source: string, start: number, end: number): string {
+function removePropertySpan(
+  source: string,
+  start: number,
+  end: number,
+): string {
+  let spanStart = start;
+  let spanEnd = end;
+  let after = spanEnd;
+  while (after < source.length && /\s/.test(source.charAt(after))) after++;
+  if (source.charAt(after) === ",") {
+    spanEnd = after + 1;
+  } else {
+    let before = spanStart - 1;
+    while (before >= 0 && /\s/.test(source.charAt(before))) before--;
+    if (source.charAt(before) === ",") spanStart = before;
+  }
+  return removeLinesOrSpan(source, spanStart, spanEnd);
+}
+
+/**
+ * Remove [start, end): as whole lines (including leading indentation and the
+ * trailing newline, so no blank line is left behind) when the span owns its
+ * lines — but as an exact span when other code shares a line with it, so a
+ * single-line `const routes = { billing: route(...) } as const;` loses only
+ * the property, never the code around it.
+ */
+function removeLinesOrSpan(source: string, start: number, end: number): string {
   const lineStart = source.lastIndexOf("\n", start - 1) + 1;
-  let lineEnd = source.indexOf("\n", end);
-  if (lineEnd === -1) lineEnd = source.length;
-  else lineEnd += 1; // include the newline
-  return source.slice(0, lineStart) + source.slice(lineEnd);
+  const newlineAfter = source.indexOf("\n", end);
+  const lineEnd = newlineAfter === -1 ? source.length : newlineAfter + 1;
+  const leading = source.slice(lineStart, start);
+  const trailing = source.slice(
+    end,
+    newlineAfter === -1 ? source.length : newlineAfter,
+  );
+  if (/^\s*$/.test(leading) && /^\s*$/.test(trailing)) {
+    return source.slice(0, lineStart) + source.slice(lineEnd);
+  }
+  return source.slice(0, start) + source.slice(end);
 }
 
 /** Detect the indentation used by the first property of the object literal. */

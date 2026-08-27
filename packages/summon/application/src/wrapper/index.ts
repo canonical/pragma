@@ -15,6 +15,7 @@ import {
 import { toKebabCase, toPascalCase } from "@canonical/utils";
 import { normalizeCommandPath } from "../shared/casing.js";
 import { packageVersion } from "../shared/packageVersion.js";
+import { validateCommandPath } from "../shared/validators.js";
 
 export interface WrapperAnswers {
   readonly wrapperName: string;
@@ -27,6 +28,11 @@ const prompts: PromptDefinition[] = [
     message: "Wrapper name (for example settings):",
     default: "example",
     positional: true,
+    validate: validateCommandPath({
+      label: "Wrapper name",
+      maxSegments: 1,
+      example: "settings",
+    }),
     group: "Wrapper",
   },
 ];
