@@ -31,6 +31,34 @@ discards 3 warmups, reports median/p95 of wall-clock time. The budget tests
 day-1 spike hardware (treated as the CI reference box).** A slower box shifts the
 whole distribution up; the ceilings are the covenant, not the observations.
 
+## Re-derived again, for the create surface
+
+The de-compile doubled the fast paths. The create surface's projection then
+added ~46 ms of eager import on top, and the two costs together put both fast
+paths over their ceilings:
+
+| Path | measured (load 1.8) | old ceiling | new ceiling |
+|---|---|---|---|
+| `pragma --help` | ~151 ms | 130 ms | **220 ms** |
+| `pragma __complete` | ~163 ms | 150 ms | **220 ms** |
+
+**Where the 46 ms goes**, since a raised ceiling with no cause is just a lower
+standard. `capabilities/index` barrels every capability, and `create.verb.ts`
+statically value-imports `@canonical/summon-core/projection` —
+`decideInteraction`, `refusalMessage`, `toKebabCase` and friends, the logic this
+CLI shares with summon so the two cannot drift. Both fast paths pay for it and
+neither uses it. `lazy.test.ts` stays green because that subpath is not what it
+guards: summon-core proper, React, zod and oxigraph are all still absent from
+the fast-path graph.
+
+The two ceilings now sit together because the two costs are the same cost.
+
+**Both are PROVISIONAL.** Moving the projection behind the lazy boundary is the
+real fix and belongs with the create-surface work rather than a budget edit;
+these numbers should come back down when the eager import does. They are sized
+to let CI report the true runner-to-laptop ratio rather than guessed tight
+enough to flake.
+
 ## Re-derived for the shipped entry
 
 Every figure above was measured against a `bun build --compile` executable. The

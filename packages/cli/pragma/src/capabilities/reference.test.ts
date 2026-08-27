@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { emitReference } from "../kernel/spec/emitReference.js";
@@ -28,5 +28,68 @@ describe("reference docs drift-guard — emitReference == committed (PROTECTED)"
       .filter((name) => name.endsWith(".md"))
       .sort();
     expect(committed).toEqual([...emitted.keys()].sort());
+  });
+
+  it("the create chapter prints the REGISTERED grammar — segments and --no- forms, never rejected spellings", () => {
+    const commands = readCommitted("commands.md");
+    const start = commands.indexOf("\n## create\n");
+    expect(start).toBeGreaterThan(-1);
+    const end = commands.indexOf("\n## ", start + 1);
+    const chapter = commands.slice(start, end === -1 ? undefined : end);
+    // The single-leaf application binding's synopsis carries its required
+    // tree segment and the registered positional token — copying it must not
+    // exit 2 with the operand parsed as an unknown subcommand.
+    expect(chapter).toContain(
+      "pragma create application react [app-path] [options]",
+    );
+    expect(chapter).toContain(
+      "pragma create component <framework> [component-path] [options]",
+    );
+    // The Arguments tables print the SAME registered token their synopses
+    // carry — never the binding-level camelCase name (that spelling belongs
+    // to the MCP schemas in tools.md).
+    expect(chapter).toContain("| `[app-path]` |");
+    expect(chapter).toContain("| `[component-path]` |");
+    expect(chapter).not.toContain("`[appPath]`");
+    expect(chapter).not.toContain("`[componentPath]`");
+    // Default-true confirms document ONLY the spelling the mount registers…
+    for (const token of [
+      "| `--no-with-styles` |",
+      "| `--no-with-stories` |",
+      "| `--no-with-ssr-tests` |",
+      "| `--no-forms` |",
+      "| `--no-run-install` |",
+    ]) {
+      expect(chapter).toContain(token);
+    }
+    // …the rejected positive tokens appear in no flag cell — and the retired
+    // ssr/router pair (always-on facts, no longer prompts) in NO cell at all…
+    for (const token of [
+      "| `--with-styles` |",
+      "| `--with-stories` |",
+      "| `--with-ssr-tests` |",
+      "| `--ssr` |",
+      "| `--no-ssr` |",
+      "| `--router` |",
+      "| `--no-router` |",
+      "| `--forms` |",
+      "| `--run-install` |",
+    ]) {
+      expect(chapter).not.toContain(token);
+    }
+    // …and default-false confirms keep their registered positive form.
+    expect(chapter).toContain("| `--relay` |");
+    expect(chapter).toContain("| `--use-ts-stories` |");
+  });
+
+  it("the create chapter says the contract is executed, and names the guard", () => {
+    const commands = readCommitted("commands.md");
+    const start = commands.indexOf("\n## create\n");
+    expect(start).toBeGreaterThan(-1);
+    const chapter = commands.slice(start, commands.indexOf("\n### ", start));
+    // Pragma's docs point, never copy. The pointer names a TEST rather than a
+    // document, because the parity claim is only worth what executes it: a
+    // prose contract can go stale silently, a spawned matrix cannot.
+    expect(chapter).toContain("crossCli.subprocess.test.ts");
   });
 });

@@ -51,6 +51,46 @@ describe("create over MCP (PROTECTED)", () => {
     expect(component?.annotations?.destructiveHint).toBe(false);
   });
 
+  it("schemas DERIVE from the prompts: framework is a required enum with no default; application args are the bare prompt names (L-CIS)", async () => {
+    const dir = freshCwd();
+    const mcp = await projectMcp([createModule], dir);
+    cleanup = mcp.cleanup;
+    const tools = await mcp.listTools();
+
+    const component = tools.find((t) => t.name === "create_component");
+    const componentSchema = component?.inputSchema as {
+      properties?: Record<string, { enum?: string[]; default?: unknown }>;
+      required?: string[];
+    };
+    // The framework enum derives from the tree segments — REQUIRED, no default.
+    expect(componentSchema.properties?.framework?.enum).toEqual([
+      "react",
+      "svelte",
+      "lit",
+    ]);
+    expect(componentSchema.properties?.framework?.default).toBeUndefined();
+    expect(componentSchema.required ?? []).toContain("framework");
+    // The svelte-only prompt joins the union.
+    expect(Object.keys(componentSchema.properties ?? {})).toContain(
+      "useTsStories",
+    );
+
+    const application = tools.find((t) => t.name === "create_application");
+    const applicationSchema = application?.inputSchema as {
+      properties?: Record<string, unknown>;
+    };
+    const names = Object.keys(applicationSchema.properties ?? {});
+    // The B8 --with-X aliases are gone: prompt names ARE the arg names — and
+    // ssr/router are gone WITH their prompts (always-on facts, not questions).
+    expect(names).toEqual(
+      expect.arrayContaining(["appPath", "forms", "relay", "runInstall"]),
+    );
+    expect(names).not.toContain("withSsr");
+    expect(names).not.toContain("withRelay");
+    expect(names).not.toContain("ssr");
+    expect(names).not.toContain("router");
+  });
+
   it("plan-first: no confirm → a plan, no files written", async () => {
     const dir = freshCwd();
     const prev = process.cwd();

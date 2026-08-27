@@ -77,6 +77,13 @@ export interface VerbEntry {
   readonly flags: readonly FlagEntry[];
   /** The verb's positionals, in declared order. */
   readonly positionals: readonly PositionalEntry[];
+  /**
+   * Segment pseudo-verbs beneath this verb (a module-mounted subtree, from
+   * `CapabilityModule.cliProjection.completionChildren`), each with its own
+   * flags/positionals/children. The parse walk descends into a matching
+   * child before flag/positional resolution.
+   */
+  readonly children?: readonly VerbEntry[];
 }
 
 /** One noun with its self-verb (if any) and sub-verbs. */

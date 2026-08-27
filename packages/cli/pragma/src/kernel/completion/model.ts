@@ -26,7 +26,12 @@
 
 import { DETAIL_LEVELS, OUTPUT_FORMATS } from "../../constants.js";
 import { kebabCase, verbLabel } from "../spec/emitSurface.js";
-import type { CapabilityModule, ParamSpec, VerbSpec } from "../spec/types.js";
+import type {
+  CapabilityModule,
+  CompletionChildSpec,
+  ParamSpec,
+  VerbSpec,
+} from "../spec/types.js";
 import type {
   CompletionModel,
   CompletionSource,
@@ -196,6 +201,60 @@ function bareSelfVerb(label: string): VerbEntry {
 }
 
 /**
+ * Convert one module-declared completion node (a mounted subtree's static
+ * data) into a verb entry, asserting every inlinable token's safety exactly
+ * as spec-derived entries are asserted.
+ */
+function toMountedEntry(
+  spec: CompletionChildSpec,
+  mutates: boolean,
+  where: string,
+): VerbEntry {
+  assertSafeToken(spec.label, `${where} label`);
+  const flags: FlagEntry[] = spec.flags.map((flag) => {
+    const name = flag.flag.replace(/^--?/, "");
+    assertSafeToken(name, `${where} flag "${flag.flag}"`);
+    const source: CompletionSource = flag.values
+      ? { kind: "values", values: flag.values }
+      : none();
+    assertSafeSource(source, `${where} flag "${flag.flag}"`);
+    return {
+      flag: flag.flag,
+      takesValue: flag.takesValue,
+      repeatable: false,
+      source,
+    };
+  });
+  const positionals: PositionalEntry[] = spec.positionals.map((positional) => {
+    const source: CompletionSource = positional.values
+      ? { kind: "values", values: positional.values }
+      : positional.files
+        ? { kind: "files" }
+        : none();
+    assertSafeSource(source, `${where} positional "${positional.name}"`);
+    return {
+      name: positional.name,
+      required: positional.required,
+      variadic: false,
+      source,
+    };
+  });
+  return {
+    label: spec.label,
+    mutates,
+    flags,
+    positionals,
+    ...(spec.children && spec.children.length > 0
+      ? {
+          children: spec.children.map((child) =>
+            toMountedEntry(child, mutates, `${where}/${child.label}`),
+          ),
+        }
+      : {}),
+  };
+}
+
+/**
  * Derive the completion model from the capability modules.
  *
  * Hidden verbs are excluded (matching `emitSurface` and `buildProgram`).
@@ -225,12 +284,24 @@ export function buildCompletionModel(
   };
 
   for (const module of modules) {
+    // A module-owned mount REPLACES its verbs' completion surface: the flags
+    // the mounted tree actually registers (e.g. a default-on confirm's
+    // `--no-` form), the segment positionals, and the child walk — declared
+    // as static data by the module, converted and safety-asserted here.
+    const mountedChildren = module.cliProjection?.completionChildren();
     for (const verb of module.verbs) {
       if (verb.hidden) continue;
       const noun = verb.path[0];
       assertSafeToken(noun, `noun "${noun}"`);
       const bucket = bucketFor(noun);
-      const entry = toVerbEntry(verb);
+      const mountedSpec = mountedChildren?.[verbLabel(verb.path)];
+      const entry = mountedSpec
+        ? toMountedEntry(
+            mountedSpec,
+            verb.capability.mutates,
+            `mounted "${verb.path.join(" ")}"`,
+          )
+        : toVerbEntry(verb);
       if (verb.path[1] === undefined) {
         bucket.selfVerb = entry;
       } else {

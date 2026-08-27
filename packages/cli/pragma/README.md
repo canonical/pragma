@@ -46,13 +46,13 @@ pragma is extended along two independent planes:
 
 ## Relationship to summon
 
-`@canonical/summon` is a separate scaffolding product. pragma reuses summon's generator core so that its scaffolding commands —
+`@canonical/summon` is a separate scaffolding product. pragma MOUNTS summon's generator tree under `create` — the surface is a projection of the same grammar, so a scaffolding command —
 
 ```bash
-pragma create component src/components/Button --framework react
+pragma create component react src/components/Button
 ```
 
-— produce output byte-identical to summon's own `component`, `package`, and `application` generators. summon is not a runtime dependency. Each generator package ships its own template tree, so all three — `pragma create component`, `create package` and `create application` — run from a clean install.
+— is `summon component react src/components/Button` wearing a different binary: same tree segments, same prompt-derived flags, same wizard, byte-identical output for `component`, `package`, and `application` alike. summon is not a runtime dependency. Each generator package ships its own template tree, so all three run from a published install. Parity is not written down but EXECUTED: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit.
 
 ## MCP
 

@@ -167,30 +167,30 @@ pragma config show --format json
 
 ## create
 
+The `create` surface is a PROJECTION of the summon generator tree: `pragma create <path...>` ≡ `summon <path...>` over the declared bindings — same grammar, same flags, same wizard, byte-identical trees. Tree segments are subcommands (`create component react|svelte|lit`, `create application react`), and every flag derives from the generators' own prompts (a default-on confirm registers only its `--no-` form). The contract is EXECUTED, not written down: `crossCli.subprocess.test.ts` runs both CLIs over the same argv and compares what they emit.
+
 ### pragma create application
 
 Scaffold a full React application with SSR and routing.
 
 ```
-pragma create application [appPath] [options]
+pragma create application react [app-path] [options]
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[appPath]` | no | Application directory. (default: my-app) |
+| `[app-path]` | no | Application directory name. (default: my-app) |
 
 **Flags**
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--with-ssr` | — | Include SSR. (default: true) |
-| `--with-router` | — | Include router. (default: true) |
-| `--with-forms` | — | Include form components. (default: true) |
-| `--with-intl` | — | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
-| `--with-relay` | — | Include a Relay (GraphQL) data layer. (default: false) |
-| `--run-install` | — | Install dependencies now. (default: false) |
+| `--no-forms` | — | Include form components. (default: true) |
+| `--intl` | — | Include internationalisation (locale negotiation, translated UI, locale switcher). (default: false) |
+| `--relay` | — | Include a Relay (GraphQL) data layer with a local mock schema. (default: false) |
+| `--no-run-install` | — | Install dependencies now. (default: true) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -199,8 +199,8 @@ pragma create application [appPath] [options]
 **Examples**
 
 ```bash
-pragma create application my-app
-pragma create application my-app --with-relay
+pragma create application react my-app
+pragma create application react my-app --relay
 ```
 
 ### pragma create component
@@ -208,23 +208,24 @@ pragma create application my-app --with-relay
 Scaffold a React, Svelte, or Lit component.
 
 ```
-pragma create component [componentPath] [options]
+pragma create component <framework> [component-path] [options]
 ```
 
 **Arguments**
 
 | Argument | Required | Description |
 | --- | --- | --- |
-| `[componentPath]` | no | Component path (its final segment is the PascalCase component name). |
+| `<framework>` | yes | Component framework — the tree segment (`create component <framework>`). (one of: react, svelte, lit) |
+| `[component-path]` | no | Component path. |
 
 **Flags**
 
 | Flag | Value | Description |
 | --- | --- | --- |
-| `--framework` | `<react\|svelte\|lit>` | Component framework. (one of: react, svelte, lit) (default: react) |
-| `--with-styles` | — | Include styles. (default: true) |
-| `--with-stories` | — | Include Storybook stories. (default: true) |
-| `--with-ssr-tests` | — | Include SSR tests. (default: true) |
+| `--no-with-styles` | — | Include styles. (default: true) |
+| `--no-with-stories` | — | Include Storybook stories. (default: true) |
+| `--no-with-ssr-tests` | — | Include SSR tests. (frameworks: react, svelte) (default: true) |
+| `--use-ts-stories` | — | Use TypeScript stories format? (otherwise Svelte CSF). (frameworks: svelte) (default: false) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -233,8 +234,8 @@ pragma create component [componentPath] [options]
 **Examples**
 
 ```bash
-pragma create component src/components/Button --framework react  # React component with tests, stories, and styles
-pragma create component src/lib/Card --framework svelte --dry-run  # preview the files without writing
+pragma create component react src/components/Button  # React component with tests, stories, and styles
+pragma create component svelte src/lib/Card --dry-run  # preview the files without writing
 ```
 
 ### pragma create package
@@ -254,9 +255,9 @@ pragma create package [options]
 | `--description` | `<string>` | Package description. (default: ) |
 | `--with-react` | — | Include React dependencies. (default: false) |
 | `--with-storybook` | — | Include Storybook setup. (default: false) |
-| `--with-cli` | — | Include a CLI binary entry point. (default: false) |
-| `--with-pr-template` | — | Include a PR template. (default: false) |
-| `--run-install` | — | Run the package manager install after creation. (default: false) |
+| `--with-cli` | — | Include CLI binary entry point. (default: false) |
+| `--with-pr-template` | — | Include a .github/PULL_REQUEST_TEMPLATE.md. (default: false) |
+| `--no-run-install` | — | Run package manager install after creation. (default: true) |
 
 - Store: storeless.
 - Mutation: plan-first — preview with `--dry-run`, apply with `--yes`, reverse with `--undo`.
@@ -266,7 +267,7 @@ pragma create package [options]
 
 ```bash
 pragma create package --name @canonical/my-lib --type library
-pragma create package --name @canonical/my-tool --run-install
+pragma create package --name @canonical/my-tool --no-run-install
 ```
 
 ## doctor

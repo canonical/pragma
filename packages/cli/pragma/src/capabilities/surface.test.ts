@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { buildOptionInfo } from "@canonical/summon-core/projection";
 import { describe, expect, it } from "vitest";
 import { MCP_SERVER_NAME, VERSION } from "../constants.js";
 import { emitSurface } from "../kernel/spec/emitSurface.js";
@@ -8,6 +9,7 @@ import {
   type Covenant,
 } from "../kernel/spec/surfaceConformance.js";
 import { projectMcp } from "../testing/helpers/projectMcp.js";
+import { CREATE_SURFACE } from "./create/createSurface.generated.js";
 import { capabilities } from "./index.js";
 
 /** The committed covenant, read from disk exactly as a consumer would. */
@@ -135,6 +137,92 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         mcp: "graph_query",
       },
     ]);
+  });
+
+  it("emits the L-CIS create noun — projected grammar, deep-equal to the covenant", () => {
+    // The create surface DERIVES from the generators' prompts (L-CIS): the
+    // framework tree segment is a required positional enum, component's flags
+    // are the framework union (incl. the svelte-only --use-ts-stories), and
+    // every flag AND positional token is the REGISTERED spelling (L-CIS-2) —
+    // a default-true confirm registers ONLY its `--no-<kebab>` form, and the
+    // args carry the kebab positional the usage line prints, so the covenant
+    // names `--no-with-styles` and `[component-path]`, never a
+    // `--with-styles` the CLI rejects or a `[componentPath]` its help never
+    // prints. Pin the three entries verbatim so a prompt edit that moves the
+    // covenant is SEEN.
+    expect(emitted.nouns.create?.verbs).toEqual([
+      {
+        v: "component",
+        args: ["<framework>", "[component-path]"],
+        flags: [
+          "--no-with-styles",
+          "--no-with-stories",
+          "--no-with-ssr-tests",
+          "--use-ts-stories",
+        ],
+        mutates: true,
+        mcp: "create_component",
+      },
+      {
+        v: "package",
+        flags: [
+          "--name",
+          "--type",
+          "--description",
+          "--with-react",
+          "--with-storybook",
+          "--with-cli",
+          "--with-pr-template",
+          "--no-run-install",
+        ],
+        mutates: true,
+        mcp: "create_package",
+      },
+      {
+        v: "application",
+        args: ["[app-path]"],
+        // ssr/router are GONE: always-on facts, not prompts — the pair had no
+        // reachable explicit form (only `--no-` spellings the generator's own
+        // guard rejected), so the projection no longer carries them.
+        flags: ["--no-forms", "--intl", "--relay", "--no-run-install"],
+        mutates: true,
+        mcp: "create_application",
+      },
+    ]);
+  });
+
+  it("every create covenant flag token is buildOptionInfo's primary registered long form (L-CIS-2)", () => {
+    // The derivation tie: the covenant's create tokens must be EXACTLY the
+    // long forms the single flag-shape authority yields for the projected
+    // prompts — the same expression both binaries register from — so the
+    // covenant can never again teach a spelling the CLI rejects (the
+    // round-15 F2 defect: kebab-cased param names blessed `--with-styles`
+    // and rejected the real `--no-with-styles`).
+    const registered = new Map<string, string>();
+    for (const surface of Object.values(CREATE_SURFACE)) {
+      for (const prompt of surface.prompts) {
+        if (prompt.positional === true) continue;
+        registered.set(
+          prompt.name,
+          buildOptionInfo(prompt).flags.split(" ")[0] as string,
+        );
+      }
+    }
+    for (const verb of emitted.nouns.create?.verbs ?? []) {
+      expect(verb.flags?.length ?? 0).toBeGreaterThan(0);
+      for (const token of verb.flags ?? []) {
+        expect([...registered.values()]).toContain(token);
+      }
+    }
+    // …and every non-positional projected prompt is named by some entry.
+    const covenantTokens = new Set(
+      (emitted.nouns.create?.verbs ?? []).flatMap((verb) => verb.flags ?? []),
+    );
+    for (const [name, token] of registered) {
+      expect(covenantTokens.has(token), `${name} → ${token} missing`).toBe(
+        true,
+      );
+    }
   });
 
   it("emits the PR6 effect/diagnostic self-verbs (doctor, upgrade)", () => {

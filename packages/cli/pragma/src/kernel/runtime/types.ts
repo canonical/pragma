@@ -94,6 +94,8 @@ export interface QueryFacade {
 export interface MutationRuntime {
   /** True for a plan-only preview; false for a real execution. */
   readonly preview: boolean;
+  /** True when this invocation reverses a previous run (`--undo`). */
+  readonly undo?: boolean;
 }
 
 /**
