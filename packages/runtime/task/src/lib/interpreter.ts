@@ -92,8 +92,14 @@ const writeFileAtomic = async (
     if (mode !== undefined) await fs.chmod(temp, mode);
     await fs.rename(temp, resolved);
   } catch (error) {
-    // Never leave the temp file behind on a failed write.
-    await fs.rm(temp, { force: true }).catch(() => {});
+    // Never leave the temp file behind on a failed write. The cleanup is
+    // best-effort on purpose: whatever stopped the write is the error worth
+    // reporting, and a failure to remove a stray temp file must not mask it.
+    try {
+      await fs.rm(temp, { force: true });
+    } catch {
+      // Swallowed deliberately — see above.
+    }
     throw error;
   }
 };

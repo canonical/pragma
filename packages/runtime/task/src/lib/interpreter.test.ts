@@ -1995,4 +1995,26 @@ describe("WriteFile lands atomically", () => {
     await runTask(writeFile(join(dir, "a.json"), "{}\n"));
     expect(readdirSync(dir)).toEqual(["a.json"]);
   });
+
+  it("leaves no temp file behind when the rename fails, and still throws", async () => {
+    // The temp file is written to the target's own directory, so a write that
+    // cannot land must not turn a failure into litter beside the user's config.
+    // A directory standing where the file should go makes the rename fail
+    // after the temp file exists — the one ordering that can leave one.
+    const dir = mkdtempSync(join(tmpdir(), "task-atomic-fail-"));
+    const occupied = join(dir, "taken.json");
+    mkdirSync(occupied);
+    writeFileSync(join(occupied, "keep.txt"), "untouched\n");
+
+    await expect(runTask(writeFile(occupied, "new\n"))).rejects.toThrow(
+      TaskExecutionError,
+    );
+
+    // The failure is reported, nothing is left over, and what was already
+    // there is exactly as it was.
+    expect(readdirSync(dir)).toEqual(["taken.json"]);
+    expect(readFileSync(join(occupied, "keep.txt"), "utf-8")).toBe(
+      "untouched\n",
+    );
+  });
 });
