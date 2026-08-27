@@ -183,7 +183,7 @@ export function composeLsp(d: LspDetection): Task<void> {
         (result) =>
           checkExecOk(fetchCommand, result as ExecResult, {
             message:
-              "The extension package could not be fetched — check that this machine can reach registry.npmjs.org, then run " +
+              "The extension package cannot be fetched — this machine cannot reach registry.npmjs.org. Check the connection, then run " +
               `\`${BIN_NAME} setup lsp\` again.`,
           }),
       ),
