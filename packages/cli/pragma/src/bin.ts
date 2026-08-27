@@ -54,7 +54,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  // 2. Completion resolver — storeless, before first-run so no banner leaks.
+  // 2. Completion resolver — storeless, and reached before anything that could
+  //    print, so a completion request is never polluted by a hint.
   //    Protocol: `pragma __complete -- <words…>`; the first `--` is framing
   //    (tolerated absent) and is stripped here so a later bare `--` stays the
   //    user's end-of-options. Candidates go to stdout newline-delimited (zero
@@ -149,25 +150,14 @@ async function main(): Promise<void> {
     }
   }
 
-  // 5. First-run onboarding (stderr-only, failure-tolerant). Skipped on the
-  //    side-effect-free help path — `--help` here; `mcp serve`, `__complete`, and
-  //    `--version` already returned above — so help never seeds state.
-  if (!explicitHelp) {
-    const { ensureFirstRun } = await import("./kernel/config/firstRun.js");
-    // `--quiet` silences the onboarding lines but still seeds the state —
-    // onboarding is failure-tolerant by design, so muting its stderr changes
-    // nothing about the invocation.
-    await ensureFirstRun(globalFlags.quiet === true ? () => {} : undefined);
-  }
-
-  // 6. Load the capability registry — the command tree's data. Commander and
+  // 5. Load the capability registry — the command tree's data. Commander and
   //    the program builder are NOT loaded yet: the bare-invocation branch
   //    below answers `--help` and the front door from the registry alone, so
   //    the help fast path never pays for the parser it will not run.
   const { capabilities } = await import("./capabilities/index.js");
   const args = stripGlobalFlags(argv);
 
-  // 7. A bare invocation (no command token — argv empty or only global flags)
+  // 6. A bare invocation (no command token — argv empty or only global flags)
   //    prints the curated front door instead of exiting silently. Uses the
   //    static capabilities — the front door never reads config or stories.
   if (!args.some((arg) => !arg.startsWith("-"))) {
@@ -215,6 +205,12 @@ async function main(): Promise<void> {
     process.stdout.write(
       `${formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, live)}\n`,
     );
+    // The front door is a read, so it is where the un-set-up hint belongs: the
+    // machine's state is the presence of the global config, and nothing is
+    // written to discover it.
+    const { setupHintLines } = await import("./kernel/config/firstRun.js");
+    const hint = setupHintLines();
+    if (hint.length > 0) process.stderr.write(`\n${hint.join("\n")}\n`);
     return;
   }
 

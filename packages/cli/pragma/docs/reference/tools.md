@@ -168,7 +168,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Runs nine diagnostic checks and reports pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
+Reports the environment checks and then one row per setup target in each band, as pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Every banded row is named after the setup target that repairs it. Storeless by default; the store check boots lazily and never fails the run.
 
 Read-only.
 
@@ -292,7 +292,7 @@ Read-only.
 
 ### setup
 
-Runs the shell-completions, LSP, MCP, and skills installers as a single wizard: pick the steps, review the recap, then apply. The scope option targets the project band, the user/home band, or both.
+Plans every target in the selected band, then applies the ones you keep. The user/home band is the default; the scope option chooses the per-project band, or both. A run with no attended terminal prints the plan and applies nothing unless the run is confirmed.
 
 Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
@@ -300,7 +300,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
-| `scope` | enum(project, global, both) | no | Which config band(s) to configure: project, global, or both. (one of: project, global, both) (default: both) |
+| `scope` | enum(project, global, both) | no | Which config band(s) to configure: global (the default), project, or both. (one of: project, global, both) (default: global) |
 | `global` | boolean | no | Shorthand for --scope global (configure the user/home band). |
 | `local` | boolean | no | Shorthand for --scope project (configure the per-project band). |
 | `confirm` | boolean | no | Set true to execute; otherwise a plan is returned (default false). |

@@ -18,6 +18,93 @@ export { TaskExecutionError };
 // =============================================================================
 
 /**
+ * Write a file so that a reader never observes a half-written one.
+ *
+ * `fs.writeFile` truncates and then writes: a crash, a full disk, or a killed
+ * process between those two steps leaves a TRUNCATED file. For a generated
+ * artifact that is an annoyance; for a config file this interpreter merges into
+ * — an editor's MCP registry, a shell rc — it is destruction of data the user
+ * did not give us, because the merge read the old contents and the truncated
+ * write is what remains of them.
+ *
+ * So: write a sibling temp file, fsync-free but fully written, then `rename`
+ * over the target. `rename` within one directory is atomic on POSIX and on
+ * Windows (ReplaceFile semantics), so the target is only ever the old bytes or
+ * the new ones.
+ *
+ * Two details that matter:
+ *
+ * - **Symlinks are followed, not replaced.** Dotfile setups routinely symlink
+ *   `~/.claude.json` into a checked-out repository. Renaming over the link
+ *   would silently break that link and strand the user's real file, so the
+ *   target is resolved first and the rename lands on the resolved path.
+ * - **The existing mode is preserved.** A fresh temp file is 0600 by default;
+ *   inheriting the replaced file's mode keeps a config the user (or another
+ *   tool) had widened from silently narrowing.
+ *
+ * @param target - The absolute path to write.
+ * @param content - The bytes to land there.
+ * @note Impure — writes, renames, and stats the filesystem.
+ */
+const writeFileAtomic = async (
+  target: string,
+  content: string,
+): Promise<void> => {
+  // Follow a symlink to its destination so the link itself survives the rename.
+  //
+  // The two probes are kept apart on purpose. `lstat` answers "is there a link
+  // here"; `realpath` answers "where does it lead", and it throws ENOENT for a
+  // link whose destination does not exist yet. Catching both together left
+  // `resolved` as the link path, so the rename replaced THE LINK — the exact
+  // destruction this function exists to prevent. A dangling link is still a
+  // link: the write lands on the destination it names, which is what makes the
+  // link work again.
+  let resolved = target;
+  let link: Awaited<ReturnType<typeof fs.lstat>> | undefined;
+  try {
+    link = await fs.lstat(target);
+  } catch {
+    link = undefined; // No such path yet — the plain path is the destination.
+  }
+  if (link?.isSymbolicLink()) {
+    try {
+      resolved = await fs.realpath(target);
+    } catch {
+      // A link with a missing destination: resolve the target it names itself,
+      // relative to the link's own directory, and create the directories the
+      // rename needs.
+      resolved = path.resolve(path.dirname(target), await fs.readlink(target));
+      await fs.mkdir(path.dirname(resolved), { recursive: true });
+    }
+  }
+
+  // Inherit the mode of the file being replaced, when there is one.
+  let mode: number | undefined;
+  try {
+    mode = (await fs.stat(resolved)).mode & 0o777;
+  } catch {
+    mode = undefined;
+  }
+
+  const temp = `${resolved}.${process.pid}.${Math.random().toString(36).slice(2, 10)}.tmp`;
+  try {
+    await fs.writeFile(temp, content, "utf-8");
+    if (mode !== undefined) await fs.chmod(temp, mode);
+    await fs.rename(temp, resolved);
+  } catch (error) {
+    // Never leave the temp file behind on a failed write. The cleanup is
+    // best-effort on purpose: whatever stopped the write is the error worth
+    // reporting, and a failure to remove a stray temp file must not mask it.
+    try {
+      await fs.rm(temp, { force: true });
+    } catch {
+      // Swallowed deliberately — see above.
+    }
+    throw error;
+  }
+};
+
+/**
  * Execute a single effect and return the result.
  * This is where the actual I/O happens.
  */
@@ -42,7 +129,7 @@ export const executeEffect = async (
     case "WriteFile": {
       const target = at(effect.path);
       await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(target, effect.content, "utf-8");
+      await writeFileAtomic(target, effect.content);
       return undefined;
     }
 

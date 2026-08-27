@@ -6,8 +6,8 @@
  * into per-file {@link TargetGroup}s for the chosen `--scope`) and `composeMcp`
  * (a pure, re-runnable write body driven by the SELECTED groups). Each write is
  * a distinct `(path, mcpKey)` so two harnesses sharing a file (VS Code + Cline)
- * each preserve the other; every group emits a band-prefixed `info()` manifest
- * line, so the recap and a `--dry-run` show which band each file belongs to.
+ * each preserve the other. What a run SAYS about each file is the plan row's
+ * per-file children, not a log line composed here.
  *
  * Detection ALSO reads each group's existing config (via `readMcpConfigFrom`,
  * FOR REAL up front) and classifies every group as `absent` (no pragma entry
@@ -19,24 +19,24 @@
  * same state-awareness `setup skills` has always had.
  */
 
+import { dirname } from "node:path";
 import type {
   McpServerConfig,
   PlatformEnv,
   TargetGroup,
 } from "@canonical/harnesses";
-import { info, sequence_, type Task, warn } from "@canonical/task";
+import { mkdir, sequence_, type Task } from "@canonical/task";
 import { MCP_SERVER_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import type {
-  ConfiguredTarget,
-  McpTargetState,
-  ScopeBand,
-  ScopeSelection,
-} from "../types.js";
+import type { McpTargetState, ScopeBand } from "../types.js";
 
 /** The `writeMcpConfigTargets` builder, captured from the dynamic harness import. */
 type WriteMcpConfigTargets =
   typeof import("@canonical/harnesses").writeMcpConfigTargets;
+
+/** The `removeMcpConfigFrom` builder, captured from the dynamic harness import. */
+type RemoveMcpConfigFrom =
+  typeof import("@canonical/harnesses").removeMcpConfigFrom;
 
 /**
  * The detected MCP state: the per-file target groups (already scoped to the
@@ -53,7 +53,23 @@ export interface McpDetection {
   readonly cwd: string;
   readonly platform: PlatformEnv;
   readonly writeMcpConfigTargets: WriteMcpConfigTargets;
+  readonly removeMcpConfigFrom: RemoveMcpConfigFrom;
 }
+
+/**
+ * The argv a registered harness spawns to reach the server.
+ *
+ * The server verb is `mcp serve`: `mcp` is the noun, and the noun on its own is
+ * not the server entry. An entry still carrying the old single-token `mcp`
+ * spawns something that no longer serves, so it must not survive.
+ *
+ * It does not have to: `mcpEntryMatches` treats `args` as a controlled field,
+ * so an entry written before this rename classifies as `drifted` on the very
+ * next detection and the ordinary forward write repairs it. That is the whole
+ * migration — no flag, no prompt, no compatibility branch — and the run after
+ * it converges, because the repaired entry then matches byte for byte.
+ */
+const MCP_SERVE_ARGV = ["mcp", "serve"] as const;
 
 /**
  * The pragma MCP server entry we register — the SINGLE source of truth both the
@@ -77,8 +93,8 @@ export interface McpDetection {
  */
 export function pragmaMcpEntry(cwd: string, band: ScopeBand): McpServerConfig {
   return band === "project"
-    ? { command: MCP_SERVER_NAME, args: ["mcp"], cwd }
-    : { command: MCP_SERVER_NAME, args: ["mcp"] };
+    ? { command: MCP_SERVER_NAME, args: [...MCP_SERVE_ARGV], cwd }
+    : { command: MCP_SERVER_NAME, args: [...MCP_SERVE_ARGV] };
 }
 
 /**
@@ -132,13 +148,13 @@ async function classifyGroup(
  * files.
  *
  * @param rt - The per-invocation runtime.
- * @param scope - The resolved `--scope` selection.
- * @returns The scoped target groups, their prior states, + the config writer.
+ * @param band - The band being planned (global or project).
+ * @returns The band's target groups, their prior states, + the config writer.
  * @note Impure — reads the filesystem via `detectHarnesses` + `readMcpConfigFrom`.
  */
 export async function detectMcp(
   rt: PragmaRuntime,
-  scope: ScopeSelection,
+  band: ScopeBand,
 ): Promise<McpDetection> {
   const cwd = rt.cwd;
   const [
@@ -148,6 +164,7 @@ export async function detectMcp(
       mcpEntryMatches,
       readMcpConfigFrom,
       readPlatformEnv,
+      removeMcpConfigFrom,
       writeMcpConfigTargets,
     },
     { runTask },
@@ -157,7 +174,7 @@ export async function detectMcp(
   ]);
   const platform = readPlatformEnv();
   const detected = await runTask(detectHarnesses(cwd, platform));
-  const groups = groupTargetsForScope(detected, cwd, scope, platform);
+  const groups = groupTargetsForScope(detected, cwd, band, platform);
 
   // Read each group's existing config (for real, up front) so the recap/preview
   // and the default selection reflect true prior state — the same discipline
@@ -177,7 +194,14 @@ export async function detectMcp(
     }),
   );
 
-  return { groups, stateByPath, cwd, platform, writeMcpConfigTargets };
+  return {
+    groups,
+    stateByPath,
+    cwd,
+    platform,
+    writeMcpConfigTargets,
+    removeMcpConfigFrom,
+  };
 }
 
 /**
@@ -198,13 +222,13 @@ export function selectedGroups(
 
 /**
  * Compose the per-target config writes for the SELECTED groups (pure —
- * re-runnable; builds ABSOLUTE config paths itself). The prior
- * {@link McpTargetState} drives the manifest MESSAGE (already-configured /
- * updated / added) but NOT whether the write runs: the idempotent
- * read-modify-write is always composed so it carries its `undo` and a re-run is
- * byte-identical when already `configured`. The wizard already default-DESELECTS
- * `configured` files (so they are usually not in `groups` at all); a `configured`
- * file that IS selected is still rewritten idempotently.
+ * re-runnable; builds ABSOLUTE config paths itself). An already-`configured`
+ * group composes NOTHING: the entry on disk is byte-for-byte what a write would
+ * emit, so re-writing it would only move an mtime. Removal no longer depends on
+ * the forward plan having written something ({@link composeMcpRemoval}), which
+ * is what used to force the redundant write.
+ *
+ * The task carries no log effects — the plan row owns what the run says.
  *
  * @param d - The detection gathered up front.
  * @param groups - The target groups the user chose (a subset of `d.groups`).
@@ -214,61 +238,65 @@ export function composeMcp(
   d: McpDetection,
   groups: readonly TargetGroup[],
 ): Task<void> {
-  if (groups.length === 0) {
-    return warn("No AI harnesses selected — nothing to configure.");
-  }
   // Re-runnable combinators (NOT a single-use `gen`): `execute` interprets the
   // task twice (preview + perform). One combined write per file keeps a shared
   // file (VS Code + Cline) a single read-modify-write — dry-run safe. The
   // written entry is BAND-shaped per group (a global entry omits `cwd`).
-  const tasks: Task<unknown>[] = [];
-  for (const group of groups) {
-    const state = mcpGroupState(d, group.path);
-    const names = group.harnessNames.join(", ");
-    tasks.push(
+  const pending = groups.filter(
+    (group) => mcpGroupState(d, group.path) !== "configured",
+  );
+  return sequence_(
+    pending.map((group) =>
       d.writeMcpConfigTargets(
         group.writes,
         MCP_SERVER_NAME,
         pragmaMcpEntry(d.cwd, group.scope),
       ),
-    );
-    const verb =
-      state === "configured"
-        ? "already configured →"
-        : state === "drifted"
-          ? "updated →"
-          : "→";
-    tasks.push(
-      info(
-        `[${group.scope}] ${MCP_SERVER_NAME} MCP server ${verb} ${group.path} (${names})`,
-      ),
-    );
-  }
-  return sequence_(tasks);
-}
-
-/** The harness names configured across a selection (for the result summary). */
-export function mcpConfigured(groups: readonly TargetGroup[]): string[] {
-  const names = new Set<string>();
-  for (const group of groups) {
-    for (const name of group.harnessNames) names.add(name);
-  }
-  return [...names].sort();
+    ),
+  );
 }
 
 /**
- * The per-file {@link ConfiguredTarget}s for a selection (for the result), each
- * carrying its prior {@link McpTargetState} so the recap distinguishes newly
- * added, updated, and already-configured targets.
+ * The groups this band OWNS right now — every file where detection classifies a
+ * pragma entry as present (`configured` or `drifted`). Removal acts on exactly
+ * this set, so a file that never carried the entry is never rewritten and a
+ * foreign server in a file that does is never touched.
  */
-export function mcpTargets(
-  d: McpDetection,
-  groups: readonly TargetGroup[],
-): ConfiguredTarget[] {
-  return groups.map((group) => ({
-    name: group.harnessNames.join(", "),
-    band: group.scope,
-    path: group.path,
-    state: mcpGroupState(d, group.path),
-  }));
+export const ownedMcpGroups = (d: McpDetection): readonly TargetGroup[] =>
+  d.groups.filter((group) => mcpGroupState(d, group.path) !== "absent");
+
+/**
+ * Compose the removal of the pragma entry from every owned file.
+ *
+ * The FORWARD side of this task must be walkable without reading anything.
+ * `runUndo` collects undos by walking the forward task with effects MOCKED —
+ * real `Exists`, but `ReadFile` deliberately returns a placeholder, so that the
+ * walk cannot observe the forward run's own edits. Re-asserting the entry here
+ * (the obvious composition, and the one this had) put a read-parse-merge on
+ * that walk: the placeholder is not JSON, the parse failed closed, and the
+ * collection aborted before gathering a single undo. `setup mcp --undo` could
+ * not remove anything, and said so by refusing a config that was perfectly
+ * valid.
+ *
+ * So the forward effect is a `mkdir` of the config's own directory — which
+ * already exists, reads nothing, and is a genuine no-op — carrying the
+ * key-scoped removal as its `undo`. Phase two then runs that removal against
+ * the real file. Only the pragma key is ever deleted; a foreign server in the
+ * same file is never touched.
+ *
+ * @param d - The detection gathered up front.
+ * @returns A Task whose undo removes the pragma entry from each owned file.
+ */
+export function composeMcpRemoval(d: McpDetection): Task<void> {
+  return sequence_(
+    ownedMcpGroups(d).map((group) =>
+      mkdir(dirname(group.path), true, {
+        undo: sequence_(
+          group.writes.map((write) =>
+            d.removeMcpConfigFrom(write, MCP_SERVER_NAME),
+          ),
+        ),
+      }),
+    ),
+  );
 }

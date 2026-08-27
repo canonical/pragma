@@ -8,7 +8,7 @@ import {
   runComplete,
 } from "../../../kernel/completion/index.js";
 import { capabilities } from "../../index.js";
-import { detectCompletions } from "../../setup/operations/setupCompletions.js";
+import type { CompletionsDetection } from "../../setup/operations/setupCompletions.js";
 import { activationHint, type ShellId } from "../../setup/shell.js";
 import type { CheckResult } from "../types.js";
 
@@ -102,15 +102,21 @@ async function completeProbe(cwd: string): Promise<number> {
  * never installed is `available`: completions are opt-in and a fresh install
  * is healthy without them.
  *
- * @param cwd - The project directory (the resolver's entity seam, and the
- *   `completion` config gate 2 renders this project's body from).
+ * The detection is passed IN rather than re-read: the `completions` target
+ * detects once per invocation and both the setup plan and this row read that
+ * one answer, so the two surfaces cannot describe different files.
+ *
+ * @param cwd - The project directory (the resolver's entity seam).
+ * @param d - The `completions` target's detection for this invocation.
  * @returns A CheckResult: pass (up to date + wired + answering), available
  *   (never installed, with the setup remedy), fail (with the attributable
  *   remedy), or skip (shell undetected).
- * @note Impure — reads `$SHELL`, the install path, the config layers, `.zshrc`,
- *   and drives the storeless resolver.
+ * @note Impure — reads the install path, `.zshrc`, and drives the resolver.
  */
-export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
+export async function checkShellCompletions(
+  cwd: string,
+  d: CompletionsDetection,
+): Promise<CheckResult> {
   // 1. Effect test: the resolver the scripts delegate to must actually answer.
   let candidates: number;
   try {
@@ -133,13 +139,43 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
     };
   }
 
-  // 2. The installed script is a script `setup completions` would write.
-  const { shell, path, state } = await detectCompletions(cwd);
+  // 2. The check is about the shell the user is IN. Reporting on the login
+  //    shell instead is what let this row print a green check for a shell the
+  //    user never opens while the one they live in had nothing installed.
+  const { shell, path, state } = d;
+  if (d.detection.kind === "ambiguous") {
+    return {
+      name: NAME,
+      status: "skip",
+      detail: `resolver OK; the running shell cannot be identified (SHELL names ${d.detection.login}, the login shell)`,
+      remedy: `Run \`${INSTALL_REMEDY}\` from the shell you want completions in.`,
+    };
+  }
   if (shell === null || path === null) {
     return {
       name: NAME,
       status: "skip",
-      detail: "resolver OK; shell not detected ($SHELL unset)",
+      detail: "resolver OK; no bash, zsh, or fish in this process tree",
+    };
+  }
+  // The installed script delegates every name context to the binary. A script
+  // that cannot reach it is inert, and reporting it as current is the same
+  // false green this row already told once.
+  //
+  // This gate runs BEFORE the install probe, so it says only what it has
+  // verified: that the binary does not resolve. Claiming "script installed" here
+  // told a user running this CLI by absolute path that a script they had never
+  // installed was broken — an invented file, in the row whose whole job is to
+  // report the real one. Nothing installed is still the opt-in `available` tier.
+  if (!d.binOnPath) {
+    const installed = state !== "absent";
+    return {
+      name: NAME,
+      status: installed ? "fail" : "available",
+      detail: installed
+        ? `${shell} script installed, but \`${BIN_NAME}\` is not on PATH — the script cannot run it`
+        : `resolver OK; \`${BIN_NAME}\` is not on PATH — an installed script cannot run it`,
+      remedy: `Put \`${BIN_NAME}\` on your PATH.`,
     };
   }
   if (state === "absent") {
@@ -176,6 +212,6 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
   return {
     name: NAME,
     status: "pass",
-    detail: `${shell} up to date and resolving (${candidates} nouns)`,
+    detail: `${shell} (the shell in use) up to date and resolving (${candidates} nouns)`,
   };
 }

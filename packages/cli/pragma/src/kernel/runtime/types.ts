@@ -213,4 +213,12 @@ export interface PragmaRuntime {
    * returning the Task, and the projector reads it back on the real-run branch.
    */
   exec?: RunnerOptions;
+  /**
+   * Structured plan data a mutating verb stashes for the `--dry-run` branch to
+   * render through its `output.formatPlan` seam, and to carry verbatim in the
+   * JSON dry-run envelope. NOT readonly, and set the same way `exec` is: the
+   * verb writes it before returning its Task. Unset on every verb that has no
+   * plan of its own, which is what keeps the raw-effect render the default.
+   */
+  planData?: unknown;
 }

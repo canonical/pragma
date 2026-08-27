@@ -1,39 +1,40 @@
 /**
- * A1 — first-run onboarding, observed through the real shipped entry.
+ * First-run onboarding, observed through the real shipped entry.
  *
- * Unit mechanics (`ensureFirstRun`/`firstRunTask`) are PR1-protected
- * (`kernel/config/firstRun.test.ts`); this is the e2e pin: a fresh XDG config
- * home produces the greeting on STDERR (never stdout — command output must stay
- * uncorrupted), seeds `config.json`, and a second run is silent.
+ * The contract inverted: onboarding no longer WRITES. A read-only command must
+ * leave the config home empty, and the un-set-up hint belongs on the read-only
+ * front door — where the machine's state is discovered by looking, not by
+ * seeding a file and a marker ahead of any consent.
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { freshXdgEnv, runCli } from "../helpers/runCli.js";
 
-describe("first-run onboarding (A1, e2e)", () => {
-  it("greets on stderr, seeds config.json, and stays silent on the second run", () => {
+describe("first-run onboarding (e2e)", () => {
+  it("hints on the front door and seeds nothing", () => {
     const env = freshXdgEnv();
     const configPath = join(env.XDG_CONFIG_HOME, "pragma", "config.json");
 
-    const first = runCli(["info"], {
+    // A read-only command writes NO config and carries no banner: the greeting
+    // used to interleave itself into the output of unrelated runs.
+    const read = runCli(["info"], {
       env: { ...env, PRAGMA_NO_AUTO_LLM: "1" },
     });
-    expect(first.exitCode).toBe(0);
-    expect(first.stderr).toContain("pre-release");
-    expect(first.stderr).toContain(configPath);
-    // Command output stays on stdout, untouched by the first-run note.
-    expect(first.stdout).not.toContain("pre-release");
-    expect(first.stdout).toContain("pragma v");
+    expect(read.exitCode).toBe(0);
+    expect(read.stdout).toContain("pragma v");
+    expect(read.stderr).not.toContain("pre-release");
+    expect(existsSync(configPath)).toBe(false);
 
-    expect(existsSync(configPath)).toBe(true);
-    expect(readFileSync(configPath, "utf-8")).toBe("{}\n");
-
-    const second = runCli(["info"], {
-      env: { ...env, PRAGMA_NO_AUTO_LLM: "1" },
-    });
-    expect(second.exitCode).toBe(0);
-    expect(second.stderr).toBe("");
+    // The front door is a read, so it is where the hint belongs — on stderr,
+    // leaving the front door's own output uncorrupted on stdout.
+    const door = runCli([], { env: { ...env, PRAGMA_NO_AUTO_LLM: "1" } });
+    expect(door.exitCode).toBe(0);
+    expect(door.stderr).toContain("pre-release");
+    expect(door.stderr).toContain("pragma setup");
+    expect(door.stdout).not.toContain("pre-release");
+    // Still nothing written: the hint is a probe, not a seed.
+    expect(existsSync(configPath)).toBe(false);
   });
 });

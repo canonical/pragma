@@ -1,104 +1,62 @@
 /**
  * Formatters for `pragma setup` and its sub-verbs — one shared formatter over
- * the tagged {@link SetupResult} union (plain, llm, json).
+ * the {@link SetupPlan} (plain, llm, json).
+ *
+ * The plan REPLACED a tagged result union with one member per sub-verb, each
+ * rendering its own sentence in its own vocabulary. That union could not
+ * describe a run that touched several targets in two bands, so the run-all
+ * reported a list of step names and nothing about what any of them did. One
+ * structure with one renderer is what makes the preview, the progress lines and
+ * the recap agree by construction rather than by review.
  */
 
 import type { Formatters } from "../../kernel/spec/types.js";
-import { BAND_LABELS } from "../shared/bands.js";
-import type {
-  ConfiguredTarget,
-  SetupResult,
-  SetupSkillsResult,
-} from "./types.js";
+import type { SetupPlan } from "./plan.js";
+import { renderPlanLlm, renderPlanTable, renderRecap } from "./plan.render.js";
 
-/** Summarize a skills result: created / skipped / replaced counts. */
-function summarizeSkills(result: SetupSkillsResult): string {
-  const created = result.actions.filter((a) => a.action === "created").length;
-  const skipped = result.actions.filter((a) => a.action === "skipped").length;
-  const replaced = result.actions.filter((a) => a.action === "replaced").length;
-  return `${created} created, ${replaced} replaced, ${skipped} unchanged across ${result.harnessCount} harness(es)`;
-}
+/** The trailing line a non-applied plan carries. */
+export const PREVIEW_HINT =
+  "Nothing was applied. Run again with --yes to apply.";
+
+/** The trailing line an explicit dry run carries. */
+export const DRY_RUN_HINT = "Dry run — nothing applied.";
 
 /**
- * Summarize the MCP targets grouped by band — the global (user/home) band
- * before the project (per-repo) band — so the recap shows which files at which
- * level got the pragma server. The Global/Project labels match the doctor
- * report and the CLI's `--global`/`--local` grammar (see {@link BAND_LABELS}).
+ * Whether any row carries an outcome, i.e. whether a run actually happened.
  *
- * A trailing state tally is appended ONLY when something was already present
- * (an `updated` or `unchanged` target) — a clean first run (every target newly
- * `added`) keeps the plain `Configured MCP — …` line, so the idempotency detail
- * surfaces exactly when it is informative (a re-run made clear it was a no-op).
+ * Selection is deliberately NOT part of this test. An all-current re-run selects
+ * nothing — every row is already converged — and gating on `selected` made that
+ * run render as an unapplied PLAN, so the one command that had just confirmed
+ * the machine was fully set up reported itself as a preview.
  */
-function summarizeMcpTargets(targets: readonly ConfiguredTarget[]): string {
-  if (targets.length === 0) return "No harnesses configured.";
-  const section = (band: ConfiguredTarget["band"], label: string): string => {
-    const names = targets.filter((t) => t.band === band).map((t) => t.name);
-    return names.length > 0 ? `${label}: ${names.join(", ")}` : "";
-  };
-  const parts = [
-    section("global", BAND_LABELS.global),
-    section("project", BAND_LABELS.project),
-  ]
-    .filter((p) => p.length > 0)
-    .join(" · ");
-  const updated = targets.filter((t) => t.state === "drifted").length;
-  const unchanged = targets.filter((t) => t.state === "configured").length;
-  if (updated === 0 && unchanged === 0) {
-    // Clean first run — every target newly added; keep the original recap line.
-    return `Configured MCP — ${parts}.`;
-  }
-  const added = targets.filter((t) => t.state === "absent").length;
-  return `Configured MCP — ${parts} (${added} added, ${updated} updated, ${unchanged} unchanged).`;
-}
+const wasApplied = (plan: SetupPlan): boolean =>
+  plan.rows.some((row) => row.outcome !== undefined);
 
-/** Render a setup result to a single human line (shared by plain/llm). */
-function renderSetupLine(data: SetupResult): string {
-  switch (data.kind) {
-    case "completions": {
-      if (!data.installed) {
-        return "No shell detected — completions were not installed.";
-      }
-      switch (data.state) {
-        case "installed":
-          return `${data.shell} completions already up to date at ${data.path}.`;
-        case "stale":
-          return `Updated ${data.shell} completions at ${data.path}.`;
-        default:
-          return `Installed ${data.shell} completions at ${data.path}.`;
-      }
-    }
-    case "lsp": {
-      // `unknown` = no VS Code-family CLI on PATH: an honest named skip — the
-      // old copy claimed "is installed (up to date)" for every non-installed
-      // state, which was false twice over (nothing was installed, and nothing
-      // ever checks a version).
-      if (data.state === "unknown") {
-        return "No VS Code-family editor CLI found on PATH — Terrazzo LSP extension not installed.";
-      }
-      const into =
-        data.editors.length > 0 ? ` (${data.editors.join(", ")})` : "";
-      return data.state === "installed"
-        ? `Terrazzo LSP extension already installed${into}.`
-        : `Terrazzo LSP extension installed${into}.`;
-    }
-    case "mcp":
-      return summarizeMcpTargets(data.targets);
-    case "skills":
-      return `Skills: ${summarizeSkills(data.result)}.`;
-    case "all":
-      return data.steps.length > 0
-        ? `Setup complete — ran: ${data.steps.join(", ")}.`
-        : "Setup complete — no steps selected.";
-  }
-}
+/**
+ * The dry-run render. Reached ONLY through the verb's `formatPlan` seam, which
+ * the kernel calls on the `--dry-run` branch — so it can name that path
+ * outright. The identical body under {@link setupFormatters} serves the OTHER
+ * preview, the non-interactive run that was given no consent, whose useful last
+ * line is how to grant it.
+ *
+ * @param plan - The plan to render.
+ * @returns The plan table, ended with the dry-run's own line.
+ */
+export const renderDryRun = (plan: SetupPlan): string =>
+  renderPlanTable(plan, { lead: "Setup plan", hint: DRY_RUN_HINT });
 
-export const setupFormatters: Formatters<SetupResult> = {
+export const setupFormatters: Formatters<SetupPlan> = {
   plain(data) {
-    return renderSetupLine(data);
+    if (data.preview === true) {
+      return renderPlanTable(data, { lead: "Setup plan", hint: PREVIEW_HINT });
+    }
+    if (!wasApplied(data)) {
+      return renderPlanTable(data, { lead: "Setup plan" });
+    }
+    return renderRecap(data);
   },
   llm(data) {
-    return `- ${renderSetupLine(data)}`;
+    return renderPlanLlm(data, data.preview === true ? "Setup plan" : "Setup");
   },
   json(data) {
     return JSON.stringify(data);

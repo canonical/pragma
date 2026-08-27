@@ -267,19 +267,35 @@ describe("surface conformance — capabilities ⊆ covenant (PROTECTED)", () => 
         mcp: "setup",
       },
       {
+        v: "config",
+        flags: ["--scope", "--global", "--local"],
+        mutates: true,
+        mcp: false,
+      },
+      {
+        v: "completions",
+        flags: ["--scope", "--global", "--local"],
+        mutates: true,
+        mcp: false,
+      },
+      {
+        v: "lsp",
+        flags: ["--scope", "--global", "--local"],
+        mutates: true,
+        mcp: false,
+      },
+      {
         v: "mcp",
         flags: ["--scope", "--global", "--local"],
         mutates: true,
         mcp: false,
       },
-      { v: "completions", mutates: true, mcp: false },
       {
         v: "skills",
         flags: ["--scope", "--global", "--local"],
         mutates: true,
         mcp: false,
       },
-      { v: "lsp", mutates: true, mcp: false },
     ]);
   });
 
