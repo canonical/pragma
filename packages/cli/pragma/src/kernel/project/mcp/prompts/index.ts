@@ -8,20 +8,28 @@
  * the ONE place either surface learns what a prompt is, so the two can never
  * report a different set of prompts or a different template body for one.
  *
- * The barrel carries both halves. `promptProvider` is the MCP module hook,
- * registered by the prompt capability; `readPrompts` and `readPrompt` are the
- * reads the CLI verbs take. Their laziness is deliberate and survives the
- * barrel only if callers keep it: listing is STORELESS over the pack index,
- * a get is store-backed, and both the SDK request schemas and this module
- * itself are reached through DYNAMIC imports so neither the MCP SDK nor a
- * store boot lands on the `--help`/`__complete` fast path. A consumer that
- * imports this barrel statically from the capability graph would put them
- * there.
+ * The barrel carries both halves, and they READ DIFFERENTLY — the distinction
+ * matters to anyone rerouting imports through here, so it is stated rather
+ * than implied.
  *
- * `listPromptSummaries` — the storeless index projection both readers build on
- * — stays internal: it is the shared half of the two reads above, and a caller
- * choosing it directly is choosing a partial prompt without the store-backed
- * body that makes it usable.
+ * `promptProvider` is the MCP module hook. Its `prompts/list` is STORELESS:
+ * it projects the pack index through `listPromptSummaries`, returning `[]`
+ * when no index is reachable and never booting the store. Its `prompts/get`
+ * is store-backed. The provider is imported STATICALLY by the prompt
+ * capability (`capabilities/prompt/index.ts`) — what it defers is the MCP SDK
+ * itself, whose request schemas it reaches through a dynamic import so the SDK
+ * stays off the `--help`/`__complete` fast path.
+ *
+ * `readPrompts` and `readPrompt` are the reads the CLI verbs take, and BOTH
+ * are store-backed: they query through `runSelect` directly, not through the
+ * index projection. A caller that expects a listing here to be as cheap as the
+ * MCP one is mistaken, and a reroute that makes either reachable statically
+ * from the capability graph puts a store boot on the fast path.
+ *
+ * `listPromptSummaries` stays internal. It is the MCP list path's projection,
+ * not a shared foundation under the two exported reads, and a caller choosing
+ * it directly is choosing a partial prompt without the store-backed body that
+ * makes it usable.
  */
 
 export { promptProvider } from "./provider.js";
