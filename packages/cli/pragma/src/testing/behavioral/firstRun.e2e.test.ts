@@ -21,11 +21,10 @@ describe("first-run onboarding (A1, e2e)", () => {
       env: { ...env, PRAGMA_NO_AUTO_LLM: "1" },
     });
     expect(first.exitCode).toBe(0);
-    expect(first.stderr).toContain("Hello!");
     expect(first.stderr).toContain("pre-release");
     expect(first.stderr).toContain(configPath);
-    // Command output stays on stdout, untouched by the greeting.
-    expect(first.stdout).not.toContain("Hello!");
+    // Command output stays on stdout, untouched by the first-run note.
+    expect(first.stdout).not.toContain("pre-release");
     expect(first.stdout).toContain("pragma v");
 
     expect(existsSync(configPath)).toBe(true);

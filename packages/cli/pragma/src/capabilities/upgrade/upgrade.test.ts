@@ -199,10 +199,10 @@ describe("assertExecOk — the exec-exitCode guard", () => {
     }
     const err = asPragmaError(thrown);
     // A denied `npm i -g` is user-fixable, NOT a bug — so it must not tell the
-    // user to "please report this issue" (that is INTERNAL_ERROR's recovery).
+    // user to "report this issue" (that is INTERNAL_ERROR's recovery).
     expect(err.code).toBe("UNSUPPORTED");
     expect(err.recovery?.message).not.toContain("report this issue");
-    expect(err.recovery?.message).toMatch(/permissions or network/i);
+    expect(err.recovery?.message).toMatch(/elevated privileges/i);
     // Surfaces the command + exit code + the captured stderr (trimmed).
     expect(err.message).toContain("npm i -g @canonical/pragma-cli");
     expect(err.message).toContain("code 13");
@@ -276,7 +276,7 @@ describe("upgrade — a failed exec maps to an actionable runtime error (exit 1)
 
   it("a missing-binary spawn (ENOENT) at a guarded site is a named UNSUPPORTED, not INTERNAL_ERROR", async () => {
     // The same wrapper `runUpgrade`/`setupLsp` apply: a spawn ENOENT REJECTS the
-    // exec, which used to collapse to INTERNAL_ERROR ("please report this issue").
+    // exec, which used to collapse to INTERNAL_ERROR ("report this issue").
     // `guardMissingBinary` names it instead.
     const thrown = await runToError(
       failVerbWith((_p, rt) =>

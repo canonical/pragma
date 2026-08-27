@@ -209,17 +209,17 @@ export async function buildUpdateTask(
   // prefix. Display-only, so a warning (not a hard failure) is the right call.
   for (const clash of detectPrefixClashes(inputs)) {
     report?.(
-      `Prefix "${clash.label}:" is declared with conflicting IRIs across packages (${clash.iris.join(" vs ")}); last wins, so some entities may compact to the wrong prefix.`,
+      `Prefix "${clash.label}:" is declared with conflicting IRIs across packs (${clash.iris.join(" vs ")}); last wins, so some entities may compact to the wrong prefix.`,
     );
   }
 
   report?.(`Building store from ${inputs.length} source(s)`);
   if (verbose) for (const input of inputs) report?.(`  parse ${input.path}`);
   if (stories.length > 0)
-    report?.(`Carrying ${stories.length} package read story file(s)`);
+    report?.(`Carrying ${stories.length} pack read story file(s)`);
 
   // Build the pack. On a parse/build failure, classify it as a NAMED data error
-  // (U6) — not INTERNAL_ERROR's "please report this issue" — identifying the
+  // (U6) — not INTERNAL_ERROR's "report this issue" — identifying the
   // offending package source, since ke's parser error carries only line/column.
   // With `--skip-invalid`, drop the unparseable sources (warning LOUDLY about
   // each — never a silent partial graph) and build from the rest instead of
@@ -262,7 +262,7 @@ export async function buildUpdateTask(
     );
     if (usableInputs.length === 0)
       throw PragmaError.configError(
-        `All ${inputs.length} configured source(s) failed to parse — nothing to build.`,
+        `None of the ${inputs.length} configured source(s) can be parsed — nothing to build.`,
         {
           recovery: cliRecovery(
             "sources update --verbose",
@@ -299,7 +299,7 @@ export async function buildUpdateTask(
       {
         recovery: cliRecovery(
           "sources update --verbose",
-          "Check that the package sources actually contain RDF triples, then re-run.",
+          "Check that the pack sources actually contain RDF triples, then re-run.",
         ),
       },
     );
@@ -415,12 +415,12 @@ export async function classifySourceBuildError(
   const culprit = await isolateBadSource(inputs);
   const detail = culprit?.message ?? parserMessage;
   const where = culprit
-    ? `Package source "${culprit.path}" could not be parsed`
-    : "The configured package sources could not be built into a store";
+    ? `Pack source "${culprit.path}" cannot be parsed`
+    : "The configured packs cannot be built into a store";
   return PragmaError.configError(`${where}: ${detail}`, {
     recovery: cliRecovery(
       "sources update --verbose",
-      "Re-run with --verbose to see each file as it parses. If a package ships malformed RDF, report it to that package's maintainer.",
+      "Re-run with --verbose to see each file as it parses. If a pack ships malformed RDF, report it to that pack's maintainer.",
     ),
   });
 }

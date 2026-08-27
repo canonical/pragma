@@ -4,7 +4,7 @@
  * Pins the remap: a generated query is composed from declared and pack-authored
  * terms, never from user input, so a "Prefix not found" from the facade means
  * the store cannot answer this read — an actionable error, NOT a raw one
- * collapsing to INTERNAL_ERROR ("please report this issue").
+ * collapsing to INTERNAL_ERROR ("report this issue").
  *
  * WHICH actionable error is the story's provenance to decide, which is the
  * second thing pinned here. A DISTRIBUTION story keeps STORE_UNAVAILABLE and its

@@ -95,7 +95,7 @@ function walkTtl(
     // symlinked `.ttl` was silently skipped (L6). Follow the link to recover a
     // symlinked FILE, but NEVER recurse into a symlinked DIRECTORY: a symlink
     // cycle (a link to an ancestor dir) would recurse without bound — a
-    // stack-overflow RangeError surfacing as an INTERNAL "please report" — and a
+    // stack-overflow RangeError surfacing as an INTERNAL "report" — and a
     // linked directory could pull `.ttl` from OUTSIDE the package root. Linking
     // individual source files (all L6 needs) stays supported; a dangling link is
     // skipped, not fatal.
@@ -343,7 +343,7 @@ export async function resolvePackage(
           "0.0.0";
       } catch (error) {
         // A malformed `package.json` for an otherwise-installed package: name it
-        // as a data error, not an INTERNAL_ERROR "please report this issue".
+        // as a data error, not an INTERNAL_ERROR "report this issue".
         throw PragmaError.configError(
           `Package "${ref.pkg}" has an invalid package.json (${pkgJsonPath}): ${errorDetail(error)}`,
         );

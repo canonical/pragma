@@ -439,7 +439,7 @@ describe("setup lsp — missing-binary guard (bunx absent)", () => {
     // Drives the REAL composeLsp exec (YES — not a dry-run mock) with `bunx`
     // removed from PATH, so the spawn REJECTS with ENOENT. The reconciled guard
     // at composeLsp's use site names it; without the guard the raw reject
-    // collapses to INTERNAL_ERROR ("please report this issue") at the boundary.
+    // collapses to INTERNAL_ERROR ("report this issue") at the boundary.
     const prevPath = process.env.PATH;
     process.env.PATH = tmp("pragma-empty-path-"); // empty dir ⇒ bunx unresolvable
     let thrown: unknown;

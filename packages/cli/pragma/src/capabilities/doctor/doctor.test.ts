@@ -170,9 +170,9 @@ describe("doctor — the store check", () => {
   it("a store that fails to boot is an attributable fail, not a crash", async () => {
     const data = await runChecks(throwingStoreRuntime(tmp("pragma-proj-")));
     expect(data.checks).toHaveLength(9);
-    const keStore = byName(data, "ke store");
-    expect(keStore?.status).toBe("fail");
-    expect(keStore?.remedy).toBeTruthy();
+    const store = byName(data, "store");
+    expect(store?.status).toBe("fail");
+    expect(store?.remedy).toBeTruthy();
   });
 
   it("a booted store passes with an entity total", async () => {
@@ -181,9 +181,9 @@ describe("doctor — the store check", () => {
       config: ALL_VISIBLE_CONFIG,
     });
     const data = await runChecks(fixture.runtime);
-    const keStore = byName(data, "ke store");
-    expect(keStore?.status).toBe("pass");
-    expect(keStore?.detail).toMatch(/entities/);
+    const store = byName(data, "store");
+    expect(store?.status).toBe("pass");
+    expect(store?.detail).toMatch(/entities/);
     await fixture.dispose();
   });
 });

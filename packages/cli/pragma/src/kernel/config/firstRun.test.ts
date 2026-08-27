@@ -25,7 +25,7 @@ describe("first run", () => {
 
     expect(existsSync(path)).toBe(true);
     expect(readFileSync(path, "utf-8")).toBe("{}\n");
-    expect(lines[0]).toContain("Hello!");
+    expect(lines[0]).toContain("pre-release");
     expect(lines.some((line) => line.includes(path))).toBe(true);
     // Snapshot the note with the volatile path masked.
     expect(
@@ -55,6 +55,6 @@ describe("first run", () => {
       ensureFirstRun((line) => lines.push(line)),
     ).resolves.toBeUndefined();
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toContain("Warning: could not create");
+    expect(lines[0]).toContain("Warning: cannot create");
   });
 });

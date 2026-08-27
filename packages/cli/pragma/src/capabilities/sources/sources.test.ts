@@ -203,7 +203,7 @@ describe("sources update round-trip (PROTECTED)", () => {
   it("does not recurse into a symlinked directory cycle (L6 safety)", async () => {
     // The L6 fix follows symlinked FILES but must NOT recurse into a symlinked
     // DIRECTORY: a link to an ancestor dir is a cycle that, if walked, recurses
-    // without bound → a stack-overflow RangeError (an INTERNAL "please report").
+    // without bound → a stack-overflow RangeError (an INTERNAL "report").
     // The real `.ttl` is still ingested and the build completes.
     const pkg = tmp("pragma-symlink-cycle-");
     mkdirSync(join(pkg, "definitions"), { recursive: true });
@@ -502,7 +502,7 @@ describe("sources update — data-failure classification (U6)", () => {
     expect(err.message).toContain("bad-pkg/definitions/broken.ttl");
     // … carries the parser's own detail …
     expect(err.message.toLowerCase()).toContain("parser error");
-    // … and is NOT the internal-bug "please report this issue" path.
+    // … and is NOT the internal-bug "report this issue" path.
     expect(err.message).not.toContain("Internal error");
     expect(err.recovery?.message ?? "").not.toContain("report this issue");
     // The recovery points the user at a runnable, useful next step.

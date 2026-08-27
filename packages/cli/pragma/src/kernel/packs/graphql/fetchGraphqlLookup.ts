@@ -72,7 +72,7 @@ export async function fetchGraphqlLookup(
     // ontology). That is a runtime not-found, not an unavailable store (exit 3).
     throw new PragmaError({
       code: "ENTITY_NOT_FOUND",
-      message: `Could not resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
+      message: `Cannot resolve <${entityUri}> — its rdf:type may be missing from the ontology.`,
       recovery: cliRecovery(
         `graph inspect ${entityUri}`,
         "Inspect the entity's triples to check its rdf:type.",

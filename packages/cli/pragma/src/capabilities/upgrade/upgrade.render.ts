@@ -15,7 +15,7 @@ export const upgradeFormatters: Formatters<UpgradeData> = {
   plain(data) {
     const lines = [`Installed via: ${data.pm}`];
     if (data.offline) {
-      lines.push("Could not reach the registry — try again later.");
+      lines.push("Cannot reach the registry — try again later.");
       return lines.join("\n");
     }
     if (data.alreadyLatest) {
@@ -40,8 +40,7 @@ export const upgradeFormatters: Formatters<UpgradeData> = {
   },
 
   llm(data) {
-    if (data.offline)
-      return "Upgrade check failed: could not reach the registry.";
+    if (data.offline) return "Upgrade check failed: cannot reach the registry.";
     if (data.alreadyLatest) {
       return `Already at the latest version (${data.current}).`;
     }
