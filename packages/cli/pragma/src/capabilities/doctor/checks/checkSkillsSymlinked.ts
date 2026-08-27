@@ -9,8 +9,13 @@ import type { CheckResult } from "../types.js";
  * Check that a skills directory exists for each detected AI harness. Skipped
  * when no harnesses are detected.
  *
+ * Skills symlinks are OPT-IN: a harness with no skills directory is
+ * `available` (the setup command is the remedy), not a fault — a fresh
+ * install has none and is healthy. Only a broken detection is a `fail`.
+ *
  * @param cwd - The project root to detect harnesses against.
- * @returns A CheckResult indicating pass, fail (with a remedy), or skip.
+ * @returns A CheckResult indicating pass, available (with the setup remedy),
+ *   fail, or skip.
  * @note Impure — detects harnesses and probes the filesystem.
  */
 export async function checkSkillsSymlinked(cwd: string): Promise<CheckResult> {
@@ -54,8 +59,8 @@ export async function checkSkillsSymlinked(cwd: string): Promise<CheckResult> {
 
   return {
     name: "Skills symlinked",
-    status: "fail",
-    detail: `missing for ${missing.join(", ")}`,
+    status: "available",
+    detail: `not set up for ${missing.join(", ")}`,
     remedy: `${BIN_NAME} setup skills`,
   };
 }

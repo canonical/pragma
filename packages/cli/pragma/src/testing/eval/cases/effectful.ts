@@ -88,7 +88,7 @@ export const effectfulEvalCases: readonly EvalCase[] = [
     id: "tool-doctor-reports-check-tallies",
     kind: "tool",
     input:
-      "doctor returns a { checks, passed, failed, skipped } diagnostic report where the tallies sum to the checks.",
+      "doctor returns a { checks, passed, failed, available, skipped } diagnostic report where the tallies sum to the checks.",
     async expect({ mcp }) {
       const result = await mcp.callTool("doctor");
       assert.equal(result.ok, true);
@@ -96,11 +96,12 @@ export const effectfulEvalCases: readonly EvalCase[] = [
         checks: unknown[];
         passed: number;
         failed: number;
+        available: number;
         skipped: number;
       };
       assert.ok(Array.isArray(data.checks), "expected a checks array");
       assert.equal(
-        data.passed + data.failed + data.skipped,
+        data.passed + data.failed + data.available + data.skipped,
         data.checks.length,
       );
     },

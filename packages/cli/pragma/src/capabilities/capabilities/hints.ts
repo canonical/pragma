@@ -115,7 +115,7 @@ export const TOOL_HINTS: Record<string, ToolHint> = {
   },
   skill_list: {
     category: "read",
-    use_when: "Discovering agent skills provided by installed packages",
+    use_when: "Discovering agent skills provided by installed packs",
   },
   skill_lookup: {
     category: "read",

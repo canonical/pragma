@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ISSUES_URL } from "../../constants.js";
 import { errorEnvelope, successEnvelope } from "../render/envelope.js";
 import { PragmaError } from "./PragmaError.js";
 import { cliRecovery } from "./recovery.js";
@@ -56,7 +57,9 @@ describe("PragmaError factories", () => {
   it("internalError attaches a report hint", () => {
     const error = PragmaError.internalError("boom");
     expect(error.code).toBe("INTERNAL_ERROR");
-    expect(error.recovery).toEqual({ message: "Please report this issue." });
+    expect(error.recovery).toEqual({
+      message: `Report this issue at ${ISSUES_URL}.`,
+    });
   });
 });
 
@@ -66,7 +69,7 @@ describe("serializeError", () => {
     expect(serializeError(error)).toEqual({
       code: "INTERNAL_ERROR",
       message: "Internal error: boom",
-      recovery: { message: "Please report this issue." },
+      recovery: { message: `Report this issue at ${ISSUES_URL}.` },
     });
   });
 

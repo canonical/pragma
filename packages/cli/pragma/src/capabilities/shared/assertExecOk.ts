@@ -13,7 +13,7 @@
  * A denied `npm i -g` (EACCES), a registry/network failure, or any other
  * nonzero exit is a fixable ENVIRONMENT condition — NOT a pragma bug — so it is
  * classified UNSUPPORTED with an actionable recovery, never INTERNAL_ERROR's
- * "please report this issue". (A spawn error like ENOENT REJECTS the effect
+ * "report this issue". (A spawn error like ENOENT REJECTS the effect
  * instead of resolving, so it never reaches here.)
  */
 
@@ -40,7 +40,7 @@ export function assertExecOk(command: string, result: ExecResult): void {
     }`,
     recovery: {
       message:
-        "The command failed — often a permissions or network issue. Check the output above and retry (for a global install, try elevated privileges).",
+        "Check the command's output above; a global install may need elevated privileges.",
     },
   });
 }

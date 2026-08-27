@@ -103,7 +103,7 @@ const selectChosenGroups = (
 /**
  * The LSP-install step, guarded at its use site. An absent `bunx` (no Bun on
  * PATH) REJECTS the exec with ENOENT, which would otherwise collapse to
- * INTERNAL_ERROR ("please report this issue") at the CLI/MCP boundary;
+ * INTERNAL_ERROR ("report this issue") at the CLI/MCP boundary;
  * `guardMissingBinary` names it a UNSUPPORTED "`bunx` not found on PATH" with an
  * actionable install recovery instead. Preview-transparent — a dry-run mocks the
  * exec (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`

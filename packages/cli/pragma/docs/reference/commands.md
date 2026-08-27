@@ -276,7 +276,7 @@ pragma create package --name @canonical/my-tool --no-run-install
 
 Check environment health — Node, config, store, MCP, and skills.
 
-Runs nine diagnostic checks and reports pass/fail/skip with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
+Runs nine diagnostic checks and reports pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
 
 ```
 pragma doctor

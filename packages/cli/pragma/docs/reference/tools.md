@@ -142,7 +142,7 @@ Mutation — plan-first (set `confirm: true` to apply). Non-destructive.
 
 ### doctor
 
-Runs nine diagnostic checks and reports pass/fail/skip with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
+Runs nine diagnostic checks and reports pass, fail, available (an opt-in integration not yet set up), or skip, with inline remedies. Storeless by default; the store check boots lazily and never fails the run.
 
 Read-only.
 

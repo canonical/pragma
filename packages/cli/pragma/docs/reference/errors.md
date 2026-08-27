@@ -45,7 +45,7 @@ Every `error.code` in a failure envelope is one of the following:
 | `INVALID_INPUT` | An argument was malformed, out of range, or the wrong shape. |
 | `AMBIGUOUS_INPUT` | A name resolved to several entities (reserved; not yet raised). |
 | `UNKNOWN_VERB` | The command noun or verb is not recognized. |
-| `STORE_UNAVAILABLE` | The local store could not be reached or is not built. |
-| `CONFIG_ERROR` | The layered configuration could not be resolved. |
-| `INTERNAL_ERROR` | An unexpected failure — please report it. |
+| `STORE_UNAVAILABLE` | The local store cannot be reached or is not built. |
+| `CONFIG_ERROR` | The layered configuration cannot be resolved. |
+| `INTERNAL_ERROR` | An unexpected failure — report it as a bug. |
 | `UNSUPPORTED` | A capability is unavailable in this build or environment. |
