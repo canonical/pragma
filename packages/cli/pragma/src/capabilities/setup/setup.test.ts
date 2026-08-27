@@ -497,6 +497,28 @@ describe("setup mcp — customize opt-in gate (Item 6)", () => {
     expect(targets?.when?.({ customize: false })).toBe(false);
     expect(targets?.when?.({ customize: true })).toBe(true);
   });
+
+  it("recaps the files the run KEPT, not the ones it offered", async () => {
+    // The note counted every child of the plan row, so narrowing two MCP files
+    // down to one still recapped `2 added`: the plan and the result described
+    // different work.
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    mkdirSync(join(cwd, ".gemini"), { recursive: true });
+    const run = await buildSetupRun(bootRuntime(FLAGS, cwd), "mcp", "project");
+    const row = run.plan.rows.find((r) => r.target === "mcp");
+    expect(row?.children?.length).toBe(2);
+    const kept = row?.children?.[0]?.key as string;
+
+    const applied = run.applied({
+      targets: ["project:mcp"],
+      customize: true,
+      mcpTargets: [kept],
+    });
+    expect(applied.rows.find((r) => r.target === "mcp")?.outcome?.note).toBe(
+      "1 added",
+    );
+  });
 });
 
 describe("setup lsp — per-editor multiselect (child rows)", () => {

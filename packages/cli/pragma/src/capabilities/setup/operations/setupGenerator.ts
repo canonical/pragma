@@ -282,10 +282,28 @@ const ACTION_NOTES: Record<string, string> = {
   remove: "removed",
 };
 
-/** The `2 added, 1 updated` note an MCP row's children produce. */
-function childNote(row: PlanRow): string | undefined {
-  const children = row.children;
-  if (children === undefined || children.length === 0) return undefined;
+/**
+ * The `2 added, 1 updated` note a row's children produce — counted over the
+ * children the run KEPT, not the ones it was offered.
+ *
+ * `kept` is the row's own child answer: the MCP files, or the LSP editors, the
+ * wizard narrowed to. Counting the plan's children instead recapped `2 added`
+ * for a run the user had just narrowed to one file, so the plan and the result
+ * described different work. Absent (`undefined`) means the narrowing prompt was
+ * never answered, which is the same thing the compose bodies read as "all".
+ *
+ * @param row - The plan row.
+ * @param kept - The child keys the run retained, or `undefined` for all.
+ * @returns The counts note, or `undefined` when the row has no children.
+ */
+function childNote(
+  row: PlanRow,
+  kept: readonly string[] | undefined,
+): string | undefined {
+  const children = (row.children ?? []).filter(
+    (child) => kept === undefined || kept.includes(child.key),
+  );
+  if (children.length === 0) return undefined;
   const count = (action: string): number =>
     children.filter((child) => child.action === action).length;
   const parts = [
@@ -391,6 +409,7 @@ export async function buildSetupRun(
   const outcomeFor = (
     row: PlanRow,
     chosen: readonly string[] | undefined,
+    answers: Record<string, unknown>,
   ): PlanOutcome | undefined => {
     const hit = detectionFor(row);
     // A row whose DETECTION threw has no draft to read and nothing to compose,
@@ -428,9 +447,11 @@ export async function buildSetupRun(
     // A removal never borrows the forward child summary: its children are the
     // files the entry is being taken OUT of, and counting them as "1 updated"
     // described the opposite of what the run had just done.
+    const childKey = CHILD_ANSWER[row.target];
+    const kept = childKey === undefined ? undefined : readList(answers, childKey);
     const note = removal
       ? ACTION_NOTES[row.action]
-      : (childNote(row) ?? ACTION_NOTES[row.action]);
+      : (childNote(row, kept) ?? ACTION_NOTES[row.action]);
     return {
       status: removal ? "removed" : "done",
       ...(note === undefined ? {} : { note }),
@@ -445,7 +466,7 @@ export async function buildSetupRun(
       return withRows(
         plan,
         plan.rows.map((row): PlanRow => {
-          const outcome = outcomeFor(row, chosen);
+          const outcome = outcomeFor(row, chosen, answers);
           return {
             ...row,
             selected: isChosen(row, chosen),
