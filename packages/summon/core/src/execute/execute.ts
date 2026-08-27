@@ -27,6 +27,7 @@ import {
   dryRun,
   fail,
   flatMap,
+  map,
   prompt,
   type Task,
   TaskExecutionError,
