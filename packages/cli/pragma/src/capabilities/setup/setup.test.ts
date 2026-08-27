@@ -1005,6 +1005,36 @@ describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
     }
   });
 
+  it("treats an extension too old to WORK as not installed", async () => {
+    // Every VSIX before 0.8.3 ships a language server that cannot resolve its
+    // own dependencies — it only appeared to run because the extension prefers
+    // Bun and Bun fetches missing packages off the network at spawn time.
+    // Matching any version meant such a machine reported `installed`, so
+    // `setup lsp` skipped it and `doctor` called it healthy: a wrong skip that
+    // reads as correct, which is worse than a wrong failure. Everyone who ran
+    // setup before that release would have kept a dead server forever.
+    const prevPath = process.env.PATH;
+    const stubDir = tmp("pragma-stale-ext-path-");
+    writeFileSync(join(stubDir, "code"), "");
+    process.env.PATH = stubDir;
+    try {
+      mkdirSync(
+        join(
+          process.env.HOME ?? "",
+          ".vscode",
+          "extensions",
+          "canonical.terrazzo-lsp-extension-0.8.1",
+        ),
+        { recursive: true },
+      );
+      const { detectLsp } = await import("./operations/setupLsp.js");
+      const detected = await detectLsp(tmp("pragma-setup-proj-"));
+      expect(detected.state).not.toBe("installed");
+    } finally {
+      process.env.PATH = prevPath;
+    }
+  });
+
   it("reports already-installed (a true no-op) when every detected editor has the extension", async () => {
     const prevPath = process.env.PATH;
     const stubDir = tmp("pragma-installed-path-");

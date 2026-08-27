@@ -93,7 +93,47 @@ export interface LspDetection {
 const cliOnPath = (candidates: readonly string[]): boolean =>
   candidates.some((candidate) => existsSync(candidate));
 
-/** Whether an editor's extensions dir holds a versioned copy of the extension. */
+/**
+ * The oldest extension release whose bundled language server actually starts.
+ *
+ * Every VSIX before this one ships the server as ~166 loose modules importing
+ * `colorjs.io`, `@lezer/common` and `@lezer/css` by BARE SPECIFIER, with no
+ * `node_modules` beside them — so the server dies on load under `node` and
+ * under `bun --no-install`. It appeared to work only because the extension
+ * prefers Bun, and Bun silently fetches missing packages from the network at
+ * spawn time; a machine without that behaviour got a language server that
+ * never started, and one with it got a server resolving unpinned dependencies
+ * over the wire. Fixed in 0.8.3, which bundles the server into one file
+ * (canonical/design-tokens#110).
+ */
+const MIN_EXTENSION_VERSION = "0.8.3";
+
+/** Compare two dotted numeric versions. Returns <0, 0, >0 like a comparator. */
+const compareVersions = (a: string, b: string): number => {
+  const parse = (v: string): number[] =>
+    v.split(".").map((part) => Number.parseInt(part, 10) || 0);
+  const [left, right] = [parse(a), parse(b)];
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+};
+
+/**
+ * Whether an editor's extensions dir holds a copy new enough to WORK.
+ *
+ * Version-aware on purpose. Matching any `canonical.terrazzo-lsp-extension-*`
+ * entry meant a machine carrying a build whose server cannot start reported
+ * `installed`, so `setup lsp` skipped it and `doctor` called it healthy —
+ * a wrong skip that reads as correct, which is worse than a wrong failure and
+ * is exactly the trap this module's docblock warns about elsewhere. Everyone
+ * who ran `setup lsp` before {@link MIN_EXTENSION_VERSION} would have kept a
+ * dead language server forever, with nothing telling them why.
+ *
+ * An unparseable suffix counts as too old: a directory this function cannot
+ * read the version of is one it cannot vouch for.
+ */
 const extensionInstalled = (
   editor: EditorCliDefinition,
   platform: PlatformEnv,
@@ -104,9 +144,13 @@ const extensionInstalled = (
   } catch {
     return false; // No extensions dir — nothing installed.
   }
-  return entries.some((entry) =>
-    entry.toLowerCase().startsWith(`${EXTENSION_ID}-`),
-  );
+  const prefix = `${EXTENSION_ID}-`;
+  return entries.some((entry) => {
+    const lower = entry.toLowerCase();
+    if (!lower.startsWith(prefix)) return false;
+    const version = lower.slice(prefix.length);
+    return compareVersions(version, MIN_EXTENSION_VERSION) >= 0;
+  });
 };
 
 /**
