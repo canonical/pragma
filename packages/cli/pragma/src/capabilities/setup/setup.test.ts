@@ -30,6 +30,7 @@ import { execute } from "@canonical/summon-core";
 import { dryRun, type Effect, type Task } from "@canonical/task";
 import { runTask, runUndo } from "@canonical/task/node";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BIN_NAME } from "../../constants.js";
 import { emitScripts } from "../../kernel/completion/emitScripts.js";
 import { asPragmaError } from "../../kernel/error/fromTaskError.js";
 import { executeVerb } from "../../kernel/project/cli/dispatch.js";
@@ -40,6 +41,7 @@ import { projectCli } from "../../testing/helpers/projectCli.js";
 import { projectMcp } from "../../testing/helpers/projectMcp.js";
 import { capabilities } from "../index.js";
 import { buildSetupRun } from "./operations/setupGenerator.js";
+import { detectCompletions } from "./operations/setupCompletions.js";
 import {
   composeSkills,
   composeSkillsRemoval,
@@ -111,6 +113,26 @@ afterEach(() => {
 });
 
 describe("setup completions", () => {
+  it("sees a Windows `.cmd` shim, so the row does not skip on Windows", async () => {
+    // npm installs this CLI as `pragma.cmd` on Windows and never as a bare
+    // name, so joining the name onto each PATH directory found nothing: the
+    // row skipped with "not on PATH" on a machine where the command runs.
+    // Spelled to match a default `PATHEXT` entry exactly: this test runs on a
+    // case-sensitive filesystem, while Windows matches `pragma.cmd` against
+    // `.CMD` case-insensitively.
+    const dir = tmp("pragma-setup-winpath-");
+    writeFileSync(join(dir, `${BIN_NAME}.CMD`), "");
+
+    const detected = await detectCompletions(dir, { kind: "unknown" }, {
+      platform: "win32",
+      env: { PATH: dir },
+      home: dir,
+      isWsl: false,
+    });
+
+    expect(detected.binOnPath).toBe(true);
+  });
+
   withShell("writes exactly emitScripts(capabilities)[shell]", async () => {
     const path = completionScriptPath(SHELL as ShellId);
     const outcome = await executeVerb(

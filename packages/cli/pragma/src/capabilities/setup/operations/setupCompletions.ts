@@ -11,7 +11,8 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { delimiter, dirname, join } from "node:path";
+import { dirname } from "node:path";
+import type { PlatformEnv } from "@canonical/harnesses";
 import {
   deleteFile,
   mkdir,
@@ -54,19 +55,31 @@ export interface CompletionsDetection {
 }
 
 /**
- * Whether a bare command name resolves in any PATH directory — the same probe
- * the `mcp` row uses for its entry's command, asked here of the binary the
- * installed completion script spawns.
+ * Whether the host would resolve a bare command name — the same probe the `mcp`
+ * row uses for its entry's command, asked here of the binary the installed
+ * completion script spawns.
+ *
+ * The candidate paths come from `@canonical/harnesses`' `executableCandidates`,
+ * which owns the PATH split and the win32 `PATHEXT` rules in one place. Joining
+ * the bare name onto each PATH directory found NOTHING on Windows, where npm
+ * installs this CLI as a `.cmd` shim: `setup completions` skipped with "not on
+ * PATH" on a machine where typing the command works.
  *
  * @param command - The bare binary name.
- * @returns Whether a PATH directory holds it.
- * @note Impure — reads PATH directories.
+ * @param platform - The captured host (injected by the tests).
+ * @returns Whether the host holds an executable under that name.
+ * @note Impure — tests each candidate path on the filesystem.
  */
-function binaryOnPath(command: string): boolean {
-  return (process.env.PATH ?? "")
-    .split(delimiter)
-    .filter((dir) => dir.length > 0)
-    .some((dir) => existsSync(join(dir, command)));
+async function binaryOnPath(
+  command: string,
+  platform?: PlatformEnv,
+): Promise<boolean> {
+  const { executableCandidates, readPlatformEnv } = await import(
+    "@canonical/harnesses"
+  );
+  return executableCandidates(command, platform ?? readPlatformEnv()).some(
+    (candidate) => existsSync(candidate),
+  );
 }
 
 /**
@@ -97,15 +110,17 @@ function classifyCompletions(path: string, script: string): CompletionsState {
  *
  * @param cwd - Directory the `completion` config layers are resolved from.
  * @param injected - A detection to use instead of probing (tests).
+ * @param platform - A captured host to use instead of reading this one (tests).
  * @returns The install target, or an all-`null` shape when `$SHELL` is unset.
  * @note Impure — reads `$SHELL`, the capability registry, and the config layers.
  */
 export async function detectCompletions(
   cwd: string,
   injected?: ShellDetection,
+  platform?: PlatformEnv,
 ): Promise<CompletionsDetection> {
   const detection = injected ?? detectShell();
-  const binOnPath = binaryOnPath(BIN_NAME);
+  const binOnPath = await binaryOnPath(BIN_NAME, platform);
   if (detection.kind !== "detected") {
     return {
       shell: null,
