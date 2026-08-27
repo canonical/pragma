@@ -1,12 +1,14 @@
 /**
- * Shell detection + completion-script install paths (ported from the old
- * shell's `setup/helpers/detectShell` + `completionScripts` path helpers).
+ * Shell detection + completion-script install paths.
  *
- * The covenant `setup completions` sub-verb carries NO flags, so shell selection
- * is detection-only (the old `--zsh`/`--bash`/`--fish` force-flags are dropped).
+ * Shell selection is detection-only, and detection means the shell the user is
+ * RUNNING — read from the process tree — not the login shell `$SHELL` records.
+ * The two differ constantly and the difference is invisible until TAB fails.
  * `$HOME` is read at call time so tests can isolate it.
  */
 
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { BIN_NAME } from "../../constants.js";
@@ -21,15 +23,137 @@ const SHELL_MAP: Record<string, ShellId> = {
 };
 
 /**
- * Detect the user's shell from `$SHELL`.
+ * What detection concluded about the shell the user is actually in.
  *
- * @returns The detected shell, or `null` when `$SHELL` is unset/unrecognized.
- * @note Impure — reads `process.env.SHELL`.
+ * `ambiguous` is a first-class answer, not a failure to try harder. Installing
+ * for the wrong shell is INVISIBLE: the file is written, `doctor` goes green,
+ * and the user finds out when they press TAB months later and nothing happens.
+ * A named skip that says what was seen is worth more than a confident guess.
  */
-export function detectShell(): ShellId | null {
-  const shell = process.env.SHELL ?? "";
-  const basename = shell.split("/").pop() ?? "";
-  return SHELL_MAP[basename] ?? null;
+export type ShellDetection =
+  | { readonly kind: "detected"; readonly shell: ShellId }
+  | {
+      readonly kind: "ambiguous";
+      /** What `$SHELL` claims, when it names a shell we support. */
+      readonly login: ShellId;
+    }
+  | { readonly kind: "unknown" };
+
+/** One process in the ancestry: what it is called, and who started it. */
+export interface ProcessEntry {
+  readonly name: string;
+  readonly ppid: number;
+}
+
+/** Look up one process. Injected in tests so the tree is deterministic. */
+export type ProcessReader = (pid: number) => ProcessEntry | undefined;
+
+/** How far up the process tree to look before giving up. */
+const MAX_ANCESTRY = 8;
+
+/**
+ * The command name and parent of a pid, read from `/proc` (Linux).
+ *
+ * `/proc/<pid>/stat` is `pid (comm) state ppid …`, and `comm` may itself
+ * contain spaces and parentheses — so the fields are taken after the LAST
+ * `)`, never by splitting the whole line.
+ *
+ * @param pid - The process to inspect.
+ * @returns Its command name and parent pid, or undefined when unreadable.
+ * @note Impure — reads /proc.
+ */
+function procEntry(pid: number): { name: string; ppid: number } | undefined {
+  try {
+    const stat = readFileSync(`/proc/${pid}/stat`, "utf8");
+    const close = stat.lastIndexOf(")");
+    const open = stat.indexOf("(");
+    if (close < 0 || open < 0) return undefined;
+    const name = stat.slice(open + 1, close);
+    const rest = stat.slice(close + 2).split(" ");
+    const ppid = Number.parseInt(rest[1] ?? "", 10);
+    return Number.isFinite(ppid) ? { name, ppid } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The same lookup for platforms without `/proc`, via one `ps` call.
+ *
+ * @param pid - The process to inspect.
+ * @returns Its command name and parent pid, or undefined.
+ * @note Impure — spawns `ps`.
+ */
+function psEntry(pid: number): { name: string; ppid: number } | undefined {
+  try {
+    const out = execFileSync("ps", ["-o", "ppid=,comm=", "-p", String(pid)], {
+      encoding: "utf8",
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    const match = /^(\d+)\s+(.*)$/.exec(out);
+    if (match === null) return undefined;
+    return { name: match[2] ?? "", ppid: Number.parseInt(match[1] ?? "", 10) };
+  } catch {
+    return undefined;
+  }
+}
+
+/** Normalize a process name to a shell id: `-zsh`, `/bin/bash`, `zsh` all map. */
+function asShell(name: string): ShellId | undefined {
+  const base = (name.split("/").pop() ?? "").replace(/^-/, "");
+  return SHELL_MAP[base];
+}
+
+/**
+ * Walk the process ancestry looking for the shell this invocation is running
+ * inside.
+ *
+ * The walk matters: a CLI reached through `npm run`, `bunx`, or a wrapper
+ * script has `node` or `sh` as its immediate parent, and the user's actual
+ * shell is a level or two further up.
+ *
+ * @returns The shell found, or undefined.
+ * @note Impure — reads the process table.
+ */
+function runningShell(read?: ProcessReader): ShellId | undefined {
+  const entryOf = read ?? (existsSync("/proc") ? procEntry : psEntry);
+  let pid = process.ppid;
+  for (let step = 0; step < MAX_ANCESTRY && pid > 1; step += 1) {
+    const entry = entryOf(pid);
+    if (entry === undefined) return undefined;
+    const shell = asShell(entry.name);
+    if (shell !== undefined) return shell;
+    pid = entry.ppid;
+  }
+  return undefined;
+}
+
+/**
+ * Detect the shell the user is actually running in.
+ *
+ * This reads the PROCESS TREE, not `$SHELL`. `$SHELL` is the login shell
+ * recorded in `/etc/passwd`; it is not changed by starting a different shell,
+ * so a user whose account says `bash` but who lives in `zsh` was silently
+ * given a bash script — and `doctor` then reported `✓ Shell completions: bash
+ * up to date and resolving`, a green check for a shell they never open, while
+ * the shell they do use had nothing.
+ *
+ * `$SHELL` survives only as a CONTRADICTION detector. When the process tree
+ * gives no answer (a CI runner, an editor task, a daemon), a `$SHELL` value is
+ * a guess about a session that may not exist, so the answer is `ambiguous` and
+ * the caller is expected to say so rather than pick.
+ *
+ * @param read - Injected process-table reader; defaults to the real one.
+ * @returns What could be established about the running shell.
+ * @note Impure — reads the process table and `$SHELL`.
+ */
+export function detectShell(read?: ProcessReader): ShellDetection {
+  const running = runningShell(read);
+  if (running !== undefined) return { kind: "detected", shell: running };
+
+  const login = SHELL_MAP[(process.env.SHELL ?? "").split("/").pop() ?? ""];
+  return login === undefined ? { kind: "unknown" } : { kind: "ambiguous", login };
 }
 
 /**

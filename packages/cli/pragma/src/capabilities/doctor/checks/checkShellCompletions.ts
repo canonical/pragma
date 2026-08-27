@@ -139,13 +139,34 @@ export async function checkShellCompletions(
     };
   }
 
-  // 2. The installed script is a script `setup completions` would write.
+  // 2. The check is about the shell the user is IN. Reporting on the login
+  //    shell instead is what let this row print a green check for a shell the
+  //    user never opens while the one they live in had nothing installed.
   const { shell, path, state } = d;
+  if (d.detection.kind === "ambiguous") {
+    return {
+      name: NAME,
+      status: "skip",
+      detail: `resolver OK; the running shell cannot be identified (SHELL names ${d.detection.login}, the login shell)`,
+      remedy: `Run \`${INSTALL_REMEDY}\` from the shell you want completions in.`,
+    };
+  }
   if (shell === null || path === null) {
     return {
       name: NAME,
       status: "skip",
-      detail: "resolver OK; shell not detected ($SHELL unset)",
+      detail: "resolver OK; no bash, zsh, or fish in this process tree",
+    };
+  }
+  // The installed script delegates every name context to the binary. A script
+  // that cannot reach it is inert, and reporting it as current is the same
+  // false green this row already told once.
+  if (!d.binOnPath) {
+    return {
+      name: NAME,
+      status: "fail",
+      detail: `${shell} script installed, but \`${BIN_NAME}\` is not on PATH — the script cannot run it`,
+      remedy: `Put \`${BIN_NAME}\` on your PATH.`,
     };
   }
   if (state === "absent") {
@@ -182,6 +203,6 @@ export async function checkShellCompletions(
   return {
     name: NAME,
     status: "pass",
-    detail: `${shell} up to date and resolving (${candidates} nouns)`,
+    detail: `${shell} (the shell in use) up to date and resolving (${candidates} nouns)`,
   };
 }

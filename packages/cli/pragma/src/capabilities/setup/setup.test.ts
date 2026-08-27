@@ -42,7 +42,11 @@ import { capabilities } from "../index.js";
 import { buildSetupRun } from "./operations/setupGenerator.js";
 import { composeSkills, detectSkills } from "./operations/setupSkills.js";
 import { setupModule } from "./setup.verb.js";
-import { completionScriptPath } from "./shell.js";
+import {
+  completionScriptPath,
+  detectShell,
+  type ShellId,
+} from "./shell.js";
 
 const FLAGS: GlobalFlags = {
   llm: false,
@@ -66,24 +70,48 @@ const tmp = (prefix: string): string => {
   return dir;
 };
 
+/**
+ * The shell this test process is actually running in.
+ *
+ * Detection reads the PROCESS TREE now, not `$SHELL` — `$SHELL` is the login
+ * shell and forcing it proved nothing about the shell in use. So the
+ * completions cases assert against whatever shell really started the run, and
+ * stand down where that cannot be established (a CI runner with no shell
+ * ancestor), rather than asserting a shell nobody is in.
+ */
+const DETECTED = detectShell();
+const SHELL = DETECTED.kind === "detected" ? DETECTED.shell : null;
+const withShell = it.skipIf(SHELL === null);
+
+/**
+ * A PATH directory carrying a `pragma` stub. The completions target refuses to
+ * install a script whose `pragma __complete` cannot be found — an inert script
+ * is worse than none — so every PATH these tests build has to satisfy that.
+ */
+const stubPath = (): string => {
+  const dir = tmp("pragma-setup-path-");
+  writeFileSync(join(dir, "pragma"), "");
+  return dir;
+};
+
 let prevHome: string | undefined;
-let prevShell: string | undefined;
+let prevPath: string | undefined;
 beforeEach(() => {
   prevHome = process.env.HOME;
-  prevShell = process.env.SHELL;
+  prevPath = process.env.PATH;
   process.env.HOME = tmp("pragma-setup-home-");
-  process.env.SHELL = "/usr/bin/zsh";
+  process.env.PATH = stubPath();
 });
 afterEach(() => {
   process.env.HOME = prevHome;
-  process.env.SHELL = prevShell;
+  process.env.PATH = prevPath;
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
   roots.length = 0;
 });
 
 describe("setup completions", () => {
-  it("writes exactly emitScripts(capabilities)[shell]", async () => {
-    const path = completionScriptPath("zsh");
+  withShell("writes exactly emitScripts(capabilities)[shell]", async () => {
+    const path = completionScriptPath(SHELL as ShellId);
     const outcome = await executeVerb(
       completionsVerb,
       {},
@@ -92,10 +120,10 @@ describe("setup completions", () => {
     );
     expect(outcome.exitCode).toBe(0);
     expect(existsSync(path)).toBe(true);
-    expect(readFileSync(path, "utf-8")).toBe(emitScripts(capabilities).zsh);
+    expect(readFileSync(path, "utf-8")).toBe(emitScripts(capabilities)[SHELL as ShellId]);
   });
 
-  it("bakes the completion config (minChars + per-family opt-out) into the emitted script", async () => {
+  withShell("bakes the completion config (minChars + per-family opt-out) into the emitted script", async () => {
     // Proves the reconciled `detectCompletions(cwd)` reads `completion` config
     // and threads {minChars, disabledFamilies} into `emitScripts` — a silent
     // regression if the fold had dropped autocomplete's config-threading for
@@ -105,7 +133,7 @@ describe("setup completions", () => {
       join(cwd, "pragma.config.ts"),
       "export default { completion: { minChars: 5, families: { block: false } } };\n",
     );
-    const path = completionScriptPath("zsh");
+    const path = completionScriptPath(SHELL as ShellId);
     const outcome = await executeVerb(
       completionsVerb,
       {},
@@ -120,16 +148,16 @@ describe("setup completions", () => {
       emitScripts(capabilities, {
         minChars: 5,
         disabledFamilies: ["block"],
-      }).zsh,
+      })[SHELL as ShellId],
     );
     // Both knobs actually moved the output: it differs from the default emit
     // (minChars), and from the minChars-only emit (the family opt-out).
-    expect(written).not.toBe(emitScripts(capabilities).zsh);
-    expect(written).not.toBe(emitScripts(capabilities, { minChars: 5 }).zsh);
+    expect(written).not.toBe(emitScripts(capabilities)[SHELL as ShellId]);
+    expect(written).not.toBe(emitScripts(capabilities, { minChars: 5 })[SHELL as ShellId]);
   });
 
-  it("--dry-run previews the write against the detected shell, writing nothing", async () => {
-    const path = completionScriptPath("zsh");
+  withShell("--dry-run previews the write against the detected shell, writing nothing", async () => {
+    const path = completionScriptPath(SHELL as ShellId);
     const outcome = await executeVerb(
       completionsVerb,
       {},
@@ -140,26 +168,33 @@ describe("setup completions", () => {
     // kernel's raw effect dump: one row, the shell it detected, and the script
     // path rendered against the header's roots instead of repeated absolutely.
     expect(outcome.stdout).toContain("Setup plan — global band");
-    expect(outcome.stdout).toContain("completions  install  zsh → ~/.zfunc/_pragma");
+    expect(outcome.stdout).toContain(`completions  install  ${SHELL} →`);
     // The confirm gate / answer prompts are never part of a plan.
     expect(outcome.stdout).not.toContain("Prompt");
     expect(existsSync(path)).toBe(false);
   });
 
-  it("warns and writes nothing when no shell is detected", async () => {
-    process.env.SHELL = "";
-    const outcome = await executeVerb(
-      completionsVerb,
-      {},
-      YES,
-      bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
-    );
-    expect(outcome.exitCode).toBe(0);
-    expect(existsSync(completionScriptPath("zsh"))).toBe(false);
-  });
+  withShell(
+    "refuses to install a script whose `pragma` the shell cannot find",
+    async () => {
+      // The script delegates every name context to `pragma __complete`. With
+      // the binary unreachable the file installs cleanly, doctor goes green,
+      // and TAB does nothing — so this is a named skip, not a silent write.
+      process.env.PATH = tmp("pragma-setup-nobin-"); // no `pragma` in it
+      const outcome = await executeVerb(
+        completionsVerb,
+        {},
+        YES,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.stdout).toContain("cannot find on PATH");
+      expect(existsSync(completionScriptPath(SHELL as ShellId))).toBe(false);
+    },
+  );
 
-  it("--undo reverses the write", async () => {
-    const path = completionScriptPath("zsh");
+  withShell("--undo reverses the write", async () => {
+    const path = completionScriptPath(SHELL as ShellId);
     const cwd = tmp("pragma-setup-proj-");
     await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
     expect(existsSync(path)).toBe(true);
@@ -215,7 +250,7 @@ describe("setup mcp — scope & dedup", () => {
   let prevPath: string | undefined;
   beforeEach(() => {
     prevPath = process.env.PATH;
-    process.env.PATH = tmp("pragma-scope-path-");
+    process.env.PATH = stubPath();
   });
   afterEach(() => {
     process.env.PATH = prevPath;
@@ -434,11 +469,11 @@ describe("setup (run-all wizard) — scope threading", () => {
   // `process` signal — detection is driven only by the dirs each test makes.
   // A stubbed `code` CLI makes the LSP step's editor detection deterministic.
   let prevPath: string | undefined;
-  let stubPath = "";
+  let editorPath = "";
   beforeEach(() => {
     prevPath = process.env.PATH;
-    stubPath = tmp("pragma-runall-path-");
-    process.env.PATH = stubPath;
+    editorPath = stubPath();
+    process.env.PATH = editorPath;
   });
   afterEach(() => {
     process.env.PATH = prevPath;
@@ -446,7 +481,7 @@ describe("setup (run-all wizard) — scope threading", () => {
 
   /** Put a stub `code` on the isolated PATH so an LSP install is composable. */
   const seedEditorCli = (): void => {
-    writeFileSync(join(stubPath, "code"), "");
+    writeFileSync(join(editorPath, "code"), "");
   };
 
   /** Seed a discoverable skill so the project-band skills step is offerable. */
@@ -480,7 +515,7 @@ describe("setup (run-all wizard) — scope threading", () => {
     expect(plan).toContain(".agents/skills");
   });
 
-  it("--global omits the project-band skills step, keeping global steps", async () => {
+  withShell("--global omits the project-band skills step, keeping global steps", async () => {
     const cwd = tmp("pragma-setup-proj-");
     seedSkill(cwd); // WOULD be offered under the default `both`
     seedEditorCli(); // vscode detected ⇒ the LSP install is in the plan
@@ -495,7 +530,7 @@ describe("setup (run-all wizard) — scope threading", () => {
     // The global-band steps are present under --global. Paths render against
     // the header's roots, so the row shows `~/.zfunc/_pragma`, not an absolute
     // prefix repeated on every line.
-    expect(plan).toContain("completions  install  zsh → ~/.zfunc/_pragma");
+    expect(plan).toContain(`completions  install  ${SHELL} →`);
     expect(plan).toContain("lsp");
     // The project-band skills step is gone (the bug: it used to run under --global).
     expect(plan).not.toContain(".agents/skills");
@@ -618,7 +653,7 @@ describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
     // issue") at the boundary.
     const prevPath = process.env.PATH;
     const prevData = process.env.XDG_DATA_HOME;
-    const stubDir = tmp("pragma-lsp-path-");
+    const stubDir = stubPath();
     writeFileSync(join(stubDir, "code"), ""); // present ⇒ vscode is a target
     process.env.PATH = stubDir;
     process.env.XDG_DATA_HOME = tmp("pragma-lsp-data-"); // jail the staging dir
@@ -755,7 +790,7 @@ describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
     // honest outcome is a named skip, not the old UNSUPPORTED with a
     // "permissions or network" guess and a dead /tmp path (§3, S1-1's trigger).
     const prevPath = process.env.PATH;
-    process.env.PATH = tmp("pragma-noeditor-path-"); // empty ⇒ no editor CLI
+    process.env.PATH = stubPath(); // empty ⇒ no editor CLI
     try {
       const outcome = await executeVerb(
         verbOf("lsp"),
@@ -780,7 +815,7 @@ describe("setup — idempotent detection of already-present config", () => {
   let prevPath: string | undefined;
   beforeEach(() => {
     prevPath = process.env.PATH;
-    process.env.PATH = tmp("pragma-idem-path-");
+    process.env.PATH = stubPath();
   });
   afterEach(() => {
     process.env.PATH = prevPath;
@@ -871,9 +906,9 @@ describe("setup — idempotent detection of already-present config", () => {
     expect(config.mcpServers.pragma.cwd).toBe(cwd); // updated to the real cwd
   });
 
-  it("completions: a second run detects the up-to-date script (state=installed)", async () => {
+  withShell("completions: a second run detects the up-to-date script (state=installed)", async () => {
     const cwd = tmp("pragma-setup-proj-");
-    const path = completionScriptPath("zsh");
+    const path = completionScriptPath(SHELL as ShellId);
     // First install.
     await executeVerb(completionsVerb, {}, YES, bootRuntime(FLAGS, cwd));
     const firstBody = readFileSync(path, "utf-8");
@@ -894,9 +929,9 @@ describe("setup — idempotent detection of already-present config", () => {
     expect(readFileSync(path, "utf-8")).toBe(firstBody);
   });
 
-  it("completions: a stale script (different body) reads as `stale`", async () => {
+  withShell("completions: a stale script (different body) reads as `stale`", async () => {
     const cwd = tmp("pragma-setup-proj-");
-    const path = completionScriptPath("zsh");
+    const path = completionScriptPath(SHELL as ShellId);
     mkdirSync(join(path, ".."), { recursive: true });
     writeFileSync(path, "# stale hand-edited completion\n");
     const { plan } = await buildSetupRun(
@@ -934,15 +969,15 @@ describe("setup (run-all wizard)", () => {
   let prevPath: string | undefined;
   beforeEach(() => {
     prevPath = process.env.PATH;
-    const stubPath = tmp("pragma-wizard-path-");
-    writeFileSync(join(stubPath, "code"), "");
-    process.env.PATH = stubPath;
+    const dir = stubPath();
+    writeFileSync(join(dir, "code"), "");
+    process.env.PATH = dir;
   });
   afterEach(() => {
     process.env.PATH = prevPath;
   });
 
-  it("--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing", async () => {
+  withShell("--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // harness detected
     const outcome = await executeVerb(
@@ -959,10 +994,10 @@ describe("setup (run-all wizard)", () => {
     for (const id of ["config", "completions", "lsp", "mcp", "skills"]) {
       expect(plan).toContain(id);
     }
-    expect(plan).toContain("zsh → ~/.zfunc/_pragma"); // completions row
+    expect(plan).toContain(`${SHELL} →`); // completions row
     expect(plan).not.toContain("Prompt"); // recap gate / multiselects filtered
     // Nothing is written by a preview.
-    expect(existsSync(completionScriptPath("zsh"))).toBe(false);
+    expect(existsSync(completionScriptPath(SHELL as ShellId))).toBe(false);
     expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
   });
 

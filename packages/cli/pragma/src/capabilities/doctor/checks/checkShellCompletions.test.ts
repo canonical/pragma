@@ -2,7 +2,7 @@
  * `checkShellCompletions` — the doctor check that verifies completions are
  * installed AND up to date AND functional.
  *
- * Runs against an isolated HOME and a controlled `$SHELL` so the three gates —
+ * Runs against an isolated HOME and an injected shell so the gates —
  * the resolver effect test, the install probe, and the zsh fpath activation
  * gate — are deterministic. The effect test (gate 1) drives the real
  * `runComplete` resolver; the install/fpath gates write real files under the
@@ -22,7 +22,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { emitScripts } from "../../../kernel/completion/emitScripts.js";
 import { capabilities } from "../../index.js";
 import { detectCompletions } from "../../setup/operations/setupCompletions.js";
-import { completionScriptPath, type ShellId } from "../../setup/shell.js";
+import {
+  completionScriptPath,
+  type ShellDetection,
+  type ShellId,
+} from "../../setup/shell.js";
 import type { CheckResult } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";
 
@@ -34,16 +38,21 @@ const tmp = (): string => {
 };
 
 let prevHome: string | undefined;
-let prevShell: string | undefined;
+let prevPath: string | undefined;
 beforeEach(() => {
   prevHome = process.env.HOME;
-  prevShell = process.env.SHELL;
+  prevPath = process.env.PATH;
   process.env.HOME = tmp();
+  // The installed script spawns `pragma` for every name context, and the check
+  // now verifies that it can. Put one on an isolated PATH so these cases are
+  // about the SCRIPT rather than about the host's install.
+  const bin = tmp();
+  writeFileSync(join(bin, "pragma"), "");
+  process.env.PATH = bin;
 });
 afterEach(() => {
   process.env.HOME = prevHome;
-  if (prevShell === undefined) delete process.env.SHELL;
-  else process.env.SHELL = prevShell;
+  process.env.PATH = prevPath;
   for (const dir of roots) rmSync(dir, { recursive: true, force: true });
   roots.length = 0;
 });
@@ -65,8 +74,19 @@ function installScript(shell: ShellId): void {
  * per invocation and the check reads that one answer, so the test drives the
  * same pairing rather than letting the check re-read behind its own back.
  */
-async function check(cwd: string): Promise<CheckResult> {
-  return checkShellCompletions(cwd, await detectCompletions(cwd));
+async function check(
+  cwd: string,
+  shell: ShellId | null,
+): Promise<CheckResult> {
+  // The shell is INJECTED rather than forced through `$SHELL`: detection reads
+  // the process tree now, and a test that set `$SHELL` was only ever asserting
+  // against the login shell — the exact confusion this check exists to catch.
+  const detection: ShellDetection =
+    shell === null ? { kind: "unknown" } : { kind: "detected", shell };
+  return checkShellCompletions(
+    cwd,
+    await detectCompletions(cwd, detection),
+  );
 }
 
 /** Write a `.zshrc` that puts ~/.zfunc on fpath. */
@@ -81,8 +101,7 @@ describe("checkShellCompletions — effect test (gate 1)", () => {
   it("passes the resolver gate: `pragma <TAB>` resolves nouns", async () => {
     // No shell → skip, but only AFTER the resolver answered — the detail proves
     // the effect test ran and succeeded.
-    delete process.env.SHELL;
-    const result = await check(tmp());
+    const result = await check(tmp(), null);
     expect(result.status).toBe("skip");
     expect(result.detail).toMatch(/resolver OK/);
   });
@@ -90,25 +109,22 @@ describe("checkShellCompletions — effect test (gate 1)", () => {
 
 describe("checkShellCompletions — install probe (gate 2)", () => {
   it("a never-installed script is available (opt-in, not a fault) with the setup command", async () => {
-    process.env.SHELL = "/usr/bin/bash";
-    const result = await check(tmp());
+    const result = await check(tmp(), "bash");
     expect(result.status).toBe("available");
     expect(result.detail).toMatch(/not installed/);
     expect(result.remedy).toBe("pragma setup completions");
   });
 
   it("passes for bash once the up-to-date script is at its real path", async () => {
-    process.env.SHELL = "/usr/bin/bash";
     installScript("bash");
-    const result = await check(tmp());
+    const result = await check(tmp(), "bash");
     expect(result.status).toBe("pass");
-    expect(result.detail).toMatch(/bash up to date and resolving/);
+    expect(result.detail).toMatch(/bash \(the shell in use\) up to date and resolving/);
   });
 
   it("passes for fish once the up-to-date script is at its real path", async () => {
-    process.env.SHELL = "/usr/bin/fish";
     installScript("fish");
-    const result = await check(tmp());
+    const result = await check(tmp(), "fish");
     expect(result.status).toBe("pass");
   });
 
@@ -120,9 +136,8 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     // Every user upgrading across a grammar change lands here: the old script
     // offers the old nouns and misses the new ones, and doctor is the one
     // command whose job is to say so.
-    process.env.SHELL = "/usr/bin/bash";
     writeScript("bash", "# STALE JUNK\n");
-    const result = await check(tmp());
+    const result = await check(tmp(), "bash");
     expect(result.status).toBe("fail");
     expect(result.detail).toMatch(/out of date/);
     expect(result.remedy).toBe("pragma setup completions");
@@ -137,23 +152,24 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     // failure back rather than closing it. The first assertion is the
     // discriminator — this project really does ask for a different body — so
     // deleting the config write below turns the test red.
-    process.env.SHELL = "/usr/bin/bash";
     installScript("bash");
     const cwd = tmp();
     writeFileSync(
       join(cwd, "pragma.config.ts"),
       "export default { completion: { minChars: 5 } };\n",
     );
-    expect((await detectCompletions(cwd)).state).toBe("stale");
-    expect((await check(cwd)).status).toBe("pass");
+    expect(
+      (await detectCompletions(cwd, { kind: "detected", shell: "bash" }))
+        .state,
+    ).toBe("stale");
+    expect((await check(cwd, "bash")).status).toBe("pass");
   });
 });
 
 describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
   it("fails when the zsh script is installed but ~/.zfunc is not on fpath", async () => {
-    process.env.SHELL = "/usr/bin/zsh";
     installScript("zsh");
-    const result = await check(tmp());
+    const result = await check(tmp(), "zsh");
     expect(result.status).toBe("fail");
     expect(result.detail).toMatch(/not on your fpath/);
     // The remedy IS the activation hint — the exact ~/.zshrc lines.
@@ -161,11 +177,10 @@ describe("checkShellCompletions — zsh fpath activation (gate 3)", () => {
   });
 
   it("passes once the zsh script is installed AND ~/.zfunc is on fpath", async () => {
-    process.env.SHELL = "/usr/bin/zsh";
     installScript("zsh");
     wireZfunc();
-    const result = await check(tmp());
+    const result = await check(tmp(), "zsh");
     expect(result.status).toBe("pass");
-    expect(result.detail).toMatch(/zsh up to date and resolving/);
+    expect(result.detail).toMatch(/zsh \(the shell in use\) up to date and resolving/);
   });
 });

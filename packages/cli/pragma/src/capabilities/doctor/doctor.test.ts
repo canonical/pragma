@@ -262,7 +262,7 @@ describe("doctor — the banded rows can see the GLOBAL band", () => {
     writeFileSync(
       join(wsDir, "mcp_config.json"),
       JSON.stringify({
-        mcpServers: { pragma: { command: "pragma", args: ["mcp"] } },
+        mcpServers: { pragma: { command: "pragma", args: ["mcp", "serve"] } },
       }),
     );
     // The row also verifies the command BOOTS, so put a `pragma` on the

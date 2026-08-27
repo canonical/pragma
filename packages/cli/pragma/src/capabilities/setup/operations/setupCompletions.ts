@@ -11,7 +11,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { delimiter, dirname, join } from "node:path";
 import {
   deleteFile,
   mkdir,
@@ -19,7 +19,13 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
-import { completionScriptPath, detectShell, type ShellId } from "../shell.js";
+import { BIN_NAME } from "../../../constants.js";
+import {
+  completionScriptPath,
+  detectShell,
+  type ShellDetection,
+  type ShellId,
+} from "../shell.js";
 import type { CompletionsState } from "../types.js";
 
 /**
@@ -34,6 +40,33 @@ export interface CompletionsDetection {
   readonly path: string | null;
   readonly script: string | null;
   readonly state: CompletionsState;
+  /** What detection concluded — `ambiguous` is reported, never resolved. */
+  readonly detection: ShellDetection;
+  /**
+   * Whether the binary the installed script SHELLS OUT TO resolves on PATH.
+   *
+   * Every emitted script delegates its name contexts to `<bin> __complete`. If
+   * the binary is not reachable from the shell, the script installs cleanly,
+   * doctor goes green, and TAB does nothing — the script is inert. Checked here
+   * so the plan row and the doctor row read the same one answer.
+   */
+  readonly binOnPath: boolean;
+}
+
+/**
+ * Whether a bare command name resolves in any PATH directory — the same probe
+ * the `mcp` row uses for its entry's command, asked here of the binary the
+ * installed completion script spawns.
+ *
+ * @param command - The bare binary name.
+ * @returns Whether a PATH directory holds it.
+ * @note Impure — reads PATH directories.
+ */
+function binaryOnPath(command: string): boolean {
+  return (process.env.PATH ?? "")
+    .split(delimiter)
+    .filter((dir) => dir.length > 0)
+    .some((dir) => existsSync(join(dir, command)));
 }
 
 /**
@@ -63,14 +96,27 @@ function classifyCompletions(path: string, script: string): CompletionsState {
  * path.
  *
  * @param cwd - Directory the `completion` config layers are resolved from.
+ * @param injected - A detection to use instead of probing (tests).
  * @returns The install target, or an all-`null` shape when `$SHELL` is unset.
  * @note Impure — reads `$SHELL`, the capability registry, and the config layers.
  */
 export async function detectCompletions(
   cwd: string,
+  injected?: ShellDetection,
 ): Promise<CompletionsDetection> {
-  const shell = detectShell();
-  if (!shell) return { shell: null, path: null, script: null, state: "absent" };
+  const detection = injected ?? detectShell();
+  const binOnPath = binaryOnPath(BIN_NAME);
+  if (detection.kind !== "detected") {
+    return {
+      shell: null,
+      path: null,
+      script: null,
+      state: "absent",
+      detection,
+      binOnPath,
+    };
+  }
+  const shell = detection.shell;
 
   const [{ capabilities }, { emitScripts }, { readConfig }] = await Promise.all(
     [
@@ -95,7 +141,14 @@ export async function detectCompletions(
       ? { disabledFamilies }
       : {}),
   })[shell];
-  return { shell, path, script, state: classifyCompletions(path, script) };
+  return {
+    shell,
+    path,
+    script,
+    state: classifyCompletions(path, script),
+    detection,
+    binOnPath,
+  };
 }
 
 /**

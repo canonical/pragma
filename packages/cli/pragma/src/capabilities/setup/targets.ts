@@ -25,6 +25,7 @@
  */
 
 import type { Task } from "@canonical/task";
+import { BIN_NAME } from "../../constants.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import {
   type CompletionsDetection,
@@ -156,13 +157,33 @@ const completionsTarget = defineTarget<CompletionsDetection>({
   bands: ["global"],
   detect: (rt) => detectCompletions(rt.cwd),
   plan: (d, _band, roots) => {
-    if (d.shell === null || d.path === null) {
+    // Never guess a shell. Installing for the wrong one is invisible until the
+    // user presses TAB and nothing happens, so an unresolved shell is a named
+    // skip whose remedy is the one action that DOES settle it.
+    if (d.detection.kind === "ambiguous") {
       return {
         action: "skip",
-        detail: "no shell detected",
-        reason: "the SHELL environment variable is not set",
-        remedy:
-          "no action is possible on this machine yet — set SHELL to bash, zsh, or fish, then run this again",
+        detail: "the running shell cannot be identified",
+        reason: `the running shell cannot be identified — SHELL names ${d.detection.login}, which is the login shell, not necessarily the one in use`,
+        remedy: `run \`${BIN_NAME} setup completions\` from the shell you want completions in`,
+      };
+    }
+    if (d.detection.kind === "unknown" || d.shell === null || d.path === null) {
+      return {
+        action: "skip",
+        detail: "no supported shell detected",
+        reason: "no bash, zsh, or fish was found in this process tree",
+        remedy: `run \`${BIN_NAME} setup completions\` from bash, zsh, or fish`,
+      };
+    }
+    // The script spawns the binary for every name context. Installing one that
+    // cannot reach it writes a file that silently does nothing.
+    if (!d.binOnPath) {
+      return {
+        action: "skip",
+        detail: `${BIN_NAME} is not on PATH`,
+        reason: `the completion script runs \`${BIN_NAME}\`, which this shell cannot find on PATH`,
+        remedy: `put \`${BIN_NAME}\` on your PATH, then run this again`,
       };
     }
     const where = `${d.shell} → ${shortenPath(d.path, roots)}`;
