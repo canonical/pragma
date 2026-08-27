@@ -30,6 +30,7 @@ import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type {
   ConfiguredTarget,
   McpTargetState,
+  ScopeBand,
   ScopeSelection,
 } from "../types.js";
 
@@ -59,29 +60,25 @@ export interface McpDetection {
  * classifier (does the existing entry match this?) and the writer (`composeMcp`)
  * consume, so "already configured" means byte-for-byte what a write would emit.
  *
- * @param cwd - The project root recorded on the entry.
+ * The entry is BAND-shaped: a project-band entry records the project root as
+ * `cwd` (that binding is the point of a per-repo registration), while a
+ * global-band entry OMITS `cwd` entirely — a per-user server must not be
+ * pinned to whatever directory `setup mcp --global` happened to run from
+ * (observed: a global registration from `~/Downloads` permanently served
+ * `~/Downloads`, and re-running from repo B "repaired" it to repo B,
+ * ping-ponging the machine band between projects). The per-harness
+ * serializers already omit an undefined `cwd`, and the matcher treats an
+ * omitted controlled field as must-be-absent, so a stale global entry still
+ * carrying a `cwd` classifies as `drifted` and converges on the next write.
+ *
+ * @param cwd - The project root (recorded only on project-band entries).
+ * @param band - The config band the entry is written to.
  * @returns The pragma {@link McpServerConfig}.
  */
-export function pragmaMcpEntry(cwd: string): McpServerConfig {
-  return { command: MCP_SERVER_NAME, args: ["mcp"], cwd };
-}
-
-/**
- * Whether an existing MCP entry equals the pragma entry we would write, over the
- * fields we control (`command`/`args`/`cwd`). A shallow structural compare — a
- * harness that carries extra keys (e.g. `env`) still reads as `configured` as
- * long as our three fields match, so we never churn a file we did not author.
- */
-function entryMatches(
-  existing: McpServerConfig,
-  want: McpServerConfig,
-): boolean {
-  const sameArgs =
-    (existing.args ?? []).length === (want.args ?? []).length &&
-    (want.args ?? []).every((a, i) => existing.args?.[i] === a);
-  return (
-    existing.command === want.command && existing.cwd === want.cwd && sameArgs
-  );
+export function pragmaMcpEntry(cwd: string, band: ScopeBand): McpServerConfig {
+  return band === "project"
+    ? { command: MCP_SERVER_NAME, args: ["mcp"], cwd }
+    : { command: MCP_SERVER_NAME, args: ["mcp"] };
 }
 
 /**
@@ -89,11 +86,15 @@ function entryMatches(
  * entry exists in ANY of the group's writes, `configured` when EVERY write
  * already carries a matching pragma entry, `drifted` otherwise (present in at
  * least one write but not matching everywhere). Reads each write's file for real
- * via `readMcpConfigFrom`.
+ * via `readMcpConfigFrom`, and matches each raw entry against what THAT write's
+ * per-harness serializer would emit for the group's BAND (`mcpEntryMatches`
+ * compares the serializer's controlled fields — so a global entry still
+ * pinning a `cwd` reads as drifted — and ignores extra keys a harness or user
+ * added, so we never churn a file we did not author).
  *
  * @param group - The target group whose writes to inspect.
- * @param want - The pragma entry a write would emit.
- * @param readMcpConfigFrom - The harness reader (dynamically imported).
+ * @param want - The canonical pragma entry for the group's band.
+ * @param harnessesApi - The dynamically imported harnesses module.
  * @param runTask - The node Task interpreter.
  * @returns The group's {@link McpTargetState}.
  * @note Impure — reads each write's config file.
@@ -101,17 +102,22 @@ function entryMatches(
 async function classifyGroup(
   group: TargetGroup,
   want: McpServerConfig,
-  readMcpConfigFrom: typeof import("@canonical/harnesses").readMcpConfigFrom,
+  harnessesApi: Pick<
+    typeof import("@canonical/harnesses"),
+    "readMcpConfigFrom" | "mcpEntryMatches"
+  >,
   runTask: typeof import("@canonical/task/node").runTask,
 ): Promise<McpTargetState> {
   let present = 0;
   let matching = 0;
   for (const write of group.writes) {
-    const servers = await runTask(readMcpConfigFrom(write));
+    const servers = await runTask(harnessesApi.readMcpConfigFrom(write));
     const existing = servers[MCP_SERVER_NAME];
     if (existing === undefined) continue;
     present += 1;
-    if (entryMatches(existing, want)) matching += 1;
+    if (harnessesApi.mcpEntryMatches(existing, want, write.serializeEntry)) {
+      matching += 1;
+    }
   }
   if (present === 0) return "absent";
   if (matching === group.writes.length) return "configured";
@@ -139,6 +145,7 @@ export async function detectMcp(
     {
       detectHarnesses,
       groupTargetsForScope,
+      mcpEntryMatches,
       readMcpConfigFrom,
       readPlatformEnv,
       writeMcpConfigTargets,
@@ -154,15 +161,16 @@ export async function detectMcp(
 
   // Read each group's existing config (for real, up front) so the recap/preview
   // and the default selection reflect true prior state — the same discipline
-  // `detectSkills` uses for its per-link create/skip/replace decision.
-  const want = pragmaMcpEntry(cwd);
+  // `detectSkills` uses for its per-link create/skip/replace decision. The
+  // wanted entry is BAND-shaped (a global entry omits `cwd`), so it is built
+  // per group, not once.
   const stateByPath = new Map<string, McpTargetState>();
   await Promise.all(
     groups.map(async (group) => {
       const state = await classifyGroup(
         group,
-        want,
-        readMcpConfigFrom,
+        pragmaMcpEntry(cwd, group.scope),
+        { readMcpConfigFrom, mcpEntryMatches },
         runTask,
       );
       stateByPath.set(group.path, state);
@@ -209,16 +217,20 @@ export function composeMcp(
   if (groups.length === 0) {
     return warn("No AI harnesses selected — nothing to configure.");
   }
-  const pragmaMcpConfig = pragmaMcpEntry(d.cwd);
   // Re-runnable combinators (NOT a single-use `gen`): `execute` interprets the
   // task twice (preview + perform). One combined write per file keeps a shared
-  // file (VS Code + Cline) a single read-modify-write — dry-run safe.
+  // file (VS Code + Cline) a single read-modify-write — dry-run safe. The
+  // written entry is BAND-shaped per group (a global entry omits `cwd`).
   const tasks: Task<unknown>[] = [];
   for (const group of groups) {
     const state = mcpGroupState(d, group.path);
     const names = group.harnessNames.join(", ");
     tasks.push(
-      d.writeMcpConfigTargets(group.writes, MCP_SERVER_NAME, pragmaMcpConfig),
+      d.writeMcpConfigTargets(
+        group.writes,
+        MCP_SERVER_NAME,
+        pragmaMcpEntry(d.cwd, group.scope),
+      ),
     );
     const verb =
       state === "configured"

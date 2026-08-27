@@ -9,14 +9,32 @@ import { deriveBand } from "./deriveBand.js";
 const NAME = "MCP commands";
 
 /**
- * Extract the stdio command from an MCP server config entry, if any. HTTP/SSE
- * entries (`{ type: "http", url }`) have no command and are not checked.
+ * Extract the stdio EXECUTABLE from an MCP server config entry, if any.
+ *
+ * `command` arrives in two schema-legal shapes. Most harnesses take the scalar
+ * (`command: "pragma"`, arguments in a sibling `args`), but OpenCode's
+ * `McpLocalConfig` requires an ARRAY that fuses the two
+ * (`command: ["pragma", "mcp"]` — see `opencodeMcpEntry` in
+ * `@canonical/harnesses`). Reading only the scalar made this check step over
+ * the array form entirely: doctor skipped the executable probe on an entry
+ * `setup` had just written correctly, and a machine whose only MCP config is
+ * OpenCode's reported "no command-based MCP servers configured" while being
+ * fully configured. A silently wrong clean answer is worse than a loud wrong
+ * one, so both shapes are read here.
+ *
+ * The executable is the FIRST non-empty string in either shape, so the two
+ * yield the same answer for the same entry; the remaining array elements are
+ * arguments and are not probed. HTTP/SSE entries (`{ type: "http", url }`)
+ * have no command and are not checked.
  */
 function commandOf(entry: unknown): string | undefined {
   if (typeof entry !== "object" || entry === null) return undefined;
   const command = (entry as { command?: unknown }).command;
-  return typeof command === "string" && command.length > 0
-    ? command
+  const executable = Array.isArray(command)
+    ? command.find((part) => typeof part === "string" && part.length > 0)
+    : command;
+  return typeof executable === "string" && executable.length > 0
+    ? executable
     : undefined;
 }
 

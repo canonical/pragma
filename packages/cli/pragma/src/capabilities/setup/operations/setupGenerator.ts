@@ -27,22 +27,31 @@ import type {
   GeneratorDefinition,
   PromptDefinition,
 } from "@canonical/summon-core";
-import { sequence_, type Task, when } from "@canonical/task";
+import {
+  flatMap,
+  map,
+  pure,
+  recover,
+  sequence,
+  type Task,
+  type TaskError,
+  warn,
+} from "@canonical/task";
 import { BIN_NAME } from "../../../constants.js";
+import { PragmaError } from "../../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import { guardMissingBinary } from "../../shared/assertExecOk.js";
-import type {
-  LspState,
-  ScopeSelection,
-  SetupMode,
-  SetupResult,
-} from "../types.js";
+import type { ScopeSelection, SetupMode, SetupResult } from "../types.js";
 import {
   type CompletionsDetection,
   composeCompletions,
   detectCompletions,
 } from "./setupCompletions.js";
-import { composeLsp, detectLsp, type LspDetection } from "./setupLsp.js";
+import {
+  composeLsp,
+  detectLsp,
+  type LspDetection,
+  lspEditorNames,
+} from "./setupLsp.js";
 import {
   composeMcp,
   detectMcp,
@@ -100,23 +109,80 @@ const selectChosenGroups = (
   answers: Record<string, unknown>,
 ) => selectedGroups(d, resolveMcpPaths(d, answers));
 
+/** One run-all step's outcome: its id, plus the failure it ended in (if any). */
+interface StepOutcome {
+  readonly id: StepId;
+  readonly error?: TaskError;
+}
+
+/** The {@link PragmaError} a step failure carries, or a wrapper around it. */
+const stepPragmaError = (error: TaskError): PragmaError =>
+  error.cause instanceof PragmaError
+    ? error.cause
+    : new PragmaError({ code: "UNSUPPORTED", message: error.message });
+
 /**
- * The LSP-install step, guarded at its use site. An absent `bunx` (no Bun on
- * PATH) REJECTS the exec with ENOENT, which would otherwise collapse to
- * INTERNAL_ERROR ("report this issue") at the CLI/MCP boundary;
- * `guardMissingBinary` names it a UNSUPPORTED "`bunx` not found on PATH" with an
- * actionable install recovery instead. Preview-transparent — a dry-run mocks the
- * exec (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`
- * is combinator-built), so it survives `execute`'s double interpretation.
+ * Run the CHOSEN steps with per-step failure isolation (S1-1). The steps are
+ * independent installers, so one unsatisfiable prerequisite must not consume
+ * the others: previously the sequenced composition let a failing LSP step
+ * abort the run before MCP or skills ever executed — on every machine without
+ * a usable editor CLI, the single advertised onboarding command configured
+ * nothing that mattered and exited 1.
+ *
+ * Each step runs under a `recover` frame: a failure is reported inline (a
+ * `warn` right where it happened) and recorded, and the remaining steps still
+ * run. After the last step the recorded failures decide the aggregate
+ * outcome — none: success; one: the ORIGINAL error is rethrown (its code,
+ * message, and recovery intact); several: one UNSUPPORTED error naming every
+ * failed step. The run's exit code therefore reflects the true aggregate
+ * result while every satisfiable step has already applied.
+ *
+ * Only failures travelling the task FAILURE CHANNEL are isolable — a
+ * synchronous throw bypasses the trampoline's recovery frames — which is why
+ * the step bodies raise via `checkExecOk`/`failPragma`/`failWith`, never a
+ * bare throw. Interruption (TASK_INTERRUPTED) bypasses recovery by interpreter
+ * invariant, so Ctrl-C still stops the whole run. Pure and re-runnable: the
+ * outcome array flows through task values, never a captured mutable, so
+ * `execute`'s double interpretation (preview + perform) stays sound.
  */
-const composeGuardedLsp = (rt: PragmaRuntime, state: LspState): Task<void> =>
-  guardMissingBinary(
-    "bunx",
-    {
-      message:
-        "Install Bun (https://bun.sh) to provide `bunx`, then run this again.",
+const runStepsIsolated = (
+  steps: readonly { id: StepId; task: Task<void> }[],
+): Task<void> =>
+  flatMap(
+    sequence(
+      steps.map(({ id, task }) =>
+        recover(
+          map(task, (): StepOutcome => ({ id })),
+          (error) =>
+            flatMap(
+              warn(
+                `Step "${id}" failed — continuing with the remaining steps.`,
+              ),
+              () => pure<StepOutcome>({ id, error }),
+            ),
+        ),
+      ),
+    ),
+    (outcomes) => {
+      const failures = outcomes.flatMap((o) =>
+        o.error === undefined ? [] : [{ id: o.id, error: o.error }],
+      );
+      const first = failures[0];
+      if (first === undefined) return pure(undefined);
+      if (failures.length === 1) throw stepPragmaError(first.error);
+      const lines = failures
+        .map((f) => `${f.id}: ${stepPragmaError(f.error).message}`)
+        .join("\n");
+      throw new PragmaError({
+        code: "UNSUPPORTED",
+        message: `${failures.length} of ${outcomes.length} setup steps failed:\n${lines}`,
+        recovery: {
+          message: `The other steps completed. Re-run the failed ones individually: ${failures
+            .map((f) => `\`${BIN_NAME} setup ${f.id}\``)
+            .join(", ")}.`,
+        },
+      });
     },
-    composeLsp(rt.cwd, state),
   );
 
 /** Build a generator's `meta` (no stamping — the version is just header text). */
@@ -278,27 +344,29 @@ function buildRunAllPlan(
   }
 
   // `generate` MUST be pure and re-runnable — `execute` interprets it twice (the
-  // confirm-gate preview + the build) — so it composes with `when`/`sequence_`
-  // (immutable) rather than a single-use `gen`, and does NO detection (all real
-  // reads already happened up front). Composing an unchosen step is harmless:
-  // `when(false, …)` discards the (side-effect-free) task it was handed.
+  // confirm-gate preview + the build) — so it composes with immutable
+  // combinators rather than a single-use `gen`, and does NO detection (all real
+  // reads already happened up front). The chosen steps run through
+  // {@link runStepsIsolated} so one failing step reports and lets the rest
+  // proceed (S1-1) while the run's exit code reflects the aggregate outcome.
   const generator: GeneratorDefinition = {
     meta: buildMeta(rt, `${BIN_NAME} setup`),
     prompts,
     generate: (answers) => {
       const chosen = readSteps(answers);
-      return sequence_([
-        when(
-          chosen.includes("completions"),
-          composeCompletions(detected.completions),
-        ),
-        when(chosen.includes("lsp"), composeGuardedLsp(rt, detected.lsp.state)),
-        when(
-          chosen.includes("mcp"),
-          composeMcp(detected.mcp, selectChosenGroups(detected.mcp, answers)),
-        ),
-        when(chosen.includes("skills"), composeSkills(detected.skills)),
-      ]);
+      const all: { id: StepId; task: Task<void> }[] = [
+        { id: "completions", task: composeCompletions(detected.completions) },
+        { id: "lsp", task: composeLsp(detected.lsp) },
+        {
+          id: "mcp",
+          task: composeMcp(
+            detected.mcp,
+            selectChosenGroups(detected.mcp, answers),
+          ),
+        },
+        { id: "skills", task: composeSkills(detected.skills) },
+      ];
+      return runStepsIsolated(all.filter((s) => chosen.includes(s.id)));
     },
   };
 
@@ -363,9 +431,13 @@ export async function buildSetupPlan(
       const d = await detectLsp(rt.cwd);
       return {
         generator: buildSingleStep(rt, `${BIN_NAME} setup lsp`, [], () =>
-          composeGuardedLsp(rt, d.state),
+          composeLsp(d),
         ),
-        toResult: () => ({ kind: "lsp", state: d.state }),
+        toResult: () => ({
+          kind: "lsp",
+          state: d.state,
+          editors: lspEditorNames(d),
+        }),
       };
     }
 

@@ -18,7 +18,9 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readlinkSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -317,6 +319,86 @@ describe("setup mcp — scope & dedup", () => {
     ).toBe(true);
     expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
   });
+
+  it("a GLOBAL entry omits cwd — registrations from two directories are byte-identical", async () => {
+    // A per-user server must not be pinned to whatever directory `setup mcp
+    // --global` happened to run from (a registration made from ~/Downloads
+    // used to serve ~/Downloads forever, and re-running from repo B flipped
+    // the machine band to repo B).
+    const home = process.env.HOME ?? "";
+    const configPath = join(home, ".codeium", "windsurf", "mcp_config.json");
+    const register = async (cwd: string): Promise<string> => {
+      mkdirSync(join(cwd, ".windsurf"), { recursive: true });
+      await executeVerb(
+        verbOf("mcp"),
+        { global: true },
+        YES,
+        bootRuntime(FLAGS, cwd),
+      );
+      return readFileSync(configPath, "utf-8");
+    };
+    const fromA = await register(tmp("pragma-setup-projA-"));
+    const fromB = await register(tmp("pragma-setup-projB-"));
+    expect(fromA).toBe(fromB);
+    const entry = JSON.parse(fromA).mcpServers?.pragma;
+    expect(entry).toEqual({ command: "pragma", args: ["mcp"] });
+    expect(entry).not.toHaveProperty("cwd");
+  });
+
+  it("a stale cwd-pinned GLOBAL entry converges: drifted once, configured after", async () => {
+    const home = process.env.HOME ?? "";
+    const configPath = join(home, ".codeium", "windsurf", "mcp_config.json");
+    mkdirSync(join(home, ".codeium", "windsurf"), { recursive: true });
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        mcpServers: {
+          pragma: {
+            command: "pragma",
+            args: ["mcp"],
+            cwd: "/home/u/Downloads",
+          },
+        },
+      }),
+    );
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".windsurf"), { recursive: true });
+    const rt = bootRuntime(FLAGS, cwd);
+    const { detectMcp, mcpGroupState } = await import(
+      "./operations/setupMcp.js"
+    );
+    // The pinned entry reads as drift (the omitted cwd is a controlled field).
+    const before = await detectMcp(rt, "global");
+    expect(mcpGroupState(before, configPath)).toBe("drifted");
+    // One write converges it...
+    await executeVerb(
+      verbOf("mcp"),
+      { global: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    expect(
+      JSON.parse(readFileSync(configPath, "utf-8")).mcpServers.pragma,
+    ).toEqual({ command: "pragma", args: ["mcp"] });
+    // ...and it stays `configured` afterwards (no churn on every run).
+    const after = await detectMcp(bootRuntime(FLAGS, cwd), "global");
+    expect(mcpGroupState(after, configPath)).toBe("configured");
+  });
+
+  it("a PROJECT entry still records the project root as cwd", async () => {
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    await executeVerb(
+      verbOf("mcp"),
+      { local: true },
+      YES,
+      bootRuntime(FLAGS, cwd),
+    );
+    const entry = JSON.parse(
+      readFileSync(join(cwd, ".cursor", "mcp.json"), "utf-8"),
+    ).mcpServers?.pragma;
+    expect(entry.cwd).toBe(cwd);
+  });
 });
 
 describe("setup mcp — customize opt-in gate (Item 6)", () => {
@@ -344,14 +426,22 @@ describe("setup mcp — customize opt-in gate (Item 6)", () => {
 describe("setup (run-all wizard) — scope threading", () => {
   // Isolate PATH so an ambient `claude`/`codex` can't inject a harness via a
   // `process` signal — detection is driven only by the dirs each test makes.
+  // A stubbed `code` CLI makes the LSP step's editor detection deterministic.
   let prevPath: string | undefined;
+  let stubPath = "";
   beforeEach(() => {
     prevPath = process.env.PATH;
-    process.env.PATH = tmp("pragma-runall-path-");
+    stubPath = tmp("pragma-runall-path-");
+    process.env.PATH = stubPath;
   });
   afterEach(() => {
     process.env.PATH = prevPath;
   });
+
+  /** Put a stub `code` on the isolated PATH so an LSP install is composable. */
+  const seedEditorCli = (): void => {
+    writeFileSync(join(stubPath, "code"), "");
+  };
 
   /** Seed a discoverable skill so the project-band skills step is offerable. */
   const seedSkill = (cwd: string): void => {
@@ -386,6 +476,7 @@ describe("setup (run-all wizard) — scope threading", () => {
   it("--global omits the project-band skills step, keeping global steps", async () => {
     const cwd = tmp("pragma-setup-proj-");
     seedSkill(cwd); // WOULD be offered under the default `both`
+    seedEditorCli(); // vscode detected ⇒ the LSP install is in the plan
     const outcome = await executeVerb(
       setupSelfVerb,
       { global: true },
@@ -432,16 +523,86 @@ describe("setup skills", () => {
     expect(symlinkEffect?.undo).toBeDefined();
     expect(existsSync(join(cwd, ".agents", "skills", "my-skill"))).toBe(false);
   });
+
+  it("classifies a DANGLING symlink as replaced and repairs it (S1-2)", async () => {
+    // `existsSync` FOLLOWS a symlink, so a dangling link used to read as
+    // "absent" → plan `created` → the real symlink() crashed EEXIST labeled
+    // INTERNAL_ERROR ("please report this issue"), leaving the broken link in
+    // place — and the dry-run previewed a clean create the run then belied.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const linkDir = join(cwd, ".agents", "skills");
+    mkdirSync(linkDir, { recursive: true });
+    const linkPath = join(linkDir, "my-skill");
+    symlinkSync(join(cwd, "nonexistent-target"), linkPath);
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const action = detected.actions.find((a) => a.linkPath === linkPath);
+    expect(action?.action).toBe("replaced");
+
+    // The dry-run preview now PREDICTS the repair: a delete before the relink.
+    const { effects } = dryRun(composeSkills(detected));
+    const deletes = effects.filter(
+      (e) =>
+        e._tag === "DeleteFile" && (e as { path?: string }).path === linkPath,
+    );
+    expect(deletes.length).toBe(1);
+
+    // The real run repairs the link instead of crashing EEXIST.
+    await runTask(composeSkills(detected));
+    expect(readlinkSync(linkPath)).toBe(skillDir);
+  });
+
+  it("skips a real (non-symlink) directory at the link path, never deleting it", async () => {
+    // A hand-placed skill directory is not this command's to delete — the
+    // sibling planner (sources/installSkills.ts) already refuses to clobber
+    // it, and the two planners must agree on classification.
+    const cwd = tmp("pragma-setup-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    const realDir = join(cwd, ".agents", "skills", "my-skill");
+    mkdirSync(realDir, { recursive: true });
+    writeFileSync(join(realDir, "SKILL.md"), "hand-placed\n");
+
+    const detected = await detectSkills(bootRuntime(FLAGS, cwd));
+    const action = detected.actions.find((a) => a.linkPath === realDir);
+    expect(action?.action).toBe("skipped");
+
+    const { effects } = dryRun(composeSkills(detected));
+    expect(
+      effects.some(
+        (e) =>
+          e._tag === "DeleteFile" && (e as { path?: string }).path === realDir,
+      ),
+    ).toBe(false);
+    expect(readFileSync(join(realDir, "SKILL.md"), "utf-8")).toBe(
+      "hand-placed\n",
+    );
+  });
 });
 
-describe("setup lsp — missing-binary guard (bunx absent)", () => {
-  it("surfaces a NAMED UNSUPPORTED (not INTERNAL_ERROR) when bunx is off PATH", async () => {
-    // Drives the REAL composeLsp exec (YES — not a dry-run mock) with `bunx`
-    // removed from PATH, so the spawn REJECTS with ENOENT. The reconciled guard
-    // at composeLsp's use site names it; without the guard the raw reject
-    // collapses to INTERNAL_ERROR ("report this issue") at the boundary.
+describe("setup lsp — prerequisites (bun absent / no editor CLI)", () => {
+  it("surfaces a NAMED UNSUPPORTED (not INTERNAL_ERROR) when bun is off PATH", async () => {
+    // Drives the REAL composeLsp fetch (YES — not a dry-run mock) with a
+    // stubbed `code` CLI on PATH (so the sideload is attempted) but no `bun`,
+    // so the fetch spawn REJECTS with ENOENT. The guard names it; without the
+    // guard the raw reject collapses to INTERNAL_ERROR ("please report this
+    // issue") at the boundary.
     const prevPath = process.env.PATH;
-    process.env.PATH = tmp("pragma-empty-path-"); // empty dir ⇒ bunx unresolvable
+    const prevData = process.env.XDG_DATA_HOME;
+    const stubDir = tmp("pragma-lsp-path-");
+    writeFileSync(join(stubDir, "code"), ""); // present ⇒ vscode is a target
+    process.env.PATH = stubDir;
+    process.env.XDG_DATA_HOME = tmp("pragma-lsp-data-"); // jail the staging dir
     let thrown: unknown;
     try {
       await executeVerb(
@@ -454,15 +615,140 @@ describe("setup lsp — missing-binary guard (bunx absent)", () => {
       thrown = error;
     } finally {
       process.env.PATH = prevPath;
+      process.env.XDG_DATA_HOME = prevData;
     }
     expect(thrown).toBeDefined();
     const err = asPragmaError(thrown);
     expect(err.code).toBe("UNSUPPORTED");
     expect(err.code).not.toBe("INTERNAL_ERROR");
-    expect(err.message).toContain("bunx");
+    expect(err.message).toContain("bun");
     expect(err.message).toMatch(/not found on your PATH/i);
     // The recovery is the actionable install hint, not "report this issue".
     expect(err.recovery?.message ?? "").not.toMatch(/report this issue/i);
+  });
+
+  it("sideloads the bundled VSIX into EACH detected editor missing it (per-editor CLI, not a hardcoded `code`)", async () => {
+    // Two editor CLIs on PATH; VS Code already has the extension (its
+    // extensions dir carries a versioned copy), VSCodium does not — so the
+    // composed plan fetches the package once (bun, into a durable staging dir)
+    // and sideloads ONLY into `codium`. This is the VSCodium fix: the editor
+    // CLI is a registry lookup, no longer the hardcoded `code`.
+    const prevPath = process.env.PATH;
+    const stubDir = tmp("pragma-forks-path-");
+    writeFileSync(join(stubDir, "code"), "");
+    writeFileSync(join(stubDir, "codium"), "");
+    process.env.PATH = stubDir;
+    try {
+      mkdirSync(
+        join(
+          process.env.HOME ?? "",
+          ".vscode",
+          "extensions",
+          "canonical.terrazzo-lsp-extension-1.2.3",
+        ),
+        { recursive: true },
+      );
+      const { detectLsp, composeLsp } = await import(
+        "./operations/setupLsp.js"
+      );
+      const detected = await detectLsp(tmp("pragma-setup-proj-"));
+      expect(detected.state).toBe("absent");
+      expect(detected.editors.map((e) => [e.editor.cli, e.installed])).toEqual([
+        ["code", true],
+        ["codium", false],
+      ]);
+
+      const { effects } = dryRun(composeLsp(detected));
+      const execs = effects.filter((e) => e._tag === "Exec") as (Effect & {
+        _tag: "Exec";
+        command: string;
+        args: string[];
+      })[];
+      // One fetch (bun add, durable staging) + one sideload per PENDING editor.
+      expect(execs.map((e) => e.command)).toEqual(["bun", "codium"]);
+      expect(execs[0].args).toEqual([
+        "add",
+        "@canonical/terrazzo-lsp-extension@latest",
+      ]);
+      expect(execs[1].args[0]).toBe("--install-extension");
+      // The VSIX path is the staging dir's — durable, not a bunx /tmp cache.
+      expect(execs[1].args[1]).toContain(detected.stagingDir);
+      expect(execs[1].args[1]).toContain("terrazzo-lsp.vsix");
+    } finally {
+      process.env.PATH = prevPath;
+    }
+  });
+
+  it("reports already-installed (a true no-op) when every detected editor has the extension", async () => {
+    const prevPath = process.env.PATH;
+    const stubDir = tmp("pragma-installed-path-");
+    writeFileSync(join(stubDir, "code"), "");
+    process.env.PATH = stubDir;
+    try {
+      mkdirSync(
+        join(
+          process.env.HOME ?? "",
+          ".vscode",
+          "extensions",
+          "canonical.terrazzo-lsp-extension-1.2.3",
+        ),
+        { recursive: true },
+      );
+      const { detectLsp, composeLsp } = await import(
+        "./operations/setupLsp.js"
+      );
+      const detected = await detectLsp(tmp("pragma-setup-proj-"));
+      expect(detected.state).toBe("installed");
+      const { effects } = dryRun(composeLsp(detected));
+      expect(effects.some((e) => e._tag === "Exec")).toBe(false);
+    } finally {
+      process.env.PATH = prevPath;
+    }
+  });
+
+  it("matches the FULL extension id, not any terrazzo-named directory", async () => {
+    // The old probe matched the substring "terrazzo", which any other
+    // terrazzo-named extension would false-positive.
+    const prevPath = process.env.PATH;
+    const stubDir = tmp("pragma-substr-path-");
+    writeFileSync(join(stubDir, "code"), "");
+    process.env.PATH = stubDir;
+    try {
+      mkdirSync(
+        join(
+          process.env.HOME ?? "",
+          ".vscode",
+          "extensions",
+          "someoneelse.terrazzo-tools-9.9.9",
+        ),
+        { recursive: true },
+      );
+      const { detectLsp } = await import("./operations/setupLsp.js");
+      const detected = await detectLsp(tmp("pragma-setup-proj-"));
+      expect(detected.state).toBe("absent");
+    } finally {
+      process.env.PATH = prevPath;
+    }
+  });
+
+  it("skips with a NAMED message (exit 0) when no editor CLI exists at all", async () => {
+    // A machine with no VS Code-family CLI cannot be installed into — the
+    // honest outcome is a named skip, not the old UNSUPPORTED with a
+    // "permissions or network" guess and a dead /tmp path (§3, S1-1's trigger).
+    const prevPath = process.env.PATH;
+    process.env.PATH = tmp("pragma-noeditor-path-"); // empty ⇒ no editor CLI
+    try {
+      const outcome = await executeVerb(
+        verbOf("lsp"),
+        {},
+        YES,
+        bootRuntime(FLAGS, tmp("pragma-setup-proj-")),
+      );
+      expect(outcome.exitCode).toBe(0);
+      expect(outcome.stdout).toContain("No VS Code-family editor CLI");
+    } finally {
+      process.env.PATH = prevPath;
+    }
   });
 });
 
@@ -613,6 +899,20 @@ describe("setup — idempotent detection of already-present config", () => {
 });
 
 describe("setup (run-all wizard)", () => {
+  // Pin PATH to a stub dir carrying only a `code` CLI: the LSP step's editor
+  // detection (and the ambient-harness process signals) must not depend on
+  // what happens to be installed on the host running the tests.
+  let prevPath: string | undefined;
+  beforeEach(() => {
+    prevPath = process.env.PATH;
+    const stubPath = tmp("pragma-wizard-path-");
+    writeFileSync(join(stubPath, "code"), "");
+    process.env.PATH = stubPath;
+  });
+  afterEach(() => {
+    process.env.PATH = prevPath;
+  });
+
   it("--dry-run previews every DETECTED step (completions + lsp + mcp), writing nothing", async () => {
     const cwd = tmp("pragma-setup-proj-");
     mkdirSync(join(cwd, ".cursor"), { recursive: true }); // harness detected
@@ -631,6 +931,41 @@ describe("setup (run-all wizard)", () => {
     // Nothing is written by a preview.
     expect(existsSync(completionScriptPath("zsh"))).toBe(false);
     expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(false);
+  });
+
+  it("a failing LSP step no longer aborts the run — MCP and skills still apply, exit reflects the failure (S1-1)", async () => {
+    // The audit's headline break: with an unsatisfiable LSP prerequisite the
+    // single advertised onboarding command configured NOTHING (no MCP write,
+    // no skills link) and exited 1. Steps are independent — one failure must
+    // report, let the rest proceed, and only then fail the run. Here the LSP
+    // step has an editor (`code` stub on PATH) but no `bun`, so its fetch
+    // fails; MCP (.cursor) and skills (a seeded skill) must still apply.
+    const prevData = process.env.XDG_DATA_HOME;
+    process.env.XDG_DATA_HOME = tmp("pragma-s11-data-"); // jail the staging dir
+    const cwd = tmp("pragma-setup-proj-");
+    mkdirSync(join(cwd, ".cursor"), { recursive: true });
+    const skillDir = join(cwd, ".pragma", "skills", "s");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: s\ndescription: A skill.\n---\n",
+    );
+    let thrown: unknown;
+    try {
+      await executeVerb(setupSelfVerb, {}, YES, bootRuntime(FLAGS, cwd));
+    } catch (error) {
+      thrown = error;
+    } finally {
+      process.env.XDG_DATA_HOME = prevData;
+    }
+    // The satisfiable steps ran to completion...
+    expect(existsSync(join(cwd, ".cursor", "mcp.json"))).toBe(true);
+    expect(existsSync(join(cwd, ".agents", "skills", "s"))).toBe(true);
+    // ...and the run still failed, with the ORIGINAL step error surfaced.
+    expect(thrown).toBeDefined();
+    const err = asPragmaError(thrown);
+    expect(err.code).toBe("UNSUPPORTED");
+    expect(err.message).toContain("bun");
   });
 
   it("omits skills gracefully when none are discovered (no mid-wizard EMPTY_RESULTS)", async () => {

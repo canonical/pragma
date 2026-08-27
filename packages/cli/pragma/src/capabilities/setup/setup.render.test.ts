@@ -107,3 +107,36 @@ describe("setup render — MCP recap banded by Global/Project", () => {
     expect(JSON.parse(setupFormatters.json(BOTH_BANDS))).toEqual(BOTH_BANDS);
   });
 });
+
+describe("setup render — LSP line names editors, never a false 'installed'", () => {
+  it("`unknown` (no editor CLI) renders as the honest named skip", () => {
+    // The old copy said "is installed (up to date)" for every non-installed
+    // state — false on a machine where nothing was installed at all.
+    const none: SetupResult = { kind: "lsp", state: "unknown", editors: [] };
+    expect(setupFormatters.plain(none)).toBe(
+      "No VS Code-family editor CLI found on PATH — Terrazzo LSP extension not installed.",
+    );
+  });
+
+  it("`installed` names the editors it is already present in", () => {
+    const done: SetupResult = {
+      kind: "lsp",
+      state: "installed",
+      editors: ["VS Code", "VSCodium"],
+    };
+    expect(setupFormatters.plain(done)).toBe(
+      "Terrazzo LSP extension already installed (VS Code, VSCodium).",
+    );
+  });
+
+  it("`absent` (installer ran) names the target editors", () => {
+    const ran: SetupResult = {
+      kind: "lsp",
+      state: "absent",
+      editors: ["Cursor"],
+    };
+    expect(setupFormatters.plain(ran)).toBe(
+      "Terrazzo LSP extension installed (Cursor).",
+    );
+  });
+});

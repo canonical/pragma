@@ -2,6 +2,7 @@
  * Core types for AI harness detection and MCP configuration.
  */
 
+import type { McpEntrySerializer } from "./mcpEntries.js";
 import type { PlatformEnv } from "./platformPaths.js";
 
 /**
@@ -70,11 +71,15 @@ export interface HarnessDefinition {
   readonly mcpKey: string;
   readonly skillsPath: (projectRoot: string) => string;
   /**
-   * When true, a written server entry's `env` is forced to a JSON object/map
-   * (OpenDesign requires it — see VERIFY(7g)). Omitted (falsy) for harnesses
-   * that leave `env` as authored.
+   * How a server entry is SHAPED in this harness's config — its
+   * {@link McpEntrySerializer}. Omitted for harnesses that accept the
+   * canonical `{command, args?, cwd?, env?}` shape (`defaultMcpEntry`);
+   * declared wherever the harness's own schema demands a different one
+   * (OpenCode's `McpLocalConfig`, Cursor's typed stdio entry, …). Both the
+   * writer and the read-back classifier consume the resolved serializer, so
+   * idempotence holds per shape.
    */
-  readonly normalizeEnv?: boolean;
+  readonly mcpEntry?: McpEntrySerializer;
 }
 
 /**
@@ -87,8 +92,12 @@ export interface ConfigTarget {
   readonly configFormat: "json" | "jsonc" | "toml";
   readonly mcpKey: string;
   readonly scope: HarnessScope;
-  /** Force a written entry's `env` to a JSON object/map (OpenDesign — 7g). */
-  readonly normalizeEnv?: boolean;
+  /**
+   * The RESOLVED entry serializer (the harness's `mcpEntry`, defaulted to
+   * `defaultMcpEntry`) — always concrete here so read/write bodies never
+   * re-consult the harness definition.
+   */
+  readonly serializeEntry: McpEntrySerializer;
 }
 
 /**

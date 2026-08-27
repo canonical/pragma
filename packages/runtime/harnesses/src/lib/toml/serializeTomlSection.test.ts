@@ -52,4 +52,26 @@ describe("serializeTomlSection", () => {
     });
     expect(result).toContain("disabled = false");
   });
+
+  it("serializes a string array as a TOML inline array (S1-4)", () => {
+    const result = serializeTomlSection("mcp_servers", {
+      pragma: { command: "pragma", args: ["mcp"] },
+    });
+    expect(result).toContain('args = ["mcp"]');
+  });
+
+  it("serializes a multi-element array element-wise, never comma-joined", () => {
+    const result = serializeTomlSection("mcp_servers", {
+      pragma: { args: ["a", "b"] },
+    });
+    expect(result).toContain('args = ["a", "b"]');
+    expect(result).not.toContain('"a,b"');
+  });
+
+  it("escapes quotes inside array string elements", () => {
+    const result = serializeTomlSection("mcp_servers", {
+      pragma: { args: ['say "hi"'] },
+    });
+    expect(result).toContain('args = ["say \\"hi\\""]');
+  });
 });

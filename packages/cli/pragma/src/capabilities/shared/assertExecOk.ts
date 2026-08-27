@@ -17,9 +17,62 @@
  * instead of resolving, so it never reaches here.)
  */
 
-import { type ExecResult, fail, recover, type Task } from "@canonical/task";
+import {
+  type ExecResult,
+  fail,
+  pure,
+  recover,
+  type Task,
+} from "@canonical/task";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { Recovery } from "../../kernel/error/types.js";
+
+/**
+ * Route a {@link PragmaError} through the Task FAILURE CHANNEL (a `Fail` node
+ * carrying the error as `cause`) instead of a synchronous throw.
+ *
+ * The distinction is load-bearing: a synchronous throw from a bind/recover
+ * continuation ESCAPES the interpreter's trampoline entirely — no enclosing
+ * `recover` can see it — whereas a `Fail` node unwinds to the nearest recovery
+ * frame. Setup's run-all isolates each step with `recover` so one failed step
+ * cannot abort the rest (S1-1); that only works if step failures travel the
+ * failure channel. The boundary (`asPragmaError`) unwraps the carried cause,
+ * so a failure that escapes un-recovered still renders with its own code,
+ * message, and recovery — never the INTERNAL_ERROR catch-all.
+ */
+export function failPragma(error: PragmaError): Task<never> {
+  return fail({ code: error.code, message: error.message, cause: error });
+}
+
+/**
+ * The failure-channel sibling of {@link assertExecOk}: yield `pure(undefined)`
+ * on exit 0, otherwise fail with an UNSUPPORTED {@link PragmaError} carrying
+ * the command, exit code, trimmed stderr, and the CALLER'S recovery — the
+ * recovery must name an action that works on this machine now, not the generic
+ * "permissions or network" guess.
+ *
+ * @param command - Human-readable command, surfaced in the error message.
+ * @param result - The {@link ExecResult} the `exec` effect yielded.
+ * @param recovery - The actionable, site-specific recovery.
+ * @returns A Task that succeeds on exit 0 and fails (recoverably) otherwise.
+ */
+export function checkExecOk(
+  command: string,
+  result: ExecResult,
+  recovery: Recovery,
+): Task<void> {
+  if (result.exitCode === 0) return pure(undefined);
+  const stderr = result.stderr.trim();
+  return failPragma(
+    new PragmaError({
+      code: "UNSUPPORTED",
+      message: `\`${command}\` exited with code ${result.exitCode}.${
+        stderr ? `\n${stderr}` : ""
+      }`,
+      recovery,
+    }),
+  );
+}
 
 /**
  * Raise UNSUPPORTED when an `exec` result carries a nonzero exit code.
@@ -93,11 +146,16 @@ export function guardMissingBinary<A>(
 ): Task<A> {
   return recover(task, (error) => {
     if (isMissingBinaryError(error)) {
-      throw new PragmaError({
-        code: "UNSUPPORTED",
-        message: `\`${bin}\` was not found on your PATH.`,
-        recovery,
-      });
+      // Failure CHANNEL, not a synchronous throw: an enclosing recover (the
+      // run-all's per-step isolation, S1-1) must be able to catch this, and
+      // the boundary unwraps the carried PragmaError when nothing does.
+      return failPragma(
+        new PragmaError({
+          code: "UNSUPPORTED",
+          message: `\`${bin}\` was not found on your PATH.`,
+          recovery,
+        }),
+      );
     }
     // Not a missing binary — re-raise unchanged (the interpreter rethrows it as
     // a TaskExecutionError, exactly as it would with no guard installed).

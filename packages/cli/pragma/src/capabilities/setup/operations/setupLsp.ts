@@ -1,105 +1,231 @@
 /**
- * `setup lsp` — ensure the Terrazzo LSP VS Code extension is installed.
+ * `setup lsp` — ensure the Terrazzo LSP extension is installed in every
+ * VS Code-family editor present on this machine.
  *
- * `detectLsp` probes for the extension FOR REAL up front — it runs
- * `code --list-extensions` (via the `exec` seam, over `runTask`) and matches the
- * `terrazzo` extension id — so a re-run of an already-installed extension is a
- * true no-op and the recap says so, rather than always shelling out. When the
- * `code` CLI is absent from PATH the state is `unknown` (we cannot enumerate,
- * so the installer still runs). `composeLsp` holds the sole mutation, mocked
- * under `--dry-run` and skipped when detection already found the extension.
+ * There is no marketplace listing yet: the install is a VSIX SIDELOAD. The
+ * published npm package bundles the VSIX, so the install is two exec steps —
+ * fetch the package into a pragma-owned staging dir (`bun add`, so the VSIX
+ * lands at a DURABLE path a user can retry by hand, not bunx's ephemeral
+ * `/tmp/bunx-…` cache), then `<editor cli> --install-extension <vsix>` for
+ * each detected editor. The package's own `install.mjs` bin is deliberately
+ * NOT used: it hardcodes the `code` CLI, which is precisely what left
+ * VSCodium/Cursor/Windsurf/Antigravity machines unable to install at all.
+ *
+ * `detectLsp` probes FOR REAL up front, and spawns NOTHING: an editor is
+ * "present" when its CLI resolves on PATH (the `editorClis` registry names
+ * them), and "installed" when its extensions dir holds a
+ * `canonical.terrazzo-lsp-extension-<version>/` entry. Running
+ * `--list-extensions` instead would be the natural probe, but Cursor's Linux
+ * launcher OPENS THE EDITOR on that flag — a detection step must never launch
+ * an app, so the fs is the source of truth. The full extension id is matched
+ * (not the old `terrazzo` substring, which any other terrazzo-named extension
+ * could false-positive).
+ *
+ * No editor CLI found is a NAMED SKIP, not an error: the message says what was
+ * looked for and what to do, and the run exits 0 — there is nothing on this
+ * machine the step could honestly fail at. Real failures (fetch, sideload)
+ * travel the task failure channel (`checkExecOk`) with a recovery that names a
+ * command runnable on THIS machine, so the run-all can isolate the step
+ * (S1-1) and a direct `setup lsp` still renders the original error.
  */
 
+import { existsSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import type { EditorCliDefinition, PlatformEnv } from "@canonical/harnesses";
 import {
   type ExecResult,
   exec,
   flatMap,
   info,
-  pure,
+  mkdir,
   sequence_,
   type Task,
 } from "@canonical/task";
-import { assertExecOk } from "../../shared/assertExecOk.js";
+import { BIN_NAME } from "../../../constants.js";
+import { checkExecOk, guardMissingBinary } from "../../shared/assertExecOk.js";
 import type { LspState } from "../types.js";
 
-/** The VS Code CLI queried for the installed-extensions list. */
-const VSCODE_CLI = "code";
+/** The full extension id, as the editor's extensions dir spells it. */
+const EXTENSION_ID = "canonical.terrazzo-lsp-extension";
 
-/** The substring an installed Terrazzo extension id contains (publisher-agnostic). */
-const TERRAZZO_EXTENSION_MATCH = "terrazzo";
+/** The npm package whose tarball bundles the VSIX. */
+const LSP_PACKAGE = "@canonical/terrazzo-lsp-extension";
+
+/** One detected editor: its registry row + whether the extension is present. */
+export interface DetectedEditor {
+  readonly editor: EditorCliDefinition;
+  readonly installed: boolean;
+}
 
 /**
- * The detected LSP state: whether the Terrazzo extension is already `installed`,
- * `absent`, or `unknown` (the `code` CLI is not on PATH, so we cannot enumerate).
+ * The detected LSP state: the editors whose CLI is on PATH (each with its
+ * installed-state), the staging dir the VSIX is fetched into, and the
+ * aggregate {@link LspState} — `unknown` when NO editor CLI was found (the
+ * step becomes a named skip), `installed` when every found editor already has
+ * the extension, `absent` otherwise (the installer runs for the missing ones).
  */
 export interface LspDetection {
   readonly available: true;
   readonly state: LspState;
+  readonly editors: readonly DetectedEditor[];
+  readonly stagingDir: string;
 }
 
 /**
- * Probe VS Code for the Terrazzo extension. Runs `code --list-extensions` and
- * matches the `terrazzo` id; an absent `code` CLI (spawn ENOENT) or a nonzero
- * exit yields `unknown` (we fall through to running the installer).
+ * Whether an editor CLI resolves on PATH, given the candidate paths the host
+ * would consider for it.
  *
- * @param cwd - The directory the probe runs in.
- * @returns The detected {@link LspState}.
- * @note Impure — spawns `code --list-extensions`.
+ * The candidates come from `@canonical/harnesses`' `executableCandidates` —
+ * the same helper harness detection resolves `process` signals with — rather
+ * than from a local `PATH`-join here. That local version joined the BARE name
+ * onto each PATH directory, which resolves nothing on Windows: `code`,
+ * `codium` and friends install as `.cmd` shims, so every installed editor
+ * went unseen and `setup lsp` took the no-editor path. That path is a named
+ * SKIP, so the run exited 0 reporting a clean answer on a machine that had
+ * the editor — a wrong skip reads as correct, which is worse than a wrong
+ * failure. One implementation of the platform rules means the probe cannot
+ * drift away from detection's.
  */
-export async function detectLsp(cwd: string): Promise<LspDetection> {
-  const { runTask } = await import("@canonical/task/node");
-  let state: LspState = "unknown";
+const cliOnPath = (candidates: readonly string[]): boolean =>
+  candidates.some((candidate) => existsSync(candidate));
+
+/** Whether an editor's extensions dir holds a versioned copy of the extension. */
+const extensionInstalled = (
+  editor: EditorCliDefinition,
+  platform: PlatformEnv,
+): boolean => {
+  let entries: string[];
   try {
-    const result = (await runTask(
-      exec(VSCODE_CLI, ["--list-extensions"], cwd),
-    )) as ExecResult;
-    if (result.exitCode === 0) {
-      const installed = result.stdout
-        .toLowerCase()
-        .includes(TERRAZZO_EXTENSION_MATCH);
-      state = installed ? "installed" : "absent";
-    }
+    entries = readdirSync(editor.extensionsDir(platform));
   } catch {
-    // `code` absent from PATH (ENOENT) or any spawn failure → we cannot tell;
-    // leave `unknown` so the installer still runs.
-    state = "unknown";
+    return false; // No extensions dir — nothing installed.
   }
-  return { available: true, state };
-}
+  return entries.some((entry) =>
+    entry.toLowerCase().startsWith(`${EXTENSION_ID}-`),
+  );
+};
 
 /**
- * Compose the LSP-install exec.
+ * Probe every registry editor: CLI presence via PATH lookup, installed-state
+ * via the extensions dir — no spawns (see the module docblock for why).
  *
- * Built from re-runnable combinators (NOT a single-use `gen`) because `execute`
- * interprets the task twice (preview + perform). Under the dry-run preview the
- * `exec` is MOCKED to `exitCode 0`, so `assertExecOk` passes there; a real run's
- * nonzero exit still fails loudly. When detection already found the extension
- * `installed`, the install is SKIPPED — a re-run is a true no-op.
- *
- * @param cwd - The directory to run the installer in.
- * @param state - The prior state from {@link detectLsp} (defaults to `unknown`).
- * @returns A Task that execs the installer (or reports already-installed).
+ * @param _cwd - Unused; kept so every `detectX` shares the (cwd) shape.
+ * @returns The detected {@link LspDetection}.
+ * @note Impure — reads PATH dirs and editor extension dirs off the real fs.
  */
-export function composeLsp(
-  cwd: string,
-  state: LspState = "unknown",
-): Task<void> {
-  if (state === "installed") {
-    return info("Terrazzo LSP VS Code extension already installed — skipped.");
+export async function detectLsp(_cwd: string): Promise<LspDetection> {
+  const { editorClis, executableCandidates, readPlatformEnv, userDataBase } =
+    await import("@canonical/harnesses");
+  const platform = readPlatformEnv();
+  const editors: DetectedEditor[] = editorClis
+    .filter((editor) => cliOnPath(executableCandidates(editor.cli, platform)))
+    .map((editor) => ({
+      editor,
+      installed: extensionInstalled(editor, platform),
+    }));
+  const state: LspState =
+    editors.length === 0
+      ? "unknown"
+      : editors.every((e) => e.installed)
+        ? "installed"
+        : "absent";
+  return {
+    available: true,
+    state,
+    editors,
+    stagingDir: join(userDataBase(platform), BIN_NAME, "lsp"),
+  };
+}
+
+/** The editor names in a detection (for messages/results). */
+export const lspEditorNames = (d: LspDetection): string[] =>
+  d.editors.map((e) => e.editor.name);
+
+/** The named-skip line for a machine with no VS Code-family CLI on PATH. */
+export const NO_EDITOR_SKIP_MESSAGE =
+  `No VS Code-family editor CLI found on PATH — skipped installing the ` +
+  `Terrazzo LSP extension. Install VS Code, VSCodium, or another fork (or ` +
+  `put its CLI on PATH), then run \`${BIN_NAME} setup lsp\`.`;
+
+/**
+ * Compose the LSP-install effects for a detection.
+ *
+ * Built from re-runnable combinators (NOT a single-use `gen`) because
+ * `execute` interprets the task twice (preview + perform); a dry-run mocks
+ * every exec (exit 0), so the preview shows the fetch + per-editor sideloads
+ * without spawning. Failures travel the task failure channel with
+ * machine-honest recoveries (see module docblock).
+ *
+ * @param d - The detection gathered up front.
+ * @returns A Task installing the extension into each editor missing it.
+ */
+export function composeLsp(d: LspDetection): Task<void> {
+  if (d.state === "unknown") {
+    return info(NO_EDITOR_SKIP_MESSAGE);
   }
-  return sequence_([
-    info("Ensuring the Terrazzo LSP VS Code extension is installed..."),
-    // The interpreter RESOLVES on a nonzero exit — a failed installer must fail
-    // loudly (surfacing its stderr), not report a false success.
-    flatMap(
-      exec("bunx", ["@canonical/terrazzo-lsp-extension"], cwd),
-      (result) => {
-        assertExecOk(
-          "bunx @canonical/terrazzo-lsp-extension",
-          result as ExecResult,
-        );
-        return pure(undefined);
+  if (d.state === "installed") {
+    return info(
+      `Terrazzo LSP extension already installed (${lspEditorNames(d).join(", ")}) — skipped.`,
+    );
+  }
+
+  const pending = d.editors.filter((e) => !e.installed);
+  const vsixPath = join(
+    d.stagingDir,
+    "node_modules",
+    ...LSP_PACKAGE.split("/"),
+    "terrazzo-lsp.vsix",
+  );
+
+  // Fetch the VSIX-bundling package into the pragma-owned staging dir. `bun`
+  // (not bunx) so the unpacked package — and its VSIX — survives at a stable
+  // path the recovery lines below can honestly point at.
+  const fetchCommand = `bun add ${LSP_PACKAGE}@latest`;
+  const fetchVsix = guardMissingBinary(
+    "bun",
+    {
+      message: `Install Bun (https://bun.sh), then run \`${BIN_NAME} setup lsp\` again.`,
+    },
+    sequence_([
+      mkdir(d.stagingDir, true),
+      flatMap(
+        exec("bun", ["add", `${LSP_PACKAGE}@latest`], d.stagingDir),
+        (result) =>
+          checkExecOk(fetchCommand, result as ExecResult, {
+            message:
+              "The extension package cannot be fetched — this machine cannot reach registry.npmjs.org. Check the connection, then run " +
+              `\`${BIN_NAME} setup lsp\` again.`,
+          }),
+      ),
+    ]),
+  );
+
+  const sideloads = pending.map(({ editor }) => {
+    const command = `${editor.cli} --install-extension ${vsixPath}`;
+    return guardMissingBinary(
+      editor.cli,
+      {
+        message: `The \`${editor.cli}\` CLI disappeared from PATH mid-run — restore it, then run \`${BIN_NAME} setup lsp\` again.`,
       },
+      flatMap(
+        exec(editor.cli, ["--install-extension", vsixPath], d.stagingDir),
+        (result) =>
+          checkExecOk(command, result as ExecResult, {
+            message:
+              `${editor.name} refused the VSIX (its output is above). The file is kept at ${vsixPath} — retry by hand with ` +
+              `\`${command}\`, or update ${editor.name} first.`,
+          }),
+      ),
+    );
+  });
+
+  return sequence_([
+    info(
+      `Installing the Terrazzo LSP extension (${EXTENSION_ID}) into: ${pending
+        .map((e) => e.editor.name)
+        .join(", ")}...`,
     ),
+    fetchVsix,
+    ...sideloads,
   ]);
 }

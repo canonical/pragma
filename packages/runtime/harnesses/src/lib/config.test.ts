@@ -16,6 +16,11 @@ import {
 } from "./config.js";
 import findHarnessById from "./findHarnessById.js";
 import harnesses from "./harnesses.js";
+import {
+  defaultMcpEntry,
+  opencodeMcpEntry,
+  opendesignMcpEntry,
+} from "./mcpEntries.js";
 import type { PlatformEnv } from "./platformPaths.js";
 import type { ConfigTarget } from "./types.js";
 
@@ -447,8 +452,11 @@ describe("resolveConfigTarget", () => {
   });
 
   it("throws for a global band on a harness with no homeConfigPath", () => {
+    // vscode is a project-only row (its user-profile mcp.json is per-profile,
+    // so no global band is offered) — the assertion's exercising case.
+    const vscode = findHarnessById("vscode") as (typeof harnesses)[number];
     expect(() =>
-      resolveConfigTarget(cursor, "/project", "global", PLATFORM),
+      resolveConfigTarget(vscode, "/project", "global", PLATFORM),
     ).toThrow(/homeConfigPath/);
   });
 });
@@ -524,12 +532,14 @@ describe("writeMcpConfigTargets — shared-file multi-key write", () => {
     configFormat: "json",
     mcpKey: "servers",
     scope: "project",
+    serializeEntry: defaultMcpEntry,
   };
   const clineTarget: ConfigTarget = {
     path: "/project/.vscode/mcp.json",
     configFormat: "json",
     mcpKey: "mcpServers",
     scope: "project",
+    serializeEntry: defaultMcpEntry,
   };
 
   it("creates one file with the server under BOTH keys in a single write", () => {
@@ -579,13 +589,45 @@ describe("writeMcpConfigTargets — shared-file multi-key write", () => {
     ).toThrow(/at least one target/);
   });
 
-  it("forces env to an object for a normalizeEnv (OpenDesign) target (7g)", () => {
+  it("writes OpenCode's own entry shape end-to-end through the registry (S1-3)", () => {
+    const opencode = findHarnessById("opencode") as (typeof harnesses)[number];
+    expect(opencode.mcpEntry).toBe(opencodeMcpEntry);
+    const target = resolveConfigTarget(opencode, "/project", "project", {
+      platform: "linux",
+      env: {},
+      home: "/home/tester",
+      isWsl: false,
+    });
+    const result = dryRunWith(
+      writeMcpConfigTargets([target], "pragma", {
+        command: "pragma",
+        args: ["mcp"],
+        cwd: "/project",
+      }),
+      buildMocks({
+        Exists: existsMock(() => false),
+        MakeDir: mkdirMock,
+        WriteFile: writeMock,
+      }),
+    );
+    const writeEffects = filterEffects(result.effects, "WriteFile");
+    const written = JSON.parse(writeEffects[0].content);
+    // McpLocalConfig: type required, command is command+args as ONE string
+    // array, no `args` key (additionalProperties: false rejects it).
+    expect(written.mcp.pragma).toEqual({
+      type: "local",
+      command: ["pragma", "mcp"],
+      cwd: "/project",
+    });
+  });
+
+  it("forces env to an object for an OpenDesign-shaped target (7g)", () => {
     const odTarget: ConfigTarget = {
       path: "/project/.od/mcp-config.json",
       configFormat: "json",
       mcpKey: "mcpServers",
       scope: "both",
-      normalizeEnv: true,
+      serializeEntry: opendesignMcpEntry,
     };
     const result = dryRunWith(
       // pragma writes no env — normalization must add an empty object, not omit it.

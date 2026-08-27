@@ -72,4 +72,40 @@ describe("parseTomlSection", () => {
     const result = parseTomlSection(toml, "mcp_servers");
     expect(result.test.path).toBe('some"quoted"path');
   });
+
+  it("parses a string array back as an ARRAY, not raw bracket text (S1-4)", () => {
+    const toml = '[mcp_servers.pragma]\nargs = ["mcp"]';
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.pragma.args).toEqual(["mcp"]);
+  });
+
+  it("parses multi-element and mixed-type arrays element-wise", () => {
+    const toml = '[mcp_servers.test]\nvalues = ["a", "b", 3, true]';
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.values).toEqual(["a", "b", 3, true]);
+  });
+
+  it("keeps a comma INSIDE a quoted array element as data", () => {
+    const toml = '[mcp_servers.test]\nargs = ["a,b", "c"]';
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.args).toEqual(["a,b", "c"]);
+  });
+
+  it("parses an empty array", () => {
+    const toml = "[mcp_servers.test]\nargs = []";
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.args).toEqual([]);
+  });
+
+  it("keeps an ESCAPED quote inside an array element as data", () => {
+    const toml = '[mcp_servers.test]\nargs = ["say \\"hi,there\\"", "b"]';
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.args).toEqual(['say "hi,there"', "b"]);
+  });
+
+  it("parses a nested array without splitting on its inner commas", () => {
+    const toml = '[mcp_servers.test]\nmatrix = [["a", "b"], ["c"]]';
+    const result = parseTomlSection(toml, "mcp_servers");
+    expect(result.test.matrix).toEqual([["a", "b"], ["c"]]);
+  });
 });

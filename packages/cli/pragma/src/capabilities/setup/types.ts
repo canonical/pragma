@@ -56,10 +56,12 @@ export interface ConfiguredTarget {
 export type CompletionsState = "absent" | "installed" | "stale";
 
 /**
- * The detected state of the Terrazzo LSP VS Code extension, probed up front by
- * `detectLsp`: `installed` (already present — a re-run skips it), `absent` (not
- * present, so the installer runs), or `unknown` (the `code` CLI is not on PATH,
- * so we cannot enumerate and the installer runs regardless).
+ * The detected state of the Terrazzo LSP extension across the VS Code-family
+ * editors on this machine, probed up front by `detectLsp`: `installed` (every
+ * editor whose CLI is on PATH already has it — a re-run skips), `absent` (at
+ * least one detected editor is missing it, so the sideload runs for those), or
+ * `unknown` (NO editor CLI was found on PATH — the step is a named skip, since
+ * there is nothing to install into).
  */
 export type LspState = "installed" | "absent" | "unknown";
 
@@ -89,7 +91,12 @@ export type SetupResult =
       readonly installed: boolean;
       readonly state: CompletionsState;
     }
-  | { readonly kind: "lsp"; readonly state: LspState }
+  | {
+      readonly kind: "lsp";
+      readonly state: LspState;
+      /** The detected editors (CLI on PATH) the state aggregates over. */
+      readonly editors: readonly string[];
+    }
   | {
       readonly kind: "mcp";
       readonly configured: readonly string[];
