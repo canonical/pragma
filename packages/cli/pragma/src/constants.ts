@@ -64,7 +64,11 @@ const RECOVERY_CLI_PREFIX = `${identity.name} `;
 /** The output formats the renderer selects between (`llm` = condensed Markdown). */
 const OUTPUT_FORMATS = ["plain", "llm", "json"] as const;
 
-/** A selected output format. `--format text` is normalised to `plain`. */
+/**
+ * A selected output format. The set is CLOSED — no alias normalises into it,
+ * so a `--format` value outside {@link OUTPUT_FORMATS} is rejected at the
+ * entry point rather than quietly becoming `plain`.
+ */
 type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 
 /** Default detail level when neither flag, config, nor spec pins one. */
