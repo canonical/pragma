@@ -487,11 +487,16 @@ describe("buildProgram — sub-verb-only noun invoked bare (U2)", () => {
 });
 
 describe("formatRootHelp — grouping", () => {
-  const help = formatRootHelp("pragma", "pragma test", [
-    makeVerb(["info"]),
-    makeVerb(["config", "show"]),
-    makeVerb(["block", "list"]),
-  ]);
+  const help = formatRootHelp(
+    "pragma",
+    "pragma test",
+    [
+      makeVerb(["info"]),
+      makeVerb(["config", "show"]),
+      makeVerb(["block", "list"]),
+    ],
+    "1.2.3",
+  );
 
   it("leads with the uncurated nouns, untitled, under the usage line", () => {
     // `block` is not in the kernel's curated table, so it leads the page with
@@ -538,7 +543,7 @@ describe("formatRootHelp — grouping", () => {
                                 /     /'
                                (___,/'
 
-      pragma — pragma test
+      pragma v1.2.3 — pragma test
 
       Usage: pragma <command> [subcommand] [flags]
 

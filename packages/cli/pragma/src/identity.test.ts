@@ -112,15 +112,23 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     const { upgradeModule } = await import("./capabilities/upgrade/index.js");
     const { colophonModule } = await import("./capabilities/colophon/index.js");
 
-    const help = formatRootHelp(BIN_NAME, PROGRAM_DESCRIPTION, [
-      dishList,
-      ...configModule.verbs,
-      ...upgradeModule.verbs,
-      ...colophonModule.verbs,
-    ]);
+    const help = formatRootHelp(
+      BIN_NAME,
+      PROGRAM_DESCRIPTION,
+      [
+        dishList,
+        ...configModule.verbs,
+        ...upgradeModule.verbs,
+        ...colophonModule.verbs,
+      ],
+      "9.9.9",
+    );
 
     expect(help).not.toMatch(THIS_DISTRIBUTION);
-    expect(help).toMatch(/^recipes — Explore the recipe graph$/m);
+    // The fork's own name and its own version — the header stamps the build
+    // exactly as `--version` reports it, and neither half names this
+    // distribution.
+    expect(help).toMatch(/^recipes v9\.9\.9 — Explore the recipe graph$/m);
     // The pack noun leads the page untitled, and the blurb is not repeated as
     // a heading three lines under the header that already carries it.
     expect(help).toMatch(/^Usage: recipes .*\n\n {2}dish\b/m);

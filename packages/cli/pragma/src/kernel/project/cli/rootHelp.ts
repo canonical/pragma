@@ -134,12 +134,17 @@ function summarizeNoun(noun: string, verbs: readonly VerbSpec[]): string {
  * @param programName - The CLI binary name (the distribution's `name`).
  * @param description - The program description shown in the header.
  * @param verbs - All registered verbs, used to derive the live noun set.
+ * @param version - The version to stamp on the header. Passed in rather than
+ *   read here so it is the SAME string `--version` prints: `buildProgram`
+ *   resolves `options.version ?? VERSION`, and a host that overrides one must
+ *   not be able to leave the other saying something else.
  * @returns The formatted, colorized help text.
  */
 export function formatRootHelp(
   programName: string,
   description: string,
   verbs: readonly VerbSpec[],
+  version: string,
 ): string {
   const present = nounsFrom(verbs);
   const kernel = buildKernelGroups(programName);
@@ -172,7 +177,11 @@ export function formatRootHelp(
     // The wordmark leads when the distribution declares one. A fork ships its
     // own art or none, so its front door is never branded with someone else's.
     ...(PROGRAM_LOGO.length > 0 ? [...PROGRAM_LOGO.map(helpLogo), ""] : []),
-    `${helpHeading(programName)} — ${description}`,
+    // `<name> v<version> — <blurb>`, the spelling `info` and `capabilities`
+    // already use, so the front door names the build the same way every other
+    // surface does. Dimmed: it answers "which build am I on" for someone who
+    // is already here, and must not compete with the name.
+    `${helpHeading(programName)} ${helpDim(`v${version}`)} — ${description}`,
     "",
     helpUsage(
       `${programName} ${helpTerm("<command>")} ${helpDim("[subcommand] [flags]")}`,
