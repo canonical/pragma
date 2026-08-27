@@ -203,7 +203,8 @@ function bareSelfVerb(label: string): VerbEntry {
 /**
  * Convert one module-declared completion node (a mounted subtree's static
  * data) into a verb entry, asserting every inlinable token's safety exactly
- * as spec-derived entries are asserted.
+ * as spec-derived entries are asserted. `mutates` is the owning verb's
+ * mutability, applied only to the LEAVES (see the namespace note below).
  */
 function toMountedEntry(
   spec: CompletionChildSpec,
@@ -239,18 +240,23 @@ function toMountedEntry(
       source,
     };
   });
+  const children =
+    spec.children && spec.children.length > 0
+      ? spec.children.map((child) =>
+          toMountedEntry(child, mutates, `${where}/${child.label}`),
+        )
+      : undefined;
   return {
     label: spec.label,
-    mutates,
+    // A node with children is a NAMESPACE, not a runnable command:
+    // `registerGeneratorCommands` adds the host mutation trio to runnable
+    // LEAVES only, so a mutating namespace would offer `--dry-run`/`--undo`/
+    // `--yes` BEFORE the framework segment — an ordering the CLI rejects as
+    // an unknown option. The verb's mutability descends to the leaves.
+    mutates: children ? false : mutates,
     flags,
     positionals,
-    ...(spec.children && spec.children.length > 0
-      ? {
-          children: spec.children.map((child) =>
-            toMountedEntry(child, mutates, `${where}/${child.label}`),
-          ),
-        }
-      : {}),
+    ...(children ? { children } : {}),
   };
 }
 

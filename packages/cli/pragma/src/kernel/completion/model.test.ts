@@ -398,7 +398,12 @@ function expectAgreement(
         expect((modelVerb.children ?? []).map((c) => c.label)).toEqual(
           (mountedSpec.children ?? []).map((c) => c.label),
         );
-        expect(modelVerb.mutates).toBe(surfaceVerb.mutates === true);
+        // A namespace node (children) never mutates for completion: the
+        // mounted tree registers the mutation trio on runnable leaves only.
+        const isNamespace = (mountedSpec.children ?? []).length > 0;
+        expect(modelVerb.mutates).toBe(
+          !isNamespace && surfaceVerb.mutates === true,
+        );
         continue;
       }
 
@@ -443,23 +448,16 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
     ).toEqual(["react"]);
   });
 
-  it("namespace flag tier: `create component --<TAB>` offers NO leaf prompt flags", async () => {
+  it("namespace flag tier: `create component --<TAB>` offers NO leaf prompt or mutation flags", async () => {
     const { runComplete } = await import("./complete.js");
-    // Prompt flags are registered on the LEAVES; a pre-segment union offered
-    // orderings Commander rejects (`create component --use-ts-stories
-    // svelte` exits 2 as an unknown option). Until a framework segment is
-    // typed, only the kernel-injected tiers are offered.
+    // Prompt AND mutation flags are registered on the LEAVES; a pre-segment
+    // offer completes orderings Commander rejects (`create component
+    // --use-ts-stories svelte` and `create component --dry-run react` both
+    // exit 2 as unknown options). Until a framework segment is typed, only
+    // the global tier is offered.
     expect(
       await runComplete(["create", "component", "--"], capabilities),
-    ).toEqual([
-      "--detail",
-      "--dry-run",
-      "--format",
-      "--help",
-      "--undo",
-      "--verbose",
-      "--yes",
-    ]);
+    ).toEqual(["--detail", "--format", "--help", "--verbose"]);
   });
 
   it("leaf flag tier: `create component react --<TAB>` offers the REGISTERED flags", async () => {
