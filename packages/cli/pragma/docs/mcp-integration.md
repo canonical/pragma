@@ -50,6 +50,10 @@ pragma capabilities
 Beyond tools, the server exposes three surfaces:
 
 - **Resources** — a `pragma:{+uri}` resource template. An agent reads one entity by URI; listing and autocomplete are storeless over the pack index, and a read shares the CLI's entity reader. `graph_inspect` is the tool equivalent when you already hold a URI.
+
+  A read returns the entity's **graph neighbourhood**, not just its own triples. Terms are typed (`NamedNode` / `BlankNode` / `Literal`) and named nodes carry their prefixed form, so a literal that merely looks like an IRI is never rewritten into one. Alongside the outbound `groups` it carries `inbound` — everything asserting a predicate *about* the subject, which is where relations like "what implements this?" actually live — and `nested`, the blank-node objects inlined one level as records, since a blank node's label is store-local and cannot be read back through the template.
+
+  `inbound` is bounded by the disclosure ladder: `count` is always the true total, while `subjects` is capped (none at `summary`, 10 at `standard`, 200 at `detailed`) and sets `truncated` when it is shorter than the count. A resource read carries no parameters of its own, so it resolves the level from config — `config_set detail detailed` is how an agent asks a resource for more, while `graph inspect` takes `--detail` and `graph_inspect` a `detail` argument.
 - **Prompts** — the workflow prompt templates the active pack's graph declares are offered natively over `prompts/list` and `prompts/get`, and as the `prompt_list` / `prompt_lookup` content tools. The two views project the same entities, addressed by the prompt terms the distribution declares. This distribution's graph carries none today, so both views are empty.
 - **Instructions** — the handshake orientation described above.
 

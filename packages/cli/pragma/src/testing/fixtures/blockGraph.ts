@@ -109,4 +109,24 @@ ds:mod.importance.secondary a ds:Modifier ; ds:name "secondary" ; ds:modifierFam
 ds:mod.density.compact a ds:Modifier ; ds:name "compact" ; ds:modifierFamily ds:family.density .
 ds:mod.size.small a ds:Modifier ; ds:name "small" ; ds:modifierFamily ds:family.size .
 ds:mod.size.large a ds:Modifier ; ds:name "large" ; ds:modifierFamily ds:family.size .
+
+# ---- Neighbourhood-read probes ----
+# Typed \`ds:Probe\`, which is deliberately NOT declared as an owl:Class and is
+# outside the block VALUES set, so these individuals reach the entity reader
+# without entering any block list or the ontology class listing.
+#
+# literalTrap holds a STRING that begins with the ds: namespace. Read through
+# the lossy string view it was indistinguishable from an IRI and got compacted
+# into something that read back as one; the term view is what tells them apart.
+ds:literalTrap a ds:Probe ;
+  ds:name "literal trap" ;
+  ds:figmaLink "https://ds.canonical.com/not-an-iri" .
+
+# blankHolder carries blank-node objects — store-local handles that re-mint on
+# every load — so the read must inline them as records AND order those records
+# by content rather than by the label that grouped them.
+ds:blankHolder a ds:Probe ;
+  ds:name "blank holder" ;
+  ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "decision" ; ds:change "Split the button." ] ;
+  ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "revision" ; ds:change "Renamed the slot." ] .
 `;

@@ -47,9 +47,19 @@ const COMPONENT_URI = "pragma:ds:Component";
  * entity. (That the labels are not stable across processes is a real property
  * of exposing blank nodes through `graph inspect`; the toy pack this suite used
  * to run against simply had none.)
+ *
+ * Scrubbed STRUCTURALLY — every `BlankNode` term's `value`, wherever it sits —
+ * rather than by matching label-shaped text. ke's terms carry the bare label
+ * (no `_:` prefix), so the old textual regex silently stopped matching anything
+ * and the mirror would have been asserted against unscrubbed labels.
  */
 const withoutBlankNodeLabels = (value: InspectResult): unknown =>
-  JSON.parse(JSON.stringify(value).replace(/_:[0-9a-f]+/g, "_:b"));
+  JSON.parse(
+    JSON.stringify(value, function replacer(this: unknown, key, raw) {
+      const holder = this as { termType?: string } | undefined;
+      return key === "value" && holder?.termType === "BlankNode" ? "_:b" : raw;
+    }),
+  );
 
 describe("resource listing (storeless, over the pack index)", () => {
   it("degrades to a recovery entry on a missing or legacy index", () => {
