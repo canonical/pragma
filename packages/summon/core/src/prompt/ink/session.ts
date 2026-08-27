@@ -61,7 +61,7 @@ export interface WizardState {
 }
 
 /** The prompts that apply given the answers so far (respecting `when`). */
-function applicablePrompts(
+function listApplicablePrompts(
   generator: GeneratorDefinition,
   answers: Record<string, unknown>,
 ): readonly GeneratorDefinition["prompts"][number][] {
@@ -73,7 +73,7 @@ function countApplicable(
   generator: GeneratorDefinition,
   answers: Record<string, unknown>,
 ): number {
-  return applicablePrompts(generator, answers).length;
+  return listApplicablePrompts(generator, answers).length;
 }
 
 /**
@@ -86,7 +86,7 @@ function countAnswered(
   generator: GeneratorDefinition,
   answers: Record<string, unknown>,
 ): number {
-  return applicablePrompts(generator, answers).filter((p) =>
+  return listApplicablePrompts(generator, answers).filter((p) =>
     Object.hasOwn(answers, p.name),
   ).length;
 }

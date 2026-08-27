@@ -12,7 +12,7 @@
  * {@link execute} so both interactive and non-interactive paths share it.
  */
 
-import flagName from "../format/flagName.js";
+import formatFlagName from "../format/formatFlagName.js";
 import type PromptDefinition from "../types/PromptDefinition.js";
 
 /**
@@ -38,7 +38,7 @@ export default function validateAnswers(
       !prompt.choices.some((choice) => choice.value === value)
     ) {
       const valid = prompt.choices.map((choice) => choice.value).join(", ");
-      return `Invalid --${flagName(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
+      return `Invalid --${formatFlagName(prompt.name)} "${String(value)}". Valid values: ${valid}.`;
     }
 
     if (
@@ -57,7 +57,7 @@ export default function validateAnswers(
       );
       if (badIndex !== -1) {
         const valid = prompt.choices.map((choice) => choice.value).join(", ");
-        return `Invalid --${flagName(prompt.name)} "${String(value[badIndex])}". Valid values: ${valid}.`;
+        return `Invalid --${formatFlagName(prompt.name)} "${String(value[badIndex])}". Valid values: ${valid}.`;
       }
     }
 
@@ -65,7 +65,7 @@ export default function validateAnswers(
       const verdict = prompt.validate(value);
       if (verdict !== true) {
         const detail = typeof verdict === "string" ? verdict : "invalid value";
-        return `Invalid --${flagName(prompt.name)}: ${detail}`;
+        return `Invalid --${formatFlagName(prompt.name)}: ${detail}`;
       }
     }
   }

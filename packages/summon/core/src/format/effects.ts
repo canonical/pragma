@@ -13,7 +13,7 @@ import type { Effect } from "@canonical/task";
 import chalk from "chalk";
 import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 import type PromptDefinition from "../types/PromptDefinition.js";
-import flagName from "./flagName.js";
+import formatFlagName from "./formatFlagName.js";
 
 // Fixed width for action label column
 const ACTION_LABEL_WIDTH = 14;
@@ -371,7 +371,7 @@ export const getLlmEffectPath = (effect: Effect): string => {
  * with spaces or shell metacharacters previously produced a broken command in
  * every `--llm` "To execute" line.
  */
-const shellQuote = (value: string): string =>
+const quoteShellValue = (value: string): string =>
   /^[A-Za-z0-9_@%+=:,./-]+$/.test(value)
     ? value
     : `'${value.replaceAll("'", `'\\''`)}'`;
@@ -387,7 +387,7 @@ export const buildReplayCommand = (
     const value = answers[prompt.name];
     if (value === undefined) continue;
 
-    const kebabName = flagName(prompt.name);
+    const kebabName = formatFlagName(prompt.name);
 
     if (prompt.type === "confirm") {
       if (value === true && prompt.default !== true) {
@@ -397,10 +397,10 @@ export const buildReplayCommand = (
       }
     } else if (prompt.type === "multiselect" && Array.isArray(value)) {
       if (value.length > 0) {
-        parts.push(`--${kebabName}`, shellQuote(value.join(",")));
+        parts.push(`--${kebabName}`, quoteShellValue(value.join(",")));
       }
     } else {
-      parts.push(`--${kebabName}`, shellQuote(String(value)));
+      parts.push(`--${kebabName}`, quoteShellValue(String(value)));
     }
   }
 
@@ -626,7 +626,7 @@ export const formatLlmHelp = (
     lines.push("|------|------|-------------|");
     for (const p of requiredPrompts) {
       lines.push(
-        `| --${flagName(p.name)} | ${formatTypeHint(p)} | ${p.message} |`,
+        `| --${formatFlagName(p.name)} | ${formatTypeHint(p)} | ${p.message} |`,
       );
     }
     lines.push("");
@@ -641,7 +641,7 @@ export const formatLlmHelp = (
       const def =
         p.default !== undefined ? `\`${JSON.stringify(p.default)}\`` : "";
       lines.push(
-        `| --${flagName(p.name)} | ${formatTypeHint(p)} | ${def} | ${p.message} |`,
+        `| --${formatFlagName(p.name)} | ${formatTypeHint(p)} | ${def} | ${p.message} |`,
       );
     }
     lines.push("");
@@ -672,7 +672,7 @@ export const formatLlmHelp = (
   lines.push("");
 
   const exampleFlags = requiredPrompts
-    .map((p) => `--${flagName(p.name)} <value>`)
+    .map((p) => `--${formatFlagName(p.name)} <value>`)
     .join(" ");
   const flagStr = exampleFlags ? ` ${exampleFlags}` : "";
 

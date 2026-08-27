@@ -7,6 +7,6 @@
  * per-capital split turned `componentURL` into `--component-u-r-l` while
  * help and Commander said `--component-url`.
  */
-export default function flagName(promptName: string): string {
+export default function formatFlagName(promptName: string): string {
   return promptName.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 }
