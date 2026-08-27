@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { RECOVERY_CLI_PREFIX } from "../../constants.js";
 import { buildFixtureRuntime } from "../../testing/helpers/packRuntime.js";
 import type { PragmaRuntime } from "../runtime/types.js";
-import { compilePack } from "./compile.js";
+import { compileListable, compilePack, compileStoryModule } from "./compile.js";
 import type { LookupOutput } from "./resolveEntity.js";
 import { parsePackDefinition } from "./schema.js";
 import type { PackDefinition, PackRow } from "./types.js";
@@ -381,5 +381,106 @@ describe("pack compiler — SPARQL fetch path (PROTECTED)", () => {
     );
     expect(data.samples).toHaveLength(2);
     expect(data.totalCount).toBe(2);
+  });
+});
+
+/**
+ * The listing a story contributes to the MCP resource surface is DERIVED from
+ * the types its lookup already names — the story author writes the type set
+ * once, for the name resolve, and the resource listing reads that same
+ * declaration. Nothing to keep in sync because there is nothing written twice.
+ */
+describe("declared listing (derived from the lookup's types)", () => {
+  it("derives one collection per declared type, unweighted types at 1", () => {
+    expect(
+      compileListable({
+        noun: "gadget",
+        lookup: { by: "ex:name", types: ["ex:Widget", "ex:Part"] },
+      }),
+    ).toEqual({
+      sources: [
+        { type: "ex:Widget", as: "collection", weight: 1 },
+        { type: "ex:Part", as: "collection", weight: 1 },
+      ],
+    });
+  });
+
+  it("carries a declared weight onto the type it names", () => {
+    const listable = compileListable({
+      noun: "gadget",
+      lookup: {
+        by: "ex:name",
+        types: ["ex:Widget", "ex:Part"],
+        weights: { "ex:Part": 0.6 },
+      },
+    });
+    expect(listable?.sources.map((s) => s.weight)).toEqual([1, 0.6]);
+  });
+
+  it("declares nothing for a list-only noun (it addresses no class)", () => {
+    expect(
+      compileListable({ noun: "gadget", list: { query: "", columns: [] } }),
+    ).toBeUndefined();
+  });
+
+  it("carries the listing onto the compiled module, beside its verbs", () => {
+    const module = compileStoryModule(
+      { noun: "gadget", lookup: { by: "ex:name", type: "ex:Widget" } },
+      distributionSource("t"),
+      PREFIXES,
+    );
+    expect(module.story).toBe(true);
+    expect(module.mcpListable?.sources).toEqual([
+      { type: "ex:Widget", as: "collection", weight: 1 },
+    ]);
+  });
+});
+
+describe("weights validation (a weight that can never apply is rejected)", () => {
+  it("accepts a weight naming a type the lookup addresses", () => {
+    const definition = {
+      noun: "gadget",
+      lookup: {
+        by: "ex:name",
+        types: ["ex:Widget", "ex:Part"],
+        weights: { "ex:Part": 0.6 },
+      },
+    };
+    expect(parsePackDefinition(definition, "t")).toEqual(definition);
+  });
+
+  it("REJECTS a weight naming a type the lookup does not address", () => {
+    // A silent no-op is how a weight that never applied survives review: the
+    // type gets renamed, the weight stays pointed at the old name, and nothing
+    // says so — the ranking simply stops changing.
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "gadget",
+          lookup: {
+            by: "ex:name",
+            types: ["ex:Widget"],
+            weights: { "ex:Gone": 0.6 },
+          },
+        },
+        "t",
+      ),
+    ).toThrow(/ex:Gone/);
+  });
+
+  it("REJECTS a weight outside 0–1", () => {
+    expect(() =>
+      parsePackDefinition(
+        {
+          noun: "gadget",
+          lookup: {
+            by: "ex:name",
+            type: "ex:Widget",
+            weights: { "ex:Widget": 2 },
+          },
+        },
+        "t",
+      ),
+    ).toThrow();
   });
 });

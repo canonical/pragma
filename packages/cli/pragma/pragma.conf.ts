@@ -141,6 +141,13 @@ const designSystemStories: readonly PackDefinition[] = [
         'Get detailed information about one or more design system blocks including anatomy, modifiers, and properties. Use when you need the full spec of specific blocks by name — detail: "summary" trims to the base view. Example: block_lookup { names: ["Button"] }.',
       by: "ds:name",
       types: ["ds:Component", "ds:Pattern", "ds:Layout", "ds:Subcomponent"],
+      // A subcomponent is a PART of a block, never the block someone means:
+      // for the query "button" the 86 `…-close_button` subcomponents used to
+      // outrank `ds:global.component.button` on the alphabet alone. Weighting
+      // them below 1 sinks every one of them under every component at equal
+      // match score, and lowers their `annotations.priority` in the resource
+      // listing by the same declaration.
+      weights: { "ds:Subcomponent": 0.6 },
       graphqlType: "UIBlock",
       fields: [
         { name: "tier", property: "ds:tier", label: "Tier" },

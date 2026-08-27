@@ -51,6 +51,8 @@ Beyond tools, the server exposes three surfaces:
 
 - **Resources** — a `pragma:{+uri}` resource template. An agent reads one entity by URI; listing and autocomplete are storeless over the pack index, and a read shares the CLI's entity reader. `graph_inspect` is the tool equivalent when you already hold a URI.
 
+  `resources/list` is CURATED, not paged. MCP defines a `cursor`/`nextCursor` contract, but the SDK's high-level server ignores it, so everything listed is sent on every connect — enumerating all 714 indexed entities cost ~155 KB of an agent's context before it had asked anything. So the listing carries the **collections** (one entry per addressable class, with `pragma/instanceCount`) and the **schema** that describes them, ~35 KB in this distribution. Each entry names itself by its stable prefixed URI, `title`s itself with the graph's human name, and reports `pragma/box` / `pragma/type` / `pragma/instanceCount` in `_meta` so a client can filter without a read. The individuals are not enumerated: reach them by completing the `uri` template variable, which offers every matching entity and reports `total`/`hasMore` truthfully.
+
   A read returns the entity's **graph neighbourhood** as a Turtle document (`text/turtle`) — not just its own triples, and not JSON. The `@prefix` header is declared once, then:
 
   - the subject's own triples, with long literals previewed (`"""…"""`) and a `#` comment stating the full length;
@@ -80,7 +82,7 @@ Beyond tools, the server exposes three surfaces:
 Two different things introduce the server to its machine peers, and they deliberately move differently:
 
 - **`serverInfo` projects from the distribution.** On `initialize` the server names itself with the distribution's declared `name` (the same projection that names the CLI binary) and the package version. A fork's MCP server therefore introduces itself under the fork's own name with no code change. Do not hard-code `pragma` as the expected server name in a client — read `serverInfo`. The rule is recorded in the surface covenant (`surface/surface.v2.json`, `mcpSurface.serverInfo`) and pinned from a fork's config by the identity suite.
-- **The resource scheme and `_meta` keys are frozen.** The `pragma:{+uri}` resource template, the `pragma:<uri>` URIs it mints, and the `pragma/box` / `pragma/instanceCount` `_meta` taxonomy keys are protocol identity, not branding: clients persist resource URIs, and deriving the scheme from the distribution's name was measured to make every one of a fork's advertised resources unreadable (the template renamed while the minted URIs stayed literal). Every distribution serves them unchanged. Revisit only if a real fork needs wire-level distinction — and then move the template and both minting sites together.
+- **The resource scheme and `_meta` keys are frozen.** The `pragma:{+uri}` resource template, the `pragma:<uri>` URIs it mints, and the `pragma/box` / `pragma/instanceCount` / `pragma/type` `_meta` taxonomy keys are protocol identity, not branding: clients persist resource URIs, and deriving the scheme from the distribution's name was measured to make every one of a fork's advertised resources unreadable (the template renamed while the minted URIs stayed literal). Every distribution serves them unchanged. Revisit only if a real fork needs wire-level distinction — and then move the template and both minting sites together.
 
 ## Plan-first mutations
 
