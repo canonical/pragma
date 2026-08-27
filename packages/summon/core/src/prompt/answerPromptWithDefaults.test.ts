@@ -16,12 +16,15 @@ describe("answerPromptWithDefaults", () => {
     ).toBe(false);
   });
 
-  it("defaults a confirm to true when unset", async () => {
+  it("defaults a confirm to false when unset — aligned with the dry-run mock", async () => {
+    // The three non-interactive resolutions previously disagreed (dry-run
+    // false, defaults true, autoPrompt reject): a --dry-run plan could take a
+    // different branch than the identical defaults-driven run.
     expect(
       await answerPromptWithDefaults(
         prompt({ type: "confirm", name: "ok", message: "?" }),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("resolves a select to its default", async () => {
@@ -52,6 +55,16 @@ describe("answerPromptWithDefaults", () => {
         }),
       ),
     ).toBe("bash");
+  });
+
+  it("resolves a select with no default and no choices to an empty string", async () => {
+    // Aligned with the dry-run mock's `?? ""` — previously this injected
+    // `undefined` into the answers.
+    expect(
+      await answerPromptWithDefaults(
+        prompt({ type: "select", name: "mode", message: "?", choices: [] }),
+      ),
+    ).toBe("");
   });
 
   it("resolves a multiselect to its default", async () => {

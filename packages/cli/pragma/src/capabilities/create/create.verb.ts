@@ -373,6 +373,9 @@ async function runCreate(
       signal,
       onCancel: abort,
       cwd: rt.cwd,
+      // Flag-provided answers reach the wizard too: without the seed the
+      // confirm gate previews with them missing (undefined paths, wrong plan).
+      initialAnswers: answers,
     });
     // Thread the per-call write root: the interpreter resolves the generator's
     // relative output paths against `rt.cwd` — the SAME dir the SEC-2 jail

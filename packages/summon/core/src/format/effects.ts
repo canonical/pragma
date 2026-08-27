@@ -13,6 +13,7 @@ import type { Effect } from "@canonical/task";
 import chalk from "chalk";
 import type GeneratorDefinition from "../types/GeneratorDefinition.js";
 import type PromptDefinition from "../types/PromptDefinition.js";
+import formatFlagName from "./formatFlagName.js";
 
 // Fixed width for action label column
 const ACTION_LABEL_WIDTH = 14;
@@ -365,6 +366,16 @@ export const getLlmEffectPath = (effect: Effect): string => {
 /**
  * Build the replay command string from generator name and answers.
  */
+/**
+ * Quote a replay-command value for a POSIX shell when it needs it — a value
+ * with spaces or shell metacharacters previously produced a broken command in
+ * every `--llm` "To execute" line.
+ */
+const quoteShellValue = (value: string): string =>
+  /^[A-Za-z0-9_@%+=:,./-]+$/.test(value)
+    ? value
+    : `'${value.replaceAll("'", `'\\''`)}'`;
+
 export const buildReplayCommand = (
   generatorName: string,
   answers: Record<string, unknown>,
@@ -376,9 +387,7 @@ export const buildReplayCommand = (
     const value = answers[prompt.name];
     if (value === undefined) continue;
 
-    const kebabName = prompt.name
-      .replace(/([a-z])([A-Z])/g, "$1-$2")
-      .toLowerCase();
+    const kebabName = formatFlagName(prompt.name);
 
     if (prompt.type === "confirm") {
       if (value === true && prompt.default !== true) {
@@ -388,10 +397,10 @@ export const buildReplayCommand = (
       }
     } else if (prompt.type === "multiselect" && Array.isArray(value)) {
       if (value.length > 0) {
-        parts.push(`--${kebabName}`, value.join(","));
+        parts.push(`--${kebabName}`, quoteShellValue(value.join(",")));
       }
     } else {
-      parts.push(`--${kebabName}`, String(value));
+      parts.push(`--${kebabName}`, quoteShellValue(String(value)));
     }
   }
 
@@ -598,17 +607,17 @@ export const formatLlmHelp = (
     switch (prompt.type) {
       case "confirm":
         return "`[boolean]`";
-      case "select":
-        return `\`${(prompt.choices as Array<{ value: string }>).map((c) => c.value).join("\\|")}\``;
+      case "select": {
+        const choices = prompt.choices ?? [];
+        if (choices.length === 0) return "`<value>`";
+        return `\`${choices.map((c) => c.value).join("\\|")}\``;
+      }
       case "multiselect":
         return "`[value,value,...]`";
       default:
         return "`<value>`";
     }
   };
-
-  const toKebab = (s: string): string =>
-    s.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
 
   if (requiredPrompts.length > 0) {
     lines.push("## Required Options");
@@ -617,7 +626,7 @@ export const formatLlmHelp = (
     lines.push("|------|------|-------------|");
     for (const p of requiredPrompts) {
       lines.push(
-        `| --${toKebab(p.name)} | ${formatTypeHint(p)} | ${p.message} |`,
+        `| --${formatFlagName(p.name)} | ${formatTypeHint(p)} | ${p.message} |`,
       );
     }
     lines.push("");
@@ -632,7 +641,7 @@ export const formatLlmHelp = (
       const def =
         p.default !== undefined ? `\`${JSON.stringify(p.default)}\`` : "";
       lines.push(
-        `| --${toKebab(p.name)} | ${formatTypeHint(p)} | ${def} | ${p.message} |`,
+        `| --${formatFlagName(p.name)} | ${formatTypeHint(p)} | ${def} | ${p.message} |`,
       );
     }
     lines.push("");
@@ -663,7 +672,7 @@ export const formatLlmHelp = (
   lines.push("");
 
   const exampleFlags = requiredPrompts
-    .map((p) => `--${toKebab(p.name)} <value>`)
+    .map((p) => `--${formatFlagName(p.name)} <value>`)
     .join(" ");
   const flagStr = exampleFlags ? ` ${exampleFlags}` : "";
 

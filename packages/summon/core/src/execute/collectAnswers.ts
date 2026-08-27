@@ -130,7 +130,7 @@ export default function collectAnswers(
     }
     const definition = prompts[index];
     if (
-      definition.name in answers ||
+      Object.hasOwn(answers, definition.name) ||
       (definition.when && definition.when(answers) !== true)
     ) {
       return step(index + 1, answers);

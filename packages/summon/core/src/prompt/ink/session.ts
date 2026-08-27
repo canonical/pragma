@@ -60,13 +60,35 @@ export interface WizardState {
   readonly error?: TaskError;
 }
 
+/** The prompts that apply given the answers so far (respecting `when`). */
+function listApplicablePrompts(
+  generator: GeneratorDefinition,
+  answers: Record<string, unknown>,
+): readonly GeneratorDefinition["prompts"][number][] {
+  return generator.prompts.filter((p) => !p.when || p.when(answers) === true);
+}
+
 /** Count the prompts that apply given the answers so far (respecting `when`). */
 function countApplicable(
   generator: GeneratorDefinition,
   answers: Record<string, unknown>,
 ): number {
-  return generator.prompts.filter((p) => !p.when || p.when(answers) === true)
-    .length;
+  return listApplicablePrompts(generator, answers).length;
+}
+
+/**
+ * Count the APPLICABLE prompts already answered. The answer bag can carry
+ * keys that are not generator prompts at all (pragma's `framework` param) or
+ * answers to prompts a `when` currently excludes — counting raw keys let the
+ * step counter exceed the total.
+ */
+function countAnswered(
+  generator: GeneratorDefinition,
+  answers: Record<string, unknown>,
+): number {
+  return listApplicablePrompts(generator, answers).filter((p) =>
+    Object.hasOwn(answers, p.name),
+  ).length;
 }
 
 /**
@@ -103,13 +125,17 @@ export class SessionController {
     generator: GeneratorDefinition,
     private readonly onUserCancel?: () => void,
     private readonly cwd?: string,
+    initialAnswers: Readonly<Record<string, unknown>> = {},
   ) {
+    // Seed flag/MCP-provided answers: collectAnswers never asks for them, so
+    // without the seed the confirm gate's preview and the step counter run
+    // against an answer set with those values missing.
     this.current = {
       phase: "idle",
       generator,
-      answers: {},
+      answers: { ...initialAnswers },
       step: 0,
-      total: countApplicable(generator, {}),
+      total: countApplicable(generator, { ...initialAnswers }),
       previewEffects: [],
       progress: [],
     };
@@ -148,7 +174,10 @@ export class SessionController {
         this.set({ phase: "confirming", previewEffects: [] });
         this.previewInFlight = this.loadPreview();
       } else {
-        const answered = Object.keys(this.current.answers).length;
+        const answered = countAnswered(
+          this.current.generator,
+          this.current.answers,
+        );
         this.set({
           phase: "prompting",
           activeQuestion: effect,
