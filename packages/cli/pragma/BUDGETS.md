@@ -83,20 +83,73 @@ The lazy-graph guard in `lazy.test.ts` pins all three: no module on the
 `capabilities/index` static graph may value-import
 `@canonical/summon-core/projection`, its Commander adapter, or `commander`.
 
-**Measured** (shared dev box, load 5–7, `measureCommand` through
-`node dist/src/bin.js`, 15 spawns/3 warmups for help and 30/5 for complete,
-three runs each):
+**Measured — A/B, both arms built from source and interleaved.** The earlier
+pass asserted the recovery rather than demonstrating it, so this is a paired
+measurement: the pre-refactor tree (`2aaf368`) and this branch's tree were each
+built to their own `dist/`, and every spawn alternates arms case by case, so
+machine drift on a shared box lands on both arms equally instead of on
+whichever was measured second. 40 kept samples per cell (5 warmup rounds),
+`node dist/src/bin.js` through `spawnSync`, fresh XDG dirs, load average ~1.5.
 
-| Path | before (median) | after (medians across runs) | ceiling |
+| Path | before (median) | after (median) | ceiling |
 |---|---|---|---|
-| `pragma --help` | ~71 ms | 58.1 · 59.9 · 62.4 ms | **130 ms** (2× median — the pre-regression number) |
-| `pragma __complete` | ~74 ms | 62.3 · 65.7 · 69.4 ms | **150 ms** (the 2×-rule number from the last local-vs-CI calibration) |
+| `pragma --help` | 74.6 ms | **64.7 ms** | 130 ms |
+| `pragma __complete config` | 79.1 ms | **69.2 ms** | 150 ms |
+| `pragma __complete skill lookup` | 74.2 ms | **69.3 ms** | 150 ms |
+| `pragma --version` (control) | 25.4 ms | 29.5 ms | — |
 
-The capabilities barrel's own import cost fell from ~38 ms to ~29 ms in the
-same runs. Both medians are back at or below the shipped-entry numbers the
-130/150 ceilings were originally derived from, so those ceilings are restored
-rather than re-invented; the designed 50 ms target remains recorded as unmet
-(node's start alone spends most of it).
+Process start is most of every number above, and it is not pragma's to spend,
+so the arms are also compared net of each arm's OWN `--version` control — the
+work the CLI actually does:
+
+| Path | before | after | delta |
+|---|---|---|---|
+| `pragma --help` | 49.3 ms | 35.3 ms | **−14.0 ms (−28%)** |
+| `pragma __complete config` | 53.7 ms | 39.7 ms | **−14.0 ms (−26%)** |
+| `pragma __complete skill lookup` | 48.9 ms | 39.8 ms | **−9.1 ms (−19%)** |
+
+The capabilities barrel's own import, measured the same paired way (25 spawns
+per arm, 5 discarded, timing one dynamic `import()` of `capabilities/index.js`
+and nothing else): **44.0 ms → 37.6 ms**. That 6.4 ms is the eager-import cost
+proper; the remaining ~8 ms on `--help` is the third change — the bare
+invocation answering before the program builder, and therefore before
+Commander, loads at all.
+
+**The eager cost is gone, and the size of it is now on the record rather than
+asserted.** It was never the ~46 ms the provisional 220 ms ceilings were sized
+for: measured end to end here it is ~14 ms of the fast paths' work. The 220 ms
+ceilings were nevertheless right to be provisional, and are right to be down.
+
+### Re-deriving the ceilings
+
+The 2×-median rule against the after arm, on this box:
+
+| Path | after median | 2× median | ceiling |
+|---|---|---|---|
+| `pragma --help` | 64.7 ms | 129.5 ms | **130 ms** |
+| `pragma __complete` (slower of the two cases) | 69.3 ms | 138.5 ms | **150 ms** |
+
+`--help` lands on 130 to within half a millisecond — the standing ceiling IS
+the rule's number, not a number the rule happens to tolerate.
+
+`__complete`'s rule number is 138.5, i.e. below the standing 150. **It is not
+lowered to 140, and the reason is a correction to the method, not a
+preference.** A ceiling is relative to the artifact AND the box (the header of
+`budgets.ts` says so). This box's cold process start is 25–30 ms; the reference
+box in the table under "p95 stabilization" is 45.5 ms. Holding the measured
+work constant and projecting onto the reference box:
+
+- `--help`: 45.5 + 35.3 = **~81 ms** median → 2× = ~162 ms
+- `__complete`: 45.5 + 39.7 = **~85 ms** median → 2× = ~170 ms
+
+Both projections sit ABOVE the standing ceilings. On the box the ceilings have
+to hold on, 130 and 150 are already the tight side of the 2× rule, and CI has
+run `__complete` at a ~100 ms trimmed mean before. So the honest reading of the
+measurement is that these two ceilings are at their floor: the recovery earned
+back the 220 ms, it does not earn a further cut, and a cut made from this box's
+median alone would be a ceiling derived on hardware the suite does not run on.
+
+The designed 50 ms target stays recorded as unmet.
 
 ## Re-derived for the shipped entry
 
