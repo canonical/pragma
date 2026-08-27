@@ -18,6 +18,7 @@ import type {
   SectionDef,
 } from "../render/contracts.js";
 import {
+  renderListEmptyNotice,
   renderListLlm,
   renderListPlain,
   renderLookupLlm,
@@ -82,9 +83,13 @@ export function listFormatters(
     emptyHint,
   };
   return {
-    plain: (rows) => renderListPlain(rows, options),
+    plain: (rows, context) => renderListPlain(rows, options, context),
     llm: (rows) => renderListLlm(rows, options),
     json: (rows) => JSON.stringify(rows, null, 2),
+    // Zero rows: the dispatcher routes this to stderr (exit 0) so the plain
+    // stdout stream stays pure data; llm/json keep their own empty shapes.
+    emptyNotice: (rows) =>
+      rows.length === 0 ? renderListEmptyNotice(options) : undefined,
   };
 }
 

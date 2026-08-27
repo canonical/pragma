@@ -131,11 +131,28 @@ export type ParamSpec =
       complete?: ParamComplete;
     };
 
-/** The three output modes every verb must render. */
+/**
+ * The three output modes every verb must render.
+ *
+ * `plain` takes an optional {@link RenderContext} — the dispatcher's
+ * presentation facts (`--no-headers`, whether stdout is a terminal). Only
+ * list-shaped formatters read it; `llm` (the byte-frozen agent contract) and
+ * `json` (the envelope) never see it.
+ *
+ * `emptyNotice` is the empty-state seam: when the data amounts to zero
+ * records, return the calm notice — the dispatcher routes it to STDERR with
+ * exit 0, keeping the stdout data stream free of human sentences a pipe
+ * would read as records. Return `undefined` (or omit the member) for data
+ * that has content; only the plain mode routes it.
+ */
 export interface Formatters<T> {
-  readonly plain: (d: T) => string;
+  readonly plain: (
+    d: T,
+    context?: import("../render/contracts.js").RenderContext,
+  ) => string;
   readonly llm: (d: T) => string;
   readonly json: (d: T) => string;
+  readonly emptyNotice?: (d: T) => string | undefined;
 }
 
 /** A usage example shown in verb help. */

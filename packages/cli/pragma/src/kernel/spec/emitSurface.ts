@@ -87,6 +87,10 @@ export const FIXED_SURFACE = {
       flag: "--detail <level>",
       doc: "Progressive-disclosure level (summary, standard, detailed)",
     },
+    {
+      flag: "--no-headers",
+      doc: "Hide the table header row in plain output",
+    },
   ],
   detailLevels: ["summary", "standard", "detailed"],
   envelope: {

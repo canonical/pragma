@@ -1,7 +1,7 @@
 /**
  * Global-flag pre-parsing, ahead of Commander.
  *
- * `--format`, `--verbose`, and `--detail` may appear anywhere on the line, so
+ * `--format`, `--verbose`, `--no-headers`, and `--detail` may appear anywhere on the line, so
  * they are scanned and stripped before Commander sees argv — otherwise
  * `enablePositionalOptions()` scoping would reject a flag placed after a verb.
  *
@@ -157,11 +157,15 @@ export function parseGlobalFlags(
   const formatRequested = rawFormat !== undefined;
   const autoLlm = !formatRequested && !env.isTty && !env.noAutoLlm;
   const detail = readDetail(argv);
+  const span = selectScanSpan(argv);
   return {
     llm: format === "llm" || autoLlm,
     autoLlm,
     format,
-    verbose: selectScanSpan(argv).includes("--verbose"),
+    verbose: span.includes("--verbose"),
+    // `--no-headers` suppresses the plain-table header row; it is global so
+    // every list-shaped verb honors one spelling.
+    ...(span.includes("--no-headers") ? { noHeaders: true } : {}),
     ...(detail !== undefined ? { detail } : {}),
   };
 }
@@ -190,7 +194,7 @@ export function stripGlobalFlags(argv: readonly string[]): string[] {
       return result;
     }
 
-    if (arg === "--verbose") continue;
+    if (arg === "--verbose" || arg === "--no-headers") continue;
     if (
       arg.startsWith("--format=") ||
       arg.startsWith("--verbose=") ||

@@ -68,6 +68,23 @@ describe("parseGlobalFlags", () => {
   it("reads --verbose", () => {
     expect(parseGlobalFlags(["--verbose"], TTY).verbose).toBe(true);
   });
+
+  it("reads --no-headers anywhere and strips it before Commander", () => {
+    expect(parseGlobalFlags(["--no-headers"], TTY).noHeaders).toBe(true);
+    expect(
+      parseGlobalFlags(["block", "list", "--no-headers"], TTY).noHeaders,
+    ).toBe(true);
+    expect(parseGlobalFlags(["block", "list"], TTY).noHeaders).toBeUndefined();
+    expect(stripGlobalFlags(["block", "list", "--no-headers"])).toEqual([
+      "block",
+      "list",
+    ]);
+    // Past the terminator it is the user's data, not this program's flag.
+    expect(
+      parseGlobalFlags(["block", "lookup", "--", "--no-headers"], TTY)
+        .noHeaders,
+    ).toBeUndefined();
+  });
 });
 
 describe("stripGlobalFlags", () => {

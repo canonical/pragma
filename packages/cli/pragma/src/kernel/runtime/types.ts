@@ -25,6 +25,8 @@ export interface GlobalFlags {
   readonly format: OutputFormat;
   /** Diagnostic output to stderr. */
   readonly verbose: boolean;
+  /** True when `--no-headers` suppressed the plain-table header row. */
+  readonly noHeaders?: boolean;
   /** Explicit progressive-disclosure level from `--detail`, if any. */
   readonly detail?: DetailLevel;
 }

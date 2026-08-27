@@ -25,8 +25,8 @@ import {
   renderErrorLlm,
   renderErrorPlain,
 } from "../../error/renderError.js";
+import type { RenderContext } from "../../render/contracts.js";
 import { successEnvelope } from "../../render/envelope.js";
-import { selectFormatter } from "../../render/formatters.js";
 import { writeStdout } from "../../render/writeStdout.js";
 import { bootRuntime } from "../../runtime/boot.js";
 import type {
@@ -140,7 +140,19 @@ export function extractParams(
   return result;
 }
 
-/** Render a read/execute result through the verb's formatters. */
+/**
+ * Render a read/execute result through the verb's formatters.
+ *
+ * The plain branch owns two ROUTING decisions (the rendering itself stays in
+ * the formatters): it threads the presentation context (`--no-headers`,
+ * stdout's TTY-ness) into the plain formatter, and it routes a declared
+ * empty-state notice to STDERR with exit 0 — a zero-record result is a calm
+ * success, and stdout (the data stream) must not carry a human sentence a
+ * pipe would read as a record. `llm` and `json` keep their own empty shapes
+ * on stdout: both are machine contracts whose consumers read one stream.
+ *
+ * @note Impure — reads `process.stdout.isTTY` for the render context.
+ */
 function renderData(
   verb: VerbSpec,
   flags: GlobalFlags,
@@ -154,8 +166,21 @@ function renderData(
       exitCode: 0,
     };
   }
-  const text = selectFormatter(flags, verb.output.formatters)(data);
-  return { stdout: text ? `${text}\n` : "", exitCode: 0 };
+  if (flags.llm) {
+    const text = verb.output.formatters.llm(data);
+    return { stdout: text ? `${text}\n` : "", exitCode: 0 };
+  }
+  const context: RenderContext = {
+    headers: flags.noHeaders !== true,
+    stdoutIsTty: process.stdout.isTTY === true,
+  };
+  const text = verb.output.formatters.plain(data, context);
+  const notice = verb.output.formatters.emptyNotice?.(data);
+  return {
+    stdout: text ? `${text}\n` : "",
+    ...(notice ? { stderr: `${notice}\n` } : {}),
+    exitCode: 0,
+  };
 }
 
 /** Render a dry-run plan (the effects a mutation would perform). */

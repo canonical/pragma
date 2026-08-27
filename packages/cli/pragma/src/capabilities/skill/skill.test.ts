@@ -85,11 +85,13 @@ describe("skill lookup (storeless)", () => {
 });
 
 describe("skill list empty-state (U5)", () => {
-  it("plain output is non-blank and guides toward package sources", () => {
-    const plain = skillListFormatters.plain([]);
-    expect(plain).not.toBe("");
-    expect(plain).toContain("No skills found");
-    expect(plain).toContain("pragma sources update");
+  it("the empty notice (stderr's text) guides toward package sources", () => {
+    // Zero skills: plain stdout is empty (a pipe reads no prose) and the
+    // guidance rides the dispatcher's stderr via `emptyNotice`.
+    expect(skillListFormatters.plain([])).toBe("");
+    const notice = skillListFormatters.emptyNotice?.([]);
+    expect(notice).toContain("No skills found");
+    expect(notice).toContain("pragma sources update");
   });
 
   it("llm output announces zero and guides, json stays []", () => {
