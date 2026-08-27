@@ -26,6 +26,15 @@ export interface CollectUndosOptions {
    * append-if-absent helper would see the very line the forward run appended
    * and skip collecting its remove-line undo). Real existence + mocked
    * content is the contract.
+   *
+   * Known boundary: post-run host state cannot recover the PRE-run branch
+   * when the forward run itself changed the answer and both branches
+   * succeed at collection time — `ifElseM(exists(p), append, create)` over
+   * an initially missing `p` collects the append branch's undo, not the
+   * create branch's delete. That is the accepted cost of stateless undo (no
+   * journal, by design); generators keep it benign by making the
+   * existing-branch undo subsume the fresh-branch one (a remove-line undo
+   * deletes the file when its removal leaves nothing behind).
    */
   resolveExists?: (path: string) => boolean;
   /**

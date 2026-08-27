@@ -29,6 +29,10 @@ import chalk from "chalk";
 import type { Command } from "commander";
 import { render } from "ink";
 import { App } from "../components/App.js";
+import {
+  describeUndoSteps,
+  isUnreversibleExec,
+} from "../components/undoPlan.js";
 import type { CommandEntry, OptionInfo } from "./types.js";
 
 // =============================================================================
@@ -371,23 +375,16 @@ const configureGeneratorCommand = (
           const undos = collectUndos(task, {
             resolveExists: hostExistsResolver(),
             onForwardEffect: (effect) => {
-              if (effect._tag === "Exec") unreversible.push(effect);
+              if (isUnreversibleExec(effect)) unreversible.push(effect);
             },
           });
           if (undos.length === 0) {
             console.log("Nothing to undo.");
             return;
           }
-          const plumbing = new Set([
-            "Log",
-            "ReadFile",
-            "Exists",
-            "ReadContext",
-          ]);
-          const planLines = undos
-            .flatMap((undoTask) => dryRun(undoTask).effects)
-            .filter((effect) => !plumbing.has(effect._tag))
-            .map(describeEffect);
+          const planLines = describeUndoSteps(undos).map((effect) =>
+            effect._tag === "Log" ? effect.message : describeEffect(effect),
+          );
           // Diagnostics go to stderr so stdout stays a clean data stream.
           process.stderr.write(
             `Undo will reverse ${undos.length} step${undos.length === 1 ? "" : "s"}:\n${planLines.map((line) => `  - ${line}`).join("\n")}\n`,

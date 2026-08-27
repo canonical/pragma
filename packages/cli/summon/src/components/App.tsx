@@ -23,6 +23,11 @@ import { useCallback, useEffect, useState } from "react";
 import { ExecutionProgress, type TimedEffect } from "./ExecutionProgress.js";
 import { PromptSequence } from "./PromptSequence.js";
 import { Spinner } from "./Spinner.js";
+import {
+  describeUndoSteps,
+  isUnreversibleExec,
+  shouldSkipUndoGate,
+} from "./undoPlan.js";
 
 // =============================================================================
 // Effect Tree - Hierarchical display with action labels and tree connectors
@@ -785,22 +790,6 @@ export type AppState =
   | { phase: "complete"; effects: TimedEffect[]; duration: number }
   | { phase: "error"; error: TaskError; answers?: Record<string, unknown> };
 
-/**
- * The effects an undo plan would perform, minus the read/log plumbing an undo
- * task walks through (a remove-line undo reads the file before rewriting it —
- * the read is not part of what gets reversed).
- */
-const UNDO_PLAN_PLUMBING = new Set([
-  "Log",
-  "ReadFile",
-  "Exists",
-  "ReadContext",
-]);
-const listUndoPlanEffects = (undos: readonly Task<void>[]): Effect[] =>
-  undos
-    .flatMap((undoTask) => dryRun(undoTask).effects)
-    .filter((effect) => !UNDO_PLAN_PLUMBING.has(effect._tag));
-
 export interface AppProps {
   /** The generator to run */
   generator: GeneratorDefinition;
@@ -880,7 +869,7 @@ export const App = ({
           const undos = collectUndos(task, {
             resolveExists: hostExistsResolver(),
             onForwardEffect: (effect) => {
-              if (effect._tag === "Exec") unreversible.push(effect);
+              if (isUnreversibleExec(effect)) unreversible.push(effect);
             },
           });
           if (undos.length === 0) {
@@ -890,7 +879,7 @@ export const App = ({
             });
             return;
           }
-          const planEffects = listUndoPlanEffects(undos);
+          const planEffects = describeUndoSteps(undos);
           if (dryRunOnly) {
             setState({ phase: "undoPreview", planEffects });
             return;
@@ -898,7 +887,7 @@ export const App = ({
           // Same gate contract as the forward run: flags only pre-fill
           // answers; `--yes` skips the gate, and so does `--no-preview` —
           // the forward flow goes straight to executing in both cases.
-          if (yes || !preview) {
+          if (shouldSkipUndoGate({ yes, preview })) {
             runUndoPlan(undos, unreversible, promptAnswers);
             return;
           }
