@@ -404,6 +404,84 @@ const designSystemStories: readonly PackDefinition[] = [
  * `--detail detailed` adds `donts`. `cs:extends` stays the raw IRI in JSON
  * (renderers compact it at display time).
  */
+// The `concept` story: long-form design-system documentation not bound to a
+// single UIBlock (foundations, how-to guides, decision guides) — ds:Concept
+// entries ingested from Coda by the design-system pack. The list stays terse
+// (name/type/summary); the Markdown body is the lookup's payload, served at
+// the `standard` level with knownEdgeCases behind `detailed`.
+const conceptStory: PackDefinition = {
+  noun: "concept",
+  description: "List design-system concepts.",
+  toolDescription:
+    "List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.",
+  list: {
+    query: [
+      "SELECT ?uri ?name ?type ?summary",
+      "WHERE {",
+      "  ?uri a ds:Concept ;",
+      "       ds:name ?name .",
+      "  OPTIONAL { ?uri ds:conceptType/ds:name ?type . }",
+      "  OPTIONAL { ?uri ds:summary ?summary . }",
+      "}",
+      "ORDER BY ?name",
+    ].join("\n"),
+    columns: [
+      { field: "uri", label: "IRI" },
+      { field: "name", label: "Name" },
+      { field: "type", label: "Type" },
+      { field: "summary", label: "Summary" },
+    ],
+    filters: [
+      {
+        param: "type",
+        variable: "type",
+        description: "Filter by concept type (e.g. Explanation, How-to guide).",
+      },
+    ],
+    search: {
+      variables: ["name", "summary"],
+      description: "Search in name and summary.",
+    },
+    emptyRecovery: {
+      message:
+        "No concepts in the store. The @canonical/design-system pack provides them; refresh the local store.",
+      cli: "sources update",
+    },
+  },
+  lookup: {
+    source: "sparql",
+    by: "ds:name",
+    type: "ds:Concept",
+    description:
+      "Look up a concept's full documentation by name, IRI, or glob.",
+    toolDescription:
+      "Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.",
+    fields: [
+      { name: "type", property: "ds:conceptType/ds:name", label: "Type" },
+      { name: "tier", property: "ds:tier", label: "Tier" },
+      { name: "summary", property: "ds:summary", label: "Summary" },
+    ],
+    sections: [
+      {
+        name: "content",
+        property: "ds:content",
+        label: "Content",
+        level: "standard",
+      },
+      {
+        name: "knownEdgeCases",
+        property: "ds:knownEdgeCases",
+        label: "Known edge cases",
+        level: "detailed",
+      },
+    ],
+    disclosure: {
+      levels: ["summary", "standard", "detailed"],
+      default: "standard",
+    },
+  },
+};
+
 const codeStandardsStories: readonly PackDefinition[] = [
   {
     noun: "standard",
@@ -599,7 +677,7 @@ Made by the Canonical Webteam — https://canonical.com.`,
     {
       name: "@canonical/design-system",
       source: "git+https://github.com/canonical/design-system.git#main",
-      stories: designSystemStories,
+      stories: [...designSystemStories, conceptStory],
     },
     {
       name: "@canonical/anatomy-dsl",

@@ -57,6 +57,32 @@ Read-only.
 
 _No input parameters._
 
+### concept_list
+
+List design-system concepts — long-form foundations, how-to guides, and decision guides not bound to a single UI block. Optionally filter by type or search.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | string | no | Filter by concept type (e.g. Explanation, How-to guide). |
+| `search` | string | no | Search in name and summary. |
+
+### concept_lookup
+
+Get a design-system concept's full Markdown documentation. Address concepts by name, prefixed name (ds:concept.…), absolute IRI, or glob pattern.
+
+Read-only.
+
+**Input**
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | string[] | yes | Concept names, prefixed names/IRIs, or glob patterns. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default standard). |
+
 ### config_set
 
 Write a global config field by name — the one-command form of the per-field setters. `key` is one of `tier`, `channel`, or `detail`; the field's own reset rules apply (e.g. `set tier none` clears it). Written to the global layer only — project configs are authored by hand.
