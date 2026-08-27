@@ -66,6 +66,15 @@ export interface SymlinkAction {
    * entry is never touched at all.
    */
   readonly owned: boolean;
+  /**
+   * Whether a REAL (non-symlink) entry occupies the link path. Such a path is
+   * `skipped` for the same reason an already-correct link is — neither is
+   * anything to do — but they are not the same state: one is a link this
+   * command maintains, the other is a hand-placed directory it will never
+   * touch, and reporting both as "current" told the user a link exists where
+   * none does.
+   */
+  readonly blocked: boolean;
 }
 
 /**
@@ -256,6 +265,7 @@ export async function detectSkills(
         linkPath,
         action,
         harnessName: name,
+        blocked: state.kind === "other",
         owned:
           state.kind === "symlink" &&
           withinRoot(sourceRoot, linkPath, state.target),

@@ -167,6 +167,19 @@ function skillsHealth(
       detail: `${stale} of ${d.actions.length} links point elsewhere`,
     };
   }
+  // A hand-placed real directory is `skipped` like an already-correct link is,
+  // and reporting the two the same way made this row say "links current" where
+  // no link exists at all. Setup will never clear such a path — it is not this
+  // command's to delete — so the row carries the only remedy that settles it.
+  const blocked = d.actions.filter((a) => a.blocked).length;
+  if (blocked > 0) {
+    return {
+      status: "available",
+      detail: `${blocked} of ${d.actions.length} link paths hold a real directory`,
+      remedy:
+        "Move or delete the directory at that path, then link the skills again.",
+    };
+  }
   if (missing > 0) {
     return {
       status: "available",

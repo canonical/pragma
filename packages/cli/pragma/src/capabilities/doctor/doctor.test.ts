@@ -284,6 +284,30 @@ describe("doctor — the banded rows can see the GLOBAL band", () => {
   });
 });
 
+describe("doctor — a blocked skill link path is never reported as current", () => {
+  it("distinguishes a hand-placed real directory from a link that is correct", async () => {
+    // Detection marks both `skipped` — there is nothing to do to either — so
+    // the row counted the blocked path as healthy and said "links current"
+    // where no link exists at all.
+    const cwd = tmp("pragma-doctor-proj-");
+    const skillDir = join(cwd, ".pragma", "skills", "my-skill");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      "---\nname: my-skill\ndescription: A test skill.\n---\n",
+    );
+    // A hand-placed directory sitting exactly where the link would go.
+    mkdirSync(join(cwd, ".agents", "skills", "my-skill"), { recursive: true });
+
+    const rows = await bandedChecks(bootRuntime(FLAGS, cwd), "pragma");
+    const row = rows.find((r) => r.name === "skills" && r.band === "project");
+    expect(row?.status).not.toBe("pass");
+    expect(row?.detail).toContain("real directory");
+    // And the remedy is the one that settles it — rerunning setup skips it.
+    expect(row?.remedy).toMatch(/Move or delete/);
+  });
+});
+
 describe("doctor — an unconfigured opt-in integration is available, not a fault", () => {
   it("a detected harness with no MCP entry reports available with the setup command", async () => {
     // Windsurf is detected (project signal) but nothing is configured. A fresh
