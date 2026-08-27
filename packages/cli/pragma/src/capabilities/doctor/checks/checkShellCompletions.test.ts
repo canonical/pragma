@@ -109,6 +109,29 @@ describe("checkShellCompletions — install probe (gate 2)", () => {
     expect(result.remedy).toBe("pragma setup completions");
   });
 
+  it("does not claim a script is installed when the binary is off PATH", async () => {
+    // This gate runs before the install probe, so it saw only that the binary
+    // does not resolve — and reported `bash script installed, but ...` on a
+    // machine where nothing had ever been installed. Anyone invoking this CLI
+    // by absolute path lands here, and the row invented the file it exists to
+    // report on.
+    process.env.PATH = tmp(); // an empty PATH: no binary to find
+    const result = await check(tmp(), "bash");
+    expect(result.detail).not.toMatch(/script installed/);
+    expect(result.detail).toMatch(/is not on PATH/);
+    // Nothing was installed, so nothing that exists is broken.
+    expect(result.status).toBe("available");
+    expect(result.remedy).toMatch(/on your PATH/);
+  });
+
+  it("fails when an INSTALLED script cannot reach the binary", async () => {
+    installScript("bash");
+    process.env.PATH = tmp();
+    const result = await check(tmp(), "bash");
+    expect(result.status).toBe("fail");
+    expect(result.detail).toMatch(/script installed, but/);
+  });
+
   it("passes for bash once the up-to-date script is at its real path", async () => {
     installScript("bash");
     const result = await check(tmp(), "bash");

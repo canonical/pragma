@@ -161,11 +161,20 @@ export async function checkShellCompletions(
   // The installed script delegates every name context to the binary. A script
   // that cannot reach it is inert, and reporting it as current is the same
   // false green this row already told once.
+  //
+  // This gate runs BEFORE the install probe, so it says only what it has
+  // verified: that the binary does not resolve. Claiming "script installed" here
+  // told a user running this CLI by absolute path that a script they had never
+  // installed was broken — an invented file, in the row whose whole job is to
+  // report the real one. Nothing installed is still the opt-in `available` tier.
   if (!d.binOnPath) {
+    const installed = state !== "absent";
     return {
       name: NAME,
-      status: "fail",
-      detail: `${shell} script installed, but \`${BIN_NAME}\` is not on PATH — the script cannot run it`,
+      status: installed ? "fail" : "available",
+      detail: installed
+        ? `${shell} script installed, but \`${BIN_NAME}\` is not on PATH — the script cannot run it`
+        : `resolver OK; \`${BIN_NAME}\` is not on PATH — an installed script cannot run it`,
       remedy: `Put \`${BIN_NAME}\` on your PATH.`,
     };
   }
