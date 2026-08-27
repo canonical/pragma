@@ -268,6 +268,19 @@ export interface PackLookup {
    */
   readonly types?: readonly string[];
   /**
+   * Relative importance per addressed type, prefixed type → 0–1 (unlisted types
+   * default to 1). Editorial judgement about which of a noun's classes matters
+   * most, declared as DATA rather than frozen into the kernel — it feeds the MCP
+   * listing's `annotations.priority` AND breaks ties in URI-completion ranking,
+   * so a `ds:Subcomponent` at 0.6 sinks below every component at equal match.
+   *
+   * A separate map rather than an entry shape on `types` so `types` keeps its
+   * flat `readonly string[]` form and the addition is non-breaking. A key naming
+   * a type the lookup does not address is REJECTED, not ignored: a silent no-op
+   * is how a weight that never applied survives review.
+   */
+  readonly weights?: Readonly<Record<string, number>>;
+  /**
    * GraphQL type or interface the generated document's inline fragment targets
    * (`source: "graphql"` only). Defaults to the local name of `type`; required
    * when `types` is used (an interface covering all of them, e.g. `"UIBlock"`).

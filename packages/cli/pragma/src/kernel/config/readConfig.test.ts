@@ -101,12 +101,15 @@ describe("readConfig — layering + provenance", () => {
     freshXdg();
     writeGlobal('{"help":"Global help"}');
     const dir = projectWith(
-      'export default { name: "acme", colophon: { markdown: "By Acme." }, issuesUrl: "https://acme.test/issues", tier: "core" };',
+      'export default { name: "acme", logo: ["ACME"], colophon: { markdown: "By Acme." }, issuesUrl: "https://acme.test/issues", tier: "core" };',
     );
 
     const { config, origins } = await readConfig(dir);
 
     expect(config).not.toHaveProperty("name");
+    // `logo` is identity too: accepted by the shared schema, silent in a layer.
+    expect(config).not.toHaveProperty("logo");
+    expect(origins).not.toHaveProperty("logo");
     expect(config).not.toHaveProperty("help");
     expect(config).not.toHaveProperty("colophon");
     expect(config).not.toHaveProperty("issuesUrl");

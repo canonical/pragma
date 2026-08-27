@@ -244,17 +244,68 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
 }
 
 /**
+ * One slice of the index a module contributes to the MCP resource listing.
+ *
+ * Deliberately the vocabulary of {@link CompletionSourceRef} — a listing and a
+ * completion address the same index by the same three facts (which type, which
+ * box, what to yield), and a second vocabulary for that would be a second
+ * writing of one decision. The only source a listing can read is the index, so
+ * `from` is implied and absent.
+ */
+export interface McpListableRef {
+  /** Prefixed type filter (e.g. `ds:Component`) — empty = any type. */
+  readonly type?: string;
+  /** Restrict to schema (`tbox`) or individuals (`abox`); empty = both. */
+  readonly box?: "tbox" | "abox";
+  /**
+   * What the slice yields: `"collection"` lists ONE entry — the class entry
+   * for {@link type}, carrying its instance count — while `"entities"` lists
+   * every matching entity. Default `"entities"`.
+   */
+  readonly as?: "collection" | "entities";
+  /**
+   * Relative importance, 0–1 (default 1). Feeds MCP `annotations.priority` on
+   * the listed resource AND breaks ties in URI-completion ranking, so the two
+   * judgements about what matters most are ONE declaration rather than two
+   * constants in the kernel.
+   */
+  readonly weight?: number;
+}
+
+/**
+ * A module's declared contribution to the MCP resource listing.
+ *
+ * The listing is the UNION of every module's slices. It exists because
+ * `resources/list` has no working pagination in the SDK (the high-level
+ * `McpServer` list handler ignores `request.params.cursor` and never returns
+ * `nextCursor`), so the listing is curated rather than paged: every byte it
+ * spends on connect is context the agent cannot spend on the task.
+ *
+ * DERIVED wherever the module is compiled from a read story — a story already
+ * declares the type set it addresses (`PackLookup.type`/`types`), so its
+ * listing is read off that declaration, never authored a second time.
+ */
+export interface McpListable {
+  readonly sources: readonly McpListableRef[];
+}
+
+/**
  * An MCP resource provider — the ONE non-tool projection a module may add.
  *
  * `register` installs a `{+uri}` resource template on the server (listing +
  * autocomplete are storeless over the pack index; a read is store-backed and
  * shares the CLI's entity reader). Resources are NOT tools, so they never enter
  * the emitted tool surface; the projector calls this per module that declares it.
+ *
+ * `register` receives the WHOLE effective module set, not just its own module:
+ * the listing a provider installs is the union of every module's
+ * {@link McpListable}, which no single module can see.
  */
 export interface McpResourceProvider {
   readonly register: (
     server: import("@modelcontextprotocol/sdk/server/mcp.js").McpServer,
     rt: PragmaRuntime,
+    modules: readonly CapabilityModule[],
   ) => void;
   /**
    * A static declaration of the resource template ids this provider installs
@@ -432,6 +483,13 @@ export interface CapabilityModule {
   readonly boot?: (rt: PragmaRuntime) => void;
   /** An optional MCP resource surface (NOT a VerbSpec field — a module hook). */
   readonly mcpResources?: McpResourceProvider;
+  /**
+   * The slices of the index this module contributes to the MCP resource
+   * listing (NOT a VerbSpec field — a module hook, like `mcpResources`). A
+   * story-compiled module gets it DERIVED from its lookup's declared types;
+   * only an authored module declares it by hand.
+   */
+  readonly mcpListable?: McpListable;
   /** An optional MCP prompt surface (NOT a VerbSpec field — a module hook). */
   readonly mcpPrompts?: McpPromptProvider;
   /** An optional CLI mount for the module's noun (NOT a VerbSpec field). */

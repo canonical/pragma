@@ -40,7 +40,7 @@ const queryVerb: VerbSpec<Record<string, unknown>, QueryResult> = {
       note: "list every component subject",
     },
     {
-      cmd: `${BIN_NAME} graph query "ASK { ds:button a ds:Component }" --format json`,
+      cmd: `${BIN_NAME} graph query "ASK { <https://ds.canonical.com/global.component.button> a ds:Component }" --format json`,
     },
   ],
   capability: {

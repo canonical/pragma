@@ -17,6 +17,7 @@
 
 import pkg from "../package.json" with { type: "json" };
 import identity from "../pragma.conf.js";
+import type { RawConfig } from "./kernel/config/types.js";
 import { DETAIL_LEVELS, type DetailLevel } from "./kernel/config/types.js";
 
 /** CLI binary name — the distribution's `name`. */
@@ -74,6 +75,30 @@ type OutputFormat = (typeof OUTPUT_FORMATS)[number];
 /** Default detail level when neither flag, config, nor spec pins one. */
 const DEFAULT_DETAIL_LEVEL: DetailLevel = "standard";
 
+/**
+ * The wordmark `--help` opens with, as raw ASCII-art lines.
+ *
+ * PROJECTED from the distribution config, exactly like {@link BIN_NAME} and
+ * {@link PROGRAM_DESCRIPTION} — a wordmark spells a name, so it is identity, and
+ * `kernel/copy.test.ts` forbids any kernel string from naming the distribution.
+ * Authoring the art here would have branded a fork's front door with someone
+ * else's logo; declaring it as data means a fork ships its own or none.
+ *
+ * Lines rather than one string because the art contains a backtick and
+ * backslashes: a template literal would need every one of them escaped, which is
+ * how a character gets lost the next time someone edits it.
+ */
+// Read through the DECLARED type, not the literal's inferred one. The
+// distribution config is `satisfies RawConfig`, which narrows to exactly the
+// keys that file writes — so `identity.logo` does not typecheck in a fork that
+// omits the field, which is precisely the fork this feature promises a bare
+// header. The assignment (not a cast) is what `satisfies` already guarantees,
+// and it makes every OPTIONAL field readable here. The other constants keep
+// reading `identity` directly, so their literal types are untouched.
+const declared: RawConfig = identity;
+
+const PROGRAM_LOGO: readonly string[] = declared.logo ?? [];
+
 export type { DetailLevel, OutputFormat };
 export {
   BIN_NAME,
@@ -83,6 +108,7 @@ export {
   MCP_SERVER_NAME,
   OUTPUT_FORMATS,
   PROGRAM_DESCRIPTION,
+  PROGRAM_LOGO,
   PROJECT_CONFIG_FILENAME,
   RECOVERY_CLI_PREFIX,
   VERSION,
