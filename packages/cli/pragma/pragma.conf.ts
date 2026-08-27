@@ -610,6 +610,14 @@ Made by the Canonical Webteam — https://canonical.com.`,
       source: "git+https://github.com/canonical/web-code-standards.git#main",
       stories: codeStandardsStories,
     },
+    // The implementation graph: ds:ImplementationLibrary / ds:ImplementationObject
+    // nodes collected from `@implements` annotations across this monorepo
+    // (regenerated each release into the root `data/` directory, which is what
+    // a git ref scans — the npm distribution is `@canonical/ds-implementations`).
+    {
+      name: "@canonical/ds-implementations",
+      source: "git+https://github.com/canonical/pragma.git#main",
+    },
   ],
   // This distribution's domain namespaces, declared once and read twice.
   //

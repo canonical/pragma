@@ -109,9 +109,10 @@ jobs:
     needs: version
     # OIDC trusted publishing: GitHub mints a short-lived npm token at publish
     # time instead of using a long-lived NPM_AUTH_TOKEN secret.
+    # contents:write lets the job create the GitHub Release for the tag.
     permissions:
       id-token: write
-      contents: read
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -147,3 +148,10 @@ jobs:
           fi
           echo "Publishing $VERSION to dist-tag '$DIST_TAG'"
           lerna publish --yes --no-private --dist-tag "$DIST_TAG" from-package
+
+      - name: Create GitHub Release with artifacts
+        uses: ./.github/actions/github-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          version: ${{ needs.version.outputs.VERSION }}

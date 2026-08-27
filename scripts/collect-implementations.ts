@@ -15,13 +15,12 @@ import { readFile, writeFile, mkdir, access } from "node:fs/promises";
 import { join, dirname, relative, resolve } from "node:path";
 import { glob } from "tinyglobby";
 
-// Import from design-system repo (will change to package import when published)
 import {
 	scanAnnotations,
 	generateLibraryTurtle,
 	generateObjectsTurtle,
-} from "../../design-system/src/collect/index.js";
-import type { CollectConfig } from "../../design-system/src/collect/types.js";
+} from "@canonical/design-system/src/collect/index.js";
+import type { CollectConfig } from "@canonical/design-system/src/collect/types.js";
 
 // -------------------------------------------------------------------
 // Types
@@ -174,6 +173,7 @@ function slugify(name: string): string {
 function mergeConfigs(
 	root: RootConfig,
 	pkg: DiscoveredPackage,
+	version?: string,
 ): CollectConfig {
 	const { config, packageJson, relativePath } = pkg;
 
@@ -196,6 +196,9 @@ function mergeConfigs(
 		prefix: root.prefix,
 		pattern,
 		outputDir,
+		version,
+		repository: root.repository,
+		sourcePath: relativePath,
 	};
 }
 
@@ -214,6 +217,8 @@ interface CollectResult {
 interface CollectOptions {
 	centralized?: boolean;
 	rootDir?: string;
+	/** Base output directory for centralized mode (default: {rootDir}/data) */
+	outDir?: string;
 }
 
 async function collectPackage(
@@ -237,9 +242,10 @@ async function collectPackage(
 	let outputPath: string;
 
 	if (options.centralized && options.rootDir) {
-		// Centralized: all output to root data/{librarySlug}/
-		outputDir = join(options.rootDir, "data", librarySlug);
-		outputPath = `data/${librarySlug}`;
+		// Centralized: all output to {outDir}/{librarySlug}/
+		const baseDir = options.outDir || join(options.rootDir, "data");
+		outputDir = join(baseDir, librarySlug);
+		outputPath = relative(options.rootDir, outputDir);
 	} else {
 		// Distributed: output to each package's data/
 		outputDir = join(cwd, config.outputDir || "data");
@@ -276,7 +282,7 @@ async function collectPackage(
 // -------------------------------------------------------------------
 
 async function generateAggregateIndex(
-	rootDir: string,
+	outDir: string,
 	rootConfig: RootConfig,
 	results: CollectResult[],
 ): Promise<void> {
@@ -293,18 +299,25 @@ async function generateAggregateIndex(
 		``,
 	];
 
-	for (const result of results) {
+	// Sort for deterministic output so regenerated files diff cleanly
+	const sorted = [...results].sort((a, b) =>
+		a.librarySlug.localeCompare(b.librarySlug),
+	);
+
+	for (const result of sorted) {
+		// seeAlso must be an absolute IRI: the graph loads this file without a
+		// base IRI, and Turtle parsers reject relative IRIs in that case.
+		const seeAlso = `${rootConfig.repository}/blob/main/data/${result.librarySlug}/implementationLibrary.ttl`;
 		lines.push(`${p}:implementation.library.${result.librarySlug}`);
 		lines.push(`    a ${p}:ImplementationLibrary;`);
-		lines.push(`    rdfs:seeAlso <${result.outputPath}/implementationLibrary.ttl>;`);
+		lines.push(`    rdfs:seeAlso <${seeAlso}>;`);
 		lines.push(`    ${p}:implementationCount ${result.annotationCount}.`);
 		lines.push(``);
 	}
 
-	const outputDir = join(rootDir, "data");
-	await mkdir(outputDir, { recursive: true });
+	await mkdir(outDir, { recursive: true });
 
-	const indexPath = join(outputDir, "implementations.ttl");
+	const indexPath = join(outDir, "implementations.ttl");
 	await writeFile(indexPath, lines.join("\n"), "utf-8");
 }
 
@@ -321,6 +334,9 @@ Usage: bun scripts/collect-implementations.ts [options]
 
 Options:
   --package <path>   Process only the specified package
+  --version <v>      Release version stamped as ds:version / ds:versionedLink
+                     (default: the current version from lerna.json)
+  --out <dir>        Base output directory for centralized mode (default: data/)
   --distributed      Output data to each package's data/ folder (default: centralized)
   --no-aggregate     Skip generating aggregate index
   --help, -h         Show this help message
@@ -330,6 +346,7 @@ Use --distributed to output to each package's own data/ folder instead.
 
 Examples:
   bun scripts/collect-implementations.ts
+  bun scripts/collect-implementations.ts --version 0.35.0
   bun scripts/collect-implementations.ts --package packages/ds-types
   bun scripts/collect-implementations.ts --distributed
 `);
@@ -355,9 +372,28 @@ Examples:
 	// Parse args
 	const packageArg = args.indexOf("--package");
 	const specificPackage = packageArg !== -1 ? args[packageArg + 1] : null;
+	const versionArg = args.indexOf("--version");
+	const outArg = args.indexOf("--out");
+	const outDir = outArg !== -1 ? resolve(args[outArg + 1]) : join(rootDir, "data");
 	const skipAggregate = args.includes("--no-aggregate");
 	const distributed = args.includes("--distributed");
 	const centralized = !distributed; // Centralized is now the default
+
+	// Release version: explicit flag, else the current version from lerna.json.
+	// Stamped as ds:version on each library and used to build versionedLink
+	// blob URLs pinned to the release tag.
+	let version: string | undefined;
+	if (versionArg !== -1) {
+		version = args[versionArg + 1];
+	} else {
+		const lernaPath = join(rootDir, "lerna.json");
+		if (await fileExists(lernaPath)) {
+			version = JSON.parse(await readFile(lernaPath, "utf-8")).version;
+		}
+	}
+	if (version) {
+		console.log(`Release version: ${version}`);
+	}
 
 	if (centralized) {
 		console.log("Mode: centralized (all output to root data/)");
@@ -386,12 +422,13 @@ Examples:
 	const collectOptions: CollectOptions = {
 		centralized,
 		rootDir,
+		outDir,
 	};
 
 	for (const pkg of packages) {
 		console.log(`\n--- ${pkg.relativePath} ---`);
 
-		const config = mergeConfigs(rootConfig, pkg);
+		const config = mergeConfigs(rootConfig, pkg, version);
 		console.log(`  Platform: ${config.platform}`);
 		console.log(`  Pattern: ${config.pattern}`);
 
@@ -405,8 +442,8 @@ Examples:
 	// Generate aggregate index
 	if (!skipAggregate && results.length > 0) {
 		console.log(`\n--- Aggregate Index ---`);
-		await generateAggregateIndex(rootDir, rootConfig, results);
-		console.log(`  Written: data/implementations.ttl`);
+		await generateAggregateIndex(outDir, rootConfig, results);
+		console.log(`  Written: ${relative(rootDir, join(outDir, "implementations.ttl"))}`);
 	}
 
 	console.log(`\nDone! Processed ${results.length} package(s)`);
