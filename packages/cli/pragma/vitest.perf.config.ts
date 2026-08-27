@@ -25,7 +25,12 @@ export default defineConfig({
     include: ["src/testing/perf/**/*.test.ts"],
     setupFiles: ["./src/testing/setupXdgIsolation.ts"],
     // Emits `dist/` once if missing — the entry the budgets spawn.
-    globalSetup: ["./src/testing/perf/globalSetup.ts"],
+    globalSetup: [
+      "./src/testing/perf/globalSetup.ts",
+      // Allocates the run-level temp root BEFORE any worker starts and
+      // removes it after the last one exits. `setupXdgIsolation.ts` reads it.
+      "./src/testing/tempRoot.globalSetup.ts",
+    ],
     environment: "node",
     // No cross-file parallelism: the perf tests run one at a time (never
     // alongside each other or coverage workers), so a wall-clock spawn
