@@ -73,7 +73,7 @@ Bun.serve({
       });
     }
 
-    const appResult = (createAppRenderer as CreateAppRenderer)(req);
+    const appResult = await (createAppRenderer as CreateAppRenderer)(req);
 
     if (appResult.kind === "redirect") {
       return new Response(null, {

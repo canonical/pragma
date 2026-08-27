@@ -65,8 +65,11 @@ Bun.serve({
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(requestUrl, template);
 
-      const { default: EntryServer, resolveRouteDisposition } =
-        await vite.ssrLoadModule("/src/server/entry.tsx");
+      const {
+        default: EntryServer,
+        prefetchRouteData,
+        resolveRouteDisposition,
+      } = await vite.ssrLoadModule("/src/server/entry.tsx");
 
       const disposition = resolveRouteDisposition(requestUrl);
 
@@ -76,6 +79,11 @@ Bun.serve({
           headers: { location: disposition.location },
         });
       }
+
+      // Fetch-then-render: run the matched route's declared server query so
+      // its captured responses ride the bootstrap script (fixed at stream
+      // start); absent or failed, the client fetches after hydration.
+      const relayPayloads = await prefetchRouteData(disposition);
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
@@ -102,6 +110,7 @@ Bun.serve({
           url: requestUrl,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
           locale,
+          ...(relayPayloads ? { relayPayloads } : {}),
           ...(disposition.dehydratedState ?? {}),
         },
         {

@@ -22,6 +22,7 @@ import { JSXRenderer } from "@canonical/react-ssr/renderer";
 import { getRequestUrl } from "@canonical/react-ssr/server";
 import EntryServer, {
   type InitialData,
+  prefetchRouteData,
   type RouteDisposition,
   resolveRouteDisposition,
 } from "./entry.js";
@@ -52,19 +53,27 @@ export type AppRendererResult =
     }
   | Extract<RouteDisposition, { kind: "redirect" }>;
 
-export default function createAppRenderer(
+export default async function createAppRenderer(
   request: Request | IncomingMessage,
-): AppRendererResult {
+): Promise<AppRendererResult> {
   const { theme } = extractPreferences(cookieHeader(request));
-  const initialData: InitialData = {
-    url: getRequestUrl(request),
-    theme: theme === "light" || theme === "dark" ? theme : undefined,
-  };
-  const disposition = resolveRouteDisposition(initialData.url ?? "/");
+  const url = getRequestUrl(request);
+  const disposition = resolveRouteDisposition(url ?? "/");
 
   if (disposition.kind === "redirect") {
     return disposition;
   }
+
+  // Fetch-then-render: the matched route's declared server query runs now so
+  // its captured responses can ride the bootstrap script (which is fixed at
+  // stream start). Absent or failed, the page renders and the client fetches.
+  const relayPayloads = await prefetchRouteData(disposition);
+
+  const initialData: InitialData = {
+    url,
+    theme: theme === "light" || theme === "dark" ? theme : undefined,
+    ...(relayPayloads ? { relayPayloads } : {}),
+  };
 
   // Flat-spread the dehydrated router state into the page payload; the client
   // reads it back with readDehydratedState() and resumes the server match.

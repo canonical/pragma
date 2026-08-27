@@ -1,7 +1,6 @@
 import { useTranslation } from "@canonical/i18n-react";
 import { useHead } from "@canonical/react-head";
 import { type ReactElement, Suspense } from "react";
-import { ClientOnly } from "#lib/index.js";
 import ErrorBoundary from "./ErrorBoundary.js";
 import ProductList from "./ProductList.js";
 
@@ -25,11 +24,13 @@ export default function CatalogPage(): ReactElement {
         point it at a real endpoint instead.
       </p>
       {/*
-        SSR guard: `useLazyLoadQuery` fetches (and suspends) while rendering,
-        and the server has no way to serialize the fetched store for the
-        client yet — that lands in the follow-up SSR data-hydration PR. Until
-        then `ClientOnly` keeps the query off the server render path: the
-        server streams the fallback and the browser fetches after hydration.
+        SSR: the server prefetches this route's declared query (see
+        `serverQueries` in src/routes.tsx) and seeds both render environments
+        from the captured payloads, so `useLazyLoadQuery` (store-or-network)
+        renders synchronously on the server and on first client render — the
+        product list is real server-rendered HTML and the client issues no
+        second fetch. If the prefetch failed, the query suspends and fetches
+        through the active environment instead.
       */}
       {/*
         The canonical Relay pairing: Suspense renders the pending state while
@@ -38,13 +39,11 @@ export default function CatalogPage(): ReactElement {
         `VITE_GRAPHQL_URL` mode) — without it a thrown query error would
         unmount the whole tree to a blank page.
       */}
-      <ClientOnly fallback={<p>{t("catalog.loading")}</p>}>
-        <ErrorBoundary fallback={<p role="alert">{t("catalog.error")}</p>}>
-          <Suspense fallback={<p>{t("catalog.loading")}</p>}>
-            <ProductList />
-          </Suspense>
-        </ErrorBoundary>
-      </ClientOnly>
+      <ErrorBoundary fallback={<p role="alert">{t("catalog.error")}</p>}>
+        <Suspense fallback={<p>{t("catalog.loading")}</p>}>
+          <ProductList />
+        </Suspense>
+      </ErrorBoundary>
     </section>
   );
 }

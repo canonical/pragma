@@ -167,6 +167,21 @@ describe("server matrix (2×3) serves correctly", () => {
             const authorized = await fetch(`${server.base}/account?auth=1`);
             expect(authorized.status).toBe(200);
           }
+
+          // SSR cells serialize Relay data across the boundary: the catalog
+          // page arrives with server-rendered product markup (a name only
+          // real data produces) and carries the captured operation payloads
+          // for the client to replay — while data-less pages carry none.
+          if (cell.ssr) {
+            const catalog = await fetch(`${server.base}/catalog`);
+            expect(catalog.status).toBe(200);
+            const catalogHtml = await catalog.text();
+            expect(catalogHtml).toContain("Vanguard Workstation");
+            expect(catalogHtml).toContain("relayPayloads");
+
+            const home = await fetch(`${server.base}/`);
+            expect(await home.text()).not.toContain("relayPayloads");
+          }
         } finally {
           await server.stop();
         }

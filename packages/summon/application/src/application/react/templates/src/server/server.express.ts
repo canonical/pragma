@@ -60,8 +60,11 @@ async function start() {
       const template = fs.readFileSync("index.html", "utf-8");
       const html = await vite.transformIndexHtml(url, template);
 
-      const { default: EntryServer, resolveRouteDisposition } =
-        await vite.ssrLoadModule("/src/server/entry.tsx");
+      const {
+        default: EntryServer,
+        prefetchRouteData,
+        resolveRouteDisposition,
+      } = await vite.ssrLoadModule("/src/server/entry.tsx");
 
       const disposition = resolveRouteDisposition(url);
 
@@ -69,6 +72,11 @@ async function start() {
         res.redirect(disposition.status, disposition.location);
         return;
       }
+
+      // Fetch-then-render: run the matched route's declared server query so
+      // its captured responses ride the bootstrap script (fixed at stream
+      // start); absent or failed, the client fetches after hydration.
+      const relayPayloads = await prefetchRouteData(disposition);
       const { JSXRenderer } = await vite.ssrLoadModule(
         "@canonical/react-ssr/renderer",
       );
@@ -85,6 +93,7 @@ async function start() {
         {
           url,
           theme: theme === "light" || theme === "dark" ? theme : undefined,
+          ...(relayPayloads ? { relayPayloads } : {}),
           ...(disposition.dehydratedState ?? {}),
         },
         { htmlString: html, statusCode: disposition.status },

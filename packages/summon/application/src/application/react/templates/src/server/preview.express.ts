@@ -60,7 +60,7 @@ app.use(async (req, res, next) => {
       return;
     }
 
-    const appResult = (createAppRenderer as CreateAppRenderer)(req);
+    const appResult = await (createAppRenderer as CreateAppRenderer)(req);
 
     if (appResult.kind === "redirect") {
       res.redirect(appResult.status, appResult.location);

@@ -11,8 +11,31 @@ import { hydrateRoot } from "react-dom/client";
 import { RelayEnvironmentProvider } from "react-relay";
 import { catalogs, i18nConfig } from "#i18n/index.js";
 import { getBrowserEnvironment } from "#relay/environment.js";
-import { appRoutes, middleware, notFoundRoute } from "../routes.js";
+import {
+  appRoutes,
+  middleware,
+  notFoundRoute,
+  resolveRelayPayloads,
+  type SerializedRelayPayload,
+} from "../routes.js";
 import "#styles/index.css";
+
+// Seed the browser-session Relay environment FIRST — before the router exists
+// — from the server-captured payloads riding __INITIAL_DATA__ (SSR pages) so
+// the first `useLazyLoadQuery` reads the store instead of refetching. In the
+// SPA cells there is no payload and the environment starts empty. Order
+// matters: the first getBrowserEnvironment() caller wins, and router
+// construction below can fire warm hooks that reach for the environment.
+const embeddedRelayPayloads = (
+  window as {
+    __INITIAL_DATA__?: {
+      relayPayloads?: readonly SerializedRelayPayload[];
+    };
+  }
+).__INITIAL_DATA__?.relayPayloads;
+const relayEnvironment = getBrowserEnvironment({
+  payloads: resolveRelayPayloads(embeddedRelayPayloads),
+});
 
 // On SSR pages __INITIAL_DATA__ carries the flat dehydrated router state
 // (href/kind/routeId/status); hydrating from it resumes the server-rendered
@@ -25,10 +48,6 @@ const router = createRouter(appRoutes, {
   notFound: notFoundRoute,
   hydratedState: readDehydratedState() ?? undefined,
 });
-
-// One Relay environment (network + normalized store) for the whole browser
-// session — module scope, so client-side navigations share the cache.
-const relayEnvironment = getBrowserEnvironment();
 
 /**
  * Resolve the locale for the first client render.
