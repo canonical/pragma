@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ExecResult, Task } from "@canonical/task";
-import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
+import type { Task } from "@canonical/task";
+import { info, map } from "@canonical/task";
 
 /**
  * Resolve the pragma workspace version range that a generated app should pin
@@ -16,23 +16,13 @@ import { exec, flatMap, info, map, pure, recover } from "@canonical/task";
  * - `@canonical/design-tokens` is versioned SEPARATELY and is NOT pinned here —
  *   it reaches the app transitively via `@canonical/styles`, which owns its range.
  *
- * Resolution strategy (in order):
- * 1. At summon time, query the npm registry for the latest published version of
- *    a representative workspace package and pin `^<latest>`. This keeps freshly
- *    scaffolded apps on the newest release without a manual bump here.
- * 2. If the query fails (offline, registry down, npm missing), fall back to the
- *    version of the generator itself — because summon-application is released in
- *    lockstep with the rest of the workspace, its own version is the correct
- *    release line for the app it just generated. This is always at least as
- *    fresh as the generator binary in use.
+ * Resolution is fully offline, by design: `pragma create` performs no network
+ * calls. The generator pins the version of the release line it belongs to —
+ * summon-application is published in lockstep with the workspace packages an
+ * app depends on, so `^<own version>` is always release-correct, and two
+ * scaffolds of the same generator are byte-identical (a registry lookup here
+ * once made concurrent scaffolds race the network and diverge).
  */
-
-/**
- * A representative workspace package whose `latest` dist-tag tracks the shared
- * lerna release line. Any of the co-released packages would do; styles is a
- * root dependency of every generated app.
- */
-const REPRESENTATIVE_PACKAGE = "@canonical/styles";
 
 const OWN_PACKAGE = "@canonical/summon-application";
 
@@ -121,57 +111,29 @@ export function ownVersion(): string {
 }
 
 /**
- * The generator's own release-line version, used as the offline fallback range.
+ * The generator's own release-line version, used as the pinned range.
  * summon-application is published in lockstep with the workspace packages an app
  * depends on, so `^<own version>` is a safe, non-stale default. The module
  * always sits inside its own package, so the walk cannot miss in practice; the
  * "latest" escape survives only as a last resort for a mangled installation.
  */
-function fallbackRange(): string {
+function pinnedRange(): string {
   const own = ownVersion();
   return own === "unknown" ? "latest" : `^${own}`;
 }
 
-const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
-
 /**
- * Resolve the version range as a Task, so the npm query participates in the
- * generator pipeline (dry-run visible, cancellable) instead of firing on module
- * import. Runs `npm view <pkg> version`; on any failure or unparseable output it
- * yields the offline fallback range.
- *
- * @note Impure — spawns `npm` and reads the registry over the network.
+ * Resolve the version range as a Task so the decision is visible in the
+ * generator pipeline (dry-run included). Deterministic and offline: the range
+ * comes from the installed generator's own release line.
  */
 export function resolvePragmaVersion(): Task<string> {
-  return flatMap(
-    // A missing `npm` binary makes the spawn reject (a task failure) rather
-    // than resolve with a nonzero exit code, so recover to a synthetic failed
-    // ExecResult. Both spawn errors and nonzero exits then flow through the
-    // single fallback branch below.
-    recover(
-      exec("npm", ["view", REPRESENTATIVE_PACKAGE, "version"], undefined, {
-        // Best-effort lookup — never let a registry miss undo prior file writes.
-        undo: null,
-      }),
-      () => pure<ExecResult>({ stdout: "", stderr: "", exitCode: 1 }),
+  const pinned = pinnedRange();
+  return map(
+    info(
+      `Pinning @canonical/* packages to ${pinned} (the installed generator's release line).`,
     ),
-    (result) => {
-      const latest = result.stdout.trim();
-      if (result.exitCode === 0 && SEMVER.test(latest)) {
-        return map(
-          info(`Pinning @canonical/* packages to ^${latest} (latest on npm).`),
-          () => `^${latest}`,
-        );
-      }
-      const fallback = fallbackRange();
-      return map(
-        info(
-          `Could not reach npm for the latest @canonical/* version; ` +
-            `pinning ${fallback} (from the installed generator).`,
-        ),
-        () => fallback,
-      );
-    },
+    () => pinned,
   );
 }
 
