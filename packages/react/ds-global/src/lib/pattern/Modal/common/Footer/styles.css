@@ -1,0 +1,56 @@
+/**
+ * Modal.Footer styles
+ * @implements dso:global.subcomponent.modal-footer
+ *
+ * DSL anatomy mapping:
+ * - layout.type: flow, layout.direction: horizontal -> display: flex; flex-direction: row
+ * - layout.justify: end -> justify-content: flex-end
+ * - spacing.gap: spacing/small -> gap: var(--modal-footer-gap)
+ * - spacing.internal: spacing/medium -> padding-block / padding-inline
+ * - appearance.border.top: border/style/divider -> an inset ::before rule, not a
+ *   border (a border would span the full dialog width; the design insets the
+ *   rule to the inline padding)
+ */
+
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  /* The rules are quiet boundaries, not structural edges: `muted` is the
+     palest border token (gray-100 vs gray-520 for `--color-border`). */
+  --modal-footer-color-border: var(--color-border-muted);
+  --modal-footer-border-width: var(--dimension-stroke-thickness-medium);
+  --modal-footer-padding-block: var(--dimension-200);
+  --modal-footer-padding-inline: var(
+    --modal-padding-inline,
+    var(--dimension-300)
+  );
+  --modal-footer-gap: var(--dimension-100);
+}
+
+.ds.modal-footer {
+  /* layout.type: flow, direction horizontal, justify end */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--modal-footer-gap);
+  padding-block: var(--modal-footer-padding-block);
+  padding-inline: var(--modal-footer-padding-inline);
+  /* Never shrink: only the content pane gives way. */
+  flex: 0 0 auto;
+  /* Positions the inset rule below. */
+  position: relative;
+
+  /*
+    The second of the two horizontal rules bounding the content — inset to the
+    inline padding so it aligns with the actions and the content. See
+    Modal.Header for why this is a pseudo-element and not a border.
+  */
+  &::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: var(--modal-footer-padding-inline);
+    block-size: var(--modal-footer-border-width);
+    background-color: var(--modal-footer-color-border);
+  }
+}

@@ -1,0 +1,104 @@
+/**
+ * Modal styles
+ * @implements dso:global.pattern.modal
+ *
+ * DSL anatomy mapping:
+ * - edges[0] backdrop -> ::backdrop (painted by the native top layer, no DOM node)
+ * - edges[1] dialog container -> the <dialog> element itself
+ *   - layout.type: stack, direction vertical -> display: flex; flex-direction: column
+ *   - layout.overflow: hidden -> overflow: hidden
+ *   -  appearance.background: color/surface/overlay -> --surface-color-background,
+ *     supplied by the `.modal` surface class in @canonical/design-tokens'
+ *     modifiers.surfaces.css. That class is matched by this component's own
+ *     `ds modal` className, so renaming the component class would silently drop
+ *     the surface reset and the modal would inherit the page's layer depth.
+ 
+ *   - appearance.radius: radius/modal -> --modal-border-radius
+ *   - appearance.shadow: shadow/overlay -> no shadow token exists at
+ *     design-tokens 0.8.1, and the design shows no outline on the panel, so the
+ *     overlay alone separates the modal from the page
+ *   - size.max.width / size.max.height -> --modal-max-inline-size / --modal-max-block-size
+ */
+
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  /*
+    The panel's own colours are not component tokens: they come from the surface
+    channels read on the element itself (see `.ds.modal` below). The backdrop is,
+    because `::backdrop` has no surface channel to read.
+  */
+  --modal-color-backdrop: var(--color-backdrop);
+  --modal-border-radius: var(--dimension-radius-medium);
+
+  /*
+    One inline padding shared by the header, content and footer, so the title,
+    the horizontal rules, the content and the actions all align on the same two
+    edges — as in the design. The parts read it with their own fallback.
+  */
+  --modal-padding-inline: var(--dimension-300);
+
+  /*
+    design-tokens 0.8.1 ships no `size/modal/*` token, so these two are literals
+    rather than token references. They are the documented override point:
+    `<Modal style={{ "--modal-max-inline-size": "30rem" }} />`.
+  */
+  --modal-min-inline-size: 50ch;
+  --modal-max-inline-size: 80vw;
+  --modal-inline-size: clamp(
+    var(--modal-min-inline-size),
+    50ch,
+    var(--modal-max-inline-size)
+  );
+
+  --modal-max-block-size: 80vh;
+}
+
+.ds.modal {
+  /*
+    Padding stays on the header/content/footer, never here, so that a click
+    landing on the dialog box itself can only be a backdrop click.
+  */
+  padding: 0;
+  /* layout.overflow: hidden — the content pane is the only scroller */
+  overflow: hidden;
+
+  inline-size: var(--modal-inline-size);
+
+  max-block-size: var(--modal-max-block-size);
+
+  /*
+    Read the surface channels on the element itself. The token layer defines a
+    `.modal` surface (identical to top-level `.surface`), so the dialog paints at
+    base surface depth even when opened from a nested `.surface` — which is the
+    DSL's `color/surface/overlay`. The global tokens are the fallback for when
+    @canonical/styles is absent and the surface channels are undeclared, matching
+    how every other component in this package reads a surface.
+  */
+  color: var(--surface-color-text, var(--color-text));
+  background-color: var(--surface-color-background, var(--color-background));
+
+  /*
+    The user-agent stylesheet gives <dialog> `border: solid` (medium width, ~3px)
+    and `padding: 1em`, so both must be reset explicitly rather than merely left
+    undeclared. The design shows no outline on the panel — the overlay separates
+    it from the page.
+  */
+  border: none;
+  border-radius: var(--modal-border-radius);
+
+  /*
+    A closed <dialog> is `display: none` by user-agent rule. Declaring display
+    unconditionally here would beat that and leave the modal permanently
+    visible, so the stack layout is scoped to the open state.
+  */
+  &[open] {
+    /* layout.type: stack, layout.direction: vertical */
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* edges[0]: backdrop — mutes the page while the modal is active */
+  &::backdrop {
+    background-color: var(--modal-color-backdrop);
+  }
+}

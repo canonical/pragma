@@ -1,0 +1,77 @@
+/**
+ * Modal.Header styles
+ * @implements dso:global.subcomponent.modal-header
+ *
+ * DSL anatomy mapping:
+ * - layout.type: flow, layout.direction: horizontal -> display: flex; flex-direction: row
+ * - layout.align: center -> align-items: center
+ * - layout.justify: space-between -> justify-content: space-between
+ * - spacing.internal: spacing/medium -> padding-block / padding-inline
+ * - appearance.border.bottom: border/style/divider -> an inset ::after rule,
+ *   not a border (a border would span the full dialog width; the design insets
+ *   the rule to the inline padding)
+ */
+
+/* Component tokens — sourced from @canonical/design-tokens */
+:root {
+  /* The rules are quiet boundaries, not structural edges: `muted` is the
+     palest border token (gray-100 vs gray-520 for `--color-border`). */
+  --modal-header-color-border: var(--color-border-muted);
+  --modal-header-border-width: var(--dimension-stroke-thickness-medium);
+  --modal-header-padding-block: var(--dimension-200);
+  --modal-header-padding-inline: var(
+    --modal-padding-inline,
+    var(--dimension-300)
+  );
+  --modal-header-gap: var(--dimension-200);
+  --modal-header-font-size: var(--typography-text-primary-font-size);
+  --modal-header-font-weight: var(--typography-weight-semiBold);
+}
+
+.ds.modal-header {
+  /* layout.type: flow, direction horizontal, align center, justify space-between */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--modal-header-gap);
+  padding-block: var(--modal-header-padding-block);
+  padding-inline: var(--modal-header-padding-inline);
+  /* Never shrink: only the content pane gives way. */
+  flex: 0 0 auto;
+  /* Positions the inset rule below. */
+  position: relative;
+
+  /*
+    The first of the two horizontal rules bounding the content. Drawn as a
+    pseudo-element rather than a border so it can be inset to the inline padding
+    and align with the title, the content and the actions. A pseudo-element
+    belongs to this element for hit-testing, so a click on it targets the header
+    and never registers as a backdrop click on the dialog.
+  */
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: var(--modal-header-padding-inline);
+    block-size: var(--modal-header-border-width);
+    background-color: var(--modal-header-color-border);
+  }
+
+  > .title {
+    flex: 1;
+    font-size: var(--modal-header-font-size);
+    font-weight: var(--modal-header-font-weight);
+  }
+
+  > .close {
+    flex: 0 0 auto;
+    /*
+      Button tightens padding-inline-start when it has an icon, which suits an
+      icon+label button but leaves an icon-only one lopsided (8px vs 16px).
+      Equalise both sides through Button's own custom-property API.
+    */
+    --button-padding-inline-start: var(--dimension-100);
+    --button-padding-inline-end: var(--dimension-100);
+  }
+}
