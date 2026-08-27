@@ -158,11 +158,14 @@ describe("checkSignal — extension", () => {
     expect(result).toBe(false);
     // A missing dir is never globbed (globbing an absent dir throws).
     expect(globbed).toBe(false);
+    // One dir per row of the editor-CLI registry — the single source of truth
+    // for the VS Code family (Antigravity included).
     expect(probed).toEqual([
       "/home/tester/.vscode/extensions",
-      "/home/tester/.cursor/extensions",
       "/home/tester/.vscode-oss/extensions",
+      "/home/tester/.cursor/extensions",
       "/home/tester/.windsurf/extensions",
+      "/home/tester/.antigravity/extensions",
     ]);
   });
 });

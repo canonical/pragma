@@ -63,14 +63,36 @@ export function isInterruption(error: unknown): boolean {
 }
 
 /**
+ * The {@link PragmaError} a task failure CARRIES, if any. A task-layer failure
+ * raised through the failure channel (`failPragma` — so an enclosing `recover`
+ * such as setup's per-step isolation can catch it, which a synchronous throw
+ * bypasses) stores the original PragmaError as the TaskError's `cause`;
+ * `runTask` then wraps that TaskError in a `TaskExecutionError` whose
+ * `taskError` carries it. Walk both wrappers (bounded — the shapes nest at
+ * most a few levels) so the boundary recovers the ORIGINAL error with its
+ * code, message, and recovery intact.
+ */
+function carriedPragmaError(error: unknown): PragmaError | undefined {
+  let current: unknown = error;
+  for (let depth = 0; depth < 4 && current !== undefined; depth += 1) {
+    if (current instanceof PragmaError) return current;
+    const record = current as { taskError?: unknown; cause?: unknown } | null;
+    current = record?.taskError ?? record?.cause;
+  }
+  return undefined;
+}
+
+/**
  * Coerce a thrown value into a {@link PragmaError} for the CLI/MCP boundary,
- * bridging summon-core task-error codes: absent/invalid non-interactive answers
- * become INVALID_INPUT (a usage error, exit 2); a `PragmaError` passes through
- * unchanged; everything else stays INTERNAL_ERROR. Cancellation is handled
- * separately by {@link isCancellation} as a clean, non-error outcome.
+ * bridging summon-core task-error codes: a `PragmaError` (direct, or carried
+ * through the task failure channel as a TaskError `cause`) passes through
+ * unchanged; absent/invalid non-interactive answers become INVALID_INPUT (a
+ * usage error, exit 2); everything else stays INTERNAL_ERROR. Cancellation is
+ * handled separately by {@link isCancellation} as a clean, non-error outcome.
  */
 export function asPragmaError(error: unknown): PragmaError {
-  if (error instanceof PragmaError) return error;
+  const carried = carriedPragmaError(error);
+  if (carried !== undefined) return carried;
   const message = error instanceof Error ? error.message : String(error);
   const code = taskErrorCode(error);
   if (code !== undefined && ANSWER_USAGE_CODES.has(code)) {

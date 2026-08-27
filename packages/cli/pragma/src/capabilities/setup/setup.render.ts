@@ -68,10 +68,20 @@ function renderSetupLine(data: SetupResult): string {
           return `Installed ${data.shell} completions at ${data.path}.`;
       }
     }
-    case "lsp":
+    case "lsp": {
+      // `unknown` = no VS Code-family CLI on PATH: an honest named skip — the
+      // old copy claimed "is installed (up to date)" for every non-installed
+      // state, which was false twice over (nothing was installed, and nothing
+      // ever checks a version).
+      if (data.state === "unknown") {
+        return "No VS Code-family editor CLI found on PATH — Terrazzo LSP extension not installed.";
+      }
+      const into =
+        data.editors.length > 0 ? ` (${data.editors.join(", ")})` : "";
       return data.state === "installed"
-        ? "Terrazzo LSP extension already installed (up to date)."
-        : "Terrazzo LSP extension is installed (up to date).";
+        ? `Terrazzo LSP extension already installed${into}.`
+        : `Terrazzo LSP extension installed${into}.`;
+    }
     case "mcp":
       return summarizeMcpTargets(data.targets);
     case "skills":

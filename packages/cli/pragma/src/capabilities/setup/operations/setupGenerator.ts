@@ -30,19 +30,18 @@ import type {
 import { sequence_, type Task, when } from "@canonical/task";
 import { BIN_NAME } from "../../../constants.js";
 import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
-import { guardMissingBinary } from "../../shared/assertExecOk.js";
-import type {
-  LspState,
-  ScopeSelection,
-  SetupMode,
-  SetupResult,
-} from "../types.js";
+import type { ScopeSelection, SetupMode, SetupResult } from "../types.js";
 import {
   type CompletionsDetection,
   composeCompletions,
   detectCompletions,
 } from "./setupCompletions.js";
-import { composeLsp, detectLsp, type LspDetection } from "./setupLsp.js";
+import {
+  composeLsp,
+  detectLsp,
+  type LspDetection,
+  lspEditorNames,
+} from "./setupLsp.js";
 import {
   composeMcp,
   detectMcp,
@@ -99,25 +98,6 @@ const selectChosenGroups = (
   d: McpDetection,
   answers: Record<string, unknown>,
 ) => selectedGroups(d, resolveMcpPaths(d, answers));
-
-/**
- * The LSP-install step, guarded at its use site. An absent `bunx` (no Bun on
- * PATH) REJECTS the exec with ENOENT, which would otherwise collapse to
- * INTERNAL_ERROR ("report this issue") at the CLI/MCP boundary;
- * `guardMissingBinary` names it a UNSUPPORTED "`bunx` not found on PATH" with an
- * actionable install recovery instead. Preview-transparent — a dry-run mocks the
- * exec (no spawn) — and re-runnable (the guard is a `recover`, and `composeLsp`
- * is combinator-built), so it survives `execute`'s double interpretation.
- */
-const composeGuardedLsp = (rt: PragmaRuntime, state: LspState): Task<void> =>
-  guardMissingBinary(
-    "bunx",
-    {
-      message:
-        "Install Bun (https://bun.sh) to provide `bunx`, then run this again.",
-    },
-    composeLsp(rt.cwd, state),
-  );
 
 /** Build a generator's `meta` (no stamping — the version is just header text). */
 const buildMeta = (
@@ -292,7 +272,7 @@ function buildRunAllPlan(
           chosen.includes("completions"),
           composeCompletions(detected.completions),
         ),
-        when(chosen.includes("lsp"), composeGuardedLsp(rt, detected.lsp.state)),
+        when(chosen.includes("lsp"), composeLsp(detected.lsp)),
         when(
           chosen.includes("mcp"),
           composeMcp(detected.mcp, selectChosenGroups(detected.mcp, answers)),
@@ -363,9 +343,13 @@ export async function buildSetupPlan(
       const d = await detectLsp(rt.cwd);
       return {
         generator: buildSingleStep(rt, `${BIN_NAME} setup lsp`, [], () =>
-          composeGuardedLsp(rt, d.state),
+          composeLsp(d),
         ),
-        toResult: () => ({ kind: "lsp", state: d.state }),
+        toResult: () => ({
+          kind: "lsp",
+          state: d.state,
+          editors: lspEditorNames(d),
+        }),
       };
     }
 

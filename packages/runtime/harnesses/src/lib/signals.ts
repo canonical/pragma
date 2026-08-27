@@ -20,6 +20,7 @@ import {
   type Task,
   traverse,
 } from "@canonical/task";
+import editorClis from "./editors.js";
 import { type PlatformEnv, userHome } from "./platformPaths.js";
 import type { DetectionSignal } from "./types.js";
 
@@ -103,26 +104,13 @@ const checkProcess = (
 };
 
 /**
- * The VS Code-family extension roots probed for an `extension` signal, relative
- * to home. VS Code and its forks each keep their own extensions directory in the
- * identical `<id>-<version>` layout, so an extension installed under ANY of them
- * counts: stock VS Code (`~/.vscode`), Cursor (`~/.cursor`), VSCodium
- * (`~/.vscode-oss`), and Windsurf (`~/.windsurf`).
- */
-const VSCODE_FAMILY_EXTENSION_ROOTS = [
-  ".vscode",
-  ".cursor",
-  ".vscode-oss",
-  ".windsurf",
-] as const;
-
-/**
  * Check an `extension` signal: whether any installed VS Code-family extension
- * directory `<id>-<version>/` is present. VS Code and its forks (Cursor,
- * VSCodium, Windsurf) keep extensions under the same `<root>/extensions` layout,
- * so every known family root ({@link VSCODE_FAMILY_EXTENSION_ROOTS}) is probed
- * and ANY match counts. Each directory is confirmed to exist before it is
- * globbed, since globbing a missing directory throws.
+ * directory `<id>-<version>/` is present. VS Code and its forks keep
+ * extensions under the same `<dir>/<id>-<version>` layout, so every editor in
+ * the {@link editorClis} registry is probed (one source of truth for the
+ * family — previously a local root list here that had drifted, e.g. it lacked
+ * Antigravity) and ANY match counts. Each directory is confirmed to exist
+ * before it is globbed, since globbing a missing directory throws.
  *
  * The pattern targets the `package.json` MANIFEST inside each versioned
  * extension directory, not the directory itself: the `glob` effect lists files
@@ -134,9 +122,8 @@ const checkExtension = (
   signal: Extract<DetectionSignal, { type: "extension" }>,
   ctx: DetectContext,
 ): Task<boolean> => {
-  const home = userHome(ctx.platform);
-  const extensionDirs = VSCODE_FAMILY_EXTENSION_ROOTS.map((root) =>
-    join(home, root, "extensions"),
+  const extensionDirs = editorClis.map((editor) =>
+    editor.extensionsDir(ctx.platform),
   );
   return map(
     traverse(extensionDirs, (extensionsDir) =>
