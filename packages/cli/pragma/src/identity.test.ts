@@ -276,9 +276,10 @@ describe("identity projection — a fork changes values, not code (PROTECTED)", 
     // ONE exemption, the same one the MCP orientation case above makes and for
     // the same reason: the `pragma:` resource scheme is covenant-frozen PROTOCOL
     // identity (`surface.v2.json`), inherited by a fork along with the
-    // `pragma/box` and `pragma/instanceCount` `_meta` keys it travels with, and
-    // `tools.md` reports it truthfully. Masked from the emitted surface, not by
-    // a literal, so a leak the kernel authored itself still fails here.
+    // `pragma/box`, `pragma/instanceCount` and `pragma/type` `_meta` keys it
+    // travels with, and `tools.md` reports it truthfully. Masked from the
+    // emitted surface, not by a literal, so a leak the kernel authored itself
+    // still fails here.
     const { emitReference } = await import("./kernel/spec/emitReference.js");
     const { emitSurface } = await import("./kernel/spec/emitSurface.js");
     const { capabilities } = await import("./capabilities/index.js");

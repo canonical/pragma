@@ -158,8 +158,19 @@ function loadActiveIndex(cwd: string): PackIndex | undefined {
     : readIndexFile(packDir(contentHash));
 }
 
-/** Whether an entity matches a prefixed type filter (primary type or any type). */
-function matchesType(entity: PackIndexEntity, type: string): boolean {
+/**
+ * Whether an entity matches a prefixed type filter (primary type or any type).
+ *
+ * Exported because the MCP resource listing addresses the index by the SAME
+ * vocabulary a completion source does (`McpListableRef` reuses
+ * `CompletionSourceRef`'s fields), and "which entities is this type?" must be
+ * ONE rule — two would let a type list entities its completion refuses.
+ *
+ * @param entity - The indexed entity to test.
+ * @param type - A prefixed type filter; empty matches every entity.
+ * @returns Whether the entity carries that type.
+ */
+export function matchesType(entity: PackIndexEntity, type: string): boolean {
   if (!type) return true;
   if (entity.type === type) return true;
   return Array.isArray(entity.types) && entity.types.includes(type);

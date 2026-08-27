@@ -187,6 +187,7 @@ Read-only.
 | Parameter | Type | Required | Description |
 | --- | --- | --- | --- |
 | `uri` | string | yes | The subject URI — a prefixed name or absolute IRI. |
+| `detail` | enum(summary, standard, detailed) | no | Progressive-disclosure level (default standard). |
 
 ### graph_query
 

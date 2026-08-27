@@ -16,7 +16,19 @@ sample, because the user pays it.
 | project `pragma.config.ts`   | < 10 ms warm    |
 | warm store-backed verb       | < 300 ms        |
 | MCP p95 (warm)               | < 100 ms        |
+| `resources/list` payload     | < 60 KB         |
 | condensed SDL (tool catalog) | ≤ 8000 tokens   |
+
+The `resources/list` ceiling is a SIZE budget, not a latency one, and it is
+enforced where the payload is built rather than by the perf pass:
+`capabilities/resources/resources.test.ts` asserts it both off
+`buildResourceList` and off what actually crosses the wire. Size is what an
+agent pays for twice — once in transfer, once in the context window it can no
+longer spend on the task — and a listing that enumerated all 712 indexed
+entities cost ~155 KB on every connect. The MCP SDK's high-level list handler
+ignores `cursor` and never returns `nextCursor`, so there is no paging to fall
+back on: the listing is curated to the declared collections (~35 KB) and the
+individuals are reached through the `pragma:{+uri}` template's autocomplete.
 
 ## Measured (day-1 perf spike, commit 6)
 

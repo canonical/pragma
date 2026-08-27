@@ -21,6 +21,18 @@ export const BLOCK_PREFIXES: Readonly<Record<string, string>> = {
   xsd: "http://www.w3.org/2001/XMLSchema#",
 };
 
+/**
+ * A membership roster deep enough to cross the entity read's fan-in threshold,
+ * so the fixture exercises the SAMPLED branch and not only the listed one.
+ * Generated rather than written out: the count is the whole point of the case,
+ * and 22 hand-copied lines invite someone to "tidy" one away.
+ */
+const ROSTER_MEMBER_COUNT = 22;
+const ROSTER_MEMBERS = Array.from(
+  { length: ROSTER_MEMBER_COUNT },
+  (_, index) => `ds:probe.member${index} a ds:Probe ; ds:tier ds:rosterHub .`,
+).join("\n");
+
 /** The fixture ontology + individuals as Turtle. */
 export const BLOCK_TTL = `
 @prefix ds: <https://ds.canonical.com/> .
@@ -109,4 +121,41 @@ ds:mod.importance.secondary a ds:Modifier ; ds:name "secondary" ; ds:modifierFam
 ds:mod.density.compact a ds:Modifier ; ds:name "compact" ; ds:modifierFamily ds:family.density .
 ds:mod.size.small a ds:Modifier ; ds:name "small" ; ds:modifierFamily ds:family.size .
 ds:mod.size.large a ds:Modifier ; ds:name "large" ; ds:modifierFamily ds:family.size .
+
+# ---- Neighbourhood-read probes ----
+# Typed \`ds:Probe\`, which is deliberately NOT declared as an owl:Class and is
+# outside the block VALUES set, so these individuals reach the entity reader
+# without entering any block list or the ontology class listing.
+#
+# literalTrap holds a STRING that begins with the ds: namespace. Read through
+# the lossy string view it was indistinguishable from an IRI and got compacted
+# into something that read back as one; the term view is what tells them apart.
+ds:literalTrap a ds:Probe ;
+  ds:name "literal trap" ;
+  ds:figmaLink "https://ds.canonical.com/not-an-iri" .
+
+# blankHolder carries blank-node objects — store-local handles that re-mint on
+# every load — so the read must inline them as records AND order those records
+# by content rather than by the label that grouped them.
+ds:blankHolder a ds:Probe ;
+  ds:name "blank holder" ;
+  ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "decision" ; ds:change "Split the button." ] ;
+  ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "revision" ; ds:change "Renamed the slot." ] .
+
+# One blank node reached by TWO predicates — keyed by node alone, the second
+# edge silently vanished.
+ds:doubleLinked a ds:Probe ;
+  ds:name "double linked" ;
+  ds:changeLog [ a ds:ChangeLogEntry ; ds:changeType "decision" ] ;
+  ds:usageNote [ a ds:ChangeLogEntry ; ds:changeType "note" ] .
+
+# An RDF 1.2 directional literal — dropped, it reads as a plain @ar literal.
+ds:directional a ds:Probe ;
+  ds:name "\u0645\u0631\u062D\u0628\u0627"@ar--rtl .
+
+# The roster hub also carries ONE edge under a different predicate, so a read
+# can prove that a 22-deep neighbour does not evict its quieter sibling.
+ds:rosterHub a ds:Probe ; ds:name "roster hub" .
+ds:probe.quiet a ds:Probe ; ds:hasSubcomponent ds:rosterHub .
+${ROSTER_MEMBERS}
 `;
