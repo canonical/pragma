@@ -314,3 +314,65 @@ describe("error render matrix (× plain/llm/json)", () => {
     }).toMatchSnapshot();
   });
 });
+
+describe("section-body headings nest under the heading the renderer gives them", () => {
+  interface Doc {
+    readonly guidelines: string;
+  }
+
+  const render = (guidelines: string): string =>
+    renderLookupLlm<Doc>({ guidelines }, {
+      title: () => "Button",
+      fields: [],
+      sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+    });
+
+  it("demotes authored headings that collide with the section heading", () => {
+    const out = render(
+      "### Accessibility\n\n- Label the button.\n\n### Content\n\n- Verb first.",
+    );
+    expect(out).toContain("### Guidelines");
+    expect(out).toContain("#### Accessibility");
+    expect(out).toContain("#### Content");
+    expect(out).not.toMatch(/^### Accessibility$/m);
+  });
+
+  it("preserves the content's own hierarchy while shifting it as a block", () => {
+    const out = render("## Overview\n\ntext\n\n### Detail\n\nmore");
+    expect(out).toContain("#### Overview");
+    expect(out).toContain("##### Detail");
+  });
+
+  it("leaves content already nested below the section alone", () => {
+    const out = render("#### Already nested\n\ntext");
+    expect(out).toContain("#### Already nested");
+    expect(out).not.toContain("##### Already nested");
+  });
+
+  it("never emits a heading deeper than markdown's floor", () => {
+    const out = render("###### Deep\n\ntext");
+    expect(out).toContain("###### Deep");
+  });
+
+  it("leaves `#` inside a fenced code block exactly as authored", () => {
+    const out = render("### Setup\n\n```sh\n# not a heading\nbun install\n```");
+    expect(out).toContain("#### Setup");
+    expect(out).toContain("# not a heading");
+    expect(out).not.toContain("## not a heading");
+  });
+
+  it("leaves a body with no headings untouched", () => {
+    const out = render("Plain prose with a # hash mid-line.");
+    expect(out).toContain("Plain prose with a # hash mid-line.");
+  });
+
+  it("does not rewrite the plain body, where `###` is literal text", () => {
+    const out = renderLookupPlain<Doc>({ guidelines: "### Accessibility" }, {
+      title: () => "Button",
+      fields: [],
+      sections: [{ key: "guidelines", heading: "Guidelines", kind: "field" }],
+    });
+    expect(out).toContain("Guidelines:");
+    expect(out).toContain("  ### Accessibility");
+  });
+});
