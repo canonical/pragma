@@ -19,28 +19,26 @@
  */
 
 import { MCP_SERVER_NAME } from "../../../constants.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import {
   type DetectedRow,
   detectionFailure,
   detectTargets,
   resolveRoots,
 } from "../../setup/buildPlan.js";
-import type { CompletionsDetection } from "../../setup/operations/setupCompletions.js";
-import type { ConfigDetection } from "../../setup/operations/setupConfig.js";
+import type {
+  CompletionsDetection,
+  ConfigDetection,
+} from "../../setup/operations/index.js";
 import {
   type LspDetection,
   lspEditorNames,
   lspSkipReason,
-} from "../../setup/operations/setupLsp.js";
-import {
   type McpDetection,
   mcpGroupState,
-} from "../../setup/operations/setupMcp.js";
-import {
   type SkillsDetection,
   skillsSkipReason,
-} from "../../setup/operations/setupSkills.js";
+} from "../../setup/operations/index.js";
 import { shortenPath, TARGET_IDS } from "../../setup/plan.js";
 import type { CheckItem, CheckResult, ScopeBand } from "../types.js";
 import { checkShellCompletions } from "./checkShellCompletions.js";

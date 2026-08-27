@@ -24,8 +24,8 @@ import {
   distributionSource,
   type PackDefinition,
 } from "../kernel/packs/types.js";
-import { DEFAULT_PREFIX_MAP } from "../kernel/render/prefixes.js";
-import type { CapabilityModule } from "../kernel/spec/types.js";
+import { DEFAULT_PREFIX_MAP } from "../kernel/render/index.js";
+import type { CapabilityModule } from "../kernel/spec/index.js";
 
 /** The read stories `pragma.conf.ts` declares on its packs, by noun. */
 export const declaredStories: ReadonlyMap<string, PackDefinition> = new Map(

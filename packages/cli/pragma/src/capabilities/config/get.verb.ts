@@ -17,7 +17,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { Formatters, VerbSpec } from "../../kernel/spec/types.js";
+import type { Formatters, VerbSpec } from "../../kernel/spec/index.js";
 import { CONFIG_FIELDS } from "./fields.js";
 import type { ConfigGetData } from "./types.js";
 

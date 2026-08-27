@@ -5,7 +5,7 @@
  * the file it landed in; an unset reports the removed field.
  */
 
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { ConfigFieldResult } from "./types.js";
 
 export const configFieldFormatters: Formatters<ConfigFieldResult> = {

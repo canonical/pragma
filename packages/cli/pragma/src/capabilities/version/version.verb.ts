@@ -9,7 +9,7 @@
 
 import { BIN_NAME, VERSION } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 
 const versionVerb: VerbSpec<Record<string, unknown>, string> = {
   path: ["version"],

@@ -11,9 +11,8 @@
  */
 
 import { map, type Task } from "@canonical/task";
-import { writeConfigField } from "../../kernel/config/writeConfigField.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import { cliRecovery } from "../../kernel/error/recovery.js";
+import { writeConfigField } from "../../kernel/config/index.js";
+import { cliRecovery, PragmaError } from "../../kernel/error/index.js";
 import { type ConfigFieldSpec, RESERVED_CLEAR_VALUES } from "./fields.js";
 import type { ConfigFieldResult } from "./types.js";
 

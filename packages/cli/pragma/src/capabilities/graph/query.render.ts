@@ -9,7 +9,7 @@
  * - json: the serialized {@link QueryResult}.
  */
 
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 
 // Inline `import("…")` type (no `from`) — keeps the ke types off the static
 // import graph the lazy-dispatch probe walks (see query.verb.ts).

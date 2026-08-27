@@ -4,7 +4,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import type { ConfigOrigin } from "../../kernel/config/types.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { InfoData } from "./types.js";
 
 /** A `[layer]` marker for values a config file supplied (blank for defaults). */

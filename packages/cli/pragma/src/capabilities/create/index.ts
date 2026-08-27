@@ -8,7 +8,7 @@
  */
 
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { createCliProjection } from "./cliProjection.js";
 import { createVerbs } from "./create.verb.js";
 

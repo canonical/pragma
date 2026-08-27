@@ -18,14 +18,15 @@ import {
   entityTotal,
   readPackIndex,
 } from "../../kernel/completion/entitySource.js";
-import { readConfig } from "../../kernel/config/readConfig.js";
+import { readConfig } from "../../kernel/config/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { resolveSources } from "../../kernel/runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import {
+  checkRegistryVersion,
   detectInstallSource,
+  PRAGMA_PACKAGE,
   pmUpdateCommand,
-} from "../shared/packageManager.js";
-import { checkRegistryVersion, PRAGMA_PACKAGE } from "../shared/registry.js";
+} from "../shared/index.js";
 import type { InfoData, InfoUpdate } from "./types.js";
 
 /**

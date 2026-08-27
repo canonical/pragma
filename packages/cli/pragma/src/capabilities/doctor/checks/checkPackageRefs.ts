@@ -20,13 +20,15 @@ import {
   entityTotal,
   readPackIndex,
 } from "../../../kernel/completion/entitySource.js";
-import { validateStories } from "../../../kernel/packs/collect.js";
-import { embeddedManifest } from "../../../kernel/runtime/graphpack/embedded.js";
-import { readManifest } from "../../../kernel/runtime/graphpack/manifest.js";
+import { validateStories } from "../../../kernel/packs/index.js";
+import {
+  embeddedManifest,
+  readManifest,
+} from "../../../kernel/runtime/graphpack/index.js";
 import { activeStories } from "../../../kernel/runtime/graphpack/stories.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { SourcesDecision } from "../../../kernel/runtime/resolveSources.js";
 import { resolveSources } from "../../../kernel/runtime/resolveSources.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
 import type { CheckItem, CheckResult } from "../types.js";
 
 /**

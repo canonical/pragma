@@ -10,7 +10,7 @@
  * Every selected target is a visible row here, including the ones that skip.
  */
 
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import {
   defaultSelected,
   type PlanRow,

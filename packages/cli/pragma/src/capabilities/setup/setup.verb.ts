@@ -33,14 +33,14 @@
 import type { GeneratorResult } from "@canonical/summon-core";
 import { $, gen, pure, type Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { PragmaError } from "../../kernel/error/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
 import type {
   CapabilityModule,
   ParamSpec,
   VerbSpec,
-} from "../../kernel/spec/types.js";
+} from "../../kernel/spec/index.js";
 import { resolveSetupMode, setupModeInput } from "./mode.js";
 import {
   planExitFailed,

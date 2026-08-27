@@ -3,7 +3,7 @@
  * (the raw SPARQL escape hatch, PR6). The covenant blesses both.
  */
 
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
 import { resourceProvider } from "../resources/index.js";
 import { graphInspectVerb } from "./inspect.verb.js";
 import { graphQueryVerb } from "./query.verb.js";

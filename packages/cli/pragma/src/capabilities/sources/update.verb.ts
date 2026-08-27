@@ -14,7 +14,7 @@
 
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import type { SourcesUpdateData } from "./types.js";
 import { updateFormatters } from "./update.render.js";
 

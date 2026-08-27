@@ -10,7 +10,7 @@
  * this spec's lazy `run` is that same serve, for any tier that dispatches it.
  */
 
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 
 /** The `mcp` verb spec. */
 export const mcpVerb: VerbSpec<Record<string, unknown>, void> = {

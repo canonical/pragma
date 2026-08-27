@@ -2,9 +2,8 @@
  * Formatters for `ontology list` and `ontology lookup`.
  */
 
-import { compactUri } from "../../kernel/render/compactUri.js";
-import { DEFAULT_PREFIX_MAP } from "../../kernel/render/prefixes.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import { compactUri, DEFAULT_PREFIX_MAP } from "../../kernel/render/index.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type {
   OntologyClass,
   OntologyProperty,

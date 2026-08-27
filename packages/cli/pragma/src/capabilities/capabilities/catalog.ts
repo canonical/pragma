@@ -15,8 +15,8 @@
  */
 
 import { BIN_NAME, PROGRAM_DESCRIPTION, VERSION } from "../../constants.js";
-import { emitSurface } from "../../kernel/spec/emitSurface.js";
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
+import { emitSurface } from "../../kernel/spec/index.js";
 import { TOOL_HINTS } from "./hints.js";
 import type {
   CapabilitiesData,

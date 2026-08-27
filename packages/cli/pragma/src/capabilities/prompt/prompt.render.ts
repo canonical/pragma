@@ -3,7 +3,7 @@
  */
 
 import { defaultStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type {
   PromptArgument,
   PromptListData,

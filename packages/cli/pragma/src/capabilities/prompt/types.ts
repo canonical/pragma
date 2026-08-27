@@ -10,7 +10,7 @@
 import type {
   PromptArgument,
   PromptEntry,
-} from "../../kernel/project/mcp/prompts/source.js";
+} from "../../kernel/project/mcp/prompts/index.js";
 
 /** One prompt in a `prompt_list` result — summary only (no template body). */
 export interface PromptListing {

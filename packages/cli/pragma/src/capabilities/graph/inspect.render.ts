@@ -13,7 +13,7 @@ import type {
   InspectResult,
   ReadTerm,
 } from "../../kernel/runtime/readEntity.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 
 /** The short form of a term: prefixed when there is one, else the raw value. */
 const short = (term: ReadTerm): string => term.prefixed ?? term.value;

@@ -7,7 +7,7 @@
  * result never depends on which vocabulary prefixes the store injected.
  */
 
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 
 const OWL = "http://www.w3.org/2002/07/owl#";
 const RDFS = "http://www.w3.org/2000/01/rdf-schema#";

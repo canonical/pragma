@@ -41,7 +41,7 @@ import {
   type Task,
 } from "@canonical/task";
 import { BIN_NAME } from "../../../constants.js";
-import { checkExecOk, guardMissingBinary } from "../../shared/assertExecOk.js";
+import { checkExecOk, guardMissingBinary } from "../../shared/index.js";
 import type { LspState } from "../types.js";
 
 /** The full extension id, as the editor's extensions dir spells it. */

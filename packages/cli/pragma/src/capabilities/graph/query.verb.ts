@@ -10,9 +10,9 @@
  */
 
 import { BIN_NAME } from "../../constants.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { queryFormatters } from "./query.render.js";
 
 // Inline `import("…")` type (no `from`) so the ke types stay OFF the static

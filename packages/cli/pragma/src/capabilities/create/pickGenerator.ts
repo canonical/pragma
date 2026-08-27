@@ -2,7 +2,7 @@ import { generators as applicationGenerators } from "@canonical/summon-applicati
 import { generators as componentGenerators } from "@canonical/summon-component";
 import type { GeneratorDefinition } from "@canonical/summon-core";
 import { generators as packageGenerators } from "@canonical/summon-package";
-import { PragmaError } from "../../kernel/error/PragmaError.js";
+import { PragmaError } from "../../kernel/error/index.js";
 import { CREATE_GENERATORS } from "./constants.js";
 import type { CreateKind } from "./types.js";
 

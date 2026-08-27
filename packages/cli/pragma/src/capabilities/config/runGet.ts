@@ -6,8 +6,8 @@
  * to a single value.
  */
 
-import { readConfig } from "../../kernel/config/readConfig.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
+import { readConfig } from "../../kernel/config/index.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import { resolveFieldSpec } from "./runSet.js";
 import type { ConfigGetData } from "./types.js";
 

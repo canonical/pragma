@@ -2,7 +2,7 @@
  * Formatters for `pragma sources update` — plain, llm, json.
  */
 
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import type { SourcesUpdateData } from "./types.js";
 
 export const updateFormatters: Formatters<SourcesUpdateData> = {

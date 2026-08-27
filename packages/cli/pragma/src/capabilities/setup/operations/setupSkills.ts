@@ -31,7 +31,7 @@ import {
   symlink,
   type Task,
 } from "@canonical/task";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { ScopeBand } from "../types.js";
 
 /** Cross-client skill directory, shared across all harnesses. */

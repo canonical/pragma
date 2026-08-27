@@ -11,7 +11,7 @@
 import type { Task } from "@canonical/task";
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { VerbSpec } from "../../kernel/spec/types.js";
+import type { VerbSpec } from "../../kernel/spec/index.js";
 import { configFieldFormatters } from "./field.render.js";
 import { CONFIG_FIELDS } from "./fields.js";
 import type { ConfigFieldResult } from "./types.js";

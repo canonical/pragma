@@ -35,8 +35,8 @@ import {
   warn,
 } from "@canonical/task";
 import { BIN_NAME } from "../../../constants.js";
-import { PragmaError } from "../../../kernel/error/PragmaError.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import { PragmaError } from "../../../kernel/error/index.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import {
   buildPlan,
   type DetectedRow,

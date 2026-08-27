@@ -27,6 +27,11 @@ import {
   type Task,
   writeFile,
 } from "@canonical/task";
+// DIRECT LEAF IMPORT, not `config/index.js`. The barrel re-exports
+// `readConfig`, which reaches `defaults.ts` → `schema.ts` → `zod`. This
+// module is on the setup/doctor target table, so routing one path constant
+// through the barrel would make both commands pay for the config parser
+// just to compute a filename.
 import { globalConfigPath } from "../../../kernel/config/paths.js";
 
 /** Seed content: an empty object, so nothing is pinned the user did not choose. */

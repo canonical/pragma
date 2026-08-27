@@ -9,7 +9,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { asVerb } from "../../kernel/spec/asVerb.js";
-import type { CapabilityModule, VerbSpec } from "../../kernel/spec/types.js";
+import type { CapabilityModule, VerbSpec } from "../../kernel/spec/index.js";
 import { colophonFormatters } from "./colophon.render.js";
 import type { ColophonData } from "./types.js";
 

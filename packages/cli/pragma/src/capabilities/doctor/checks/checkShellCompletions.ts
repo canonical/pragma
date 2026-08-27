@@ -8,7 +8,7 @@ import {
   runComplete,
 } from "../../../kernel/completion/index.js";
 import { capabilities } from "../../index.js";
-import type { CompletionsDetection } from "../../setup/operations/setupCompletions.js";
+import type { CompletionsDetection } from "../../setup/operations/index.js";
 import { activationHint, type ShellId } from "../../setup/shell.js";
 import type { CheckResult } from "../types.js";
 

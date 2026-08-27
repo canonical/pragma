@@ -21,13 +21,15 @@
  */
 
 import { $, exec, gen, info, type Task, warn } from "@canonical/task";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import { assertExecOk, guardMissingBinary } from "../shared/assertExecOk.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
 import {
+  assertExecOk,
+  checkRegistryVersion,
   detectInstallSource,
+  guardMissingBinary,
+  PRAGMA_PACKAGE,
   pmUpdateCommand,
-} from "../shared/packageManager.js";
-import { checkRegistryVersion, PRAGMA_PACKAGE } from "../shared/registry.js";
+} from "../shared/index.js";
 import type { UpgradeData } from "./types.js";
 
 /**

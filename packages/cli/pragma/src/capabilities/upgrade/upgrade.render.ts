@@ -7,8 +7,8 @@
  */
 
 import chalk from "chalk";
-import type { Formatters } from "../../kernel/spec/types.js";
-import { PRAGMA_PACKAGE } from "../shared/registry.js";
+import type { Formatters } from "../../kernel/spec/index.js";
+import { PRAGMA_PACKAGE } from "../shared/index.js";
 import type { UpgradeData } from "./types.js";
 
 export const upgradeFormatters: Formatters<UpgradeData> = {

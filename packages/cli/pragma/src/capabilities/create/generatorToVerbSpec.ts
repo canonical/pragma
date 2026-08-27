@@ -25,7 +25,7 @@
  */
 
 import type { PromptLike } from "@canonical/summon-core/projection";
-import type { ParamSpec } from "../../kernel/spec/types.js";
+import type { ParamSpec } from "../../kernel/spec/index.js";
 
 /** A path-like text prompt gets file completion. */
 const looksLikePath = (name: string): boolean => /(path|dir)$/i.test(name);

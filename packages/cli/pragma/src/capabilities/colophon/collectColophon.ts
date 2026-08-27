@@ -18,8 +18,8 @@
 
 import { BIN_NAME } from "../../constants.js";
 import distribution from "../../kernel/config/defaults.js";
-import type { PragmaRuntime } from "../../kernel/runtime/types.js";
-import type { CapabilityModule } from "../../kernel/spec/types.js";
+import type { PragmaRuntime } from "../../kernel/runtime/index.js";
+import type { CapabilityModule } from "../../kernel/spec/index.js";
 import type { ColophonData, ColophonSection } from "./types.js";
 
 /**

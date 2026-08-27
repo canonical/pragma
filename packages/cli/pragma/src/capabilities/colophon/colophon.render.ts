@@ -16,7 +16,7 @@
 
 import { BIN_NAME } from "../../constants.js";
 import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
-import type { Formatters } from "../../kernel/spec/types.js";
+import type { Formatters } from "../../kernel/spec/index.js";
 import { renderMarkdownToTerminal } from "./markdownTerminal.js";
 import type { ColophonData, ColophonSection } from "./types.js";
 

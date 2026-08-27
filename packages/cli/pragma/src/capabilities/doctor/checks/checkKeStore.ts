@@ -1,6 +1,6 @@
 import { BIN_NAME } from "../../../constants.js";
 import { entityTotal } from "../../../kernel/completion/entitySource.js";
-import type { PragmaRuntime } from "../../../kernel/runtime/types.js";
+import type { PragmaRuntime } from "../../../kernel/runtime/index.js";
 import type { CheckResult } from "../types.js";
 
 /**
