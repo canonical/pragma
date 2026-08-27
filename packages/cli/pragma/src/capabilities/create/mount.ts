@@ -455,15 +455,18 @@ export function topicTree(programName: string): string {
   ].join("\n");
 }
 
-/** One leaf's completion node, derived from its projected prompts. */
+/**
+ * One leaf's completion node, derived from its projected prompts. EVERY
+ * prompt is a flag — `addPromptOptions` registers positional prompts as
+ * options too (`--component-path` is as real as `--no-with-styles`), the
+ * positional argument being an additional spelling, not a replacement.
+ */
 function leafChild(label: string, commandPath: string): CompletionChildSpec {
   const surface = CREATE_SURFACE[commandPath];
   const prompts = surface?.prompts ?? [];
   return {
     label,
-    flags: prompts
-      .filter((prompt) => prompt.positional !== true)
-      .map(promptFlag),
+    flags: prompts.map(promptFlag),
     positionals: prompts
       .filter((prompt) => prompt.positional === true)
       .map((prompt) => ({

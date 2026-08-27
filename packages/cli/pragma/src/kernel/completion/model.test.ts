@@ -463,12 +463,15 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
   it("leaf flag tier: `create component react --<TAB>` offers the REGISTERED flags", async () => {
     const { runComplete } = await import("./complete.js");
     // The leaf's prompt-derived flags in their registered spelling (--no-
-    // forms for default-true confirms), the mutation trio, and the root
-    // globals — as literals, so dropping the framework positional's values
-    // or the leaf child's flag filter goes red instead of silently green.
+    // forms for default-true confirms, --component-path for the positional
+    // prompt — addPromptOptions registers EVERY prompt as an option), the
+    // mutation trio, and the root globals — as literals, so dropping the
+    // framework positional's values or a leaf prompt flag goes red instead
+    // of silently green.
     expect(
       await runComplete(["create", "component", "react", "--"], capabilities),
     ).toEqual([
+      "--component-path",
       "--detail",
       "--dry-run",
       "--format",
@@ -484,6 +487,7 @@ describe("mounted create completion — literal candidate pins (PROTECTED)", () 
     expect(
       await runComplete(["create", "component", "svelte", "--"], capabilities),
     ).toEqual([
+      "--component-path",
       "--detail",
       "--dry-run",
       "--format",
