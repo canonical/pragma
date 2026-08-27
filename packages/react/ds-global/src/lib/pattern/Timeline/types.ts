@@ -5,7 +5,7 @@ import type { EventProps } from "./common/Event/types.js";
 /**
  * Props for the Timeline component
  *
- * @implements dso:global.pattern.timeline
+ * @implements ds:global.pattern.timeline
  *
  * Anatomy (from DSL):
  * - layout.type: stack

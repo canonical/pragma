@@ -16,7 +16,7 @@ export interface TabItem extends Item {
 /**
  * Props for the Tabs component
  *
- * @implements dso:global.component.tabs
+ * @implements ds:global.component.tabs
  */
 export interface TabsProps extends HTMLAttributes<HTMLElement> {
   /**

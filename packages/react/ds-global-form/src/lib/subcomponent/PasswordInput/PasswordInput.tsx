@@ -18,6 +18,8 @@ const componentCssClassName = "ds input password chrome";
  * @returns {ReactElement} - Rendered PasswordInput
  *
  * `import { PasswordInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.password_input
  */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   function PasswordInput(

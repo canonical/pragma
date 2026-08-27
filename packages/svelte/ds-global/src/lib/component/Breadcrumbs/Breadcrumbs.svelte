@@ -55,5 +55,5 @@ when users might arrive at deep pages through search or external links.
 />
 ```
 
-@implements ds:global.pattern.breadcrumbs
+@implements ds:global.component.breadcrumbs
 -->

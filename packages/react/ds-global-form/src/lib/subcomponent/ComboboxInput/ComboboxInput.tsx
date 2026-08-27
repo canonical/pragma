@@ -13,6 +13,8 @@ const componentCssClassName = "ds combobox";
  * text input of the single-select variant.
  *
  * `import { ComboboxInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.combobox_input
  */
 export const ComboboxInput = forwardRef<HTMLInputElement, ComboboxInputProps>(
   function ComboboxInput(

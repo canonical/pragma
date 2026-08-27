@@ -30,4 +30,7 @@ const Description = ({
   );
 };
 
+/**
+ * @implements ds:global.subcomponent.field-description
+ */
 export default Description;

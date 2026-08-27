@@ -53,6 +53,8 @@ function countryLabel(
  * @returns {React.ReactElement} - Rendered Phone
  *
  * `import { PhoneInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.phone_input
  */
 export const PhoneInput = ({
   id,

@@ -16,6 +16,8 @@ const componentCssClassName = "ds input number chrome";
  * @returns {ReactElement} - Rendered NumberInput
  *
  * `import { NumberInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.number_input
  */
 export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(
   function NumberInput(

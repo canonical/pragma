@@ -3,9 +3,9 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix ds: <https://ds.canonical.com/>.
 
-ds:implementation.library.svelte-ds-global ds:hasImplementation ds:implementation.svelte-ds-global.global.pattern.breadcrumbs, ds:implementation.svelte-ds-global.global.pattern.skip_link, ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item.
-ds:implementation.svelte-ds-global.global.pattern.breadcrumbs a ds:ImplementationObject;
-    ds:implementsBlock ds:global.pattern.breadcrumbs;
+ds:implementation.library.svelte-ds-global ds:hasImplementation ds:implementation.svelte-ds-global.global.component.breadcrumbs, ds:implementation.svelte-ds-global.global.pattern.skip_link, ds:implementation.svelte-ds-global.global.subcomponent.breadcrumbs-item.
+ds:implementation.svelte-ds-global.global.component.breadcrumbs a ds:ImplementationObject;
+    ds:implementsBlock ds:global.component.breadcrumbs;
     ds:headLink "https://github.com/canonical/pragma/blob/main/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte";
     ds:versionedLink "https://github.com/canonical/pragma/blob/v0.34.0/packages/svelte/ds-global/src/lib/component/Breadcrumbs/Breadcrumbs.svelte".
 ds:implementation.svelte-ds-global.global.pattern.skip_link a ds:ImplementationObject;

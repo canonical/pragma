@@ -46,6 +46,8 @@ const defaultHexFormats: HexFormat[] = ["hex6"];
  * Controlled via `value`/`onChange`; knows nothing about react-hook-form. The
  * field tier (`fields/Color`) binds it to RHF.
  * @returns {React.ReactElement} - Rendered ColorInput
+ *
+ * @implements ds:global.subcomponent.color_input
  */
 export const ColorInput = ({
   id,

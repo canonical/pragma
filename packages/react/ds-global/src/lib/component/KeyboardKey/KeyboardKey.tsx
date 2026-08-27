@@ -20,7 +20,7 @@ const componentCssClassName = "ds keyboard-key surface";
  *
  * `import { KeyboardKey } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.component.keyboard_key
+ * @implements ds:global.component.keyboard_key
  */
 const KeyboardKey = ({
   keyValue,

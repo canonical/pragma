@@ -13,6 +13,8 @@ type CheckboxInputFieldProps = InputProps<CheckboxInputProps>;
  * `label`/`controlLabel`.
  *
  * `import { CheckboxField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.checkbox_field
  */
 export default withToggleWrapper<CheckboxInputFieldProps>(
   bindField<CheckboxInputFieldProps>(CheckboxInput, "native"),

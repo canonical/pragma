@@ -1,6 +1,6 @@
 /**
  * Tabs styles
- * @implements dso:global.component.tabs
+ * @implements ds:global.component.tabs
  *
  * DSL anatomy mapping:
  * - layout.type: stack, layout.direction: horizontal -> flex row of tabs

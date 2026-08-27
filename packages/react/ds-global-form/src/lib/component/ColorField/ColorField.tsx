@@ -7,6 +7,8 @@ import type { ColorFieldProps } from "./types.js";
  * ColorInput bound to react-hook-form (controlled), wrapped with field chrome.
  * The `defaultValue` preserves the registration default the original leaf set
  * in `useController` (`"#000000"`).
+ *
+ * @implements ds:global.component.color_field
  */
 export default withWrapper<ColorFieldProps>(
   bindField<ColorFieldProps>(ColorInput, "controlled", {
