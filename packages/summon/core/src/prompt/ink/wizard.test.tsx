@@ -7,13 +7,15 @@
  * - the FLOW test drives phase transitions through the controller API (no
  *   fake-TTY input at all), so what it protects — that every phase renders
  *   correctly — is deterministic;
- * - the KEYBOARD-BINDING tests each render one prompt and send the fewest
- *   keystrokes that prove the component→controller wiring. Renders are
- *   sequential and unmounted between tests (Ink's reconciler is a
- *   process-global; overlapping live instances can stall frames), and a
- *   dropped write can only cost a resend inside its own test — the old
- *   monolithic keystroke drive let one dropped write wedge every later
- *   phase, which was a recurring CI-only flake.
+ * - the KEYBOARD-BINDING tests each render one prompt and drive it with one
+ *   idempotent keystroke, proving the component→controller wiring. Renders
+ *   are sequential and unmounted between tests (Ink's reconciler is a
+ *   process-global; overlapping live instances can stall frames). The fake
+ *   stdin can deliver writes LATE under load, so no test sends input whose
+ *   duplicate or delayed arrival changes state — the old monolithic
+ *   keystroke drive typed multi-character values, and one late-arriving
+ *   duplicate garbled the field and wedged every later phase, which was a
+ *   recurring CI-only flake.
  *
  * Controller-only cancellation semantics are covered in session.test.ts.
  */
@@ -95,36 +97,17 @@ async function pressUntil(
   );
 }
 
-/**
- * Type a text value deterministically. Re-sending a multi-character value
- * (the pressUntil strategy) is not safe for text: a partially-dropped first
- * write followed by a full re-send still satisfies an `includes` check but
- * leaves the field garbled, and the later submit wait then hangs to its
- * ceiling. Instead: prove the input subscription is live with a sentinel
- * keystroke, clear it, then send the whole value as one atomic chunk —
- * reliable once the subscription is known to be up.
- */
-async function typeExactly(
-  stdin: { write: (data: string) => void },
-  frame: () => string,
-  value: string,
-  describe?: () => string,
-): Promise<void> {
-  await pressUntil(stdin, "@", () => frame().includes("@"), 30000, describe);
-  // Clear however many sentinels landed. Control keys must go one write per
-  // keystroke — ink parses key flags per chunk, so a chunk of backspaces is
-  // not N backspaces.
-  for (let i = 0; i < 40 && frame().includes("@"); i++) {
-    stdin.write("\x7f");
-    await new Promise((r) => setTimeout(r, 5));
-  }
-  await waitFor(() => !frame().includes("@"), 30000, describe);
-  stdin.write(value);
-  await waitFor(() => frame().includes(value), 30000, describe);
-}
-
-const text = (name: string, message: string): PromptEffect =>
-  promptEffect({ type: "text", name, message }) as PromptEffect;
+const text = (
+  name: string,
+  message: string,
+  defaultValue?: string,
+): PromptEffect =>
+  promptEffect({
+    type: "text",
+    name,
+    message,
+    default: defaultValue,
+  }) as PromptEffect;
 const confirm = (name: string, message: string): PromptEffect =>
   promptEffect({
     type: "confirm",
@@ -158,8 +141,8 @@ describe("create wizard (PROTECTED)", () => {
   // real SessionController (step counters, honest preview pane, progress,
   // completion), and that contract is deterministic. Keystroke→handler wiring
   // is covered one binding per render in the suite below — the old monolithic
-  // keystroke drive let a single dropped write wedge every later phase, which
-  // is exactly the CI flake this split retires.
+  // keystroke drive let one late-delivered write corrupt the field and wedge
+  // every later phase, which is exactly the CI flake this split retires.
   it("renders prompt sequence → preview/confirm → completion", async () => {
     const c = new SessionController(gen);
     const { lastFrame, unmount } = render(<Wizard controller={c} />);
@@ -210,27 +193,31 @@ describe("create wizard (PROTECTED)", () => {
 });
 
 describe("keyboard bindings (one prompt, one render each)", () => {
-  // Each test renders a single prompt and sends the fewest keystrokes that
-  // prove the component→controller wiring. Fresh render per test: a dropped
-  // write can only ever cost a resend inside that test's own helper, never
-  // wedge a later phase. On a timeout the error carries the wedged state —
-  // these races have only ever reproduced on loaded CI runners, so the error
-  // text is the one diagnostic that comes back from there.
+  // Each test renders a single prompt and drives it with ONE IDEMPOTENT
+  // keystroke. The fake stdin does not lose writes — it can deliver them LATE
+  // (a CI diagnostic caught a probe character landing after its verification
+  // window and corrupting the field), so no test may send input whose
+  // duplicate or late arrival changes state: the text prompt submits its
+  // seeded default with bare Enter rather than typing, and y/Enter re-sends
+  // are no-ops once the prompt has resolved. On a timeout the error carries
+  // the wedged state — these races have only ever reproduced on loaded CI
+  // runners, so the error text is the one diagnostic that comes back.
   const describeWedge =
     (c: SessionController, frame: () => string) => (): string => {
       const s = c.getSnapshot();
       return `phase=${s.phase} answers=${JSON.stringify(s.answers)} frame:\n${frame()}`;
     };
 
-  it("text prompt: typed value submits on Enter", async () => {
+  it("text prompt: Enter submits the seeded value", async () => {
     const c = new SessionController(gen);
     const { lastFrame, stdin, unmount } = render(<Wizard controller={c} />);
     const frame = (): string => lastFrame() ?? "";
     const wedged = describeWedge(c, frame);
     try {
-      void c.request(text("componentPath", "Component path:"));
+      void c.request(
+        text("componentPath", "Component path:", "src/components/Button"),
+      );
       await waitFor(() => frame().includes("Component path:"), 30000, wedged);
-      await typeExactly(stdin, frame, "src/components/Button", wedged);
       await pressUntil(
         stdin,
         "\r",
