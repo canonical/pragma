@@ -1,24 +1,34 @@
 import { HeadProvider } from "@canonical/react-head";
 import { createBrowserAdapter, createRouter } from "@canonical/router-core";
-import { Outlet, RouterProvider } from "@canonical/router-react";
+import {
+  Outlet,
+  readDehydratedState,
+  RouterProvider,
+} from "@canonical/router-react";
 import { hydrateRoot } from "react-dom/client";
 <% if (relay) { -%>
 import { RelayEnvironmentProvider } from "react-relay";
-import { createEnvironment } from "#relay/environment.js";
+import { getBrowserEnvironment } from "#relay/environment.js";
 <% } -%>
 import { appRoutes, middleware, notFoundRoute } from "../routes.js";
 import "#styles/index.css";
 
+// On SSR pages __INITIAL_DATA__ carries the flat dehydrated router state
+// (href/kind/routeId/status); hydrating from it resumes the server-rendered
+// match and skips the duplicate initial load. In the SPA cells there is no
+// payload (or no router fields) and readDehydratedState() returns null, so
+// the router performs a normal initial load.
 const router = createRouter(appRoutes, {
   adapter: createBrowserAdapter(),
   middleware: [...middleware],
   notFound: notFoundRoute,
+  hydratedState: readDehydratedState() ?? undefined,
 });
 <% if (relay) { -%>
 
 // One Relay environment (network + normalized store) for the whole browser
 // session — module scope, so client-side navigations share the cache.
-const relayEnvironment = createEnvironment();
+const relayEnvironment = getBrowserEnvironment();
 <% } -%>
 
 const root = document.getElementById("root");
