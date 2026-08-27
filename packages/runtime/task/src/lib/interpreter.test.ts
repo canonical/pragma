@@ -1,10 +1,15 @@
 import {
+  chmodSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   readlinkSync,
   rmSync,
+  statSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -1937,5 +1942,41 @@ describe("matchesPattern — the fallback glob matcher", () => {
   it("treats dots in the pattern literally", () => {
     expect(matchesPattern("axts", "a.ts")).toBe(false);
     expect(matchesPattern("a.ts", "a.ts")).toBe(true);
+  });
+});
+
+describe("WriteFile lands atomically", () => {
+  const tmpRoot = mkdtempSync(join(tmpdir(), "task-atomic-"));
+
+  it("writes through a symlink instead of replacing it", async () => {
+    // Dotfile setups symlink a config into a checked-out repository. A rename
+    // over the link would break it and strand the real file.
+    const real = join(tmpRoot, "real.json");
+    const link = join(tmpRoot, "link.json");
+    writeFileSync(real, "old\n");
+    symlinkSync(real, link);
+
+    await runTask(writeFile(link, "new\n"));
+
+    expect(lstatSync(link).isSymbolicLink()).toBe(true);
+    expect(readFileSync(real, "utf-8")).toBe("new\n");
+    expect(readlinkSync(link)).toBe(real);
+  });
+
+  it("preserves the mode of the file it replaces", async () => {
+    const path = join(tmpRoot, "moded.json");
+    writeFileSync(path, "old\n");
+    chmodSync(path, 0o640);
+
+    await runTask(writeFile(path, "new\n"));
+
+    expect(statSync(path).mode & 0o777).toBe(0o640);
+    expect(readFileSync(path, "utf-8")).toBe("new\n");
+  });
+
+  it("leaves no temp file beside the target", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "task-atomic-clean-"));
+    await runTask(writeFile(join(dir, "a.json"), "{}\n"));
+    expect(readdirSync(dir)).toEqual(["a.json"]);
   });
 });

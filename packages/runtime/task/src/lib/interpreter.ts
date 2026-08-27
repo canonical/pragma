@@ -17,6 +17,69 @@ export { TaskExecutionError };
 // Effect Executor
 // =============================================================================
 
+
+/**
+ * Write a file so that a reader never observes a half-written one.
+ *
+ * `fs.writeFile` truncates and then writes: a crash, a full disk, or a killed
+ * process between those two steps leaves a TRUNCATED file. For a generated
+ * artifact that is an annoyance; for a config file this interpreter merges into
+ * — an editor's MCP registry, a shell rc — it is destruction of data the user
+ * did not give us, because the merge read the old contents and the truncated
+ * write is what remains of them.
+ *
+ * So: write a sibling temp file, fsync-free but fully written, then `rename`
+ * over the target. `rename` within one directory is atomic on POSIX and on
+ * Windows (ReplaceFile semantics), so the target is only ever the old bytes or
+ * the new ones.
+ *
+ * Two details that matter:
+ *
+ * - **Symlinks are followed, not replaced.** Dotfile setups routinely symlink
+ *   `~/.claude.json` into a checked-out repository. Renaming over the link
+ *   would silently break that link and strand the user's real file, so the
+ *   target is resolved first and the rename lands on the resolved path.
+ * - **The existing mode is preserved.** A fresh temp file is 0600 by default;
+ *   inheriting the replaced file's mode keeps a config the user (or another
+ *   tool) had widened from silently narrowing.
+ *
+ * @param target - The absolute path to write.
+ * @param content - The bytes to land there.
+ * @note Impure — writes, renames, and stats the filesystem.
+ */
+const writeFileAtomic = async (
+  target: string,
+  content: string,
+): Promise<void> => {
+  // Follow a symlink to its destination so the link itself survives the rename.
+  let resolved = target;
+  try {
+    const link = await fs.lstat(target);
+    if (link.isSymbolicLink()) resolved = await fs.realpath(target);
+  } catch {
+    // No such file yet — the plain path is the destination.
+  }
+
+  // Inherit the mode of the file being replaced, when there is one.
+  let mode: number | undefined;
+  try {
+    mode = (await fs.stat(resolved)).mode & 0o777;
+  } catch {
+    mode = undefined;
+  }
+
+  const temp = `${resolved}.${process.pid}.${Math.random().toString(36).slice(2, 10)}.tmp`;
+  try {
+    await fs.writeFile(temp, content, "utf-8");
+    if (mode !== undefined) await fs.chmod(temp, mode);
+    await fs.rename(temp, resolved);
+  } catch (error) {
+    // Never leave the temp file behind on a failed write.
+    await fs.rm(temp, { force: true }).catch(() => {});
+    throw error;
+  }
+};
+
 /**
  * Execute a single effect and return the result.
  * This is where the actual I/O happens.
@@ -42,7 +105,7 @@ export const executeEffect = async (
     case "WriteFile": {
       const target = at(effect.path);
       await fs.mkdir(path.dirname(target), { recursive: true });
-      await fs.writeFile(target, effect.content, "utf-8");
+      await writeFileAtomic(target, effect.content);
       return undefined;
     }
 
