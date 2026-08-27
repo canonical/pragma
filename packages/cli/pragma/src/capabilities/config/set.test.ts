@@ -217,7 +217,14 @@ describe("config set — MCP plan-first / confirm parity", () => {
     expect(plan.ok).toBe(true);
     expect(plan.meta).toMatchObject({ planOnly: true, confirmRequired: true });
     const planLines = (plan.data as { plan: string[] }).plan;
-    expect(planLines.some((line) => line.includes("Write file"))).toBe(true);
+    // The MCP payload passes the SHARED visibility filter but keeps the
+    // described spelling, so it reads exactly as the CLI dry-run above does:
+    // one plan, named the same way on both structured surfaces. The claim is
+    // unchanged — the plan names the write it would perform, and performs none.
+    expect(planLines.some((line) => line.startsWith("Write file: "))).toBe(
+      true,
+    );
+    expect(planLines.at(-1)).toContain("config.json");
     expect(existsSync(globalConfigPath())).toBe(false);
 
     const done = await mcp.callTool("config_set", {

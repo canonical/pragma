@@ -1,20 +1,84 @@
 /**
- * Formatters for `create` — plain / llm / json over a {@link GeneratorResult}.
+ * Formatters for `create` — plain / llm / json over a {@link GeneratorResult},
+ * plus the dry-run plan render.
  *
- * Deliberately free of any runtime summon-core (and any Ink) import: the
- * `GeneratorResult` type is imported type-only (erased), and the effect
- * inspection uses `@canonical/task`, which the kernel already loads. So a verb
- * spec carrying these formatters never pulls summon-core onto the
- * `buildProgram` / `--help` / `__complete` fast paths — and never pulls React.
+ * Free of any RUNTIME summon-core import, and of any Ink import: the
+ * `GeneratorResult` type is imported type-only (erased) and the effect
+ * inspection uses `@canonical/task`, which the kernel already loads. This
+ * module sits on the capabilities barrel, so `--help` and `__complete` pay its
+ * import cost on every spawn — the same reason `create.verb.ts` keeps even the
+ * UI-free projection subpath off its static graph. So a verb spec carrying
+ * these formatters never pulls summon-core onto the `buildProgram` / `--help`
+ * / `__complete` fast paths, and never pulls React.
+ *
+ * The plan render matters because pragma and summon scaffold through the SAME
+ * projection: the two bins write byte-identical trees, so a preview that
+ * described that work differently in each was a difference with nothing behind
+ * it. {@link formatCreatePlan} therefore consumes summon's own rules rather
+ * than restating them — the rows, the connectors and the closing line are
+ * whatever `@canonical/summon-core/format` says they are.
  */
 
 import type { GeneratorResult } from "@canonical/summon-core";
 import { type Effect, getAffectedFiles } from "@canonical/task";
+import { defaultStyle, type RenderStyle } from "../../kernel/render/style.js";
 import type { Formatters } from "../../kernel/spec/types.js";
 
 /** The user-visible mutating effects, de-duplicated by path for MakeDir. */
 function created(effects: readonly Effect[]): string[] {
   return getAffectedFiles([...effects]);
+}
+
+/**
+ * Render a `create --dry-run` plan: the generation summon would describe.
+ *
+ * The kernel's default render dumps every effect the interpreter recorded,
+ * which for a generator means the internal `Exists` probes, the output
+ * directory once per file it holds, and the generator's own log lines — a
+ * transcript rather than a plan. {@link visiblePlanEffects} is the filter that
+ * already exists for exactly this, and {@link formatEffectLine} the row.
+ *
+ * Nothing is stashed on the runtime for this: a generator's plan is not known
+ * until the preview interpreter has walked the Task, so the effects ARE the
+ * plan data. That also keeps `--dry-run --format json` untouched, since the
+ * kernel adds its `targets` key only for a verb that stashed something.
+ *
+ * ASYNC because the formatter is loaded LAZILY, from the light `/format`
+ * subpath — the same dynamic edge `registerVerb.ts` uses for the MCP plan
+ * payload, so both surfaces reach one module and neither puts it on the fast
+ * paths. A dry run is already several filesystem reads deep by the time this
+ * is called; a `--help` spawn never calls it at all.
+ *
+ * COLOUR is decided HERE and handed to the formatter, never left to chalk's
+ * own environment detection. pragma's gate is `defaultStyle()`, which demands
+ * an attended stdout as well as a usable chalk level: nx exports `FORCE_COLOR`
+ * to every test task, so a piped preview would otherwise carry escapes that
+ * the rest of pragma's renderers — and `doctor.render.test.ts`'s pin on
+ * redirected output — do not.
+ *
+ * @param effects - The effects the previewed run recorded, in order.
+ * @param verbose - If true, the generator's debug logs stay in the plan.
+ * @param style - The colour decision; defaults to pragma's own render gate.
+ * @returns The rendered plan, without a trailing newline.
+ */
+export async function formatCreatePlan(
+  effects: readonly Effect[],
+  verbose: boolean,
+  style: RenderStyle = defaultStyle(),
+): Promise<string> {
+  const { effectStyleFor, formatEffectLine, visiblePlanEffects } = await import(
+    "@canonical/summon-core/format"
+  );
+  const rowStyle = effectStyleFor(style.enabled);
+  const rows = visiblePlanEffects(effects, verbose);
+  return [
+    "Plan:",
+    ...rows.map((effect, index) =>
+      formatEffectLine(effect, index === rows.length - 1, rowStyle),
+    ),
+    "",
+    "Dry-run complete. No files were modified.",
+  ].join("\n");
 }
 
 /** The generation's outcome formatters. */

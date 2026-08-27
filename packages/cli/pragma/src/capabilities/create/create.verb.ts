@@ -33,7 +33,7 @@ import { PragmaError } from "../../kernel/error/PragmaError.js";
 import type { PragmaRuntime } from "../../kernel/runtime/types.js";
 import type { ParamSpec, VerbSpec } from "../../kernel/spec/types.js";
 import { COMPONENT_FRAMEWORKS, CREATE_GENERATORS } from "./constants.js";
-import { createFormatters } from "./create.render.js";
+import { createFormatters, formatCreatePlan } from "./create.render.js";
 import { CREATE_SURFACE } from "./createSurface.generated.js";
 import { generatorToParams, promptToParam } from "./generatorToVerbSpec.js";
 import { assertInsideWorkspace } from "./pathJail.js";
@@ -412,6 +412,35 @@ export const CREATE_CAPABILITY = {
 };
 
 /**
+ * The shared output spec: the outcome formatters plus the dry-run seam.
+ *
+ * ONE constant because there are TWO specs per leaf — the binding-level verbs
+ * below (what MCP and the emitted surface read) and the per-leaf spec the
+ * mount synthesizes for `create component react …` (what a user actually
+ * runs). They describe the same generation, so a preview that reached only one
+ * of them would be a preview the CLI never showed.
+ *
+ * `formatPlan` renders through summon's own effect formatter instead of the
+ * kernel's raw dump, so the two bins describe the identical tree they write
+ * identically. `planData` stays unset — the effects the preview records ARE
+ * the plan — which is what leaves the `--format json` dry-run body exactly as
+ * it was.
+ *
+ * It resolves a PROMISE because {@link formatCreatePlan} loads that formatter
+ * behind a dynamic `import()`: this constant is reachable from the
+ * capabilities barrel, and the whole point of the lazy-dispatch boundary above
+ * is that nothing on that graph pays for summon-core on a `--help` spawn.
+ */
+export const CREATE_OUTPUT: VerbSpec<
+  Record<string, unknown>,
+  GeneratorResult
+>["output"] = {
+  formatters: createFormatters,
+  formatPlan: (_planData, effects, verbose) =>
+    formatCreatePlan(effects, verbose),
+};
+
+/**
  * Build a create verb. `run` presents `Promise<Task<R>>` through the `Task<R>`
  * arm by an honest cast at this one site (mirroring `sources update`): a literal
  * `Promise<Task<R>>` arm in the union would poison async read-verb inference.
@@ -429,7 +458,7 @@ function createVerb(
     path: ["create", kind],
     summary,
     params,
-    output: { formatters: createFormatters },
+    output: CREATE_OUTPUT,
     examples,
     capability: CREATE_CAPABILITY,
     run: (params_, rt) => {

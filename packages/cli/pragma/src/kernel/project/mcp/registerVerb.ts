@@ -7,7 +7,9 @@
  * capability, and a mutating verb gains the plan-first `confirm` flow: without
  * `confirm`, the verb's `Task` is dry-run and a plan is returned
  * (`{ planOnly: true, confirmRequired: true }`); with `confirm: true`, it runs
- * for real.
+ * for real. That plan is rendered through the SAME shared effect formatter the
+ * CLI preview uses, so the agent-facing and human-facing surfaces describe one
+ * plan rather than two views of it.
  */
 
 import { statSync } from "node:fs";
@@ -203,16 +205,40 @@ function mutateHandler(verb: VerbSpec, runtime: PragmaRuntime) {
         // reads are real, writes are recorded and never executed. A tool call
         // whose confirmed run would fail now returns that error instead of a
         // confident plan, so plan-first predicts rather than reassures.
+        //
+        // NO `onLog`: a preview that PERFORMS an effect is not a preview of
+        // that effect, and the recorded `Log`s are already about to be listed.
+        // The interpreter prints nothing of its own when it is absent.
         const previewExec = mutationRuntime.exec ?? {};
         try {
           const { effects } = await runPreview(task, {
             cwd: previewExec.cwd,
             onEffectStart: previewExec.onEffectStart,
-            onLog: logToStderr,
           });
-          const plan = effects
-            .filter((effect) => effect._tag !== "Prompt")
-            .map(describeEffect);
+          // This payload is read by an LLM on a token budget, so it carries
+          // the plan a person is shown rather than the interpreter's
+          // transcript: the same `visiblePlanEffects` filter the CLI preview
+          // applies, from the same module. Without it every internal
+          // `Check exists:` and every repeat of the output directory spent
+          // tokens burying the real artifacts.
+          //
+          // The FILTER is what the surfaces share; the ROW FORMAT is not.
+          // These strings are structured data, so they stay `describeEffect` —
+          // the description `@canonical/task` gives its own effects, which
+          // carries byte counts, has no terminal chrome, and cannot embed an
+          // ANSI escape however the editor that spawned this server configured
+          // colour. That also lets the CLI's `--format json` plan and this one
+          // be compared string for string, which is the A6 invariant.
+          //
+          // Loaded lazily, and from the LIGHT `/format` subpath: the kernel
+          // keeps summon-core proper (and React) off its static import graph.
+          const { visiblePlanEffects } = await import(
+            "@canonical/summon-core/format"
+          );
+          const plan = visiblePlanEffects(
+            effects,
+            runtime.globalFlags.verbose === true,
+          ).map(describeEffect);
           return toolSuccess(
             { plan },
             { planOnly: true, confirmRequired: true },

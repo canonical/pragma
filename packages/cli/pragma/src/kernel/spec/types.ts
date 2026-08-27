@@ -11,7 +11,7 @@
  * other param is a kebab-cased flag.
  */
 
-import type { Task } from "@canonical/task";
+import type { Effect, Task } from "@canonical/task";
 import type { PragmaRuntime } from "../runtime/types.js";
 
 /** MCP tool annotations mirrored onto exposed verbs. */
@@ -214,11 +214,26 @@ export interface VerbSpec<P = Record<string, unknown>, R = unknown> {
      * data on the runtime (`PragmaRuntime.planData`) can render that instead.
      *
      * ABSENT BY DEFAULT, and absent is exactly today's render: a verb that does
-     * not set both this and `planData` is untouched. The honest preview still
-     * runs underneath either way, so a dry run still fails exactly when the run
-     * would.
+     * not declare this is untouched. The honest preview still runs underneath
+     * either way, so a dry run still fails exactly when the run would.
+     *
+     * The previewed `effects` and the run's verbosity arrive BESIDE the stashed
+     * data, because a plan is not always known before the Task runs: `setup`
+     * computes its target table up front and renders that, while `create` has
+     * nothing to stash — its plan IS the effects the generator produced, which
+     * only exist once the preview interpreter has walked the Task. One seam
+     * serves both by handing the renderer everything the branch knows.
+     *
+     * MAY be async: a renderer whose formatting rules live in another package
+     * loads them behind a dynamic `import()` rather than putting them on the
+     * capabilities barrel's static graph, which every `--help` and
+     * `__complete` spawn pays for. The kernel awaits whatever it returns.
      */
-    formatPlan?: (planData: unknown) => string;
+    formatPlan?: (
+      planData: unknown,
+      effects: readonly Effect[],
+      verbose: boolean,
+    ) => string | Promise<string>;
   };
   readonly examples?: readonly Example[];
   readonly disclosure?: DisclosureSpec;

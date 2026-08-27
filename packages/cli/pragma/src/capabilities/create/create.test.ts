@@ -17,6 +17,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import chalk from "chalk";
 import { describe, expect, it } from "vitest";
 import { PragmaError } from "../../kernel/error/PragmaError.js";
 import {
@@ -36,6 +37,7 @@ const FLAGS: GlobalFlags = {
   format: "plain",
   verbose: false,
 };
+const JSON_FLAGS: GlobalFlags = { ...FLAGS, format: "json" };
 const YES: MutationFlags = { dryRun: false, undo: false, yes: true };
 const freshCwd = (): string => mkdtempSync(join(tmpdir(), "pragma-create-"));
 
@@ -45,15 +47,27 @@ async function runIn(
   params: Record<string, unknown>,
   mutation: MutationFlags = YES,
   verb = createVerbs.component,
+  flags: GlobalFlags = FLAGS,
 ) {
   const prev = process.cwd();
   process.chdir(dir);
   try {
-    return await executeVerb(verb, params, mutation, bootRuntime(FLAGS, dir));
+    return await executeVerb(verb, params, mutation, bootRuntime(flags, dir));
   } finally {
     process.chdir(prev);
   }
 }
+
+/**
+ * The described-effect rows of a `--format json` dry run.
+ *
+ * The plain preview renders through summon's shared effect formatter now, so
+ * `describeEffect`'s `Write file: <path> (N bytes)` spelling — with the byte
+ * count two cells below depend on — lives on the JSON surface, which this
+ * change deliberately left alone.
+ */
+const jsonPlan = (stdout: string | undefined): string[] =>
+  (JSON.parse(stdout ?? "{}").data as { plan: string[] }).plan;
 
 const walk = (dir: string, base = ""): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
@@ -99,12 +113,121 @@ describe("create — real generation + stamp", () => {
     expect(walk(dir)).toEqual([]); // nothing written
   });
 
+  it("--dry-run previews through summon's effect formatter, not the raw dump", async () => {
+    // pragma and summon scaffold through the SAME projection and write
+    // byte-identical trees, so a preview describing that work differently in
+    // each was a difference with nothing behind it. The rows here are
+    // `formatEffectLine`'s; the filtering is `visiblePlanEffects`'.
+    const dir = freshCwd();
+    const outcome = await runIn(
+      dir,
+      {
+        framework: "react",
+        componentPath: "Widget",
+        withStyles: false,
+        withStories: false,
+        withSsrTests: false,
+      },
+      { dryRun: true, undo: false, yes: false },
+    );
+    expect(outcome.exitCode).toBe(0);
+    const stdout = outcome.stdout ?? "";
+
+    // The shared shape: a titled plan, kind-columned rows, the closing line.
+    expect(stdout.startsWith("Plan:\n")).toBe(true);
+    expect(stdout).toContain("├─ Create file   Widget/Widget.tsx");
+    expect(stdout).toContain("└─ Info          ");
+    expect(
+      stdout.endsWith("\nDry-run complete. No files were modified.\n"),
+    ).toBe(true);
+
+    // The noise the filter exists to remove is gone: no internal probes, no
+    // directory repeated once per file it holds, no kernel bullet dump.
+    expect(stdout).not.toContain("Dry run — planned effects:");
+    expect(stdout).not.toContain("Check exists:");
+    expect(stdout).not.toContain("Log [");
+    expect(stdout.split("\n").filter((l) => l.includes("Create dir"))).toEqual([
+      "├─ Create dir    Widget",
+    ]);
+  });
+
+  it("--dry-run stays ANSI-free when stdout is not a terminal (PROTECTED)", async () => {
+    // The row formatter used to call chalk directly, so whether a preview
+    // carried escapes was decided by chalk's environment detection at the
+    // moment of the call. pragma's gate is stricter than chalk's: it demands
+    // an ATTENDED stdout as well as a usable colour level. nx exports
+    // FORCE_COLOR to every test task, which is exactly the condition where the
+    // two disagree — chalk would colour a piped preview that every other
+    // pragma renderer, and `doctor.render.test.ts`'s pin on redirected output,
+    // leaves plain.
+    const dir = freshCwd();
+    const level = chalk.level;
+    try {
+      chalk.level = 3; // as FORCE_COLOR would leave it
+      const outcome = await runIn(
+        dir,
+        {
+          framework: "react",
+          componentPath: "Widget",
+          withStyles: false,
+          withStories: false,
+          withSsrTests: false,
+        },
+        { dryRun: true, undo: false, yes: false },
+      );
+      expect(outcome.exitCode).toBe(0);
+      // Not a TTY under vitest, so the decision is "no colour" — and the
+      // formatter is told that rather than left to work it out.
+      expect(process.stdout.isTTY).not.toBe(true);
+      expect(outcome.stdout ?? "").not.toContain("\u001B[");
+      // Still the shared shape, just uncoloured.
+      expect(outcome.stdout).toContain("├─ Create file   Widget/Widget.tsx");
+    } finally {
+      chalk.level = level;
+    }
+  });
+
+  it("--dry-run PLANS the generator's logs instead of performing them", async () => {
+    // A preview that performs an effect is not a preview of that effect. The
+    // interpreter's recorded `Log`s used to be written to stderr on the way
+    // through AND listed as plan rows, so every line the generator emitted
+    // appeared twice in one invocation.
+    const dir = freshCwd();
+    const written: string[] = [];
+    const realWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      written.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    let outcome: Awaited<ReturnType<typeof executeVerb>>;
+    try {
+      outcome = await runIn(
+        dir,
+        { framework: "react", componentPath: "Widget" },
+        { dryRun: true, undo: false, yes: false },
+      );
+    } finally {
+      process.stderr.write = realWrite;
+    }
+    expect(outcome.exitCode).toBe(0);
+    // The generator's opening line is planned exactly once…
+    const line = "Generating React component: Widget";
+    expect((outcome.stdout ?? "").split(line).length - 1).toBe(1);
+    // …and performed never.
+    expect(written.join("").includes(line)).toBe(false);
+  });
+
   it("application --dry-run renders carried assets as WRITES — no Copy rows (§L item 6)", async () => {
     // copy()→rawFile() reclassified ~62 carried assets from CopyFile to
     // verbatim WriteFile, changing every dry-run/--llm/json plan row from
     // `Copy file: <src> → <dest>` to `Write file: <dest> (N bytes)`. That is
     // a DELIBERATE observable change (PLAN §L); this literal pin keeps both
     // an accidental reversion and a silent re-rendering visible.
+    //
+    // Read off `--format json`. The pin is the same literal it always was —
+    // only the surface it is read from moved, because the plain preview now
+    // renders through summon's effect formatter while the JSON `plan` array
+    // stays the `describeEffect` strings it has always carried.
     const dir = freshCwd();
     const prev = process.cwd();
     process.chdir(dir);
@@ -118,18 +241,19 @@ describe("create — real generation + stamp", () => {
         createVerbs.application as unknown as Parameters<typeof executeVerb>[0],
         { appPath: "my-app", runInstall: false },
         { dryRun: true, undo: false, yes: false },
-        bootRuntime(FLAGS, dir),
+        bootRuntime(JSON_FLAGS, dir),
       );
     } finally {
       process.chdir(prev);
     }
     expect(outcome.exitCode).toBe(0);
+    const plan = jsonPlan(outcome.stdout).join("\n");
     // A known carried (formerly copied) asset plans as a write…
-    expect(outcome.stdout).toMatch(
-      /- Write file: my-app\/\.storybook\/preview\.ts \(\d+ bytes\)/,
+    expect(plan).toMatch(
+      /^Write file: my-app\/\.storybook\/preview\.ts \(\d+ bytes\)$/m,
     );
     // …and no plan row renders as a copy anywhere.
-    expect(outcome.stdout).not.toContain("Copy file:");
+    expect(plan).not.toContain("Copy file:");
     expect(walk(dir)).toEqual([]); // still a dry run
   }, 60_000);
 
@@ -145,17 +269,19 @@ describe("create — real generation + stamp", () => {
       withSsrTests: false,
     };
     const previewDir = freshCwd();
-    const preview = await runIn(previewDir, params, {
-      dryRun: true,
-      undo: false,
-      yes: false,
-    });
+    const preview = await runIn(
+      previewDir,
+      params,
+      { dryRun: true, undo: false, yes: false },
+      createVerbs.component,
+      JSON_FLAGS,
+    );
     expect(preview.exitCode).toBe(0);
     expect(walk(previewDir)).toEqual([]);
 
     const planned = new Map<string, number>();
-    for (const line of (preview.stdout ?? "").split("\n")) {
-      const match = /^ {2}- Write file: (.+) \((\d+) bytes\)$/.exec(line);
+    for (const line of jsonPlan(preview.stdout)) {
+      const match = /^Write file: (.+) \((\d+) bytes\)$/.exec(line);
       if (match) planned.set(match[1] as string, Number(match[2]));
     }
     expect(planned.size).toBeGreaterThan(0);

@@ -27,6 +27,12 @@ export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
   switch (effect._tag) {
     case "WriteFile":
     case "AppendFile":
+    // A TransformFile REWRITES a file the run already owns — `isWriteEffect`
+    // counts it and `getAffectedPaths` names its path, so a plan that omitted
+    // it hid a real mutation. It reached the default arm for as long as that
+    // arm claimed an exhaustiveness it did not have; the `never` below is what
+    // stops the next tag added to `@canonical/task` from repeating that.
+    case "TransformFile":
     case "MakeDir":
     case "CopyFile":
     case "CopyDirectory":
@@ -51,12 +57,111 @@ export const isVisibleEffect = (effect: Effect, verbose = false): boolean => {
     case "Parallel":
     case "Race":
       return false;
-    /* v8 ignore start — exhaustive switch; all known effect tags handled above */
-    default:
+    /* v8 ignore start — unreachable: the arms above cover every `Effect`
+       tag, which the `never` assignment enforces at COMPILE time rather than
+       asserting in prose. Adding a tag to `@canonical/task` fails `tsc` here. */
+    default: {
+      const _exhaustive: never = effect;
       return false;
+    }
     /* v8 ignore stop */
   }
 };
+
+/**
+ * The rows a plan shows: the user-relevant effects, each directory named once.
+ *
+ * The visibility filter and the `MakeDir` de-duplication are ONE rule with
+ * several readers — the summon bin's dry-run, the `--llm` / `--format json`
+ * projections below, and the pragma kernel's CLI and MCP previews — and each
+ * reader used to carry its own copy of the two steps. A generator that ensures
+ * its output directory before every file plans that directory once per file,
+ * so the de-duplication is what makes a plan a list of artifacts rather than a
+ * list of mkdir calls.
+ *
+ * @param effects - The effects a run would apply, in order.
+ * @param verbose - If true, debug logs stay in the plan.
+ * @returns The visible effects, first occurrence of each directory kept.
+ */
+export const visiblePlanEffects = (
+  effects: readonly Effect[],
+  verbose = false,
+): Effect[] => {
+  const seenDirPaths = new Set<string>();
+  return effects.filter((effect) => {
+    if (!isVisibleEffect(effect, verbose)) return false;
+    if (effect._tag === "MakeDir") {
+      if (seenDirPaths.has(effect.path)) return false;
+      seenDirPaths.add(effect.path);
+    }
+    return true;
+  });
+};
+
+/**
+ * The colour decision a row is rendered under, carried as DATA.
+ *
+ * {@link formatEffectLine} used to call `chalk` directly, which meant whether a
+ * row carried ANSI was decided by chalk's environment detection at the moment
+ * of the call. Two of its callers cannot live with that: pragma's CLI preview
+ * gates colour on `process.stdout.isTTY` AND chalk's level (so a piped run
+ * under `FORCE_COLOR` — which nx exports to every test task — must stay plain
+ * while chalk alone would colour it), and the MCP plan payload is structured
+ * data read by a model, which must be plain whatever the editor that spawned
+ * the server put in the environment.
+ *
+ * So the decision arrives as an argument. Stripping escapes afterwards would
+ * work too and would be wrong: it puts the rule in a second place.
+ */
+export interface EffectStyle {
+  /** Whether this style emits ANSI at all. */
+  readonly enabled: boolean;
+  /** De-emphasize a connector or indent. */
+  dim(text: string): string;
+  /** Tint an action label, or pass it through when the effect has no colour. */
+  paint(color: EffectColor | undefined, text: string): string;
+}
+
+/** The colours {@link getActionColor} may ask for. */
+export type EffectColor =
+  | "green"
+  | "red"
+  | "yellow"
+  | "cyan"
+  | "blue"
+  | "magenta";
+
+/** The identity styler — every function returns its input unchanged. */
+const PLAIN_EFFECT_STYLE: EffectStyle = {
+  enabled: false,
+  dim: (text) => text,
+  paint: (_color, text) => text,
+};
+
+/**
+ * Build an {@link EffectStyle} for a known colour decision.
+ *
+ * @param enabled - True to colour through chalk; false for the identity
+ *   styler, which emits no escape under any environment.
+ * @returns A style whose functions colour, or pass through, accordingly.
+ */
+export const effectStyleFor = (enabled: boolean): EffectStyle => {
+  if (!enabled) return PLAIN_EFFECT_STYLE;
+  return {
+    enabled: true,
+    dim: (text) => chalk.dim(text),
+    paint: (color, text) => (color ? chalk[color](text) : text),
+  };
+};
+
+/**
+ * The default style: chalk's own ambient decision.
+ *
+ * Kept as the default argument so the summon bin — which has always rendered
+ * under exactly this — stays byte-identical. A host with its own colour gate
+ * passes {@link effectStyleFor} instead of inheriting this one.
+ */
+const AMBIENT_EFFECT_STYLE: EffectStyle = effectStyleFor(true);
 
 /**
  * Get human-readable action label for an effect.
@@ -67,6 +172,8 @@ export const getActionLabel = (effect: Effect): string => {
       return "Create file";
     case "AppendFile":
       return "Append to";
+    case "TransformFile":
+      return "Transform";
     case "MakeDir":
       return "Create dir";
     case "CopyFile":
@@ -94,22 +201,37 @@ export const getActionLabel = (effect: Effect): string => {
         default:
           return "Log";
       }
-    default:
+    // The internal effects: never rendered as a plan row (isVisibleEffect
+    // drops them), but named here so the switch is exhaustive over the tag
+    // union rather than leaning on a default that hides a missing case.
+    case "ReadFile":
+    case "Exists":
+    case "Glob":
+    case "ReadContext":
+    case "WriteContext":
+    case "Prompt":
+    case "Parallel":
+    case "Race":
       return effect._tag;
+    /* v8 ignore start — unreachable; `never` proves the arms above are total */
+    default: {
+      const _exhaustive: never = effect;
+      return "";
+    }
+    /* v8 ignore stop */
   }
 };
 
 /**
  * Get color for action label based on effect type.
  */
-export const getActionColor = (
-  effect: Effect,
-): "green" | "red" | "yellow" | "cyan" | "blue" | "magenta" | undefined => {
+export const getActionColor = (effect: Effect): EffectColor | undefined => {
   switch (effect._tag) {
     case "WriteFile":
     case "MakeDir":
       return "green";
     case "AppendFile":
+    case "TransformFile":
       return "magenta";
     case "DeleteFile":
     case "DeleteDirectory":
@@ -132,8 +254,22 @@ export const getActionColor = (
         default:
           return "blue";
       }
-    default:
+    // Internal effects — uncoloured, and named for exhaustiveness (above).
+    case "ReadFile":
+    case "Exists":
+    case "Glob":
+    case "ReadContext":
+    case "WriteContext":
+    case "Prompt":
+    case "Parallel":
+    case "Race":
       return undefined;
+    /* v8 ignore start — unreachable; `never` proves the arms above are total */
+    default: {
+      const _exhaustive: never = effect;
+      return undefined;
+    }
+    /* v8 ignore stop */
   }
 };
 
@@ -145,6 +281,8 @@ export const getEffectPayload = (effect: Effect): string => {
     case "WriteFile":
       return effect.path;
     case "AppendFile":
+      return effect.path;
+    case "TransformFile":
       return effect.path;
     case "MakeDir":
       return effect.path;
@@ -161,24 +299,49 @@ export const getEffectPayload = (effect: Effect): string => {
       return `${effect.target} → ${effect.path}`;
     case "Log":
       return effect.message;
-    default:
+    // Internal effects — named for exhaustiveness (see getActionLabel).
+    case "ReadFile":
+    case "Exists":
+    case "Glob":
+    case "ReadContext":
+    case "WriteContext":
+    case "Prompt":
+    case "Parallel":
+    case "Race":
       return effect._tag;
+    /* v8 ignore start — unreachable; `never` proves the arms above are total */
+    default: {
+      const _exhaustive: never = effect;
+      return "";
+    }
+    /* v8 ignore stop */
   }
 };
 
 /**
  * Format a single effect as a CLI line (for non-interactive output).
+ *
+ * @param effect - The effect to name.
+ * @param isLast - True for the final row, which closes the tree connector.
+ * @param style - The colour decision. Defaults to chalk's ambient one, which
+ *   is what the summon bin has always rendered under; a host with its own gate
+ *   passes {@link effectStyleFor} so the row cannot disagree with the rest of
+ *   that host's output.
+ * @returns The rendered row.
  */
-export const formatEffectLine = (effect: Effect, isLast: boolean): string => {
+export const formatEffectLine = (
+  effect: Effect,
+  isLast: boolean,
+  style: EffectStyle = AMBIENT_EFFECT_STYLE,
+): string => {
   const connector = isLast ? "└─" : "├─";
   const actionLabel = getActionLabel(effect);
   const color = getActionColor(effect);
   const payload = getEffectPayload(effect);
 
-  const colorFn = color ? chalk[color] : (s: string) => s;
   const paddedLabel = actionLabel.padEnd(ACTION_LABEL_WIDTH);
 
-  return `${chalk.dim(connector)} ${colorFn(paddedLabel)}${payload}`;
+  return `${style.dim(connector)} ${style.paint(color, paddedLabel)}${payload}`;
 };
 
 /**
@@ -201,6 +364,7 @@ const MAX_LINE_WIDTH = 120;
 export const formatContentPreview = (
   content: string,
   maxLines: number = MAX_PREVIEW_LINES,
+  style: EffectStyle = AMBIENT_EFFECT_STYLE,
 ): string => {
   const lines = content.split("\n");
   const totalLines = lines.length;
@@ -213,12 +377,12 @@ export const formatContentPreview = (
       line.length > MAX_LINE_WIDTH
         ? `${line.slice(0, MAX_LINE_WIDTH - 3)}...`
         : line;
-    return `${chalk.dim(`${lineNum} │`)} ${truncatedLine}`;
+    return `${style.dim(`${lineNum} │`)} ${truncatedLine}`;
   });
 
   if (totalLines > maxLines) {
     formatted.push(
-      chalk.dim(`   ... (${totalLines - maxLines} more lines omitted)`),
+      style.dim(`   ... (${totalLines - maxLines} more lines omitted)`),
     );
   }
 
@@ -235,16 +399,21 @@ export const formatContentPreview = (
 export const formatEffectWithContent = (
   effect: Effect,
   isLast: boolean,
+  style: EffectStyle = AMBIENT_EFFECT_STYLE,
 ): string => {
-  const baseLine = formatEffectLine(effect, isLast);
+  const baseLine = formatEffectLine(effect, isLast, style);
 
   // Only show content for WriteFile and AppendFile effects
   if (effect._tag === "WriteFile" || effect._tag === "AppendFile") {
     const indent = isLast ? "   " : "│  ";
-    const contentPreview = formatContentPreview(effect.content);
+    const contentPreview = formatContentPreview(
+      effect.content,
+      MAX_PREVIEW_LINES,
+      style,
+    );
     const indentedContent = contentPreview
       .split("\n")
-      .map((line) => `${chalk.dim(indent)}${line}`)
+      .map((line) => `${style.dim(indent)}${line}`)
       .join("\n");
     return `${baseLine}\n${indentedContent}`;
   }
@@ -316,6 +485,8 @@ export const getLlmActionLabel = (effect: Effect): string => {
       return "create";
     case "AppendFile":
       return "append";
+    case "TransformFile":
+      return "transform";
     case "MakeDir":
       return "mkdir";
     case "CopyFile":
@@ -332,8 +503,22 @@ export const getLlmActionLabel = (effect: Effect): string => {
       return "symlink";
     case "Log":
       return effect.level;
-    default:
+    // Internal effects — named for exhaustiveness (see getActionLabel).
+    case "ReadFile":
+    case "Exists":
+    case "Glob":
+    case "ReadContext":
+    case "WriteContext":
+    case "Prompt":
+    case "Parallel":
+    case "Race":
       return effect._tag.toLowerCase();
+    /* v8 ignore start — unreachable; `never` proves the arms above are total */
+    default: {
+      const _exhaustive: never = effect;
+      return "";
+    }
+    /* v8 ignore stop */
   }
 };
 
@@ -344,6 +529,7 @@ export const getLlmEffectPath = (effect: Effect): string => {
   switch (effect._tag) {
     case "WriteFile":
     case "AppendFile":
+    case "TransformFile":
     case "MakeDir":
     case "DeleteFile":
     case "DeleteDirectory":
@@ -358,8 +544,22 @@ export const getLlmEffectPath = (effect: Effect): string => {
       return `${effect.target} -> ${effect.path}`;
     case "Log":
       return effect.message;
-    default:
+    // Internal effects — no path to name, and named for exhaustiveness.
+    case "ReadFile":
+    case "Exists":
+    case "Glob":
+    case "ReadContext":
+    case "WriteContext":
+    case "Prompt":
+    case "Parallel":
+    case "Race":
       return "";
+    /* v8 ignore start — unreachable; `never` proves the arms above are total */
+    default: {
+      const _exhaustive: never = effect;
+      return "";
+    }
+    /* v8 ignore stop */
   }
 };
 
@@ -449,18 +649,8 @@ export const formatLlmMarkdown = (
     lines.push("");
   }
 
-  // Filter visible effects
-  const visibleEffects = effects.filter((e) => isVisibleEffect(e, verbose));
-
-  // Deduplicate MakeDir
-  const seenDirPaths = new Set<string>();
-  const dedupedEffects = visibleEffects.filter((e) => {
-    if (e._tag === "MakeDir") {
-      if (seenDirPaths.has(e.path)) return false;
-      seenDirPaths.add(e.path);
-    }
-    return true;
-  });
+  // The one plan rule: visible effects, each directory named once.
+  const dedupedEffects = visiblePlanEffects(effects, verbose);
 
   // Plan table
   if (dedupedEffects.length > 0) {
@@ -526,17 +716,8 @@ export const formatLlmJson = (
   effects: Effect[],
   verbose = false,
 ): Record<string, unknown> => {
-  const visibleEffects = effects.filter((e) => isVisibleEffect(e, verbose));
-
-  // Deduplicate MakeDir
-  const seenDirPaths = new Set<string>();
-  const dedupedEffects = visibleEffects.filter((e) => {
-    if (e._tag === "MakeDir") {
-      if (seenDirPaths.has(e.path)) return false;
-      seenDirPaths.add(e.path);
-    }
-    return true;
-  });
+  // The one plan rule: visible effects, each directory named once.
+  const dedupedEffects = visiblePlanEffects(effects, verbose);
 
   const plan = dedupedEffects.map((effect) => {
     const entry: Record<string, unknown> = {

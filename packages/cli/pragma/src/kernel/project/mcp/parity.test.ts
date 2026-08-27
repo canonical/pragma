@@ -102,9 +102,12 @@ describe("MCP plan-first is honest (PRA-104)", () => {
 
     expect(planned.ok).toBe(true);
     expect(planned.meta).toEqual({ planOnly: true, confirmRequired: true });
-    expect((planned.data as { plan: string[] }).plan).toContain(
+    // The SHARED filter applies to every mutating tool and not just `create`:
+    // the write is named, and the `ReadFile` this verb performs first is
+    // internal and filtered out, so the plan is one row.
+    expect((planned.data as { plan: string[] }).plan).toEqual([
       `Write file: ${source}.grafted (8 bytes)`,
-    );
+    ]);
     expect(readdirSync(dir)).toEqual(["present.txt"]);
   });
 });
