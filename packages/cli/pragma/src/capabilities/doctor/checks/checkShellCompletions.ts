@@ -8,7 +8,7 @@ import {
   runComplete,
 } from "../../../kernel/completion/index.js";
 import { capabilities } from "../../index.js";
-import { detectCompletions } from "../../setup/operations/setupCompletions.js";
+import type { CompletionsDetection } from "../../setup/operations/setupCompletions.js";
 import { activationHint, type ShellId } from "../../setup/shell.js";
 import type { CheckResult } from "../types.js";
 
@@ -102,15 +102,21 @@ async function completeProbe(cwd: string): Promise<number> {
  * never installed is `available`: completions are opt-in and a fresh install
  * is healthy without them.
  *
- * @param cwd - The project directory (the resolver's entity seam, and the
- *   `completion` config gate 2 renders this project's body from).
+ * The detection is passed IN rather than re-read: the `completions` target
+ * detects once per invocation and both the setup plan and this row read that
+ * one answer, so the two surfaces cannot describe different files.
+ *
+ * @param cwd - The project directory (the resolver's entity seam).
+ * @param d - The `completions` target's detection for this invocation.
  * @returns A CheckResult: pass (up to date + wired + answering), available
  *   (never installed, with the setup remedy), fail (with the attributable
  *   remedy), or skip (shell undetected).
- * @note Impure — reads `$SHELL`, the install path, the config layers, `.zshrc`,
- *   and drives the storeless resolver.
+ * @note Impure — reads the install path, `.zshrc`, and drives the resolver.
  */
-export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
+export async function checkShellCompletions(
+  cwd: string,
+  d: CompletionsDetection,
+): Promise<CheckResult> {
   // 1. Effect test: the resolver the scripts delegate to must actually answer.
   let candidates: number;
   try {
@@ -134,7 +140,7 @@ export async function checkShellCompletions(cwd: string): Promise<CheckResult> {
   }
 
   // 2. The installed script is a script `setup completions` would write.
-  const { shell, path, state } = await detectCompletions(cwd);
+  const { shell, path, state } = d;
   if (shell === null || path === null) {
     return {
       name: NAME,
