@@ -17,7 +17,7 @@ const contentSurfaceClassName = "contrasted";
  *
  * `import { Popover } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.component.popover
+ * @implements ds:global.component.popover
  */
 const Popover = ({
   trigger,

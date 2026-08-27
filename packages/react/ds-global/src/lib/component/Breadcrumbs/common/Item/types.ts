@@ -12,7 +12,7 @@ export type { LinkComponentProps };
  *
  * Extends navigation Item (WD405) with breadcrumb-specific props.
  *
- * @implements dso:global.subcomponent.breadcrumbs-item
+ * @implements ds:global.subcomponent.breadcrumbs-item
  */
 export interface ItemProps extends HTMLAttributes<HTMLLIElement>, Item {
   /**

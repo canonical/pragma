@@ -12,7 +12,7 @@ const componentCssClassName = "ds token-swatch";
  * border, shadow, typography, transition, and strokeStyle. Derived tokens
  * without resolved values render as reference arrows to their base token.
  *
- * @implements dso:global.subcomponent.token-swatch
+ * @implements ds:global.subcomponent.token-swatch
  */
 export const TokenSwatch = ({
   token,

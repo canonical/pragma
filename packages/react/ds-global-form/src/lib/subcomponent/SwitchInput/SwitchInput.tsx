@@ -14,6 +14,8 @@ const componentCssClassName = "ds form-switch";
  * @returns {ReactElement} - Rendered Switch
  *
  * `import { SwitchInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.switch_input
  */
 export const SwitchInput = forwardRef<HTMLInputElement, SwitchInputProps>(
   function SwitchInput(

@@ -54,4 +54,7 @@ const Label = ({
   );
 };
 
+/**
+ * @implements ds:global.subcomponent.field-label
+ */
 export default Label;

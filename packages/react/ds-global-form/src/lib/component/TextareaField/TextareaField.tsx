@@ -8,6 +8,8 @@ import type { TextareaFieldProps } from "./types.js";
  * (label, description, error) and middleware/conditional-display support.
  *
  * `import { TextareaField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.textarea_field
  */
 export default withWrapper<TextareaFieldProps>(
   bindField<TextareaFieldProps>(TextareaInput, "native"),

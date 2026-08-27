@@ -15,7 +15,7 @@ const componentCssClassName = "ds tabs";
  *
  * `import { Tabs } from "@canonical/react-ds-global";`
  *
- * @implements dso:global.component.tabs
+ * @implements ds:global.component.tabs
  */
 const Tabs = ({
   navigationRoot,

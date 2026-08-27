@@ -14,6 +14,8 @@ import type { RangeFieldProps } from "./types.js";
  * inputs report.
  *
  * `import { RangeField } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.component.range_field
  */
 export default withWrapper<RangeFieldProps>(
   bindField<RangeFieldProps>(RangeControl, "native", {

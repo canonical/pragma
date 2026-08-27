@@ -1,6 +1,6 @@
 /**
  * Label styles
- * @implements dso:global.component.label
+ * @implements ds:global.component.label
  *
  * DSL anatomy mapping:
  * - layout.display: inline -> display: inline

@@ -12,6 +12,8 @@ const componentCssClassName = "ds input file-upload";
  * @returns {React.ReactElement} - Rendered FileUploadInput
  *
  * `import { FileUploadInput } from "@canonical/react-ds-global-form";`
+ *
+ * @implements ds:global.subcomponent.file_upload_input
  */
 export const FileUploadInput = ({
   id,
